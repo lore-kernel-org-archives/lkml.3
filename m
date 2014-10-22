@@ -1,66 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513AbaJVP57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:57:59 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:54095 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754913AbaJVPp5 (ORCPT
+	id S932532AbaJVP6R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:58:17 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:52277 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753422AbaJVP6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:45:57 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v3 45/59] dmaengine: mv_xor: Remove device_control
-Date: Wed, 22 Oct 2014 17:43:59 +0200
-Message-Id: <1413992653-21963-46-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 22 Oct 2014 11:58:12 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@gmail.com>, <ssantosh@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 2/3] ARM: keystone: pm: switch to use generic pm domains
+References: <1413809764-21995-1-git-send-email-grygorii.strashko@ti.com>
+	<1413809764-21995-3-git-send-email-grygorii.strashko@ti.com>
+	<5446A065.9050308@gmail.com> <544793B5.6080601@ti.com>
+Date: Wed, 22 Oct 2014 08:58:08 -0700
+In-Reply-To: <544793B5.6080601@ti.com> (Grygorii Strashko's message of "Wed,
+	22 Oct 2014 14:23:33 +0300")
+Message-ID: <7h61fccd0v.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Marvell XOR engine doesn't allow any operations that use to be defined in
-device_control, it shouldn't need to be defined. Since it's going to be
-deprecated, remove it altogether.
+Grygorii Strashko <grygorii.strashko@ti.com> writes:
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/dma/mv_xor.c | 9 ---------
- 1 file changed, 9 deletions(-)
+> Hi Santosh,
+>
+> On 10/21/2014 09:05 PM, Santosh Shilimkar wrote:
+>> On 10/20/2014 05:56 AM, Grygorii Strashko wrote:
+>>> This patch switches Keystone 2 PM code to use Generic PM domains
+>>> instead of PM clock domains because of the lack of DT support
+>>> for the last.
+>>>
+>>> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>> ---
+>>>   .../bindings/power/ti,keystone-powerdomain.txt     |  31 ++++++
+>>>   arch/arm/mach-keystone/Kconfig                     |   1 +
+>>>   arch/arm/mach-keystone/pm_domain.c                 | 112 
+>>> ++++++++++++++-------
+>>>   3 files changed, 107 insertions(+), 37 deletions(-)
+>>>   create mode 100644 
+>>> Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
+>>>
+>>> diff --git 
+>>> a/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt 
+>>> b/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
+>>> new file mode 100644
+>>> index 0000000..4bbf2aa
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
+>>> @@ -0,0 +1,31 @@
+>>> +* TI Keystone 2 Generic PM Controller
+>>> +
+>>> +The TI Keystone 2 Generic PM Controller is responsible for Clock gating
+>>> +for each controlled IP module.
+>>> +
+>>> +Required properties:
+>>> +- compatible: Should be "ti,keystone-powerdomain"
+>>> +- #power-domain-cells: Should be 0, see below:
+>>> +
+>>> +The gpc node is a power-controller as documented by the generic power 
+>>> domain
+>> You renamed gpc but missed to fix the comment ? Pls update it.
+>
+> ok.
+>
+>> 
+>>> +bindings in Documentation/devicetree/bindings/power/power_domain.txt.
+>>> +
+>>> +Example:
+>>> +
+>>> +    pm_controller: pm-controller {
+>>> +        compatible = "ti,keystone-powerdomain";
+>>> +        #power-domain-cells = <0>;
+>>> +    };
+>>> +
+>>> +    netcp: netcp@2090000 {
+>>> +        reg = <0x2620110 0x8>;
+>>> +        reg-names = "efuse";
+>>> +        ...
+>>> +        #address-cells = <1>;
+>>> +        #size-cells = <1>;
+>>> +        ranges;
+>>> +        power-domains = <&pm_controller>;
+>>> +
+>>> +        clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
+>>> +        dma-coherent;
+>>> +    }
+>>> diff --git a/arch/arm/mach-keystone/Kconfig 
+>>> b/arch/arm/mach-keystone/Kconfig
+>>> index 98a156a..de43107 100644
+>>> --- a/arch/arm/mach-keystone/Kconfig
+>>> +++ b/arch/arm/mach-keystone/Kconfig
+>>> @@ -9,6 +9,7 @@ config ARCH_KEYSTONE
+>>>       select COMMON_CLK_KEYSTONE
+>>>       select ARCH_SUPPORTS_BIG_ENDIAN
+>>>       select ZONE_DMA if ARM_LPAE
+>>> +    select PM_GENERIC_DOMAINS if PM
+>>>       help
+>>>         Support for boards based on the Texas Instruments Keystone 
+>>> family of
+>>>         SoCs.
+>>> diff --git a/arch/arm/mach-keystone/pm_domain.c 
+>>> b/arch/arm/mach-keystone/pm_domain.c
+>>> index ca79dda..d58759d 100644
+>>> --- a/arch/arm/mach-keystone/pm_domain.c
+>>> +++ b/arch/arm/mach-keystone/pm_domain.c
+>>> @@ -12,69 +12,107 @@
+>>>    * version 2, as published by the Free Software Foundation.
+>>>    */
+>>>
+>>> +#include <linux/clk.h>
+>>>   #include <linux/init.h>
+>>> -#include <linux/pm_runtime.h>
+>>>   #include <linux/pm_clock.h>
+>>> +#include <linux/pm_domain.h>
+>>>   #include <linux/platform_device.h>
+>>> -#include <linux/clk-provider.h>
+>>>   #include <linux/of.h>
+>>>
+>>> -#ifdef CONFIG_PM_RUNTIME
+>>> -static int keystone_pm_runtime_suspend(struct device *dev)
+>>> +#ifdef CONFIG_PM_GENERIC_DOMAINS
+>>> +
+>>> +struct keystone_domain {
+>>> +    struct generic_pm_domain genpd;
+>>> +    struct device    *dev;
+>>> +};
+>>> +
+>>> +void keystone_pm_domain_attach_dev(struct device *dev)
+>>>   {
+>>> +    struct clk *clk;
+>>>       int ret;
+>>> +    int i = 0;
+>>>
+>>>       dev_dbg(dev, "%s\n", __func__);
+>>>
+>>> -    ret = pm_generic_runtime_suspend(dev);
+>>> -    if (ret)
+>>> -        return ret;
+>>> -
+>>> -    ret = pm_clk_suspend(dev);
+>>> +    ret = pm_clk_create(dev);
+>>>       if (ret) {
+>>> -        pm_generic_runtime_resume(dev);
+>>> -        return ret;
+>>> +        dev_err(dev, "pm_clk_create failed %d\n", ret);
+>>> +        return;
+>>> +    };
+>>> +
+>>> +    while ((clk = of_clk_get(dev->of_node, i++)) && !IS_ERR(clk)) {
+>>> +        ret = pm_clk_add_clk(dev, clk);
+>>> +        if (ret) {
+>>> +            dev_err(dev, "pm_clk_add_clk failed %d\n", ret);
+>>> +            goto clk_err;
+>>> +        };
+>>>       }
+>>>
+>>> -    return 0;
+>>> +    if (!IS_ENABLED(CONFIG_PM_RUNTIME)) {
+>> Can we not okkup two seperate callbacks instead of above check ?
+>> I don't like this CONFIG check here. Its slightly better version of
+>> ifdef in middle of the code.
+>
+> I've found more-less similar comment on patch
+> "Re: [PATCH v3 1/3] power-domain: add power domain drivers for Rockchip platform"
+> https://lkml.org/lkml/2014/10/17/257
+>
+> So, Would you like me to create patch which will enable clocks in pm_clk_add/_clk()
+> in case !IS_ENABLED(CONFIG_PM_RUNTIME)
 
-diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
-index a63837ca1410..10d6dd8b8ee4 100644
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -928,14 +928,6 @@ out:
- 	return err;
- }
- 
--/* This driver does not implement any of the optional DMA operations. */
--static int
--mv_xor_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	       unsigned long arg)
--{
--	return -ENOSYS;
--}
--
- static int mv_xor_channel_remove(struct mv_xor_chan *mv_chan)
- {
- 	struct dma_chan *chan, *_chan;
-@@ -1008,7 +1000,6 @@ mv_xor_channel_add(struct mv_xor_device *xordev,
- 	dma_dev->device_free_chan_resources = mv_xor_free_chan_resources;
- 	dma_dev->device_tx_status = mv_xor_status;
- 	dma_dev->device_issue_pending = mv_xor_issue_pending;
--	dma_dev->device_control = mv_xor_control;
- 	dma_dev->dev = &pdev->dev;
- 
- 	/* set prep routines based on capability */
--- 
-2.1.1
+Yes, I think it's a good idea to propose that change and propose to
+Rafael on linux-pm.  Be sure that myself, Ulf and Geert are Cc'd.
 
+Thanks,
+
+Kevin
