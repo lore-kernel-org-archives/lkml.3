@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108AbaJVLoM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 07:44:12 -0400
-Received: from axentia.se ([87.96.186.132]:52048 "EHLO EMAIL.axentia.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932723AbaJVLoK convert rfc822-to-8bit (ORCPT
+	id S933158AbaJVLqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 07:46:14 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:33595 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932729AbaJVLqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 07:44:10 -0400
-From: Peter Rosin <peda@axentia.se>
-To: Bo Shen <voice.shen@atmel.com>
-CC: "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
-        "Takashi Iwai" <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, "Mark Brown" <broonie@kernel.org>
-Subject: RE: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
- capture CMR dividers separately.
-Thread-Topic: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
- capture CMR dividers separately.
-Thread-Index: Ac/saz/Ebhtl/6cSQtuv8Muf3bNWIgBblZMBAAC0CiA=
-Date: Wed, 22 Oct 2014 11:42:18 +0000
-Message-ID: <a983ea457a56451a96e377d64f861a9d@EMAIL.axentia.se>
-References: <a541333cf46b4c61b790df927d4b315d@EMAIL.axentia.se>
- <5445BCBF.5090002@atmel.com>
- <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se>
- <544620C8.4040001@atmel.com>
- <8559eca320324092be82f7d942606102@EMAIL.axentia.se>
- <544707F3.1020505@atmel.com>
- <c61abc1ef0f341c2be04e3d7b07d97de@EMAIL.axentia.se>
- <54476640.5050603@atmel.com>
- <05f8e371e0ac40949bfc01b8d86d3c6e@EMAIL.axentia.se>
- <54477775.7070401@atmel.com>
-In-Reply-To: <54477775.7070401@atmel.com>
-Accept-Language: en-US, sv-SE
-Content-Language: sv-SE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [217.210.101.82]
-x-gfi-smtp-submission: 1
-x-gfi-smtp-hellodomain: EMAIL.axentia.se
-x-gfi-smtp-remoteip: 192.168.2.5
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 22 Oct 2014 07:46:13 -0400
+Date: Wed, 22 Oct 2014 13:45:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Davidlohr Bueso <dave@stgolabs.net>, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
+        oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
+Message-ID: <20141022114558.GC21513@worktop.programming.kicks-ass.net>
+References: <20141020215633.717315139@infradead.org>
+ <1413963289.26628.3.camel@linux-t7sj.site>
+ <20141022112925.GH30588@node.dhcp.inet.fi>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022112925.GH30588@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bo Chen wrote:
-> with this piece of code, I reproduce your issue.
+On Wed, Oct 22, 2014 at 02:29:25PM +0300, Kirill A. Shutemov wrote:
+> On Wed, Oct 22, 2014 at 12:34:49AM -0700, Davidlohr Bueso wrote:
+> > On Mon, 2014-10-20 at 23:56 +0200, Peter Zijlstra wrote:
+> > > Hi,
+> > > 
+> > > I figured I'd give my 2010 speculative fault series another spin:
+> > > 
+> > >   https://lkml.org/lkml/2010/1/4/257
+> > > 
+> > > Since then I think many of the outstanding issues have changed sufficiently to
+> > > warrant another go. In particular Al Viro's delayed fput seems to have made it
+> > > entirely 'normal' to delay fput(). Lai Jiangshan's SRCU rewrite provided us
+> > > with call_srcu() and my preemptible mmu_gather removed the TLB flushes from
+> > > under the PTL.
+> > > 
+> > > The code needs way more attention but builds a kernel and runs the
+> > > micro-benchmark so I figured I'd post it before sinking more time into it.
+> > > 
+> > > I realize the micro-bench is about as good as it gets for this series and not
+> > > very realistic otherwise, but I think it does show the potential benefit the
+> > > approach has.
+> > > 
+> > > (patches go against .18-rc1+)
+> > 
+> > I think patch 2/6 is borken:
+> > 
+> > error: patch failed: mm/memory.c:2025
+> > error: mm/memory.c: patch does not apply
+> > 
+> > and related, as you mention, I would very much welcome having the
+> > introduction of 'struct faut_env' as a separate cleanup patch. May I
+> > suggest renaming it to fault_cxt?
 > 
-> Now, I know the reason of this issue, work in oss mode, it will set the default
-> clock to 8KHz, and then if change to other sample rate, for example 48KHz,
-> the div is different, then it reports -EBUSY.
+> What about extend start using 'struct vm_fault' earlier by stack?
 
-Indeed.
-
-> So, I think we won't change the ATMEL_SSC_CMR_DIV to
-> ATMEL_SSC_TCMR_DIV and ATMEL_SSC_RCMR_DIV, as it will affect other
-> users. We just deal with this situation in ATMEL_SSC_CMR_DIV block, check
-> the direction, if the same direction change the div, then accept the change,
-> otherwise, return -EBUSY.
-
-Ok.
-
-But I'm not sure it is possible to dig out the current direction in the
-.set_clkdiv callback? Perhaps the correct fix is to set the bits
-.symmetric_rates, .symmetric_channels and .symmetric_samplebits
-in the atmel_ssc_dai struct when the ssc dai is master? Then I
-expect that other mechanisms will kick in that will render the current
-CMR_DIV check pointless?
-
-Is a dai driver allowed to change these symmetry bits after registration?
-Can they be set in the .set_sysclk callback? Perhaps in the
-ATMEL_SSC_CMR_DIV block itself? That callback should only be
-called when the dai is master, so that would be perfect...
-
-Yes, the limitation would be a little bit more strict than today, but is it
-really common to require different modes on playback and capture?
-
-Cheers,
-Peter
-
+I'm not sure we should mix the environment for vm_ops::fault, which
+acquires the page, and the fault path, which deals with changing the
+PTE. Ideally we should not expose the page-table information to file
+ops, its a layering violating if nothing else, drivers should not have
+access to the page tables.
