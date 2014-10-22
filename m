@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750964AbaJVG42 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 02:56:28 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:25601 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105AbaJVG41 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 02:56:27 -0400
-Date: Wed, 22 Oct 2014 08:56:25 +0200
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Sebastian Reichel <sre@kernel.org>, <linux-pm@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 8/8] MAINTAINERS: add at91 power and memory entries
-Message-ID: <20141022065625.GK7443@ldesroches-Latitude-E6320>
-Mail-Followup-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-	Nicolas Ferre <nicolas.ferre@atmel.com>,
-	Sebastian Reichel <sre@kernel.org>, linux-pm@vger.kernel.org,
-	Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-	linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-	linux-arm-kernel@lists.infradead.org
-References: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1413928540-27099-9-git-send-email-alexandre.belloni@free-electrons.com>
+	id S1753827AbaJVG6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 02:58:30 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38001 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750981AbaJVG62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 02:58:28 -0400
+Message-ID: <5447558F.90706@ti.com>
+Date: Wed, 22 Oct 2014 09:58:23 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1413928540-27099-9-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>, <plagnioj@jcrosoft.com>
+CC: Mark Rustad <mark.d.rustad@intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCH] video/console: Resolve several shadow warnings
+References: <1413287629-11749-1-git-send-email-jeffrey.t.kirsher@intel.com>
+In-Reply-To: <1413287629-11749-1-git-send-email-jeffrey.t.kirsher@intel.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="EtotUrbCTSE98j2H7LcTr1hSaxDg22Ngt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 11:55:40PM +0200, Alexandre Belloni wrote:
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+--EtotUrbCTSE98j2H7LcTr1hSaxDg22Ngt
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
+
+On 14/10/14 14:53, Jeff Kirsher wrote:
+> From: Mark Rustad <mark.d.rustad@intel.com>
+>=20
+> Resolve shadow warnings that appear in W=3D2 builds by renaming
+> the "state" global to "vgastate".
+>=20
+> Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 > ---
->  MAINTAINERS | 19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index a20df9bf8ab0..e325c81ee2fa 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -871,6 +871,25 @@ M:	Boris Brezillon <boris.brezillon@free-electrons.com>
->  S:	Maintained
->  F:	drivers/clk/at91
->  
-> +ARM/ATMEL AT91 Poweroff driver
-> +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	Maintained
-> +F:	drivers/power/reset/at91-poweroff.c
-> +
-> +ARM/ATMEL AT91 Reset driver
-> +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	Maintained
-> +F:	drivers/power/reset/at91-reset.c
-> +
-> +ARM/ATMEL AT91 SDRAM Controlller driver
+>  drivers/video/console/vgacon.c | 24 ++++++++++++------------
+>  1 file changed, 12 insertions(+), 12 deletions(-)
 
-Controller
+Thanks, queued for 3.18 fixes.
 
-> +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	Maintained
-> +F:	drivers/memory/atmel-sdramc.c
-> +F:	include/soc/atmel/memory.h
-> +
->  ARM/CALXEDA HIGHBANK ARCHITECTURE
->  M:	Rob Herring <robh@kernel.org>
->  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> -- 
-> 1.9.1
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+ Tomi
+
+
+
+--EtotUrbCTSE98j2H7LcTr1hSaxDg22Ngt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUR1WPAAoJEPo9qoy8lh71diQP/2avyd7NGmGHXsylUl0Rdb0v
+Zuy1AQowkK1icClbVlOIeZrLdka3N0xMEnGaDfHsUST8IIYME+P9X3x5QTyNwqCf
+qRATfzDBwQJcJWHQS/hyHhInSwycYYeaxP+1Wg8zSZxa6XSPAI/mT6wDPLtRY0Uk
+VQxq/dKbg+ly2b4Ov8NnlwQo6s0hwNEAcRtnXhwcch5k0yzHIU66YXBbQWu8IBYN
+hZS18sPlJlXZKHlbykr+Jd3ZeiWSeigUC++K2BOELI5BL2Z/C5sxQTWgeMuFJX3f
+w1T2QO+ymO29EWTSfTvzhBVL/iqHZ67iKpwnLOLjq+F25SuKVQbHvMh+QphOXGWH
+cZOc8u6+bsPUdRgEi7ut1DR3mrbMP02Gu7xnLosLkk2WM7HorHQ23mghfVqGKrJ3
+TuiqazsiJmv5MPcfzS7pJ3nxWFEv7h04J/S3F2A3psdK3qTEg0dfuc1cZmHJOPrz
+VFyYwfD/QR6+wIQGulYHop/2/CZ8O8z1hs279BZ8/JANET9JgSDpOqBRTBBAdo2T
+wkjVcbJuH3E0OBaie8EF7seE0DelvHgim8k9szqMyKd6XodfmgsT1Fm9wJ5TlYoA
+daqv3R4C3aLrh+uY2t3Kh7e/SzAQsDOkiyeJt7OkRcL3zNBJ+1NSvbUHvswxuSjS
+N4ZRPjsbq/KHfRm/9t1e
+=3T40
+-----END PGP SIGNATURE-----
+
+--EtotUrbCTSE98j2H7LcTr1hSaxDg22Ngt--
