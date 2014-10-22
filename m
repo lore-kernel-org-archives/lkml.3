@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755923AbaJVQLn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:11:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43568 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755899AbaJVQLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 12:11:41 -0400
-Date: Wed, 22 Oct 2014 18:11:40 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 4/4] mm: memcontrol: remove unnecessary PCG_USED
- pc->mem_cgroup valid flag
-Message-ID: <20141022161140.GG30802@dhcp22.suse.cz>
-References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
- <1413818532-11042-5-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413818532-11042-5-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754126AbaJVPpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:45:08 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:53894 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753037AbaJVPpF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 11:45:05 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
+        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org
+Subject: [PATCH v3 01/59] crypto: ux500: Use dmaengine_terminate_all API
+Date: Wed, 22 Oct 2014 17:43:15 +0200
+Message-Id: <1413992653-21963-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 20-10-14 11:22:12, Johannes Weiner wrote:
-> pc->mem_cgroup had to be left intact after uncharge for the final LRU
-> removal, and !PCG_USED indicated whether the page was uncharged.  But
-> since 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API") pages are
-> uncharged after the final LRU removal.  Uncharge can simply clear the
-> pointer and the PCG_USED/PageCgroupUsed sites can test that instead.
-> 
-> Because this is the last page_cgroup flag, this patch reduces the
-> memcg per-page overhead to a single pointer.
+We are removing the dmaengine_device_control API, that shouldn't even have been
+exposed in the first place. Change the callers to use the proper API.
 
-Nice. I have an old patch which stuck this flag into page_cgroup pointer
-but this is of course much much better!
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/crypto/ux500/cryp/cryp_core.c | 4 ++--
+ drivers/crypto/ux500/hash/hash_core.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
+index 92105f3dc8e0..75bd0f1e9a94 100644
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -606,12 +606,12 @@ static void cryp_dma_done(struct cryp_ctx *ctx)
+ 	dev_dbg(ctx->device->dev, "[%s]: ", __func__);
  
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-Just a nit below
-
-[...]
-> @@ -2525,9 +2523,10 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
-
-memcg = NULL initialization is not needed now
-
->  	VM_BUG_ON_PAGE(!PageLocked(page), page);
->  
->  	pc = lookup_page_cgroup(page);
-> -	if (PageCgroupUsed(pc)) {
-> -		memcg = pc->mem_cgroup;
-> -		if (memcg && !css_tryget_online(&memcg->css))
-> +	memcg = pc->mem_cgroup;
-> +
-> +	if (memcg) {
-> +		if (!css_tryget_online(&memcg->css))
->  			memcg = NULL;
->  	} else if (PageSwapCache(page)) {
->  		ent.val = page_private(page);
-
->  #else
->  static inline void memcg_unregister_all_caches(struct mem_cgroup *memcg)
-[...]
+ 	chan = ctx->device->dma.chan_mem2cryp;
+-	dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
++	dmaengine_terminate_all(chan);
+ 	dma_unmap_sg(chan->device->dev, ctx->device->dma.sg_src,
+ 		     ctx->device->dma.sg_src_len, DMA_TO_DEVICE);
+ 
+ 	chan = ctx->device->dma.chan_cryp2mem;
+-	dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
++	dmaengine_terminate_all(chan);
+ 	dma_unmap_sg(chan->device->dev, ctx->device->dma.sg_dst,
+ 		     ctx->device->dma.sg_dst_len, DMA_FROM_DEVICE);
+ }
+diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
+index 1c73f4fbc252..48bdc5df7b3b 100644
+--- a/drivers/crypto/ux500/hash/hash_core.c
++++ b/drivers/crypto/ux500/hash/hash_core.c
+@@ -202,7 +202,7 @@ static void hash_dma_done(struct hash_ctx *ctx)
+ 	struct dma_chan *chan;
+ 
+ 	chan = ctx->device->dma.chan_mem2hash;
+-	dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
++	dmaengine_terminate_all(chan);
+ 	dma_unmap_sg(chan->device->dev, ctx->device->dma.sg,
+ 		     ctx->device->dma.sg_len, DMA_TO_DEVICE);
+ }
 -- 
-Michal Hocko
-SUSE Labs
+2.1.1
+
