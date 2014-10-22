@@ -1,80 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533AbaJVIRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:17:36 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:49507 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaJVIRc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:17:32 -0400
-X-Google-Original-Sender: <johan@hovold.com>
-Date: Wed, 22 Oct 2014 10:14:28 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Frans Klaver <frans.klaver@xsens.com>
-Cc: Johan Hovold <johan@kernel.org>, stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: serial: ftdi_sio: add Awinda Station and Dongle
- products
-Message-ID: <20141022081428.GE2113@localhost>
-References: <1412930694-28769-1-git-send-email-frans.klaver@xsens.com>
- <1412934728-23475-1-git-send-email-frans.klaver@xsens.com>
+	id S1754239AbaJVIRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:17:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55864 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023AbaJVIRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 04:17:44 -0400
+Date: Wed, 22 Oct 2014 10:17:30 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Anton Blanchard <anton@au1.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/powerpc: Cache the DWARF debug info
+Message-ID: <20141022081730.GB9860@krava.brq.redhat.com>
+References: <20141021185610.GA18366@us.ibm.com>
+ <20141021190839.GA4160@kernel.org>
+ <20141022000958.GB2228@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412934728-23475-1-git-send-email-frans.klaver@xsens.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20141022000958.GB2228@us.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 11:52:08AM +0200, Frans Klaver wrote:
-> Add new IDs for the Xsens Awinda Station and Awinda Dongle.
-> 
-> While at it, order the definitions by PID and add a logical separation
-> between devices using Xsens' VID and those using FTDI's VID.
-> 
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
-> ---
-> Third time's a charm.
+On Tue, Oct 21, 2014 at 05:09:58PM -0700, Sukadev Bhattiprolu wrote:
+> Arnaldo Carvalho de Melo [acme@kernel.org] wrote:
+> | Em Tue, Oct 21, 2014 at 11:56:10AM -0700, Sukadev Bhattiprolu escreveu:
+> | > >From 773a3608a0cd2daf02e244cb9ffbf5bb6a0e724e Mon Sep 17 00:00:00 2001
+> | > From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+> | > Date: Tue, 21 Oct 2014 13:20:22 -0500
+> | > Subject: [PATCH 1/1] perf/powerpc: Cache DWARF debug info
+> | 
+> | Jiri, isn't his related to that dsos caching thing you created?
 
-Applied, thanks.
+well, yea.. but Sukadev needs dw handle on top of that
 
-Johan
-
->  drivers/usb/serial/ftdi_sio.c     | 2 ++
->  drivers/usb/serial/ftdi_sio_ids.h | 6 +++++-
->  2 files changed, 7 insertions(+), 1 deletion(-)
+> | 
+> | Anyway, there is a per machine struct (struct machine) where things like
+> | this should be put, please do not add globals or static variables in
+> | functions.
 > 
-> diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-> index dc72b92..1f73ca3 100644
-> --- a/drivers/usb/serial/ftdi_sio.c
-> +++ b/drivers/usb/serial/ftdi_sio.c
-> @@ -661,6 +661,8 @@ static const struct usb_device_id id_table_combined[] = {
->  	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
->  	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
->  	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
-> +	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_DONGLE_PID) },
-> +	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_STATION_PID) },
->  	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
->  	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
->  	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
-> diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-> index 5937b2d..b68084c 100644
-> --- a/drivers/usb/serial/ftdi_sio_ids.h
-> +++ b/drivers/usb/serial/ftdi_sio_ids.h
-> @@ -143,8 +143,12 @@
->   * Xsens Technologies BV products (http://www.xsens.com).
+> Good point. How about something like this:
+
+yep, and the code got much shorter ;-)
+
+SNIP
+
+> --- a/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+> +++ b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+> @@ -145,7 +145,7 @@ static Dwarf_Frame *get_dwarf_frame(Dwfl_Module *mod, Dwarf_Addr pc)
+>   *		yet used)
+>   *	-1 in case of errors
 >   */
->  #define XSENS_VID		0x2639
-> -#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
-> +#define XSENS_AWINDA_STATION_PID 0x0101
-> +#define XSENS_AWINDA_DONGLE_PID 0x0102
->  #define XSENS_MTW_PID		0x0200	/* Xsens MTw */
-> +#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
+> -static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
+> +static int check_return_addr(struct dso *dso, Dwarf_Addr pc)
+>  {
+>  	int		rc = -1;
+>  	Dwfl		*dwfl;
+> @@ -156,15 +156,27 @@ static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
+>  	Dwarf_Addr	end = pc;
+>  	bool		signalp;
+>  
+> -	dwfl = dwfl_begin(&offline_callbacks);
+> -	if (!dwfl) {
+> -		pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
+> -		return -1;
+> -	}
+> +	dwfl = dso->dwfl;
+>  
+> -	if (dwfl_report_offline(dwfl, "",  exec_file, -1) == NULL) {
+> -		pr_debug("dwfl_report_offline() failed %s\n", dwarf_errmsg(-1));
+> -		goto out;
+> +	if (!dwfl) {
+> +		dwfl = dwfl_begin(&offline_callbacks);
+> +		if (!dwfl) {
+> +			pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
+> +			return -1;
+> +		}
 > +
-> +/* Xsens devices using FTDI VID */
->  #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
->  #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
->  #define XSENS_CONVERTER_2_PID	0xD38A
+> +		if (dwfl_report_offline(dwfl, "", dso->long_name, -1) == NULL) {
+> +			pr_debug("dwfl_report_offline() failed %s\n",
+> +						dwarf_errmsg(-1));
+> +			/*
+> +			 * We normally cache the DWARF debug info and never
+> +			 * call dwfl_end(). But to prevent fd leak, free in
+> +			 * case of error.
+> +			 */
+> +			dwfl_end(dwfl);
+> +			goto out;
+> +		}
+> +		dso->dwfl = dwfl;
+
+so by this we get powerpc arch code sharing dw handle via dso object,
+but we have lot of generic code too ;-)
+
+could you make this happen for unwind__get_entries.. probably
+both sharing same generic code I guess
+
+thanks,
+jirka
