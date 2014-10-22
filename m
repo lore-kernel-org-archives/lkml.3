@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637AbaJVSk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 14:40:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45401 "EHLO mx2.suse.de"
+	id S1754118AbaJVSkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 14:40:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47330 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752757AbaJVSkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 14:40:24 -0400
-Date: Wed, 22 Oct 2014 20:40:21 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: lockdep splat in CPU hotplug
-In-Reply-To: <20141022143728.18d1eb3d@gandalf.local.home>
-Message-ID: <alpine.LNX.2.00.1410222040080.17725@pobox.suse.cz>
-References: <alpine.LNX.2.00.1410211255531.24255@pobox.suse.cz> <20141021145809.GA799@home.goodmis.org> <alpine.LNX.2.00.1410211703170.24255@pobox.suse.cz> <20141022143728.18d1eb3d@gandalf.local.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753846AbaJVSka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 14:40:30 -0400
+Date: Wed, 22 Oct 2014 21:44:05 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v3 00/16] linux: towards virtio-1 guest support
+Message-ID: <1414003404-505-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014, Steven Rostedt wrote:
+Based on patches by Cornelia and others, but
+with an API that should allow better static checking of code,
+and slightly more concervative changes in vring.
 
-> > > > -> #1 (cpu_hotplug.lock#2){+.+.+.}:
-> > > >         [<ffffffff81099fac>] lock_acquire+0xac/0x130
-> > > >         [<ffffffff815b9f2c>] mutex_lock_nested+0x5c/0x3b0
-> > > >         [<ffffffff81491892>] cpuidle_pause+0x12/0x30
-> > > >         [<ffffffff81402314>] dpm_suspend_noirq+0x44/0x340
-> > > >         [<ffffffff81402958>] dpm_suspend_end+0x38/0x80
-> > > >         [<ffffffff810a07bd>] hibernation_snapshot+0xcd/0x370
-> > > >         [<ffffffff810a1248>] hibernate+0x168/0x210
-> > > >         [<ffffffff8109e9b4>] state_store+0xe4/0xf0
-> > > >         [<ffffffff813003ef>] kobj_attr_store+0xf/0x20
-> > > >         [<ffffffff8121e9a3>] sysfs_kf_write+0x43/0x60
-> > > >         [<ffffffff8121e287>] kernfs_fop_write+0xe7/0x170
-> > > >         [<ffffffff811a7342>] vfs_write+0xb2/0x1f0
-> > > >         [<ffffffff811a7da4>] SyS_write+0x44/0xb0
-> > > >         [<ffffffff815be856>] system_call_fastpath+0x16/0x1b
-> > > 
-> > > Yeah, this backtrace looks totally bogus. Unless there's some magic going on
-> > > with grabbing the get_online_cpus here?
-> > > 
-> > > Could you send your config. Maybe it has to do with some debug magic?
-> > 
-> > .config attached.
-> > 
-> 
-> Can you reproduce this all the time? I tried this config and pm-suspend
-> and pm-hibernate, and they both worked fine without a single lockdep
-> splat.
+Changes from v2:
+	add missing virtio_byteorder.h
 
-Yes, it's 100% reliable for me.
+Cornelia Huck (4):
+  virtio: allow transports to get avail/used addresses
+  virtio_blk: use virtio v1.0 endian
+  KVM: s390: virtio-ccw revision 1 SET_VQ
+  KVM: s390: enable virtio-ccw revision 1
+
+Michael S. Tsirkin (8):
+  virtio: memory access APIs
+  virtio_ring: switch to new memory access APIs
+  virtio: add virtio 1.0 feature bit
+  virtio: make endian-ness depend on virtio 1.0
+  virtio_config: endian conversion for v1.0
+  virtio: set FEATURES_OK
+  virtio_net: fix types for in memory structures
+  virtio_blk: fix types for in memory structures
+
+Rusty Russell (3):
+  virtio: use u32, not bitmap for struct virtio_device's features
+  virtio: add support for 64 bit features.
+  virtio_net: use v1.0 endian.
+
+Thomas Huth (1):
+  KVM: s390: Set virtio-ccw transport revision
+
+ include/linux/virtio.h                 |   6 +-
+ include/linux/virtio_byteorder.h       |  29 ++++++
+ include/linux/virtio_config.h          |  33 +++++--
+ include/uapi/linux/virtio_blk.h        |  15 +--
+ include/uapi/linux/virtio_config.h     |   9 +-
+ include/uapi/linux/virtio_net.h        |  15 +--
+ include/uapi/linux/virtio_ring.h       |  49 +++++-----
+ tools/virtio/linux/virtio.h            |  22 +----
+ tools/virtio/linux/virtio_config.h     |   2 +-
+ drivers/block/virtio_blk.c             |   4 +
+ drivers/char/virtio_console.c          |   2 +-
+ drivers/lguest/lguest_device.c         |  16 ++--
+ drivers/net/virtio_net.c               |  31 ++++---
+ drivers/remoteproc/remoteproc_virtio.c |   7 +-
+ drivers/s390/kvm/kvm_virtio.c          |  10 +-
+ drivers/s390/kvm/virtio_ccw.c          | 165 +++++++++++++++++++++++++++------
+ drivers/virtio/virtio.c                |  47 ++++++----
+ drivers/virtio/virtio_mmio.c           |  20 ++--
+ drivers/virtio/virtio_pci.c            |   8 +-
+ drivers/virtio/virtio_ring.c           | 109 +++++++++++++---------
+ tools/virtio/virtio_test.c             |   5 +-
+ tools/virtio/vringh_test.c             |  16 ++--
+ include/uapi/linux/Kbuild              |   1 +
+ 23 files changed, 406 insertions(+), 215 deletions(-)
+ create mode 100644 include/linux/virtio_byteorder.h
 
 -- 
-Jiri Kosina
-SUSE Labs
+MST
+
