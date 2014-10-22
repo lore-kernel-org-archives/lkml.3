@@ -1,64 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403AbaJVTH7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:07:59 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:42604 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079AbaJVTH6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:07:58 -0400
+	id S1754868AbaJVTKb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:10:31 -0400
+Received: from mout.web.de ([212.227.17.12]:49810 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754534AbaJVTK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 15:10:29 -0400
+Message-ID: <5448011D.1000500@users.sourceforge.net>
+Date: Wed, 22 Oct 2014 21:10:21 +0200
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1409872109-31645-2-git-send-email-andi@firstfloor.org>
-References: <1409872109-31645-1-git-send-email-andi@firstfloor.org>
-	<1409872109-31645-2-git-send-email-andi@firstfloor.org>
-Date: Wed, 22 Oct 2014 12:07:56 -0700
-Message-ID: <CAADnVQKWgm9smg5vtfFwt53RiNYidgV9kiq3C0B0Xekx0cUJJg@mail.gmail.com>
-Subject: Re: [PATCH 2/5] perf, x86, uncore: Add Haswell-EP uncore support
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, eranian@google.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: "James E. J. Bottomley" <JBottomley@parallels.com>,
+        qla2xxx-upstream@qlogic.com, linux-scsi@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] SCSI-QLA2...: Deletion of unnecessary checks before
+ the function call "vfree"
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:MsFwmqiBDXiWjhHNAqz7GcG8/lK4rz4x9GY3y9z1WHsQdFzlOTw
+ ru0IHEpwF8DMOx6Dk6Xwoy62Fp5r12psklEOqTmsE0oA9Ec+Yx7TM+A0aY14kJDdGDisY2y
+ FbSTZYlR2WHwYF7SBerLmPa/38ENpvPg7XGvzXnUVsiNstSWVgd+PYjGcJPo2isFBzB87XB
+ J3Q0HStQw7Kg5OHb/Y5Qg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 4, 2014 at 4:08 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> From: "Yan, Zheng" <zheng.z.yan@intel.com>
->
-> The uncore subsystem in Haswell-EP is similar to Sandy/Ivy
-> Bridge-EP. There are some differences in config register
-> encoding and pci device IDs. The Haswell-EP uncore also
-> supports a few new events. Add the Haswell-EP driver to
-> the snbep split driver.
->
-> v2: (AK): Add missing break. Add imc events. Add cbox nc/isoc/c6.
-> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel_uncore.c      |   7 +-
->  arch/x86/kernel/cpu/perf_event_intel_uncore.h      |   2 +
->  .../x86/kernel/cpu/perf_event_intel_uncore_snbep.c | 608 ++++++++++++++++++++-
->  3 files changed, 615 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> index 812ec5d..2b0fa02 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> @@ -883,6 +883,9 @@ static int __init uncore_pci_init(void)
->         case 62: /* Ivy Bridge-EP */
->                 ret = ivbep_uncore_pci_init();
->                 break;
-> +       case 63: /* Haswell-EP */
-> +               ret = hswep_uncore_pci_init();
-> +               break;
+>> If you are convinced that dropping the null tests is a good idea, then you 
+>> can submit the patch that makes the change to the relevant maintainers and 
+>> mailing lists.
 
-my E5-1630 v3 crashes hard during boot in
-snbep_uncore_msr_init_box()+0x3c
-I don't have a setup to capture the screen so early in the boot.
-So this is just heads up.
-I replaced the call above with 'return -ENODEV' as a workaround.
-btw, E5-16xx v3 became available just a month ago.
+I resent the request once more because another "Triple-X" software development
+adventure might follow ...?
+
+Regards,
+Markus
+
+
+>From ff44962f88ac2dae9324e30819629da4fb33f0ff Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Wed, 22 Oct 2014 20:40:31 +0200
+Subject: [PATCH] SCSI-QLA2XXX: Deletion of unnecessary checks before the
+ function call "vfree"
+
+A semantic patch approach was proposed with the subject "[PATCH with
+Coccinelle?] Deletion of unnecessary checks before specific function calls"
+on 2014-03-05.
+https://lkml.org/lkml/2014/3/5/344
+http://article.gmane.org/gmane.comp.version-control.coccinelle/3513/
+
+This patch pattern application was repeated with the help of the software
+"Coccinelle 1.0.0-rc22" on the source files for Linux 3.17.1. An extract
+of the automatically generated update suggestions is shown here.
+
+It was determined that the affected source code places call functions
+which perform input parameter validation already. It is therefore not
+needed that a similar safety check is repeated at the call site.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/scsi/qla2xxx/qla_attr.c |  6 ++----
+ drivers/scsi/qla2xxx/qla_init.c | 18 ++++++------------
+ drivers/scsi/qla2xxx/qla_os.c   |  6 ++----
+ 3 files changed, 10 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
+index 82b92c4..95c4c09 100644
+--- a/drivers/scsi/qla2xxx/qla_attr.c
++++ b/drivers/scsi/qla2xxx/qla_attr.c
+@@ -175,10 +175,8 @@ qla2x00_sysfs_write_fw_dump_template(struct file *filp,
+struct kobject *kobj,
+ 	uint32_t size;
+
+ 	if (off == 0) {
+-		if (ha->fw_dump)
+-			vfree(ha->fw_dump);
+-		if (ha->fw_dump_template)
+-			vfree(ha->fw_dump_template);
++		vfree(ha->fw_dump);
++		vfree(ha->fw_dump_template);
+
+ 		ha->fw_dump = NULL;
+ 		ha->fw_dump_len = 0;
+diff --git a/drivers/scsi/qla2xxx/qla_init.c b/drivers/scsi/qla2xxx/qla_init.c
+index a4dde7e..8da3d4f 100644
+--- a/drivers/scsi/qla2xxx/qla_init.c
++++ b/drivers/scsi/qla2xxx/qla_init.c
+@@ -5256,8 +5256,7 @@ qla24xx_load_risc_flash(scsi_qla_host_t *vha, uint32_t
+*srisc_addr,
+ 	if (!IS_QLA27XX(ha))
+ 		return rval;
+
+-	if (ha->fw_dump_template)
+-		vfree(ha->fw_dump_template);
++	vfree(ha->fw_dump_template);
+ 	ha->fw_dump_template = NULL;
+ 	ha->fw_dump_template_len = 0;
+
+@@ -5307,8 +5306,7 @@ qla24xx_load_risc_flash(scsi_qla_host_t *vha, uint32_t
+*srisc_addr,
+
+ default_template:
+ 	ql_log(ql_log_warn, vha, 0x0168, "Using default fwdump template\n");
+-	if (ha->fw_dump_template)
+-		vfree(ha->fw_dump_template);
++	vfree(ha->fw_dump_template);
+ 	ha->fw_dump_template = NULL;
+ 	ha->fw_dump_template_len = 0;
+
+@@ -5342,8 +5340,7 @@ default_template:
+
+ failed_template:
+ 	ql_log(ql_log_warn, vha, 0x016d, "Failed default fwdump template\n");
+-	if (ha->fw_dump_template)
+-		vfree(ha->fw_dump_template);
++	vfree(ha->fw_dump_template);
+ 	ha->fw_dump_template = NULL;
+ 	ha->fw_dump_template_len = 0;
+ 	return rval;
+@@ -5559,8 +5556,7 @@ qla24xx_load_risc_blob(scsi_qla_host_t *vha, uint32_t
+*srisc_addr)
+ 	if (!IS_QLA27XX(ha))
+ 		return rval;
+
+-	if (ha->fw_dump_template)
+-		vfree(ha->fw_dump_template);
++	vfree(ha->fw_dump_template);
+ 	ha->fw_dump_template = NULL;
+ 	ha->fw_dump_template_len = 0;
+
+@@ -5609,8 +5605,7 @@ qla24xx_load_risc_blob(scsi_qla_host_t *vha, uint32_t
+*srisc_addr)
+
+ default_template:
+ 	ql_log(ql_log_warn, vha, 0x0178, "Using default fwdump template\n");
+-	if (ha->fw_dump_template)
+-		vfree(ha->fw_dump_template);
++	vfree(ha->fw_dump_template);
+ 	ha->fw_dump_template = NULL;
+ 	ha->fw_dump_template_len = 0;
+
+@@ -5644,8 +5639,7 @@ default_template:
+
+ failed_template:
+ 	ql_log(ql_log_warn, vha, 0x017d, "Failed default fwdump template\n");
+-	if (ha->fw_dump_template)
+-		vfree(ha->fw_dump_template);
++	vfree(ha->fw_dump_template);
+ 	ha->fw_dump_template = NULL;
+ 	ha->fw_dump_template_len = 0;
+ 	return rval;
+diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
+index db3dbd9..0f9c378 100644
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -3676,10 +3676,8 @@ qla2x00_free_fw_dump(struct qla_hw_data *ha)
+ 		dma_free_coherent(&ha->pdev->dev,
+ 		    EFT_SIZE, ha->eft, ha->eft_dma);
+
+-	if (ha->fw_dump)
+-		vfree(ha->fw_dump);
+-	if (ha->fw_dump_template)
+-		vfree(ha->fw_dump_template);
++	vfree(ha->fw_dump);
++	vfree(ha->fw_dump_template);
+
+ 	ha->fce = NULL;
+ 	ha->fce_dma = 0;
+-- 
+2.1.2
+
+
