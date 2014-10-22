@@ -1,160 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933216AbaJVU7w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:59:52 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:18631 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932270AbaJVU6I (ORCPT
+	id S932650AbaJVVEd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 17:04:33 -0400
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:44372 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932270AbaJVVEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:58:08 -0400
-X-IronPort-AV: E=Sophos;i="5.04,771,1406617200"; 
-   d="scan'208";a="48759401"
-From: Scott Branden <sbranden@broadcom.com>
-To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
-        Antti Palosaari <crope@iki.fi>
-CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Jonathan Richardson <jonathar@broadcom.com>,
-        Scott Branden <sbranden@broadcom.com>
-Subject: [PATCH v7 1/7] ARM: cygnus: Initial support for Broadcom Cygnus SoC
-Date: Wed, 22 Oct 2014 13:57:48 -0700
-Message-ID: <1414011474-11821-2-git-send-email-sbranden@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1414011474-11821-1-git-send-email-sbranden@broadcom.com>
-References: <Scott Branden <sbranden@broadcom.com>
- <1414011474-11821-1-git-send-email-sbranden@broadcom.com>
+	Wed, 22 Oct 2014 17:04:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141022091239.GG12706@worktop.programming.kicks-ass.net>
+References: <1412872486-2930-1-git-send-email-eranian@google.com>
+	<20141021112501.GY23531@worktop.programming.kicks-ass.net>
+	<CABPqkBTDz56a9Hoy04W6VmTG_FTOE72037D0tmnh+ntw+VW0ZQ@mail.gmail.com>
+	<20141021130320.GE12706@worktop.programming.kicks-ass.net>
+	<CABPqkBQuf_W1X_VbVzLhKbv6AZwKE3YyHGpT=cRFNBEak5wz_Q@mail.gmail.com>
+	<20141022091239.GG12706@worktop.programming.kicks-ass.net>
+Date: Wed, 22 Oct 2014 23:04:31 +0200
+Message-ID: <CABPqkBQSSsSFMfq=Wb7pZZD_gjCvqh4mTt88FL3Eq-fgduEriQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/12] perf/x86: implement HT leak workaround for SNB/IVB/HSW
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Liang, Kan" <kan.liang@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonathan Richardson <jonathar@broadcom.com>
+On Wed, Oct 22, 2014 at 11:12 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Oct 21, 2014 at 03:08:32PM +0200, Stephane Eranian wrote:
+>> On Tue, Oct 21, 2014 at 3:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, Oct 21, 2014 at 02:28:06PM +0200, Stephane Eranian wrote:
+>> >> Peter,
+>> >>
+>> >> On Tue, Oct 21, 2014 at 1:25 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >> >
+>> >> >
+>> >> > lkml.kernel.org/r/CABPqkBRbst4sgpgE5O_VXt-CSC0VD=aP2KWA0e3Uy64tw7df3A@mail.gmail.com
+>> >> >
+>> >> > I missed that 3 lines if they were in here.
+>> >> >
+>> >> I did not put them in there because there is another problem.
+>> >> If you partition the generic counters 2 and 2, then some CPUs will not
+>> >> be able to measure some events.
+>> >> Unfortunately, there is no way to partition the 4 counters such that
+>> >> all the events can be measured by
+>> >> each CPU. Some events or precise sampling requires counter 2 for
+>> >> instance (like prec_dist).
+>> >> That's why I did not put this fix in.
+>> >
+>> > Ah, I wasn't thinking about a hard partition, just a limit on the number
+>> > of exclusive counters any one CPU can claim such as to not starve. Or is
+>> > that what you were talking about? I feel not being able to starve
+>> > another CPU is more important than a better utilization bound for
+>> > counter scheduling.
+>>
+>> So you're saying, just limit number of used counters to 2 regardless
+>> of which one they are.
+>
+> used as in marked exclusive and forced empty on the other side.
+>
+>> So sometimes, this will avoid the problem aforementioned and sometimes
+>> not. We can try that.
+>
+> How will this sometimes not avoid the starvation issue?
 
-Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
+Here is a simple case:
+Limiting each HT to only 2 counters, can be any, 2 out of 4 possible.
 
-Reviewed-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Desmond Liu <desmondl@broadcom.com>
-Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
-Tested-by: Jonathan Richardson <jonathar@broadcom.com>
-Signed-off-by: Scott Branden <sbranden@broadcom.com>
----
- arch/arm/mach-bcm/Kconfig      |   32 ++++++++++++++++++++++++++++++++
- arch/arm/mach-bcm/Makefile     |    3 +++
- arch/arm/mach-bcm/bcm_cygnus.c |   26 ++++++++++++++++++++++++++
- 3 files changed, 61 insertions(+)
- create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+HT0: you measure a MEM* in ctr2, it is started first, and it keeps running
+HT1: you measure PREC_DIST with PEBS (it requires ctr2)
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 2abad74..73d95c2 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -5,6 +5,36 @@ menuconfig ARCH_BCM
- 
- if ARCH_BCM
- 
-+comment "IPROC architected SoCs"
-+
-+config ARCH_BCM_IPROC
-+	bool
-+	select ARM_GIC
-+	select CACHE_L2X0
-+	select HAVE_ARM_SCU if SMP
-+	select HAVE_ARM_TWD if SMP
-+	select ARM_GLOBAL_TIMER
-+
-+	select CLKSRC_MMIO
-+	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_AMBA
-+	select PINCTRL
-+	help
-+	  This enables support for systems based on Broadcom IPROC architected SoCs.
-+	  The IPROC complex contains one or more ARM CPUs along with common
-+	  core periperals. Application specific SoCs are created by adding a
-+	  uArchitecture containing peripherals outside of the IPROC complex.
-+	  Currently supported SoCs are Cygnus.
-+
-+config ARCH_BCM_CYGNUS
-+	bool "Broadcom Cygnus Support" if ARCH_MULTI_V7
-+	select ARCH_BCM_IPROC
-+	help
-+	  Enable support for the Cygnus family,
-+	  which includes the following variants:
-+	  BCM11300, BCM11320, BCM11350, BCM11360,
-+	  BCM58300, BCM58302, BCM58303, BCM58305.
-+
- config ARCH_BCM_MOBILE
- 	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
- 	select ARCH_REQUIRE_GPIOLIB
-@@ -65,6 +95,8 @@ endmenu
- 
- endif
- 
-+comment "Other Architectures"
-+
- config ARCH_BCM2835
- 	bool "Broadcom BCM2835 family" if ARCH_MULTI_V6
- 	select ARCH_REQUIRE_GPIOLIB
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index 300ae4b..34d45ba 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -10,6 +10,9 @@
- # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
- 
-+# Cygnus
-+obj-$(CONFIG_ARCH_BCM_CYGNUS) +=  bcm_cygnus.o
-+
- # BCM281XX
- obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
- 
-diff --git a/arch/arm/mach-bcm/bcm_cygnus.c b/arch/arm/mach-bcm/bcm_cygnus.c
-new file mode 100644
-index 0000000..41b4933
---- /dev/null
-+++ b/arch/arm/mach-bcm/bcm_cygnus.c
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright 2014 Broadcom Corporation.  All rights reserved.
-+ *
-+ * Unless you and Broadcom execute a separate written software license
-+ * agreement governing use of this software, this software is licensed to you
-+ * under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <asm/mach/arch.h>
-+
-+static const char const *bcm_cygnus_dt_compat[] = {
-+	"brcm,cygnus",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
-+	.l2c_aux_val	= 0,
-+	.l2c_aux_mask	= ~0,
-+	.dt_compat = bcm_cygnus_dt_compat,
-+MACHINE_END
--- 
-1.7.9.5
+HT0 is measuring a corrupting event on ctr2, this prevents ctr2 on HT1
+from being used.
+HT1 is starved, it cannot measure PREC_DIST
 
+Yes you have a quota of 2 out of 4 counters.
+
+The quota dynamic or static can help mitigate the starvation. The only
+way to eliminate
+it is to force multiplexing even though you are using fewer counters
+than actually avail.
