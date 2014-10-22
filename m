@@ -1,96 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbaJVNx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:53:27 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:63652 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbaJVNxZ (ORCPT
+	id S1752158AbaJVNyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:54:18 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:63832 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057AbaJVNyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:53:25 -0400
+	Wed, 22 Oct 2014 09:54:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <1413984696.19686.72.camel@mtksdaap41>
-References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com>
-	<1413973797-17619-9-git-send-email-yingjoe.chen@mediatek.com>
-	<CABuKBe+Ew6R2Kb90-gDHBQ4HuydfFxJdYmr+v9-KNC-b0K4Tkw@mail.gmail.com>
-	<1413984696.19686.72.camel@mtksdaap41>
-Date: Wed, 22 Oct 2014 15:53:23 +0200
-Message-ID: <CABuKBeLJuaDnCYuvvS6csNzvbTeEdgEUdZ4tBQeVPuw37JK11Q@mail.gmail.com>
-Subject: Re: [PATCH v4 8/8] ARM: mediatek: Add config option for mediatek SoCs.
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Yingjoe Chen <yingjoe.chen@mediatek.com>
-Cc: Rob Herring <robh+dt@kernel.org>, arm@kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        srv_heupstream <srv_heupstream@mediatek.com>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        Hsien-Chun Yen <hc.yen@mediatek.com>,
-        huang eddie <eddie.huang@mediatek.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        Yuhau Chen <yh.chen@mediatek.com>,
-        Sascha Hauer <kernel@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [2a01:e35:2434:4600:389c:cfae:9fd8:91b0]
+In-Reply-To: <54468BDA.6050606@linaro.org>
+References: <1413205825-6370-1-git-send-email-a.motakis@virtualopensystems.com>
+ <1413205825-6370-3-git-send-email-a.motakis@virtualopensystems.com>
+ <1413908269.4202.135.camel@ul30vt.home> <54468BDA.6050606@linaro.org>
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+Date: Wed, 22 Oct 2014 15:53:55 +0200
+Message-ID: <CAG8rG2yjWDPuorXAdhQvVAcJb7eiPFYwTivHV2qo0rBdfn3sSA@mail.gmail.com>
+Subject: Re: [PATCH v8 02/18] vfio: platform: probe to devices on the platform bus
+To: Eric Auger <eric.auger@linaro.org>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Will Deacon <will.deacon@arm.com>,
+        VirtualOpenSystems Technical Team <tech@virtualopensystems.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:VFIO DRIVER <kvm@vger.kernel.org>, open list:ABI/API" 
+	<linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
-
-2014-10-22 15:31 GMT+02:00 Yingjoe Chen <yingjoe.chen@mediatek.com>:
->
-> Hi Matthias,
->
-> On Wed, 2014-10-22 at 15:18 +0200, Matthias Brugger wrote:
->> 2014-10-22 12:29 GMT+02:00 Joe.C <yingjoe.chen@mediatek.com>:
->> > +
->> > +if ARCH_MEDIATEK
->> > +
->> > +config MACH_MT6589
->> > +       bool "MediaTek MT6589 SoCs support"
->> > +       default ARCH_MEDIATEK
->> > +
->> > +config MACH_MT8127
->> > +       bool "MediaTek MT8127 SoCs support"
->> > +       default ARCH_MEDIATEK
->> > +
->> > +config MACH_MT8135
->> > +       bool "MediaTek MT8135 SoCs support"
->> > +       default ARCH_MEDIATEK
->> > +
->> > +endif
+On Tue, Oct 21, 2014 at 6:37 PM, Eric Auger <eric.auger@linaro.org> wrote:
+> On 10/21/2014 06:17 PM, Alex Williamson wrote:
+>> On Mon, 2014-10-13 at 15:10 +0200, Antonios Motakis wrote:
+>>> Driver to bind to Linux platform devices, and callbacks to discover their
+>>> resources to be used by the main VFIO PLATFORM code.
+>>>
+>>> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+>>> ---
+>>>  drivers/vfio/platform/vfio_platform.c | 107 ++++++++++++++++++++++++++++++++++
+>>>  include/uapi/linux/vfio.h             |   1 +
+>>>  2 files changed, 108 insertions(+)
+>>>  create mode 100644 drivers/vfio/platform/vfio_platform.c
+>>>
+>>> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+>>> new file mode 100644
+>>> index 0000000..baeb7da
+>>> --- /dev/null
+>>> +++ b/drivers/vfio/platform/vfio_platform.c
+>>> @@ -0,0 +1,107 @@
+>>> +/*
+>>> + * Copyright (C) 2013 - Virtual Open Systems
+>>> + * Author: Antonios Motakis <a.motakis@virtualopensystems.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License, version 2, as
+>>> + * published by the Free Software Foundation.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#include <linux/device.h>
+>>> +#include <linux/eventfd.h>
+>>> +#include <linux/interrupt.h>
+>>> +#include <linux/iommu.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/mutex.h>
+>>> +#include <linux/notifier.h>
+>>> +#include <linux/pm_runtime.h>
+>>> +#include <linux/slab.h>
+>>> +#include <linux/types.h>
+>>> +#include <linux/uaccess.h>
+>>> +#include <linux/vfio.h>
+>>> +#include <linux/io.h>
+>>> +#include <linux/platform_device.h>
+>>> +#include <linux/irq.h>
+>>> +
+>>> +#include "vfio_platform_private.h"
+>>> +
+>>> +#define DRIVER_VERSION  "0.8"
+>>> +#define DRIVER_AUTHOR   "Antonios Motakis <a.motakis@virtualopensystems.com>"
+>>> +#define DRIVER_DESC     "VFIO for platform devices - User Level meta-driver"
+>>> +
+>>> +/* probing devices from the linux platform bus */
+>>> +
+>>> +static struct resource *get_platform_resource(struct vfio_platform_device *vdev,
+>>> +                                            int num)
+>>> +{
+>>> +    struct platform_device *dev = (struct platform_device *) vdev->opaque;
+>>> +    int i;
+>>> +
+>>> +    for (i = 0; i < dev->num_resources; i++) {
+>>> +            struct resource *r = &dev->resource[i];
+>>> +
+>>> +            if (resource_type(r) & (IORESOURCE_MEM|IORESOURCE_IO)) {
+>>> +                    num--;
+>>> +
+>>> +                    if (!num)
+>>> +                            return r;
 >>
->> MACH_MTxxxx are not used nowhere, please remove them.
->
-> Yes, they are not used in this series yet.
->
-> MACH_MT8135 was used in mt8135 pinctrl driver [1] and will be used in
-> mt8135 clk driver we are about to send. I don't want to create false
-> dependency between these 2 series so I put it here.
-> Do you prefer add them when they are first used?
+>> Has this been tested?  What happens when we call this with num = 0?
+> Yep. I confirm I enter that case with my xgmac where the IORESOURCE_MEM
+> is the 1st resource. I Just ended to the same cause ;-)
 
-Yes please add them, when they are first used.
-Today I had a look on the pinctrl patches you mentioned. It looks to
-me as if the config is not needed in the series.
-
-Thanks,
-Matthias
-
-[0] http://thread.gmane.org/gmane.linux.ports.arm.kernel/358505
+Right, num-- should be after the check, or we miss one region.
 
 >
-> Joe.C
+> Best Regards
 >
-> [1]
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/289288.html
->
+> Eric
+>>
+>>> +            }
+>>> +    }
+>>> +    return NULL;
+>>> +}
+>>> +
+>>> +static int get_platform_irq(struct vfio_platform_device *vdev, int i)
+>>> +{
+>>> +    struct platform_device *pdev = (struct platform_device *) vdev->opaque;
+>>> +
+>>> +    return platform_get_irq(pdev, i);
+>>> +}
+>>> +
+>>> +
+>>> +static int vfio_platform_probe(struct platform_device *pdev)
+>>> +{
+>>> +    struct vfio_platform_device *vdev;
+>>> +    int ret;
+>>> +
+>>> +    vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
+>>> +    if (!vdev)
+>>> +            return -ENOMEM;
+>>> +
+>>> +    vdev->opaque = (void *) pdev;
+>>> +    vdev->name = pdev->name;
+>>> +    vdev->flags = VFIO_DEVICE_FLAGS_PLATFORM;
+>>> +    vdev->get_resource = get_platform_resource;
+>>> +    vdev->get_irq = get_platform_irq;
+>>> +
+>>> +    ret = vfio_platform_probe_common(vdev, &pdev->dev);
+>>> +    if (ret)
+>>> +            kfree(vdev);
+>>> +
+>>> +    return ret;
+>>> +}
+>>> +
+>>> +static int vfio_platform_remove(struct platform_device *pdev)
+>>> +{
+>>> +    return vfio_platform_remove_common(&pdev->dev);
+>>> +}
+>>> +
+>>> +static struct platform_driver vfio_platform_driver = {
+>>> +    .probe          = vfio_platform_probe,
+>>> +    .remove         = vfio_platform_remove,
+>>> +    .driver = {
+>>> +            .name   = "vfio-platform",
+>>> +            .owner  = THIS_MODULE,
+>>> +    },
+>>> +};
+>>> +
+>>> +module_platform_driver(vfio_platform_driver);
+>>> +
+>>> +MODULE_VERSION(DRIVER_VERSION);
+>>> +MODULE_LICENSE("GPL v2");
+>>> +MODULE_AUTHOR(DRIVER_AUTHOR);
+>>> +MODULE_DESCRIPTION(DRIVER_DESC);
+>>> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+>>> index 111b5e8..aca6d3e 100644
+>>> --- a/include/uapi/linux/vfio.h
+>>> +++ b/include/uapi/linux/vfio.h
+>>> @@ -158,6 +158,7 @@ struct vfio_device_info {
+>>>      __u32   flags;
+>>>  #define VFIO_DEVICE_FLAGS_RESET     (1 << 0)        /* Device supports reset */
+>>>  #define VFIO_DEVICE_FLAGS_PCI       (1 << 1)        /* vfio-pci device */
+>>> +#define VFIO_DEVICE_FLAGS_PLATFORM (1 << 2) /* vfio-platform device */
+>>>      __u32   num_regions;    /* Max region index + 1 */
+>>>      __u32   num_irqs;       /* Max IRQ index + 1 */
+>>>  };
+>>
+>>
+>>
 >
 
 
 
 -- 
-motzblog.wordpress.com
+Antonios Motakis
+Virtual Open Systems
