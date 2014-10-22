@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399AbaJVHGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 03:06:52 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:60717 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaJVHGv (ORCPT
+	id S932417AbaJVHIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 03:08:15 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:49787 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751138AbaJVHIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 03:06:51 -0400
+	Wed, 22 Oct 2014 03:08:14 -0400
+Date: Wed, 22 Oct 2014 09:08:10 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Sebastian Reichel <sre@kernel.org>, linux-pm@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH 5/8] power: reset: at91-reset: use at91_ramc_shutdown
+Message-ID: <20141022090810.167c470f@free-electrons.com>
+In-Reply-To: <1413928540-27099-6-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1413928540-27099-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1413928540-27099-6-git-send-email-alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <A765B125120D1346A63912DDE6D8B6315E6D82@NTXXIAMBX02.xacn.micron.com>
-References: <A765B125120D1346A63912DDE6D8B6315E62CB@NTXXIAMBX02.xacn.micron.com>
-	<201410150045.53976.marex@denx.de>
-	<A765B125120D1346A63912DDE6D8B6315E6D82@NTXXIAMBX02.xacn.micron.com>
-Date: Wed, 22 Oct 2014 09:06:51 +0200
-Message-ID: <CACna6rxGzOVu+PKFxHeD7fnhG__3kcM-vY=q8OgtSVgZuQzGwA@mail.gmail.com>
-Subject: Re: [PATCH 1/1 v2] driver:mtd:spi-nor:fix spi_nor_scan overwrite
- platform ID point
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: bpqw <bpqw@micron.com>
-Cc: Marek Vasut <marex@denx.de>,
-        "geert+renesas@glider.be" <geert+renesas@glider.be>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "grmoore@altera.com" <grmoore@altera.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        "shijie8@gmail.com" <shijie8@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 October 2014 02:52, bpqw <bpqw@micron.com> wrote:
-> For example:
->
-> const struct spi_device_id spi_nor_ids[] = {
-> ......
-> ......
-> ......
->         { "n25q064",     INFO(0x20ba17, 0, 64 * 1024,  128, 0) },
->         { "n25q128a11",  INFO(0x20bb18, 0, 64 * 1024,  256, 0) },//former right platform point will be overwrote by this data info.
->         { "n25q128a13",  INFO(0x20bb18, 0x1234, 64 * 1024,  512, SECT_4K) },//this is the right platform data,I want to match this data info.
->         { "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
->         { "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
+Dear Alexandre Belloni,
 
-Your initial commit was really missing some example indeed. It was
-trying to understand it for 10 minutes with no luck (until seeing
-above case) ;)
+On Tue, 21 Oct 2014 23:55:37 +0200, Alexandre Belloni wrote:
 
-I see problem in spi-nor that your patch reveals:
-ISSUE: spi-nor accepts any entry from spi_nor_ids with no ext_id
-specified as long as the jedec_id matches
-I guess reason behind this is to support chips with the same
-parameters but different extended IDs. That simplifies the driver and
-support for extra chips but may also cause problems like in your case.
+>  /*
+>  * unless the SDRAM is cleanly shutdown before we hit the
+>  * reset register it can be left driving the data bus and
+>  * killing the chance of a subsequent boot from NAND
+>  */
+> -static void at91sam9260_restart(enum reboot_mode mode, const char *cmd)
+> +static void at91_restart(enum reboot_mode mode, const char *cmd)
+>  {
+> -	asm volatile(
+> -		/* Align to cache lines */
+> -		".balign 32\n\t"
+> -
+> -		/* Disable SDRAM accesses */
+> -		"str	%2, [%0, #" __stringify(AT91_SDRAMC_TR) "]\n\t"
+> -
+> -		/* Power down SDRAM */
+> -		"str	%3, [%0, #" __stringify(AT91_SDRAMC_LPR) "]\n\t"
+> +	if (at91_ramc_shutdown)
+> +		at91_ramc_shutdown();
+>  
+> +	asm volatile(
+>  		/* Reset CPU */
+> -		"str	%4, [%1, #" __stringify(AT91_RSTC_CR) "]\n\t"
+> +		"str	%1, [%0, #" __stringify(AT91_RSTC_CR) "]\n\t"
+>  
+>  		"b	.\n\t"
 
-So AFAIU your patch tries to force using specific flash info, because
-JEDEC based detection fails. In general this is what we try to avoid.
-We want to auto-detect flash chips and to relieve platform code / DT.
+Are you sure this is working properly? There was a reason to have the
+SDRAM controller shutdown right before resetting the CPU: the code was
+ensuring that all those assembly instructions fitted in one cache line,
+so that even if the SDRAM controller gets shutdown, the rest of the
+code can properly execute until resetting the CPU. Now, the SDRAM
+controller shutdown code and the code resetting the CPU are in
+completely separate places, which break this assumption.
 
-Could we drop this patch and modify spi-nor to detect your chip
-automatically? That would be much cleaner solution to me.
+And also, you forgot to Cc: Maxime Ripard who did the initial work on
+this at91-reset controller.
+
+Thanks,
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
