@@ -1,118 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbaJVTBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:01:52 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:48820 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753816AbaJVTBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:01:49 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AukNALz+R1RR86AM/2dsb2JhbABcgw6BLLh3BQFzmj6BDxcBfYRfI4EaN4hEAbcojwyGJYoyHYQ1BZ1djGiJQoFHAYIyOy+CSwEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, "David S. Miller" <davem@davemloft.net>,
-        linux-x25@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] lapb: move EXPORT_SYMBOL after functions.
-Date: Wed, 22 Oct 2014 21:01:41 +0200
-Message-Id: <1414004501-7715-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.1
+	id S932111AbaJVTDX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:03:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41569 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753462AbaJVTDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 15:03:21 -0400
+Message-ID: <5447FF51.5000401@ti.com>
+Date: Wed, 22 Oct 2014 22:02:41 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        <khilman@linaro.org>, Geert Uytterhoeven <geert+renesas@glider.be>,
+        <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        <grant.likely@secretlab.ca>, <ulf.hansson@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 1/3] PM / clock_ops: Add pm_clk_add_clk()
+References: <1413809764-21995-1-git-send-email-grygorii.strashko@ti.com> <1413809764-21995-2-git-send-email-grygorii.strashko@ti.com> <20141022173856.GB28104@dtor-ws>
+In-Reply-To: <20141022173856.GB28104@dtor-ws>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-See Documentation/CodingStyle Chapter 6
+On 10/22/2014 08:38 PM, Dmitry Torokhov wrote:
+> On Mon, Oct 20, 2014 at 03:56:02PM +0300, Grygorii Strashko wrote:
+>> From: Geert Uytterhoeven <geert+renesas@glider.be>
+>>
+>> The existing pm_clk_add() allows to pass a clock by con_id. However,
+>> when referring to a specific clock from DT, no con_id is available.
+>>
+>> Add pm_clk_add_clk(), which allows to specify the struct clk * directly.
+>>
+>> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> ---
+>>
+>>   Pay attantion pls, that there is another series of patches
+>>   which have been posted already and which depends from this patch
+>>     "[PATCH v4 0/3] ARM: rk3288 : Add PM Domain support"
+>>     https://lkml.org/lkml/2014/10/20/105
+>>
+>>   drivers/base/power/clock_ops.c | 41 +++++++++++++++++++++++++++++++----------
+>>   include/linux/pm_clock.h       |  8 ++++++++
+>>   2 files changed, 39 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+>> index 7836930..f14b767 100644
+>> --- a/drivers/base/power/clock_ops.c
+>> +++ b/drivers/base/power/clock_ops.c
+>> @@ -53,7 +53,8 @@ static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
+>>    */
+>>   static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+>>   {
+>> -	ce->clk = clk_get(dev, ce->con_id);
+>> +	if (!ce->clk)
+>> +		ce->clk = clk_get(dev, ce->con_id);
+>>   	if (IS_ERR(ce->clk)) {
+>>   		ce->status = PCE_STATUS_ERROR;
+>>   	} else {
+>> @@ -63,15 +64,8 @@ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+>>   	}
+>>   }
+>>
+>> -/**
+>> - * pm_clk_add - Start using a device clock for power management.
+>> - * @dev: Device whose clock is going to be used for power management.
+>> - * @con_id: Connection ID of the clock.
+>> - *
+>> - * Add the clock represented by @con_id to the list of clocks used for
+>> - * the power management of @dev.
+>> - */
+>> -int pm_clk_add(struct device *dev, const char *con_id)
+>> +static int __pm_clk_add(struct device *dev, const char *con_id,
+>> +			struct clk *clk)
+>>   {
+>>   	struct pm_subsys_data *psd = dev_to_psd(dev);
+>>   	struct pm_clock_entry *ce;
+>> @@ -93,6 +87,8 @@ int pm_clk_add(struct device *dev, const char *con_id)
+>>   			kfree(ce);
+>>   			return -ENOMEM;
+>>   		}
+>> +	} else {
+>> +		ce->clk = clk;
+>>   	}
+>>
+>>   	pm_clk_acquire(dev, ce);
+>> @@ -104,6 +100,31 @@ int pm_clk_add(struct device *dev, const char *con_id)
+>>   }
+>>
+>>   /**
+>> + * pm_clk_add - Start using a device clock for power management.
+>> + * @dev: Device whose clock is going to be used for power management.
+>> + * @con_id: Connection ID of the clock.
+>> + *
+>> + * Add the clock represented by @con_id to the list of clocks used for
+>> + * the power management of @dev.
+>> + */
+>> +int pm_clk_add(struct device *dev, const char *con_id)
+>> +{
+>> +	return __pm_clk_add(dev, con_id, NULL);
+>
+> Bikeshedding: why do we need __pm_clk_add() and not simply have
+> "canonical" pm_clk_add_clk() and then do:
+>
+> int pm_clk_add(struct device *dev, const char *con_id)
+> {
+> 	struct clk *clk;
+>
+> 	clk = clk_get(dev, con_id);
+> 	...
+> 	return pm_clk_add_clk(dev, clk);
+> }
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/lapb/lapb_iface.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+Hm. I did fast look at code and:
+1) agree - there is a lot of thing which can be optimized ;)
+2) in my strong opinion, this patch is the fastest and simplest
+way to introduce new API (take a look on pm_clock_entry->con_id
+management code) and It is exactly what we need as of now.
 
-diff --git a/net/lapb/lapb_iface.c b/net/lapb/lapb_iface.c
-index 3cdaa04..fc60d9d 100644
---- a/net/lapb/lapb_iface.c
-+++ b/net/lapb/lapb_iface.c
-@@ -73,6 +73,7 @@ static void __lapb_remove_cb(struct lapb_cb *lapb)
- 		lapb_put(lapb);
- 	}
- }
-+EXPORT_SYMBOL(lapb_register);
- 
- /*
-  *	Add a socket to the bound sockets list.
-@@ -195,6 +196,7 @@ out:
- 	write_unlock_bh(&lapb_list_lock);
- 	return rc;
- }
-+EXPORT_SYMBOL(lapb_unregister);
- 
- int lapb_getparms(struct net_device *dev, struct lapb_parms_struct *parms)
- {
-@@ -227,6 +229,7 @@ int lapb_getparms(struct net_device *dev, struct lapb_parms_struct *parms)
- out:
- 	return rc;
- }
-+EXPORT_SYMBOL(lapb_getparms);
- 
- int lapb_setparms(struct net_device *dev, struct lapb_parms_struct *parms)
- {
-@@ -262,6 +265,7 @@ out_put:
- out:
- 	return rc;
- }
-+EXPORT_SYMBOL(lapb_setparms);
- 
- int lapb_connect_request(struct net_device *dev)
- {
-@@ -290,6 +294,7 @@ out_put:
- out:
- 	return rc;
- }
-+EXPORT_SYMBOL(lapb_connect_request);
- 
- int lapb_disconnect_request(struct net_device *dev)
- {
-@@ -334,6 +339,7 @@ out_put:
- out:
- 	return rc;
- }
-+EXPORT_SYMBOL(lapb_disconnect_request);
- 
- int lapb_data_request(struct net_device *dev, struct sk_buff *skb)
- {
-@@ -355,6 +361,7 @@ out_put:
- out:
- 	return rc;
- }
-+EXPORT_SYMBOL(lapb_data_request);
- 
- int lapb_data_received(struct net_device *dev, struct sk_buff *skb)
- {
-@@ -369,6 +376,7 @@ int lapb_data_received(struct net_device *dev, struct sk_buff *skb)
- 
- 	return rc;
- }
-+EXPORT_SYMBOL(lapb_data_received);
- 
- void lapb_connect_confirmation(struct lapb_cb *lapb, int reason)
- {
-@@ -415,15 +423,6 @@ int lapb_data_transmit(struct lapb_cb *lapb, struct sk_buff *skb)
- 	return used;
- }
- 
--EXPORT_SYMBOL(lapb_register);
--EXPORT_SYMBOL(lapb_unregister);
--EXPORT_SYMBOL(lapb_getparms);
--EXPORT_SYMBOL(lapb_setparms);
--EXPORT_SYMBOL(lapb_connect_request);
--EXPORT_SYMBOL(lapb_disconnect_request);
--EXPORT_SYMBOL(lapb_data_request);
--EXPORT_SYMBOL(lapb_data_received);
--
- static int __init lapb_init(void)
- {
- 	return 0;
--- 
-1.9.1
+regards,
+-grygorii
 
