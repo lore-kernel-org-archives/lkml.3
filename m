@@ -1,175 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaJVPxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:53:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43023 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755039AbaJVPqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755481AbaJVPxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:53:33 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:54095 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755032AbaJVPqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Oct 2014 11:46:07 -0400
-Date: Wed, 22 Oct 2014 17:46:06 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/4] mm: memcontrol: remove unnecessary PCG_MEMSW
- memory+swap charge flag
-Message-ID: <20141022154606.GE30802@dhcp22.suse.cz>
-References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
- <1413818532-11042-3-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413818532-11042-3-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
+        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH v3 54/59] dmaengine: omap: Declare slave capabilities for the generic code
+Date: Wed, 22 Oct 2014 17:44:08 +0200
+Message-Id: <1413992653-21963-55-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 20-10-14 11:22:10, Johannes Weiner wrote:
-> Now that mem_cgroup_swapout() fully uncharges the page, every page
-> that is still in use when reaching mem_cgroup_uncharge() is known to
-> carry both the memory and the memory+swap charge.  Simplify the
-> uncharge path and remove the PCG_MEMSW page flag accordingly.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Now that the generic slave caps code can make use of the device assigned
+capabilities, instead of relying on a callback to be implemented.
 
-Looks good
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Make use of this code.
 
-> ---
->  include/linux/page_cgroup.h |  1 -
->  mm/memcontrol.c             | 34 ++++++++++++----------------------
->  2 files changed, 12 insertions(+), 23 deletions(-)
-> 
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index 5c831f1eca79..da62ee2be28b 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -5,7 +5,6 @@ enum {
->  	/* flags for mem_cgroup */
->  	PCG_USED = 0x01,	/* This page is charged to a memcg */
->  	PCG_MEM = 0x02,		/* This page holds a memory charge */
-> -	PCG_MEMSW = 0x04,	/* This page holds a memory+swap charge */
->  };
->  
->  struct pglist_data;
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 7709f17347f3..9bab35fc3e9e 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2606,7 +2606,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
->  	 *   have the page locked
->  	 */
->  	pc->mem_cgroup = memcg;
-> -	pc->flags = PCG_USED | PCG_MEM | (do_swap_account ? PCG_MEMSW : 0);
-> +	pc->flags = PCG_USED | PCG_MEM;
->  
->  	if (lrucare)
->  		unlock_page_lru(page, isolated);
-> @@ -5815,7 +5815,6 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
->  	if (!PageCgroupUsed(pc))
->  		return;
->  
-> -	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEMSW), page);
->  	memcg = pc->mem_cgroup;
->  
->  	oldid = swap_cgroup_record(entry, mem_cgroup_id(memcg));
-> @@ -6010,17 +6009,16 @@ void mem_cgroup_cancel_charge(struct page *page, struct mem_cgroup *memcg)
->  }
->  
->  static void uncharge_batch(struct mem_cgroup *memcg, unsigned long pgpgout,
-> -			   unsigned long nr_mem, unsigned long nr_memsw,
->  			   unsigned long nr_anon, unsigned long nr_file,
->  			   unsigned long nr_huge, struct page *dummy_page)
->  {
-> +	unsigned long nr_pages = nr_anon + nr_file;
->  	unsigned long flags;
->  
->  	if (!mem_cgroup_is_root(memcg)) {
-> -		if (nr_mem)
-> -			page_counter_uncharge(&memcg->memory, nr_mem);
-> -		if (nr_memsw)
-> -			page_counter_uncharge(&memcg->memsw, nr_memsw);
-> +		page_counter_uncharge(&memcg->memory, nr_pages);
-> +		if (do_swap_account)
-> +			page_counter_uncharge(&memcg->memsw, nr_pages);
->  		memcg_oom_recover(memcg);
->  	}
->  
-> @@ -6029,23 +6027,21 @@ static void uncharge_batch(struct mem_cgroup *memcg, unsigned long pgpgout,
->  	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_CACHE], nr_file);
->  	__this_cpu_sub(memcg->stat->count[MEM_CGROUP_STAT_RSS_HUGE], nr_huge);
->  	__this_cpu_add(memcg->stat->events[MEM_CGROUP_EVENTS_PGPGOUT], pgpgout);
-> -	__this_cpu_add(memcg->stat->nr_page_events, nr_anon + nr_file);
-> +	__this_cpu_add(memcg->stat->nr_page_events, nr_pages);
->  	memcg_check_events(memcg, dummy_page);
->  	local_irq_restore(flags);
->  
->  	if (!mem_cgroup_is_root(memcg))
-> -		css_put_many(&memcg->css, max(nr_mem, nr_memsw));
-> +		css_put_many(&memcg->css, nr_pages);
->  }
->  
->  static void uncharge_list(struct list_head *page_list)
->  {
->  	struct mem_cgroup *memcg = NULL;
-> -	unsigned long nr_memsw = 0;
->  	unsigned long nr_anon = 0;
->  	unsigned long nr_file = 0;
->  	unsigned long nr_huge = 0;
->  	unsigned long pgpgout = 0;
-> -	unsigned long nr_mem = 0;
->  	struct list_head *next;
->  	struct page *page;
->  
-> @@ -6072,10 +6068,9 @@ static void uncharge_list(struct list_head *page_list)
->  
->  		if (memcg != pc->mem_cgroup) {
->  			if (memcg) {
-> -				uncharge_batch(memcg, pgpgout, nr_mem, nr_memsw,
-> -					       nr_anon, nr_file, nr_huge, page);
-> -				pgpgout = nr_mem = nr_memsw = 0;
-> -				nr_anon = nr_file = nr_huge = 0;
-> +				uncharge_batch(memcg, pgpgout, nr_anon, nr_file,
-> +					       nr_huge, page);
-> +				pgpgout = nr_anon = nr_file = nr_huge = 0;
->  			}
->  			memcg = pc->mem_cgroup;
->  		}
-> @@ -6091,18 +6086,14 @@ static void uncharge_list(struct list_head *page_list)
->  		else
->  			nr_file += nr_pages;
->  
-> -		if (pc->flags & PCG_MEM)
-> -			nr_mem += nr_pages;
-> -		if (pc->flags & PCG_MEMSW)
-> -			nr_memsw += nr_pages;
->  		pc->flags = 0;
->  
->  		pgpgout++;
->  	} while (next != page_list);
->  
->  	if (memcg)
-> -		uncharge_batch(memcg, pgpgout, nr_mem, nr_memsw,
-> -			       nr_anon, nr_file, nr_huge, page);
-> +		uncharge_batch(memcg, pgpgout, nr_anon, nr_file,
-> +			       nr_huge, page);
->  }
->  
->  /**
-> @@ -6187,7 +6178,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->  		return;
->  
->  	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
-> -	VM_BUG_ON_PAGE(do_swap_account && !(pc->flags & PCG_MEMSW), oldpage);
->  
->  	if (lrucare)
->  		lock_page_lru(oldpage, &isolated);
-> -- 
-> 2.1.2
-> 
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/dma/omap-dma.c | 19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
 
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 90c0bdd53bb0..b66860a93ae4 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -1072,19 +1072,6 @@ static void omap_dma_free(struct omap_dmadev *od)
+ 				 BIT(DMA_SLAVE_BUSWIDTH_2_BYTES) | \
+ 				 BIT(DMA_SLAVE_BUSWIDTH_4_BYTES))
+ 
+-static int omap_dma_device_slave_caps(struct dma_chan *dchan,
+-				      struct dma_slave_caps *caps)
+-{
+-	caps->src_addr_widths = OMAP_DMA_BUSWIDTHS;
+-	caps->dst_addr_widths = OMAP_DMA_BUSWIDTHS;
+-	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
+-	caps->cmd_pause = true;
+-	caps->cmd_terminate = true;
+-	caps->residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
+-
+-	return 0;
+-}
+-
+ static int omap_dma_probe(struct platform_device *pdev)
+ {
+ 	struct omap_dmadev *od;
+@@ -1118,7 +1105,11 @@ static int omap_dma_probe(struct platform_device *pdev)
+ 	od->ddev.device_pause = omap_dma_pause;
+ 	od->ddev.device_resume = omap_dma_resume;
+ 	od->ddev.device_terminate_all = omap_dma_terminate_all;
+-	od->ddev.device_slave_caps = omap_dma_device_slave_caps;
++	od->ddev.src_addr_widths = OMAP_DMA_BUSWIDTHS;
++	od->ddev.dst_addr_widths = OMAP_DMA_BUSWIDTHS;
++	od->ddev.directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
++	od->ddev.residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
++	od->ddev.generic_slave_caps = true;
+ 	od->ddev.dev = &pdev->dev;
+ 	INIT_LIST_HEAD(&od->ddev.channels);
+ 	INIT_LIST_HEAD(&od->pending);
 -- 
-Michal Hocko
-SUSE Labs
+2.1.1
+
