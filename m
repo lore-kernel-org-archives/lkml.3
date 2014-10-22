@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399AbaJVP5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:57:14 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:54159 "EHLO
+	id S932431AbaJVP5e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:57:34 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:54095 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754414AbaJVPqB (ORCPT
+	with ESMTP id S1753356AbaJVPqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:46:01 -0400
+	Wed, 22 Oct 2014 11:46:00 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,11 +14,10 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Alexandre Bounine <alexandre.bounine@idt.com>
-Subject: [PATCH v3 49/59] dmaengine: rapidio: tsi721: Rename device_control
-Date: Wed, 22 Oct 2014 17:44:03 +0200
-Message-Id: <1413992653-21963-50-git-send-email-maxime.ripard@free-electrons.com>
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH v3 48/59] dmaengine: txx9: Rename device_control
+Date: Wed, 22 Oct 2014 17:44:02 +0200
+Message-Id: <1413992653-21963-49-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -32,42 +31,41 @@ slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/rapidio/devices/tsi721_dma.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/dma/txx9dmac.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
-index f64c5decb747..47295940a868 100644
---- a/drivers/rapidio/devices/tsi721_dma.c
-+++ b/drivers/rapidio/devices/tsi721_dma.c
-@@ -815,8 +815,7 @@ struct dma_async_tx_descriptor *tsi721_prep_rio_sg(struct dma_chan *dchan,
- 	return txd;
+diff --git a/drivers/dma/txx9dmac.c b/drivers/dma/txx9dmac.c
+index 17686caf64d5..cb24d3efe3a2 100644
+--- a/drivers/dma/txx9dmac.c
++++ b/drivers/dma/txx9dmac.c
+@@ -901,17 +901,12 @@ txx9dmac_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 	return &first->txd;
  }
  
--static int tsi721_device_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
--			     unsigned long arg)
-+static int tsi721_terminate_all(struct dma_chan *dchan)
+-static int txx9dmac_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-			    unsigned long arg)
++static int txx9dmac_terminate_all(struct dma_chan *chan)
  {
- 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
- 	struct tsi721_tx_desc *desc, *_d;
-@@ -825,9 +824,6 @@ static int tsi721_device_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
+ 	struct txx9dmac_chan *dc = to_txx9dmac_chan(chan);
+ 	struct txx9dmac_desc *desc, *_desc;
+ 	LIST_HEAD(list);
  
- 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
- 
+-	/* Only supports DMA_TERMINATE_ALL */
 -	if (cmd != DMA_TERMINATE_ALL)
--		return -ENOSYS;
+-		return -EINVAL;
 -
- 	spin_lock_bh(&bdma_chan->lock);
+ 	dev_vdbg(chan2dev(chan), "terminate_all\n");
+ 	spin_lock_bh(&dc->lock);
  
- 	bdma_chan->active = false;
-@@ -901,7 +897,7 @@ int tsi721_register_dma(struct tsi721_device *priv)
- 	mport->dma.device_tx_status = tsi721_tx_status;
- 	mport->dma.device_issue_pending = tsi721_issue_pending;
- 	mport->dma.device_prep_slave_sg = tsi721_prep_rio_sg;
--	mport->dma.device_control = tsi721_device_control;
-+	mport->dma.device_terminate_all = tsi721_terminate_all;
- 
- 	err = dma_async_device_register(&mport->dma);
- 	if (err)
+@@ -1109,7 +1104,7 @@ static int __init txx9dmac_chan_probe(struct platform_device *pdev)
+ 	dc->dma.dev = &pdev->dev;
+ 	dc->dma.device_alloc_chan_resources = txx9dmac_alloc_chan_resources;
+ 	dc->dma.device_free_chan_resources = txx9dmac_free_chan_resources;
+-	dc->dma.device_control = txx9dmac_control;
++	dc->dma.device_terminate_all = txx9dmac_terminate_all;
+ 	dc->dma.device_tx_status = txx9dmac_tx_status;
+ 	dc->dma.device_issue_pending = txx9dmac_issue_pending;
+ 	if (pdata && pdata->memcpy_chan == ch) {
 -- 
 2.1.1
 
