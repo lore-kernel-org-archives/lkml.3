@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282AbaJVQay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:30:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43806 "EHLO mx2.suse.de"
+	id S1754224AbaJVQe3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:34:29 -0400
+Received: from mout.gmx.net ([212.227.15.15]:57184 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754350AbaJVQav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 12:30:51 -0400
-Date: Wed, 22 Oct 2014 18:30:51 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: fix missed end-writeback accounting
-Message-ID: <20141022163051.GH30802@dhcp22.suse.cz>
-References: <1413915550-5651-1-git-send-email-hannes@cmpxchg.org>
+	id S1753351AbaJVQe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 12:34:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413915550-5651-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Message-ID: <trinity-cda2c5de-5cfe-4522-ac24-466d34965655-1413995642086@3capp-gmx-bs09>
+From: "Peter Huewe" <PeterHuewe@gmx.de>
+To: "Jarkko Sakkinen" <jarkko.sakkinen@linux.intel.com>
+Cc: "Ashley Lai" <ashley@ashleylai.com>,
+        "Marcel Selhorst" <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, josh.triplett@intel.com,
+        christophe.ricard@gmail.com, jason.gunthorpe@obsidianresearch.com,
+        "Jarkko Sakkinen" <jarkko.sakkinen@linux.intel.com>
+Subject: Aw: [PATCH v1 0/3] tpm: prepare for TPM2
+Content-Type: text/plain; charset=UTF-8
+Date: Wed, 22 Oct 2014 18:34:02 +0200
+Importance: normal
+Sensitivity: Normal
+In-Reply-To: <1413995036-22497-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+References: <1413995036-22497-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+X-UI-Message-Type: mail
+X-Priority: 3
+X-Provags-ID: V03:K0:KO7ivp+5mrt2cqS/kDhMll9ArAvuMWmZqpCpvyPInHv
+ v3keHcQBVfXa9sUsLRBxxan0BfIjlgxmy6wvK9558GP5pk+o90
+ 512jO6GcJTGqUlo9I9x/DvT/QXI8kFYmK6TVo1egaDP2b2/z4J
+ gqrgnA8//yBQnR+SL9Tp1LZbHv8OT/CvvdRFsqgeuT6G0//jMZ
+ IYWDrsn0B7znGRzUT2+xo9DOo9bxZSF98+jh2OOd4o7ZXWpSZw
+ 35RKSGpL4kpXgG0wx7RCW5beZJMWz56T1cvsuWJfwX8bocdpBi GfjH3E=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 21-10-14 14:19:10, Johannes Weiner wrote:
-> 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API") changed page
-> migration to uncharge the old page right away.  The page is locked,
-> unmapped, truncated, and off the LRU.  But it could race with a
-> finishing writeback, which then doesn't get unaccounted properly:
-> 
-> test_clear_page_writeback()              migration
->   acquire pc->mem_cgroup->move_lock
->                                            wait_on_page_writeback()
->   TestClearPageWriteback()
->                                            mem_cgroup_migrate()
->                                              clear PCG_USED
->   if (PageCgroupUsed(pc))
->     decrease memcg pages under writeback
->   release pc->mem_cgroup->move_lock
-> 
-> One solution for this would be to simply remove the PageCgroupUsed()
-> check, as RCU protects the memcg anyway.
-> 
-> However, it's more robust to acknowledge that migration is really
-> modifying the charge state of alive pages in this case, and so it
-> should participate in the protocol specifically designed for this.
+Hi Jarkko,
 
-It's been a long day so I might be missing something really obvious
-here. But how can move_lock help here when the fast path (no task
-migration is going on) takes only RCU read lock?
+> Jarkko Sakkinen (3):
+> tpm: merge duplicate transmit_cmd() functions
+> tpm: two-phase chip management functions
+> tpm: fix multiple race conditions in tpm_ppi.c
 
-> Fixes: 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API")
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: "3.17" <stable@vger.kernel.org>
-> ---
->  mm/memcontrol.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3a203c7ec6c7..b35a44e9cd37 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -6148,6 +6148,7 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->  			bool lrucare)
->  {
->  	struct page_cgroup *pc;
-> +	unsigned long flags;
->  	int isolated;
->  
->  	VM_BUG_ON_PAGE(!PageLocked(oldpage), oldpage);
-> @@ -6177,7 +6178,14 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->  	if (lrucare)
->  		lock_page_lru(oldpage, &isolated);
->  
-> +	/*
-> +	 * The page is locked, unmapped, truncated, and off the LRU,
-> +	 * but there might still be references, e.g. from finishing
-> +	 * writeback.  Follow the charge moving protocol here.
-> +	 */
-> +	move_lock_mem_cgroup(pc->mem_cgroup, &flags);
->  	pc->flags = 0;
-> +	move_unlock_mem_cgroup(pc->mem_cgroup, &flags);
->  
->  	if (lrucare)
->  		unlock_page_lru(oldpage, isolated);
-> -- 
-> 2.1.2
-> 
+the patchset introduces a sparse error:
+  CHECK   /home/phuewe/linux-2.6-host/drivers/char/tpm/tpm_tis.c
+/home/phuewe/linux-2.6-host/drivers/char/tpm/tpm_tis.c:783:39: warning: Using plain integer as NULL pointer
+/home/phuewe/linux-2.6-host/drivers/char/tpm/tpm_tis.c:868:39: warning: Using plain integer as NULL pointer
 
--- 
-Michal Hocko
-SUSE Labs
+apart from that I'll review it this evening.
+
+Thanks,
+Peter
