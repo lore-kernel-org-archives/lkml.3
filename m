@@ -1,76 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530AbaJVPze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:55:34 -0400
-Received: from resqmta-po-04v.sys.comcast.net ([96.114.154.163]:59030 "EHLO
-	resqmta-po-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753535AbaJVPza (ORCPT
+	id S1755633AbaJVP42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:56:28 -0400
+Received: from resqmta-po-07v.sys.comcast.net ([96.114.154.166]:43479 "EHLO
+	resqmta-po-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755522AbaJVPzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:55:30 -0400
-Message-Id: <20141022155526.942670823@linux.com>
-Date: Wed, 22 Oct 2014 10:55:18 -0500
+	Wed, 22 Oct 2014 11:55:33 -0400
+Message-Id: <20141022155527.158407162@linux.com>
+Date: Wed, 22 Oct 2014 10:55:20 -0500
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linuxfoundation.org
 Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com
-Subject: [RFC 1/4] slub: Remove __slab_alloc code duplication
+Subject: [RFC 3/4] slub: Drop ->page field from kmem_cache_cpu
 References: <20141022155517.560385718@linux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=simplify_code
+Content-Disposition: inline; filename=slub_drop_kmem_cache_cpu_page_Field
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Somehow the two branches in __slab_alloc do the same.
-Unify them.
+Dropping the page field is possible since the page struct address
+of an object or a freelist pointer can now always be calcualted from
+the address. No freelist pointer will be NULL anymore so use
+NULL to signify the condition that the current cpu has no
+percpu slab attached to it.
 
 Signed-off-by: Christoph Lameter <cl@linux.com>
 
+Index: linux/include/linux/slub_def.h
+===================================================================
+--- linux.orig/include/linux/slub_def.h
++++ linux/include/linux/slub_def.h
+@@ -40,7 +40,6 @@ enum stat_item {
+ struct kmem_cache_cpu {
+ 	void **freelist;	/* Pointer to next available object */
+ 	unsigned long tid;	/* Globally unique transaction id */
+-	struct page *page;	/* The slab from which we are allocating */
+ 	struct page *partial;	/* Partially allocated frozen slabs */
+ #ifdef CONFIG_SLUB_STATS
+ 	unsigned stat[NR_SLUB_STAT_ITEMS];
 Index: linux/mm/slub.c
 ===================================================================
 --- linux.orig/mm/slub.c
 +++ linux/mm/slub.c
-@@ -2280,12 +2280,8 @@ redo:
- 		if (node != NUMA_NO_NODE && !node_present_pages(node))
- 			searchnode = node_to_mem_node(node);
+@@ -1611,7 +1611,6 @@ static void *get_partial_node(struct kme
  
--		if (unlikely(!node_match(page, searchnode))) {
--			stat(s, ALLOC_NODE_MISMATCH);
--			deactivate_slab(s, page, c->freelist);
--			c->page = NULL;
--			c->freelist = NULL;
--			goto new_slab;
-+		if (unlikely(!node_match(page, searchnode)))
-+			goto deactivate;
- 		}
- 	}
+ 		available += objects;
+ 		if (!object) {
+-			c->page = page;
+ 			stat(s, ALLOC_FROM_PARTIAL);
+ 			object = t;
+ 		} else {
+@@ -2049,10 +2048,9 @@ static void put_cpu_partial(struct kmem_
+ static inline void flush_slab(struct kmem_cache *s, struct kmem_cache_cpu *c)
+ {
+ 	stat(s, CPUSLAB_FLUSH);
+-	deactivate_slab(s, c->page, c->freelist);
++	deactivate_slab(s, virt_to_head_page(c->freelist), c->freelist);
  
-@@ -2294,12 +2290,8 @@ redo:
- 	 * PFMEMALLOC but right now, we are losing the pfmemalloc
- 	 * information when the page leaves the per-cpu allocator
- 	 */
--	if (unlikely(!pfmemalloc_match(page, gfpflags))) {
--		deactivate_slab(s, page, c->freelist);
--		c->page = NULL;
--		c->freelist = NULL;
--		goto new_slab;
--	}
-+	if (unlikely(!pfmemalloc_match(page, gfpflags)))
-+		goto deactivate;
+ 	c->tid = next_tid(c->tid);
+-	c->page = NULL;
+ 	c->freelist = NULL;
+ }
  
- 	/* must check again c->freelist in case of cpu migration or IRQ */
- 	freelist = c->freelist;
-@@ -2328,6 +2320,11 @@ load_freelist:
- 	local_irq_restore(flags);
- 	return freelist;
+@@ -2066,7 +2064,7 @@ static inline void __flush_cpu_slab(stru
+ 	struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
  
-+deactivate:
-+	deactivate_slab(s, page, c->freelist);
-+	c->page = NULL;
-+	c->freelist = NULL;
+ 	if (likely(c)) {
+-		if (c->page)
++		if (c->freelist)
+ 			flush_slab(s, c);
+ 
+ 		unfreeze_partials(s, c);
+@@ -2085,7 +2083,7 @@ static bool has_cpu_slab(int cpu, void *
+ 	struct kmem_cache *s = info;
+ 	struct kmem_cache_cpu *c = per_cpu_ptr(s->cpu_slab, cpu);
+ 
+-	return c->page || c->partial;
++	return c->freelist || c->partial;
+ }
+ 
+ static void flush_all(struct kmem_cache *s)
+@@ -2186,7 +2184,7 @@ static inline void *new_slab_objects(str
+ 	page = new_slab(s, flags, node);
+ 	if (page) {
+ 		c = raw_cpu_ptr(s->cpu_slab);
+-		if (c->page)
++		if (c->freelist)
+ 			flush_slab(s, c);
+ 
+ 		/*
+@@ -2197,7 +2195,6 @@ static inline void *new_slab_objects(str
+ 		page->freelist = end_token(freelist);
+ 
+ 		stat(s, ALLOC_SLAB);
+-		c->page = page;
+ 		*pc = c;
+ 	} else
+ 		freelist = NULL;
+@@ -2280,9 +2277,10 @@ static void *__slab_alloc(struct kmem_ca
+ 	c = this_cpu_ptr(s->cpu_slab);
+ #endif
+ 
+-	page = c->page;
+-	if (!page)
++	if (!c->freelist || is_end_token(c->freelist))
+ 		goto new_slab;
 +
++	page = virt_to_head_page(c->freelist);
+ redo:
+ 
+ 	if (unlikely(!node_match(page, node))) {
+@@ -2311,7 +2309,7 @@ redo:
+ 	freelist = get_freelist(s, page);
+ 
+ 	if (!freelist || is_end_token(freelist)) {
+-		c->page = NULL;
++		c->freelist = NULL;
+ 		stat(s, DEACTIVATE_BYPASS);
+ 		goto new_slab;
+ 	}
+@@ -2324,7 +2322,7 @@ load_freelist:
+ 	 * page is pointing to the page from which the objects are obtained.
+ 	 * That page must be frozen for per cpu allocations to work.
+ 	 */
+-	VM_BUG_ON(!c->page->frozen);
++	VM_BUG_ON(!virt_to_head_page(freelist)->frozen);
+ 	c->freelist = get_freepointer(s, freelist);
+ 	c->tid = next_tid(c->tid);
+ 	local_irq_restore(flags);
+@@ -2332,16 +2330,15 @@ load_freelist:
+ 
+ deactivate:
+ 	deactivate_slab(s, page, c->freelist);
+-	c->page = NULL;
+ 	c->freelist = NULL;
+ 
  new_slab:
  
  	if (c->partial) {
+-		page = c->page = c->partial;
++		page = c->partial;
+ 		c->partial = page->next;
+ 		stat(s, CPU_PARTIAL_ALLOC);
+-		c->freelist = NULL;
++		c->freelist = end_token(page_address(page));
+ 		goto redo;
+ 	}
+ 
+@@ -2353,7 +2350,7 @@ new_slab:
+ 		return NULL;
+ 	}
+ 
+-	page = c->page;
++	page = virt_to_head_page(freelist);
+ 	if (likely(!kmem_cache_debug(s) && pfmemalloc_match(page, gfpflags)))
+ 		goto load_freelist;
+ 
+@@ -2363,7 +2360,6 @@ new_slab:
+ 		goto new_slab;	/* Slab failed checks. Next slab needed */
+ 
+ 	deactivate_slab(s, page, get_freepointer(s, freelist));
+-	c->page = NULL;
+ 	c->freelist = NULL;
+ 	local_irq_restore(flags);
+ 	return freelist;
+@@ -2384,7 +2380,6 @@ static __always_inline void *slab_alloc_
+ {
+ 	void **object;
+ 	struct kmem_cache_cpu *c;
+-	struct page *page;
+ 	unsigned long tid;
+ 
+ 	if (slab_pre_alloc_hook(s, gfpflags))
+@@ -2416,8 +2411,7 @@ redo:
+ 	preempt_enable();
+ 
+ 	object = c->freelist;
+-	page = c->page;
+-	if (unlikely(!object || is_end_token(object) || !node_match(page, node))) {
++	if (unlikely(!object || is_end_token(object) || !node_match(virt_to_head_page(object), node))) {
+ 		object = __slab_alloc(s, gfpflags, node, addr, c);
+ 		stat(s, ALLOC_SLOWPATH);
+ 	} else {
+@@ -2665,7 +2659,7 @@ redo:
+ 	tid = c->tid;
+ 	preempt_enable();
+ 
+-	if (likely(page == c->page)) {
++	if (likely(c->freelist && page == virt_to_head_page(c->freelist))) {
+ 		set_freepointer(s, object, c->freelist);
+ 
+ 		if (unlikely(!this_cpu_cmpxchg_double(
+@@ -4191,10 +4185,10 @@ static ssize_t show_slab_objects(struct
+ 			int node;
+ 			struct page *page;
+ 
+-			page = ACCESS_ONCE(c->page);
+-			if (!page)
++			if (!c->freelist)
+ 				continue;
+ 
++			page = virt_to_head_page(c->freelist);
+ 			node = page_to_nid(page);
+ 			if (flags & SO_TOTAL)
+ 				x = page->objects;
 
