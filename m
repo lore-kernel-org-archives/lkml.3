@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753462AbaJVPQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:16:16 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:41961 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535AbaJVPQO (ORCPT
+	id S1753527AbaJVPQY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:16:24 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:39839 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535AbaJVPQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:16:14 -0400
+	Wed, 22 Oct 2014 11:16:18 -0400
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
@@ -14,9 +14,9 @@ Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Hemant Kumar <hemant@linux.vnet.ibm.com>
-Subject: [PATCH 4/5] perf tools: Add support for exclusive option
-Date: Thu, 23 Oct 2014 00:15:48 +0900
-Message-Id: <1413990949-13953-5-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 5/5] perf probe: Use PARSE_OPT_EXCLUSIVE flag
+Date: Thu, 23 Oct 2014 00:15:49 +0900
+Message-Id: <1413990949-13953-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1413990949-13953-1-git-send-email-namhyung@kernel.org>
 References: <1413990949-13953-1-git-send-email-namhyung@kernel.org>
@@ -24,165 +24,142 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some options cannot be used at the same time.  To handle such options
-add a new PARSE_OPT_EXCLUSIVE flag and show error message if more than
-one of them is used.
+The perf probe has some exclusive options.  Use new PARSE_OPT_EXCLUSIVE
+flag to simplify the code and show more compact usage.
+
+  $ perf probe -l -a foo
+    Error: switch `a' cannot be used with switch `l'
+
+   usage: perf probe [<options>] 'PROBEDEF' ['PROBEDEF' ...]
+      or: perf probe [<options>] --add 'PROBEDEF' [--add 'PROBEDEF' ...]
+      or: perf probe [<options>] --del '[GROUP:]EVENT' ...
+      or: perf probe --list
+      or: perf probe [<options>] --line 'LINEDESC'
+      or: perf probe [<options>] --vars 'PROBEPOINT'
+
+      -a, --add <[EVENT=]FUNC[@SRC][+OFF|%return|:RL|;PT]|SRC:AL|SRC;PT [[NAME=]ARG ...]>
+                            probe point definition, where
+		GROUP:	Group name (optional)
+		EVENT:	Event name
+		FUNC:	Function name
+		OFF:	Offset from function entry (in byte)
+		%return:	Put the probe at function return
+		SRC:	Source code path
+		RL:	Relative line number from function entry.
+		AL:	Absolute line number in file.
+		PT:	Lazy expression of line code.
+		ARG:	Probe argument (local variable name or
+			kprobe-tracer argument format.)
+
+      -l, --list            list up current probe events
 
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/parse-options.c | 59 +++++++++++++++++++++++++++++++++--------
- tools/perf/util/parse-options.h |  2 ++
- 2 files changed, 50 insertions(+), 11 deletions(-)
+ tools/perf/builtin-probe.c | 54 ++++++++--------------------------------------
+ 1 file changed, 9 insertions(+), 45 deletions(-)
 
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index b6016101b40b..f62dee7bd924 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -45,6 +45,23 @@ static int get_value(struct parse_opt_ctx_t *p,
- 	if (opt->flags & PARSE_OPT_DISABLED)
- 		return opterror(opt, "is not usable", flags);
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 04412b4770a2..23d6e7f03cf1 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -312,7 +312,7 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ #endif
+ 		NULL
+ };
+-	const struct option options[] = {
++	struct option options[] = {
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show parsed arguments, etc)"),
+ 	OPT_BOOLEAN('l', "list", &params.list_events,
+@@ -382,6 +382,14 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	};
+ 	int ret;
  
-+	if (opt->flags & PARSE_OPT_EXCLUSIVE) {
-+		if (p->excl_opt) {
-+			char msg[128];
++	set_option_flag(options, 'a', "add", PARSE_OPT_EXCLUSIVE);
++	set_option_flag(options, 'd', "del", PARSE_OPT_EXCLUSIVE);
++	set_option_flag(options, 'l', "list", PARSE_OPT_EXCLUSIVE);
++#ifdef HAVE_DWARF_SUPPORT
++	set_option_flag(options, 'L', "line", PARSE_OPT_EXCLUSIVE);
++	set_option_flag(options, 'V', "vars", PARSE_OPT_EXCLUSIVE);
++#endif
 +
-+			if (((flags & OPT_SHORT) && p->excl_opt->short_name) ||
-+			    p->excl_opt->long_name == NULL) {
-+				scnprintf(msg, sizeof(msg), "cannot be used with switch `%c'",
-+					  p->excl_opt->short_name);
-+			} else {
-+				scnprintf(msg, sizeof(msg), "cannot be used with %s",
-+					  p->excl_opt->long_name);
-+			}
-+			opterror(opt, msg, flags);
-+			return -3;
-+		}
-+		p->excl_opt = opt;
-+	}
- 	if (!(flags & OPT_SHORT) && p->opt) {
- 		switch (opt->type) {
- 		case OPTION_CALLBACK:
-@@ -345,13 +362,14 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		       const char * const usagestr[])
- {
- 	int internal_help = !(ctx->flags & PARSE_OPT_NO_INTERNAL_HELP);
-+	int excl_short_opt = 1;
-+	const char *arg;
+ 	argc = parse_options(argc, argv, options, probe_usage,
+ 			     PARSE_OPT_STOP_AT_NON_OPTION);
+ 	if (argc > 0) {
+@@ -409,22 +417,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	symbol_conf.try_vmlinux_path = (symbol_conf.vmlinux_name == NULL);
  
- 	/* we must reset ->opt, unknown short option leave it dangling */
- 	ctx->opt = NULL;
- 
- 	for (; ctx->argc; ctx->argc--, ctx->argv++) {
--		const char *arg = ctx->argv[0];
--
-+		arg = ctx->argv[0];
- 		if (*arg != '-' || !arg[1]) {
- 			if (ctx->flags & PARSE_OPT_STOP_AT_NON_OPTION)
- 				break;
-@@ -360,19 +378,21 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		}
- 
- 		if (arg[1] != '-') {
--			ctx->opt = arg + 1;
-+			ctx->opt = ++arg;
- 			if (internal_help && *ctx->opt == 'h')
- 				return usage_with_options_internal(usagestr, options, 0);
- 			switch (parse_short_opt(ctx, options)) {
- 			case -1:
--				return parse_options_usage(usagestr, options, arg + 1, 1);
-+				return parse_options_usage(usagestr, options, arg, 1);
- 			case -2:
- 				goto unknown;
-+			case -3:
-+				goto exclusive;
- 			default:
- 				break;
- 			}
- 			if (ctx->opt)
--				check_typos(arg + 1, options);
-+				check_typos(arg, options);
- 			while (ctx->opt) {
- 				if (internal_help && *ctx->opt == 'h')
- 					return usage_with_options_internal(usagestr, options, 0);
-@@ -389,6 +409,8 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 					ctx->argv[0] = strdup(ctx->opt - 1);
- 					*(char *)ctx->argv[0] = '-';
- 					goto unknown;
-+				case -3:
-+					goto exclusive;
- 				default:
- 					break;
- 				}
-@@ -404,19 +426,23 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 			break;
- 		}
- 
--		if (internal_help && !strcmp(arg + 2, "help-all"))
-+		arg += 2;
-+		if (internal_help && !strcmp(arg, "help-all"))
- 			return usage_with_options_internal(usagestr, options, 1);
--		if (internal_help && !strcmp(arg + 2, "help"))
-+		if (internal_help && !strcmp(arg, "help"))
- 			return usage_with_options_internal(usagestr, options, 0);
--		if (!strcmp(arg + 2, "list-opts"))
-+		if (!strcmp(arg, "list-opts"))
- 			return PARSE_OPT_LIST_OPTS;
--		if (!strcmp(arg + 2, "list-cmds"))
-+		if (!strcmp(arg, "list-cmds"))
- 			return PARSE_OPT_LIST_SUBCMDS;
--		switch (parse_long_opt(ctx, arg + 2, options)) {
-+		switch (parse_long_opt(ctx, arg, options)) {
- 		case -1:
--			return parse_options_usage(usagestr, options, arg + 2, 0);
-+			return parse_options_usage(usagestr, options, arg, 0);
- 		case -2:
- 			goto unknown;
-+		case -3:
-+			excl_short_opt = 0;
-+			goto exclusive;
- 		default:
- 			break;
- 		}
-@@ -428,6 +454,17 @@ unknown:
- 		ctx->opt = NULL;
+ 	if (params.list_events) {
+-		if (params.mod_events) {
+-			pr_err("  Error: Don't use --list with --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_lines) {
+-			pr_err("  Error: Don't use --list with --line.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_vars) {
+-			pr_err(" Error: Don't use --list with --vars.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_funcs) {
+-			pr_err("  Error: Don't use --list with --funcs.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+ 		if (params.uprobes) {
+ 			pr_warning("  Error: Don't use --list with --exec.\n");
+ 			usage_with_options(probe_usage, options);
+@@ -435,19 +427,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return ret;
  	}
- 	return PARSE_OPT_DONE;
-+
-+exclusive:
-+	parse_options_usage(usagestr, options, arg, excl_short_opt);
-+	if ((excl_short_opt && ctx->excl_opt->short_name) ||
-+	    ctx->excl_opt->long_name == NULL) {
-+		char opt = ctx->excl_opt->short_name;
-+		parse_options_usage(NULL, options, &opt, 1);
-+	} else {
-+		parse_options_usage(NULL, options, ctx->excl_opt->long_name, 0);
-+	}
-+	return PARSE_OPT_HELP;
- }
+ 	if (params.show_funcs) {
+-		if (params.nevents != 0 || params.dellist) {
+-			pr_err("  Error: Don't use --funcs with"
+-			       " --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_lines) {
+-			pr_err("  Error: Don't use --funcs with --line.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_vars) {
+-			pr_err("  Error: Don't use --funcs with --vars.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+ 		if (!params.filter)
+ 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
+ 						       NULL);
+@@ -462,16 +441,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
  
- int parse_options_end(struct parse_opt_ctx_t *ctx)
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index b7c80dbc7627..97b153fb4999 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -39,6 +39,7 @@ enum parse_opt_option_flags {
- 	PARSE_OPT_HIDDEN  = 8,
- 	PARSE_OPT_LASTARG_DEFAULT = 16,
- 	PARSE_OPT_DISABLED = 32,
-+	PARSE_OPT_EXCLUSIVE = 64,
- };
- 
- struct option;
-@@ -174,6 +175,7 @@ struct parse_opt_ctx_t {
- 	const char **out;
- 	int argc, cpidx;
- 	const char *opt;
-+	const struct option *excl_opt;
- 	int flags;
- };
- 
+ #ifdef HAVE_DWARF_SUPPORT
+ 	if (params.show_lines) {
+-		if (params.mod_events) {
+-			pr_err("  Error: Don't use --line with"
+-			       " --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-		if (params.show_vars) {
+-			pr_err(" Error: Don't use --line with --vars.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+-
+ 		ret = show_line_range(&params.line_range, params.target,
+ 				      params.uprobes);
+ 		if (ret < 0)
+@@ -479,11 +448,6 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		return ret;
+ 	}
+ 	if (params.show_vars) {
+-		if (params.mod_events) {
+-			pr_err("  Error: Don't use --vars with"
+-			       " --add/--del.\n");
+-			usage_with_options(probe_usage, options);
+-		}
+ 		if (!params.filter)
+ 			params.filter = strfilter__new(DEFAULT_VAR_FILTER,
+ 						       NULL);
 -- 
 2.0.0
 
