@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377AbaJVPQM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:16:12 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:58308 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752535AbaJVPQK (ORCPT
+	id S1753462AbaJVPQQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:16:16 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:41961 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535AbaJVPQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:16:10 -0400
+	Wed, 22 Oct 2014 11:16:14 -0400
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Subject: [PATCH 3/5] perf kvm: Print kvm specific --help output
-Date: Thu, 23 Oct 2014 00:15:47 +0900
-Message-Id: <1413990949-13953-4-git-send-email-namhyung@kernel.org>
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>
+Subject: [PATCH 4/5] perf tools: Add support for exclusive option
+Date: Thu, 23 Oct 2014 00:15:48 +0900
+Message-Id: <1413990949-13953-5-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1413990949-13953-1-git-send-email-namhyung@kernel.org>
 References: <1413990949-13953-1-git-send-email-namhyung@kernel.org>
@@ -23,93 +24,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'perf kvm stat record' tool is an alias of 'perf record' with
-predefined kvm related options. All options that passed to 'perf kvm
-stat record' are processed by the 'perf record' tool. So, 'perf kvm
-stat record --help' prints help of usage for the 'perf record'
-command. There are a few options useful for 'perf kvm stat record',
-the rest either break kvm related output or don't change it.
+Some options cannot be used at the same time.  To handle such options
+add a new PARSE_OPT_EXCLUSIVE flag and show error message if more than
+one of them is used.
 
-Let's print safe for 'perf kvm stat record' options in addition to
-general 'perf record' --help output.
-
-With this patch, new output looks like below:
-
-  $ perf kvm stat record -h
-
-   usage: perf kvm stat record [<options>]
-
-      -p, --pid <pid>       record events on existing process id
-      -t, --tid <tid>       record events on existing thread id
-      -r, --realtime <n>    collect data with this RT SCHED_FIFO priority
-          --no-buffering    collect data without buffering
-      -a, --all-cpus        system-wide collection from all CPUs
-      -C, --cpu <cpu>       list of cpus to monitor
-      -c, --count <n>       event period to sample
-      -o, --output <file>   output file name
-      -i, --no-inherit      child tasks do not inherit counters
-      -m, --mmap-pages <pages>
-                            number of mmap data pages
-      -v, --verbose         be more verbose (show counter open errors, etc)
-      -q, --quiet           don't print any message
-      -s, --stat            per thread counts
-      -D, --delay <n>       ms to wait before starting measurement after program start
-      -u, --uid <user>      user to profile
-          --per-thread      use per-thread mmaps
-
-  $ perf kvm stat record -n sleep 1
-    Error: switch `n' is not usable
-
-   usage: perf kvm stat record [<options>]
-
-Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-kvm.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ tools/perf/util/parse-options.c | 59 +++++++++++++++++++++++++++++++++--------
+ tools/perf/util/parse-options.h |  2 ++
+ 2 files changed, 50 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index b65eb0507b38..3c0f3d4fb021 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1132,6 +1132,10 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 		"-m", "1024",
- 		"-c", "1",
- 	};
-+	const char * const kvm_stat_record_usage[] = {
-+		"perf kvm stat record [<options>]",
-+		NULL
-+	};
- 	const char * const *events_tp;
- 	events_tp_size = 0;
+diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+index b6016101b40b..f62dee7bd924 100644
+--- a/tools/perf/util/parse-options.c
++++ b/tools/perf/util/parse-options.c
+@@ -45,6 +45,23 @@ static int get_value(struct parse_opt_ctx_t *p,
+ 	if (opt->flags & PARSE_OPT_DISABLED)
+ 		return opterror(opt, "is not usable", flags);
  
-@@ -1159,6 +1163,27 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 	for (j = 1; j < (unsigned int)argc; j++, i++)
- 		rec_argv[i] = argv[j];
++	if (opt->flags & PARSE_OPT_EXCLUSIVE) {
++		if (p->excl_opt) {
++			char msg[128];
++
++			if (((flags & OPT_SHORT) && p->excl_opt->short_name) ||
++			    p->excl_opt->long_name == NULL) {
++				scnprintf(msg, sizeof(msg), "cannot be used with switch `%c'",
++					  p->excl_opt->short_name);
++			} else {
++				scnprintf(msg, sizeof(msg), "cannot be used with %s",
++					  p->excl_opt->long_name);
++			}
++			opterror(opt, msg, flags);
++			return -3;
++		}
++		p->excl_opt = opt;
++	}
+ 	if (!(flags & OPT_SHORT) && p->opt) {
+ 		switch (opt->type) {
+ 		case OPTION_CALLBACK:
+@@ -345,13 +362,14 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 		       const char * const usagestr[])
+ {
+ 	int internal_help = !(ctx->flags & PARSE_OPT_NO_INTERNAL_HELP);
++	int excl_short_opt = 1;
++	const char *arg;
  
-+	set_option_flag(record_options, 'e', "event", PARSE_OPT_HIDDEN);
-+	set_option_flag(record_options, 0, "filter", PARSE_OPT_HIDDEN);
-+	set_option_flag(record_options, 'R', "raw-samples", PARSE_OPT_HIDDEN);
+ 	/* we must reset ->opt, unknown short option leave it dangling */
+ 	ctx->opt = NULL;
+ 
+ 	for (; ctx->argc; ctx->argc--, ctx->argv++) {
+-		const char *arg = ctx->argv[0];
+-
++		arg = ctx->argv[0];
+ 		if (*arg != '-' || !arg[1]) {
+ 			if (ctx->flags & PARSE_OPT_STOP_AT_NON_OPTION)
+ 				break;
+@@ -360,19 +378,21 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 		}
+ 
+ 		if (arg[1] != '-') {
+-			ctx->opt = arg + 1;
++			ctx->opt = ++arg;
+ 			if (internal_help && *ctx->opt == 'h')
+ 				return usage_with_options_internal(usagestr, options, 0);
+ 			switch (parse_short_opt(ctx, options)) {
+ 			case -1:
+-				return parse_options_usage(usagestr, options, arg + 1, 1);
++				return parse_options_usage(usagestr, options, arg, 1);
+ 			case -2:
+ 				goto unknown;
++			case -3:
++				goto exclusive;
+ 			default:
+ 				break;
+ 			}
+ 			if (ctx->opt)
+-				check_typos(arg + 1, options);
++				check_typos(arg, options);
+ 			while (ctx->opt) {
+ 				if (internal_help && *ctx->opt == 'h')
+ 					return usage_with_options_internal(usagestr, options, 0);
+@@ -389,6 +409,8 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 					ctx->argv[0] = strdup(ctx->opt - 1);
+ 					*(char *)ctx->argv[0] = '-';
+ 					goto unknown;
++				case -3:
++					goto exclusive;
+ 				default:
+ 					break;
+ 				}
+@@ -404,19 +426,23 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 			break;
+ 		}
+ 
+-		if (internal_help && !strcmp(arg + 2, "help-all"))
++		arg += 2;
++		if (internal_help && !strcmp(arg, "help-all"))
+ 			return usage_with_options_internal(usagestr, options, 1);
+-		if (internal_help && !strcmp(arg + 2, "help"))
++		if (internal_help && !strcmp(arg, "help"))
+ 			return usage_with_options_internal(usagestr, options, 0);
+-		if (!strcmp(arg + 2, "list-opts"))
++		if (!strcmp(arg, "list-opts"))
+ 			return PARSE_OPT_LIST_OPTS;
+-		if (!strcmp(arg + 2, "list-cmds"))
++		if (!strcmp(arg, "list-cmds"))
+ 			return PARSE_OPT_LIST_SUBCMDS;
+-		switch (parse_long_opt(ctx, arg + 2, options)) {
++		switch (parse_long_opt(ctx, arg, options)) {
+ 		case -1:
+-			return parse_options_usage(usagestr, options, arg + 2, 0);
++			return parse_options_usage(usagestr, options, arg, 0);
+ 		case -2:
+ 			goto unknown;
++		case -3:
++			excl_short_opt = 0;
++			goto exclusive;
+ 		default:
+ 			break;
+ 		}
+@@ -428,6 +454,17 @@ unknown:
+ 		ctx->opt = NULL;
+ 	}
+ 	return PARSE_OPT_DONE;
 +
-+	set_option_flag(record_options, 'F', "freq", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 0, "group", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'g', NULL, PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 0, "call-graph", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'd', "data", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'T', "timestamp", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'P', "period", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'n', "no-samples", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'N', "no-buildid-cache", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'B', "no-buildid", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'G', "cgroup", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'b', "branch-any", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'j', "branch-filter", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 'W', "weight", PARSE_OPT_DISABLED);
-+	set_option_flag(record_options, 0, "transaction", PARSE_OPT_DISABLED);
-+
-+	record_usage = kvm_stat_record_usage;
- 	return cmd_record(i, rec_argv, NULL);
++exclusive:
++	parse_options_usage(usagestr, options, arg, excl_short_opt);
++	if ((excl_short_opt && ctx->excl_opt->short_name) ||
++	    ctx->excl_opt->long_name == NULL) {
++		char opt = ctx->excl_opt->short_name;
++		parse_options_usage(NULL, options, &opt, 1);
++	} else {
++		parse_options_usage(NULL, options, ctx->excl_opt->long_name, 0);
++	}
++	return PARSE_OPT_HELP;
  }
+ 
+ int parse_options_end(struct parse_opt_ctx_t *ctx)
+diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+index b7c80dbc7627..97b153fb4999 100644
+--- a/tools/perf/util/parse-options.h
++++ b/tools/perf/util/parse-options.h
+@@ -39,6 +39,7 @@ enum parse_opt_option_flags {
+ 	PARSE_OPT_HIDDEN  = 8,
+ 	PARSE_OPT_LASTARG_DEFAULT = 16,
+ 	PARSE_OPT_DISABLED = 32,
++	PARSE_OPT_EXCLUSIVE = 64,
+ };
+ 
+ struct option;
+@@ -174,6 +175,7 @@ struct parse_opt_ctx_t {
+ 	const char **out;
+ 	int argc, cpidx;
+ 	const char *opt;
++	const struct option *excl_opt;
+ 	int flags;
+ };
  
 -- 
 2.0.0
