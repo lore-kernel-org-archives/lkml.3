@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaJVPAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:00:09 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:42872 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614AbaJVPAH (ORCPT
+	id S1753297AbaJVPAX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:00:23 -0400
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:37751 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614AbaJVPAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:00:07 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Simon Horman <horms+renesas@verge.net.au>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, linux-sh@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] clocksource: sh_mtu2: Correct SoC family name
-Date: Wed, 22 Oct 2014 18:00:19 +0300
-Message-ID: <1593823.SBtdMLb0Ra@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1413969978-15946-1-git-send-email-geert+renesas@glider.be>
-References: <1413969978-15946-1-git-send-email-geert+renesas@glider.be>
+	Wed, 22 Oct 2014 11:00:21 -0400
+Date: Wed, 22 Oct 2014 16:00:04 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH -next 00/10] Fixes to controlling tty handling
+Message-ID: <20141022160004.11be0850@alan.etchedpixels.co.uk>
+In-Reply-To: <1413485990-16855-1-git-send-email-peter@hurleysoftware.com>
+References: <1413485990-16855-1-git-send-email-peter@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Thu, 16 Oct 2014 14:59:40 -0400
+Peter Hurley <peter@hurleysoftware.com> wrote:
 
-Thank you for the patch.
-
-On Wednesday 22 October 2014 11:26:18 Geert Uytterhoeven wrote:
-> r7s72100 is a member of the RZ family, not of the R-Car family
+> Hi Greg,
 > 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-
-Acked-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-
-> ---
->  Documentation/devicetree/bindings/timer/renesas,mtu2.txt | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> This patch series:
+> 1. removes stale code from the controlling tty handling functions
+> 2. relocates the ctty functions to eliminate forward declarations
+> 3. fixes several unsafe races when setting the controlling tty
+> 4. eliminates holding tty_mutex as a necessary condition of
+>    setting the controlling terminal
 > 
-> diff --git a/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
-> b/Documentation/devicetree/bindings/timer/renesas,mtu2.txt index
-> d9a8d5af1a21270f..55484a77a6ae54d0 100644
-> --- a/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
-> +++ b/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
-> @@ -1,4 +1,4 @@
-> -* Renesas R-Car Multi-Function Timer Pulse Unit 2 (MTU2)
-> +* Renesas RZ Multi-Function Timer Pulse Unit 2 (MTU2)
+> #4 is part of an overall effort to reduce the tty_mutex footprint.
 > 
->  The MTU2 is a multi-purpose, multi-channel timer/counter with configurable
->  clock inputs and programmable compare match.
+> Unfortunately, this series does not fix two other race conditions:
+> 1. disassociate_ctty()/no_tty() does not teardown the tty<->process
+> associations atomically wrt job control, so it is possible to
+> observe spurious error conditions from job control (tty_check_change()
+> and job_control()). I'm looking into inverting the lock order of
+> tty->ctrl_lock and tsk->sighand->siglock() to see if holding ctrl_lock
+> is a suitable solution for atomic teardown. Especially now that
+> ctrl_lock is not used for flow control anymore :)
+> 2. task_pgrp() and task_session() are used unsafely. These fixes
+> will be clearer after #1 is fixed.
 
--- 
-Regards,
 
-Laurent Pinchart
+Reviewed-by: Alan Cox <alan@linux.intel.com>
 
+I can't prove entirely to my satisfaction that the claim in #9 is true in
+the presence of simultaenous hangups opens and setsid but the locking
+appears to be correct for the cases I was trying to figure out anyway.
+
+Makes my head hurt just reviewing bits of this so thanks for doing all
+this work !
