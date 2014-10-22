@@ -1,148 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367AbaJVTPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 15:15:50 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:58656 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753889AbaJVTNW (ORCPT
+	id S932417AbaJVTQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 15:16:01 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:32093 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932370AbaJVTP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 15:13:22 -0400
-From: Frans Klaver <fransklaver@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: Frans Klaver <fransklaver@gmail.com>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] eeepc-laptop: flatten control flow
-Date: Wed, 22 Oct 2014 21:12:36 +0200
-Message-Id: <1414005163-3461-2-git-send-email-fransklaver@gmail.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
-References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+	Wed, 22 Oct 2014 15:15:59 -0400
+Message-ID: <1414004531.12798.27.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] memory-hotplug: Clear pgdat which is allocated by
+ bootmem in try_offline_node()
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, zhenzhang.zhang@huawei.com,
+        wangnan0@huawei.com, tangchen@cn.fujitsu.com, dave.hansen@intel.com,
+        rientjes@google.com
+Date: Wed, 22 Oct 2014 13:02:11 -0600
+In-Reply-To: <54476215.3010006@jp.fujitsu.com>
+References: <54476215.3010006@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In eeepc_rfkill_hotplug there's an if statement with a big tail that
-ends right before the out_unlock label. We might as well invert the
-condition and jump to out_unlock in that case, pretty much like the rest
-of the code does. This removes an indentation level for a large chunk of
-code and also stops suggesting there might be an else clause.
+On Wed, 2014-10-22 at 16:51 +0900, Yasuaki Ishimatsu wrote:
+> When hot adding the same memory after hot removing a memory,
+> the following messages are shown:
+> 
+> WARNING: CPU: 20 PID: 6 at mm/page_alloc.c:4968 free_area_init_node+0x3fe/0x426()
+> ...
+> Call Trace:
+>  [<...>] dump_stack+0x46/0x58
+>  [<...>] warn_slowpath_common+0x81/0xa0
+>  [<...>] warn_slowpath_null+0x1a/0x20
+>  [<...>] free_area_init_node+0x3fe/0x426
+>  [<...>] ? up+0x32/0x50
+>  [<...>] hotadd_new_pgdat+0x90/0x110
+>  [<...>] add_memory+0xd4/0x200
+>  [<...>] acpi_memory_device_add+0x1aa/0x289
+>  [<...>] acpi_bus_attach+0xfd/0x204
+>  [<...>] ? device_register+0x1e/0x30
+>  [<...>] acpi_bus_attach+0x178/0x204
+>  [<...>] acpi_bus_scan+0x6a/0x90
+>  [<...>] ? acpi_bus_get_status+0x2d/0x5f
+>  [<...>] acpi_device_hotplug+0xe8/0x418
+>  [<...>] acpi_hotplug_work_fn+0x1f/0x2b
+>  [<...>] process_one_work+0x14e/0x3f0
+>  [<...>] worker_thread+0x11b/0x510
+>  [<...>] ? rescuer_thread+0x350/0x350
+>  [<...>] kthread+0xe1/0x100
+>  [<...>] ? kthread_create_on_node+0x1b0/0x1b0
+>  [<...>] ret_from_fork+0x7c/0xb0
+>  [<...>] ? kthread_create_on_node+0x1b0/0x1b0
+> 
+> The detaled explanation is as follows:
+> 
+> When hot removing memory, pgdat is set to 0 in try_offline_node().
+> But if the pgdat is allocated by bootmem allocator, the clearing
+> step is skipped. And when hot adding the same memory, the uninitialized
+> pgdat is reused. But free_area_init_node() checks wether pgdat is set
+> to zero. As a result, free_area_init_node() hits WARN_ON().
+> 
+> This patch clears pgdat which is allocated by bootmem allocator
+> in try_offline_node().
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Signed-off-by: Frans Klaver <fransklaver@gmail.com>
----
- drivers/platform/x86/eeepc-laptop.c | 89 +++++++++++++++++++------------------
- 1 file changed, 45 insertions(+), 44 deletions(-)
+Thanks for the update. It looks good.
 
-diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-index db79902..bb098e5 100644
---- a/drivers/platform/x86/eeepc-laptop.c
-+++ b/drivers/platform/x86/eeepc-laptop.c
-@@ -580,59 +580,60 @@ static void eeepc_rfkill_hotplug(struct eeepc_laptop *eeepc, acpi_handle handle)
- 	mutex_lock(&eeepc->hotplug_lock);
- 	pci_lock_rescan_remove();
- 
--	if (eeepc->hotplug_slot) {
--		port = acpi_get_pci_dev(handle);
--		if (!port) {
--			pr_warning("Unable to find port\n");
--			goto out_unlock;
--		}
-+	if (!eeepc->hotplug_slot)
-+		goto out_unlock;
- 
--		bus = port->subordinate;
-+	port = acpi_get_pci_dev(handle);
-+	if (!port) {
-+		pr_warning("Unable to find port\n");
-+		goto out_unlock;
-+	}
- 
--		if (!bus) {
--			pr_warn("Unable to find PCI bus 1?\n");
--			goto out_put_dev;
--		}
-+	bus = port->subordinate;
- 
--		if (pci_bus_read_config_dword(bus, 0, PCI_VENDOR_ID, &l)) {
--			pr_err("Unable to read PCI config space?\n");
--			goto out_put_dev;
--		}
-+	if (!bus) {
-+		pr_warn("Unable to find PCI bus 1?\n");
-+		goto out_put_dev;
-+	}
-+
-+	if (pci_bus_read_config_dword(bus, 0, PCI_VENDOR_ID, &l)) {
-+		pr_err("Unable to read PCI config space?\n");
-+		goto out_put_dev;
-+	}
- 
--		absent = (l == 0xffffffff);
-+	absent = (l == 0xffffffff);
- 
--		if (blocked != absent) {
--			pr_warn("BIOS says wireless lan is %s, "
--				"but the pci device is %s\n",
--				blocked ? "blocked" : "unblocked",
--				absent ? "absent" : "present");
--			pr_warn("skipped wireless hotplug as probably "
--				"inappropriate for this model\n");
-+	if (blocked != absent) {
-+		pr_warn("BIOS says wireless lan is %s, "
-+			"but the pci device is %s\n",
-+			blocked ? "blocked" : "unblocked",
-+			absent ? "absent" : "present");
-+		pr_warn("skipped wireless hotplug as probably "
-+			"inappropriate for this model\n");
-+		goto out_put_dev;
-+	}
-+
-+	if (!blocked) {
-+		dev = pci_get_slot(bus, 0);
-+		if (dev) {
-+			/* Device already present */
-+			pci_dev_put(dev);
- 			goto out_put_dev;
- 		}
--
--		if (!blocked) {
--			dev = pci_get_slot(bus, 0);
--			if (dev) {
--				/* Device already present */
--				pci_dev_put(dev);
--				goto out_put_dev;
--			}
--			dev = pci_scan_single_device(bus, 0);
--			if (dev) {
--				pci_bus_assign_resources(bus);
--				pci_bus_add_device(dev);
--			}
--		} else {
--			dev = pci_get_slot(bus, 0);
--			if (dev) {
--				pci_stop_and_remove_bus_device(dev);
--				pci_dev_put(dev);
--			}
-+		dev = pci_scan_single_device(bus, 0);
-+		if (dev) {
-+			pci_bus_assign_resources(bus);
-+			pci_bus_add_device(dev);
-+		}
-+	} else {
-+		dev = pci_get_slot(bus, 0);
-+		if (dev) {
-+			pci_stop_and_remove_bus_device(dev);
-+			pci_dev_put(dev);
- 		}
--out_put_dev:
--		pci_dev_put(port);
- 	}
-+out_put_dev:
-+	pci_dev_put(port);
- 
- out_unlock:
- 	pci_unlock_rescan_remove();
--- 
-2.1.0
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+
+-Toshi
+
+
 
