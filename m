@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaJVNvd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 09:51:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40503 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071AbaJVNvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 09:51:31 -0400
-Date: Wed, 22 Oct 2014 15:51:31 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: remove mem_cgroup_reclaimable check from soft
- reclaim
-Message-ID: <20141022135131.GB30802@dhcp22.suse.cz>
-References: <1413897350-32553-1-git-send-email-vdavydov@parallels.com>
- <20141021182239.GA24899@phnom.home.cmpxchg.org>
- <20141022112116.GA30802@dhcp22.suse.cz>
- <20141022124025.GA17161@phnom.home.cmpxchg.org>
+	id S1752001AbaJVNx1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 09:53:27 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:63652 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964AbaJVNxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 09:53:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022124025.GA17161@phnom.home.cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1413984696.19686.72.camel@mtksdaap41>
+References: <1413973797-17619-1-git-send-email-yingjoe.chen@mediatek.com>
+	<1413973797-17619-9-git-send-email-yingjoe.chen@mediatek.com>
+	<CABuKBe+Ew6R2Kb90-gDHBQ4HuydfFxJdYmr+v9-KNC-b0K4Tkw@mail.gmail.com>
+	<1413984696.19686.72.camel@mtksdaap41>
+Date: Wed, 22 Oct 2014 15:53:23 +0200
+Message-ID: <CABuKBeLJuaDnCYuvvS6csNzvbTeEdgEUdZ4tBQeVPuw37JK11Q@mail.gmail.com>
+Subject: Re: [PATCH v4 8/8] ARM: mediatek: Add config option for mediatek SoCs.
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>, arm@kernel.org,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        Hsien-Chun Yen <hc.yen@mediatek.com>,
+        huang eddie <eddie.huang@mediatek.com>,
+        Nathan Chung <nathan.chung@mediatek.com>,
+        Yuhau Chen <yh.chen@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 22-10-14 08:40:25, Johannes Weiner wrote:
-> On Wed, Oct 22, 2014 at 01:21:16PM +0200, Michal Hocko wrote:
-> > On Tue 21-10-14 14:22:39, Johannes Weiner wrote:
-> > [...]
-> > > From 27bd24b00433d9f6c8d60ba2b13dbff158b06c13 Mon Sep 17 00:00:00 2001
-> > > From: Johannes Weiner <hannes@cmpxchg.org>
-> > > Date: Tue, 21 Oct 2014 09:53:54 -0400
-> > > Subject: [patch] mm: memcontrol: do not filter reclaimable nodes in NUMA
-> > >  round-robin
-> > > 
-> > > The round-robin node reclaim currently tries to include only nodes
-> > > that have memory of the memcg in question, which is quite elaborate.
-> > > 
-> > > Just use plain round-robin over the nodes that are allowed by the
-> > > task's cpuset, which are the most likely to contain that memcg's
-> > > memory.  But even if zones without memcg memory are encountered,
-> > > direct reclaim will skip over them without too much hassle.
-> > 
-> > I do not think that using the current's node mask is correct. Different
-> > tasks in the same memcg might be bound to different nodes and then a set
-> > of nodes might be reclaimed much more if a particular task hits limit
-> > more often. It also doesn't make much sense from semantical POV, we are
-> > reclaiming memcg so the mask should be union of all tasks allowed nodes.
-> 
-> Unless the cpuset hierarchy is separate from the memcg hierarchy, all
-> tasks in the memcg belong to the same cpuset.  And the whole point of
-> cpusets is that a group of tasks has the same nodemask, no?
+Hi Joe,
 
-Memory limit and memory placement are orthogonal configurations and they
-might be stacked one on top of other in both directions.
- 
-> Sure, there are *possible* configurations for which this assumption
-> breaks, like multiple hierarchies, but are they sensible?  Do we care?
+2014-10-22 15:31 GMT+02:00 Yingjoe Chen <yingjoe.chen@mediatek.com>:
+>
+> Hi Matthias,
+>
+> On Wed, 2014-10-22 at 15:18 +0200, Matthias Brugger wrote:
+>> 2014-10-22 12:29 GMT+02:00 Joe.C <yingjoe.chen@mediatek.com>:
+>> > +
+>> > +if ARCH_MEDIATEK
+>> > +
+>> > +config MACH_MT6589
+>> > +       bool "MediaTek MT6589 SoCs support"
+>> > +       default ARCH_MEDIATEK
+>> > +
+>> > +config MACH_MT8127
+>> > +       bool "MediaTek MT8127 SoCs support"
+>> > +       default ARCH_MEDIATEK
+>> > +
+>> > +config MACH_MT8135
+>> > +       bool "MediaTek MT8135 SoCs support"
+>> > +       default ARCH_MEDIATEK
+>> > +
+>> > +endif
+>>
+>> MACH_MTxxxx are not used nowhere, please remove them.
+>
+> Yes, they are not used in this series yet.
+>
+> MACH_MT8135 was used in mt8135 pinctrl driver [1] and will be used in
+> mt8135 clk driver we are about to send. I don't want to create false
+> dependency between these 2 series so I put it here.
+> Do you prefer add them when they are first used?
 
-Why wouldn't they be sensible? What is wrong about limiting memory of
-a load which internally uses node placement for its components?
+Yes please add them, when they are first used.
+Today I had a look on the pinctrl patches you mentioned. It looks to
+me as if the config is not needed in the series.
 
-> > What we do currently is overly complicated though and I agree that there
-> > is no good reason for it.
-> > Let's just s@cpuset_current_mems_allowed@node_online_map@ and round
-> > robin over all nodes. As you said we do not have to optimize for empty
-> > zones.
-> 
-> That was what I first had.  And cpuset_current_mems_allowed defaults
-> to node_online_map, but once the user sets up cpusets in conjunction
-> with memcgs, it seems to be the preferred value.
-> 
-> The other end of this is that if you have 16 nodes and use cpuset to
-> bind the task to node 14 and 15, round-robin iterations of node 1-13
-> will reclaim the group's memory on 14 and only the 15 iteration will
-> actually look at memory from node 15 first.
+Thanks,
+Matthias
 
-mem_cgroup_select_victim_node can check reclaimability of the memcg
-(hierarchy) and skip nodes without pages. Or would that be too
-expensive? We are in the slow path already.
+[0] http://thread.gmane.org/gmane.linux.ports.arm.kernel/358505
 
-> It seems using the cpuset bindings, while theoretically independent,
-> would do the right thing for all intents and purposes.
+>
+> Joe.C
+>
+> [1]
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/289288.html
+>
+>
 
-Only if cpuset is on top of memcg. Not the other way around as mentioned
-above (possible node over-reclaim).
+
+
 -- 
-Michal Hocko
-SUSE Labs
+motzblog.wordpress.com
