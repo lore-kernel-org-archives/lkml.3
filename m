@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234AbaJVPtU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:49:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43079 "EHLO mx2.suse.de"
+	id S932270AbaJVPtb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:49:31 -0400
+Received: from tex.lwn.net ([70.33.254.29]:50713 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753927AbaJVPtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:49:18 -0400
-Date: Wed, 22 Oct 2014 17:49:18 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/4] mm: memcontrol: remove unnecessary PCG_MEM memory
- charge flag
-Message-ID: <20141022154918.GF30802@dhcp22.suse.cz>
-References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
- <1413818532-11042-4-git-send-email-hannes@cmpxchg.org>
+	id S1755396AbaJVPtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 11:49:20 -0400
+Date: Wed, 22 Oct 2014 11:49:17 -0400
+From: Jonathan Corbet <corbet@lwn.net>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: trivial@kernel.org, rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [PATCH] treewide: Fix typo in
+ Documentation/DocBook/device-drivers
+Message-ID: <20141022114917.3b34905d@lwn.net>
+In-Reply-To: <1413903614-20775-1-git-send-email-standby24x7@gmail.com>
+References: <1413903614-20775-1-git-send-email-standby24x7@gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413818532-11042-4-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 20-10-14 11:22:11, Johannes Weiner wrote:
-> PCG_MEM is a remnant from an earlier version of 0a31bc97c80c ("mm:
-> memcontrol: rewrite uncharge API"), used to tell whether migration
-> cleared a charge while leaving pc->mem_cgroup valid and PCG_USED set.
-> But in the final version, mem_cgroup_migrate() directly uncharges the
-> source page, rendering this distinction unnecessary.  Remove it.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+On Wed, 22 Oct 2014 00:00:14 +0900
+Masanari Iida <standby24x7@gmail.com> wrote:
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+> This patch fix speeling typo found in html files within
+> Documentation/DocBook/device-drivers.
+> It is because html files are generated from comments in source,
+> so I have to fix comments in the source.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+
+I can pick this up, I guess.  But I'll copy the relevant subsystem
+maintainers just in case they would rather carry the changes themselves.
+
+jon
 
 > ---
->  include/linux/page_cgroup.h | 1 -
->  mm/memcontrol.c             | 4 +---
->  2 files changed, 1 insertion(+), 4 deletions(-)
+>  drivers/dma-buf/fence.c | 2 +-
+>  include/linux/fence.h   | 4 ++--
+>  include/linux/i2c.h     | 2 +-
+>  3 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index da62ee2be28b..97536e685843 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -4,7 +4,6 @@
->  enum {
->  	/* flags for mem_cgroup */
->  	PCG_USED = 0x01,	/* This page is charged to a memcg */
-> -	PCG_MEM = 0x02,		/* This page holds a memory charge */
->  };
->  
->  struct pglist_data;
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9bab35fc3e9e..1d66ac49e702 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2606,7 +2606,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
->  	 *   have the page locked
->  	 */
->  	pc->mem_cgroup = memcg;
-> -	pc->flags = PCG_USED | PCG_MEM;
-> +	pc->flags = PCG_USED;
->  
->  	if (lrucare)
->  		unlock_page_lru(page, isolated);
-> @@ -6177,8 +6177,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
->  	if (!PageCgroupUsed(pc))
->  		return;
->  
-> -	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
-> -
->  	if (lrucare)
->  		lock_page_lru(oldpage, &isolated);
->  
-> -- 
-> 2.1.2
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+> diff --git a/drivers/dma-buf/fence.c b/drivers/dma-buf/fence.c
+> index 7bb9d65..e554111 100644
+> --- a/drivers/dma-buf/fence.c
+> +++ b/drivers/dma-buf/fence.c
+> @@ -283,7 +283,7 @@ EXPORT_SYMBOL(fence_add_callback);
+>   * @cb:		[in]	the callback to remove
+>   *
+>   * Remove a previously queued callback from the fence. This function returns
+> - * true if the callback is succesfully removed, or false if the fence has
+> + * true if the callback is successfully removed, or false if the fence has
+>   * already been signaled.
+>   *
+>   * *WARNING*:
+> diff --git a/include/linux/fence.h b/include/linux/fence.h
+> index d174585..39efee1 100644
+> --- a/include/linux/fence.h
+> +++ b/include/linux/fence.h
+> @@ -128,8 +128,8 @@ struct fence_cb {
+>   * from irq context, so normal spinlocks can be used.
+>   *
+>   * A return value of false indicates the fence already passed,
+> - * or some failure occured that made it impossible to enable
+> - * signaling. True indicates succesful enabling.
+> + * or some failure occurred that made it impossible to enable
+> + * signaling. True indicates successful enabling.
+>   *
+>   * fence->status may be set in enable_signaling, but only when false is
+>   * returned.
+> diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+> index b556e0a..70ee0d3 100644
+> --- a/include/linux/i2c.h
+> +++ b/include/linux/i2c.h
+> @@ -359,7 +359,7 @@ i2c_register_board_info(int busnum, struct i2c_board_info const *info,
+>   * to name two of the most common.
+>   *
+>   * The return codes from the @master_xfer field should indicate the type of
+> - * error code that occured during the transfer, as documented in the kernel
+> + * error code that occurred during the transfer, as documented in the kernel
+>   * Documentation file Documentation/i2c/fault-codes.
+>   */
+>  struct i2c_algorithm {
