@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933001AbaJVU61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 16:58:27 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:33886 "EHLO
+	id S933151AbaJVU6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 16:58:39 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:33900 "EHLO
 	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932352AbaJVU6W (ORCPT
+	with ESMTP id S932976AbaJVU6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 16:58:22 -0400
+	Wed, 22 Oct 2014 16:58:36 -0400
 X-IronPort-AV: E=Sophos;i="5.04,771,1406617200"; 
-   d="scan'208";a="48759414"
+   d="scan'208";a="48759418"
 From: Scott Branden <sbranden@broadcom.com>
 To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -27,9 +27,9 @@ To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
 CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, Scott Branden <sbranden@broadcom.com>
-Subject: [PATCH v7 4/7] ARM: dts: Enable Broadcom Cygnus SoC
-Date: Wed, 22 Oct 2014 13:57:51 -0700
-Message-ID: <1414011474-11821-5-git-send-email-sbranden@broadcom.com>
+Subject: [PATCH v7 7/7] ARM: mach-bcm: ARCH_BCM_MOBILE: remove one level of menu from Kconfig
+Date: Wed, 22 Oct 2014 13:57:54 -0700
+Message-ID: <1414011474-11821-8-git-send-email-sbranden@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414011474-11821-1-git-send-email-sbranden@broadcom.com>
 References: <Scott Branden <sbranden@broadcom.com>
@@ -40,321 +40,125 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT files to enable cygnus consisting on reference designs
-and cygnus core configuration.
+remove menu "Broadcom Mobile SoC Selection"
+This requires:
+- selecting ARCH_BCM_MOBILE based on SoC selections
+- fixup bcm_defconfig to work with new menu levels.
 
-Reviewed-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Arun Parameswaran <aparames@broadcom.com>
-Tested-by: Jonathan Richardson <jonathar@broadcom.com>
-Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
 Signed-off-by: Scott Branden <sbranden@broadcom.com>
 ---
- arch/arm/boot/dts/Makefile              |    4 ++
- arch/arm/boot/dts/bcm-cygnus-clock.dtsi |   73 +++++++++++++++++++++
- arch/arm/boot/dts/bcm-cygnus.dtsi       |  109 +++++++++++++++++++++++++++++++
- arch/arm/boot/dts/bcm911360_entphn.dts  |   22 +++++++
- arch/arm/boot/dts/bcm911360k.dts        |   22 +++++++
- arch/arm/boot/dts/bcm958300k.dts        |   22 +++++++
- 6 files changed, 252 insertions(+)
- create mode 100644 arch/arm/boot/dts/bcm-cygnus-clock.dtsi
- create mode 100644 arch/arm/boot/dts/bcm-cygnus.dtsi
- create mode 100644 arch/arm/boot/dts/bcm911360_entphn.dts
- create mode 100644 arch/arm/boot/dts/bcm911360k.dts
- create mode 100644 arch/arm/boot/dts/bcm958300k.dts
+ arch/arm/configs/bcm_defconfig      |    3 ++-
+ arch/arm/configs/multi_v7_defconfig |    3 ++-
+ arch/arm/mach-bcm/Kconfig           |   26 ++++++++++----------------
+ 3 files changed, 14 insertions(+), 18 deletions(-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 7c80af9..a6b734a 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -54,6 +54,10 @@ dtb-$(CONFIG_ARCH_AT91)	+= at91-sama5d4ek.dtb
- dtb-$(CONFIG_ARCH_ATLAS6) += atlas6-evb.dtb
- dtb-$(CONFIG_ARCH_AXXIA) += axm5516-amarillo.dtb
- dtb-$(CONFIG_ARCH_BCM2835) += bcm2835-rpi-b.dtb
-+dtb-$(CONFIG_ARCH_BCM_CYGNUS) += \
-+	bcm911360_entphn.dtb \
-+	bcm911360k.dtb \
-+	bcm958300k.dtb
- dtb-$(CONFIG_ARCH_BCM_5301X) += bcm4708-netgear-r6250.dtb
- dtb-$(CONFIG_ARCH_BCM_63XX) += bcm963138dvt.dtb
- dtb-$(CONFIG_ARCH_BCM_MOBILE) += bcm28155-ap.dtb \
-diff --git a/arch/arm/boot/dts/bcm-cygnus-clock.dtsi b/arch/arm/boot/dts/bcm-cygnus-clock.dtsi
-new file mode 100644
-index 0000000..d06172b
---- /dev/null
-+++ b/arch/arm/boot/dts/bcm-cygnus-clock.dtsi
-@@ -0,0 +1,73 @@
-+/*
-+ * Copyright 2014 Broadcom Corporation.  All rights reserved.
-+ *
-+ * Unless you and Broadcom execute a separate written software license
-+ * agreement governing use of this software, this software is licensed to you
-+ * under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
+diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
+index bc614f4..83a87e4 100644
+--- a/arch/arm/configs/bcm_defconfig
++++ b/arch/arm/configs/bcm_defconfig
+@@ -25,7 +25,8 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+ CONFIG_PARTITION_ADVANCED=y
+ CONFIG_ARCH_BCM=y
+-CONFIG_ARCH_BCM_MOBILE=y
++CONFIG_ARCH_BCM_21664=y
++CONFIG_ARCH_BCM_281XX=y
+ CONFIG_ARM_THUMBEE=y
+ CONFIG_SMP=y
+ CONFIG_PREEMPT=y
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 491b7d5..e8f79fd 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -17,7 +17,8 @@ CONFIG_MACH_ARMADA_38X=y
+ CONFIG_MACH_ARMADA_XP=y
+ CONFIG_MACH_DOVE=y
+ CONFIG_ARCH_BCM=y
+-CONFIG_ARCH_BCM_MOBILE=y
++CONFIG_ARCH_BCM_21664=y
++CONFIG_ARCH_BCM_281XX=y
+ CONFIG_ARCH_BCM_5301X=y
+ CONFIG_ARCH_BRCMSTB=y
+ CONFIG_ARCH_BERLIN=y
+diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+index 6e79696..cceb69f 100644
+--- a/arch/arm/mach-bcm/Kconfig
++++ b/arch/arm/mach-bcm/Kconfig
+@@ -51,8 +51,10 @@ config ARCH_BCM_5301X
+ 	  different SoC or with the older BCM47XX and BCM53XX based
+ 	  network SoC using a MIPS CPU, they are supported by arch/mips/bcm47xx
+ 
++comment "KONA architected SoCs"
 +
-+clocks {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	ranges;
-+
-+	osc: oscillator {
-+		compatible = "fixed-clock";
-+		#clock-cells = <1>;
-+		clock-frequency = <25000000>;
-+	};
-+
-+	apb_clk: apb_clk {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <1000000000>;
-+	};
-+
-+	periph_clk: periph_clk {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <500000000>;
-+	};
-+
-+	sdio_clk: lcpll_ch2 {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <200000000>;
-+	};
-+
-+	axi81_clk: axi81_clk {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <100000000>;
-+	};
-+
-+	keypad_clk: keypad_clk {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <31806>;
-+	};
-+
-+	adc_clk: adc_clk {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <1562500>;
-+	};
-+
-+	pwm_clk: pwm_clk {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <1000000>;
-+	};
-+
-+	lcd_clk: mipipll_ch1 {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <100000000>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
-new file mode 100644
-index 0000000..a377ab2
---- /dev/null
-+++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
-@@ -0,0 +1,109 @@
-+/*
-+ * Copyright 2014 Broadcom Corporation.  All rights reserved.
-+ *
-+ * Unless you and Broadcom execute a separate written software license
-+ * agreement governing use of this software, this software is licensed to you
-+ * under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include <dt-bindings/interrupt-controller/irq.h>
-+
-+#include "skeleton.dtsi"
-+
-+/ {
-+	compatible = "brcm,cygnus";
-+	model = "Broadcom Cygnus SoC";
-+	interrupt-parent = <&gic>;
-+
-+	aliases {
-+		serial0 = &uart3;
-+		serial1 = &uart0;
-+	};
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 earlyprintk debug";
-+	};
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			device_type = "cpu";
-+			compatible = "arm,cortex-a9";
-+			next-level-cache = <&L2>;
-+			reg = <0x0>;
-+		};
-+	};
-+
-+	/include/ "bcm-cygnus-clock.dtsi"
-+
-+	amba {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "arm,amba-bus", "simple-bus";
-+		interrupt-parent = <&gic>;
-+		ranges;
-+
-+		wdt@18009000 {
-+			 compatible = "arm,sp805" , "arm,primecell";
-+			 reg = <0x18009000 0x1000>;
-+			 interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_HIGH>;
-+			 clocks = <&axi81_clk>;
-+			 clock-names = "apb_pclk";
-+		};
-+	};
-+
-+	uart3: serial@18023000 {
-+		compatible = "snps,dw-apb-uart";
-+		reg = <0x18023000 0x100>;
-+		reg-shift = <2>;
-+		reg-io-width = <4>;
-+		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
-+		clock-frequency = <100000000>;
-+		clocks = <&axi81_clk>;
-+		status = "okay";
-+	};
-+
-+	uart0: serial@18020000 {
-+		compatible = "snps,dw-apb-uart";
-+		reg = <0x18020000 0x100>;
-+		reg-shift = <2>;
-+		reg-io-width = <4>;
-+		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&axi81_clk>;
-+		clock-frequency = <100000000>;
-+		status = "okay";
-+	};
-+
-+	gic: interrupt-controller@19021000 {
-+		compatible = "arm,cortex-a9-gic";
-+		#interrupt-cells = <3>;
-+		#address-cells = <0>;
-+		interrupt-controller;
-+		reg = <0x19021000 0x1000>,
-+		      <0x19020100 0x100>;
-+	};
-+
-+	L2: l2-cache {
-+		compatible = "arm,pl310-cache";
-+		reg = <0x19022000 0x1000>;
-+		cache-unified;
-+		cache-level = <2>;
-+	};
-+
-+	timer@19020200 {
-+		compatible = "arm,cortex-a9-global-timer";
-+		reg = <0x19020200 0x100>;
-+		interrupts = <GIC_PPI 11 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&periph_clk>;
-+	};
-+
-+};
-diff --git a/arch/arm/boot/dts/bcm911360_entphn.dts b/arch/arm/boot/dts/bcm911360_entphn.dts
-new file mode 100644
-index 0000000..c5188d7
---- /dev/null
-+++ b/arch/arm/boot/dts/bcm911360_entphn.dts
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright 2014 Broadcom Corporation.  All rights reserved.
-+ *
-+ * Unless you and Broadcom execute a separate written software license
-+ * agreement governing use of this software, this software is licensed to you
-+ * under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+/dts-v1/;
-+
-+#include "bcm-cygnus.dtsi"
-+
-+/ {
-+	model = "Cygnus Enterprise Phone (BCM911360_ENTPHN)";
-+	compatible = "brcm,bcm11360", "brcm,cygnus";
-+};
-diff --git a/arch/arm/boot/dts/bcm911360k.dts b/arch/arm/boot/dts/bcm911360k.dts
-new file mode 100644
-index 0000000..866d1e1
---- /dev/null
-+++ b/arch/arm/boot/dts/bcm911360k.dts
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright 2014 Broadcom Corporation.  All rights reserved.
-+ *
-+ * Unless you and Broadcom execute a separate written software license
-+ * agreement governing use of this software, this software is licensed to you
-+ * under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+/dts-v1/;
-+
-+#include "bcm-cygnus.dtsi"
-+
-+/ {
-+	model = "Cygnus SVK (BCM911360K)";
-+	compatible = "brcm,bcm11360", "brcm,cygnus";
-+};
-diff --git a/arch/arm/boot/dts/bcm958300k.dts b/arch/arm/boot/dts/bcm958300k.dts
-new file mode 100644
-index 0000000..8739751
---- /dev/null
-+++ b/arch/arm/boot/dts/bcm958300k.dts
-@@ -0,0 +1,22 @@
-+/*
-+ * Copyright 2014 Broadcom Corporation.  All rights reserved.
-+ *
-+ * Unless you and Broadcom execute a separate written software license
-+ * agreement governing use of this software, this software is licensed to you
-+ * under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+/dts-v1/;
-+
-+#include "bcm-cygnus.dtsi"
-+
-+/ {
-+	model = "Cygnus SVK (BCM958300K)";
-+	compatible = "brcm,bcm58300", "brcm,cygnus";
-+};
+ config ARCH_BCM_MOBILE
+-	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
++	bool
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select ARM_ERRATA_754322
+ 	select ARM_ERRATA_775420
+@@ -61,16 +63,13 @@ config ARCH_BCM_MOBILE
+ 	select TICK_ONESHOT
+ 	select HAVE_ARM_ARCH_TIMER
+ 	select PINCTRL
++	select ARCH_BCM_MOBILE_SMP if SMP
+ 	help
+ 	  This enables support for systems based on Broadcom mobile SoCs.
+ 
+-if ARCH_BCM_MOBILE
+-
+-menu "Broadcom Mobile SoC Selection"
+-
+ config ARCH_BCM_281XX
+ 	bool "Broadcom BCM281XX SoC family"
+-	default y
++	select ARCH_BCM_MOBILE
+ 	select HAVE_SMP
+ 	help
+ 	  Enable support for the BCM281XX family, which includes
+@@ -79,7 +78,7 @@ config ARCH_BCM_281XX
+ 
+ config ARCH_BCM_21664
+ 	bool "Broadcom BCM21664 SoC family"
+-	default y
++	select ARCH_BCM_MOBILE
+ 	select HAVE_SMP
+ 	help
+ 	  Enable support for the BCM21664 family, which includes
+@@ -87,19 +86,18 @@ config ARCH_BCM_21664
+ 
+ config ARCH_BCM_MOBILE_L2_CACHE
+ 	bool "Broadcom mobile SoC level 2 cache support"
+-	depends on (ARCH_BCM_281XX || ARCH_BCM_21664)
++	depends on ARCH_BCM_MOBILE
+ 	default y
+ 	select CACHE_L2X0
+ 	select ARCH_BCM_MOBILE_SMC
+ 
+ config ARCH_BCM_MOBILE_SMC
+ 	bool
+-	depends on ARCH_BCM_281XX || ARCH_BCM_21664
++	depends on ARCH_BCM_MOBILE
+ 
+ config ARCH_BCM_MOBILE_SMP
+-	bool "Broadcom mobile SoC SMP support"
+-	depends on (ARCH_BCM_281XX || ARCH_BCM_21664) && SMP
+-	default y
++	bool
++	depends on ARCH_BCM_MOBILE
+ 	select HAVE_ARM_SCU
+ 	select ARM_ERRATA_764369
+ 	help
+@@ -107,10 +105,6 @@ config ARCH_BCM_MOBILE_SMP
+ 	  Provided as an option so SMP support for SoCs of this type
+ 	  can be disabled for an SMP-enabled kernel.
+ 
+-endmenu
+-
+-endif
+-
+ comment "Other Architectures"
+ 
+ config ARCH_BCM2835
 -- 
 1.7.9.5
 
