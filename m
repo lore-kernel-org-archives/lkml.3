@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282AbaJVGJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 02:09:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57955 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232AbaJVGH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 02:07:59 -0400
-From: Mike Turquette <mturquette@linaro.org>
-To: peterz@infradead.org, mingo@kernel.org
-Cc: linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
-        Morten.Rasmussen@arm.com, kamalesh@linux.vnet.ibm.com, riel@redhat.com,
-        efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
-        dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
-        vincent.guittot@linaro.org, patches@linaro.org,
-        tuukka.tikkanen@linaro.org, amit.kucheria@linaro.org,
-        Mike Turquette <mturquette@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: [PATCH RFC 4/7] cpufreq: add per-governor private data
-Date: Tue, 21 Oct 2014 23:07:28 -0700
-Message-Id: <1413958051-7103-5-git-send-email-mturquette@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1413958051-7103-1-git-send-email-mturquette@linaro.org>
-References: <1413958051-7103-1-git-send-email-mturquette@linaro.org>
+	id S1754086AbaJVGLz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 02:11:55 -0400
+Received: from mga03.intel.com ([134.134.136.65]:63041 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751100AbaJVGLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 02:11:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,766,1406617200"; 
+   d="scan'208";a="593550077"
+Message-ID: <5447495A.1060102@intel.com>
+Date: Wed, 22 Oct 2014 14:06:18 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@kernel.org, rafael.j.wysocki@intel.com, toshi.kani@hp.com,
+        akpm@linux-foundation.org, ktkhai@parallels.com, fabf@skynet.be,
+        laijs@cn.fujitsu.com, srivatsa.bhat@linux.vnet.ibm.com,
+        ego@linux.vnet.ibm.com, srivatsa@mit.edu, viresh.kumar@linaro.org,
+        todd.e.brandt@linux.intel.com, tipbot@zytor.com,
+        wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH V3 0/3] PM/CPU: Parallel enalbing nonboot cpus with
+ resume devices
+References: <1411633925-9018-1-git-send-email-tianyu.lan@intel.com> <20141008205441.GJ4750@worktop.programming.kicks-ass.net> <5435E275.3030307@intel.com>
+In-Reply-To: <5435E275.3030307@intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Signed-off-by: Mike Turquette <mturquette@linaro.org>
----
- include/linux/cpufreq.h | 3 +++
- 1 file changed, 3 insertions(+)
+On 2014年10月09日 09:18, Lan Tianyu wrote:
+> On 2014年10月09日 04:54, Peter Zijlstra wrote:
+>> On Thu, Sep 25, 2014 at 04:32:02PM +0800, Lan Tianyu wrote:
+>>> This patchset is to parallel enabling nonboot cpus with resuming devices
+>>> during system resume in order to accelerate S2RAM. From test result on
+>>> a 8 logical core Haswell machine, system resume time reduces from 347ms
+>>> to 217ms with this patchset.
+>>>
+>>> In the current world, all nonboot cpus are enabled serially during system
+>>> resume. System resume sequence is that boot cpu enables nonboot cpu one by
+>>> one and then resume devices. Before resuming devices, there are few tasks
+>>> assigned to nonboot cpus after they are brought up. This wastes cpu usage.
+>>>
+>>> This patchset is to allow boot cpu to go forward to resume devices after
+>>> bringing up one nonboot cpu and starting a thread. The thread will be in
+>>> charge of bringing up other frozen cpus. The thread will be scheduled to
+>>> the first online cpu to run . This makes enabling cpu2~x parallel with
+>>> resuming devices.
+>>
+>> So I feel we should really clean up hotplug before doing anything like
+>> this. Its a trainwreck and just piling more and more hacks ontop isn't
+>> going to help any.
+>>
+> 
+> Hi Peter:
+> 	Sorry, I don't know the gap of hotplug clearly. Could you elaborate it?
+> 
 
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 138336b..91d173c 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -115,6 +115,9 @@ struct cpufreq_policy {
- 
- 	/* For cpufreq driver's internal use */
- 	void			*driver_data;
-+
-+	/* For cpufreq governor's internal use */
-+	void			*gov_data;
- };
- 
- /* Only for ACPI */
+Hi Peter:
+	Could you elaborate the gap of hotplug? Thanks.
+
 -- 
-1.8.3.2
-
+Best regards
+Tianyu Lan
