@@ -1,97 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763AbaJVJgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 05:36:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12315 "EHLO mga09.intel.com"
+	id S932580AbaJVJht (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 05:37:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35693 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154AbaJVJg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 05:36:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,768,1406617200"; 
-   d="scan'208";a="593640465"
-From: Chao Peng <chao.p.peng@linux.intel.com>
-To: gleb@kernel.org, pbonzini@redhat.com
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        fenghua.yu@intel.com, bp@suse.de, qiaowei.ren@intel.com,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Chao Peng <chao.p.peng@linux.intel.com>
-Subject: [PATCH] KVM: x86: Enable Intel AVX-512 for guest
-Date: Wed, 22 Oct 2014 17:35:24 +0800
-Message-Id: <1413970524-12845-1-git-send-email-chao.p.peng@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932158AbaJVJhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 05:37:47 -0400
+Date: Wed, 22 Oct 2014 11:37:35 +0200
+From: Vojtech Pavlik <vojtech@suse.cz>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] s390 vs. kprobes on ftrace
+Message-ID: <20141022093735.GA31440@suse.cz>
+References: <1413880229-4796-1-git-send-email-heiko.carstens@de.ibm.com>
+ <20141021195831.GA31587@suse.cz>
+ <20141022082625.GB4090@osiris>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022082625.GB4090@osiris>
+X-Bounce-Cookie: It's a lemon tree, dear Watson!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expose Intel AVX-512 feature bits to guest. Also add checks for
-xcr0 AVX512 related bits according to spec:
-http://download-software.intel.com/sites/default/files/managed/71/2e/319433-017.pdf
+On Wed, Oct 22, 2014 at 10:26:25AM +0200, Heiko Carstens wrote:
 
-Signed-off-by: Chao Peng <chao.p.peng@linux.intel.com>
----
- arch/x86/include/asm/xsave.h |    1 +
- arch/x86/kvm/cpuid.c         |    3 ++-
- arch/x86/kvm/x86.c           |    6 ++++++
- arch/x86/kvm/x86.h           |    3 ++-
- 4 files changed, 11 insertions(+), 2 deletions(-)
+> > I can confirm that kGraft works well on top of current mainline with
+> > this patch added.
+> > 
+> > Another reason for a performance impact when kGraft is enabled is that
+> > kGraft still adds two instructions to the syscall path on s390x, as
+> > there is no space left for a kgraft TIF in the first eight bits of
+> > thread info flags. Renumbering the thread info flags such that _TIF_WORK
+> > occupies the first eight bits and TIF_TRACE the next eight would fix
+> > that problem: Do you believe it is feasible?
+> 
+> Hi Vojtech,
+> 
+> I think you're talking about the SLES12 kernel? 
 
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 7e7a79a..5fa9770 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -16,6 +16,7 @@
- #define XSTATE_Hi16_ZMM		0x80
- 
- #define XSTATE_FPSSE	(XSTATE_FP | XSTATE_SSE)
-+#define XSTATE_AVX512	(XSTATE_OPMASK | XSTATE_ZMM_Hi256 | XSTATE_Hi16_ZMM)
- /* Bit 63 of XCR0 is reserved for future expansion */
- #define XSTATE_EXTEND_MASK	(~(XSTATE_FPSSE | (1ULL << 63)))
- 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 976e3a5..20d8321 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -317,7 +317,8 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 	const u32 kvm_supported_word9_x86_features =
- 		F(FSGSBASE) | F(BMI1) | F(HLE) | F(AVX2) | F(SMEP) |
- 		F(BMI2) | F(ERMS) | f_invpcid | F(RTM) | f_mpx | F(RDSEED) |
--		F(ADX) | F(SMAP);
-+		F(ADX) | F(SMAP) | F(AVX512F) | F(AVX512PF) | F(AVX512ER) |
-+		F(AVX512CD);
- 
- 	/* all calls to cpuid_count() should be made on the same cpu */
- 	get_cpu();
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 5430e4b..3d77b88 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -651,6 +651,12 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- 	if ((!(xcr0 & XSTATE_BNDREGS)) != (!(xcr0 & XSTATE_BNDCSR)))
- 		return 1;
- 
-+	if (xcr0 & XSTATE_AVX512) {
-+		if (!(xcr0 & XSTATE_YMM))
-+			return 1;
-+		if ((xcr0 & XSTATE_AVX512) != XSTATE_AVX512)
-+			return 1;
-+	}
- 	kvm_put_guest_xcr0(vcpu);
- 	vcpu->arch.xcr0 = xcr0;
- 
-diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-index 7cb9c45..cc1d61a 100644
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -162,7 +162,8 @@ int kvm_write_guest_virt_system(struct x86_emulate_ctxt *ctxt,
- bool kvm_mtrr_valid(struct kvm_vcpu *vcpu, u32 msr, u64 data);
- 
- #define KVM_SUPPORTED_XCR0     (XSTATE_FP | XSTATE_SSE | XSTATE_YMM \
--				| XSTATE_BNDREGS | XSTATE_BNDCSR)
-+				| XSTATE_BNDREGS | XSTATE_BNDCSR \
-+				| XSTATE_AVX512)
- extern u64 host_xcr0;
- 
- extern u64 kvm_supported_xcr0(void);
+I'm working with upstream git right now, to make sure kGraft keeps up
+with it.
+
+> There you can simply move the TIF_SYSCALL bit to the same byte where
+> your TIF_KGR bit resides.
+
+On 3.12 (SLE12) this would allow me to clear the TIF_KGR in a single
+instruction when exiting a syscall simply by extending the mask. 
+
+I need to clear it before entering a syscall, too, and TIF_SYSCALL is
+set there, not cleared.
+
+What could work is moving TIF_SYSCALL and TIF_KGR to the same byte as
+TIF_TRACE. Then I could use the TIF_TRACE check to also clear the
+TIF_KGR bit in sysc_tracesys without adding an instruction to the hot
+path.
+
+> Upstream is a bit different since the TIF_SYSCALL bit is already gone (got
+> replaced with an s390 specific "PIF" bit). However the free TIF bit got
+> already eaten up by uprobes..
+
+Yes, and all the 8 bits are eaten now in upstream. That's what got me
+thinking about separating TIF_WORK and TIF_TRACE to separate bytes, with
+no other flags in them. Then the syscall code would then just check the
+whole byte for zero instead of doing test-under-mask.
+
+> However we can think of a better solution for upstream if the combined
+> solution of kGraft/kpatch is ready to be merged.
+
+We may, indeed, end up doing things very differently there.
+
+At least initially the plan is to go entirely without enforcing any kind
+of consistency when patching, so TIF_KGR and the lazy migration will not
+exist, and neither will we be stopping the kernel or checking stacks.
+
+This will make applying patches bigger than a single functions tricky,
+but it's a good initial goal.
+
 -- 
-1.7.9.5
-
+Vojtech Pavlik
+Director SUSE Labs
