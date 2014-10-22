@@ -1,101 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaJVQ74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:59:56 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:61991 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752576AbaJVQ7y (ORCPT
+	id S1753462AbaJVRBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 13:01:32 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:36350 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752541AbaJVRBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 12:59:54 -0400
-Date: Wed, 22 Oct 2014 12:59:51 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: lockdep splat in CPU hotplug
-Message-ID: <20141022125951.64fb1ed3@gandalf.local.home>
-In-Reply-To: <alpine.LNX.2.00.1410221125280.22681@pobox.suse.cz>
-References: <alpine.LNX.2.00.1410211255531.24255@pobox.suse.cz>
-	<alpine.LNX.2.00.1410221125280.22681@pobox.suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
+	Wed, 22 Oct 2014 13:01:31 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: fixes for 3.18 #1
+Date: Wed, 22 Oct 2014 19:01:27 +0200
+Message-ID: <1413997287-9855-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 11:53:49 +0200 (CEST)
-Jiri Kosina <jkosina@suse.cz> wrote:
+Arnd, Olof, Kevin,
 
+This is my first batch of fixes for 3.18.
+The power/reset driver part is there because it was introduced through arm-soc
+and it seems that it's better to continue like that.
+The MAINTAINERS entry is better if included the soonest.
 
-> Still, the lockdep stacktrace is bogus and didn't really help 
-> understanding this. Any idea why it's wrong?
+Note as well that it's my first pull-request from my newly created kernel.org
+account: I hope that everything is done properly ;-)
 
-Could possibly be from a tail call?
+Thanks, bye,
 
-> 
-> >  ======================================================
-> >  [ INFO: possible circular locking dependency detected ]
-> >  3.18.0-rc1-00069-gc2661b8 #1 Not tainted
-> >  -------------------------------------------------------
-> >  do_s2disk/2367 is trying to acquire lock:
-> >   (cpuidle_lock){+.+.+.}, at: [<ffffffff814916c2>] cpuidle_pause_and_lock+0x12/0x20
-> >  
-> > but task is already holding lock:
-> >   (cpu_hotplug.lock#2){+.+.+.}, at: [<ffffffff810522ea>] cpu_hotplug_begin+0x4a/0x80
-> >  
-> > which lock already depends on the new lock.
-> > 
-> > the existing dependency chain (in reverse order) is:
-> > 
-> > -> #1 (cpu_hotplug.lock#2){+.+.+.}:
-> >         [<ffffffff81099fac>] lock_acquire+0xac/0x130
-> >         [<ffffffff815b9f2c>] mutex_lock_nested+0x5c/0x3b0
-> >         [<ffffffff81491892>] cpuidle_pause+0x12/0x30
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
 
-Where exactly does that address point to?
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
 
--- Steve
+are available in the git repository at:
 
-> >         [<ffffffff81402314>] dpm_suspend_noirq+0x44/0x340
-> >         [<ffffffff81402958>] dpm_suspend_end+0x38/0x80
-> >         [<ffffffff810a07bd>] hibernation_snapshot+0xcd/0x370
-> >         [<ffffffff810a1248>] hibernate+0x168/0x210
-> >         [<ffffffff8109e9b4>] state_store+0xe4/0xf0
-> >         [<ffffffff813003ef>] kobj_attr_store+0xf/0x20
-> >         [<ffffffff8121e9a3>] sysfs_kf_write+0x43/0x60
-> >         [<ffffffff8121e287>] kernfs_fop_write+0xe7/0x170
-> >         [<ffffffff811a7342>] vfs_write+0xb2/0x1f0
-> >         [<ffffffff811a7da4>] SyS_write+0x44/0xb0
-> >         [<ffffffff815be856>] system_call_fastpath+0x16/0x1b
-> >  
-> > -> #0 (cpuidle_lock){+.+.+.}:
-> >         [<ffffffff81099433>] __lock_acquire+0x1a03/0x1e30
-> >         [<ffffffff81099fac>] lock_acquire+0xac/0x130
-> >         [<ffffffff815b9f2c>] mutex_lock_nested+0x5c/0x3b0
-> >         [<ffffffff814916c2>] cpuidle_pause_and_lock+0x12/0x20
-> >         [<ffffffffc02e184c>] acpi_processor_hotplug+0x45/0x8a [processor]
-> >         [<ffffffffc02df25a>] acpi_cpu_soft_notify+0xad/0xe3 [processor]
-> >         [<ffffffff81071393>] notifier_call_chain+0x53/0xa0
-> >         [<ffffffff810713e9>] __raw_notifier_call_chain+0x9/0x10
-> >         [<ffffffff810521ce>] cpu_notify+0x1e/0x40
-> >         [<ffffffff810524a8>] _cpu_up+0x148/0x160
-> >         [<ffffffff815a7b99>] enable_nonboot_cpus+0xc9/0x1d0
-> >         [<ffffffff810a0955>] hibernation_snapshot+0x265/0x370
-> >         [<ffffffff810a1248>] hibernate+0x168/0x210
-> >         [<ffffffff8109e9b4>] state_store+0xe4/0xf0
-> >         [<ffffffff813003ef>] kobj_attr_store+0xf/0x20
-> >         [<ffffffff8121e9a3>] sysfs_kf_write+0x43/0x60
-> >         [<ffffffff8121e287>] kernfs_fop_write+0xe7/0x170
-> >         [<ffffffff811a7342>] vfs_write+0xb2/0x1f0
-> >         [<ffffffff811a7da4>] SyS_write+0x44/0xb0
-> >         [<ffffffff815be856>] system_call_fastpath+0x16/0x1b
-> >  
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to 106c67af2fb938880edbf43b49dabbd8d2534839:
+
+  ARM: at91/dt: sam9263: fix PLLB frequencies (2014-10-22 10:08:22 +0200)
+
+----------------------------------------------------------------
+First AT91 fixes for 3.18:
+- one more MAINTAINERS entry for the SSC driver
+- a fix for the newly introduced power/reset driver
+- a fix on at91sam9263 USB due to PLLB misconfiguration
+
+----------------------------------------------------------------
+Alexandre Belloni (1):
+      power: reset: at91-reset: fix power down register
+
+Bo Shen (1):
+      MAINTAINERS: add atmel ssc driver maintainer entry
+
+Boris Brezillon (1):
+      ARM: at91/dt: sam9263: fix PLLB frequencies
+
+ MAINTAINERS                        | 7 +++++++
+ arch/arm/boot/dts/at91sam9263.dtsi | 5 +++--
+ drivers/power/reset/at91-reset.c   | 4 ++--
+ 3 files changed, 12 insertions(+), 4 deletions(-)
+
+-- 
+Nicolas Ferre
