@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963AbaJVQNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:13:13 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:53929 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753411AbaJVPpH (ORCPT
+	id S1755985AbaJVQNg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:13:36 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:59581 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066AbaJVPpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:45:07 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v3 04/59] dmaengine: Rework dma_chan_get
-Date: Wed, 22 Oct 2014 17:43:18 +0200
-Message-Id: <1413992653-21963-5-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 22 Oct 2014 11:45:06 -0400
+Date: Wed, 22 Oct 2014 19:44:57 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        Michal Hocko <mhocko@suse.cz>, <linux-mm@kvack.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 3/4] mm: memcontrol: remove unnecessary PCG_MEM memory
+ charge flag
+Message-ID: <20141022154457.GA16496@esperanza>
+References: <1413818532-11042-1-git-send-email-hannes@cmpxchg.org>
+ <1413818532-11042-4-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1413818532-11042-4-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dma_chan_get uses a rather interesting error handling and code path.
+On Mon, Oct 20, 2014 at 11:22:11AM -0400, Johannes Weiner wrote:
+> PCG_MEM is a remnant from an earlier version of 0a31bc97c80c ("mm:
+> memcontrol: rewrite uncharge API"), used to tell whether migration
+> cleared a charge while leaving pc->mem_cgroup valid and PCG_USED set.
+> But in the final version, mem_cgroup_migrate() directly uncharges the
+> source page, rendering this distinction unnecessary.  Remove it.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Change it to something more usual in the kernel.
+Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/dma/dmaengine.c | 36 +++++++++++++++++++-----------------
- 1 file changed, 19 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index 24bfaf0b92ba..72f10e2f5c32 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -222,31 +222,33 @@ static void balance_ref_count(struct dma_chan *chan)
-  */
- static int dma_chan_get(struct dma_chan *chan)
- {
--	int err = -ENODEV;
- 	struct module *owner = dma_chan_to_owner(chan);
-+	int ret;
- 
-+	/* The channel is already in use, update client count */
- 	if (chan->client_count) {
- 		__module_get(owner);
--		err = 0;
--	} else if (try_module_get(owner))
--		err = 0;
-+		goto out;
-+	}
- 
--	if (err == 0)
--		chan->client_count++;
-+	if (!try_module_get(owner))
-+		return -ENODEV;
- 
- 	/* allocate upon first client reference */
--	if (chan->client_count == 1 && err == 0) {
--		int desc_cnt = chan->device->device_alloc_chan_resources(chan);
--
--		if (desc_cnt < 0) {
--			err = desc_cnt;
--			chan->client_count = 0;
--			module_put(owner);
--		} else if (!dma_has_cap(DMA_PRIVATE, chan->device->cap_mask))
--			balance_ref_count(chan);
--	}
-+	ret = chan->device->device_alloc_chan_resources(chan);
-+	if (ret < 0)
-+		goto err_out;
- 
--	return err;
-+	if (!dma_has_cap(DMA_PRIVATE, chan->device->cap_mask))
-+		balance_ref_count(chan);
-+
-+out:
-+	chan->client_count++;
-+	return 0;
-+
-+err_out:
-+	module_put(owner);
-+	return ret;
- }
- 
- /**
--- 
-2.1.1
-
+> ---
+>  include/linux/page_cgroup.h | 1 -
+>  mm/memcontrol.c             | 4 +---
+>  2 files changed, 1 insertion(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index da62ee2be28b..97536e685843 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -4,7 +4,6 @@
+>  enum {
+>  	/* flags for mem_cgroup */
+>  	PCG_USED = 0x01,	/* This page is charged to a memcg */
+> -	PCG_MEM = 0x02,		/* This page holds a memory charge */
+>  };
+>  
+>  struct pglist_data;
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9bab35fc3e9e..1d66ac49e702 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2606,7 +2606,7 @@ static void commit_charge(struct page *page, struct mem_cgroup *memcg,
+>  	 *   have the page locked
+>  	 */
+>  	pc->mem_cgroup = memcg;
+> -	pc->flags = PCG_USED | PCG_MEM;
+> +	pc->flags = PCG_USED;
+>  
+>  	if (lrucare)
+>  		unlock_page_lru(page, isolated);
+> @@ -6177,8 +6177,6 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+>  	if (!PageCgroupUsed(pc))
+>  		return;
+>  
+> -	VM_BUG_ON_PAGE(!(pc->flags & PCG_MEM), oldpage);
+> -
+>  	if (lrucare)
+>  		lock_page_lru(oldpage, &isolated);
+>  
+> -- 
+> 2.1.2
+> 
