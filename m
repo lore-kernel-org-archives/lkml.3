@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300AbaJVICv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:02:51 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40888 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076AbaJVICr (ORCPT
+	id S932484AbaJVIDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:03:09 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:45948 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754196AbaJVIDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:02:47 -0400
-Message-ID: <5447648C.1050405@huawei.com>
-Date: Wed, 22 Oct 2014 16:02:20 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 22 Oct 2014 04:03:02 -0400
+Message-ID: <544764B1.9020303@gmail.com>
+Date: Wed, 22 Oct 2014 10:02:57 +0200
+From: =?UTF-8?B?UGhpbGlwcGUgUsOpdG9ybmF6?= <philippe.retornaz@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>, <acme@kernel.org>
-CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
-        <jolsa@redhat.com>, <adrian.hunter@intel.com>, <Waiman.Long@hp.com>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
-Subject: Re: [PATCH v2] perf tools: makes CPUINFO_PROC to array for different
- kernel version
-References: <1413963582-7174-1-git-send-email-wangnan0@huawei.com>
-In-Reply-To: <1413963582-7174-1-git-send-email-wangnan0@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+To: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org
+CC: linux-pm@vger.kernel.org, Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
+        Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: Re: [PATCH v2 01/47] kernel: Add support for poweroff handler call
+ chain
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net> <1413864783-3271-2-git-send-email-linux@roeck-us.net> <54460140.50805@gmail.com> <54465FBA.8070007@roeck-us.net>
+In-Reply-To: <54465FBA.8070007@roeck-us.net>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/22 15:39, Wang Nan wrote:
-> euler inclusion
-> target: kernel 3.10
-> category: bugfix
-> DTS: DTS2014101306477
-> Bugzilla: 623
-> directory: upstreamed
-> archive: https://lkml.org/lkml/2014/10/15/611
-> 
-> ----------------------------------------
-> 
+Le 21/10/2014 15:29, Guenter Roeck a écrit :
+> On 10/20/2014 11:46 PM, Philippe Rétornaz wrote:
+>> Hello
+>>
+>> [...]
+>>> - Use raw notifiers protected by spinlocks instead of atomic notifiers
+>> [...]
+>>
+>>> +/**
+>>> + *    do_kernel_power_off - Execute kernel poweroff handler call chain
+>>> + *
+>>> + *    Calls functions registered with register_power_off_handler.
+>>> + *
+>>> + *    Expected to be called from machine_power_off as last step of
+>>> + *    the poweroff sequence.
+>>> + *
+>>> + *    Powers off the system immediately if a poweroff handler function
+>>> + *    has been registered. Otherwise does nothing.
+>>> + */
+>>> +void do_kernel_power_off(void)
+>>> +{
+>>> +    spin_lock(&power_off_handler_lock);
+>>> +    raw_notifier_call_chain(&power_off_handler_list, 0, NULL);
+>>> +    spin_unlock(&power_off_handler_lock);
+>>> +}
+>>
+>> I don't get it. You are still in atomic context inside the poweroff
+>> callback
+>> since you lock it with a spinlock.
+[...]
+>>
+>> Why not using the blocking_notifier_* family ?
+>> It will lock with a read-write semaphore under which you can sleep.
+>>
+>> For instance, twl4030_power_off will sleep, since it is doing I2C access.
+>> So you cannot call it in atomic context.
+>>
+>
+> Learning something new all the time. I assumed that spin_lock (unlike
+> spin_lock_irqsafe) would not run in atomic context.
+>
+> I did not want to use a sleeping lock because I am not sure if that
+> works for all architectures; some disable (local) interrupts before
+> calling the function (eg arm and arm64), and I don't want to change
+> that semantics.
 
-Sorry, the header is for our internal use only.
+You're right and it even disable all others CPUs (if any).
+I don't understand why it needs to disable local interrupts since the
+code path to pm_power_off is simply doing:
 
-Please ignore it and see
+syscall -> migrate to reboot cpu -> disable local interrupt -> disable 
+others cpu -> pm_power_off().
 
-https://lkml.org/lkml/2014/10/22/85
+I don't understand why we cannot re-enable interrupts right before 
+pm_power_off().
+And it looks like that all pm_power_off callbacks which can sleep are 
+broken.
+I still wonder how i2c communication can works without local interrupts 
+... it looks
+like somebody is re-enabling them (or the code was never run)
 
-Thanks.
+> I have another idea how to get there without changing the lock situation
+> while executing the call chain - just set a flag indicating that it is
+> running and execute it without lock. Would that work ?
 
-> After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
-> /proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
-> CPUINFO_PROC to an array and provides two choices for ARM, makes it
-> compatible for different kernel version.
-> 
-> v1 -> v2: minor changes as suggested by Namhyung Kim:
-> 
->  - Doesn't pass @h and @evlist to __write_cpudesc;
->  - Coding style fix.
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
+I don't think inventing a new locking mechanism is a good solution.
+We need first to know for sure if we can sleep or not in pm_power_off.
+If yes then we need to re-enable local interrupts and we can use a mutex.
+If not then the atomic notifier is fine and a lots of drivers are wrong.
 
+Thanks,
 
+Philippe
