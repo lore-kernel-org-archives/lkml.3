@@ -1,235 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203AbaJVGk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 02:40:57 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:55398 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932076AbaJVGkz (ORCPT
+	id S1753533AbaJVGoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 02:44:21 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:34825 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751036AbaJVGoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 02:40:55 -0400
-Date: Wed, 22 Oct 2014 10:40:44 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memcg: remove mem_cgroup_reclaimable check from soft
- reclaim
-Message-ID: <20141022064044.GQ16496@esperanza>
-References: <1413897350-32553-1-git-send-email-vdavydov@parallels.com>
- <20141021182239.GA24899@phnom.home.cmpxchg.org>
+	Wed, 22 Oct 2014 02:44:20 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Adrian Hunter <adrian.hunter@intel.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Waiman Long <Waiman.Long@hp.com>,
+        <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH] perf tools: makes CPUINFO_PROC to array for different kernel version
+References: <1413428923-80073-1-git-send-email-wangnan0@huawei.com>
+Date: Wed, 22 Oct 2014 15:44:18 +0900
+In-Reply-To: <1413428923-80073-1-git-send-email-wangnan0@huawei.com> (Wang
+	Nan's message of "Thu, 16 Oct 2014 11:08:43 +0800")
+Message-ID: <87wq7seh8d.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20141021182239.GA24899@phnom.home.cmpxchg.org>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 02:22:39PM -0400, Johannes Weiner wrote:
-> On Tue, Oct 21, 2014 at 05:15:50PM +0400, Vladimir Davydov wrote:
-> > mem_cgroup_reclaimable() checks whether a cgroup has reclaimable pages
-> > on *any* NUMA node. However, the only place where it's called is
-> > mem_cgroup_soft_reclaim(), which tries to reclaim memory from a
-> > *specific* zone. So the way how it's used is incorrect - it will return
-> > true even if the cgroup doesn't have pages on the zone we're scanning.
-> > 
-> > I think we can get rid of this check completely, because
-> > mem_cgroup_shrink_node_zone(), which is called by
-> > mem_cgroup_soft_reclaim() if mem_cgroup_reclaimable() returns true, is
-> > equivalent to shrink_lruvec(), which exits almost immediately if the
-> > lruvec passed to it is empty. So there's no need to optimize anything
-> > here. Besides, we don't have such a check in the general scan path
-> > (shrink_zone) either.
-> > 
-> > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> 
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-> 
-> How about this on top?
-> 
-> ---
-> 
-> From 27bd24b00433d9f6c8d60ba2b13dbff158b06c13 Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Date: Tue, 21 Oct 2014 09:53:54 -0400
-> Subject: [patch] mm: memcontrol: do not filter reclaimable nodes in NUMA
->  round-robin
-> 
-> The round-robin node reclaim currently tries to include only nodes
-> that have memory of the memcg in question, which is quite elaborate.
-> 
-> Just use plain round-robin over the nodes that are allowed by the
-> task's cpuset, which are the most likely to contain that memcg's
-> memory.  But even if zones without memcg memory are encountered,
-> direct reclaim will skip over them without too much hassle.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Hi Wang,
 
-Totally agree.
+On Thu, 16 Oct 2014 11:08:43 +0800, Wang Nan wrote:
+> After kerne 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
+> /proc/cpuinfo replcae 'Processor' to 'model name'. This patch makes
+> CPUINFO_PROC to an array and provides two choices for ARM, make it
+> compatible for different kernel version.
+>
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> -static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
+> -		       struct perf_evlist *evlist __maybe_unused)
+> +static int __write_cpudesc(int fd, struct perf_header *h __maybe_unused,
+> +		       struct perf_evlist *evlist __maybe_unused, const char *cpuinfo_proc)
 
-Acked-by: Vladimir Davydov <vdavydov@parallels.com>
+You don't need to pass @h and @evlist if they're not used.
 
-> ---
->  mm/memcontrol.c | 97 +++------------------------------------------------------
->  1 file changed, 5 insertions(+), 92 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index d353d9e1fdca..293db8234179 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -54,6 +54,7 @@
->  #include <linux/page_cgroup.h>
->  #include <linux/cpu.h>
->  #include <linux/oom.h>
-> +#include <linux/cpuset.h>
->  #include <linux/lockdep.h>
->  #include <linux/file.h>
->  #include "internal.h"
-> @@ -129,12 +130,10 @@ static const char * const mem_cgroup_lru_names[] = {
->  enum mem_cgroup_events_target {
->  	MEM_CGROUP_TARGET_THRESH,
->  	MEM_CGROUP_TARGET_SOFTLIMIT,
-> -	MEM_CGROUP_TARGET_NUMAINFO,
->  	MEM_CGROUP_NTARGETS,
->  };
->  #define THRESHOLDS_EVENTS_TARGET 128
->  #define SOFTLIMIT_EVENTS_TARGET 1024
-> -#define NUMAINFO_EVENTS_TARGET	1024
->  
->  struct mem_cgroup_stat_cpu {
->  	long count[MEM_CGROUP_STAT_NSTATS];
-> @@ -352,11 +351,6 @@ struct mem_cgroup {
->  #endif
->  
->  	int last_scanned_node;
-> -#if MAX_NUMNODES > 1
-> -	nodemask_t	scan_nodes;
-> -	atomic_t	numainfo_events;
-> -	atomic_t	numainfo_updating;
-> -#endif
->  
->  	/* List of events which userspace want to receive */
->  	struct list_head event_list;
-> @@ -965,9 +959,6 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
->  		case MEM_CGROUP_TARGET_SOFTLIMIT:
->  			next = val + SOFTLIMIT_EVENTS_TARGET;
->  			break;
-> -		case MEM_CGROUP_TARGET_NUMAINFO:
-> -			next = val + NUMAINFO_EVENTS_TARGET;
-> -			break;
->  		default:
->  			break;
->  		}
-> @@ -986,22 +977,10 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
->  	/* threshold event is triggered in finer grain than soft limit */
->  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_THRESH))) {
-> -		bool do_softlimit;
-> -		bool do_numainfo __maybe_unused;
-> -
-> -		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> -						MEM_CGROUP_TARGET_SOFTLIMIT);
-> -#if MAX_NUMNODES > 1
-> -		do_numainfo = mem_cgroup_event_ratelimit(memcg,
-> -						MEM_CGROUP_TARGET_NUMAINFO);
-> -#endif
->  		mem_cgroup_threshold(memcg);
-> -		if (unlikely(do_softlimit))
-> +		if (mem_cgroup_event_ratelimit(memcg,
-> +					       MEM_CGROUP_TARGET_SOFTLIMIT))
->  			mem_cgroup_update_tree(memcg, page);
-> -#if MAX_NUMNODES > 1
-> -		if (unlikely(do_numainfo))
-> -			atomic_inc(&memcg->numainfo_events);
-> -#endif
->  	}
->  }
->  
-> @@ -1708,61 +1687,7 @@ static void mem_cgroup_out_of_memory(struct mem_cgroup *memcg, gfp_t gfp_mask,
->  			 NULL, "Memory cgroup out of memory");
->  }
->  
-> -/**
-> - * test_mem_cgroup_node_reclaimable
-> - * @memcg: the target memcg
-> - * @nid: the node ID to be checked.
-> - * @noswap : specify true here if the user wants flle only information.
-> - *
-> - * This function returns whether the specified memcg contains any
-> - * reclaimable pages on a node. Returns true if there are any reclaimable
-> - * pages in the node.
-> - */
-> -static bool test_mem_cgroup_node_reclaimable(struct mem_cgroup *memcg,
-> -		int nid, bool noswap)
-> -{
-> -	if (mem_cgroup_node_nr_lru_pages(memcg, nid, LRU_ALL_FILE))
-> -		return true;
-> -	if (noswap || !total_swap_pages)
-> -		return false;
-> -	if (mem_cgroup_node_nr_lru_pages(memcg, nid, LRU_ALL_ANON))
-> -		return true;
-> -	return false;
-> -
-> -}
->  #if MAX_NUMNODES > 1
-> -
-> -/*
-> - * Always updating the nodemask is not very good - even if we have an empty
-> - * list or the wrong list here, we can start from some node and traverse all
-> - * nodes based on the zonelist. So update the list loosely once per 10 secs.
-> - *
-> - */
-> -static void mem_cgroup_may_update_nodemask(struct mem_cgroup *memcg)
-> -{
-> -	int nid;
-> -	/*
-> -	 * numainfo_events > 0 means there was at least NUMAINFO_EVENTS_TARGET
-> -	 * pagein/pageout changes since the last update.
-> -	 */
-> -	if (!atomic_read(&memcg->numainfo_events))
-> -		return;
-> -	if (atomic_inc_return(&memcg->numainfo_updating) > 1)
-> -		return;
-> -
-> -	/* make a nodemask where this memcg uses memory from */
-> -	memcg->scan_nodes = node_states[N_MEMORY];
-> -
-> -	for_each_node_mask(nid, node_states[N_MEMORY]) {
-> -
-> -		if (!test_mem_cgroup_node_reclaimable(memcg, nid, false))
-> -			node_clear(nid, memcg->scan_nodes);
-> -	}
-> -
-> -	atomic_set(&memcg->numainfo_events, 0);
-> -	atomic_set(&memcg->numainfo_updating, 0);
-> -}
-> -
->  /*
->   * Selecting a node where we start reclaim from. Because what we need is just
->   * reducing usage counter, start from anywhere is O,K. Considering
-> @@ -1779,21 +1704,9 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+
 >  {
->  	int node;
+> -#ifndef CPUINFO_PROC
+> -#define CPUINFO_PROC NULL
+> -#endif
+>  	FILE *file;
+>  	char *buf = NULL;
+>  	char *s, *p;
+> -	const char *search = CPUINFO_PROC;
+> +	const char *search = cpuinfo_proc;
+>  	size_t len = 0;
+>  	int ret = -1;
 >  
-> -	mem_cgroup_may_update_nodemask(memcg);
-> -	node = memcg->last_scanned_node;
-> -
-> -	node = next_node(node, memcg->scan_nodes);
-> +	node = next_node(memcg->last_scanned_node, cpuset_current_mems_allowed);
->  	if (node == MAX_NUMNODES)
-> -		node = first_node(memcg->scan_nodes);
-> -	/*
-> -	 * We call this when we hit limit, not when pages are added to LRU.
-> -	 * No LRU may hold pages because all pages are UNEVICTABLE or
-> -	 * memcg is too small and all pages are not on LRU. In that case,
-> -	 * we use curret node.
-> -	 */
-> -	if (unlikely(node == MAX_NUMNODES))
-> -		node = numa_node_id();
-> -
-> +		node = first_node(cpuset_current_mems_allowed);
->  	memcg->last_scanned_node = node;
->  	return node;
+> @@ -640,6 +637,23 @@ done:
+>  	return ret;
 >  }
-> -- 
-> 2.1.2
+>  
+> +static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
+> +		       struct perf_evlist *evlist __maybe_unused)
+> +{
+> +#ifndef CPUINFO_PROC
+> +#define CPUINFO_PROC {"model name", }
+> +#endif
+> +	const char *cpuinfo_procs[] = CPUINFO_PROC;
+> +	unsigned int i;
+
+Please put a blank line between declaration and the function body.
+
+Other than that, looks good to me.
+
+Thanks,
+Namhyung
+
+
+> +	for (i = 0; i < ARRAY_SIZE(cpuinfo_procs); i++) {
+> +		int ret;
+> +		ret = __write_cpudesc(fd, h, evlist, cpuinfo_procs[i]);
+> +		if (ret >= 0)
+> +			return ret;
+> +	}
+> +	return -1;
+> +}
+> +
+>  static int write_nrcpus(int fd, struct perf_header *h __maybe_unused,
+>  			struct perf_evlist *evlist __maybe_unused)
+>  {
