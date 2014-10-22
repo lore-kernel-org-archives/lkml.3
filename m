@@ -1,97 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754602AbaJVJCA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 05:02:00 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:53511 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121AbaJVJB5 (ORCPT
+	id S1753978AbaJVJEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 05:04:42 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:51528 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaJVJEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 05:01:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: LABBE Corentin <clabbe.montjoie@gmail.com>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        grant.likely@linaro.org, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, joe@perches.com, mchehab@osg.samsung.com,
-        crope@iki.fi, devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH v5 4/4] crypto: Add Allwinner Security System crypto accelerator
-Date: Wed, 22 Oct 2014 11:00:45 +0200
-Message-ID: <2751026.4HEPlZfN7W@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com>
-References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com> <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:srLZ/vdt/bpFBWACeHaZO3t3DHJYofB9B8jT6695lnK
- OsJKb6vz9wWPoqA2Vr8nz6IQ9psKl85dqpPDwyGLqjxOHb8Sj8
- OC5Cttp0TG9TqMp/jYqxdi1nPB9r/nDwMu7KwCPn0efs1wJpPg
- oWBr4wN6pqZfu0z+/dIJkhgajb3fzJz8QXyC7YSn7mxxDY0DW7
- GrCAToJn6Pu4yztAyVjgi614HpBm+eE2l+hKdO7sVzxnSQ/bkE
- mkoVGLHlUjBt3gauayi8ceVUsJRboEAVwEobTfTrk5p5PaEh8d
- p7d1JaOvPYv1bwzmrZZMgbRJmT167KLZE2IBQGXwIZbdz3DmEX
- 3kwNYy3hIfx5Q9atPsIc=
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 22 Oct 2014 05:04:39 -0400
+X-AuditID: cbfee68f-f791c6d000004834-72-5447730d435f
+Message-id: <5447730E.80500@samsung.com>
+Date: Wed, 22 Oct 2014 18:04:14 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH RESEND 2/3] extcon: max77693: Request only specific
+ interrupts
+References: <1413967540-27626-1-git-send-email-k.kozlowski@samsung.com>
+ <1413967540-27626-2-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1413967540-27626-2-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsWyRsSkRJe32D3E4PMSK4uNM9azWrx+YWhx
+	tukNu8X9r0cZLS7vmsNmsfbIXXaL240r2CxOd7M6cHjcubaHzWPeyUCPvi2rGD0+b5ILYIni
+	sklJzcksSy3St0vgylg2V6rgrVTF5K1L2BsYJ4p1MXJySAiYSKy/08YCYYtJXLi3nq2LkYtD
+	SGApo8TB90dZYIo2PfzOCJFYxCix+sZzKOc1o8SB82fBqngFNCS2Hl7IBmKzCKhKvFkIEWcT
+	0JLY/+IGWFxUIExi5fQrUPWCEj8m3wOzRQQMJQ7u3s4EMpRZYDmTxMNX85hBEsICIRLd7R+h
+	bmpllJi3/QIjSIJTwEPi7Y8/7CA2s4COxP7WaWwQtrzE5jVvmUEaJASOsUsc+vCMCeIkAYlv
+	kw8BreMASshKbDrADPGbpMTBFTdYJjCKzUJy1CwkY2chGbuAkXkVo2hqQXJBcVJ6kbFecWJu
+	cWleul5yfu4mRmDUnf73rH8H490D1ocYBTgYlXh4HdjcQ4RYE8uKK3MPMZoCXTGRWUo0OR8Y
+	23kl8YbGZkYWpiamxkbmlmZK4rwLpX4GCwmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamB0XJfb
+	n7pAkXvt69/6061PrvyRt4ShY/dyFuudlR2bT82x9yr6F2SgtWnjNPuW2A7tuB1VJseafYQs
+	Yz67sljOLdn1znS55wSvGOFVXx9Ka2V+OVE/cZ0229P82PIrXQ/fH2t/Ib/H7Kbb6mPTq1cK
+	7Mtikn5mOGPtQ58Y9YVuP+9veFs2Q+eOEktxRqKhFnNRcSIAUj6uy7UCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t9jAV3eYvcQg94eI4uNM9azWrx+YWhx
+	tukNu8X9r0cZLS7vmsNmsfbIXXaL240r2CxOd7M6cHjcubaHzWPeyUCPvi2rGD0+b5ILYIlq
+	YLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMATpCSaEs
+	MacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5ixbK5UwVupislbl7A3ME4U62Lk
+	5JAQMJHY9PA7I4QtJnHh3nq2LkYuDiGBRYwSq288Z4RwXjNKHDh/lgWkildAQ2Lr4YVsIDaL
+	gKrEm4UQcTYBLYn9L26AxUUFwiRWTr8CVS8o8WPyPTBbRMBQ4uDu7UwgQ5kFljNJPHw1jxkk
+	ISwQItHd/hFqdSujxLztF8Bu4hTwkHj74w87iM0soCOxv3UaG4QtL7F5zVvmCYwCs5AsmYWk
+	bBaSsgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgmP6mfQOxlUNFocYBTgYlXh4Hdjc
+	Q4RYE8uKK3MPMUpwMCuJ8N5LBwrxpiRWVqUW5ccXleakFh9iNAWGwURmKdHkfGC6ySuJNzQ2
+	MTOyNDI3tDAyNlcS5z3Yah0oJJCeWJKanZpakFoE08fEwSnVwKidmfY/v1ROtPbV9osFpdd+
+	O6xYfn1Oxor7xm/i+RrPTjAtnL7dmldbQf6/R2RDTAtjwusw7+e//35elHtsw1or8V1eM9iT
+	jU9mrH754/E/nictJqLcenk6fbfkDnXuPtxrmeXVHe0SsWT9xQWzp8RUzji5qCdi3Yq425mH
+	//f/Fat+cLfq0TUlluKMREMt5qLiRAB6u8Tg/wIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 19 October 2014 16:16:22 LABBE Corentin wrote:
-> Add support for the Security System included in Allwinner SoC A20.
-> The Security System is a hardware cryptographic accelerator that support AES/MD5/SHA1/DES/3DES/PRNG algorithms.
+Hi Krzysztof,
+
+The extcon-max77693.c was tested by all cables (mhl, hdmi, usb, usb-host, dock for audio play, dock for mhl).
+with default_init_data register setting. If you deletes legacy default_init_data[] register setting,
+extcon-max77693.c can not guarantee the operation of upper cables.
+
+So, I want to maintain 'default_init_data' register setting value.
+
+Thanks,
+Chanwoo Choi
+
+On 10/22/2014 05:45 PM, Krzysztof Kozlowski wrote:
+> The driver was requesting all MUIC interrupts but then was masking most
+> of them manually at end of probe (with default_init_data). Since
+> default_init_data cannot be passed through DTS (no bindings for driver),
+> this was a conflicting behavior. First get everything, then mask what we
+> don't want.
 > 
-> Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
+> This could change after adding DTS bindings for requesting specific
+> MUIC interrupts. Until then driver should request only these MUIC
+> interrupts which he is really interested in.
+> 
+> The commit does not introduce any functional change when the driver is
+> used with DTS (no platform data). However this changes the behavior with
+> platform data supplied. In such case the driver will request only 3
+> interrupts (ADC, ADC1K, ChgTyp). Platform data could still unmask other
+> interrupts but they won't be handled by the driver.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/extcon/extcon-max77693.c | 26 --------------------------
+>  1 file changed, 26 deletions(-)
+> 
+> diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+> index 863d088c9bdd..9d21e75a7032 100644
+> --- a/drivers/extcon/extcon-max77693.c
+> +++ b/drivers/extcon/extcon-max77693.c
+> @@ -44,19 +44,6 @@ static struct max77693_reg_data default_init_data[] = {
+>  		.addr = MAX77693_MUIC_REG_STATUS2,
+>  		.data = STATUS2_CHGDETRUN_MASK,
+>  	}, {
+> -		/* INTMASK1 - Unmask [3]ADC1KM,[0]ADCM */
+> -		.addr = MAX77693_MUIC_REG_INTMASK1,
+> -		.data = INTMASK1_ADC1K_MASK
+> -			| INTMASK1_ADC_MASK,
+> -	}, {
+> -		/* INTMASK2 - Unmask [0]ChgTypM */
+> -		.addr = MAX77693_MUIC_REG_INTMASK2,
+> -		.data = INTMASK2_CHGTYP_MASK,
+> -	}, {
+> -		/* INTMASK3 - Mask all of interrupts */
+> -		.addr = MAX77693_MUIC_REG_INTMASK3,
+> -		.data = 0x0,
+> -	}, {
+>  		/* CDETCTRL2 */
+>  		.addr = MAX77693_MUIC_REG_CDETCTRL2,
+>  		.data = CDETCTRL2_VIDRMEN_MASK
+> @@ -135,21 +122,8 @@ struct max77693_muic_irq {
+>  
+>  static struct max77693_muic_irq muic_irqs[] = {
+>  	{ MAX77693_MUIC_IRQ_INT1_ADC,		"muic-ADC" },
+> -	{ MAX77693_MUIC_IRQ_INT1_ADC_LOW,	"muic-ADCLOW" },
+> -	{ MAX77693_MUIC_IRQ_INT1_ADC_ERR,	"muic-ADCError" },
+>  	{ MAX77693_MUIC_IRQ_INT1_ADC1K,		"muic-ADC1K" },
+>  	{ MAX77693_MUIC_IRQ_INT2_CHGTYP,	"muic-CHGTYP" },
+> -	{ MAX77693_MUIC_IRQ_INT2_CHGDETREUN,	"muic-CHGDETREUN" },
+> -	{ MAX77693_MUIC_IRQ_INT2_DCDTMR,	"muic-DCDTMR" },
+> -	{ MAX77693_MUIC_IRQ_INT2_DXOVP,		"muic-DXOVP" },
+> -	{ MAX77693_MUIC_IRQ_INT2_VBVOLT,	"muic-VBVOLT" },
+> -	{ MAX77693_MUIC_IRQ_INT2_VIDRM,		"muic-VIDRM" },
+> -	{ MAX77693_MUIC_IRQ_INT3_EOC,		"muic-EOC" },
+> -	{ MAX77693_MUIC_IRQ_INT3_CGMBC,		"muic-CGMBC" },
+> -	{ MAX77693_MUIC_IRQ_INT3_OVP,		"muic-OVP" },
+> -	{ MAX77693_MUIC_IRQ_INT3_MBCCHG_ERR,	"muic-MBCCHG_ERR" },
+> -	{ MAX77693_MUIC_IRQ_INT3_CHG_ENABLED,	"muic-CHG_ENABLED" },
+> -	{ MAX77693_MUIC_IRQ_INT3_BAT_DET,	"muic-BAT_DET" },
+>  };
+>  
+>  /* Define supported accessory type */
+> 
 
-Please wrap lines in the changelog after about 70 characters.
-
-> --- /dev/null
-> +++ b/drivers/crypto/sunxi-ss/sunxi-ss-cipher.c
-> @@ -0,0 +1,489 @@
-
-> +#include "sunxi-ss.h"
-> +
-> +extern struct sunxi_ss_ctx *ss;
-
-'extern' declarations belong into header files, not .c files. It would
-be even better to avoid this completely and carry the pointer to the
-context in an object that gets passed around. In general we want drivers
-to be written in a way that allows having multiple instances of the
-device, which the global pointer prevents.
-
-> +
-> +	src32 = (u32 *)src_addr;
-> +	dst32 = (u32 *)dst_addr;
-
-
-You appear to be missing '__iomem' annotations for the mmio pointers.
-Please always run your code through the 'sparse' checker using 'make C=1'
-to catch and fix this and other erros.
-
-> +	ileft = areq->nbytes / 4;
-> +	oleft = areq->nbytes / 4;
-> +	i = 0;
-> +	do {
-> +		if (ileft > 0 && rx_cnt > 0) {
-> +			todo = min(rx_cnt, ileft);
-> +			ileft -= todo;
-> +			do {
-> +				writel_relaxed(*src32++,
-> +						ss->base +
-> +						SS_RXFIFO);
-> +				todo--;
-> +			} while (todo > 0);
-> +		}
-
-This looks like it should be using writesl() instead of the 
-writel_relaxed() loop. That should not only be faster but it will
-also change the byte ordering if you are running a big-endian
-kernel.
-
-Since this is a FIFO register, the ordering that writesl uses
-is likely the correct one.
-
-	Arnd
