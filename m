@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446AbaJVOpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 10:45:08 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:62842 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729AbaJVOpG (ORCPT
+	id S1752591AbaJVOpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 10:45:52 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60070 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaJVOpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 10:45:06 -0400
-Message-ID: <5447C2ED.5020707@linaro.org>
-Date: Wed, 22 Oct 2014 16:45:01 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 22 Oct 2014 10:45:51 -0400
+Date: Wed, 22 Oct 2014 16:45:43 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
+Message-ID: <20141022144543.GV12706@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: lockdep splat in CPU hotplug
-References: <alpine.LNX.2.00.1410211255531.24255@pobox.suse.cz> <alpine.LNX.2.00.1410221125280.22681@pobox.suse.cz> <5447BEFE.2040806@linaro.org> <alpine.LNX.2.00.1410221634550.22681@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1410221634550.22681@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 04:36 PM, Jiri Kosina wrote:
-> On Wed, 22 Oct 2014, Daniel Lezcano wrote:
->
->>>> I am seeing the lockdep report below when resuming from suspend-to-disk
->>>> with current Linus' tree (c2661b80609).
->>>>
->>>> The reason for CCing Ingo and Peter is that I can't make any sense of one
->>>> of the stacktraces lockdep is providing.
->>>>
->>>> Please have a look at the very first stacktrace in the dump, where lockdep
->>>> is trying to explain where cpu_hotplug.lock#2 has been acquired. It seems
->>>> to imply that cpuidle_pause() is taking cpu_hotplug.lock, but that's not
->>>> the case at all.
->>>>
->>>> What am I missing?
->>>
->>> Okay, reverting 442bf3aaf55a ("sched: Let the scheduler see CPU idle
->>> states") and followup 83a0a96a5f26 ("sched/fair: Leverage the idle state
->>> info when choosing the "idlest" cpu") which depends on it makes the splat
->>> go away.
->>
->> Are you able to reproduce it by offlining the cpu and onlining it again ?
->
-> No, that doesn't trigger it (please note that all the relevant stacktraces
-> from lockdep are going through hibernation).
+On Mon, Oct 13, 2014 at 04:45:40PM +0300, Alexander Shishkin wrote:
+> +static int pt_config(struct perf_event *event)
+> +{
+> +	u64 reg;
+> +
+> +	reg = RTIT_CTL_TOPA | RTIT_CTL_BRANCH_EN;
+> +
+> +	if (!event->attr.exclude_kernel)
+> +		reg |= RTIT_CTL_OS;
+> +	if (!event->attr.exclude_user)
+> +		reg |= RTIT_CTL_USR;
+> +
+> +	reg |= (event->attr.config & PT_CONFIG_MASK);
+> +
+> +	/*
+> +	 * User can try to set bits in RTIT_CTL through PT_BYPASS_MASK,
+> +	 * that aren't supported by the hardware. Weather or not a
+> +	 * particular bitmask is supported by a cpu can't be determined
+> +	 * via cpuid or otherwise, so we have to rely on #GP handling
+> +	 * to catch these cases.
+> +	 */
+> +	return wrmsrl_safe(MSR_IA32_RTIT_CTL, reg);
+> +}
 
-Ok, thanks.
+Whether the weather is nice or not :-)
 
+But no, this cannot be, once we've accepted the event is must be
+programmable. Failing at the time of programming is vile; pmu::start()
+is a void return, failure is not an option there.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+The fact that the hardware cannot even tell you the supported mask is
+further fail.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+IIRC I think Andi once suggested probing each of the 64 bits in that MSR
+to determine the supported mask at device init time.
 
+BTW, what's that RTIT thing? Did someone forget to propagate the latest
+name change of the thing or so?
