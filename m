@@ -1,70 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785AbaJVFmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 01:42:51 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:37833 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaJVFmu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 01:42:50 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-47-544743d7fa89
-Message-id: <544743D6.6040103@samsung.com>
-Date: Wed, 22 Oct 2014 09:42:46 +0400
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>, akpm@linux-foundation.org
-Cc: n-horiguchi@ah.jp.nec.com, aarcange@redhat.com, mgorman@suse.de,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm, hugetlb: correct bit shift in hstate_sizelog
-References: <1413915307-20536-1-git-send-email-sasha.levin@oracle.com>
-In-reply-to: <1413915307-20536-1-git-send-email-sasha.levin@oracle.com>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xa7rXnd1DDM58UrVYsH4pu8Wc9WvY
-	LC7vmsNmcW/Nf1aLye+eMVp8WHuKxWLxkdvMDuweLxZuYfbY9GkSu8eJGb9ZPD4+vcXi8X7f
-	VTaPzaerPT5vkgtgj+KySUnNySxLLdK3S+DK+Pr0DUvBN/aKlY/vsjYwbmfrYuTkkBAwkZj4
-	6TELhC0mceHeeqA4F4eQwFJGiZP7ljNCOM1MEuu3rmMEqeIV0JL4v3sXK4jNIqAqsWvaIyYQ
-	m01AT+LfLIipogIRElfWzIGqF5T4Mfke2AYRAWeJQ1t/MYPYzALlEv/fHwSzhQVcJS62fASz
-	hQTcJPZ3rQbr5RRwl5h+/R3QTA6genWJKVNyIVrlJTavecs8gVFgFpINsxCqZiGpWsDIvIpR
-	NLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJOi/7GBcfMzqEKMAB6MSD+8MDvcQIdbEsuLK3EOM
-	EhzMSiK8fRZAId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYyd3cae5g2tU3w3zmROkbspn12eeeCh
-	q1fjtIkOW9/qfdS99bX28vHVrSkTg7l3fPd8ekqdM/f5FtYdmQE+XAfPpH6tlrU5qchqkCha
-	7bP3aLTHxvc39f9yltp33p9qIXA9K3nXk5sdLYpFwWUlc27+bLuhfe5DrrVBa/r2aVs23gj3
-	1C4+eEOJpTgj0VCLuag4EQDJJfVjWAIAAA==
+	id S1753932AbaJVFod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 01:44:33 -0400
+Received: from [42.62.48.242] ([42.62.48.242]:37942 "EHLO manager.mioffice.cn"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750831AbaJVFob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 01:44:31 -0400
+From: =?gb2312?B?1uy71A==?= <zhuhui@xiaomi.com>
+To: Pavel Machek <pavel@denx.de>
+CC: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mina86@mina86.com" <mina86@mina86.com>,
+        "aneesh.kumar@linux.vnet.ibm.com" <aneesh.kumar@linux.vnet.ibm.com>,
+        "iamjoonsoo.kim@lge.com" <iamjoonsoo.kim@lge.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "nasa4836@gmail.com" <nasa4836@gmail.com>,
+        "ddstreet@ieee.org" <ddstreet@ieee.org>,
+        "hughd@google.com" <hughd@google.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "atomlin@redhat.com" <atomlin@redhat.com>,
+        "raistlin@linux.it" <raistlin@linux.it>, "axboe@fb.com" <axboe@fb.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "kirill.shutemov@linux.intel.com" <kirill.shutemov@linux.intel.com>,
+        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
+        "k.khlebnikov@samsung.com" <k.khlebnikov@samsung.com>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        "deller@gmx.de" <deller@gmx.de>,
+        "tangchen@cn.fujitsu.com" <tangchen@cn.fujitsu.com>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>,
+        "akinobu.mita@gmail.com" <akinobu.mita@gmail.com>,
+        "lauraa@codeaurora.org" <lauraa@codeaurora.org>,
+        "vbabka@suse.cz" <vbabka@suse.cz>,
+        "sasha.levin@oracle.com" <sasha.levin@oracle.com>,
+        "vdavydov@parallels.com" <vdavydov@parallels.com>,
+        "suleiman@google.com" <suleiman@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/4] (CMA_AGGRESSIVE) Add CMA_AGGRESSIVE to Kconfig
+Thread-Topic: [PATCH 1/4] (CMA_AGGRESSIVE) Add CMA_AGGRESSIVE to Kconfig
+Thread-Index: AQHP6PJVlMR9bONqakO6B9lMcs478w==
+Date: Wed, 22 Oct 2014 05:44:24 +0000
+Message-ID: <2c27ad87839b42ca85c03c9541550d30@cnbox4.mioffice.cn>
+References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
+ <1413430551-22392-2-git-send-email-zhuhui@xiaomi.com>
+ <201410220126.s9M1Qita026502@spam.xiaomi.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [106.37.216.50]
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On 10/21/2014 10:15 PM, Sasha Levin wrote:
-> hstate_sizelog() would shift left an int rather than long, triggering
-> undefined behaviour and passing an incorrect value when the requested
-> page size was more than 4GB, thus breaking >4GB pages.
-
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  include/linux/hugetlb.h |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 65e12a2..57e0dfd 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -312,7 +312,8 @@ static inline struct hstate *hstate_sizelog(int page_size_log)
->  {
->  	if (!page_size_log)
->  		return &default_hstate;
-> -	return size_to_hstate(1 << page_size_log);
-> +
-> +	return size_to_hstate(1UL << page_size_log);
-
-That still could be undefined on 32-bits. Either use 1ULL or reduce SHM_HUGE_MASK on 32bits.
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9M5ic53004559
 
 
->  }
->  
->  static inline struct hstate *hstate_vma(struct vm_area_struct *vma)
-> 
 
+On 10/22/14 09:27, Pavel Machek wrote:
+> Hi!
+>
+>> Add CMA_AGGRESSIVE config that depend on CMA to Linux kernel config.
+>> Add CMA_AGGRESSIVE_PHY_MAX, CMA_AGGRESSIVE_FREE_MIN and CMA_AGGRESSIVE_SHRINK
+>> that depend on CMA_AGGRESSIVE.
+>>
+>> If physical memory size (not include CMA memory) in byte less than or equal to
+>> CMA_AGGRESSIVE_PHY_MAX, CMA aggressive switch (sysctl vm.cma-aggressive-switch)
+>> will be opened.
+>
+> Ok...
+>
+> Do I understand it correctly that there is some problem with
+> hibernation not working on machines not working on machines with big
+> CMA areas...?
+
+No, these patches want to handle this issue that most of CMA memory is 
+not allocated before lowmemorykiller or oom_killer begin to kill tasks.
+
+>
+> But adding 4 config options end-user has no chance to set right can
+> not be the best solution, can it?
+>
+>> +config CMA_AGGRESSIVE_PHY_MAX
+>> +	hex "Physical memory size in Bytes that auto turn on the CMA aggressive switch"
+>> +	depends on CMA_AGGRESSIVE
+>> +	default 0x40000000
+>> +	help
+>> +	  If physical memory size (not include CMA memory) in byte less than or
+>> +	  equal to this value, CMA aggressive switch will be opened.
+>> +	  After the Linux boot, sysctl "vm.cma-aggressive-switch" can control
+>> +	  the CMA AGGRESSIVE switch.
+>
+> For example... how am I expected to figure right value to place here?
+
+I agree with that.  I will update this config to auto set in next version.
+
+Thanks,
+Hui
+
+>
+> 									Pavel
+>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
