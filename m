@@ -1,71 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345AbaJVVeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 17:34:04 -0400
-Received: from mail.kernel.org ([198.145.19.201]:45578 "EHLO mail.kernel.org"
+	id S933371AbaJVVeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 17:34:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34137 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932542AbaJVVeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 17:34:02 -0400
-Date: Wed, 22 Oct 2014 23:33:57 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Subject: Re: [PATCH v2 26/47] power/reset: msm-poweroff: Register with kernel
- poweroff handler
-Message-ID: <20141022213357.GE28840@earth.universe>
-References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
- <1413864783-3271-27-git-send-email-linux@roeck-us.net>
+	id S932542AbaJVVeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 17:34:18 -0400
+Date: Wed, 22 Oct 2014 23:30:41 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: introduce task_rcu_dereference?
+Message-ID: <20141022213041.GA25467@redhat.com>
+References: <1413962231.19914.130.camel@tkhai>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="CGDBiGfvSTbxKZlW"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413864783-3271-27-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1413962231.19914.130.camel@tkhai>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/22, Kirill Tkhai wrote:
+>
+> Unlocked access to dst_rq->curr in task_numa_compare() is racy.
+> If curr task is exiting this may be a reason of use-after-free:
 
---CGDBiGfvSTbxKZlW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks.
 
-Hi,
+And as you pointed out, there are other examples of unlocked
+foreign_rq->curr usage.
 
-On Mon, Oct 20, 2014 at 09:12:42PM -0700, Guenter Roeck wrote:
-> Register with kernel poweroff handler instead of setting pm_power_off
-> directly. Select fallback priority since the code does not really poweroff
-> the system but resets it instead.
->=20
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+So, Kirill, Peter, do you think that the patch below can help? Can
+we change task_numa_group() and ->select_task_rq() to do nothing if
+rq_curr_rcu_safe() returns NULL? It seems we can...
 
-Acked-By: Sebastian Reichel <sre@kernel.org>
+task_numa_compare() can use it too, we can make another patch on
+top of this one.
 
--- Sebastian
+	- Obviously just for the early review. Lacks the changelog
+	  and the comments (at least).
 
---CGDBiGfvSTbxKZlW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	- Once again, I won't insist on probe_slab_address(). We can
+	  add SDBR and change task_rcu_dereference() to simply read
+	  ->sighand.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+	- Also, I won't argue if you think that we do not need a
+	  generic helper. In this case we can move this logic into
+	  rq_curr_rcu_safe() and it will be a bit simpler.
 
-iQIcBAEBCgAGBQJUSCLFAAoJENju1/PIO/qaIJwP/2YaQcShu84vwkr1hjY77pAy
-NpT03XD0yJs6atRYhqkx+wcwuox7yGQTTC87HkLRDV9fPbVHTHtVcNastiAwiLh9
-CoWQhixQlmADRG+kRpkfmTxtqIx68ff2ooNqePSPrqh34sMAfrex0j1mcvPnpF8r
-/9E22ZEHzyY+qCQSMTHSYiEJjkONGntkmKHcnQZsclARYoXJFduPbsVh0bJxmzDQ
-21vHFRiXp2RvsT6o0uf37kd/tpe4eC3os8l3tl29ch8oFHHc8FgzqhTDYSJv+yvW
-cDi7pgcGl8KK1zh3n4nKOYJKeuPvW8nQXsVN9VrXUSjNiFk5vhN8IJqwwFi6G0DQ
-v9DGiqdO/h0wvf8AFJgu2H4Bvrle+AbcCMfSNdMrqnLjnX6iv7oO2r0T5L7x3ilr
-/lhk0fPDInAI6Ni/RM5M5NdGVRTSl7/JYJbXN5QStKZmRCYnmhRbdvrsSJ9/QOdt
-izMRNTAsDg00eeOC9Za3Z9GFcLCiB9AeiMvX0Fso6oPkqUI1PNtTtEQz+NJ1Trsv
-YOL5wMLs3bg78CJ6WqWrxvFdXkB4VOMis24xcfeWgtA4hgmnCooTKTcMh1NB0Gs8
-HC1PBjvD5vLEBjtZXhA+2WHUEess1wXkaW3s8KzR4C8xk2YRBjQQY/Btw/67qfv5
-KLBtNWoiHKvIY60eLPEA
-=J2nc
------END PGP SIGNATURE-----
+	- OTOH, I am not sure we need rq_curr_rcu_safe(). The callers
+	  can just use task_rcu_dereference() and check IS_ERR_OR_NULL,
+	  I guess retry doesn't buy too much in this case.
 
---CGDBiGfvSTbxKZlW--
+Or do you think we need something else?
+
+Oleg.
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 857ba40..0ba420e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2300,6 +2300,7 @@ extern void block_all_signals(int (*notifier)(void *priv), void *priv,
+ 			      sigset_t *mask);
+ extern void unblock_all_signals(void);
+ extern void release_task(struct task_struct * p);
++extern struct task_struct *task_rcu_dereference(struct task_struct **ptask);
+ extern int send_sig_info(int, struct siginfo *, struct task_struct *);
+ extern int force_sigsegv(int, struct task_struct *);
+ extern int force_sig_info(int, struct siginfo *, struct task_struct *);
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 32c58f7..4aa00c7 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -213,6 +213,37 @@ repeat:
+ 		goto repeat;
+ }
+ 
++struct task_struct *task_rcu_dereference(struct task_struct **ptask)
++{
++	struct task_struct *task;
++	struct sighand_struct *sighand;
++
++	task = rcu_dereference(*ptask);
++	if (!task)
++		return NULL;
++
++	/* If it fails the check below must fail too */
++	probe_slab_address(&task->sighand, sighand);
++	/*
++	 * Pairs with atomic_dec_and_test() in put_task_struct(task).
++	 * If we have read the freed/reused memory, we must see that
++	 * the pointer was updated. The caller might want to retry in
++	 * this case.
++	 */
++	smp_rmb();
++	if (unlikely(task != ACCESS_ONCE(*ptask)))
++		return ERR_PTR(-EAGAIN);
++
++	/*
++	 * release_task(task) was already called; potentially before
++	 * the caller took rcu_read_lock() and in this case it can be
++	 * freed before rcu_read_unlock().
++	 */
++	if (!sighand)
++		return ERR_PTR(-EINVAL);
++	return task;
++}
++
+ /*
+  * This checks not only the pgrp, but falls back on the pid if no
+  * satisfactory pgrp is found. I dunno - gdb doesn't work correctly
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 579712f..249c0c1 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -655,6 +655,18 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+ 
++static inline struct task_struct *rq_curr_rcu_safe(struct rq *rq)
++{
++	for (;;) {
++		struct task_struct *curr = task_rcu_dereference(&rq->curr);
++		/* NULL is not possible */
++		if (likely(!IS_ERR(curr)))
++			return curr;
++		if (PTR_ERR(curr) != -EAGAIN)
++			return NULL;
++	}
++}
++
+ static inline u64 rq_clock(struct rq *rq)
+ {
+ 	return rq->clock;
+
