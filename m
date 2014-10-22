@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123AbaJVSma (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 14:42:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30048 "EHLO mx1.redhat.com"
+	id S1755208AbaJVSm6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 14:42:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58596 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932211AbaJVSlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 14:41:37 -0400
-Date: Wed, 22 Oct 2014 21:45:09 +0300
+	id S1755060AbaJVSl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 14:41:28 -0400
+Date: Wed, 22 Oct 2014 21:44:59 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: [PATCH RFC v3 16/16] virtio_blk: fix types for in memory structures
-Message-ID: <1414003404-505-17-git-send-email-mst@redhat.com>
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: [PATCH RFC v3 13/16] KVM: s390: virtio-ccw revision 1 SET_VQ
+Message-ID: <1414003404-505-14-git-send-email-mst@redhat.com>
 References: <1414003404-505-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,49 +25,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+
+The CCW_CMD_SET_VQ command has a different format for revision 1+
+devices, allowing to specify a more complex virtqueue layout. For
+now, we stay however with the old layout and simply use the new
+command format for virtio-1 devices.
+
+Signed-off-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/uapi/linux/virtio_blk.h | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/s390/kvm/virtio_ccw.c | 54 +++++++++++++++++++++++++++++++++----------
+ 1 file changed, 42 insertions(+), 12 deletions(-)
 
-diff --git a/include/uapi/linux/virtio_blk.h b/include/uapi/linux/virtio_blk.h
-index 9ad67b2..247c8ba 100644
---- a/include/uapi/linux/virtio_blk.h
-+++ b/include/uapi/linux/virtio_blk.h
-@@ -28,6 +28,7 @@
- #include <linux/types.h>
- #include <linux/virtio_ids.h>
- #include <linux/virtio_config.h>
-+#include <linux/virtio_types.h>
- 
- /* Feature bits */
- #define VIRTIO_BLK_F_BARRIER	0	/* Does host support barriers? */
-@@ -114,18 +115,18 @@ struct virtio_blk_config {
- /* This is the first element of the read scatter-gather list. */
- struct virtio_blk_outhdr {
- 	/* VIRTIO_BLK_T* */
--	__u32 type;
-+	__virtio32 type;
- 	/* io priority. */
--	__u32 ioprio;
-+	__virtio32 ioprio;
- 	/* Sector (ie. 512 byte offset) */
--	__u64 sector;
-+	__virtio64 sector;
+diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+index 394ddb8..a994078 100644
+--- a/drivers/s390/kvm/virtio_ccw.c
++++ b/drivers/s390/kvm/virtio_ccw.c
+@@ -68,13 +68,22 @@ struct virtio_ccw_device {
+ 	void *airq_info;
  };
  
- struct virtio_scsi_inhdr {
--	__u32 errors;
--	__u32 data_len;
--	__u32 sense_len;
--	__u32 residual;
-+	__virtio32 errors;
-+	__virtio32 data_len;
-+	__virtio32 sense_len;
-+	__virtio32 residual;
- };
+-struct vq_info_block {
++struct vq_info_block_legacy {
+ 	__u64 queue;
+ 	__u32 align;
+ 	__u16 index;
+ 	__u16 num;
+ } __packed;
  
- /* And this is the final byte of the write scatter-gather list. */
++struct vq_info_block {
++	__u64 desc;
++	__u32 res0;
++	__u16 index;
++	__u16 num;
++	__u64 avail;
++	__u64 used;
++} __packed;
++
+ struct virtio_feature_desc {
+ 	__u32 features;
+ 	__u8 index;
+@@ -100,7 +109,10 @@ struct virtio_ccw_vq_info {
+ 	struct virtqueue *vq;
+ 	int num;
+ 	void *queue;
+-	struct vq_info_block *info_block;
++	union {
++		struct vq_info_block s;
++		struct vq_info_block_legacy l;
++	} *info_block;
+ 	int bit_nr;
+ 	struct list_head node;
+ 	long cookie;
+@@ -411,13 +423,22 @@ static void virtio_ccw_del_vq(struct virtqueue *vq, struct ccw1 *ccw)
+ 	spin_unlock_irqrestore(&vcdev->lock, flags);
+ 
+ 	/* Release from host. */
+-	info->info_block->queue = 0;
+-	info->info_block->align = 0;
+-	info->info_block->index = index;
+-	info->info_block->num = 0;
++	if (vcdev->revision == 0) {
++		info->info_block->l.queue = 0;
++		info->info_block->l.align = 0;
++		info->info_block->l.index = index;
++		info->info_block->l.num = 0;
++		ccw->count = sizeof(info->info_block->l);
++	} else {
++		info->info_block->s.desc = 0;
++		info->info_block->s.index = index;
++		info->info_block->s.num = 0;
++		info->info_block->s.avail = 0;
++		info->info_block->s.used = 0;
++		ccw->count = sizeof(info->info_block->s);
++	}
+ 	ccw->cmd_code = CCW_CMD_SET_VQ;
+ 	ccw->flags = 0;
+-	ccw->count = sizeof(*info->info_block);
+ 	ccw->cda = (__u32)(unsigned long)(info->info_block);
+ 	ret = ccw_io_helper(vcdev, ccw,
+ 			    VIRTIO_CCW_DOING_SET_VQ | index);
+@@ -500,13 +521,22 @@ static struct virtqueue *virtio_ccw_setup_vq(struct virtio_device *vdev,
+ 	}
+ 
+ 	/* Register it with the host. */
+-	info->info_block->queue = (__u64)info->queue;
+-	info->info_block->align = KVM_VIRTIO_CCW_RING_ALIGN;
+-	info->info_block->index = i;
+-	info->info_block->num = info->num;
++	if (vcdev->revision == 0) {
++		info->info_block->l.queue = (__u64)info->queue;
++		info->info_block->l.align = KVM_VIRTIO_CCW_RING_ALIGN;
++		info->info_block->l.index = i;
++		info->info_block->l.num = info->num;
++		ccw->count = sizeof(info->info_block->l);
++	} else {
++		info->info_block->s.desc = (__u64)info->queue;
++		info->info_block->s.index = i;
++		info->info_block->s.num = info->num;
++		info->info_block->s.avail = (__u64)virtqueue_get_avail(vq);
++		info->info_block->s.used = (__u64)virtqueue_get_used(vq);
++		ccw->count = sizeof(info->info_block->s);
++	}
+ 	ccw->cmd_code = CCW_CMD_SET_VQ;
+ 	ccw->flags = 0;
+-	ccw->count = sizeof(*info->info_block);
+ 	ccw->cda = (__u32)(unsigned long)(info->info_block);
+ 	err = ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_SET_VQ | i);
+ 	if (err) {
 -- 
 MST
 
