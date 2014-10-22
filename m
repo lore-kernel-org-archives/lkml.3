@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650AbaJVQFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 12:05:51 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:53988 "EHLO
+	id S1755075AbaJVQGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 12:06:13 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:54002 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754568AbaJVPp3 (ORCPT
+	with ESMTP id S1754532AbaJVPp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:45:29 -0400
+	Wed, 22 Oct 2014 11:45:28 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH v3 22/59] dmaengine: imx: Split device_control
-Date: Wed, 22 Oct 2014 17:43:36 +0200
-Message-Id: <1413992653-21963-23-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v3 21/59] dmaengine: fsl-edma: Split device_control
+Date: Wed, 22 Oct 2014 17:43:35 +0200
+Message-Id: <1413992653-21963-22-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -25,148 +25,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Freescale IMX DMA driver to make use
+Split the device_control callback of the Freescale EDMA driver to make use
 of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/imx-dma.c | 103 +++++++++++++++++++++++++-------------------------
- 1 file changed, 51 insertions(+), 52 deletions(-)
+ drivers/dma/fsl-edma.c | 106 +++++++++++++++++++++++++++----------------------
+ 1 file changed, 58 insertions(+), 48 deletions(-)
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 9d2c9e7374dc..dfd1557384ca 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -669,69 +669,67 @@ out:
- 
+diff --git a/drivers/dma/fsl-edma.c b/drivers/dma/fsl-edma.c
+index 13df85a16438..b5b7474f8859 100644
+--- a/drivers/dma/fsl-edma.c
++++ b/drivers/dma/fsl-edma.c
+@@ -292,62 +292,69 @@ static void fsl_edma_free_desc(struct virt_dma_desc *vdesc)
+ 	kfree(fsl_desc);
  }
  
--static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-static int fsl_edma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
 -		unsigned long arg)
-+static int imxdma_terminate_all(struct dma_chan *chan)
++static int fsl_edma_terminate_all(struct dma_chan *chan)
  {
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
--	struct dma_slave_config *dmaengine_cfg = (void *)arg;
- 	struct imxdma_engine *imxdma = imxdmac->imxdma;
+ 	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
+-	struct dma_slave_config *cfg = (void *)arg;
  	unsigned long flags;
--	unsigned int mode = 0;
--
+ 	LIST_HEAD(head);
+ 
 -	switch (cmd) {
 -	case DMA_TERMINATE_ALL:
--		imxdma_disable_hw(imxdmac);
- 
--		spin_lock_irqsave(&imxdma->lock, flags);
--		list_splice_tail_init(&imxdmac->ld_active, &imxdmac->ld_free);
--		list_splice_tail_init(&imxdmac->ld_queue, &imxdmac->ld_free);
--		spin_unlock_irqrestore(&imxdma->lock, flags);
+-		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	fsl_edma_disable_request(fsl_chan);
++	fsl_chan->edesc = NULL;
++	vchan_get_all_descriptors(&fsl_chan->vchan, &head);
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++	vchan_dma_desc_free_list(&fsl_chan->vchan, &head);
++	return 0;
++}
++
++static int fsl_edma_pause(struct dma_chan *chan)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	unsigned long flags;
++
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	if (fsl_chan->edesc) {
+ 		fsl_edma_disable_request(fsl_chan);
+-		fsl_chan->edesc = NULL;
+-		vchan_get_all_descriptors(&fsl_chan->vchan, &head);
+-		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
+-		vchan_dma_desc_free_list(&fsl_chan->vchan, &head);
 -		return 0;
--	case DMA_SLAVE_CONFIG:
--		if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
--			imxdmac->per_address = dmaengine_cfg->src_addr;
--			imxdmac->watermark_level = dmaengine_cfg->src_maxburst;
--			imxdmac->word_size = dmaengine_cfg->src_addr_width;
--		} else {
--			imxdmac->per_address = dmaengine_cfg->dst_addr;
--			imxdmac->watermark_level = dmaengine_cfg->dst_maxburst;
--			imxdmac->word_size = dmaengine_cfg->dst_addr_width;
--		}
 -
--		switch (imxdmac->word_size) {
--		case DMA_SLAVE_BUSWIDTH_1_BYTE:
--			mode = IMX_DMA_MEMSIZE_8;
--			break;
--		case DMA_SLAVE_BUSWIDTH_2_BYTES:
--			mode = IMX_DMA_MEMSIZE_16;
--			break;
--		default:
--		case DMA_SLAVE_BUSWIDTH_4_BYTES:
--			mode = IMX_DMA_MEMSIZE_32;
--			break;
+-	case DMA_SLAVE_CONFIG:
+-		fsl_chan->fsc.dir = cfg->direction;
+-		if (cfg->direction == DMA_DEV_TO_MEM) {
+-			fsl_chan->fsc.dev_addr = cfg->src_addr;
+-			fsl_chan->fsc.addr_width = cfg->src_addr_width;
+-			fsl_chan->fsc.burst = cfg->src_maxburst;
+-			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->src_addr_width);
+-		} else if (cfg->direction == DMA_MEM_TO_DEV) {
+-			fsl_chan->fsc.dev_addr = cfg->dst_addr;
+-			fsl_chan->fsc.addr_width = cfg->dst_addr_width;
+-			fsl_chan->fsc.burst = cfg->dst_maxburst;
+-			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->dst_addr_width);
+-		} else {
+-			return -EINVAL;
 -		}
-+	imxdma_disable_hw(imxdmac);
- 
--		imxdmac->hw_chaining = 0;
-+	spin_lock_irqsave(&imxdma->lock, flags);
-+	list_splice_tail_init(&imxdmac->ld_active, &imxdmac->ld_free);
-+	list_splice_tail_init(&imxdmac->ld_queue, &imxdmac->ld_free);
-+	spin_unlock_irqrestore(&imxdma->lock, flags);
+-		return 0;
++		fsl_chan->status = DMA_PAUSED;
++	}
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
 +	return 0;
 +}
  
--		imxdmac->ccr_from_device = (mode | IMX_DMA_TYPE_FIFO) |
--			((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
--			CCR_REN;
--		imxdmac->ccr_to_device =
--			(IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) |
--			((mode | IMX_DMA_TYPE_FIFO) << 2) | CCR_REN;
--		imx_dmav1_writel(imxdma, imxdmac->dma_request,
--				 DMA_RSSR(imxdmac->channel));
-+static int imxdma_config(struct dma_chan *chan,
-+			 struct dma_slave_config *dmaengine_cfg)
-+{
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-+	struct imxdma_engine *imxdma = imxdmac->imxdma;
-+	unsigned int mode = 0;
- 
--		/* Set burst length */
--		imx_dmav1_writel(imxdma, imxdmac->watermark_level *
--				imxdmac->word_size, DMA_BLR(imxdmac->channel));
-+	if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
-+		imxdmac->per_address = dmaengine_cfg->src_addr;
-+		imxdmac->watermark_level = dmaengine_cfg->src_maxburst;
-+		imxdmac->word_size = dmaengine_cfg->src_addr_width;
-+	} else {
-+		imxdmac->per_address = dmaengine_cfg->dst_addr;
-+		imxdmac->watermark_level = dmaengine_cfg->dst_maxburst;
-+		imxdmac->word_size = dmaengine_cfg->dst_addr_width;
-+	}
- 
+-	case DMA_PAUSE:
+-		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
+-		if (fsl_chan->edesc) {
+-			fsl_edma_disable_request(fsl_chan);
+-			fsl_chan->status = DMA_PAUSED;
+-		}
+-		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
 -		return 0;
-+	switch (imxdmac->word_size) {
-+	case DMA_SLAVE_BUSWIDTH_1_BYTE:
-+		mode = IMX_DMA_MEMSIZE_8;
-+		break;
-+	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-+		mode = IMX_DMA_MEMSIZE_16;
-+		break;
- 	default:
--		return -ENOSYS;
-+	case DMA_SLAVE_BUSWIDTH_4_BYTES:
-+		mode = IMX_DMA_MEMSIZE_32;
-+		break;
- 	}
+-
+-	case DMA_RESUME:
+-		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
+-		if (fsl_chan->edesc) {
+-			fsl_edma_enable_request(fsl_chan);
+-			fsl_chan->status = DMA_IN_PROGRESS;
+-		}
+-		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
+-		return 0;
++static int fsl_edma_resume(struct dma_chan *chan)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	unsigned long flags;
  
--	return -EINVAL;
-+	imxdmac->hw_chaining = 0;
+-	default:
+-		return -ENXIO;
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	if (fsl_chan->edesc) {
++		fsl_edma_enable_request(fsl_chan);
++		fsl_chan->status = DMA_IN_PROGRESS;
+ 	}
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++	return 0;
++}
 +
-+	imxdmac->ccr_from_device = (mode | IMX_DMA_TYPE_FIFO) |
-+		((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
-+		CCR_REN;
-+	imxdmac->ccr_to_device =
-+		(IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) |
-+		((mode | IMX_DMA_TYPE_FIFO) << 2) | CCR_REN;
-+	imx_dmav1_writel(imxdma, imxdmac->dma_request,
-+			 DMA_RSSR(imxdmac->channel));
++static int fsl_edma_slave_config(struct dma_chan *chan,
++				 struct dma_slave_config *cfg)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
 +
-+	/* Set burst length */
-+	imx_dmav1_writel(imxdma, imxdmac->watermark_level *
-+			 imxdmac->word_size, DMA_BLR(imxdmac->channel));
-+
++	fsl_chan->fsc.dir = cfg->direction;
++	if (cfg->direction == DMA_DEV_TO_MEM) {
++		fsl_chan->fsc.dev_addr = cfg->src_addr;
++		fsl_chan->fsc.addr_width = cfg->src_addr_width;
++		fsl_chan->fsc.burst = cfg->src_maxburst;
++		fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->src_addr_width);
++	} else if (cfg->direction == DMA_MEM_TO_DEV) {
++		fsl_chan->fsc.dev_addr = cfg->dst_addr;
++		fsl_chan->fsc.addr_width = cfg->dst_addr_width;
++		fsl_chan->fsc.burst = cfg->dst_maxburst;
++		fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->dst_addr_width);
++	} else {
++			return -EINVAL;
++	}
 +	return 0;
  }
  
- static enum dma_status imxdma_tx_status(struct dma_chan *chan,
-@@ -1184,7 +1182,8 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
- 	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
- 	imxdma->dma_device.device_prep_interleaved_dma = imxdma_prep_dma_interleaved;
--	imxdma->dma_device.device_control = imxdma_control;
-+	imxdma->dma_device.device_config = imxdma_config;
-+	imxdma->dma_device.device_terminate_all = imxdma_terminate_all;
- 	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
+ static size_t fsl_edma_desc_residue(struct fsl_edma_chan *fsl_chan,
+@@ -914,7 +921,10 @@ static int fsl_edma_probe(struct platform_device *pdev)
+ 	fsl_edma->dma_dev.device_tx_status = fsl_edma_tx_status;
+ 	fsl_edma->dma_dev.device_prep_slave_sg = fsl_edma_prep_slave_sg;
+ 	fsl_edma->dma_dev.device_prep_dma_cyclic = fsl_edma_prep_dma_cyclic;
+-	fsl_edma->dma_dev.device_control = fsl_edma_control;
++	fsl_edma->dma_dev.device_config = fsl_edma_slave_config;
++	fsl_edma->dma_dev.device_pause = fsl_edma_pause;
++	fsl_edma->dma_dev.device_resume = fsl_edma_resume;
++	fsl_edma->dma_dev.device_terminate_all = fsl_edma_terminate_all;
+ 	fsl_edma->dma_dev.device_issue_pending = fsl_edma_issue_pending;
+ 	fsl_edma->dma_dev.device_slave_caps = fsl_dma_device_slave_caps;
  
- 	platform_set_drvdata(pdev, imxdma);
 -- 
 2.1.1
 
