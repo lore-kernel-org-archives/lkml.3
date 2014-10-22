@@ -1,118 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815AbaJVCan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 21 Oct 2014 22:30:43 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34651 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178AbaJVCam (ORCPT
+	id S1753140AbaJVCjv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 21 Oct 2014 22:39:51 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:52720 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaJVCju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 21 Oct 2014 22:30:42 -0400
-Message-ID: <544716CA.2020605@hitachi.com>
-Date: Wed, 22 Oct 2014 11:30:34 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 21 Oct 2014 22:39:50 -0400
+X-Original-SENDERIP: 10.177.222.235
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        masami.hiramatsu.pt@hitachi.com, aravinda@linux.vnet.ibm.com,
+        penberg@iki.fi
+Subject: Re: [PATCH v3 1/5] perf/sdt: ELF support for SDT
+References: <20141010104402.15506.73285.stgit@hemant-fedora>
+	<20141010105727.15506.99362.stgit@hemant-fedora>
+Date: Wed, 22 Oct 2014 11:39:48 +0900
+In-Reply-To: <20141010105727.15506.99362.stgit@hemant-fedora> (Hemant Kumar's
+	message of "Fri, 10 Oct 2014 16:27:53 +0530")
+Message-ID: <87a94og74b.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        linux-kernel@vger.kernel.org, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Seth Jennings <sjenning@redhat.com>
-Subject: Re: [PATCH] kprobes: add kprobe_is_function_probed()
-References: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1410211744550.24255@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/22 0:48), Jiri Kosina wrote:
-> Add a function that allows external users (such as live patching 
-> mechanisms) to check whether a given function (identified by symbol name) 
-> has a kprobe installed in it.
+Hi Hemant,
 
-Actually, we've already exported the list of kprobes with probe points
-(symbols) via debugfs. Please check /sys/kernel/debug/kprobes/list :)
+On Fri, 10 Oct 2014 16:27:53 +0530, Hemant Kumar wrote:
+> This patch serves the initial support to identify and list SDT events in binaries.
+> When programs containing SDT markers are compiled, gcc with the help of assembler
+> directives identifies them and places them in the section ".note.stapsdt". To find
+> these markers from the binaries, one needs to traverse through this section and
+> parse the relevant details like the name, type and location of the marker. Also,
+> the original location could be skewed due to the effect of prelinking. If that is
+> the case, the locations need to be adjusted.
+>
+> The functions in this patch open a given ELF, find out the SDT section, parse the
+> relevant details, adjust the location (if necessary) and populate them in a list.
+>
+> Signed-off-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
 
-Thank you,
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  include/linux/kprobes.h |  5 +++++
->  kernel/kprobes.c        | 28 ++++++++++++++++++++++++++++
->  2 files changed, 33 insertions(+)
-> 
-> diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-> index f7296e5..f760555 100644
-> --- a/include/linux/kprobes.h
-> +++ b/include/linux/kprobes.h
-> @@ -384,6 +384,7 @@ int disable_kprobe(struct kprobe *kp);
->  int enable_kprobe(struct kprobe *kp);
->  
->  void dump_kprobe(struct kprobe *kp);
-> +bool kprobe_is_function_probed(const char *name);
->  
->  #else /* !CONFIG_KPROBES: */
->  
-> @@ -459,6 +460,10 @@ static inline int enable_kprobe(struct kprobe *kp)
->  {
->  	return -ENOSYS;
->  }
-> +static inline bool kprobe_is_function_probed(const char *name)
+Just a nitpick below..
+
+
+> +static int construct_sdt_notes_list(Elf *elf, struct list_head *sdt_notes)
 > +{
-> +	return false;
-> +}
->  #endif /* CONFIG_KPROBES */
->  static inline int disable_kretprobe(struct kretprobe *rp)
->  {
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 3995f54..27e8ddb 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -2036,6 +2036,34 @@ void dump_kprobe(struct kprobe *kp)
->  NOKPROBE_SYMBOL(dump_kprobe);
->  
->  /*
-> + * Check whether a given symbol is a probed function
-> + */
-> +bool kprobe_is_function_probed(const char *name)
-> +{
-> +	struct hlist_head *head;
-> +	struct kprobe *p, *kp;
-> +	const char *sym = NULL;
-> +	unsigned long offset = 0;
-> +	unsigned int i;
-> +	char *modname, namebuf[KSYM_NAME_LEN];
+> +	GElf_Ehdr ehdr;
+> +	Elf_Scn *scn = NULL;
+> +	Elf_Data *data;
+> +	GElf_Shdr shdr;
+> +	size_t shstrndx, next;
+> +	GElf_Nhdr nhdr;
+> +	size_t name_off, desc_off, offset;
+> +	int ret = 0;
 > +
-> +	preempt_disable();
-> +	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
-> +		head = &kprobe_table[i];
-> +		hlist_for_each_entry_rcu(p, head, hlist) {
-> +			sym = kallsyms_lookup((unsigned long)p->addr,
-> +					NULL, &offset, &modname,
-> +					namebuf);
-> +			if (!strcmp(sym, name))
-> +				return true;
+> +	if (gelf_getehdr(elf, &ehdr) == NULL) {
+> +		ret = -EBADF;
+> +		goto out_ret;
+> +	}
+> +	if (elf_getshdrstrndx(elf, &shstrndx) != 0) {
+> +		ret = -EBADF;
+> +		goto out_ret;
+> +	}
+> +
+> +	/* Look for the required section */
+> +	scn = elf_section_by_name(elf, &ehdr, &shdr, SDT_NOTE_SCN, NULL);
+> +	if (!scn) {
+> +		ret = -ENOENT;
+> +		goto out_ret;
+> +	}
+> +
+> +	if (!(shdr.sh_type == SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC)) {
+
+I think the below is more readable:
+
+	if ((shdr.sh_type != SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC)) {
+
+Other than that, looks good to me!
+
+Thanks,
+Namhyung
+
+
+> +		ret = -ENOENT;
+> +		goto out_ret;
+> +	}
+> +
+> +	data = elf_getdata(scn, NULL);
+> +
+> +	/* Get the SDT notes */
+> +	for (offset = 0; (next = gelf_getnote(data, offset, &nhdr, &name_off,
+> +					      &desc_off)) > 0; offset = next) {
+> +		if (nhdr.n_namesz == sizeof(SDT_NOTE_NAME) &&
+> +		    !memcmp(data->d_buf + name_off, SDT_NOTE_NAME,
+> +			    sizeof(SDT_NOTE_NAME))) {
+> +			ret = populate_sdt_note(&elf, ((data->d_buf) + desc_off),
+> +						nhdr.n_descsz, nhdr.n_type,
+> +						sdt_notes);
+> +			if (ret < 0)
+> +				goto out_ret;
 > +		}
 > +	}
-> +	preempt_enable();
-> +	return false;
-> +}
-> +EXPORT_SYMBOL_GPL(kprobe_is_function_probed);
+> +	if (list_empty(sdt_notes))
+> +		ret = -ENOENT;
 > +
-> +/*
->   * Lookup and populate the kprobe_blacklist.
->   *
->   * Unlike the kretprobe blacklist, we'll need to determine
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> +out_ret:
+> +	return ret;
+> +}
