@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaJVIK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 04:10:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63095 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023AbaJVIKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 04:10:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,767,1406617200"; 
-   d="scan'208";a="618380063"
-Date: Wed, 22 Oct 2014 11:10:44 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio:
- Support for unified device properties interface)
-Message-ID: <20141022081044.GB1484@lahna.fi.intel.com>
-References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com>
- <4582579.9WMrIMALsy@wuerfel>
+	id S1752877AbaJVIM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 04:12:26 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:48599 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbaJVIMW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 04:12:22 -0400
+Message-ID: <54476640.5050603@atmel.com>
+Date: Wed, 22 Oct 2014 16:09:36 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4582579.9WMrIMALsy@wuerfel>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Peter Rosin <peda@axentia.se>
+CC: "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
+        "Takashi Iwai" <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, "Mark Brown" <broonie@kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: atmel_ssc_dai: Track playback and
+ capture CMR dividers separately.
+References: <a541333cf46b4c61b790df927d4b315d@EMAIL.axentia.se> <5445BCBF.5090002@atmel.com> <dc4461593ddb4d539f2db74b69bab98c@EMAIL.axentia.se> <544620C8.4040001@atmel.com> <8559eca320324092be82f7d942606102@EMAIL.axentia.se> <544707F3.1020505@atmel.com> <c61abc1ef0f341c2be04e3d7b07d97de@EMAIL.axentia.se>
+In-Reply-To: <c61abc1ef0f341c2be04e3d7b07d97de@EMAIL.axentia.se>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 09:54:45AM +0200, Arnd Bergmann wrote:
-> On Tuesday 21 October 2014 14:14:02 Alexandre Courbot wrote:
-> > >
-> > > We have enforced naming things for the dmaengine binding, which has
-> > > just led to everyone calling things "rx" and "tx". My fear is that
-> > > if we start to enforce giving a name, we'd end up with lots of
-> > > drivers that use a "gpio-gpios" property or something silly.
-> > 
-> > Checking the bindings is also part of the review process.  Things
-> > like "gpio-gpios" should simply not be accepted to begin with.
-> > 
-> > This sounds like a good chance to finally land some guidelines
-> > regarding GPIO bindings. Let's summarize the situation:
-> > - GPIO bindings can be defined using both DT and ACPI (both interfaces
-> > nicely abstracted by the interface introduced by this series)
-> > - Both firmware interfaces support indexed GPIOs
-> > - Both firmware interfaces support named GPIO properties, with an
-> > optional index (can we absolutely take this for granted on ACPI now?)
-> 
-> The developers working on it have said that they definitely want to
-> be compatible with the existing bindings, so the answer to your question
-> is yes.
+Hi Peter,
 
-One thing to consider still is that we have plenty of existing ACPI code
-out there where _DSD is not used but instead we rely on the index. An
-example would be rfkill-gpio.c driver:
+On 10/22/2014 12:47 PM, Peter Rosin wrote:
+> Hi!
+>
+>> Hi Peter,
+>>
+>> On 10/21/2014 09:05 PM, Peter Rosin wrote:
+>>> I did some further tests, and the following program fails without the patch:
+>>
+>> With the patch, it is OK?
+>
+> Yes.
+>
+>>> #include <sys/ioctl.h>
+>>> #include <unistd.h>
+>>> #include <fcntl.h>
+>>> #include <sys/soundcard.h>
+>>>
+>>> int
+>>> main(void)
+>>> {
+>>> 	int fd;
+>>> 	int format;
+>>> 	int channels;
+>>>
+>>> 	if ((fd = open("/dev/dsp", O_WRONLY, 0)) == -1) {
+>>> 		perror("open");
+>>> 		return 1;
+>>> 	}
+>>> 	format = AFMT_S16_LE;
+>>> 	if (ioctl(fd, SNDCTL_DSP_SETFMT, &format) == -1) {
+>>> 		perror("SNDCTL_DSP_SETFMT");
+>>> 		return 1;
+>>> 	}
+>>> 	channels = 2;
+>>> 	if (ioctl(fd, SNDCTL_DSP_CHANNELS, &channels) == -1) {
+>>> 		perror("SNDCTL_DSP_CHANNELS");
+>>> 		return 1;
+>>> 	}
+>>> 	return 0;
+>>> }
+>>>
+>>> Output:
+>>> SNDCTL_DSP_CHANNELS: Device or resource busy
+>>
+>> This return from codec or from atmel_ssc_dai?
+>
+> This -EBUSY definitely comes from atmel_ssc_set_dai_sysclk, when my
+> card-driver tries to set ATMEL_SSC_CMR_DIV. With the patch, it works.
+> (the codec is spdif-transmitter, since the i2c interface of the actual tfa9879
+> codec is not directly reachable from the linux cpu, but that has nothing to
+> do with this issue).
 
-        gpio = devm_gpiod_get_index(&pdev->dev, "reset", 0);
-        if (!IS_ERR(gpio)) {
-		...
-        }
+I try to reproduce it (using the code your pasted directly) on atmel 
+sama5d3xek with wm8904 code, don't meet this error.
 
-        gpio = devm_gpiod_get_index(&pdev->dev, "shutdown", 1);
-        if (!IS_ERR(gpio)) {
-		...
-        }
+I also go through the OSS code, I still don't find this is related with 
+atmel_ssc_set_dai_sysclk.
 
-It expects that GPIOs returned from _CRS are in specific order. Since we
-can't change these existing ACPI tables, we must support them somehow.
+So, am I missing something or something else?
 
-This patch series handles it so that:
+>>> (I admin to having edited the above code slightly in this mail, so I
+> s/admin/admit/
+>>> might have introduced some silly bug, but you get what I mean, just
+>>> open the device and request some parameters, and boom: -EBUSY)
+>
+> Cheers,
+> Peter
+>
 
-  1) If we can't find given property (e.g "reset-gpios" or
-     "shutdown-gpios") the index above will refer directly to the GPIO
-     resource returned from _CRS.
-
-  2) If the property is found we ignore index and take it from the
-     property instead.
-
-This has the drawback that we cannot support this:
-
-	Package () { "reset-gpios", Package () { ^GPIO, 0, 0, 0, ^GPIO, 1, 0, 0}}
-                                                                 ^^^^^^^^^^^^^^
-So the second entry in the above is not accessible using
-gpiod_get_index() and the reason is that we want to support the existing
-and new ACPI tables where _DSD is not being used.
+Best Regards,
+Bo Shen
