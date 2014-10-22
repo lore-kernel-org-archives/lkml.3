@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152AbaJVPqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 11:46:15 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:54095 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755068AbaJVPqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 11:46:08 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Barry Song <baohua@kernel.org>
-Subject: [PATCH v3 56/59] dmaengine: sirf: Declare slave capabilities for the generic code
-Date: Wed, 22 Oct 2014 17:44:10 +0200
-Message-Id: <1413992653-21963-57-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1755173AbaJVPqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 11:46:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13515 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752473AbaJVPqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 11:46:30 -0400
+Date: Wed, 22 Oct 2014 18:50:05 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH RFC v2 00/14] linux: towards virtio-1 guest support
+Message-ID: <1413992894-22976-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the generic slave caps code can make use of the device assigned
-capabilities, instead of relying on a callback to be implemented.
+Based on patches by Cornelia and others, but
+with an API that should allow better static checking of code,
+and slightly more concervative changes in vring.
 
-Make use of this code.
+Cornelia Huck (4):
+  virtio: allow transports to get avail/used addresses
+  virtio_blk: use virtio v1.0 endian
+  KVM: s390: virtio-ccw revision 1 SET_VQ
+  KVM: s390: enable virtio-ccw revision 1
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/dma/sirf-dma.c | 17 ++++-------------
- 1 file changed, 4 insertions(+), 13 deletions(-)
+Michael S. Tsirkin (6):
+  virtio: memory access APIs
+  virtio_ring: switch to new memory access APIs
+  virtio: add virtio 1.0 feature bit
+  virtio: make endian-ness depend on virtio 1.0
+  virtio_config: endian conversion for v1.0
+  virtio: set FEATURES_OK
 
-diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
-index 711c2bae9003..87294f9b8094 100644
---- a/drivers/dma/sirf-dma.c
-+++ b/drivers/dma/sirf-dma.c
-@@ -628,18 +628,6 @@ EXPORT_SYMBOL(sirfsoc_dma_filter_id);
- 	BIT(DMA_SLAVE_BUSWIDTH_4_BYTES) | \
- 	BIT(DMA_SLAVE_BUSWIDTH_8_BYTES))
- 
--static int sirfsoc_dma_device_slave_caps(struct dma_chan *dchan,
--	struct dma_slave_caps *caps)
--{
--	caps->src_addr_widths = SIRFSOC_DMA_BUSWIDTHS;
--	caps->dst_addr_widths = SIRFSOC_DMA_BUSWIDTHS;
--	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
--	caps->cmd_pause = true;
--	caps->cmd_terminate = true;
--
--	return 0;
--}
--
- static struct dma_chan *of_dma_sirfsoc_xlate(struct of_phandle_args *dma_spec,
- 	struct of_dma *ofdma)
- {
-@@ -727,7 +715,10 @@ static int sirfsoc_dma_probe(struct platform_device *op)
- 	dma->device_tx_status = sirfsoc_dma_tx_status;
- 	dma->device_prep_interleaved_dma = sirfsoc_dma_prep_interleaved;
- 	dma->device_prep_dma_cyclic = sirfsoc_dma_prep_cyclic;
--	dma->device_slave_caps = sirfsoc_dma_device_slave_caps;
-+	dma->src_addr_widths = SIRFSOC_DMA_BUSWIDTHS;
-+	dma->dst_addr_widths = SIRFSOC_DMA_BUSWIDTHS;
-+	dma->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
-+	dma->generic_slave_caps = true;
- 
- 	INIT_LIST_HEAD(&dma->channels);
- 	dma_cap_set(DMA_SLAVE, dma->cap_mask);
+Rusty Russell (3):
+  virtio: use u32, not bitmap for struct virtio_device's features
+  virtio: add support for 64 bit features.
+  virtio_net: use v1.0 endian.
+
+Thomas Huth (1):
+  KVM: s390: Set virtio-ccw transport revision
+
+ include/linux/virtio.h                 |   6 +-
+ include/linux/virtio_config.h          |  33 +++++--
+ include/uapi/linux/virtio_config.h     |   9 +-
+ include/uapi/linux/virtio_ring.h       |  49 +++++-----
+ tools/virtio/linux/virtio.h            |  22 +----
+ tools/virtio/linux/virtio_config.h     |   2 +-
+ drivers/block/virtio_blk.c             |   4 +
+ drivers/char/virtio_console.c          |   2 +-
+ drivers/lguest/lguest_device.c         |  16 ++--
+ drivers/net/virtio_net.c               |  31 ++++---
+ drivers/remoteproc/remoteproc_virtio.c |   7 +-
+ drivers/s390/kvm/kvm_virtio.c          |  10 +-
+ drivers/s390/kvm/virtio_ccw.c          | 165 +++++++++++++++++++++++++++------
+ drivers/virtio/virtio.c                |  47 ++++++----
+ drivers/virtio/virtio_mmio.c           |  20 ++--
+ drivers/virtio/virtio_pci.c            |   8 +-
+ drivers/virtio/virtio_ring.c           | 109 +++++++++++++---------
+ tools/virtio/virtio_test.c             |   5 +-
+ tools/virtio/vringh_test.c             |  16 ++--
+ include/uapi/linux/Kbuild              |   1 +
+ 20 files changed, 361 insertions(+), 201 deletions(-)
+
 -- 
-2.1.1
+MST
 
