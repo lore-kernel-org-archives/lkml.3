@@ -1,90 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393AbaJWQlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:41:09 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:58601 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885AbaJWQlF (ORCPT
+	id S1753956AbaJWQmz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:42:55 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43605 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaJWQmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:41:05 -0400
-Date: Thu, 23 Oct 2014 09:40:52 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, linux-kernel@vger.kernel.org,
-        Chris Healy <chealy@imsco-us.com>
-Subject: Re: [PATCH 10/14] net: dsa/mv88e6352: Implement EEPROM access
- functions
-Message-ID: <20141023164052.GB21343@roeck-us.net>
-References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
- <1414037002-25528-11-git-send-email-linux@roeck-us.net>
- <20141023135412.GC25190@lunn.ch>
+	Thu, 23 Oct 2014 12:42:53 -0400
+Date: Thu, 23 Oct 2014 18:42:46 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>, dmitry.torokhov@gmail.com,
+        sre@kernel.org, B38611@freescale.com, aaro.koskinen@iki.fi,
+        jg1.han@samsung.com, linux-input@vger.kernel.org
+Subject: Re: 3.18.rc1: compile failure in tsc2005.c
+Message-ID: <20141023164245.GA13718@amd>
+References: <20141023125325.GB30572@amd>
+ <201410231501.04540@pali>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141023135412.GC25190@lunn.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.54492FA1.00FD,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <201410231501.04540@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 03:54:12PM +0200, Andrew Lunn wrote:
-> On Wed, Oct 22, 2014 at 09:03:18PM -0700, Guenter Roeck wrote:
-> > MV88E6352 supports read and write access to its configuration eeprom.
-> 
-> Hi Guenter
-> 
-> I don't have the datasheet for the MV88E6352. Is the EEPROM built in,
-> or external on an i2c bus?
-> 
-External.
+Hi!
 
-> > +static int mv88e6352_get_eeprom_len(struct dsa_switch *ds)
-> > +{
-> > +	return 0x200;
-> > +}
-> 
-> How do you handle the case of it being external and not populated.
-> Would it not be better to try to detect it here, and return 0 if it
-> does not exist?
-> 
-Makes sense, if it is detectable that it the EEPROM not there. Browsing
-through the datasheet, I don't see how I could detect it; there does not
-seem to be a status bit indicating if the EEPROM is there or not. There
-are sw_mode pins which determine if the eeprom should be loaded after
-reset or not, but I don't see anything in the register set which would
-tell me.
+Oops, ignore me, this is part of n900 changes that did not make it to
+mainline.
 
-Chris, do you know if there is a means to detect if the EEPROM is present
-on the MV88E6352 ?
+> > I get this. Before I start patching it, perhaps someone has
+> > fixed it already?
+> > 
+> >   CC      drivers/input/touchscreen/tsc2005.o
+> > drivers/input/touchscreen/tsc2005.c: In function
+> > 'tsc2005_disable_store':
+> > drivers/input/touchscreen/tsc2005.c:406:2: error: implicit
+> > declaration of function 'strict_strtoul'
+> > [-Werror=implicit-function-declaration] cc1: some warnings
+> > being treated as errors
+n> > scripts/Makefile.build:257: recipe for target
+> > 'drivers/input/touchscreen/tsc2005.o' failed
+> > make[3]: *** [drivers/input/touchscreen/tsc2005.o] Error 1
+> > scripts/Makefile.build:402: recipe for target
+> > 'drivers/input/touchscreen' failed
+> > make[2]: *** [drivers/input/touchscreen] Error 2
+> > scripts/Makefile.build:402: recipe for target 'drivers/input'
+> > failed make[1]: *** [drivers/input] Error 2
+> > make[1]: *** Waiting for unfinished jobs....
+> >   CC      net/core/request_sock.o
+> 
+> Hi, I read somewhere that strict_strtoul function was replaced by 
+> some kstrtol function... So maybe somebody forgot to fix tsc2005 
+> driver?
 
-Thanks,
-Guenter
+Yes.. there are four places in n900 patches that will need fixing.
+
+This only applies to Pali's tree.
+
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+
+									Pavel
+
+commit 1f031685bd14a13242f78e7cc9cc1cd767aa3dbc
+Author: Pavel <pavel@ucw.cz>
+Date:   Thu Oct 23 17:23:16 2014 +0200
+
+    Fix compilation by replacing strict_strtoul to kstrtoul
+    
+    Signed-off-by: Pavel Machek <pavel@ucw.cz>
+
+diff --git a/arch/arm/plat-omap/gpio-switch.c b/arch/arm/plat-omap/gpio-switch.c
+index 394c45b..ceed4f3 100644
+--- a/arch/arm/plat-omap/gpio-switch.c
++++ b/arch/arm/plat-omap/gpio-switch.c
+@@ -197,7 +197,7 @@ static ssize_t gpio_sw_disable_store(struct device *dev,
+ 	struct gpio_switch *sw = dev_get_drvdata(dev);
+ 	unsigned long res;
+ 
+-	if (strict_strtoul(buf, 10, &res) < 0)
++	if (kstrtoul(buf, 10, &res) < 0)
+ 		return -EINVAL;
+ 
+ 	if (!!res == sw->disabled)
+diff --git a/drivers/input/touchscreen/tsc2005.c b/drivers/input/touchscreen/tsc2005.c
+index 422ec6e..ec1c276 100644
+--- a/drivers/input/touchscreen/tsc2005.c
++++ b/drivers/input/touchscreen/tsc2005.c
+@@ -403,7 +403,7 @@ static ssize_t tsc2005_disable_store(struct device *dev,
+ 	unsigned long val;
+ 	int error;
+ 
+-	error = strict_strtoul(buf, 10, &val);
++	error = kstrtoul(buf, 10, &val);
+ 	if (error)
+ 		return error;
+ 
+diff --git a/drivers/net/wireless/ti/wl1251/main.c b/drivers/net/wireless/ti/wl1251/main.c
+index 3a986f3..f697e5f 100644
+--- a/drivers/net/wireless/ti/wl1251/main.c
++++ b/drivers/net/wireless/ti/wl1251/main.c
+@@ -1506,7 +1506,7 @@ static ssize_t wl1251_sysfs_store_tx_mgmt_frm_rate(struct device *dev,
+ 	unsigned long res;
+ 	int ret;
+ 
+-	ret = strict_strtoul(buf, 10, &res);
++	ret = kstrtoul(buf, 10, &res);
+ 
+ 	if (ret < 0) {
+ 		wl1251_warning("incorrect value written to tx_mgmt_frm_rate");
+@@ -1600,7 +1600,7 @@ static ssize_t wl1251_sysfs_store_bt_coex_mode(struct device *dev,
+ 	unsigned long res;
+ 	int ret;
+ 
+-	ret = strict_strtoul(buf, 10, &res);
++	ret = kstrtoul(buf, 10, &res);
+ 
+ 	if (ret < 0) {
+ 		wl1251_warning("incorrect value written to bt_coex_mode");
+
+
+
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
