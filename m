@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbaJWIYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 04:24:53 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:45746 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaJWIYu (ORCPT
+	id S1753851AbaJWIZy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 04:25:54 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:43751 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145AbaJWIZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 04:24:50 -0400
-Date: Thu, 23 Oct 2014 10:24:44 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Florian Fainelli <f.fainelli@gmail.com>, netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Andrew Lunn <andrew@lunn.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
-Message-ID: <20141023082444.GA4122@localhost.localdomain>
-References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
- <1414037002-25528-7-git-send-email-linux@roeck-us.net>
- <CAGVrzcYjPJWai9bxkh+WRrEEAzBKBd-LQm7zDeeouxngr_v9SQ@mail.gmail.com>
- <54488CE1.2000106@roeck-us.net>
+	Thu, 23 Oct 2014 04:25:52 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "David S. Miller" <davem@davemloft.net>,
+        Iyappan Subramanian <isubramanian@apm.com>,
+        Keyur Chudgar <kchudgar@apm.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH v3] drivers: net: xgene: Rewrite buggy loop in xgene_enet_ecc_init()
+Date: Thu, 23 Oct 2014 10:25:53 +0200
+Message-Id: <1414052753-10183-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54488CE1.2000106@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 10:06:41PM -0700, Guenter Roeck wrote:
-> On 10/22/2014 09:37 PM, Florian Fainelli wrote:
-> >You probably want the number of temperature sensors to come from the
-> >switch driver, and support arbitrary number of temperature sensors?
-> 
-> In that case we would need the number of sensors, pass a sensor index,
-> and create a dynamic number of attributes. The code would get much more
-> complex without real benefit unless there is such a chip - and if there is,
-> we can still change the code at that time. I would prefer to keep it simple
-> for now.
+drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c: In function ‘xgene_enet_ecc_init’:
+drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c:126: warning: ‘data’ may be used uninitialized in this function
 
-Better to do it correctly, right from the start. There *will* be such
-a chip one day, and the person wanting to add it will appreciate the
-solid foundation (even if that person ends up being you ;).
+Depending on the arbitrary value on the stack, the loop may terminate
+too early, and cause a bogus -ENODEV failure.
 
-Thanks,
-Richard
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+v3:
+  - Use "do { ... } while (...);" instead of "for (...) { ... }",
+v2:
+  - Rewrite the loop instead of pre-initializing data.
+
+ drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c b/drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c
+index e6d24c2101982444..c22f32622fa9a50a 100644
+--- a/drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c
++++ b/drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c
+@@ -124,20 +124,18 @@ static int xgene_enet_ecc_init(struct xgene_enet_pdata *p)
+ {
+ 	struct net_device *ndev = p->ndev;
+ 	u32 data;
+-	int i;
++	int i = 0;
+ 
+ 	xgene_enet_wr_diag_csr(p, ENET_CFG_MEM_RAM_SHUTDOWN_ADDR, 0);
+-	for (i = 0; i < 10 && data != ~0U ; i++) {
++	do {
+ 		usleep_range(100, 110);
+ 		data = xgene_enet_rd_diag_csr(p, ENET_BLOCK_MEM_RDY_ADDR);
+-	}
++		if (data == ~0U)
++			return 0;
++	} while (++i < 10);
+ 
+-	if (data != ~0U) {
+-		netdev_err(ndev, "Failed to release memory from shutdown\n");
+-		return -ENODEV;
+-	}
+-
+-	return 0;
++	netdev_err(ndev, "Failed to release memory from shutdown\n");
++	return -ENODEV;
+ }
+ 
+ static void xgene_enet_config_ring_if_assoc(struct xgene_enet_pdata *p)
+-- 
+1.9.1
+
