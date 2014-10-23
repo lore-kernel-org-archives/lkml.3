@@ -1,83 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035AbaJWRWo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 13:22:44 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35363 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaJWRWm (ORCPT
+	id S1754361AbaJWRXw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 13:23:52 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:58008 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037AbaJWRXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 13:22:42 -0400
-Date: Thu, 23 Oct 2014 19:22:33 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
-Subject: Re: [PATCH RFC v4 16/17] KVM: s390 allow virtio_ccw status writes
- to fail
-Message-ID: <20141023192233.29ca143e.cornelia.huck@de.ibm.com>
-In-Reply-To: <1414081380-14623-17-git-send-email-mst@redhat.com>
-References: <1414081380-14623-1-git-send-email-mst@redhat.com>
-	<1414081380-14623-17-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102317-0021-0000-0000-000001848E14
+	Thu, 23 Oct 2014 13:23:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <54493433.4090703@arm.com>
+References: <54493433.4090703@arm.com>
+Date: Thu, 23 Oct 2014 10:23:49 -0700
+Message-ID: <CABg9mcu0-AFNNOn+C4kbS7_rWqc-6WXZTyKUJYz6rA7-8OBqZA@mail.gmail.com>
+Subject: Re: BPF crash with 3.18-rc1 on arm64 Juno hardware
+From: Z Lim <zlim.lnx@gmail.com>
+To: Andre Przywara <andre.przywara@arm.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Oct 2014 19:25:01 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Hi Andre,
 
-> Gracefully handle failure to write device status.
-> We really should handle other errors as well, but this one is needed for
-> virtio 1.0 compliance.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/s390/kvm/virtio_ccw.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
-> index a994078..26e737c 100644
-> --- a/drivers/s390/kvm/virtio_ccw.c
-> +++ b/drivers/s390/kvm/virtio_ccw.c
-> @@ -862,7 +862,9 @@ static u8 virtio_ccw_get_status(struct virtio_device *vdev)
->  static void virtio_ccw_set_status(struct virtio_device *vdev, u8 status)
->  {
->  	struct virtio_ccw_device *vcdev = to_vc_device(vdev);
-> +	u8 old_status = vcdev->status;
+On Thu, Oct 23, 2014 at 10:00 AM, Andre Przywara <andre.przywara@arm.com> wrote:
+> Hi,
+>
+> I see a crash with 3.18-rc1 on a Juno board related to bpf_jit (see dump
+> below). Userland tries to carry on afterwards, but eventually hangs in
+> RCU stalls.
+> The kernel has just CONFIG_BPF_JIT enabled, I guess Ubuntu enables this
+> automatically if detected.
+>
 
-*vcdev->status
+When net-next and arm64-next merged in mainline, a silent failure is
+introduced due to new enhancements in net/bpf.
+This was actually uncovered before 3.18 merge window, and Daniel's
+patch to fix this was discussed here [1].
+I see that Catalin has queued up this patch in fixes/core [2].
 
->  	struct ccw1 *ccw;
-> +	int ret;
-> 
->  	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
->  	if (!ccw)
-> @@ -874,7 +876,10 @@ static void virtio_ccw_set_status(struct virtio_device *vdev, u8 status)
->  	ccw->flags = 0;
->  	ccw->count = sizeof(status);
->  	ccw->cda = (__u32)(unsigned long)vcdev->status;
-> -	ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_WRITE_STATUS);
-> +	ret = ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_WRITE_STATUS);
-> +	/* Write failed? We assume status is unchanged. */
-> +	if (ret)
-> +		*vcdev->status = old_status;
+[1] https://lkml.org/lkml/2014/9/16/73
+[2] https://git.kernel.org/cgit/linux/kernel/git/arm64/linux.git/commit/?h=fixes/core&id=b569c1c622c5e60c960a6ae5bd0880e0cdbd56b1)
 
-If we fail the write, ccw->cda should be unchanged; but this doesn't
-hurt.
-
->  	kfree(ccw);
->  }
-> 
-
+> The backtrace doesn't make too much sense to me:
+>
+> void bpf_jit_free(struct bpf_prog *prog)
+> {
+>         if (prog->jited)
+>                 module_free(NULL, prog->bpf_func);
+>
+>         kfree(prog);
+> }
+> It crashes in kfree, but has survived the dereference before.
+>
+> I have no clue about BPF, so if anyone could help me debug this, I'd be
+> grateful.
+>
+> Cheers,
+> Andre.
+>
+>
+>  * Starting Signal sysvinit that local filesystems are mounted   [ OK ]
+>  * Starting configure network device security                    [ OK ]
+> Unable to handle kernel paging request at virtual address 37fffbd21c02290
+> pgd = ffffffc976538000
+> [37fffbd21c02290] *pgd=0000000000000000, *pud=0000000000000000
+> Internal error: Oops: 96000004 [#1] PREEMPT SMP
+> Modules linked in:
+> CPU: 3 PID: 737 Comm: kworker/3:1 Not tainted 3.18.0-rc1+ #1666
+> Workqueue: events bpf_prog_free_deferred
+> task: ffffffc977a89580 ti: ffffffc976494000 task.ti: ffffffc976494000
+> PC is at kfree+0x70/0x260
+> LR is at bpf_jit_free+0x34/0x40
+> pc : [<ffffffc0001b0634>] lr : [<ffffffc000099290>] pstate: a0000145
+> sp : ffffffc976497ca0
+> x29: ffffffc976497ca0 x28: 0000000000000000
+> x27: ffffffc97feff400 x26: ffffffc0009b0000
+> x25: 0000000000000000 x24: 0000000000000000
+> x23: ffffffc97ff03900 x22: ffffffc97feff400
+> x21: ffffffc000099290 x20: ffffff800009e000
+> x19: ffffff800009e000 x18: 0000007feb492820
+> x17: 0000007fb71c6980 x16: ffffffc0001fcc14
+> x15: 003b9aca00000000 x14: 0027947614000000
+> x13: ffffffffabb6d0e3 x12: 0000000000000018
+> x11: 0000000033c2a168 x10: 0000000000000006
+> x9 : ffffffc976497bd0 x8 : ffffffc977a89a90
+> x7 : ffffffc97736c4d0 x6 : 00000000000009be
+> x5 : 0000000000000000 x4 : 0000000000000001
+> x3 : ffffffc97feff7c0 x2 : 03ffffff02002780
+> x1 : 037fffff21c02290 x0 : ffffffbe00000000
+>
+> Process kworker/3:1 (pid: 737, stack limit = 0xffffffc976494058)
+> Stack: (0xffffffc976497ca0 to 0xffffffc976498000)
+> ....
