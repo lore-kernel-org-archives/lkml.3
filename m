@@ -1,127 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690AbaJWCmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 22:42:44 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:42994 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932381AbaJWCmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 22:42:43 -0400
-Date: Wed, 22 Oct 2014 21:43:08 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: athorlton@sgi.com
-Cc: Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
-Message-ID: <20141023024308.GA14217@sgi.com>
-References: <1414031706-101613-1-git-send-email-athorlton@sgi.com>
+	id S932814AbaJWCnj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 22:43:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8761 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932353AbaJWCni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 22:43:38 -0400
+Message-ID: <54486B26.30703@redhat.com>
+Date: Wed, 22 Oct 2014 22:42:46 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414031706-101613-1-git-send-email-athorlton@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Galbraith <efault@gmx.de>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        kamalesh@linux.vnet.ibm.com, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        Tuukka Tikkanen <tuukka.tikkanen@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH RFC 5/7] sched: cfs: cpu frequency scaling arch functions
+References: <1413958051-7103-1-git-send-email-mturquette@linaro.org>	 <1413958051-7103-6-git-send-email-mturquette@linaro.org>	 <54480E58.5060600@redhat.com>	 <CAPtuhThe9dQkbwbXoCV0VpHohrC8UacPoL5vCn2uDqHcjbtKGA@mail.gmail.com>	 <54485D03.9070107@redhat.com> <1414030360.5228.12.camel@marge.simpson.net>
+In-Reply-To: <1414030360.5228.12.camel@marge.simpson.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore!  Screwed up my git send-email...  Sending the proper
-version here in a bit...
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On Wed, Oct 22, 2014 at 09:35:02PM -0500, Alex Thorlton wrote:
-> Hey everyone,
+On 10/22/2014 10:12 PM, Mike Galbraith wrote:
+> On Wed, 2014-10-22 at 21:42 -0400, Rik van Riel wrote:
+>> On 10/22/2014 07:20 PM, Mike Turquette wrote:
+>>> On Wed, Oct 22, 2014 at 1:06 PM, Rik van Riel
+>>> <riel@redhat.com> wrote: On 10/22/2014 02:07 AM, Mike Turquette
+>>> wrote:
+>>>>>> arch_eval_cpu_freq and arch_scale_cpu_freq are added to
+>>>>>> allow the scheduler to evaluate if cpu frequency should
+>>>>>> change and to invoke that change from a safe context.
+>>>>>> 
+>>>>>> They are weakly defined arch functions that do nothing
+>>>>>> by default. A CPUfreq governor could use these functions
+>>>>>> to implement a frequency scaling policy based on updates
+>>>>>> to per-task statistics or updates to per-cpu
+>>>>>> utilization.
+>>>>>> 
+>>>>>> As discussed at Linux Plumbers Conference 2014, the goal
+>>>>>> will be to focus on a single cpu frequency scaling policy
+>>>>>> that works for everyone. That may mean that the weak
+>>>>>> arch functions definitions can be removed entirely and a
+>>>>>> single policy implements that logic for all
+>>>>>> architectures.
+>>> 
+>>> On virtual machines, we probably want to use both frequency and
+>>>  steal time to calculate the factor.
+>>> 
+>>>> You mean for calculating desired cpu frequency on a virtual 
+>>>> guest? Is that something we want to do?
+>> 
+>> A guest will be unable to set the cpu frequency, but it should 
+>> know what the frequency is, so it can take the capacity of each 
+>> CPU into account when doing things like load balancing.
 > 
-> Last week, while discussing possible fixes for some unexpected/unwanted behavior
-> from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
-> mentioned possibly changing changing khugepaged to work as a task_work function
-> instead of a kernel thread.  This will give us finer grained control over the
-> page collapse scans, eliminate some unnecessary scans since tasks that are
-> relatively inactive will not be scanned often, and eliminate the unwanted
-> behavior described in the email thread I mentioned.
-> 
-> This initial patch is fully functional, but there are quite a few areas that
-> will need to be polished up before it's ready to be considered for a merge.  I
-> wanted to get this initial version out with some basic test results quickly, so
-> that people can give their opinions and let me know if there's anything they'd
-> like to see done differently (and there probably is :).  I'll give details on
-> the code in the individual patches.
-> 
-> I gathered some pretty rudimentary test data using a 48-thread NAMD simulation
-> pinned to a cpuset with 8 cpus and about 60g of memory.  I'm checking to see if
-> I'm allowed to publish the input data so that others can replicate the test.  In
-> the meantime, if somebody knows of a publicly available benchmark that stresses
-> khugepaged, that would be helpful.
-> 
-> The only data point I gathered was the number of pages collapsed, sampled every
-> ten seconds, for the lifetime of the job.  This one statistic gives a pretty
-> decent illustration of the difference in behavior between the two kernels, but I
-> intend to add some other counters to measure fully completed scans, failed
-> allocations, and possibly scans skipped due to timer constraints.
-> 
-> The data for the standard kernel (with a very small patch to add the stat
-> counter that I used to the task_struct) is available here:
-> 
-> http://oss.sgi.com/projects/memtests/pgcollapse/output-khpd
-> 
-> This was a fairly recent kernel (last Tuesday).  Commit ID:
-> 2d65a9f48fcdf7866aab6457bc707ca233e0c791.  I'll send the patches I used for that
-> kernel as a reply to this message shortly.
-> 
-> The output from the modified kernel is stored here:
-> 
-> http://oss.sgi.com/projects/memtests/pgcollapse/output-pgcollapse
-> 
-> The output is stored in a pretty dumb format (*really* wide).  Best viewed in a
-> simple text editor with word wrap off, just fyi.
-> 
-> Quick summary of what I found:  Both kernels performed about the same when it
-> comes to overall runtime, my kernel was 22 seconds faster with a total runtime
-> of 4:13:07.  Not a significant difference, but important to note that there was
-> no apparent performance degradation.  The most interesting result is that my
-> kernel completed the majority of the necessary page collapses for this job in
-> 2:04, whereas the mainline kernel took 29:05 to get to the same point.
-> 
-> Let me know what you think.  Any suggestions are appreciated!
-> 
-> - Alex
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Bob Liu <lliubbo@gmail.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: linux-kernel@vger.kernel.org
-> 
-> Alex Thorlton (4):
->   Disable khugepaged thread
->   Add pgcollapse controls to task_struct
->   Convert khugepaged scan functions to work with task_work
->   Add /proc files to expose per-mm pgcollapse stats
-> 
->  fs/proc/base.c             |  23 +++++++
->  include/linux/khugepaged.h |  10 ++-
->  include/linux/sched.h      |  16 +++++
->  kernel/fork.c              |   7 ++
->  kernel/sched/fair.c        |  18 +++++
->  mm/huge_memory.c           | 162 +++++++++++++++------------------------------
->  6 files changed, 123 insertions(+), 113 deletions(-)
-> 
-> -- 
-> 1.7.12.4
-> 
+> Hm.  Why does using vaporite freq/capacity/whatever make any sense,
+> the silicon under the V(aporite)PU can/does change at the drop of a
+> hat, no?
+
+It can, but IIRC that should cause the kvmclock data for that VCPU
+to be regenerated, and the VCPU should be able to use that to figure
+out that the frequency changed the next time it runs the scheduler
+code on that VCPU.
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUSGsmAAoJEM553pKExN6DlhUH/RLmVoHmab2zfPgZfRXWD9PX
+yKkx1tmoNPFAdp7l1xgz+fIVtp5I7gUnCo03r0x3JDL8dYiEfU1BfX1bs2WSresL
+7q50DVLQe8VXIqgmu1INqzQSJGfF9yOW4Kgg2xHkNBoWUdt+3fjF9JSEMJFxOZOs
+pFT85ITTs0zFIRDlwdEBEs0kRLEqh0JBeLx501RSC9VQ9OIZ3lp9O1BnawQ8WI0o
+Qq8ODXFgy1BGUE+Ow+skP8MnQUyBgb6b+f0Q6AmK/Er6lzw8PMwNvnmYN14ruR3R
+YkTjsyYxlYlzrx2IKZNWuYy5OXguRIslWi67fI0k/yE2WVHy/yXPbRErYQfM2o8=
+=PeDr
+-----END PGP SIGNATURE-----
