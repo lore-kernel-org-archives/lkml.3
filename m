@@ -1,349 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaJWUvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 16:51:40 -0400
-Received: from mail.kernel.org ([198.145.19.201]:50097 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750930AbaJWUvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 16:51:38 -0400
-Date: Thu, 23 Oct 2014 17:51:27 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 04/16] perf tools: Add a thread stack for synthesizing
- call chains
-Message-ID: <20141023205127.GM14687@kernel.org>
-References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
- <1414061124-26830-5-git-send-email-adrian.hunter@intel.com>
+	id S932836AbaJWUwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 16:52:50 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62661 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932301AbaJWUws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 16:52:48 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>, linux-usb@vger.kernel.org
+Subject: Re: kernel 3.17.1: fail to use USB3 device after resuming from suspend
+Date: Thu, 23 Oct 2014 23:13:16 +0200
+Message-ID: <3246508.csL4NlCXV0@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <544961F6.8050609@gmail.com>
+References: <544961F6.8050609@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414061124-26830-5-git-send-email-adrian.hunter@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Oct 23, 2014 at 01:45:12PM +0300, Adrian Hunter escreveu:
-> Add a thread stack for synthesizing call chains from call
-> and return events.
+On Thursday, October 23, 2014 10:15:50 PM Francis Moreau wrote:
+> Hello,
 > 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  tools/perf/Makefile.perf       |   2 +
->  tools/perf/util/event.h        |  26 +++++++
->  tools/perf/util/thread-stack.c | 151 +++++++++++++++++++++++++++++++++++++++++
->  tools/perf/util/thread-stack.h |  32 +++++++++
->  tools/perf/util/thread.c       |   3 +
->  tools/perf/util/thread.h       |   3 +
->  6 files changed, 217 insertions(+)
->  create mode 100644 tools/perf/util/thread-stack.c
->  create mode 100644 tools/perf/util/thread-stack.h
+> After resuming from a suspend (to RAM), I can't use an external USB hard
+> drive anymore, the kernel seems to fail to detect it.
 > 
-> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-> index 262916f..5bbe1ff 100644
-> --- a/tools/perf/Makefile.perf
-> +++ b/tools/perf/Makefile.perf
-> @@ -304,6 +304,7 @@ LIB_H += ui/util.h
->  LIB_H += ui/ui.h
->  LIB_H += util/data.h
->  LIB_H += util/kvm-stat.h
-> +LIB_H += util/thread-stack.h
->  
->  LIB_OBJS += $(OUTPUT)util/abspath.o
->  LIB_OBJS += $(OUTPUT)util/alias.o
-> @@ -380,6 +381,7 @@ LIB_OBJS += $(OUTPUT)util/srcline.o
->  LIB_OBJS += $(OUTPUT)util/data.o
->  LIB_OBJS += $(OUTPUT)util/tsc.o
->  LIB_OBJS += $(OUTPUT)util/cloexec.o
-> +LIB_OBJS += $(OUTPUT)util/thread-stack.o
->  
->  LIB_OBJS += $(OUTPUT)ui/setup.o
->  LIB_OBJS += $(OUTPUT)ui/helpline.o
-> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-> index c89518e..e84f929 100644
-> --- a/tools/perf/util/event.h
-> +++ b/tools/perf/util/event.h
-> @@ -143,6 +143,32 @@ struct branch_stack {
->  	struct branch_entry	entries[0];
->  };
->  
-> +enum {
-> +	PERF_FLAG_BRANCH		= 1ULL << 0,
-> +	PERF_FLAG_CALL			= 1ULL << 1,
-> +	PERF_FLAG_RETURN		= 1ULL << 2,
-> +	PERF_FLAG_CONDITIONAL		= 1ULL << 3,
-> +	PERF_FLAG_SYSCALLRET		= 1ULL << 4,
-> +	PERF_FLAG_ASYNC			= 1ULL << 5,
-> +	PERF_FLAG_INTERRUPT		= 1ULL << 6,
-> +	PERF_FLAG_TX_ABORT		= 1ULL << 7,
-> +	PERF_FLAG_TRACE_BEGIN		= 1ULL << 8,
-> +	PERF_FLAG_TRACE_END		= 1ULL << 9,
-> +	PERF_FLAG_IN_TX			= 1ULL << 10,
-> +};
-> +
-> +#define PERF_BRANCH_MASK	(\
-> +	PERF_FLAG_BRANCH	|\
-> +	PERF_FLAG_CALL		|\
-> +	PERF_FLAG_RETURN	|\
-> +	PERF_FLAG_CONDITIONAL	|\
-> +	PERF_FLAG_SYSCALLRET	|\
-> +	PERF_FLAG_ASYNC		|\
-> +	PERF_FLAG_INTERRUPT	|\
-> +	PERF_FLAG_TX_ABORT	|\
-> +	PERF_FLAG_TRACE_BEGIN	|\
-> +	PERF_FLAG_TRACE_END)
-> +
->  struct perf_sample {
->  	u64 ip;
->  	u32 pid, tid;
-> diff --git a/tools/perf/util/thread-stack.c b/tools/perf/util/thread-stack.c
-> new file mode 100644
-> index 0000000..c1ca2a9
-> --- /dev/null
-> +++ b/tools/perf/util/thread-stack.c
-> @@ -0,0 +1,151 @@
-> +/*
-> + * thread-stack.c: Synthesize a thread's stack using call / return events
-> + * Copyright (c) 2014, Intel Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + */
-> +
-> +#include "thread.h"
-> +#include "event.h"
-> +#include "util.h"
-> +#include "thread-stack.h"
-> +
-> +#define STACK_GROWTH 4096
-> +
-> +struct thread_stack_entry {
-> +	u64 ret_addr;
-> +};
-> +
-> +struct thread_stack {
-> +	struct thread_stack_entry *stack;
-> +	size_t cnt;
-> +	size_t sz;
-> +	u64 trace_nr;
-> +};
-> +
-> +static void thread_stack__grow(struct thread_stack *ts)
-> +{
-> +	struct thread_stack_entry *new_stack;
-> +	size_t sz, new_sz;
-> +
-> +	new_sz = ts->sz + STACK_GROWTH;
-> +	sz = new_sz * sizeof(struct thread_stack_entry);
-> +	new_stack = realloc(ts->stack, sz);
-> +	if (new_stack) {
-> +		ts->stack = new_stack;
-> +		ts->sz = new_sz;
-> +	}
-> +}
-> +
-> +static struct thread_stack *thread_stack__new(void)
-> +{
-> +	struct thread_stack *ts;
-> +
-> +	ts = zalloc(sizeof(struct thread_stack));
-> +	if (!ts)
-> +		return NULL;
-> +
-> +	thread_stack__grow(ts);
-> +	if (!ts->stack) {
-> +		free(ts);
-> +		return NULL;
-> +	}
-> +
-> +	return ts;
-> +}
-> +
-> +static void thread_stack__push(struct thread_stack *ts, u64 ret_addr)
-> +{
-> +	if (ts->cnt == ts->sz) {
-> +		thread_stack__grow(ts);
-> +		if (ts->cnt == ts->sz)
-> +			ts->cnt = 0;
-> +	}
-> +
-> +	ts->stack[ts->cnt++].ret_addr = ret_addr;
-> +}
+> Here is the kernel log when doing a suspend/resume cycle.
+> 
+> [Oct23 22:03] wlp2s0: deauthenticating from 92:23:b1:f9:54:e4 by local
+> choice (Reason: 3=DEAUTH_LEAVING)
+> [  +0.025152] cfg80211: Calling CRDA to update world regulatory domain
+> [  +0.052636] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+> [  +0.071175] PM: Syncing filesystems ... done.
+> [  +0.099223] PM: Preparing system for mem sleep
+> [  +0.000347] Freezing user space processes ... (elapsed 0.001 seconds)
+> done.
+> [  +0.001406] Freezing remaining freezable tasks ... (elapsed 0.001
+> seconds) done.
+> [  +0.001083] PM: Entering mem sleep
+> [  +0.000017] Suspending console(s) (use no_console_suspend to debug)
+> [  +0.000264] sd 4:0:0:0: [sdb] Synchronizing SCSI cache
+> [  +0.000036] sd 4:0:0:0: [sdb] Stopping disk
+> [  +0.000004] sd 0:0:0:0: [sda] Synchronizing SCSI cache
+> [  +0.000049] sd 0:0:0:0: [sda] Stopping disk
+> [  +1.058316] PM: suspend of devices complete after 1057.429 msecs
+> [  +0.013434] PM: late suspend of devices complete after 13.410 msecs
+> [  +0.000875] ehci-pci 0000:00:1d.0: System wakeup enabled by ACPI
+> [  +0.000013] r8169 0000:03:00.2: System wakeup enabled by ACPI
+> [  +0.000101] ehci-pci 0000:00:1a.0: System wakeup enabled by ACPI
+> [  +0.000047] xhci_hcd 0000:00:14.0: System wakeup enabled by ACPI
+> [  +0.012356] PM: noirq suspend of devices complete after 13.373 msecs
+> [  +0.000401] ACPI: Preparing to enter system sleep state S3
+> [  +0.002149] PM: Saving platform NVS memory
+> [  +0.000006] Disabling non-boot CPUs ...
+> [  +0.000075] intel_pstate CPU 1 exiting
+> [  +0.001363] kvm: disabling virtualization on CPU1
+> [  +0.000028] smpboot: CPU 1 is now offline
+> [  +0.000436] intel_pstate CPU 2 exiting
+> [  +0.001348] kvm: disabling virtualization on CPU2
+> [  +0.100773] smpboot: CPU 2 is now offline
+> [  +0.000322] intel_pstate CPU 3 exiting
+> [  +0.001260] kvm: disabling virtualization on CPU3
+> [  +0.101855] smpboot: CPU 3 is now offline
+> [  +0.000246] intel_pstate CPU 4 exiting
+> [  +0.001181] kvm: disabling virtualization on CPU4
+> [  +0.102021] smpboot: CPU 4 is now offline
+> [  +0.000396] intel_pstate CPU 5 exiting
+> [  +0.001242] kvm: disabling virtualization on CPU5
+> [  +0.101801] smpboot: CPU 5 is now offline
+> [  +0.000292] intel_pstate CPU 6 exiting
+> [  +0.001301] kvm: disabling virtualization on CPU6
+> [  +0.101880] smpboot: CPU 6 is now offline
+> [  +0.000496] intel_pstate CPU 7 exiting
+> [  +0.001265] kvm: disabling virtualization on CPU7
+> [  +0.101649] smpboot: CPU 7 is now offline
+> [  +0.002022] ACPI: Low-level resume complete
+> [  +0.000043] PM: Restoring platform NVS memory
+> [  +0.000342] Enabling non-boot CPUs ...
+> [  +0.000047] x86: Booting SMP configuration:
+> [  +0.000002] smpboot: Booting Node 0 Processor 1 APIC 0x2
+> [  +0.011516] kvm: enabling virtualization on CPU1
+> [  +0.002301] CPU1 is up
+> [  +0.000025] smpboot: Booting Node 0 Processor 2 APIC 0x4
+> [  +0.011466] kvm: enabling virtualization on CPU2
+> [  +0.002307] CPU2 is up
+> [  +0.000022] smpboot: Booting Node 0 Processor 3 APIC 0x6
+> [  +0.011469] kvm: enabling virtualization on CPU3
+> [  +0.002305] CPU3 is up
+> [  +0.000022] smpboot: Booting Node 0 Processor 4 APIC 0x1
+> [  +0.011483] kvm: enabling virtualization on CPU4
+> [  +0.002298] CPU4 is up
+> [  +0.000018] smpboot: Booting Node 0 Processor 5 APIC 0x3
+> [  +0.011437] kvm: enabling virtualization on CPU5
+> [  +0.002305] CPU5 is up
+> [  +0.000017] smpboot: Booting Node 0 Processor 6 APIC 0x5
+> [  +0.011550] kvm: enabling virtualization on CPU6
+> [  +0.002297] CPU6 is up
+> [  +0.000017] smpboot: Booting Node 0 Processor 7 APIC 0x7
+> [  +0.011457] kvm: enabling virtualization on CPU7
+> [  +0.002312] CPU7 is up
+> [  +0.006813] ACPI: Waking up from system sleep state S3
+> [  +0.046539] ehci-pci 0000:00:1d.0: System wakeup disabled by ACPI
+> [  +0.000267] ehci-pci 0000:00:1a.0: System wakeup disabled by ACPI
+> [  +0.000123] xhci_hcd 0000:00:14.0: System wakeup disabled by ACPI
+> [  +0.000053] PM: noirq resume of devices complete after 13.005 msecs
+> [  +0.000523] PM: early resume of devices complete after 0.479 msecs
+> [  +0.000120] mei_me 0000:00:16.0: irq 28 for MSI/MSI-X
+> [  +0.000047] r8169 0000:03:00.2: System wakeup disabled by ACPI
+> [  +0.000097] snd_hda_intel 0000:00:1b.0: irq 29 for MSI/MSI-X
+> [  +0.003073] rtc_cmos 00:02: System wakeup disabled by ACPI
+> [  +0.008776] sd 4:0:0:0: [sdb] Starting disk
+> [  +0.000009] sd 0:0:0:0: [sda] Starting disk
+> [  +0.053104] r8169 0000:03:00.2 enp3s0f2: link down
+> [  +0.254016] usb 1-4: reset full-speed USB device number 2 using xhci_hcd
+> [  +0.000016] xhci_hcd 0000:00:14.0: Setup ERROR: setup context command
+> for slot 1.
+> [  +0.000003] usb 1-4: hub failed to enable device, error -22
+> [  +0.019787] ata3: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+> [  +0.002347] ata3.00: configured for UDMA/100
+> [  +0.004325] ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> [  +0.014796] ata5.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES)
+> succeeded
+> [  +0.000004] ata5.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY FREEZE
+> LOCK) filtered out
+> [  +0.000002] ata5.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
+> CONFIGURATION OVERLAY) filtered out
+> [  +0.036236] ata5.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES)
+> succeeded
+> [  +0.000004] ata5.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY FREEZE
+> LOCK) filtered out
+> [  +0.000003] ata5.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
+> CONFIGURATION OVERLAY) filtered out
+> [  +0.002230] ata5.00: configured for UDMA/133
+> [  +0.080235] usb 1-4: reset full-speed USB device number 2 using xhci_hcd
+> [  +0.000014] xhci_hcd 0000:00:14.0: Setup ERROR: setup context command
+> for slot 1.
+> [  +0.000002] usb 1-4: hub failed to enable device, error -22
+> [  +0.160144] usb 1-4: reset full-speed USB device number 2 using xhci_hcd
+> [  +0.015695] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
+> disabled ep ffff880405d77900
+> [  +0.000003] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
+> disabled ep ffff880405d77948
+> [  +0.000001] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
+> disabled ep ffff880405d77990
+> [  +0.000002] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
+> disabled ep ffff880405ece3c0
+> [  +0.000001] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
+> disabled ep ffff880405ece408
 
-So can you elaborate on the use case, i.e. this silently trows the
-existing stack contents away if it doesn't grow, looks strange :-\
+The above messages look suspicious to me, but I'm not a USB expert.
+CCing linux-usb and linux-pm.
 
-Merits some explanation about why this is OK, to say the least.
+> [  +0.001376] PM: resume of devices complete after 655.778 msecs
+> [  +0.001102] PM: Finishing wakeup.
+> [  +0.000002] Restarting tasks ... done.
+> [  +0.008460] video LNXVIDEO:00: Restoring backlight state
+> [  +0.269354] IPv6: ADDRCONF(NETDEV_UP): enp3s0f2: link is not ready
+> [  +0.067225] r8169 0000:03:00.2 enp3s0f2: link down
+> [  +0.000036] IPv6: ADDRCONF(NETDEV_UP): enp3s0f2: link is not ready
+> [  +0.041454] iwlwifi 0000:02:00.0: L1 Disabled; Enabling L0S
+> [  +0.007433] iwlwifi 0000:02:00.0: Radio type=0x2-0x0-0x0
+> [  +0.052615] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+> [  +0.645784] wlp2s0: authenticate with 92:23:b1:f9:54:e4
+> [  +0.010244] wlp2s0: send auth to 92:23:b1:f9:54:e4 (try 1/3)
+> [  +0.002563] wlp2s0: authenticated
+> [  +0.000151] iwlwifi 0000:02:00.0 wlp2s0: disabling HT/VHT due to
+> WEP/TKIP use
+> [  +0.000942] wlp2s0: associate with 92:23:b1:f9:54:e4 (try 1/3)
+> [  +0.002687] wlp2s0: RX AssocResp from 92:23:b1:f9:54:e4 (capab=0x411
+> status=0 aid=4)
+> [  +0.019814] wlp2s0: associated
+> [  +0.000027] IPv6: ADDRCONF(NETDEV_CHANGE): wlp2s0: link becomes ready
+> [  +0.257801] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> [  +0.006493] ata1.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES)
+> succeeded
+> [  +0.000006] ata1.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY FREEZE
+> LOCK) filtered out
+> [  +0.000004] ata1.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
+> CONFIGURATION OVERLAY) filtered out
+> [  +0.012908] ata1.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES)
+> succeeded
+> [  +0.000022] ata1.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY FREEZE
+> LOCK) filtered out
+> [  +0.000003] ata1.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
+> CONFIGURATION OVERLAY) filtered out
+> [  +0.006284] ata1.00: configured for UDMA/133
+> ^[[B[Oct23 22:04] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
+> [  +0.034951] usb-storage 2-2:1.0: USB Mass Storage device detected
+> [  +0.000233] scsi host6: usb-storage 2-2:1.0
+> [  +0.000138] usbcore: registered new interface driver usb-storage
+> [  +0.001865] usbcore: registered new interface driver uas
+> [  +1.330800] usb 2-2: USB disconnect, device number 2
+> 
+> The xHCI controller is:
+> 
+> 00:14.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset
+> Family USB xHCI Host Controller (rev 04) (prog-if 30 [XHCI])
+> 	Subsystem: CLEVO/KAPOK Computer Device 0550
+> 	Flags: bus master, medium devsel, latency 0, IRQ 26
+> 	Memory at f7d00000 (64-bit, non-prefetchable) [size=64K]
+> 	Capabilities: [70] Power Management version 2
+> 	Capabilities: [80] MSI: Enable+ Count=1/8 Maskable- 64bit+
+> 	Kernel driver in use: xhci_hcd
+> 	Kernel modules: xhci_hcd
+> 
+> 
+> Please let me know if you need more information.
+> 
+> Thanks
 
-> +
-> +static void thread_stack__pop(struct thread_stack *ts, u64 ret_addr)
-> +{
-> +	if (!ts->cnt)
-> +		return;
-> +
-> +	if (ts->stack[ts->cnt - 1].ret_addr == ret_addr) {
-> +		ts->cnt -= 1;
-> +	} else {
-> +		size_t i = ts->cnt - 1;
-> +
-> +		while (i--) {
-> +			if (ts->stack[i].ret_addr == ret_addr) {
-> +				ts->cnt = i;
-> +				return;
-> +			}
-> +		}
-> +	}
-> +}
-> +
-> +void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
-> +			 u64 to_ip, u16 insn_len, u64 trace_nr)
-> +{
-> +	if (!thread)
-> +		return;
-> +
-> +	if (!thread->ts) {
-> +		thread->ts = thread_stack__new();
-> +		if (!thread->ts)
-> +			return;
-> +		thread->ts->trace_nr = trace_nr;
-> +	}
-> +
-> +	if (trace_nr != thread->ts->trace_nr) {
-> +		thread->ts->trace_nr = trace_nr;
-> +		thread->ts->cnt = 0;
-> +	}
-> +
-> +	if (flags & PERF_FLAG_CALL) {
-> +		u64 ret_addr;
-> +
-> +		if (!to_ip)
-> +			return;
-> +		ret_addr = from_ip + insn_len;
-> +		if (ret_addr == to_ip)
-> +			return; /* Zero-length calls are excluded */
-> +		thread_stack__push(thread->ts, ret_addr);
-> +	} else if (flags & PERF_FLAG_RETURN) {
-> +		if (!from_ip)
-> +			return;
-> +		thread_stack__pop(thread->ts, to_ip);
-> +	}
-> +}
-> +
-> +void thread_stack__free(struct thread *thread)
-> +{
-> +	if (thread->ts) {
-> +		zfree(&thread->ts->stack);
-> +		zfree(&thread->ts);
-> +	}
-> +}
-> +
-> +void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
-> +			  size_t sz, u64 ip)
-> +{
-> +	size_t i;
-> +
-> +	if (!thread || !thread->ts)
-> +		chain->nr = 1;
-> +	else
-> +		chain->nr = min(sz, thread->ts->cnt + 1);
-> +
-> +	chain->ips[0] = ip;
-> +
-> +	for (i = 1; i < chain->nr; i++)
-> +		chain->ips[i] = thread->ts->stack[thread->ts->cnt - i].ret_addr;
-> +}
-> diff --git a/tools/perf/util/thread-stack.h b/tools/perf/util/thread-stack.h
-> new file mode 100644
-> index 0000000..c0ba4cf
-> --- /dev/null
-> +++ b/tools/perf/util/thread-stack.h
-> @@ -0,0 +1,32 @@
-> +/*
-> + * thread-stack.h: Synthesize a thread's stack using call / return events
-> + * Copyright (c) 2014, Intel Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + */
-> +
-> +#ifndef __PERF_THREAD_STACK_H
-> +#define __PERF_THREAD_STACK_H
-> +
-> +#include <sys/types.h>
-> +
-> +#include <linux/types.h>
-> +
-> +struct thread;
-> +struct ip_callchain;
-> +
-> +void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
-> +			 u64 to_ip, u16 insn_len, u64 trace_nr);
-> +void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
-> +			  size_t sz, u64 ip);
-> +void thread_stack__free(struct thread *thread);
-> +
-> +#endif
-> diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-> index 2b7b2d9..4e3418d 100644
-> --- a/tools/perf/util/thread.c
-> +++ b/tools/perf/util/thread.c
-> @@ -4,6 +4,7 @@
->  #include <string.h>
->  #include "session.h"
->  #include "thread.h"
-> +#include "thread-stack.h"
->  #include "util.h"
->  #include "debug.h"
->  #include "comm.h"
-> @@ -66,6 +67,8 @@ void thread__delete(struct thread *thread)
->  {
->  	struct comm *comm, *tmp;
->  
-> +	thread_stack__free(thread);
-> +
->  	if (thread->mg) {
->  		map_groups__put(thread->mg);
->  		thread->mg = NULL;
-> diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-> index 8c75fa7..a057820 100644
-> --- a/tools/perf/util/thread.h
-> +++ b/tools/perf/util/thread.h
-> @@ -8,6 +8,8 @@
->  #include "symbol.h"
->  #include <strlist.h>
->  
-> +struct thread_stack;
-> +
->  struct thread {
->  	union {
->  		struct rb_node	 rb_node;
-> @@ -25,6 +27,7 @@ struct thread {
->  	int			comm_len;
->  
->  	void			*priv;
-> +	struct thread_stack	*ts;
->  };
->  
->  struct machine;
-> -- 
-> 1.9.1
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
