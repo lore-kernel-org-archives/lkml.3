@@ -1,106 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960AbaJWIBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 04:01:11 -0400
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:52846 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215AbaJWIBJ (ORCPT
+	id S1753110AbaJWIIv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 04:08:51 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:63767 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295AbaJWIIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 04:01:09 -0400
+	Thu, 23 Oct 2014 04:08:44 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 23 Oct 2014 17:09:42 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com
+Subject: Re: [RFC 0/4] [RFC] slub: Fastpath optimization (especially for RT)
+Message-ID: <20141023080942.GA7598@js1304-P5Q-DELUXE>
+References: <20141022155517.560385718@linux.com>
 MIME-Version: 1.0
-In-Reply-To: <20141023071944.GA5184@krava.brq.redhat.com>
-References: <1412872486-2930-1-git-send-email-eranian@google.com>
-	<1412872486-2930-7-git-send-email-eranian@google.com>
-	<20141022123151.GA15126@krava.brq.redhat.com>
-	<20141023071944.GA5184@krava.brq.redhat.com>
-Date: Thu, 23 Oct 2014 10:01:08 +0200
-Message-ID: <CABPqkBT7y0CjozJ9VtkK6KrTGEwYaTzX+Qt6UD-Y9jHXNzu86g@mail.gmail.com>
-Subject: Re: [PATCH v2 06/12] perf/x86: implement cross-HT corruption bug workaround
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Liang, Kan" <kan.liang@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022155517.560385718@linux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 9:19 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Wed, Oct 22, 2014 at 02:31:51PM +0200, Jiri Olsa wrote:
->> On Thu, Oct 09, 2014 at 06:34:40PM +0200, Stephane Eranian wrote:
->> > From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
->>
->> SNIP
->>
->> > +static struct event_constraint *
->> > +intel_get_excl_constraints(struct cpu_hw_events *cpuc, struct perf_event *event,
->> > +                      int idx, struct event_constraint *c)
->> > +{
->> > +   struct event_constraint *cx;
->> > +   struct intel_excl_cntrs *excl_cntrs = cpuc->excl_cntrs;
->> > +   struct intel_excl_states *xl, *xlo;
->> > +   int is_excl, i;
->>
->> SNIP
->>
->> > +   /*
->> > +    * Modify static constraint with current dynamic
->> > +    * state of thread
->> > +    *
->> > +    * EXCLUSIVE: sibling counter measuring exclusive event
->> > +    * SHARED   : sibling counter measuring non-exclusive event
->> > +    * UNUSED   : sibling counter unused
->> > +    */
->> > +   for_each_set_bit(i, cx->idxmsk, X86_PMC_IDX_MAX) {
->> > +           /*
->> > +            * exclusive event in sibling counter
->> > +            * our corresponding counter cannot be used
->> > +            * regardless of our event
->> > +            */
->> > +           if (xl->state[i] == INTEL_EXCL_EXCLUSIVE)
->> > +                   __clear_bit(i, cx->idxmsk);
->>
->> if we want to check sibling counter, shouldn't we check xlo->state[i] instead? like
->>
->>               if (xlo->state[i] == INTEL_EXCL_EXCLUSIVE)
->>                       __clear_bit(i, cx->idxmsk);
->>
->>
->> and also in condition below?
->
-> any comment on this? I'm curious, because it'd enlighten me
-> on how this is supposed to work ;-)
->
-> I dont understand why you update the sibling's counter state instead
-> of the current cpuc->excl_thread_id HT, like in intel_commit_scheduling
-> while you hold lock for the current HT state
->
-> could you please comment, I must be missing something
->
-Yes, it is a bit confusing. It comes down that what the state represents.
-Let me explain.
+On Wed, Oct 22, 2014 at 10:55:17AM -0500, Christoph Lameter wrote:
+> We had to insert a preempt enable/disable in the fastpath a while ago. This
+> was mainly due to a lot of state that is kept to be allocating from the per
+> cpu freelist. In particular the page field is not covered by
+> this_cpu_cmpxchg used in the fastpath to do the necessary atomic state
+> change for fast path allocation and freeing.
+> 
+> This patch removes the need for the page field to describe the state of the
+> per cpu list. The freelist pointer can be used to determine the page struct
+> address if necessary.
+> 
+> However, currently this does not work for the termination value of a list
+> which is NULL and the same for all slab pages. If we use a valid pointer
+> into the page as well as set the last bit then all freelist pointers can
+> always be used to determine the address of the page struct and we will not
+> need the page field anymore in the per cpu are for a slab. Testing for the
+> end of the list is a test if the first bit is set.
+> 
+> So the first patch changes the termination pointer for freelists to do just
+> that. The second removes the page field and then third can then remove the
+> preempt enable/disable.
+> 
+> There are currently a number of caveats because we are adding calls to
+> page_address() and virt_to_head_page() in a number of code paths. These
+> can hopefully be removed one way or the other.
+> 
+> Removing the ->page field reduces the cache footprint of the fastpath so hopefully overall
+> allocator effectiveness will increase further. Also RT uses full preemption which means
+> that currently pretty expensive code has to be inserted into the fastpath. This approach
+> allows the removal of that code and a corresponding performance increase.
+> 
 
-In get_constraints(), you compute the bitmask of possible counters by looking
-at your own state in states[tid] (xl).
+Hello, Christoph.
 
-In commit_constraint(), the scheduler has picked counters and you need to commit
-the changes. But you don't update your state, you update your
-sibling's state. Why?
-Because of the bug, what you use influences what the sibling can measure. So you
-update the sibling's state to reflect its new constraint. When the
-sibling calls get_constraint()
-it will harvest the new constraints automatically.
+Preemption disable during very short code would cause large problem for RT?
 
-Example:
+And, if page_address() and virt_to_head_page() remain as current patchset
+implementation, this would work worse than before.
 
-HT0 wants to program a MEM (corrupting) event, it gathers its
-constraints from get_constraints().
-The mask is, let's say, 0x3. The scheduler picks counter0. Then, in
-commit_constraints(), you need
-to mark *HT1*'s counter0 in exclusive mode, i.e., it cannot be used
-anymore on that thread.
+I looked at the patchset quickly and found another idea to remove
+preemption disable. How about just retrieving s->cpu_slab->tid first,
+before accessing s->cpu_slab, in slab_alloc() and slab_free()?
+Retrieved tid may ensure that we aren't migrated to other CPUs so that
+we can remove code for preemption disable.
 
-Hope this helps.
+Following is the patch implementing above idea.
+
+Thanks.
+
+------------->8------------------------
+diff --git a/mm/slub.c b/mm/slub.c
+index ae7b9f1..af622d8 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2386,28 +2386,21 @@ static __always_inline void *slab_alloc_node(struct kmem_cache *s,
+ 	s = memcg_kmem_get_cache(s, gfpflags);
+ redo:
+ 	/*
++	 * The transaction ids are globally unique per cpu and per operation on
++	 * a per cpu queue. Thus they can be guarantee that the cmpxchg_double
++	 * occurs on the right processor and that there was no operation on the
++	 * linked list in between.
++	 */
++	tid = this_cpu_read(s->cpu_slab->tid);
++
++	/*
+ 	 * Must read kmem_cache cpu data via this cpu ptr. Preemption is
+ 	 * enabled. We may switch back and forth between cpus while
+ 	 * reading from one cpu area. That does not matter as long
+ 	 * as we end up on the original cpu again when doing the cmpxchg.
+-	 *
+-	 * Preemption is disabled for the retrieval of the tid because that
+-	 * must occur from the current processor. We cannot allow rescheduling
+-	 * on a different processor between the determination of the pointer
+-	 * and the retrieval of the tid.
+ 	 */
+-	preempt_disable();
+ 	c = this_cpu_ptr(s->cpu_slab);
+ 
+-	/*
+-	 * The transaction ids are globally unique per cpu and per operation on
+-	 * a per cpu queue. Thus they can be guarantee that the cmpxchg_double
+-	 * occurs on the right processor and that there was no operation on the
+-	 * linked list in between.
+-	 */
+-	tid = c->tid;
+-	preempt_enable();
+-
+ 	object = c->freelist;
+ 	page = c->page;
+ 	if (unlikely(!object || !node_match(page, node))) {
+@@ -2646,18 +2639,16 @@ static __always_inline void slab_free(struct kmem_cache *s,
+ 	slab_free_hook(s, x);
+ 
+ redo:
++	tid = this_cpu_read(s->cpu_slab->tid);
++
+ 	/*
+ 	 * Determine the currently cpus per cpu slab.
+ 	 * The cpu may change afterward. However that does not matter since
+ 	 * data is retrieved via this pointer. If we are on the same cpu
+ 	 * during the cmpxchg then the free will succedd.
+ 	 */
+-	preempt_disable();
+ 	c = this_cpu_ptr(s->cpu_slab);
+ 
+-	tid = c->tid;
+-	preempt_enable();
+-
+ 	if (likely(page == c->page)) {
+ 		set_freepointer(s, object, c->freelist);
+ 
