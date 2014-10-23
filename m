@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaJWGlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 02:41:20 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:50496 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaJWGlQ (ORCPT
+	id S1752447AbaJWGsh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 02:48:37 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:36113 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752207AbaJWGsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 02:41:16 -0400
-Message-ID: <5448A2F2.7060001@huawei.com>
-Date: Thu, 23 Oct 2014 14:40:50 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 23 Oct 2014 02:48:35 -0400
+X-Original-SENDERIP: 10.177.226.38
+X-Original-MAILFROM: karam.lee@lge.com
+Date: Thu, 23 Oct 2014 15:48:31 +0900
+From: "karam.lee" <karam.lee@lge.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, ngupta@vflare.org,
+        linux-kernel@vger.kernel.org, matthew.r.wilcox@intel.com,
+        jmarchan@redhat.com, seungho1.park@lge.com
+Subject: Re: [PATCH v5 0/3] zram: add rw_page implementation for zram and
+ clean up unnecessary parameter
+Message-ID: <20141023064831.GA5532@caribbean.org>
+References: <1413967490-20218-1-git-send-email-karam.lee@lge.com>
+ <20141022232022.GH21620@bbox>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
-        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
-        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
-        Liviu Dudau <liviu@dudau.co.uk>
-Subject: Re: [PATCH v3 10/27] PCI/MSI: Remove useless bus->msi assignment
-References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com> <1413342435-7876-11-git-send-email-wangyijing@huawei.com> <20141023054121.GE11770@google.com>
-In-Reply-To: <20141023054121.GE11770@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.5448A307.0162,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 2d23c51c586ec84e4869088c814f38cf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022232022.GH21620@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/23 13:41, Bjorn Helgaas wrote:
-> On Wed, Oct 15, 2014 at 11:06:58AM +0800, Yijing Wang wrote:
->> Now msi chip is saved in pci_sys_data in arm,
->> we could clean the bus->msi assignment in
->> pci core.
->>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> CC: Thierry Reding <thierry.reding@gmail.com>
->> CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
->> ---
->>  drivers/pci/probe.c |    1 -
->>  1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->> index efa48dc..98bf4c3 100644
->> --- a/drivers/pci/probe.c
->> +++ b/drivers/pci/probe.c
->> @@ -682,7 +682,6 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->>  
->>  	child->parent = parent;
->>  	child->ops = parent->ops;
->> -	child->msi = parent->msi;
+On Thu, Oct 23, 2014 at 08:20:22AM +0900, Minchan Kim wrote:
+
+Thank you for reply. Your advice was a big help!
+
+I will send the fixed version.
+
+> Hey Karam,
 > 
-> This needs an explanation of why ARM was the only arch to depend on this.
-
-OK, will add explanation in next version.
-
+> You could keep Acked-by/Reviewed-by gotten from me and Jerome
+> in old versions if new version isn't changed heavily.
+> It's credit of them and at least, you should respect it. :)
 > 
->>  	child->sysdata = parent->sysdata;
->>  	child->bus_flags = parent->bus_flags;
->>  
->> -- 
->> 1.7.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please Cc Andrew for zram patches because he merges the patche
+> into his tree (ie, mmotm).
+> Oops but get_maintainer.pl -f drivers/block/zram doesn't say it. :(
 > 
-> .
+> Anyway, Thansk for nice work!
 > 
-
-
--- 
-Thanks!
-Yijing
-
+> On Wed, Oct 22, 2014 at 05:44:46PM +0900, karam.lee@lge.com wrote:
+> > From: "karam.lee" <karam.lee@lge.com>
+> > 
+> > Recently rw_page block device operation has been added.
+> > This patchset implements rw_page operation for zram block device
+> > and does some clean-up.
+> > 
+> > Patches 1~2 are for clean-up.
+> > Patch 3 is for implementation of rw_page operation.
+> > With the rw_page operation, zram can do I/O without allocating a BIO.
+> > It make zram can save time and memory.
+> > 
+> > karam.lee (3):
+> >   zram: remove bio parameter from zram_bvec_rw().
+> >   zram: change parameter from vaild_io_request()
+> >   zram: implement rw_page operation of zram
+> 
+> Acked-by: Minchan Kim <minchan@kernel.org>
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
