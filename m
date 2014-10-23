@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617AbaJWQQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:16:08 -0400
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:24681 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754070AbaJWQQF (ORCPT
+	id S1756057AbaJWQQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:16:36 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:40717 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754341AbaJWQQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:16:05 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AswNAB0pSVRbtA79/2dsb2JhbABcgw66QwUBdJo+gRMXAX2EMC8jgRo3iEUBuhGOTCyGJYozHYQ1BZ1djGiJRYFHATYggVw7L4JLAQEB
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Sage Weil <sage@inktank.com>,
-        "David S. Miller" <davem@davemloft.net>, ceph-devel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] libceph: remove unused variable in handle_reply()
-Date: Thu, 23 Oct 2014 18:15:59 +0200
-Message-Id: <1414080959-6053-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Thu, 23 Oct 2014 12:16:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141022152019.GK10074@8bytes.org>
+References: <1412158843-8115-1-git-send-email-djkurtz@chromium.org> <20141022152019.GK10074@8bytes.org>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Fri, 24 Oct 2014 00:15:44 +0800
+X-Google-Sender-Auth: PtaykxvPLmRI6_C4a85dSADRM5w
+Message-ID: <CAGS+omDyKLVqmvVtJBez7SuC_oqkpov1e-ikfLE=NBcY0Mx45A@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Rockchip IOMMU driver and devicetree bindings
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, Simon Xue <xxm@rock-chips.com>,
+        Grant Grundler <grundler@chromium.org>,
+        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:IOMMU DRIVERS" <iommu@lists.linux-foundation.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-osdmap_epoch is redundant with reassert_epoch and unused.
+On Wed, Oct 22, 2014 at 11:20 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Wed, Oct 01, 2014 at 06:20:40PM +0800, Daniel Kurtz wrote:
+>> Add a driver and devicetree bindings for the IOMMU found in Rockchip RK3288
+>> SoCs.
+>>
+>> Daniel Kurtz (3):
+>>   iommu/rockchip: rk3288 iommu driver
+>>   dt-bindings: iommu: Add documentation for rockchip iommu
+>>   ARM: dts: rk3288: add VOP iommu nodes
+>>
+>>  .../devicetree/bindings/iommu/rockchip,iommu.txt   |  26 +
+>>  arch/arm/boot/dts/rk3288.dtsi                      |  18 +
+>>  drivers/iommu/Kconfig                              |  11 +
+>>  drivers/iommu/Makefile                             |   1 +
+>>  drivers/iommu/rockchip-iommu.c                     | 924 +++++++++++++++++++++
+>>  5 files changed, 980 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/iommu/rockchip,iommu.txt
+>>  create mode 100644 drivers/iommu/rockchip-iommu.c
+>
+> Please make sure you also get Acks for the DT bindings. With that and
+> the issue I mentioned in the other email fixed, I will apply these
+> patches?
+>
+>
+>         Joerg
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/ceph/osd_client.c | 2 --
- 1 file changed, 2 deletions(-)
+Hi Joerg,
 
-diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
-index f3fc54e..432bd75 100644
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1700,7 +1700,6 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
- 	int err;
- 	u32 reassert_epoch;
- 	u64 reassert_version;
--	u32 osdmap_epoch;
- 	int already_completed;
- 	u32 bytes;
- 	unsigned int i;
-@@ -1725,7 +1724,6 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
- 	result = ceph_decode_32(&p);
- 	reassert_epoch = ceph_decode_32(&p);
- 	reassert_version = ceph_decode_64(&p);
--	osdmap_epoch = ceph_decode_32(&p);
- 
- 	/* lookup */
- 	down_read(&osdc->map_sem);
--- 
-1.9.3
+Thanks for your reviews.
+Can you help get these DT bindings Acked?
+AFAICT, the DT maintainers are CC'ed on this patch, I'm not sure what
+else to do.
 
+Thanks,
+-Daniel
