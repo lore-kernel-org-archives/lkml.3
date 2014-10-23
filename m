@@ -1,209 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957AbaJWN5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:57:37 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42729 "EHLO gum.cmpxchg.org"
+	id S1755993AbaJWN6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:58:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10339 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755833AbaJWN5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:57:34 -0400
-Date: Thu, 23 Oct 2014 09:57:29 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcontrol: fix missed end-writeback page
- accounting
-Message-ID: <20141023135729.GB24269@phnom.home.cmpxchg.org>
-References: <1414002568-21042-1-git-send-email-hannes@cmpxchg.org>
- <1414002568-21042-3-git-send-email-hannes@cmpxchg.org>
- <20141022133936.44f2d2931948ce13477b5e64@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022133936.44f2d2931948ce13477b5e64@linux-foundation.org>
+	id S1752107AbaJWN57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 09:57:59 -0400
+Message-ID: <1414072672.27420.12.camel@ul30vt.home>
+Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver
+ mapping.
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Stuart Yoder <stuart.yoder@freescale.com>
+Cc: Marcel Apfelbaum <marcel.a@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "marcel@redhat.com" <marcel@redhat.com>,
+        "mst@redhat.com" <mst@redhat.com>
+Date: Thu, 23 Oct 2014 07:57:52 -0600
+In-Reply-To: <d093a0738f61433aafe5ddd36d0393e9@CY1PR0301MB0748.namprd03.prod.outlook.com>
+References: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
+	 <1414002755.4202.253.camel@ul30vt.home>
+	 <d093a0738f61433aafe5ddd36d0393e9@CY1PR0301MB0748.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 01:39:36PM -0700, Andrew Morton wrote:
-> On Wed, 22 Oct 2014 14:29:28 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > @@ -1061,9 +1062,10 @@ void page_add_file_rmap(struct page *page)
-> >   */
-> >  void page_remove_rmap(struct page *page)
-> >  {
-> > +	struct mem_cgroup *uninitialized_var(memcg);
-> >  	bool anon = PageAnon(page);
-> > -	bool locked;
-> >  	unsigned long flags;
-> > +	bool locked;
-> >  
-> >  	/*
-> >  	 * The anon case has no mem_cgroup page_stat to update; but may
-> > @@ -1071,7 +1073,7 @@ void page_remove_rmap(struct page *page)
-> >  	 * we hold the lock against page_stat move: so avoid it on anon.
-> >  	 */
-> >  	if (!anon)
-> > -		mem_cgroup_begin_update_page_stat(page, &locked, &flags);
-> > +		memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-> >  
-> >  	/* page still mapped by someone else? */
-> >  	if (!atomic_add_negative(-1, &page->_mapcount))
-> > @@ -1096,8 +1098,7 @@ void page_remove_rmap(struct page *page)
-> >  				-hpage_nr_pages(page));
-> >  	} else {
-> >  		__dec_zone_page_state(page, NR_FILE_MAPPED);
-> > -		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
-> > -		mem_cgroup_end_update_page_stat(page, &locked, &flags);
-> > +		mem_cgroup_dec_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
-> >  	}
-> >  	if (unlikely(PageMlocked(page)))
-> >  		clear_page_mlock(page);
-> > @@ -1110,10 +1111,9 @@ void page_remove_rmap(struct page *page)
-> >  	 * Leaving it set also helps swapoff to reinstate ptes
-> >  	 * faster for those pages still in swapcache.
-> >  	 */
-> > -	return;
-> >  out:
-> >  	if (!anon)
-> > -		mem_cgroup_end_update_page_stat(page, &locked, &flags);
-> > +		mem_cgroup_end_page_stat(memcg, locked, flags);
-> >  }
+On Thu, 2014-10-23 at 13:44 +0000, Stuart Yoder wrote:
 > 
-> The anon and file paths have as much unique code as they do common
-> code.  I wonder if page_remove_rmap() would come out better if split
-> into two functions?  I gave that a quick try and it came out OK-looking.
+> > -----Original Message-----
+> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > Sent: Wednesday, October 22, 2014 1:33 PM
+> > To: Marcel Apfelbaum
+> > Cc: linux-pci@vger.kernel.org; bhelgaas@google.com; linux-kernel@vger.kernel.org; marcel@redhat.com;
+> > mst@redhat.com; Yoder Stuart-B08248
+> > Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver mapping.
+> > 
+> > [cc+ stuart]
+> > 
+> > On Mon, 2014-10-20 at 17:04 +0300, Marcel Apfelbaum wrote:
+> > > Scanning a lot of devices during boot requires a lot of time.
+> > > On other scenarios there is a need to bind a driver to a specific slot.
+> > >
+> > > Binding devices to pci-stub driver does not work,
+> > > as it will not differentiate between devices of the
+> > > same type. Using some start scripts is error prone.
+> > >
+> > > The solution leverages driver_override functionality introduced by
+> > >
+> > > 	commit: 782a985d7af26db39e86070d28f987cad21313c0
+> > > 	Author: Alex Williamson <alex.williamson@redhat.com>
+> > > 	Date:   Tue May 20 08:53:21 2014 -0600
+> > >
+> > >     	PCI: Introduce new device binding path using pci_dev.driver_override
+> > >
+> > > In order to bind PCI slots to specific drivers use:
+> > > 	pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
+> > >
+> > > Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+> > > ---
+> > > v3 -> v4:
+> > >  - Addressed Alex Williamson's comments:
+> > >    - Modified the type of driver_override_entry's fields
+> > >    - Used PCI_DEVFN when appropriated
+> > >    - Removed redundant checks
+> > >    - Replaced BUG_ON with pr_err messages
+> > >    - Simpler command line parsing
+> > >  - Addressed Michael S. Tsirkin comments
+> > >    - removed DRIVER_OVERRIDE_NAME_LENGTH limitation
+> > > v2 -> v3:
+> > >  - Corrected subject line
+> > > v1 -> v2:
+> > >  - Addressed Michael S. Tsirkin comments
+> > >    - Removed 32 slots limitation
+> > >    - Better handling of memory allocation failures
+> > >      (preferred BUG_ON over error messages)
+> > >  - Addressed Alex Williamson's comments:
+> > >    - Modified commit message to show parameter usage more clear.
+> > >  - I preferred to re-use parse_args instead of manually using
+> > >    strstr in order to better comply with command line parsing
+> > >    rules.
+> > >  - I didn't use any locking when parsing the command line args
+> > >    (see parse_done usage) assuming that first call will be
+> > >    early in system boot and no race can occur. Please correct
+> > >    me if I am wrong.
+> > >
+> > > Notes:
+> > >  - I have further ideas on top of this patch based on your reviews.
+> > >    I thought of:
+> > >    - Use wildcards to specify entire buses/devices, something like:
+> > >      	driver[0001:02:*.*]=pci-stub
+> > >    - Use comma to separate several devices:
+> > >      	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
+> > >    - Make domain optional:
+> > >    	driver[00:03.0]=pci-stub
+> > >
+> > > Comments will be appreciated,
+> > > Thanks,
+> > > Marcel
+> > >  Documentation/kernel-parameters.txt |   4 ++
+> > >  drivers/pci/bus.c                   | 111 ++++++++++++++++++++++++++++++++++++
+> > >  drivers/pci/pci.c                   |   2 +
+> > >  3 files changed, 117 insertions(+)
+> > 
+> > The driver_override feature that we're making use of here is also going
+> > to be supported by platform devices and potentially more bustypes in the
+> > future, so I'm concerned that making a pci specific kernel parameter is
+> > too shortsighted.  Instead we could hook on to BUS_NOTIFY_ADD_DEVICE for
+> > bustypes that support driver_override so we can have a common interface.
+> > Perhaps:
+> > 
+> > driver_override=pci,0000:02:00.0=pci-stub;platform,fakename=vfio-platform
+> > 
+> > Finding delimiters that don't conflict may be challenging.
+> 
+> I think what you proposed works--  <bus-name>,<bus-dev>=<driver>;
+> 
+> Think that will work for PCI, platform, and the new fsl-mc bus we are working
+> on.
+> 
+> > Also, can we
+> > assume that bus-name:dev-name is unique for every bustype?  It is for
+> > pci, platform?
+> 
+> I think that has to be the case.
+> 
+> > It also seems like there's a question of how long should this override
+> > last and how does the user disable it?
+> 
+> Isn't that a general question for the "driver_overrride" mechanism?
+> I'm forgetting if the mechanism in the kernel now has a way to disable
+> it--  e.g. echo /dev/null > /sys/pci/devices/.../driver_override ??
+> 
+> So, it would last until explicitly disabled through sysfs.
 
-I agree, that looks better.  How about this?
+Yes, when you set a driver_override on a device you cancel it by writing
+a NULL string to the same interface.  The problem is that here we have a
+new entity in the driver scan that keeps re-applying the driver_override
+as devices are scanned with no way to stop it.  So you can certainly
+undo the immediate effect and bind the device to another driver, but if
+the device is removed and re-scanned there's no way to stop if from
+re-applying the override.  Thanks,
 
----
->From b518d88254b01be8c6c0c4a496d9f311f0c71b4a Mon Sep 17 00:00:00 2001
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Thu, 23 Oct 2014 09:29:06 -0400
-Subject: [patch] mm: rmap: split out page_remove_file_rmap()
+Alex
 
-page_remove_rmap() has too many branches on PageAnon() and is hard to
-follow.  Move the file part into a separate function.
+> > I think with pci-stub.ids=
+> > $VENDOR:$DEVICE a user can echo the IDs to the pci-stub/remove_id sysfs
+> > entry to cancel the effect.  The only option here seems to be a reboot.
+> > Do we need a /sys/bus/pci/driver_overrides/{add_name,remove_name} for
+> > this interface?  Thanks,
+> 
+> Thanks,
+> Stuart
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/rmap.c | 78 +++++++++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 46 insertions(+), 32 deletions(-)
 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index f574046f77d4..19886fb2f13a 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1054,6 +1054,36 @@ void page_add_file_rmap(struct page *page)
- 	mem_cgroup_end_page_stat(memcg, locked, flags);
- }
- 
-+static void page_remove_file_rmap(struct page *page)
-+{
-+	struct mem_cgroup *memcg;
-+	unsigned long flags;
-+	bool locked;
-+
-+	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-+
-+	/* page still mapped by someone else? */
-+	if (!atomic_add_negative(-1, &page->_mapcount))
-+		goto out;
-+
-+	/* Hugepages are not counted in NR_FILE_MAPPED for now. */
-+	if (unlikely(PageHuge(page)))
-+		goto out;
-+
-+	/*
-+	 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
-+	 * these counters are not modified in interrupt context, and
-+	 * pte lock(a spinlock) is held, which implies preemption disabled.
-+	 */
-+	__dec_zone_page_state(page, NR_FILE_MAPPED);
-+	mem_cgroup_dec_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
-+
-+	if (unlikely(PageMlocked(page)))
-+		clear_page_mlock(page);
-+out:
-+	mem_cgroup_end_page_stat(memcg, locked, flags);
-+}
-+
- /**
-  * page_remove_rmap - take down pte mapping from a page
-  * @page: page to remove mapping from
-@@ -1062,46 +1092,33 @@ void page_add_file_rmap(struct page *page)
-  */
- void page_remove_rmap(struct page *page)
- {
--	struct mem_cgroup *uninitialized_var(memcg);
--	bool anon = PageAnon(page);
--	unsigned long flags;
--	bool locked;
--
--	/*
--	 * The anon case has no mem_cgroup page_stat to update; but may
--	 * uncharge_page() below, where the lock ordering can deadlock if
--	 * we hold the lock against page_stat move: so avoid it on anon.
--	 */
--	if (!anon)
--		memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-+	if (!PageAnon(page)) {
-+		page_remove_file_rmap(page);
-+		return;
-+	}
- 
- 	/* page still mapped by someone else? */
- 	if (!atomic_add_negative(-1, &page->_mapcount))
--		goto out;
-+		return;
-+
-+	/* Hugepages are not counted in NR_ANON_PAGES for now. */
-+	if (unlikely(PageHuge(page)))
-+		return;
- 
- 	/*
--	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
--	 * and not charged by memcg for now.
--	 *
- 	 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
- 	 * these counters are not modified in interrupt context, and
--	 * these counters are not modified in interrupt context, and
- 	 * pte lock(a spinlock) is held, which implies preemption disabled.
- 	 */
--	if (unlikely(PageHuge(page)))
--		goto out;
--	if (anon) {
--		if (PageTransHuge(page))
--			__dec_zone_page_state(page,
--					      NR_ANON_TRANSPARENT_HUGEPAGES);
--		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
--				-hpage_nr_pages(page));
--	} else {
--		__dec_zone_page_state(page, NR_FILE_MAPPED);
--		mem_cgroup_dec_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
--	}
-+	if (PageTransHuge(page))
-+		__dec_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
-+
-+	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
-+			      -hpage_nr_pages(page));
-+
- 	if (unlikely(PageMlocked(page)))
- 		clear_page_mlock(page);
-+
- 	/*
- 	 * It would be tidy to reset the PageAnon mapping here,
- 	 * but that might overwrite a racing page_add_anon_rmap
-@@ -1111,9 +1128,6 @@ void page_remove_rmap(struct page *page)
- 	 * Leaving it set also helps swapoff to reinstate ptes
- 	 * faster for those pages still in swapcache.
- 	 */
--out:
--	if (!anon)
--		mem_cgroup_end_page_stat(memcg, locked, flags);
- }
- 
- /*
--- 
-2.1.2
 
