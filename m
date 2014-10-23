@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261AbaJWQ6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:58:50 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:31181 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaJWQ6s (ORCPT
+	id S1754418AbaJWRBD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 13:01:03 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61408 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751250AbaJWRBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:58:48 -0400
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-To: <akpm@linux-foundation.org>, <Zubair.Kakakhel@imgtec.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [RFC] mm: memblock: change default cnt for regions from 1 to 0
-Date: Thu, 23 Oct 2014 17:56:53 +0100
-Message-ID: <1414083413-61756-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 23 Oct 2014 13:01:01 -0400
+Message-ID: <54493433.4090703@arm.com>
+Date: Thu, 23 Oct 2014 18:00:35 +0100
+From: Andre Przywara <andre.przywara@arm.com>
+Organization: ARM Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.89]
+To: Zi Shen Lim <zlim.lnx@gmail.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+CC: LAKML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: BPF crash with 3.18-rc1 on arm64 Juno hardware
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default region counts are set to 1 with a comment saying empty
-dummy entry.
+Hi,
 
-If this is a dummy entry, should this be changed to 0?
+I see a crash with 3.18-rc1 on a Juno board related to bpf_jit (see dump
+below). Userland tries to carry on afterwards, but eventually hangs in
+RCU stalls.
+The kernel has just CONFIG_BPF_JIT enabled, I guess Ubuntu enables this
+automatically if detected.
 
-We have faced this in mips/kernel/setup.c arch_mem_init.
+The backtrace doesn't make too much sense to me:
 
-cma uses memblock. But even with cma disabled.
-The for_each_memblock(reserved, reg) goes inside the loop.
-Even without any reserved regions.
+void bpf_jit_free(struct bpf_prog *prog)
+{
+        if (prog->jited)
+                module_free(NULL, prog->bpf_func);
 
-Traced it to the following, when the macro
-for_each_memblock(memblock_type, region) is used.
+        kfree(prog);
+}
+It crashes in kfree, but has survived the dereference before.
 
-It expands to add the cnt variable.
+I have no clue about BPF, so if anyone could help me debug this, I'd be
+grateful.
 
-for (region = memblock.memblock_type.regions; 		\
-	region < (memblock.memblock_type.regions + memblock.memblock_type.cnt); \
-	region++)
+Cheers,
+Andre.
 
-In the corner case, that there are no reserved regions.
-Due to the default 1 value of cnt.
-The loop under for_each_memblock still runs once.
 
-Even when there is no reserved region.
+ * Starting Signal sysvinit that local filesystems are mounted   [ OK ]
+ * Starting configure network device security                    [ OK ]
+Unable to handle kernel paging request at virtual address 37fffbd21c02290
+pgd = ffffffc976538000
+[37fffbd21c02290] *pgd=0000000000000000, *pud=0000000000000000
+Internal error: Oops: 96000004 [#1] PREEMPT SMP
+Modules linked in:
+CPU: 3 PID: 737 Comm: kworker/3:1 Not tainted 3.18.0-rc1+ #1666
+Workqueue: events bpf_prog_free_deferred
+task: ffffffc977a89580 ti: ffffffc976494000 task.ti: ffffffc976494000
+PC is at kfree+0x70/0x260
+LR is at bpf_jit_free+0x34/0x40
+pc : [<ffffffc0001b0634>] lr : [<ffffffc000099290>] pstate: a0000145
+sp : ffffffc976497ca0
+x29: ffffffc976497ca0 x28: 0000000000000000
+x27: ffffffc97feff400 x26: ffffffc0009b0000
+x25: 0000000000000000 x24: 0000000000000000
+x23: ffffffc97ff03900 x22: ffffffc97feff400
+x21: ffffffc000099290 x20: ffffff800009e000
+x19: ffffff800009e000 x18: 0000007feb492820
+x17: 0000007fb71c6980 x16: ffffffc0001fcc14
+x15: 003b9aca00000000 x14: 0027947614000000
+x13: ffffffffabb6d0e3 x12: 0000000000000018
+x11: 0000000033c2a168 x10: 0000000000000006
+x9 : ffffffc976497bd0 x8 : ffffffc977a89a90
+x7 : ffffffc97736c4d0 x6 : 00000000000009be
+x5 : 0000000000000000 x4 : 0000000000000001
+x3 : ffffffc97feff7c0 x2 : 03ffffff02002780
+x1 : 037fffff21c02290 x0 : ffffffbe00000000
 
-Is this by design? or unintentional?
-It might be that this loop runs an extra time every instance out there?
----
- mm/memblock.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 6d2f219..b91301c 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -33,16 +33,16 @@ static struct memblock_region memblock_physmem_init_regions[INIT_PHYSMEM_REGIONS
- 
- struct memblock memblock __initdata_memblock = {
- 	.memory.regions		= memblock_memory_init_regions,
--	.memory.cnt		= 1,	/* empty dummy entry */
-+	.memory.cnt		= 0,	/* empty dummy entry */
- 	.memory.max		= INIT_MEMBLOCK_REGIONS,
- 
- 	.reserved.regions	= memblock_reserved_init_regions,
--	.reserved.cnt		= 1,	/* empty dummy entry */
-+	.reserved.cnt		= 0,	/* empty dummy entry */
- 	.reserved.max		= INIT_MEMBLOCK_REGIONS,
- 
- #ifdef CONFIG_HAVE_MEMBLOCK_PHYS_MAP
- 	.physmem.regions	= memblock_physmem_init_regions,
--	.physmem.cnt		= 1,	/* empty dummy entry */
-+	.physmem.cnt		= 0,	/* empty dummy entry */
- 	.physmem.max		= INIT_PHYSMEM_REGIONS,
- #endif
- 
--- 
-1.9.1
-
+Process kworker/3:1 (pid: 737, stack limit = 0xffffffc976494058)
+Stack: (0xffffffc976497ca0 to 0xffffffc976498000)
+....
