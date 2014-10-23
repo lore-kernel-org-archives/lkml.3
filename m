@@ -1,110 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963AbaJWHaq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 03:30:46 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46869 "EHLO mga02.intel.com"
+	id S1753179AbaJWHby (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 03:31:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19407 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863AbaJWHao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 03:30:44 -0400
+	id S1752149AbaJWHbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 03:31:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
-   d="scan'208";a="623796403"
-Date: Thu, 23 Oct 2014 10:30:19 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, josh.triplett@intel.com,
-        christophe.ricard@gmail.com, jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v1 3/3] tpm: fix multiple race conditions in tpm_ppi.c
-Message-ID: <20141023073019.GB5188@intel.com>
-References: <1413995036-22497-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1413995036-22497-4-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141022172646.GD12775@obsidianresearch.com>
+   d="scan'208";a="623796707"
+From: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
+To: "'Alexandre Courbot'" <gnurou@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Denis Turischev <denis.turischev@compulab.co.il>
+Subject: RE: [PATCHv3 3/3] gpio: sch: Enable IRQ support for Quark X1000
+Thread-Topic: [PATCHv3 3/3] gpio: sch: Enable IRQ support for Quark X1000
+Thread-Index: AQHP6ef1Ka3j/RcXxUq5NEUuAjnRK5w9ULSg
+Date: Thu, 23 Oct 2014 07:29:38 +0000
+Message-ID: <50B33AC5ED75F74F991980326F1C438D0FC00922@PGSMSX108.gar.corp.intel.com>
+References: <1413431475-12799-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <1413431475-12799-4-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <CAAVeFuJe_52V3bWJ9AzvXMNedwJ5m67xC-L3b-d0LH+q4ogH=A@mail.gmail.com>
+In-Reply-To: <CAAVeFuJe_52V3bWJ9AzvXMNedwJ5m67xC-L3b-d0LH+q4ogH=A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022172646.GD12775@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9N7Vxvi013683
 
-Thanks for the excellent review comments. I'll do another spin an try to
-incorporate most them.
-
-/Jarkko
-
-On Wed, Oct 22, 2014 at 11:26:46AM -0600, Jason Gunthorpe wrote:
-> On Wed, Oct 22, 2014 at 07:23:56PM +0300, Jarkko Sakkinen wrote:
-> > Traversal of the ACPI device tree was not done right. It should lookup
-> > PPI only under the ACPI device that it is associated. Otherwise, it could
-> > match to a wrong PPI interface if there are two TPM devices in the device
-> > tree.
-> > 
-> > Removed global ACPI handle and version string from tpm_ppi.c as this
-> > is racy. Instead they should be associated with the chip.
-> > 
-> > Moved code just a tiny bit towards two-phase allocation to implement
-> > fix for the PPI race conditions.
-> 
-> Not this version..
-> 
-> > Added missing copyright platter to tpm_ppi.c.
-> > 
-> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> 
-> Reviewed-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> 
-> I like this one the most of the three I've seen :)
-> 
-> Did you also look in tpm_acpi.c to see if it needs to use
-> acpi_dev_handle somehow too?
-> 
-> > +	union acpi_object *obj;
-> > +	struct kobject *parent = &chip->dev->kobj;
-> 
-> Nit, this variable is only used once, it would be clearer to inline
-> 
-> > +	/* Cache PPI version string. */
-> > +	obj = acpi_evaluate_dsm_typed(chip->acpi_dev_handle, tpm_ppi_uuid,
-> > +				      TPM_PPI_REVISION_ID, TPM_PPI_FN_VERSION,
-> > +				      NULL, ACPI_TYPE_STRING);
-> > +       if (obj) {
-> > +               strlcpy(chip->ppi_version, obj->string.pointer,
-> > +                       PPI_VERSION_LEN + 1);
-> > +               ACPI_FREE(obj);
-> > +       } else
-> > +               return -ENOMEM;
 > > +
-> > +       return chip->acpi_dev_handle ?
-> > +               sysfs_create_group(parent, &ppi_attr_grp) : 0;
+> > +static int sch_gpio_irq_type(struct irq_data *d, unsigned type)
+> > +{
+> > +       struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
+> > +       unsigned long flags;
+> > +       u32 gpio_num;
+> > +
+> > +       if (d == NULL)
+> > +               return -EINVAL;
+> > +
+> > +       gpio_num = d->irq - sch->irq_base;
+> > +
+> > +       spin_lock_irqsave(&sch->lock, flags);
+> > +
+> > +       switch (type) {
+> > +       case IRQ_TYPE_EDGE_RISING:
+> > +               sch_gpio_register_set(sch, gpio_num, GTPE);
+> > +               sch_gpio_register_clear(sch, gpio_num, GTNE);
 > 
-> The above sequence can just be:
+> You will have the same problem as I pointed out in patch 1/3 that
+> sch_gpio_register_set/clear() will try to acquire the already-locked
+> sch->lock. No way this can ever work, or I am under a serious
+> misapprehension.
 > 
-> if (!obj)
->    return -ENOMEM;
+> > +               break;
+> > +
+> > +       case IRQ_TYPE_EDGE_FALLING:
+> > +               sch_gpio_register_set(sch, gpio_num, GTNE);
+> > +               sch_gpio_register_clear(sch, gpio_num, GTPE);
+> > +               break;
+> > +
+> > +       case IRQ_TYPE_EDGE_BOTH:
+> > +               sch_gpio_register_set(sch, gpio_num, GTPE);
+> > +               sch_gpio_register_set(sch, gpio_num, GTNE);
+> > +               break;
+> > +
+> > +       case IRQ_TYPE_NONE:
+> > +               sch_gpio_register_clear(sch, gpio_num, GTPE);
+> > +               sch_gpio_register_clear(sch, gpio_num, GTNE);
+> > +               break;
+> > +
+> > +       default:
+> > +               spin_unlock_irqrestore(&sch->lock, flags);
+> > +               return -EINVAL;
+> > +       }
+> > +
+> > +       spin_unlock_irqrestore(&sch->lock, flags);
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static struct irq_chip sch_irq_chip = {
+> > +       .irq_enable     = sch_gpio_irq_enable,
+> > +       .irq_disable    = sch_gpio_irq_disable,
+> > +       .irq_ack        = sch_gpio_irq_ack,
+> > +       .irq_set_type   = sch_gpio_irq_type,
+> > +};
+> > +
+> > +static void sch_gpio_irqs_init(struct sch_gpio *sch, unsigned int num)
+> > +{
+> > +       unsigned int i;
+> > +
+> > +       for (i = 0; i < num; i++) {
+> > +               irq_set_chip_data(i + sch->irq_base, sch);
+> > +               irq_set_chip_and_handler_name(i + sch->irq_base,
+> > +                                             &sch_irq_chip,
+> > +                                             handle_simple_irq,
+> > +                                             "sch_gpio_irq_chip");
+> > +       }
+> > +}
+> > +
+> > +static void sch_gpio_irqs_deinit(struct sch_gpio *sch, unsigned int num)
+> > +{
+> > +       unsigned int i;
+> > +
+> > +       for (i = 0; i < num; i++) {
+> > +               irq_set_chip_data(i + sch->irq_base, 0);
+> > +               irq_set_chip_and_handler_name(i + sch->irq_base, 0, 0, 0);
+> > +       }
+> > +}
+> > +
+> > +static void sch_gpio_irq_disable_all(struct sch_gpio *sch, unsigned int num)
+> > +{
+> > +       unsigned long flags;
+> > +       unsigned int gpio_num;
+> > +
+> > +       spin_lock_irqsave(&sch->lock, flags);
+> > +
+> > +       for (gpio_num = 0; gpio_num < num; gpio_num++) {
+> > +               sch_gpio_register_clear(sch, gpio_num, GTPE);
+> > +               sch_gpio_register_clear(sch, gpio_num, GTNE);
+> > +               sch_gpio_register_clear(sch, gpio_num, GGPE);
+> > +               sch_gpio_register_clear(sch, gpio_num, GSMI);
 > 
-> strlcpy(chip->ppi_version, obj->string.pointer, sizeof(chip->ppi_version));
-> ACPI_FREE(obj);
-> 
-> return sysfs_create_group(&chip->dev->kobj, &ppi_attr_grp);
-> 
-> Which is more idiomatic. Also remove TPM_PPI_VERSION_LEN, sizeof is better.
-> 
-> I know nothing about acpi, but is ENOMEM the right code? I would think
-> acpi_evalute_dsm_typed would also fail if tpm_ppi_uuid is not found??
-> 
-> > +	return chip->acpi_dev_handle ?
-> > +		sysfs_create_group(parent, &ppi_attr_grp) : 0;
-> 
-> dev_handle is already checked to be non 0
-> 
-> > +void tpm_remove_ppi(struct tpm_chip *chip)
-> > +	struct kobject *parent = &chip->dev->kobj;
-> 
-> Also used only once
-> 
-> Jason
+> Same here.
+
+
+Alright. I should have noticed this double locking issue earlier. Thanks. I think the next version will be much cleaner. Thanks for spending time and effort to review.
+
+Rebecca
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
