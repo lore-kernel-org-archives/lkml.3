@@ -1,70 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955AbaJWOWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:22:42 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:34904 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734AbaJWOWl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:22:41 -0400
-Date: Thu, 23 Oct 2014 16:22:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
-        mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        laijs@cn.fujitsu.com, dave@stgolabs.net, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 3/6] mm: VMA sequence count
-Message-ID: <20141023142224.GL3219@twins.programming.kicks-ass.net>
-References: <20141020215633.717315139@infradead.org>
- <20141020222841.361741939@infradead.org>
- <20141022112657.GG30588@node.dhcp.inet.fi>
- <20141022113951.GB21513@worktop.programming.kicks-ass.net>
- <20141022115304.GA31486@node.dhcp.inet.fi>
- <20141022121554.GD21513@worktop.programming.kicks-ass.net>
- <20141022134416.GA15602@worktop.programming.kicks-ass.net>
- <20141023123616.GA8809@node.dhcp.inet.fi>
+	id S1756048AbaJWOXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:23:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36062 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850AbaJWOXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:23:45 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        <khilman@linaro.org>
+CC: <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH v3 1/5] PM / clock_ops: Add pm_clk_add_clk()
+Date: Thu, 23 Oct 2014 17:22:58 +0300
+Message-ID: <1414074182-25980-2-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
+References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023123616.GA8809@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 03:36:16PM +0300, Kirill A. Shutemov wrote:
-> On Wed, Oct 22, 2014 at 03:44:16PM +0200, Peter Zijlstra wrote:
-> > On Wed, Oct 22, 2014 at 02:15:54PM +0200, Peter Zijlstra wrote:
-> > > On Wed, Oct 22, 2014 at 02:53:04PM +0300, Kirill A. Shutemov wrote:
-> > > > Em, no. In this case change_protection() will not touch the pte, since
-> > > > it's pte_none() and the pte_same() check will pass just fine.
-> > > 
-> > > Oh, that's what you meant. Yes that's a problem, yes vm_page_prot
-> > > needs wrapping too.
-> > 
-> > Maybe also vm_policy, is there anything else that can change while a vma
-> > lives?
-> 
->  - vm_flags, obviously;
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-Do those ever change? The only thing that jumps out is the VM_LOCKED
-thing and that should not really matter one way or the other, but sure
-can do.
+The existing pm_clk_add() allows to pass a clock by con_id. However,
+when referring to a specific clock from DT, no con_id is available.
 
->  - shared, anon_vma and anon_vma_chain (at least on the first write fault
->    to private mapping);
->  - vm_pgoff (mremap(2) ?);
+Add pm_clk_add_clk(), which allows to specify the struct clk * directly.
 
-Right you are. Never thought about that one.
+CC: Ulf Hansson <ulf.hansson@linaro.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+ drivers/base/power/clock_ops.c | 41 +++++++++++++++++++++++++++++++----------
+ include/linux/pm_clock.h       |  8 ++++++++
+ 2 files changed, 39 insertions(+), 10 deletions(-)
 
->  - vm_private_data -- it's all over drivers. Potential nightmare, but
->    seems not in use for anon mappings.
+diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+index 7836930..f14b767 100644
+--- a/drivers/base/power/clock_ops.c
++++ b/drivers/base/power/clock_ops.c
+@@ -53,7 +53,8 @@ static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
+  */
+ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+ {
+-	ce->clk = clk_get(dev, ce->con_id);
++	if (!ce->clk)
++		ce->clk = clk_get(dev, ce->con_id);
+ 	if (IS_ERR(ce->clk)) {
+ 		ce->status = PCE_STATUS_ERROR;
+ 	} else {
+@@ -63,15 +64,8 @@ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+ 	}
+ }
+ 
+-/**
+- * pm_clk_add - Start using a device clock for power management.
+- * @dev: Device whose clock is going to be used for power management.
+- * @con_id: Connection ID of the clock.
+- *
+- * Add the clock represented by @con_id to the list of clocks used for
+- * the power management of @dev.
+- */
+-int pm_clk_add(struct device *dev, const char *con_id)
++static int __pm_clk_add(struct device *dev, const char *con_id,
++			struct clk *clk)
+ {
+ 	struct pm_subsys_data *psd = dev_to_psd(dev);
+ 	struct pm_clock_entry *ce;
+@@ -93,6 +87,8 @@ int pm_clk_add(struct device *dev, const char *con_id)
+ 			kfree(ce);
+ 			return -ENOMEM;
+ 		}
++	} else {
++		ce->clk = clk;
+ 	}
+ 
+ 	pm_clk_acquire(dev, ce);
+@@ -104,6 +100,31 @@ int pm_clk_add(struct device *dev, const char *con_id)
+ }
+ 
+ /**
++ * pm_clk_add - Start using a device clock for power management.
++ * @dev: Device whose clock is going to be used for power management.
++ * @con_id: Connection ID of the clock.
++ *
++ * Add the clock represented by @con_id to the list of clocks used for
++ * the power management of @dev.
++ */
++int pm_clk_add(struct device *dev, const char *con_id)
++{
++	return __pm_clk_add(dev, con_id, NULL);
++}
++
++/**
++ * pm_clk_add_clk - Start using a device clock for power management.
++ * @dev: Device whose clock is going to be used for power management.
++ * @clk: Clock pointer
++ *
++ * Add the clock to the list of clocks used for the power management of @dev.
++ */
++int pm_clk_add_clk(struct device *dev, struct clk *clk)
++{
++	return __pm_clk_add(dev, NULL, clk);
++}
++
++/**
+  * __pm_clk_remove - Destroy PM clock entry.
+  * @ce: PM clock entry to destroy.
+  */
+diff --git a/include/linux/pm_clock.h b/include/linux/pm_clock.h
+index 8348866..0b00396 100644
+--- a/include/linux/pm_clock.h
++++ b/include/linux/pm_clock.h
+@@ -18,6 +18,8 @@ struct pm_clk_notifier_block {
+ 	char *con_ids[];
+ };
+ 
++struct clk;
++
+ #ifdef CONFIG_PM_CLK
+ static inline bool pm_clk_no_clocks(struct device *dev)
+ {
+@@ -29,6 +31,7 @@ extern void pm_clk_init(struct device *dev);
+ extern int pm_clk_create(struct device *dev);
+ extern void pm_clk_destroy(struct device *dev);
+ extern int pm_clk_add(struct device *dev, const char *con_id);
++extern int pm_clk_add_clk(struct device *dev, struct clk *clk);
+ extern void pm_clk_remove(struct device *dev, const char *con_id);
+ extern int pm_clk_suspend(struct device *dev);
+ extern int pm_clk_resume(struct device *dev);
+@@ -51,6 +54,11 @@ static inline int pm_clk_add(struct device *dev, const char *con_id)
+ {
+ 	return -EINVAL;
+ }
++
++static inline int pm_clk_add_clk(struct device *dev, struct clk *clk)
++{
++	return -EINVAL;
++}
+ static inline void pm_clk_remove(struct device *dev, const char *con_id)
+ {
+ }
+-- 
+1.9.1
 
-Yeah, we need to either audit drivers or otherwise exclude stuff from
-speculative faults, Andy already noted that drivers might not expect
-.fault after .close or whatnot.
-
-In any case, yes I'll go include them.
