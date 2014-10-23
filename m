@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957AbaJWPYc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:24:32 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:53270 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454AbaJWPYb (ORCPT
+	id S1754905AbaJWP2E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:28:04 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:64360 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109AbaJWP2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 11:24:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        wim@iguana.be, linux-watchdog@vger.kernel.org, linux@roeck-us.net,
-        David Paris <david.paris@st.com>, kernel@stlinux.com
-Subject: Re: [PATCH 4/4] watchdog: st_wdt: Add new driver for ST's LPC Watchdog
-Date: Thu, 23 Oct 2014 17:23:55 +0200
-Message-ID: <8501493.uUGsNVQOhe@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414077524-6469-5-git-send-email-lee.jones@linaro.org>
-References: <1414077524-6469-1-git-send-email-lee.jones@linaro.org> <1414077524-6469-5-git-send-email-lee.jones@linaro.org>
+	Thu, 23 Oct 2014 11:28:01 -0400
+Message-ID: <54491E1E.6090001@gmail.com>
+Date: Thu, 23 Oct 2014 13:26:22 -0200
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:of/rLA58z2djUusNrEjDUdLyFzex2nW+ILmzSkp+MCd
- E2ZLI5m7zVq1bJyKq3V9zy0ZOXTTqSpmvfhN7XYJaDX2ro9LyE
- bWeHh9PvS+uqUvggXKu4ucF5ut6SAaOsGxcfZg/tQGYu1h9Ldn
- TR2v/yfweD+HsJxedxnFpxEi9hfTeJJkIoksdvuDo3wQ+zZIHi
- mR+hhfiudhr6lpx1wFfbZxh6Z9DouBEyNdRPVzjuPmCbFo0aAV
- Zxp+igumUU3aaOXh7V8IJXYIN4ls4SvH/Sa8QKTMFWbthiQzqE
- OJu6kbCqz7fZ2JzXYLkoXVuHpM+W4SEk7asZpUIrl2bzAWDD9m
- fE1ySf9/B012vKedj1Vc=
-X-UI-Out-Filterresults: notjunk:1;
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Thadeu Cascardo <cascardo@cascardo.eti.br>
+Subject: Re: Possible wireless issue introduced in next-20140930
+References: <54487346.4080604@gmail.com> <1414041815.5228.37.camel@marge.simpson.net>
+In-Reply-To: <1414041815.5228.37.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 October 2014 16:18:44 Lee Jones wrote:
-> +config ST_WATCHDOG
-> +       tristate "STMicroelectronics LPC Watchdog"
-> +       depends on ARCH_STI && OF
-> +       depends on !RTC_DRV_ST_LPC
-> +       select WATCHDOG_CORE
-> +       help
-> +        Say Y here to include Watchdog timer support for the watchdog
-> +        existing in the LPC of STMicroelectronics SOCs.
-> +        !!! BE CARREFUL !!!
-> +        This driver shares hardware resources with RTC Alarm part of the
-> +        LPC. Both LPC Watchdog driver and LPC RTC driver cannot be
-> +        used together.
-> +
-> +        To compile this driver as a module, choose M here: the
-> +        module will be called st-wdt.
-> +
-> 
+On 10/23/2014 03:23 AM, Mike Galbraith wrote:
+> On Thu, 2014-10-23 at 01:17 -0200, Murilo Opsfelder Araujo wrote:
+>> Hello, everyone.
+>>
+>> With next-20140930 my laptop does not work, i.e. after I enter my login
+>> and password in KDM, the entire system becomes unresponsive and I need
+>> to reset it in order to reboot (it does not even show the KDE splash
+>> screen).
+>>
+>> It was working pretty fine with next-20140926.
+>>
+>> I've also tested with next-20141022 and v3.18-rc1 and no luck.
+>>
+>> git bisect pointed me to the commit below [1].  My wireless card is a
+>> RTL8191SEvA [2].
+>
+> Mine is RTL8191SEvB.
+>
+> I was going to bisect RTL8191SE regression when I got a chance, but you
+> beat me to it.
+>
+>> commit 38506ecefab911785d5e1aa5889f6eeb462e0954
+>> Author: Larry Finger <Larry.Finger@lwfinger.net>
+>> Date:   Mon Sep 22 09:39:19 2014 -0500
+>>
+>>       rtlwifi: rtl_pci: Start modification for new drivers
+>
+> Did you confirm that bisection result, ie revert it at HEAD of whichever
+> tree you bisected?
+>
+> The revert (master) removed some warnings on the way to kaboom here, but
+> the drivers is still toxic.  My log follows in case it's the same thing.
+> I can't go hunting atm, maybe during the weekend if the problem hasn't
+> evaporate by then.
 
-How is this ensured by the code? Do both drivers try to bind to the
-same device node? Would it make more sense to have a single driver
-that registers both to the rtc and the watchdog subsystems?
+next-20141023 does not work as well.
 
-	Arnd
+With commit 38506ecefab911785d5e1aa5889f6eeb462e0954 reverted, kernel 
+blows up very early in boot.
+
+Cascardo (CC:) helped me to investigate and it seems that when 
+rtlpriv->cfg->ops->get_btc_status() is called, it is pointing to a NULL 
+function.
+
+With the changes below, written by Cascardo, I could get rid of 
+oops/panic and system booted normally.  But there was no wifi network 
+available (like if wifi card was disabled).
+
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c 
+b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+index 1bff2a0..807f0f7 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+@@ -253,6 +253,11 @@ static void rtl92s_deinit_sw_vars(struct 
+ieee80211_hw *hw)
+         }
+  }
+
++static bool rtl92s_get_btc_status(void)
++{
++       return false;
++}
++
+  static struct rtl_hal_ops rtl8192se_hal_ops = {
+         .init_sw_vars = rtl92s_init_sw_vars,
+         .deinit_sw_vars = rtl92s_deinit_sw_vars,
+@@ -294,6 +299,7 @@ static struct rtl_hal_ops rtl8192se_hal_ops = {
+         .set_bbreg = rtl92s_phy_set_bb_reg,
+         .get_rfreg = rtl92s_phy_query_rf_reg,
+         .set_rfreg = rtl92s_phy_set_rf_reg,
++       .get_btc_status = rtl92s_get_btc_status,
+  };
+
+  static struct rtl_mod_params rtl92se_mod_params = {
+
+-- 
+Murilo
