@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008AbaJWUdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 16:33:36 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35682 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932240AbaJWUdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 16:33:33 -0400
-Date: Thu, 23 Oct 2014 13:29:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] document ->sighand protection,
-	rcu_read_unlock() deadlocks
-Message-ID: <20141023202939.GF4977@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140922164404.GA28910@redhat.com>
- <20140928214357.GA17874@redhat.com>
- <20141023195604.GA7899@redhat.com>
+	id S1755452AbaJWUgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 16:36:19 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:46805 "EHLO
+	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493AbaJWUgS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 16:36:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023195604.GA7899@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102320-0029-0000-0000-000000DC8CDC
+In-Reply-To: <1414068740-9553-2-git-send-email-gioh.kim@lge.com>
+References: <1414068740-9553-1-git-send-email-gioh.kim@lge.com>
+	<1414068740-9553-2-git-send-email-gioh.kim@lge.com>
+Date: Fri, 24 Oct 2014 02:06:17 +0530
+Message-ID: <CAOFgiypyxykRPpYn7dAXnnDHhCR-MwRnNT46BdwS28TKobnxuw@mail.gmail.com>
+Subject: Re: [RFC 1/2] staging: ion: shrink page-pool by page unit
+From: Devendra Naga <devendranaga4@gmail.com>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        gunho.lee@lge.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 09:56:04PM +0200, Oleg Nesterov wrote:
-> Ping ;)
-> 
-> Paul, should I resend or you do not think this can go via your rcu
-> tree?
+Hello,
 
-Please accept my apologies for missing these!
+On Thu, Oct 23, 2014 at 6:22 PM, Gioh Kim <gioh.kim@lge.com> wrote:
+> This patch shrink page-pool by page unit.
+>
+> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+> ---
+>  drivers/staging/android/ion/ion_page_pool.c   |    5 +++--
+>  drivers/staging/android/ion/ion_system_heap.c |    7 +++++--
+>  2 files changed, 8 insertions(+), 4 deletions(-)
 
-They are now queued for 3.19.
+>
 
-							Thanx, Paul
+--- cut --
 
-> On 09/28, Oleg Nesterov wrote:
-> >
-> > Paul, could you take these 2 doc patches? Assuming that you agree
-> > with the comments, of course.
-> >
-> > On 09/24, Paul E. McKenney wrote:
-> > >
-> > > On Tue, Sep 23, 2014 at 09:03:48PM +0200, Oleg Nesterov wrote:
-> > > >
-> > > > Paul, will you agree if we turn it into
-> > > > ...
-> > > >      /*
-> > > >       * On the succesfull return we hold ->siglock. According to comment
-> > > >       * above rcu_read_unlock() this is against the rules, but scheduler
-> > > >       * locks are fine under this lock, signal_wake_up() takes them too.
-> > > >       */
-> > > >      rcu_read_unlock();
-> > >
-> > > If you guys continue the guarantee of no deadlock, I am OK with this change.
-> >
-> > Heh. Contrary to what I said (and you all were agree ;), this deadlock
-> > is actually possible, so we can not remove the deadlock-avoidance from
-> > __lock_task_sighand(). And I do not see how we can cleanup this code
-> > because preempt_disable() + spin_lock() is not -rt friendly.
-> >
-> > I think this deserves a bit of documentation, see 2/2. Perhaps this is
-> > just me, but imo the current comment is a bit misleading.
-> >
-> > "if the caller of rcu_read_unlock() already holds one of these locks ..."
-> > is not a problem in fact. I mean, pi_lock or rq->lock are special enough,
-> > nobody should ever call the outermost rcu_read_unlock() with these locks
-> > held. rt_mutex->wait_lock should be fine too, also because ->boost_mtx
-> > is private to rcu_boost() and rcu_read_unlock_special().
-> >
-> > But. They can race with each other, and that is why rcu_read_unlock()
-> > under (say) ->siglock can actually lead to deadlock. And only because
-> > rt_mutex->wait_lock doesn't disable irqs. Or I am totally confused.
-> >
-> > Perhaps we can change rtmutex.c to use raw_spin_lock_irqsave(), or do
-> > something else...
-> >
-> > Oleg.
-> >
-> >  include/linux/rcupdate.h |    4 +++-
-> >  kernel/fork.c            |    5 ++++-
-> >  kernel/signal.c          |   12 +++++++++++-
-> >  3 files changed, 18 insertions(+), 3 deletions(-)
-> 
+> diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+> index da2a63c..36e73c3 100644
+> --- a/drivers/staging/android/ion/ion_system_heap.c
+> +++ b/drivers/staging/android/ion/ion_system_heap.c
+> @@ -211,7 +211,7 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
+>                                         int nr_to_scan)
+>  {
+>         struct ion_system_heap *sys_heap;
+> -       int nr_total = 0;
+> +       int nr_total = 0, nr_freed;
+>         int i;
+>
+>         sys_heap = container_of(heap, struct ion_system_heap, heap);
+> @@ -219,7 +219,10 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
+>         for (i = 0; i < num_orders; i++) {
+>                 struct ion_page_pool *pool = sys_heap->pools[i];
+>
+> -               nr_total += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
+> +               nr_freed += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
 
+nr_freed is not initialised to zero. This might result in updating of
+a garbage value stored initially after nr_freed is created.
+
+> +               nr_total += nr_freed;
+> +               /* nr_to_scan can be negative */
+> +               nr_to_scan -= nr_freed;
+>         }
+>
+>         return nr_total;
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
