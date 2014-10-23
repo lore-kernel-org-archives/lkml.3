@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138AbaJWKSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:18:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38479 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527AbaJWKS1 (ORCPT
+	id S1753878AbaJWKT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:19:59 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:58090 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbaJWKT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:18:27 -0400
-Date: Thu, 23 Oct 2014 18:17:19 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-Cc: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] usb: dwc2: gadget: sparse warning of context
- imbalance
-Message-ID: <20141023101719.GA31916@kroah.com>
-References: <1413521043-7587-1-git-send-email-sudipm.mukherjee@gmail.com>
- <A2CA0424C0A6F04399FB9E1CD98E0304844E345C@US01WEMBX2.internal.synopsys.com>
- <20141017185209.GY26260@saruman>
- <A2CA0424C0A6F04399FB9E1CD98E0304844E34A6@US01WEMBX2.internal.synopsys.com>
- <20141023100714.GA2386@sudip-PC>
+	Thu, 23 Oct 2014 06:19:57 -0400
+Date: Thu, 23 Oct 2014 12:19:48 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Bob Liu <lliubbo@gmail.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        kvm@vger.kernel.org, linux390@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH v3 0/4] mm: new function to forbid zeropage mappings for
+ a process
+Message-ID: <20141023121948.51e4a6cb@mschwide>
+In-Reply-To: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
+References: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023100714.GA2386@sudip-PC>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102310-0009-0000-0000-000001A8968C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 03:37:14PM +0530, Sudip Mukherjee wrote:
-> On Fri, Oct 17, 2014 at 07:05:19PM +0000, Paul Zimmerman wrote:
-> > > From: Felipe Balbi [mailto:balbi@ti.com]
-> > > Sent: Friday, October 17, 2014 11:52 AM
-> > > 
-> > > On Fri, Oct 17, 2014 at 06:50:19PM +0000, Paul Zimmerman wrote:
-> > > > > From: Sudip Mukherjee [mailto:sudipm.mukherjee@gmail.com]
-> > > > > Sent: Thursday, October 16, 2014 9:44 PM
-> > > > >
-> > > > > sparse was giving the following warning:
-> > > > >         warning: context imbalance in 's3c_hsotg_ep_enable'
-> > > > > 	                - different lock contexts for basic block
-> > > > >
-> > > > > we were returning ENOMEM while still holding the spinlock.
-> > > > > The sparse warning was fixed by releasing the spinlock before return.
-> > > > >
-> > > > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > > > > ---
-> > > > >  drivers/usb/dwc2/gadget.c | 7 +++++--
-> > > > >  1 file changed, 5 insertions(+), 2 deletions(-)
-> > > > >
-> > > > > diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-> > > > > index 7b5856f..7f25527 100644
-> > > > > --- a/drivers/usb/dwc2/gadget.c
-> > > > > +++ b/drivers/usb/dwc2/gadget.c
-> > > > > @@ -2561,8 +2561,10 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
-> > > > >  			hs_ep->fifo_size = val;
-> > > > >  			break;
-> > > > >  		}
-> > > > > -		if (i == 8)
-> > > > > -			return -ENOMEM;
-> > > > > +		if (i == 8) {
-> > > > > +			ret = -ENOMEM;
-> > > > > +			goto error;
-> > > > > +		}
-> > > > >  	}
-> > > > >
-> > > > >  	/* for non control endpoints, set PID to D0 */
-> > > > > @@ -2579,6 +2581,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
-> > > > >  	/* enable the endpoint interrupt */
-> > > > >  	s3c_hsotg_ctrl_epint(hsotg, index, dir_in, 1);
-> > > > >
-> > > > > +error:
-> > > > >  	spin_unlock_irqrestore(&hsotg->lock, flags);
-> > > > >  	return ret;
-> > > > >  }
-> > > >
-> > > > Acked-by: Paul Zimmerman <paulz@synopsys.com>
-> > > 
-> > > v3.18-rc or v3.19 ?
-> > 
-> > v3.18-rc, since it's a bugfix. And I forgot, this should be marked for
-> > 3.17 stable too.
-> > 
-> hi,
-> this is not yet added to linux-next , is something pending from my side?
+On Wed, 22 Oct 2014 13:09:26 +0200
+Dominik Dingel <dingel@linux.vnet.ibm.com> wrote:
 
-Patience.
+> s390 has the special notion of storage keys which are some sort of page flags
+> associated with physical pages and live outside of direct addressable memory.
+> These storage keys can be queried and changed with a special set of instructions.
+> The mentioned instructions behave quite nicely under virtualization, if there is: 
+> - an invalid pte, then the instructions will work on memory in the host page table
+> - a valid pte, then the instructions will work with the real storage key
+> 
+> Thanks to Martin with his software reference and dirty bit tracking,
+> the kernel does not issue any storage key instructions as now a 
+> software based approach will be taken, on the other hand distributions 
+> in the wild are currently using them.
+> 
+> However, for virtualized guests we still have a problem with guest pages 
+> mapped to zero pages and the kernel same page merging.  
+> With each one multiple guest pages will point to the same physical page
+> and share the same storage key.
+> 
+> Let's fix this by introducing a new function which s390 will define to
+> forbid new zero page mappings.  If the guest issues a storage key related 
+> instruction we flag the mm_struct, drop existing zero page mappings
+> and unmerge the guest memory.
+> 
+> v2 -> v3:
+>  - Clearing up patch description Patch 3/4
+>  - removing unnecessary flag in mmu_context (Paolo)
+> 
+> v1 -> v2: 
+>  - Following Dave and Paolo suggestion removing the vma flag
+> 
+> Dominik Dingel (4):
+>   s390/mm: recfactor global pgste updates
+>   mm: introduce mm_forbids_zeropage function
+>   s390/mm: prevent and break zero page mappings in case of storage keys
+>   s390/mm: disable KSM for storage key enabled pages
+> 
+>  arch/s390/include/asm/pgalloc.h |   2 -
+>  arch/s390/include/asm/pgtable.h |   8 +-
+>  arch/s390/kvm/kvm-s390.c        |   2 +-
+>  arch/s390/kvm/priv.c            |  17 ++--
+>  arch/s390/mm/pgtable.c          | 180 ++++++++++++++++++----------------------
+>  include/linux/mm.h              |   4 +
+>  mm/huge_memory.c                |   2 +-
+>  mm/memory.c                     |   2 +-
+>  8 files changed, 106 insertions(+), 111 deletions(-)
+ 
+Patches look good to me and as nobody seems to disagree with the proposed
+solution I will add the code to the features branch of the s390 tree.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
