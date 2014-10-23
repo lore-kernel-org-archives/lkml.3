@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603AbaJWNCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:02:44 -0400
-Received: from mga14.intel.com ([192.55.52.115]:36345 "EHLO mga14.intel.com"
+	id S1755739AbaJWND0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:03:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16946 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755443AbaJWNCl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:02:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="404802200"
-From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
-To: Pavel Machek <pavel@ucw.cz>, kernel list <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>
-Subject: RE: 3.18-rc0: iwlegacy failed after a while
-Thread-Topic: 3.18-rc0: iwlegacy failed after a while
-Thread-Index: Ac/uwXl795E3/2oRTnmJTjtK4+8qsQ==
-Date: Thu, 23 Oct 2014 13:02:37 +0000
-Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB31B552E3F@hasmsx107.ger.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755657AbaJWNDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 09:03:21 -0400
+Date: Thu, 23 Oct 2014 16:06:54 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Marcel Apfelbaum <marcel.a@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        marcel@redhat.com,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
+Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver
+ mapping.
+Message-ID: <20141023130654.GA11446@redhat.com>
+References: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
+ <CAErSpo4bx1tZMi1rhKhRoE6v9EVr6iTFVw=oQaLEpzT+h=U5Tg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4bx1tZMi1rhKhRoE6v9EVr6iTFVw=oQaLEpzT+h=U5Tg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Changed subject]
-This is really iwlegacy and not iwlwifi.
+On Wed, Oct 22, 2014 at 03:28:29PM -0600, Bjorn Helgaas wrote:
+> Hi Marcel,
+> 
+> I'm not quite clear on what the objective is here, so I apologize for
+> some questions that probably seem silly.
+> 
+> On Mon, Oct 20, 2014 at 8:04 AM, Marcel Apfelbaum <marcel.a@redhat.com> wrote:
+> > Scanning a lot of devices during boot requires a lot of time.
+> 
+> I think what takes a lot of time is the .probe() method for some
+> drivers, right?  I first thought you meant that it took a long time
+> for the PCI core to enumerate a lot of devices, but you're not
+> changing anything there.
+> 
+> If the intent is to reduce boot time, I don't think this is a general
+> solution.  Drivers should be able to schedule asynchronous things in
+> their .probe() methods if necessary.
+
+If this worked for all devices, we could just make probe
+asynchronous in PCI core.
+Unfortunately this doesn't work esp for storage devices
+since people expect disks to be available for mount immediately.
+
+If the point of the patch is to speed up boot, we could
+try to probe everything in parallel?
+Probe is serialized now, right?
 
 
+> > On other scenarios there is a need to bind a driver to a specific slot.
 > 
-> Hi!
+> A short example here would be good.  Are you talking about something
+> like binding a NIC driver to one device while leaving others unbound
+> for use by guests?
 > 
-> Full dmesg is in the attachment, I guess the troubles started with:
+> > Binding devices to pci-stub driver does not work,
+> > as it will not differentiate between devices of the
+> > same type.
 > 
-> iwl3945 0000:03:00.0: Queue 4 stuck for 2004 ms.
-> iwl3945 0000:03:00.0: On demand firmware reload
-> iwl3945 0000:03:00.0: Master Disable Timed Out, 100 usec
-> ieee80211 phy0: Hardware restart was requested
-> iwl3945 0000:03:00.0: BSM uCode verification failed at addr
-> 0x00003800+0 (of 900), is 0xa5\
-> a5a5a2, s/b 0xf802020
-> iwl3945 0000:03:00.0: Unable to set up bootstrap uCode: -5
+> I assume you mean booting with "pci-stub.ids=$VENDOR:$DEVICE" will
+> make pci-stub bind to *all* matching devices, and you only want it to
+> bind to some.  Maybe pci-stub could be extended to pay attention to
+> PCI bus addresses in addition to vendor/device IDs.
 > 
-> Best regards,
-> 								Pavel
+> > Using some start scripts is error prone.
+> >
+> > The solution leverages driver_override functionality introduced by
+> >
+> >         commit: 782a985d7af26db39e86070d28f987cad21313c0
+> >         Author: Alex Williamson <alex.williamson@redhat.com>
+> >         Date:   Tue May 20 08:53:21 2014 -0600
+> >
+> >         PCI: Introduce new device binding path using pci_dev.driver_override
+> >
+> > In order to bind PCI slots to specific drivers use:
+> >         pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
 > 
-> --
+> If/when you address Alex's comments about other bus types, can you
+> also update the changelog to use the canonical commit reference
+> format, i.e., 782a985d7af2 ("PCI: Introduce new device binding path
+> using pci_dev.driver_override") in this case?
+> 
+> PCI bus numbers are mutable, e.g., they can change with hotplug or
+> other configuration changes.  But I don't have any better suggestion,
+> so I guess all we can do is be aware of this.
 
-Huh - I don't remember any change there, but you should ask the right person - iwlegacy maintainer :)
+We could use slot capability for addressing if that's available.
 
+> Speaking of hotplug, this is only a boot-time kernel parameter, with
+> no opportunity to use this, e.g., to add slot/driver pairs, after
+> boot.  Do you not need that because of Alex's driver_override thing?
+> How can we integrate this all together into a coherent whole?  I'm a
+> little confused as to how this would all be documented in a form
+> usable by end-users.
+> 
+> Bjorn
