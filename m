@@ -1,127 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbaJWEEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 00:04:14 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49518 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008AbaJWEEH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 00:04:07 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 12/14] net: dsa/mv88e6123_61_65: Add support for reading switch registers
-Date: Wed, 22 Oct 2014 21:03:20 -0700
-Message-Id: <1414037002-25528-13-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
-References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54487E37.009A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 73
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1753552AbaJWEEw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 00:04:52 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:36805 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753097AbaJWEEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 00:04:50 -0400
+Message-ID: <54487E28.7070305@linux.vnet.ibm.com>
+Date: Thu, 23 Oct 2014 09:33:52 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>, peterz@infradead.org,
+        mingo@kernel.org
+CC: linux-kernel@vger.kernel.org, Morten.Rasmussen@arm.com,
+        kamalesh@linux.vnet.ibm.com, riel@redhat.com, efault@gmx.de,
+        nicolas.pitre@linaro.org, linaro-kernel@lists.linaro.org,
+        daniel.lezcano@linaro.org, dietmar.eggemann@arm.com, pjt@google.com,
+        bsegall@google.com, vincent.guittot@linaro.org, patches@linaro.org,
+        tuukka.tikkanen@linaro.org, amit.kucheria@linaro.org
+Subject: Re: [PATCH RFC 6/7] sched: cfs: cpu frequency scaling based on task
+ placement
+References: <1413958051-7103-1-git-send-email-mturquette@linaro.org> <1413958051-7103-7-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1413958051-7103-7-git-send-email-mturquette@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102304-0033-0000-0000-000000CDE316
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The infrastructure can now report switch registers to ethtool.
-Add support for it to the mv88e6123_61_65 driver.
+Hi Mike,
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/net/dsa/mv88e6123_61_65.c |  2 ++
- drivers/net/dsa/mv88e6xxx.c       | 24 ++++++++++++++++++++++++
- drivers/net/dsa/mv88e6xxx.h       |  3 +++
- 3 files changed, 29 insertions(+)
+On 10/22/2014 11:37 AM, Mike Turquette wrote:
+> {en,de}queue_task_fair are updated to track which cpus will have changed
+> utilization values as function of task queueing. The affected cpus are
+> passed on to arch_eval_cpu_freq for further machine-specific processing
+> based on a selectable policy.
+> 
+> arch_scale_cpu_freq is called from run_rebalance_domains as a way to
+> kick off the scaling process (via wake_up_process), so as to prevent
+> re-entering the {en,de}queue code.
+> 
+> All of the call sites in this patch are up for discussion. Does it make
+> sense to track which cpus have updated statistics in enqueue_fair_task?
+> I chose this because I wanted to gather statistics for all cpus affected
+> in the event CONFIG_FAIR_GROUP_SCHED is enabled. As agreed at LPC14 the
 
-diff --git a/drivers/net/dsa/mv88e6123_61_65.c b/drivers/net/dsa/mv88e6123_61_65.c
-index 17dc60e..a3aeba4 100644
---- a/drivers/net/dsa/mv88e6123_61_65.c
-+++ b/drivers/net/dsa/mv88e6123_61_65.c
-@@ -465,6 +465,8 @@ struct dsa_switch_driver mv88e6123_61_65_switch_driver = {
- 	.get_ethtool_stats	= mv88e6123_61_65_get_ethtool_stats,
- 	.get_sset_count		= mv88e6123_61_65_get_sset_count,
- 	.get_temp		= mv88e6123_61_65_get_temp,
-+	.get_regs_len		= mv88e6xxx_get_regs_len,
-+	.get_regs		= mv88e6xxx_get_regs,
- };
- 
- MODULE_ALIAS("platform:mv88e6123");
-diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
-index 8e1090b..c071fde 100644
---- a/drivers/net/dsa/mv88e6xxx.c
-+++ b/drivers/net/dsa/mv88e6xxx.c
-@@ -499,6 +499,30 @@ void mv88e6xxx_get_ethtool_stats(struct dsa_switch *ds,
- 	mutex_unlock(&ps->stats_mutex);
- }
- 
-+int mv88e6xxx_get_regs_len(struct dsa_switch *ds, int port)
-+{
-+	return 32 * sizeof(u16);
-+}
-+
-+void mv88e6xxx_get_regs(struct dsa_switch *ds, int port,
-+			struct ethtool_regs *regs, void *_p)
-+{
-+	u16 *p = _p;
-+	int i;
-+
-+	regs->version = 0;
-+
-+	memset(p, 0xff, 32 * sizeof(u16));
-+
-+	for (i = 0; i < 32; i++) {
-+		int ret;
-+
-+		ret = mv88e6xxx_reg_read(ds, REG_PORT(port), i);
-+		if (ret >= 0)
-+			p[i] = ret;
-+	}
-+}
-+
- static int __init mv88e6xxx_init(void)
- {
- #if IS_ENABLED(CONFIG_NET_DSA_MV88E6131)
-diff --git a/drivers/net/dsa/mv88e6xxx.h b/drivers/net/dsa/mv88e6xxx.h
-index d4d53ae..8c75702 100644
---- a/drivers/net/dsa/mv88e6xxx.h
-+++ b/drivers/net/dsa/mv88e6xxx.h
-@@ -78,6 +78,9 @@ void mv88e6xxx_get_strings(struct dsa_switch *ds,
- void mv88e6xxx_get_ethtool_stats(struct dsa_switch *ds,
- 				 int nr_stats, struct mv88e6xxx_hw_stat *stats,
- 				 int port, uint64_t *data);
-+int mv88e6xxx_get_regs_len(struct dsa_switch *ds, int port);
-+void mv88e6xxx_get_regs(struct dsa_switch *ds, int port,
-+			struct ethtool_regs *regs, void *_p);
- 
- extern struct dsa_switch_driver mv88e6131_switch_driver;
- extern struct dsa_switch_driver mv88e6123_61_65_switch_driver;
--- 
-1.9.1
+Can you explain how pstate selection can get affected by the presence of
+task groups? We are after all concerned with the cpu load. So when we
+enqueue/dequeue a task, we update the cpu load and pass it on for cpu
+pstate scaling. How does this change if we have task groups?
+I know that this issue was brought up during LPC, but I have yet not
+managed to gain clarity here.
+
+> next version of this patch will focus on the simpler case of not using
+> scheduler cgroups, which should remove a good chunk of this code,
+> including the cpumask stuff.
+> 
+> Also discussed at LPC14 is that fact that load_balance is a very
+> interesting place to do this as frequency can be considered in concert
+> with task placement. Please put forth any ideas on a sensible way to do
+> this.
+> 
+> Is run_rebalance_domains a logical place to change cpu frequency? What
+> other call sites make sense?
+> 
+> Even for platforms that can target a cpu frequency without sleeping
+> (x86, some ARM platforms with PM microcontrollers) it is currently
+> necessary to always kick the frequency target work out into a kthread.
+> This is because of the rw_sem usage in the cpufreq core which might
+> sleep. Replacing that lock type is probably a good idea.
+> 
+> Not-signed-off-by: Mike Turquette <mturquette@linaro.org>
+> ---
+>  kernel/sched/fair.c | 39 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 39 insertions(+)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 1af6f6d..3619f63 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3999,6 +3999,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  {
+>  	struct cfs_rq *cfs_rq;
+>  	struct sched_entity *se = &p->se;
+> +	struct cpumask update_cpus;
+> +
+> +	cpumask_clear(&update_cpus);
+> 
+>  	for_each_sched_entity(se) {
+>  		if (se->on_rq)
+> @@ -4028,12 +4031,27 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+> 
+>  		update_cfs_shares(cfs_rq);
+>  		update_entity_load_avg(se, 1);
+> +		/* track cpus that need to be re-evaluated */
+> +		cpumask_set_cpu(cpu_of(rq_of(cfs_rq)), &update_cpus);
+
+All the cfs_rqs that you iterate through here will belong to the same
+rq/cpu right?
+
+Regards
+Preeti U Murthy
 
