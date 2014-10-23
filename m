@@ -1,104 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672AbaJWUxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 16:53:52 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:44207 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093AbaJWUxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 16:53:50 -0400
-Date: Thu, 23 Oct 2014 16:53:47 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: mathieu.poirier@linaro.org
-cc: linux@arm.linux.org.uk, catalin.marinas@arm.com,
-        stefano.stabellini@eu.citrix.com, ezequiel.garcia@free-electrons.com,
-        Liviu.Dudau@arm.com, thomas.petazzoni@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: supplementing IO accessors with 64 bit
- capability
-In-Reply-To: <1414072315-18393-1-git-send-email-mathieu.poirier@linaro.org>
-Message-ID: <alpine.LFD.2.11.1410231652100.6969@knanqh.ubzr>
-References: <1414072315-18393-1-git-send-email-mathieu.poirier@linaro.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1755269AbaJWVIZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 17:08:25 -0400
+Received: from mail.kernel.org ([198.145.19.201]:50630 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754418AbaJWVIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 17:08:24 -0400
+Date: Thu, 23 Oct 2014 18:08:17 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 01/16] perf tools: Add id index
+Message-ID: <20141023210817.GN14687@kernel.org>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+ <1414061124-26830-2-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414061124-26830-2-git-send-email-adrian.hunter@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Oct 2014, mathieu.poirier@linaro.org wrote:
-
-> From: Mathieu Poirier <mathieu.poirier@linaro.org>
+Em Thu, Oct 23, 2014 at 01:45:09PM +0300, Adrian Hunter escreveu:
+> Add an index of the event identifiers.
 > 
-> Some drivers on ARMv7 need 64 bit read and writes.
-> 
-> Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+> This is needed to queue Instruction
+> Trace samples according to the mmap
+> buffer from which they were recorded.
 
-If you make __LINUX_ARM_ARCH__ >= 6 then you may add
+This gets difficult to review, I end up having to look at all the
+patches together to figure out the use cases, to see if this here makes
+sense...
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Can you try to explain like to a seven year old?
 
+Sigh.
+
+'id' is somethig super vague, what does this identifies? I want to make
+progress processing these patches, but with so short explanations like
+the above one, it gets difficult.
+
+- Arnaldo
+ 
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 > ---
-> Changes for v2:
->  - Protecting [readq, writeq]_relaxed with architecture constraint.
+>  tools/perf/builtin-inject.c |   1 +
+>  tools/perf/util/event.c     |   1 +
+>  tools/perf/util/event.h     |  15 ++++++
+>  tools/perf/util/evlist.c    |  26 ++++++++--
+>  tools/perf/util/evsel.h     |   3 ++
+>  tools/perf/util/session.c   | 122 ++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/session.h   |  10 ++++
+>  tools/perf/util/tool.h      |   3 +-
+>  8 files changed, 177 insertions(+), 4 deletions(-)
 > 
->  arch/arm/include/asm/io.h | 25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
-> 
-> diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-> index 1805674..027832b 100644
-> --- a/arch/arm/include/asm/io.h
-> +++ b/arch/arm/include/asm/io.h
-> @@ -118,6 +118,24 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
->  	return val;
+> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+> index de99ca1..046c719 100644
+> --- a/tools/perf/builtin-inject.c
+> +++ b/tools/perf/builtin-inject.c
+> @@ -410,6 +410,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+>  			.tracing_data	= perf_event__repipe_op2_synth,
+>  			.finished_round	= perf_event__repipe_op2_synth,
+>  			.build_id	= perf_event__repipe_op2_synth,
+> +			.id_index	= perf_event__repipe_op2_synth,
+>  		},
+>  		.input_name  = "-",
+>  		.samples = LIST_HEAD_INIT(inject.samples),
+> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+> index 4af6b27..bbf6705 100644
+> --- a/tools/perf/util/event.c
+> +++ b/tools/perf/util/event.c
+> @@ -28,6 +28,7 @@ static const char *perf_event__names[] = {
+>  	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
+>  	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
+>  	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
+> +	[PERF_RECORD_ID_INDEX]			= "ID_INDEX",
+>  };
+>  
+>  const char *perf_event__name(unsigned int id)
+> diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+> index 5699e7e..c89518e 100644
+> --- a/tools/perf/util/event.h
+> +++ b/tools/perf/util/event.h
+> @@ -187,6 +187,7 @@ enum perf_user_event_type { /* above any possible kernel type */
+>  	PERF_RECORD_HEADER_TRACING_DATA		= 66,
+>  	PERF_RECORD_HEADER_BUILD_ID		= 67,
+>  	PERF_RECORD_FINISHED_ROUND		= 68,
+> +	PERF_RECORD_ID_INDEX			= 69,
+>  	PERF_RECORD_HEADER_MAX
+>  };
+>  
+> @@ -239,6 +240,19 @@ struct tracing_data_event {
+>  	u32 size;
+>  };
+>  
+> +struct id_index_entry {
+> +	u64 id;
+> +	u64 idx;
+> +	u64 cpu;
+> +	u64 tid;
+> +};
+> +
+> +struct id_index_event {
+> +	struct perf_event_header header;
+> +	u64 nr;
+> +	struct id_index_entry entries[0];
+> +};
+> +
+>  union perf_event {
+>  	struct perf_event_header	header;
+>  	struct mmap_event		mmap;
+> @@ -253,6 +267,7 @@ union perf_event {
+>  	struct event_type_event		event_type;
+>  	struct tracing_data_event	tracing_data;
+>  	struct build_id_event		build_id;
+> +	struct id_index_event		id_index;
+>  };
+>  
+>  void perf_event__print_totals(void);
+> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+> index 3c9e77d..0babd39 100644
+> --- a/tools/perf/util/evlist.c
+> +++ b/tools/perf/util/evlist.c
+> @@ -527,6 +527,22 @@ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
+>  	return 0;
 >  }
 >  
-> +#if __LINUX_ARM_ARCH__ >= 5
-> +static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
+> +static void perf_evlist__set_sid_idx(struct perf_evlist *evlist,
+> +				     struct perf_evsel *evsel, int idx, int cpu,
+> +				     int thread)
 > +{
-> +	asm volatile("strd %1, %0"
-> +		     : "+Qo" (*(volatile u64 __force *)addr)
-> +		     : "r" (val));
+> +	struct perf_sample_id *sid = SID(evsel, cpu, thread);
+> +	sid->idx = idx;
+> +	if (evlist->cpus && cpu >= 0)
+> +		sid->cpu = evlist->cpus->map[cpu];
+> +	else
+> +		sid->cpu = -1;
+> +	if (!evsel->system_wide && evlist->threads && thread >= 0)
+> +		sid->tid = evlist->threads->map[thread];
+> +	else
+> +		sid->tid = -1;
 > +}
 > +
-> +static inline u64 __raw_readq(const volatile void __iomem *addr)
+>  struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id)
+>  {
+>  	struct hlist_head *head;
+> @@ -805,9 +821,13 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+>  			return -1;
+>  		}
+>  
+> -		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+> -		    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
+> -			return -1;
+> +		if (evsel->attr.read_format & PERF_FORMAT_ID) {
+> +			if (perf_evlist__id_add_fd(evlist, evsel, cpu, thread,
+> +						   fd) < 0)
+> +				return -1;
+> +			perf_evlist__set_sid_idx(evlist, evsel, idx, cpu,
+> +						 thread);
+> +		}
+>  	}
+>  
+>  	return 0;
+> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+> index 163c560..4861e8c 100644
+> --- a/tools/perf/util/evsel.h
+> +++ b/tools/perf/util/evsel.h
+> @@ -36,6 +36,9 @@ struct perf_sample_id {
+>  	struct hlist_node 	node;
+>  	u64		 	id;
+>  	struct perf_evsel	*evsel;
+> +	int			idx;
+> +	int			cpu;
+> +	pid_t			tid;
+>  
+>  	/* Holds total ID period value for PERF_SAMPLE_READ processing. */
+>  	u64			period;
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index 6702ac2..d70e37d 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -228,6 +228,15 @@ static int process_finished_round(struct perf_tool *tool,
+>  				  union perf_event *event,
+>  				  struct perf_session *session);
+>  
+> +static int process_id_index_stub(struct perf_tool *tool __maybe_unused,
+> +				 union perf_event *event __maybe_unused,
+> +				 struct perf_session *perf_session
+> +				 __maybe_unused)
 > +{
-> +	u64 val;
-> +	asm volatile("ldrd %1, %0"
-> +		     : "+Qo" (*(volatile u64 __force *)addr),
-> +		       "=r" (val));
-> +	return val;
+> +	dump_printf(": unhandled!\n");
+> +	return 0;
 > +}
-> +#endif
 > +
->  /*
->   * Architecture ioremap implementation.
->   */
-> @@ -306,10 +324,17 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
->  					__raw_readw(c)); __r; })
->  #define readl_relaxed(c) ({ u32 __r = le32_to_cpu((__force __le32) \
->  					__raw_readl(c)); __r; })
-> +#if __LINUX_ARM_ARCH__ >= 5
-> +#define readq_relaxed(c) ({ u64 __r = le64_to_cpu((__force __le64) \
-> +					__raw_readq(c)); __r; })
-> +#endif
+>  void perf_tool__fill_defaults(struct perf_tool *tool)
+>  {
+>  	if (tool->sample == NULL)
+> @@ -262,6 +271,8 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
+>  		else
+>  			tool->finished_round = process_finished_round_stub;
+>  	}
+> +	if (tool->id_index == NULL)
+> +		tool->id_index = process_id_index_stub;
+>  }
+>   
+>  static void swap_sample_id_all(union perf_event *event, void *data)
+> @@ -460,6 +471,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
+>  	[PERF_RECORD_HEADER_EVENT_TYPE]	  = perf_event__event_type_swap,
+>  	[PERF_RECORD_HEADER_TRACING_DATA] = perf_event__tracing_data_swap,
+>  	[PERF_RECORD_HEADER_BUILD_ID]	  = NULL,
+> +	[PERF_RECORD_ID_INDEX]		  = perf_event__all64_swap,
+>  	[PERF_RECORD_HEADER_MAX]	  = NULL,
+>  };
 >  
->  #define writeb_relaxed(v,c)	__raw_writeb(v,c)
->  #define writew_relaxed(v,c)	__raw_writew((__force u16) cpu_to_le16(v),c)
->  #define writel_relaxed(v,c)	__raw_writel((__force u32) cpu_to_le32(v),c)
-> +#if __LINUX_ARM_ARCH__ >= 5
-> +#define writeq_relaxed(v,c)	__raw_writeq((__force u64) cpu_to_le64(v),c)
-> +#endif
+> @@ -888,6 +900,8 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+>  		return tool->build_id(tool, event, session);
+>  	case PERF_RECORD_FINISHED_ROUND:
+>  		return tool->finished_round(tool, event, session);
+> +	case PERF_RECORD_ID_INDEX:
+> +		return tool->id_index(tool, event, session);
+>  	default:
+>  		return -EINVAL;
+>  	}
+> @@ -1594,3 +1608,111 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+>  out:
+>  	return err;
+>  }
+> +
+> +int perf_event__process_id_index(struct perf_tool *tool __maybe_unused,
+> +				 union perf_event *event,
+> +				 struct perf_session *session)
+> +{
+> +	struct perf_evlist *evlist = session->evlist;
+> +	struct id_index_event *ie = &event->id_index;
+> +	size_t i, nr, max_nr;
+> +
+> +	max_nr = (ie->header.size - sizeof(struct id_index_event)) /
+> +		 sizeof(struct id_index_entry);
+> +	nr = ie->nr;
+> +	if (nr > max_nr)
+> +		return -EINVAL;
+> +
+> +	if (dump_trace)
+> +		fprintf(stdout, " nr: %zu\n", nr);
+> +
+> +	for (i = 0; i < nr; i++) {
+> +		struct id_index_entry *e = &ie->entries[i];
+> +		struct perf_sample_id *sid;
+> +
+> +		if (dump_trace) {
+> +			fprintf(stdout,	" ... id: %"PRIu64, e->id);
+> +			fprintf(stdout,	"  idx: %"PRIu64, e->idx);
+> +			fprintf(stdout,	"  cpu: %"PRId64, e->cpu);
+> +			fprintf(stdout,	"  tid: %"PRId64"\n", e->tid);
+> +		}
+> +
+> +		sid = perf_evlist__id2sid(evlist, e->id);
+> +		if (!sid)
+> +			return -ENOENT;
+> +		sid->idx = e->idx;
+> +		sid->cpu = e->cpu;
+> +		sid->tid = e->tid;
+> +	}
+> +	return 0;
+> +}
+> +
+> +int perf_event__synthesize_id_index(struct perf_tool *tool,
+> +				    perf_event__handler_t process,
+> +				    struct perf_evlist *evlist,
+> +				    struct machine *machine)
+> +{
+> +	union perf_event *ev;
+> +	struct perf_evsel *evsel;
+> +	size_t nr = 0, i = 0, sz, max_nr, n;
+> +	int err;
+> +
+> +	pr_debug2("Synthesizing id index\n");
+> +
+> +	max_nr = (UINT16_MAX - sizeof(struct id_index_event)) /
+> +		 sizeof(struct id_index_entry);
+> +
+> +	list_for_each_entry(evsel, &evlist->entries, node)
+> +		nr += evsel->ids;
+> +
+> +	n = nr > max_nr ? max_nr : nr;
+> +	sz = sizeof(struct id_index_event) + n * sizeof(struct id_index_entry);
+> +	ev = zalloc(sz);
+> +	if (!ev)
+> +		return -ENOMEM;
+> +
+> +	ev->id_index.header.type = PERF_RECORD_ID_INDEX;
+> +	ev->id_index.header.size = sz;
+> +	ev->id_index.nr = n;
+> +
+> +	list_for_each_entry(evsel, &evlist->entries, node) {
+> +		u32 j;
+> +
+> +		for (j = 0; j < evsel->ids; j++) {
+> +			struct id_index_entry *e;
+> +			struct perf_sample_id *sid;
+> +
+> +			if (i >= n) {
+> +				err = process(tool, ev, NULL, machine);
+> +				if (err)
+> +					goto out_err;
+> +				nr -= n;
+> +				i = 0;
+> +			}
+> +
+> +			e = &ev->id_index.entries[i++];
+> +
+> +			e->id = evsel->id[j];
+> +
+> +			sid = perf_evlist__id2sid(evlist, e->id);
+> +			if (!sid) {
+> +				free(ev);
+> +				return -ENOENT;
+> +			}
+> +
+> +			e->idx = sid->idx;
+> +			e->cpu = sid->cpu;
+> +			e->tid = sid->tid;
+> +		}
+> +	}
+> +
+> +	sz = sizeof(struct id_index_event) + nr * sizeof(struct id_index_entry);
+> +	ev->id_index.header.size = sz;
+> +	ev->id_index.nr = nr;
+> +
+> +	err = process(tool, ev, NULL, machine);
+> +out_err:
+> +	free(ev);
+> +
+> +	return err;
+> +}
+> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+> index a4be851..d8521ac 100644
+> --- a/tools/perf/util/session.h
+> +++ b/tools/perf/util/session.h
+> @@ -126,4 +126,14 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+>  extern volatile int session_done;
 >  
->  #define readb(c)		({ u8  __v = readb_relaxed(c); __iormb(); __v; })
->  #define readw(c)		({ u16 __v = readw_relaxed(c); __iormb(); __v; })
+>  #define session_done()	ACCESS_ONCE(session_done)
+> +
+> +int perf_event__process_id_index(struct perf_tool *tool,
+> +				 union perf_event *event,
+> +				 struct perf_session *session);
+> +
+> +int perf_event__synthesize_id_index(struct perf_tool *tool,
+> +				    perf_event__handler_t process,
+> +				    struct perf_evlist *evlist,
+> +				    struct machine *machine);
+> +
+>  #endif /* __PERF_SESSION_H */
+> diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
+> index f116369..bb2708b 100644
+> --- a/tools/perf/util/tool.h
+> +++ b/tools/perf/util/tool.h
+> @@ -39,7 +39,8 @@ struct perf_tool {
+>  	event_attr_op	attr;
+>  	event_op2	tracing_data;
+>  	event_op2	finished_round,
+> -			build_id;
+> +			build_id,
+> +			id_index;
+>  	bool		ordered_events;
+>  	bool		ordering_requires_timestamps;
+>  };
 > -- 
 > 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
