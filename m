@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933643AbaJWBHn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 21:07:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754395AbaJWBHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 21:07:41 -0400
-Date: Wed, 22 Oct 2014 21:07:31 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org
-Subject: btrfs: WARN_ON(data_sinfo->bytes_may_use < bytes);
-Message-ID: <20141023010731.GA27796@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com,
-	jbacik@fb.com, linux-btrfs@vger.kernel.org
+	id S1753215AbaJWBLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 21:11:31 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:64764 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750928AbaJWBLa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 21:11:30 -0400
+Date: Wed, 22 Oct 2014 21:11:15 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        Peter Foley <pefoley2@pefoley.com>, linux-kbuild@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] kbuild: Fix output of make kernelrelease
+Message-ID: <20141022211115.576b0053@gandalf.local.home>
+In-Reply-To: <20141022194408.GA20989@pobox.suse.cz>
+References: <20141022101944.70d637cc@gandalf.local.home>
+	<20141022194408.GA20989@pobox.suse.cz>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just hit this while running trinity.
+On Wed, 22 Oct 2014 21:44:08 +0200
+Michal Marek <mmarek@suse.cz> wrote:
 
-WARNING: CPU: 3 PID: 9612 at fs/btrfs/extent-tree.c:3799 btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]()
-Modules linked in: rfcomm hidp bnep af_key llc2 scsi_transport_iscsi nfnetlink sctp libcrc32c can_raw can_bcm nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill btrfs xor coretemp hwmon x86_pkg_temp_thermal kvm_intel snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_codec_generic kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel raid6_pq snd_hda_intel microcode snd_hda_controller pcspkr snd_hda_codec serio_raw snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp shpchp pps_core snd_timer snd soundcore
-CPU: 3 PID: 9612 Comm: trinity-c85 Not tainted 3.18.0-rc1+ #74
- 0000000000000009 000000009989d5b8 ffff88018a337ba8 ffffffffaf86cc97
- 0000000000000000 0000000000000000 ffff88018a337be8 ffffffffaf07f301
- ffff88022ddf8d40 ffff88023f799148 000000007fbbf000 ffff88009c2b59c8
-Call Trace:
- [<ffffffffaf86cc97>] dump_stack+0x4f/0x7c
- [<ffffffffaf07f301>] warn_slowpath_common+0x81/0xa0
- [<ffffffffaf07f41a>] warn_slowpath_null+0x1a/0x20
- [<ffffffffc045b831>] btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]
- [<ffffffffc045d0b2>] btrfs_delalloc_release_space+0x22/0x30 [btrfs]
- [<ffffffffc047994b>] btrfs_direct_IO+0x33b/0x350 [btrfs]
- [<ffffffffc0487400>] ? btrfs_page_exists_in_range+0x2c0/0x2c0 [btrfs]
- [<ffffffffc047b2b0>] ? btrfs_real_readdir+0x5e0/0x5e0 [btrfs]
- [<ffffffffaf1adbb4>] generic_file_direct_write+0xc4/0x1a0
- [<ffffffffc048b246>] btrfs_file_write_iter+0x186/0x560 [btrfs]
- [<ffffffffaf22abde>] new_sync_write+0x8e/0xd0
- [<ffffffffaf22b5ca>] vfs_write+0xba/0x1f0
- [<ffffffffaf24fbce>] ? __fget_light+0xbe/0xe0
- [<ffffffffaf22c2d2>] SyS_pwrite64+0x92/0xc0
- [<ffffffffaf877d49>] tracesys_phase2+0xd4/0xd9
+> Dne 22.10.2014 v 16:19 Steven Rostedt napsal(a):
+> > 
+> > Commit 7ff525712acf "kbuild: fake the "Entering directory ..." message
+> > more simply" changed the output of "make kernelrelease" such that the
+> > kernel release version was not the last line printed. This broke various
+> > tools that would find the kernel release with "make kernelrelease | tail -1".
+> 
+> The cleaner and recommended (see recent make help) way is to use make -s:
+> 
+> $ make O=build -s kernelrelease
+> 3.18.0-rc1+
+> 
+> no further processing is needed.
+
+
+I don't mind changing my script with your patch. But this does break
+other scripts of mine that I need to hunt down and change. My fear is
+why do we need the '-s' when there may be other methods to preserve the
+old functionality.
+
+If this is breaking my scripts, I wonder if it is also breaking other
+scripts out there too? As you stated, it wasn't until recently that the
+help message recommended the '-s'.
+
+-- Steve
+
+
+> 
+> 
+> > One of those tools that broke was ktest.pl which resides in the kernel.
+> 
+> Can you please apply this patch?
+> 
+> Thanks,
+> Michal
+> 
+> >From c660b235e25eee053337e0e6c952e87f39839c63 Mon Sep 17 00:00:00 2001
+> From: Michal Marek <mmarek@suse.cz>
+> Date: Wed, 22 Oct 2014 21:25:39 +0200
+> Subject: [PATCH] ktest: Use make -s kernelrelease
+> 
+> The previous tail -1 broke with commit 7ff525712acf ("kbuild: fake the
+> "Entering directory ..." message more simply")
+> 
+> Reported-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> ---
+>  tools/testing/ktest/ktest.pl | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+> index bf13981..60fe020 100755
+> --- a/tools/testing/ktest/ktest.pl
+> +++ b/tools/testing/ktest/ktest.pl
+> @@ -2005,7 +2005,7 @@ sub get_version {
+>      # get the release name
+>      return if ($have_version);
+>      doprint "$make kernelrelease ... ";
+> -    $version = `$make kernelrelease | tail -1`;
+> +    $version = `$make -s kernelrelease`;
+>      chomp($version);
+>      doprint "$version\n";
+>      $have_version = 1;
 
