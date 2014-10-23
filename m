@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbaJWKq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:46:59 -0400
+	id S1754784AbaJWKra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:47:30 -0400
 Received: from mga02.intel.com ([134.134.136.20]:19432 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133AbaJWKqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:46:55 -0400
+	id S1754044AbaJWKrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 06:47:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
-   d="scan'208";a="594445823"
+   d="scan'208";a="594445922"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,96 +16,326 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 00/16] perf tools: Intel PT preparation continued
-Date: Thu, 23 Oct 2014 13:45:08 +0300
-Message-Id: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 04/16] perf tools: Add a thread stack for synthesizing call chains
+Date: Thu, 23 Oct 2014 13:45:12 +0300
+Message-Id: <1414061124-26830-5-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
 Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Add a thread stack for synthesizing call chains from call
+and return events.
 
-Here are the remaining Intel PT preparation patches.  They are
-all patches that have been posted before, although "perf tools:
-Do not attempt to run perf-read-vdso32 if it wasn't built" wasn't
-sent as a separate email.
-
-With regard to "32-bit compatibility VDSOs", you may recall that
-Ingo had a problem getting "sh: perf-read-vdso32: command not found".
-That message is inevitable when using popen to run perf-read-vdso32
-and perf-read-vdso32 cannot be found.  At least with the patch
-"perf tools: Do not attempt to run perf-read-vdso32 if it wasn't built"
-one reason for the message is eliminated.
-
-It would be nice to target 3.19 for Intel PT, but there are still the
-real patches of which there are about 48.
-
-
-Adrian Hunter (16):
-      perf tools: Add id index
-      perf pmu: Let pmu's with no events show up on perf list
-      perf session: Add perf_session__deliver_synth_event()
-      perf tools: Add a thread stack for synthesizing call chains
-      perf tools: Add facility to export data in database-friendly way
-      perf tools: Extend Python script interface to export data in a database-friendly way
-      perf tools: Add Python script to export to postgresql
-      perf tools: Add branch type to db export
-      perf tools: Add branch_type and in_tx to Python export
-      perf tools: Enhance the thread stack to output call/return data
-      perf tools: Add call information to the database export API
-      perf tools: Add call information to Python export
-      perf tools: Defer export of comms that were not 'set'
-      perf tools: Build programs to copy 32-bit compatibility VDSOs
-      perf tools: Add support for 32-bit compatibility VDSOs
-      perf tools: Do not attempt to run perf-read-vdso32 if it wasn't built
-
- tools/perf/Makefile.perf                           |  42 +-
- tools/perf/builtin-inject.c                        |   1 +
- tools/perf/config/Makefile                         |  29 +-
- tools/perf/config/Makefile.arch                    |   8 +
- tools/perf/config/feature-checks/Makefile          |  10 +-
- tools/perf/config/feature-checks/test-compile.c    |   4 +
- tools/perf/perf-read-vdso.c                        |  34 +
- .../scripts/python/bin/export-to-postgresql-record |   8 +
- .../scripts/python/bin/export-to-postgresql-report |  29 +
- tools/perf/scripts/python/export-to-postgresql.py  | 444 +++++++++++++
- tools/perf/util/comm.h                             |   1 +
- tools/perf/util/db-export.c                        | 426 +++++++++++++
- tools/perf/util/db-export.h                        | 107 ++++
- tools/perf/util/dso.h                              |   1 +
- tools/perf/util/event.c                            |   1 +
- tools/perf/util/event.h                            |  41 ++
- tools/perf/util/evlist.c                           |  26 +-
- tools/perf/util/evsel.h                            |   4 +
- tools/perf/util/find-vdso-map.c                    |  30 +
- tools/perf/util/machine.h                          |   1 +
- tools/perf/util/pmu.c                              |  13 +-
- tools/perf/util/pmu.h                              |   1 +
- .../util/scripting-engines/trace-event-python.c    | 395 +++++++++++-
- tools/perf/util/session.c                          | 136 ++++
- tools/perf/util/session.h                          |  15 +
- tools/perf/util/symbol.h                           |   1 +
- tools/perf/util/thread-stack.c                     | 690 +++++++++++++++++++++
- tools/perf/util/thread-stack.h                     |  79 +++
- tools/perf/util/thread.c                           |   3 +
- tools/perf/util/thread.h                           |   4 +
- tools/perf/util/tool.h                             |   3 +-
- tools/perf/util/vdso.c                             | 217 ++++++-
- tools/perf/util/vdso.h                             |   4 +-
- 33 files changed, 2760 insertions(+), 48 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-compile.c
- create mode 100644 tools/perf/perf-read-vdso.c
- create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-record
- create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-report
- create mode 100644 tools/perf/scripts/python/export-to-postgresql.py
- create mode 100644 tools/perf/util/db-export.c
- create mode 100644 tools/perf/util/db-export.h
- create mode 100644 tools/perf/util/find-vdso-map.c
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/Makefile.perf       |   2 +
+ tools/perf/util/event.h        |  26 +++++++
+ tools/perf/util/thread-stack.c | 151 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/thread-stack.h |  32 +++++++++
+ tools/perf/util/thread.c       |   3 +
+ tools/perf/util/thread.h       |   3 +
+ 6 files changed, 217 insertions(+)
  create mode 100644 tools/perf/util/thread-stack.c
  create mode 100644 tools/perf/util/thread-stack.h
 
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 262916f..5bbe1ff 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -304,6 +304,7 @@ LIB_H += ui/util.h
+ LIB_H += ui/ui.h
+ LIB_H += util/data.h
+ LIB_H += util/kvm-stat.h
++LIB_H += util/thread-stack.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -380,6 +381,7 @@ LIB_OBJS += $(OUTPUT)util/srcline.o
+ LIB_OBJS += $(OUTPUT)util/data.o
+ LIB_OBJS += $(OUTPUT)util/tsc.o
+ LIB_OBJS += $(OUTPUT)util/cloexec.o
++LIB_OBJS += $(OUTPUT)util/thread-stack.o
+ 
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index c89518e..e84f929 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -143,6 +143,32 @@ struct branch_stack {
+ 	struct branch_entry	entries[0];
+ };
+ 
++enum {
++	PERF_FLAG_BRANCH		= 1ULL << 0,
++	PERF_FLAG_CALL			= 1ULL << 1,
++	PERF_FLAG_RETURN		= 1ULL << 2,
++	PERF_FLAG_CONDITIONAL		= 1ULL << 3,
++	PERF_FLAG_SYSCALLRET		= 1ULL << 4,
++	PERF_FLAG_ASYNC			= 1ULL << 5,
++	PERF_FLAG_INTERRUPT		= 1ULL << 6,
++	PERF_FLAG_TX_ABORT		= 1ULL << 7,
++	PERF_FLAG_TRACE_BEGIN		= 1ULL << 8,
++	PERF_FLAG_TRACE_END		= 1ULL << 9,
++	PERF_FLAG_IN_TX			= 1ULL << 10,
++};
++
++#define PERF_BRANCH_MASK	(\
++	PERF_FLAG_BRANCH	|\
++	PERF_FLAG_CALL		|\
++	PERF_FLAG_RETURN	|\
++	PERF_FLAG_CONDITIONAL	|\
++	PERF_FLAG_SYSCALLRET	|\
++	PERF_FLAG_ASYNC		|\
++	PERF_FLAG_INTERRUPT	|\
++	PERF_FLAG_TX_ABORT	|\
++	PERF_FLAG_TRACE_BEGIN	|\
++	PERF_FLAG_TRACE_END)
++
+ struct perf_sample {
+ 	u64 ip;
+ 	u32 pid, tid;
+diff --git a/tools/perf/util/thread-stack.c b/tools/perf/util/thread-stack.c
+new file mode 100644
+index 0000000..c1ca2a9
+--- /dev/null
++++ b/tools/perf/util/thread-stack.c
+@@ -0,0 +1,151 @@
++/*
++ * thread-stack.c: Synthesize a thread's stack using call / return events
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#include "thread.h"
++#include "event.h"
++#include "util.h"
++#include "thread-stack.h"
++
++#define STACK_GROWTH 4096
++
++struct thread_stack_entry {
++	u64 ret_addr;
++};
++
++struct thread_stack {
++	struct thread_stack_entry *stack;
++	size_t cnt;
++	size_t sz;
++	u64 trace_nr;
++};
++
++static void thread_stack__grow(struct thread_stack *ts)
++{
++	struct thread_stack_entry *new_stack;
++	size_t sz, new_sz;
++
++	new_sz = ts->sz + STACK_GROWTH;
++	sz = new_sz * sizeof(struct thread_stack_entry);
++	new_stack = realloc(ts->stack, sz);
++	if (new_stack) {
++		ts->stack = new_stack;
++		ts->sz = new_sz;
++	}
++}
++
++static struct thread_stack *thread_stack__new(void)
++{
++	struct thread_stack *ts;
++
++	ts = zalloc(sizeof(struct thread_stack));
++	if (!ts)
++		return NULL;
++
++	thread_stack__grow(ts);
++	if (!ts->stack) {
++		free(ts);
++		return NULL;
++	}
++
++	return ts;
++}
++
++static void thread_stack__push(struct thread_stack *ts, u64 ret_addr)
++{
++	if (ts->cnt == ts->sz) {
++		thread_stack__grow(ts);
++		if (ts->cnt == ts->sz)
++			ts->cnt = 0;
++	}
++
++	ts->stack[ts->cnt++].ret_addr = ret_addr;
++}
++
++static void thread_stack__pop(struct thread_stack *ts, u64 ret_addr)
++{
++	if (!ts->cnt)
++		return;
++
++	if (ts->stack[ts->cnt - 1].ret_addr == ret_addr) {
++		ts->cnt -= 1;
++	} else {
++		size_t i = ts->cnt - 1;
++
++		while (i--) {
++			if (ts->stack[i].ret_addr == ret_addr) {
++				ts->cnt = i;
++				return;
++			}
++		}
++	}
++}
++
++void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
++			 u64 to_ip, u16 insn_len, u64 trace_nr)
++{
++	if (!thread)
++		return;
++
++	if (!thread->ts) {
++		thread->ts = thread_stack__new();
++		if (!thread->ts)
++			return;
++		thread->ts->trace_nr = trace_nr;
++	}
++
++	if (trace_nr != thread->ts->trace_nr) {
++		thread->ts->trace_nr = trace_nr;
++		thread->ts->cnt = 0;
++	}
++
++	if (flags & PERF_FLAG_CALL) {
++		u64 ret_addr;
++
++		if (!to_ip)
++			return;
++		ret_addr = from_ip + insn_len;
++		if (ret_addr == to_ip)
++			return; /* Zero-length calls are excluded */
++		thread_stack__push(thread->ts, ret_addr);
++	} else if (flags & PERF_FLAG_RETURN) {
++		if (!from_ip)
++			return;
++		thread_stack__pop(thread->ts, to_ip);
++	}
++}
++
++void thread_stack__free(struct thread *thread)
++{
++	if (thread->ts) {
++		zfree(&thread->ts->stack);
++		zfree(&thread->ts);
++	}
++}
++
++void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
++			  size_t sz, u64 ip)
++{
++	size_t i;
++
++	if (!thread || !thread->ts)
++		chain->nr = 1;
++	else
++		chain->nr = min(sz, thread->ts->cnt + 1);
++
++	chain->ips[0] = ip;
++
++	for (i = 1; i < chain->nr; i++)
++		chain->ips[i] = thread->ts->stack[thread->ts->cnt - i].ret_addr;
++}
+diff --git a/tools/perf/util/thread-stack.h b/tools/perf/util/thread-stack.h
+new file mode 100644
+index 0000000..c0ba4cf
+--- /dev/null
++++ b/tools/perf/util/thread-stack.h
+@@ -0,0 +1,32 @@
++/*
++ * thread-stack.h: Synthesize a thread's stack using call / return events
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#ifndef __PERF_THREAD_STACK_H
++#define __PERF_THREAD_STACK_H
++
++#include <sys/types.h>
++
++#include <linux/types.h>
++
++struct thread;
++struct ip_callchain;
++
++void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
++			 u64 to_ip, u16 insn_len, u64 trace_nr);
++void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
++			  size_t sz, u64 ip);
++void thread_stack__free(struct thread *thread);
++
++#endif
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 2b7b2d9..4e3418d 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -4,6 +4,7 @@
+ #include <string.h>
+ #include "session.h"
+ #include "thread.h"
++#include "thread-stack.h"
+ #include "util.h"
+ #include "debug.h"
+ #include "comm.h"
+@@ -66,6 +67,8 @@ void thread__delete(struct thread *thread)
+ {
+ 	struct comm *comm, *tmp;
+ 
++	thread_stack__free(thread);
++
+ 	if (thread->mg) {
+ 		map_groups__put(thread->mg);
+ 		thread->mg = NULL;
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 8c75fa7..a057820 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -8,6 +8,8 @@
+ #include "symbol.h"
+ #include <strlist.h>
+ 
++struct thread_stack;
++
+ struct thread {
+ 	union {
+ 		struct rb_node	 rb_node;
+@@ -25,6 +27,7 @@ struct thread {
+ 	int			comm_len;
+ 
+ 	void			*priv;
++	struct thread_stack	*ts;
+ };
+ 
+ struct machine;
+-- 
+1.9.1
 
-Regards
-Adrian
