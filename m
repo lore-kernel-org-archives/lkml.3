@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191AbaJWQZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:25:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755120AbaJWQVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:21:08 -0400
-Date: Thu, 23 Oct 2014 19:24:40 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH RFC v4 10/17] virtio: simplify feature bit handling
-Message-ID: <1414081380-14623-11-git-send-email-mst@redhat.com>
-References: <1414081380-14623-1-git-send-email-mst@redhat.com>
+	id S1754560AbaJWQZl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:25:41 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:50613 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109AbaJWQZg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 12:25:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414081380-14623-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+In-Reply-To: <1414080959-6053-1-git-send-email-fabf@skynet.be>
+References: <1414080959-6053-1-git-send-email-fabf@skynet.be>
+Date: Thu, 23 Oct 2014 20:25:35 +0400
+Message-ID: <CALFYKtD222g32njwF8nHz0Fbjj4p2512ka9bkADmB6S2QibgYA@mail.gmail.com>
+Subject: Re: [PATCH 1/1 net-next] libceph: remove unused variable in handle_reply()
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sage Weil <sage@inktank.com>, "David S. Miller" <davem@davemloft.net>,
+        Ceph Development <ceph-devel@vger.kernel.org>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we use u64 for bits, we can simply & them together.
+On Thu, Oct 23, 2014 at 8:15 PM, Fabian Frederick <fabf@skynet.be> wrote:
+> osdmap_epoch is redundant with reassert_epoch and unused.
+>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  net/ceph/osd_client.c | 2 --
+>  1 file changed, 2 deletions(-)
+>
+> diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+> index f3fc54e..432bd75 100644
+> --- a/net/ceph/osd_client.c
+> +++ b/net/ceph/osd_client.c
+> @@ -1700,7 +1700,6 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
+>         int err;
+>         u32 reassert_epoch;
+>         u64 reassert_version;
+> -       u32 osdmap_epoch;
+>         int already_completed;
+>         u32 bytes;
+>         unsigned int i;
+> @@ -1725,7 +1724,6 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
+>         result = ceph_decode_32(&p);
+>         reassert_epoch = ceph_decode_32(&p);
+>         reassert_version = ceph_decode_64(&p);
+> -       osdmap_epoch = ceph_decode_32(&p);
+>
+>         /* lookup */
+>         down_read(&osdc->map_sem);
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/virtio/virtio.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+Hi Fabian,
 
-diff --git a/drivers/virtio/virtio.c b/drivers/virtio/virtio.c
-index a3df817..0f44cff 100644
---- a/drivers/virtio/virtio.c
-+++ b/drivers/virtio/virtio.c
-@@ -160,6 +160,7 @@ static int virtio_dev_probe(struct device *_d)
- 	struct virtio_device *dev = dev_to_virtio(_d);
- 	struct virtio_driver *drv = drv_to_virtio(dev->dev.driver);
- 	u64 device_features;
-+	u64 driver_features;
- 	unsigned status;
- 
- 	/* We have a driver! */
-@@ -168,15 +169,16 @@ static int virtio_dev_probe(struct device *_d)
- 	/* Figure out what features the device supports. */
- 	device_features = dev->config->get_features(dev);
- 
--	/* Features supported by both device and driver into dev->features. */
--	dev->features = 0;
-+	/* Figure out what features the driver supports. */
-+	driver_features = 0;
- 	for (i = 0; i < drv->feature_table_size; i++) {
- 		unsigned int f = drv->feature_table[i];
- 		BUG_ON(f >= 64);
--		if (device_features & (1ULL << f))
--			dev->features |= (1ULL << f);
-+		driver_features |= (1ULL << f);
- 	}
- 
-+	dev->features = driver_features & device_features;
-+
- 	/* Transport features always preserved to pass to finalize_features. */
- 	for (i = VIRTIO_TRANSPORT_F_START; i < VIRTIO_TRANSPORT_F_END; i++)
- 		if (device_features & (1ULL << i))
--- 
-MST
+osdmap_epoch is useful for debugging, but this is wrong anyway -
+ceph_decode_32() has side effects.  Removing it and not adjusting *p
+would make the whole thing blow up pretty fast..
 
+Thanks,
+
+                Ilya
