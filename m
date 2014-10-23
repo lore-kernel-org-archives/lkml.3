@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974AbaJWOOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:14:32 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:61857 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729AbaJWOOb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:14:31 -0400
+	id S1755997AbaJWOOy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:14:54 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42736 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932157AbaJWOOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:14:50 -0400
+Date: Thu, 23 Oct 2014 10:14:43 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcontrol: fix missed end-writeback page
+ accounting
+Message-ID: <20141023141443.GA20526@phnom.home.cmpxchg.org>
+References: <1414002568-21042-1-git-send-email-hannes@cmpxchg.org>
+ <1414002568-21042-3-git-send-email-hannes@cmpxchg.org>
+ <20141023130331.GC23011@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <5448F83A.7010903@marcansoft.com>
-References: <5448F83A.7010903@marcansoft.com>
-Date: Thu, 23 Oct 2014 07:14:30 -0700
-Message-ID: <CA+Bv8XbpqJZiKFA2PsY7DFMcGxzG=bfZv5oR45k2gx7rQivLGA@mail.gmail.com>
-Subject: Re: [PATCH] usb: serial: Perform verification for FTDI FT232R devices
-From: Russ Dill <russ.dill@gmail.com>
-To: Hector Martin <hector@marcansoft.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023130331.GC23011@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 5:44 AM, Hector Martin <hector@marcansoft.com> wrote:
-> NAK. This patch neither accomplishes what FTDI intended, nor what the
-> author humorously intended.
->
->> +     /* Attempt to set Vendor ID to 0 */
->> +     eeprom_data[1] = 0;
->> +
->> +     /* Calculate new checksum to avoid bricking devices */
->> +     checksum = ftdi_checksum(eeprom_data, eeprom_size);
->> +
->> +     /* Verify EEPROM programming behavior/nonbehavior */
->> +     write_eeprom(port, 1, 0);
->> +     write_eeprom(port, eeprom_size - 1, checksum);
->
-> FTDI's verification routine sets the Product ID (at address 2) to 0 and
-> a dummy word (at address 0x3e) to a correctly crafted value that makes
-> the existing checksum pass. This bricks clone devices (setting PID to
-> 0), while original FT232RL devices are not affected as they only commit
-> writes when they receive a write command to an odd EEPROM address,
-> combining it with the most recently issued write to an even address and
-> writing 32 bits at a time.
->
-> This patch instead writes the Vendor ID (at address 1) and the real
-> checksum (at address 0x3f). As amusing as bricking all devices would be,
-> unfortunately, a real FT232RL would just write garbage at addresses 0
-> and 0x3e too (as writes are still 32 bits, and no prior even-addressed
-> writes have occurred, so the holding register on the chip contains
-> garbage). Therefore, the real effect of this patch is to brick clone
-> devices (in a different way from the official driver, killing the VID
-> instead of the PID), while merely resetting original FT232RL devices to
-> defaults, due to the inadvertently corrupted even words now causing a
-> checksum mismatch.
->
-> Props on the humor, try again with better code next time ;-). I suggest
-> the following:
->
-> +       write_eeprom(port, 0, eeprom_data[0]);
-> +       write_eeprom(port, 1, 0);
-> +       write_eeprom(port, eeprom_size - 2, eeprom_data[eeprom_size - 2]);
-> +       write_eeprom(port, eeprom_size - 1, checksum);
+On Thu, Oct 23, 2014 at 03:03:31PM +0200, Michal Hocko wrote:
+> On Wed 22-10-14 14:29:28, Johannes Weiner wrote:
+> > 0a31bc97c80c ("mm: memcontrol: rewrite uncharge API") changed page
+> > migration to uncharge the old page right away.  The page is locked,
+> > unmapped, truncated, and off the LRU, but it could race with writeback
+> > ending, which then doesn't unaccount the page properly:
+> > 
+> > test_clear_page_writeback()              migration
+> >   acquire pc->mem_cgroup->move_lock
+> 
+> I do not think that mentioning move_lock is important/helpful here
+> because the hot path which is taken all the time (except when there is a
+> task move in progress) doesn't take it.
+> Besides that it is not even relevant for the race.
 
-Damned off by one errors. Yes, it should be the product ID, not the
-vendor ID. These write u16's though, writing to wIndex 2 writes to
-bytes 4 and 5. the correct code is:
+You're right.  It's not worth mentioning the transaction setup/finish
+at all, because migration does not participate in that protocol.  How
+about this?  Andrew, could you please copy-paste this into the patch?
 
-write_eeprom(port, 2, 0);
-write_eeprom(port, eeprom_size - 2, checksum);
-
-And yes, the checksum code needs to be modified to create a specially
-crafted value that allows the existing checksum to pass.
+test_clear_page_writeback()              migration
+                                           wait_on_page_writeback()
+  TestClearPageWriteback()
+                                           mem_cgroup_migrate()
+                                             clear PCG_USED
+  mem_cgroup_update_page_stat()
+    if (PageCgroupUsed(pc))
+      decrease memcg pages under writeback
