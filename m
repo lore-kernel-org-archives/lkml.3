@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbaJWQk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:40:26 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:44015 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410AbaJWQkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:40:25 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/4] pinctrl: rockchip: Set wake_enabled
-Date: Thu, 23 Oct 2014 18:43:28 +0200
-Message-ID: <1522951.uUd1Gprpbn@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1413913655-22351-1-git-send-email-dianders@chromium.org>
-References: <1413913655-22351-1-git-send-email-dianders@chromium.org>
+	id S1753393AbaJWQlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:41:09 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:58601 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbaJWQlF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 12:41:05 -0400
+Date: Thu, 23 Oct 2014 09:40:52 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, linux-kernel@vger.kernel.org,
+        Chris Healy <chealy@imsco-us.com>
+Subject: Re: [PATCH 10/14] net: dsa/mv88e6352: Implement EEPROM access
+ functions
+Message-ID: <20141023164052.GB21343@roeck-us.net>
+References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
+ <1414037002-25528-11-git-send-email-linux@roeck-us.net>
+ <20141023135412.GC25190@lunn.ch>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023135412.GC25190@lunn.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020209.54492FA1.00FD,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 5
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 21. Oktober 2014, 10:47:32 schrieb Doug Anderson:
-> The rockchip pinctrl driver uses irq_gc_set_wake() but doesn't setup
-> the .wake_enabled member.  That means that we can never actually use a
-> pin for wakeup.  When "irq_set_irq_wake()" tries to call through it
-> will always get a failure from set_irq_wake_real() and will then set
-> wake_depth to 0.  Assuming you can resume you'll later get an error
-> message about "Unbalanced IRQ x wake disable".
-
-The change itself looks reasonable. But now being able to read the docs for 
-it, it doesn't look like all gpios are able to wake the system.
-
-On the rk3288 it seems to be only the pins from gpio0 that can do this 
-(similar for different banks on the other Rockchip SoCs) - see PMU_WAKEUP_CFG0 
-and PMU_WAKEUP_CFG1[1].
-
-So I guess we'll need something more eloquent to handle this.
-
-
-Heiko
-
+On Thu, Oct 23, 2014 at 03:54:12PM +0200, Andrew Lunn wrote:
+> On Wed, Oct 22, 2014 at 09:03:18PM -0700, Guenter Roeck wrote:
+> > MV88E6352 supports read and write access to its configuration eeprom.
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Chris Zhong <zyw@rock-chips.com>
-> ---
-> Changes in v2: None
+> Hi Guenter
 > 
->  drivers/pinctrl/pinctrl-rockchip.c | 1 +
->  1 file changed, 1 insertion(+)
+> I don't have the datasheet for the MV88E6352. Is the EEPROM built in,
+> or external on an i2c bus?
 > 
-> diff --git a/drivers/pinctrl/pinctrl-rockchip.c
-> b/drivers/pinctrl/pinctrl-rockchip.c index 016f457..230d8f3 100644
-> --- a/drivers/pinctrl/pinctrl-rockchip.c
-> +++ b/drivers/pinctrl/pinctrl-rockchip.c
-> @@ -1563,6 +1563,7 @@ static int rockchip_interrupts_register(struct
-> platform_device *pdev, gc->chip_types[0].chip.irq_unmask =
-> irq_gc_mask_set_bit;
->  		gc->chip_types[0].chip.irq_set_wake = irq_gc_set_wake;
->  		gc->chip_types[0].chip.irq_set_type = rockchip_irq_set_type;
-> +		gc->wake_enabled = IRQ_MSK(bank->nr_pins);
-> 
->  		irq_set_handler_data(bank->irq, bank);
->  		irq_set_chained_handler(bank->irq, rockchip_irq_demux);
+External.
 
+> > +static int mv88e6352_get_eeprom_len(struct dsa_switch *ds)
+> > +{
+> > +	return 0x200;
+> > +}
+> 
+> How do you handle the case of it being external and not populated.
+> Would it not be better to try to detect it here, and return 0 if it
+> does not exist?
+> 
+Makes sense, if it is detectable that it the EEPROM not there. Browsing
+through the datasheet, I don't see how I could detect it; there does not
+seem to be a status bit indicating if the EEPROM is there or not. There
+are sw_mode pins which determine if the eeprom should be loaded after
+reset or not, but I don't see anything in the register set which would
+tell me.
+
+Chris, do you know if there is a means to detect if the EEPROM is present
+on the MV88E6352 ?
+
+Thanks,
+Guenter
