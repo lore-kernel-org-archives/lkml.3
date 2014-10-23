@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396AbaJWMvI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:51:08 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:64670 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755688AbaJWMvF (ORCPT
+	id S932516AbaJWMvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:51:35 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:63717 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932411AbaJWMvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:51:05 -0400
-Message-ID: <5448F9B4.9010209@cogentembedded.com>
-Date: Thu, 23 Oct 2014 16:51:00 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, netdev@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/14] net: dsa: Report known silicon revisions for Marvell
- 88E6060
-References: <1414037002-25528-1-git-send-email-linux@roeck-us.net> <1414037002-25528-3-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1414037002-25528-3-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Oct 2014 08:51:33 -0400
+X-Original-SENDERIP: 165.186.175.39
+X-Original-MAILFROM: gioh.kim@lge.com
+From: Gioh Kim <gioh.kim@lge.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        gunho.lee@lge.com, gioh.kim@lge.com
+Subject: [RFC 0/2] enable pool shrinking in page unit
+Date: Thu, 23 Oct 2014 21:52:18 +0900
+Message-Id: <1414068740-9553-1-git-send-email-gioh.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hello,
 
-On 10/23/2014 8:03 AM, Guenter Roeck wrote:
+Current shrinking is not page unit, block unit.
+But shrinker returns the pools size with page unit.
+So it is confused.
 
-> Report known silicon revisions when probing Marvell 88E6060 switches.
+And there is no ways to shrink at any moment and any amount.
 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->   drivers/net/dsa/mv88e6060.c | 5 ++++-
->   1 file changed, 4 insertions(+), 1 deletion(-)
+I have 2 patches:
 
-> diff --git a/drivers/net/dsa/mv88e6060.c b/drivers/net/dsa/mv88e6060.c
-> index 05b0ca3..c29aebe 100644
-> --- a/drivers/net/dsa/mv88e6060.c
-> +++ b/drivers/net/dsa/mv88e6060.c
-> @@ -69,8 +69,11 @@ static char *mv88e6060_probe(struct device *host_dev, int sw_addr)
->
->   	ret = mdiobus_read(bus, sw_addr + REG_PORT(0), 0x03);
->   	if (ret >= 0) {
-> -		ret &= 0xfff0;
->   		if (ret == 0x0600)
-> +			return "Marvell 88E6060 (A0)";
-> +		if (ret == 0x0601 || ret == 0x0602)
+1. Patch 1/2: make pool be shrinked by page unit
+This patch trys to shrink pool in page unit.
 
-    *else* *if*.
+2. Patch 2/2: enable debugfs to shrink pool directly
+This patch enable debugfs to specify shrink amount.
 
-> +			return "Marvell 88E6060 (B0)";
-> +		if ((ret & 0xfff0) == 0x0600)
+Thanks for any feedback.
 
-    Likewise?
+This patchset is based on linux-next-20141023.
 
->   			return "Marvell 88E6060";
->   	}
+Gioh Kim (2):
+  staging: ion: shrink page-pool by page unit
+  staging: ion: debugfs to shrink pool
 
-WBR, Sergei
+ drivers/staging/android/ion/ion.c             |   31 +++++++------------------
+ drivers/staging/android/ion/ion_page_pool.c   |    5 ++--
+ drivers/staging/android/ion/ion_system_heap.c |    7 ++++--
+ 3 files changed, 16 insertions(+), 27 deletions(-)
+
+-- 
+1.7.9.5
 
