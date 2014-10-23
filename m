@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927AbaJWOau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:30:50 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:31953 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754440AbaJWOat (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:30:49 -0400
-X-IronPort-AV: E=Sophos;i="5.04,775,1406592000"; 
-   d="scan'208";a="185526518"
-Date: Thu, 23 Oct 2014 15:22:27 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Will Deacon <will.deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH v4 3/7] [RFC] arm/arm64: introduce is_dma_coherent
-In-Reply-To: <alpine.DEB.2.02.1410221703560.876@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1410231516450.876@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com> <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com> <20141010120702.GI7755@arm.com> <alpine.DEB.2.02.1410101401250.17038@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1410131215400.17038@kaball.uk.xensource.com> <20141013125725.GA19156@arm.com> <alpine.DEB.2.02.1410131358490.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410221703560.876@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+	id S1756065AbaJWOby (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:31:54 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42746 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755959AbaJWObs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:31:48 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] mm: memcontrol: uncharge pages on swapout fix
+Date: Thu, 23 Oct 2014 10:31:40 -0400
+Message-Id: <1414074700-13995-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014, Stefano Stabellini wrote:
-> On Mon, 13 Oct 2014, Stefano Stabellini wrote:
-> > On Mon, 13 Oct 2014, Will Deacon wrote:
-> > > On Mon, Oct 13, 2014 at 12:16:14PM +0100, Stefano Stabellini wrote:
-> > > > On Fri, 10 Oct 2014, Stefano Stabellini wrote:
-> > > > > On Fri, 10 Oct 2014, Will Deacon wrote:
-> > > > > > On Fri, Oct 10, 2014 at 12:51:44PM +0100, Stefano Stabellini wrote:
-> > > > > > > Introduce a function to check whether a device is dma coherent.
-> > > > > > > 
-> > > > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > > > > CC: linux@arm.linux.org.uk
-> > > > > > > CC: catalin.marinas@arm.com
-> > > > > > > CC: will.deacon@arm.com
-> > > > > > > CC: linux-arm-kernel@lists.infradead.org
-> > > > > > > ---
-> > > > > > >  arch/arm/include/asm/dma-mapping.h   |    6 ++++++
-> > > > > > >  arch/arm64/include/asm/dma-mapping.h |    5 +++++
-> > > > > > >  2 files changed, 11 insertions(+)
-> > > > > > > 
-> > > > > > > diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-> > > > > > > index c45b61a..bededbb 100644
-> > > > > > > --- a/arch/arm/include/asm/dma-mapping.h
-> > > > > > > +++ b/arch/arm/include/asm/dma-mapping.h
-> > > > > > > @@ -126,6 +126,12 @@ static inline int set_arch_dma_coherent_ops(struct device *dev)
-> > > > > > >  	set_dma_ops(dev, &arm_coherent_dma_ops);
-> > > > > > >  	return 0;
-> > > > > > >  }
-> > > > > > > +
-> > > > > > > +static inline bool is_dma_coherent(struct device *dev)
-> > > > > > > +{
-> > > > > > > +    return (__generic_dma_ops(dev) == &arm_coherent_dma_ops);
-> > > > > > > +}
-> > > > > > 
-> > > > > > Hmm, what about the IOMMU ops?
-> > > > > 
-> > > > > Maybe I should check __generic_dma_ops(dev) != &arm_dma_ops?
-> > > > > Do you have any better suggestions?
-> > > > 
-> > > > ping?
-> > > 
-> > > Without any clear idea about why this is needed or how it's used, I don't
-> > > have any better ideas.
-> > 
-> > Thanks for the quick reply.
-> > 
-> > It is used in dom0 to figure out whether the device is not coherent: in
-> > that case Dom0 is going to issue an hypercall and Xen is going to
-> > execute the required cache maintenance operations on Dom0's behalf.
-> > 
-> > In practice for this use case iommu_dma_ops is not a problem, as the
-> > device is never going to appear as being behind an SMMU in dom0.
-> 
-> re-ping?
+Vladimir notes:
 
-I don't mean to be pushy but this series is required to fix a regression
-that causes dom0 to crash when running as dom0 on Xen on ARM if
-non-coherent devices are present on the platform.
+> > +   local_irq_disable();
+> > +   mem_cgroup_charge_statistics(memcg, page, -1);
+> > +   memcg_check_events(memcg, page);
+> > +   local_irq_enable();
+>
+> AFAICT mem_cgroup_swapout() is called under mapping->tree_lock with irqs
+> disabled, so we should use irq_save/restore here.
 
-We should aim at getting it in 3.18 or we are going to release a broken
-kernel.
+Simply remove the irq-disabling altogether and rely on the caller
+holding the mapping->tree_lock for now.
 
-I am thinking of reposting the series keeping the ugly is_dma_coherent
-function in a Xen specific source file as a static function and then fix
-it up properly in common code later with your help?
+Reported-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ mm/memcontrol.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+For "mm: memcontrol: uncharge pages on swapout" in -mm.
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ae9b630e928b..09fece0eb9f1 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5777,10 +5777,11 @@ void mem_cgroup_swapout(struct page *page, swp_entry_t entry)
+ 	if (!mem_cgroup_is_root(memcg))
+ 		page_counter_uncharge(&memcg->memory, 1);
+ 
+-	local_irq_disable();
++	/* XXX: caller holds IRQ-safe mapping->tree_lock */
++	VM_BUG_ON(!irqs_disabled());
++
+ 	mem_cgroup_charge_statistics(memcg, page, -1);
+ 	memcg_check_events(memcg, page);
+-	local_irq_enable();
+ }
+ 
+ /**
+-- 
+2.1.2
+
