@@ -1,129 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933AbaJWOAa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:00:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752970AbaJWOA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:00:29 -0400
-Date: Thu, 23 Oct 2014 17:03:58 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC v3 09/16] virtio: set FEATURES_OK
-Message-ID: <20141023140358.GA21043@redhat.com>
-References: <1414003404-505-1-git-send-email-mst@redhat.com>
- <1414003404-505-10-git-send-email-mst@redhat.com>
- <20141023142808.377551d8.cornelia.huck@de.ibm.com>
- <20141023125139.GA10033@redhat.com>
- <20141023153006.0cb1e7c3.cornelia.huck@de.ibm.com>
+	id S1754726AbaJWOEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:04:45 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:54188 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674AbaJWOEm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:04:42 -0400
+Date: Thu, 23 Oct 2014 16:04:37 +0200
+From: Frank Blaschka <blaschka@linux.vnet.ibm.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: schwidefsky@de.ibm.com, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, iommu@lists.linux-foundation.org,
+        sebott@linux.vnet.ibm.com, gerald.schaefer@de.ibm.com
+Subject: Re: [PATCH linux-next] iommu: add iommu for s390 platform
+Message-ID: <20141023140437.GA31009@tuxmaker.boeblingen.de.ibm.com>
+References: <1413892645-37657-1-git-send-email-blaschka@linux.vnet.ibm.com> <20141022141728.GG10074@8bytes.org> <20141022154320.GA42442@tuxmaker.boeblingen.de.ibm.com> <20141023124115.GB10053@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141023153006.0cb1e7c3.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141023124115.GB10053@8bytes.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102314-0017-0000-0000-000001910494
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 03:30:06PM +0200, Cornelia Huck wrote:
-> On Thu, 23 Oct 2014 15:51:39 +0300
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Thu, Oct 23, 2014 at 02:41:15PM +0200, Joerg Roedel wrote:
+> On Wed, Oct 22, 2014 at 05:43:20PM +0200, Frank Blaschka wrote:
+> > Basically there are no limitations. Depending on the s390 maschine
+> > generation a device starts its IOVA at a specific address (announced by
+> > the HW). But as I already told each device starts at the same address.
+> > I think this prevents having multiple devices on the same IOMMU domain.
 > 
-> > On Thu, Oct 23, 2014 at 02:28:08PM +0200, Cornelia Huck wrote:
-> > > On Wed, 22 Oct 2014 21:44:44 +0300
-> > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > 
-> > > > set FEATURES_OK as per virtio 1.0 spec
-> > > > 
-> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > ---
-> > > >  include/uapi/linux/virtio_config.h |  2 ++
-> > > >  drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
-> > > >  2 files changed, 24 insertions(+), 7 deletions(-)
-> > > > 
-> > > 
-> > > >  	dev->config->finalize_features(dev);
-> > > > 
-> > > > +	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
-> > > > +		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
-> > > > +		status = dev->config->get_status(dev);
-> > > > +		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
-> > > > +			printk(KERN_ERR "virtio: device refuses features: %x\n",
-> > > > +			       status);
-> > > > +			err = -ENODEV;
-> > > > +			goto err;
-> > > > +		}
-> > > > +	}
-> > > > +
-> > > 
-> > > Ugh, I just realize that virtio-ccw has a problem with that mechanism :(
-> > > 
-> > > Up to now, the driver only propagated status to the device: For
-> > > virtio-ccw, this was easily implemented via a ccw that transmitted
-> > > "status" to the device. However, the "read back status" part now
-> > > actually requires that the driver can get "status" from the device, or
-> > > has a comparable way to find out that the device won't accept the
-> > > status it tried to write.
-> > 
-> > Ugh, it actually caches the status in the transport :(
+> Why, each device has its own IOVA address space, so IOVA A could map to
+> physical address X for one device and to Y for another, no? And if you
+> point multiple devices to the same dma_table they share the mappings
+> (and thus the address space). Or am I getting something wrong?
 > 
-> Well, it worked as long as this was unidirectional...
+> > yes, you are absolutely right. There is a per-device dma_table.
+> > There is no general IOMMU device but each pci device has its own IOMMU
+> > translation capability.
 > 
-> > 
-> > 
-> > > I can think of two solutions:
-> > > 
-> > > (1) Introduce a new ccw that actually reads the device status.
-> > > (2) Make the WRITE_STATUS ccw fail (with a unit check) if the driver
-> > >     sets FEATURES_OK after it tried to set features the device won't
-> > >     accept.
-> > > 
-> > > (1) is probably more generic, while (2) is more straightforward to
-> > > implement.
-> > > 
-> > > Good thing we actually try to finally implement this,
-> > 
-> > > I did not notice
-> > > this problem during the review :(
-> > 
-> > Well, it's a nuisance, but the spec is out.
-> > It seems to me a new command would be a substantive change so we can't
-> > do this in errata.
-> > 
-> > Option (2) would require two statements for drivers and devices,
-> > but since it's clearly the case for correct drivers/devices
-> > that command does not fail, it follows that this
-> > is not a substantive change so it can be fixed
-> > in an errata.
+> I see, in this way it is similar to ARM where there is often also one IOMMU
+> per master device.
 > 
-> It only adds a new failure case, so it's not really magic, agreed.
-> 
+> > Is there a possibility the IOMMU domain can support e.g. something like
 > > 
-> > So the new command would have to be optional, 
+> > VIOA 0x10000 -> pci device 1
+> > VIOA 0x10000 -> pci device 2
 > 
-> I think a new command should be tied to a new virtio-ccw revision.
+> A domain is basically an abstraction for a DMA page table (or a
+> dma_table, as you call it on s390). So you can easily create similar
+> mappings for more than one device with it.
+>
+ok, maybe I was too close to the existing s390 dma implementation or simply
+wrong, maybe Sebastian or Gerald can give more background information.
+Here is my understanding so far:
 
-Or a feature bit.
+the clp instructions reports a start/end dma address for the pci device.
+on my system all devices report:
 
-> > please open
-> > two issues in the TC: one documenting that driver must check
-> > WRITE_STATUS and device can fail WRITE_STATUS, and another
-> > for adding READ_STATUS (which will have to wait until
-> > the next CS).
+sdma = 0x100000000;
+edma = 0x1ffffffffffffff;
+
+dma mappings are created for each device separately starting from 0x100000000
+and filling the the VIOA space for this device (until 0x1ffffffffffffff)
+
+If we would like to have more then one device per domain I think:
+
+we would have to slice the IOVA address space (0x100000000 - 0x1ffffffffffffff)
+of the domain and report only a slice to the pci device (clp)
+The iommu code would have to find the device by the dma (VIOA) address
+and then program the entry to the table of the particular device (and only this
+device).
+
+Is this understanding more appropriate?
+
+Thx
+
+Frank
+ 
 > 
-> I think I need to contemplate that a bit more. The problem with a new
-> READ_STATUS is that it is, by nature, an asynchronous command (as all
-> ccw commands are - the Linux guest driver uses a simple wrapper that
-> makes it appear synchronous). This means, for example, that every
-> status update now involves two channel programs instead of one, and
-> that reading e.g. the status sysfs attribute in Linux now triggers
-> channel I/O, which means several exits (at least ssch, interrupt
-> injection, tsch; probably more depending on what the guest does)...
+> 
+> 	Joerg
+> 
 
-Well it seems more robust than just caching it within guest.
-Anyway, let's start with issue tracker, it does not force any specific
-solution.
-
--- 
-MST
