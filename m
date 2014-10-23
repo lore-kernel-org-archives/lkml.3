@@ -1,27 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753221AbaJWV7K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 17:59:10 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:55223 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615AbaJWV7A (ORCPT
+	id S1753513AbaJWV7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 17:59:16 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:60091 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615AbaJWV7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 17:59:00 -0400
+	Thu, 23 Oct 2014 17:59:11 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>
-Subject: [PATCH v2 02/14] perf tools: Kbuild builtin source related fixies
-Date: Thu, 23 Oct 2014 23:56:00 +0200
-Message-Id: <1414101372-14443-3-git-send-email-alexis.berlemont@gmail.com>
+Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com
+Subject: [PATCH v2 08/14] perf kbuild: cross-compilation variables are now handled in Kconfig
+Date: Thu, 23 Oct 2014 23:56:06 +0200
+Message-Id: <1414101372-14443-9-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414101372-14443-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1414101372-14443-1-git-send-email-alexis.berlemont@gmail.com>
@@ -31,433 +22,259 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+The variable CONFIG_ARCH and CONFIG_CROSS_COMPILE were added.
 
-Adding CONFIG_BUILTIN_* defines to govern builtin commands.
-This will be useful for kbuild process switch.
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
-Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Alexis Berlemont <alexis.berlemont@gmail.com>
 ---
- tools/perf/builtin-annotate.c       |  8 ++++++-
- tools/perf/builtin-cmds.h           | 27 ++++++++++++++++++++++
- tools/perf/builtin-help.c           |  1 +
- tools/perf/builtin-kvm.c            | 19 ++++++++++------
- tools/perf/builtin-report.c         |  3 +++
- tools/perf/builtin-top.c            | 19 ++++++++++++----
- tools/perf/perf.c                   | 45 +++++++++++++++++++++++++++++++++++--
- tools/perf/ui/setup.c               |  6 +++--
- tools/perf/util/generate-cmdlist.sh | 10 +++++++++
- 9 files changed, 122 insertions(+), 16 deletions(-)
- create mode 100644 tools/perf/builtin-cmds.h
+ tools/perf/Kconfig                          | 24 ++++++++++++++++++++++++
+ tools/perf/Makefile.kbuild                  |  8 ++++----
+ tools/perf/arch/x86/include/perf_regs.h     |  8 +++++---
+ tools/perf/arch/x86/tests/regs_load.S       |  3 ++-
+ tools/perf/arch/x86/util/unwind-libunwind.c |  5 +++--
+ tools/perf/bench/mem-memcpy-arch.h          |  4 +++-
+ tools/perf/bench/mem-memcpy.c               |  4 +++-
+ tools/perf/bench/mem-memset-arch.h          |  4 +++-
+ tools/perf/bench/mem-memset.c               |  4 +++-
+ tools/perf/config/Makefile                  |  7 ++-----
+ 10 files changed, 52 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index e7417fe..19cb967 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -5,6 +5,7 @@
-  * look up and read DSOs and symbol information and display
-  * a histogram of results, along various sorting keys.
-  */
-+#include "generated/autoconf.h"
- #include "builtin.h"
+diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
+index 026ef67..5f85923 100644
+--- a/tools/perf/Kconfig
++++ b/tools/perf/Kconfig
+@@ -1,6 +1,30 @@
  
- #include "util/util.h"
-@@ -115,7 +116,7 @@ static void hists__find_annotations(struct hists *hists,
- 				    struct perf_evsel *evsel,
- 				    struct perf_annotate *ann)
- {
--	struct rb_node *nd = rb_first(&hists->entries), *next;
-+	struct rb_node *nd = rb_first(&hists->entries);
- 	int key = K_RIGHT;
+ mainmenu "The perf configuration"
  
- 	while (nd) {
-@@ -154,7 +155,9 @@ find_next:
- 
- 			/* skip missing symbols */
- 			nd = rb_next(nd);
-+#ifdef CONFIG_TUI
- 		} else if (use_browser == 1) {
-+			struct rb_node *next = NULL;
- 			key = hist_entry__tui_annotate(he, evsel, NULL);
- 			switch (key) {
- 			case -1:
-@@ -173,6 +176,7 @@ find_next:
- 
- 			if (next != NULL)
- 				nd = next;
-+#endif /* CONFIG_TUI */
- 		} else {
- 			hist_entry__tty_annotate(he, evsel, ann);
- 			nd = rb_next(nd);
-@@ -299,7 +303,9 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
- 		    "dump raw trace in ASCII"),
- 	OPT_BOOLEAN(0, "gtk", &annotate.use_gtk, "Use the GTK interface"),
-+#ifdef CONFIG_TUI
- 	OPT_BOOLEAN(0, "tui", &annotate.use_tui, "Use the TUI interface"),
-+#endif /* CONFIG_TUI */
- 	OPT_BOOLEAN(0, "stdio", &annotate.use_stdio, "Use the stdio interface"),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
-diff --git a/tools/perf/builtin-cmds.h b/tools/perf/builtin-cmds.h
-new file mode 100644
-index 0000000..fec342a
---- /dev/null
-+++ b/tools/perf/builtin-cmds.h
-@@ -0,0 +1,27 @@
-+#ifndef BUILTIN_CMDS_H
-+#define BUILTIN_CMDS_H
++config TARGET_ARCH
++	string
++	option env="ARCH"
 +
-+#define CONFIG_BUILTIN_REPORT 1
-+#define CONFIG_BUILTIN_SCRIPT 1
-+#define CONFIG_BUILTIN_BENCH 1
-+#define CONFIG_BUILTIN_SCHED 1
-+#define CONFIG_BUILTIN_TRACE 1
-+#define CONFIG_BUILTIN_TOP 1
-+#define CONFIG_BUILTIN_RECORD 1
-+#define CONFIG_BUILTIN_BUILDID_LIST 1
-+#define CONFIG_BUILTIN_INJECT 1
-+#define CONFIG_BUILTIN_LOCK 1
-+#define CONFIG_BUILTIN_KVM 1
-+#define CONFIG_BUILTIN_BUILDID_CACHE 1
-+#define CONFIG_BUILTIN_EVLIST 1
-+#define CONFIG_BUILTIN_KMEM 1
-+#define CONFIG_BUILTIN_STAT 1
-+#define CONFIG_BUILTIN_DIFF 1
-+#define CONFIG_BUILTIN_ANNOTATE 1
-+#define CONFIG_BUILTIN_TIMECHART 1
-+#define CONFIG_BUILTIN_LIST 1
-+#define CONFIG_BUILTIN_HELP 1
-+#define CONFIG_BUILTIN_PROBE 1
-+#define CONFIG_BUILTIN_MEM 1
++config TARGET_IS_X86_64
++       string
++       option env="IS_X86_64"
 +
-+#endif /* BUILTIN_CMDS_H */
-diff --git a/tools/perf/builtin-help.c b/tools/perf/builtin-help.c
-index 25d2062..fbbbaa4 100644
---- a/tools/perf/builtin-help.c
-+++ b/tools/perf/builtin-help.c
-@@ -7,6 +7,7 @@
- #include "util/cache.h"
- #include "builtin.h"
- #include "util/exec_cmd.h"
-+#include "builtin-cmds.h"
- #include "common-cmds.h"
- #include "util/parse-options.h"
- #include "util/run-command.h"
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index b65eb050..400e92e 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -1531,20 +1531,25 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
- 
- 	if (!strncmp(argv[0], "rec", 3))
- 		return __cmd_record(file_name, argc, argv);
--	else if (!strncmp(argv[0], "rep", 3))
++config TARGET_CROSS_COMPILE
++	string
++	option env="CROSS_COMPILE"
 +
-+	if (!strncmp(argv[0], "rep", 3))
- 		return __cmd_report(file_name, argc, argv);
--	else if (!strncmp(argv[0], "diff", 4))
++config ARCH
++	string
++	default TARGET_ARCH
 +
-+	if (!strncmp(argv[0], "diff", 4))
- 		return cmd_diff(argc, argv, NULL);
--	else if (!strncmp(argv[0], "top", 3))
++config X86_64
++	bool
++	default y if TARGET_ARCH = "x86" && TARGET_IS_X86_64 = "1"
 +
-+	if (!strncmp(argv[0], "top", 3))
- 		return cmd_top(argc, argv, NULL);
--	else if (!strncmp(argv[0], "buildid-list", 12))
++config CROSS_COMPILE
++	string
++	default TARGET_CROSS_COMPILE
 +
-+	if (!strncmp(argv[0], "buildid-list", 12))
- 		return __cmd_buildid_list(file_name, argc, argv);
-+
- #ifdef HAVE_KVM_STAT_SUPPORT
--	else if (!strncmp(argv[0], "stat", 4))
-+	if (!strncmp(argv[0], "stat", 4))
- 		return kvm_cmd_stat(file_name, argc, argv);
- #endif
--	else
--		usage_with_options(kvm_usage, kvm_options);
-+
-+	usage_with_options(kvm_usage, kvm_options);
+ menu "Built-in commands"
  
- 	return 0;
- }
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 140a6cd..00d93ff 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -5,6 +5,7 @@
-  * look up and read DSOs and symbol information and display
-  * a histogram of results, along various sorting keys.
-  */
-+#include "generated/autoconf.h"
- #include "builtin.h"
+ config BUILTIN_RECORD
+diff --git a/tools/perf/Makefile.kbuild b/tools/perf/Makefile.kbuild
+index 8d9e8b0..b48fe7f 100644
+--- a/tools/perf/Makefile.kbuild
++++ b/tools/perf/Makefile.kbuild
+@@ -123,9 +123,12 @@ export KCONFIG_AUTOHEADER KCONFIG_AUTOCONFIG KCONFIG_SCRIPT
  
- #include "util/util.h"
-@@ -406,6 +407,7 @@ static int report__browse_hists(struct report *rep)
- 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
- 
- 	switch (use_browser) {
-+#ifdef CONFIG_TUI
- 	case 1:
- 		ret = perf_evlist__tui_browse_hists(evlist, help, NULL,
- 						    rep->min_percent,
-@@ -417,6 +419,7 @@ static int report__browse_hists(struct report *rep)
- 		if (ret != K_SWITCH_INPUT_DATA)
- 			ret = 0;
- 		break;
-+#endif /* CONFIG_TUI */
- 	case 2:
- 		ret = report__gtk_browse_hists(rep, help);
- 		break;
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 0aa7747..a2ff8b7 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -17,6 +17,7 @@
-  *
-  * Released under the GPL v2. (and only v2, not any later version)
-  */
-+#include "generated/autoconf.h"
- #include "builtin.h"
- 
- #include "perf.h"
-@@ -534,6 +535,7 @@ static bool perf_top__handle_keypress(struct perf_top *top, int c)
- 	return ret;
- }
- 
-+#ifdef CONFIG_TUI
- static void perf_top__sort_new_samples(void *arg)
- {
- 	struct perf_top *t = arg;
-@@ -586,6 +588,7 @@ static void *display_thread_tui(void *arg)
- 	done = 1;
- 	return NULL;
- }
-+#endif /* CONFIG_TUI */
- 
- static void display_sig(int sig __maybe_unused)
- {
-@@ -926,9 +929,12 @@ static int perf_top__setup_sample_type(struct perf_top *top __maybe_unused)
- 	return 0;
- }
- 
-+typedef void* (*display_fn_t)(void *);
-+
- static int __cmd_top(struct perf_top *top)
- {
- 	struct record_opts *opts = &top->record_opts;
-+	display_fn_t display_fn = display_thread;
- 	pthread_t thread;
- 	int ret;
- 
-@@ -965,8 +971,8 @@ static int __cmd_top(struct perf_top *top)
- 	 * XXX 'top' still doesn't start workloads like record, trace, but should,
- 	 * so leave the check here.
- 	 */
--        if (!target__none(&opts->target))
--                perf_evlist__enable(top->evlist);
-+	if (!target__none(&opts->target))
-+		perf_evlist__enable(top->evlist);
- 
- 	/* Wait for a minimal set of events before starting the snapshot */
- 	perf_evlist__poll(top->evlist, 100);
-@@ -974,8 +980,13 @@ static int __cmd_top(struct perf_top *top)
- 	perf_top__mmap_read(top);
- 
- 	ret = -1;
--	if (pthread_create(&thread, NULL, (use_browser > 0 ? display_thread_tui :
--							    display_thread), top)) {
-+
-+#ifdef CONFIG_TUI
-+	if (use_browser > 0)
-+		display_fn = display_thread_tui;
-+#endif
-+
-+	if (pthread_create(&thread, NULL, display_fn, top)) {
- 		ui__error("Could not create display thread.\n");
- 		goto out_delete;
- 	}
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 452a847..ab363b5 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -7,6 +7,7 @@
-  * perf top, perf record, perf report, etc.) are started.
-  */
- #include "builtin.h"
-+#include "builtin-cmds.h"
- 
- #include "util/exec_cmd.h"
- #include "util/cache.h"
-@@ -34,34 +35,74 @@ struct cmd_struct {
- };
- 
- static struct cmd_struct commands[] = {
-+#ifdef CONFIG_BUILTIN_BUILDID_CACHE
- 	{ "buildid-cache", cmd_buildid_cache, 0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_BUILDID_LIST
- 	{ "buildid-list", cmd_buildid_list, 0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_DIFF
- 	{ "diff",	cmd_diff,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_EVLIST
- 	{ "evlist",	cmd_evlist,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_HELP
- 	{ "help",	cmd_help,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_LIST
- 	{ "list",	cmd_list,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_RECORD
- 	{ "record",	cmd_record,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_REPORT
- 	{ "report",	cmd_report,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_BENCH
- 	{ "bench",	cmd_bench,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_STAT
- 	{ "stat",	cmd_stat,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_TIMECHART
- 	{ "timechart",	cmd_timechart,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_TOP
- 	{ "top",	cmd_top,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_ANNOTATE
- 	{ "annotate",	cmd_annotate,	0 },
-+#endif
- 	{ "version",	cmd_version,	0 },
-+#ifdef CONFIG_BUILTIN_SCRIPT
- 	{ "script",	cmd_script,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_SCHED
- 	{ "sched",	cmd_sched,	0 },
--#ifdef HAVE_LIBELF_SUPPORT
-+#endif
-+#if defined HAVE_LIBELF_SUPPORT && defined CONFIG_BUILTIN_PROBE
- 	{ "probe",	cmd_probe,	0 },
- #endif
-+#ifdef CONFIG_BUILTIN_KMEM
- 	{ "kmem",	cmd_kmem,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_LOCK
- 	{ "lock",	cmd_lock,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_KVM
- 	{ "kvm",	cmd_kvm,	0 },
-+#endif
- 	{ "test",	cmd_test,	0 },
--#ifdef HAVE_LIBAUDIT_SUPPORT
-+#if defined HAVE_LIBAUDIT_SUPPORT && defined CONFIG_BUILTIN_TRACE
- 	{ "trace",	cmd_trace,	0 },
- #endif
-+#ifdef CONFIG_BUILTIN_INJECT
- 	{ "inject",	cmd_inject,	0 },
-+#endif
-+#ifdef CONFIG_BUILTIN_MEM
- 	{ "mem",	cmd_mem,	0 },
-+#endif
- };
- 
- struct pager_config {
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index ba51fa8..ec7fd36 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -77,11 +77,13 @@ void setup_browser(bool fallback_to_pager)
- 		       PERF_GTK_DSO);
- 		sleep(1);
- 		/* fall through */
-+#ifdef CONFIG_TUI
- 	case 1:
- 		use_browser = 1;
- 		if (ui__init() == 0)
- 			break;
- 		/* fall through */
-+#endif
- 	default:
- 		use_browser = 0;
- 		if (fallback_to_pager)
-@@ -96,11 +98,11 @@ void exit_browser(bool wait_for_ok)
- 	case 2:
- 		exit_gtk_browser(wait_for_ok);
- 		break;
+ # perf detected config
+ CONFIG_DETECTED := $(obj-perf)/.config-detected
 -
-+#ifdef CONFIG_TUI
- 	case 1:
- 		ui__exit(wait_for_ok);
- 		break;
--
-+#endif
- 	default:
- 		break;
- 	}
-diff --git a/tools/perf/util/generate-cmdlist.sh b/tools/perf/util/generate-cmdlist.sh
-index 36a885d..05ee30f 100755
---- a/tools/perf/util/generate-cmdlist.sh
-+++ b/tools/perf/util/generate-cmdlist.sh
-@@ -1,5 +1,11 @@
- #!/bin/sh
+ export CONFIG_DETECTED
  
-+function cfg()
-+{
-+     cfg=`echo $1 | tr '[:lower:]' '[:upper:]' | sed 's/-/_/g'`
-+     echo "$cfg"
-+}
++# arch-related main variables
++include $(src-perf)/config/Makefile.arch
++export ARCH IS_X86_64 CROSS_COMPILE
 +
- echo "/* Automatically generated by $0 */
- struct cmdname_help
- {
-@@ -13,6 +19,7 @@ sed -n -e 's/^perf-\([^ 	]*\)[ 	].* common.*/\1/p' command-list.txt |
- sort |
- while read cmd
- do
-+     echo "#ifdef CONFIG_BUILTIN_$(cfg $cmd)"
-      sed -n '
-      /^NAME/,/perf-'"$cmd"'/H
-      ${
-@@ -20,6 +27,7 @@ do
-             s/.*perf-'"$cmd"' - \(.*\)/  {"'"$cmd"'", "\1"},/
- 	    p
-      }' "Documentation/perf-$cmd.txt"
-+     echo "#endif"
- done
+ # external .a libs
+ LIBTRACEEVENT   := $(obj-kernel)/tools/lib/traceevent/libtraceevent.a
+ LIBAPIKFS       := $(obj-kernel)/tools/lib/api/libapikfs.a
+@@ -202,9 +205,6 @@ ifndef dont-detect
+ ifdef CONFIG_DETECTED_STORED
+ # Following variables are needed within Kbuild files, we need
+ # to export them as they are not part of the .config set.
+-export CONFIG_ARCH := $(ARCH)
+-export CROSS_COMPILE
+-export CONFIG_X86_64
+ export htmldir_SQ
+ export infodir_SQ
+ export mandir_SQ
+diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
+index 7df517a..d969cca 100644
+--- a/tools/perf/arch/x86/include/perf_regs.h
++++ b/tools/perf/arch/x86/include/perf_regs.h
+@@ -5,9 +5,11 @@
+ #include <linux/types.h>
+ #include <asm/perf_regs.h>
  
- echo "#ifdef HAVE_LIBELF_SUPPORT"
-@@ -27,6 +35,7 @@ sed -n -e 's/^perf-\([^ 	]*\)[ 	].* full.*/\1/p' command-list.txt |
- sort |
- while read cmd
- do
-+     echo "#ifdef CONFIG_BUILTIN_$(cfg $cmd)"
-      sed -n '
-      /^NAME/,/perf-'"$cmd"'/H
-      ${
-@@ -34,6 +43,7 @@ do
-             s/.*perf-'"$cmd"' - \(.*\)/  {"'"$cmd"'", "\1"},/
- 	    p
-      }' "Documentation/perf-$cmd.txt"
-+     echo "#endif"
- done
- echo "#endif /* HAVE_LIBELF_SUPPORT */"
- echo "};"
++#include "generated/autoconf.h"
++
+ void perf_regs_load(u64 *regs);
+ 
+-#ifndef HAVE_ARCH_X86_64_SUPPORT
++#ifndef CONFIG_X86_64
+ #define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
+ #define PERF_REGS_MAX PERF_REG_X86_32_MAX
+ #define PERF_SAMPLE_REGS_ABI PERF_SAMPLE_REGS_ABI_32
+@@ -58,7 +60,7 @@ static inline const char *perf_reg_name(int id)
+ 		return "FS";
+ 	case PERF_REG_X86_GS:
+ 		return "GS";
+-#ifdef HAVE_ARCH_X86_64_SUPPORT
++#ifdef CONFIG_X86_64
+ 	case PERF_REG_X86_R8:
+ 		return "R8";
+ 	case PERF_REG_X86_R9:
+@@ -75,7 +77,7 @@ static inline const char *perf_reg_name(int id)
+ 		return "R14";
+ 	case PERF_REG_X86_R15:
+ 		return "R15";
+-#endif /* HAVE_ARCH_X86_64_SUPPORT */
++#endif /* CONFIG_X86_64 */
+ 	default:
+ 		return NULL;
+ 	}
+diff --git a/tools/perf/arch/x86/tests/regs_load.S b/tools/perf/arch/x86/tests/regs_load.S
+index 60875d5..822a797 100644
+--- a/tools/perf/arch/x86/tests/regs_load.S
++++ b/tools/perf/arch/x86/tests/regs_load.S
+@@ -1,4 +1,5 @@
+ #include <linux/linkage.h>
++#include "generated/autoconf.h"
+ 
+ #define AX	 0
+ #define BX	 1 * 8
+@@ -26,7 +27,7 @@
+ #define R15	23 * 8
+ 
+ .text
+-#ifdef HAVE_ARCH_X86_64_SUPPORT
++#ifdef CONFIG_X86_64
+ ENTRY(perf_regs_load)
+ 	movq %rax, AX(%rdi)
+ 	movq %rbx, BX(%rdi)
+diff --git a/tools/perf/arch/x86/util/unwind-libunwind.c b/tools/perf/arch/x86/util/unwind-libunwind.c
+index db25e93..e4960c1 100644
+--- a/tools/perf/arch/x86/util/unwind-libunwind.c
++++ b/tools/perf/arch/x86/util/unwind-libunwind.c
+@@ -1,11 +1,12 @@
+ 
+ #include <errno.h>
+ #include <libunwind.h>
++#include "generated/autoconf.h"
+ #include "perf_regs.h"
+ #include "../../util/unwind.h"
+ #include "../../util/debug.h"
+ 
+-#ifdef HAVE_ARCH_X86_64_SUPPORT
++#ifdef CONFIG_X86_64
+ int libunwind__arch_reg_id(int regnum)
+ {
+ 	int id;
+@@ -109,4 +110,4 @@ int libunwind__arch_reg_id(int regnum)
+ 
+ 	return id;
+ }
+-#endif /* HAVE_ARCH_X86_64_SUPPORT */
++#endif /* CONFIG_X86_64 */
+diff --git a/tools/perf/bench/mem-memcpy-arch.h b/tools/perf/bench/mem-memcpy-arch.h
+index 57b4ed8..8e3f0a9 100644
+--- a/tools/perf/bench/mem-memcpy-arch.h
++++ b/tools/perf/bench/mem-memcpy-arch.h
+@@ -1,5 +1,7 @@
+ 
+-#ifdef HAVE_ARCH_X86_64_SUPPORT
++#include "generated/autoconf.h"
++
++#ifdef CONFIG_X86_64
+ 
+ #define MEMCPY_FN(fn, name, desc)		\
+ 	extern void *fn(void *, const void *, size_t);
+diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
+index 2465141..9061d2b 100644
+--- a/tools/perf/bench/mem-memcpy.c
++++ b/tools/perf/bench/mem-memcpy.c
+@@ -6,6 +6,8 @@
+  * Written by Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+  */
+ 
++#include "generated/autoconf.h"
++
+ #include "../perf.h"
+ #include "../util/util.h"
+ #include "../util/parse-options.h"
+@@ -59,7 +61,7 @@ struct routine routines[] = {
+ 	{ "default",
+ 	  "Default memcpy() provided by glibc",
+ 	  memcpy },
+-#ifdef HAVE_ARCH_X86_64_SUPPORT
++#ifdef CONFIG_X86_64
+ 
+ #define MEMCPY_FN(fn, name, desc) { name, desc, fn },
+ #include "mem-memcpy-x86-64-asm-def.h"
+diff --git a/tools/perf/bench/mem-memset-arch.h b/tools/perf/bench/mem-memset-arch.h
+index 633800c..5dfc4c5 100644
+--- a/tools/perf/bench/mem-memset-arch.h
++++ b/tools/perf/bench/mem-memset-arch.h
+@@ -1,5 +1,7 @@
+ 
+-#ifdef HAVE_ARCH_X86_64_SUPPORT
++#include "generated/autoconf.h"
++
++#ifdef CONFIG_X86_64
+ 
+ #define MEMSET_FN(fn, name, desc)		\
+ 	extern void *fn(void *, int, size_t);
+diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
+index 75fc3e6..73e8d8d 100644
+--- a/tools/perf/bench/mem-memset.c
++++ b/tools/perf/bench/mem-memset.c
+@@ -6,6 +6,8 @@
+  * Trivial clone of mem-memcpy.c.
+  */
+ 
++#include "generated/autoconf.h"
++
+ #include "../perf.h"
+ #include "../util/util.h"
+ #include "../util/parse-options.h"
+@@ -59,7 +61,7 @@ static const struct routine routines[] = {
+ 	{ "default",
+ 	  "Default memset() provided by glibc",
+ 	  memset },
+-#ifdef HAVE_ARCH_X86_64_SUPPORT
++#ifdef CONFIG_X86_64
+ 
+ #define MEMSET_FN(fn, name, desc) { name, desc, fn },
+ #include "mem-memset-x86-64-asm-def.h"
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index ce3a726..7f87a45 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -20,11 +20,9 @@ NO_PERF_REGS := 1
+ 
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),x86)
+-  ifeq (${IS_X86_64}, 1)
+-    CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
+-    ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
++  ifeq ($(IS_X86_64),1)
+     LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
+-    CONFIG_X86_64=y
++    $(shell $(KCONFIG_SCRIPT) -e CONFIG_X86_64)
+   else
+     LIBUNWIND_LIBS = -lunwind -lunwind-x86
+   endif
+@@ -794,7 +792,6 @@ all:
+ 	$(call store,PARSER_DEBUG_FLEX)
+ 	$(call store,PYTHON_EMBED_CCOPTS)
+ 	$(call store,PERL_EMBED_CCOPTS)
+-	$(call store,CONFIG_X86_64)
+ 	$(call store,NO_LIBUNWIND)
+ 	$(call store,NO_LIBPERL)
+ 	$(call store,NO_LIBPYTHON)
 -- 
 2.1.1
 
