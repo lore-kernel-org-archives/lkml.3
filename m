@@ -1,114 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933076AbaJWDQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 23:16:58 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:42437 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381AbaJWDQ5 (ORCPT
+	id S933295AbaJWDTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 23:19:07 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:34790 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932381AbaJWDTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 23:16:57 -0400
-Date: Thu, 23 Oct 2014 12:16:44 +0900
-From: Gyungoh Yoo <gyungoh@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: sameo@linux.intel.com, jg1.han@samsung.com, cooloney@gmail.com,
-        broonie@kernel.org, lgirdwood@gmail.com, jack.yoo@skyworksinc.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        grant.likely@linaro.org, robh+dt@kernel.org, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        pawel.moll@arm.com, heiko@sntech.de, jason@lakedaemon.net,
-        shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
-        trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
-        jic23@kernel.org
-Subject: Re: [RESUBMIT PATCH v4 1/8] mfd: Add support for Skyworks SKY81452
- driver
-Message-ID: <20141023031644.GB3244@jack-ThinkPad-T520>
-References: <1412657745-7812-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
- <1413179262-27636-2-git-send-email-jack.yoo@skyworksinc.com>
- <20141021123001.GA4939@x1>
+	Wed, 22 Oct 2014 23:19:04 -0400
+Message-ID: <54487346.4080604@gmail.com>
+Date: Thu, 23 Oct 2014 01:17:26 -0200
+From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141021123001.GA4939@x1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+CC: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Possible wireless issue introduced in next-20140930
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 01:30:01PM +0100, Lee Jones wrote:
-> On Mon, 13 Oct 2014, Gyungoh Yoo wrote:
-> 
-> > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> > ---
-> > Changes v4:
-> > Removed MODULE_VERSION()
-> > Modified license to GPLv2
-> > 
-> > Changes v3:
-> > Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
-> > Assigned mfd_cell.of_compatible for binding device node
-> > Modified error messages
-> > 
-> > Changes v2:
-> > Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
-> > Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
-> > Added message for exception or errors
-> > 
-> >  drivers/mfd/Kconfig          |  12 +++++
-> >  drivers/mfd/Makefile         |   1 +
-> >  drivers/mfd/sky81452.c       | 110 +++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/sky81452.h |  32 +++++++++++++
-> >  4 files changed, 155 insertions(+)
-> >  create mode 100644 drivers/mfd/sky81452.c
-> >  create mode 100644 include/linux/mfd/sky81452.h
-> 
-> [...]
-> 
-> > +++ b/include/linux/mfd/sky81452.h
-> > @@ -0,0 +1,32 @@
-> > +/*
-> > + * sky81452.h	SKY81452 MFD driver
-> > + *
-> > + * Copyright 2014 Skyworks Solutions Inc.
-> > + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify it
-> > + * under the terms of the GNU General Public License as published by the
-> > + * Free Software Foundation; either version 2, or (at your option) any
-> > + * later version.
-> > + *
-> > + * This program is distributed in the hope that it will be useful, but
-> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-> > + * General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License along
-> > + * with this program; if not, see <http://www.gnu.org/licenses/>.
-> > + */
-> > +
-> > +#ifndef _SKY81452_H
-> > +#define _SKY81452_H
-> > +
-> > +#include <linux/sky81452-backlight.h>
-> 
-> Shouldn't this live in linux/platform_data?
+Hello, everyone.
 
-I will change the location to linux/platform_data and resubmit it.
-Thank you your review.
+With next-20140930 my laptop does not work, i.e. after I enter my login 
+and password in KDM, the entire system becomes unresponsive and I need 
+to reset it in order to reboot (it does not even show the KDE splash 
+screen).
 
-> 
-> > +#include <linux/regulator/machine.h>
-> > +
-> > +struct sky81452_platform_data {
-> > +	struct sky81452_bl_platform_data *bl_pdata;
-> > +	struct regulator_init_data *regulator_init_data;
-> > +};
-> > +
-> > +#endif
-> 
-> -- 
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+It was working pretty fine with next-20140926.
+
+I've also tested with next-20141022 and v3.18-rc1 and no luck.
+
+git bisect pointed me to the commit below [1].  My wireless card is a 
+RTL8191SEvA [2].
+
+I need your help to troubleshoot this.
+
+Thanks in advance.
+
+[1]
+commit 38506ecefab911785d5e1aa5889f6eeb462e0954
+Author: Larry Finger <Larry.Finger@lwfinger.net>
+Date:   Mon Sep 22 09:39:19 2014 -0500
+
+     rtlwifi: rtl_pci: Start modification for new drivers
+
+     Future patches will move the drivers for RTL8192EE and RTL8821AE
+     from staging to the regular wireless tree. Here, the necessary features
+     are added to the PCI driver. Other files are touched due to changes
+     in the various data structs.
+
+     Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+     Signed-off-by: John W. Linville <linville@tuxdriver.com>
+
+[2]
+$ lspci -vvv
+02:00.0 Network controller: Realtek Semiconductor Co., Ltd. RTL8191SEvA 
+Wireless LAN Controller (rev 10)
+         Subsystem: Hewlett-Packard Company Device 1467
+         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
+ParErr- Stepping- SERR- FastB2B- DisINTx-
+         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- 
+<TAbort- <MAbort- >SERR- <PERR- INTx-
+         Latency: 0, Cache Line Size: 64 bytes
+         Interrupt: pin A routed to IRQ 16
+         Region 0: I/O ports at 3000 [size=256]
+         Region 1: Memory at d3400000 (32-bit, non-prefetchable) [size=16K]
+         Capabilities: <access denied>
+         Kernel driver in use: rtl8192se
+
+-- 
+Murilo
