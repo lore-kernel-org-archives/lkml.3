@@ -1,76 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802AbaJWN5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:57:15 -0400
-Received: from forward-corp1f.mail.yandex.net ([95.108.130.40]:38101 "EHLO
-	forward-corp1f.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751706AbaJWN5L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:57:11 -0400
-X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Oct 2014 09:57:10 EDT
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
-        "jesse.brandeburg@intel.com" <jesse.brandeburg@intel.com>,
-        "bruce.w.allan@intel.com" <bruce.w.allan@intel.com>,
-        "carolyn.wyborny@intel.com" <carolyn.wyborny@intel.com>,
-        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
-        "gregory.v.rose@intel.com" <gregory.v.rose@intel.com>,
-        "peter.p.waskiewicz.jr@intel.com" <peter.p.waskiewicz.jr@intel.com>,
-        "alexander.h.duyck@intel.com" <alexander.h.duyck@intel.com>,
-        "john.ronciak@intel.com" <john.ronciak@intel.com>,
-        "tushar.n.dave@intel.com" <tushar.n.dave@intel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "sassmann@kpanic.de" <sassmann@kpanic.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1414071030.2094.46.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1413985819-9553-1-git-send-email-klamm@yandex-team.ru>
-	 <1413992737.9031.1.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1811414063272@webcorp02e.yandex-team.ru> <1414071030.2094.46.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATHC] net: napi_reuse_skb() should check pfmemalloc
+	id S1755957AbaJWN5h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:57:37 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42729 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755833AbaJWN5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 09:57:34 -0400
+Date: Thu, 23 Oct 2014 09:57:29 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcontrol: fix missed end-writeback page
+ accounting
+Message-ID: <20141023135729.GB24269@phnom.home.cmpxchg.org>
+References: <1414002568-21042-1-git-send-email-hannes@cmpxchg.org>
+ <1414002568-21042-3-git-send-email-hannes@cmpxchg.org>
+ <20141022133936.44f2d2931948ce13477b5e64@linux-foundation.org>
 MIME-Version: 1.0
-Message-Id: <1131414072170@webcorp02e.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Thu, 23 Oct 2014 17:49:30 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022133936.44f2d2931948ce13477b5e64@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
+On Wed, Oct 22, 2014 at 01:39:36PM -0700, Andrew Morton wrote:
+> On Wed, 22 Oct 2014 14:29:28 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > @@ -1061,9 +1062,10 @@ void page_add_file_rmap(struct page *page)
+> >   */
+> >  void page_remove_rmap(struct page *page)
+> >  {
+> > +	struct mem_cgroup *uninitialized_var(memcg);
+> >  	bool anon = PageAnon(page);
+> > -	bool locked;
+> >  	unsigned long flags;
+> > +	bool locked;
+> >  
+> >  	/*
+> >  	 * The anon case has no mem_cgroup page_stat to update; but may
+> > @@ -1071,7 +1073,7 @@ void page_remove_rmap(struct page *page)
+> >  	 * we hold the lock against page_stat move: so avoid it on anon.
+> >  	 */
+> >  	if (!anon)
+> > -		mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+> > +		memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
+> >  
+> >  	/* page still mapped by someone else? */
+> >  	if (!atomic_add_negative(-1, &page->_mapcount))
+> > @@ -1096,8 +1098,7 @@ void page_remove_rmap(struct page *page)
+> >  				-hpage_nr_pages(page));
+> >  	} else {
+> >  		__dec_zone_page_state(page, NR_FILE_MAPPED);
+> > -		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_MAPPED);
+> > -		mem_cgroup_end_update_page_stat(page, &locked, &flags);
+> > +		mem_cgroup_dec_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
+> >  	}
+> >  	if (unlikely(PageMlocked(page)))
+> >  		clear_page_mlock(page);
+> > @@ -1110,10 +1111,9 @@ void page_remove_rmap(struct page *page)
+> >  	 * Leaving it set also helps swapoff to reinstate ptes
+> >  	 * faster for those pages still in swapcache.
+> >  	 */
+> > -	return;
+> >  out:
+> >  	if (!anon)
+> > -		mem_cgroup_end_update_page_stat(page, &locked, &flags);
+> > +		mem_cgroup_end_page_stat(memcg, locked, flags);
+> >  }
+> 
+> The anon and file paths have as much unique code as they do common
+> code.  I wonder if page_remove_rmap() would come out better if split
+> into two functions?  I gave that a quick try and it came out OK-looking.
 
---
-@klamm
+I agree, that looks better.  How about this?
 
+---
+>From b518d88254b01be8c6c0c4a496d9f311f0c71b4a Mon Sep 17 00:00:00 2001
+From: Johannes Weiner <hannes@cmpxchg.org>
+Date: Thu, 23 Oct 2014 09:29:06 -0400
+Subject: [patch] mm: rmap: split out page_remove_file_rmap()
 
-23.10.2014, 17:30, "Eric Dumazet" <eric.dumazet@gmail.com>:
-> From: Eric Dumazet <edumazet@google.com>
->
-> Do not reuse skb if it was pfmemalloc tainted, otherwise
-> future frame might be dropped anyway.
->
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
-> ---
-> šnet/core/dev.c | ššš4 ++++
-> š1 file changed, 4 insertions(+)
->
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index b793e3521a36..945bbd001359 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -4157,6 +4157,10 @@ EXPORT_SYMBOL(napi_gro_receive);
->
-> šstatic void napi_reuse_skb(struct napi_struct *napi, struct sk_buff *skb)
-> š{
-> + if (unlikely(skb->pfmemalloc)) {
-> + consume_skb(skb);
-> + return;
-> + }
-> ššššššššš__skb_pull(skb, skb_headlen(skb));
-> ššššššššš/* restore the reserve we had after netdev_alloc_skb_ip_align() */
-> šššššššššskb_reserve(skb, NET_SKB_PAD + NET_IP_ALIGN - skb_headroom(skb));
+page_remove_rmap() has too many branches on PageAnon() and is hard to
+follow.  Move the file part into a separate function.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/rmap.c | 78 +++++++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 46 insertions(+), 32 deletions(-)
+
+diff --git a/mm/rmap.c b/mm/rmap.c
+index f574046f77d4..19886fb2f13a 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -1054,6 +1054,36 @@ void page_add_file_rmap(struct page *page)
+ 	mem_cgroup_end_page_stat(memcg, locked, flags);
+ }
+ 
++static void page_remove_file_rmap(struct page *page)
++{
++	struct mem_cgroup *memcg;
++	unsigned long flags;
++	bool locked;
++
++	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
++
++	/* page still mapped by someone else? */
++	if (!atomic_add_negative(-1, &page->_mapcount))
++		goto out;
++
++	/* Hugepages are not counted in NR_FILE_MAPPED for now. */
++	if (unlikely(PageHuge(page)))
++		goto out;
++
++	/*
++	 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
++	 * these counters are not modified in interrupt context, and
++	 * pte lock(a spinlock) is held, which implies preemption disabled.
++	 */
++	__dec_zone_page_state(page, NR_FILE_MAPPED);
++	mem_cgroup_dec_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
++
++	if (unlikely(PageMlocked(page)))
++		clear_page_mlock(page);
++out:
++	mem_cgroup_end_page_stat(memcg, locked, flags);
++}
++
+ /**
+  * page_remove_rmap - take down pte mapping from a page
+  * @page: page to remove mapping from
+@@ -1062,46 +1092,33 @@ void page_add_file_rmap(struct page *page)
+  */
+ void page_remove_rmap(struct page *page)
+ {
+-	struct mem_cgroup *uninitialized_var(memcg);
+-	bool anon = PageAnon(page);
+-	unsigned long flags;
+-	bool locked;
+-
+-	/*
+-	 * The anon case has no mem_cgroup page_stat to update; but may
+-	 * uncharge_page() below, where the lock ordering can deadlock if
+-	 * we hold the lock against page_stat move: so avoid it on anon.
+-	 */
+-	if (!anon)
+-		memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
++	if (!PageAnon(page)) {
++		page_remove_file_rmap(page);
++		return;
++	}
+ 
+ 	/* page still mapped by someone else? */
+ 	if (!atomic_add_negative(-1, &page->_mapcount))
+-		goto out;
++		return;
++
++	/* Hugepages are not counted in NR_ANON_PAGES for now. */
++	if (unlikely(PageHuge(page)))
++		return;
+ 
+ 	/*
+-	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
+-	 * and not charged by memcg for now.
+-	 *
+ 	 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
+ 	 * these counters are not modified in interrupt context, and
+-	 * these counters are not modified in interrupt context, and
+ 	 * pte lock(a spinlock) is held, which implies preemption disabled.
+ 	 */
+-	if (unlikely(PageHuge(page)))
+-		goto out;
+-	if (anon) {
+-		if (PageTransHuge(page))
+-			__dec_zone_page_state(page,
+-					      NR_ANON_TRANSPARENT_HUGEPAGES);
+-		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
+-				-hpage_nr_pages(page));
+-	} else {
+-		__dec_zone_page_state(page, NR_FILE_MAPPED);
+-		mem_cgroup_dec_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
+-	}
++	if (PageTransHuge(page))
++		__dec_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
++
++	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
++			      -hpage_nr_pages(page));
++
+ 	if (unlikely(PageMlocked(page)))
+ 		clear_page_mlock(page);
++
+ 	/*
+ 	 * It would be tidy to reset the PageAnon mapping here,
+ 	 * but that might overwrite a racing page_add_anon_rmap
+@@ -1111,9 +1128,6 @@ void page_remove_rmap(struct page *page)
+ 	 * Leaving it set also helps swapoff to reinstate ptes
+ 	 * faster for those pages still in swapcache.
+ 	 */
+-out:
+-	if (!anon)
+-		mem_cgroup_end_page_stat(memcg, locked, flags);
+ }
+ 
+ /*
+-- 
+2.1.2
+
