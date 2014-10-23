@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100AbaJWWd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 18:33:29 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:64989 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259AbaJWWbT (ORCPT
+	id S1755296AbaJWWdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 18:33:55 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:47396 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575AbaJWWbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 18:31:19 -0400
+	Thu, 23 Oct 2014 18:31:12 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
         dsahern@gmail.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
         paulus@samba.org, acme@kernel.org, namhyung@kernel.org, mmarek@suse.cz
-Subject: [PATCH v3 08/14] perf kbuild: cross-compilation variables are now handled in Kconfig
-Date: Fri, 24 Oct 2014 00:28:16 +0200
-Message-Id: <1414103302-14906-9-git-send-email-alexis.berlemont@gmail.com>
+Subject: [PATCH v3 05/14] perf kbuild: remove Makefile.perf
+Date: Fri, 24 Oct 2014 00:28:13 +0200
+Message-Id: <1414103302-14906-6-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414103302-14906-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1414103302-14906-1-git-send-email-alexis.berlemont@gmail.com>
@@ -24,259 +24,1122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The variable CONFIG_ARCH and CONFIG_CROSS_COMPILE were added.
+The file Makefile.perf contained legacy build rules. It is replaced by
+Makefile.kbuild which relies on Kbuild. Consequently, some minor
+points need updates:
+* The constant CONFIG_KBUILD can be removed
+* The main Makefile wrapper now call Makefile.kbuild instead of
+  Makefile.perf
 
 Signed-off-by: Alexis Berlemont <alexis.berlemont@gmail.com>
 ---
- tools/perf/Kconfig                          | 24 ++++++++++++++++++++++++
- tools/perf/Makefile.kbuild                  |  8 ++++----
- tools/perf/arch/x86/include/perf_regs.h     |  8 +++++---
- tools/perf/arch/x86/tests/regs_load.S       |  3 ++-
- tools/perf/arch/x86/util/unwind-libunwind.c |  5 +++--
- tools/perf/bench/mem-memcpy-arch.h          |  4 +++-
- tools/perf/bench/mem-memcpy.c               |  4 +++-
- tools/perf/bench/mem-memset-arch.h          |  4 +++-
- tools/perf/bench/mem-memset.c               |  4 +++-
- tools/perf/config/Makefile                  |  7 ++-----
- 10 files changed, 52 insertions(+), 19 deletions(-)
+ tools/perf/Makefile           |   2 +-
+ tools/perf/Makefile.kbuild    |   2 +-
+ tools/perf/Makefile.perf      | 949 ------------------------------------------
+ tools/perf/builtin-annotate.c |   4 +-
+ tools/perf/builtin-cmds.h     |  25 --
+ tools/perf/builtin-report.c   |   2 +-
+ tools/perf/builtin-top.c      |   4 +-
+ tools/perf/ui/setup.c         |   4 +-
+ 8 files changed, 9 insertions(+), 983 deletions(-)
+ delete mode 100644 tools/perf/Makefile.perf
 
-diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
-index 026ef67..5f85923 100644
---- a/tools/perf/Kconfig
-+++ b/tools/perf/Kconfig
-@@ -1,6 +1,30 @@
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index cb2e586..4512f16 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -55,7 +55,7 @@ define print_msg
+ endef
  
- mainmenu "The perf configuration"
+ define make
+-  @$(MAKE) -f Makefile.perf --no-print-directory -j$(JOBS) O=$(FULL_O) $(SET_DEBUG) $@
++  @$(MAKE) -f Makefile.kbuild --no-print-directory -j$(JOBS) O=$(FULL_O) $(SET_DEBUG) $@
+ endef
  
-+config TARGET_ARCH
-+	string
-+	option env="ARCH"
-+
-+config TARGET_IS_X86_64
-+       string
-+       option env="IS_X86_64"
-+
-+config TARGET_CROSS_COMPILE
-+	string
-+	option env="CROSS_COMPILE"
-+
-+config ARCH
-+	string
-+	default TARGET_ARCH
-+
-+config X86_64
-+	bool
-+	default y if TARGET_ARCH = "x86" && TARGET_IS_X86_64 = "1"
-+
-+config CROSS_COMPILE
-+	string
-+	default TARGET_CROSS_COMPILE
-+
- menu "Built-in commands"
- 
- config BUILTIN_RECORD
+ #
 diff --git a/tools/perf/Makefile.kbuild b/tools/perf/Makefile.kbuild
-index 8d9e8b0..b48fe7f 100644
+index 51eba07..8d9e8b0 100644
 --- a/tools/perf/Makefile.kbuild
 +++ b/tools/perf/Makefile.kbuild
-@@ -123,9 +123,12 @@ export KCONFIG_AUTOHEADER KCONFIG_AUTOCONFIG KCONFIG_SCRIPT
+@@ -43,7 +43,7 @@ export QUIET_BISON QUIET_FLEX
  
- # perf detected config
- CONFIG_DETECTED := $(obj-perf)/.config-detected
+ ifeq ($(KBUILD_SRC),)
+ 
+-ifeq ("$(origin O)", "command line")
++ifneq ($(O),)
+ KBUILD_OUTPUT := $(O)
+ else
+ KBUILD_OUTPUT := $(objtree)
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+deleted file mode 100644
+index dcf6248..0000000
+--- a/tools/perf/Makefile.perf
++++ /dev/null
+@@ -1,949 +0,0 @@
+-include ../scripts/Makefile.include
 -
- export CONFIG_DETECTED
+-# The default target of this Makefile is...
+-all:
+-
+-include config/utilities.mak
+-
+-# Define V to have a more verbose compile.
+-#
+-# Define VF to have a more verbose feature check output.
+-#
+-# Define O to save output files in a separate directory.
+-#
+-# Define ARCH as name of target architecture if you want cross-builds.
+-#
+-# Define CROSS_COMPILE as prefix name of compiler if you want cross-builds.
+-#
+-# Define NO_LIBPERL to disable perl script extension.
+-#
+-# Define NO_LIBPYTHON to disable python script extension.
+-#
+-# Define PYTHON to point to the python binary if the default
+-# `python' is not correct; for example: PYTHON=python2
+-#
+-# Define PYTHON_CONFIG to point to the python-config binary if
+-# the default `$(PYTHON)-config' is not correct.
+-#
+-# Define ASCIIDOC8 if you want to format documentation with AsciiDoc 8
+-#
+-# Define DOCBOOK_XSL_172 if you want to format man pages with DocBook XSL v1.72.
+-#
+-# Define LDFLAGS=-static to build a static binary.
+-#
+-# Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
+-#
+-# Define NO_DWARF if you do not want debug-info analysis feature at all.
+-#
+-# Define WERROR=0 to disable treating any warnings as errors.
+-#
+-# Define NO_NEWT if you do not want TUI support. (deprecated)
+-#
+-# Define NO_SLANG if you do not want TUI support.
+-#
+-# Define NO_GTK2 if you do not want GTK+ GUI support.
+-#
+-# Define NO_DEMANGLE if you do not want C++ symbol demangling.
+-#
+-# Define NO_LIBELF if you do not want libelf dependency (e.g. cross-builds)
+-#
+-# Define NO_LIBUNWIND if you do not want libunwind dependency for dwarf
+-# backtrace post unwind.
+-#
+-# Define NO_BACKTRACE if you do not want stack backtrace debug feature
+-#
+-# Define NO_LIBNUMA if you do not want numa perf benchmark
+-#
+-# Define NO_LIBAUDIT if you do not want libaudit support
+-#
+-# Define NO_LIBBIONIC if you do not want bionic support
+-#
+-# Define NO_LIBDW_DWARF_UNWIND if you do not want libdw support
+-# for dwarf backtrace post unwind.
+-
+-ifeq ($(srctree),)
+-srctree := $(patsubst %/,%,$(dir $(shell pwd)))
+-srctree := $(patsubst %/,%,$(dir $(srctree)))
+-#$(info Determined 'srctree' to be $(srctree))
+-endif
+-
+-ifneq ($(objtree),)
+-#$(info Determined 'objtree' to be $(objtree))
+-endif
+-
+-ifneq ($(OUTPUT),)
+-#$(info Determined 'OUTPUT' to be $(OUTPUT))
+-endif
+-
+-$(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
+-	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+-	@touch $(OUTPUT)PERF-VERSION-FILE
+-
+-CC = $(CROSS_COMPILE)gcc
+-AR = $(CROSS_COMPILE)ar
+-PKG_CONFIG = $(CROSS_COMPILE)pkg-config
+-
+-RM      = rm -f
+-LN      = ln -f
+-MKDIR   = mkdir
+-FIND    = find
+-INSTALL = install
+-FLEX    = flex
+-BISON   = bison
+-STRIP   = strip
+-
+-LIB_DIR          = $(srctree)/tools/lib/api/
+-TRACE_EVENT_DIR = $(srctree)/tools/lib/traceevent/
+-
+-# include config/Makefile by default and rule out
+-# non-config cases
+-config := 1
+-
+-NON_CONFIG_TARGETS := clean TAGS tags cscope help
+-
+-ifdef MAKECMDGOALS
+-ifeq ($(filter-out $(NON_CONFIG_TARGETS),$(MAKECMDGOALS)),)
+-  config := 0
+-endif
+-endif
+-
+-ifeq ($(config),1)
+-include config/Makefile
+-endif
+-
+-export prefix bindir sharedir sysconfdir DESTDIR
+-
+-# sparse is architecture-neutral, which means that we need to tell it
+-# explicitly what architecture to check for. Fix this up for yours..
+-SPARSE_FLAGS = -D__BIG_ENDIAN__ -D__powerpc__
+-
+-# Guard against environment variables
+-BUILTIN_OBJS =
+-LIB_H =
+-LIB_OBJS =
+-GTK_OBJS =
+-PYRF_OBJS =
+-SCRIPT_SH =
+-
+-SCRIPT_SH += perf-archive.sh
+-SCRIPT_SH += perf-with-kcore.sh
+-
+-grep-libs = $(filter -l%,$(1))
+-strip-libs = $(filter-out -l%,$(1))
+-
+-ifneq ($(OUTPUT),)
+-  TE_PATH=$(OUTPUT)
+-ifneq ($(subdir),)
+-  LIB_PATH=$(OUTPUT)/../lib/api/
+-else
+-  LIB_PATH=$(OUTPUT)
+-endif
+-else
+-  TE_PATH=$(TRACE_EVENT_DIR)
+-  LIB_PATH=$(LIB_DIR)
+-endif
+-
+-LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
+-export LIBTRACEEVENT
+-
+-LIBAPIKFS = $(LIB_PATH)libapikfs.a
+-export LIBAPIKFS
+-
+-# python extension build directories
+-PYTHON_EXTBUILD     := $(OUTPUT)python_ext_build/
+-PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
+-PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
+-export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
+-
+-python-clean := $(call QUIET_CLEAN, python) $(RM) -r $(PYTHON_EXTBUILD) $(OUTPUT)python/perf.so
+-
+-PYTHON_EXT_SRCS := $(shell grep -v ^\# util/python-ext-sources)
+-PYTHON_EXT_DEPS := util/python-ext-sources util/setup.py $(LIBTRACEEVENT) $(LIBAPIKFS)
+-
+-$(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
+-	$(QUIET_GEN)CFLAGS='$(CFLAGS)' $(PYTHON_WORD) util/setup.py \
+-	  --quiet build_ext; \
+-	mkdir -p $(OUTPUT)python && \
+-	cp $(PYTHON_EXTBUILD_LIB)perf.so $(OUTPUT)python/
+-#
+-# No Perl scripts right now:
+-#
+-
+-SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
+-
+-#
+-# Single 'perf' binary right now:
+-#
+-PROGRAMS += $(OUTPUT)perf
+-
+-# what 'all' will build and 'install' will install, in perfexecdir
+-ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
+-
+-# what 'all' will build but not install in perfexecdir
+-OTHER_PROGRAMS = $(OUTPUT)perf
+-
+-# Set paths to tools early so that they can be used for version tests.
+-ifndef SHELL_PATH
+-  SHELL_PATH = /bin/sh
+-endif
+-ifndef PERL_PATH
+-  PERL_PATH = /usr/bin/perl
+-endif
+-
+-export PERL_PATH
+-
+-$(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-events-bison.c
+-	$(QUIET_FLEX)$(FLEX) -o $@ --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) util/parse-events.l
+-
+-$(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+-	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c -p parse_events_
+-
+-$(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
+-	$(QUIET_FLEX)$(FLEX) -o $@ --header-file=$(OUTPUT)util/pmu-flex.h util/pmu.l
+-
+-$(OUTPUT)util/pmu-bison.c: util/pmu.y
+-	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c -p perf_pmu_
+-
+-$(OUTPUT)util/parse-events.o: $(OUTPUT)util/parse-events-flex.c $(OUTPUT)util/parse-events-bison.c
+-$(OUTPUT)util/pmu.o: $(OUTPUT)util/pmu-flex.c $(OUTPUT)util/pmu-bison.c
+-
+-LIB_FILE=$(OUTPUT)libperf.a
+-
+-LIB_H += ../lib/symbol/kallsyms.h
+-LIB_H += ../../include/uapi/linux/perf_event.h
+-LIB_H += ../../include/linux/rbtree.h
+-LIB_H += ../../include/linux/list.h
+-LIB_H += ../../include/uapi/linux/const.h
+-LIB_H += ../include/linux/hash.h
+-LIB_H += ../../include/linux/stringify.h
+-LIB_H += util/include/linux/bitmap.h
+-LIB_H += util/include/linux/bitops.h
+-LIB_H += ../include/linux/compiler.h
+-LIB_H += util/include/linux/const.h
+-LIB_H += util/include/linux/ctype.h
+-LIB_H += util/include/linux/kernel.h
+-LIB_H += util/include/linux/list.h
+-LIB_H += ../include/linux/export.h
+-LIB_H += util/include/linux/poison.h
+-LIB_H += util/include/linux/rbtree.h
+-LIB_H += util/include/linux/rbtree_augmented.h
+-LIB_H += util/include/linux/string.h
+-LIB_H += ../include/linux/types.h
+-LIB_H += util/include/linux/linkage.h
+-LIB_H += util/include/asm/asm-offsets.h
+-LIB_H += ../include/asm/bug.h
+-LIB_H += util/include/asm/byteorder.h
+-LIB_H += util/include/asm/hweight.h
+-LIB_H += util/include/asm/swab.h
+-LIB_H += util/include/asm/system.h
+-LIB_H += util/include/asm/uaccess.h
+-LIB_H += util/include/dwarf-regs.h
+-LIB_H += util/include/asm/dwarf2.h
+-LIB_H += util/include/asm/cpufeature.h
+-LIB_H += util/include/asm/unistd_32.h
+-LIB_H += util/include/asm/unistd_64.h
+-LIB_H += perf.h
+-LIB_H += util/annotate.h
+-LIB_H += util/cache.h
+-LIB_H += util/callchain.h
+-LIB_H += util/build-id.h
+-LIB_H += util/debug.h
+-LIB_H += util/pmu.h
+-LIB_H += util/event.h
+-LIB_H += util/evsel.h
+-LIB_H += util/evlist.h
+-LIB_H += util/exec_cmd.h
+-LIB_H += util/levenshtein.h
+-LIB_H += util/machine.h
+-LIB_H += util/map.h
+-LIB_H += util/parse-options.h
+-LIB_H += util/parse-events.h
+-LIB_H += util/quote.h
+-LIB_H += util/util.h
+-LIB_H += util/xyarray.h
+-LIB_H += util/header.h
+-LIB_H += util/help.h
+-LIB_H += util/session.h
+-LIB_H += util/ordered-events.h
+-LIB_H += util/strbuf.h
+-LIB_H += util/strlist.h
+-LIB_H += util/strfilter.h
+-LIB_H += util/svghelper.h
+-LIB_H += util/tool.h
+-LIB_H += util/run-command.h
+-LIB_H += util/sigchain.h
+-LIB_H += util/dso.h
+-LIB_H += util/symbol.h
+-LIB_H += util/color.h
+-LIB_H += util/values.h
+-LIB_H += util/sort.h
+-LIB_H += util/hist.h
+-LIB_H += util/comm.h
+-LIB_H += util/thread.h
+-LIB_H += util/thread_map.h
+-LIB_H += util/trace-event.h
+-LIB_H += util/probe-finder.h
+-LIB_H += util/dwarf-aux.h
+-LIB_H += util/probe-event.h
+-LIB_H += util/pstack.h
+-LIB_H += util/cpumap.h
+-LIB_H += util/top.h
+-LIB_H += $(ARCH_INCLUDE)
+-LIB_H += util/cgroup.h
+-LIB_H += $(LIB_INCLUDE)traceevent/event-parse.h
+-LIB_H += util/target.h
+-LIB_H += util/rblist.h
+-LIB_H += util/intlist.h
+-LIB_H += util/perf_regs.h
+-LIB_H += util/unwind.h
+-LIB_H += util/vdso.h
+-LIB_H += util/tsc.h
+-LIB_H += ui/helpline.h
+-LIB_H += ui/progress.h
+-LIB_H += ui/util.h
+-LIB_H += ui/ui.h
+-LIB_H += util/data.h
+-LIB_H += util/kvm-stat.h
+-
+-LIB_OBJS += $(OUTPUT)util/abspath.o
+-LIB_OBJS += $(OUTPUT)util/alias.o
+-LIB_OBJS += $(OUTPUT)util/annotate.o
+-LIB_OBJS += $(OUTPUT)util/build-id.o
+-LIB_OBJS += $(OUTPUT)util/config.o
+-LIB_OBJS += $(OUTPUT)util/ctype.o
+-LIB_OBJS += $(OUTPUT)util/pmu.o
+-LIB_OBJS += $(OUTPUT)util/environment.o
+-LIB_OBJS += $(OUTPUT)util/event.o
+-LIB_OBJS += $(OUTPUT)util/evlist.o
+-LIB_OBJS += $(OUTPUT)util/evsel.o
+-LIB_OBJS += $(OUTPUT)util/exec_cmd.o
+-LIB_OBJS += $(OUTPUT)util/help.o
+-LIB_OBJS += $(OUTPUT)util/kallsyms.o
+-LIB_OBJS += $(OUTPUT)util/levenshtein.o
+-LIB_OBJS += $(OUTPUT)util/parse-options.o
+-LIB_OBJS += $(OUTPUT)util/parse-events.o
+-LIB_OBJS += $(OUTPUT)util/path.o
+-LIB_OBJS += $(OUTPUT)util/rbtree.o
+-LIB_OBJS += $(OUTPUT)util/bitmap.o
+-LIB_OBJS += $(OUTPUT)util/hweight.o
+-LIB_OBJS += $(OUTPUT)util/run-command.o
+-LIB_OBJS += $(OUTPUT)util/quote.o
+-LIB_OBJS += $(OUTPUT)util/strbuf.o
+-LIB_OBJS += $(OUTPUT)util/string.o
+-LIB_OBJS += $(OUTPUT)util/strlist.o
+-LIB_OBJS += $(OUTPUT)util/strfilter.o
+-LIB_OBJS += $(OUTPUT)util/top.o
+-LIB_OBJS += $(OUTPUT)util/usage.o
+-LIB_OBJS += $(OUTPUT)util/wrapper.o
+-LIB_OBJS += $(OUTPUT)util/sigchain.o
+-LIB_OBJS += $(OUTPUT)util/dso.o
+-LIB_OBJS += $(OUTPUT)util/symbol.o
+-LIB_OBJS += $(OUTPUT)util/symbol-elf.o
+-LIB_OBJS += $(OUTPUT)util/color.o
+-LIB_OBJS += $(OUTPUT)util/pager.o
+-LIB_OBJS += $(OUTPUT)util/header.o
+-LIB_OBJS += $(OUTPUT)util/callchain.o
+-LIB_OBJS += $(OUTPUT)util/values.o
+-LIB_OBJS += $(OUTPUT)util/debug.o
+-LIB_OBJS += $(OUTPUT)util/machine.o
+-LIB_OBJS += $(OUTPUT)util/map.o
+-LIB_OBJS += $(OUTPUT)util/pstack.o
+-LIB_OBJS += $(OUTPUT)util/session.o
+-LIB_OBJS += $(OUTPUT)util/ordered-events.o
+-LIB_OBJS += $(OUTPUT)util/comm.o
+-LIB_OBJS += $(OUTPUT)util/thread.o
+-LIB_OBJS += $(OUTPUT)util/thread_map.o
+-LIB_OBJS += $(OUTPUT)util/trace-event-parse.o
+-LIB_OBJS += $(OUTPUT)util/parse-events-flex.o
+-LIB_OBJS += $(OUTPUT)util/parse-events-bison.o
+-LIB_OBJS += $(OUTPUT)util/pmu-flex.o
+-LIB_OBJS += $(OUTPUT)util/pmu-bison.o
+-LIB_OBJS += $(OUTPUT)util/trace-event-read.o
+-LIB_OBJS += $(OUTPUT)util/trace-event-info.o
+-LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
+-LIB_OBJS += $(OUTPUT)util/trace-event.o
+-LIB_OBJS += $(OUTPUT)util/svghelper.o
+-LIB_OBJS += $(OUTPUT)util/sort.o
+-LIB_OBJS += $(OUTPUT)util/hist.o
+-LIB_OBJS += $(OUTPUT)util/probe-event.o
+-LIB_OBJS += $(OUTPUT)util/util.o
+-LIB_OBJS += $(OUTPUT)util/xyarray.o
+-LIB_OBJS += $(OUTPUT)util/cpumap.o
+-LIB_OBJS += $(OUTPUT)util/cgroup.o
+-LIB_OBJS += $(OUTPUT)util/target.o
+-LIB_OBJS += $(OUTPUT)util/rblist.o
+-LIB_OBJS += $(OUTPUT)util/intlist.o
+-LIB_OBJS += $(OUTPUT)util/vdso.o
+-LIB_OBJS += $(OUTPUT)util/stat.o
+-LIB_OBJS += $(OUTPUT)util/record.o
+-LIB_OBJS += $(OUTPUT)util/srcline.o
+-LIB_OBJS += $(OUTPUT)util/data.o
+-LIB_OBJS += $(OUTPUT)util/tsc.o
+-LIB_OBJS += $(OUTPUT)util/cloexec.o
+-
+-LIB_OBJS += $(OUTPUT)ui/setup.o
+-LIB_OBJS += $(OUTPUT)ui/helpline.o
+-LIB_OBJS += $(OUTPUT)ui/progress.o
+-LIB_OBJS += $(OUTPUT)ui/util.o
+-LIB_OBJS += $(OUTPUT)ui/hist.o
+-LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
+-
+-LIB_OBJS += $(OUTPUT)arch/common.o
+-
+-LIB_OBJS += $(OUTPUT)tests/parse-events.o
+-LIB_OBJS += $(OUTPUT)tests/dso-data.o
+-LIB_OBJS += $(OUTPUT)tests/attr.o
+-LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
+-LIB_OBJS += $(OUTPUT)tests/open-syscall.o
+-LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
+-LIB_OBJS += $(OUTPUT)tests/open-syscall-tp-fields.o
+-LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
+-LIB_OBJS += $(OUTPUT)tests/perf-record.o
+-LIB_OBJS += $(OUTPUT)tests/rdpmc.o
+-LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
+-LIB_OBJS += $(OUTPUT)tests/evsel-tp-sched.o
+-LIB_OBJS += $(OUTPUT)tests/fdarray.o
+-LIB_OBJS += $(OUTPUT)tests/pmu.o
+-LIB_OBJS += $(OUTPUT)tests/hists_common.o
+-LIB_OBJS += $(OUTPUT)tests/hists_link.o
+-LIB_OBJS += $(OUTPUT)tests/hists_filter.o
+-LIB_OBJS += $(OUTPUT)tests/hists_output.o
+-LIB_OBJS += $(OUTPUT)tests/hists_cumulate.o
+-LIB_OBJS += $(OUTPUT)tests/python-use.o
+-LIB_OBJS += $(OUTPUT)tests/bp_signal.o
+-LIB_OBJS += $(OUTPUT)tests/bp_signal_overflow.o
+-LIB_OBJS += $(OUTPUT)tests/task-exit.o
+-LIB_OBJS += $(OUTPUT)tests/sw-clock.o
+-ifeq ($(ARCH),x86)
+-LIB_OBJS += $(OUTPUT)tests/perf-time-to-tsc.o
+-endif
+-LIB_OBJS += $(OUTPUT)tests/code-reading.o
+-LIB_OBJS += $(OUTPUT)tests/sample-parsing.o
+-LIB_OBJS += $(OUTPUT)tests/parse-no-sample-id-all.o
+-ifndef NO_DWARF_UNWIND
+-ifeq ($(ARCH),$(filter $(ARCH),x86 arm))
+-LIB_OBJS += $(OUTPUT)tests/dwarf-unwind.o
+-endif
+-endif
+-LIB_OBJS += $(OUTPUT)tests/mmap-thread-lookup.o
+-LIB_OBJS += $(OUTPUT)tests/thread-mg-share.o
+-LIB_OBJS += $(OUTPUT)tests/switch-tracking.o
+-
+-BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
+-# Benchmark modules
+-BUILTIN_OBJS += $(OUTPUT)bench/sched-messaging.o
+-BUILTIN_OBJS += $(OUTPUT)bench/sched-pipe.o
+-ifeq ($(RAW_ARCH),x86_64)
+-BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
+-BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
+-endif
+-BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
+-BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
+-BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
+-BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
+-BUILTIN_OBJS += $(OUTPUT)bench/futex-requeue.o
+-
+-BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-help.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-sched.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-buildid-list.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-buildid-cache.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-list.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-record.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-report.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-stat.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-timechart.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-top.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-script.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-probe.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-kmem.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-lock.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+-BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
+-BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
+-
+-PERFLIBS = $(LIB_FILE) $(LIBAPIKFS) $(LIBTRACEEVENT)
+-
+-# We choose to avoid "if .. else if .. else .. endif endif"
+-# because maintaining the nesting to match is a pain.  If
+-# we had "elif" things would have been much nicer...
+-
+--include arch/$(ARCH)/Makefile
+-
+-ifneq ($(OUTPUT),)
+-  CFLAGS += -I$(OUTPUT)
+-endif
+-
+-ifdef NO_LIBELF
+-EXTLIBS := $(filter-out -lelf,$(EXTLIBS))
+-
+-# Remove ELF/DWARF dependent codes
+-LIB_OBJS := $(filter-out $(OUTPUT)util/symbol-elf.o,$(LIB_OBJS))
+-LIB_OBJS := $(filter-out $(OUTPUT)util/dwarf-aux.o,$(LIB_OBJS))
+-LIB_OBJS := $(filter-out $(OUTPUT)util/probe-event.o,$(LIB_OBJS))
+-LIB_OBJS := $(filter-out $(OUTPUT)util/probe-finder.o,$(LIB_OBJS))
+-
+-BUILTIN_OBJS := $(filter-out $(OUTPUT)builtin-probe.o,$(BUILTIN_OBJS))
+-
+-# Use minimal symbol handling
+-LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
+-
+-else # NO_LIBELF
+-ifndef NO_DWARF
+-  LIB_OBJS += $(OUTPUT)util/probe-finder.o
+-  LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
+-endif # NO_DWARF
+-endif # NO_LIBELF
+-
+-ifndef NO_LIBDW_DWARF_UNWIND
+-  LIB_OBJS += $(OUTPUT)util/unwind-libdw.o
+-  LIB_H += util/unwind-libdw.h
+-endif
+-
+-ifndef NO_LIBUNWIND
+-  LIB_OBJS += $(OUTPUT)util/unwind-libunwind.o
+-endif
+-LIB_OBJS += $(OUTPUT)tests/keep-tracking.o
+-
+-ifndef NO_LIBAUDIT
+-  BUILTIN_OBJS += $(OUTPUT)builtin-trace.o
+-endif
+-
+-ifndef NO_SLANG
+-  LIB_OBJS += $(OUTPUT)ui/browser.o
+-  LIB_OBJS += $(OUTPUT)ui/browsers/annotate.o
+-  LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
+-  LIB_OBJS += $(OUTPUT)ui/browsers/map.o
+-  LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
+-  LIB_OBJS += $(OUTPUT)ui/browsers/header.o
+-  LIB_OBJS += $(OUTPUT)ui/tui/setup.o
+-  LIB_OBJS += $(OUTPUT)ui/tui/util.o
+-  LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
+-  LIB_OBJS += $(OUTPUT)ui/tui/progress.o
+-  LIB_H += ui/tui/tui.h
+-  LIB_H += ui/browser.h
+-  LIB_H += ui/browsers/map.h
+-  LIB_H += ui/keysyms.h
+-  LIB_H += ui/libslang.h
+-endif
+-
+-ifndef NO_GTK2
+-  ALL_PROGRAMS += $(OUTPUT)libperf-gtk.so
+-
+-  GTK_OBJS += $(OUTPUT)ui/gtk/browser.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/hists.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/setup.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/util.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/helpline.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/progress.o
+-  GTK_OBJS += $(OUTPUT)ui/gtk/annotate.o
+-
+-install-gtk: $(OUTPUT)libperf-gtk.so
+-	$(call QUIET_INSTALL, 'GTK UI') \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(libdir_SQ)'; \
+-		$(INSTALL) $(OUTPUT)libperf-gtk.so '$(DESTDIR_SQ)$(libdir_SQ)'
+-endif
+-
+-ifndef NO_LIBPERL
+-  LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
+-  LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+-endif
+-
+-ifndef NO_LIBPYTHON
+-  LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
+-  LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
+-endif
+-
+-ifeq ($(NO_PERF_REGS),0)
+-  ifeq ($(ARCH),x86)
+-    LIB_H += arch/x86/include/perf_regs.h
+-  endif
+-  LIB_OBJS += $(OUTPUT)util/perf_regs.o
+-endif
+-
+-ifndef NO_LIBNUMA
+-  BUILTIN_OBJS += $(OUTPUT)bench/numa.o
+-endif
+-
+-ifdef ASCIIDOC8
+-  export ASCIIDOC8
+-endif
+-
+-LIBS = -Wl,--whole-archive $(PERFLIBS) -Wl,--no-whole-archive -Wl,--start-group $(EXTLIBS) -Wl,--end-group
+-
+-export INSTALL SHELL_PATH
+-
+-### Build rules
+-
+-SHELL = $(SHELL_PATH)
+-
+-all: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(OTHER_PROGRAMS)
+-
+-please_set_SHELL_PATH_to_a_more_modern_shell:
+-	@$$(:)
+-
+-shell_compatibility_test: please_set_SHELL_PATH_to_a_more_modern_shell
+-
+-strip: $(PROGRAMS) $(OUTPUT)perf
+-	$(STRIP) $(STRIP_OPTS) $(PROGRAMS) $(OUTPUT)perf
+-
+-$(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -include $(OUTPUT)PERF-VERSION-FILE \
+-		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+-		$(CFLAGS) -c $(filter %.c,$^) -o $@
+-
+-$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS)
+-	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
+-               $(BUILTIN_OBJS) $(LIBS) -o $@
+-
+-$(GTK_OBJS): $(OUTPUT)%.o: %.c $(LIB_H)
+-	$(QUIET_CC)$(CC) -o $@ -c -fPIC $(CFLAGS) $(GTK_CFLAGS) $<
+-
+-$(OUTPUT)libperf-gtk.so: $(GTK_OBJS) $(PERFLIBS)
+-	$(QUIET_LINK)$(CC) -o $@ -shared $(LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
+-
+-$(OUTPUT)builtin-help.o: builtin-help.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+-		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+-		'-DPERF_MAN_PATH="$(mandir_SQ)"' \
+-		'-DPERF_INFO_PATH="$(infodir_SQ)"' $<
+-
+-$(OUTPUT)builtin-timechart.o: builtin-timechart.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+-		'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+-		'-DPERF_MAN_PATH="$(mandir_SQ)"' \
+-		'-DPERF_INFO_PATH="$(infodir_SQ)"' $<
+-
+-$(OUTPUT)common-cmds.h: util/generate-cmdlist.sh command-list.txt
+-
+-$(OUTPUT)common-cmds.h: $(wildcard Documentation/perf-*.txt)
+-	$(QUIET_GEN). util/generate-cmdlist.sh ./ > $@+ && mv $@+ $@
+-
+-$(SCRIPTS) : % : %.sh
+-	$(QUIET_GEN)$(INSTALL) '$@.sh' '$(OUTPUT)$@'
+-
+-# These can record PERF_VERSION
+-$(OUTPUT)perf.o perf.spec \
+-	$(SCRIPTS) \
+-	: $(OUTPUT)PERF-VERSION-FILE
+-
+-.SUFFIXES:
+-
+-#
+-# If a target does not match any of the later rules then prefix it by $(OUTPUT)
+-# This makes targets like 'make O=/tmp/perf perf.o' work in a natural way.
+-#
+-ifneq ($(OUTPUT),)
+-%.o: $(OUTPUT)%.o
+-	@echo "    # Redirected target $@ => $(OUTPUT)$@"
+-util/%.o: $(OUTPUT)util/%.o
+-	@echo "    # Redirected target $@ => $(OUTPUT)$@"
+-bench/%.o: $(OUTPUT)bench/%.o
+-	@echo "    # Redirected target $@ => $(OUTPUT)$@"
+-tests/%.o: $(OUTPUT)tests/%.o
+-	@echo "    # Redirected target $@ => $(OUTPUT)$@"
+-endif
+-
+-# These two need to be here so that when O= is not used they take precedence
+-# over the general rule for .o
+-
+-$(OUTPUT)util/%-flex.o: $(OUTPUT)util/%-flex.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(CFLAGS) -w $<
+-
+-$(OUTPUT)util/%-bison.o: $(OUTPUT)util/%-bison.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c -Iutil/ $(CFLAGS) -DYYENABLE_NLS=0 -DYYLTYPE_IS_TRIVIAL=0 -w $<
+-
+-$(OUTPUT)%.o: %.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $<
+-$(OUTPUT)%.i: %.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -E $(CFLAGS) $<
+-$(OUTPUT)%.s: %.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -S $(CFLAGS) $<
+-$(OUTPUT)%.o: %.S
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $<
+-$(OUTPUT)%.s: %.S
+-	$(QUIET_CC)$(CC) -o $@ -E $(CFLAGS) $<
+-
+-$(OUTPUT)util/exec_cmd.o: util/exec_cmd.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+-		'-DPERF_EXEC_PATH="$(perfexecdir_SQ)"' \
+-		'-DPREFIX="$(prefix_SQ)"' \
+-		$<
+-
+-$(OUTPUT)tests/attr.o: tests/attr.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+-		'-DBINDIR="$(bindir_SQ)"' -DPYTHON='"$(PYTHON_WORD)"' \
+-		$<
+-
+-$(OUTPUT)tests/python-use.o: tests/python-use.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) \
+-		-DPYTHONPATH='"$(OUTPUT)python"' \
+-		-DPYTHON='"$(PYTHON_WORD)"' \
+-		$<
+-
+-$(OUTPUT)tests/dwarf-unwind.o: tests/dwarf-unwind.c
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -fno-optimize-sibling-calls $<
+-
+-$(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+-
+-$(OUTPUT)ui/setup.o: ui/setup.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DLIBDIR='"$(libdir_SQ)"' $<
+-
+-$(OUTPUT)ui/browser.o: ui/browser.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
+-
+-$(OUTPUT)ui/browsers/annotate.o: ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
+-
+-$(OUTPUT)ui/browsers/hists.o: ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
+-
+-$(OUTPUT)ui/browsers/map.o: ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
+-
+-$(OUTPUT)ui/browsers/scripts.o: ui/browsers/scripts.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -DENABLE_SLFUTURE_CONST $<
+-
+-$(OUTPUT)util/kallsyms.o: ../lib/symbol/kallsyms.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $<
+-
+-$(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+-
+-$(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-redundant-decls $<
+-
+-$(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow -Wno-undef -Wno-switch-default $<
+-
+-$(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o: scripts/perl/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs -Wno-undef -Wno-switch-default $<
+-
+-$(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engines/trace-event-python.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
+-
+-$(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
+-
+-$(OUTPUT)perf-%: %.o $(PERFLIBS)
+-	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
+-
+-$(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
+-$(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
+-
+-# we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
+-# we depend the various files onto their directories.
+-DIRECTORY_DEPS = $(LIB_OBJS) $(BUILTIN_OBJS) $(GTK_OBJS)
+-DIRECTORY_DEPS += $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
+-# no need to add flex objects, because they depend on bison ones
+-DIRECTORY_DEPS += $(OUTPUT)util/parse-events-bison.c
+-DIRECTORY_DEPS += $(OUTPUT)util/pmu-bison.c
+-
+-OUTPUT_DIRECTORIES := $(sort $(dir $(DIRECTORY_DEPS)))
+-
+-$(DIRECTORY_DEPS): | $(OUTPUT_DIRECTORIES)
+-# In the second step, we make a rule to actually create these directories
+-$(OUTPUT_DIRECTORIES):
+-	$(QUIET_MKDIR)$(MKDIR) -p $@ 2>/dev/null
+-
+-$(LIB_FILE): $(LIB_OBJS)
+-	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIB_OBJS)
+-
+-# libtraceevent.a
+-TE_SOURCES = $(wildcard $(TRACE_EVENT_DIR)*.[ch])
+-
+-LIBTRACEEVENT_FLAGS  = $(QUIET_SUBDIR1) O=$(OUTPUT)
+-LIBTRACEEVENT_FLAGS += CFLAGS="-g -Wall $(EXTRA_CFLAGS)"
+-LIBTRACEEVENT_FLAGS += plugin_dir=$(plugindir_SQ)
+-
+-$(LIBTRACEEVENT): $(TE_SOURCES) $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) libtraceevent.a plugins
+-
+-$(LIBTRACEEVENT)-clean:
+-	$(call QUIET_CLEAN, libtraceevent)
+-	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
+-
+-install-traceevent-plugins: $(LIBTRACEEVENT)
+-	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
+-
+-LIBAPIKFS_SOURCES = $(wildcard $(LIB_PATH)fs/*.[ch] $(LIB_PATH)fd/*.[ch])
+-
+-# if subdir is set, we've been called from above so target has been built
+-# already
+-$(LIBAPIKFS): $(LIBAPIKFS_SOURCES)
+-ifeq ($(subdir),)
+-	$(QUIET_SUBDIR0)$(LIB_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libapikfs.a
+-endif
+-
+-$(LIBAPIKFS)-clean:
+-ifeq ($(subdir),)
+-	$(call QUIET_CLEAN, libapikfs)
+-	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) clean >/dev/null
+-endif
+-
+-help:
+-	@echo 'Perf make targets:'
+-	@echo '  doc		- make *all* documentation (see below)'
+-	@echo '  man		- make manpage documentation (access with man <foo>)'
+-	@echo '  html		- make html documentation'
+-	@echo '  info		- make GNU info documentation (access with info <foo>)'
+-	@echo '  pdf		- make pdf documentation'
+-	@echo '  TAGS		- use etags to make tag information for source browsing'
+-	@echo '  tags		- use ctags to make tag information for source browsing'
+-	@echo '  cscope	- use cscope to make interactive browsing database'
+-	@echo ''
+-	@echo 'Perf install targets:'
+-	@echo '  NOTE: documentation build requires asciidoc, xmlto packages to be installed'
+-	@echo '  HINT: use "prefix" or "DESTDIR" to install to a particular'
+-	@echo '        path like "make prefix=/usr/local install install-doc"'
+-	@echo '  install	- install compiled binaries'
+-	@echo '  install-doc	- install *all* documentation'
+-	@echo '  install-man	- install manpage documentation'
+-	@echo '  install-html	- install html documentation'
+-	@echo '  install-info	- install GNU info documentation'
+-	@echo '  install-pdf	- install pdf documentation'
+-	@echo ''
+-	@echo '  quick-install-doc	- alias for quick-install-man'
+-	@echo '  quick-install-man	- install the documentation quickly'
+-	@echo '  quick-install-html	- install the html documentation quickly'
+-	@echo ''
+-	@echo 'Perf maintainer targets:'
+-	@echo '  clean			- clean all binary objects and build output'
+-
+-
+-DOC_TARGETS := doc man html info pdf
+-
+-INSTALL_DOC_TARGETS := $(patsubst %,install-%,$(DOC_TARGETS)) try-install-man
+-INSTALL_DOC_TARGETS += quick-install-doc quick-install-man quick-install-html
+-
+-# 'make doc' should call 'make -C Documentation all'
+-$(DOC_TARGETS):
+-	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) $(@:doc=all)
+-
+-TAG_FOLDERS= . ../lib/traceevent ../lib/api ../lib/symbol
+-TAG_FILES= ../../include/uapi/linux/perf_event.h
+-
+-TAGS:
+-	$(QUIET_GEN)$(RM) TAGS; \
+-	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs etags -a $(TAG_FILES)
+-
+-tags:
+-	$(QUIET_GEN)$(RM) tags; \
+-	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs ctags -a $(TAG_FILES)
+-
+-cscope:
+-	$(QUIET_GEN)$(RM) cscope*; \
+-	$(FIND) $(TAG_FOLDERS) -name '*.[hcS]' -print | xargs cscope -b $(TAG_FILES)
+-
+-### Detect prefix changes
+-TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
+-             $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ):$(plugindir_SQ)
+-
+-$(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
+-	@FLAGS='$(TRACK_CFLAGS)'; \
+-	    if test x"$$FLAGS" != x"`cat $(OUTPUT)PERF-CFLAGS 2>/dev/null`" ; then \
+-		echo 1>&2 "  FLAGS:   * new build flags or prefix"; \
+-		echo "$$FLAGS" >$(OUTPUT)PERF-CFLAGS; \
+-            fi
+-
+-### Testing rules
+-
+-# GNU make supports exporting all variables by "export" without parameters.
+-# However, the environment gets quite big, and some programs have problems
+-# with that.
+-
+-check: $(OUTPUT)common-cmds.h
+-	if sparse; \
+-	then \
+-		for i in *.c */*.c; \
+-		do \
+-			sparse $(CFLAGS) $(SPARSE_FLAGS) $$i || exit; \
+-		done; \
+-	else \
+-		exit 1; \
+-	fi
+-
+-### Installation rules
+-
+-install-gtk:
+-
+-install-bin: all install-gtk
+-	$(call QUIET_INSTALL, binaries) \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'; \
+-		$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'; \
+-		$(LN) '$(DESTDIR_SQ)$(bindir_SQ)/perf' '$(DESTDIR_SQ)$(bindir_SQ)/trace'
+-	$(call QUIET_INSTALL, libexec) \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+-	$(call QUIET_INSTALL, perf-archive) \
+-		$(INSTALL) $(OUTPUT)perf-archive -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+-	$(call QUIET_INSTALL, perf-with-kcore) \
+-		$(INSTALL) $(OUTPUT)perf-with-kcore -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
+-ifndef NO_LIBPERL
+-	$(call QUIET_INSTALL, perl-scripts) \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'; \
+-		$(INSTALL) scripts/perl/Perf-Trace-Util/lib/Perf/Trace/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/Perf-Trace-Util/lib/Perf/Trace'; \
+-		$(INSTALL) scripts/perl/*.pl -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl'; \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/bin'; \
+-		$(INSTALL) scripts/perl/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/perl/bin'
+-endif
+-ifndef NO_LIBPYTHON
+-	$(call QUIET_INSTALL, python-scripts) \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/Perf-Trace-Util/lib/Perf/Trace'; \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'; \
+-		$(INSTALL) scripts/python/Perf-Trace-Util/lib/Perf/Trace/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/Perf-Trace-Util/lib/Perf/Trace'; \
+-		$(INSTALL) scripts/python/*.py -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python'; \
+-		$(INSTALL) scripts/python/bin/* -t '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/scripts/python/bin'
+-endif
+-	$(call QUIET_INSTALL, perf_completion-script) \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d'; \
+-		$(INSTALL) perf-completion.sh '$(DESTDIR_SQ)$(sysconfdir_SQ)/bash_completion.d/perf'
+-	$(call QUIET_INSTALL, tests) \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests'; \
+-		$(INSTALL) tests/attr.py '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests'; \
+-		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'; \
+-		$(INSTALL) tests/attr/* '$(DESTDIR_SQ)$(perfexec_instdir_SQ)/tests/attr'
+-
+-install: install-bin try-install-man install-traceevent-plugins
+-
+-install-python_ext:
+-	$(PYTHON_WORD) util/setup.py --quiet install --root='/$(DESTDIR_SQ)'
+-
+-# 'make install-doc' should call 'make -C Documentation install'
+-$(INSTALL_DOC_TARGETS):
+-	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) $(@:-doc=)
+-
+-### Cleaning rules
+-
+-#
+-# This is here, not in config/Makefile, because config/Makefile does
+-# not get included for the clean target:
+-#
+-config-clean:
+-	$(call QUIET_CLEAN, config)
+-	@$(MAKE) -C config/feature-checks clean >/dev/null
+-
+-clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
+-	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
+-	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
+-	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
+-	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
+-	$(python-clean)
+-
+-#
+-# Trick: if ../../.git does not exist - we are building out of tree for example,
+-# then force version regeneration:
+-#
+-ifeq ($(wildcard ../../.git/HEAD),)
+-    GIT-HEAD-PHONY = ../../.git/HEAD
+-else
+-    GIT-HEAD-PHONY =
+-endif
+-
+-.PHONY: all install clean config-clean strip install-gtk
+-.PHONY: shell_compatibility_test please_set_SHELL_PATH_to_a_more_modern_shell
+-.PHONY: $(GIT-HEAD-PHONY) TAGS tags cscope .FORCE-PERF-CFLAGS
+-
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index a46af8f..7b97b8a 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -155,7 +155,7 @@ find_next:
  
-+# arch-related main variables
-+include $(src-perf)/config/Makefile.arch
-+export ARCH IS_X86_64 CROSS_COMPILE
-+
- # external .a libs
- LIBTRACEEVENT   := $(obj-kernel)/tools/lib/traceevent/libtraceevent.a
- LIBAPIKFS       := $(obj-kernel)/tools/lib/api/libapikfs.a
-@@ -202,9 +205,6 @@ ifndef dont-detect
- ifdef CONFIG_DETECTED_STORED
- # Following variables are needed within Kbuild files, we need
- # to export them as they are not part of the .config set.
--export CONFIG_ARCH := $(ARCH)
--export CROSS_COMPILE
--export CONFIG_X86_64
- export htmldir_SQ
- export infodir_SQ
- export mandir_SQ
-diff --git a/tools/perf/arch/x86/include/perf_regs.h b/tools/perf/arch/x86/include/perf_regs.h
-index 7df517a..d969cca 100644
---- a/tools/perf/arch/x86/include/perf_regs.h
-+++ b/tools/perf/arch/x86/include/perf_regs.h
-@@ -5,9 +5,11 @@
- #include <linux/types.h>
- #include <asm/perf_regs.h>
+ 			/* skip missing symbols */
+ 			nd = rb_next(nd);
+-#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
++#ifdef CONFIG_TUI
+ 		} else if (use_browser == 1) {
+ 			struct rb_node *next = NULL;
+ 			key = hist_entry__tui_annotate(he, evsel, NULL);
+@@ -303,7 +303,7 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+ 		    "dump raw trace in ASCII"),
+ 	OPT_BOOLEAN(0, "gtk", &annotate.use_gtk, "Use the GTK interface"),
+-#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
++#ifdef CONFIG_TUI
+ 	OPT_BOOLEAN(0, "tui", &annotate.use_tui, "Use the TUI interface"),
+ #endif
+ 	OPT_BOOLEAN(0, "stdio", &annotate.use_stdio, "Use the stdio interface"),
+diff --git a/tools/perf/builtin-cmds.h b/tools/perf/builtin-cmds.h
+index 49550c9..863727f 100644
+--- a/tools/perf/builtin-cmds.h
++++ b/tools/perf/builtin-cmds.h
+@@ -1,31 +1,6 @@
+ #ifndef BUILTIN_CMDS_H
+ #define BUILTIN_CMDS_H
  
-+#include "generated/autoconf.h"
-+
- void perf_regs_load(u64 *regs);
+-#ifndef CONFIG_KBUILD
+-#define CONFIG_BUILTIN_REPORT 1
+-#define CONFIG_BUILTIN_SCRIPT 1
+-#define CONFIG_BUILTIN_BENCH 1
+-#define CONFIG_BUILTIN_SCHED 1
+-#define CONFIG_BUILTIN_TRACE 1
+-#define CONFIG_BUILTIN_TOP 1
+-#define CONFIG_BUILTIN_RECORD 1
+-#define CONFIG_BUILTIN_BUILDID_LIST 1
+-#define CONFIG_BUILTIN_INJECT 1
+-#define CONFIG_BUILTIN_LOCK 1
+-#define CONFIG_BUILTIN_KVM 1
+-#define CONFIG_BUILTIN_BUILDID_CACHE 1
+-#define CONFIG_BUILTIN_EVLIST 1
+-#define CONFIG_BUILTIN_KMEM 1
+-#define CONFIG_BUILTIN_STAT 1
+-#define CONFIG_BUILTIN_DIFF 1
+-#define CONFIG_BUILTIN_ANNOTATE 1
+-#define CONFIG_BUILTIN_TIMECHART 1
+-#define CONFIG_BUILTIN_LIST 1
+-#define CONFIG_BUILTIN_HELP 1
+-#define CONFIG_BUILTIN_PROBE 1
+-#define CONFIG_BUILTIN_MEM 1
+-#else
+ #include "generated/autoconf.h"
+-#endif /* CONFIG_KBUILD */
  
--#ifndef HAVE_ARCH_X86_64_SUPPORT
-+#ifndef CONFIG_X86_64
- #define PERF_REGS_MASK ((1ULL << PERF_REG_X86_32_MAX) - 1)
- #define PERF_REGS_MAX PERF_REG_X86_32_MAX
- #define PERF_SAMPLE_REGS_ABI PERF_SAMPLE_REGS_ABI_32
-@@ -58,7 +60,7 @@ static inline const char *perf_reg_name(int id)
- 		return "FS";
- 	case PERF_REG_X86_GS:
- 		return "GS";
--#ifdef HAVE_ARCH_X86_64_SUPPORT
-+#ifdef CONFIG_X86_64
- 	case PERF_REG_X86_R8:
- 		return "R8";
- 	case PERF_REG_X86_R9:
-@@ -75,7 +77,7 @@ static inline const char *perf_reg_name(int id)
- 		return "R14";
- 	case PERF_REG_X86_R15:
- 		return "R15";
--#endif /* HAVE_ARCH_X86_64_SUPPORT */
-+#endif /* CONFIG_X86_64 */
- 	default:
- 		return NULL;
- 	}
-diff --git a/tools/perf/arch/x86/tests/regs_load.S b/tools/perf/arch/x86/tests/regs_load.S
-index 60875d5..822a797 100644
---- a/tools/perf/arch/x86/tests/regs_load.S
-+++ b/tools/perf/arch/x86/tests/regs_load.S
-@@ -1,4 +1,5 @@
- #include <linux/linkage.h>
-+#include "generated/autoconf.h"
+ #endif /* BUILTIN_CMDS_H */
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index b639e58..00d93ff 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -407,7 +407,7 @@ static int report__browse_hists(struct report *rep)
+ 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
  
- #define AX	 0
- #define BX	 1 * 8
-@@ -26,7 +27,7 @@
- #define R15	23 * 8
- 
- .text
--#ifdef HAVE_ARCH_X86_64_SUPPORT
-+#ifdef CONFIG_X86_64
- ENTRY(perf_regs_load)
- 	movq %rax, AX(%rdi)
- 	movq %rbx, BX(%rdi)
-diff --git a/tools/perf/arch/x86/util/unwind-libunwind.c b/tools/perf/arch/x86/util/unwind-libunwind.c
-index db25e93..e4960c1 100644
---- a/tools/perf/arch/x86/util/unwind-libunwind.c
-+++ b/tools/perf/arch/x86/util/unwind-libunwind.c
-@@ -1,11 +1,12 @@
- 
- #include <errno.h>
- #include <libunwind.h>
-+#include "generated/autoconf.h"
- #include "perf_regs.h"
- #include "../../util/unwind.h"
- #include "../../util/debug.h"
- 
--#ifdef HAVE_ARCH_X86_64_SUPPORT
-+#ifdef CONFIG_X86_64
- int libunwind__arch_reg_id(int regnum)
- {
- 	int id;
-@@ -109,4 +110,4 @@ int libunwind__arch_reg_id(int regnum)
- 
- 	return id;
+ 	switch (use_browser) {
+-#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
++#ifdef CONFIG_TUI
+ 	case 1:
+ 		ret = perf_evlist__tui_browse_hists(evlist, help, NULL,
+ 						    rep->min_percent,
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 6f04452..a2ff8b7 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -535,7 +535,7 @@ static bool perf_top__handle_keypress(struct perf_top *top, int c)
+ 	return ret;
  }
--#endif /* HAVE_ARCH_X86_64_SUPPORT */
-+#endif /* CONFIG_X86_64 */
-diff --git a/tools/perf/bench/mem-memcpy-arch.h b/tools/perf/bench/mem-memcpy-arch.h
-index 57b4ed8..8e3f0a9 100644
---- a/tools/perf/bench/mem-memcpy-arch.h
-+++ b/tools/perf/bench/mem-memcpy-arch.h
-@@ -1,5 +1,7 @@
  
--#ifdef HAVE_ARCH_X86_64_SUPPORT
-+#include "generated/autoconf.h"
-+
-+#ifdef CONFIG_X86_64
+-#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
++#ifdef CONFIG_TUI
+ static void perf_top__sort_new_samples(void *arg)
+ {
+ 	struct perf_top *t = arg;
+@@ -981,7 +981,7 @@ static int __cmd_top(struct perf_top *top)
  
- #define MEMCPY_FN(fn, name, desc)		\
- 	extern void *fn(void *, const void *, size_t);
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 2465141..9061d2b 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -6,6 +6,8 @@
-  * Written by Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-  */
+ 	ret = -1;
  
-+#include "generated/autoconf.h"
-+
- #include "../perf.h"
- #include "../util/util.h"
- #include "../util/parse-options.h"
-@@ -59,7 +61,7 @@ struct routine routines[] = {
- 	{ "default",
- 	  "Default memcpy() provided by glibc",
- 	  memcpy },
--#ifdef HAVE_ARCH_X86_64_SUPPORT
-+#ifdef CONFIG_X86_64
- 
- #define MEMCPY_FN(fn, name, desc) { name, desc, fn },
- #include "mem-memcpy-x86-64-asm-def.h"
-diff --git a/tools/perf/bench/mem-memset-arch.h b/tools/perf/bench/mem-memset-arch.h
-index 633800c..5dfc4c5 100644
---- a/tools/perf/bench/mem-memset-arch.h
-+++ b/tools/perf/bench/mem-memset-arch.h
-@@ -1,5 +1,7 @@
- 
--#ifdef HAVE_ARCH_X86_64_SUPPORT
-+#include "generated/autoconf.h"
-+
-+#ifdef CONFIG_X86_64
- 
- #define MEMSET_FN(fn, name, desc)		\
- 	extern void *fn(void *, int, size_t);
-diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
-index 75fc3e6..73e8d8d 100644
---- a/tools/perf/bench/mem-memset.c
-+++ b/tools/perf/bench/mem-memset.c
-@@ -6,6 +6,8 @@
-  * Trivial clone of mem-memcpy.c.
-  */
- 
-+#include "generated/autoconf.h"
-+
- #include "../perf.h"
- #include "../util/util.h"
- #include "../util/parse-options.h"
-@@ -59,7 +61,7 @@ static const struct routine routines[] = {
- 	{ "default",
- 	  "Default memset() provided by glibc",
- 	  memset },
--#ifdef HAVE_ARCH_X86_64_SUPPORT
-+#ifdef CONFIG_X86_64
- 
- #define MEMSET_FN(fn, name, desc) { name, desc, fn },
- #include "mem-memset-x86-64-asm-def.h"
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index ce3a726..7f87a45 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -20,11 +20,9 @@ NO_PERF_REGS := 1
- 
- # Additional ARCH settings for x86
- ifeq ($(ARCH),x86)
--  ifeq (${IS_X86_64}, 1)
--    CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT
--    ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
-+  ifeq ($(IS_X86_64),1)
-     LIBUNWIND_LIBS = -lunwind -lunwind-x86_64
--    CONFIG_X86_64=y
-+    $(shell $(KCONFIG_SCRIPT) -e CONFIG_X86_64)
-   else
-     LIBUNWIND_LIBS = -lunwind -lunwind-x86
-   endif
-@@ -794,7 +792,6 @@ all:
- 	$(call store,PARSER_DEBUG_FLEX)
- 	$(call store,PYTHON_EMBED_CCOPTS)
- 	$(call store,PERL_EMBED_CCOPTS)
--	$(call store,CONFIG_X86_64)
- 	$(call store,NO_LIBUNWIND)
- 	$(call store,NO_LIBPERL)
- 	$(call store,NO_LIBPYTHON)
+-#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
++#ifdef CONFIG_TUI
+ 	if (use_browser > 0)
+ 		display_fn = display_thread_tui;
+ #endif
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+index efc2b21..7928984 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/setup.c
+@@ -77,7 +77,7 @@ void setup_browser(bool fallback_to_pager)
+ 		       PERF_GTK_DSO);
+ 		sleep(1);
+ 		/* fall through */
+-#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
++#ifdef CONFIG_TUI
+ 	case 1:
+ 		use_browser = 1;
+ 		if (ui__init() == 0)
+@@ -98,7 +98,7 @@ void exit_browser(bool wait_for_ok __maybe_unused)
+ 	case 2:
+ 		exit_gtk_browser(wait_for_ok);
+ 		break;
+-#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
++#ifdef CONFIG_TUI
+ 	case 1:
+ 		ui__exit(wait_for_ok);
+ 		break;
 -- 
 2.1.1
 
