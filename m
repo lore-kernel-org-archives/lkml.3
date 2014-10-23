@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaJWKT7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:19:59 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:58090 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbaJWKT5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:19:57 -0400
-Date: Thu, 23 Oct 2014 12:19:48 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Dominik Dingel <dingel@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Bob Liu <lliubbo@gmail.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Gleb Natapov <gleb@kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Jianyu Zhan <nasa4836@gmail.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        kvm@vger.kernel.org, linux390@de.ibm.com, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH v3 0/4] mm: new function to forbid zeropage mappings for
- a process
-Message-ID: <20141023121948.51e4a6cb@mschwide>
-In-Reply-To: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
-References: <1413976170-42501-1-git-send-email-dingel@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102310-0009-0000-0000-000001A8968C
+	id S1753411AbaJWKeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:34:13 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14191 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552AbaJWKeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 06:34:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
+   d="scan'208";a="619098530"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc 3.10 backport] mei: bus: fix possible boundaries violation
+Date: Thu, 23 Oct 2014 13:32:54 +0300
+Message-Id: <1414060374-1879-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 13:09:26 +0200
-Dominik Dingel <dingel@linux.vnet.ibm.com> wrote:
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-> s390 has the special notion of storage keys which are some sort of page flags
-> associated with physical pages and live outside of direct addressable memory.
-> These storage keys can be queried and changed with a special set of instructions.
-> The mentioned instructions behave quite nicely under virtualization, if there is: 
-> - an invalid pte, then the instructions will work on memory in the host page table
-> - a valid pte, then the instructions will work with the real storage key
-> 
-> Thanks to Martin with his software reference and dirty bit tracking,
-> the kernel does not issue any storage key instructions as now a 
-> software based approach will be taken, on the other hand distributions 
-> in the wild are currently using them.
-> 
-> However, for virtualized guests we still have a problem with guest pages 
-> mapped to zero pages and the kernel same page merging.  
-> With each one multiple guest pages will point to the same physical page
-> and share the same storage key.
-> 
-> Let's fix this by introducing a new function which s390 will define to
-> forbid new zero page mappings.  If the guest issues a storage key related 
-> instruction we flag the mm_struct, drop existing zero page mappings
-> and unmerge the guest memory.
-> 
-> v2 -> v3:
->  - Clearing up patch description Patch 3/4
->  - removing unnecessary flag in mmu_context (Paolo)
-> 
-> v1 -> v2: 
->  - Following Dave and Paolo suggestion removing the vma flag
-> 
-> Dominik Dingel (4):
->   s390/mm: recfactor global pgste updates
->   mm: introduce mm_forbids_zeropage function
->   s390/mm: prevent and break zero page mappings in case of storage keys
->   s390/mm: disable KSM for storage key enabled pages
-> 
->  arch/s390/include/asm/pgalloc.h |   2 -
->  arch/s390/include/asm/pgtable.h |   8 +-
->  arch/s390/kvm/kvm-s390.c        |   2 +-
->  arch/s390/kvm/priv.c            |  17 ++--
->  arch/s390/mm/pgtable.c          | 180 ++++++++++++++++++----------------------
->  include/linux/mm.h              |   4 +
->  mm/huge_memory.c                |   2 +-
->  mm/memory.c                     |   2 +-
->  8 files changed, 106 insertions(+), 111 deletions(-)
+commit cfda2794b5afe7ce64ee9605c64bef0e56a48125 upstream.
+
+function 'strncpy' will fill whole buffer 'id.name' of fixed size (32)
+with string value and will not leave place for NULL-terminator.
+Possible buffer boundaries violation in following string operations.
+Replace strncpy with strlcpy.
+
+Cc: stable@vger.kernel.org # 3.10
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/misc/mei/bus.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index 99cc0b07a713..0513ea0906dd 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -71,7 +71,7 @@ static int mei_cl_device_probe(struct device *dev)
  
-Patches look good to me and as nobody seems to disagree with the proposed
-solution I will add the code to the features branch of the s390 tree.
-
+ 	dev_dbg(dev, "Device probe\n");
+ 
+-	strncpy(id.name, dev_name(dev), MEI_CL_NAME_SIZE);
++	strlcpy(id.name, dev_name(dev), sizeof(id.name));
+ 
+ 	return driver->probe(device, &id);
+ }
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+1.9.3
 
