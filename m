@@ -1,141 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179AbaJWHby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 03:31:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19407 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752149AbaJWHbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 03:31:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
-   d="scan'208";a="623796707"
-From: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-To: "'Alexandre Courbot'" <gnurou@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Denis Turischev <denis.turischev@compulab.co.il>
-Subject: RE: [PATCHv3 3/3] gpio: sch: Enable IRQ support for Quark X1000
-Thread-Topic: [PATCHv3 3/3] gpio: sch: Enable IRQ support for Quark X1000
-Thread-Index: AQHP6ef1Ka3j/RcXxUq5NEUuAjnRK5w9ULSg
-Date: Thu, 23 Oct 2014 07:29:38 +0000
-Message-ID: <50B33AC5ED75F74F991980326F1C438D0FC00922@PGSMSX108.gar.corp.intel.com>
-References: <1413431475-12799-1-git-send-email-rebecca.swee.fun.chang@intel.com>
- <1413431475-12799-4-git-send-email-rebecca.swee.fun.chang@intel.com>
- <CAAVeFuJe_52V3bWJ9AzvXMNedwJ5m67xC-L3b-d0LH+q4ogH=A@mail.gmail.com>
-In-Reply-To: <CAAVeFuJe_52V3bWJ9AzvXMNedwJ5m67xC-L3b-d0LH+q4ogH=A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="utf-8"
+	id S1752576AbaJWHqU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 03:46:20 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:36119 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057AbaJWHqP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 03:46:15 -0400
+Message-ID: <5448B21C.1020906@huawei.com>
+Date: Thu, 23 Oct 2014 15:45:32 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <liviu@dudau.co.uk>
+Subject: Re: [PATCH v3 00/27] Use MSI chip framework to configure MSI/MSI-X
+ in all platforms
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com> <20141023054326.GF4795@google.com>
+In-Reply-To: <20141023054326.GF4795@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9N7Vxvi013683
 
-> > +
-> > +static int sch_gpio_irq_type(struct irq_data *d, unsigned type)
-> > +{
-> > +       struct sch_gpio *sch = container_of(d, struct sch_gpio, data);
-> > +       unsigned long flags;
-> > +       u32 gpio_num;
-> > +
-> > +       if (d == NULL)
-> > +               return -EINVAL;
-> > +
-> > +       gpio_num = d->irq - sch->irq_base;
-> > +
-> > +       spin_lock_irqsave(&sch->lock, flags);
-> > +
-> > +       switch (type) {
-> > +       case IRQ_TYPE_EDGE_RISING:
-> > +               sch_gpio_register_set(sch, gpio_num, GTPE);
-> > +               sch_gpio_register_clear(sch, gpio_num, GTNE);
+>> v1->v2:
+>> Add a patch to make s390 MSI code build happy between patch "x86/xen/MSI: E.."
+>> and "s390/MSI: Use MSI..". Fix several typo problems found by Lucas.
+>>
+>> RFC->v1: 
+>> Updated "[patch 4/21] x86/xen/MSI: Eliminate...", export msi_chip instead
+>> of #ifdef to fix MSI bug in xen running in x86. 
+>> Rename arch_get_match_msi_chip() to arch_find_msi_chip().
+>> Drop use struct device as the msi_chip argument, we will do that
+>> later in another patchset.
+>>
+>> Yijing Wang (27):
 > 
-> You will have the same problem as I pointed out in patch 1/3 that
-> sch_gpio_register_set/clear() will try to acquire the already-locked
-> sch->lock. No way this can ever work, or I am under a serious
-> misapprehension.
+> This is a lot of stuff, and it's not all related, so putting it all
+> together in one series makes it hard for me to deal with it.
 > 
-> > +               break;
-> > +
-> > +       case IRQ_TYPE_EDGE_FALLING:
-> > +               sch_gpio_register_set(sch, gpio_num, GTNE);
-> > +               sch_gpio_register_clear(sch, gpio_num, GTPE);
-> > +               break;
-> > +
-> > +       case IRQ_TYPE_EDGE_BOTH:
-> > +               sch_gpio_register_set(sch, gpio_num, GTPE);
-> > +               sch_gpio_register_set(sch, gpio_num, GTNE);
-> > +               break;
-> > +
-> > +       case IRQ_TYPE_NONE:
-> > +               sch_gpio_register_clear(sch, gpio_num, GTPE);
-> > +               sch_gpio_register_clear(sch, gpio_num, GTNE);
-> > +               break;
-> > +
-> > +       default:
-> > +               spin_unlock_irqrestore(&sch->lock, flags);
-> > +               return -EINVAL;
-> > +       }
-> > +
-> > +       spin_unlock_irqrestore(&sch->lock, flags);
-> > +
-> > +       return 0;
-> > +}
-> > +
-> > +static struct irq_chip sch_irq_chip = {
-> > +       .irq_enable     = sch_gpio_irq_enable,
-> > +       .irq_disable    = sch_gpio_irq_disable,
-> > +       .irq_ack        = sch_gpio_irq_ack,
-> > +       .irq_set_type   = sch_gpio_irq_type,
-> > +};
-> > +
-> > +static void sch_gpio_irqs_init(struct sch_gpio *sch, unsigned int num)
-> > +{
-> > +       unsigned int i;
-> > +
-> > +       for (i = 0; i < num; i++) {
-> > +               irq_set_chip_data(i + sch->irq_base, sch);
-> > +               irq_set_chip_and_handler_name(i + sch->irq_base,
-> > +                                             &sch_irq_chip,
-> > +                                             handle_simple_irq,
-> > +                                             "sch_gpio_irq_chip");
-> > +       }
-> > +}
-> > +
-> > +static void sch_gpio_irqs_deinit(struct sch_gpio *sch, unsigned int num)
-> > +{
-> > +       unsigned int i;
-> > +
-> > +       for (i = 0; i < num; i++) {
-> > +               irq_set_chip_data(i + sch->irq_base, 0);
-> > +               irq_set_chip_and_handler_name(i + sch->irq_base, 0, 0, 0);
-> > +       }
-> > +}
-> > +
-> > +static void sch_gpio_irq_disable_all(struct sch_gpio *sch, unsigned int num)
-> > +{
-> > +       unsigned long flags;
-> > +       unsigned int gpio_num;
-> > +
-> > +       spin_lock_irqsave(&sch->lock, flags);
-> > +
-> > +       for (gpio_num = 0; gpio_num < num; gpio_num++) {
-> > +               sch_gpio_register_clear(sch, gpio_num, GTPE);
-> > +               sch_gpio_register_clear(sch, gpio_num, GTNE);
-> > +               sch_gpio_register_clear(sch, gpio_num, GGPE);
-> > +               sch_gpio_register_clear(sch, gpio_num, GSMI);
+>>   MSI: Remove the redundant irq_set_chip_data()
+
+OK, will post it out separately.
+
 > 
-> Same here.
+> This doesn't seem related to eliminating weak functions.
+> 
+>>   x86/xen/MSI: Eliminate arch_msix_mask_irq() and arch_msi_mask_irq()
+>>   s390/MSI: Use __msi_mask_irq() instead of default_msi_mask_irq()
+
+Will update your comments and post these together.
+
+> 
+> These two seem to go together.
+> 
+>>   arm/MSI: Save MSI chip in pci_sys_data
+>>   PCI: tegra: Save msi chip in pci_sys_data
+>>   PCI: designware: Save msi chip in pci_sys_data
+>>   PCI: rcar: Save msi chip in pci_sys_data
+>>   PCI: mvebu: Save msi chip in pci_sys_data
+>>   arm/PCI: Clean unused pcibios_add_bus() and pcibios_remove_bus()
+>>   PCI/MSI: Remove useless bus->msi assignment
+> 
+> These seem to go together (it'd be nice if they were all capitalized the
+> same).
+
+OK, will update the titles and post together.
+
+> 
+> I don't like the "msi_chip" name because the "chip" part doesn't convey
+> much information, other than telling us that apparently some sort of
+> semiconductor integrated circuit is involved.  I sort of assumed that
+> much :)
+
+I think so, msi_chip easily make me confuse with x86 irq_chip msi_chip.
+
+> 
+> Something like "msi_controller" would be more descriptive since we're
+> talking about an interrupt controller that accepts writes from a device and
+> turns them into CPU interrupts, e.g., a LAPIC.
+
+Hm, it's a better one, arm also use "msi-controller" to represent the msi related
+object in DTS file.
 
 
-Alright. I should have noticed this double locking issue earlier. Thanks. I think the next version will be much cleaner. Thanks for spending time and effort to review.
+> 
+>>   PCI/MSI: Refactor struct msi_chip to make it become more common
+>>   x86/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   x86/xen/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   Irq_remapping/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   x86/MSI: Remove unused MSI weak arch functions
+>>   Mips/MSI: Save msi chip in pci sysdata
+>>   MIPS/Octeon/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   MIPS/Xlp: Remove the dead function destroy_irq() to fix build error
+>>   MIPS/Xlp/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   MIPS/Xlr/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   Powerpc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   s390/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   arm/iop13xx/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   IA64/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   Sparc/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   tile/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+>>   PCI/MSI: Clean up unused MSI arch functions
+>>
+>>  arch/arm/include/asm/mach/pci.h                 |   10 +-
+>>  arch/arm/include/asm/pci.h                      |    9 ++
+>>  arch/arm/kernel/bios32.c                        |   19 +---
+>>  arch/arm/mach-iop13xx/include/mach/pci.h        |    4 +
+>>  arch/arm/mach-iop13xx/iq81340mc.c               |    3 +
+>>  arch/arm/mach-iop13xx/iq81340sc.c               |    5 +-
+>>  arch/arm/mach-iop13xx/msi.c                     |   11 ++-
+>>  arch/ia64/include/asm/pci.h                     |   10 ++
+>>  arch/ia64/kernel/msi_ia64.c                     |   14 ++-
+>>  arch/ia64/pci/pci.c                             |    1 +
+>>  arch/mips/include/asm/netlogic/xlp-hal/pcibus.h |    1 +
+>>  arch/mips/include/asm/octeon/pci-octeon.h       |    4 +
+>>  arch/mips/include/asm/pci.h                     |   14 +++
+>>  arch/mips/pci/msi-octeon.c                      |   31 +++---
+>>  arch/mips/pci/msi-xlp.c                         |   15 ++-
+>>  arch/mips/pci/pci-octeon.c                      |    3 +
+>>  arch/mips/pci/pci-xlp.c                         |    3 +
+>>  arch/mips/pci/pci-xlr.c                         |   17 +++-
+>>  arch/powerpc/include/asm/pci-bridge.h           |   15 +++
+>>  arch/powerpc/kernel/msi.c                       |   12 ++-
+>>  arch/powerpc/kernel/pci-common.c                |    3 +
+>>  arch/s390/include/asm/pci.h                     |    9 ++
+>>  arch/s390/pci/pci.c                             |   16 ++-
+>>  arch/sparc/kernel/pci.c                         |   14 ++-
+>>  arch/sparc/kernel/pci_impl.h                    |   12 ++
+>>  arch/tile/include/asm/pci.h                     |   10 ++
+>>  arch/tile/kernel/pci_gx.c                       |   13 ++-
+>>  arch/x86/include/asm/pci.h                      |   18 +++-
+>>  arch/x86/include/asm/x86_init.h                 |    7 --
+>>  arch/x86/kernel/apic/io_apic.c                  |   12 ++-
+>>  arch/x86/kernel/x86_init.c                      |   34 ------
+>>  arch/x86/pci/acpi.c                             |    1 +
+>>  arch/x86/pci/common.c                           |    3 +
+>>  arch/x86/pci/xen.c                              |   72 +++++++------
+>>  drivers/iommu/irq_remapping.c                   |   13 ++-
+>>  drivers/pci/host/pci-mvebu.c                    |   10 +--
+>>  drivers/pci/host/pci-tegra.c                    |   13 +--
+>>  drivers/pci/host/pcie-designware.c              |   15 +--
+>>  drivers/pci/host/pcie-rcar.c                    |   13 +--
+>>  drivers/pci/msi.c                               |  133 ++++++++++-------------
+>>  drivers/pci/probe.c                             |    1 -
+>>  include/linux/msi.h                             |   24 ++---
+>>  include/linux/pci.h                             |    1 +
+>>  43 files changed, 379 insertions(+), 269 deletions(-)
+> 
+> Huh.  I was hoping this was going to simplify things, and maybe it does
+> somehow, but it's unfortunate that it adds 110 lines of code overall.  Does
+> that seem right to you?  Why does it add code?
 
-Rebecca
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I filter out these patches which add code.
+
+[PATCH v3 04/27] arm/MSI: Save MSI chip in pci_sys_data
+ 5 files changed, 33 insertions(+), 0 deletions(-)
+Insertions code mainly to introduce arch specific pci_msi_chip() to extract msi_chip from pci_sys_data, and temporary #ifdef
+
+[PATCH v3 11/27] PCI/MSI: Refactor struct msi_chip to make it become more common
+ 2 files changed, 19 insertions(+), 0 deletions(-)
+Insertions here is to add msi ops like restore, teardown to msi_chip.
+
+[PATCH v3 12/27] x86/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+ 4 files changed, 36 insertions(+), 0 deletions(-)
+Arch specific pci_msi_chip() and declaration of msi_chip in x86, also some temporary code to compile ok.
+
+[PATCH v3 13/27] x86/xen/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+ 1 files changed, 39 insertions(+), 19 deletions(-)
+To avoid call default_teardown_msi_irq(), copy the default_teardown_msi_irq() code in this file.
+
+[PATCH v3 16/27] Mips/MSI: Save msi chip in pci sysdata
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+Arch specific pci_msi_chip() and some #ifdef code
+
+[PATCH v3 17/27] MIPS/Octeon/MSI: Use MSI chip framework to configure MSI/MSI-X irq
+ 3 files changed, 25 insertions(+), 13 deletions(-)
+
+Archs Use msi chip framework to configure MSI/MSI-x
+ 3 files changed, 13 insertions(+), 2 deletions(-)
+ 1 files changed, 15 insertions(+), 2 deletions(-)
+ 3 files changed, 28 insertions(+), 2 deletions(-)
+ 2 files changed, 19 insertions(+), 2 deletions(-)
+ 4 files changed, 20 insertions(+), 3 deletions(-)
+ 3 files changed, 21 insertions(+), 4 deletions(-)
+ 2 files changed, 24 insertions(+), 2 deletions(-)
+ 2 files changed, 21 insertions(+), 2 deletions(-)
+
+So the most adding code is to introduce arch specific pci_msi_chip(), this one will be removed after we make
+pci_host_bridge generic and save msi_chip in it. There are also lots of #ifdef in arm code for msi_chip.
+
+> 
+> Who do you want to apply this?  I can take it if that makes the most sense,
+
+I hope you can apply this.
+
+> but I'd like acks from the architecture folks for their pieces, and
+> especially one from Thomas for the overall direction and the x86 parts.
+
+OK.
+
+> 
+> If you want me to take this, can you refresh it to be based on v3.18-rc1?
+> I tried to apply it on v3.18-rc1, but [15/27] didn't apply because of
+> conflicts in arch/x86/kernel/apic/io_apic.c.
+
+OK.
+
+> 
+> I'll look at these more tomorrow, I'm getting bleary-eyed tonight.
+
+Thanks for your review and comments very much!
+
+Thanks!
+Yijing.
+
+> 
+> Bjorn
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
+
