@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570AbaJWUPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 16:15:36 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:57919 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282AbaJWUPe (ORCPT
+	id S932258AbaJWUWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 16:22:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45994 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaJWUWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 16:15:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: opw-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, john.stultz@linaro.org
-Subject: git tree for y2038 patches, to be added to linux-next
-Date: Thu, 23 Oct 2014 22:15:24 +0200
-Message-ID: <8455153.NY1892ffCa@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:LjgdL/+pn1dGZPr7ZIzz5LIvBkQAj77prr8O786JImn
- JHZ6pV20w8MZTEJ8slRW9sWJRLbgvXp9LlfMuOnC8TKrjchQCd
- jcqvmbzgrcM5GDTa7+FnCbgZZ6fFjbaPpkBrlAMbIRAbpcbZ/P
- OKyaFTn1yfpJbzf+TJqZ6ETBa9bp7z05jbxaXXoiXVUrXqdkk2
- ETHcXYa5xsE69Y3A2XLjl8OS6CUzNPqPjlJY0VsCB3dDADLcip
- DwIMnylEq8O3y+fts2Au9DW4nAncgBj9fumLMag2fr5YBnkMkJ
- jt3xL0BRPjw8Sl3qw4D85l3Qa86rflhOyVDlAALhRjfz4HKZOL
- ibIHY7k5wyUb046mQsEc=
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 23 Oct 2014 16:22:32 -0400
+Date: Thu, 23 Oct 2014 13:22:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] mm/cma: Make kmemleak ignore CMA regions
+Message-Id: <20141023132233.b156cd79badc1254eff08494@linux-foundation.org>
+In-Reply-To: <1413893696-25484-1-git-send-email-thierry.reding@gmail.com>
+References: <1413893696-25484-1-git-send-email-thierry.reding@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Tue, 21 Oct 2014 14:14:56 +0200 Thierry Reding <thierry.reding@gmail.com> wrote:
 
-I'm collecting patches for 64-bit time_t conversion. I'm getting patches
-for this topic from the OPW application, and hopefully soon from an intern
-in the program.
+> From: Thierry Reding <treding@nvidia.com>
+> 
+> kmemleak will add allocations as objects to a pool. The memory allocated
+> for each object in this pool is periodically searched for pointers to
+> other allocated objects. This only works for memory that is mapped into
+> the kernel's virtual address space, which happens not to be the case for
+> most CMA regions.
+> 
+> Furthermore, CMA regions are typically used to store data transferred to
+> or from a device and therefore don't contain pointers to other objects.
+> 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+> Note: I'm not sure this is really the right fix. But without this, the
+> kernel crashes on the first execution of the scan_gray_list() because
+> it tries to access highmem. Perhaps a more appropriate fix would be to
+> reject any object that can't map to a kernel virtual address?
 
-The plan is to have most of the patches being  merged through subsystem
-maintainer trees as much as possible, but I also want to give them linux-next
-exposure as early as possible, in particular since a lot of the code that
-is being changed is not actively maintained.  I will send the remaining
-patches to Thomas Gleixner so he can put them into the tip tree.
+Let's cc Catalin.
 
-Please add
+> --- a/mm/cma.c
+> +++ b/mm/cma.c
+> @@ -280,6 +280,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
+>  			ret = -ENOMEM;
+>  			goto err;
+>  		} else {
+> +			kmemleak_ignore(phys_to_virt(addr));
+>  			base = addr;
+>  		}
+>  	}
 
-git://git.kernel.org/pub/scm/linux/kernel/git/arnd/playground.git y2038
+And let's tell our poor readers why we did stuff.  Something like this.
 
-to linux-next. At the moment there is only one simple patch in it,
-I assume there will be more soon.
+--- a/mm/cma.c~mm-cma-make-kmemleak-ignore-cma-regions-fix
++++ a/mm/cma.c
+@@ -280,6 +280,10 @@ int __init cma_declare_contiguous(phys_a
+ 			ret = -ENOMEM;
+ 			goto err;
+ 		} else {
++			/*
++			 * kmemleak writes metadata to the tracked objects, but
++			 * this address isn't mapped and accessible.
++			 */
+ 			kmemleak_ignore(phys_to_virt(addr));
+ 			base = addr;
+ 		}
+_
 
-	Arnd
