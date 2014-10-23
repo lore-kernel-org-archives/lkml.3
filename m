@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598AbaJWIPa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 04:15:30 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:5556 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705AbaJWIP1 (ORCPT
+	id S932359AbaJWIPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 04:15:53 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:13905 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754602AbaJWIPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 04:15:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 23 Oct 2014 01:11:25 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] ASoC: jack: update calls to gpiod_get*()
-Date: Thu, 23 Oct 2014 17:15:18 +0900
-Message-ID: <1414052118-19742-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 2.1.2
-X-NVConfidentiality: public
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 23 Oct 2014 04:15:48 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed
+X-AuditID: cbfec7f4-b7f6c6d00000120b-b8-5448b931eec8
+Content-transfer-encoding: 8BIT
+Message-id: <5448B930.7070800@samsung.com>
+Date: Thu, 23 Oct 2014 10:15:44 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+To: Laura Abbott <lauraa@codeaurora.org>,
+        Stefan Hengelein <stefan.hengelein@fau.de>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        akpm@linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+        andreas.herrmann@calxeda.com,
+        Valentin Rothberg <valentinrothberg@gmail.com>,
+        iommu@lists.linux-foundation.org
+Subject: Re: [PATCH] arm: dma-mapping: fix compilation error when CONFIG_MMU is
+ not present
+References: <1413734340-53108-1-git-send-email-stefan.hengelein@fau.de>
+ <5444BCFF.8030803@samsung.com>
+ <CABv5NL_GdtZegpw8wxau9oD6xXWdX3GUySLqCaoaoa549Kg_GQ@mail.gmail.com>
+ <5445A345.7010401@codeaurora.org>
+In-reply-to: <5445A345.7010401@codeaurora.org>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xq7qGOz1CDBZ9lbOYs34Nm8XiIzEW
+	C/ZbW2zvnMFusenxNVaLy7vmsFncvsxr0X1/EpvFp+Y2ZgdOj5bmHjaPBZ+vsHtc7utl8jjf
+	PpvFY+esu+weJ2b8ZvHYvKTeY/KN5YwenzfJBXBGcdmkpOZklqUW6dslcGWceLaUrWCqcMWZ
+	/Q+YGhgnC3QxcnJICJhITLu6gRnCFpO4cG89WxcjF4eQwFJGiQ9XzzCCJHgFBCV+TL7H0sXI
+	wcEsIC9x5FI2SJhZwEziy8vDrBD1nxgl9sy6wwxRryUxZ84mZpB6FgFViSUHuUHCbAKGEl1v
+	u9hAbFGBGIn7O1eD2SICYRJ3Dz8F28ss8J5RYlnbCiaQhLBArMTKvkNMEAsuM0rcbZoP1sEp
+	oCdx7vZ8pgmMArOQ3DcL4b5ZSO5bwMi8ilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyMkMr7s
+	YFx8zOoQowAHoxIPb0WyR4gQa2JZcWXuIUYJDmYlEd60HUAh3pTEyqrUovz4otKc1OJDjEwc
+	nFINjCXfqnOy4/MeMRT/iI/6tDj7ocnKVdMjDt3ybmANk1z0N3irgX516e6aYy4ZH7sm6dvn
+	JEvdOLNf+OSFZeHtv47XrA2TO5fPJJI9K+ooX77w1agblWs+mfX4pdQJ5NvIx+zijdcuq1+h
+	4iBS8vR05UuGOmsW5vuzWW2fXC07Y5oTxHnl53oPJZbijERDLeai4kQAdjLcUmoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new flags argument to calls of (devm_)gpiod_get*() and
-remove any direction setting code afterwards.
+Hello,
 
-Currently both forms (with or without the flags argument)
-are valid thanks to transitional macros in
-<linux/gpio/consumer.h>. These macros will be removed once
-all consumers are updated and the flags argument will become
-compulsary.
+On 2014-10-21 02:05, Laura Abbott wrote:
+> On 10/20/2014 6:50 AM, Stefan Hengelein wrote:
+>> Well,
+>>
+>> arch/arm/mm/dma-mapping.c: In function ‘__atomic_get_pages’:
+>> arch/arm/mm/dma-mapping.c:1265:31: error: ‘atomic_pool’ undeclared
+>> (first use in this function)
+>>
+>> arch/arm/mm/dma-mapping.c: In function ‘__iommu_get_pages’:
+>> arch/arm/mm/dma-mapping.c:1275:2: error: implicit declaration of
+>> function ‘__in_atomic_pool’ [-Werror=implicit-function-declaration]
+>>
+>>
+>> others:
+>> arch/arm/mm/dma-mapping.c: In function ‘__iommu_alloc_remap’:
+>> arch/arm/mm/dma-mapping.c:1200:4: error: ‘VM_ARM_DMA_CONSISTENT’
+>> undeclared (first use in this function)
+>> arch/arm/mm/dma-mapping.c:1200:4: note: each undeclared identifier is
+>> reported only once for each function it appears in
+>>
+>> arch/arm/mm/dma-mapping.c: In function ‘__iommu_get_pages’:
+>> arch/arm/mm/dma-mapping.c:1282:29: error: ‘VM_ARM_DMA_CONSISTENT’
+>> undeclared (first use in this function)
+>> arch/arm/mm/dma-mapping.c: In function ‘arm_iommu_free_attrs’:
+>> arch/arm/mm/dma-mapping.c:1411:4: error: ‘VM_ARM_DMA_CONSISTENT’
+>> undeclared (first use in this function)
+>>
+>>
+>> i've attached a configuration where it happens.
+>> when you place the configuration in your tree and compile the file,
+>> the errors should show up.
+>>
+>> However, within the configuration CONFIG_ARM_DMA_USE_IOMMU is defined
+>> and CONFIG_MMU is not. AFAIUI, if both should be enabled together, it
+>> should be mapped in Kconfig somewhere, right?
+>
+> There isn't a nice way to fixup the dma consistent flags so I would
+> say this option should just depend on MMU.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
----
- sound/soc/soc-jack.c | 9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+The question is which option should depend on MMU? Making 
+CONFIG_ARM_DMA_USE_IOMMU
+to depend on MMU doesn't solve this case. It only gives following 
+warning with the
+mentioned .config:
+warning: (VIDEO_OMAP3 && EXYNOS_IOMMU && SHMOBILE_IOMMU && IPMMU_VMSA && 
+ARM_SMMU) selects ARM_DMA_USE_IOMMU which has unmet direct dependencies 
+(MMU)
 
-diff --git a/sound/soc/soc-jack.c b/sound/soc/soc-jack.c
-index ab47fea997a3..f921d0098518 100644
---- a/sound/soc/soc-jack.c
-+++ b/sound/soc/soc-jack.c
-@@ -309,7 +309,7 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
- 			/* GPIO descriptor */
- 			gpios[i].desc = gpiod_get_index(gpios[i].gpiod_dev,
- 							gpios[i].name,
--							gpios[i].idx);
-+							gpios[i].idx, GPIOD_IN);
- 			if (IS_ERR(gpios[i].desc)) {
- 				ret = PTR_ERR(gpios[i].desc);
- 				dev_err(gpios[i].gpiod_dev,
-@@ -327,17 +327,14 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
- 				goto undo;
- 			}
- 
--			ret = gpio_request(gpios[i].gpio, gpios[i].name);
-+			ret = gpio_request_one(gpios[i].gpio, GPIOF_IN,
-+					       gpios[i].name);
- 			if (ret)
- 				goto undo;
- 
- 			gpios[i].desc = gpio_to_desc(gpios[i].gpio);
- 		}
- 
--		ret = gpiod_direction_input(gpios[i].desc);
--		if (ret)
--			goto err;
--
- 		INIT_DELAYED_WORK(&gpios[i].work, gpio_work);
- 		gpios[i].jack = jack;
- 
+IMHO the best solution will be to either make the whole IOMMU subsystem 
+to depend
+on MMU or alternatively, add this dependency to all IOMMU drivers which 
+can be
+enabled by COMPILE_TEST option (here the issue is caused by 
+SHMOBILE_IOMMU, which
+otherwise cannot be enabled when no-mmu systems are selected).
+
+Best regards
 -- 
-2.1.2
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
