@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741AbaJWQ3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:29:11 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:51102 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945AbaJWQ3J (ORCPT
+	id S1753015AbaJWQ3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:29:18 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:57092 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721AbaJWQ3Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:29:09 -0400
-Date: Thu, 23 Oct 2014 21:58:59 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] block: wrong return value
-Message-ID: <20141023162859.GB6590@sudip-PC>
-References: <1414080271-6551-1-git-send-email-sudipm.mukherjee@gmail.com>
- <54492840.9050704@kernel.dk>
-MIME-Version: 1.0
+	Thu, 23 Oct 2014 12:29:16 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54492840.9050704@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Subject: Re: [PATCH 1/1 net-next] Bluetooth: fix shadow warning in hci_disconnect()
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1414081365-6461-1-git-send-email-fabf@skynet.be>
+Date: Thu, 23 Oct 2014 09:29:08 -0700
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2F67F6E8-CA99-4998-AE68-89E60D62C39D@holtmann.org>
+References: <1414081365-6461-1-git-send-email-fabf@skynet.be>
+To: Fabian Frederick <fabf@skynet.be>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 10:09:36AM -0600, Jens Axboe wrote:
-> On 10/23/2014 10:04 AM, Sudip Mukherjee wrote:
-> > while compiling integer err was showing as a set but unused variable.
-> > elevator_init_fn can be either cfq_init_queue or deadline_init_queue
-> > or noop_init_queue.
-> > all three of these functions are returning -ENOMEM if they fail to
-> > allocate the queue.
-> > so we should actually be returning the error code rather than
-> > returning 0 always.
-> > 
-> > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > ---
-> > 
-> > change in v2: added elevator_put
-> > 
-> >  block/elevator.c | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/block/elevator.c b/block/elevator.c
-> > index 24c28b6..1267c2b 100644
-> > --- a/block/elevator.c
-> > +++ b/block/elevator.c
-> > @@ -184,7 +184,7 @@ static void elevator_release(struct kobject *kobj)
-> >  int elevator_init(struct request_queue *q, char *name)
-> >  {
-> >  	struct elevator_type *e = NULL;
-> > -	int err;
-> > +	int err = 0;
-> 
-> Why init it to 0?
-not required actually. my initial thinking was that we are returning 0 on success or else the error code. so gave it a default value of 0.
-but elevator_init_fn is returning 0 on success , so we will get 0 even if we do not initialize it.
-should i resend after modifying it?
+Hi Fabian,
 
-thanks
-sudip
+> use cpr for hci_cp_read_clock_offset instead of cp
+> (already defined above).
 > 
-> -- 
-> Jens Axboe
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+> net/bluetooth/hci_conn.c | 6 +++---
+> 1 file changed, 3 insertions(+), 3 deletions(-)
 > 
+> diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+> index b9517bd..6151e09 100644
+> --- a/net/bluetooth/hci_conn.c
+> +++ b/net/bluetooth/hci_conn.c
+> @@ -141,10 +141,10 @@ int hci_disconnect(struct hci_conn *conn, __u8 reason)
+> 	 */
+> 	if (conn->type == ACL_LINK && conn->role == HCI_ROLE_MASTER) {
+> 		struct hci_dev *hdev = conn->hdev;
+> -		struct hci_cp_read_clock_offset cp;
+> +		struct hci_cp_read_clock_offset cpr;
+> 
+> -		cp.handle = cpu_to_le16(conn->handle);
+> -		hci_send_cmd(hdev, HCI_OP_READ_CLOCK_OFFSET, sizeof(cp), &cp);
+> +		cpr.handle = cpu_to_le16(conn->handle);
+> +		hci_send_cmd(hdev, HCI_OP_READ_CLOCK_OFFSET, sizeof(cpr), &cpr);
+
+valid change, but I do not like cpr as variable name. We need to come up with a better one. There are other places in the code where we had the same thing. Please have a look there.
+
+Regards
+
+Marcel
+
