@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbaJWRSa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 13:18:30 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:48044 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaJWRS3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 13:18:29 -0400
+	id S1756087AbaJWRTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 13:19:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10607 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755665AbaJWRTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 13:19:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,776,1406617200"; 
+   d="scan'208";a="610093068"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@alien8.de>, Chen Yucong <slaoub@gmail.com>
+CC: Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
+Subject: RE: [PATCH] x86, MCE: support memory error recovery for both UCNA
+ and Deferred error in machine_check_poll
+Thread-Topic: [PATCH] x86, MCE: support memory error recovery for both UCNA
+ and Deferred error in machine_check_poll
+Thread-Index: AQHP5FAMtVPteB+EEE28SKVlaIO66Jw+CiWA///2T6A=
+Date: Thu, 23 Oct 2014 17:18:29 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F3290F9B0@ORSMSX114.amr.corp.intel.com>
+References: <1412921020.3631.7.camel@debian> <20141023104717.GB4619@pd.tnic>
+In-Reply-To: <20141023104717.GB4619@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAFxy--b+j86kn6Ttc+qTTi4chDkKbrmSAxEsS7_CnzuabJAZfQ@mail.gmail.com>
-References: <CAFxy--b+j86kn6Ttc+qTTi4chDkKbrmSAxEsS7_CnzuabJAZfQ@mail.gmail.com>
-Date: Thu, 23 Oct 2014 22:48:27 +0530
-Message-ID: <CAFxy--Z4FpWJbqr8OMoxgpMXa2WMSuCOA_pvtokcwcq6C-uaFg@mail.gmail.com>
-Subject: Re: threadirqs and kthreadd_task
-From: ajay kanala <ajaykanala321@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9NHJP38017764
 
-Hi,
-any help?
+> The general idea of preemptively poisoning pages which contain deferred
+> errors is fine though.
 
-thanks in advance
--- Ajay
+Agreed. I used to think that it wasn't likely to be very useful because in many
+cases the UCNA errors are just a trail of breadcrumbs set by different units
+on the chip as the poison passed through on the way to consumption - where
+there would be a fatal (or recoverable) error.
 
-On Sat, Oct 18, 2014 at 4:41 PM, ajay kanala <ajaykanala321@gmail.com> wrote:
-> Hi,
-> I have been trying to enable "threadirqs" command line option on
-> 3.10.12 kernel and kernel crashes with NULL pointer access for
-> kthreadd_task in wake_up_process function:
->
-> [    0.000000] Call Trace:
-> [    0.000000] [<8005544c>] wake_up_process+0xc/0x48
-> [    0.000000] [<8004c1b8>] kthread_create_on_node+0x64/0xc4
-> [    0.000000] [<8006d338>] __setup_irq+0x130/0x634
-> [    0.000000] [<8006d89c>] setup_irq+0x60/0xb4
-> [    0.000000] [<8050267c>] icu_of_init+0x1f8/0x2f8
-> [    0.000000] [<80517b30>] of_irq_init+0x2c8/0x304
-> [    0.000000] [<805007bc>] start_kernel+0x218/0x3a4
->
-> But as far as i see, kthreadd_task is initialized in start_kernel -->
-> rest_init function which is much later than setting up interrupts (
-> init_IRQ ):
->
-> So my question is, how are systems working which enabled "threadirqs"
-> command line option enabled ( the code flow seems similar even on 3.17
-> kernel ). Am i missing the obvious?
->
-> thanks for pointers
->
-> -- Ajay
+But recently I found that a partial write to a poisoned cache line only sets the
+trail of UCNA errors - there is no consumption, so no machine check.  So in
+this case it would definitely be worthwhile to trigger the same action that we
+do for SRAO to unmap the page before someone does do a read.
+
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
