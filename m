@@ -1,83 +1,61 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270AbaKADxs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 31 Oct 2014 23:53:48 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:58921 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757773AbaKADxr (ORCPT
+	id S1751813AbaJWF6b (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 23 Oct 2014 01:58:31 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:47395 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833AbaJWF6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 31 Oct 2014 23:53:47 -0400
-Message-ID: <54545AB9.70206@gmail.com>
-Date: Sat, 01 Nov 2014 11:59:53 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 23 Oct 2014 01:58:30 -0400
+Date: Thu, 23 Oct 2014 07:58:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robert Bragg <robert@sixbynine.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Rob Clark <robdclark@gmail.com>,
+        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Expose gpu counters via perf pmu driver
+Message-ID: <20141023055825.GA4559@gmail.com>
+References: <1413991731-20628-1-git-send-email-robert@sixbynine.org>
 MIME-Version: 1.0
-To: michal.simek@xilinx.com, soren.brinkmann@xilinx.com
-CC: davem@davemloft.net, sthokal@xilinx.com, manuel.schoelling@gmx.de,
-        paul.gortmaker@windriver.com, f.fainelli@gmail.com,
-        ebiederm@xmission.com, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: net: ethernet: xilinx: xilinx_emaclite: Compatible
- with 'xlnx,xps-ethernetlite-2.00.b' for QEMU using
-References: <54544E98.4060007@gmail.com>
-In-Reply-To: <54544E98.4060007@gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413991731-20628-1-git-send-email-robert@sixbynine.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/1/14 11:08, Chen Gang wrote:
-> When use current latest upstream qemu (current version: 2.1.2), need let
-> driver compatible with 'xlnx,xps-ethernetlite-2.00.b', or can not find
-> net device in microblaze qemu. Related QEMU commands under fedora 20:
-> 
->   yum install libvirt
->   yum install tunctl
->   tunctl -b
->   ip link set tap0 up
->   brctl addif virbr0 tap0
->   ./microblaze-softmmu/qemu-system-microblaze -M petalogix-s3adsp1800 \
->     -kernel ../linux-stable.microblaze/arch/microblaze/boot/linux.bin \
->     -no-reboot -append "console=ttyUL0,115200 doreboot" -nographic \
->     -net nic,vlan=0,model=xlnx.xps-ethernetlite,macaddr=00:16:35:AF:94:00 \
->     -net tap,vlan=0,ifname=tap0,script=no,downscript=no
-> 
->   in microblaze qemu bash (guest machine):
-> 
->     ifconfig eth0 add 192.168.122.1 netmask 255.255.255.0
 
-Oh, sorry, it is 192.168.122.2 (192.168.122.1 is the router address).
+* Robert Bragg <robert@sixbynine.org> wrote:
 
-Thanks.
+> [...]
+> 
+> I'd be interested to hear whether is sounds reasonable to 
+> others for us to expose gpu device metrics via a perf pmu and 
+> whether adding the PERF_PMU_CAP_IS_DEVICE flag as in my 
+> following patch could be acceptable.
 
->     ifconfig eth0 up
-> 
-> After add this patch, can find the device, and can be used by 'telnetd'
-> (need cross-build busybox with glibc for it), then outside can telnet to
-> it without password.
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  drivers/net/ethernet/xilinx/xilinx_emaclite.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> index 28dbbdc..298fad3 100644
-> --- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> +++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> @@ -1236,6 +1236,7 @@ static struct of_device_id xemaclite_of_match[] = {
->  	{ .compatible = "xlnx,opb-ethernetlite-1.01.b", },
->  	{ .compatible = "xlnx,xps-ethernetlite-1.00.a", },
->  	{ .compatible = "xlnx,xps-ethernetlite-2.00.a", },
-> +	{ .compatible = "xlnx,xps-ethernetlite-2.00.b", },
->  	{ .compatible = "xlnx,xps-ethernetlite-2.01.a", },
->  	{ .compatible = "xlnx,xps-ethernetlite-3.00.a", },
->  	{ /* end of list */ },
-> 
+I think it's perfectly reasonable, it's one of the interesting 
+kernel features I hoped for years would be implemented for perf.
 
--- 
-Chen Gang
+> [...]
+> 
+> In addition I also explicitly black list numerous attributes 
+> and PERF_SAMPLE_ flags that I don't think make sense for a 
+> device pmu. This could be handled in the pmu driver but it 
+> seemed better to do in events/core, avoiding duplication in 
+> case we later have multiple device pmus.
 
-Open, share, and attitude like air, water, and life which God blessed
+Btw., if the GPU is able to dump (part of) its current execution 
+status, you could in theory even do instruction profiling and 
+in-GPU profiling (symbol resolution, maybe even annotation, etc.) 
+with close to standard perf tooling - which I think is currently 
+mostly the domain of proprietary tools.
+
+Thanks,
+
+	Ingo
