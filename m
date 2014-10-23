@@ -1,142 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726AbaJWC0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 22:26:17 -0400
-Received: from x35.xmailserver.org ([64.71.152.41]:47704 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754175AbaJWC0I (ORCPT
+	id S932849AbaJWC1A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 22:27:00 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:59912 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932447AbaJWC07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 22:26:08 -0400
-X-AuthUser: davidel@xmailserver.org
-Date: Wed, 22 Oct 2014 19:26:07 -0700 (PDT)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@davide-lnx3
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org
-Subject: [patch][resend] MAP_HUGETLB munmap fails with size not 2MB aligned
-Message-ID: <alpine.DEB.2.10.1410221518160.31326@davide-lnx3>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+	Wed, 22 Oct 2014 22:26:59 -0400
+Date: Wed, 22 Oct 2014 21:24:37 -0500
+From: Eric Rost <eric.rost@mybabylon.net>
+To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
+        antonysaraev@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/2] staging: skein: Add Loadable Module Support
+Message-ID: <6465068320badb589bcbd2cf37f4700e2cef0406.1414030776.git.eric.rost@mybabylon.net>
+References: <cover.1414030776.git.eric.rost@mybabylon.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1414030776.git.eric.rost@mybabylon.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Resending with proper CC list suggested by Andrew]
+Adds loadable module support for skein_mod, containing skein256,
+skein512, and skein1024 algorithms.
 
-Calling munmap on a MAP_HUGETLB area, and a size which is not 2MB aligned, 
-causes munmap to fail.  Tested on 3.13.x but tracking back to 3.2.x.
-In do_munmap() we forcibly want a 4KB default page, and we wrongly 
-calculate the end of the map.  Since the calculated end is within the end 
-address of the target vma, we try to do a split with an address right in 
-the middle of a huge page, which would fail with EINVAL.
+Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
+---
+ drivers/staging/skein/Kconfig         |   2 +-
+ drivers/staging/skein/skein_generic.c | 122 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 123 insertions(+), 1 deletion(-)
 
-Tentative (untested) patch and test case attached (be sure you have a few 
-huge pages available via /proc/sys/vm/nr_hugepages tinkering).
-
-
-Signed-Off-By: Davide Libenzi <davidel@xmailserver.org>
-
-
-- Davide
-
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 7f85520..6dba257 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2528,10 +2528,6 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
- 	if ((start & ~PAGE_MASK) || start > TASK_SIZE || len > TASK_SIZE-start)
- 		return -EINVAL;
+diff --git a/drivers/staging/skein/Kconfig b/drivers/staging/skein/Kconfig
+index de8bdd7..012a823 100644
+--- a/drivers/staging/skein/Kconfig
++++ b/drivers/staging/skein/Kconfig
+@@ -1,5 +1,5 @@
+ config CRYPTO_SKEIN
+-	bool "Skein digest algorithm"
++	tristate "Skein digest algorithm"
+ 	depends on (X86 || UML_X86) && 64BIT && CRYPTO
+ 	select CRYPTO_HASH
+ 	select CRYPTO_ALGAPI
+diff --git a/drivers/staging/skein/skein_generic.c b/drivers/staging/skein/skein_generic.c
+index 14cc5bd..43e3cdf 100644
+--- a/drivers/staging/skein/skein_generic.c
++++ b/drivers/staging/skein/skein_generic.c
+@@ -16,6 +16,7 @@
+  */
+ #include <crypto/internal/hash.h>
+ #include <linux/init.h>
++#include <linux/module.h>
+ #include <linux/mm.h>
+ #include <linux/cryptohash.h>
+ #include <linux/types.h>
+@@ -50,6 +51,22 @@ static int skein256_final(struct shash_desc *desc, u8 *out)
+ 	return ret;
+ }
  
--	len = PAGE_ALIGN(len);
--	if (len == 0)
--		return -EINVAL;
--
- 	/* Find the first overlapping VMA */
- 	vma = find_vma(mm, start);
- 	if (!vma)
-@@ -2539,6 +2535,16 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
- 	prev = vma->vm_prev;
- 	/* we have  start < vma->vm_end  */
- 
-+	if (likely(!is_vm_hugetlb_page(vma)))
-+		len = PAGE_ALIGN(len);
-+	else {
-+		unsigned long hpage_size = huge_page_size(hstate_vma(vma));
++static int skein256_export(struct shash_desc *desc, void *out)
++{
++	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
 +
-+		len = ALIGN(len, hpage_size);
++	memcpy(out, sctx, sizeof(*sctx));
++	return 0;
++}
++
++static int skein256_import(struct shash_desc *desc, const void *in)
++{
++	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
++
++	memcpy(sctx, in, sizeof(*sctx));
++	return 0;
++}
++
+ static int skein512_init(struct shash_desc *desc)
+ {
+ 	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
+@@ -78,6 +95,22 @@ static int skein512_final(struct shash_desc *desc, u8 *out)
+ 	return ret;
+ }
+ 
++static int skein512_export(struct shash_desc *desc, void *out)
++{
++	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
++
++	memcpy(out, sctx, sizeof(*sctx));
++	return 0;
++}
++
++static int skein512_import(struct shash_desc *desc, const void *in)
++{
++	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
++
++	memcpy(sctx, in, sizeof(*sctx));
++	return 0;
++}
++
+ static int skein1024_init(struct shash_desc *desc)
+ {
+ 	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
+@@ -106,4 +139,93 @@ static int skein1024_final(struct shash_desc *desc, u8 *out)
+ 	return ret;
+ }
+ 
++static int skein1024_export(struct shash_desc *desc, void *out)
++{
++	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
++
++	memcpy(out, sctx, sizeof(*sctx));
++	return 0;
++}
++
++static int skein1024_import(struct shash_desc *desc, const void *in)
++{
++	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
++
++	memcpy(sctx, in, sizeof(*sctx));
++	return 0;
++}
++
++static struct shash_alg alg256 = {
++	.digestsize	=	(SKEIN256_DIGEST_BIT_SIZE / 8),
++	.init		=	skein256_init,
++	.update		=	skein256_update,
++	.final		=	skein256_final,
++	.export		=	skein256_export,
++	.import		=	skein256_import,
++	.descsize	=	sizeof(struct skein_256_ctx),
++	.statesize	=	sizeof(struct skein_256_ctx),
++	.base		=	{
++		.cra_name		=	"skein256",
++		.cra_driver_name	=	"skein-mod",
++		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize		=	SKEIN_256_BLOCK_BYTES,
++		.cra_module		=	THIS_MODULE,
 +	}
-+	if (unlikely(len == 0))
-+		return -EINVAL;
++};
 +
- 	/* if it doesn't overlap, we have nothing.. */
- 	end = start + len;
- 	if (vma->vm_start >= end)
-
-
-
-
-[hugebug.c]
-
-#include <sys/mman.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-
-static void test(int flags, size_t size)
-{
-    void* addr = mmap(NULL, size, PROT_READ | PROT_WRITE,
-                      flags | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-    if (addr == MAP_FAILED)
-    {
-        perror("mmap");
-        exit(1);
-    }
-    *(char*) addr = 17;
-
-    if (munmap(addr, size) != 0)
-    {
-        perror("munmap");
-        exit(1);
-    }
-}
-
-int main(int ac, const char** av)
-{
-    static const size_t hugepage_size = 2 * 1024 * 1024;
-
-    printf("Testing normal pages with 2MB size ...\n");
-    test(0, hugepage_size);
-    printf("OK\n");
-
-    printf("Testing huge pages with 2MB size ...\n");
-    test(MAP_HUGETLB, hugepage_size);
-    printf("OK\n");
-
-
-    printf("Testing normal pages with 4KB byte size ...\n");
-    test(0, 4096);
-    printf("OK\n");
-
-    printf("Testing huge pages with 4KB byte size ...\n");
-    test(MAP_HUGETLB, 4096);
-    printf("OK\n");
-
-
-    printf("Testing normal pages with 1 byte size ...\n");
-    test(0, 1);
-    printf("OK\n");
-
-    printf("Testing huge pages with 1 byte size ...\n");
-    test(MAP_HUGETLB, 1);
-    printf("OK\n");
-
-    return 0;
-}
++static struct shash_alg alg512 = {
++	.digestsize	=	(SKEIN512_DIGEST_BIT_SIZE / 8),
++	.init		=	skein512_init,
++	.update		=	skein512_update,
++	.final		=	skein512_final,
++	.export		=	skein512_export,
++	.import		=	skein512_import,
++	.descsize	=	sizeof(struct skein_512_ctx),
++	.statesize	=	sizeof(struct skein_512_ctx),
++	.base		=	{
++		.cra_name		=	"skein512",
++		.cra_driver_name	=	"skein-mod",
++		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize		=	SKEIN_512_BLOCK_BYTES,
++		.cra_module		=	THIS_MODULE,
++	}
++};
++
++static struct shash_alg alg1024 = {
++	.digestsize	=	(SKEIN1024_DIGEST_BIT_SIZE / 8),
++	.init		=	skein1024_init,
++	.update		=	skein1024_update,
++	.final		=	skein1024_final,
++	.export		=	skein1024_export,
++	.import		=	skein1024_import,
++	.descsize	=	sizeof(struct skein_1024_ctx),
++	.statesize	=	sizeof(struct skein_1024_ctx),
++	.base		=	{
++		.cra_name		=	"skein1024",
++		.cra_driver_name	=	"skein-mod",
++		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
++		.cra_blocksize		=	SKEIN_1024_BLOCK_BYTES,
++		.cra_module		=	THIS_MODULE,
++	}
++};
++
++static int __init skein_generic_mod_init(void)
++{
++	return crypto_register_shash(&alg256) || crypto_register_shash(&alg512)
++		|| crypto_register_shash(&alg1024);
++}
++
++static void __exit skein_generic_mod_fini(void)
++{
++	crypto_unregister_shash(&alg256);
++	crypto_unregister_shash(&alg512);
++	crypto_unregister_shash(&alg1024);
++}
++
++module_init(skein_generic_mod_init);
++module_exit(skein_generic_mod_fini);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Skein Hash Algorithm");
+ 
++MODULE_ALIAS("skein");
+-- 
+2.1.1
 
