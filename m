@@ -1,93 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557AbaJWXRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 19:17:00 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:57475 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233AbaJWXQ7 (ORCPT
+	id S1753424AbaJWXZv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 19:25:51 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48161 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751907AbaJWXZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 19:16:59 -0400
-X-Original-SENDERIP: 10.186.123.76
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <54498C68.8090207@lge.com>
-Date: Fri, 24 Oct 2014 08:16:56 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 23 Oct 2014 19:25:48 -0400
+Date: Fri, 24 Oct 2014 01:25:39 +0200
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-unionfs@vger.kernel.org
+Subject: [GIT PULL] overlay filesystem v25
+Message-ID: <20141023232539.GA4662@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
-To: Devendra Naga <devendranaga4@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        gunho.lee@lge.com
-Subject: Re: [RFC 1/2] staging: ion: shrink page-pool by page unit
-References: <1414068740-9553-1-git-send-email-gioh.kim@lge.com>	<1414068740-9553-2-git-send-email-gioh.kim@lge.com> <CAOFgiypyxykRPpYn7dAXnnDHhCR-MwRnNT46BdwS28TKobnxuw@mail.gmail.com>
-In-Reply-To: <CAOFgiypyxykRPpYn7dAXnnDHhCR-MwRnNT46BdwS28TKobnxuw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus,
 
+Please pull
 
-2014-10-24 오전 5:36, Devendra Naga 쓴 글:
-> Hello,
->
-> On Thu, Oct 23, 2014 at 6:22 PM, Gioh Kim <gioh.kim@lge.com> wrote:
->> This patch shrink page-pool by page unit.
->>
->> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
->> ---
->>   drivers/staging/android/ion/ion_page_pool.c   |    5 +++--
->>   drivers/staging/android/ion/ion_system_heap.c |    7 +++++--
->>   2 files changed, 8 insertions(+), 4 deletions(-)
->
->>
->
-> --- cut --
->
->> diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
->> index da2a63c..36e73c3 100644
->> --- a/drivers/staging/android/ion/ion_system_heap.c
->> +++ b/drivers/staging/android/ion/ion_system_heap.c
->> @@ -211,7 +211,7 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
->>                                          int nr_to_scan)
->>   {
->>          struct ion_system_heap *sys_heap;
->> -       int nr_total = 0;
->> +       int nr_total = 0, nr_freed;
->>          int i;
->>
->>          sys_heap = container_of(heap, struct ion_system_heap, heap);
->> @@ -219,7 +219,10 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
->>          for (i = 0; i < num_orders; i++) {
->>                  struct ion_page_pool *pool = sys_heap->pools[i];
->>
->> -               nr_total += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
->> +               nr_freed += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
->
-> nr_freed is not initialised to zero. This might result in updating of
-> a garbage value stored initially after nr_freed is created.
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs.v25
 
-Yes, your're right. It's my mistake.
-I testes this on my platform with custom kernel and copied codes.
-I missed a line for it.
-I'm sorry.
+Plenty of bugs fixed relative to the previous version, thanks to Al Viro's
+review and is now officially be BugFree(TM).  Also passes the
+unionmount-testsuite by David Howells.
 
->
->> +               nr_total += nr_freed;
->> +               /* nr_to_scan can be negative */
->> +               nr_to_scan -= nr_freed;
->>          }
->>
->>          return nr_total;
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks,
+Miklos
+
+---
+Andy Whitcroft (1):
+      overlayfs: add statfs support
+
+Erez Zadok (1):
+      overlayfs: implement show_options
+
+Miklos Szeredi (11):
+      vfs: add i_op->dentry_open()
+      vfs: export do_splice_direct() to modules
+      vfs: export __inode_permission() to modules
+      vfs: introduce clone_private_mount()
+      vfs: export check_sticky()
+      vfs: add whiteout support
+      vfs: add RENAME_WHITEOUT
+      ext4: support RENAME_WHITEOUT
+      shmem: support RENAME_WHITEOUT
+      overlay filesystem
+      fs: limit filesystem stacking depth
+
+Neil Brown (1):
+      overlay: overlay filesystem documentation
+
+---
+ Documentation/filesystems/Locking       |   2 +
+ Documentation/filesystems/overlayfs.txt | 198 +++++++
+ Documentation/filesystems/vfs.txt       |   7 +
+ MAINTAINERS                             |   7 +
+ fs/Kconfig                              |   1 +
+ fs/Makefile                             |   1 +
+ fs/btrfs/ioctl.c                        |  20 +-
+ fs/ecryptfs/main.c                      |   7 +
+ fs/ext4/namei.c                         |  95 +++-
+ fs/internal.h                           |   7 -
+ fs/namei.c                              |  41 +-
+ fs/namespace.c                          |  27 +
+ fs/open.c                               |  23 +-
+ fs/overlayfs/Kconfig                    |  10 +
+ fs/overlayfs/Makefile                   |   7 +
+ fs/overlayfs/copy_up.c                  | 414 ++++++++++++++
+ fs/overlayfs/dir.c                      | 921 ++++++++++++++++++++++++++++++++
+ fs/overlayfs/inode.c                    | 425 +++++++++++++++
+ fs/overlayfs/overlayfs.h                | 191 +++++++
+ fs/overlayfs/readdir.c                  | 587 ++++++++++++++++++++
+ fs/overlayfs/super.c                    | 796 +++++++++++++++++++++++++++
+ fs/splice.c                             |   1 +
+ include/linux/fs.h                      |  39 ++
+ include/linux/mount.h                   |   3 +
+ include/uapi/linux/fs.h                 |   1 +
+ mm/shmem.c                              |  36 +-
+ 26 files changed, 3809 insertions(+), 58 deletions(-)
+ create mode 100644 Documentation/filesystems/overlayfs.txt
+ create mode 100644 fs/overlayfs/Kconfig
+ create mode 100644 fs/overlayfs/Makefile
+ create mode 100644 fs/overlayfs/copy_up.c
+ create mode 100644 fs/overlayfs/dir.c
+ create mode 100644 fs/overlayfs/inode.c
+ create mode 100644 fs/overlayfs/overlayfs.h
+ create mode 100644 fs/overlayfs/readdir.c
+ create mode 100644 fs/overlayfs/super.c
+
