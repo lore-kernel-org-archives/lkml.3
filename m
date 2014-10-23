@@ -1,112 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996AbaJWTVQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 15:21:16 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:60230 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754709AbaJWTVO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 15:21:14 -0400
+	id S932560AbaJWTV4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 15:21:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12585 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755071AbaJWTVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 15:21:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="405001353"
+From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
+To: Arnd Hannemann <arnd@arndnet.de>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+CC: "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Ilw] WARNING: drivers/net/wireless/iwlwifi/mvm/tx.c:197
+ iwl_mvm_set_tx_params+0x5f4/0x630 [iwlmvm]()
+Thread-Topic: [Ilw] WARNING: drivers/net/wireless/iwlwifi/mvm/tx.c:197
+ iwl_mvm_set_tx_params+0x5f4/0x630 [iwlmvm]()
+Thread-Index: AQHP7vToxh1K35tli0296vSR1ex4rZw+DvFw
+Date: Thu, 23 Oct 2014 19:21:12 +0000
+Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB31B55331A@hasmsx107.ger.corp.intel.com>
+References: <5449525A.6000009@arndnet.de>
+In-Reply-To: <5449525A.6000009@arndnet.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1414091732.2363.11.camel@redhat.com>
-References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
- <54494B74.2080504@amacapital.net> <1414091732.2363.11.camel@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 23 Oct 2014 12:20:51 -0700
-Message-ID: <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com>
-Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
-To: Eric Paris <eparis@redhat.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-audit@redhat.com
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9NJM2xG018393
 
-On Thu, Oct 23, 2014 at 12:15 PM, Eric Paris <eparis@redhat.com> wrote:
-> On Thu, 2014-10-23 at 11:39 -0700, Andy Lutomirski wrote:
->> On 10/22/2014 09:04 PM, Eric Paris wrote:
->> > git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
->> > It was writing over %esp/pt_regs semi-randomly on i686  with the expected
->> > "system can't boot" results.  As noted in:
->> >
->> > https://bugs.freedesktop.org/show_bug.cgi?id=85277
->> >
->> > This patch stops fscking with pt_regs.  Instead it sets up the registers
->> > for the call to __audit_syscall_entry in the most obvious conceivable
->> > way.  It then does just a tiny tiny touch of magic.  We need to get what
->> > started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
->> > as a pair of pushes.
->> >
->> > After the call to __audit_syscall_entry all we need to do is get that
->> > now useless junk off the stack (pair of pops) and reload %eax with the
->> > original syscall so other stuff can keep going about it's business.
->> >
->> > Signed-off-by: Eric Paris <eparis@redhat.com>
->> > Cc: Thomas Gleixner <tglx@linutronix.de>
->> > Cc: Ingo Molnar <mingo@redhat.com>
->> > Cc: "H. Peter Anvin" <hpa@zytor.com>
->> > Cc: x86@kernel.org
->> > Cc: linux-kernel@vger.kernel.org
->> > Cc: linux-audit@redhat.com
->> > ---
->> >  arch/x86/kernel/entry_32.S | 15 +++++++--------
->> >  1 file changed, 7 insertions(+), 8 deletions(-)
->> >
->> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
->> > index f9e3fab..fb01d22 100644
->> > --- a/arch/x86/kernel/entry_32.S
->> > +++ b/arch/x86/kernel/entry_32.S
->> > @@ -447,15 +447,14 @@ sysenter_exit:
->> >  sysenter_audit:
->> >     testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
->> >     jnz syscall_trace_entry
->> > -   addl $4,%esp
->> > -   CFI_ADJUST_CFA_OFFSET -4
->> > -   movl %esi,4(%esp)               /* 5th arg: 4th syscall arg */
->> > -   movl %edx,(%esp)                /* 4th arg: 3rd syscall arg */
->> > -   /* %ecx already in %ecx            3rd arg: 2nd syscall arg */
->> > -   movl %ebx,%edx                  /* 2nd arg: 1st syscall arg */
->> > -   /* %eax already in %eax            1st arg: syscall number */
->> > +   /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
->> > +   movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
->> > +   /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
->> > +   pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
->> > +   pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
->> >     call __audit_syscall_entry
->> > -   pushl_cfi %ebx
->> > +   popl_cfi %ecx /* get that remapped edx off the stack */
->> > +   popl_cfi %ecx /* get that remapped esi off the stack */
->> >     movl PT_EAX(%esp),%eax          /* reload syscall number */
->> >     jmp sysenter_do_call
->> >
->> >
->>
->> This looks reasonably likely to be correct, but this code is complicated
->> and now ever slower.
->
-> I guess I could just use push/pop and do the CFI_ADJUST_CFA_OFFSET by
-> hand.  But I figured this was reasonable enough...
->
+> Hi,
+> 
+> on recent Linus git, I regulary get the following backtrace (since 3.17 around
+> or so).
+> HW is Intel Corporation Wireless 7260 (rev 83)
+> 
+> [ 1774.340980] ------------[ cut here ]------------
+> [ 1774.341003] WARNING: CPU: 2 PID: 2402 at
+> /home/arnd/Projekte/kernel/linux-
+> 2.6/drivers/net/wireless/iwlwifi/mvm/tx.c:197
+> iwl_mvm_set_tx_params+0x5f4/0x630 [iwlmvm]()
 
-I'm not complaining about your new assembly in particular.  There's
-just too much assembly in there in general.
+Yep  - fix is in my tree already.
 
-But I feel like I'm missing something in the new code.  Aren't you
-corrupting ecx with those popl_cfi insns?
+> [ 1774.341004] Got an HT rate for a non data frame 0x8
+> [ 1774.341005] Modules linked in: ccm xt_CHECKSUM iptable_mangle
+> xt_tcpudp bridge stp llc ip6table_filter ip6_tables iptable_filter ip_tables
+> ebtable_nat ebtables x_tables dm_crypt cdc_ncm uvcvideo usbnet
+> videobuf2_vmalloc videobuf2_memops mii videobuf2_core cdc_wdm
+> cdc_acm v4l2_common videodev media btusb deflate ctr twofish_generic
+> twofish_x86_64_3way twofish_x86_64 twofish_common camellia_generic
+> camellia_x86_64 serpent_sse2_x86_64 serpent_generic xts blowfish_generic
+> blowfish_x86_64 blowfish_common cast5_generic cast_common
+> des3_ede_x86_64 des_generic cmac xcbc rmd160 sha512_generic
+> crypto_null af_key xfrm_algo rfcomm bnep bluetooth arc4 binfmt_misc
+> snd_hda_codec_realtek snd_hda_codec_generic snd_hda_codec_hdmi
+> x86_pkg_temp_thermal coretemp kvm_intel dm_multipath kvm
+> ghash_clmulni_intel aesni_intel aes_x86_64 ablk_helper cryptd lrw gf128mul
+> glue_helper snd_hda_intel microcode snd_hda_controller joydev serio_raw
+> iwlmvm snd_hda_codec lpc_ich mac80211 snd_hwdep wmi thinkpad_
+>  acpi nvra
+> m tpm_tis snd_pcm iwlwifi cfg80211 snd_seq_midi snd_seq_midi_event
+> snd_rawmidi snd_seq snd_seq_device snd_timer snd xhci_pci xhci_hcd
+> soundcore btrfs xor raid6_pq rtsx_pci_sdmmc rtsx_pci psmouse i915
+> i2c_algo_bit drm_kms_helper ahci libahci e1000e ptp drm pps_core video
+> [ 1774.341060] CPU: 2 PID: 2402 Comm: wpa_supplicant Tainted: P
+> 3.18.0-rc1aha+ #1
+> [ 1774.341061] Hardware name: LENOVO 20AQCTO1WW/20AQCTO1WW,
+> BIOS GJET79WW (2.29 ) 09/03/2014
+> [ 1774.341063]  0000000000000009 ffff880302b93728 ffffffff8168e85a
+> 0000000000000000
+> [ 1774.341065]  ffff880302b93778 ffff880302b93768 ffffffff8104c5d1
+> ffff880302b937d8
+> [ 1774.341067]  ffff8802e4a82480 ffff8800a520b026 0000000000000000
+> ffff88030d7f9a88
+> [ 1774.341069] Call Trace:
+> [ 1774.341074]  [<ffffffff8168e85a>] dump_stack+0x46/0x58
+> [ 1774.341078]  [<ffffffff8104c5d1>] warn_slowpath_common+0x81/0xa0
+> [ 1774.341080]  [<ffffffff8104c636>] warn_slowpath_fmt+0x46/0x50
+> [ 1774.341089]  [<ffffffffc06f97a4>] iwl_mvm_set_tx_params+0x5f4/0x630
+> [iwlmvm]
+> [ 1774.341095]  [<ffffffffc06f9a24>] iwl_mvm_tx_skb+0x54/0x350 [iwlmvm]
+> [ 1774.341101]  [<ffffffffc06f152f>] iwl_mvm_mac_tx+0xaf/0x1b0 [iwlmvm]
+> [ 1774.341104]  [<ffffffff8104c7c6>] ? put_online_cpus+0x56/0x80
+> [ 1774.341120]  [<ffffffffc060cf91>] __ieee80211_tx+0x271/0x380 [mac80211]
+> [ 1774.341133]  [<ffffffffc060f7ca>] ieee80211_tx+0xca/0x100 [mac80211]
+> [ 1774.341144]  [<ffffffffc060fa01>] ieee80211_xmit+0xa1/0x100 [mac80211]
+> [ 1774.341155]  [<ffffffffc061033a>]
+> ieee80211_subif_start_xmit+0x66a/0xd10 [mac80211]
+> [ 1774.341160]  [<ffffffff8159a019>] dev_hard_start_xmit+0x169/0x3d0
+> [ 1774.341163]  [<ffffffff815ba362>] sch_direct_xmit+0xe2/0x1e0
+> [ 1774.341166]  [<ffffffff8159a4c7>] __dev_queue_xmit+0x247/0x560
+> [ 1774.341168]  [<ffffffff8159a7f0>] dev_queue_xmit+0x10/0x20
+> [ 1774.341171]  [<ffffffff81675c5d>] packet_sendmsg+0xe8d/0x1130
+> [ 1774.341174]  [<ffffffff8157f132>] ? sock_recvmsg+0xa2/0xd0
+> [ 1774.341176]  [<ffffffff8157ee43>] sock_sendmsg+0x93/0xd0
+> [ 1774.341179]  [<ffffffff811aee00>] ? evict+0x110/0x180
+> [ 1774.341182]  [<ffffffff811a9c2b>] ? __d_free+0x2b/0x50
+> [ 1774.341185]  [<ffffffff811b0f33>] ? __fdget+0x13/0x20
+> [ 1774.341187]  [<ffffffff8157eff1>] SYSC_sendto+0x121/0x1c0
+> [ 1774.341189]  [<ffffffff81580032>] ? __sys_recvmsg+0x42/0x80
+> [ 1774.341192]  [<ffffffff8157fb0e>] SyS_sendto+0xe/0x10
+> [ 1774.341194]  [<ffffffff81695452>] system_call_fastpath+0x12/0x17
+> [ 1774.341195] ---[ end trace f25bbefa3f5a7aa1 ]---
+> 
 
->> How hard would it be to just delete it and replace it with a
->> straightforward two-phase trace invocation a la x86_64?
->
-> For me?  Hard.
->
-
-I can try it eventually, but my track record with the 32-bit entry
-code isn't so good.  I agree that this would be pretty nasty for
-urgent, but at least neither that or your fix would need to go to
--stable.
-
---Andy
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
