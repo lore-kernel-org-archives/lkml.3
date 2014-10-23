@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933335AbaJWAUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 20:20:08 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:48426 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932095AbaJWAUG (ORCPT
+	id S933572AbaJWAW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 20:22:26 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:48082 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933411AbaJWAWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 20:20:06 -0400
+	Wed, 22 Oct 2014 20:22:23 -0400
+Date: Wed, 22 Oct 2014 19:22:00 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        seth.forshee@canonical.com
+Subject: Re: [PATCH v5 4/4] fuse: Allow user namespace mounts
+Message-ID: <20141023002200.GA138443@ubuntu-hedt>
+Mail-Followup-To: Andy Lutomirski <luto@amacapital.net>,
+	Miklos Szeredi <miklos@szeredi.hu>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	"Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+	Michael j Theall <mtheall@us.ibm.com>,
+	fuse-devel@lists.sourceforge.net,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Linux FS Devel <linux-fsdevel@vger.kernel.org>
+References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
+ <1414013060-137148-5-git-send-email-seth.forshee@canonical.com>
+ <CALCETrV_4euS+iDi3imBvBW3L7sutQ6kGJ1Z9CRHUPRL7n9v0g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1414022989-23035-1-git-send-email-gregory.0xf0@gmail.com>
-References: <1414022989-23035-1-git-send-email-gregory.0xf0@gmail.com>
-From: Gregory Fong <gregory.0xf0@gmail.com>
-Date: Wed, 22 Oct 2014 17:19:33 -0700
-Message-ID: <CADtm3G7UwHW34vP_067d7cZZ74bBGqtdHGZQjvO-0-gs-5YnRg@mail.gmail.com>
-Subject: Re: [PATCH] mm: cma: Use %pa to avoid truncating the physical address
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kevin Cernekee <cernekee@gmail.com>,
-        Gregory Fong <gregory.0xf0@gmail.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrV_4euS+iDi3imBvBW3L7sutQ6kGJ1Z9CRHUPRL7n9v0g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replying to change to use the real linux-mm list on CC (sorry for the noise!)
+On Wed, Oct 22, 2014 at 02:51:56PM -0700, Andy Lutomirski wrote:
+> On Wed, Oct 22, 2014 at 2:24 PM, Seth Forshee
+> <seth.forshee@canonical.com> wrote:
+> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+> > Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
+> > Cc: Andy Lutomirski <luto@amacapital.net>
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> > ---
+> >  fs/fuse/inode.c | 4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+> > index b88b5a780228..7d0e73e36e7b 100644
+> > --- a/fs/fuse/inode.c
+> > +++ b/fs/fuse/inode.c
+> > @@ -1201,7 +1201,7 @@ static void fuse_kill_sb_anon(struct super_block *sb)
+> >  static struct file_system_type fuse_fs_type = {
+> >         .owner          = THIS_MODULE,
+> >         .name           = "fuse",
+> > -       .fs_flags       = FS_HAS_SUBTYPE,
+> > +       .fs_flags       = FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
+> >         .mount          = fuse_mount,
+> >         .kill_sb        = fuse_kill_sb_anon,
+> >  };
+> > @@ -1233,7 +1233,7 @@ static struct file_system_type fuseblk_fs_type = {
+> >         .name           = "fuseblk",
+> >         .mount          = fuse_mount_blk,
+> >         .kill_sb        = fuse_kill_sb_blk,
+> > -       .fs_flags       = FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
+> > +       .fs_flags       = FS_REQUIRES_DEV | FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
+> >  };
+> >  MODULE_ALIAS_FS("fuseblk");
+> >
+> > --
+> > 1.9.1
+> >
+> 
+> This is mostly a sign of my ignorance, but how does this actually end
+> up working?  I assume that the mounter opens /dev/fuse and then passes
+> the fd to the mount call.  Which userns is captured?  The opener of
+> /dev/fuse or the mounter of the fs?
 
-On Wed, Oct 22, 2014 at 5:09 PM, Gregory Fong <gregory.0xf0@gmail.com> wrote:
-> From: Kevin Cernekee <cernekee@gmail.com>
->
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-> [gregory.0xf0@gmail.com: rebased from 3.14 and updated commit message]
-> Signed-off-by: Gregory Fong <gregory.0xf0@gmail.com>
-> ---
->  mm/cma.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/mm/cma.c b/mm/cma.c
-> index 963bc4a..154efb0 100644
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -288,8 +288,8 @@ int __init cma_declare_contiguous(phys_addr_t base,
->         if (ret)
->                 goto err;
->
-> -       pr_info("Reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
-> -               (unsigned long)base);
-> +       pr_info("Reserved %ld MiB at %pa\n", (unsigned long)size / SZ_1M,
-> +               &base);
->         return 0;
->
->  err:
-> --
-> 1.9.1
->
+You're correct that the mounter passes the fd to /dev/fuse to the mount
+call. The namespace of the mounter is used, but there's also a check to
+make sure that's the same as that of the opener of /dev/fuse, otherwise
+the mount fails.
+
+Seth
