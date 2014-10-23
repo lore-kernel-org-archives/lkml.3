@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100AbaJWP47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:56:59 -0400
-Received: from mailgw01.mediatek.com ([210.61.82.183]:52523 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754756AbaJWPyL (ORCPT
+	id S1755780AbaJWP7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:59:11 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:33486 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754349AbaJWP7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 11:54:11 -0400
-X-Listener-Flag: 11101
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Rob Herring <robh+dt@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>, <arm@kernel.org>
-CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <srv_heupstream@mediatek.com>, <yingjoe.chen@gmail.com>,
-        <hc.yen@mediatek.com>, <eddie.huang@mediatek.com>,
-        <nathan.chung@mediatek.com>, <yh.chen@mediatek.com>
-Subject: [PATCH v4 0/7] ARM: mediatek: Add support for interrupt polarity
-Date: Thu, 23 Oct 2014 23:53:08 +0800
-Message-ID: <1414079595-26129-1-git-send-email-yingjoe.chen@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
+	Thu, 23 Oct 2014 11:59:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
+In-Reply-To: <20141023154007.GA21034@quack.suse.cz>
+References: <cover.1414071910.git.d.kasatkin@samsung.com>
+	<5b1f234e8515c10c96a16868ff4341f29460f38f.1414071910.git.d.kasatkin@samsung.com>
+	<20141023154007.GA21034@quack.suse.cz>
+Date: Thu, 23 Oct 2014 18:59:07 +0300
+Message-ID: <CACE9dm9zB0h6CU+oHUowm3=Oy7Kpx9q4tp78pb-5myRCpTXLZA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ima: check xattr value length in ima_inode_setxattr()
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-ima-devel <linux-ima-devel@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is 4th version of interrupt polarity support for MediaTek SoCs.
-This is based on Jiang's hierarchy irqdomain v2 [1] and my mediatek SoC
-basic support [2].
+On 23 October 2014 18:40, Jan Kara <jack@suse.cz> wrote:
+> On Thu 23-10-14 16:47:17, Dmitry Kasatkin wrote:
+>> ima_inode_setxattr() can be called with no value. Function does not
+>> check the length so that following command can be used to produce
+>> kernel oops: setfattr -n security.ima FOO. This patch fixes it.
+>>
+> ..
+>>
+>> Reported-by: Jan Kara <jack@suse.cz>
+>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+>> ---
+>>  security/integrity/ima/ima_appraise.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+>> index 5b845af..f07aacd 100644
+>> --- a/security/integrity/ima/ima_appraise.c
+>> +++ b/security/integrity/ima/ima_appraise.c
+>> @@ -378,6 +378,8 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+>>       result = ima_protect_xattr(dentry, xattr_name, xattr_value,
+>>                                  xattr_value_len);
+>>       if (result == 1) {
+>> +             if (!xattr_value_len)
+>> +                     return -EINVAL;
+>   Wouldn't it be safer to return EINVAL whenever xattr_value_len !=
+> sizeof(evm_ima_xattr_data)?
 
-This version addressed comments from previous discussion[3]. I removed
-arm,hierarchy-irq-domain property. When GIC is probed by DT, it will
-support hierarchy irqdomain. I still keep the first patch because this is
-still base on hierarchy irqdomain v2.
+In this function we only use first byte to identify attribute type.
+sizeof(evm_ima_xattr_data) is SHA1_DIGEST_SIZE + 1.
+But IMA may use any other algorithm where digest size is different.
 
-In Jiang's version of irq_create_of_mapping, if irqdomain is hierarchy, it
-will not perform irq_find_mapping check and set_type. The outermost
-irqdomain need to take care of that. Because we will have several different
-outermost irqdomain in different ARM SoCs, this cause code duplication. I
-moved them back to irq_create_of_mapping. Since Jiang's changes are not
-merged yet, maybe that patch should be merged there.
+- Dmitry
 
-Simplified block diagram for interrupt on my system:
 
-    +-------+      +-------+
- ---| SYSIRQ|------|ARM GIC|
- ---|       |------|       |
- ---|       |------|       |
- ---|       |------|       |
- ---|       |------|       |
-    +-------+      +-------+
+>
+>                                                                 Honza
+>>               ima_reset_appraise_flags(dentry->d_inode,
+>>                        (xvalue->type == EVM_IMA_XATTR_DIGSIG) ? 1 : 0);
+>>               result = 0;
+>> --
+>> 1.9.1
+>>
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
 
-In device tree, interrupt-parent for other devices is sysirq, child of gic.
-This describe HW better and allow device to specify polarity as it is sent
-by the device.
 
-When using hierarchy irq domain, gic will use irq_domain_add_linear to
-create irqdomain and all interrupt numbers must come from device tree. My
-/proc/interrupts looks like this now:
-
-# cat /proc/interrupts
-           CPU0
- 16:       1862  MT_SYSIRQ 113  mtk_timer
- 17:         67  MT_SYSIRQ  54  mtk-uart
-
-Changes in v3:
- - Discussion in [3]
- - First implementation using hierarchy irqdomain
-
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/290832.html
-[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/284553.html
-[3] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/293766.html
-
-Yingjoe Chen (7):
-  irqdomain: Fix irq_domain_alloc_irqs return check.
-  irqdomain: Add back xlate and set_type for hierarchy irq domain
-  genirq: Add more helper functions to support stacked irq_chip
-  irqchip: gic: Support hierarchy irq domain.
-  ARM: mediatek: Add sysirq interrupt polarity support
-  ARM: mediatek: Add sysirq in mt6589/mt8135/mt8127 dtsi
-  dt-bindings: add bindings for mediatek sysirq
-
- .../bindings/arm/mediatek/mediatek,sysirq.txt      |  26 ++++
- arch/arm/boot/dts/mt6589.dtsi                      |  14 +-
- arch/arm/boot/dts/mt8127.dtsi                      |  14 +-
- arch/arm/boot/dts/mt8135.dtsi                      |  14 +-
- drivers/irqchip/Kconfig                            |   1 +
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-gic.c                          |  54 +++++--
- drivers/irqchip/irq-mtk-sysirq.c                   | 168 +++++++++++++++++++++
- include/linux/irq.h                                |   6 +
- kernel/irq/chip.c                                  |  28 ++++
- kernel/irq/irqdomain.c                             |  31 ++--
- 11 files changed, 332 insertions(+), 25 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/arm/mediatek/mediatek,sysirq.txt
- create mode 100644 drivers/irqchip/irq-mtk-sysirq.c
 
 -- 
-1.8.1.1.dirty
-
+Thanks,
+Dmitry
