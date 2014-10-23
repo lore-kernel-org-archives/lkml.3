@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527AbaJWMz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:55:29 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44481 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755296AbaJWMz2 (ORCPT
+	id S1755607AbaJWM4i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:56:38 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:64386 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755296AbaJWM4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:55:28 -0400
-Date: Thu, 23 Oct 2014 13:55:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Greg KH <gregkh@linuxfoundation.org>, russ.dill@gmail.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Message-ID: <20141023125502.GB3729@sirena.org.uk>
-References: <1414054344-3688-1-git-send-email-Russ.Dill@gmail.com>
- <20141023094053.GA30334@kroah.com>
- <20141023121815.1d8ef21d@alan.etchedpixels.co.uk>
+	Thu, 23 Oct 2014 08:56:37 -0400
+Message-ID: <5448FB01.1090108@mentor.com>
+Date: Thu, 23 Oct 2014 15:56:33 +0300
+From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MfFXiAuoTsnnDAfZ"
-Content-Disposition: inline
-In-Reply-To: <20141023121815.1d8ef21d@alan.etchedpixels.co.uk>
-X-Cookie: You will get what you deserve.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.174.112.79
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] usb: serial: Perform verification for FTDI FT232R devices
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] fs: sysfs: return EFBIG on write if offset is
+ larger than binary file size
+References: <1412876515-12057-1-git-send-email-vladimir_zapolskiy@mentor.com> <20141009184631.GA17554@mtj.dyndns.org>
+In-Reply-To: <20141009184631.GA17554@mtj.dyndns.org>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello Greg,
 
---MfFXiAuoTsnnDAfZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 09.10.2014 21:46, Tejun Heo wrote:
+> Hello, Vladimir.
+> 
+> On Thu, Oct 09, 2014 at 08:41:55PM +0300, Vladimir Zapolskiy wrote:
+>> According to the user expectations common utilities like dd or sh
+>> redirection operator '>' should work correctly over binary files from
+>> sysfs. At the moment doing excessive write can not be ever completed
+>> (no error is returned), e.g. for 4-byte file:
+>>
+>>   write(1, "\0\0\0\0\0\0\0\0", 8)         = 4
+>>   write(1, "\0\0\0\0", 4)                 = 0
+>>   write(1, "\0\0\0\0", 4)                 = 0
+>>   write(1, "\0\0\0\0", 4)                 = 0
+>>   write(1, "\0\0\0\0", 4)                 = 0
+>>   write(1, "\0\0\0\0", 4)                 = 0
+>>   .......
+>>
+>> This is not a successful completion of write(2), so fix the problem by
+>> returning EFBIG as described in POSIX.1-2001:
+>>
+>>   [EFBIG]
+>>     The file is a regular file, nbyte is greater than 0, and the
+>>     starting position is greater than or equal to the offset maximum
+>>     established in the open file description associated with fildes.
+>>
+>> Note, the write(2) ABI is changed, however
+>> 1) write(2) behaviour is corrected in conformance to POSIX, the
+>>    existing userspace applications must be aware of possible errors on
+>>    a syscall,
+>> 2) the return value is changed on error path, so it is an exceptional
+>>    situation,
+>> 3) the change is related only to binary sysfs files, which is a very
+>>    small class of files, mainly representing non-volatile registers or
+>>    ram, eeproms etc, many of such files are read-only.
+>>
+>> Presumably it is safe to apply the change, the described problem is
+>> definitely in the kernel and userspace utilities can not be changed to
+>> process 0 return value as an error, because it is just not an error
+>> according to POSIX.
+>>
+>> Signed-off-by: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Tejun Heo <tj@kernel.org>
+> 
+> This is a bit risky but the current behavior is problematic and as you
+> pointed out the danger of actual breakge is relatively low.  We might
+> as well give it a shot.
+> 
+>  Cautiously-acked-by: Tejun Heo <tj@kernel.org>
+> 
+> Please also cc stable.
+> 
+> Thanks.
 
-On Thu, Oct 23, 2014 at 12:18:15PM +0100, One Thousand Gnomes wrote:
-> > >  drivers/usb/serial/ftdi_sio.c | 111 +++++++++++++++++++++++++++++++++++++++++-
-> > >  drivers/usb/serial/ftdi_sio.h |  41 ++++++++++++++++
-> > >  2 files changed, 151 insertions(+), 1 deletion(-)
+have you had time to look at the problem? Understanding the risk of the
+change, should the inconsistency with POSIX be documented in
+Documentation/ABI/stable/syscalls instead?
 
-> > Funny patch, you should have saved it for April 1, otherwise people
-> > might have actually taken this seriously :)
-
-> > Patches as performance art, now I've seen everything...
-
-> Chuckle. Sillyness aside a pure detection version of that patch might be
-> useful so it can warn users "Running Windows may damage your adapter" 8)
-
-The EEPROM read function might also be interesting too, especially with
-a userspace interface for reading it back.
-
---MfFXiAuoTsnnDAfZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUSPqlAAoJECTWi3JdVIfQkgwH/3EOq0zYk6YLb6XdMJSRj1zX
-yT2mY7f6ID5UzyWgqUEtVgHu54P0dapBIQrbbi4Y0tO7A3CcZ3O1NVLoVxcBc0ck
-zWRDxk5Nu7g/r22PzjbXtv3NlfGFV39Vio0bIkEoYcY9EXEe4tg+/U8Kx31zRX9o
-eyN1cTn+VZ+AA0faoYHtImojRx9TuW2TaJ9j3zmd7hg2EVUpa8MdY63/bHmtPRXc
-37vMAyN+vAhrkYqrYw/t6Y17hHBdxmJfjHHf2wFYUNyDA4DLS68o3bT7ZycqUt4+
-w6rXxvsGjIITSYdQHF4A3f0N9ht4Rs/KrqR/nLyvEA6JUbM7aDusFUFQyX0QZ2A=
-=Fasw
------END PGP SIGNATURE-----
-
---MfFXiAuoTsnnDAfZ--
+With best wishes,
+Vladimir
