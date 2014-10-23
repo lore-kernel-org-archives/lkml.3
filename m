@@ -1,105 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344AbaJWMWB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:22:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59139 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754971AbaJWMV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:21:57 -0400
-Date: Thu, 23 Oct 2014 14:21:54 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2] mm: page-writeback: inline account_page_dirtied()
- into single caller
-Message-ID: <20141023122154.GB23011@dhcp22.suse.cz>
-References: <1414002568-21042-1-git-send-email-hannes@cmpxchg.org>
- <1414002568-21042-2-git-send-email-hannes@cmpxchg.org>
+	id S932383AbaJWMZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:25:38 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:63510 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932143AbaJWMZd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 08:25:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio: Support for unified device properties interface)
+Date: Thu, 23 Oct 2014 14:25:19 +0200
+Message-ID: <2964475.27LDgQTJ7C@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAAVeFuJzZJdh+Z7hY-Ws3orxyO=PSqCB_eBphbWk3nRb15op2w@mail.gmail.com>
+References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com> <4582579.9WMrIMALsy@wuerfel> <CAAVeFuJzZJdh+Z7hY-Ws3orxyO=PSqCB_eBphbWk3nRb15op2w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414002568-21042-2-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:/I5/H2vPhkUWspuJkLM9q657KTDU3BtBnoPSbUeRiuj
+ IqTUAiZFjvlPdcbkW1CBhXlykFnNl3PMJvfE4n/Y4P9e7P7kjR
+ AfgFT1zUrX9ugjzlR7t3BHlFPCdhF9FRkOHUlrAnBRYRmTE2XU
+ ystWnYzY6h+vdhSdhzxo/u/hSJPBNJQDTeYCKR3quhBA7H8ZRO
+ e9AUY0VPDo9vGk6ubk3YUg5NfJ3EzUFRPpOfI2HolDXYPpeKns
+ NFQe6QyfetKvKAadDj4F4+S1J05yXmveChT63DO42RmOGHepUn
+ /oHuK1qaPEA/Sq2q+QMV+l2W0stVUZ4bZET9WdSCVuh9DpMyeK
+ W8pdPtwOWkS2RF1nen48=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 22-10-14 14:29:27, Johannes Weiner wrote:
-> A follow-up patch would have changed the call signature.  To save the
-> trouble, just fold it instead.
+On Thursday 23 October 2014 15:02:46 Alexandre Courbot wrote:
+> On Tue, Oct 21, 2014 at 4:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Tuesday 21 October 2014 14:14:02 Alexandre Courbot wrote:
+
+> > Drivers that use
+> > existing bindings with the "foo-gpio" form (or worse, "foo-somethingelse"
+> > can use the same internal interface as the drivers that use name plus
+> > index. Do you see a problem using what I suggested for the combined
+> > API:
+> >
+> > __gpiod_get(dev, propname, index); // use property name plus index
+> > gpiod_get(dev, index); // use "gpios" plus index
+> > gpiod_get_named(dev, "name"); use "name-gpios" with index 0
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: "3.17" <stable@kernel.org>
+> Apart from the loosy naming practices which we sometimes see (and
+> which should be caught during review), do you have something against
+> requiring a name for all new GPIO bindings, i.e. for ensuring that all
+> new properties are "name-gpio" and forbidding "gpios"?
 
-It seems that the function was added just for nilfs but that wasn't using
-the symbol at the time memcg part went in. Funny...
+Most other subsystems don't require a name, and traditionally we only
+had anonymous indexed properties for a lot of things (registers, 
+interrupts, ...).
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+I still like the idea of using anonymous references for simple things,
+but if you and Linus feel that it's better to mandate names from now on,
+I won't complain.
 
-> ---
->  include/linux/mm.h  |  1 -
->  mm/page-writeback.c | 23 ++++-------------------
->  2 files changed, 4 insertions(+), 20 deletions(-)
+> Requiring a proper name for all GPIOs makes a lot of sense IMHO, it
+> makes drivers easier to understand and is less error-prone than long
+> arrays of GPIOs. The API would then be basically what we have today:
 > 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 27eb1bfbe704..b46461116cd2 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1235,7 +1235,6 @@ int __set_page_dirty_no_writeback(struct page *page);
->  int redirty_page_for_writepage(struct writeback_control *wbc,
->  				struct page *page);
->  void account_page_dirtied(struct page *page, struct address_space *mapping);
-> -void account_page_writeback(struct page *page);
->  int set_page_dirty(struct page *page);
->  int set_page_dirty_lock(struct page *page);
->  int clear_page_dirty_for_io(struct page *page);
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index ff24c9d83112..ff6a5b07211e 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -2116,23 +2116,6 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
->  EXPORT_SYMBOL(account_page_dirtied);
->  
->  /*
-> - * Helper function for set_page_writeback family.
-> - *
-> - * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
-> - * while calling this function.
-> - * See test_set_page_writeback for example.
-> - *
-> - * NOTE: Unlike account_page_dirtied this does not rely on being atomic
-> - * wrt interrupts.
-> - */
-> -void account_page_writeback(struct page *page)
-> -{
-> -	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
-> -	inc_zone_page_state(page, NR_WRITEBACK);
-> -}
-> -EXPORT_SYMBOL(account_page_writeback);
-> -
-> -/*
->   * For address_spaces which do not use buffers.  Just tag the page as dirty in
->   * its radix tree.
->   *
-> @@ -2410,8 +2393,10 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
->  	} else {
->  		ret = TestSetPageWriteback(page);
->  	}
-> -	if (!ret)
-> -		account_page_writeback(page);
-> +	if (!ret) {
-> +		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
-> +		inc_zone_page_state(page, NR_WRITEBACK);
-> +	}
->  	mem_cgroup_end_update_page_stat(page, &locked, &memcg_flags);
->  	return ret;
->  
-> -- 
-> 2.1.2
+> gpiod_get(dev, name) // use "name-gpios" with index 0
+> gpiod_get_index(dev, name, index) // for the rare case where several
+> GPIOs serve the same function. Not to be used lightly.
 > 
+> ... with stronger guidelines for the definition of new bindings, and a
+> big warning in the kerneldoc of gpiod_get_index().
+> 
+> ACPI drivers that may use tables without _DSD should then use a way to
+> bind GPIO names to indexes as a fallback for older hardware.
 
--- 
-Michal Hocko
-SUSE Labs
+Ok.
+
+	Arnd
