@@ -1,95 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653AbaJWVJe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 17:09:34 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:48477 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753073AbaJWVJd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 17:09:33 -0400
+	id S1755808AbaJWVLT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 17:11:19 -0400
+Received: from mail.kernel.org ([198.145.19.201]:50939 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751729AbaJWVLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 17:11:17 -0400
+Date: Thu, 23 Oct 2014 18:11:13 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 00/16] perf tools: Intel PT preparation continued
+Message-ID: <20141023211113.GO14687@kernel.org>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20141023132233.b156cd79badc1254eff08494@linux-foundation.org>
-References: <1413893696-25484-1-git-send-email-thierry.reding@gmail.com> <20141023132233.b156cd79badc1254eff08494@linux-foundation.org>
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Thu, 23 Oct 2014 22:09:12 +0100
-X-Google-Sender-Auth: eaioXotczQ1PFaGkm7cpdgi21-E
-Message-ID: <CAHkRjk5KLR1390eiRdXcNmppVKWBgugutsuvhpesMwXYa6CRzA@mail.gmail.com>
-Subject: Re: [PATCH] mm/cma: Make kmemleak ignore CMA regions
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 October 2014 21:22, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Tue, 21 Oct 2014 14:14:56 +0200 Thierry Reding <thierry.reding@gmail.com> wrote:
->
->> From: Thierry Reding <treding@nvidia.com>
->>
->> kmemleak will add allocations as objects to a pool. The memory allocated
->> for each object in this pool is periodically searched for pointers to
->> other allocated objects. This only works for memory that is mapped into
->> the kernel's virtual address space, which happens not to be the case for
->> most CMA regions.
->>
->> Furthermore, CMA regions are typically used to store data transferred to
->> or from a device and therefore don't contain pointers to other objects.
->>
->> Signed-off-by: Thierry Reding <treding@nvidia.com>
->> ---
->> Note: I'm not sure this is really the right fix. But without this, the
->> kernel crashes on the first execution of the scan_gray_list() because
->> it tries to access highmem. Perhaps a more appropriate fix would be to
->> reject any object that can't map to a kernel virtual address?
->
-> Let's cc Catalin.
->
->> --- a/mm/cma.c
->> +++ b/mm/cma.c
->> @@ -280,6 +280,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
->>                       ret = -ENOMEM;
->>                       goto err;
->>               } else {
->> +                     kmemleak_ignore(phys_to_virt(addr));
->>                       base = addr;
->>               }
->>       }
+Em Thu, Oct 23, 2014 at 01:45:08PM +0300, Adrian Hunter escreveu:
+> Hi
+> 
+> Here are the remaining Intel PT preparation patches.  They are
+> all patches that have been posted before, although "perf tools:
+> Do not attempt to run perf-read-vdso32 if it wasn't built" wasn't
+> sent as a separate email.
+> 
+> With regard to "32-bit compatibility VDSOs", you may recall that
+> Ingo had a problem getting "sh: perf-read-vdso32: command not found".
+> That message is inevitable when using popen to run perf-read-vdso32
+> and perf-read-vdso32 cannot be found.  At least with the patch
+> "perf tools: Do not attempt to run perf-read-vdso32 if it wasn't built"
+> one reason for the message is eliminated.
 
-I wonder whether using __va() for the argument of kmemleak_alloc() in
-memblock_alloc_range_nid() is always correct. Is
-memblock.current_limit guaranteed to be in lowmem? If not, I think we
-need some logic not to call kmemleak_alloc() for all memblock
-allocations (and avoid the need to ignore them later).
+The above patches I will try to process, look ok but since they are at
+the end of the patch kit, it conflicts if I don't process the ones at
+the start of the patchkit, which I am still not confortable merging.
 
-> And let's tell our poor readers why we did stuff.  Something like this.
->
-> --- a/mm/cma.c~mm-cma-make-kmemleak-ignore-cma-regions-fix
-> +++ a/mm/cma.c
-> @@ -280,6 +280,10 @@ int __init cma_declare_contiguous(phys_a
->                         ret = -ENOMEM;
->                         goto err;
->                 } else {
-> +                       /*
-> +                        * kmemleak writes metadata to the tracked objects, but
-> +                        * this address isn't mapped and accessible.
-> +                        */
->                         kmemleak_ignore(phys_to_virt(addr));
->                         base = addr;
->                 }
-
-The reason is different, as per Therry's patch description. Kmemleak
-does not write metadata to the tracked objects but reads them during
-memory scanning. So maybe something like "kmemleak scans/reads tracked
-objects for pointers to other objects but this address isn't mapped
-and accessible."
-
-A better API to use here would have been kmemleak_no_scan(), however,
-I don't think we care about such CMA pointers anyway since they seem
-to be tracked by physical address which kmemleak doesn't store.
-
--- 
-Catalin
+- Arnaldo
+ 
+> It would be nice to target 3.19 for Intel PT, but there are still the
+> real patches of which there are about 48.
+> 
+> 
+> Adrian Hunter (16):
+>       perf tools: Add id index
+>       perf pmu: Let pmu's with no events show up on perf list
+>       perf session: Add perf_session__deliver_synth_event()
+>       perf tools: Add a thread stack for synthesizing call chains
+>       perf tools: Add facility to export data in database-friendly way
+>       perf tools: Extend Python script interface to export data in a database-friendly way
+>       perf tools: Add Python script to export to postgresql
+>       perf tools: Add branch type to db export
+>       perf tools: Add branch_type and in_tx to Python export
+>       perf tools: Enhance the thread stack to output call/return data
+>       perf tools: Add call information to the database export API
+>       perf tools: Add call information to Python export
+>       perf tools: Defer export of comms that were not 'set'
+>       perf tools: Build programs to copy 32-bit compatibility VDSOs
+>       perf tools: Add support for 32-bit compatibility VDSOs
+>       perf tools: Do not attempt to run perf-read-vdso32 if it wasn't built
+> 
+>  tools/perf/Makefile.perf                           |  42 +-
+>  tools/perf/builtin-inject.c                        |   1 +
+>  tools/perf/config/Makefile                         |  29 +-
+>  tools/perf/config/Makefile.arch                    |   8 +
+>  tools/perf/config/feature-checks/Makefile          |  10 +-
+>  tools/perf/config/feature-checks/test-compile.c    |   4 +
+>  tools/perf/perf-read-vdso.c                        |  34 +
+>  .../scripts/python/bin/export-to-postgresql-record |   8 +
+>  .../scripts/python/bin/export-to-postgresql-report |  29 +
+>  tools/perf/scripts/python/export-to-postgresql.py  | 444 +++++++++++++
+>  tools/perf/util/comm.h                             |   1 +
+>  tools/perf/util/db-export.c                        | 426 +++++++++++++
+>  tools/perf/util/db-export.h                        | 107 ++++
+>  tools/perf/util/dso.h                              |   1 +
+>  tools/perf/util/event.c                            |   1 +
+>  tools/perf/util/event.h                            |  41 ++
+>  tools/perf/util/evlist.c                           |  26 +-
+>  tools/perf/util/evsel.h                            |   4 +
+>  tools/perf/util/find-vdso-map.c                    |  30 +
+>  tools/perf/util/machine.h                          |   1 +
+>  tools/perf/util/pmu.c                              |  13 +-
+>  tools/perf/util/pmu.h                              |   1 +
+>  .../util/scripting-engines/trace-event-python.c    | 395 +++++++++++-
+>  tools/perf/util/session.c                          | 136 ++++
+>  tools/perf/util/session.h                          |  15 +
+>  tools/perf/util/symbol.h                           |   1 +
+>  tools/perf/util/thread-stack.c                     | 690 +++++++++++++++++++++
+>  tools/perf/util/thread-stack.h                     |  79 +++
+>  tools/perf/util/thread.c                           |   3 +
+>  tools/perf/util/thread.h                           |   4 +
+>  tools/perf/util/tool.h                             |   3 +-
+>  tools/perf/util/vdso.c                             | 217 ++++++-
+>  tools/perf/util/vdso.h                             |   4 +-
+>  33 files changed, 2760 insertions(+), 48 deletions(-)
+>  create mode 100644 tools/perf/config/feature-checks/test-compile.c
+>  create mode 100644 tools/perf/perf-read-vdso.c
+>  create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-record
+>  create mode 100644 tools/perf/scripts/python/bin/export-to-postgresql-report
+>  create mode 100644 tools/perf/scripts/python/export-to-postgresql.py
+>  create mode 100644 tools/perf/util/db-export.c
+>  create mode 100644 tools/perf/util/db-export.h
+>  create mode 100644 tools/perf/util/find-vdso-map.c
+>  create mode 100644 tools/perf/util/thread-stack.c
+>  create mode 100644 tools/perf/util/thread-stack.h
+> 
+> 
+> Regards
+> Adrian
