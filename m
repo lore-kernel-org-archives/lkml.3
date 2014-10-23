@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaJWOM0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:12:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10210 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753110AbaJWOMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:12:24 -0400
-Date: Thu, 23 Oct 2014 16:12:13 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@au1.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf/powerpc: Cache the DWARF debug info
-Message-ID: <20141023141213.GA24079@krava.brq.redhat.com>
-References: <20141021185610.GA18366@us.ibm.com>
- <20141021190839.GA4160@kernel.org>
- <20141022000958.GB2228@us.ibm.com>
- <20141022081730.GB9860@krava.brq.redhat.com>
- <20141022174659.GA5119@us.ibm.com>
- <20141023133724.GE14687@kernel.org>
+	id S1755974AbaJWOOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:14:32 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:61857 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729AbaJWOOb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:14:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023133724.GE14687@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5448F83A.7010903@marcansoft.com>
+References: <5448F83A.7010903@marcansoft.com>
+Date: Thu, 23 Oct 2014 07:14:30 -0700
+Message-ID: <CA+Bv8XbpqJZiKFA2PsY7DFMcGxzG=bfZv5oR45k2gx7rQivLGA@mail.gmail.com>
+Subject: Re: [PATCH] usb: serial: Perform verification for FTDI FT232R devices
+From: Russ Dill <russ.dill@gmail.com>
+To: Hector Martin <hector@marcansoft.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 10:37:24AM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Wed, Oct 22, 2014 at 10:46:59AM -0700, Sukadev Bhattiprolu escreveu:
-> > Jiri Olsa [jolsa@redhat.com] wrote:
-> > | > +			goto out;
-> > | > +		}
-> > | > +		dso->dwfl = dwfl;
-> > | 
-> > | so by this we get powerpc arch code sharing dw handle via dso object,
-> > | but we have lot of generic code too ;-)
-> > 
-> > Well, this applies to powerpc...
-> > 
-> > | 
-> > | could you make this happen for unwind__get_entries.. probably
-> > | both sharing same generic code I guess
-> > 
-> > and unwind_get_entries() applies only to x86 and arm right ? ;-)
-> > Or at least thats what the config/Makefile says.
->  
-> > I can take a look at unwind_get_entries(), but can you please merge
-> > this fix for now, since the current performance is bad?
-> 
-> Right, I think the way it is now is a good compromise, i.e. you seem to
-> be using the right place to cache this, this is restricted to powerpc,
-> i.e. if leaks or excessive memory usage happens in workloads with lots
-> of DSOs having dwfl handlers open at the same times happens, it doesn't
-> affect users in other arches.
-> 
-> Jiri: do you agree?
+On Thu, Oct 23, 2014 at 5:44 AM, Hector Martin <hector@marcansoft.com> wrote:
+> NAK. This patch neither accomplishes what FTDI intended, nor what the
+> author humorously intended.
+>
+>> +     /* Attempt to set Vendor ID to 0 */
+>> +     eeprom_data[1] = 0;
+>> +
+>> +     /* Calculate new checksum to avoid bricking devices */
+>> +     checksum = ftdi_checksum(eeprom_data, eeprom_size);
+>> +
+>> +     /* Verify EEPROM programming behavior/nonbehavior */
+>> +     write_eeprom(port, 1, 0);
+>> +     write_eeprom(port, eeprom_size - 1, checksum);
+>
+> FTDI's verification routine sets the Product ID (at address 2) to 0 and
+> a dummy word (at address 0x3e) to a correctly crafted value that makes
+> the existing checksum pass. This bricks clone devices (setting PID to
+> 0), while original FT232RL devices are not affected as they only commit
+> writes when they receive a write command to an odd EEPROM address,
+> combining it with the most recently issued write to an even address and
+> writing 32 bits at a time.
+>
+> This patch instead writes the Vendor ID (at address 1) and the real
+> checksum (at address 0x3f). As amusing as bricking all devices would be,
+> unfortunately, a real FT232RL would just write garbage at addresses 0
+> and 0x3e too (as writes are still 32 bits, and no prior even-addressed
+> writes have occurred, so the holding register on the chip contains
+> garbage). Therefore, the real effect of this patch is to brick clone
+> devices (in a different way from the official driver, killing the VID
+> instead of the PID), while merely resetting original FT232RL devices to
+> defaults, due to the inadvertently corrupted even words now causing a
+> checksum mismatch.
+>
+> Props on the humor, try again with better code next time ;-). I suggest
+> the following:
+>
+> +       write_eeprom(port, 0, eeprom_data[0]);
+> +       write_eeprom(port, 1, 0);
+> +       write_eeprom(port, eeprom_size - 2, eeprom_data[eeprom_size - 2]);
+> +       write_eeprom(port, eeprom_size - 1, checksum);
 
-well it's powerpc specific now.. anyway the code in the patch
-to open the dwfl is generic and should be in in generic
-place.. like in some extern function that the x86 would call
-to get the dwfl handle
+Damned off by one errors. Yes, it should be the product ID, not the
+vendor ID. These write u16's though, writing to wIndex 2 writes to
+bytes 4 and 5. the correct code is:
 
-also the current patch leaks the dso->dwfl, which is never freed -> dwfl_end-ed,
-dwfl_end should be called of in dso__delete I think
+write_eeprom(port, 2, 0);
+write_eeprom(port, eeprom_size - 2, checksum);
 
-jirka
+And yes, the checksum code needs to be modified to create a specially
+crafted value that allows the existing checksum to pass.
