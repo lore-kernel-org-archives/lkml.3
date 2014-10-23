@@ -1,167 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129AbaJWBNQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 21:13:16 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:25987 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513AbaJWBNN (ORCPT
+	id S1754082AbaJWBSH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 21:18:07 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:17445 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941AbaJWBSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 21:13:13 -0400
-X-AuditID: cbfee68e-f79b46d000002b74-13-5448562715f6
-Message-id: <54485626.1050409@samsung.com>
-Date: Thu, 23 Oct 2014 10:13:10 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101
- Thunderbird/24.6.0
-MIME-version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-Cc: Alim Akhtar <alim.akhtar@gmail.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>, Addy Ke <addy.ke@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: Re: [PATCH] mmc: dw_mmc: Remove old card detect infrastructure
-References: <1413304389-6580-1-git-send-email-dianders@chromium.org>
- <CAGOxZ507j5QjnT_hW2y0KPZsw6WDJWRPLdesTBm4+C8D2EznWw@mail.gmail.com>
- <CAD=FV=X+q2ymbB0EZkjj_tip9_PLdFV+Tfee+MkeUDSfD3E-ig@mail.gmail.com>
- <CAGOxZ51x8cd9XmNg49aaUdZQkw-hhEA-mC=34ZSjLf0XF8Zbvw@mail.gmail.com>
- <54448023.1050008@samsung.com>
- <CAD=FV=UhdHHYqaF=Nprr2Lz2b4w7guuBquBdBrB82BmYhGC0=Q@mail.gmail.com>
-In-reply-to: <CAD=FV=UhdHHYqaF=Nprr2Lz2b4w7guuBquBdBrB82BmYhGC0=Q@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsWyRsSkWFc9zCPEYP9jYYuV7/8yWiz7/53J
-	YumtaosH87axWUy4vJ3R4uyyg2wWR38XWFzeNYfN4sj/fkaLJ2dmMlp8uH+R2eL42nAHHo/Z
-	DRdZPP4+v87isXPWXXaPO9f2sHnceLWQyePvrP0sHn1bVjF6fN4kF8ARxWWTkpqTWZZapG+X
-	wJXxqTmtYIF8RfvqtAbGlxJdjJwcEgImEnfnbGWBsMUkLtxbz9bFyMUhJLCUUaJz4iUmmKJj
-	Nz4xg9hCAosYJY6croAoes0ocWj3fbAiXgEtiQ0HLwBN4uBgEVCV+PA4HiTMJqAjsf3bcbAS
-	UYEwiUNt86DKBSV+TL4HtlhEQFPiWcNLZpCZzAIvmSWe7PoIlhAWcJfYevc4I8TiRmaJ60dM
-	QGxOgWCJe4+nsIPYzALqEpPmLWKGsOUlNq95CzZIQqCVQ+Lj659gCRYBAYlvkw+BHSchICux
-	6QAzxGOSEgdX3GCZwCg2C8lNs5CMnYVk7AJG5lWMoqkFyQXFSelFRnrFibnFpXnpesn5uZsY
-	gdF7+t+zvh2MNw9YH2IU4GBU4uF1YHMPEWJNLCuuzD3EaAp0xURmKdHkfGCKyCuJNzQ2M7Iw
-	NTE1NjK3NFMS502Q+hksJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgbGwcfO821Etnzzrrt14
-	pLzLcsK5C4XMZwouq+hxODJs7HSvVJtRvsxhnccLlYoD1+2a312eqX0+akXczEOhcRec+52e
-	L7HNXLw9eEvoxaXSzPOEOHIC0w5Uh3HpvLPxyrp+R+yX1M2/GbxLefn5n+zN6Wrvl8qd27P+
-	kkfpyp/Xp8WmrQ1WKVRiKc5INNRiLipOBABHN6cL2QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t9jAV31MI8Qg8NvuCxWvv/LaLHs/3cm
-	i6W3qi0ezNvGZjHh8nZGi7PLDrJZHP1dYHF51xw2iyP/+xktnpyZyWjx4f5FZovja8MdeDxm
-	N1xk8fj7/DqLx85Zd9k97lzbw+Zx49VCJo+/s/azePRtWcXo8XmTXABHVAOjTUZqYkpqkUJq
-	XnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QsUoKZYk5pUChgMTiYiV9
-	O0wTQkPcdC1gGiN0fUOC4HqMDNBAwhrGjE/NaQUL5CvaV6c1ML6U6GLk5JAQMJE4duMTM4Qt
-	JnHh3no2EFtIYBGjxJHTFV2MXED2a0aJQ7vvM4EkeAW0JDYcvMDSxcjBwSKgKvHhcTxImE1A
-	R2L7t+NgJaICYRKH2uZBlQtK/Jh8jwXEFhHQlHjW8JIZZCazwEtmiSe7PoIlhAXcJbbePc4I
-	sbiRWeL6ERMQm1MgWOLe4ynsIDazgLrEpHmLmCFseYnNa94yT2AUmIVkxywkZbOQlC1gZF7F
-	KJpakFxQnJSea6hXnJhbXJqXrpecn7uJEZwankntYFzZYHGIUYCDUYmH14HNPUSINbGsuDL3
-	EKMEB7OSCG+ttUeIEG9KYmVValF+fFFpTmrxIUZTYAhMZJYSTc4Hpq28knhDYxMzI0sjc0ML
-	I2NzJXHeA63WgUIC6YklqdmpqQWpRTB9TBycUg2MMeUnGx1mm8msPl5dHXp3bdOLsyfTt25P
-	Wv5z0+bX2UZWLBs+Xingj+J3frvEbY/pVQvN9uIX94NEHnzNavjUIyMmoCf/UOXMt9bwuB/e
-	/ZZ6kvlOXTH9Rur1kaummPtNE2pMPaavu+bg8R0XeyMc9z0rXfle6X58qf/afdsk6z/+C3gx
-	XV9CiaU4I9FQi7moOBEAtAbTwSMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
+	Wed, 22 Oct 2014 21:18:04 -0400
+Message-ID: <5448571F.6030105@huawei.com>
+Date: Thu, 23 Oct 2014 09:17:19 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
+        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
+        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
+        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <liviu@dudau.co.uk>
+Subject: Re: [PATCH v3 24/27] IA64/MSI: Use MSI chip framework to configure
+ MSI/MSI-X irq
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com> <1413342435-7876-25-git-send-email-wangyijing@huawei.com> <20141022235345.GE4795@google.com>
+In-Reply-To: <20141022235345.GE4795@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear, Doug.
-
-On 10/23/2014 01:36 AM, Doug Anderson wrote:
-> Hi,
+On 2014/10/23 7:53, Bjorn Helgaas wrote:
+> On Wed, Oct 15, 2014 at 11:07:12AM +0800, Yijing Wang wrote:
+>> Use MSI chip framework instead of arch MSI functions to configure
+>> MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
 > 
-> On Sun, Oct 19, 2014 at 8:23 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
->> Hi.
+> This needs slightly more detail.  You're using the MSI chip framework
+> "instead of arch MSI functions".  Well, there are still arch-specific
+> functions, i.e., arch_ia64_setup_msi_irq() and
+> arch_ia64_teardown_msi_irq().
+> 
+> We used to have arch_setup_msi_irq() which had a weak default
+> implementation, and a strong arch-specific implementation here, and you're
+> replacing that model with the new "msi-ops" model.  I don't know how you
+> want to write that, but it's not that you're getting rid of the
+> arch-specific code; you're keeping arch-specific code but structuring it
+> differently.
+
+Hm, I will rename the msi-ops functions.
+
+> 
+>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>> ---
+>>  arch/ia64/include/asm/pci.h |   10 ++++++++++
+>>  arch/ia64/kernel/msi_ia64.c |   14 ++++++++++----
+>>  arch/ia64/pci/pci.c         |    1 +
+>>  3 files changed, 21 insertions(+), 4 deletions(-)
 >>
->> On 10/17/2014 09:44 PM, Alim Akhtar wrote:
->>> Hi Doug,
->>>
->>> On Thu, Oct 16, 2014 at 9:40 PM, Doug Anderson <dianders@chromium.org> wrote:
->>>> Alim,
->>>>
->>>> On Thu, Oct 16, 2014 at 5:57 AM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
->>>>> Hi Doug,
->>>>>
->>>>> On Tue, Oct 14, 2014 at 10:03 PM, Doug Anderson <dianders@chromium.org> wrote:
->>>>>> The dw_mmc driver had a bunch of code that ran whenever a card was
->>>>>> ejected and inserted.  However, this code was old and crufty and
->>>>>> should be removed.  Some evidence that it's really not needed:
->>>>>>
->>>>>> 1. Is is supposed to be legal to use 'cd-gpio' on dw_mmc instead of
->>>>>>    using the built-in card detect mechanism.  The 'cd-gpio' code
->>>>>>    doesn't run any of the crufty old code but yet still works.
->>>>>>
->>>>>> 2. While looking at this, I realized that my old change (369ac86 mmc:
->>>>>>    dw_mmc: don't queue up a card detect at slot startup) actually
->>>>>>    castrated the old code a little bit already and nobody noticed.
->>>>>>    Specifically "last_detect_state" was left as 0 at bootup.  That
->>>>>>    means that on the first card removal none of the crufty code ran.
->>>>>>
->>>>> Yes, right most of these codes are _almost_ never call. But I see
->>>>> dw_mci_reset() being called on card removal (after first
->>>>> insert/removal).
->>>>
->>>> Right.  The old crufty code was called on the 2nd removal, not the
->>>> 1st.  That meant that the two were accidentally different.  My point
->>>> was that if the old code was really required that someone would have
->>>> noticed crashes on the 1st removal after each boot.  Since nobody is
->>>> reporting crashes with that then it means it can't be too terrible.
->>>>
->>>> One thing to note: I remember in the last Chromebook project you were
->>>> trying to track down crashes associated with constant eject / insert
->>>> of SD Cards.  I wonder if my patch will fix these crashes?
->>>>
->>> Ah, yes, reproducing that and checking with this patch will be really
->>> interesting.
->>>
->>>>
->>>>> I tested this on exynos5800 and this looks working fine. We need to
->>>>> test once cross suspend/resume as well.
->>>>
->>>> Good idea.  Can you test that?  I know that there's been lots of flux
->>>> with suspend/resume on exynos and I'm not sure I have all the latest
->>>> patches, but I'll search for them if you are unable to test easily.
->>>>
->>> Sure, I will do that..but probably sometime next week, as I will out
->>> of office for few days.
->>>>
->>>>> And as Jaehoon pointed out,probably lets look in TRM if there are some
->>>>> recommended  steps for cd-detect.
->>>>> Otherwise this looks good to me.
->>>>
->>>> If you see some other requirement than the one I addressed in my email
->>>> to Jaehoon, please let me know.
+>> diff --git a/arch/ia64/include/asm/pci.h b/arch/ia64/include/asm/pci.h
+>> index 52af5ed..907dcba 100644
+>> --- a/arch/ia64/include/asm/pci.h
+>> +++ b/arch/ia64/include/asm/pci.h
+>> @@ -94,6 +94,7 @@ struct pci_controller {
+>>  	int segment;
+>>  	int node;		/* nearest node with memory or NUMA_NO_NODE for global allocation */
+>>  
+>> +	struct msi_chip *msi_chip;
+>>  	void *platform_data;
+>>  };
+>>  
+>> @@ -101,6 +102,15 @@ struct pci_controller {
+>>  #define PCI_CONTROLLER(busdev) ((struct pci_controller *) busdev->sysdata)
+>>  #define pci_domain_nr(busdev)    (PCI_CONTROLLER(busdev)->segment)
+>>  
+>> +extern struct msi_chip chip;
+> 
+> Please make this name more descriptive.  "chip" is way too generic for a
+> global name.
+
+OK, what about rename it to ia64_msi_chip, and rename the original static irq_chip ia64_msi_chip to
+static irq_chip msi_chip like in x86.
+
+> 
+>> +static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
+>> +{
+>> +	struct pci_controller *ctrl = bus->sysdata;
+>> +
+>> +	return ctrl->msi_chip;
+>> +}
+>> +
+>>  extern struct pci_ops pci_root_ops;
+>>  
+>>  static inline int pci_proc_domain(struct pci_bus *bus)
+>> diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
+>> index 8c3730c..401fc98 100644
+>> --- a/arch/ia64/kernel/msi_ia64.c
+>> +++ b/arch/ia64/kernel/msi_ia64.c
+>> @@ -112,15 +112,16 @@ static struct irq_chip ia64_msi_chip = {
+>>  };
+>>  
+>>  
+>> -int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
+>> +static int arch_ia64_setup_msi_irq(struct msi_chip *chip,
+>> +		struct pci_dev *dev, struct msi_desc *desc)
+>>  {
+>>  	if (platform_setup_msi_irq)
+>> -		return platform_setup_msi_irq(pdev, desc);
+>> +		return platform_setup_msi_irq(dev, desc);
+>>  
+>> -	return ia64_setup_msi_irq(pdev, desc);
+>> +	return ia64_setup_msi_irq(dev, desc);
+> 
+> Please don't make gratuitous changes ("pdev" -> "dev") at the same time,
+> especially since the rest of the file still uses "pdev".
+
+OK.
+
+> 
+>>  }
+>>  
+>> -void arch_teardown_msi_irq(unsigned int irq)
+>> +static void arch_ia64_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
+>>  {
+>>  	if (platform_teardown_msi_irq)
+>>  		return platform_teardown_msi_irq(irq);
+>> @@ -128,6 +129,11 @@ void arch_teardown_msi_irq(unsigned int irq)
+>>  	return ia64_teardown_msi_irq(irq);
+>>  }
+>>  
+>> +struct msi_chip chip = {
+>> +	.setup_irq = arch_ia64_setup_msi_irq,
+>> +	.teardown_irq = arch_ia64_teardown_msi_irq,
+>> +};
+>> +
+>>  #ifdef CONFIG_INTEL_IOMMU
+>>  #ifdef CONFIG_SMP
+>>  static int dmar_msi_set_affinity(struct irq_data *data,
+>> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+>> index 291a582..299b67d 100644
+>> --- a/arch/ia64/pci/pci.c
+>> +++ b/arch/ia64/pci/pci.c
+>> @@ -437,6 +437,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+>>  
+>>  	controller->companion = device;
+>>  	controller->node = acpi_get_node(device->handle);
+>> +	controller->msi_chip = &chip;
+>>  
+>>  	info = kzalloc(sizeof(*info), GFP_KERNEL);
+>>  	if (!info) {
+>> -- 
+>> 1.7.1
 >>
->> I know there is no other requirement for detecting card.
->> So this patch can be applied after testing the above case(suspend/resume).
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> I put a kernel based upon 3.17 on an exynos5250-snow (specifically
-> git://git.collabora.co.uk/git/user/javier/linux.git branch
-> max77802-op-modes-v3, git hash 98cf5a0).  Snow uses the builtin card
-> detect on dw_mmc.  Resume wasn't terribly reliable to start with even
-> without my patch (it often woke up right after suspend), but it worked
-> well enough for testing.  I tested the following scenarios:
+> .
 > 
-> 1. Leave card in and mounted.  Suspend/resume.  Card is still usable
-> after resume
-> 
-> 2. Suspend and insert card.  Resume.  Card is detected upon resume.
-> 
-> 3. Suspend and remove card.  Resume.  Card is removed upon resume.
-> 
-> How does that sound?
 
-I think these test cases are enough, and if it's working fine, sounds good.
 
-Acked-by: Jaehoon Chung <jh80.chung@samsung.com>
-
-Best Regards,
-Jaehoon Chung
-
-> 
-> -Doug
-> 
+-- 
+Thanks!
+Yijing
 
