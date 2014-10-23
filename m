@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936AbaJWOeB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:34:01 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:43911 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932774AbaJWOd6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932850AbaJWOd6 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 23 Oct 2014 10:33:58 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:43906 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932634AbaJWOdz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:33:55 -0400
 From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,63 +14,40 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Michal Nazarewicz <mina86@mina86.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 4/4] mm: cma: Use %pa to print physical addresses
-Date: Thu, 23 Oct 2014 17:33:48 +0300
-Message-Id: <1414074828-4488-5-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Subject: [PATCH 0/4] Low/high memory CMA reservation fixes
+Date: Thu, 23 Oct 2014 17:33:44 +0300
+Message-Id: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Casting physical addresses to unsigned long and using %lu truncates the
-values on systems where physical addresses are larger than 32 bits. Use
-%pa and get rid of the cast instead.
+Hello,
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
----
- mm/cma.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+This patch set fixes an issue introduced by commits 95b0e655f914 ("ARM: mm:
+don't limit default CMA region only to low memory") and f7426b983a6a ("mm:
+cma: adjust address limit to avoid hitting low/high memory boundary")
+resulting in reserved areas crossing the low/high memory boundary.
 
-diff --git a/mm/cma.c b/mm/cma.c
-index b83597b..741c7ec 100644
---- a/mm/cma.c
-+++ b/mm/cma.c
-@@ -212,9 +212,8 @@ int __init cma_declare_contiguous(phys_addr_t base,
- 	phys_addr_t highmem_start = __pa(high_memory);
- 	int ret = 0;
- 
--	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
--		__func__, (unsigned long)size, (unsigned long)base,
--		(unsigned long)limit, (unsigned long)alignment);
-+	pr_debug("%s(size %pa, base %pa, limit %pa alignment %pa)\n",
-+		__func__, &size, &base, &limit, &alignment);
- 
- 	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
- 		pr_err("Not enough slots for CMA reserved regions!\n");
-@@ -257,8 +256,8 @@ int __init cma_declare_contiguous(phys_addr_t base,
- 	 */
- 	if (fixed && base < highmem_start && base + size > highmem_start) {
- 		ret = -EINVAL;
--		pr_err("Region at %08lx defined on low/high memory boundary (%08lx)\n",
--			(unsigned long)base, (unsigned long)highmem_start);
-+		pr_err("Region at %pa defined on low/high memory boundary (%pa)\n",
-+			&base, &highmem_start);
- 		goto err;
- 	}
- 
-@@ -316,8 +315,8 @@ int __init cma_declare_contiguous(phys_addr_t base,
- 	if (ret)
- 		goto err;
- 
--	pr_info("Reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
--		(unsigned long)base);
-+	pr_info("Reserved %ld MiB at %pa\n", (unsigned long)size / SZ_1M,
-+		&base);
- 	return 0;
- 
- err:
+Patches 1/4 and 2/4 fix sides issues, with the bulk of the work in patch 3/4.
+Patch 4/4 then fixes a printk issue that got me puzzled wondering why memory
+reported under the lowmem limit was actually highmem.
+
+This series fixes a v3.18-rc1 regression causing Renesas Koelsch boot
+breakages when CMA is enabled.
+
+Laurent Pinchart (4):
+  mm: cma: Don't crash on allocation if CMA area can't be activated
+  mm: cma: Always consider a 0 base address reservation as dynamic
+  mm: cma: Ensure that reservations never cross the low/high mem
+    boundary
+  mm: cma: Use %pa to print physical addresses
+
+ mm/cma.c | 93 +++++++++++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 60 insertions(+), 33 deletions(-)
+
 -- 
-2.0.4
+Regards,
+
+Laurent Pinchart
 
