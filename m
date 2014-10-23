@@ -1,76 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaJWFbY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 01:31:24 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:47658 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaJWFbX (ORCPT
+	id S1751759AbaJWFgD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 01:36:03 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:54467 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341AbaJWFf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 01:31:23 -0400
-Message-ID: <54489298.3010108@linux.vnet.ibm.com>
-Date: Thu, 23 Oct 2014 11:01:04 +0530
-From: Hemant Kumar <hemant@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Thu, 23 Oct 2014 01:35:59 -0400
+Date: Wed, 22 Oct 2014 23:35:55 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <liviu@dudau.co.uk>
+Subject: Re: [PATCH v3 04/27] arm/MSI: Save MSI chip in pci_sys_data
+Message-ID: <20141023053555.GC11770@google.com>
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
+ <1413342435-7876-5-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: linux-kernel@vger.kernel.org, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        namhyung@kernel.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
-Subject: Re: [PATCH v3 5/5] perf/sdt: Add support to perf record to trace
- SDT events
-References: <20141010104402.15506.73285.stgit@hemant-fedora> <20141010105914.15506.84827.stgit@hemant-fedora> <54475292.20409@hitachi.com> <544768C6.6090105@linux.vnet.ibm.com> <54477BE6.2060006@hitachi.com>
-In-Reply-To: <54477BE6.2060006@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102305-0017-0000-0000-00000065A5AA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413342435-7876-5-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 15, 2014 at 11:06:52AM +0800, Yijing Wang wrote:
+> Saving msi chip in pci_sys_data can make pci bus and
+> devices don't need to know msi chip detail, it also
+> make pci enumeration code be decoupled from msi chip.
+> In fact, all pci devices under the same pci hostbridge
+> share same msi chip. So msi chip should be seen as one
+> of resources or attributes to be initialized in pci host
+> bridge driver. Currently, pci hostbridge drivers create
+> pci_host_bridge in pci_create_root_bus(), and pass arch
+> specific pci sysdata to core pci scan functions. So pci
+> arch sysdata is good place to save msi chip.
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  arch/arm/include/asm/mach/pci.h |    6 ++++++
+>  arch/arm/include/asm/pci.h      |    9 +++++++++
+>  arch/arm/kernel/bios32.c        |    3 +++
+>  drivers/pci/msi.c               |    6 ++++++
+>  include/linux/pci.h             |    9 +++++++++
+>  5 files changed, 33 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
+> index 7fc4278..59b0d87 100644
+> --- a/arch/arm/include/asm/mach/pci.h
+> +++ b/arch/arm/include/asm/mach/pci.h
+> @@ -22,6 +22,9 @@ struct hw_pci {
+>  #ifdef CONFIG_PCI_DOMAINS
+>  	int		domain;
+>  #endif
+> +#ifdef CONFIG_PCI_MSI
+> +	struct msi_chip *msi_chip;
+> +#endif
+>  	struct pci_ops	*ops;
+>  	int		nr_controllers;
+>  	void		**private_data;
+> @@ -47,6 +50,9 @@ struct pci_sys_data {
+>  #ifdef CONFIG_PCI_DOMAINS
+>  	int		domain;
+>  #endif
+> +#ifdef CONFIG_PCI_MSI
+> +	struct msi_chip *msi_chip;
+> +#endif
+>  	struct list_head node;
+>  	int		busnr;		/* primary bus number			*/
+>  	u64		mem_offset;	/* bus->cpu memory mapping offset	*/
+> diff --git a/arch/arm/include/asm/pci.h b/arch/arm/include/asm/pci.h
+> index 7e95d85..b562c09 100644
+> --- a/arch/arm/include/asm/pci.h
+> +++ b/arch/arm/include/asm/pci.h
+> @@ -31,6 +31,15 @@ static inline int pci_proc_domain(struct pci_bus *bus)
+>  }
+>  #endif /* CONFIG_PCI_DOMAINS */
+>  
+> +#ifdef CONFIG_PCI_MSI
+> +static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
+> +{
+> +	struct pci_sys_data *root = bus->sysdata;
+> +
+> +	return root->msi_chip;
+> +}
+> +#endif
+> +
+>  /*
+>   * The PCI address space does equal the physical memory address space.
+>   * The networking and block device layers use this boolean for bounce
+> diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+> index 17a26c1..a19038d 100644
+> --- a/arch/arm/kernel/bios32.c
+> +++ b/arch/arm/kernel/bios32.c
+> @@ -471,6 +471,9 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
+>  #ifdef CONFIG_PCI_DOMAINS
+>  		sys->domain  = hw->domain;
+>  #endif
+> +#ifdef CONFIG_PCI_MSI
+> +		sys->msi_chip = hw->msi_chip;
+> +#endif
+>  		sys->busnr   = busnr;
+>  		sys->swizzle = hw->swizzle;
+>  		sys->map_irq = hw->map_irq;
+> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+> index 22e413c..f11108c 100644
+> --- a/drivers/pci/msi.c
+> +++ b/drivers/pci/msi.c
+> @@ -35,6 +35,9 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+>  	struct msi_chip *chip = dev->bus->msi;
+>  	int err;
+>  
+> +	if (!chip)
+> +		chip = pci_msi_chip(dev->bus);
+> +
+>  	if (!chip || !chip->setup_irq)
+>  		return -EINVAL;
+>  
+> @@ -50,6 +53,9 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
+>  	struct msi_desc *entry = irq_get_msi_desc(irq);
+>  	struct msi_chip *chip = entry->dev->bus->msi;
+>  
+> +	if (!chip)
+> +		chip = pci_msi_chip(entry->dev->bus);
+> +
+>  	if (!chip || !chip->teardown_irq)
+>  		return;
+>  
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 9cd2721..7a48b40 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -1433,6 +1433,15 @@ static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
+>  
+>  #include <asm/pci.h>
+>  
+> +/* Just avoid compile error, will be clean up later */
+> +#ifdef CONFIG_PCI_MSI
+> +
+> +#ifndef pci_msi_chip
+> +#define pci_msi_chip(bus)	NULL
+> +#endif
+> +#endif
 
-On 10/22/2014 03:11 PM, Masami Hiramatsu wrote:
-> (2014/10/22 17:20), Hemant Kumar wrote:
->>>>  From "file_sdt_ent" we will find out the file name.
->>>> Convert this sdt note into a perf event and then write this into uprobe_events
->>>> file to be able to record the event.
->>>> Then, corresponding entries are added to uprobe_events file for
->>>> the SDT events.
->>>> After recording is done, these events are silently deleted from uprobe_events
->>>> file. The uprobe_events file is present in debugfs/tracing directory.
->>>>
->>>> To support the addition and deletion of SDT events to/from uprobe_events
->>>> file, a record_sdt struct is maintained which has the event data.
->>> OK, I have some comments on this.
->>>
->>>> An example usage:
->>>>
->>>> # ./perf record -e %user_app:fun_start -aR /home/user_app
->>> At first, I'd like to add SDT support for adding probes too, like below;
->>>
->>> ./perf probe -a '%user_app:fun_start $vars'
->> But I think, previously we discussed that we won't be having "perf
->> probe" for SDT events.
->> We list them and probe/trace them using "perf record" directly.
-> Right, sorry for confusing you. I meant that I'd like to support SDT on both of
-> perf-record and perf-probe :)
+I don't like the mixture of ARM changes and PCI core changes in the same
+patch.  Can you split this into a core patch that does something like this:
 
-I plan to do this and add this subsequently but will it be okay if we go 
-with the current
-implementation for the time being?
+  struct msi_chip * __weak pcibios_msi_controller(struct pci_bus *bus)
+  {
+    return NULL;
+  }
 
-What do you think?
+  struct msi_chip *pci_msi_controller(struct pci_bus *bus)
+  {
+    msi_chip *controller = bus->msi;
 
-> And even if we'll hide sdt related events via perf, users can access it via ftrace.
-> So, I doubt that we can completely hide them, in that case, honesty is the best way;)
->
-> Thank you,
->
->
+    if (controller)
+      return controller;
+    return pcibios_msi_controller(bus);
+  }
 
--- 
-Thanks,
-Hemant Kumar
+followed by an ARM patch that puts the msi_chip pointer in struct hw_pci
+and implements pcibios_msi_controller()?
 
+I know you're trying to *remove* weak functions, and this adds one, but
+this section of the series is more about getting rid of the ARM
+pcibios_add_bus() because all it was used for was setting the bus->msi
+pointer.
+
+Eventually we might have a way to stash an MSI controller pointer in the
+generic pci_host_bridge struct, and then the pcibios_msi_controller()
+interface could go away.
+
+> +
+>  /* these helpers provide future and backwards compatibility
+>   * for accessing popular PCI BAR info */
+>  #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
+> -- 
+> 1.7.1
+> 
