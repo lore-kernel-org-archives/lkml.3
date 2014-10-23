@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333AbaJWSPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 14:15:10 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:34359 "EHLO
+	id S932572AbaJWSQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 14:16:09 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:34373 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752865AbaJWSO6 (ORCPT
+	with ESMTP id S932139AbaJWSPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 14:14:58 -0400
+	Thu, 23 Oct 2014 14:15:07 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] ARM: mvebu: Clean-up the Armada XP support
-Date: Thu, 23 Oct 2014 20:14:27 +0200
-Message-Id: <1414088070-12510-2-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH 4/4] ARM: mvebu: Implement CPU hotplug support for Armada 38x
+Date: Thu, 23 Oct 2014 20:14:30 +0200
+Message-Id: <1414088070-12510-5-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414088070-12510-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1414088070-12510-1-git-send-email-gregory.clement@free-electrons.com>
@@ -26,121 +26,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the unneeded include of the armada-370-xp.h header.
+This commit implements CPU hotplug support for the Marvell Armada 38x
+platform. Similarly to what was done for the Armada XP, this commit:
 
-It also moves some declarations from this file into more accurate
-places.
+ * Implements the ->cpu_die() function of SMP operations by calling
+   armada_38x_do_cpu_suspend() to enter the deep idle state for
+   CPUs going offline.
 
-Finally, it also adds a comment explaining that we can't remove yet the
-smp field in the dt machine struct due to backward compatibly of the
-device tree.
+ * Implements a dummy ->cpu_kill() function, simply needed for the
+   kernel to know we have CPU hotplug support.
 
-In a few releases, when the old device tree will be obsolete, we will be
-able to remove the smp field and then the armada-370-xp.h header.
+ * The mvebu_cortex_a9_boot_secondary() function makes sure to wake up
+   the CPU if waiting in deep idle state by sending an IPI before
+   deasserting the CPUs from reset. This is because
+   mvebu_cortex_a9_boot_secondary() is now used in two different
+   situations: for the initial boot of secondary CPUs (where CPU reset
+   deassert is used to wake up CPUs) and for CPU hotplug (where an IPI
+   is used to take CPU out of deep idle).
+
+ * At boot time, we exit from the idle state in the
+    ->smp_secondary_init() hook.
+
+This commit has been tested using CPU hotplug through sysfs
+(/sys/devices/system/cpu/cpuX/online) and using kexec.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- arch/arm/mach-mvebu/armada-370-xp.h | 6 ------
- arch/arm/mach-mvebu/board-v7.c      | 4 ++++
- arch/arm/mach-mvebu/coherency.c     | 1 -
- arch/arm/mach-mvebu/cpu-reset.c     | 1 -
- arch/arm/mach-mvebu/platsmp.c       | 2 ++
- arch/arm/mach-mvebu/pmsu.c          | 1 -
- arch/arm/mach-mvebu/pmsu.h          | 1 +
- 7 files changed, 7 insertions(+), 9 deletions(-)
+ arch/arm/mach-mvebu/platsmp-a9.c | 53 ++++++++++++++++++++++++++++++++++++++--
+ arch/arm/mach-mvebu/pmsu.c       |  2 +-
+ arch/arm/mach-mvebu/pmsu.h       |  1 +
+ 3 files changed, 53 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-mvebu/armada-370-xp.h b/arch/arm/mach-mvebu/armada-370-xp.h
-index 84cd90d9b860..c55bbf81de0e 100644
---- a/arch/arm/mach-mvebu/armada-370-xp.h
-+++ b/arch/arm/mach-mvebu/armada-370-xp.h
-@@ -16,14 +16,8 @@
- #define __MACH_ARMADA_370_XP_H
- 
- #ifdef CONFIG_SMP
--#include <linux/cpumask.h>
--
--#define ARMADA_XP_MAX_CPUS 4
--
- void armada_xp_secondary_startup(void);
- extern struct smp_operations armada_xp_smp_ops;
- #endif
- 
--int armada_370_xp_pmsu_idle_enter(unsigned long deepidle);
--
- #endif /* __MACH_ARMADA_370_XP_H */
-diff --git a/arch/arm/mach-mvebu/board-v7.c b/arch/arm/mach-mvebu/board-v7.c
-index 6478626e3ff6..e51bb1ddffbf 100644
---- a/arch/arm/mach-mvebu/board-v7.c
-+++ b/arch/arm/mach-mvebu/board-v7.c
-@@ -206,6 +206,10 @@ static const char * const armada_370_xp_dt_compat[] = {
- DT_MACHINE_START(ARMADA_370_XP_DT, "Marvell Armada 370/XP (Device Tree)")
- 	.l2c_aux_val	= 0,
- 	.l2c_aux_mask	= ~0,
-+/*
-+ * The following field (.smp) is stil needed to ensure backward
-+ * compatibility with the old device trees
-+ */
- 	.smp		= smp_ops(armada_xp_smp_ops),
- 	.init_machine	= mvebu_dt_init,
- 	.init_irq       = mvebu_init_irq,
-diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-index 2bdc3233abe2..d1b0a173e4a6 100644
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -33,7 +33,6 @@
- #include <asm/smp_plat.h>
- #include <asm/cacheflush.h>
- #include <asm/mach/map.h>
--#include "armada-370-xp.h"
- #include "coherency.h"
- #include "mvebu-soc-id.h"
- 
-diff --git a/arch/arm/mach-mvebu/cpu-reset.c b/arch/arm/mach-mvebu/cpu-reset.c
-index 60fb53787004..4a2cadd6b48e 100644
---- a/arch/arm/mach-mvebu/cpu-reset.c
-+++ b/arch/arm/mach-mvebu/cpu-reset.c
-@@ -15,7 +15,6 @@
- #include <linux/of_address.h>
- #include <linux/io.h>
- #include <linux/resource.h>
--#include "armada-370-xp.h"
- 
- static void __iomem *cpu_reset_base;
- static size_t cpu_reset_size;
-diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
-index 895dc373c8a1..622315c185b2 100644
---- a/arch/arm/mach-mvebu/platsmp.c
-+++ b/arch/arm/mach-mvebu/platsmp.c
-@@ -30,6 +30,8 @@
- #include "pmsu.h"
- #include "coherency.h"
- 
-+#define ARMADA_XP_MAX_CPUS 4
+diff --git a/arch/arm/mach-mvebu/platsmp-a9.c b/arch/arm/mach-mvebu/platsmp-a9.c
+index 47a71a924b96..2ec1a42b4321 100644
+--- a/arch/arm/mach-mvebu/platsmp-a9.c
++++ b/arch/arm/mach-mvebu/platsmp-a9.c
+@@ -43,21 +43,70 @@ static int __cpuinit mvebu_cortex_a9_boot_secondary(unsigned int cpu,
+ 	else
+ 		mvebu_pmsu_set_cpu_boot_addr(hw_cpu, mvebu_cortex_a9_secondary_startup);
+ 	smp_wmb();
 +
- #define AXP_BOOTROM_BASE 0xfff00000
- #define AXP_BOOTROM_SIZE 0x100000
++	/*
++	 * Doing this before deasserting the CPUs is needed to wake up CPUs
++	 * in the offline state after using CPU hotplug.
++	 */
++	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
++
+ 	ret = mvebu_cpu_reset_deassert(hw_cpu);
+ 	if (ret) {
+ 		pr_err("Could not start the secondary CPU: %d\n", ret);
+ 		return ret;
+ 	}
+-	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
  
+ 	return 0;
+ }
++/*
++ * When a CPU is brought back online, either through CPU hotplug, or
++ * because of the boot of a kexec'ed kernel, the PMSU configuration
++ * for this CPU might be in the deep idle state, preventing this CPU
++ * from receiving interrupts. Here, we therefore take out the current
++ * CPU from this state, which was entered by armada_38x_cpu_die()
++ * below.
++ */
++static void armada_38x_secondary_init(unsigned int cpu)
++{
++	mvebu_v7_pmsu_idle_exit();
++}
++
++#ifdef CONFIG_HOTPLUG_CPU
++static void armada_38x_cpu_die(unsigned int cpu)
++{
++	/*
++	 * CPU hotplug is implemented by putting offline CPUs into the
++	 * deep idle sleep state.
++	 */
++	armada_38x_do_cpu_suspend(true);
++}
++
++/*
++ * We need a dummy function, so that platform_can_cpu_hotplug() knows
++ * we support CPU hotplug. However, the function does not need to do
++ * anything, because CPUs going offline can enter the deep idle state
++ * by themselves, without any help from a still alive CPU.
++ */
++static int armada_38x_cpu_kill(unsigned int cpu)
++{
++	return 1;
++}
++#endif
+ 
+ static struct smp_operations mvebu_cortex_a9_smp_ops __initdata = {
+ 	.smp_boot_secondary	= mvebu_cortex_a9_boot_secondary,
+ };
+ 
++static struct smp_operations armada_38x_smp_ops __initdata = {
++	.smp_boot_secondary	= mvebu_cortex_a9_boot_secondary,
++	.smp_secondary_init     = armada_38x_secondary_init,
++#ifdef CONFIG_HOTPLUG_CPU
++	.cpu_die		= armada_38x_cpu_die,
++	.cpu_kill               = armada_38x_cpu_kill,
++#endif
++};
++
+ CPU_METHOD_OF_DECLARE(mvebu_armada_375_smp, "marvell,armada-375-smp",
+ 		      &mvebu_cortex_a9_smp_ops);
+ CPU_METHOD_OF_DECLARE(mvebu_armada_380_smp, "marvell,armada-380-smp",
+-		      &mvebu_cortex_a9_smp_ops);
++		      &armada_38x_smp_ops);
 diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
-index bbd8664d1bac..5af58927a56d 100644
+index 5af58927a56d..5a757f929927 100644
 --- a/arch/arm/mach-mvebu/pmsu.c
 +++ b/arch/arm/mach-mvebu/pmsu.c
-@@ -39,7 +39,6 @@
- #include <asm/suspend.h>
- #include <asm/tlbflush.h>
- #include "common.h"
--#include "armada-370-xp.h"
+@@ -311,7 +311,7 @@ static int armada_370_xp_cpu_suspend(unsigned long deepidle)
+ 	return cpu_suspend(deepidle, armada_370_xp_pmsu_idle_enter);
+ }
  
+-static int armada_38x_do_cpu_suspend(unsigned long deepidle)
++int armada_38x_do_cpu_suspend(unsigned long deepidle)
+ {
+ 	unsigned long flags = 0;
  
- #define PMSU_BASE_OFFSET    0x100
 diff --git a/arch/arm/mach-mvebu/pmsu.h b/arch/arm/mach-mvebu/pmsu.h
-index 6b58c1fe2b0d..e1eb4959a2d4 100644
+index e1eb4959a2d4..c2c95db4f648 100644
 --- a/arch/arm/mach-mvebu/pmsu.h
 +++ b/arch/arm/mach-mvebu/pmsu.h
-@@ -18,4 +18,5 @@ int mvebu_setup_boot_addr_wa(unsigned int crypto_eng_target,
- 
+@@ -19,4 +19,5 @@ int mvebu_setup_boot_addr_wa(unsigned int crypto_eng_target,
  void mvebu_v7_pmsu_idle_exit(void);
  
-+int armada_370_xp_pmsu_idle_enter(unsigned long deepidle);
+ int armada_370_xp_pmsu_idle_enter(unsigned long deepidle);
++int armada_38x_do_cpu_suspend(unsigned long deepidle);
  #endif	/* __MACH_370_XP_PMSU_H */
 -- 
 1.9.1
