@@ -1,69 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070AbaJWSEw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 14:04:52 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:42737 "EHLO vps0.lunn.ch"
+	id S932301AbaJWSFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 14:05:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39758 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751721AbaJWSEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 14:04:51 -0400
-Date: Thu, 23 Oct 2014 20:03:57 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Andrew Lunn <andrew@lunn.ch>, Florian Fainelli <f.fainelli@gmail.com>,
-        netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
-Message-ID: <20141023180357.GG25190@lunn.ch>
-References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
- <1414037002-25528-7-git-send-email-linux@roeck-us.net>
- <CAGVrzcYjPJWai9bxkh+WRrEEAzBKBd-LQm7zDeeouxngr_v9SQ@mail.gmail.com>
- <54488CE1.2000106@roeck-us.net>
- <20141023134706.GB25190@lunn.ch>
- <20141023162754.GA21343@roeck-us.net>
- <20141023165459.GE25190@lunn.ch>
- <20141023173847.GA22988@roeck-us.net>
+	id S932090AbaJWSFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 14:05:06 -0400
+Message-ID: <54494323.7030805@ti.com>
+Date: Thu, 23 Oct 2014 21:04:19 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023173847.GA22988@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        <khilman@linaro.org>, <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, <grant.likely@secretlab.ca>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH v3 1/5] PM / clock_ops: Add pm_clk_add_clk()
+References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com> <1414074182-25980-2-git-send-email-grygorii.strashko@ti.com> <20141023154928.GC18714@dtor-ws> <54492A69.5070505@ti.com> <20141023171305.GA24671@dtor-ws>
+In-Reply-To: <20141023171305.GA24671@dtor-ws>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No, I am not saying that. The hwmon device's parent device will tell,
-> which is how it works for all other hwmon devices.
+On 10/23/2014 08:13 PM, Dmitry Torokhov wrote:
+> On Thu, Oct 23, 2014 at 07:18:49PM +0300, Grygorii Strashko wrote:
+>> On 10/23/2014 06:49 PM, Dmitry Torokhov wrote:
+>>> On Thu, Oct 23, 2014 at 05:22:58PM +0300, Grygorii Strashko wrote:
+>>>> From: Geert Uytterhoeven <geert+renesas@glider.be>
+>>>>
+>>>> The existing pm_clk_add() allows to pass a clock by con_id. However,
+>>>> when referring to a specific clock from DT, no con_id is available.
+>>>>
+>>>> Add pm_clk_add_clk(), which allows to specify the struct clk * directly.
+>>>>
+>>>> CC: Ulf Hansson <ulf.hansson@linaro.org>
+>>>> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>>>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+>>>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>>>> ---
+>>>>   drivers/base/power/clock_ops.c | 41 +++++++++++++++++++++++++++++++----------
+>>>>   include/linux/pm_clock.h       |  8 ++++++++
+>>>>   2 files changed, 39 insertions(+), 10 deletions(-)
+>>>>
+>>>> diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+>>>> index 7836930..f14b767 100644
+>>>> --- a/drivers/base/power/clock_ops.c
+>>>> +++ b/drivers/base/power/clock_ops.c
+>>>> @@ -53,7 +53,8 @@ static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
+>>>>    */
+>>>>   static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+>>>>   {
+>>>> -	ce->clk = clk_get(dev, ce->con_id);
+>>>> +	if (!ce->clk)
+>>>> +		ce->clk = clk_get(dev, ce->con_id);
+>>>>   	if (IS_ERR(ce->clk)) {
+>>>>   		ce->status = PCE_STATUS_ERROR;
+>>>>   	} else {
+>>>> @@ -63,15 +64,8 @@ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+>>>>   	}
+>>>>   }
+>>>>
+>>>> -/**
+>>>> - * pm_clk_add - Start using a device clock for power management.
+>>>> - * @dev: Device whose clock is going to be used for power management.
+>>>> - * @con_id: Connection ID of the clock.
+>>>> - *
+>>>> - * Add the clock represented by @con_id to the list of clocks used for
+>>>> - * the power management of @dev.
+>>>> - */
+>>>> -int pm_clk_add(struct device *dev, const char *con_id)
+>>>> +static int __pm_clk_add(struct device *dev, const char *con_id,
+>>>> +			struct clk *clk)
+>>>>   {
+>>>>   	struct pm_subsys_data *psd = dev_to_psd(dev);
+>>>>   	struct pm_clock_entry *ce;
+>>>> @@ -93,6 +87,8 @@ int pm_clk_add(struct device *dev, const char *con_id)
+>>>>   			kfree(ce);
+>>>>   			return -ENOMEM;
+>>>>   		}
+>>>> +	} else {
+>>>
+>>> You need __clk_get(clk) here, otherwise when you will be removing clocks
+>>> you'll be dropping a reference that does not belong to you (as yiou have
+>>> not taken it).
+>>
+>> No, I don't ;)
+>>
+>> pm_clk_add_clk is intended to be used with valid pointer on clk,
+>> which means clk_get() has been called already. In our case:
+>> 	clk = of_clk_get(dev->of_node, i));
+>> 	ret = pm_clk_add_clk(dev, clk);
+>>
+>> It's just a different way to fill list of clocks for device,
+>> once pm_clk_add_clk() is called - PM clock framework will be the owner
+>> of clock.
+>
+> No, this is not how the rest of refcounted APIs work in the kernel. You
+> do not take over other's references and if you need to store pointer to
+> refcounted object you are responsible for taking your own reference. See
+> how we work with device structures, OF nodes, etc, etc.
+>
+> The proper pattern here should be (unless the driver wants to hold on to
+> the clock for its own purposes):
+>
+> 	clk = of_clk_get(dev->of_node, i));
+> 	ret = pm_clk_add_clk(dev, clk);
+> 	clk_put(clk);
+>
+> with pm_clk_add_clk() taking and managing _its own_ reference and the
+> caller (driver) managing _its_ reference.
+>
+> So FWIW strong NAK here from me.
 
-O.K, so parent is important.
+Ok. I'll update and resend.
 
-> Not really. Again, the parent device provides that information. libsensors,
-> which is the preferred way of accessing sensors information from user space,
-> provides the parent device instance as part of the logical sensor device
-> name. In this case, the names will end up being dsa-isa-0000, dsa-isa-0001,
-> and so on. With your added tags it would be dsa.0.0-isa-0000, dsa.0.1-isa-0001,
-> and so on. I don't see how this would add any value.
+regards,
+-grygorii
 
-isa is the name of the ethernet device? Why is it not eth0? Most
-Marvell SoCs used in WiFi Access Points have multiple ethernet
-interfaces, so i would hope the parent actually identifies which
-ethernet interface it is hanging off.
-
-Now consider the example in
-
-http://lxr.free-electrons.com/source/Documentation/devicetree/bindings/net/dsa/dsa.txt
-
-We have two switches hanging off one ethernet interface. What will the
-naming look like in this case?
-
-The Marvell DSA tagging scheme allows you to have 16 switches hanging
-off one ethernet interface. How is the naming going to work then,
-especially if there is a mixture of switch chips, some with
-temperature sensors, and some without?
-
-What would really help is if each switch has a device in the linux
-device model. The hwmon parent would then be the switch device. The
-EEPROM would then hang off the switch device, not an interface on the
-switch device, etc.
-
-	    Andrew
