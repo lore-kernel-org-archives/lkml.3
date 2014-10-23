@@ -1,109 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932921AbaJWO0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:26:42 -0400
-Received: from mail.kernel.org ([198.145.19.201]:58456 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932774AbaJWO0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:26:40 -0400
-Date: Thu, 23 Oct 2014 11:26:34 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@au1.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf/powerpc: Cache the DWARF debug info
-Message-ID: <20141023142634.GF14687@kernel.org>
-References: <20141021185610.GA18366@us.ibm.com>
- <20141021190839.GA4160@kernel.org>
- <20141022000958.GB2228@us.ibm.com>
- <20141022081730.GB9860@krava.brq.redhat.com>
- <20141022174659.GA5119@us.ibm.com>
- <20141023133724.GE14687@kernel.org>
- <20141023141213.GA24079@krava.brq.redhat.com>
+	id S1755927AbaJWOau (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:30:50 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:31953 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440AbaJWOat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:30:49 -0400
+X-IronPort-AV: E=Sophos;i="5.04,775,1406592000"; 
+   d="scan'208";a="185526518"
+Date: Thu, 23 Oct 2014 15:22:27 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Will Deacon <will.deacon@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH v4 3/7] [RFC] arm/arm64: introduce is_dma_coherent
+In-Reply-To: <alpine.DEB.2.02.1410221703560.876@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1410231516450.876@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com> <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com> <20141010120702.GI7755@arm.com> <alpine.DEB.2.02.1410101401250.17038@kaball.uk.xensource.com>
+ <alpine.DEB.2.02.1410131215400.17038@kaball.uk.xensource.com> <20141013125725.GA19156@arm.com> <alpine.DEB.2.02.1410131358490.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410221703560.876@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023141213.GA24079@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Oct 23, 2014 at 04:12:13PM +0200, Jiri Olsa escreveu:
-> On Thu, Oct 23, 2014 at 10:37:24AM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, Oct 22, 2014 at 10:46:59AM -0700, Sukadev Bhattiprolu escreveu:
-> > > Jiri Olsa [jolsa@redhat.com] wrote:
-> > > | > +			goto out;
-> > > | > +		}
-> > > | > +		dso->dwfl = dwfl;
-
-> > > | so by this we get powerpc arch code sharing dw handle via dso object,
-> > > | but we have lot of generic code too ;-)
-
-> > > Well, this applies to powerpc...
-
-> > > | could you make this happen for unwind__get_entries.. probably
-> > > | both sharing same generic code I guess
-
-> > > and unwind_get_entries() applies only to x86 and arm right ? ;-)
-> > > Or at least thats what the config/Makefile says.
-
-> > > I can take a look at unwind_get_entries(), but can you please merge
-> > > this fix for now, since the current performance is bad?
-
-> > Right, I think the way it is now is a good compromise, i.e. you seem to
-> > be using the right place to cache this, this is restricted to powerpc,
-> > i.e. if leaks or excessive memory usage happens in workloads with lots
-> > of DSOs having dwfl handlers open at the same times happens, it doesn't
-> > affect users in other arches.
+On Wed, 22 Oct 2014, Stefano Stabellini wrote:
+> On Mon, 13 Oct 2014, Stefano Stabellini wrote:
+> > On Mon, 13 Oct 2014, Will Deacon wrote:
+> > > On Mon, Oct 13, 2014 at 12:16:14PM +0100, Stefano Stabellini wrote:
+> > > > On Fri, 10 Oct 2014, Stefano Stabellini wrote:
+> > > > > On Fri, 10 Oct 2014, Will Deacon wrote:
+> > > > > > On Fri, Oct 10, 2014 at 12:51:44PM +0100, Stefano Stabellini wrote:
+> > > > > > > Introduce a function to check whether a device is dma coherent.
+> > > > > > > 
+> > > > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > > > > > CC: linux@arm.linux.org.uk
+> > > > > > > CC: catalin.marinas@arm.com
+> > > > > > > CC: will.deacon@arm.com
+> > > > > > > CC: linux-arm-kernel@lists.infradead.org
+> > > > > > > ---
+> > > > > > >  arch/arm/include/asm/dma-mapping.h   |    6 ++++++
+> > > > > > >  arch/arm64/include/asm/dma-mapping.h |    5 +++++
+> > > > > > >  2 files changed, 11 insertions(+)
+> > > > > > > 
+> > > > > > > diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> > > > > > > index c45b61a..bededbb 100644
+> > > > > > > --- a/arch/arm/include/asm/dma-mapping.h
+> > > > > > > +++ b/arch/arm/include/asm/dma-mapping.h
+> > > > > > > @@ -126,6 +126,12 @@ static inline int set_arch_dma_coherent_ops(struct device *dev)
+> > > > > > >  	set_dma_ops(dev, &arm_coherent_dma_ops);
+> > > > > > >  	return 0;
+> > > > > > >  }
+> > > > > > > +
+> > > > > > > +static inline bool is_dma_coherent(struct device *dev)
+> > > > > > > +{
+> > > > > > > +    return (__generic_dma_ops(dev) == &arm_coherent_dma_ops);
+> > > > > > > +}
+> > > > > > 
+> > > > > > Hmm, what about the IOMMU ops?
+> > > > > 
+> > > > > Maybe I should check __generic_dma_ops(dev) != &arm_dma_ops?
+> > > > > Do you have any better suggestions?
+> > > > 
+> > > > ping?
+> > > 
+> > > Without any clear idea about why this is needed or how it's used, I don't
+> > > have any better ideas.
 > > 
-> > Jiri: do you agree?
+> > Thanks for the quick reply.
+> > 
+> > It is used in dom0 to figure out whether the device is not coherent: in
+> > that case Dom0 is going to issue an hypercall and Xen is going to
+> > execute the required cache maintenance operations on Dom0's behalf.
+> > 
+> > In practice for this use case iommu_dma_ops is not a problem, as the
+> > device is never going to appear as being behind an SMMU in dom0.
 > 
-> well it's powerpc specific now.. anyway the code in the patch
-> to open the dwfl is generic and should be in in generic
-> place.. like in some extern function that the x86 would call
-> to get the dwfl handle
-> 
-> also the current patch leaks the dso->dwfl, which is never freed -> dwfl_end-ed,
-> dwfl_end should be called of in dso__delete I think
+> re-ping?
 
-Yeah, as my comment implies, I guess those are all valid concerns, i.e.
-the patch needs more work, I was willing to accept it as-is because it
-would hurt just Sukadev (i.e. powerpc), as he seems to be in a hurry to
-get the performance improved :-)
+I don't mean to be pushy but this series is required to fix a regression
+that causes dom0 to crash when running as dom0 on Xen on ARM if
+non-coherent devices are present on the platform.
 
-I will remove it from my tree for now, as in the end what I'm doing
-doesn't touch those specific functions.
+We should aim at getting it in 3.18 or we are going to release a broken
+kernel.
 
-But I think this will go on dragging extra work, i.e.: how to limit the
-number of dwfl handlers used? Should we have just a front end cache like
-what is done for machine__findnew_thread() (with just the last hit) and
-perhaps then have a few slots for keeping N dwfl open and when that
-number is up we check the one with less queries and close it?
-
-Jiri, are you doing that on that cache stuff you did? I mean how do
-you keep this stuff:
-
-/*
- * Global list of open DSOs and the counter.
- */
-static LIST_HEAD(dso__data_open);
-static long dso__data_open_cnt;
-
-Also this should not be global at all, this should be on struct machine,
-since a DSO that is present on a machine may have the same name as the
-dso on another machine (two guests, hosts, etc) and thus should not be
-kept on the same list, etc.
-
-So reading a bit more you seem to check rlimit, do LRUing when hitting
-the limit, etc, that is why I thought about that stuff when Sukadev
-first posted this patch...
-
-Sukadev, all this is in tools/perf/util/dso.c
-
-That is why I thought it would be a compromise to put what he did, it
-would not make the existing situation that much worse, work needs to be
-done in this area :-\
-
-- Arnaldo
+I am thinking of reposting the series keeping the ugly is_dma_coherent
+function in a Xen specific source file as a static function and then fix
+it up properly in common code later with your help?
