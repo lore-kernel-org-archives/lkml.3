@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349AbaJWJk6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 05:40:58 -0400
-Received: from regular1.263xmail.com ([211.150.99.131]:48446 "EHLO
+	id S1754609AbaJWJlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 05:41:42 -0400
+Received: from regular1.263xmail.com ([211.150.99.130]:40316 "EHLO
 	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098AbaJWJkv (ORCPT
+	with ESMTP id S1754013AbaJWJku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 05:40:51 -0400
+	Thu, 23 Oct 2014 05:40:50 -0400
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 0
 X-MAIL-DELIVERY: 1
@@ -16,7 +16,7 @@ X-RL-SENDER: wxt@rock-chips.com
 X-FST-TO: heiko@sntech.de
 X-SENDER-IP: 58.22.7.114
 X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <9c314985a5527daedff0d84663dde162>
+X-UNIQUE-TAG: <98f2041972b6d0b5bf8097130b82854e>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Caesar Wang <caesar.wang@rock-chips.com>
@@ -28,9 +28,9 @@ Cc: zyf@rock-chips.com, dianders@chromium.org,
         cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
         huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
         Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v13 4/5] ARM: dts: add main Thermal info to rk3288
-Date: Thu, 23 Oct 2014 17:40:06 +0800
-Message-Id: <1414057207-1576-5-git-send-email-caesar.wang@rock-chips.com>
+Subject: [PATCH v13 3/5] ARM: dts: add RK3288 Thermal data
+Date: Thu, 23 Oct 2014 17:40:05 +0800
+Message-Id: <1414057207-1576-4-git-send-email-caesar.wang@rock-chips.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414057207-1576-1-git-send-email-caesar.wang@rock-chips.com>
 References: <1414057207-1576-1-git-send-email-caesar.wang@rock-chips.com>
@@ -38,71 +38,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is depend on rk3288-thermal.dtsi,or
-it will compile error.
-
-If the temperature over a period of time High,over 120C
-the resulting TSHUT gave CRU module,let it reset
-the entire chip,or via GPIO give PMIC.
+This patch changes a dtsi file to contain the thermal data
+on RK3288 and later SoCs. This data will
+enable a thermal shutdown over 125C.
 
 Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
 ---
- arch/arm/boot/dts/rk3288.dtsi | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ arch/arm/boot/dts/rk3288-thermal.dtsi | 65 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index cb18bb4..85fc17a 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -15,6 +15,7 @@
- #include <dt-bindings/interrupt-controller/arm-gic.h>
- #include <dt-bindings/pinctrl/rockchip.h>
- #include <dt-bindings/clock/rk3288-cru.h>
+diff --git a/arch/arm/boot/dts/rk3288-thermal.dtsi b/arch/arm/boot/dts/rk3288-thermal.dtsi
+new file mode 100644
+index 0000000..c361262
+--- /dev/null
++++ b/arch/arm/boot/dts/rk3288-thermal.dtsi
+@@ -0,0 +1,65 @@
++/*
++ * Device Tree Source for RK3288 SoC thermal
++ *
++ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
 +#include <dt-bindings/thermal/thermal.h>
- #include "skeleton.dtsi"
- 
- / {
-@@ -66,6 +67,7 @@
- 				 216000  900000
- 				 126000  900000
- 			>;
-+			#cooling-cells = <2>; /* min followed by max */
- 			clock-latency = <40000>;
- 			clocks = <&cru ARMCLK>;
- 		};
-@@ -346,6 +348,19 @@
- 		status = "disabled";
- 	};
- 
-+	tsadc: tsadc@ff280000 {
-+		compatible = "rockchip,rk3288-tsadc";
-+		reg = <0xff280000 0x100>;
-+		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-+		clock-names = "tsadc", "apb_pclk";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&otp_out>;
-+		#thermal-sensor-cells = <1>;
-+		hw-shut-temp = <120000>;
-+		status = "disabled";
++
++reserve_thermal: reserve_thermal {
++	polling-delay-passive = <500>; /* milliseconds */
++	polling-delay = <1000>; /* milliseconds */
++
++			/* sensor	ID */
++	thermal-sensors = <&tsadc	0>;
++
++};
++
++cpu_thermal: cpu_thermal {
++	polling-delay-passive = <500>; /* milliseconds */
++	polling-delay = <1000>; /* milliseconds */
++
++			/* sensor	ID */
++	thermal-sensors = <&tsadc	1>;
++
++	trips {
++		cpu_alert0: cpu_alert0 {
++			temperature = <80000>; /* millicelsius */
++			hysteresis = <2000>; /* millicelsius */
++			type = "passive";
++		};
++		cpu_crit: cpu_crit {
++			temperature = <125000>; /* millicelsius */
++			hysteresis = <2000>; /* millicelsius */
++			type = "critical";
++		};
 +	};
 +
- 	usb_host0_ehci: usb@ff500000 {
- 		compatible = "generic-ehci";
- 		reg = <0xff500000 0x100>;
-@@ -965,6 +980,12 @@
- 			};
- 		};
- 
-+		tsadc {
-+			otp_out: otp-out {
-+				rockchip,pins = <0 10 RK_FUNC_1 &pcfg_pull_none>;
-+			};
++	cooling-maps {
++		map0 {
++		trip = <&cpu_alert0>;
++			cooling-device =
++				<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
 +		};
++	};
++};
 +
- 		pwm0 {
- 			pwm0_pin: pwm0-pin {
- 				rockchip,pins = <7 0 RK_FUNC_1 &pcfg_pull_none>;
++gpu_thermal: gpu_thermal {
++	polling-delay-passive = <500>; /* milliseconds */
++	polling-delay = <1000>; /* milliseconds */
++
++			/* sensor	ID */
++	thermal-sensors = <&tsadc	2>;
++
++	trips {
++		gpu_crit: gpu_crit {
++			temperature = <125000>; /* millicelsius */
++			hysteresis = <2000>; /* millicelsius */
++			type = "critical";
++		};
++	};
++};
 -- 
 1.9.1
 
