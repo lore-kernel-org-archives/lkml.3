@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaJWI5p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 04:57:45 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:47882 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaJWI5l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 04:57:41 -0400
-Message-ID: <5448C2FE.8020507@hitachi.com>
-Date: Thu, 23 Oct 2014 17:57:34 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1754554AbaJWI6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 04:58:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54957 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753894AbaJWI57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 04:57:59 -0400
+Message-ID: <5448C315.9000001@suse.cz>
+Date: Thu, 23 Oct 2014 10:57:57 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
-        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
-        aravinda@linux.vnet.ibm.com, penberg@iki.fi
-Subject: Re: Re: [PATCH v3 5/5] perf/sdt: Add support to perf record to
- trace SDT events
-References: <20141010104402.15506.73285.stgit@hemant-fedora> <20141010105914.15506.84827.stgit@hemant-fedora> <54475292.20409@hitachi.com> <544768C6.6090105@linux.vnet.ibm.com> <54477BE6.2060006@hitachi.com> <20141023055422.GA27939@linux.vnet.ibm.com> <5448A141.7050601@hitachi.com> <87oat3dwn2.fsf@sejong.aot.lge.com>
-In-Reply-To: <87oat3dwn2.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        Peter Foley <pefoley2@pefoley.com>, linux-kbuild@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] kbuild: Fix output of make kernelrelease
+References: <20141022101944.70d637cc@gandalf.local.home>	<20141022194408.GA20989@pobox.suse.cz> <20141022211115.576b0053@gandalf.local.home>
+In-Reply-To: <20141022211115.576b0053@gandalf.local.home>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/23 17:21), Namhyung Kim wrote:
-> Hi Masami,
+On 2014-10-23 03:11, Steven Rostedt wrote:
+> On Wed, 22 Oct 2014 21:44:08 +0200
+> Michal Marek <mmarek@suse.cz> wrote:
 > 
-> On Thu, 23 Oct 2014 15:33:37 +0900, Masami Hiramatsu wrote:
->> (2014/10/23 14:54), Srikar Dronamraju wrote:
->>> I am somehow not able to figure out how perf probe comes into the
->>> current workflow.
+>> Dne 22.10.2014 v 16:19 Steven Rostedt napsal(a):
 >>>
->>> I think the current design was
->>> 1. perf sdt-cache --add <file> (only once per file)
->>> 2. perf record -e <sdt-event>
->>>
->>> So what is the additional thing that perf probe does or Is it going to
->>> replace any of the above steps?
+>>> Commit 7ff525712acf "kbuild: fake the "Entering directory ..." message
+>>> more simply" changed the output of "make kernelrelease" such that the
+>>> kernel release version was not the last line printed. This broke various
+>>> tools that would find the kernel release with "make kernelrelease | tail -1".
 >>
->> 3. perf probe -a <sdt-event>
+>> The cleaner and recommended (see recent make help) way is to use make -s:
 >>
->> And this will be done subsequently in this series (without user interface part).
->> However, current implementation of 2. will do the following steps
+>> $ make O=build -s kernelrelease
+>> 3.18.0-rc1+
 >>
->> s1. get sdt event data from sdt-cache
->> s2. set up sdt events with suppressing messages
->> s3. do recording events
->> (s4. and hiding existing sdt events from perf-probe --list)
->> s5. remove sdt events
->>
->> So, what I proposed were ;
->> - to implement s2., we can introduce --quiet(-q) option and use it
->>   instead of ->sdt flag checking
->> - removing s4. and s5.
->> - and add verification of existing sdt events at s2. if needed.
+>> no further processing is needed.
 > 
-> I'm okay with removing the s4 but not sure about the s5.  In that case,
-> we might have many dynamic events in a system without noticing to users.
+> 
+> I don't mind changing my script with your patch. But this does break
+> other scripts of mine that I need to hunt down and change. My fear is
+> why do we need the '-s' when there may be other methods to preserve the
+> old functionality.
 
-Indeed, okey, so let's keep s5 then :)
+If you have scripts that only do x=$(make kernelrelease), then you
+should definitely fix them. You are right that the make kernelrelease |
+tail -1 trick had always been working until 7ff525712acf, so I can apply
+your patch. But please fix ktest.pl so that it's consistent with what
+the help text says. Also, the Makefile patch should cover kernelversion
+and image_name as well.
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Michal
