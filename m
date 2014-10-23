@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822AbaJWXup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 19:50:45 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:44330 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754554AbaJWXun (ORCPT
+	id S1754909AbaJWXwU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 19:52:20 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:46096 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753761AbaJWXwT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 19:50:43 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 2/4] mm: cma: Always consider a 0 base address reservation as dynamic
-Date: Fri, 24 Oct 2014 02:50:42 +0300
-Message-ID: <3165257.hQsT1mEnTD@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.14.14-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <xa1tk33qlo93.fsf@mina86.com>
-References: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1414074828-4488-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <xa1tk33qlo93.fsf@mina86.com>
+	Thu, 23 Oct 2014 19:52:19 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/4] pinctrl: rockchip: Set wake_enabled
+Date: Fri, 24 Oct 2014 01:55:17 +0200
+Message-ID: <3672443.givx50pOhv@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <CAD=FV=X5T0z9QhPsxBtQ8ffS+x90TZ9kYAvNcmU0uNsx1+2wNA@mail.gmail.com>
+References: <1413913655-22351-1-git-send-email-dianders@chromium.org> <1522951.uUd1Gprpbn@diego> <CAD=FV=X5T0z9QhPsxBtQ8ffS+x90TZ9kYAvNcmU0uNsx1+2wNA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
-
-On Thursday 23 October 2014 18:55:20 Michal Nazarewicz wrote:
-> On Thu, Oct 23 2014, Laurent Pinchart wrote:
-> > The fixed parameter to cma_declare_contiguous() tells the function
-> > whether the given base address must be honoured or should be considered
-> > as a hint only. The API considers a zero base address as meaning any
-> > base address, which must never be considered as a fixed value.
-> > 
-> > Part of the implementation correctly checks both fixed and base != 0,
-> > but two locations check the fixed value only. Set fixed to false when
-> > base is 0 to fix that and simplify the code.
-> > 
-> > Signed-off-by: Laurent Pinchart
-> > <laurent.pinchart+renesas@ideasonboard.com>
+Am Donnerstag, 23. Oktober 2014, 09:55:27 schrieb Doug Anderson:
+> Heiko,
 > 
-> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> On Thu, Oct 23, 2014 at 9:43 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> > Am Dienstag, 21. Oktober 2014, 10:47:32 schrieb Doug Anderson:
+> >> The rockchip pinctrl driver uses irq_gc_set_wake() but doesn't setup
+> >> the .wake_enabled member.  That means that we can never actually use a
+> >> pin for wakeup.  When "irq_set_irq_wake()" tries to call through it
+> >> will always get a failure from set_irq_wake_real() and will then set
+> >> wake_depth to 0.  Assuming you can resume you'll later get an error
+> >> message about "Unbalanced IRQ x wake disable".
+> > 
+> > The change itself looks reasonable. But now being able to read the docs
+> > for
+> > it, it doesn't look like all gpios are able to wake the system.
+> > 
+> > On the rk3288 it seems to be only the pins from gpio0 that can do this
+> > (similar for different banks on the other Rockchip SoCs) - see
+> > PMU_WAKEUP_CFG0 and PMU_WAKEUP_CFG1[1].
+> > 
+> > So I guess we'll need something more eloquent to handle this.
 > 
-> And like before, this should also probably also go to stable.
+> I think long term we're going to need something more elegant, yes.
+> ...but it turns out that as long as you're not in the low, low power
+> state that all pins can wake up the system.
+> 
+> Check out "Table 4-5 Power Domain Status Summary in all Work Mode".
+> In Mode 3 (called "sleep") all GPIOs can wake the system up.  This is
+> the mode that Chris's current suspend/resume patch uses (actually, it
+> doesn't quite get all the way to that mode yet, but that's the
+> target).  It would be ideal if we could get to Mode 4 (called
+> "poweroff"), but when I talked to Rockchip they were a little hesitant
+> about promising that it would work.
 
-v3.17 and older don't have the extra fixed checks, so I don't think there's a 
-need to Cc stable.
+You're right ... didn't read far enough it seems, so this patch also
 
-> > ---
-> > 
-> >  mm/cma.c | 5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/mm/cma.c b/mm/cma.c
-> > index 16c6650..6b14346 100644
-> > --- a/mm/cma.c
-> > +++ b/mm/cma.c
-> > @@ -239,6 +239,9 @@ int __init cma_declare_contiguous(phys_addr_t base,
-> >  	size = ALIGN(size, alignment);
-> >  	limit &= ~(alignment - 1);
-> > 
-> > +	if (!base)
-> > +		fixed = false;
-> > +
-> >  	/* size should be aligned with order_per_bit */
-> >  	if (!IS_ALIGNED(size >> PAGE_SHIFT, 1 << order_per_bit))
-> >  		return -EINVAL;
-> > @@ -262,7 +265,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
-> >  	}
-> >  	
-> >  	/* Reserve memory */
-> > -	if (base && fixed) {
-> > +	if (fixed) {
-> >  		if (memblock_is_region_reserved(base, size) ||
-> >  		    memblock_reserve(base, size) < 0) {
-> >  			ret = -EBUSY;
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
 
--- 
-Regards,
 
-Laurent Pinchart
 
+> NOTE: One unresolved thing with the current series (this series +
+> Chris's) is that pretty much any interrupt can wake up the system.
+> Even typing on the UART seems to do it.  Somehow we're not masking
+> interrupts in a way that prevents this, but I haven't tracked it down
+> yet.  I don't think it's related to this patch.
+
+I guess the interrupts that aren't wakeup sources should then get masked when 
+going to sleep?
+
+
+
+
+Heiko
