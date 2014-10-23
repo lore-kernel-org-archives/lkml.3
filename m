@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143AbaJWQJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:09:37 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:49139 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754756AbaJWQJg (ORCPT
+	id S1755617AbaJWQQI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:16:08 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:24681 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754070AbaJWQQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:09:36 -0400
-Message-ID: <54492840.9050704@kernel.dk>
-Date: Thu, 23 Oct 2014 10:09:36 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] block: wrong return value
-References: <1414080271-6551-1-git-send-email-sudipm.mukherjee@gmail.com>
-In-Reply-To: <1414080271-6551-1-git-send-email-sudipm.mukherjee@gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Oct 2014 12:16:05 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AswNAB0pSVRbtA79/2dsb2JhbABcgw66QwUBdJo+gRMXAX2EMC8jgRo3iEUBuhGOTCyGJYozHYQ1BZ1djGiJRYFHATYggVw7L4JLAQEB
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>, Sage Weil <sage@inktank.com>,
+        "David S. Miller" <davem@davemloft.net>, ceph-devel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/1 net-next] libceph: remove unused variable in handle_reply()
+Date: Thu, 23 Oct 2014 18:15:59 +0200
+Message-Id: <1414080959-6053-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2014 10:04 AM, Sudip Mukherjee wrote:
-> while compiling integer err was showing as a set but unused variable.
-> elevator_init_fn can be either cfq_init_queue or deadline_init_queue
-> or noop_init_queue.
-> all three of these functions are returning -ENOMEM if they fail to
-> allocate the queue.
-> so we should actually be returning the error code rather than
-> returning 0 always.
-> 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
-> 
-> change in v2: added elevator_put
-> 
->  block/elevator.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/block/elevator.c b/block/elevator.c
-> index 24c28b6..1267c2b 100644
-> --- a/block/elevator.c
-> +++ b/block/elevator.c
-> @@ -184,7 +184,7 @@ static void elevator_release(struct kobject *kobj)
->  int elevator_init(struct request_queue *q, char *name)
->  {
->  	struct elevator_type *e = NULL;
-> -	int err;
-> +	int err = 0;
+osdmap_epoch is redundant with reassert_epoch and unused.
 
-Why init it to 0?
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ net/ceph/osd_client.c | 2 --
+ 1 file changed, 2 deletions(-)
 
+diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+index f3fc54e..432bd75 100644
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1700,7 +1700,6 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
+ 	int err;
+ 	u32 reassert_epoch;
+ 	u64 reassert_version;
+-	u32 osdmap_epoch;
+ 	int already_completed;
+ 	u32 bytes;
+ 	unsigned int i;
+@@ -1725,7 +1724,6 @@ static void handle_reply(struct ceph_osd_client *osdc, struct ceph_msg *msg,
+ 	result = ceph_decode_32(&p);
+ 	reassert_epoch = ceph_decode_32(&p);
+ 	reassert_version = ceph_decode_64(&p);
+-	osdmap_epoch = ceph_decode_32(&p);
+ 
+ 	/* lookup */
+ 	down_read(&osdc->map_sem);
 -- 
-Jens Axboe
+1.9.3
 
