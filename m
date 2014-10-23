@@ -1,83 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671AbaJWN2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:28:00 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:35050 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152AbaJWN16 (ORCPT
+	id S1753552AbaJWNaT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:30:19 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:57153 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaJWNaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:27:58 -0400
-Message-ID: <5449025B.4080600@roeck-us.net>
-Date: Thu, 23 Oct 2014 06:27:55 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: Florian Fainelli <f.fainelli@gmail.com>, netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Andrew Lunn <andrew@lunn.ch>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
-References: <1414037002-25528-1-git-send-email-linux@roeck-us.net> <1414037002-25528-7-git-send-email-linux@roeck-us.net> <CAGVrzcYjPJWai9bxkh+WRrEEAzBKBd-LQm7zDeeouxngr_v9SQ@mail.gmail.com> <54488CE1.2000106@roeck-us.net> <20141023082444.GA4122@localhost.localdomain>
-In-Reply-To: <20141023082444.GA4122@localhost.localdomain>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Thu, 23 Oct 2014 09:30:16 -0400
+Date: Thu, 23 Oct 2014 15:30:06 +0200
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC v3 09/16] virtio: set FEATURES_OK
+Message-ID: <20141023153006.0cb1e7c3.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141023125139.GA10033@redhat.com>
+References: <1414003404-505-1-git-send-email-mst@redhat.com>
+	<1414003404-505-10-git-send-email-mst@redhat.com>
+	<20141023142808.377551d8.cornelia.huck@de.ibm.com>
+	<20141023125139.GA10033@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.5449025E.021E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102313-0013-0000-0000-00000194B30F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2014 01:24 AM, Richard Cochran wrote:
-> On Wed, Oct 22, 2014 at 10:06:41PM -0700, Guenter Roeck wrote:
->> On 10/22/2014 09:37 PM, Florian Fainelli wrote:
->>> You probably want the number of temperature sensors to come from the
->>> switch driver, and support arbitrary number of temperature sensors?
->>
->> In that case we would need the number of sensors, pass a sensor index,
->> and create a dynamic number of attributes. The code would get much more
->> complex without real benefit unless there is such a chip - and if there is,
->> we can still change the code at that time. I would prefer to keep it simple
->> for now.
->
-> Better to do it correctly, right from the start. There *will* be such
-> a chip one day, and the person wanting to add it will appreciate the
-> solid foundation (even if that person ends up being you ;).
->
+On Thu, 23 Oct 2014 15:51:39 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-That is really a matter of opinion; others say one should only introduce
-complex infrastructure into the kernel if and when needed. I don't mind
-changing the code to anticipate multiple sensors, but as I said it would
-be more complex, obviously I would only have limited means to test it,
-and, yes, by nature I tend to be one of the people who prefer to keep
-things simple. Before I jump into doing this, I would prefer to get
-guidance from the maintainer. David ?
+> On Thu, Oct 23, 2014 at 02:28:08PM +0200, Cornelia Huck wrote:
+> > On Wed, 22 Oct 2014 21:44:44 +0300
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > 
+> > > set FEATURES_OK as per virtio 1.0 spec
+> > > 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ---
+> > >  include/uapi/linux/virtio_config.h |  2 ++
+> > >  drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
+> > >  2 files changed, 24 insertions(+), 7 deletions(-)
+> > > 
+> > 
+> > >  	dev->config->finalize_features(dev);
+> > > 
+> > > +	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
+> > > +		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
+> > > +		status = dev->config->get_status(dev);
+> > > +		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
+> > > +			printk(KERN_ERR "virtio: device refuses features: %x\n",
+> > > +			       status);
+> > > +			err = -ENODEV;
+> > > +			goto err;
+> > > +		}
+> > > +	}
+> > > +
+> > 
+> > Ugh, I just realize that virtio-ccw has a problem with that mechanism :(
+> > 
+> > Up to now, the driver only propagated status to the device: For
+> > virtio-ccw, this was easily implemented via a ccw that transmitted
+> > "status" to the device. However, the "read back status" part now
+> > actually requires that the driver can get "status" from the device, or
+> > has a comparable way to find out that the device won't accept the
+> > status it tried to write.
+> 
+> Ugh, it actually caches the status in the transport :(
 
-Thanks,
-Guenter
+Well, it worked as long as this was unidirectional...
+
+> 
+> 
+> > I can think of two solutions:
+> > 
+> > (1) Introduce a new ccw that actually reads the device status.
+> > (2) Make the WRITE_STATUS ccw fail (with a unit check) if the driver
+> >     sets FEATURES_OK after it tried to set features the device won't
+> >     accept.
+> > 
+> > (1) is probably more generic, while (2) is more straightforward to
+> > implement.
+> > 
+> > Good thing we actually try to finally implement this,
+> 
+> > I did not notice
+> > this problem during the review :(
+> 
+> Well, it's a nuisance, but the spec is out.
+> It seems to me a new command would be a substantive change so we can't
+> do this in errata.
+> 
+> Option (2) would require two statements for drivers and devices,
+> but since it's clearly the case for correct drivers/devices
+> that command does not fail, it follows that this
+> is not a substantive change so it can be fixed
+> in an errata.
+
+It only adds a new failure case, so it's not really magic, agreed.
+
+> 
+> So the new command would have to be optional, 
+
+I think a new command should be tied to a new virtio-ccw revision.
+
+> please open
+> two issues in the TC: one documenting that driver must check
+> WRITE_STATUS and device can fail WRITE_STATUS, and another
+> for adding READ_STATUS (which will have to wait until
+> the next CS).
+
+I think I need to contemplate that a bit more. The problem with a new
+READ_STATUS is that it is, by nature, an asynchronous command (as all
+ccw commands are - the Linux guest driver uses a simple wrapper that
+makes it appear synchronous). This means, for example, that every
+status update now involves two channel programs instead of one, and
+that reading e.g. the status sysfs attribute in Linux now triggers
+channel I/O, which means several exits (at least ssch, interrupt
+injection, tsch; probably more depending on what the guest does)...
 
