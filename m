@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674AbaJWGYK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 02:24:10 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:23417 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827AbaJWGYH (ORCPT
+	id S1751955AbaJWGdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 02:33:07 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:46037 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaJWGdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 02:24:07 -0400
-Message-ID: <54489EDE.5070109@huawei.com>
-Date: Thu, 23 Oct 2014 14:23:26 +0800
+	Thu, 23 Oct 2014 02:33:04 -0400
+Message-ID: <5448A0F8.1040004@huawei.com>
+Date: Thu, 23 Oct 2014 14:32:24 +0800
 From: Yijing Wang <wangyijing@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
@@ -37,9 +37,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>
-Subject: Re: [PATCH v3 05/27] PCI: tegra: Save msi chip in pci_sys_data
-References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com> <1413342435-7876-6-git-send-email-wangyijing@huawei.com> <20141023051831.GB11770@google.com>
-In-Reply-To: <20141023051831.GB11770@google.com>
+Subject: Re: [PATCH v3 04/27] arm/MSI: Save MSI chip in pci_sys_data
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com> <1413342435-7876-5-git-send-email-wangyijing@huawei.com> <20141023053555.GC11770@google.com>
+In-Reply-To: <20141023053555.GC11770@google.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.177.27.212]
@@ -48,81 +48,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/23 13:18, Bjorn Helgaas wrote:
-> On Wed, Oct 15, 2014 at 11:06:53AM +0800, Yijing Wang wrote:
->> Save msi chip in pci_sys_data instead of assign
->> msi chip to every pci bus in .add_bus().
->>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> ---
->>  drivers/pci/host/pci-tegra.c |   13 +++----------
->>  1 files changed, 3 insertions(+), 10 deletions(-)
->>
->> diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
->> index 3d43874..5af0525 100644
->> --- a/drivers/pci/host/pci-tegra.c
->> +++ b/drivers/pci/host/pci-tegra.c
->> @@ -694,15 +694,6 @@ static int tegra_pcie_map_irq(const struct pci_dev *pdev, u8 slot, u8 pin)
->>  	return irq;
->>  }
+>> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+>> index 22e413c..f11108c 100644
+>> --- a/drivers/pci/msi.c
+>> +++ b/drivers/pci/msi.c
+>> @@ -35,6 +35,9 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+>>  	struct msi_chip *chip = dev->bus->msi;
+>>  	int err;
 >>  
->> -static void tegra_pcie_add_bus(struct pci_bus *bus)
->> -{
->> -	if (IS_ENABLED(CONFIG_PCI_MSI)) {
->> -		struct tegra_pcie *pcie = sys_to_pcie(bus->sysdata);
->> -
->> -		bus->msi = &pcie->msi.chip;
->> -	}
->> -}
->> -
->>  static struct pci_bus *tegra_pcie_scan_bus(int nr, struct pci_sys_data *sys)
->>  {
->>  	struct tegra_pcie *pcie = sys_to_pcie(sys);
->> @@ -1881,11 +1872,13 @@ static int tegra_pcie_enable(struct tegra_pcie *pcie)
+>> +	if (!chip)
+>> +		chip = pci_msi_chip(dev->bus);
+>> +
+>>  	if (!chip || !chip->setup_irq)
+>>  		return -EINVAL;
 >>  
->>  	memset(&hw, 0, sizeof(hw));
+>> @@ -50,6 +53,9 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
+>>  	struct msi_desc *entry = irq_get_msi_desc(irq);
+>>  	struct msi_chip *chip = entry->dev->bus->msi;
 >>  
+>> +	if (!chip)
+>> +		chip = pci_msi_chip(entry->dev->bus);
+>> +
+>>  	if (!chip || !chip->teardown_irq)
+>>  		return;
+>>  
+>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> index 9cd2721..7a48b40 100644
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -1433,6 +1433,15 @@ static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
+>>  
+>>  #include <asm/pci.h>
+>>  
+>> +/* Just avoid compile error, will be clean up later */
 >> +#ifdef CONFIG_PCI_MSI
->> +	hw.msi_chip = &pcie->msi.chip;
+>> +
+>> +#ifndef pci_msi_chip
+>> +#define pci_msi_chip(bus)	NULL
+>> +#endif
 >> +#endif
 > 
-> Why did you use "#ifdef CONFIG_PCI_MSI" instead of the
-> "IS_ENABLED(CONFIG_PCI_MSI)" used previously?
+> I don't like the mixture of ARM changes and PCI core changes in the same
+> patch.  Can you split this into a core patch that does something like this:
+> 
+>   struct msi_chip * __weak pcibios_msi_controller(struct pci_bus *bus)
+>   {
+>     return NULL;
+>   }
+> 
+>   struct msi_chip *pci_msi_controller(struct pci_bus *bus)
+>   {
+>     msi_chip *controller = bus->msi;
+> 
+>     if (controller)
+>       return controller;
+>     return pcibios_msi_controller(bus);
+>   }
+> 
+> followed by an ARM patch that puts the msi_chip pointer in struct hw_pci
+> and implements pcibios_msi_controller()?
 
-Just personal habit. :)
+OK, I will split it in half.
 
 > 
-> It's true that CONFIG_PCI_MSI will never be a tristate symbol, so we don't
-> really *need* the extra smarts of IS_ENABLED(), but I'm fairly sympathetic
-> to James' argument [1] that we should just use IS_ENABLED() all the time
-> because it's simpler overall.
-> 
-> If you want to change the #ifdef to IS_ENABLED(), that should be a separate
-> patch from your msi_chip change, and we can debate the merits of that by
-> itself.
-> 
-> [1] http://lkml.iu.edu//hypermail/linux/kernel/1204.3/00081.html
+> I know you're trying to *remove* weak functions, and this adds one, but
+> this section of the series is more about getting rid of the ARM
+> pcibios_add_bus() because all it was used for was setting the bus->msi
+> pointer.
 
-Hi Bjorn, thanks for your guidance. I will use IS_ENABLED() instead of #ifdef for simplification
-in a separate patch.
+Yes, agree.
 
 > 
->>  	hw.nr_controllers = 1;
->>  	hw.private_data = (void **)&pcie;
->>  	hw.setup = tegra_pcie_setup;
->>  	hw.map_irq = tegra_pcie_map_irq;
->> -	hw.add_bus = tegra_pcie_add_bus;
->>  	hw.scan = tegra_pcie_scan_bus;
->>  	hw.ops = &tegra_pcie_ops;
->>  
+> Eventually we might have a way to stash an MSI controller pointer in the
+> generic pci_host_bridge struct, and then the pcibios_msi_controller()
+> interface could go away.
+
+Yep, I am doing the work to make a generic pci_host_bridge, and try to rip it out from
+pci_create_root_bus, that's also a large changes across many archs.
+
+> 
+>> +
+>>  /* these helpers provide future and backwards compatibility
+>>   * for accessing popular PCI BAR info */
+>>  #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
 >> -- 
 >> 1.7.1
 >>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 > .
 > 
