@@ -1,113 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbaJWGtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 02:49:47 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42398 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834AbaJWGt1 (ORCPT
+	id S1752490AbaJWHFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 03:05:31 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:53181 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751296AbaJWHF3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 02:49:27 -0400
-X-Original-SENDERIP: 10.177.226.38
-X-Original-MAILFROM: karam.lee@lge.com
-From: karam.lee@lge.com
-To: minchan@kernel.org, ngupta@vflare.org, linux-kernel@vger.kernel.org
-Cc: matthew.r.wilcox@intel.com, jmarchan@redhat.com, seungho1.park@lge.com,
-        akpm@linux-foundation.org, "karam.lee" <karam.lee@lge.com>
-Subject: [PATCH v6 3/3] zram: implement rw_page operation of zram
-Date: Thu, 23 Oct 2014 15:49:07 +0900
-Message-Id: <1414046947-7955-4-git-send-email-karam.lee@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1414046947-7955-1-git-send-email-karam.lee@lge.com>
-References: <1414046947-7955-1-git-send-email-karam.lee@lge.com>
+	Thu, 23 Oct 2014 03:05:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141022.161257.290251379136182774.davem@davemloft.net>
+References: <1413963581-24019-1-git-send-email-geert@linux-m68k.org>
+	<20141022.153436.93475594748933547.davem@davemloft.net>
+	<CAMuHMdXJs=+SpB07t0a+LRWX_TGUnUmQi3P-aExFzmbm_j0fow@mail.gmail.com>
+	<20141022.161257.290251379136182774.davem@davemloft.net>
+Date: Thu, 23 Oct 2014 09:05:27 +0200
+X-Google-Sender-Auth: uUJlLZj8WwzhTbQEbwCaD09ykGs
+Message-ID: <CAMuHMdW9W962ofhQYCEZY4OWpDLSYFEZknN5nz6OwaWnTKzEQw@mail.gmail.com>
+Subject: Re: [PATCH v2] drivers: net: xgene: Rewrite loop in xgene_enet_ecc_init()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: David Miller <davem@davemloft.net>
+Cc: Iyappan Subramanian <isubramanian@apm.com>, kchudgar@apm.com,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "karam.lee" <karam.lee@lge.com>
+On Wed, Oct 22, 2014 at 10:12 PM, David Miller <davem@davemloft.net> wrote:
+> From: Geert Uytterhoeven <geert@linux-m68k.org>
+> Date: Wed, 22 Oct 2014 21:50:06 +0200
+>
+>> On Wed, Oct 22, 2014 at 9:34 PM, David Miller <davem@davemloft.net> wrote:
+>>> From: Geert Uytterhoeven <geert@linux-m68k.org>
+>>> Date: Wed, 22 Oct 2014 09:39:41 +0200
+>>>
+>>>> drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c: In function ‘xgene_enet_ecc_init’:
+>>>> drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c:126: warning: ‘data’ may be used uninitialized in this function
+>>>>
+>>>> Depending on the arbitrary value on the stack, the loop may terminate
+>>>> too early, and cause a bogus -ENODEV failure.
+>>>>
+>>>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>>>> ---
+>>>> v2: Rewrite the loop instead of pre-initializing data.
+>>>
+>>> I hate to be a pest, but like the other patch of your's I think
+>>> a do { } while() works best here because the intent is clearly
+>>> to run the loop at least once, right?
+>>
+>> I wanted to avoid checking for "data != ~0U" twice: once to abort the loop,
+>> and once to check if a timeout happened.
+>
+> Hmmm:
+>
+>         do {
+>                 usleep_range(...);
+>                 data = ...();
+>                 if (data == ~0)
+>                         return 0;
+>         } while (++i < 10);
+>
+>         netdev_err(...);
+>         return -ENODEV;
+>
+> Why would you have to check data twice?
 
-This patch implements rw_page operation for zram block device.
 
-I implemented the feature in zram and tested it.
-Test bed was the G2, LG electronic mobile device, whtich has msm8974
-processor and 2GB memory.
-With a memory allocation test program consuming memory, the system
-generates swap.
-And operating time of swap_write_page() was measured.
 
---------------------------------------------------
-|             |   operating time   | improvement |
-|             |  (20 runs average) |             |
---------------------------------------------------
-|with patch   |    1061.15 us      |    +2.4%    |
---------------------------------------------------
-|without patch|    1087.35 us      |             |
---------------------------------------------------
-
-Each test(with paged_io,with BIO) result set shows normal distribution
-and has equal variance.
-I mean the two values are valid result to compare.
-I can say operation with paged I/O(without BIO) is faster 2.4% with
-confidence level 95%.
-
-Signed-off-by: karam.lee <karam.lee@lge.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-CC: Matthew Wilcox <matthew.r.wilcox@intel.com>
----
- drivers/block/zram/zram_drv.c |   38 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
-
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 4565fdc..8d3086a 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -810,8 +810,46 @@ static void zram_slot_free_notify(struct block_device *bdev,
- 	atomic64_inc(&zram->stats.notify_free);
- }
- 
-+static int zram_rw_page(struct block_device *bdev, sector_t sector,
-+		       struct page *page, int rw)
-+{
-+	int offset, ret;
-+	u32 index;
-+	struct zram *zram;
-+	struct bio_vec bv;
-+
-+	zram = bdev->bd_disk->private_data;
-+	if (!valid_io_request(zram, sector, PAGE_SIZE)) {
-+		atomic64_inc(&zram->stats.invalid_io);
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	down_read(&zram->init_lock);
-+	if (unlikely(!init_done(zram))) {
-+		ret = -EIO;
-+		goto out_unlock;
-+	}
-+
-+	index = sector >> SECTORS_PER_PAGE_SHIFT;
-+	offset = sector & (SECTORS_PER_PAGE - 1) << SECTOR_SHIFT;
-+
-+	bv.bv_page = page;
-+	bv.bv_len = PAGE_SIZE;
-+	bv.bv_offset = 0;
-+
-+	ret = zram_bvec_rw(zram, &bv, index, offset, rw);
-+
-+out_unlock:
-+	up_read(&zram->init_lock);
-+out:
-+	page_endio(page, rw, ret);
-+	return ret;
-+}
-+
- static const struct block_device_operations zram_devops = {
- 	.swap_slot_free_notify = zram_slot_free_notify,
-+	.rw_page = zram_rw_page,
- 	.owner = THIS_MODULE
- };
- 
 -- 
-1.7.9.5
+Gr{oetje,eeting}s,
 
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
