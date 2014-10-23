@@ -1,83 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754976AbaJWXxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 19:53:09 -0400
-Received: from mail.kernel.org ([198.145.19.201]:56996 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753576AbaJWXxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 19:53:07 -0400
-Date: Thu, 23 Oct 2014 20:53:02 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Wang Nan <wangnan0@huawei.com>, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, jolsa@redhat.com, adrian.hunter@intel.com,
-        Waiman.Long@hp.com, linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH v2 RESEND] perf tools: makes CPUINFO_PROC to array for
- different kernel version
-Message-ID: <20141023235302.GU14687@kernel.org>
-References: <1413963614-7251-1-git-send-email-wangnan0@huawei.com>
- <87k33qe5be.fsf@sejong.aot.lge.com>
+	id S1754276AbaJWX6G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 19:58:06 -0400
+Received: from mail-bn1bon0089.outbound.protection.outlook.com ([157.56.111.89]:56211
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753533AbaJWX6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 19:58:04 -0400
+From: <atull@opensource.altera.com>
+To: <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
+        <michal.simek@xilinx.com>, <rdunlap@infradead.org>,
+        <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <mgerlach@opensource.altera.com>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>,
+        Alan Tull <atull@opensource.altera.com>
+Subject: [PATCH v2 0/3] fpga bridge framework
+Date: Thu, 23 Oct 2014 18:51:04 -0500
+Message-ID: <1414108267-22058-1-git-send-email-atull@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87k33qe5be.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: DB4PR04CA0024.eurprd04.prod.outlook.com (25.160.41.34) To
+ BL2PR03MB306.namprd03.prod.outlook.com (10.141.68.14)
+X-MS-Exchange-Transport-FromEntityHeader: Hosted
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB306;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0373D94D15
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(479174003)(199003)(189002)(64706001)(66066001)(86152002)(92566001)(92726001)(2201001)(33646002)(48376002)(21056001)(50986999)(86362001)(50466002)(93916002)(47776003)(20776003)(105586002)(95666004)(50226001)(4396001)(85306004)(42186005)(53416004)(106356001)(80022003)(229853001)(77096002)(46102003)(81156004)(107046002)(69596002)(85852003)(122386002)(19580405001)(19580395003)(40100003)(89996001)(87976001)(88136002)(87286001)(76482002)(104166001)(99396003)(120916001)(101416001)(102836001)(31966008)(77156001)(62966002)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB306;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 24, 2014 at 08:26:13AM +0900, Namhyung Kim escreveu:
-> On Wed, 22 Oct 2014 15:40:14 +0800, Wang Nan wrote:
-> > After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
-> > /proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
-> > CPUINFO_PROC to an array and provides two choices for ARM, makes it
-> > compatible for different kernel version.
+From: Alan Tull <atull@opensource.altera.com>
 
-> > v1 -> v2: minor changes as suggested by Namhyung Kim:
+Followup to bridge framework that was posted on 2013/10/3
 
-> >  - Doesn't pass @h and @evlist to __write_cpudesc;
-> >  - Coding style fix.
+This is a driver for enabling/disabling the fpga bridges under control
+of a sys entry.  It has a common framework and individual drivers for
+the various bridges.
 
-> > Signed-off-by: Wang Nan <wangnan0@huawei.com>
- 
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
+This framework uses the reset driver where appropriate.
 
-So now this will work with older kernels and new ones? Cool, thanks for
-working on it, but:
+Alan
 
-[acme@ssdandy linux]$ patch -p1 < /wb/1.patch 
-patching file tools/perf/perf.h
-Hunk #1 FAILED at 6.
-Hunk #2 FAILED at 15.
-Hunk #3 FAILED at 25.
-Hunk #4 FAILED at 40.
-Hunk #5 FAILED at 74.
-Hunk #6 FAILED at 91.
-6 out of 6 hunks FAILED -- saving rejects to file tools/perf/perf.h.rej
-patching file tools/perf/util/header.c
-Hunk #1 succeeded at 579 (offset 29 lines).
-Hunk #2 succeeded at 636 (offset 29 lines).
-[acme@ssdandy linux]$
 
-[acme@ssdandy linux]$ git log --oneline tools/perf/perf.h | head -10
-87c43ee perf tools: Export usage string and option table of perf record
-72a128a perf tools: Move callchain config from record_opts to callchain_param
-73a31b7 perf tools: Move ACCESS_ONCE from perf.h header
-82baa0e perf tools: Move sys_perf_event_open function from perf.h
-43599d1 perf tools: Move syscall and arch specific defines from perf.h
-2c83bc0 perf tools: Move perf_call_graph_mode enum from perf.h
-0776eb5 perf tools: Move sample data structures from perf.h
-36446f4 perf tools: Remove PR_TASK_PERF_EVENTS_* from perf.h
-273a0a7 perf tools: Remove asmlinkage define from perf.h
-1b7ae1c perf tools: Remove min define from perf.h
-[acme@ssdandy linux]$
+Alan Tull (3):
+  add sysfs document for fpga bridges
+  ARM: dts: socfpga: fpga bridges bindings docs
+  fpga bridge driver
 
-This is:
+ Documentation/ABI/testing/sysfs-class-fpga-bridge  |    5 +
+ .../bindings/fpga/altera-fpga2sdram-bridge.txt     |   57 +++++
+ .../bindings/fpga/altera-hps2fpga-bridge.txt       |   53 +++++
+ drivers/misc/Kconfig                               |    3 +-
+ drivers/misc/Makefile                              |    1 +
+ drivers/misc/fpga-bridge/Kconfig                   |   20 ++
+ drivers/misc/fpga-bridge/Makefile                  |    6 +
+ drivers/misc/fpga-bridge/altera-fpga2sdram.c       |  236 ++++++++++++++++++++
+ drivers/misc/fpga-bridge/altera-hps2fpga.c         |  220 ++++++++++++++++++
+ drivers/misc/fpga-bridge/fpga-bridge.c             |  230 +++++++++++++++++++
+ drivers/misc/fpga-bridge/fpga-bridge.h             |   51 +++++
+ 11 files changed, 881 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-fpga-bridge
+ create mode 100644 Documentation/devicetree/bindings/fpga/altera-fpga2sdram-bridge.txt
+ create mode 100644 Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
+ create mode 100644 drivers/misc/fpga-bridge/Kconfig
+ create mode 100644 drivers/misc/fpga-bridge/Makefile
+ create mode 100644 drivers/misc/fpga-bridge/altera-fpga2sdram.c
+ create mode 100644 drivers/misc/fpga-bridge/altera-hps2fpga.c
+ create mode 100644 drivers/misc/fpga-bridge/fpga-bridge.c
+ create mode 100644 drivers/misc/fpga-bridge/fpga-bridge.h
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
+-- 
+1.7.9.5
 
-If you don't have time to fix this up, I'll try to find time tomorrow
-and do it.
-
-- Arnaldo
