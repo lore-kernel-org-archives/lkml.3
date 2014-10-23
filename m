@@ -1,196 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229AbaJWBdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 21:33:24 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:26662 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752801AbaJWBdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 21:33:22 -0400
-X-IronPort-AV: E=Sophos;i="5.04,772,1406563200"; 
-   d="scan'208";a="37777973"
-Message-ID: <544859D3.3000703@cn.fujitsu.com>
-Date: Thu, 23 Oct 2014 09:28:51 +0800
-From: Chai Wen <chaiw.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	id S1753975AbaJWBnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 21:43:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750941AbaJWBnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 21:43:13 -0400
+Message-ID: <54485D03.9070107@redhat.com>
+Date: Wed, 22 Oct 2014 21:42:27 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: Mike Turquette <mturquette@linaro.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yuichi.kusakabe@jp.fujitsu.com" <yuichi.kusakabe@jp.fujitsu.com>
-Subject: Re: [PATCH resend] ARM: perf: remove useless return and check of
- idx in counter handling
-References: <1413980209-14913-1-git-send-email-chaiw.fnst@cn.fujitsu.com> <20141022123153.GH22642@leverpostej>
-In-Reply-To: <20141022123153.GH22642@leverpostej>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.161]
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        kamalesh@linux.vnet.ibm.com, efault@gmx.de,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        Tuukka Tikkanen <tuukka.tikkanen@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH RFC 5/7] sched: cfs: cpu frequency scaling arch functions
+References: <1413958051-7103-1-git-send-email-mturquette@linaro.org> <1413958051-7103-6-git-send-email-mturquette@linaro.org> <54480E58.5060600@redhat.com> <CAPtuhThe9dQkbwbXoCV0VpHohrC8UacPoL5vCn2uDqHcjbtKGA@mail.gmail.com>
+In-Reply-To: <CAPtuhThe9dQkbwbXoCV0VpHohrC8UacPoL5vCn2uDqHcjbtKGA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 08:31 PM, Mark Rutland wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> On Wed, Oct 22, 2014 at 01:16:49PM +0100, chai wen wrote:
->> Idx sanity check was once implemented separately in these counter
->> handling functions and then return value was treated as a judgement.
->> 	armv7_pmnc_select_counter()
->> 	armv7_pmnc_enable_counter()
->> 	armv7_pmnc_disable_counter()
->> 	armv7_pmnc_enable_intens()
->> 	armv7_pmnc_disable_intens()
->> But we do not need to do this now, as idx validation check was moved
->> out all these functions by commit 7279adbd9bb8ef8f(ARM: perf: check ARMv7
->> counter validity on a per-pmu basis).
->> Let's remove the useless return of idx from these functions.
+On 10/22/2014 07:20 PM, Mike Turquette wrote:
+> On Wed, Oct 22, 2014 at 1:06 PM, Rik van Riel <riel@redhat.com>
+> wrote: On 10/22/2014 02:07 AM, Mike Turquette wrote:
+>>>> arch_eval_cpu_freq and arch_scale_cpu_freq are added to allow
+>>>> the scheduler to evaluate if cpu frequency should change and
+>>>> to invoke that change from a safe context.
+>>>> 
+>>>> They are weakly defined arch functions that do nothing by
+>>>> default. A CPUfreq governor could use these functions to
+>>>> implement a frequency scaling policy based on updates to
+>>>> per-task statistics or updates to per-cpu utilization.
+>>>> 
+>>>> As discussed at Linux Plumbers Conference 2014, the goal will
+>>>> be to focus on a single cpu frequency scaling policy that
+>>>> works for everyone. That may mean that the weak arch
+>>>> functions definitions can be removed entirely and a single
+>>>> policy implements that logic for all architectures.
 > 
-> In future when you fix up a patch, please send as "PATCHv2" (or v3, etc
-> as appropriate), and only as "PATCH RESEND" if there are no changes. It
-> makes it far easier to keep track of the stat of the patch. Don't worry
-> about sending again this time, however.
+> On virtual machines, we probably want to use both frequency and 
+> steal time to calculate the factor.
 > 
+>> You mean for calculating desired cpu frequency on a virtual
+>> guest? Is that something we want to do?
 
+A guest will be unable to set the cpu frequency, but it should
+know what the frequency is, so it can take the capacity of each
+CPU into account when doing things like load balancing.
 
-Thanks a lot for your exact description about difference between 'resend' and 'v1..v2..'.
-(Sincerely speaking, I did not know the true meaning of the 'resend', although
-I have done the 'resend' for times before :( )
-Will follow up this in the future.
+This has little impact on this patch series, the impact is more
+in the load balancer, which can see how much compute capacity is
+available on each CPU, and adjust the load accordingly.
 
-> Thanks for fixing up the braces since v1; this looks good to me.
-> 
+I have seen some code come by that adjusts each cpu's compute_capacity,
+but do not remember whether it looks at cpu frequency, and am pretty
+sure it does not look at steal time currently :)
 
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-
-thanks
-chai wen
-
-> Mark.
-> 
->>
->> Acked-by: Mark Rutland <mark.rutland@arm.com>
->> Signed-off-by: chai wen <chaiw.fnst@cn.fujitsu.com>
->> ---
->>  arch/arm/kernel/perf_event_v7.c |   40 +++++++++++++++++---------------------
->>  1 files changed, 18 insertions(+), 22 deletions(-)
->>
->> diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
->> index 116758b..aaf5314 100644
->> --- a/arch/arm/kernel/perf_event_v7.c
->> +++ b/arch/arm/kernel/perf_event_v7.c
->> @@ -564,13 +564,11 @@ static inline int armv7_pmnc_counter_has_overflowed(u32 pmnc, int idx)
->>  	return pmnc & BIT(ARMV7_IDX_TO_COUNTER(idx));
->>  }
->>  
->> -static inline int armv7_pmnc_select_counter(int idx)
->> +static inline void armv7_pmnc_select_counter(int idx)
->>  {
->>  	u32 counter = ARMV7_IDX_TO_COUNTER(idx);
->>  	asm volatile("mcr p15, 0, %0, c9, c12, 5" : : "r" (counter));
->>  	isb();
->> -
->> -	return idx;
->>  }
->>  
->>  static inline u32 armv7pmu_read_counter(struct perf_event *event)
->> @@ -580,13 +578,15 @@ static inline u32 armv7pmu_read_counter(struct perf_event *event)
->>  	int idx = hwc->idx;
->>  	u32 value = 0;
->>  
->> -	if (!armv7_pmnc_counter_valid(cpu_pmu, idx))
->> +	if (!armv7_pmnc_counter_valid(cpu_pmu, idx)) {
->>  		pr_err("CPU%u reading wrong counter %d\n",
->>  			smp_processor_id(), idx);
->> -	else if (idx == ARMV7_IDX_CYCLE_COUNTER)
->> +	} else if (idx == ARMV7_IDX_CYCLE_COUNTER) {
->>  		asm volatile("mrc p15, 0, %0, c9, c13, 0" : "=r" (value));
->> -	else if (armv7_pmnc_select_counter(idx) == idx)
->> +	} else {
->> +		armv7_pmnc_select_counter(idx);
->>  		asm volatile("mrc p15, 0, %0, c9, c13, 2" : "=r" (value));
->> +	}
->>  
->>  	return value;
->>  }
->> @@ -597,45 +597,43 @@ static inline void armv7pmu_write_counter(struct perf_event *event, u32 value)
->>  	struct hw_perf_event *hwc = &event->hw;
->>  	int idx = hwc->idx;
->>  
->> -	if (!armv7_pmnc_counter_valid(cpu_pmu, idx))
->> +	if (!armv7_pmnc_counter_valid(cpu_pmu, idx)) {
->>  		pr_err("CPU%u writing wrong counter %d\n",
->>  			smp_processor_id(), idx);
->> -	else if (idx == ARMV7_IDX_CYCLE_COUNTER)
->> +	} else if (idx == ARMV7_IDX_CYCLE_COUNTER) {
->>  		asm volatile("mcr p15, 0, %0, c9, c13, 0" : : "r" (value));
->> -	else if (armv7_pmnc_select_counter(idx) == idx)
->> +	} else {
->> +		armv7_pmnc_select_counter(idx);
->>  		asm volatile("mcr p15, 0, %0, c9, c13, 2" : : "r" (value));
->> +	}
->>  }
->>  
->>  static inline void armv7_pmnc_write_evtsel(int idx, u32 val)
->>  {
->> -	if (armv7_pmnc_select_counter(idx) == idx) {
->> -		val &= ARMV7_EVTYPE_MASK;
->> -		asm volatile("mcr p15, 0, %0, c9, c13, 1" : : "r" (val));
->> -	}
->> +	armv7_pmnc_select_counter(idx);
->> +	val &= ARMV7_EVTYPE_MASK;
->> +	asm volatile("mcr p15, 0, %0, c9, c13, 1" : : "r" (val));
->>  }
->>  
->> -static inline int armv7_pmnc_enable_counter(int idx)
->> +static inline void armv7_pmnc_enable_counter(int idx)
->>  {
->>  	u32 counter = ARMV7_IDX_TO_COUNTER(idx);
->>  	asm volatile("mcr p15, 0, %0, c9, c12, 1" : : "r" (BIT(counter)));
->> -	return idx;
->>  }
->>  
->> -static inline int armv7_pmnc_disable_counter(int idx)
->> +static inline void armv7_pmnc_disable_counter(int idx)
->>  {
->>  	u32 counter = ARMV7_IDX_TO_COUNTER(idx);
->>  	asm volatile("mcr p15, 0, %0, c9, c12, 2" : : "r" (BIT(counter)));
->> -	return idx;
->>  }
->>  
->> -static inline int armv7_pmnc_enable_intens(int idx)
->> +static inline void armv7_pmnc_enable_intens(int idx)
->>  {
->>  	u32 counter = ARMV7_IDX_TO_COUNTER(idx);
->>  	asm volatile("mcr p15, 0, %0, c9, c14, 1" : : "r" (BIT(counter)));
->> -	return idx;
->>  }
->>  
->> -static inline int armv7_pmnc_disable_intens(int idx)
->> +static inline void armv7_pmnc_disable_intens(int idx)
->>  {
->>  	u32 counter = ARMV7_IDX_TO_COUNTER(idx);
->>  	asm volatile("mcr p15, 0, %0, c9, c14, 2" : : "r" (BIT(counter)));
->> @@ -643,8 +641,6 @@ static inline int armv7_pmnc_disable_intens(int idx)
->>  	/* Clear the overflow flag in case an interrupt is pending. */
->>  	asm volatile("mcr p15, 0, %0, c9, c12, 3" : : "r" (BIT(counter)));
->>  	isb();
->> -
->> -	return idx;
->>  }
->>  
->>  static inline u32 armv7_pmnc_getreset_flags(void)
->> -- 
->> 1.7.1
->>
->>
-> .
-> 
-
-
-
--- 
-Regards
-
-Chai Wen
+iQEcBAEBAgAGBQJUSF0DAAoJEM553pKExN6DYgkIALSZxKxQhMAJl0VUrBtPEFlr
+cXOr0jKS/0FowS22agzpJr/OoWi58mGGm6mKr6LkoZJ34K96Y6/H4ie7Sr7Q4BL/
+A4hQpTwxHzGasawQwdQOG/lW2q2oDUqsQuxRQDOs97I4vtYwxsj+D3qDtfIyaosf
+f7ctWDQMzBBgLlrDn1wWmDE6K1pxa2eqnf0rRVSRNRXQ/lncHHzPdFOj4sJE9RVQ
+E47gqeisDf+m7TyvG1I9MN6ZIHMEfgaQcmVvO8/QGqnb1ZMom6JTCDa4UqAd97XB
+1NQ/QSJvQ5ED/cCfLy91YguEr/GY+QFsKeCjL1604e+3lsN4DjuejtcUP9/LQVs=
+=On7B
+-----END PGP SIGNATURE-----
