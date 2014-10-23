@@ -1,79 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856AbaJWAKn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 20:10:43 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:54993 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576AbaJWAKl (ORCPT
+	id S1754688AbaJWATi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 20:19:38 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:48937 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753932AbaJWATh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 20:10:41 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: torvalds@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: [GIT PULL] hwmon fixes for 3.18-rc2
-Date: Wed, 22 Oct 2014 17:10:36 -0700
-Message-Id: <1414023036-17120-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.54484780.001F,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Wed, 22 Oct 2014 20:19:37 -0400
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <54484993.1090803@lge.com>
+Date: Thu, 23 Oct 2014 09:19:31 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Pintu Kumar <pintu.k@samsung.com>, akpm@linux-foundation.org,
+        riel@redhat.com, aquini@redhat.com, paul.gortmaker@windriver.com,
+        jmarchan@redhat.com, lcapitulino@redhat.com,
+        kirill.shutemov@linux.intel.com, m.szyprowski@samsung.com,
+        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
+        mina86@mina86.com, lauraa@codeaurora.org, mgorman@suse.de,
+        rientjes@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
+        sasha.levin@oracle.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+CC: pintu_agarwal@yahoo.com, cpgs@samsung.com, vishnu.ps@samsung.com,
+        rohit.kr@samsung.com, ed.savinay@samsung.com
+Subject: Re: [PATCH v2 2/2] fs: proc: Include cma info in proc/meminfo
+References: <1413790391-31686-1-git-send-email-pintu.k@samsung.com> <1413986796-19732-1-git-send-email-pintu.k@samsung.com> <1413986796-19732-2-git-send-email-pintu.k@samsung.com>
+In-Reply-To: <1413986796-19732-2-git-send-email-pintu.k@samsung.com>
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull hwmon fixes for Linux 3.18-rc2 from signed tag:
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus-v3.18-rc2
+2014-10-22 오후 11:06, Pintu Kumar 쓴 글:
+> This patch include CMA info (CMATotal, CMAFree) in /proc/meminfo.
+> Currently, in a CMA enabled system, if somebody wants to know the
+> total CMA size declared, there is no way to tell, other than the dmesg
+> or /var/log/messages logs.
+> With this patch we are showing the CMA info as part of meminfo, so that
+> it can be determined at any point of time.
+> This will be populated only when CMA is enabled.
+> 
+> Below is the sample output from a ARM based device with RAM:512MB and CMA:16MB.
+> 
+> MemTotal:         471172 kB
+> MemFree:          111712 kB
+> MemAvailable:     271172 kB
+> .
+> .
+> .
+> CmaTotal:          16384 kB
+> CmaFree:            6144 kB
+> 
+> This patch also fix below checkpatch errors that were found during these changes.
 
-Thanks,
-Guenter
-------
+Why don't you split patch for it?
+I think there's a rule not to mix separate patchs.
 
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+> 
+> ERROR: space required after that ',' (ctx:ExV)
+> 199: FILE: fs/proc/meminfo.c:199:
+> +       ,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
+>          ^
+> 
+> ERROR: space required after that ',' (ctx:ExV)
+> 202: FILE: fs/proc/meminfo.c:202:
+> +       ,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+>          ^
+> 
+> ERROR: space required after that ',' (ctx:ExV)
+> 206: FILE: fs/proc/meminfo.c:206:
+> +       ,K(totalcma_pages)
+>          ^
+> 
+> total: 3 errors, 0 warnings, 2 checks, 236 lines checked
+> 
+> Signed-off-by: Pintu Kumar <pintu.k@samsung.com>
+> Signed-off-by: Vishnu Pratap Singh <vishnu.ps@samsung.com>
+> ---
+>   fs/proc/meminfo.c |   15 +++++++++++++--
+>   1 file changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+> index aa1eee0..d3ebf2e 100644
+> --- a/fs/proc/meminfo.c
+> +++ b/fs/proc/meminfo.c
+> @@ -12,6 +12,9 @@
+>   #include <linux/vmstat.h>
+>   #include <linux/atomic.h>
+>   #include <linux/vmalloc.h>
+> +#ifdef CONFIG_CMA
+> +#include <linux/cma.h>
+> +#endif
+>   #include <asm/page.h>
+>   #include <asm/pgtable.h>
+>   #include "internal.h"
+> @@ -138,6 +141,10 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>   #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>   		"AnonHugePages:  %8lu kB\n"
+>   #endif
+> +#ifdef CONFIG_CMA
+> +		"CmaTotal:       %8lu kB\n"
+> +		"CmaFree:        %8lu kB\n"
+> +#endif
+>   		,
+>   		K(i.totalram),
+>   		K(i.freeram),
+> @@ -187,12 +194,16 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>   		vmi.used >> 10,
+>   		vmi.largest_chunk >> 10
+>   #ifdef CONFIG_MEMORY_FAILURE
+> -		,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
+> +		, atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
+>   #endif
+>   #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> -		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+> +		, K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+>   		   HPAGE_PMD_NR)
+>   #endif
+> +#ifdef CONFIG_CMA
+> +		, K(totalcma_pages)
+> +		, K(global_page_state(NR_FREE_CMA_PAGES))
+> +#endif
+>   		);
 
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+Just for sure, are zoneinfo and pagetypeinfo not suitable?
 
-are available in the git repository at:
+I don't know HOTPLUG feature so I'm just asking for sure.
+Does HOTPLUG not need printing message like this?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus-v3.18-rc2
+Thanks a lot.
 
-for you to fetch changes up to 3d5960472de0a245c56ba55e9a59b8d0f4c69cb4:
-
-  hwmon: (menf21bmc) Include linux/err.h (2014-10-19 18:41:18 -0700)
-
-----------------------------------------------------------------
-Fix potential compile problem for menf21bmc hwmon driver
-
-----------------------------------------------------------------
-Johannes Thumshirn (1):
-      hwmon: (menf21bmc) Include linux/err.h
-
- drivers/hwmon/menf21bmc_hwmon.c | 1 +
- 1 file changed, 1 insertion(+)
+>   
+>   	hugetlb_report_meminfo(m);
+> 
