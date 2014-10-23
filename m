@@ -1,194 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaJWJNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 05:13:17 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48203 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966AbaJWJNN convert rfc822-to-8bit (ORCPT
+	id S1752210AbaJWJ1o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 05:27:44 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:52057 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799AbaJWJ1l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 05:13:13 -0400
-Date: Thu, 23 Oct 2014 10:13:09 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: Re: [RFC 2/4] PCI: generic: Add support for ARM64 and MSI(x)
-Message-ID: <20141023091309.GF25302@e106497-lin.cambridge.arm.com>
-References: <1411937610-22125-1-git-send-email-suravee.suthikulpanit@amd.com>
- <3256560.C0cZnIlnAv@wuerfel>
- <20141022155914.GB25939@e102568-lin.cambridge.arm.com>
- <2148776.X8NPqiYA6S@wuerfel>
-MIME-Version: 1.0
-In-Reply-To: <2148776.X8NPqiYA6S@wuerfel>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 23 Oct 2014 09:13:10.0185 (UTC) FILETIME=[90B35190:01CFEEA1]
-X-MC-Unique: 114102310131006501
-Content-Type: text/plain; charset=UTF-8
+	Thu, 23 Oct 2014 05:27:41 -0400
+References: <1413816472-1895-1-git-send-email-javier.martinez@collabora.co.uk> <1413816472-1895-5-git-send-email-javier.martinez@collabora.co.uk> <20141022164813.GD2344@sirena.org.uk>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20141022164813.GD2344@sirena.org.uk>
+Content-Type: text/plain;
+	charset=us-ascii
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Message-Id: <0DA944C5-7A6B-461B-A8E6-D47343D22E0B@collabora.co.uk>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Chris Zhong <zyw@rock-chips.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+X-Mailer: iPhone Mail (11D257)
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH v3 4/5] regulator: max77802: Parse regulator operating mode properties
+Date: Thu, 23 Oct 2014 11:28:09 +0200
+To: Mark Brown <broonie@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:52:19PM +0100, Arnd Bergmann wrote:
-> On Wednesday 22 October 2014 16:59:14 Lorenzo Pieralisi wrote:
-> > On Wed, Oct 01, 2014 at 10:38:45AM +0100, Arnd Bergmann wrote:
-> > 
-> > [...]
-> > 
-> > > The arm32 implementations of pci_domain_nr/pci_proc_domain can probably be
-> > > removed if we change the arm32 pcibios_init_hw function to call the new
-> > > interfaces that set the domain number.
-> > 
-> > I wished, but it is a bit more complicated than I thought unfortunately,
-> > mostly because some drivers, eg cns3xxx set the domain numbers
-> > statically in pci_sys_data and this sets a chain of dependency that is
-> > not easy to untangle. I think cns3xxx is the only legacy driver that "uses"
-> > the domain number (in pci_sys_data) in a way that clashes with the
-> > generic domain_nr implementation, I need to give it more thought.
+Hello Mark,
+
+> On 22/10/2014, at 18:48, Mark Brown <broonie@kernel.org> wrote:
 > 
-> Just had a look at that driver, shouldn't be too hard to change, see below.
-
-I like this!
-
-One thing though ...
-
+>> On Mon, Oct 20, 2014 at 04:47:51PM +0200, Javier Martinez Canillas wrote:
+>> 
+>> +    char *states[PM_SUSPEND_MAX + 1] = {
+>> +        [PM_SUSPEND_MEM] = "regulator-state-mem",
+>> +        [PM_SUSPEND_MAX] = "regulator-state-disk",
+>> +    };
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> 
-> diff --git a/arch/arm/mach-cns3xxx/pcie.c b/arch/arm/mach-cns3xxx/pcie.c
-> index 45d6bd09e6ef..aa4b9d7c52fd 100644
-> --- a/arch/arm/mach-cns3xxx/pcie.c
-> +++ b/arch/arm/mach-cns3xxx/pcie.c
-> @@ -30,18 +30,15 @@ struct cns3xxx_pcie {
->  	unsigned int irqs[2];
->  	struct resource res_io;
->  	struct resource res_mem;
-> -	struct hw_pci hw_pci;
-> -
-> +	int port;
->  	bool linked;
->  };
->  
-> -static struct cns3xxx_pcie cns3xxx_pcie[]; /* forward decl. */
-> -
->  static struct cns3xxx_pcie *sysdata_to_cnspci(void *sysdata)
->  {
->  	struct pci_sys_data *root = sysdata;
->  
-> -	return &cns3xxx_pcie[root->domain];
-> +	return root->private_data;
->  }
->  
->  static struct cns3xxx_pcie *pdev_to_cnspci(const struct pci_dev *dev)
-> @@ -192,13 +189,7 @@ static struct cns3xxx_pcie cns3xxx_pcie[] = {
->  			.flags = IORESOURCE_MEM,
->  		},
->  		.irqs = { IRQ_CNS3XXX_PCIE0_RC, IRQ_CNS3XXX_PCIE0_DEVICE, },
-> -		.hw_pci = {
-> -			.domain = 0,
-> -			.nr_controllers = 1,
-> -			.ops = &cns3xxx_pcie_ops,
-> -			.setup = cns3xxx_pci_setup,
-> -			.map_irq = cns3xxx_pcie_map_irq,
-> -		},
-> +		.port = 0,
->  	},
->  	[1] = {
->  		.host_regs = (void __iomem *)CNS3XXX_PCIE1_HOST_BASE_VIRT,
-> @@ -217,19 +208,13 @@ static struct cns3xxx_pcie cns3xxx_pcie[] = {
->  			.flags = IORESOURCE_MEM,
->  		},
->  		.irqs = { IRQ_CNS3XXX_PCIE1_RC, IRQ_CNS3XXX_PCIE1_DEVICE, },
-> -		.hw_pci = {
-> -			.domain = 1,
-> -			.nr_controllers = 1,
-> -			.ops = &cns3xxx_pcie_ops,
-> -			.setup = cns3xxx_pci_setup,
-> -			.map_irq = cns3xxx_pcie_map_irq,
-> -		},
-> +		.port = 1,
->  	},
->  };
->  
->  static void __init cns3xxx_pcie_check_link(struct cns3xxx_pcie *cnspci)
->  {
-> -	int port = cnspci->hw_pci.domain;
-> +	int port = cnspci->port;
->  	u32 reg;
->  	unsigned long time;
->  
-> @@ -260,9 +245,10 @@ static void __init cns3xxx_pcie_check_link(struct cns3xxx_pcie *cnspci)
->  
->  static void __init cns3xxx_pcie_hw_init(struct cns3xxx_pcie *cnspci)
->  {
-> -	int port = cnspci->hw_pci.domain;
-> +	int port = cnspci->port;
->  	struct pci_sys_data sd = {
->  		.domain = port,
-> +		.private_data = cnspci,
->  	};
->  	struct pci_bus bus = {
->  		.number = 0,
-> @@ -323,6 +309,14 @@ static int cns3xxx_pcie_abort_handler(unsigned long addr, unsigned int fsr,
->  void __init cns3xxx_pcie_init_late(void)
->  {
->  	int i;
-> +	void *private_data;
-> +	struct hw_pci hw_pci = {
-> +		.nr_controllers = 1,
-> +		.ops = &cns3xxx_pcie_ops,
-> +		.setup = cns3xxx_pci_setup,
-> +		.map_irq = cns3xxx_pcie_map_irq,
-> +		.private_data = &private_data,
-> +	};
->  
->  	pcibios_min_io = 0;
->  	pcibios_min_mem = 0;
-> @@ -335,7 +329,9 @@ void __init cns3xxx_pcie_init_late(void)
->  		cns3xxx_pwr_soft_rst(0x1 << PM_SOFT_RST_REG_OFFST_PCIE(i));
->  		cns3xxx_pcie_check_link(&cns3xxx_pcie[i]);
->  		cns3xxx_pcie_hw_init(&cns3xxx_pcie[i]);
-> -		pci_common_init(&cns3xxx_pcie[i].hw_pci);
-> +		hw_pci->domain = i;
-> +		private_data = &cns3xxx_pcie[i];
+> This still has the same problem as your previous patch with things not
+> being as joined up with the core as they should be.  What I'd like to
+> see is that the code to extract the number for each state is in the core
+> and then the drivers just provide a translation function to map from
+> this to the internal modes.
 
-Is this dance with pointers absolutely necessary? Does gcc though dishes at you
-for doing hw_pci->private_data = &cns3xxx_pcie[i] directly?
+Ok, I'll send a new version parsing it in the core and providing a translation function in the driver as you said.
 
-Best regards,
-Liviu
+However this is an implementation detail and should not change the DT bindings in the current version. Could you please let me know if you have any issues with the other patches from this series so I can address all of them when doing a re-spin?
 
-> +		pci_common_init(&hw_pci);
->  	}
->  
->  	pci_assign_unassigned_resources();
-> 
-> 
-> 
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Thanks a lot and best regards,
+Javier
