@@ -1,160 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993AbaJWN6B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:58:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10339 "EHLO mx1.redhat.com"
+	id S1755933AbaJWOAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:00:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37624 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752107AbaJWN57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:57:59 -0400
-Message-ID: <1414072672.27420.12.camel@ul30vt.home>
-Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver
- mapping.
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Stuart Yoder <stuart.yoder@freescale.com>
-Cc: Marcel Apfelbaum <marcel.a@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "marcel@redhat.com" <marcel@redhat.com>,
-        "mst@redhat.com" <mst@redhat.com>
-Date: Thu, 23 Oct 2014 07:57:52 -0600
-In-Reply-To: <d093a0738f61433aafe5ddd36d0393e9@CY1PR0301MB0748.namprd03.prod.outlook.com>
-References: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
-	 <1414002755.4202.253.camel@ul30vt.home>
-	 <d093a0738f61433aafe5ddd36d0393e9@CY1PR0301MB0748.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752970AbaJWOA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:00:29 -0400
+Date: Thu, 23 Oct 2014 17:03:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC v3 09/16] virtio: set FEATURES_OK
+Message-ID: <20141023140358.GA21043@redhat.com>
+References: <1414003404-505-1-git-send-email-mst@redhat.com>
+ <1414003404-505-10-git-send-email-mst@redhat.com>
+ <20141023142808.377551d8.cornelia.huck@de.ibm.com>
+ <20141023125139.GA10033@redhat.com>
+ <20141023153006.0cb1e7c3.cornelia.huck@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023153006.0cb1e7c3.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-23 at 13:44 +0000, Stuart Yoder wrote:
+On Thu, Oct 23, 2014 at 03:30:06PM +0200, Cornelia Huck wrote:
+> On Thu, 23 Oct 2014 15:51:39 +0300
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
-> > -----Original Message-----
-> > From: Alex Williamson [mailto:alex.williamson@redhat.com]
-> > Sent: Wednesday, October 22, 2014 1:33 PM
-> > To: Marcel Apfelbaum
-> > Cc: linux-pci@vger.kernel.org; bhelgaas@google.com; linux-kernel@vger.kernel.org; marcel@redhat.com;
-> > mst@redhat.com; Yoder Stuart-B08248
-> > Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver mapping.
+> > On Thu, Oct 23, 2014 at 02:28:08PM +0200, Cornelia Huck wrote:
+> > > On Wed, 22 Oct 2014 21:44:44 +0300
+> > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > 
+> > > > set FEATURES_OK as per virtio 1.0 spec
+> > > > 
+> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > ---
+> > > >  include/uapi/linux/virtio_config.h |  2 ++
+> > > >  drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
+> > > >  2 files changed, 24 insertions(+), 7 deletions(-)
+> > > > 
+> > > 
+> > > >  	dev->config->finalize_features(dev);
+> > > > 
+> > > > +	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
+> > > > +		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
+> > > > +		status = dev->config->get_status(dev);
+> > > > +		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
+> > > > +			printk(KERN_ERR "virtio: device refuses features: %x\n",
+> > > > +			       status);
+> > > > +			err = -ENODEV;
+> > > > +			goto err;
+> > > > +		}
+> > > > +	}
+> > > > +
+> > > 
+> > > Ugh, I just realize that virtio-ccw has a problem with that mechanism :(
+> > > 
+> > > Up to now, the driver only propagated status to the device: For
+> > > virtio-ccw, this was easily implemented via a ccw that transmitted
+> > > "status" to the device. However, the "read back status" part now
+> > > actually requires that the driver can get "status" from the device, or
+> > > has a comparable way to find out that the device won't accept the
+> > > status it tried to write.
 > > 
-> > [cc+ stuart]
+> > Ugh, it actually caches the status in the transport :(
+> 
+> Well, it worked as long as this was unidirectional...
+> 
 > > 
-> > On Mon, 2014-10-20 at 17:04 +0300, Marcel Apfelbaum wrote:
-> > > Scanning a lot of devices during boot requires a lot of time.
-> > > On other scenarios there is a need to bind a driver to a specific slot.
-> > >
-> > > Binding devices to pci-stub driver does not work,
-> > > as it will not differentiate between devices of the
-> > > same type. Using some start scripts is error prone.
-> > >
-> > > The solution leverages driver_override functionality introduced by
-> > >
-> > > 	commit: 782a985d7af26db39e86070d28f987cad21313c0
-> > > 	Author: Alex Williamson <alex.williamson@redhat.com>
-> > > 	Date:   Tue May 20 08:53:21 2014 -0600
-> > >
-> > >     	PCI: Introduce new device binding path using pci_dev.driver_override
-> > >
-> > > In order to bind PCI slots to specific drivers use:
-> > > 	pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
-> > >
-> > > Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
-> > > ---
-> > > v3 -> v4:
-> > >  - Addressed Alex Williamson's comments:
-> > >    - Modified the type of driver_override_entry's fields
-> > >    - Used PCI_DEVFN when appropriated
-> > >    - Removed redundant checks
-> > >    - Replaced BUG_ON with pr_err messages
-> > >    - Simpler command line parsing
-> > >  - Addressed Michael S. Tsirkin comments
-> > >    - removed DRIVER_OVERRIDE_NAME_LENGTH limitation
-> > > v2 -> v3:
-> > >  - Corrected subject line
-> > > v1 -> v2:
-> > >  - Addressed Michael S. Tsirkin comments
-> > >    - Removed 32 slots limitation
-> > >    - Better handling of memory allocation failures
-> > >      (preferred BUG_ON over error messages)
-> > >  - Addressed Alex Williamson's comments:
-> > >    - Modified commit message to show parameter usage more clear.
-> > >  - I preferred to re-use parse_args instead of manually using
-> > >    strstr in order to better comply with command line parsing
-> > >    rules.
-> > >  - I didn't use any locking when parsing the command line args
-> > >    (see parse_done usage) assuming that first call will be
-> > >    early in system boot and no race can occur. Please correct
-> > >    me if I am wrong.
-> > >
-> > > Notes:
-> > >  - I have further ideas on top of this patch based on your reviews.
-> > >    I thought of:
-> > >    - Use wildcards to specify entire buses/devices, something like:
-> > >      	driver[0001:02:*.*]=pci-stub
-> > >    - Use comma to separate several devices:
-> > >      	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
-> > >    - Make domain optional:
-> > >    	driver[00:03.0]=pci-stub
-> > >
-> > > Comments will be appreciated,
-> > > Thanks,
-> > > Marcel
-> > >  Documentation/kernel-parameters.txt |   4 ++
-> > >  drivers/pci/bus.c                   | 111 ++++++++++++++++++++++++++++++++++++
-> > >  drivers/pci/pci.c                   |   2 +
-> > >  3 files changed, 117 insertions(+)
 > > 
-> > The driver_override feature that we're making use of here is also going
-> > to be supported by platform devices and potentially more bustypes in the
-> > future, so I'm concerned that making a pci specific kernel parameter is
-> > too shortsighted.  Instead we could hook on to BUS_NOTIFY_ADD_DEVICE for
-> > bustypes that support driver_override so we can have a common interface.
-> > Perhaps:
+> > > I can think of two solutions:
+> > > 
+> > > (1) Introduce a new ccw that actually reads the device status.
+> > > (2) Make the WRITE_STATUS ccw fail (with a unit check) if the driver
+> > >     sets FEATURES_OK after it tried to set features the device won't
+> > >     accept.
+> > > 
+> > > (1) is probably more generic, while (2) is more straightforward to
+> > > implement.
+> > > 
+> > > Good thing we actually try to finally implement this,
 > > 
-> > driver_override=pci,0000:02:00.0=pci-stub;platform,fakename=vfio-platform
+> > > I did not notice
+> > > this problem during the review :(
 > > 
-> > Finding delimiters that don't conflict may be challenging.
+> > Well, it's a nuisance, but the spec is out.
+> > It seems to me a new command would be a substantive change so we can't
+> > do this in errata.
+> > 
+> > Option (2) would require two statements for drivers and devices,
+> > but since it's clearly the case for correct drivers/devices
+> > that command does not fail, it follows that this
+> > is not a substantive change so it can be fixed
+> > in an errata.
 > 
-> I think what you proposed works--  <bus-name>,<bus-dev>=<driver>;
+> It only adds a new failure case, so it's not really magic, agreed.
 > 
-> Think that will work for PCI, platform, and the new fsl-mc bus we are working
-> on.
+> > 
+> > So the new command would have to be optional, 
 > 
-> > Also, can we
-> > assume that bus-name:dev-name is unique for every bustype?  It is for
-> > pci, platform?
-> 
-> I think that has to be the case.
-> 
-> > It also seems like there's a question of how long should this override
-> > last and how does the user disable it?
-> 
-> Isn't that a general question for the "driver_overrride" mechanism?
-> I'm forgetting if the mechanism in the kernel now has a way to disable
-> it--  e.g. echo /dev/null > /sys/pci/devices/.../driver_override ??
-> 
-> So, it would last until explicitly disabled through sysfs.
+> I think a new command should be tied to a new virtio-ccw revision.
 
-Yes, when you set a driver_override on a device you cancel it by writing
-a NULL string to the same interface.  The problem is that here we have a
-new entity in the driver scan that keeps re-applying the driver_override
-as devices are scanned with no way to stop it.  So you can certainly
-undo the immediate effect and bind the device to another driver, but if
-the device is removed and re-scanned there's no way to stop if from
-re-applying the override.  Thanks,
+Or a feature bit.
 
-Alex
-
-> > I think with pci-stub.ids=
-> > $VENDOR:$DEVICE a user can echo the IDs to the pci-stub/remove_id sysfs
-> > entry to cancel the effect.  The only option here seems to be a reboot.
-> > Do we need a /sys/bus/pci/driver_overrides/{add_name,remove_name} for
-> > this interface?  Thanks,
+> > please open
+> > two issues in the TC: one documenting that driver must check
+> > WRITE_STATUS and device can fail WRITE_STATUS, and another
+> > for adding READ_STATUS (which will have to wait until
+> > the next CS).
 > 
-> Thanks,
-> Stuart
+> I think I need to contemplate that a bit more. The problem with a new
+> READ_STATUS is that it is, by nature, an asynchronous command (as all
+> ccw commands are - the Linux guest driver uses a simple wrapper that
+> makes it appear synchronous). This means, for example, that every
+> status update now involves two channel programs instead of one, and
+> that reading e.g. the status sysfs attribute in Linux now triggers
+> channel I/O, which means several exits (at least ssch, interrupt
+> injection, tsch; probably more depending on what the guest does)...
 
+Well it seems more robust than just caching it within guest.
+Anyway, let's start with issue tracker, it does not force any specific
+solution.
 
-
+-- 
+MST
