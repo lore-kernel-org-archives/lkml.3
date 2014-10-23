@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaJWXOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 19:14:38 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:37371 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbaJWXOg (ORCPT
+	id S1753557AbaJWXRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 19:17:00 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:57475 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233AbaJWXQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 19:14:36 -0400
+	Thu, 23 Oct 2014 19:16:59 -0400
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <54498C68.8090207@lge.com>
+Date: Fri, 24 Oct 2014 08:16:56 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <1413287968-13940-1-git-send-email-heesub.shin@samsung.com>
-References: <1413287968-13940-1-git-send-email-heesub.shin@samsung.com>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 23 Oct 2014 19:14:15 -0400
-X-Google-Sender-Auth: abCacRno7hhSn3FahdGDiubJbUg
-Message-ID: <CALZtONCn8R0v7WV+fhMBh=y9b=ES0GuM9ds6TBtYeyKR-Z7LxA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/9] mm/zbud: support highmem pages
-To: Seth Jennings <sjennings@variantweb.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Heesub Shin <heesub.shin@samsung.com>, Nitin Gupta <ngupta@vflare.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Sunae Seo <sunae.seo@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Devendra Naga <devendranaga4@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        gunho.lee@lge.com
+Subject: Re: [RFC 1/2] staging: ion: shrink page-pool by page unit
+References: <1414068740-9553-1-git-send-email-gioh.kim@lge.com>	<1414068740-9553-2-git-send-email-gioh.kim@lge.com> <CAOFgiypyxykRPpYn7dAXnnDHhCR-MwRnNT46BdwS28TKobnxuw@mail.gmail.com>
+In-Reply-To: <CAOFgiypyxykRPpYn7dAXnnDHhCR-MwRnNT46BdwS28TKobnxuw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 7:59 AM, Heesub Shin <heesub.shin@samsung.com> wrote:
-> zbud is a memory allocator for storing compressed data pages. It keeps
-> two data objects of arbitrary size on a single page. This simple design
-> provides very deterministic behavior on reclamation, which is one of
-> reasons why zswap selected zbud as a default allocator over zsmalloc.
->
-> Unlike zsmalloc, however, zbud does not support highmem. This is
-> problomatic especially on 32-bit machines having relatively small
-> lowmem. Compressing anonymous pages from highmem and storing them into
-> lowmem could eat up lowmem spaces.
->
-> This limitation is due to the fact that zbud manages its internal data
-> structures on zbud_header which is kept in the head of zbud_page. For
-> example, zbud_pages are tracked by several lists and have some status
-> information, which are being referenced at any time by the kernel. Thus,
-> zbud_pages should be allocated on a memory region directly mapped,
-> lowmem.
->
-> After some digging out, I found that internal data structures of zbud
-> can be kept in the struct page, the same way as zsmalloc does. So, this
-> series moves out all fields in zbud_header to struct page. Though it
-> alters quite a lot, it does not add any functional differences except
-> highmem support. I am afraid that this kind of modification abusing
-> several fields in struct page would be ok.
-
-Seth, have you had a chance to review this yet?  I'm going to try to
-take a look at it next week if you haven't yet.  Letting zbud use
-highmem would be a good thing.
 
 
+2014-10-24 오전 5:36, Devendra Naga 쓴 글:
+> Hello,
 >
-> Heesub Shin (9):
->   mm/zbud: tidy up a bit
->   mm/zbud: remove buddied list from zbud_pool
->   mm/zbud: remove lru from zbud_header
->   mm/zbud: remove first|last_chunks from zbud_header
->   mm/zbud: encode zbud handle using struct page
->   mm/zbud: remove list_head for buddied list from zbud_header
->   mm/zbud: drop zbud_header
->   mm/zbud: allow clients to use highmem pages
->   mm/zswap: use highmem pages for compressed pool
+> On Thu, Oct 23, 2014 at 6:22 PM, Gioh Kim <gioh.kim@lge.com> wrote:
+>> This patch shrink page-pool by page unit.
+>>
+>> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+>> ---
+>>   drivers/staging/android/ion/ion_page_pool.c   |    5 +++--
+>>   drivers/staging/android/ion/ion_system_heap.c |    7 +++++--
+>>   2 files changed, 8 insertions(+), 4 deletions(-)
 >
->  mm/zbud.c  | 244 ++++++++++++++++++++++++++++++-------------------------------
->  mm/zswap.c |   4 +-
->  2 files changed, 121 insertions(+), 127 deletions(-)
+>>
 >
-> --
-> 1.9.1
+> --- cut --
+>
+>> diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+>> index da2a63c..36e73c3 100644
+>> --- a/drivers/staging/android/ion/ion_system_heap.c
+>> +++ b/drivers/staging/android/ion/ion_system_heap.c
+>> @@ -211,7 +211,7 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
+>>                                          int nr_to_scan)
+>>   {
+>>          struct ion_system_heap *sys_heap;
+>> -       int nr_total = 0;
+>> +       int nr_total = 0, nr_freed;
+>>          int i;
+>>
+>>          sys_heap = container_of(heap, struct ion_system_heap, heap);
+>> @@ -219,7 +219,10 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
+>>          for (i = 0; i < num_orders; i++) {
+>>                  struct ion_page_pool *pool = sys_heap->pools[i];
+>>
+>> -               nr_total += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
+>> +               nr_freed += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
+>
+> nr_freed is not initialised to zero. This might result in updating of
+> a garbage value stored initially after nr_freed is created.
+
+Yes, your're right. It's my mistake.
+I testes this on my platform with custom kernel and copied codes.
+I missed a line for it.
+I'm sorry.
+
+>
+>> +               nr_total += nr_freed;
+>> +               /* nr_to_scan can be negative */
+>> +               nr_to_scan -= nr_freed;
+>>          }
+>>
+>>          return nr_total;
+>> --
+>> 1.7.9.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 >
