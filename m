@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732AbaJWQcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:32:45 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:55871 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643AbaJWQcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:32:43 -0400
-Date: Thu, 23 Oct 2014 09:28:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Kevin Fenzi <kevin@scrye.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yanko Kaneti <yaneti@declera.com>, netdev <netdev@vger.kernel.org>,
-        Cong Wang <cwang@twopensource.com>
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141023162848.GU4977@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141022181135.GH4977@linux.vnet.ibm.com>
- <87d29kezby.fsf@x220.int.ebiederm.org>
- <20141022185511.GI4977@linux.vnet.ibm.com>
- <CA+5PVA56ajrBQ-C9orSb9-_qhMKe994QL2x0FcKbe6BYmaWFBw@mail.gmail.com>
- <20141022224032.GA1240@declera.com>
- <20141022232421.GN4977@linux.vnet.ibm.com>
- <1414044566.2031.1.camel@declera.com>
- <20141023122750.GP4977@linux.vnet.ibm.com>
- <20141023153333.GA19278@linux.vnet.ibm.com>
- <CA+5PVA4H6EAf6cBc4a_8W8x4Mgppjc5GsskKaCRry2jq+LP+FA@mail.gmail.com>
+	id S1751951AbaJWQjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:39:11 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:58237 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaJWQjK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 12:39:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA4H6EAf6cBc4a_8W8x4Mgppjc5GsskKaCRry2jq+LP+FA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102316-0029-0000-0000-000000DB3B43
+In-Reply-To: <20141022190051.7c0d5df1.akpm@linux-foundation.org>
+References: <20141021202137.GA20114@www.outflux.net>
+	<20141022162638.875681da6bbb9e027d2d3bee@linux-foundation.org>
+	<CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
+	<20141022190051.7c0d5df1.akpm@linux-foundation.org>
+Date: Thu, 23 Oct 2014 09:39:09 -0700
+X-Google-Sender-Auth: eiEx2OQPaFDTho29K8JP8A_9wds
+Message-ID: <CAGXu5jL-6sGy2QSH39Qmu0-8MEg6aX5GCPvPKeWaheXcai0TDA@mail.gmail.com>
+Subject: Re: [PATCH] sysctl: terminate strings also on \r
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Wise <pabs3@bonedaddy.net>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
+        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jens Axboe <axboe@fb.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 12:11:26PM -0400, Josh Boyer wrote:
-> On Oct 23, 2014 11:37 AM, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> wrote:
-> >
-> > On Thu, Oct 23, 2014 at 05:27:50AM -0700, Paul E. McKenney wrote:
-> > > On Thu, Oct 23, 2014 at 09:09:26AM +0300, Yanko Kaneti wrote:
-> > > > On Wed, 2014-10-22 at 16:24 -0700, Paul E. McKenney wrote:
-> > > > > On Thu, Oct 23, 2014 at 01:40:32AM +0300, Yanko Kaneti wrote:
-> > > > > > On Wed-10/22/14-2014 15:33, Josh Boyer wrote:
-> > > > > > > On Wed, Oct 22, 2014 at 2:55 PM, Paul E. McKenney
-> > > > > > > <paulmck@linux.vnet.ibm.com> wrote:
-> > > > >
-> > > > > [ . . . ]
-> > > > >
-> > > > > > > > Don't get me wrong -- the fact that this kthread appears to
-> > > > > > > > have
-> > > > > > > > blocked within rcu_barrier() for 120 seconds means that
-> > > > > > > > something is
-> > > > > > > > most definitely wrong here.  I am surprised that there are no
-> > > > > > > > RCU CPU
-> > > > > > > > stall warnings, but perhaps the blockage is in the callback
-> > > > > > > > execution
-> > > > > > > > rather than grace-period completion.  Or something is
-> > > > > > > > preventing this
-> > > > > > > > kthread from starting up after the wake-up callback executes.
-> > > > > > > > Or...
-> > > > > > > >
-> > > > > > > > Is this thing reproducible?
-> > > > > > >
-> > > > > > > I've added Yanko on CC, who reported the backtrace above and can
-> > > > > > > recreate it reliably.  Apparently reverting the RCU merge commit
-> > > > > > > (d6dd50e) and rebuilding the latest after that does not show the
-> > > > > > > issue.  I'll let Yanko explain more and answer any questions you
-> > > > > > > have.
-> > > > > >
-> > > > > > - It is reproducible
-> > > > > > - I've done another build here to double check and its definitely
-> > > > > > the rcu merge
-> > > > > >   that's causing it.
-> > > > > >
-> > > > > > Don't think I'll be able to dig deeper, but I can do testing if
-> > > > > > needed.
-> > > > >
-> > > > > Please!  Does the following patch help?
-> > > >
-> > > > Nope, doesn't seem to make a difference to the modprobe ppp_generic
-> > > > test
-> > >
-> > > Well, I was hoping.  I will take a closer look at the RCU merge commit
-> > > and see what suggests itself.  I am likely to ask you to revert specific
-> > > commits, if that works for you.
-> >
-> > Well, rather than reverting commits, could you please try testing the
-> > following commits?
-> >
-> > 11ed7f934cb8 (rcu: Make nocb leader kthreads process pending callbacks
-> after spawning)
-> >
-> > 73a860cd58a1 (rcu: Replace flush_signals() with WARN_ON(signal_pending()))
-> >
-> > c847f14217d5 (rcu: Avoid misordering in nocb_leader_wait())
-> >
-> >         For whatever it is worth, I am guessing this one.
-> >
-> > a53dd6a65668 (rcutorture: Add RCU-tasks tests to default rcutorture list)
-> >
-> >         If any of the above fail, this one should also fail.
-> >
-> > Also, could you please send along your .config?
-> 
-> Which tree are those in?
+On Wed, Oct 22, 2014 at 7:00 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Wed, 22 Oct 2014 16:43:10 -0700 Kees Cook <keescook@chromium.org> wrote:
+>
+>> On Wed, Oct 22, 2014 at 4:26 PM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Tue, 21 Oct 2014 13:21:37 -0700 Kees Cook <keescook@chromium.org> wrote:
+>> >
+>> >> From: Paul Wise <pabs3@bonedaddy.net>
+>> >>
+>> >> This partially mitigates a common strategy used by attackers for hiding
+>> >> the full contents of strings in procfs from naive sysadmins who use cat,
+>> >> more or sysctl to inspect the contents of strings in procfs.
+>> >>
+>> >> ...
+>> >>
+>> >> --- a/kernel/sysctl.c
+>> >> +++ b/kernel/sysctl.c
+>> >> @@ -1739,7 +1739,7 @@ static int _proc_do_string(char *data, int maxlen, int write,
+>> >>               while ((p - buffer) < *lenp && len < maxlen - 1) {
+>> >>                       if (get_user(c, p++))
+>> >>                               return -EFAULT;
+>> >> -                     if (c == 0 || c == '\n')
+>> >> +                     if (c == 0 || c == '\n' || c == '\r')
+>> >>                               break;
+>> >>                       data[len++] = c;
+>> >>               }
+>> >
+>> > There are no valid uses of \r in a procfs write?
+>>
+>> I struggle to imagine one; everything I found that uses proc_dostring
+>> seems to be names, paths, and commands.
+>>
+>
+> You're insufficiently pessimistic.
 
-They are all in Linus's tree.  They are topic branches of the RCU merge
-commit (d6dd50e), and the test results will hopefully give me more of a
-clue where to look.  As would the .config file.  ;-)
+Haha, I haven't had that accusation made about me before; I'll keep
+this quote around! :)
 
-							Thanx, Paul
+> I wonder if the chances of damage would be lower if we were to continue
+> to accept the \r, but turn it into something else ("\r"?) when it is
+> read.
 
+I think that would complicate things more than help them. If there's a
+legit use of \r, I'll let Paul Wise debate how to proceed. :)
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
