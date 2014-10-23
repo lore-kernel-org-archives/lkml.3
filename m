@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaJWVtr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 17:49:47 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:53348 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751995AbaJWVto (ORCPT
+	id S1751700AbaJWVy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 17:54:58 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:62412 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799AbaJWVy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 17:49:44 -0400
-Date: Thu, 23 Oct 2014 23:47:25 +0200
+	Thu, 23 Oct 2014 17:54:57 -0400
+Date: Thu, 23 Oct 2014 23:52:38 +0200
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
 Cc: linux-kernel@vger.kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        mingo@kernel.org, sam@ravnborg.org, namhyung@kernel.org
-Subject: Re: [PATCH 01/15] kbuild: add support of custom paths for
- "auto.conf*" files
-Message-ID: <20141023214725.GB24223@marx-slim>
+        mingo@kernel.org, sam@ravnborg.org, mmarek@suse.cz,
+        namhyung@kernel.org
+Subject: Re: [PATCH 15/15] perf: replace _BSD_SOURCE macro by _DEFAULT_SOURCE
+Message-ID: <20141023215238.GC24223@marx-slim>
 References: <1411422796-27049-1-git-send-email-alexis.berlemont@gmail.com>
- <1411422796-27049-2-git-send-email-alexis.berlemont@gmail.com>
- <54216F39.9030902@suse.cz>
+ <1411422796-27049-16-git-send-email-alexis.berlemont@gmail.com>
+ <20140928221553.GA22895@drone.musicnaut.iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54216F39.9030902@suse.cz>
+In-Reply-To: <20140928221553.GA22895@drone.musicnaut.iki.fi>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Marek wrote:
-> On 2014-09-22 23:53, Alexis Berlemont wrote:
-> > In the scripts/Makefile.build, use KCONFIG_AUTOCONFIG to include a
-> > custom path for the "auto.conf" file.
-> > 
-> > The "*conf" programs were modified so as to work with the environment
-> > variable KCONFIG_AUTOCONFIG.
-> > ---
-> >  scripts/Makefile.build     |  3 ++-
-> >  scripts/kconfig/confdata.c | 27 ++++++++++++++++++++++++++-
-> >  scripts/kconfig/lkc.h      |  1 +
-> >  3 files changed, 29 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-> > index bf3e677..ef60769 100644
-> > --- a/scripts/Makefile.build
-> > +++ b/scripts/Makefile.build
-> > @@ -31,7 +31,8 @@ subdir-asflags-y :=
-> >  subdir-ccflags-y :=
-> >  
-> >  # Read auto.conf if it exists, otherwise ignore
-> > --include include/config/auto.conf
-> > +kconfig-autoconfig := $(if $(KCONFIG_AUTOCONFIG),$(KCONFIG_AUTOCONFIG),include/config/auto.conf)
-> > +-include $(kconfig-autoconfig)
-> >  
-> >  include scripts/Kbuild.include
-> >  
-> > diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-> > index f88d90f..d4d8920 100644
-> > --- a/scripts/kconfig/confdata.c
-> > +++ b/scripts/kconfig/confdata.c
-> > @@ -75,6 +75,27 @@ const char *conf_get_autoconfig_name(void)
-> >  	return name ? name : "include/config/auto.conf";
-> >  }
-> >  
-> > +#define PATH_MAXLENGTH 4096
-> > +const char *conf_get_autoconfigdep_name(void)
-> > +{
-> > +	static char res_value[PATH_MAXLENGTH];
-> > +
-> > +	char *name = getenv("KCONFIG_AUTOCONFIG");
-> > +
-> > +	if (name == NULL)
-> > +		name = "include/config/auto.conf.cmd";
+Aaro Koskinen wrote:
+> Hi,
 > 
-> This will result in "include/config/auto.conf.cmd.cmd". Better simplify
-> it to name = conf_get_autoconfig_name().
+> On Mon, Sep 22, 2014 at 11:53:16PM +0200, Alexis Berlemont wrote:
+> > Starting from glibc-2.20, the macro _BSD_SOURCE is deprecated and
+> > should be replaced by _DEFAULT_SOURCE.
 > 
+> This patch fixes perf build breakage with glibc-2.20, so _DEFAULT_SOURCE
+> is needed.
+> 
+> But shouldn't you also keep _BSD_SOURCE still there for a while for
+> backwards compatibility? (Not sure if it has relevance for those
+> using older glibcs...).
 
-Sorry for such a terrible mistake. I broke everything just to make
-kconfig work for perf...
+One more terrible mistake... Sorry.
 
 > 
-> > +	if (strlen(name) > PATH_MAXLENGTH - 5)
-> > +		name = NULL;
-> > +	else {
-> > +		res_value[0] = 0;
+> Anyway to fix the perf + glibc-2.20 build failure:
 > 
-> This assignment is superfluous.
+> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> 
+> (BTW, your patch was missing Signed-off-by.)
+> 
 
-OK.
+OK. I fixed that on the next patch set (and I read the doc
+linux/Documentation/SubmittingPatches). I hope my next patch set will
+be less ludicrous...
 
-> 
-> 
-> > +		strncpy(res_value, name, PATH_MAXLENGTH);
-> > +		strcat(res_value, ".cmd");
-> > +		name = res_value;
-> 
-> Michal
-> 
+Thank you for your feedback.
 
 Alexis
+
+> A.
+> 
+> > ---
+> >  tools/perf/util/util.h | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+> > index 6686436..f56b4e0 100644
+> > --- a/tools/perf/util/util.h
+> > +++ b/tools/perf/util/util.h
+> > @@ -38,7 +38,7 @@
+> >  #define decimal_length(x)	((int)(sizeof(x) * 2.56 + 0.5) + 1)
+> >  
+> >  #define _ALL_SOURCE 1
+> > -#define _BSD_SOURCE 1
+> > +#define _DEFAULT_SOURCE 1
+> >  #define HAS_BOOL
+> >  
+> >  #include <unistd.h>
+> > -- 
+> > 2.1.0
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
