@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaJWWbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 18:31:11 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:39524 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575AbaJWWbG (ORCPT
+	id S1754518AbaJWWbY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 18:31:24 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:43427 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754229AbaJWWbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 18:31:06 -0400
+	Thu, 23 Oct 2014 18:31:16 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, dsahern@gmail.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
-        namhyung@kernel.org, mmarek@suse.cz,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@elte.hu>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Borislav Petkov <bp@alien8.de>, linux-kbuild@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>
-Subject: [PATCH v3 03/14] perf tools: Kbuild source related fixies
-Date: Fri, 24 Oct 2014 00:28:11 +0200
-Message-Id: <1414103302-14906-4-git-send-email-alexis.berlemont@gmail.com>
+Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
+        dsahern@gmail.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        paulus@samba.org, acme@kernel.org, namhyung@kernel.org, mmarek@suse.cz
+Subject: [PATCH v3 07/14] perf kbuild: remove legacy demangle-related build variables
+Date: Fri, 24 Oct 2014 00:28:15 +0200
+Message-Id: <1414103302-14906-8-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414103302-14906-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1414103302-14906-1-git-send-email-alexis.berlemont@gmail.com>
@@ -31,237 +24,250 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+Remove NO_DEMANGLE (replaced by CONFIG_DEMANGLE)
+Remove HAVE_LIBBFD_SUPPORT (replaced by CONFIG_LIBBFD)
+Remove HAVE_CPLUS_DEMANGLE_SUPPORT (replaced by CONFIG_LIBIBERTY_ONLY)
 
-Fixing several sources config dependencies to allow
-separate config builds.
-
-This commit was originally created by Jiri Olsa in 2013. Minor changes
-were needed to get it working one year later:
-* Remove #ifdef directives related with GUI / TUI (because of code
-  changes in ui/setup.c)
-* Fix a link issue if the option BUILTIN_TRACE is disabled.
-* Fix typo (CONFIG_BULTIN_ instead CONFIG_BUILTIN_)
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: linux-kbuild@vger.kernel.org
-Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Alexis Berlemont <alexis.berlemont@gmail.com>
 ---
- tools/perf/builtin-annotate.c    |  6 +++---
- tools/perf/builtin-lock.c        |  5 ++++-
- tools/perf/builtin-report.c      |  2 +-
- tools/perf/builtin-sched.c       |  3 +++
- tools/perf/builtin-top.c         |  4 ++--
- tools/perf/perf.c                | 10 ++++++++--
- tools/perf/ui/browsers/scripts.c |  4 ++++
- tools/perf/ui/setup.c            |  6 +++---
- 8 files changed, 28 insertions(+), 12 deletions(-)
+ tools/perf/Kconfig                    | 36 +++++++++++++++++++++------
+ tools/perf/config/Makefile            | 46 ++++++++++++++++++-----------------
+ tools/perf/config/Makefile.fix-legacy |  4 ---
+ tools/perf/util/srcline.c             |  8 +++---
+ tools/perf/util/symbol.h              | 25 +++++++++++++------
+ 5 files changed, 75 insertions(+), 44 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 19cb967..a46af8f 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -155,7 +155,7 @@ find_next:
+diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
+index eb59567..026ef67 100644
+--- a/tools/perf/Kconfig
++++ b/tools/perf/Kconfig
+@@ -225,6 +225,35 @@ config LIBPYTHON
+         ---help---
+ 	  Libpython dependency needed by the perf script feature.
  
- 			/* skip missing symbols */
- 			nd = rb_next(nd);
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 		} else if (use_browser == 1) {
- 			struct rb_node *next = NULL;
- 			key = hist_entry__tui_annotate(he, evsel, NULL);
-@@ -303,9 +303,9 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
- 		    "dump raw trace in ASCII"),
- 	OPT_BOOLEAN(0, "gtk", &annotate.use_gtk, "Use the GTK interface"),
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	OPT_BOOLEAN(0, "tui", &annotate.use_tui, "Use the TUI interface"),
--#endif /* CONFIG_TUI */
-+#endif
- 	OPT_BOOLEAN(0, "stdio", &annotate.use_stdio, "Use the stdio interface"),
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index e7ec715..05c0e1c 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -1,4 +1,5 @@
- #include "builtin.h"
-+#include "builtin-cmds.h"
- #include "perf.h"
++config TIMERFD
++	bool "Timer via file descriptor"
++	default y
++        ---help---
++	  Timer via file descriptor
++
++config DEMANGLE
++	bool "Demangle symbols"
++	default y
++        ---help---
++	  Enable demangling so as to display human-readable
++	  symbols. This option is convenient with C++ programs.
++
++choice DEMANGLE_DEPS
++       prompt "Demangle dependency(ies)"
++       depends on DEMANGLE
++       default LIBBFD
++
++config LIBBFD
++	bool "BFD + libiberty libraries"
++        ---help---
++	  Binary File Descriptor and libiberty libraries
++
++config LIBIBERTY_ONLY
++	bool "Libiberty only"
++        ---help---
++	  Libiberty
++endchoice
++
+ choice
+ 	prompt "Elf library"
+ 	default LIBELF
+@@ -266,13 +295,6 @@ config NUMA
+ 	  The library libnuma offers facilities to configure NUMA
+ 	  policies supported by the linux kernel.
  
- #include "util/evlist.h"
-@@ -995,9 +996,11 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
- 				usage_with_options(report_usage, report_options);
- 		}
- 		rc = __cmd_report(false);
-+#ifdef CONFIG_BUILTIN_SCRIPT
- 	} else if (!strcmp(argv[0], "script")) {
- 		/* Aliased to 'perf script' */
--		return cmd_script(argc, argv, prefix);
-+		rc = cmd_script(argc, argv, prefix);
-+#endif
- 	} else if (!strcmp(argv[0], "info")) {
- 		if (argc) {
- 			argc = parse_options(argc, argv,
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 00d93ff..b639e58 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -407,7 +407,7 @@ static int report__browse_hists(struct report *rep)
- 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
+-config DEMANGLE
+-	bool "Demangle symbols"
+-	default y
+-        ---help---
+-	  Enable demangling so as to display human-readable
+-	  symbols. This option is convenient with C++ programs.
+-
+ config BIONIC
+ 	bool "Bionic support"
+ 	default n
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 27b092c..ce3a726 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -573,33 +573,36 @@ ifeq ($(feature-libbfd), 1)
+   endif
+ endif
  
- 	switch (use_browser) {
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	case 1:
- 		ret = perf_evlist__tui_browse_hists(evlist, help, NULL,
- 						    rep->min_percent,
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 891c393..e38b021 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1,4 +1,5 @@
- #include "builtin.h"
-+#include "builtin-cmds.h"
- #include "perf.h"
+-ifdef NO_DEMANGLE
+-  CFLAGS += -DNO_DEMANGLE
+-else
+-  ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
+-    EXTLIBS += -liberty
+-    CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+-  else
+-    ifneq ($(feature-libbfd), 1)
+-      ifneq ($(feature-liberty), 1)
+-        ifneq ($(feature-liberty-z), 1)
+-          # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
+-          # or any of 'bfd iberty z' trinity
+-          ifeq ($(feature-cplus-demangle), 1)
+-            EXTLIBS += -liberty
+-            CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+-          else
+-            msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
+-            CFLAGS += -DNO_DEMANGLE
+-          endif
++ifdef CONFIG_LIBBFD
++  ifneq ($(feature-libbfd), 1)
++    # TODO: there might be an issue here: feature-liberty and
++    # feature-liberty-z cannot be set; they can be set only if
++    # feature-libbfd is set
++    ifneq ($(feature-liberty), 1)
++      ifneq ($(feature-liberty-z), 1)
++        # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
++        # or any of 'bfd iberty z' trinity
++        ifeq ($(feature-cplus-demangle), 1)
++          EXTLIBS += -liberty
++          $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBBFD)
++          $(shell $(KCONFIG_SCRIPT) -e CONFIG_LIBIBERTY_ONLY)
++        else
++          msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
++          $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
+         endif
+       endif
+     endif
+   endif
+ endif
  
+-ifneq ($(filter -lbfd,$(EXTLIBS)),)
+-  CFLAGS += -DHAVE_LIBBFD_SUPPORT
++ifdef CONFIG_LIBIBERTY_ONLY
++  $(call feature_check,cplus-demangle)
++  ifeq ($(feature-cplus-demangle), 1)
++    EXTLIBS += -liberty
++  else
++    msg := $(warning No libiberty found, install binutils-dev[el]/zlib-static to gain symbol demangling)
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
++  endif
+ endif
+ 
+ ifndef NO_BACKTRACE
+@@ -795,7 +798,6 @@ all:
+ 	$(call store,NO_LIBUNWIND)
+ 	$(call store,NO_LIBPERL)
+ 	$(call store,NO_LIBPYTHON)
+-	$(call store,NO_DEMANGLE)
+ 	$(call store,NO_LIBELF)
+ 	$(call store,NO_LIBUNWIND)
+ 	$(call store,NO_BACKTRACE)
+diff --git a/tools/perf/config/Makefile.fix-legacy b/tools/perf/config/Makefile.fix-legacy
+index ca219e7..64dbb1a 100644
+--- a/tools/perf/config/Makefile.fix-legacy
++++ b/tools/perf/config/Makefile.fix-legacy
+@@ -9,10 +9,6 @@ ifndef CONFIG_LIBPYTHON
+ NO_LIBPYTHON := 1
+ endif
+ 
+-ifndef CONFIG_DEMANGLE
+-NO_DEMANGLE := 1
+-endif
+-
+ ifndef CONFIG_LIBELF
+ NO_LIBELF := 1
+ endif
+diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+index f3e4bc5..38df8f4 100644
+--- a/tools/perf/util/srcline.c
++++ b/tools/perf/util/srcline.c
+@@ -4,11 +4,13 @@
+ 
+ #include <linux/kernel.h>
+ 
++#include "generated/autoconf.h"
++
+ #include "util/dso.h"
  #include "util/util.h"
-@@ -1742,11 +1743,13 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!argc)
- 		usage_with_options(sched_usage, sched_options);
+ #include "util/debug.h"
  
-+#ifdef CONFIG_BUILTIN_SCRIPT
- 	/*
- 	 * Aliased to 'perf script' for now:
- 	 */
- 	if (!strcmp(argv[0], "script"))
- 		return cmd_script(argc, argv, prefix);
-+#endif
+-#ifdef HAVE_LIBBFD_SUPPORT
++#ifdef CONFIG_LIBBFD
  
- 	if (!strncmp(argv[0], "rec", 3)) {
- 		return __cmd_record(argc, argv);
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index a2ff8b7..6f04452 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -535,7 +535,7 @@ static bool perf_top__handle_keypress(struct perf_top *top, int c)
- 	return ret;
+ /*
+  * Implement addr2line using libbfd.
+@@ -189,7 +191,7 @@ void dso__free_a2l(struct dso *dso)
+ 	dso->a2l = NULL;
  }
  
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- static void perf_top__sort_new_samples(void *arg)
+-#else /* HAVE_LIBBFD_SUPPORT */
++#else /* !CONFIG_LIBBFD */
+ 
+ static int addr2line(const char *dso_name, unsigned long addr,
+ 		     char **file, unsigned int *line_nr,
+@@ -242,7 +244,7 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
  {
- 	struct perf_top *t = arg;
-@@ -981,7 +981,7 @@ static int __cmd_top(struct perf_top *top)
- 
- 	ret = -1;
- 
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	if (use_browser > 0)
- 		display_fn = display_thread_tui;
- #endif
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index ab363b5..976ded6 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -93,8 +93,10 @@ static struct cmd_struct commands[] = {
- #ifdef CONFIG_BUILTIN_KVM
- 	{ "kvm",	cmd_kvm,	0 },
- #endif
-+#ifdef CONFIG_BUILTIN_TEST
- 	{ "test",	cmd_test,	0 },
--#if defined HAVE_LIBAUDIT_SUPPORT && defined CONFIG_BUILTIN_TRACE
-+#endif
-+#ifdef CONFIG_BUILTIN_TRACE
- 	{ "trace",	cmd_trace,	0 },
- #endif
- #ifdef CONFIG_BUILTIN_INJECT
-@@ -539,7 +541,7 @@ int main(int argc, const char **argv)
- 		goto out;
- 	}
- 	if (!prefixcmp(cmd, "trace")) {
--#ifdef HAVE_LIBAUDIT_SUPPORT
-+#ifdef CONFIG_BUILTIN_TRACE
- 		set_buildid_dir();
- 		setup_path();
- 		argv[0] = "trace";
-@@ -563,13 +565,17 @@ int main(int argc, const char **argv)
- 	} else {
- 		/* The user didn't specify a command; give them help */
- 		printf("\n usage: %s\n\n", perf_usage_string);
-+#ifdef CONFIG_BUILTIN_HELP
- 		list_common_cmds_help();
- 		printf("\n %s\n\n", perf_more_info_string);
-+#endif
- 		goto out;
- 	}
- 	cmd = argv[0];
- 
-+#ifdef CONFIG_BUILTIN_TEST
- 	test_attr__init();
-+#endif
- 
- 	/*
- 	 * We use PATH to find perf commands, but we prepend some higher
-diff --git a/tools/perf/ui/browsers/scripts.c b/tools/perf/ui/browsers/scripts.c
-index 402d2bd..128988d 100644
---- a/tools/perf/ui/browsers/scripts.c
-+++ b/tools/perf/ui/browsers/scripts.c
-@@ -59,7 +59,11 @@ static int list_scripts(char *script_name)
- 		paths[i] = names[i] + SCRIPT_NAMELEN;
- 	}
- 
-+#ifdef CONFIG_BUILTIN_SCRIPT
- 	num = find_scripts(names, paths);
-+#else
-+	num = 0;
-+#endif
- 	if (num > 0) {
- 		choice = ui__popup_menu(num, names);
- 		if (choice < num && choice >= 0) {
-diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index ec7fd36..efc2b21 100644
---- a/tools/perf/ui/setup.c
-+++ b/tools/perf/ui/setup.c
-@@ -77,7 +77,7 @@ void setup_browser(bool fallback_to_pager)
- 		       PERF_GTK_DSO);
- 		sleep(1);
- 		/* fall through */
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	case 1:
- 		use_browser = 1;
- 		if (ui__init() == 0)
-@@ -92,13 +92,13 @@ void setup_browser(bool fallback_to_pager)
- 	}
  }
  
--void exit_browser(bool wait_for_ok)
-+void exit_browser(bool wait_for_ok __maybe_unused)
+-#endif /* HAVE_LIBBFD_SUPPORT */
++#endif /* CONFIG_LIBBFD */
+ 
+ /*
+  * Number of addr2line failures (without success) before disabling it for that
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index eb2c19b..7e3a003 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -1,6 +1,8 @@
+ #ifndef __PERF_SYMBOL
+ #define __PERF_SYMBOL 1
+ 
++#include "generated/autoconf.h"
++
+ #include <linux/types.h>
+ #include <stdbool.h>
+ #include <stdint.h>
+@@ -23,26 +25,33 @@
+ 
+ #include "dso.h"
+ 
+-#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
++#ifdef CONFIG_DEMANGLE
++
++#ifdef CONFIG_LIBBFD
++
++#define PACKAGE 'perf'
++#include <bfd.h>
++
++#elif defined(CONFIG_LIBIBERTY_ONLY)
+ extern char *cplus_demangle(const char *, int);
+ 
+ static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
  {
- 	switch (use_browser) {
- 	case 2:
- 		exit_gtk_browser(wait_for_ok);
- 		break;
--#ifdef CONFIG_TUI
-+#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
- 	case 1:
- 		ui__exit(wait_for_ok);
- 		break;
+ 	return cplus_demangle(c, i);
+ }
+-#else
+-#ifdef NO_DEMANGLE
++
++#else /* Unknown dependency */
++#error "Inconsistent demangling configuration"
++#endif
++
++#else /* !CONFIG_DEMANGLE */
+ static inline char *bfd_demangle(void __maybe_unused *v,
+ 				 const char __maybe_unused *c,
+ 				 int __maybe_unused i)
+ {
+ 	return NULL;
+ }
+-#else
+-#define PACKAGE 'perf'
+-#include <bfd.h>
+-#endif
+-#endif
++#endif /* CONFIG_DEMANGLE */
+ 
+ /*
+  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
 -- 
 2.1.1
 
