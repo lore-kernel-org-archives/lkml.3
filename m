@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393AbaJWWJn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 18:09:43 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:48586 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747AbaJWWJl convert rfc822-to-8bit (ORCPT
+	id S1752292AbaJWWNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 18:13:36 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:56250 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199AbaJWWNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 18:09:41 -0400
-Subject: Re: [PATCH 1/1 net-next] Bluetooth: fix shadow warning in hci_disconnect()
-Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+	Thu, 23 Oct 2014 18:13:34 -0400
+Date: Thu, 23 Oct 2014 17:11:21 -0500
+From: Eric Rost <eric.rost@mybabylon.net>
+To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
+        antonysaraev@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/2] staging: skein: Adds CryptoAPI and Module Support
+Message-ID: <cover.1414102205.git.eric.rost@mybabylon.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Marcel Holtmann <marcel@holtmann.org>
-X-Priority: 3
-In-Reply-To: <20326343.74480.1414085453988.open-xchange@webmail.nmp.skynet.be>
-Date: Thu, 23 Oct 2014 15:09:36 -0700
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AB7C94CC-9608-4BE7-B5C6-B89B64403D83@holtmann.org>
-References: <1414081365-6461-1-git-send-email-fabf@skynet.be> <2F67F6E8-CA99-4998-AE68-89E60D62C39D@holtmann.org> <20326343.74480.1414085453988.open-xchange@webmail.nmp.skynet.be>
-To: Fabian Frederick <fabf@skynet.be>
-X-Mailer: Apple Mail (2.1990.1)
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabian,
+Adds CryptoAPI and Loadable Module support to the Skein Hashing
+Algorithm.
 
->>> use cpr for hci_cp_read_clock_offset instead of cp
->>> (already defined above).
->>> 
->>> Signed-off-by: Fabian Frederick <fabf@skynet.be>
->>> ---
->>> net/bluetooth/hci_conn.c | 6 +++---
->>> 1 file changed, 3 insertions(+), 3 deletions(-)
->>> 
->>> diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
->>> index b9517bd..6151e09 100644
->>> --- a/net/bluetooth/hci_conn.c
->>> +++ b/net/bluetooth/hci_conn.c
->>> @@ -141,10 +141,10 @@ int hci_disconnect(struct hci_conn *conn, __u8 reason)
->>>       */
->>>      if (conn->type == ACL_LINK && conn->role == HCI_ROLE_MASTER) {
->>>              struct hci_dev *hdev = conn->hdev;
->>> -           struct hci_cp_read_clock_offset cp;
->>> +           struct hci_cp_read_clock_offset cpr;
->>> 
->>> -           cp.handle = cpu_to_le16(conn->handle);
->>> -           hci_send_cmd(hdev, HCI_OP_READ_CLOCK_OFFSET, sizeof(cp), &cp);
->>> +           cpr.handle = cpu_to_le16(conn->handle);
->>> +           hci_send_cmd(hdev, HCI_OP_READ_CLOCK_OFFSET, sizeof(cpr), &cpr);
->> 
->> valid change, but I do not like cpr as variable name. We need to come up with
->> a better one. There are other places in the code where we had the same thing.
->> Please have a look there.
-> 
->   Maybe read_cp (like commit c1f23a2bfc89 with struct hci_cp_auth_requested
-> auth_cp) ?
+Eric Rost (2):
+  staging: skein: Adds CryptoAPI Support
+  staging: skein: Adds Loadable Module Support
 
-lets use clkoff_cp unless someone comes up with a better name.
+ drivers/staging/skein/Kconfig         |  24 +-
+ drivers/staging/skein/Makefile        |  13 +-
+ drivers/staging/skein/skein.c         | 883 ---------------------------------
+ drivers/staging/skein/skein.h         | 346 -------------
+ drivers/staging/skein/skein_api.h     |   2 +-
+ drivers/staging/skein/skein_base.c    | 884 ++++++++++++++++++++++++++++++++++
+ drivers/staging/skein/skein_base.h    | 351 ++++++++++++++
+ drivers/staging/skein/skein_block.c   |   2 +-
+ drivers/staging/skein/skein_block.h   |   2 +-
+ drivers/staging/skein/skein_generic.c | 211 ++++++++
+ drivers/staging/skein/skein_iv.h      |   2 +-
+ drivers/staging/skein/threefish_api.h |   2 +-
+ 12 files changed, 1462 insertions(+), 1260 deletions(-)
+ delete mode 100644 drivers/staging/skein/skein.c
+ delete mode 100644 drivers/staging/skein/skein.h
+ create mode 100644 drivers/staging/skein/skein_base.c
+ create mode 100644 drivers/staging/skein/skein_base.h
+ create mode 100644 drivers/staging/skein/skein_generic.c
 
-Regards
-
-Marcel
+-- 
+2.1.1
 
