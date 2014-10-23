@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550AbaJWUPX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 16:15:23 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:58886 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755282AbaJWUPW (ORCPT
+	id S932570AbaJWUPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 16:15:36 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:57919 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282AbaJWUPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 16:15:22 -0400
-Date: Thu, 23 Oct 2014 16:15:19 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-cc: Catalin Marinas <catalin.marinas@arm.com>,
-        "mathieu.poirier@linaro.org" <mathieu.poirier@linaro.org>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: supplementing IO accessors with 64 bit capability
-In-Reply-To: <20141023195119.GL27405@n2100.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.11.1410231607340.6969@knanqh.ubzr>
-References: <1413993983-17310-1-git-send-email-mathieu.poirier@linaro.org> <20141022164454.GI15370@e104818-lin.cambridge.arm.com> <alpine.LFD.2.11.1410231542320.6969@knanqh.ubzr> <20141023195119.GL27405@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Thu, 23 Oct 2014 16:15:34 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: opw-kernel@googlegroups.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, john.stultz@linaro.org
+Subject: git tree for y2038 patches, to be added to linux-next
+Date: Thu, 23 Oct 2014 22:15:24 +0200
+Message-ID: <8455153.NY1892ffCa@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:LjgdL/+pn1dGZPr7ZIzz5LIvBkQAj77prr8O786JImn
+ JHZ6pV20w8MZTEJ8slRW9sWJRLbgvXp9LlfMuOnC8TKrjchQCd
+ jcqvmbzgrcM5GDTa7+FnCbgZZ6fFjbaPpkBrlAMbIRAbpcbZ/P
+ OKyaFTn1yfpJbzf+TJqZ6ETBa9bp7z05jbxaXXoiXVUrXqdkk2
+ ETHcXYa5xsE69Y3A2XLjl8OS6CUzNPqPjlJY0VsCB3dDADLcip
+ DwIMnylEq8O3y+fts2Au9DW4nAncgBj9fumLMag2fr5YBnkMkJ
+ jt3xL0BRPjw8Sl3qw4D85l3Qa86rflhOyVDlAALhRjfz4HKZOL
+ ibIHY7k5wyUb046mQsEc=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Oct 2014, Russell King - ARM Linux wrote:
+Hi Stephen,
 
-> On Thu, Oct 23, 2014 at 03:47:32PM -0400, Nicolas Pitre wrote:
-> > On Wed, 22 Oct 2014, Catalin Marinas wrote:
-> > 
-> > > On Wed, Oct 22, 2014 at 05:06:23PM +0100, mathieu.poirier@linaro.org wrote:
-> > > > +#if __LINUX_ARM_ARCH__ >= 5
-> > > 
-> > > My old ARMv5 book does not list LDRD/STRD. It looks like they only come
-> > > with ARMv5TE. Are there any processors prior to this supported by the
-> > > kernel?
-> > 
-> > We still supports ARMv4 targets.
-> > 
-> > As far as I know, all the ARMv5 targets we support are also TE capable.
-> 
-> Not quite.  We have ARM1020, which according to our proc-*.S files is
-> only ARMv5T, not ARMv5TE.
+I'm collecting patches for 64-bit time_t conversion. I'm getting patches
+for this topic from the OPW application, and hopefully soon from an intern
+in the program.
 
-Oh well.  Never saw such a beast in the field though.
+The plan is to have most of the patches being  merged through subsystem
+maintainer trees as much as possible, but I also want to give them linux-next
+exposure as early as possible, in particular since a lot of the code that
+is being changed is not actively maintained.  I will send the remaining
+patches to Thomas Gleixner so he can put them into the tip tree.
 
-Maybe to be on the very safe side, given that no ARMV5TE is likely to 
-need 64-bit IO accessors at this point, this could simply be 
-__LINUX_ARM_ARCH__ >= 6 instead.
+Please add
 
+git://git.kernel.org/pub/scm/linux/kernel/git/arnd/playground.git y2038
 
-Nicolas
+to linux-next. At the moment there is only one simple patch in it,
+I assume there will be more soon.
+
+	Arnd
