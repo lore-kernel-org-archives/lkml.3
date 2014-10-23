@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028AbaJWLEw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 07:04:52 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40000 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625AbaJWLEt (ORCPT
+	id S1755068AbaJWLGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 07:06:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45814 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244AbaJWLGN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 07:04:49 -0400
-Date: Thu, 23 Oct 2014 13:04:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Ingo Molnar <mingo@kernel.org>, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        dave@stgolabs.net, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
-Message-ID: <20141023110438.GQ21513@worktop.programming.kicks-ass.net>
-References: <20141020215633.717315139@infradead.org>
- <20141021162340.GA5508@gmail.com>
- <20141021170948.GA25964@node.dhcp.inet.fi>
- <20141021175603.GI3219@twins.programming.kicks-ass.net>
- <5448DB05.5050803@cn.fujitsu.com>
+	Thu, 23 Oct 2014 07:06:13 -0400
+Message-ID: <5448E11D.1020306@arm.com>
+Date: Thu, 23 Oct 2014 13:06:05 +0200
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5448DB05.5050803@cn.fujitsu.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Yuyang Du <yuyang.du@intel.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "arjan.van.de.ven@intel.com" <arjan.van.de.ven@intel.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "alan.cox@intel.com" <alan.cox@intel.com>,
+        "mark.gross@intel.com" <mark.gross@intel.com>,
+        "fengguang.wu@intel.com" <fengguang.wu@intel.com>
+Subject: Re: [RESEND PATCH 2/3 v5] sched: Rewrite per entity runnable load
+ average tracking
+References: <1412907717-2871-1-git-send-email-yuyang.du@intel.com> <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
+In-Reply-To: <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
+X-OriginalArrivalTime: 23 Oct 2014 11:06:07.0571 (UTC) FILETIME=[58565A30:01CFEEB1]
+X-MC-Unique: 114102312060815601
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 06:40:05PM +0800, Lai Jiangshan wrote:
-> On 10/22/2014 01:56 AM, Peter Zijlstra wrote:
-> > On Tue, Oct 21, 2014 at 08:09:48PM +0300, Kirill A. Shutemov wrote:
-> >> It would be interesting to see if the patchset affects non-condended case.
-> >> Like a one-threaded workload.
-> > 
-> > It does, and not in a good way, I'll have to look at that... :/
-> 
-> Maybe it is blamed to find_vma_srcu() that it doesn't take the advantage of
-> the vmacache_find() and cause more cache-misses.
+On 10/10/14 04:21, Yuyang Du wrote:
 
-Its what I thought initially, I tried doing perf record with and
-without, but then I ran into perf diff not quite working for me and I've
-yet to find time to kick that thing into shape.
+[...]
 
-> Is it hard to use the vmacache in the find_vma_srcu()?
+> @@ -331,21 +330,16 @@ struct cfs_rq {
+>
+>   #ifdef CONFIG_SMP
+>          /*
+> -        * CFS Load tracking
+> -        * Under CFS, load is tracked on a per-entity basis and aggregated up.
+> -        * This allows for the description of both thread and group usage (in
+> -        * the FAIR_GROUP_SCHED case).
+> +        * CFS load tracking
+>           */
+> -       unsigned long runnable_load_avg, blocked_load_avg;
+> -       atomic64_t decay_counter;
+> -       u64 last_decay;
+> -       atomic_long_t removed_load;
+> +       struct sched_avg avg;
+> +       unsigned long tg_load_avg_contrib;
 
-I've not had time to look at it.
+IMHO, unsigned long tg_load_avg_contrib (former unsigned long 
+tg_load_contrib) can stay under #ifdef CONFIG_FAIR_GROUP_SCHED.
+
+> +       atomic_long_t removed_load_avg;
+> +#ifndef CONFIG_64BIT
+> +       u64 load_last_update_time_copy;
+> +#endif
+>
+>   #ifdef CONFIG_FAIR_GROUP_SCHED
+> -       /* Required to track per-cpu representation of a task_group */
+> -       u32 tg_runnable_contrib;
+> -       unsigned long tg_load_contrib;
+> -
+>          /*
+>           *   h_load = weight * f(tg)
+>           *
+
+[...]
+
