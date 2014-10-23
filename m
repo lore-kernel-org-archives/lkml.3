@@ -1,48 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876AbaJWNKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:10:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43996 "EHLO mx1.redhat.com"
+	id S1755886AbaJWNMB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:12:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57498 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755669AbaJWNKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:10:47 -0400
-Date: Thu, 23 Oct 2014 09:10:04 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Joe Mario <jmario@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        eranian@google.com, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com, rfowles@redhat.com
-Subject: Re: perf:  Translating mmap2 ids into socket info?
-Message-ID: <20141023131004.GS135937@redhat.com>
-References: <20141022162026.GG135937@redhat.com>
- <20141022164510.GJ21513@worktop.programming.kicks-ass.net>
- <5447F2DF.3000506@redhat.com>
- <20141022200219.GM21513@worktop.programming.kicks-ass.net>
- <20141022203834.GL135937@redhat.com>
- <20141023113001.GA12706@worktop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023113001.GA12706@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755656AbaJWNL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 09:11:57 -0400
+Message-ID: <1414069910.27420.7.camel@ul30vt.home>
+Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver
+ mapping.
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Marcel Apfelbaum <marcel.a@redhat.com>
+Cc: linux-pci@vger.kernel.org, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, marcel@redhat.com, mst@redhat.com,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Date: Thu, 23 Oct 2014 07:11:50 -0600
+In-Reply-To: <1414067521.2376.54.camel@localhost.localdomain>
+References: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
+	 <1414002755.4202.253.camel@ul30vt.home>
+	 <1414067521.2376.54.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 01:30:01PM +0200, Peter Zijlstra wrote:
-> On Wed, Oct 22, 2014 at 04:38:34PM -0400, Don Zickus wrote:
-> > Ha!  I have been telling myself for a year I would try to learn more about
-> > those offcore/uncore counters.  Is there documentation for how to access
-> > the uncore stuff?  Do I have to long hand it with 'perf record -e
-> > uncore_qpi_1/<stuff>/ foo'?
-> 
-> For uncore there is some in the SDM and there are these documents; there
-> might be more but who knows.
-> 
-> http://www.intel.com/Assets/PDF/designguide/323535.pdf 
-> http://www.intel.com/content/dam/www/public/us/en/documents/design-guides/xeon-e5-2600-uncore-guide.pdf 
 
-Thanks!
+On Thu, 2014-10-23 at 15:32 +0300, Marcel Apfelbaum wrote:
+> On Wed, 2014-10-22 at 12:32 -0600, Alex Williamson wrote:
+> > [cc+ stuart]
+> > 
+> > On Mon, 2014-10-20 at 17:04 +0300, Marcel Apfelbaum wrote:
+> > > Scanning a lot of devices during boot requires a lot of time.
+> > > On other scenarios there is a need to bind a driver to a specific slot.
+> > > 
+> > > Binding devices to pci-stub driver does not work,
+> > > as it will not differentiate between devices of the
+> > > same type. Using some start scripts is error prone.
+> > > 
+> > > The solution leverages driver_override functionality introduced by
+> > > 
+> > > 	commit: 782a985d7af26db39e86070d28f987cad21313c0
+> > > 	Author: Alex Williamson <alex.williamson@redhat.com>
+> > > 	Date:   Tue May 20 08:53:21 2014 -0600
+> > > 
+> > >     	PCI: Introduce new device binding path using pci_dev.driver_override
+> > > 
+> > > In order to bind PCI slots to specific drivers use:
+> > > 	pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
+> > > 
+> > > Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+> > > ---
+> > > v3 -> v4:
+> > >  - Addressed Alex Williamson's comments:
+> > >    - Modified the type of driver_override_entry's fields
+> > >    - Used PCI_DEVFN when appropriated
+> > >    - Removed redundant checks
+> > >    - Replaced BUG_ON with pr_err messages
+> > >    - Simpler command line parsing
+> > >  - Addressed Michael S. Tsirkin comments
+> > >    - removed DRIVER_OVERRIDE_NAME_LENGTH limitation
+> > > v2 -> v3:
+> > >  - Corrected subject line
+> > > v1 -> v2:
+> > >  - Addressed Michael S. Tsirkin comments
+> > >    - Removed 32 slots limitation
+> > >    - Better handling of memory allocation failures
+> > >      (preferred BUG_ON over error messages)
+> > >  - Addressed Alex Williamson's comments:
+> > >    - Modified commit message to show parameter usage more clear.
+> > >  - I preferred to re-use parse_args instead of manually using
+> > >    strstr in order to better comply with command line parsing
+> > >    rules.
+> > >  - I didn't use any locking when parsing the command line args
+> > >    (see parse_done usage) assuming that first call will be
+> > >    early in system boot and no race can occur. Please correct
+> > >    me if I am wrong.
+> > > 
+> > > Notes:
+> > >  - I have further ideas on top of this patch based on your reviews.
+> > >    I thought of:
+> > >    - Use wildcards to specify entire buses/devices, something like:
+> > >      	driver[0001:02:*.*]=pci-stub
+> > >    - Use comma to separate several devices:
+> > >      	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
+> > >    - Make domain optional:
+> > >    	driver[00:03.0]=pci-stub
+> > > 
+> > > Comments will be appreciated,
+> > > Thanks,
+> > > Marcel
+> > >  Documentation/kernel-parameters.txt |   4 ++
+> > >  drivers/pci/bus.c                   | 111 ++++++++++++++++++++++++++++++++++++
+> > >  drivers/pci/pci.c                   |   2 +
+> > >  3 files changed, 117 insertions(+)
+> > 
+> > The driver_override feature that we're making use of here is also going
+> > to be supported by platform devices and potentially more bustypes in the
+> > future, so I'm concerned that making a pci specific kernel parameter is
+> > too shortsighted.  Instead we could hook on to BUS_NOTIFY_ADD_DEVICE for
+> > bustypes that support driver_override so we can have a common interface.
+> The real question here if those bus types/devices would benefit from this
+> feature, and I also must confess that I have no knowledge of the other buses.
+> Can anyone confirm that it does make sense for them?
 
-Cheers,
-Don
+Platform devices are adding vfio support, so I expect the next logical
+question will be how to reserve devices for use by vfio at boot.
+
+> > Perhaps:
+> > 
+> > driver_override=pci,0000:02:00.0=pci-stub;platform,fakename=vfio-platform
+> > 
+> > Finding delimiters that don't conflict may be challenging.  Also, can we
+> > assume that bus-name:dev-name is unique for every bustype?  It is for
+> > pci, platform?
+> For PCI, sure the domain:bus:dev.func is unique, for platform I have no idea,
+> can anyone that knows "platform" confirm or deny?
+> 
+> > 
+> > It also seems like there's a question of how long should this override
+> > last and how does the user disable it?  
+> > I think with pci-stub.ids=
+> > $VENDOR:$DEVICE a user can echo the IDs to the pci-stub/remove_id sysfs
+> > entry to cancel the effect.
+> The way I see it is simple, the override specified in kernel command line
+> last as long as the user does not specifically remove it using
+> echo "" > /sys/.../driver_override
+> and then unbind and bind the device again.
+> 
+> >   The only option here seems to be a reboot.
+> Please see above
+
+That's only a temporary removal though, if the device is removed and
+re-added, either via physical hotplug or sysfs, the override is
+re-applied.  Thanks,
+
+Alex
+
+> > Do we need a /sys/bus/pci/driver_overrides/{add_name,remove_name} for
+> > this interface?  Thanks,
+> While it does not hurt, I see it as optional since a simple removal of
+> driver_override and rebind does the same
+> 
+> Thanks,
+> Marcel
+> 
+> > 
+> > Alex
+> > 
+> > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > > index 5ae8608..c1cbb4c 100644
+> > > --- a/Documentation/kernel-parameters.txt
+> > > +++ b/Documentation/kernel-parameters.txt
+> > > @@ -2631,6 +2631,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> > >  		pcie_scan_all	Scan all possible PCIe devices.  Otherwise we
+> > >  				only look for one device below a PCIe downstream
+> > >  				port.
+> > > +		driver		Provide an override to the devid<->driver mapping
+> > > +				for a specific slot.
+> > > +				Bind PCI slot 0001:02:03.4 to pci-stub by:
+> > > +					driver[0001:02:03.4]=pci-stub
+> > >  
+> > >  	pcie_aspm=	[PCIE] Forcibly enable or disable PCIe Active State Power
+> > >  			Management.
+> > > diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> > > index 73aef51..b49f5cc 100644
+> > > --- a/drivers/pci/bus.c
+> > > +++ b/drivers/pci/bus.c
+> > > @@ -15,6 +15,8 @@
+> > >  #include <linux/proc_fs.h>
+> > >  #include <linux/slab.h>
+> > >  
+> > > +#include <asm/setup.h>
+> > > +
+> > >  #include "pci.h"
+> > >  
+> > >  void pci_add_resource_offset(struct list_head *resources, struct resource *res,
+> > > @@ -230,6 +232,114 @@ EXPORT_SYMBOL(pci_bus_alloc_resource);
+> > >  
+> > >  void __weak pcibios_resource_survey_bus(struct pci_bus *bus) { }
+> > >  
+> > > +struct driver_override_entry {
+> > > +	u16 domain;
+> > > +	u8 bus;
+> > > +	u8 devfn;
+> > > +	char *driver_name;
+> > > +	struct list_head list;
+> > > +};
+> > > +
+> > > +static LIST_HEAD(driver_override_entries);
+> > > +
+> > > +static int pci_device_parse_driver_override(char *param, char *val,
+> > > +					    const char *unused)
+> > > +{
+> > > +	unsigned int domain, bus, dev, fn;
+> > > +	char  *buf;
+> > > +	struct driver_override_entry *entry;
+> > > +	int ret;
+> > > +
+> > > +	buf = kmalloc(COMMAND_LINE_SIZE, GFP_KERNEL);
+> > > +	if (!buf)
+> > > +		goto err_buf;
+> > > +
+> > > +	while (val) {
+> > > +		char *k = strchr(val, ',');
+> > > +
+> > > +		if (k)
+> > > +			*k++ = 0;
+> > > +
+> > > +		if (strncmp(val, "driver", 6)) {
+> > > +			val = k;
+> > > +			continue;
+> > > +		}
+> > > +
+> > > +		memset(buf, 0, COMMAND_LINE_SIZE);
+> > > +		ret = sscanf(val + 6, "[%4x:%2x:%2x.%2x]=%s",
+> > > +			     &domain, &bus, &dev, &fn, buf);
+> > > +		if (ret != 5) {
+> > > +			pr_warn("PCI: Invalid command line: %s\n", val);
+> > > +			val = k;
+> > > +			continue;
+> > > +		}
+> > > +
+> > > +		entry = kzalloc(sizeof(*entry), GFP_KERNEL);
+> > > +		if (!entry)
+> > > +			goto err_entry;
+> > > +
+> > > +		INIT_LIST_HEAD(&entry->list);
+> > > +		entry->domain = domain;
+> > > +		entry->bus = bus;
+> > > +		entry->devfn = PCI_DEVFN(dev, fn);
+> > > +		entry->driver_name = kstrdup(buf, GFP_KERNEL);
+> > > +		if (!entry->driver_name)
+> > > +			goto err_driver_name;
+> > > +
+> > > +		list_add_tail(&entry->list, &driver_override_entries);
+> > > +		val = k;
+> > > +	}
+> > > +
+> > > +	kfree(buf);
+> > > +	return 0;
+> > > +
+> > > +err_driver_name:
+> > > +	kfree(entry);
+> > > +
+> > > +err_entry:
+> > > +	kfree(buf);
+> > > +
+> > > +err_buf:
+> > > +	pr_err("PCI: Out of memory while parsing command line: %s\n", val);
+> > > +	return -ENOMEM;
+> > > +}
+> > > +
+> > > +static void pci_device_setup_driver_override(struct pci_dev *dev)
+> > > +{
+> > > +	static int parse_done;
+> > > +	struct driver_override_entry *entry;
+> > > +
+> > > +	if (!parse_done) {
+> > > +		char *cmdline = kstrdup(saved_command_line, GFP_KERNEL);
+> > > +
+> > > +		if (!cmdline)
+> > > +			goto err_out_of_mem;
+> > > +
+> > > +		parse_args("pci", cmdline, NULL,
+> > > +			   0, 0, 0, &pci_device_parse_driver_override);
+> > > +		kfree(cmdline);
+> > > +		parse_done = 1;
+> > > +	}
+> > > +
+> > > +	list_for_each_entry(entry, &driver_override_entries, list) {
+> > > +		if (pci_domain_nr(dev->bus) != entry->domain ||
+> > > +		    dev->bus->number != entry->bus ||
+> > > +		    dev->devfn != entry->devfn)
+> > > +			continue;
+> > > +
+> > > +		dev->driver_override = kstrdup(entry->driver_name, GFP_KERNEL);
+> > > +		if (!dev->driver_override)
+> > > +			goto err_out_of_mem;
+> > > +
+> > > +		break;
+> > > +	}
+> > > +
+> > > +	return;
+> > > +
+> > > +err_out_of_mem:
+> > > +	pr_err("PCI: Out of memory while setting up driver override\n");
+> > > +}
+> > > +
+> > >  /**
+> > >   * pci_bus_add_device - start driver for a single device
+> > >   * @dev: device to add
+> > > @@ -245,6 +355,7 @@ void pci_bus_add_device(struct pci_dev *dev)
+> > >  	 * are not assigned yet for some devices.
+> > >  	 */
+> > >  	pci_fixup_device(pci_fixup_final, dev);
+> > > +	pci_device_setup_driver_override(dev);
+> > >  	pci_create_sysfs_dev_files(dev);
+> > >  	pci_proc_attach_device(dev);
+> > >  
+> > > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> > > index 625a4ac..37809d4 100644
+> > > --- a/drivers/pci/pci.c
+> > > +++ b/drivers/pci/pci.c
+> > > @@ -4508,6 +4508,8 @@ static int __init pci_setup(char *str)
+> > >  				pcie_bus_config = PCIE_BUS_PEER2PEER;
+> > >  			} else if (!strncmp(str, "pcie_scan_all", 13)) {
+> > >  				pci_add_flags(PCI_SCAN_ALL_PCIE_DEVS);
+> > > +			} else if (!strncmp(str, "driver", 6)) {
+> > > +				/* lazy evaluation by the pci subsystem */
+> > >  			} else {
+> > >  				printk(KERN_ERR "PCI: Unknown option `%s'\n",
+> > >  						str);
+> > 
+> > 
+> > 
+> 
+> 
+> 
+
+
+
+
