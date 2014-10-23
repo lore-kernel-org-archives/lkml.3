@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbaJWKsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:48:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60790 "EHLO mga02.intel.com"
+	id S1754852AbaJWKrc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:47:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19432 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754146AbaJWKri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:47:38 -0400
+	id S1754121AbaJWKrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 06:47:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
-   d="scan'208";a="594446121"
+   d="scan'208";a="594445934"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 13/16] perf tools: Defer export of comms that were not 'set'
-Date: Thu, 23 Oct 2014 13:45:21 +0300
-Message-Id: <1414061124-26830-14-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 05/16] perf tools: Add facility to export data in database-friendly way
+Date: Thu, 23 Oct 2014 13:45:13 +0300
+Message-Id: <1414061124-26830-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
 References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
@@ -27,149 +27,494 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tracing for a workload begins before the comm event
-is seen, which results in the initial comm having a
-string of the form ":<pid>" (e.g. ":12345").  In order
-to export the correct string, defer the export until
-the new script 'flush' callback.
+This patch introduces an abstraction for exporting sample
+data in a database-friendly way.  The abstraction does not
+implement the actual output.  A subsequent patch takes this
+facility into use for extending the script interface.
+
+The abstraction is needed because static data like symbols,
+dsos, comms etc need to be exported only once.  That means
+allocating them a unique identifier and recording it on each
+structure.  The member 'db_id' is used for that.  'db_id'
+is just a 64-bit sequence number.
+
+Exporting centres around the db_export__sample() function
+which exports the associated data structures if they have
+not yet been allocated a db_id.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/db-export.c                        | 62 +++++++++++++++++++++-
- tools/perf/util/db-export.h                        |  3 ++
- .../util/scripting-engines/trace-event-python.c    |  4 +-
- 3 files changed, 67 insertions(+), 2 deletions(-)
+ tools/perf/Makefile.perf    |   2 +
+ tools/perf/util/comm.h      |   1 +
+ tools/perf/util/db-export.c | 268 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/db-export.h |  86 ++++++++++++++
+ tools/perf/util/dso.h       |   1 +
+ tools/perf/util/evsel.h     |   1 +
+ tools/perf/util/machine.h   |   1 +
+ tools/perf/util/symbol.h    |   1 +
+ tools/perf/util/thread.h    |   1 +
+ 9 files changed, 362 insertions(+)
+ create mode 100644 tools/perf/util/db-export.c
+ create mode 100644 tools/perf/util/db-export.h
 
-diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
-index ca79616..ef61cf7 100644
---- a/tools/perf/util/db-export.c
-+++ b/tools/perf/util/db-export.c
-@@ -21,17 +21,74 @@
- #include "comm.h"
- #include "symbol.h"
- #include "event.h"
-+#include "util.h"
- #include "thread-stack.h"
- #include "db-export.h"
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 5bbe1ff..9134c93 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -305,6 +305,7 @@ LIB_H += ui/ui.h
+ LIB_H += util/data.h
+ LIB_H += util/kvm-stat.h
+ LIB_H += util/thread-stack.h
++LIB_H += util/db-export.h
  
-+struct deferred_export {
-+	struct list_head node;
-+	struct comm *comm;
-+};
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -382,6 +383,7 @@ LIB_OBJS += $(OUTPUT)util/data.o
+ LIB_OBJS += $(OUTPUT)util/tsc.o
+ LIB_OBJS += $(OUTPUT)util/cloexec.o
+ LIB_OBJS += $(OUTPUT)util/thread-stack.o
++LIB_OBJS += $(OUTPUT)util/db-export.o
+ 
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
+index 51c10ab..99e7021 100644
+--- a/tools/perf/util/comm.h
++++ b/tools/perf/util/comm.h
+@@ -10,6 +10,7 @@ struct comm_str;
+ struct comm {
+ 	struct comm_str *comm_str;
+ 	u64 start;
++	u64 db_id;
+ 	struct list_head list;
+ 	bool exec;
+ };
+diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
+new file mode 100644
+index 0000000..53d0e75
+--- /dev/null
++++ b/tools/perf/util/db-export.c
+@@ -0,0 +1,268 @@
++/*
++ * db-export.c: Support for exporting data suitable for import to a database
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
 +
-+static int db_export__deferred(struct db_export *dbe)
++#include <errno.h>
++
++#include "evsel.h"
++#include "machine.h"
++#include "thread.h"
++#include "comm.h"
++#include "symbol.h"
++#include "event.h"
++#include "db-export.h"
++
++int db_export__init(struct db_export *dbe)
 +{
-+	struct deferred_export *de;
++	memset(dbe, 0, sizeof(struct db_export));
++	return 0;
++}
++
++void db_export__exit(struct db_export *dbe __maybe_unused)
++{
++}
++
++int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel)
++{
++	if (evsel->db_id)
++		return 0;
++
++	evsel->db_id = ++dbe->evsel_last_db_id;
++
++	if (dbe->export_evsel)
++		return dbe->export_evsel(dbe, evsel);
++
++	return 0;
++}
++
++int db_export__machine(struct db_export *dbe, struct machine *machine)
++{
++	if (machine->db_id)
++		return 0;
++
++	machine->db_id = ++dbe->machine_last_db_id;
++
++	if (dbe->export_machine)
++		return dbe->export_machine(dbe, machine);
++
++	return 0;
++}
++
++int db_export__thread(struct db_export *dbe, struct thread *thread,
++		      struct machine *machine, struct comm *comm)
++{
++	u64 main_thread_db_id = 0;
 +	int err;
 +
-+	while (!list_empty(&dbe->deferred)) {
-+		de = list_entry(dbe->deferred.next, struct deferred_export,
-+				node);
-+		err = dbe->export_comm(dbe, de->comm);
-+		list_del(&de->node);
-+		free(de);
++	if (thread->db_id)
++		return 0;
++
++	thread->db_id = ++dbe->thread_last_db_id;
++
++	if (thread->pid_ != -1) {
++		struct thread *main_thread;
++
++		if (thread->pid_ == thread->tid) {
++			main_thread = thread;
++		} else {
++			main_thread = machine__findnew_thread(machine,
++							      thread->pid_,
++							      thread->pid_);
++			if (!main_thread)
++				return -ENOMEM;
++			err = db_export__thread(dbe, main_thread, machine,
++						comm);
++			if (err)
++				return err;
++			if (comm) {
++				err = db_export__comm_thread(dbe, comm, thread);
++				if (err)
++					return err;
++			}
++		}
++		main_thread_db_id = main_thread->db_id;
++	}
++
++	if (dbe->export_thread)
++		return dbe->export_thread(dbe, thread, main_thread_db_id,
++					  machine);
++
++	return 0;
++}
++
++int db_export__comm(struct db_export *dbe, struct comm *comm,
++		    struct thread *main_thread)
++{
++	int err;
++
++	if (comm->db_id)
++		return 0;
++
++	comm->db_id = ++dbe->comm_last_db_id;
++
++	if (dbe->export_comm) {
++		err = dbe->export_comm(dbe, comm);
 +		if (err)
 +			return err;
 +	}
 +
++	return db_export__comm_thread(dbe, comm, main_thread);
++}
++
++int db_export__comm_thread(struct db_export *dbe, struct comm *comm,
++			   struct thread *thread)
++{
++	u64 db_id;
++
++	db_id = ++dbe->comm_thread_last_db_id;
++
++	if (dbe->export_comm_thread)
++		return dbe->export_comm_thread(dbe, db_id, comm, thread);
++
 +	return 0;
 +}
 +
-+static void db_export__free_deferred(struct db_export *dbe)
++int db_export__dso(struct db_export *dbe, struct dso *dso,
++		   struct machine *machine)
 +{
-+	struct deferred_export *de;
++	if (dso->db_id)
++		return 0;
 +
-+	while (!list_empty(&dbe->deferred)) {
-+		de = list_entry(dbe->deferred.next, struct deferred_export,
-+				node);
-+		list_del(&de->node);
-+		free(de);
++	dso->db_id = ++dbe->dso_last_db_id;
++
++	if (dbe->export_dso)
++		return dbe->export_dso(dbe, dso, machine);
++
++	return 0;
++}
++
++int db_export__symbol(struct db_export *dbe, struct symbol *sym,
++		      struct dso *dso)
++{
++	if (sym->db_id)
++		return 0;
++
++	sym->db_id = ++dbe->symbol_last_db_id;
++
++	if (dbe->export_symbol)
++		return dbe->export_symbol(dbe, sym, dso);
++
++	return 0;
++}
++
++static struct thread *get_main_thread(struct machine *machine,
++				      struct thread *thread)
++{
++	if (thread->pid_ == thread->tid)
++		return thread;
++
++	if (thread->pid_ == -1)
++		return NULL;
++
++	return machine__find_thread(machine, thread->pid_, thread->pid_);
++}
++
++static int db_ids_from_al(struct db_export *dbe, struct addr_location *al,
++			  u64 *dso_db_id, u64 *sym_db_id, u64 *offset)
++{
++	int err;
++
++	if (al->map) {
++		struct dso *dso = al->map->dso;
++
++		err = db_export__dso(dbe, dso, al->machine);
++		if (err)
++			return err;
++		*dso_db_id = dso->db_id;
++
++		if (!al->sym) {
++			al->sym = symbol__new(al->addr, 0, 0, "unknown");
++			if (al->sym)
++				symbols__insert(&dso->symbols[al->map->type],
++						al->sym);
++		}
++
++		if (al->sym) {
++			err = db_export__symbol(dbe, al->sym, dso);
++			if (err)
++				return err;
++			*sym_db_id = al->sym->db_id;
++			*offset = al->addr - al->sym->start;
++		}
 +	}
-+}
-+
-+static int db_export__defer_comm(struct db_export *dbe, struct comm *comm)
-+{
-+	struct deferred_export *de;
-+
-+	de = zalloc(sizeof(struct deferred_export));
-+	if (!de)
-+		return -ENOMEM;
-+
-+	de->comm = comm;
-+	list_add_tail(&de->node, &dbe->deferred);
 +
 +	return 0;
 +}
 +
- int db_export__init(struct db_export *dbe)
- {
- 	memset(dbe, 0, sizeof(struct db_export));
-+	INIT_LIST_HEAD(&dbe->deferred);
- 	return 0;
- }
- 
-+int db_export__flush(struct db_export *dbe)
++int db_export__sample(struct db_export *dbe, union perf_event *event,
++		      struct perf_sample *sample, struct perf_evsel *evsel,
++		      struct thread *thread, struct addr_location *al)
 +{
-+	return db_export__deferred(dbe);
-+}
++	struct export_sample es = {
++		.event = event,
++		.sample = sample,
++		.evsel = evsel,
++		.thread = thread,
++		.al = al,
++	};
++	struct thread *main_thread;
++	struct comm *comm = NULL;
++	int err;
 +
- void db_export__exit(struct db_export *dbe)
- {
-+	db_export__free_deferred(dbe);
- 	call_return_processor__free(dbe->crp);
- 	dbe->crp = NULL;
- }
-@@ -115,7 +172,10 @@ int db_export__comm(struct db_export *dbe, struct comm *comm,
- 	comm->db_id = ++dbe->comm_last_db_id;
- 
- 	if (dbe->export_comm) {
--		err = dbe->export_comm(dbe, comm);
-+		if (main_thread->comm_set)
-+			err = dbe->export_comm(dbe, comm);
-+		else
-+			err = db_export__defer_comm(dbe, comm);
- 		if (err)
- 			return err;
- 	}
++	err = db_export__evsel(dbe, evsel);
++	if (err)
++		return err;
++
++	err = db_export__machine(dbe, al->machine);
++	if (err)
++		return err;
++
++	main_thread = get_main_thread(al->machine, thread);
++	if (main_thread)
++		comm = machine__thread_exec_comm(al->machine, main_thread);
++
++	err = db_export__thread(dbe, thread, al->machine, comm);
++	if (err)
++		return err;
++
++	if (comm) {
++		err = db_export__comm(dbe, comm, main_thread);
++		if (err)
++			return err;
++		es.comm_db_id = comm->db_id;
++	}
++
++	es.db_id = ++dbe->sample_last_db_id;
++
++	err = db_ids_from_al(dbe, al, &es.dso_db_id, &es.sym_db_id, &es.offset);
++	if (err)
++		return err;
++
++	if ((evsel->attr.sample_type & PERF_SAMPLE_ADDR) &&
++	    sample_addr_correlates_sym(&evsel->attr)) {
++		struct addr_location addr_al;
++
++		perf_event__preprocess_sample_addr(event, sample, al->machine,
++						   thread, &addr_al);
++		err = db_ids_from_al(dbe, &addr_al, &es.addr_dso_db_id,
++				     &es.addr_sym_db_id, &es.addr_offset);
++		if (err)
++			return err;
++	}
++
++	if (dbe->export_sample)
++		return dbe->export_sample(dbe, &es);
++
++	return 0;
++}
 diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
-index dd5ac2a..adbd22d 100644
---- a/tools/perf/util/db-export.h
+new file mode 100644
+index 0000000..b3643e8
+--- /dev/null
 +++ b/tools/perf/util/db-export.h
-@@ -17,6 +17,7 @@
- #define __PERF_DB_EXPORT_H
- 
- #include <linux/types.h>
-+#include <linux/list.h>
- 
- struct perf_evsel;
- struct machine;
-@@ -74,9 +75,11 @@ struct db_export {
- 	u64 sample_last_db_id;
- 	u64 call_path_last_db_id;
- 	u64 call_return_last_db_id;
-+	struct list_head deferred;
+@@ -0,0 +1,86 @@
++/*
++ * db-export.h: Support for exporting data suitable for import to a database
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#ifndef __PERF_DB_EXPORT_H
++#define __PERF_DB_EXPORT_H
++
++#include <linux/types.h>
++
++struct perf_evsel;
++struct machine;
++struct thread;
++struct comm;
++struct dso;
++struct perf_sample;
++struct addr_location;
++
++struct export_sample {
++	union perf_event	*event;
++	struct perf_sample	*sample;
++	struct perf_evsel	*evsel;
++	struct thread		*thread;
++	struct addr_location	*al;
++	u64			db_id;
++	u64			comm_db_id;
++	u64			dso_db_id;
++	u64			sym_db_id;
++	u64			offset; /* ip offset from symbol start */
++	u64			addr_dso_db_id;
++	u64			addr_sym_db_id;
++	u64			addr_offset; /* addr offset from symbol start */
++};
++
++struct db_export {
++	int (*export_evsel)(struct db_export *dbe, struct perf_evsel *evsel);
++	int (*export_machine)(struct db_export *dbe, struct machine *machine);
++	int (*export_thread)(struct db_export *dbe, struct thread *thread,
++			     u64 main_thread_db_id, struct machine *machine);
++	int (*export_comm)(struct db_export *dbe, struct comm *comm);
++	int (*export_comm_thread)(struct db_export *dbe, u64 db_id,
++				  struct comm *comm, struct thread *thread);
++	int (*export_dso)(struct db_export *dbe, struct dso *dso,
++			  struct machine *machine);
++	int (*export_symbol)(struct db_export *dbe, struct symbol *sym,
++			     struct dso *dso);
++	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
++	u64 evsel_last_db_id;
++	u64 machine_last_db_id;
++	u64 thread_last_db_id;
++	u64 comm_last_db_id;
++	u64 comm_thread_last_db_id;
++	u64 dso_last_db_id;
++	u64 symbol_last_db_id;
++	u64 sample_last_db_id;
++};
++
++int db_export__init(struct db_export *dbe);
++void db_export__exit(struct db_export *dbe);
++int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel);
++int db_export__machine(struct db_export *dbe, struct machine *machine);
++int db_export__thread(struct db_export *dbe, struct thread *thread,
++		      struct machine *machine, struct comm *comm);
++int db_export__comm(struct db_export *dbe, struct comm *comm,
++		    struct thread *main_thread);
++int db_export__comm_thread(struct db_export *dbe, struct comm *comm,
++			   struct thread *thread);
++int db_export__dso(struct db_export *dbe, struct dso *dso,
++		   struct machine *machine);
++int db_export__symbol(struct db_export *dbe, struct symbol *sym,
++		      struct dso *dso);
++int db_export__sample(struct db_export *dbe, union perf_event *event,
++		      struct perf_sample *sample, struct perf_evsel *evsel,
++		      struct thread *thread, struct addr_location *al);
++
++#endif
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index acb651a..8463fc3 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -111,6 +111,7 @@ struct dso {
+ 	enum dso_swap_type	needs_swap;
+ 	enum dso_binary_type	symtab_type;
+ 	enum dso_binary_type	binary_type;
++	u64		 db_id;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 has_srcline:1;
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 4861e8c..4777262 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -95,6 +95,7 @@ struct perf_evsel {
+ 	int			sample_read;
+ 	struct perf_evsel	*leader;
+ 	char			*group_name;
++	u64			db_id;
  };
  
- int db_export__init(struct db_export *dbe);
-+int db_export__flush(struct db_export *dbe);
- void db_export__exit(struct db_export *dbe);
- int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel);
- int db_export__machine(struct db_export *dbe, struct machine *machine);
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index e7792b7..97a70d8 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -1025,7 +1025,9 @@ error:
+ union u64_swap {
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 2b651a7..4bc57e5 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -40,6 +40,7 @@ struct machine {
+ 	u64		  kernel_start;
+ 	symbol_filter_t	  symbol_filter;
+ 	pid_t		  *current_tid;
++	u64		  db_id;
+ };
  
- static int python_flush_script(void)
- {
--	return 0;
-+	struct tables *tables = &tables_global;
-+
-+	return db_export__flush(&tables->dbe);
- }
+ static inline
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index eb2c19b..6f54ade 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -73,6 +73,7 @@ struct symbol {
+ 	struct rb_node	rb_node;
+ 	u64		start;
+ 	u64		end;
++	u64		db_id;
+ 	u16		namelen;
+ 	u8		binding;
+ 	bool		ignore;
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index a057820..a3ebb21 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -25,6 +25,7 @@ struct thread {
+ 	bool			dead; /* if set thread has exited */
+ 	struct list_head	comm_list;
+ 	int			comm_len;
++	u64			db_id;
  
- /*
+ 	void			*priv;
+ 	struct thread_stack	*ts;
 -- 
 1.9.1
 
