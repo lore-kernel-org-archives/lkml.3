@@ -1,124 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484AbaJWPCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:02:18 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:48851 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341AbaJWPCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 11:02:17 -0400
-Date: Thu, 23 Oct 2014 16:02:01 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux@roeck-us.net" <linux@roeck-us.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        David Paris <david.paris@st.com>
-Subject: Re: [PATCH 3/4] watchdog: st_wdt: Provide binding documentation for
- ST's LPC Watchdog driver
-Message-ID: <20141023150201.GD10395@x1>
-References: <1412760810-23199-1-git-send-email-lee.jones@linaro.org>
- <1412760810-23199-4-git-send-email-lee.jones@linaro.org>
- <20141009095649.GC3869@leverpostej>
+	id S1754815AbaJWPDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:03:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34460 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499AbaJWPDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 11:03:23 -0400
+Date: Thu, 23 Oct 2014 17:03:21 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcontrol: fix missed end-writeback page
+ accounting
+Message-ID: <20141023150321.GJ23011@dhcp22.suse.cz>
+References: <1414002568-21042-1-git-send-email-hannes@cmpxchg.org>
+ <1414002568-21042-3-git-send-email-hannes@cmpxchg.org>
+ <20141022133936.44f2d2931948ce13477b5e64@linux-foundation.org>
+ <20141023135729.GB24269@phnom.home.cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141009095649.GC3869@leverpostej>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141023135729.GB24269@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 09 Oct 2014, Mark Rutland wrote:
-
-> On Wed, Oct 08, 2014 at 10:33:29AM +0100, Lee Jones wrote:
-> > Cc: devicetree@vger.kernel.org
-> > Signed-off-by: David Paris <david.paris@st.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  .../devicetree/bindings/watchdog/st-lpc-wdt.txt    | 30 ++++++++++++++++++++++
-> >  1 file changed, 30 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-> > 
-> > diff --git a/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-> > new file mode 100644
-> > index 0000000..520ce90
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/watchdog/st-lpc-wdt.txt
-> > @@ -0,0 +1,30 @@
-> > +STMicroelectronics LPC Watchdog
-> > +===============================
-> > +
-> > +Required properties
-> > +
-> > +- compatible 	: Must be one of:
-> > +			"st,stih407-watchdog"
-> > +			"st,stih416-watchdog"
-> > +			"st,stih415-watchdog"
-> > +			"st,stid127-watchdog"
-> > +- reg		: LPC registers base address + range
+On Thu 23-10-14 09:57:29, Johannes Weiner wrote:
+[...]
+> From b518d88254b01be8c6c0c4a496d9f311f0c71b4a Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Thu, 23 Oct 2014 09:29:06 -0400
+> Subject: [patch] mm: rmap: split out page_remove_file_rmap()
 > 
-> s/range/size/
+> page_remove_rmap() has too many branches on PageAnon() and is hard to
+> follow.  Move the file part into a separate function.
 > 
-> Please append something like "one entryfor each entry in reg-names".
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  mm/rmap.c | 78 +++++++++++++++++++++++++++++++++++++--------------------------
+>  1 file changed, 46 insertions(+), 32 deletions(-)
 > 
-> > +- reg-names	: Register map "base" and "syscfg-en" are compulsory. "type" is
-> > +		  platform dependent and not required for the STiH407
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index f574046f77d4..19886fb2f13a 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -1054,6 +1054,36 @@ void page_add_file_rmap(struct page *page)
+>  	mem_cgroup_end_page_stat(memcg, locked, flags);
+>  }
+>  
+> +static void page_remove_file_rmap(struct page *page)
+> +{
+> +	struct mem_cgroup *memcg;
+> +	unsigned long flags;
+> +	bool locked;
+> +
+> +	memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
+> +
+> +	/* page still mapped by someone else? */
+> +	if (!atomic_add_negative(-1, &page->_mapcount))
+> +		goto out;
+> +
+> +	/* Hugepages are not counted in NR_FILE_MAPPED for now. */
+> +	if (unlikely(PageHuge(page)))
+> +		goto out;
+> +
+> +	/*
+> +	 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
+> +	 * these counters are not modified in interrupt context, and
+> +	 * pte lock(a spinlock) is held, which implies preemption disabled.
+> +	 */
+> +	__dec_zone_page_state(page, NR_FILE_MAPPED);
+> +	mem_cgroup_dec_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
+> +
+> +	if (unlikely(PageMlocked(page)))
+> +		clear_page_mlock(page);
+> +out:
+> +	mem_cgroup_end_page_stat(memcg, locked, flags);
+> +}
+> +
+>  /**
+>   * page_remove_rmap - take down pte mapping from a page
+>   * @page: page to remove mapping from
+> @@ -1062,46 +1092,33 @@ void page_add_file_rmap(struct page *page)
+>   */
+>  void page_remove_rmap(struct page *page)
+>  {
+> -	struct mem_cgroup *uninitialized_var(memcg);
+> -	bool anon = PageAnon(page);
+> -	unsigned long flags;
+> -	bool locked;
+> -
+> -	/*
+> -	 * The anon case has no mem_cgroup page_stat to update; but may
+> -	 * uncharge_page() below, where the lock ordering can deadlock if
+> -	 * we hold the lock against page_stat move: so avoid it on anon.
+> -	 */
+> -	if (!anon)
+> -		memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
+> +	if (!PageAnon(page)) {
+> +		page_remove_file_rmap(page);
+> +		return;
+> +	}
+>  
+>  	/* page still mapped by someone else? */
+>  	if (!atomic_add_negative(-1, &page->_mapcount))
+> -		goto out;
+> +		return;
+> +
+> +	/* Hugepages are not counted in NR_ANON_PAGES for now. */
+> +	if (unlikely(PageHuge(page)))
+> +		return;
+>  
+>  	/*
+> -	 * Hugepages are not counted in NR_ANON_PAGES nor NR_FILE_MAPPED
+> -	 * and not charged by memcg for now.
+> -	 *
+>  	 * We use the irq-unsafe __{inc|mod}_zone_page_stat because
+>  	 * these counters are not modified in interrupt context, and
+> -	 * these counters are not modified in interrupt context, and
+>  	 * pte lock(a spinlock) is held, which implies preemption disabled.
+>  	 */
+> -	if (unlikely(PageHuge(page)))
+> -		goto out;
+> -	if (anon) {
+> -		if (PageTransHuge(page))
+> -			__dec_zone_page_state(page,
+> -					      NR_ANON_TRANSPARENT_HUGEPAGES);
+> -		__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
+> -				-hpage_nr_pages(page));
+> -	} else {
+> -		__dec_zone_page_state(page, NR_FILE_MAPPED);
+> -		mem_cgroup_dec_page_stat(memcg, MEM_CGROUP_STAT_FILE_MAPPED);
+> -	}
+> +	if (PageTransHuge(page))
+> +		__dec_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
+> +
+> +	__mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
+> +			      -hpage_nr_pages(page));
+> +
+>  	if (unlikely(PageMlocked(page)))
+>  		clear_page_mlock(page);
+> +
+>  	/*
+>  	 * It would be tidy to reset the PageAnon mapping here,
+>  	 * but that might overwrite a racing page_add_anon_rmap
+> @@ -1111,9 +1128,6 @@ void page_remove_rmap(struct page *page)
+>  	 * Leaving it set also helps swapoff to reinstate ptes
+>  	 * faster for those pages still in swapcache.
+>  	 */
+> -out:
+> -	if (!anon)
+> -		mem_cgroup_end_page_stat(memcg, locked, flags);
+>  }
+>  
+>  /*
+> -- 
+> 2.1.2
 > 
-> I don't understand the mention of "type".
-
-This is a typo.  It should be "syscfg-type".
-
-> Additionally, "syscfg-en" looks to be a portion of another device
-> (shared system controller?), and probably should be described by
-> reference.
-
-Answer below.
-
-> > +- clock-names 	: Should be "lpc_wdt"
-> > +- clocks	: Clock used by LPC device
-> > +- timeout-sec	: Watchdog timeout in seconds
-> > +- st,syscfg	: Syscfg node used to configure CPU reset type and mask
-> 
-> Does this relate to the syscfg-en entry in the reg proeprty?
- 
-Yes.  We map these registers with regmap and use the read-in register
-values of syscfg-en and syscfg-type to manipulate them.  It's either
-that or supplying a property for each read-in, which I like less.
-
-> > +- st,warm_reset	: If present, reset type will be 'warm'. If not, it will be cold
-> 
-> s/_/-/ in property names.
-
-You're right.  This slipped my gaze.
-
-> Why does this need to be in the binding? It seems like a choice rather
-> than a property of the system.
-
-What do you mean?  It's something which needs to be configured at
-initialisation time.  If we provide it here, it means that we don't
-have to re-complie to change the config.
-
-> > +Example:
-> > +	watchdog@fde05000 {
-> > +		compatible	= "st,stih416-lpc-watchdog";
-> > +		reg		= <0xfde05000 0x1000> <0x204 0x4>;
-> > +		reg-names	= "base", "syscfg-en"
-> > +		clock-names	= "lpc_wdt";
-> > +		clocks 		= <&clk_s_d3_flexgen CLK_LPC_0>;
-> > +		timeout-sec	= <600>;
-> > +		st,syscfg	= <&syscfg_core>;
-> > +		st,warm_reset;
-> > +	};
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michal Hocko
+SUSE Labs
