@@ -1,109 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899AbaJWQGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:06:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752541AbaJWQGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:06:24 -0400
-Message-ID: <1414080354.6829.2.camel@deneb.redhat.com>
-Subject: Re: [PATCHv2] efi: efi-stub: notify on DTB absence
-From: Mark Salter <msalter@redhat.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        leif.lindholm@linaro.org, ard.biesheuvel@linaro.org,
-        matt.fleming@intel.com, roy.franz@linaro.org
-Date: Thu, 23 Oct 2014 12:05:54 -0400
-In-Reply-To: <1414078413-15439-1-git-send-email-mark.rutland@arm.com>
-References: <1414078413-15439-1-git-send-email-mark.rutland@arm.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756062AbaJWQHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:07:10 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:39421 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482AbaJWQHI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 12:07:08 -0400
+Date: Thu, 23 Oct 2014 17:07:03 +0100
+From: Daniel Walter <dwalter@google.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        kernel list <linux-kernel@vger.kernel.org>, sre@kernel.org,
+        B38611@freescale.com, aaro.koskinen@iki.fi, jg1.han@samsung.com,
+        linux-input@vger.kernel.org
+Subject: Re: 3.18.rc1: compile failure in tsc2005.c
+Message-ID: <20141023160703.GA3230@google.com>
+References: <20141023125325.GB30572@amd>
+ <201410231501.04540@pali>
+ <20141023154751.GB18714@dtor-ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141023154751.GB18714@dtor-ws>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-23 at 16:33 +0100, Mark Rutland wrote:
-> Since v1 [1]:
-> * Add a positive acknowledgement for a configuration table DTB
-> * Fixed a couple of typos in the commit message
+On Thu, Oct 23, 2014 at 08:47:51AM -0700, Dmitry Torokhov wrote:
+> On Thu, Oct 23, 2014 at 03:01:04PM +0200, Pali Rohár wrote:
+> > On Thursday 23 October 2014 14:53:25 Pavel Machek wrote:
+> > > Hi!
+> > > 
+> > > I get this. Before I start patching it, perhaps someone has
+> > > fixed it already?
+> > > 
+> > > 								Pavel
+> > > 
+> > >   CC      drivers/input/touchscreen/tsc2005.o
+> > > drivers/input/touchscreen/tsc2005.c: In function
+> > > 'tsc2005_disable_store':
+> > > drivers/input/touchscreen/tsc2005.c:406:2: error: implicit
+> > > declaration of function 'strict_strtoul'
+> > > [-Werror=implicit-function-declaration] cc1: some warnings
+> > > being treated as errors
+> > > scripts/Makefile.build:257: recipe for target
+> > > 'drivers/input/touchscreen/tsc2005.o' failed
+> > > make[3]: *** [drivers/input/touchscreen/tsc2005.o] Error 1
+> > > scripts/Makefile.build:402: recipe for target
+> > > 'drivers/input/touchscreen' failed
+> > > make[2]: *** [drivers/input/touchscreen] Error 2
+> > > scripts/Makefile.build:402: recipe for target 'drivers/input'
+> > > failed make[1]: *** [drivers/input] Error 2
+> > > make[1]: *** Waiting for unfinished jobs....
+> > >   CC      net/core/request_sock.o
+> > 
+> > Hi, I read somewhere that strict_strtoul function was replaced by 
+> > some kstrtol function... So maybe somebody forgot to fix tsc2005 
+> > driver?
 > 
-> Ard, Leif, Roy, I've assumed your acks from v1 are still valid with the
-> additional print. Please shout if that's not the case.
+> Yeah, I see patch from Daniel removing these but forgettign tsc2005.
 > 
-> Thanks,
-> Mark.
+> Pavel, if you have hardware then a patch connverting to kstro* would be
+> very welcome.
 > 
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/295521.html
+> Thanks.
 > 
-> ---->8----
-> In the absence of a DTB configuration table, the EFI stub will happily
-> continue attempting to boot a kernel, despite the fact that this kernel
-> may not function without a description of the hardware. In this case, as
-> with a typo'd "dtb=" option (e.g. "dbt=") or many other possible
-> failures, the only output seen by the user will be the rather terse
-> output from the EFI stub:
-> 
-> EFI stub: Booting Linux Kernel...
-> 
-> To aid those attempting to debug such failures, this patch adds a notice
-> when no DTB is found, making the output more helpful:
-> 
-> EFI stub: Booting Linux Kernel...
-> EFI stub: Generating empty DTB
-> 
-> Additionally, a positive acknowledgement is added when a user-specified
-> DTB is in use:
-> 
-> EFI stub: Booting Linux Kernel...
-> EFI stub: Using DTB from command line
-> 
-> Similarly, a positive acknowledgement is added when a DTB from a
-> configuration table is in use:
-> 
-> EFI stub: Booting Linux Kernel...
-> EFI stub: Using DTB from configuration table
-> 
-> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-> Acked-by: Leif Lindholm <leif.lindholm@linaro.org>
-> Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-> Cc: Mark Salter <msalter@redhat.com>
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Acked-by: Roy Franz <roy.franz@linaro.org>
-> ---
->  drivers/firmware/efi/libstub/arm-stub.c | 11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/firmware/efi/libstub/arm-stub.c b/drivers/firmware/efi/libstub/arm-stub.c
-> index 480339b..21fa50e 100644
-> --- a/drivers/firmware/efi/libstub/arm-stub.c
-> +++ b/drivers/firmware/efi/libstub/arm-stub.c
-> @@ -243,9 +243,18 @@ unsigned long __init efi_entry(void *handle, efi_system_table_t *sys_table,
->  			goto fail_free_cmdline;
->  		}
->  	}
-> -	if (!fdt_addr)
-> +
-> +	if (fdt_addr) {
-> +		pr_efi(sys_table, "Using DTB from command line\n");
-> +	} else {
->  		/* Look for a device tree configuration table entry. */
->  		fdt_addr = (uintptr_t)get_fdt(sys_table);
-> +		if (fdt_addr)
-> +			pr_efi(sys_table, "Using DTB from configuration table\n");
-> +	}
-> +
-> +	if (!fdt_addr)
-> +		pr_efi(sys_table, "Generating empty DTB\n");
+> -- 
+> Dmitry
 
-Nitpicking: I'd put that as an else to the config table fdt_addr check
-above. In any case,
+Hi Pavel,
 
-Acked-by: Mark Salter <msalter@redhat.com>
+what tree are you working with, since I do not see any reference to
+strict_strto* in mainline,
 
->  
->  	status = handle_cmdline_files(sys_table, image, cmdline_ptr,
->  				      "initrd=", dram_base + SZ_512M,
-
-
+thanks
+--
+Daniel
