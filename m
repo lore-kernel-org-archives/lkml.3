@@ -1,136 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690AbaJWM5S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:57:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:64308 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755648AbaJWM5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:57:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
-   d="scan'208";a="623954461"
-Date: Thu, 23 Oct 2014 15:56:55 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio:
- Support for unified device properties interface)
-Message-ID: <20141023125655.GJ1484@lahna.fi.intel.com>
-References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com>
- <1971792.8pKYWlGxB9@vostro.rjw.lan>
- <20141022145651.GH1484@lahna.fi.intel.com>
- <13758254.acHP1NJN1b@vostro.rjw.lan>
+	id S932502AbaJWNBK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:01:10 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:41305 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932157AbaJWNBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 09:01:07 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: 3.18.rc1: compile failure in tsc2005.c
+Date: Thu, 23 Oct 2014 15:01:04 +0200
+User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
+Cc: kernel list <linux-kernel@vger.kernel.org>, dmitry.torokhov@gmail.com,
+        sre@kernel.org, B38611@freescale.com, aaro.koskinen@iki.fi,
+        jg1.han@samsung.com, linux-input@vger.kernel.org
+References: <20141023125325.GB30572@amd>
+In-Reply-To: <20141023125325.GB30572@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13758254.acHP1NJN1b@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed;
+  boundary="nextPart5775186.5qjUkLqLxT";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201410231501.04540@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 01:21:06AM +0200, Rafael J. Wysocki wrote:
-> OK, would the below make sense, then (completely untested, on top of the v6
-> of the device properties patchset)?
+--nextPart5775186.5qjUkLqLxT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Yes it does :-)
+On Thursday 23 October 2014 14:53:25 Pavel Machek wrote:
+> Hi!
+>=20
+> I get this. Before I start patching it, perhaps someone has
+> fixed it already?
+>=20
+> 								Pavel
+>=20
+>   CC      drivers/input/touchscreen/tsc2005.o
+> drivers/input/touchscreen/tsc2005.c: In function
+> 'tsc2005_disable_store':
+> drivers/input/touchscreen/tsc2005.c:406:2: error: implicit
+> declaration of function 'strict_strtoul'
+> [-Werror=3Dimplicit-function-declaration] cc1: some warnings
+> being treated as errors
+> scripts/Makefile.build:257: recipe for target
+> 'drivers/input/touchscreen/tsc2005.o' failed
+> make[3]: *** [drivers/input/touchscreen/tsc2005.o] Error 1
+> scripts/Makefile.build:402: recipe for target
+> 'drivers/input/touchscreen' failed
+> make[2]: *** [drivers/input/touchscreen] Error 2
+> scripts/Makefile.build:402: recipe for target 'drivers/input'
+> failed make[1]: *** [drivers/input] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+>   CC      net/core/request_sock.o
 
-With the the below fix it works nicely with the modified rfkill-gpio.c
-driver.
+Hi, I read somewhere that strict_strtoul function was replaced by=20
+some kstrtol function... So maybe somebody forgot to fix tsc2005=20
+driver?
 
-> +static bool acpi_get_driver_gpio_data(struct acpi_device *adev,
-> +				      const char *name,
-> +				      struct acpi_reference_args *args)
-> +{
-> +	struct acpi_gpio_data *gd;
-> +
-> +	mutex_lock(&driver_gpio_data_lock);
-> +
-> +	list_for_each_entry(gd, &adev->driver_gpios, item)
-> +		if (!strcmp(name, gd->name)) {
-> +			args->adev = adev;
-> +			args->args[0] = gd->entry_index;
-> +			args->args[1] = gd->pin_index;
-> +			args->args[2] = gd->active_low;
-> +			args->nargs = 3;
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
-			mutex_unlock(&driver_gpio_data_lock);
+--nextPart5775186.5qjUkLqLxT
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-> +			return true;
-> +		}
-> +
-> +	mutex_unlock(&driver_gpio_data_lock);
-> +
-> +	return false;
-> +}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Also I think the two functions should be exported to modules as well.
+iEYEABECAAYFAlRI/BAACgkQi/DJPQPkQ1KvdACfZFqrkHk907ubUeTMKSjjRmk6
+eZ4AoJhsLryyPIMndmRoVCUT7/LWnp2A
+=JfsC
+-----END PGP SIGNATURE-----
 
-Here are the modifications needed for rfkill-gpio.c driver. I think it
-is not that bad considering that now the driver supports both ACPI _DSD
-and non-_DSD at the same time.
-
-diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-index 0f62326c0f5e..f8754e7d81ea 100644
---- a/net/rfkill/rfkill-gpio.c
-+++ b/net/rfkill/rfkill-gpio.c
-@@ -67,6 +67,8 @@ static int rfkill_gpio_acpi_probe(struct device *dev,
- 				  struct rfkill_gpio_data *rfkill)
- {
- 	const struct acpi_device_id *id;
-+	struct acpi_device *adev = ACPI_COMPANION(dev);
-+	int ret;
- 
- 	id = acpi_match_device(dev->driver->acpi_match_table, dev);
- 	if (!id)
-@@ -75,6 +77,20 @@ static int rfkill_gpio_acpi_probe(struct device *dev,
- 	rfkill->name = dev_name(dev);
- 	rfkill->type = (unsigned)id->driver_data;
- 
-+	/*
-+	 * Add default mapping for ACPI _DSD properties now just in case
-+	 * there is no _DSD for this device.
-+	 */
-+	ret = acpi_dev_add_driver_gpio(adev, "reset-gpios", 0, 0, false);
-+	if (ret)
-+		return ret;
-+
-+	ret = acpi_dev_add_driver_gpio(adev, "shutdown-gpios", 1, 0, false);
-+	if (ret) {
-+		acpi_dev_remove_driver_gpios(adev);
-+		return ret;
-+	}
-+
- 	return 0;
- }
- 
-@@ -110,7 +126,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 		rfkill->reset_gpio = gpio;
- 	}
- 
--	gpio = devm_gpiod_get_index(&pdev->dev, "shutdown", 1);
-+	gpio = devm_gpiod_get_index(&pdev->dev, "shutdown", 0);
- 	if (!IS_ERR(gpio)) {
- 		ret = gpiod_direction_output(gpio, 0);
- 		if (ret)
-@@ -150,6 +166,9 @@ static int rfkill_gpio_remove(struct platform_device *pdev)
- 	rfkill_unregister(rfkill->rfkill_dev);
- 	rfkill_destroy(rfkill->rfkill_dev);
- 
-+	if (ACPI_COMPANION(&pdev->dev))
-+		acpi_dev_remove_driver_gpios(ACPI_COMPANION(&pdev->dev));
-+
- 	return 0;
- }
- 
+--nextPart5775186.5qjUkLqLxT--
