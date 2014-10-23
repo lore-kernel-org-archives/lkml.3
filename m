@@ -1,106 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905AbaJWP2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:28:04 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:64360 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbaJWP2B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 11:28:01 -0400
-Message-ID: <54491E1E.6090001@gmail.com>
-Date: Thu, 23 Oct 2014 13:26:22 -0200
-From: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1755387AbaJWP2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:28:54 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:54609 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753469AbaJWP2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 11:28:53 -0400
+Date: Thu, 23 Oct 2014 10:29:19 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-mm@kvack.org, athorlton@sgi.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add pgcollapse controls to task_struct
+Message-ID: <20141023152919.GB15104@sgi.com>
+References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+ <1414032567-109765-3-git-send-email-athorlton@sgi.com>
 MIME-Version: 1.0
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Thadeu Cascardo <cascardo@cascardo.eti.br>
-Subject: Re: Possible wireless issue introduced in next-20140930
-References: <54487346.4080604@gmail.com> <1414041815.5228.37.camel@marge.simpson.net>
-In-Reply-To: <1414041815.5228.37.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414032567-109765-3-git-send-email-athorlton@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2014 03:23 AM, Mike Galbraith wrote:
-> On Thu, 2014-10-23 at 01:17 -0200, Murilo Opsfelder Araujo wrote:
->> Hello, everyone.
->>
->> With next-20140930 my laptop does not work, i.e. after I enter my login
->> and password in KDM, the entire system becomes unresponsive and I need
->> to reset it in order to reboot (it does not even show the KDE splash
->> screen).
->>
->> It was working pretty fine with next-20140926.
->>
->> I've also tested with next-20141022 and v3.18-rc1 and no luck.
->>
->> git bisect pointed me to the commit below [1].  My wireless card is a
->> RTL8191SEvA [2].
->
-> Mine is RTL8191SEvB.
->
-> I was going to bisect RTL8191SE regression when I got a chance, but you
-> beat me to it.
->
->> commit 38506ecefab911785d5e1aa5889f6eeb462e0954
->> Author: Larry Finger <Larry.Finger@lwfinger.net>
->> Date:   Mon Sep 22 09:39:19 2014 -0500
->>
->>       rtlwifi: rtl_pci: Start modification for new drivers
->
-> Did you confirm that bisection result, ie revert it at HEAD of whichever
-> tree you bisected?
->
-> The revert (master) removed some warnings on the way to kaboom here, but
-> the drivers is still toxic.  My log follows in case it's the same thing.
-> I can't go hunting atm, maybe during the weekend if the problem hasn't
-> evaporate by then.
+On Wed, Oct 22, 2014 at 09:49:25PM -0500, Alex Thorlton wrote:
+> This patch just adds the necessary bits to the task_struct so that the scans can
+> eventually be controlled on a per-mm basis.  As I mentioned previously, we might
+> want to add some more counters here.
 
-next-20141023 does not work as well.
-
-With commit 38506ecefab911785d5e1aa5889f6eeb462e0954 reverted, kernel 
-blows up very early in boot.
-
-Cascardo (CC:) helped me to investigate and it seems that when 
-rtlpriv->cfg->ops->get_btc_status() is called, it is pointing to a NULL 
-function.
-
-With the changes below, written by Cascardo, I could get rid of 
-oops/panic and system booted normally.  But there was no wifi network 
-available (like if wifi card was disabled).
-
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c 
-b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-index 1bff2a0..807f0f7 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
-@@ -253,6 +253,11 @@ static void rtl92s_deinit_sw_vars(struct 
-ieee80211_hw *hw)
-         }
-  }
-
-+static bool rtl92s_get_btc_status(void)
-+{
-+       return false;
-+}
-+
-  static struct rtl_hal_ops rtl8192se_hal_ops = {
-         .init_sw_vars = rtl92s_init_sw_vars,
-         .deinit_sw_vars = rtl92s_deinit_sw_vars,
-@@ -294,6 +299,7 @@ static struct rtl_hal_ops rtl8192se_hal_ops = {
-         .set_bbreg = rtl92s_phy_set_bb_reg,
-         .get_rfreg = rtl92s_phy_query_rf_reg,
-         .set_rfreg = rtl92s_phy_set_rf_reg,
-+       .get_btc_status = rtl92s_get_btc_status,
-  };
-
-  static struct rtl_mod_params rtl92se_mod_params = {
-
--- 
-Murilo
+Just noticed that this one didn't get properly numbered when I split
+them out.  This should be patch 2/4 for the first set that I sent. Sorry
+about that!
