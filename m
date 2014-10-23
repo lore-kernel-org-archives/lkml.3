@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019AbaJWEIB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 00:08:01 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49486 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaJWED5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751992AbaJWED5 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 23 Oct 2014 00:03:57 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:49443 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341AbaJWEDo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 00:03:44 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: netdev@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
         Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 09/14] net: dsa: Add support for switch EEPROM access
-Date: Wed, 22 Oct 2014 21:03:17 -0700
-Message-Id: <1414037002-25528-10-git-send-email-linux@roeck-us.net>
+Subject: [PATCH 03/14] net: dsa: Report known silicon revisions for Marvell 88E6131
+Date: Wed, 22 Oct 2014 21:03:11 -0700
+Message-Id: <1414037002-25528-4-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
 References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54487E2D.00D3,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020206.54487E1F.0133,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 58
+X-CTCH-SenderID-TotalMessages: 30
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -50,89 +50,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some chips it is possible to access the switch eeprom.
-Add infrastructure support for it.
+Report known silicon revisions when probing Marvell 88E6131 switches.
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- include/net/dsa.h |  7 +++++++
- net/dsa/slave.c   | 38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+)
+ drivers/net/dsa/mv88e6131.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/include/net/dsa.h b/include/net/dsa.h
-index d8b3057..73146b7 100644
---- a/include/net/dsa.h
-+++ b/include/net/dsa.h
-@@ -248,6 +248,13 @@ struct dsa_switch_driver {
- 	int	(*get_temp_limit)(struct dsa_switch *ds, int *temp);
- 	int	(*set_temp_limit)(struct dsa_switch *ds, int temp);
- 	int	(*get_temp_alarm)(struct dsa_switch *ds, bool *alarm);
-+
-+	/* EEPROM access */
-+	int	(*get_eeprom_len)(struct dsa_switch *ds);
-+	int	(*get_eeprom)(struct dsa_switch *ds,
-+			      struct ethtool_eeprom *eeprom, u8 *data);
-+	int	(*set_eeprom)(struct dsa_switch *ds,
-+			      struct ethtool_eeprom *eeprom, u8 *data);
- };
+diff --git a/drivers/net/dsa/mv88e6131.c b/drivers/net/dsa/mv88e6131.c
+index 244c735..1230f52 100644
+--- a/drivers/net/dsa/mv88e6131.c
++++ b/drivers/net/dsa/mv88e6131.c
+@@ -21,6 +21,7 @@
+ #define ID_6085		0x04a0
+ #define ID_6095		0x0950
+ #define ID_6131		0x1060
++#define ID_6131_B2	0x1066
  
- void register_switch_driver(struct dsa_switch_driver *type);
-diff --git a/net/dsa/slave.c b/net/dsa/slave.c
-index 6d18174..a54ee43 100644
---- a/net/dsa/slave.c
-+++ b/net/dsa/slave.c
-@@ -271,6 +271,41 @@ static u32 dsa_slave_get_link(struct net_device *dev)
- 	return -EOPNOTSUPP;
- }
- 
-+static int dsa_slave_get_eeprom_len(struct net_device *dev)
-+{
-+	struct dsa_slave_priv *p = netdev_priv(dev);
-+	struct dsa_switch *ds = p->parent;
-+
-+	if (ds->drv->get_eeprom_len != NULL)
-+		return ds->drv->get_eeprom_len(ds);
-+
-+	return 0;
-+}
-+
-+static int dsa_slave_get_eeprom(struct net_device *dev,
-+				struct ethtool_eeprom *eeprom, u8 *data)
-+{
-+	struct dsa_slave_priv *p = netdev_priv(dev);
-+	struct dsa_switch *ds = p->parent;
-+
-+	if (ds->drv->get_eeprom != NULL)
-+		return ds->drv->get_eeprom(ds, eeprom, data);
-+
-+	return -EOPNOTSUPP;
-+}
-+
-+static int dsa_slave_set_eeprom(struct net_device *dev,
-+				struct ethtool_eeprom *eeprom, u8 *data)
-+{
-+	struct dsa_slave_priv *p = netdev_priv(dev);
-+	struct dsa_switch *ds = p->parent;
-+
-+	if (ds->drv->set_eeprom != NULL)
-+		return ds->drv->set_eeprom(ds, eeprom, data);
-+
-+	return -EOPNOTSUPP;
-+}
-+
- static void dsa_slave_get_strings(struct net_device *dev,
- 				  uint32_t stringset, uint8_t *data)
+ static char *mv88e6131_probe(struct device *host_dev, int sw_addr)
  {
-@@ -387,6 +422,9 @@ static const struct ethtool_ops dsa_slave_ethtool_ops = {
- 	.get_drvinfo		= dsa_slave_get_drvinfo,
- 	.nway_reset		= dsa_slave_nway_reset,
- 	.get_link		= dsa_slave_get_link,
-+	.get_eeprom_len		= dsa_slave_get_eeprom_len,
-+	.get_eeprom		= dsa_slave_get_eeprom,
-+	.set_eeprom		= dsa_slave_set_eeprom,
- 	.get_strings		= dsa_slave_get_strings,
- 	.get_ethtool_stats	= dsa_slave_get_ethtool_stats,
- 	.get_sset_count		= dsa_slave_get_sset_count,
+@@ -32,12 +33,15 @@ static char *mv88e6131_probe(struct device *host_dev, int sw_addr)
+ 
+ 	ret = __mv88e6xxx_reg_read(bus, sw_addr, REG_PORT(0), 0x03);
+ 	if (ret >= 0) {
+-		ret &= 0xfff0;
+-		if (ret == ID_6085)
++		int ret_masked = ret & 0xfff0;
++
++		if (ret_masked == ID_6085)
+ 			return "Marvell 88E6085";
+-		if (ret == ID_6095)
++		if (ret_masked == ID_6095)
+ 			return "Marvell 88E6095/88E6095F";
+-		if (ret == ID_6131)
++		if (ret == ID_6131_B2)
++			return "Marvell 88E6131 (B2)";
++		if (ret_masked == ID_6131)
+ 			return "Marvell 88E6131";
+ 	}
+ 
 -- 
 1.9.1
 
