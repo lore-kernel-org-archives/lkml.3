@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867AbaJWCtg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 22:49:36 -0400
-Received: from relay1.sgi.com ([192.48.180.66]:33139 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932354AbaJWCtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933254AbaJWCuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 22:50:07 -0400
+Received: from relay2.sgi.com ([192.48.180.65]:52660 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932402AbaJWCtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 22 Oct 2014 22:49:35 -0400
 From: Alex Thorlton <athorlton@sgi.com>
 To: linux-mm@kvack.org, athorlton@sgi.com
@@ -19,70 +19,22 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Vladimir Davydov <vdavydov@parallels.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] Convert khugepaged to a task_work function
-Date: Wed, 22 Oct 2014 21:49:23 -0500
-Message-Id: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+Subject: [PATCH 4/4] Add /proc files to expose per-mm pgcollapse stats
+Date: Wed, 22 Oct 2014 21:49:27 -0500
+Message-Id: <1414032567-109765-5-git-send-email-athorlton@sgi.com>
 X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey everyone,
+This patch adds a /proc file to read out the information that we've added to the
+task_struct.  I'll need to split the information out to separate files, probably
+in a subdirectory, change a few of the files to allow us to modify their values,
+and it will need appropriate locks.
 
-Last week, while discussing possible fixes for some unexpected/unwanted behavior
-from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
-mentioned possibly changing changing khugepaged to work as a task_work function
-instead of a kernel thread.  This will give us finer grained control over the
-page collapse scans, eliminate some unnecessary scans since tasks that are
-relatively inactive will not be scanned often, and eliminate the unwanted
-behavior described in the email thread I mentioned.
-
-This initial patch is fully functional, but there are quite a few areas that
-will need to be polished up before it's ready to be considered for a merge.  I
-wanted to get this initial version out with some basic test results quickly, so
-that people can give their opinions and let me know if there's anything they'd
-like to see done differently (and there probably is :).  I'll give details on
-the code in the individual patches.
-
-I gathered some pretty rudimentary test data using a 48-thread NAMD simulation
-pinned to a cpuset with 8 cpus and about 60g of memory.  I'm checking to see if
-I'm allowed to publish the input data so that others can replicate the test.  In
-the meantime, if somebody knows of a publicly available benchmark that stresses
-khugepaged, that would be helpful.
-
-The only data point I gathered was the number of pages collapsed, sampled every
-ten seconds, for the lifetime of the job.  This one statistic gives a pretty
-decent illustration of the difference in behavior between the two kernels, but I
-intend to add some other counters to measure fully completed scans, failed
-allocations, and possibly scans skipped due to timer constraints.
-
-The data for the standard kernel (with a very small patch to add the stat
-counter that I used to the task_struct) is available here:
-
-http://oss.sgi.com/projects/memtests/pgcollapse/output-khpd
-
-This was a fairly recent kernel (last Tuesday).  Commit ID:
-2d65a9f48fcdf7866aab6457bc707ca233e0c791.  I'll send the patches I used for that
-kernel as a reply to this message shortly.
-
-The output from the modified kernel is stored here:
-
-http://oss.sgi.com/projects/memtests/pgcollapse/output-pgcollapse
-
-The output is stored in a pretty dumb format (*really* wide).  Best viewed in a
-simple text editor with word wrap off, just fyi.
-
-Quick summary of what I found:  Both kernels performed about the same when it
-comes to overall runtime, my kernel was 22 seconds faster with a total runtime
-of 4:13:07.  Not a significant difference, but important to note that there was
-no apparent performance degradation.  The most interesting result is that my
-kernel completed the majority of the necessary page collapses for this job in
-2:04, whereas the mainline kernel took 29:05 to get to the same point.
-
-Let me know what you think.  Any suggestions are appreciated!
-
-- Alex
-
+Signed-off-by: Alex Thorlton <athorlton@sgi.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Bob Liu <lliubbo@gmail.com>
 Cc: David Rientjes <rientjes@google.com>
@@ -99,20 +51,60 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Vladimir Davydov <vdavydov@parallels.com>
 Cc: linux-kernel@vger.kernel.org
 
-Alex Thorlton (4):
-  Disable khugepaged thread
-  Add pgcollapse controls to task_struct
-  Convert khugepaged scan functions to work with task_work
-  Add /proc files to expose per-mm pgcollapse stats
+---
+ fs/proc/base.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
- fs/proc/base.c             |  23 +++++++
- include/linux/khugepaged.h |  10 ++-
- include/linux/sched.h      |  16 +++++
- kernel/fork.c              |   7 ++
- kernel/sched/fair.c        |  18 +++++
- mm/huge_memory.c           | 162 +++++++++++++++------------------------------
- 6 files changed, 123 insertions(+), 113 deletions(-)
-
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 772efa4..7c5aca2 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2466,6 +2466,25 @@ static const struct file_operations proc_projid_map_operations = {
+ };
+ #endif /* CONFIG_USER_NS */
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++int proc_pgcollapse_show(struct seq_file *m, struct pid_namespace *ns,
++		     struct pid *pid, struct task_struct *tsk)
++{
++	/* need locks here */
++	seq_printf(m, "pages_to_scan: %u\n", tsk->pgcollapse_pages_to_scan);
++	seq_printf(m, "pages_collapsed: %u\n", tsk->pgcollapse_pages_collapsed);
++	seq_printf(m, "full_scans: %u\n", tsk->pgcollapse_full_scans);
++	seq_printf(m, "scan_sleep_millisecs: %u\n",
++		   tsk->pgcollapse_scan_sleep_millisecs);
++	seq_printf(m, "alloc_sleep_millisecs: %u\n", 
++		   tsk->pgcollapse_alloc_sleep_millisecs);
++	seq_printf(m, "last_scan: %lu\n", tsk->pgcollapse_last_scan);
++	seq_printf(m, "scan_address: 0x%0lx\n", tsk->pgcollapse_scan_address);
++
++	return 0;
++}
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
++
+ static int proc_pid_personality(struct seq_file *m, struct pid_namespace *ns,
+ 				struct pid *pid, struct task_struct *task)
+ {
+@@ -2576,6 +2595,9 @@ static const struct pid_entry tgid_base_stuff[] = {
+ #ifdef CONFIG_CHECKPOINT_RESTORE
+ 	REG("timers",	  S_IRUGO, proc_timers_operations),
+ #endif
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	ONE("pgcollapse", S_IRUGO, proc_pgcollapse_show),
++#endif
+ };
+ 
+ static int proc_tgid_base_readdir(struct file *file, struct dir_context *ctx)
+@@ -2914,6 +2936,9 @@ static const struct pid_entry tid_base_stuff[] = {
+ 	REG("gid_map",    S_IRUGO|S_IWUSR, proc_gid_map_operations),
+ 	REG("projid_map", S_IRUGO|S_IWUSR, proc_projid_map_operations),
+ #endif
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	ONE("pgcollapse", S_IRUGO, proc_pgcollapse_show),
++#endif
+ };
+ 
+ static int proc_tid_base_readdir(struct file *file, struct dir_context *ctx)
 -- 
 1.7.12.4
 
