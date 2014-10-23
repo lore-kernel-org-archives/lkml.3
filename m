@@ -1,175 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaJWIKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 04:10:18 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:58974 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754090AbaJWIKF (ORCPT
+	id S1754229AbaJWIKn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 04:10:43 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:48414 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754090AbaJWIK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 04:10:05 -0400
-Date: Thu, 23 Oct 2014 10:08:51 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH v2 06/53] dmaengine: Create a generic dma_slave_caps
- callback
-Message-ID: <20141023080851.GI7893@lukather>
-References: <1413454672-27400-1-git-send-email-maxime.ripard@free-electrons.com>
- <1496298.0f0GAuhKve@avalon>
- <20141016162453.GN19438@lukather>
- <2111765.kYORi97jNj@avalon>
+	Thu, 23 Oct 2014 04:10:27 -0400
+Date: Thu, 23 Oct 2014 10:10:34 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Jani Nikula <jani.nikula@intel.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linuxppc-dev@lists.ozlabs.org,
+        platform-driver-x86@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        Daniel Drake <dsd@laptop.org>, Jens Frederich <jfrederich@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Darren Hart <dvhart@infradead.org>,
+        Daniel Vetter <daniel.vetter@intel.com>, Bryan Wu <cooloney@gmail.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] drivers: depend on instead of select
+ BACKLIGHT_CLASS_DEVICE and ACPI_VIDEO
+Message-ID: <20141023081034.GA26941@phenom.ffwll.local>
+Mail-Followup-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+	Jani Nikula <jani.nikula@intel.com>, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org, linuxppc-dev@lists.ozlabs.org,
+	platform-driver-x86@vger.kernel.org, linux-usb@vger.kernel.org,
+	linux-fbdev@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+	Daniel Drake <dsd@laptop.org>,
+	Jens Frederich <jfrederich@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Jon Nettleton <jon.nettleton@gmail.com>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	Darren Hart <dvhart@infradead.org>,
+	Daniel Vetter <daniel.vetter@intel.com>,
+	Bryan Wu <cooloney@gmail.com>,
+	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+	Lee Jones <lee.jones@linaro.org>
+References: <1413580403-16225-1-git-send-email-jani.nikula@intel.com>
+ <54476492.6090105@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Rmm1Stw9KgbdL9/H"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2111765.kYORi97jNj@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54476492.6090105@ti.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 22, 2014 at 11:02:26AM +0300, Tomi Valkeinen wrote:
+> On 18/10/14 00:13, Jani Nikula wrote:
+> > Documentation/kbuild/kconfig-language.txt warns to use select with care,
+> > and in general use select only for non-visible symbols and for symbols
+> > with no dependencies, because select will force a symbol to a value
+> > without visiting the dependencies.
+> > 
+> > Select has become particularly problematic, interdependently, with the
+> > BACKLIGHT_CLASS_DEVICE and ACPI_VIDEO configs. For example:
+> > 
+> > scripts/kconfig/conf --randconfig Kconfig
+> > KCONFIG_SEED=0x48312B00
+> > warning: (DRM_RADEON && DRM_NOUVEAU && DRM_I915 && DRM_GMA500 &&
+> > DRM_SHMOBILE && DRM_TILCDC && FB_BACKLIGHT && FB_MX3 && USB_APPLEDISPLAY
+> > && FB_OLPC_DCON && ASUS_LAPTOP && SONY_LAPTOP && THINKPAD_ACPI &&
+> > EEEPC_LAPTOP && ACPI_CMPC && SAMSUNG_Q10) selects BACKLIGHT_CLASS_DEVICE
+> > which has unmet direct dependencies (HAS_IOMEM && BACKLIGHT_LCD_SUPPORT)
+> > warning: (DRM_RADEON && DRM_NOUVEAU && DRM_I915 && DRM_GMA500 &&
+> > DRM_SHMOBILE && DRM_TILCDC && FB_BACKLIGHT && FB_MX3 && USB_APPLEDISPLAY
+> > && FB_OLPC_DCON && ASUS_LAPTOP && SONY_LAPTOP && THINKPAD_ACPI &&
+> > EEEPC_LAPTOP && ACPI_CMPC && SAMSUNG_Q10) selects BACKLIGHT_CLASS_DEVICE
+> > which has unmet direct dependencies (HAS_IOMEM && BACKLIGHT_LCD_SUPPORT)
+> > 
+> > With tristates it's possible to end up selecting FOO=y depending on
+> > BAR=m in the config, which gets discovered at build time, not config
+> > time, like reported in the thread referenced below.
+> > 
+> > Do the following to fix the dependencies:
+> > 
+> > * Depend on instead of select BACKLIGHT_CLASS_DEVICE everywhere. Drop
+> >   select BACKLIGHT_LCD_SUPPORT in such cases, as it's a dependency of
+> >   BACKLIGHT_CLASS_DEVICE.
+> > 
+> > * Remove config FB_BACKLIGHT altogether, and replace it with a
+> >   dependency on BACKLIGHT_CLASS_DEVICE. All configs selecting
+> >   FB_BACKLIGHT select or depend on FB anyway, so we can simplify.
+> > 
+> > * Depend on (ACPI && ACPI_VIDEO) || ACPI=n in several places instead of
+> >   selecting ACPI_VIDEO and a number of its dependencies if ACPI is
+> >   enabled. This is tied to backlight, as ACPI_VIDEO depends on
+> >   BACKLIGHT_CLASS_DEVICE.
+> > 
+> > * Replace a couple of select INPUT/VT with depends as it seemed to be
+> >   necessary.
+> 
+> While doing 'depends on' instead of 'select' is an "easy" fix for this,
+> I do dislike it quite a bit. It's a major pain to go around the kernel
+> config, trying to find all the dependencies that a particular driver
+> wants. If I need fb-foobar, I should just be able to enable it, instead
+> of first searching and selecting its minor dependencies individually.
+> 
+> So, not a NACK, but a "isn't there an another way to fix this?".
+> 
+> Looking at backlight... BACKLIGHT_LCD_SUPPORT seems to be a "meta"
+> option, it only enables a Kconfig submenu.
+> 
+> So I think we could just remove the whole BACKLIGHT_LCD_SUPPORT option.
+> But if we do that, all the items in drivers/video/backlight/Kconfig with
+> default 'y' or 'm' would get enabled by default, so I think we should
+> remove the 'default's from that file. That makes sense in any case, as I
+> don't see why "HP Jornada 700 series LCD Driver" should be "default y".
+> 
+> BACKLIGHT_CLASS_DEVICE doesn't depend on anything except
+> BACKLIGHT_LCD_SUPPORT, so after removing BACKLIGHT_LCD_SUPPORT it should
+> be safe to 'select' BACKLIGHT_CLASS_DEVICE.
+> 
+> BACKLIGHT_CLASS_DEVICE could be made a hidden option, and the drivers in
+> drivers/video/backlight/Kconfig which are under BACKLIGHT_CLASS_DEVICE
+> could be made to select BACKLIGHT_CLASS_DEVICE instead.
+> 
+> That doesn't exactly fix anything, but I think it makes sense as
+> BACKLIGHT_CLASS_DEVICE is something that's selected from all around the
+> kernel, so it should be a selectable "library" instead of a Kconfig menu
+> option.
+> 
+> I didn't look at the ACPI_VIDEO side, so no idea how messy that is.
 
---Rmm1Stw9KgbdL9/H
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If we want to make BACKLIGHT_CLASS_DEVICE into a library thing then I
+guess we could do that, but we must then also drag it out of all the other
+meta options to make sure it's always available. No need I think to ditch
+the entire BACKLIGHT_LCD_SUPPORT meta option. And then everyone could
+select it.
 
-Hi Laurent,
+The problem is if you mix depends and select Kconfig falls over and starts
+to see loops where there are none. So you really can't ever mix them for
+the same symbol.
 
-On Wed, Oct 22, 2014 at 11:16:03PM +0300, Laurent Pinchart wrote:
-> Hi Maxime,
->=20
-> On Thursday 16 October 2014 18:24:53 Maxime Ripard wrote:
-> > On Thu, Oct 16, 2014 at 07:15:40PM +0300, Laurent Pinchart wrote:
-> > > On Thursday 16 October 2014 12:17:05 Maxime Ripard wrote:
-> > > > dma_slave_caps is very important to the generic layers that might
-> > > > interact with dmaengine, such as ASoC. Unfortunately, it has been a=
-dded
-> > > > as yet another dma_device callback, and most of the existing drivers
-> > > > haven't implemented it, reducing its reliability.
-> > > >=20
-> > > > Introduce a generic behaviour and a flag to trigger it. In case this
-> > > > flag hasn't been set, fall back to the old mechanism.
-> > > >=20
-> > > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > > ---
-> > > >=20
-> > > >  include/linux/dmaengine.h | 25 +++++++++++++++++++++----
-> > > >  1 file changed, 21 insertions(+), 4 deletions(-)
-> > > >=20
-> > > > diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> > > > index 4d0294ec3567..85afd71df2e7 100644
-> > > > --- a/include/linux/dmaengine.h
-> > > > +++ b/include/linux/dmaengine.h
-> > > > @@ -643,6 +643,8 @@ struct dma_device {
-> > > >=20
-> > > >  	int dev_id;
-> > > >  	struct device *dev;
-> > > >=20
-> > > > +	bool generic_slave_caps;
-> > > > +
-> > > >=20
-> > > >  	int (*device_alloc_chan_resources)(struct dma_chan *chan);
-> > > >  	void (*device_free_chan_resources)(struct dma_chan *chan);
-> > > >=20
-> > > > @@ -772,17 +774,32 @@ static inline struct dma_async_tx_descriptor
-> > > > *dmaengine_prep_interleaved_dma(
-> > > >=20
-> > > >  static inline int dma_get_slave_caps(struct dma_chan *chan, struct
-> > > >=20
-> > > > dma_slave_caps *caps) {
-> > >=20
-> > > This is getting too big for an inline function, it should be moved to
-> > > drivers/dma/dmaengine.c.
-> >=20
-> > I agree, but I wanted to do that in another patch set. This one is
-> > just getting bigger and bigger, and this is not really the point of
-> > this serie.
->=20
-> If both get merged in the same kernel version I would be fine with this.
+I think if we get the BACKLIGHT_CLASS_DEVICE out of the picture with that
+ACPI_VIDEO should be fixable with some
 
-I'll do my best.
+	select ACPI_VIDEO if ACPI
 
-> > > > +	struct dma_device *device;
-> > > > +
-> > > >=20
-> > > >  	if (!chan || !caps)
-> > > >  		return -EINVAL;
-> > > >=20
-> > > > +	device =3D chan->device;
-> > > > +
-> > > >=20
-> > > >  	/* check if the channel supports slave transactions */
-> > > >=20
-> > > > -	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
-> > > > +	if (!test_bit(DMA_SLAVE, device->cap_mask.bits))
-> > > > +		return -ENXIO;
-> > > > +
-> > > > +	if (device->device_slave_caps)
-> > > > +		return device->device_slave_caps(chan, caps);
-> > > > +
-> > > > +	/*
-> > > > +	 * Check whether it reports it uses the generic slave
-> > > > +	 * capabilities, if not, that means it doesn't support any
-> > > > +	 * kind of slave capabilities reporting.
-> > > > +	 */
-> > > > +	if (device->generic_slave_caps)
-> > > >  		return -ENXIO;
-> > >=20
-> > > Couldn't we replace that check with if (device->device_control) and g=
-et
-> > > rid of the generic_slave_caps field ? Drivers converted to the new API
-> > > would then get slave caps support for free.
-> >=20
-> > Not really. Drivers might have converted to the splitted device_control=
- (and
-> > actually all of them are), while they don't define the values needed to
-> > implement properly the generic slave caps retrieval (and the vast major=
-ity
-> > of them doesn't).
->=20
-> Indeed, my bad.
->=20
-> How about testing those fields then ? You could consider that the driver =
-wants=20
-> the generic slave caps implementation if device->directions is set to a n=
-on-
-> zero value for instance.
-
-
-Hmmm, why not. I guess I'm in for a v4 then :)
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---Rmm1Stw9KgbdL9/H
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUSLeTAAoJEBx+YmzsjxAg45gQAKB8pxC3WNvPoRHOdUN2h7nA
-zgOZL22crFXW5ScAhlTMfiQPfny+bWLI0bZ/guJGIzYjzSPwkya55/Z9tMvtlVOb
-er7yCiZNdQd69B8OIqCXE5sQ4tAYCdyfAfCmwm+q7ImlKZTQ1daT//hswdehApyL
-nAnYHxmBIxNHDGC5bRYSfI5AUJTdaSftkR5kNS1pVgVSMwcgsV7SfrZxGp/pxkZr
-fh6mKUax8c5n2G+ohEjOQyM84VfTK9pPJppqD50cJkWxr3yyrGWn8tdz5aW6vugF
-3SYZBsPF3iYMd7U0tNICF+87H4llfG+FqKAu/ivxI/HRiF111voPcmP9Xfn0qJ0x
-iFZxUsC0IS0ot6L/IeYrRFFTVlEdkzjDMwEP5MRdM4QGDgskhyw3oBf16G8fhJ1Q
-Su91lQnTE2AurPxHsBVL07Iknbzvu0/YcfGDzS1UlOUfvOLyfpx19UgomJaIsUva
-Xv5ZrEUJxkUksfPuidimarGFUcNip6zKlBSgQSQmgM0QnMFKtuQleYBMsbznfGxk
-g6Yr32fRy+48JF4VKdVnKU8u55e0egWFvS9fm9PZRfQYlPMhQqKEs+S93qJWFNLt
-NQT7z+MMb3KwZ+5Ya6Nt6R8ieovoY0djCKmM9HFJGs7KNyZXZs0CU40F8rASL1Z7
-ZenCGnJn3N5EKPLMEWYh
-=txul
------END PGP SIGNATURE-----
-
---Rmm1Stw9KgbdL9/H--
+or so. Currently that doesn't work because of the backlight class knob and
+select being broken.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
