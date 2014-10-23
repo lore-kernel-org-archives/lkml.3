@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaJWQjL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:39:11 -0400
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:58237 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022AbaJWQjK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:39:10 -0400
+	id S1752293AbaJWQk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:40:26 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:44015 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751410AbaJWQkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 12:40:25 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] pinctrl: rockchip: Set wake_enabled
+Date: Thu, 23 Oct 2014 18:43:28 +0200
+Message-ID: <1522951.uUd1Gprpbn@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1413913655-22351-1-git-send-email-dianders@chromium.org>
+References: <1413913655-22351-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <20141022190051.7c0d5df1.akpm@linux-foundation.org>
-References: <20141021202137.GA20114@www.outflux.net>
-	<20141022162638.875681da6bbb9e027d2d3bee@linux-foundation.org>
-	<CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
-	<20141022190051.7c0d5df1.akpm@linux-foundation.org>
-Date: Thu, 23 Oct 2014 09:39:09 -0700
-X-Google-Sender-Auth: eiEx2OQPaFDTho29K8JP8A_9wds
-Message-ID: <CAGXu5jL-6sGy2QSH39Qmu0-8MEg6aX5GCPvPKeWaheXcai0TDA@mail.gmail.com>
-Subject: Re: [PATCH] sysctl: terminate strings also on \r
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Wise <pabs3@bonedaddy.net>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
-        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Jens Axboe <axboe@fb.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 7:00 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 22 Oct 2014 16:43:10 -0700 Kees Cook <keescook@chromium.org> wrote:
->
->> On Wed, Oct 22, 2014 at 4:26 PM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->> > On Tue, 21 Oct 2014 13:21:37 -0700 Kees Cook <keescook@chromium.org> wrote:
->> >
->> >> From: Paul Wise <pabs3@bonedaddy.net>
->> >>
->> >> This partially mitigates a common strategy used by attackers for hiding
->> >> the full contents of strings in procfs from naive sysadmins who use cat,
->> >> more or sysctl to inspect the contents of strings in procfs.
->> >>
->> >> ...
->> >>
->> >> --- a/kernel/sysctl.c
->> >> +++ b/kernel/sysctl.c
->> >> @@ -1739,7 +1739,7 @@ static int _proc_do_string(char *data, int maxlen, int write,
->> >>               while ((p - buffer) < *lenp && len < maxlen - 1) {
->> >>                       if (get_user(c, p++))
->> >>                               return -EFAULT;
->> >> -                     if (c == 0 || c == '\n')
->> >> +                     if (c == 0 || c == '\n' || c == '\r')
->> >>                               break;
->> >>                       data[len++] = c;
->> >>               }
->> >
->> > There are no valid uses of \r in a procfs write?
->>
->> I struggle to imagine one; everything I found that uses proc_dostring
->> seems to be names, paths, and commands.
->>
->
-> You're insufficiently pessimistic.
+Am Dienstag, 21. Oktober 2014, 10:47:32 schrieb Doug Anderson:
+> The rockchip pinctrl driver uses irq_gc_set_wake() but doesn't setup
+> the .wake_enabled member.  That means that we can never actually use a
+> pin for wakeup.  When "irq_set_irq_wake()" tries to call through it
+> will always get a failure from set_irq_wake_real() and will then set
+> wake_depth to 0.  Assuming you can resume you'll later get an error
+> message about "Unbalanced IRQ x wake disable".
 
-Haha, I haven't had that accusation made about me before; I'll keep
-this quote around! :)
+The change itself looks reasonable. But now being able to read the docs for 
+it, it doesn't look like all gpios are able to wake the system.
 
-> I wonder if the chances of damage would be lower if we were to continue
-> to accept the \r, but turn it into something else ("\r"?) when it is
-> read.
+On the rk3288 it seems to be only the pins from gpio0 that can do this 
+(similar for different banks on the other Rockchip SoCs) - see PMU_WAKEUP_CFG0 
+and PMU_WAKEUP_CFG1[1].
 
-I think that would complicate things more than help them. If there's a
-legit use of \r, I'll let Paul Wise debate how to proceed. :)
+So I guess we'll need something more eloquent to handle this.
 
--Kees
 
--- 
-Kees Cook
-Chrome OS Security
+Heiko
+
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Tested-by: Chris Zhong <zyw@rock-chips.com>
+> ---
+> Changes in v2: None
+> 
+>  drivers/pinctrl/pinctrl-rockchip.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-rockchip.c
+> b/drivers/pinctrl/pinctrl-rockchip.c index 016f457..230d8f3 100644
+> --- a/drivers/pinctrl/pinctrl-rockchip.c
+> +++ b/drivers/pinctrl/pinctrl-rockchip.c
+> @@ -1563,6 +1563,7 @@ static int rockchip_interrupts_register(struct
+> platform_device *pdev, gc->chip_types[0].chip.irq_unmask =
+> irq_gc_mask_set_bit;
+>  		gc->chip_types[0].chip.irq_set_wake = irq_gc_set_wake;
+>  		gc->chip_types[0].chip.irq_set_type = rockchip_irq_set_type;
+> +		gc->wake_enabled = IRQ_MSK(bank->nr_pins);
+> 
+>  		irq_set_handler_data(bank->irq, bank);
+>  		irq_set_chained_handler(bank->irq, rockchip_irq_demux);
+
