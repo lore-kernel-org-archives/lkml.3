@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726AbaJWIRP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 04:17:15 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:8340 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061AbaJWIRJ (ORCPT
+	id S1754682AbaJWIRN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 04:17:13 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:3977 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258AbaJWIRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 04:17:09 -0400
+	Thu, 23 Oct 2014 04:17:11 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 23 Oct 2014 01:16:35 -0700
+	by hqnvupgp07.nvidia.com on Thu, 23 Oct 2014 01:13:09 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Thierry Reding <thierry.reding@gmail.com>
 CC: <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>,
         <gnurou@gmail.com>, Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH] drm/panel: s6e8aa0: Update calls to gpiod_get*()
-Date: Thu, 23 Oct 2014 17:16:57 +0900
-Message-ID: <1414052218-20157-1-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH] drm/panel: simple: Update calls to gpiod_get*()
+Date: Thu, 23 Oct 2014 17:16:58 +0900
+Message-ID: <1414052218-20157-2-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1414052218-20157-1-git-send-email-acourbot@nvidia.com>
+References: <1414052218-20157-1-git-send-email-acourbot@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -35,32 +37,37 @@ compulsary.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- drivers/gpu/drm/panel/panel-s6e8aa0.c | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/gpu/drm/panel/panel-simple.c | 11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/gpu/drm/panel/panel-s6e8aa0.c b/drivers/gpu/drm/panel/panel-s6e8aa0.c
-index b5217fe37f02..6427aa187735 100644
---- a/drivers/gpu/drm/panel/panel-s6e8aa0.c
-+++ b/drivers/gpu/drm/panel/panel-s6e8aa0.c
-@@ -1019,17 +1019,12 @@ static int s6e8aa0_probe(struct mipi_dsi_device *dsi)
- 		return ret;
+diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
+index 23de22f8c820..83d93062930d 100644
+--- a/drivers/gpu/drm/panel/panel-simple.c
++++ b/drivers/gpu/drm/panel/panel-simple.c
+@@ -247,21 +247,14 @@ static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)
+ 	if (IS_ERR(panel->supply))
+ 		return PTR_ERR(panel->supply);
+ 
+-	panel->enable_gpio = devm_gpiod_get_optional(dev, "enable");
++	panel->enable_gpio = devm_gpiod_get_optional(dev, "enable",
++						     GPIOD_OUT_LOW);
+ 	if (IS_ERR(panel->enable_gpio)) {
+ 		err = PTR_ERR(panel->enable_gpio);
+ 		dev_err(dev, "failed to request GPIO: %d\n", err);
+ 		return err;
  	}
  
--	ctx->reset_gpio = devm_gpiod_get(dev, "reset");
-+	ctx->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
- 	if (IS_ERR(ctx->reset_gpio)) {
- 		dev_err(dev, "cannot get reset-gpios %ld\n",
- 			PTR_ERR(ctx->reset_gpio));
- 		return PTR_ERR(ctx->reset_gpio);
- 	}
--	ret = gpiod_direction_output(ctx->reset_gpio, 1);
--	if (ret < 0) {
--		dev_err(dev, "cannot configure reset-gpios %d\n", ret);
--		return ret;
+-	if (panel->enable_gpio) {
+-		err = gpiod_direction_output(panel->enable_gpio, 0);
+-		if (err < 0) {
+-			dev_err(dev, "failed to setup GPIO: %d\n", err);
+-			return err;
+-		}
 -	}
- 
- 	ctx->brightness = GAMMA_LEVEL_NUM - 1;
- 
+-
+ 	backlight = of_parse_phandle(dev->of_node, "backlight", 0);
+ 	if (backlight) {
+ 		panel->backlight = of_find_backlight_by_node(backlight);
 -- 
 2.1.2
 
