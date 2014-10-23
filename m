@@ -1,137 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628AbaJWSni (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 14:43:38 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:43004 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932833AbaJWSnf (ORCPT
+	id S1755817AbaJWSoc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 14:44:32 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:34642 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755221AbaJWSob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 14:43:35 -0400
-Date: Thu, 23 Oct 2014 11:43:22 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Andrew Lunn <andrew@lunn.ch>
-Cc: Florian Fainelli <f.fainelli@gmail.com>, netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
-Message-ID: <20141023184322.GA24281@roeck-us.net>
-References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
- <1414037002-25528-7-git-send-email-linux@roeck-us.net>
- <CAGVrzcYjPJWai9bxkh+WRrEEAzBKBd-LQm7zDeeouxngr_v9SQ@mail.gmail.com>
- <54488CE1.2000106@roeck-us.net>
- <20141023134706.GB25190@lunn.ch>
- <20141023162754.GA21343@roeck-us.net>
- <20141023165459.GE25190@lunn.ch>
- <20141023173847.GA22988@roeck-us.net>
- <20141023180357.GG25190@lunn.ch>
+	Thu, 23 Oct 2014 14:44:31 -0400
+Date: Thu, 23 Oct 2014 20:41:00 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] ARM: mvebu: Clean-up the Armada XP support
+Message-ID: <20141023204100.7cd93f08@free-electrons.com>
+In-Reply-To: <1414088070-12510-2-git-send-email-gregory.clement@free-electrons.com>
+References: <1414088070-12510-1-git-send-email-gregory.clement@free-electrons.com>
+	<1414088070-12510-2-git-send-email-gregory.clement@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023180357.GG25190@lunn.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54494C57.0180,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 08:03:57PM +0200, Andrew Lunn wrote:
-> > No, I am not saying that. The hwmon device's parent device will tell,
-> > which is how it works for all other hwmon devices.
-> 
-> O.K, so parent is important.
-> 
-> > Not really. Again, the parent device provides that information. libsensors,
-> > which is the preferred way of accessing sensors information from user space,
-> > provides the parent device instance as part of the logical sensor device
-> > name. In this case, the names will end up being dsa-isa-0000, dsa-isa-0001,
-> > and so on. With your added tags it would be dsa.0.0-isa-0000, dsa.0.1-isa-0001,
-> > and so on. I don't see how this would add any value.
-> 
-> isa is the name of the ethernet device? Why is it not eth0? Most
+Dear Gregory CLEMENT,
 
-isa is just an internal name made up by libsensors, and pretty much just
-indicates something like "neither i2c nor spi". It is mostly historic,
-but nowadays almost part of the ABI. It is made up by user space,
-based on the parent device type, not by the kernel.
+On Thu, 23 Oct 2014 20:14:27 +0200, Gregory CLEMENT wrote:
 
-> Marvell SoCs used in WiFi Access Points have multiple ethernet
-> interfaces, so i would hope the parent actually identifies which
-> ethernet interface it is hanging off.
-> 
-> Now consider the example in
-> 
-> http://lxr.free-electrons.com/source/Documentation/devicetree/bindings/net/dsa/dsa.txt
-> 
-> We have two switches hanging off one ethernet interface. What will the > naming look like in this case?
-> 
-Ah, that is a good question. You are right, the parent will be the same
-for both of those switches but should be unique. Hmm ...
+> +/*
+> + * The following field (.smp) is stil needed to ensure backward
 
-> The Marvell DSA tagging scheme allows you to have 16 switches hanging
-> off one ethernet interface. How is the naming going to work then,
-> especially if there is a mixture of switch chips, some with
-> temperature sensors, and some without?
-> 
-The ones without sensor would not create a hwmon device, so that should
-not be an issue. You are right, the other use cases are more tricky.
+stil -> still
 
-> What would really help is if each switch has a device in the linux
-> device model. The hwmon parent would then be the switch device. The
-> EEPROM would then hang off the switch device, not an interface on the
-> switch device, etc.
+> + * compatibility with the old device trees
 
-Good point. Unfortunately that is not the case.
+It would be good to be more specific here:
 
-You have convinced me that 'dsa' as hwmon attribute name is insufficient,
-so let's see what we have.
+	The following field (.smp) is still needed to ensure backward
+	compatibility with old Device Trees that were not specifying
+	the cpus enable-method property.
 
-- the parent network device in dst->master_netdev
-- the dsa device in 'parent'
-- the host device in host_dev
-- the switch index in 'index'
+Other than that, looks good to me.
 
-First question is what should be the parent device. We have three to
-choose from. Should it be the parent network device or the dsa device ?
-The dsa device seems like a better choice to me, but I am open to
-suggestions. A problem with choosing the network device as parent
-may be that this device could by itself have a temperature sensor
-(some Intel and broadcom Ethernet chips have that), which could
-cause confusion.
-
-Second is what to choose for the hwmon device 'name' attribute.
-'dsa' is not sufficient, but what to choose instead ? dsa.X or dsa_X,
-where X is the switch index ? At this point I am open to suggestions.
-Note that we can not use the name returned from the switch probe
-functions as it may contain spaces and other invalid characters.
-Including the ethernet device name (eg as in eth0_dsa_0) may also be
-problematic if it can contain '-', which is illegal for hwmon devices.
-
-Thanks,
-Guenter
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
