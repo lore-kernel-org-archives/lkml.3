@@ -1,220 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345AbaJWHYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 03:24:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65050 "EHLO mga02.intel.com"
+	id S1752608AbaJWH0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 03:26:08 -0400
+Received: from mga03.intel.com ([134.134.136.65]:61838 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057AbaJWHYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 03:24:09 -0400
+	id S1752057AbaJWH0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 03:26:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
-   d="scan'208";a="623792900"
-Date: Thu, 23 Oct 2014 10:22:52 +0300
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, josh.triplett@intel.com,
-        christophe.ricard@gmail.com, jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v1 2/3] tpm: two-phase chip management functions
-Message-ID: <20141023072252.GA5188@intel.com>
-References: <1413995036-22497-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1413995036-22497-3-git-send-email-jarkko.sakkinen@linux.intel.com>
- <20141022171603.GC12775@obsidianresearch.com>
+   d="scan'208";a="623793352"
+From: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
+To: "'Alexandre Courbot'" <gnurou@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Denis Turischev <denis.turischev@compulab.co.il>
+Subject: RE: [PATCHv3 1/3] gpio: sch: Consolidate similar algorithms
+Thread-Topic: [PATCHv3 1/3] gpio: sch: Consolidate similar algorithms
+Thread-Index: AQHP6eZ7JeEtgf7yJkGiy9DuNcKC1Zw9TTGA
+Date: Thu, 23 Oct 2014 07:23:25 +0000
+Message-ID: <50B33AC5ED75F74F991980326F1C438D0FC00913@PGSMSX108.gar.corp.intel.com>
+References: <1413431475-12799-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <1413431475-12799-2-git-send-email-rebecca.swee.fun.chang@intel.com>
+ <CAAVeFuKVH4R0r1mdxgNRJY=D9hVSyO7NQ5eCOn4qcYMz6+vR3w@mail.gmail.com>
+In-Reply-To: <CAAVeFuKVH4R0r1mdxgNRJY=D9hVSyO7NQ5eCOn4qcYMz6+vR3w@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022171603.GC12775@obsidianresearch.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9N7QEr2013650
 
-On Wed, Oct 22, 2014 at 11:16:03AM -0600, Jason Gunthorpe wrote:
-> On Wed, Oct 22, 2014 at 07:23:55PM +0300, Jarkko Sakkinen wrote:
-> > tpm_register_hardware() and tpm_remove_hardware() are called often
-> > before initializing the device. This is wrong order since it could
-> > be that main TPM driver needs a fully initialized chip to be able to
-> > do its job. For example, now it is impossible to move common startup
-> > functions such as tpm_do_selftest() to tpm_register_hardware().
->  
-> > Added tpm_chip_alloc() and tpm_chip_register() where tpm_chip_alloc()
-> 
-> It is called tpmm_chip_alloc() in this version..
-> 
-> > Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-> 
-> Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> 
-> Looks fine, if you have to spin this again you can incorporate the
-> nits.
+Thanks for the review comments. Please check my reply below.
 
-Thanks for the review! I'll try to incorporate most (if not all of
-them). I was going to comment some of the points you made but they
-would have mostly been "ACK".
-
-> > +
-> > +static DECLARE_BITMAP(dev_mask, TPM_NUM_DEVICES);
+> -----Original Message-----
+> From: Alexandre Courbot [mailto:gnurou@gmail.com]
+> Sent: 17 October, 2014 4:44 PM
+> To: Chang, Rebecca Swee Fun
+> Cc: Linus Walleij; Westerberg, Mika; GPIO Subsystem Mailing List; Linux Kernel
+> Mailing List; Denis Turischev
+> Subject: Re: [PATCHv3 1/3] gpio: sch: Consolidate similar algorithms
 > 
-> Not for this patch, but while this area of code is being looked at
-> this should probably be an IDR/IDA like other subsytems?
-
-Yes, it should use IDR. I'll put this into my backlog but don't 
-include into this patch set.
-
-> > +		if (try_module_get(pos->dev->driver->owner)) {
-> > +			chip = pos;
-> > +			break;
-> > +		}
-> 
-> Not for this patch, this module stuff should be wiped in favor of chip->ops
-> locking.
-
-Definitely, horrible stuff, putting into my backlog (kref + mutex
-should be a better solution).
-
-> > +static void tpmm_chip_remove(void *data)
-> > +{
-> > +	struct tpm_chip *chip = (struct tpm_chip *) data;
-> > +	dev_dbg(chip->dev, "%s\n", __func__);
-> 
-> This print is silent in the default compile, right?
-
-Forgotten clutter, removing it, thanks.
-
-> > +	chip->dev_num = find_first_zero_bit(dev_mask, TPM_NUM_DEVICES);
-> [..]
-> > +	set_bit(chip->dev_num, dev_mask);
-> 
-> Not for this patch but somehow there is no locking for dev_mask
-> here. I guess it should use the driver_lock spinlock?
-
-I'll add it anyway, thanks.
-
-> > +	chip->bios_dir = tpm_bios_log_setup(chip->devname);
-> 
-> Not for this patch, but tpm_bios_log_setup can return NULL if
-> securityfs setup fails.
-
-Easy to fix so I'll just fix it.
-
-> > diff --git a/drivers/char/tpm/tpm_atmel.c b/drivers/char/tpm/tpm_atmel.c
-> > index 6069d13..8e2576a 100644
-> > +++ b/drivers/char/tpm/tpm_atmel.c
-> > @@ -138,11 +138,11 @@ static void atml_plat_remove(void)
-> >  	struct tpm_chip *chip = dev_get_drvdata(&pdev->dev);
-> >  
-> >  	if (chip) {
-> > +		tpm_chip_unregister(chip);
-> >  		if (chip->vendor.have_region)
-> >  			atmel_release_region(chip->vendor.base,
-> >  					     chip->vendor.region_size);
-> >  		atmel_put_base_addr(chip->vendor.iobase);
-> > -		tpm_remove_hardware(chip->dev);
-> >  		platform_device_unregister(pdev);
-> 
-> Missed this before, the Atmel driver is the same as the TIS driver in
-> force mode, ie it isn't going through the driver APIs, but instead
-> force creating platform devices. Same comment as for TIS - I'm not
-> sure devm works properly like this.
-> 
-> I guess just add the same comment as for TIS?
-
-Yup, makes sense.
-
-> > diff --git a/drivers/char/tpm/tpm_i2c_infineon.c b/drivers/char/tpm/tpm_i2c_infineon.c
-> > index 472af4b..6f00bc3 100644
-> > +++ b/drivers/char/tpm/tpm_i2c_infineon.c
-> > @@ -581,10 +581,9 @@ static int tpm_tis_i2c_init(struct device *dev)
-> >  	int rc = 0;
-> >  	struct tpm_chip *chip;
-> >  
-> > -	chip = tpm_register_hardware(dev, &tpm_tis_i2c);
-> > -	if (!chip) {
-> > -		dev_err(dev, "could not register hardware\n");
-> > -		rc = -ENODEV;
-> > +	chip = tpmm_chip_alloc(dev, &tpm_tis_i2c);
-> > +	if (IS_ERR(chip)) {
-> > +		rc = PTR_ERR(chip);
-> >  		goto out_err;
-> 
-> Nit: out_err is synonymous with 'return rc;', so all the goto out_err
-> in this driver can just return;
-> 
-> > +	rc = tpm_chip_register(chip);
-> > +	if (rc)
-> > +		return rc;
-> > +	return 0;
-> 
-> Nit: could just be return tpm_chip_register(chip);
-> 
-> > @@ -619,10 +619,9 @@ tpm_st33_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
-> >  		goto end;
-> >  	}
-> >  
-> > -	chip = tpm_register_hardware(&client->dev, &st_i2c_tpm);
-> > -	if (!chip) {
-> > -		dev_info(&client->dev, "fail chip\n");
-> > -		err = -ENODEV;
-> > +	chip = tpmm_chip_alloc(&client->dev, &st_i2c_tpm);
-> > +	if (IS_ERR(chip)) {
-> > +		err = PTR_ERR(chip);
-> >  		goto end;
-> >  	}
-> 
-> Nit: Same comment, 'goto end' can just be 'return rc'
-> 
-> > -	dev_info(chip->dev, "TPM I2C Initialized\n");
-> > +	err = tpm_chip_register(chip);
-> > +	if (err)
-> > +		goto _irq_set;
-> > +
-> 
-> Nit: Same comment
-> 
-> >  end:
-> >  	pr_info("TPM I2C initialisation fail\n");
-> 
-> This pr_info should be deleted
-
-Agreed.
-
-> > @@ -573,6 +580,8 @@ static void tpm_inf_pnp_remove(struct pnp_dev *dev)
-> >  	struct tpm_chip *chip = pnp_get_drvdata(dev);
-> >  
-> >  	if (chip) {
-> 
-> Nit: This if in the remove callback is an anti-pattern and should be
-> globally removed. If remove is being called then probe succeeded,
-> there is no way for probe to succed and drvdata to be unset.
-> 
-> >  static void tpm_nsc_remove(struct device *dev)
+> On Thu, Oct 16, 2014 at 12:51 PM, Chang Rebecca Swee Fun
+> <rebecca.swee.fun.chang@intel.com> wrote:
+> > Consolidating similar algorithms into common functions to make GPIO
+> > SCH simpler and manageable.
+> >
+> > Signed-off-by: Chang Rebecca Swee Fun
+> > <rebecca.swee.fun.chang@intel.com>
+> > ---
+> >  drivers/gpio/gpio-sch.c |   95 ++++++++++++++++++++++++++--------------------
+> -
+> >  1 file changed, 53 insertions(+), 42 deletions(-)
+> >
+> > diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c index
+> > 99720c8..6e89be9 100644
+> > --- a/drivers/gpio/gpio-sch.c
+> > +++ b/drivers/gpio/gpio-sch.c
+> > @@ -63,94 +63,105 @@ static unsigned sch_gpio_bit(struct sch_gpio *sch,
+> unsigned gpio)
+> >         return gpio % 8;
+> >  }
+> >
+> > -static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio)
+> > +static void sch_gpio_register_set(struct sch_gpio *sch, unsigned gpio,
+> > +                                 unsigned reg)
 > >  {
-> >  	struct tpm_chip *chip = dev_get_drvdata(dev);
-> > -	if ( chip ) {
-> > +	if (chip) {
+> >         unsigned short offset, bit;
+> >         u8 enable;
+> >
+> >         spin_lock(&sch->lock);
 > 
-> Same comment
+> ...
 > 
-> > @@ -836,7 +831,7 @@ MODULE_PARM_DESC(hid, "Set additional specific HID for this driver to probe");
-> >  
-> >  static struct platform_driver tis_drv = {
-> >  	.driver = {
-> > -		.name = "tpm_tis",
-> > +		.name		= "tpm_tis",
-> >  		.owner		= THIS_MODULE,
-> >  		.pm		= &tpm_tis_pm,
-> >  	},
+> >
+> > -       offset = sch_gpio_offset(sch, gpio, GEN);
+> > +       offset = sch_gpio_offset(sch, gpio, reg);
+> >         bit = sch_gpio_bit(sch, gpio);
+> >
+> >         enable = inb(sch->iobase + offset);
 > 
-> There is no remove method here in this platform_driver, this ties into
-> the question if force works or not. The tpm_tis_remove call in the
-> cleanup_hardware should be done through the .remove method of this
-> driver structure..
+> I see identical blocks of code in sch_gpio_register_clear(),
+> sch_gpio_reg_get() and sch_gpio_reg_set() (and possibly other functions?).
+> Maybe this could be factorized into an inline function that would return the
+> "enable" variable?
+> 
+> Also, "enable" looks like the wrong name here. The exact same result is later
+> called "disable" and "curr_dirs" later.
 
-I'll try to get this tested.
+Referring to your comments below, this will be get rid of after the sch_gpio_register_set() and sch_gpio_register_clear() being replaced by sch_gpio_reg_set(gc, gpio, reg, 1) and sch_gpio_reg_set(gc, gpio, reg, 0).
+There will be less identical block of "offset", "bit", and "enable" nor "disable". So there is no need to factorize the identical blocks into inline function.
 
-> Jason
+> 
+> > -       if (!(enable & (1 << bit)))
+> > -               outb(enable | (1 << bit), sch->iobase + offset);
+> > +       if (!(enable & BIT(bit)))
+> > +               outb(enable | BIT(bit), sch->iobase + offset);
+> >
+> >         spin_unlock(&sch->lock);
+> >  }
+> >
+> > -static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned
+> > gpio_num)
+> > +static void sch_gpio_register_clear(struct sch_gpio *sch, unsigned gpio,
+> > +                                   unsigned reg)
+> >  {
+> > -       struct sch_gpio *sch = to_sch_gpio(gc);
+> > -       u8 curr_dirs;
+> >         unsigned short offset, bit;
+> > +       u8 disable;
+> >
+> >         spin_lock(&sch->lock);
+> >
+> > -       offset = sch_gpio_offset(sch, gpio_num, GIO);
+> > -       bit = sch_gpio_bit(sch, gpio_num);
+> > -
+> > -       curr_dirs = inb(sch->iobase + offset);
+> > +       offset = sch_gpio_offset(sch, gpio, reg);
+> > +       bit = sch_gpio_bit(sch, gpio);
+> >
+> > -       if (!(curr_dirs & (1 << bit)))
+> > -               outb(curr_dirs | (1 << bit), sch->iobase + offset);
+> > +       disable = inb(sch->iobase + offset);
+> > +       if (disable & BIT(bit))
+> > +               outb(disable & ~BIT(bit), sch->iobase + offset);
+> >
+> >         spin_unlock(&sch->lock);
+> > -       return 0;
+> >  }
+> >
+> > -static int sch_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
+> > +static int sch_gpio_reg_get(struct gpio_chip *gc, unsigned gpio,
+> > +unsigned reg)
+> >  {
+> >         struct sch_gpio *sch = to_sch_gpio(gc);
+> > -       int res;
+> >         unsigned short offset, bit;
+> > +       u8 curr_dirs;
+> >
+> > -       offset = sch_gpio_offset(sch, gpio_num, GLV);
+> > -       bit = sch_gpio_bit(sch, gpio_num);
+> > +       offset = sch_gpio_offset(sch, gpio, reg);
+> > +       bit = sch_gpio_bit(sch, gpio);
+> >
+> > -       res = !!(inb(sch->iobase + offset) & (1 << bit));
+> > +       curr_dirs = !!(inb(sch->iobase + offset) & BIT(bit));
+> >
+> > -       return res;
+> > +       return curr_dirs;
+> >  }
+> >
+> > -static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int
+> > val)
+> > +static void sch_gpio_reg_set(struct gpio_chip *gc, unsigned gpio, unsigned
+> reg,
+> > +                            int val)
+> >  {
+> >         struct sch_gpio *sch = to_sch_gpio(gc);
+> > -       u8 curr_vals;
+> >         unsigned short offset, bit;
+> > +       u8 curr_dirs;
+> >
+> > -       spin_lock(&sch->lock);
+> > -
+> > -       offset = sch_gpio_offset(sch, gpio_num, GLV);
+> > -       bit = sch_gpio_bit(sch, gpio_num);
+> > +       offset = sch_gpio_offset(sch, gpio, reg);
+> > +       bit = sch_gpio_bit(sch, gpio);
+> >
+> > -       curr_vals = inb(sch->iobase + offset);
+> > +       curr_dirs = inb(sch->iobase + offset);
+> >
+> >         if (val)
+> > -               outb(curr_vals | (1 << bit), sch->iobase + offset);
+> > +               outb(curr_dirs | BIT(bit), sch->iobase + offset);
+> >         else
+> > -               outb((curr_vals & ~(1 << bit)), sch->iobase + offset);
+> > +               outb((curr_dirs & ~BIT(bit)), sch->iobase + offset); }
+> 
+> Mmmm this really looks like sch_gpio_register_set() and
+> sch_gpio_register_clear() could just call sch_gpio_reg_set() right after
+> acquiring the spinlock. Also the names are very similar and it is not clear why
+> you need two different functions here. Couldn't you call sch_gpio_reg_set(gc,
+> gpio, reg, 1) in place of
+> sch_gpio_register_set() and sch_gpio_reg_set(gc, gpio, reg, 0) for
+> sch_gpio_register_clear()? You may need to acquire the spinlock before some
+> call sites, but that's preferable to having very similar functions bearing a very
+> similar name IMHO.
 
-/Jarkko
+Thanks for pointing that out. I think I can replaced all sch_gpio_register_set() and sch_gpio_register_clear() with sch_gpio_reg_set(gc, gpio, reg, 0/1).
+Regarding the spinlock, in fact, I have tested using the GPIO driver through sysfs. I didn't encounter any deadlock issue, but the double locking is really an issue.
+This double lock problem can also be fix by calling sch_gpio_reg_set(gc, gpio, reg, 0/1) in place of sch_gpio_register_set() and sch_gpio_register_clear().
+
+> 
+> >
+> > +static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned
+> > +gpio_num) {
+> > +       struct sch_gpio *sch = to_sch_gpio(gc);
+> > +
+> > +       spin_lock(&sch->lock);
+> > +       sch_gpio_register_set(sch, gpio_num, GIO);
+> 
+> So here you are acquiring sch->lock, then calling
+> sch_gpio_register_set() which will try to acquire the same spinlock first thing.
+> Wouldn't that deadlock? Have you tested changing the direction of a GPIO? This
+> again speaks in favor or reducing the number of similar functions in this file.
+> 
+> Unless I misunderstood something there are still some issues that make this file
+> harder to understand than it should, and which can sometimes bork the system
+> altogether. It is a good idea to cleanup this file, but please try to go one step
+> further - this should simplify locking and ultimately get rid of the locking issues.
+> 
+> And hopefully I will also take less time to review v4. :P
+
+Thanks for the review. I will take note on the locking part and resend later or next week. Appreciate your review comments. Thank you!
+
+Rebecca
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
