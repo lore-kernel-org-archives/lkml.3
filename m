@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562AbaJWSX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 14:23:28 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:24706 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932423AbaJWSXZ (ORCPT
+	id S932417AbaJWSXT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 14:23:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44827 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755308AbaJWSXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 14:23:25 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqASAGBGSVRbtA79/2dsb2JhbABcgw66QwUBdJo4BAKBExcBfYQwLyOBGjeIRQG6F453hiWKMx2ENQWdXYxoiUWBRwGCMjsvgksBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 1/1 linux-next] scsi: remove unused label in sg_scsi_ioctl()
-Date: Thu, 23 Oct 2014 20:23:21 +0200
-Message-Id: <1414088601-24249-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Thu, 23 Oct 2014 14:23:14 -0400
+Date: Thu, 23 Oct 2014 11:23:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Paul Wise <pabs3@bonedaddy.net>,
+        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
+        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jens Axboe <axboe@fb.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH] sysctl: terminate strings also on \r
+Message-Id: <20141023112314.8d62733c202a527b4107eb11@linux-foundation.org>
+In-Reply-To: <CAGXu5jL-6sGy2QSH39Qmu0-8MEg6aX5GCPvPKeWaheXcai0TDA@mail.gmail.com>
+References: <20141021202137.GA20114@www.outflux.net>
+	<20141022162638.875681da6bbb9e027d2d3bee@linux-foundation.org>
+	<CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
+	<20141022190051.7c0d5df1.akpm@linux-foundation.org>
+	<CAGXu5jL-6sGy2QSH39Qmu0-8MEg6aX5GCPvPKeWaheXcai0TDA@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-label 'out' is unused since commit 374f8fdea4aa
-("scsi: Fix error handling in SCSI_IOCTL_SEND_COMMAND")
+On Thu, 23 Oct 2014 09:39:09 -0700 Kees Cook <keescook@chromium.org> wrote:
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- block/scsi_ioctl.c | 2 --
- 1 file changed, 2 deletions(-)
+> > I wonder if the chances of damage would be lower if we were to continue
+> > to accept the \r, but turn it into something else ("\r"?) when it is
+> > read.
+> 
+> I think that would complicate things more than help them.
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index cc7927a..d1ae462 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -516,8 +516,6 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
- 	rq->sense_len = 0;
- 
- 	blk_execute_rq(q, disk, rq, 0);
--
--out:
- 	err = rq->errors & 0xff;	/* only 8 bit SCSI status */
- 	if (err) {
- 		if (rq->sense_len && rq->sense) {
--- 
-1.9.3
+Why.
+
+> If there's a
+> legit use of \r, I'll let Paul Wise debate how to proceed. :)
+
+I don't know who Paul is.  Please take this seriously; we don't want to
+have to revert this after breaking a bunch of people's setups.
 
