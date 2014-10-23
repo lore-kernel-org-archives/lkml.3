@@ -1,43 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387AbaJWP2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:28:54 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:54609 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753469AbaJWP2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 11:28:53 -0400
-Date: Thu, 23 Oct 2014 10:29:19 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: linux-mm@kvack.org, athorlton@sgi.com
-Cc: Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add pgcollapse controls to task_struct
-Message-ID: <20141023152919.GB15104@sgi.com>
-References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
- <1414032567-109765-3-git-send-email-athorlton@sgi.com>
+	id S1754726AbaJWPdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:33:32 -0400
+Received: from mail.kernel.org ([198.145.19.201]:35087 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753316AbaJWPdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 11:33:31 -0400
+Date: Thu, 23 Oct 2014 12:33:22 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@au1.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/powerpc: Cache the DWARF debug info
+Message-ID: <20141023153322.GH14687@kernel.org>
+References: <20141021185610.GA18366@us.ibm.com>
+ <20141021190839.GA4160@kernel.org>
+ <20141022000958.GB2228@us.ibm.com>
+ <20141022081730.GB9860@krava.brq.redhat.com>
+ <20141022174659.GA5119@us.ibm.com>
+ <20141023133724.GE14687@kernel.org>
+ <20141023141213.GA24079@krava.brq.redhat.com>
+ <20141023142634.GF14687@kernel.org>
+ <20141023151306.GA25215@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414032567-109765-3-git-send-email-athorlton@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141023151306.GA25215@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:49:25PM -0500, Alex Thorlton wrote:
-> This patch just adds the necessary bits to the task_struct so that the scans can
-> eventually be controlled on a per-mm basis.  As I mentioned previously, we might
-> want to add some more counters here.
+Em Thu, Oct 23, 2014 at 05:13:06PM +0200, Jiri Olsa escreveu:
+> On Thu, Oct 23, 2014 at 11:26:34AM -0300, Arnaldo Carvalho de Melo wrote:
+> > That is why I thought it would be a compromise to put what he did, it
+> > would not make the existing situation that much worse, work needs to be
+> > done in this area :-\
+ 
+> I think we just need to put that libdw handle into dso object
+> as I suggested above
 
-Just noticed that this one didn't get properly numbered when I split
-them out.  This should be patch 2/4 for the first set that I sent. Sorry
-about that!
+Isn't it there already?
+
+The patch does:
+
++++ b/tools/perf/util/dso.h
+@@ -127,6 +127,7 @@ struct dso {
+        const char       *long_name;
+        u16              long_name_len;
+        u16              short_name_len;
++       void            *dwfl;                  /* DWARF debug info */
+
+
+----------
+
+What you want, on top of that, at a minimum, we somehow limit the number
+of simultaneously dwfl_begin()'ed DSOs, right?
+
+- Arnaldo
