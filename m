@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899AbaJWLS3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 07:18:29 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:38941 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944AbaJWLS2 (ORCPT
+	id S1754822AbaJWLVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 07:21:21 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:35268 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753351AbaJWLVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 07:18:28 -0400
-Date: Thu, 23 Oct 2014 12:18:15 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: russ.dill@gmail.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: serial: Perform verification for FTDI FT232R
- devices
-Message-ID: <20141023121815.1d8ef21d@alan.etchedpixels.co.uk>
-In-Reply-To: <20141023094053.GA30334@kroah.com>
-References: <1414054344-3688-1-git-send-email-Russ.Dill@gmail.com>
-	<20141023094053.GA30334@kroah.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Thu, 23 Oct 2014 07:21:19 -0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "jeffrey.t.kirsher@intel.com" <jeffrey.t.kirsher@intel.com>,
+        "jesse.brandeburg@intel.com" <jesse.brandeburg@intel.com>,
+        "bruce.w.allan@intel.com" <bruce.w.allan@intel.com>,
+        "carolyn.wyborny@intel.com" <carolyn.wyborny@intel.com>,
+        "donald.c.skidmore@intel.com" <donald.c.skidmore@intel.com>,
+        "gregory.v.rose@intel.com" <gregory.v.rose@intel.com>,
+        "peter.p.waskiewicz.jr@intel.com" <peter.p.waskiewicz.jr@intel.com>,
+        "alexander.h.duyck@intel.com" <alexander.h.duyck@intel.com>,
+        "john.ronciak@intel.com" <john.ronciak@intel.com>,
+        "tushar.n.dave@intel.com" <tushar.n.dave@intel.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "sassmann@kpanic.de" <sassmann@kpanic.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1413992737.9031.1.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1413985819-9553-1-git-send-email-klamm@yandex-team.ru> <1413992737.9031.1.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] igb: don't reuse pages with pfmemalloc flag
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Message-Id: <1811414063272@webcorp02e.yandex-team.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Thu, 23 Oct 2014 15:21:12 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  drivers/usb/serial/ftdi_sio.c | 111 +++++++++++++++++++++++++++++++++++++++++-
-> >  drivers/usb/serial/ftdi_sio.h |  41 ++++++++++++++++
-> >  2 files changed, 151 insertions(+), 1 deletion(-)
-> 
-> Funny patch, you should have saved it for April 1, otherwise people
-> might have actually taken this seriously :)
-> 
-> Patches as performance art, now I've seen everything...
+>
+> Interesting...
+>
+> It seems we also need to clear skb->pfmemalloc in napi_reuse_skb()
 
-Chuckle. Sillyness aside a pure detection version of that patch might be
-useful so it can warn users "Running Windows may damage your adapter" 8)
+Sounds reasonable, but are you sure, that we can just drop skb->pfmemalloc flag in napi_reuse_skb()?
 
-Is the 0x0000, 0x0401 they end up with consistent - can we add that to the
-default table so end users can at least make use of devices that have
-been attacked by malware ?
-
-Alan
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at šhttp://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at šhttp://www.tux.org/lkml/
