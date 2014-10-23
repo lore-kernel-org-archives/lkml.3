@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaJWFwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 01:52:09 -0400
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:48242 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaJWFwH (ORCPT
+	id S1751860AbaJWFy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 01:54:29 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:47780 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaJWFy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 01:52:07 -0400
+	Thu, 23 Oct 2014 01:54:28 -0400
+Date: Thu, 23 Oct 2014 11:24:22 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, oleg@redhat.com, hegdevasant@linux.vnet.ibm.com,
+        mingo@redhat.com, anton@redhat.com, systemtap@sourceware.org,
+        namhyung@kernel.org, aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [PATCH v3 5/5] perf/sdt: Add support to perf record to trace SDT
+ events
+Message-ID: <20141023055422.GA27939@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20141010104402.15506.73285.stgit@hemant-fedora>
+ <20141010105914.15506.84827.stgit@hemant-fedora>
+ <54475292.20409@hitachi.com>
+ <544768C6.6090105@linux.vnet.ibm.com>
+ <54477BE6.2060006@hitachi.com>
 MIME-Version: 1.0
-In-Reply-To: <1645583.LAOF2HV7Iq@avalon>
-References: <1413992061-28678-1-git-send-email-jean-michel.hautbois@vodalys.com>
- <1645583.LAOF2HV7Iq@avalon>
-From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Date: Thu, 23 Oct 2014 07:51:50 +0200
-X-Google-Sender-Auth: 2YexCxw_0Jo3FQrMmtpgyOYLei4
-Message-ID: <CAL8zT=gUaBDiq=KC5YqCD5dqx2WO1PSXGckvchX_9XxDbJJEpw@mail.gmail.com>
-Subject: Re: [PATCH] adv7604: Add DT parsing support
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        wsa@the-dreams.de, Lars-Peter Clausen <lars@metafoo.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <54477BE6.2060006@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102305-0013-0000-0000-000001D8A330
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> [2014-10-22 18:41:58]:
 
-Thank you for reviewing,
+> (2014/10/22 17:20), Hemant Kumar wrote:
+> >>> From "file_sdt_ent" we will find out the file name.
+> >>> Convert this sdt note into a perf event and then write this into uprobe_events
+> >>> file to be able to record the event.
+> >>> Then, corresponding entries are added to uprobe_events file for
+> >>> the SDT events.
+> >>> After recording is done, these events are silently deleted from uprobe_events
+> >>> file. The uprobe_events file is present in debugfs/tracing directory.
+> >>>
+> >>> To support the addition and deletion of SDT events to/from uprobe_events
+> >>> file, a record_sdt struct is maintained which has the event data.
+> >> OK, I have some comments on this.
+> >>
+> >>> An example usage:
+> >>>
+> >>> # ./perf record -e %user_app:fun_start -aR /home/user_app
+> >> At first, I'd like to add SDT support for adding probes too, like below;
+> >>
+> >> ./perf probe -a '%user_app:fun_start $vars'
+> >
+> > But I think, previously we discussed that we won't be having "perf
+> > probe" for SDT events.
+> > We list them and probe/trace them using "perf record" directly.
+>
+> Right, sorry for confusing you. I meant that I'd like to support SDT on both of
+> perf-record and perf-probe :)
+> And even if we'll hide sdt related events via perf, users can access it via ftrace.
+> So, I doubt that we can completely hide them, in that case, honesty is the best way;)
+>
 
-2014-10-23 1:53 GMT+02:00 Laurent Pinchart <laurent.pinchart@ideasonboard.com>:
-> Hi Jean-Michel,
->
-> Thank you for the patch.
->
-> On Wednesday 22 October 2014 17:34:21 Jean-Michel Hautbois wrote:
->> This patch adds support for DT parsing of ADV7604 as well as ADV7611.
->> It needs to be improved in order to get ports parsing too.
->
-> Let's improve it then :-) The DT bindings as proposed by this patch are
-> incomplete, that's just asking for trouble.
->
-> How would you model the adv7604 ports ?
+I am somehow not able to figure out how perf probe comes into the
+current workflow.
 
-I am opened to suggestions :).
-But it has to remain as simple as possible, ideally allowing for
-giving names to the ports.
-As done today, it works, ports are parsed but are all the same...
+I think the current design was
+1. perf sdt-cache --add <file> (only once per file)
+2. perf record -e <sdt-event>
 
->> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
->> ---
->>  Documentation/devicetree/bindings/media/i2c/adv7604.txt | 1 +
->>  drivers/media/i2c/adv7604.c                             | 1 +
->>  2 files changed, 2 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/media/i2c/adv7604.txt
->> b/Documentation/devicetree/bindings/media/i2c/adv7604.txt index
->> c27cede..5c8b3e6 100644
->> --- a/Documentation/devicetree/bindings/media/i2c/adv7604.txt
->> +++ b/Documentation/devicetree/bindings/media/i2c/adv7604.txt
->> @@ -10,6 +10,7 @@ Required Properties:
->>
->>    - compatible: Must contain one of the following
->>      - "adi,adv7611" for the ADV7611
->> +    - "adi,adv7604" for the ADV7604
->
-> Please switch the two lines to keep them alphabetically sorted.
->>
->>    - reg: I2C slave address
->>
->> diff --git a/drivers/media/i2c/adv7604.c b/drivers/media/i2c/adv7604.c
->> index 47795ff..421035f 100644
->> --- a/drivers/media/i2c/adv7604.c
->> +++ b/drivers/media/i2c/adv7604.c
->> @@ -2677,6 +2677,7 @@ MODULE_DEVICE_TABLE(i2c, adv7604_i2c_id);
->>
->>  static struct of_device_id adv7604_of_id[] __maybe_unused = {
->>       { .compatible = "adi,adv7611", .data = &adv7604_chip_info[ADV7611] },
->> +     { .compatible = "adi,adv7604", .data = &adv7604_chip_info[ADV7604] },
->
-> Same comment here.
+So what is the additional thing that perf probe does or Is it going to
+replace any of the above steps?
 
-Done on my side, but will wait for your suggestions, in order to add
-ports parsing ;-).
+--
+Thanks and Regards
+Srikar Dronamraju
 
-Thanks,
-JM
