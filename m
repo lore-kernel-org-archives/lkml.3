@@ -1,122 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaJWNUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:20:08 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:60599 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751180AbaJWNUE (ORCPT
+	id S1752278AbaJWNUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:20:22 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33994 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaJWNUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:20:04 -0400
-Date: Thu, 23 Oct 2014 15:19:33 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH v3 58/59] dmaengine: Add a warning for drivers not using
- the generic slave caps retrieval
-Message-ID: <20141023131933.GO7893@lukather>
-References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
- <1413992653-21963-59-git-send-email-maxime.ripard@free-electrons.com>
- <2006617.Jsn4xl9O1U@avalon>
+	Thu, 23 Oct 2014 09:20:15 -0400
+Message-ID: <5449008C.4050505@roeck-us.net>
+Date: Thu, 23 Oct 2014 06:20:12 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wr1Q/2bz0MCWWNYv"
-Content-Disposition: inline
-In-Reply-To: <2006617.Jsn4xl9O1U@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        netdev@vger.kernel.org
+CC: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/14] net: dsa: Report known silicon revisions for Marvell
+ 88E6060
+References: <1414037002-25528-1-git-send-email-linux@roeck-us.net> <1414037002-25528-3-git-send-email-linux@roeck-us.net> <5448F9B4.9010209@cogentembedded.com>
+In-Reply-To: <5448F9B4.9010209@cogentembedded.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.5449008F.005A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/23/2014 05:51 AM, Sergei Shtylyov wrote:
+> Hello.
+>
+> On 10/23/2014 8:03 AM, Guenter Roeck wrote:
+>
+>> Report known silicon revisions when probing Marvell 88E6060 switches.
+>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>>   drivers/net/dsa/mv88e6060.c | 5 ++++-
+>>   1 file changed, 4 insertions(+), 1 deletion(-)
+>
+>> diff --git a/drivers/net/dsa/mv88e6060.c b/drivers/net/dsa/mv88e6060.c
+>> index 05b0ca3..c29aebe 100644
+>> --- a/drivers/net/dsa/mv88e6060.c
+>> +++ b/drivers/net/dsa/mv88e6060.c
+>> @@ -69,8 +69,11 @@ static char *mv88e6060_probe(struct device *host_dev, int sw_addr)
+>>
+>>       ret = mdiobus_read(bus, sw_addr + REG_PORT(0), 0x03);
+>>       if (ret >= 0) {
+>> -        ret &= 0xfff0;
+>>           if (ret == 0x0600)
+>> +            return "Marvell 88E6060 (A0)";
+>> +        if (ret == 0x0601 || ret == 0x0602)
+>
+>     *else* *if*.
+>
+>> +            return "Marvell 88E6060 (B0)";
+>> +        if ((ret & 0xfff0) == 0x0600)
+>
+>     Likewise?
+>
 
---wr1Q/2bz0MCWWNYv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The if case returns, so the else would just introduce an unnecessary
+additional level of indentation. I think nowadays even checkpatch
+complains about an unnecessary else after return.
 
-Hi,
+Thanks,
+Guenter
 
-On Thu, Oct 23, 2014 at 12:21:31AM +0300, Laurent Pinchart wrote:
-> Hi Maxime,
->=20
-> Thank you for the patch.
->=20
-> On Wednesday 22 October 2014 17:44:12 Maxime Ripard wrote:
-> > For the slave caps retrieval to be really useful, most drivers need to
-> > implement it.
-> >=20
-> > Hence, we need to be slightly more aggressive, and trigger a warning at
-> > registration time for drivers that don't fill their caps infos in order=
- to
-> > encourage them to implement it.
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > ---
-> >  drivers/dma/dmaengine.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> >=20
-> > diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-> > index 98e9431f85ec..4e18981b16bd 100644
-> > --- a/drivers/dma/dmaengine.c
-> > +++ b/drivers/dma/dmaengine.c
-> > @@ -827,6 +827,9 @@ int dma_async_device_register(struct dma_device *de=
-vice)
-> > BUG_ON(!device->device_issue_pending);
-> >  	BUG_ON(!device->dev);
-> >=20
-> > +	WARN(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
-> > !device->generic_slave_caps,
-> > +	     "this driver doesn't support generic slave capabilities
-> > reporting\n");
-> > +
->=20
-> This might be slightly too aggressive.
-
-I disagree with that. If we want at some point to have the drivers
-implement it, we should be aggressive (and note that we don't break
-anything, the driver will still work as it used to).
-
-> I agree with your previous comment on all DMA engine drivers
-> returning the same capabilities for all channels, but it might not
-> be true anymore in the future, in which case drivers will need to
-> implement a custom slave caps function. We could delay support for
-> that to when it's needed though.
-
-Actually, my next patch (59) is removing such possibility... And you
-acked it ;)
-
-Is it still something we should be concerned about?
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---wr1Q/2bz0MCWWNYv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUSQBlAAoJEBx+YmzsjxAgEdoP/jt9fuct/5f+cUXsIs3ZpIdQ
-YcyGDnEAvcu/HO5+t9G44+NW9M7/vzx0cpC2r/viQky+m169Wc3kI49gInds/zOI
-2okX0yeqUXkgpWMBZBGzlFbAp55nEqchGzBJnmoQbAX7vgqUmZw1FIg+2gchb+IG
-o9ZvHFZvkGN+FxXg4aw/aP58WpoxN3DzySgngQeJFoENTLtBNn6Fx7190HtzKCmT
-D0oUNOHLSVP8MwOCNipKQyEClvUxFt/o31vUG/wbUE4RwYx/ADEqdD8QmbU9yMOZ
-AZx04fStc7DU0kRoVacudD7t2D+v0wr/v2LlQRKN1Eeh7Wa3Wcw+UBm4QaL3f842
-USbe0dfJCwAO2HOT+18ldOI6qExmJh8bGAG2QQLWWEh9ta5SiM6J8UvH4mNqJzQW
-nHt84sh9uH9ZSCgHUg1U63XRmyB3+OaLDFUPPH2HbJByj8QbSEjVidqGw8axTyB2
-nWmU3oqGcXiq/Tpfs+ieQ6c+069z8wtJtvzDoAf1YPFely46+JXKsbP0jTHON3ux
-IF4U/ONB8ZdAa1yvGxsj3laMwURw3z/s/XmEXXHtnASxLw0V62DuviQC5lsB6vZN
-WUTPuwyUlPaC6dUOPBjDzetagHVSpTttR1zvfLTl/NS2sjKy6tyXHoGVZgo8Q01V
-HR/hDfEUh0kMWXyYcwWv
-=WUSH
------END PGP SIGNATURE-----
-
---wr1Q/2bz0MCWWNYv--
