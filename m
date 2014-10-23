@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755211AbaJWLaI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 07:30:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36208 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156AbaJWLaE (ORCPT
+	id S1755269AbaJWLa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 07:30:27 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:46254 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755235AbaJWLaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 07:30:04 -0400
-Date: Thu, 23 Oct 2014 13:30:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Joe Mario <jmario@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        eranian@google.com, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, jolsa@redhat.com, rfowles@redhat.com
-Subject: Re: perf:  Translating mmap2 ids into socket info?
-Message-ID: <20141023113001.GA12706@worktop.programming.kicks-ass.net>
-References: <20141022162026.GG135937@redhat.com>
- <20141022164510.GJ21513@worktop.programming.kicks-ass.net>
- <5447F2DF.3000506@redhat.com>
- <20141022200219.GM21513@worktop.programming.kicks-ass.net>
- <20141022203834.GL135937@redhat.com>
+	Thu, 23 Oct 2014 07:30:24 -0400
+Subject: [PATCH v2 0/5] module: Remove stop_machine from module unloading
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Lucas De Marchi <lucas.demarchi@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Josh Poimboeuf <jpoimboe@redhat.com>
+Date: Thu, 23 Oct 2014 15:26:36 -0400
+Message-ID: <20141023192636.10463.45031.stgit@localhost.localdomain>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022203834.GL135937@redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 04:38:34PM -0400, Don Zickus wrote:
-> Ha!  I have been telling myself for a year I would try to learn more about
-> those offcore/uncore counters.  Is there documentation for how to access
-> the uncore stuff?  Do I have to long hand it with 'perf record -e
-> uncore_qpi_1/<stuff>/ foo'?
+Hi,
 
-For uncore there is some in the SDM and there are these documents; there
-might be more but who knows.
+Here is the second version of removing stop_machine() from
+module unloading patchset.
 
-http://www.intel.com/Assets/PDF/designguide/323535.pdf 
-http://www.intel.com/content/dam/www/public/us/en/documents/design-guides/xeon-e5-2600-uncore-guide.pdf 
+Currently, each module unloading calls stop_machine()s 2 times.
+One is for safely removing module from lists and one is to
+check the reference counter. However, both are not necessary
+for those purposes (required by current implementation).
+
+First, we can use RCU for the list operation, we just need
+a synchronize_rcu right before cleaning up.
+Second, the reference counter can be checked atomically by
+using atomic_t, instead of per-cpu module_ref.
+
+In v2, the series updated as below;
+
+ - Fix to initialize return value in 1/5.
+ - Remove module LOCKUP code(v1 4/5).
+ - Split v1 5/5 into replacing module_ref with atomic_t and
+   removing stop_machine patches.
+ - Also, add BUG_ON and WARN_ON for the cases if the
+   reference counter becomes a negative value.
+
+Thank you,
+
+
+---
+
+Masami Hiramatsu (5):
+      module: Wait for RCU synchronizing before releasing a module
+      module: Unlink module with RCU synchronizing instead of stop_machine
+      lib/bug: Use RCU list ops for module_bug_list
+      module: Replace module_ref with atomic_t refcnt
+      module: Remove stop_machine from module unloading
+
+
+ include/linux/module.h        |   16 ------
+ include/trace/events/module.h |    2 -
+ kernel/module.c               |  117 ++++++++++++++++-------------------------
+ lib/bug.c                     |   20 +++++--
+ 4 files changed, 63 insertions(+), 92 deletions(-)
+
+--
+Masami HIRAMATSU
+Software Platform Research Dpt. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
