@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933043AbaJWOfH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:35:07 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:43911 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932714AbaJWOd5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932747AbaJWOd5 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 23 Oct 2014 10:33:57 -0400
-From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-sh@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 2/4] mm: cma: Always consider a 0 base address reservation as dynamic
-Date: Thu, 23 Oct 2014 17:33:46 +0300
-Message-Id: <1414074828-4488-3-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
-References: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+Received: from gum.cmpxchg.org ([85.214.110.215]:42756 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932178AbaJWOdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:33:55 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] mm: memcontrol: don't pass a NULL memcg to mem_cgroup_end_move()
+Date: Thu, 23 Oct 2014 10:33:50 -0400
+Message-Id: <1414074830-14623-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fixed parameter to cma_declare_contiguous() tells the function
-whether the given base address must be honoured or should be considered
-as a hint only. The API considers a zero base address as meaning any
-base address, which must never be considered as a fixed value.
+mem_cgroup_end_move() checks if the passed memcg is NULL, along with a
+lengthy comment to explain why this seemingly non-sensical situation
+is even possible.
 
-Part of the implementation correctly checks both fixed and base != 0,
-but two locations check the fixed value only. Set fixed to false when
-base is 0 to fix that and simplify the code.
+Check in cancel_attach() itself whether can_attach() set up the move
+context or not, it's a lot more obvious from there.  Then remove the
+check and comment in mem_cgroup_end_move().
 
-Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- mm/cma.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ mm/memcontrol.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/mm/cma.c b/mm/cma.c
-index 16c6650..6b14346 100644
---- a/mm/cma.c
-+++ b/mm/cma.c
-@@ -239,6 +239,9 @@ int __init cma_declare_contiguous(phys_addr_t base,
- 	size = ALIGN(size, alignment);
- 	limit &= ~(alignment - 1);
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a5c9aa4688e8..3cd4f1e0bfb3 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1469,12 +1469,7 @@ static void mem_cgroup_start_move(struct mem_cgroup *memcg)
  
-+	if (!base)
-+		fixed = false;
-+
- 	/* size should be aligned with order_per_bit */
- 	if (!IS_ALIGNED(size >> PAGE_SHIFT, 1 << order_per_bit))
- 		return -EINVAL;
-@@ -262,7 +265,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
- 	}
+ static void mem_cgroup_end_move(struct mem_cgroup *memcg)
+ {
+-	/*
+-	 * Now, mem_cgroup_clear_mc() may call this function with NULL.
+-	 * We check NULL in callee rather than caller.
+-	 */
+-	if (memcg)
+-		atomic_dec(&memcg->moving_account);
++	atomic_dec(&memcg->moving_account);
+ }
  
- 	/* Reserve memory */
--	if (base && fixed) {
-+	if (fixed) {
- 		if (memblock_is_region_reserved(base, size) ||
- 		    memblock_reserve(base, size) < 0) {
- 			ret = -EBUSY;
+ /*
+@@ -5489,7 +5484,8 @@ static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
+ static void mem_cgroup_cancel_attach(struct cgroup_subsys_state *css,
+ 				     struct cgroup_taskset *tset)
+ {
+-	mem_cgroup_clear_mc();
++	if (mc.to)
++		mem_cgroup_clear_mc();
+ }
+ 
+ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
 -- 
-2.0.4
+2.1.2
 
