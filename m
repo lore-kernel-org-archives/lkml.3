@@ -1,203 +1,319 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962AbaJWX0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 19:26:17 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:61079 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079AbaJWX0O (ORCPT
+	id S1754258AbaJWX1N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 19:27:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47855 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615AbaJWX1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 19:26:14 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: <acme@kernel.org>, <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
-        <mingo@redhat.com>, <jolsa@redhat.com>, <adrian.hunter@intel.com>,
-        <Waiman.Long@hp.com>, <linux-kernel@vger.kernel.org>,
-        <lizefan@huawei.com>
-Subject: Re: [PATCH v2 RESEND] perf tools: makes CPUINFO_PROC to array for different kernel version
-References: <1413963614-7251-1-git-send-email-wangnan0@huawei.com>
-Date: Fri, 24 Oct 2014 08:26:13 +0900
-In-Reply-To: <1413963614-7251-1-git-send-email-wangnan0@huawei.com> (Wang
-	Nan's message of "Wed, 22 Oct 2014 15:40:14 +0800")
-Message-ID: <87k33qe5be.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 23 Oct 2014 19:27:12 -0400
+Date: Thu, 23 Oct 2014 16:27:08 -0700
+From: akpm@linux-foundation.org
+To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, mhocko@suse.cz
+Subject: mmotm 2014-10-23-16-26 uploaded
+Message-ID: <54498ecc.hhvSv+WUtdCJvPHX%akpm@linux-foundation.org>
+User-Agent: Heirloom mailx 12.5 6/20/10
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 15:40:14 +0800, Wang Nan wrote:
-> After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
-> /proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
-> CPUINFO_PROC to an array and provides two choices for ARM, makes it
-> compatible for different kernel version.
->
-> v1 -> v2: minor changes as suggested by Namhyung Kim:
->
->  - Doesn't pass @h and @evlist to __write_cpudesc;
->  - Coding style fix.
->
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+The mm-of-the-moment snapshot 2014-10-23-16-26 has been uploaded to
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+   http://www.ozlabs.org/~akpm/mmotm/
 
-Thanks,
-Namhyung
+mmotm-readme.txt says
+
+README for mm-of-the-moment:
+
+http://www.ozlabs.org/~akpm/mmotm/
+
+This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+more than once a week.
+
+You will need quilt to apply these patches to the latest Linus release (3.x
+or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+http://ozlabs.org/~akpm/mmotm/series
+
+The file broken-out.tar.gz contains two datestamp files: .DATE and
+.DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+followed by the base kernel version against which this patch series is to
+be applied.
+
+This tree is partially included in linux-next.  To see which patches are
+included in linux-next, consult the `series' file.  Only the patches
+within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+linux-next.
+
+A git tree which contains the memory management portion of this tree is
+maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+by Michal Hocko.  It contains the patches which are between the
+"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
+file, http://www.ozlabs.org/~akpm/mmotm/series.
 
 
-> ---
->  tools/perf/perf.h        | 24 ++++++++++++------------
->  tools/perf/util/header.c | 27 +++++++++++++++++++++------
->  2 files changed, 33 insertions(+), 18 deletions(-)
->
-> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-> index 32bd102..1a23392 100644
-> --- a/tools/perf/perf.h
-> +++ b/tools/perf/perf.h
-> @@ -6,7 +6,7 @@
->  #if defined(__i386__)
->  #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
->  #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
-> -#define CPUINFO_PROC	"model name"
-> +#define CPUINFO_PROC	{"model name"}
->  #ifndef __NR_perf_event_open
->  # define __NR_perf_event_open 336
->  #endif
-> @@ -15,7 +15,7 @@
->  #if defined(__x86_64__)
->  #define rmb()		asm volatile("lfence" ::: "memory")
->  #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
-> -#define CPUINFO_PROC	"model name"
-> +#define CPUINFO_PROC	{"model name"}
->  #ifndef __NR_perf_event_open
->  # define __NR_perf_event_open 298
->  #endif
-> @@ -25,7 +25,7 @@
->  #include "../../arch/powerpc/include/uapi/asm/unistd.h"
->  #define rmb()		asm volatile ("sync" ::: "memory")
->  #define cpu_relax()	asm volatile ("" ::: "memory");
-> -#define CPUINFO_PROC	"cpu"
-> +#define CPUINFO_PROC	{"cpu"}
->  #endif
->  
->  #ifdef __s390__
-> @@ -40,31 +40,31 @@
->  # define rmb()		asm volatile("" ::: "memory")
->  #endif
->  #define cpu_relax()	asm volatile("" ::: "memory")
-> -#define CPUINFO_PROC	"cpu type"
-> +#define CPUINFO_PROC	{"cpu type"}
->  #endif
->  
->  #ifdef __hppa__
->  #define rmb()		asm volatile("" ::: "memory")
->  #define cpu_relax()	asm volatile("" ::: "memory");
-> -#define CPUINFO_PROC	"cpu"
-> +#define CPUINFO_PROC	{"cpu"}
->  #endif
->  
->  #ifdef __sparc__
->  #define rmb()		asm volatile("":::"memory")
->  #define cpu_relax()	asm volatile("":::"memory")
-> -#define CPUINFO_PROC	"cpu"
-> +#define CPUINFO_PROC	{"cpu"}
->  #endif
->  
->  #ifdef __alpha__
->  #define rmb()		asm volatile("mb" ::: "memory")
->  #define cpu_relax()	asm volatile("" ::: "memory")
-> -#define CPUINFO_PROC	"cpu model"
-> +#define CPUINFO_PROC	{"cpu model"}
->  #endif
->  
->  #ifdef __ia64__
->  #define rmb()		asm volatile ("mf" ::: "memory")
->  #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
-> -#define CPUINFO_PROC	"model name"
-> +#define CPUINFO_PROC	{"model name"}
->  #endif
->  
->  #ifdef __arm__
-> @@ -74,7 +74,7 @@
->   */
->  #define rmb()		((void(*)(void))0xffff0fa0)()
->  #define cpu_relax()	asm volatile("":::"memory")
-> -#define CPUINFO_PROC	"Processor"
-> +#define CPUINFO_PROC	{"model name", "Processor"}
->  #endif
->  
->  #ifdef __aarch64__
-> @@ -91,19 +91,19 @@
->  				: /* no input */			\
->  				: "memory")
->  #define cpu_relax()	asm volatile("" ::: "memory")
-> -#define CPUINFO_PROC	"cpu model"
-> +#define CPUINFO_PROC	{"cpu model"}
->  #endif
->  
->  #ifdef __arc__
->  #define rmb()		asm volatile("" ::: "memory")
->  #define cpu_relax()	rmb()
-> -#define CPUINFO_PROC	"Processor"
-> +#define CPUINFO_PROC	{"Processor"}
->  #endif
->  
->  #ifdef __metag__
->  #define rmb()		asm volatile("" ::: "memory")
->  #define cpu_relax()	asm volatile("" ::: "memory")
-> -#define CPUINFO_PROC	"CPU"
-> +#define CPUINFO_PROC	{"CPU"}
->  #endif
->  
->  #include <time.h>
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index b59350f..d48f571 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -550,16 +550,12 @@ static int write_version(int fd, struct perf_header *h __maybe_unused,
->  	return do_write_string(fd, perf_version_string);
->  }
->  
-> -static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
-> -		       struct perf_evlist *evlist __maybe_unused)
-> +static int __write_cpudesc(int fd, const char *cpuinfo_proc)
->  {
-> -#ifndef CPUINFO_PROC
-> -#define CPUINFO_PROC NULL
-> -#endif
->  	FILE *file;
->  	char *buf = NULL;
->  	char *s, *p;
-> -	const char *search = CPUINFO_PROC;
-> +	const char *search = cpuinfo_proc;
->  	size_t len = 0;
->  	int ret = -1;
->  
-> @@ -611,6 +607,25 @@ done:
->  	return ret;
->  }
->  
-> +static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
-> +		       struct perf_evlist *evlist __maybe_unused)
-> +{
-> +#ifndef CPUINFO_PROC
-> +#define CPUINFO_PROC {"model name", }
-> +#endif
-> +	const char *cpuinfo_procs[] = CPUINFO_PROC;
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(cpuinfo_procs); i++) {
-> +		int ret;
-> +		ret = __write_cpudesc(fd, cpuinfo_procs[i]);
-> +		if (ret >= 0)
-> +			return ret;
-> +	}
-> +	return -1;
-> +}
-> +
-> +
->  static int write_nrcpus(int fd, struct perf_header *h __maybe_unused,
->  			struct perf_evlist *evlist __maybe_unused)
->  {
+A full copy of the full kernel tree with the linux-next and mmotm patches
+already applied is available through git within an hour of the mmotm
+release.  Individual mmotm releases are tagged.  The master branch always
+points to the latest release, so it's constantly rebasing.
+
+http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
+
+To develop on top of mmotm git:
+
+  $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
+  $ git remote update mmotm
+  $ git checkout -b topic mmotm/master
+  <make changes, commit>
+  $ git send-email mmotm/master.. [...]
+
+To rebase a branch with older patches to a new mmotm release:
+
+  $ git remote update mmotm
+  $ git rebase --onto mmotm/master <topic base> topic
+
+
+
+
+The directory http://www.ozlabs.org/~akpm/mmots/ (mm-of-the-second)
+contains daily snapshots of the -mm tree.  It is updated more frequently
+than mmotm, and is untested.
+
+A git copy of this tree is available at
+
+	http://git.cmpxchg.org/?p=linux-mmots.git;a=summary
+
+and use of this tree is similar to
+http://git.cmpxchg.org/?p=linux-mmotm.git, described above.
+
+
+This mmotm tree contains the following patches against 3.18-rc1:
+(patches marked "*" will be included in linux-next)
+
+  origin.patch
+  i-need-old-gcc.patch
+  arch-alpha-kernel-systblss-remove-debug-check.patch
+* cgroup-kmemleak-add-kmemleak_free-for-cgroup-deallocations.patch
+* mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
+* fsnotify-next_i-is-freed-during-fsnotify_unmount_inodes.patch
+* gcov-add-arm64-to-gcov_profile_all.patch
+* mm-free-compound-page-with-correct-order.patch
+* drivers-of-add-return-value-to-of_reserved_mem_device_init.patch
+* mm-thp-fix-collapsing-of-hugepages-on-madvise.patch
+* rtc-pm8xxx-rework-to-support-pm8941-rtc.patch
+* rtc-pm8xxx-rework-to-support-pm8941-rtc-checkpatch-fixes.patch
+* rtc-pm8xxx-rework-to-support-pm8941-rtc-fix.patch
+* kernel-kmod-fix-use-after-free-of-the-sub_info-structure.patch
+* kernel-kmod-fix-use-after-free-of-the-sub_info-structure-v2.patch
+* drivers-rtc-fix-s3c-rtc-initialization-failure-without-rtc-source-clock.patch
+* memory-hotplug-clear-pgdat-which-is-allocated-by-bootmem-in-try_offline_node.patch
+* memory-hotplug-clear-pgdat-which-is-allocated-by-bootmem-in-try_offline_node-v2.patch
+* rtc-bq3000-fix-register-value.patch
+* bitmap-fix-undefined-shift-in-__bitmap_shift_leftright.patch
+* mm-page-writeback-inline-account_page_dirtied-into-single-caller.patch
+* mm-memcontrol-fix-missed-end-writeback-page-accounting.patch
+* mm-memcontrol-fix-missed-end-writeback-page-accounting-fix.patch
+* mm-rmap-split-out-page_remove_file_rmap.patch
+* ocfs2-fix-d_splice_alias-return-code-checking.patch
+* mm-slab_common-dont-check-for-duplicate-cache-names.patch
+* mm-cma-make-kmemleak-ignore-cma-regions.patch
+* mm-cma-make-kmemleak-ignore-cma-regions-fix.patch
+* mm-cma-make-kmemleak-ignore-cma-regions-fix-fix.patch
+* fs-cifs-remove-obsolete-__constant.patch
+* fs-cifs-filec-replace-countsize-kzalloc-by-kcalloc.patch
+* fs-cifs-smb2filec-replace-countsize-kzalloc-by-kcalloc.patch
+* fallocate-create-fan_modify-and-in_modify-events.patch
+* kernel-posix-timersc-code-clean-up.patch
+* kernel-posix-timersc-code-clean-up-checkpatch-fixes.patch
+* input-route-kbd-leds-through-the-generic-leds-layer.patch
+* input-route-kbd-leds-through-the-generic-leds-layer-fix.patch
+* input-route-kbd-leds-through-the-generic-leds-layer-fix-2.patch
+* fs-ext4-fsyncc-generic_file_fsync-call-based-on-barrier-flag.patch
+* ocfs2-dlm-let-sender-retry-if-dlm_dispatch_assert_master-failed-with-enomem.patch
+* ocfs2-fix-an-off-by-one-bug_on-statement.patch
+* ocfs2-fix-xattr-check-in-ocfs2_get_xattr_nolock.patch
+* ocfs2-remove-bogus-test-from-ocfs2_read_locked_inode.patch
+* ocfs2-report-error-from-o2hb_do_disk_heartbeat-to-user.patch
+* ocfs2-remove-pointless-assignment-in-ocfs2_init.patch
+* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper.patch
+* o2dlm-fix-null-pointer-dereference-in-o2dlm_blocking_ast_wrapper-checkpatch-fixes.patch
+* ocfs2-free-inode-when-i_count-becomes-zero.patch
+* ocfs2-call-ocfs2_journal_access_di-before-ocfs2_journal_dirty-in-ocfs2_write_end_nolock.patch
+* ocfs2-avoid-access-invalid-address-when-read-o2dlm-debug-messages.patch
+* ocfs2-avoid-access-invalid-address-when-read-o2dlm-debug-messages-v2.patch
+* ocfs2-dlm-fix-race-between-dispatched_work-and-dlm_lockres_grab_inflight_worker.patch
+* ocfs2-reflink-fix-slow-unlink-for-refcounted-file.patch
+* ocfs2-fix-journal-commit-deadlock.patch
+* ocfs2-eliminate-the-static-flag-of-some-functions.patch
+* ocfs2-add-two-functions-of-add-and-remove-inode-in-orphan-dir.patch
+* ocfs2-add-orphan-recovery-types-in-ocfs2_recover_orphans.patch
+* ocfs2-add-and-remove-inode-in-orphan-dir-in-ocfs2_direct_io.patch
+* ocfs2-add-and-remove-inode-in-orphan-dir-in-ocfs2_direct_io-fix.patch
+* ocfs2-allocate-blocks-in-ocfs2_direct_io_get_blocks.patch
+* ocfs2-do-not-fallback-to-buffer-i-o-write-if-appending.patch
+* ocfs2-do-not-fallback-to-buffer-i-o-write-if-fill-holes.patch
+* ocfs2-do-not-fallback-to-buffer-i-o-write-if-fill-holes-checkpatch-fixes.patch
+* bio-modify-__bio_add_page-to-accept-pages-that-dont-start-a-new-segment.patch
+* block-restore-proc-partitions-to-not-display-non-partitionable-removable-devices.patch
+  mm.patch
+* cpuset-convert-callback_mutex-to-a-spinlock.patch
+* cpuset-simplify-cpuset_node_allowed-api.patch
+* slab-fix-cpuset-check-in-fallback_alloc.patch
+* slub-fix-cpuset-check-in-get_any_partial.patch
+* mm-slab-slub-coding-style-whitespaces-and-tabs-mixture.patch
+* mm-memcontrol-lockless-page-counters.patch
+* mm-memcontrol-lockless-page-counters-fix.patch
+* mm-memcontrol-lockless-page-counters-fix-fix.patch
+* mm-memcontrol-lockless-page-counters-fix-2.patch
+* mm-hugetlb_cgroup-convert-to-lockless-page-counters.patch
+* kernel-res_counter-remove-the-unused-api.patch
+* kernel-res_counter-remove-the-unused-api-fix.patch
+* kernel-res_counter-remove-the-unused-api-fix-2.patch
+* mm-memcontrol-convert-reclaim-iterator-to-simple-css-refcounting.patch
+* mm-memcontrol-convert-reclaim-iterator-to-simple-css-refcounting-fix.patch
+* mm-memcontrol-take-a-css-reference-for-each-charged-page.patch
+* mm-memcontrol-remove-obsolete-kmemcg-pinning-tricks.patch
+* mm-memcontrol-continue-cache-reclaim-from-offlined-groups.patch
+* mm-memcontrol-remove-synchroneous-stock-draining-code.patch
+* mm-page_alloc-convert-boot-printks-without-log-level-to-pr_info.patch
+* vmalloc-replace-printk-with-pr_warn.patch
+* vmscan-replace-printk-with-pr_err.patch
+* mm-introduce-single-zone-pcplists-drain.patch
+* mm-page_isolation-drain-single-zone-pcplists.patch
+* mm-cma-drain-single-zone-pcplists.patch
+* mm-memory_hotplug-failure-drain-single-zone-pcplists.patch
+* cma-make-default-cma-area-size-zero-for-x86.patch
+* mm-verify-compound-order-when-freeing-a-page.patch
+* mm-vmscan-count-only-dirty-pages-as-congested.patch
+* mm-compaction-pass-classzone_idx-and-alloc_flags-to-watermark-checking.patch
+* mm-compaction-simplify-deferred-compaction.patch
+* mm-compaction-simplify-deferred-compaction-fix.patch
+* mm-compaction-defer-only-on-compact_complete.patch
+* mm-compaction-always-update-cached-scanner-positions.patch
+* mm-compaction-more-focused-lru-and-pcplists-draining.patch
+* mm-numa-balancing-rearrange-kconfig-entry.patch
+* memcg-simplify-unreclaimable-groups-handling-in-soft-limit-reclaim.patch
+* mm-memcontrol-update-mem_cgroup_page_lruvec-documentation.patch
+* mm-memcontrol-clarify-migration-where-old-page-is-uncharged.patch
+* memcg-remove-activate_kmem_mutex.patch
+* mm-memcontrol-micro-optimize-mem_cgroup_split_huge_fixup.patch
+* mm-memcontrol-uncharge-pages-on-swapout.patch
+* mm-memcontrol-uncharge-pages-on-swapout-fix.patch
+* mm-memcontrol-remove-unnecessary-pcg_memsw-memoryswap-charge-flag.patch
+* mm-memcontrol-remove-unnecessary-pcg_mem-memory-charge-flag.patch
+* mm-memcontrol-remove-unnecessary-pcg_used-pc-mem_cgroup-valid-flag.patch
+* mm-memcontrol-remove-unnecessary-pcg_used-pc-mem_cgroup-valid-flag-fix.patch
+* mm-memcontrol-inline-memcg-move_lock-locking.patch
+* mm-memcontrol-dont-pass-a-null-memcg-to-mem_cgroup_end_move.patch
+* mm-memcontrol-fold-mem_cgroup_start_move-mem_cgroup_end_move.patch
+* mm-memcontrol-fold-mem_cgroup_start_move-mem_cgroup_end_move-fix.patch
+* mm-hugetlb-correct-bit-shift-in-hstate_sizelog.patch
+* mm-cma-split-cma-reserved-in-dmesg-log.patch
+* fs-proc-include-cma-info-in-proc-meminfo.patch
+* lib-show_mem-this-patch-adds-cma-reserved-infromation.patch
+* lib-show_mem-this-patch-adds-cma-reserved-infromation-fix.patch
+* mm-cma-use-%pa-to-avoid-truncating-the-physical-address.patch
+* memcg-remove-mem_cgroup_reclaimable-check-from-soft-reclaim.patch
+* mm-memcontrol-do-not-filter-reclaimable-nodes-in-numa-round-robin.patch
+* mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix.patch
+* fs-mpagec-forgotten-write_sync-in-case-of-data-integrity-write.patch
+* zsmalloc-merge-size_class-to-reduce-fragmentation.patch
+* zram-remove-bio-parameter-from-zram_bvec_rw.patch
+* zram-change-parameter-from-vaild_io_request.patch
+* zram-implement-rw_page-operation-of-zram.patch
+* mm-zbud-init-user-ops-only-when-it-is-needed.patch
+* do_shared_fault-check-that-mmap_sem-is-held.patch
+* security-smack-replace-kzalloc-with-kmem_cache-for-inode_smack.patch
+* fs-proc-use-a-rb-tree-for-the-directory-entries.patch
+* fs-proc-use-a-rb-tree-for-the-directory-entries-fix.patch
+* procfs-fix-error-handling-of-proc_register.patch
+* ia64-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
+* ppc-cell-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
+* binfmt_misc-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
+* file-trivial-replace-get_unused_fd-by-get_unused_fd_flags0.patch
+* file-remove-get_unused_fd-macro.patch
+* drivers-misc-ti-st-st_corec-fix-null-dereference-on-protocol-type-check.patch
+* lib-vsprintf-add-%pt-format-specifier.patch
+* drivers-video-backlight-backlightc-remove-backlight-sysfs-uevent.patch
+* mm-utilc-add-kstrimdup.patch
+* lib-add-crc64-ecma-module.patch
+* checkpatch-add-an-error-test-for-no-space-before-comma.patch
+* checkpatch-add-error-on-use-of-attributeweak-or-__weak-declarations.patch
+* checkpatch-improve-test-for-no-space-after-cast.patch
+* checkpatch-improve-warning-message-for-needless-if-case.patch
+* checkpatch-fix-use-via-symlink-make-missing-spelling-file-non-fatal.patch
+* binfmt_misc-add-comments-debug-logs.patch
+* binfmt_misc-clean-up-code-style-a-bit.patch
+* init-allow-config_init_fallback=n-to-disable-defaults-if-init=-fails.patch
+* init-allow-config_init_fallback=n-to-disable-defaults-if-init=-fails-checkpatch-fixes.patch
+* init-remove-config_init_fallback.patch
+* ncpfs-return-proper-error-from-ncp_ioc_setroot-ioctl.patch
+* drivers-rtc-interfacec-check-the-validation-of-rtc_time-in-__rtc_read_time.patch
+* rtc-omap-fix-clock-source-configuration.patch
+* rtc-omap-fix-missing-wakealarm-attribute.patch
+* rtc-omap-fix-interrupt-disable-at-probe.patch
+* rtc-omap-clean-up-probe-error-handling.patch
+* rtc-omap-fix-class-device-registration.patch
+* rtc-omap-remove-unused-register-base-define.patch
+* rtc-omap-use-dev_info.patch
+* rtc-omap-make-platform-device-id-table-const.patch
+* rtc-omap-add-device-abstraction.patch
+* rtc-omap-remove-driver_name-macro.patch
+* rtc-omap-add-structured-device-type-info.patch
+* rtc-omap-silence-bogus-power-up-reset-message-at-probe.patch
+* rtc-omap-add-helper-to-read-raw-bcd-time.patch
+* rtc-omap-add-helper-to-read-32-bit-registers.patch
+* rtc-omap-add-support-for-pmic_power_en.patch
+* rtc-omap-enable-wake-up-from-power-off.patch
+* rtc-omap-fix-minor-coding-style-issues.patch
+* rtc-omap-add-copyright-entry.patch
+* arm-dts-am33xx-update-rtc-node-compatible-property.patch
+* arm-dts-am335x-boneblack-enable-power-off-and-rtc-wake-up.patch
+* befs-remove-dead-code.patch
+* hfsplus-fix-longname-handling.patch
+* fat-add-fat_fallocate-operation.patch
+* fat-skip-cluster-allocation-on-fallocated-region.patch
+* fat-permit-to-return-phy-block-number-by-fibmap-in-fallocated-region.patch
+* documentation-filesystems-vfattxt-update-the-limitation-for-fat-fallocate.patch
+* usermodehelper-dont-use-clone_vfork-for-____call_usermodehelper.patch
+* usermodehelper-kill-the-kmod_thread_locker-logic.patch
+* kexec-remove-unnecessary-kern_err-from-kexecc.patch
+* sysctl-terminate-strings-also-on-r.patch
+* sysctl-terminate-strings-also-on-r-fix.patch
+* gcov-enable-gcov_profile_all-from-arch-kconfigs.patch
+* fs-affs-filec-forward-declaration-clean-up.patch
+* fs-affs-amigaffsc-use-va_format-instead-of-buffer-vnsprintf.patch
+* kgdb-timeout-if-secondary-cpus-ignore-the-roundup.patch
+* ratelimit-add-initialization-macro.patch
+* fault-inject-add-ratelimit-option-v2.patch
+* make-initrd-compression-algorithm-selection-not-expert.patch
+* decompress_bunzip2-off-by-one-in-get_next_block.patch
+* ipc-semc-chance-memory-barrier-in-sem_lock-to-smp_rmb.patch
+* ipc-semc-chance-memory-barrier-in-sem_lock-to-smp_rmb-fix.patch
+* ipc-semc-chance-memory-barrier-in-sem_lock-to-smp_rmb-fix-fix.patch
+* ipc-semc-increase-semmsl-semmni-semopm.patch
+* ipc-msg-increase-msgmni-remove-scaling.patch
+* ipc-msg-increase-msgmni-remove-scaling-checkpatch-fixes.patch
+  linux-next.patch
+* drivers-gpio-gpio-zevioc-fix-build.patch
+* mm-replace-remap_file_pages-syscall-with-emulation.patch
+* w1-call-put_device-if-device_register-fails.patch
+* mm-add-strictlimit-knob-v2.patch
+  debugging-keep-track-of-page-owners.patch
+  debugging-keep-track-of-page-owners-fix.patch
+  page-owners-correct-page-order-when-to-free-page.patch
+  make-sure-nobodys-leaking-resources.patch
+  journal_add_journal_head-debug.patch
+  journal_add_journal_head-debug-fix.patch
+  releasing-resources-with-children.patch
+  make-frame_pointer-default=y.patch
+  kernel-forkc-export-kernel_thread-to-modules.patch
+  mutex-subsystem-synchro-test-module.patch
+  slab-leaks3-default-y.patch
+  add-debugging-aid-for-memory-initialisation-problems.patch
+  workaround-for-a-pci-restoring-bug.patch
+  single_open-seq_release-leak-diagnostics.patch
