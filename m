@@ -1,93 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562AbaJWMvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:51:38 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:63725 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932427AbaJWMvd (ORCPT
+	id S932845AbaJWMx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:53:27 -0400
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:60262 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932757AbaJWMxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:51:33 -0400
-X-Original-SENDERIP: 165.186.175.39
-X-Original-MAILFROM: gioh.kim@lge.com
-From: Gioh Kim <gioh.kim@lge.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        gunho.lee@lge.com, gioh.kim@lge.com
-Subject: [RFC 1/2] staging: ion: shrink page-pool by page unit
-Date: Thu, 23 Oct 2014 21:52:19 +0900
-Message-Id: <1414068740-9553-2-git-send-email-gioh.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1414068740-9553-1-git-send-email-gioh.kim@lge.com>
-References: <1414068740-9553-1-git-send-email-gioh.kim@lge.com>
+	Thu, 23 Oct 2014 08:53:22 -0400
+Date: Thu, 23 Oct 2014 07:53:36 -0500
+From: Brian Vandre <bvandre@gmail.com>
+To: gregkh@linuxfoundation.org, jic23@kernel.org,
+        alexandre.belloni@free-electrons.com, linux-iio@vger.kernel.org,
+        marex@denx.de
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Staging: iio: adc: fix line over 80 characters
+Message-ID: <20141023125336.GB10433@brian-U>
+References: <cover.1413858979.git.bvandre@gmail.com>
+ <cover.1413931615.git.bvandre@gmail.com>
+ <ec4b497827f6c7615f6b5eef5669144f8c68d034.1413931615.git.bvandre@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ec4b497827f6c7615f6b5eef5669144f8c68d034.1413931615.git.bvandre@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch shrink page-pool by page unit.
+With all the replies I have gotten it seems like there might not be a good path forward
+with this patch.  I am starting to agree with what Daniel Baluta said above that this doesn't
+make the code easier to read.  All the other suggestions don't quite fit the same style
+as the rest of the file so it might just be better to leave it.
 
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
----
- drivers/staging/android/ion/ion_page_pool.c   |    5 +++--
- drivers/staging/android/ion/ion_system_heap.c |    7 +++++--
- 2 files changed, 8 insertions(+), 4 deletions(-)
+This being my first try I thank you all for your input.  It has helped me learn quite a bit.
 
-diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-index 5864f3d..165152f 100644
---- a/drivers/staging/android/ion/ion_page_pool.c
-+++ b/drivers/staging/android/ion/ion_page_pool.c
-@@ -116,7 +116,7 @@ static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
- int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
- 				int nr_to_scan)
- {
--	int freed;
-+	int freed = 0;
- 	bool high;
- 
- 	if (current_is_kswapd())
-@@ -127,7 +127,7 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
- 	if (nr_to_scan == 0)
- 		return ion_page_pool_total(pool, high);
- 
--	for (freed = 0; freed < nr_to_scan; freed++) {
-+	while (freed <= nr_to_scan) {
- 		struct page *page;
- 
- 		mutex_lock(&pool->mutex);
-@@ -141,6 +141,7 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
- 		}
- 		mutex_unlock(&pool->mutex);
- 		ion_page_pool_free_pages(pool, page);
-+		freed += (1 << pool->order);
- 	}
- 
- 	return freed;
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index da2a63c..36e73c3 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -211,7 +211,7 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
- 					int nr_to_scan)
- {
- 	struct ion_system_heap *sys_heap;
--	int nr_total = 0;
-+	int nr_total = 0, nr_freed;
- 	int i;
- 
- 	sys_heap = container_of(heap, struct ion_system_heap, heap);
-@@ -219,7 +219,10 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
- 	for (i = 0; i < num_orders; i++) {
- 		struct ion_page_pool *pool = sys_heap->pools[i];
- 
--		nr_total += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
-+		nr_freed += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
-+		nr_total += nr_freed;
-+		/* nr_to_scan can be negative */
-+		nr_to_scan -= nr_freed;
- 	}
- 
- 	return nr_total;
--- 
-1.7.9.5
+Hopefully on the next patch I can fix something a little more meaningful!
 
+Thanks,
+Brian Vandre
