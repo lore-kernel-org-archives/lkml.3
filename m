@@ -1,97 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630AbaJWVTw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 17:19:52 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:50717 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799AbaJWVTu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 17:19:50 -0400
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, benh@kernel.crashing.org, corbet@lwn.net,
-        gwshan@linux.vnet.ibm.com,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [PATCH v2] powernv/iommu: disable IOMMU bypass with param iommu=nobypass
-Date: Thu, 23 Oct 2014 19:19:35 -0200
-Message-Id: <1414099175-27863-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102321-0017-0000-0000-000000D0C17D
+	id S1751737AbaJWVYZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 17:24:25 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51233 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750814AbaJWVYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 17:24:23 -0400
+Date: Fri, 24 Oct 2014 00:27:53 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: cornelia.huck@de.ibm.com, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: [PATCH RFC 1/4] virtio_net: pass vi around
+Message-ID: <1414099656-28090-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mailer: git-send-email 2.0.0.545.gd9cabeb
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When IOMMU bypass is enabled, a PCI device can read and write memory
-that was not mapped by the driver without causing an EEH. That might
-cause memory corruption, for example.
+Too many places poke at [rs]q->vq->vdev->priv just to get
+the the vi structure.  Let's just pass the pointer around: seems
+cleaner, and might even be faster.
 
-When we disable bypass, DMA reads and writes to addresses not mapped by
-the IOMMU will cause an EEH, allowing us to debug such issues.
-
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Reviewed-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- Documentation/kernel-parameters.txt       |    2 ++
- arch/powerpc/platforms/powernv/pci-ioda.c |   24 +++++++++++++++++++++++-
- 2 files changed, 25 insertions(+), 1 deletions(-)
+ drivers/net/virtio_net.c | 36 +++++++++++++++++++-----------------
+ 1 file changed, 19 insertions(+), 17 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 988160a..b03322a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1454,6 +1454,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 		forcesac
- 		soft
- 		pt		[x86, IA-64]
-+		nobypass	[PPC/POWERNV]
-+			Disable IOMMU bypass, using IOMMU for PCI devices.
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 57cbc7d..36f3dfc 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -241,11 +241,11 @@ static unsigned long mergeable_buf_to_ctx(void *buf, unsigned int truesize)
+ }
  
+ /* Called from bottom half context */
+-static struct sk_buff *page_to_skb(struct receive_queue *rq,
++static struct sk_buff *page_to_skb(struct virtnet_info *vi,
++				   struct receive_queue *rq,
+ 				   struct page *page, unsigned int offset,
+ 				   unsigned int len, unsigned int truesize)
+ {
+-	struct virtnet_info *vi = rq->vq->vdev->priv;
+ 	struct sk_buff *skb;
+ 	struct skb_vnet_hdr *hdr;
+ 	unsigned int copy, hdr_len, hdr_padded_len;
+@@ -328,12 +328,13 @@ static struct sk_buff *receive_small(void *buf, unsigned int len)
+ }
  
- 	io7=		[HW] IO7 for Marvel based alpha systems
-diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
-index 468a0f2..a7d2f32 100644
---- a/arch/powerpc/platforms/powernv/pci-ioda.c
-+++ b/arch/powerpc/platforms/powernv/pci-ioda.c
-@@ -75,6 +75,27 @@ static void pe_level_printk(const struct pnv_ioda_pe *pe, const char *level,
- #define pe_info(pe, fmt, ...)					\
- 	pe_level_printk(pe, KERN_INFO, fmt, ##__VA_ARGS__)
+ static struct sk_buff *receive_big(struct net_device *dev,
++				   struct virtnet_info *vi,
+ 				   struct receive_queue *rq,
+ 				   void *buf,
+ 				   unsigned int len)
+ {
+ 	struct page *page = buf;
+-	struct sk_buff *skb = page_to_skb(rq, page, 0, len, PAGE_SIZE);
++	struct sk_buff *skb = page_to_skb(vi, rq, page, 0, len, PAGE_SIZE);
  
-+static bool pnv_iommu_bypass_disabled __read_mostly;
-+
-+static int __init iommu_setup(char *str)
-+{
-+	if (!str)
-+		return -EINVAL;
-+	while (*str) {
-+		if (!strncmp(str, "nobypass", 8)) {
-+			pnv_iommu_bypass_disabled = true;
-+			pr_info("PowerNV: IOMMU bypass window disabled.\n");
-+		}
-+		str += strcspn(str, ",");
-+		if (*str == ',')
-+			str++;
-+	}
-+
-+	return 0;
-+}
-+
-+early_param("iommu", iommu_setup);
-+
- /*
-  * stdcix is only supposed to be used in hypervisor real mode as per
-  * the architecture spec
-@@ -1243,7 +1264,8 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
- 		pnv_ioda_setup_bus_dma(pe, pe->pbus, true);
+ 	if (unlikely(!skb))
+ 		goto err;
+@@ -359,7 +360,8 @@ static struct sk_buff *receive_mergeable(struct net_device *dev,
+ 	int offset = buf - page_address(page);
+ 	unsigned int truesize = max(len, mergeable_ctx_to_buf_truesize(ctx));
  
- 	/* Also create a bypass window */
--	pnv_pci_ioda2_setup_bypass_pe(phb, pe);
-+	if (!pnv_iommu_bypass_disabled)
-+		pnv_pci_ioda2_setup_bypass_pe(phb, pe);
- 	return;
- fail:
- 	if (pe->tce32_seg >= 0)
+-	struct sk_buff *head_skb = page_to_skb(rq, page, offset, len, truesize);
++	struct sk_buff *head_skb = page_to_skb(vi, rq, page, offset, len,
++					       truesize);
+ 	struct sk_buff *curr_skb = head_skb;
+ 
+ 	if (unlikely(!curr_skb))
+@@ -433,9 +435,9 @@ err_buf:
+ 	return NULL;
+ }
+ 
+-static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
++static void receive_buf(struct virtnet_info *vi, struct receive_queue *rq,
++			void *buf, unsigned int len)
+ {
+-	struct virtnet_info *vi = rq->vq->vdev->priv;
+ 	struct net_device *dev = vi->dev;
+ 	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+ 	struct sk_buff *skb;
+@@ -459,9 +461,9 @@ static void receive_buf(struct receive_queue *rq, void *buf, unsigned int len)
+ 	if (vi->mergeable_rx_bufs)
+ 		skb = receive_mergeable(dev, vi, rq, (unsigned long)buf, len);
+ 	else if (vi->big_packets)
+-		skb = receive_big(dev, rq, buf, len);
++		skb = receive_big(dev, vi, rq, buf, len);
+ 	else
+-		skb = receive_small(buf, len);
++		skb = receive_small(vi, buf, len);
+ 
+ 	if (unlikely(!skb))
+ 		return;
+@@ -530,9 +532,9 @@ frame_err:
+ 	dev_kfree_skb(skb);
+ }
+ 
+-static int add_recvbuf_small(struct receive_queue *rq, gfp_t gfp)
++static int add_recvbuf_small(struct virtnet_info *vi, struct receive_queue *rq,
++			     gfp_t gfp)
+ {
+-	struct virtnet_info *vi = rq->vq->vdev->priv;
+ 	struct sk_buff *skb;
+ 	struct skb_vnet_hdr *hdr;
+ 	int err;
+@@ -655,9 +657,9 @@ static int add_recvbuf_mergeable(struct receive_queue *rq, gfp_t gfp)
+  * before we're receiving packets, or from refill_work which is
+  * careful to disable receiving (using napi_disable).
+  */
+-static bool try_fill_recv(struct receive_queue *rq, gfp_t gfp)
++static bool try_fill_recv(struct virtnet_info *vi, struct receive_queue *rq,
++			  gfp_t gfp)
+ {
+-	struct virtnet_info *vi = rq->vq->vdev->priv;
+ 	int err;
+ 	bool oom;
+ 
+@@ -668,7 +670,7 @@ static bool try_fill_recv(struct receive_queue *rq, gfp_t gfp)
+ 		else if (vi->big_packets)
+ 			err = add_recvbuf_big(rq, gfp);
+ 		else
+-			err = add_recvbuf_small(rq, gfp);
++			err = add_recvbuf_small(vi, rq, gfp);
+ 
+ 		oom = err == -ENOMEM;
+ 		if (err)
+@@ -717,7 +719,7 @@ static void refill_work(struct work_struct *work)
+ 		struct receive_queue *rq = &vi->rq[i];
+ 
+ 		napi_disable(&rq->napi);
+-		still_empty = !try_fill_recv(rq, GFP_KERNEL);
++		still_empty = !try_fill_recv(vi, rq, GFP_KERNEL);
+ 		virtnet_napi_enable(rq);
+ 
+ 		/* In theory, this can happen: if we don't get any buffers in
+@@ -736,12 +738,12 @@ static int virtnet_receive(struct receive_queue *rq, int budget)
+ 
+ 	while (received < budget &&
+ 	       (buf = virtqueue_get_buf(rq->vq, &len)) != NULL) {
+-		receive_buf(rq, buf, len);
++		receive_buf(vi, rq, buf, len);
+ 		received++;
+ 	}
+ 
+ 	if (rq->vq->num_free > virtqueue_get_vring_size(rq->vq) / 2) {
+-		if (!try_fill_recv(rq, GFP_ATOMIC))
++		if (!try_fill_recv(vi, rq, GFP_ATOMIC))
+ 			schedule_delayed_work(&vi->refill, 0);
+ 	}
+ 
+@@ -817,7 +819,7 @@ static int virtnet_open(struct net_device *dev)
+ 	for (i = 0; i < vi->max_queue_pairs; i++) {
+ 		if (i < vi->curr_queue_pairs)
+ 			/* Make sure we have some buffers: if oom use wq. */
+-			if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
++			if (!try_fill_recv(vi, &vi->rq[i], GFP_KERNEL))
+ 				schedule_delayed_work(&vi->refill, 0);
+ 		virtnet_napi_enable(&vi->rq[i]);
+ 	}
 -- 
-1.7.1
+MST
 
