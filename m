@@ -1,155 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229AbaJWIKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 04:10:43 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:48414 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090AbaJWIK1 (ORCPT
+	id S1754270AbaJWILA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 04:11:00 -0400
+Received: from relay.parallels.com ([195.214.232.42]:56894 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156AbaJWIKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 04:10:27 -0400
-Date: Thu, 23 Oct 2014 10:10:34 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Jani Nikula <jani.nikula@intel.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linuxppc-dev@lists.ozlabs.org,
-        platform-driver-x86@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        Daniel Drake <dsd@laptop.org>, Jens Frederich <jfrederich@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Darren Hart <dvhart@infradead.org>,
-        Daniel Vetter <daniel.vetter@intel.com>, Bryan Wu <cooloney@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH] drivers: depend on instead of select
- BACKLIGHT_CLASS_DEVICE and ACPI_VIDEO
-Message-ID: <20141023081034.GA26941@phenom.ffwll.local>
-Mail-Followup-To: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-	Jani Nikula <jani.nikula@intel.com>, linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, linuxppc-dev@lists.ozlabs.org,
-	platform-driver-x86@vger.kernel.org, linux-usb@vger.kernel.org,
-	linux-fbdev@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-	Daniel Drake <dsd@laptop.org>,
-	Jens Frederich <jfrederich@gmail.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Jon Nettleton <jon.nettleton@gmail.com>,
-	Randy Dunlap <rdunlap@infradead.org>,
-	Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-	Darren Hart <dvhart@infradead.org>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Bryan Wu <cooloney@gmail.com>,
-	Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-	Lee Jones <lee.jones@linaro.org>
-References: <1413580403-16225-1-git-send-email-jani.nikula@intel.com>
- <54476492.6090105@ti.com>
+	Thu, 23 Oct 2014 04:10:54 -0400
+Message-ID: <1414051845.19914.144.camel@tkhai>
+Subject: Re: introduce task_rcu_dereference?
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Date: Thu, 23 Oct 2014 12:10:45 +0400
+In-Reply-To: <20141022213041.GA25467@redhat.com>
+References: <1413962231.19914.130.camel@tkhai>
+	 <20141022213041.GA25467@redhat.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54476492.6090105@ti.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 11:02:26AM +0300, Tomi Valkeinen wrote:
-> On 18/10/14 00:13, Jani Nikula wrote:
-> > Documentation/kbuild/kconfig-language.txt warns to use select with care,
-> > and in general use select only for non-visible symbols and for symbols
-> > with no dependencies, because select will force a symbol to a value
-> > without visiting the dependencies.
-> > 
-> > Select has become particularly problematic, interdependently, with the
-> > BACKLIGHT_CLASS_DEVICE and ACPI_VIDEO configs. For example:
-> > 
-> > scripts/kconfig/conf --randconfig Kconfig
-> > KCONFIG_SEED=0x48312B00
-> > warning: (DRM_RADEON && DRM_NOUVEAU && DRM_I915 && DRM_GMA500 &&
-> > DRM_SHMOBILE && DRM_TILCDC && FB_BACKLIGHT && FB_MX3 && USB_APPLEDISPLAY
-> > && FB_OLPC_DCON && ASUS_LAPTOP && SONY_LAPTOP && THINKPAD_ACPI &&
-> > EEEPC_LAPTOP && ACPI_CMPC && SAMSUNG_Q10) selects BACKLIGHT_CLASS_DEVICE
-> > which has unmet direct dependencies (HAS_IOMEM && BACKLIGHT_LCD_SUPPORT)
-> > warning: (DRM_RADEON && DRM_NOUVEAU && DRM_I915 && DRM_GMA500 &&
-> > DRM_SHMOBILE && DRM_TILCDC && FB_BACKLIGHT && FB_MX3 && USB_APPLEDISPLAY
-> > && FB_OLPC_DCON && ASUS_LAPTOP && SONY_LAPTOP && THINKPAD_ACPI &&
-> > EEEPC_LAPTOP && ACPI_CMPC && SAMSUNG_Q10) selects BACKLIGHT_CLASS_DEVICE
-> > which has unmet direct dependencies (HAS_IOMEM && BACKLIGHT_LCD_SUPPORT)
-> > 
-> > With tristates it's possible to end up selecting FOO=y depending on
-> > BAR=m in the config, which gets discovered at build time, not config
-> > time, like reported in the thread referenced below.
-> > 
-> > Do the following to fix the dependencies:
-> > 
-> > * Depend on instead of select BACKLIGHT_CLASS_DEVICE everywhere. Drop
-> >   select BACKLIGHT_LCD_SUPPORT in such cases, as it's a dependency of
-> >   BACKLIGHT_CLASS_DEVICE.
-> > 
-> > * Remove config FB_BACKLIGHT altogether, and replace it with a
-> >   dependency on BACKLIGHT_CLASS_DEVICE. All configs selecting
-> >   FB_BACKLIGHT select or depend on FB anyway, so we can simplify.
-> > 
-> > * Depend on (ACPI && ACPI_VIDEO) || ACPI=n in several places instead of
-> >   selecting ACPI_VIDEO and a number of its dependencies if ACPI is
-> >   enabled. This is tied to backlight, as ACPI_VIDEO depends on
-> >   BACKLIGHT_CLASS_DEVICE.
-> > 
-> > * Replace a couple of select INPUT/VT with depends as it seemed to be
-> >   necessary.
+В Ср, 22/10/2014 в 23:30 +0200, Oleg Nesterov пишет:
+> On 10/22, Kirill Tkhai wrote:
+> >
+> > Unlocked access to dst_rq->curr in task_numa_compare() is racy.
+> > If curr task is exiting this may be a reason of use-after-free:
 > 
-> While doing 'depends on' instead of 'select' is an "easy" fix for this,
-> I do dislike it quite a bit. It's a major pain to go around the kernel
-> config, trying to find all the dependencies that a particular driver
-> wants. If I need fb-foobar, I should just be able to enable it, instead
-> of first searching and selecting its minor dependencies individually.
+> Thanks.
 > 
-> So, not a NACK, but a "isn't there an another way to fix this?".
+> And as you pointed out, there are other examples of unlocked
+> foreign_rq->curr usage.
 > 
-> Looking at backlight... BACKLIGHT_LCD_SUPPORT seems to be a "meta"
-> option, it only enables a Kconfig submenu.
+> So, Kirill, Peter, do you think that the patch below can help? Can
+> we change task_numa_group() and ->select_task_rq() to do nothing if
+> rq_curr_rcu_safe() returns NULL? It seems we can...
 > 
-> So I think we could just remove the whole BACKLIGHT_LCD_SUPPORT option.
-> But if we do that, all the items in drivers/video/backlight/Kconfig with
-> default 'y' or 'm' would get enabled by default, so I think we should
-> remove the 'default's from that file. That makes sense in any case, as I
-> don't see why "HP Jornada 700 series LCD Driver" should be "default y".
+> task_numa_compare() can use it too, we can make another patch on
+> top of this one.
 > 
-> BACKLIGHT_CLASS_DEVICE doesn't depend on anything except
-> BACKLIGHT_LCD_SUPPORT, so after removing BACKLIGHT_LCD_SUPPORT it should
-> be safe to 'select' BACKLIGHT_CLASS_DEVICE.
+> 	- Obviously just for the early review. Lacks the changelog
+> 	  and the comments (at least).
 > 
-> BACKLIGHT_CLASS_DEVICE could be made a hidden option, and the drivers in
-> drivers/video/backlight/Kconfig which are under BACKLIGHT_CLASS_DEVICE
-> could be made to select BACKLIGHT_CLASS_DEVICE instead.
+> 	- Once again, I won't insist on probe_slab_address(). We can
+> 	  add SDBR and change task_rcu_dereference() to simply read
+> 	  ->sighand.
 > 
-> That doesn't exactly fix anything, but I think it makes sense as
-> BACKLIGHT_CLASS_DEVICE is something that's selected from all around the
-> kernel, so it should be a selectable "library" instead of a Kconfig menu
-> option.
+> 	- Also, I won't argue if you think that we do not need a
+> 	  generic helper. In this case we can move this logic into
+> 	  rq_curr_rcu_safe() and it will be a bit simpler.
 > 
-> I didn't look at the ACPI_VIDEO side, so no idea how messy that is.
+> 	- OTOH, I am not sure we need rq_curr_rcu_safe(). The callers
+> 	  can just use task_rcu_dereference() and check IS_ERR_OR_NULL,
+> 	  I guess retry doesn't buy too much in this case.
+> 
+> Or do you think we need something else?
+> 
+> Oleg.
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 857ba40..0ba420e 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2300,6 +2300,7 @@ extern void block_all_signals(int (*notifier)(void *priv), void *priv,
+>  			      sigset_t *mask);
+>  extern void unblock_all_signals(void);
+>  extern void release_task(struct task_struct * p);
+> +extern struct task_struct *task_rcu_dereference(struct task_struct **ptask);
+>  extern int send_sig_info(int, struct siginfo *, struct task_struct *);
+>  extern int force_sigsegv(int, struct task_struct *);
+>  extern int force_sig_info(int, struct siginfo *, struct task_struct *);
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 32c58f7..4aa00c7 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -213,6 +213,37 @@ repeat:
+>  		goto repeat;
+>  }
+>  
+> +struct task_struct *task_rcu_dereference(struct task_struct **ptask)
+> +{
+> +	struct task_struct *task;
+> +	struct sighand_struct *sighand;
+> +
+> +	task = rcu_dereference(*ptask);
+> +	if (!task)
+> +		return NULL;
+> +
+> +	/* If it fails the check below must fail too */
+> +	probe_slab_address(&task->sighand, sighand);
+> +	/*
+> +	 * Pairs with atomic_dec_and_test() in put_task_struct(task).
+> +	 * If we have read the freed/reused memory, we must see that
+> +	 * the pointer was updated. The caller might want to retry in
+> +	 * this case.
+> +	 */
+> +	smp_rmb();
+> +	if (unlikely(task != ACCESS_ONCE(*ptask)))
+> +		return ERR_PTR(-EAGAIN);
+> +
+> +	/*
+> +	 * release_task(task) was already called; potentially before
+> +	 * the caller took rcu_read_lock() and in this case it can be
+> +	 * freed before rcu_read_unlock().
+> +	 */
+> +	if (!sighand)
+> +		return ERR_PTR(-EINVAL);
+> +	return task;
+> +}
+> +
+>  /*
+>   * This checks not only the pgrp, but falls back on the pid if no
+>   * satisfactory pgrp is found. I dunno - gdb doesn't work correctly
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+> index 579712f..249c0c1 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -655,6 +655,18 @@ DECLARE_PER_CPU(struct rq, runqueues);
+>  #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
+>  #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+>  
+> +static inline struct task_struct *rq_curr_rcu_safe(struct rq *rq)
+> +{
+> +	for (;;) {
+> +		struct task_struct *curr = task_rcu_dereference(&rq->curr);
+> +		/* NULL is not possible */
+> +		if (likely(!IS_ERR(curr)))
+> +			return curr;
+> +		if (PTR_ERR(curr) != -EAGAIN)
+> +			return NULL;
+> +	}
+> +}
+> +
+>  static inline u64 rq_clock(struct rq *rq)
+>  {
+>  	return rq->clock;
+> 
 
-If we want to make BACKLIGHT_CLASS_DEVICE into a library thing then I
-guess we could do that, but we must then also drag it out of all the other
-meta options to make sure it's always available. No need I think to ditch
-the entire BACKLIGHT_LCD_SUPPORT meta option. And then everyone could
-select it.
+I'm agree generic helper is better. But probe_slab_address() has a sence
+if we know that SDBR is worse in our subject area. Less of code is
+easier to support :) probe_slab_address() it's not a trivial logic.
+Also, if we use mm primitives this increases kernel modularity.
 
-The problem is if you mix depends and select Kconfig falls over and starts
-to see loops where there are none. So you really can't ever mix them for
-the same symbol.
+Kirill
 
-I think if we get the BACKLIGHT_CLASS_DEVICE out of the picture with that
-ACPI_VIDEO should be fixable with some
-
-	select ACPI_VIDEO if ACPI
-
-or so. Currently that doesn't work because of the backlight class knob and
-select being broken.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
