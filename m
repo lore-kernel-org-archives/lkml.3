@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaJWQ3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:29:18 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:57092 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbaJWQ3Q convert rfc822-to-8bit (ORCPT
+	id S1756320AbaJWQ3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:29:38 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:48500 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270AbaJWQ33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:29:16 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
-Subject: Re: [PATCH 1/1 net-next] Bluetooth: fix shadow warning in hci_disconnect()
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1414081365-6461-1-git-send-email-fabf@skynet.be>
-Date: Thu, 23 Oct 2014 09:29:08 -0700
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2F67F6E8-CA99-4998-AE68-89E60D62C39D@holtmann.org>
-References: <1414081365-6461-1-git-send-email-fabf@skynet.be>
-To: Fabian Frederick <fabf@skynet.be>
-X-Mailer: Apple Mail (2.1990.1)
+	Thu, 23 Oct 2014 12:29:29 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH v2] MAINTAINERS: Add myself as reviewer for Zynq
+Date: Thu, 23 Oct 2014 09:29:22 -0700
+Message-Id: <1414081762-28886-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.1.2.1.g5e69ed6
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabian,
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+---
+v2:
+ - I removed the additional 'F' entries
 
-> use cpr for hci_cp_read_clock_offset instead of cp
-> (already defined above).
-> 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
-> net/bluetooth/hci_conn.c | 6 +++---
-> 1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-> index b9517bd..6151e09 100644
-> --- a/net/bluetooth/hci_conn.c
-> +++ b/net/bluetooth/hci_conn.c
-> @@ -141,10 +141,10 @@ int hci_disconnect(struct hci_conn *conn, __u8 reason)
-> 	 */
-> 	if (conn->type == ACL_LINK && conn->role == HCI_ROLE_MASTER) {
-> 		struct hci_dev *hdev = conn->hdev;
-> -		struct hci_cp_read_clock_offset cp;
-> +		struct hci_cp_read_clock_offset cpr;
-> 
-> -		cp.handle = cpu_to_le16(conn->handle);
-> -		hci_send_cmd(hdev, HCI_OP_READ_CLOCK_OFFSET, sizeof(cp), &cp);
-> +		cpr.handle = cpu_to_le16(conn->handle);
-> +		hci_send_cmd(hdev, HCI_OP_READ_CLOCK_OFFSET, sizeof(cpr), &cpr);
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-valid change, but I do not like cpr as variable name. We need to come up with a better one. There are other places in the code where we had the same thing. Please have a look there.
-
-Regards
-
-Marcel
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 0484f2c526f0..8b49eeee5a27 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1543,6 +1543,7 @@ F:	arch/arm/mach-pxa/include/mach/z2.h
+ 
+ ARM/ZYNQ ARCHITECTURE
+ M:	Michal Simek <michal.simek@xilinx.com>
++R:	Sören Brinkmann <soren.brinkmann@xilinx.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ W:	http://wiki.xilinx.com
+ T:	git git://git.xilinx.com/linux-xlnx.git
+-- 
+2.1.2.1.g5e69ed6
 
