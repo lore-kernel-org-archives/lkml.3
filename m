@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481AbaJWCAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 22:00:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33180 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932192AbaJWCAl (ORCPT
+	id S1754375AbaJWCCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 22:02:06 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:58198 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaJWCCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 22:00:41 -0400
-Date: Wed, 22 Oct 2014 19:00:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
-        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Jens Axboe <axboe@fb.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Wise <pabs3@bonedaddy.net>
-Subject: Re: [PATCH] sysctl: terminate strings also on \r
-Message-Id: <20141022190051.7c0d5df1.akpm@linux-foundation.org>
-In-Reply-To: <CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
-References: <20141021202137.GA20114@www.outflux.net>
-	<20141022162638.875681da6bbb9e027d2d3bee@linux-foundation.org>
-	<CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 22 Oct 2014 22:02:03 -0400
+Date: Wed, 22 Oct 2014 21:02:13 -0500
+From: Brian Vandre <bvandre@gmail.com>
+To: Hartmut Knaack <knaack.h@gmx.de>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, gregkh@linuxfoundation.org,
+        jic23@kernel.org, alexandre.belloni@free-electrons.com,
+        linux-iio@vger.kernel.org, marex@denx.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Staging: iio: adc: fix line over 80 characters
+Message-ID: <20141023020213.GA30907@brian-U>
+References: <cover.1413858979.git.bvandre@gmail.com>
+ <cover.1413931615.git.bvandre@gmail.com>
+ <ec4b497827f6c7615f6b5eef5669144f8c68d034.1413931615.git.bvandre@gmail.com>
+ <20141022042115.GA2530@sudip-PC>
+ <54484219.5000708@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54484219.5000708@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 16:43:10 -0700 Kees Cook <keescook@chromium.org> wrote:
-
-> On Wed, Oct 22, 2014 at 4:26 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Tue, 21 Oct 2014 13:21:37 -0700 Kees Cook <keescook@chromium.org> wrote:
-> >
-> >> From: Paul Wise <pabs3@bonedaddy.net>
+On Thu, Oct 23, 2014 at 01:47:37AM +0200, Hartmut Knaack wrote:
+> Sudip Mukherjee schrieb am 22.10.2014 06:21:
+> > On Tue, Oct 21, 2014 at 05:56:47PM -0500, Brian Vandre wrote:
+> >> This fixes the 2 checkpatch.pl warnings:
+> >> WARNING: line over 80 characters
 > >>
-> >> This partially mitigates a common strategy used by attackers for hiding
-> >> the full contents of strings in procfs from naive sysadmins who use cat,
-> >> more or sysctl to inspect the contents of strings in procfs.
-> >>
-> >> ...
-> >>
-> >> --- a/kernel/sysctl.c
-> >> +++ b/kernel/sysctl.c
-> >> @@ -1739,7 +1739,7 @@ static int _proc_do_string(char *data, int maxlen, int write,
-> >>               while ((p - buffer) < *lenp && len < maxlen - 1) {
-> >>                       if (get_user(c, p++))
-> >>                               return -EFAULT;
-> >> -                     if (c == 0 || c == '\n')
-> >> +                     if (c == 0 || c == '\n' || c == '\r')
-> >>                               break;
-> >>                       data[len++] = c;
-> >>               }
-> >
-> > There are no valid uses of \r in a procfs write?
-> 
-> I struggle to imagine one; everything I found that uses proc_dostring
-> seems to be names, paths, and commands.
-> 
+> > please check your patch with --strict option of checkpatch.pl , and you will get :
+> > "Alignment should match open parenthesis" .
+> > 
+> Good point, but what solution would you propose?
 
-You're insufficiently pessimistic.
+Hey All,
 
-I wonder if the chances of damage would be lower if we were to continue
-to accept the \r, but turn it into something else ("\r"?) when it is
-read.
+Thanks for all the feedback.  This is my first attempt at a patch so I thank you all
+for helping me through it.  I have a question about the strict option on checkpatch.pl.
+I thought that the stict option was not necessarily part of the coding standards but
+more of a nice to have.  Should I be always using the strict option?
 
+On this particular patch if I were to align to the open parenthesis it would push the
+comment "/* trigger DELAY unit#3 */" off to the next line which I thought we be less
+clear.  If --strict is optional then I would argue to leave it the way it is, but again
+this is my first time and I am learning.
+
+If I were to align to the parenthesis should I just move the comment to the next line
+or possibly delete the comment altogether?  The code is clear and the comment might not
+be necessary but I didn't want to remove anything the original author wrote.
+
+Thanks,
+Brian Vandre
