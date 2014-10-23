@@ -1,90 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbaJWROu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 13:14:50 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:58539 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbaJWROt (ORCPT
+	id S1755855AbaJWRPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 13:15:04 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39692 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755627AbaJWRPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 13:14:49 -0400
-Date: Thu, 23 Oct 2014 11:14:45 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Richard Guy Briggs <rgb@redhat.com>
-Subject: [GIT PULL] Remove weak function declarations
-Message-ID: <20141023171445.GB15847@google.com>
+	Thu, 23 Oct 2014 13:15:02 -0400
+Date: Thu, 23 Oct 2014 10:14:54 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Christoph Hellwig <hch@infradead.org>, Christoph Hellwig <hch@lst.de>,
+        Jens Axboe <axboe@kernel.dk>, David Miller <davem@davemloft.net>,
+        linux-scsi@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: fix blk-mq for SPI hosts
+Message-ID: <20141023171454.GA16990@infradead.org>
+References: <1413731638-28305-1-git-send-email-hch@lst.de>
+ <20141023084530.GB20233@infradead.org>
+ <alpine.LRH.2.11.1410231151160.2821@adalberg.ut.ee>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LRH.2.11.1410231151160.2821@adalberg.ut.ee>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Oct 23, 2014 at 01:49:07PM +0300, Meelis Roos wrote:
+> > ping?
+> 
+> Sorry, forgot to reply. Yes, it worked fine, on the initial Ultra 1 and 
+> additionally on Ultra 2 too.
 
-Here are some changes to fix possible issues with "weak" functions.
-They're not PCI-related; I just put them in my tree to get them into
-linux-next for a few days.
+Thanks!
 
-I don't have any problem reports for these, so they're just potential
-issues at this point, but I think it's worth including these changes in
-v3.18 because the current behavior is so counter-intuitive.
+Can I get a review from Jens and some SCSI developers, too?
 
-Bjorn
-
-
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/remove-weak-declarations
-
-for you to fetch changes up to 271a9c35158910496f6fc3a635c2ed85df6be3d9:
-
-  uprobes: Remove "weak" from function declarations (2014-10-22 16:14:04 -0600)
-
-----------------------------------------------------------------
-The "weak" attribute is commonly used for the default version of a
-function, where an architecture can override it by providing a strong
-version.
-
-Some header file declarations included the "weak" attribute.  That's
-error-prone because it causes every implementation to be weak, with no
-strong version at all, and the linker chooses one based on link order.
-
-What we want is the "weak" attribute only on the *definition* of the
-default implementation.  These changes remove "weak" from the declarations,
-leaving it on the default definitions.
-
-----------------------------------------------------------------
-Bjorn Helgaas (7):
-      audit: Remove "weak" from audit_classify_compat_syscall() declaration
-      x86, intel-mid: Remove "weak" from function declarations
-      clocksource: Remove "weak" from clocksource_default_clock() declaration
-      vmcore: Remove "weak" from function declarations
-      kgdb: Remove "weak" from kgdb_arch_pc() declaration
-      memory-hotplug: Remove "weak" from memory_block_size_bytes() declaration
-      uprobes: Remove "weak" from function declarations
-
-Vineet Gupta (1):
-      ARC: kgdb: generic kgdb_arch_pc() suffices
-
- arch/arc/kernel/kgdb.c                             |  5 -----
- arch/x86/platform/intel-mid/intel_mid_weak_decls.h |  7 +++----
- include/linux/audit.h                              |  2 +-
- include/linux/clocksource.h                        |  2 +-
- include/linux/crash_dump.h                         | 15 +++++++--------
- include/linux/kgdb.h                               |  2 +-
- include/linux/memory.h                             |  2 +-
- include/linux/uprobes.h                            | 14 +++++++-------
- 8 files changed, 21 insertions(+), 28 deletions(-)
+Jens, are you fine taking the blkdev.h revert through the SCSI tree?
