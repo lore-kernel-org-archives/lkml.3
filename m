@@ -1,115 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512AbaJWCTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 22:19:54 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:56489 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928AbaJWCTx (ORCPT
+	id S932489AbaJWCUN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 22:20:13 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:33810 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932184AbaJWCUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 22:19:53 -0400
-Message-ID: <544865B8.1010405@huawei.com>
-Date: Thu, 23 Oct 2014 10:19:36 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Wed, 22 Oct 2014 22:20:08 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>
-CC: Namhyung Kim <namhyung@kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Li Zefan" <lizefan@huawei.com>
-Subject: Re: [PATCH] perf tools: ensure return negitive value when write header
- error
-References: <1413428909-80017-1-git-send-email-wangnan0@huawei.com> <87siigeghv.fsf@sejong.aot.lge.com>
-In-Reply-To: <87siigeghv.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20141023002200.GA138443@ubuntu-hedt>
+References: <1414013060-137148-1-git-send-email-seth.forshee@canonical.com>
+ <1414013060-137148-5-git-send-email-seth.forshee@canonical.com>
+ <CALCETrV_4euS+iDi3imBvBW3L7sutQ6kGJ1Z9CRHUPRL7n9v0g@mail.gmail.com> <20141023002200.GA138443@ubuntu-hedt>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 22 Oct 2014 19:19:44 -0700
+Message-ID: <CALCETrUWt+8jfgNN-H=JkxgAcn2j1wQigaovxcmYqKx+=m9oHA@mail.gmail.com>
+Subject: Re: [PATCH v5 4/4] fuse: Allow user namespace mounts
+To: Andy Lutomirski <luto@amacapital.net>, Miklos Szeredi <miklos@szeredi.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        fuse-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+Cc: Seth Forshee <seth.forshee@canonical.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
-
-Could you please collect this patch which fixes a perf problem?
-
-Thanks.
-
-On 2014/10/22 15:00, Namhyung Kim wrote:
-> On Thu, 16 Oct 2014 11:08:29 +0800, Wang Nan wrote:
->> When 'perf record' write headers, it calls write_xxx in
->> tools/perf/util/header.c, and check return value. It rolls back all
->> working only when return value is negative.
+On Wed, Oct 22, 2014 at 5:22 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> On Wed, Oct 22, 2014 at 02:51:56PM -0700, Andy Lutomirski wrote:
+>> On Wed, Oct 22, 2014 at 2:24 PM, Seth Forshee
+>> <seth.forshee@canonical.com> wrote:
+>> > Cc: Eric W. Biederman <ebiederm@xmission.com>
+>> > Cc: Serge H. Hallyn <serge.hallyn@ubuntu.com>
+>> > Cc: Andy Lutomirski <luto@amacapital.net>
+>> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+>> > ---
+>> >  fs/fuse/inode.c | 4 ++--
+>> >  1 file changed, 2 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+>> > index b88b5a780228..7d0e73e36e7b 100644
+>> > --- a/fs/fuse/inode.c
+>> > +++ b/fs/fuse/inode.c
+>> > @@ -1201,7 +1201,7 @@ static void fuse_kill_sb_anon(struct super_block *sb)
+>> >  static struct file_system_type fuse_fs_type = {
+>> >         .owner          = THIS_MODULE,
+>> >         .name           = "fuse",
+>> > -       .fs_flags       = FS_HAS_SUBTYPE,
+>> > +       .fs_flags       = FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
+>> >         .mount          = fuse_mount,
+>> >         .kill_sb        = fuse_kill_sb_anon,
+>> >  };
+>> > @@ -1233,7 +1233,7 @@ static struct file_system_type fuseblk_fs_type = {
+>> >         .name           = "fuseblk",
+>> >         .mount          = fuse_mount_blk,
+>> >         .kill_sb        = fuse_kill_sb_blk,
+>> > -       .fs_flags       = FS_REQUIRES_DEV | FS_HAS_SUBTYPE,
+>> > +       .fs_flags       = FS_REQUIRES_DEV | FS_HAS_SUBTYPE | FS_USERNS_MOUNT,
+>> >  };
+>> >  MODULE_ALIAS_FS("fuseblk");
+>> >
+>> > --
+>> > 1.9.1
+>> >
 >>
->> This patch ensures write_cpudesc() and write_total_mem() return negative number
->> when error. Without this patch, headers reported by 'perf report' header is
->> error in some platform. Following output is caputured on ARM, which doesn't
->> contain "Processor" field in /proc/cpuinfo. See "cpudesc", "total memory" and
->> "cmdline" field.
->>
->>    bash-4.2# perf record ls
->>    ...
->>    [ perf record: Woken up 1 times to write data ]
->>    [ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
->>    bash-4.2# perf report --stdio --header
->>    Error:
->>    The perf.data file has no samples!
->>    # ========
->>    # captured on: Fri Sep 12 10:09:10 2014
->>    # hostname : arma15el
->>    # os release : 3.17.0+
->>    # perf version : 3.10.53
->>    # arch : armv7l
->>    # nrcpus online : 4
->>    # nrcpus avail : 1
->>    # cpudesc : (null)
->>    # total memory : 0 kB
->>    # cmdline :
->>    # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
->>    # pmu mappings: not available
->>    # ========
->>    #
->>
->> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> 
-> I guess the total_memory, cmdline and pmu mappings are somehow affected
-> by the broken cpudesc.  Do they have their own problem on ARM?
-> 
-> Anyway I think it's good to check the result properly, so
-> 
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
-> 
-> Thanks,
-> Namhyung
-> 
-> 
->> ---
->>  tools/perf/util/header.c | 7 +++++--
->>  1 file changed, 5 insertions(+), 2 deletions(-)
->>
->> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
->> index ce0de00..39b80ac 100644
->> --- a/tools/perf/util/header.c
->> +++ b/tools/perf/util/header.c
->> @@ -605,8 +605,10 @@ static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
->>  			break;
->>  	}
->>  
->> -	if (ret)
->> +	if (ret) {
->> +		ret = -1;
->>  		goto done;
->> +	}
->>  
->>  	s = buf;
->>  
->> @@ -950,7 +952,8 @@ static int write_total_mem(int fd, struct perf_header *h __maybe_unused,
->>  		n = sscanf(buf, "%*s %"PRIu64, &mem);
->>  		if (n == 1)
->>  			ret = do_write(fd, &mem, sizeof(mem));
->> -	}
->> +	} else
->> +		ret = -1;
->>  	free(buf);
->>  	fclose(fp);
->>  	return ret;
+>> This is mostly a sign of my ignorance, but how does this actually end
+>> up working?  I assume that the mounter opens /dev/fuse and then passes
+>> the fd to the mount call.  Which userns is captured?  The opener of
+>> /dev/fuse or the mounter of the fs?
+>
+> You're correct that the mounter passes the fd to /dev/fuse to the mount
+> call. The namespace of the mounter is used, but there's also a check to
+> make sure that's the same as that of the opener of /dev/fuse, otherwise
+> the mount fails.
+
+As long as my nodev fix is either applied first or rejected,
+
+Acked-by: Andy Lutomirski <luto@amacapital.net>
+
+Although the LSM situation is still a mess.  Serge, any thoughts?
+
+--Andy
+
+>
+> Seth
 
 
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
