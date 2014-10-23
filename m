@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759AbaJWFgD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 01:36:03 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:54467 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaJWFf7 (ORCPT
+	id S1751899AbaJWFjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 01:39:08 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:37197 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751808AbaJWFjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 01:35:59 -0400
-Date: Wed, 22 Oct 2014 23:35:55 -0600
+	Thu, 23 Oct 2014 01:39:03 -0400
+Date: Wed, 22 Oct 2014 23:38:58 -0600
 From: Bjorn Helgaas <bhelgaas@google.com>
 To: Yijing Wang <wangyijing@huawei.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -33,171 +33,128 @@ Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Thierry Reding <thierry.reding@gmail.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>
-Subject: Re: [PATCH v3 04/27] arm/MSI: Save MSI chip in pci_sys_data
-Message-ID: <20141023053555.GC11770@google.com>
+Subject: Re: [PATCH v3 09/27] arm/PCI: Clean unused pcibios_add_bus() and
+ pcibios_remove_bus()
+Message-ID: <20141023053858.GD11770@google.com>
 References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
- <1413342435-7876-5-git-send-email-wangyijing@huawei.com>
+ <1413342435-7876-10-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413342435-7876-5-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <1413342435-7876-10-git-send-email-wangyijing@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 11:06:52AM +0800, Yijing Wang wrote:
-> Saving msi chip in pci_sys_data can make pci bus and
-> devices don't need to know msi chip detail, it also
-> make pci enumeration code be decoupled from msi chip.
-> In fact, all pci devices under the same pci hostbridge
-> share same msi chip. So msi chip should be seen as one
-> of resources or attributes to be initialized in pci host
-> bridge driver. Currently, pci hostbridge drivers create
-> pci_host_bridge in pci_create_root_bus(), and pass arch
-> specific pci sysdata to core pci scan functions. So pci
-> arch sysdata is good place to save msi chip.
+On Wed, Oct 15, 2014 at 11:06:57AM +0800, Yijing Wang wrote:
+> MSI chip will be saved in pci_sys_data, now we can
+> clean up pcibios_add_bus() and pcibios_remove_bus()
+> in arm, and use pci_find_msi_chip() to get msi chip
+> in core MSI code.
 > 
 > Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 > ---
->  arch/arm/include/asm/mach/pci.h |    6 ++++++
->  arch/arm/include/asm/pci.h      |    9 +++++++++
->  arch/arm/kernel/bios32.c        |    3 +++
->  drivers/pci/msi.c               |    6 ++++++
->  include/linux/pci.h             |    9 +++++++++
->  5 files changed, 33 insertions(+), 0 deletions(-)
+>  arch/arm/include/asm/mach/pci.h |    4 ----
+>  arch/arm/kernel/bios32.c        |   16 ----------------
+>  drivers/pci/msi.c               |   11 +++--------
+>  3 files changed, 3 insertions(+), 28 deletions(-)
 > 
 > diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
-> index 7fc4278..59b0d87 100644
+> index 59b0d87..230b2c9 100644
 > --- a/arch/arm/include/asm/mach/pci.h
 > +++ b/arch/arm/include/asm/mach/pci.h
-> @@ -22,6 +22,9 @@ struct hw_pci {
->  #ifdef CONFIG_PCI_DOMAINS
->  	int		domain;
->  #endif
-> +#ifdef CONFIG_PCI_MSI
-> +	struct msi_chip *msi_chip;
-> +#endif
->  	struct pci_ops	*ops;
->  	int		nr_controllers;
->  	void		**private_data;
-> @@ -47,6 +50,9 @@ struct pci_sys_data {
->  #ifdef CONFIG_PCI_DOMAINS
->  	int		domain;
->  #endif
-> +#ifdef CONFIG_PCI_MSI
-> +	struct msi_chip *msi_chip;
-> +#endif
->  	struct list_head node;
->  	int		busnr;		/* primary bus number			*/
->  	u64		mem_offset;	/* bus->cpu memory mapping offset	*/
-> diff --git a/arch/arm/include/asm/pci.h b/arch/arm/include/asm/pci.h
-> index 7e95d85..b562c09 100644
-> --- a/arch/arm/include/asm/pci.h
-> +++ b/arch/arm/include/asm/pci.h
-> @@ -31,6 +31,15 @@ static inline int pci_proc_domain(struct pci_bus *bus)
->  }
->  #endif /* CONFIG_PCI_DOMAINS */
+> @@ -39,8 +39,6 @@ struct hw_pci {
+>  					  resource_size_t start,
+>  					  resource_size_t size,
+>  					  resource_size_t align);
+> -	void		(*add_bus)(struct pci_bus *bus);
+> -	void		(*remove_bus)(struct pci_bus *bus);
+>  };
 >  
-> +#ifdef CONFIG_PCI_MSI
-> +static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
-> +{
-> +	struct pci_sys_data *root = bus->sysdata;
-> +
-> +	return root->msi_chip;
-> +}
-> +#endif
-> +
 >  /*
->   * The PCI address space does equal the physical memory address space.
->   * The networking and block device layers use this boolean for bounce
+> @@ -71,8 +69,6 @@ struct pci_sys_data {
+>  					  resource_size_t start,
+>  					  resource_size_t size,
+>  					  resource_size_t align);
+> -	void		(*add_bus)(struct pci_bus *bus);
+> -	void		(*remove_bus)(struct pci_bus *bus);
+>  	void		*private_data;	/* platform controller private data	*/
+>  };
+>  
 > diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-> index 17a26c1..a19038d 100644
+> index a19038d..b1b872e 100644
 > --- a/arch/arm/kernel/bios32.c
 > +++ b/arch/arm/kernel/bios32.c
-> @@ -471,6 +471,9 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
->  #ifdef CONFIG_PCI_DOMAINS
->  		sys->domain  = hw->domain;
->  #endif
-> +#ifdef CONFIG_PCI_MSI
-> +		sys->msi_chip = hw->msi_chip;
-> +#endif
->  		sys->busnr   = busnr;
+> @@ -360,20 +360,6 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+>  }
+>  EXPORT_SYMBOL(pcibios_fixup_bus);
+>  
+> -void pcibios_add_bus(struct pci_bus *bus)
+> -{
+> -	struct pci_sys_data *sys = bus->sysdata;
+> -	if (sys->add_bus)
+> -		sys->add_bus(bus);
+> -}
+> -
+> -void pcibios_remove_bus(struct pci_bus *bus)
+> -{
+> -	struct pci_sys_data *sys = bus->sysdata;
+> -	if (sys->remove_bus)
+> -		sys->remove_bus(bus);
+> -}
+> -
+>  /*
+>   * Swizzle the device pin each time we cross a bridge.  If a platform does
+>   * not provide a swizzle function, we perform the standard PCI swizzling.
+> @@ -478,8 +464,6 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
 >  		sys->swizzle = hw->swizzle;
 >  		sys->map_irq = hw->map_irq;
+>  		sys->align_resource = hw->align_resource;
+> -		sys->add_bus = hw->add_bus;
+> -		sys->remove_bus = hw->remove_bus;
+>  		INIT_LIST_HEAD(&sys->resources);
+>  
+>  		if (hw->private_data)
+
+What do the core changes below have to do with the ARM changes above?
+They should be a separate patch unless they can't be separated.
+
 > diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index 22e413c..f11108c 100644
+> index f11108c..56e54ad 100644
 > --- a/drivers/pci/msi.c
 > +++ b/drivers/pci/msi.c
-> @@ -35,6 +35,9 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
->  	struct msi_chip *chip = dev->bus->msi;
+> @@ -32,12 +32,10 @@ int pci_msi_ignore_mask;
+>  
+>  int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+>  {
+> -	struct msi_chip *chip = dev->bus->msi;
+> +	struct msi_chip *chip;
 >  	int err;
 >  
-> +	if (!chip)
-> +		chip = pci_msi_chip(dev->bus);
-> +
+> -	if (!chip)
+> -		chip = pci_msi_chip(dev->bus);
+> -
+> +	chip = pci_msi_chip(dev->bus);
 >  	if (!chip || !chip->setup_irq)
 >  		return -EINVAL;
 >  
-> @@ -50,6 +53,9 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
+> @@ -51,10 +49,7 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+>  void __weak arch_teardown_msi_irq(unsigned int irq)
+>  {
 >  	struct msi_desc *entry = irq_get_msi_desc(irq);
->  	struct msi_chip *chip = entry->dev->bus->msi;
+> -	struct msi_chip *chip = entry->dev->bus->msi;
+> -
+> -	if (!chip)
+> -		chip = pci_msi_chip(entry->dev->bus);
+> +	struct msi_chip *chip = pci_msi_chip(entry->dev->bus);
 >  
-> +	if (!chip)
-> +		chip = pci_msi_chip(entry->dev->bus);
-> +
 >  	if (!chip || !chip->teardown_irq)
 >  		return;
->  
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 9cd2721..7a48b40 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1433,6 +1433,15 @@ static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
->  
->  #include <asm/pci.h>
->  
-> +/* Just avoid compile error, will be clean up later */
-> +#ifdef CONFIG_PCI_MSI
-> +
-> +#ifndef pci_msi_chip
-> +#define pci_msi_chip(bus)	NULL
-> +#endif
-> +#endif
-
-I don't like the mixture of ARM changes and PCI core changes in the same
-patch.  Can you split this into a core patch that does something like this:
-
-  struct msi_chip * __weak pcibios_msi_controller(struct pci_bus *bus)
-  {
-    return NULL;
-  }
-
-  struct msi_chip *pci_msi_controller(struct pci_bus *bus)
-  {
-    msi_chip *controller = bus->msi;
-
-    if (controller)
-      return controller;
-    return pcibios_msi_controller(bus);
-  }
-
-followed by an ARM patch that puts the msi_chip pointer in struct hw_pci
-and implements pcibios_msi_controller()?
-
-I know you're trying to *remove* weak functions, and this adds one, but
-this section of the series is more about getting rid of the ARM
-pcibios_add_bus() because all it was used for was setting the bus->msi
-pointer.
-
-Eventually we might have a way to stash an MSI controller pointer in the
-generic pci_host_bridge struct, and then the pcibios_msi_controller()
-interface could go away.
-
-> +
->  /* these helpers provide future and backwards compatibility
->   * for accessing popular PCI BAR info */
->  #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
 > -- 
 > 1.7.1
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
