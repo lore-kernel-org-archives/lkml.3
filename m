@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039AbaJWOSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:18:34 -0400
-Received: from resqmta-ch2-12v.sys.comcast.net ([69.252.207.44]:47315 "EHLO
-	resqmta-ch2-12v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755680AbaJWOSc (ORCPT
+	id S1755955AbaJWOWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:22:42 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:34904 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaJWOWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:18:32 -0400
-Date: Thu, 23 Oct 2014 09:18:29 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com
-Subject: Re: [RFC 0/4] [RFC] slub: Fastpath optimization (especially for
- RT)
-In-Reply-To: <20141023080942.GA7598@js1304-P5Q-DELUXE>
-Message-ID: <alpine.DEB.2.11.1410230916090.19494@gentwo.org>
-References: <20141022155517.560385718@linux.com> <20141023080942.GA7598@js1304-P5Q-DELUXE>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 23 Oct 2014 10:22:41 -0400
+Date: Thu, 23 Oct 2014 16:22:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
+        mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        laijs@cn.fujitsu.com, dave@stgolabs.net, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 3/6] mm: VMA sequence count
+Message-ID: <20141023142224.GL3219@twins.programming.kicks-ass.net>
+References: <20141020215633.717315139@infradead.org>
+ <20141020222841.361741939@infradead.org>
+ <20141022112657.GG30588@node.dhcp.inet.fi>
+ <20141022113951.GB21513@worktop.programming.kicks-ass.net>
+ <20141022115304.GA31486@node.dhcp.inet.fi>
+ <20141022121554.GD21513@worktop.programming.kicks-ass.net>
+ <20141022134416.GA15602@worktop.programming.kicks-ass.net>
+ <20141023123616.GA8809@node.dhcp.inet.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023123616.GA8809@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Oct 2014, Joonsoo Kim wrote:
+On Thu, Oct 23, 2014 at 03:36:16PM +0300, Kirill A. Shutemov wrote:
+> On Wed, Oct 22, 2014 at 03:44:16PM +0200, Peter Zijlstra wrote:
+> > On Wed, Oct 22, 2014 at 02:15:54PM +0200, Peter Zijlstra wrote:
+> > > On Wed, Oct 22, 2014 at 02:53:04PM +0300, Kirill A. Shutemov wrote:
+> > > > Em, no. In this case change_protection() will not touch the pte, since
+> > > > it's pte_none() and the pte_same() check will pass just fine.
+> > > 
+> > > Oh, that's what you meant. Yes that's a problem, yes vm_page_prot
+> > > needs wrapping too.
+> > 
+> > Maybe also vm_policy, is there anything else that can change while a vma
+> > lives?
+> 
+>  - vm_flags, obviously;
 
-> Preemption disable during very short code would cause large problem for RT?
+Do those ever change? The only thing that jumps out is the VM_LOCKED
+thing and that should not really matter one way or the other, but sure
+can do.
 
-This is the hotpath and preempt enable/disable adds a significant number
-of cycles.
+>  - shared, anon_vma and anon_vma_chain (at least on the first write fault
+>    to private mapping);
+>  - vm_pgoff (mremap(2) ?);
 
-> And, if page_address() and virt_to_head_page() remain as current patchset
-> implementation, this would work worse than before.
+Right you are. Never thought about that one.
 
-Right.
+>  - vm_private_data -- it's all over drivers. Potential nightmare, but
+>    seems not in use for anon mappings.
 
-> I looked at the patchset quickly and found another idea to remove
-> preemption disable. How about just retrieving s->cpu_slab->tid first,
-> before accessing s->cpu_slab, in slab_alloc() and slab_free()?
-> Retrieved tid may ensure that we aren't migrated to other CPUs so that
-> we can remove code for preemption disable.
+Yeah, we need to either audit drivers or otherwise exclude stuff from
+speculative faults, Andy already noted that drivers might not expect
+.fault after .close or whatnot.
 
-You cannot do any of these things because you need the tid from the right
-cpu and the scheduler can prempt you and reschedule you on another
-processor at will. tid and c may be from different per cpu areas.
+In any case, yes I'll go include them.
