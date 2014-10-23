@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaJWNwk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:52:40 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:36125 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaJWNwi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:52:38 -0400
-From: mathieu.poirier@linaro.org
-To: linux@arm.linux.org.uk
-Cc: catalin.marinas@arm.com, stefano.stabellini@eu.citrix.com,
-        ezequiel.garcia@free-electrons.com, Liviu.Dudau@arm.com,
-        thomas.petazzoni@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mathieu.poirier@linaro.org
-Subject: [PATCH v2] ARM: supplementing IO accessors with 64 bit capability
-Date: Thu, 23 Oct 2014 07:51:55 -0600
-Message-Id: <1414072315-18393-1-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	id S1755989AbaJWNxD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:53:03 -0400
+Received: from lists.s-osg.org ([54.187.51.154]:41765 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753446AbaJWNw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 09:52:59 -0400
+Message-ID: <54490832.7040906@osg.samsung.com>
+Date: Thu, 23 Oct 2014 07:52:50 -0600
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Christopher Covington <cov@codeaurora.org>,
+        Michael Ellerman <mpe@ellerman.id.au>
+CC: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Andrew Morton <akpm@osdl.org>, gorcunov@openvz.org
+Subject: Re: [PATCH 3/3] selftests/kcmp: Always try to build the test
+References: <1414040834-30209-1-git-send-email-mpe@ellerman.id.au> <1414040834-30209-3-git-send-email-mpe@ellerman.id.au> <5448FD72.9040301@codeaurora.org>
+In-Reply-To: <5448FD72.9040301@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+On 10/23/2014 07:06 AM, Christopher Covington wrote:
+> Hi Michael,
+> 
+> On 10/23/2014 01:07 AM, Michael Ellerman wrote:
+>> Don't prevent the test building on non-x86. Just try and build it and
+>> let the chips fall where they may.
+> 
+> As a user of kcmp via CRIU on arm and arm64, thanks!
+> 
+>> diff --git a/tools/testing/selftests/kcmp/Makefile b/tools/testing/selftests/kcmp/Makefile
+>> index 4f00c0524501..cda9cc4004c9 100644
+>> --- a/tools/testing/selftests/kcmp/Makefile
+>> +++ b/tools/testing/selftests/kcmp/Makefile
+>> @@ -1,21 +1,7 @@
+>> -uname_M := $(shell uname -m 2>/dev/null || echo not)
+>> -ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
+>> -ifeq ($(ARCH),i386)
+>> -        ARCH := x86
+>> -	CFLAGS := -DCONFIG_X86_32 -D__i386__
+>> -endif
+>> -ifeq ($(ARCH),x86_64)
+>> -	ARCH := x86
+>> -	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
+>> -endif
+>>  CFLAGS += -I../../../../usr/include/
+>>  
+>>  all:
+>> -ifeq ($(ARCH),x86)
+>>  	gcc $(CFLAGS) kcmp_test.c -o kcmp_test
+> 
+> Not that this needs to be addressed in this patch, but this looks broken for
+> cross compilation. It looks like some of the other selftests use:
+> 
+> CC = $(CROSS_COMPILE)gcc
+> 
 
-Some drivers on ARMv7 need 64 bit read and writes.
+It makes sense to fix the cross-compile problem now, since
+this patch is extending the support to other archs.
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
-Changes for v2:
- - Protecting [readq, writeq]_relaxed with architecture constraint.
+thanks,
+-- Shuah
 
- arch/arm/include/asm/io.h | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
 
-diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
-index 1805674..027832b 100644
---- a/arch/arm/include/asm/io.h
-+++ b/arch/arm/include/asm/io.h
-@@ -118,6 +118,24 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
- 	return val;
- }
- 
-+#if __LINUX_ARM_ARCH__ >= 5
-+static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
-+{
-+	asm volatile("strd %1, %0"
-+		     : "+Qo" (*(volatile u64 __force *)addr)
-+		     : "r" (val));
-+}
-+
-+static inline u64 __raw_readq(const volatile void __iomem *addr)
-+{
-+	u64 val;
-+	asm volatile("ldrd %1, %0"
-+		     : "+Qo" (*(volatile u64 __force *)addr),
-+		       "=r" (val));
-+	return val;
-+}
-+#endif
-+
- /*
-  * Architecture ioremap implementation.
-  */
-@@ -306,10 +324,17 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
- 					__raw_readw(c)); __r; })
- #define readl_relaxed(c) ({ u32 __r = le32_to_cpu((__force __le32) \
- 					__raw_readl(c)); __r; })
-+#if __LINUX_ARM_ARCH__ >= 5
-+#define readq_relaxed(c) ({ u64 __r = le64_to_cpu((__force __le64) \
-+					__raw_readq(c)); __r; })
-+#endif
- 
- #define writeb_relaxed(v,c)	__raw_writeb(v,c)
- #define writew_relaxed(v,c)	__raw_writew((__force u16) cpu_to_le16(v),c)
- #define writel_relaxed(v,c)	__raw_writel((__force u32) cpu_to_le32(v),c)
-+#if __LINUX_ARM_ARCH__ >= 5
-+#define writeq_relaxed(v,c)	__raw_writeq((__force u64) cpu_to_le64(v),c)
-+#endif
- 
- #define readb(c)		({ u8  __v = readb_relaxed(c); __iormb(); __v; })
- #define readw(c)		({ u16 __v = readw_relaxed(c); __iormb(); __v; })
 -- 
-1.9.1
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
