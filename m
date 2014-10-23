@@ -1,79 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761AbaJWBWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 21:22:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49304 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850AbaJWBWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 21:22:45 -0400
-Date: Wed, 22 Oct 2014 21:22:36 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com, jbacik@fb.com,
-        linux-btrfs@vger.kernel.org
-Subject: Re: btrfs: WARN_ON(data_sinfo->bytes_may_use < bytes);
-Message-ID: <20141023012236.GA28429@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com,
-	jbacik@fb.com, linux-btrfs@vger.kernel.org
-References: <20141023010731.GA27796@redhat.com>
+	id S1754332AbaJWBZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 21:25:52 -0400
+Received: from mail-bl2on0135.outbound.protection.outlook.com ([65.55.169.135]:54000
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751202AbaJWBZu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 21:25:50 -0400
+From: Dudley Du <dudl@cypress.com>
+To: "'dmitry.torokhov@gmail.com'" <dmitry.torokhov@gmail.com>,
+        "'rydberg@euromail.se'" <rydberg@euromail.se>
+CC: "'bleung@google.com'" <bleung@google.com>,
+        "'patrikf@google.com'" <patrikf@google.com>,
+        "'linux-input@vger.kernel.org'" <linux-input@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        David Solda <dso@cypress.com>
+Subject: RE: [PATCH v8 00/13] input: cyapa: intruction of cyapa patches
+Thread-Topic: [PATCH v8 00/13] input: cyapa: intruction of cyapa patches
+Thread-Index: Ac/tlhWHE+MFpOnvS3qaig+FKBixaQ==
+Date: Thu, 23 Oct 2014 01:25:45 +0000
+Message-ID: <5a3eeff037d14e3ba96376a7459e4478@BN1PR06MB070.namprd06.prod.outlook.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [140.207.206.26]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB070;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-forefront-prvs: 0373D94D15
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(51164003)(164054003)(51704005)(13464003)(76482002)(99396003)(120916001)(31966008)(54356999)(40100003)(122556002)(33646002)(87936001)(2656002)(85852003)(108616004)(107046002)(95666004)(99286002)(106356001)(76576001)(101416001)(77096002)(74316001)(105586002)(46102003)(80022003)(85306004)(86362001)(64706001)(97736003)(20776003)(92566001)(19580405001)(21056001)(50986999)(19580395003)(4396001)(66066001)(24736002)(491001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR06MB070;H:BN1PR06MB070.namprd06.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023010731.GA27796@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB053;
+X-OriginatorOrg: cypress.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:07:31PM -0400, Dave Jones wrote:
- > Just hit this while running trinity.
- > 
- > WARNING: CPU: 3 PID: 9612 at fs/btrfs/extent-tree.c:3799 btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]()
- > Modules linked in: rfcomm hidp bnep af_key llc2 scsi_transport_iscsi nfnetlink sctp libcrc32c can_raw can_bcm nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill btrfs xor coretemp hwmon x86_pkg_temp_thermal kvm_intel snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_codec_generic kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel raid6_pq snd_hda_intel microcode snd_hda_controller pcspkr snd_hda_codec serio_raw snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp shpchp pps_core snd_timer snd soundcore
- > CPU: 3 PID: 9612 Comm: trinity-c85 Not tainted 3.18.0-rc1+ #74
- >  0000000000000009 000000009989d5b8 ffff88018a337ba8 ffffffffaf86cc97
- >  0000000000000000 0000000000000000 ffff88018a337be8 ffffffffaf07f301
- >  ffff88022ddf8d40 ffff88023f799148 000000007fbbf000 ffff88009c2b59c8
- > Call Trace:
- >  [<ffffffffaf86cc97>] dump_stack+0x4f/0x7c
- >  [<ffffffffaf07f301>] warn_slowpath_common+0x81/0xa0
- >  [<ffffffffaf07f41a>] warn_slowpath_null+0x1a/0x20
- >  [<ffffffffc045b831>] btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]
- >  [<ffffffffc045d0b2>] btrfs_delalloc_release_space+0x22/0x30 [btrfs]
- >  [<ffffffffc047994b>] btrfs_direct_IO+0x33b/0x350 [btrfs]
- >  [<ffffffffc0487400>] ? btrfs_page_exists_in_range+0x2c0/0x2c0 [btrfs]
- >  [<ffffffffc047b2b0>] ? btrfs_real_readdir+0x5e0/0x5e0 [btrfs]
- >  [<ffffffffaf1adbb4>] generic_file_direct_write+0xc4/0x1a0
- >  [<ffffffffc048b246>] btrfs_file_write_iter+0x186/0x560 [btrfs]
- >  [<ffffffffaf22abde>] new_sync_write+0x8e/0xd0
- >  [<ffffffffaf22b5ca>] vfs_write+0xba/0x1f0
- >  [<ffffffffaf24fbce>] ? __fget_light+0xbe/0xe0
- >  [<ffffffffaf22c2d2>] SyS_pwrite64+0x92/0xc0
- >  [<ffffffffaf877d49>] tracesys_phase2+0xd4/0xd9
+Hi Dmitry,
 
-I also see this WARN_ON being hit from the sync path..
+It has been long time after the v8 patches submitted, with your busy time, could you help take a little time to update the status of the schedule or reviews?
+Any information will halp a lot.
 
-WARNING: CPU: 2 PID: 11166 at fs/btrfs/extent-tree.c:3799 btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]()
-CPU: 2 PID: 11166 Comm: trinity-c61 Tainted: G        W      3.18.0-rc1+ #74
- 0000000000000009 00000000aee2e4e2 ffff8801b0dfbcc8 ffffffff8d86cc97
- 0000000000000000 0000000000000000 ffff8801b0dfbd08 ffffffff8d07f301
- ffff88023f328000 ffff88023953d668 0000000000040000 ffff880239358548
-Call Trace:
- [<ffffffff8d86cc97>] dump_stack+0x4f/0x7c
- [<ffffffff8d07f301>] warn_slowpath_common+0x81/0xa0
- [<ffffffff8d07f41a>] warn_slowpath_null+0x1a/0x20
- [<ffffffffc0253831>] btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]
- [<ffffffffc025ca63>] btrfs_write_dirty_block_groups+0x6f3/0x740 [btrfs]
- [<ffffffffc02f7a41>] commit_cowonly_roots+0x17a/0x234 [btrfs]
- [<ffffffffc026e60b>] btrfs_commit_transaction+0x45b/0xc10 [btrfs]
- [<ffffffffc023a09b>] btrfs_sync_fs+0x8b/0x270 [btrfs]
- [<ffffffff8d266ad0>] ? do_fsync+0x80/0x80
- [<ffffffff8d266af0>] sync_fs_one_sb+0x20/0x30
- [<ffffffff8d22f2f2>] iterate_supers+0xb2/0x110
- [<ffffffff8d266c24>] sys_sync+0x64/0xb0
- [<ffffffff8d877d49>] tracesys_phase2+0xd4/0xd9
+Thanks,
+Dudley
 
-After rebooting, and restarting the fuzzer, it happened again very quickly.
+> -----Original Message-----
+> From: Dudley Du
+> Sent: 2014?10?20? 9:16
+> To: 'Dudley Du'; dmitry.torokhov@gmail.com; rydberg@euromail.se
+> Cc: bleung@google.com; patrikf@google.com; linux-input@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH 00/13] input: cyapa: intruction of cyapa patches
+>
+> Hi Dmitry,
+>
+> Is there any update on the v8 patchs for input cyapa trackpad drivers?
+>
+> Thanks,
+> Dudley
+>
+> > -----Original Message-----
+> > From: Dudley Du [mailto:dudley.dulixin@gmail.com]
+> > Sent: 2014?10?15? 15:19
+> > To: dmitry.torokhov@gmail.com; rydberg@euromail.se
+> > Cc: Dudley Du; bleung@google.com; patrikf@google.com;
+> > linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
+> > Subject: [PATCH 00/13] input: cyapa: intruction of cyapa patches
+> >
+> > Based on Dmitry's comments, I made v8 patches of cyapa trackpad device
+> > with below updates compared with v7 patches:
+> > 1) [PATCH v8 01/13] - Remove the async thread for device detect in
+> >    proble routine, now the device detect process is completly done within
+> >    the device proble routine.
+> > 2) [PATCH v8 01/13] - Split the irq cmd hander function to separated
+> >    function cyapa_default_irq_cmd_handler() and set it to interface
+> >    cyapa_default_ops.irq_cmd_handler.
+> > 3) [PATCH v8 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
+> >    to avoid miss-enter when device protocol is still in detecting.
+> >
+> >
+> > V7 patches have below updates compared with v6 patches:
+> > 1) [PATCH v7 01/13] - Split the irq cmd hander function to separated
+> >    function cyapa_default_irq_cmd_handler() and set it to interface
+> >    cyapa_default_ops.irq_cmd_handler.
+> > 2) [PATCH v7 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
+> >    to avoid miss-enter when device protocol is still in detecting.
+> >
+> >
+> > V6 patches have below updates compared with v5 patches:
+> > 1) Remove patch 14 of the lid filtering from the cyapa driver.
+> >
+> > V5 patches have below updates compared with v4 patches:
+> > 1) Uses get_device()/put_device() instead of kobject_get()/kobject_put();
+> > 2) Fix memories freed before debugfs entries issue;
+> > 3) Make cyapa_debugs_root valid in driver module level
+> >    in module_init()/moudle_exit() ;
+> > 4) Fix i2c_transfer() may return partial transfer issues.
+> > 5) Add cyapa->removed flag to avoid detecting thread may still running
+> >    when driver module is removed.
+> > 6) Fix the meanings of some comments and return error code not clear issue.
+> >
+> > This patch set is aimed to re-architecture the cyapa driver to support
+> > old gen3 trackpad device and new gen5 trackpad device in one
+> > cyapa driver for easily productions support based on
+> > customers' requirements, and add sysfs functions and interfaces
+> > supported that required by users and customers.
+> > Because the earlier gen3 and the latest gen5 trackpad devies using
+> > two different chipsets, and have different protocol and interfaces.
+> > If supported these two trackpad devices in two different drivers, then
+> > it will be difficult to manage productions and later firmware updates.
+> > it will cause customer don't know which one to use and update
+> > because these two trackpad devices have been used and integrated
+> > in same one productions at a time, so must to support these two trackpad
+> > devices in same on driver.
+> >
+> > The new architecture is made of:
+> > cyapa.c - the core of the architecture, supply interfaces and
+> > functions to system and read trackpad devices.
+> > cyapa.h - header file including macros and data structure definitions.
+> > cyapa_gen3.c - functions support for gen3 trackpad devices,
+> > cyapa_gen5.c - functions support for gen5 trackpad devices.
+> >
+> > Beside this introduction patch, it has 14 patches listed as below.
+> > For these patches each one is patched based on previous one.
+> >
+> > patch 1/13: re-architecture cyapa driver with core functions,
+> > and applying the device detecting function in async thread to speed
+> > up system boot time.
+> >
+> > patch 2/13: add cyapa driver power management interfaces support.
+> >
+> > patch 3/13: add cyapa driver runtime power management interfaces support.
+> >
+> > patch 4/13: add cyapa key function interfaces in sysfs system.
+> > Including read firmware version, get production ID, read baseline,
+> > re-calibrate trackpad baselines and do trackpad firmware update.
+> >
+> > patch 5/13: add read firmware image and read raw trackpad device'
+> > sensors' raw data interface in debugfs system.
+> >
+> > patch 6/13: add gen3 trackpad device basic functions support.
+> >
+> > patch 7/13: add gen3 trackpad device firmware update function support.
+> >
+> > patch 8/13: add gen3 trackpad device report baseline and do force
+> > re-calibrate functions support.
+> >
+> > patch 9/13: add gen3 trackpad device read firmware image function support.
+> >
+> > patch 10/13: add gen5 trackpad device basic functions support.
+> >
+> > patch 11/13: add gen5 trackpad device firmware update function support.
+> >
+> > patch 12/13: add gen5 trackpad device report baseline and do force
+> > re-calibrate functions support.
+> >
+> > patch 13/13: add gen5 trackpad device read firmware image and report
+> > sensors' raw data values functions support.
+> >
+> > This message and any attachments may contain Cypress (or its subsidiaries)
+> > confidential information. If it has been received in error, please advise the sender
+> > and immediately delete this message.
 
-	Dave
-
+This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
