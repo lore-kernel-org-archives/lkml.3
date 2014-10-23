@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543AbaJWHPo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 03:15:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14839 "EHLO mx1.redhat.com"
+	id S1752181AbaJWHUq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 03:20:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5102 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144AbaJWHPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 03:15:43 -0400
-Date: Thu, 23 Oct 2014 09:14:49 +0200
+	id S1752010AbaJWHUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 03:20:45 -0400
+Date: Thu, 23 Oct 2014 09:19:44 +0200
 From: Jiri Olsa <jolsa@redhat.com>
 To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Liang, Kan" <kan.liang@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Subject: Re: [PATCH v2 05/12] perf/x86: add cross-HT counter exclusion
- infrastructure
-Message-ID: <20141023071448.GB3356@krava.brq.redhat.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, kan.liang@intel.com, bp@alien8.de,
+        maria.n.dimakopoulou@gmail.com
+Subject: Re: [PATCH v2 06/12] perf/x86: implement cross-HT corruption bug
+ workaround
+Message-ID: <20141023071944.GA5184@krava.brq.redhat.com>
 References: <1412872486-2930-1-git-send-email-eranian@google.com>
- <1412872486-2930-6-git-send-email-eranian@google.com>
- <20141022150712.GD15126@krava.brq.redhat.com>
- <CABPqkBTim1nHhF2zEm0FGLBVStuD1TvdH_gifP+f3GCxdMp4Ag@mail.gmail.com>
+ <1412872486-2930-7-git-send-email-eranian@google.com>
+ <20141022123151.GA15126@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABPqkBTim1nHhF2zEm0FGLBVStuD1TvdH_gifP+f3GCxdMp4Ag@mail.gmail.com>
+In-Reply-To: <20141022123151.GA15126@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 07:25:40PM +0200, Stephane Eranian wrote:
-> On Wed, Oct 22, 2014 at 5:07 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> > On Thu, Oct 09, 2014 at 06:34:39PM +0200, Stephane Eranian wrote:
-> >> From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-> >>
-> >
-> > SNIP
-> >
-> >> +struct intel_excl_cntrs *allocate_excl_cntrs(int cpu)
-> >> +{
-> >> +     struct intel_excl_cntrs *c;
-> >> +     int i;
-> >> +
-> >> +     c = kzalloc_node(sizeof(struct intel_excl_cntrs),
-> >> +                      GFP_KERNEL, cpu_to_node(cpu));
-> >> +     if (c) {
-> >> +             spin_lock_init(&c->lock);
-> >> +             for (i = 0; i < X86_PMC_IDX_MAX; i++) {
-> >> +                     c->states[0].state[i] = INTEL_EXCL_UNUSED;
-> >> +                     c->states[0].init_state[i] = INTEL_EXCL_UNUSED;
-> >> +
-> >> +                     c->states[1].state[i] = INTEL_EXCL_UNUSED;
-> >> +                     c->states[1].init_state[i] = INTEL_EXCL_UNUSED;
-> >
-> > 'c' is allocated with kzalloc_node, seems there's no need
-> > to re-initialize states it to zero again with INTEL_EXCL_UNUSED
-> >
-> You are assuming that INTEL_EXCL_UNUSED=0 always.
-> That means it needs to be clear there is a dependency here.
+On Wed, Oct 22, 2014 at 02:31:51PM +0200, Jiri Olsa wrote:
+> On Thu, Oct 09, 2014 at 06:34:40PM +0200, Stephane Eranian wrote:
+> > From: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
+> 
+> SNIP
+> 
+> > +static struct event_constraint *
+> > +intel_get_excl_constraints(struct cpu_hw_events *cpuc, struct perf_event *event,
+> > +			   int idx, struct event_constraint *c)
+> > +{
+> > +	struct event_constraint *cx;
+> > +	struct intel_excl_cntrs *excl_cntrs = cpuc->excl_cntrs;
+> > +	struct intel_excl_states *xl, *xlo;
+> > +	int is_excl, i;
+> 
+> SNIP
+> 
+> > +	/*
+> > +	 * Modify static constraint with current dynamic
+> > +	 * state of thread
+> > +	 *
+> > +	 * EXCLUSIVE: sibling counter measuring exclusive event
+> > +	 * SHARED   : sibling counter measuring non-exclusive event
+> > +	 * UNUSED   : sibling counter unused
+> > +	 */
+> > +	for_each_set_bit(i, cx->idxmsk, X86_PMC_IDX_MAX) {
+> > +		/*
+> > +		 * exclusive event in sibling counter
+> > +		 * our corresponding counter cannot be used
+> > +		 * regardless of our event
+> > +		 */
+> > +		if (xl->state[i] == INTEL_EXCL_EXCLUSIVE)
+> > +			__clear_bit(i, cx->idxmsk);
+> 
+> if we want to check sibling counter, shouldn't we check xlo->state[i] instead? like
+> 
+> 		if (xlo->state[i] == INTEL_EXCL_EXCLUSIVE)
+> 			__clear_bit(i, cx->idxmsk);
+> 	   
+> 
+> and also in condition below?
 
-it's 0 explicitly:
+any comment on this? I'm curious, because it'd enlighten me
+on how this is supposed to work ;-)
 
-enum intel_excl_state_type {
-        INTEL_EXCL_UNUSED    = 0, /* counter is unused */
+I dont understand why you update the sibling's counter state instead
+of the current cpuc->excl_thread_id HT, like in intel_commit_scheduling
+while you hold lock for the current HT state
 
-but it's not big issue for me.. just curious ;-)
+could you please comment, I must be missing something
 
+thanks,
 jirka
