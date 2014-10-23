@@ -1,82 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbaJWM2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:28:20 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:59055 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168AbaJWM2Q (ORCPT
+	id S1755466AbaJWM3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:29:07 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34759 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168AbaJWM3E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:28:16 -0400
-Date: Thu, 23 Oct 2014 14:28:08 +0200
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC v3 09/16] virtio: set FEATURES_OK
-Message-ID: <20141023142808.377551d8.cornelia.huck@de.ibm.com>
-In-Reply-To: <1414003404-505-10-git-send-email-mst@redhat.com>
-References: <1414003404-505-1-git-send-email-mst@redhat.com>
-	<1414003404-505-10-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102312-0021-0000-0000-000001836EF0
+	Thu, 23 Oct 2014 08:29:04 -0400
+Date: Thu, 23 Oct 2014 15:28:45 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Eric Rost <eric.rost@mybabylon.net>
+Cc: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
+        antonysaraev@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] staging: skein: Add Crypto API support
+Message-ID: <20141023122845.GP23154@mwanda>
+References: <cover.1414030776.git.eric.rost@mybabylon.net>
+ <e9cb9bb24d2c34a6f6d9459a22c79609ff5cb60e.1414030776.git.eric.rost@mybabylon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e9cb9bb24d2c34a6f6d9459a22c79609ff5cb60e.1414030776.git.eric.rost@mybabylon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 21:44:44 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> set FEATURES_OK as per virtio 1.0 spec
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  include/uapi/linux/virtio_config.h |  2 ++
->  drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
->  2 files changed, 24 insertions(+), 7 deletions(-)
+On Wed, Oct 22, 2014 at 09:23:51PM -0500, Eric Rost wrote:
+> Adds crypto API support for the skein module. Also collapses the
+> threefish module into the skein module.
 > 
 
->  	dev->config->finalize_features(dev);
-> 
-> +	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
-> +		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
-> +		status = dev->config->get_status(dev);
-> +		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
-> +			printk(KERN_ERR "virtio: device refuses features: %x\n",
-> +			       status);
-> +			err = -ENODEV;
-> +			goto err;
-> +		}
-> +	}
+Why is this in staging anyway?  It seems very small and not terrible
+code.  It could easily be sent to the main kernel.
+
+> diff --git a/drivers/staging/skein/skein.h b/drivers/staging/skein/skein.h
+> index e6669f1..79fac00 100644
+> --- a/drivers/staging/skein/skein.h
+> +++ b/drivers/staging/skein/skein.h
+> @@ -28,6 +28,11 @@
+>  **
+>  ***************************************************************************/
+>  
+> +/*Skein digest sizes for crypto api*/
+> +#define SKEIN256_DIGEST_BIT_SIZE (256)
+> +#define SKEIN512_DIGEST_BIT_SIZE (512)
+> +#define SKEIN1024_DIGEST_BIT_SIZE (1024)
+
+Superfulous parens.
+
+> +
+>  #ifndef rotl_64
+>  #define rotl_64(x, N)    (((x) << (N)) | ((x) >> (64-(N))))
+
+Missing spaces.
+
+#define rotl_64(x, N)    (((x) << (N)) | ((x) >> (64 - (N))))
+
+Also this should be a function.  N and x are evaulated twice so it could
+be a bug depending on how it's called.
+
+
+>  #endif
+> diff --git a/drivers/staging/skein/skein_generic.c b/drivers/staging/skein/skein_generic.c
+> new file mode 100644
+> index 0000000..14cc5bd
+> --- /dev/null
+> +++ b/drivers/staging/skein/skein_generic.c
+> @@ -0,0 +1,109 @@
+> +/*
+> + * Cryptographic API.
+> + *
+> + * Skein256 Hash Algorithm.
+> + *
+> + * Derived from cryptoapi implementation, adapted for in-place
+> + * scatterlist interface.
+> + *
+> + * Copyright (c) Eric Rost <eric.rost@mybabylon.net>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License as published by the Free
+> + * Software Foundation; either version 2 of the License, or (at your option)
+> + * any later version.
+> + *
+> + */
+> +#include <crypto/internal/hash.h>
+> +#include <linux/init.h>
+> +#include <linux/mm.h>
+> +#include <linux/cryptohash.h>
+> +#include <linux/types.h>
+> +#include "skein.h"
+> +#include <asm/byteorder.h>
+> +
+> +static int skein256_init(struct shash_desc *desc)
+> +{
+> +	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
 > +
 
-Ugh, I just realize that virtio-ccw has a problem with that mechanism :(
+Don't put a blank line in the middle of the declaration block.
 
-Up to now, the driver only propagated status to the device: For
-virtio-ccw, this was easily implemented via a ccw that transmitted
-"status" to the device. However, the "read back status" part now
-actually requires that the driver can get "status" from the device, or
-has a comparable way to find out that the device won't accept the
-status it tried to write.
+> +	int ret = skein_256_init(sctx, SKEIN256_DIGEST_BIT_SIZE);
+> +
+> +	return ret;
+> +}
 
-I can think of two solutions:
+This should be:
 
-(1) Introduce a new ccw that actually reads the device status.
-(2) Make the WRITE_STATUS ccw fail (with a unit check) if the driver
-    sets FEATURES_OK after it tried to set features the device won't
-    accept.
+static int skein256_init(struct shash_desc *desc)
+{
+	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
 
-(1) is probably more generic, while (2) is more straightforward to
-implement.
+	return skein_256_init(sctx, SKEIN256_DIGEST_BIT_SIZE);
+}
 
-Good thing we actually try to finally implement this, I did not notice
-this problem during the review :(
+> +
+> +int skein256_update(struct shash_desc *desc, const u8 *data,
+> +			unsigned int len)
+> +{
+> +	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
+> +	size_t hbl = (size_t) len;
+
+Pointless case.  Pointless assignment.
+
+> +	int ret = skein_256_update(sctx, data, hbl);
+> +
+> +	return ret;
+> +}
+
+This should be:
+
+int skein256_update(struct shash_desc *desc, const u8 *data,
+			unsigned int len)
+{
+	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
+
+	return skein_256_update(sctx, data, len);
+}
+
+> +EXPORT_SYMBOL(skein256_update);
+> +
+> +/* Add padding and return the message digest. */
+> +static int skein256_final(struct shash_desc *desc, u8 *out)
+> +{
+> +	struct skein_256_ctx *sctx = shash_desc_ctx(desc);
+> +	int ret = skein_256_final(sctx, out);
+> +	return ret;
+> +}
+
+Same.
+
+> +
+> +static int skein512_init(struct shash_desc *desc)
+> +{
+> +	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
+> +
+> +	int ret = skein_512_init(sctx, SKEIN512_DIGEST_BIT_SIZE);
+> +
+> +	return ret;
+> +}
+
+Same.
+
+> +
+> +int skein512_update(struct shash_desc *desc, const u8 *data,
+> +			unsigned int len)
+> +{
+> +	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
+> +	size_t hbl = (size_t) len;
+> +	int ret = skein_512_update(sctx, data, hbl);
+> +
+> +	return ret;
+> +}
+
+Same.
+
+> +EXPORT_SYMBOL(skein512_update);
+> +
+> +/* Add padding and return the message digest. */
+> +static int skein512_final(struct shash_desc *desc, u8 *out)
+> +{
+> +	struct skein_512_ctx *sctx = shash_desc_ctx(desc);
+> +	int ret = skein_512_final(sctx, out);
+> +	return ret;
+> +}
+
+Same.
+
+> +
+> +static int skein1024_init(struct shash_desc *desc)
+> +{
+> +	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
+> +
+> +	int ret = skein_1024_init(sctx, SKEIN1024_DIGEST_BIT_SIZE);
+> +
+> +	return ret;
+> +}
+
+Same.
+
+> +
+> +int skein1024_update(struct shash_desc *desc, const u8 *data,
+> +			unsigned int len)
+> +{
+> +	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
+> +	size_t hbl = (size_t) len;
+> +	int ret = skein_1024_update(sctx, data, hbl);
+> +
+> +	return ret;
+> +}
+
+Same.
+
+> +EXPORT_SYMBOL(skein1024_update);
+> +
+> +/* Add padding and return the message digest. */
+> +static int skein1024_final(struct shash_desc *desc, u8 *out)
+> +{
+> +	struct skein_1024_ctx *sctx = shash_desc_ctx(desc);
+> +	int ret = skein_1024_final(sctx, out);
+> +	return ret;
+> +}
+
+Same.
+
+regarsd,
+dan carpenter
+
 
