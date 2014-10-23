@@ -1,167 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329AbaJWPm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:42:58 -0400
-Received: from mail-bl2on0138.outbound.protection.outlook.com ([65.55.169.138]:21007
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751525AbaJWPm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 11:42:56 -0400
-From: Stuart Yoder <stuart.yoder@freescale.com>
-To: Marcel Apfelbaum <marcel.a@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "marcel@redhat.com" <marcel@redhat.com>,
-        "mst@redhat.com" <mst@redhat.com>, Eric Auger <eric.auger@linaro.org>
-Subject: RE: [PATCH v4] PCI: add kernel parameter to override devid<->driver
- mapping.
-Thread-Topic: [PATCH v4] PCI: add kernel parameter to override devid<->driver
- mapping.
-Thread-Index: AQHP7iaRIqQChkARrE2ClRQTljGKipw9nmKAgAALIACAAAb/AIAABHrA
-Date: Thu, 23 Oct 2014 15:42:52 +0000
-Message-ID: <b1639ca1ba8f4b7d9a361784bcca6a2e@CY1PR0301MB0748.namprd03.prod.outlook.com>
-References: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
-	 <1414002755.4202.253.camel@ul30vt.home>
-	 <1414067521.2376.54.camel@localhost.localdomain>
-	 <1414069910.27420.7.camel@ul30vt.home>
- <1414071412.2376.81.camel@localhost.localdomain>
-In-Reply-To: <1414071412.2376.81.camel@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [192.88.168.50]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0747;
-x-forefront-prvs: 0373D94D15
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(13464003)(377454003)(51704005)(199003)(164054003)(377424004)(24454002)(74316001)(40100003)(122556002)(2656002)(77096002)(120916001)(46102003)(101416001)(87936001)(64706001)(561944003)(20776003)(76482002)(99396003)(4396001)(85852003)(50986999)(21056001)(66066001)(19580395003)(86362001)(95666004)(92566001)(97736003)(93886004)(19580405001)(31966008)(99286002)(76176999)(108616004)(76576001)(107046002)(106356001)(80022003)(85306004)(54356999)(106116001)(105586002)(33646002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0747;H:CY1PR0301MB0748.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1755498AbaJWPoL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:44:11 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:50861 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850AbaJWPoJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 11:44:09 -0400
+Date: Thu, 23 Oct 2014 08:44:04 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Tommy Will <tommywill2011@gmail.com>, Hans de Goede <hdegoede@redhat.com>,
+        Yunkang Tang <yunkang.tang@cn.alps.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] input: alps: Reset mouse before identifying it
+Message-ID: <20141023154404.GA18714@dtor-ws>
+References: <1412329392-5580-1-git-send-email-pali.rohar@gmail.com>
+ <201410152010.39507@pali>
+ <20141015182256.GE8625@dtor-ws>
+ <201410191307.41313@pali>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201410191307.41313@pali>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9NFh5WO017067
 
-
-
-> -----Original Message-----
-> From: Marcel Apfelbaum [mailto:marcel.a@redhat.com]
-> Sent: Thursday, October 23, 2014 8:37 AM
-> To: Alex Williamson
-> Cc: linux-pci@vger.kernel.org; bhelgaas@google.com; linux-kernel@vger.kernel.org; marcel@redhat.com;
-> mst@redhat.com; Yoder Stuart-B08248
-> Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver mapping.
+On Sun, Oct 19, 2014 at 01:07:41PM +0200, Pali Rohár wrote:
+> On Wednesday 15 October 2014 20:22:56 Dmitry Torokhov wrote:
+> > On Wed, Oct 15, 2014 at 08:10:39PM +0200, Pali Rohár wrote:
+> > > On Wednesday 15 October 2014 20:00:11 Dmitry Torokhov wrote:
+> > > > On Wed, Oct 15, 2014 at 07:57:37PM +0200, Pali Rohár wrote:
+> > > > > On Wednesday 15 October 2014 19:43:15 Dmitry Torokhov 
+> wrote:
+> > > > > > On Wed, Oct 15, 2014 at 02:53:11PM +0200, Pali Rohár 
+> wrote:
+> > > > > > > On Tuesday 14 October 2014 08:08:34 Dmitry Torokhov
+> > > 
+> > > wrote:
+> > > > > > > > On Fri, Oct 03, 2014 at 11:47:59AM +0200, Hans de
+> > > > > > > > Goede
+> > > > > 
+> > > > > wrote:
+> > > > > > > > > Hi,
+> > > > > > > > > 
+> > > > > > > > > Thanks for working on this!
+> > > > > > > > > 
+> > > > > > > > > On 10/03/2014 11:43 AM, Pali Rohár wrote:
+> > > > > > > > > > On some systems after starting computer
+> > > > > > > > > > function alps_identify() does not detect dual
+> > > > > > > > > > ALPS touchpad+trackstick device correctly and
+> > > > > > > > > > detect only touchpad.
+> > > > > > > > > > 
+> > > > > > > > > > Resetting ALPS device before identifiying it
+> > > > > > > > > > fixing this problem and both parts touchpad
+> > > > > > > > > > and trackstick are detected.
+> > > > > > > > > > 
+> > > > > > > > > > Signed-off-by: Pali Rohár
+> > > > > > > > > > <pali.rohar@gmail.com> Tested-by: Pali Rohár
+> > > > > > > > > > <pali.rohar@gmail.com>
+> > > > > > > > > 
+> > > > > > > > > Looks good and seems sensible:
+> > > > > > > > > 
+> > > > > > > > > Acked-by: Hans de Goede <hdegoede@redhat.com>
+> > > > > > > > 
+> > > > > > > > *sigh* I am not really happy about this, as we
+> > > > > > > > making boot longer and longer for people without
+> > > > > > > > ALPS touchpads. It would be better if we only
+> > > > > > > > reset the mouse when we knew we are dealing with
+> > > > > > > > ALPS, and even better if we only reset it when we
+> > > > > > > > suspected that we missed trackstick. Any chance
+> > > > > > > > of doing this?
+> > > > > > > > 
+> > > > > > > > Thanks.
+> > > > > > > 
+> > > > > > > Dmitry, problem is that function check which
+> > > > > > > detecting trackstick does not working when I start
+> > > > > > > my laptop from power-off state and do not reset
+> > > > > > > PS/2 device. But detecting ALPS touchpad looks like
+> > > > > > > working. So if do not like this idea, what about
+> > > > > > > doing something like this in alps_dectect function?
+> > > > > > > 
+> > > > > > > int alps_detect(...)
+> > > > > > > {
+> > > > > > > ...
+> > > > > > > /* detect if device is ALPS */
+> > > > > > > if (alps_identify(...) < 0)
+> > > > > > > return -1;
+> > > > > > > /* now we know that device is ALPS */
+> > > > > > > if (!(flags & ALPS_DUALPOINT)) {
+> > > > > > > /* reset it and identify again, maybe there is
+> > > > > > > trackstick */ psmouse_reset(...);
+> > > > > > > alps_identify(...);
+> > > > > > > }
+> > > > > > > ...
+> > > > > > > }
+> > > > > > > 
+> > > > > > > It will does not affect non ALPS devices (because
+> > > > > > > first identify call will fail), but will affect
+> > > > > > > ALPS devices without trackstick (because identify
+> > > > > > > will be called twice and reset too).
+> > > > > > 
+> > > > > > I think this is a step in right direction. Do you know
+> > > > > > what exactly fails in alps_identify() on your box if
+> > > > > > you do not call psmouse_reset?
+> > > > > > 
+> > > > > > Thanks.
+> > > > > 
+> > > > > Yes, I know. It is failing in
+> > > > > alps_probe_trackstick_v3(). It calls
+> > > > > alps_command_mode_read_reg(...) and it returns 0 which
+> > > > > means trackstick is not there.
+> > > > 
+> > > > OK, so can we try sticking psmouse_reset() there? This
+> > > > will limit the exposure of the new delay.
+> > > > 
+> > > > Thanks.
+> > > 
+> > > Sorry, but I think this is not safe. Function psmouse_reset
+> > > will reset device (set it to relative mode, etc...) and
+> > > before and after alps_probe_trackstick_v3() are called
+> > > other functions. So it could break something else.
+> > 
+> > We might need to repeat bits of alps_identify() after
+> > resetting the mouse, you are right. It should still be doable
+> > though.
 > 
-> On Thu, 2014-10-23 at 07:11 -0600, Alex Williamson wrote:
-> > On Thu, 2014-10-23 at 15:32 +0300, Marcel Apfelbaum wrote:
-> > > On Wed, 2014-10-22 at 12:32 -0600, Alex Williamson wrote:
-> > > > [cc+ stuart]
-> > > >
-> > > > On Mon, 2014-10-20 at 17:04 +0300, Marcel Apfelbaum wrote:
-> > > > > Scanning a lot of devices during boot requires a lot of time.
-> > > > > On other scenarios there is a need to bind a driver to a specific slot.
-> > > > >
-> > > > > Binding devices to pci-stub driver does not work,
-> > > > > as it will not differentiate between devices of the
-> > > > > same type. Using some start scripts is error prone.
-> > > > >
-> > > > > The solution leverages driver_override functionality introduced by
-> > > > >
-> > > > > 	commit: 782a985d7af26db39e86070d28f987cad21313c0
-> > > > > 	Author: Alex Williamson <alex.williamson@redhat.com>
-> > > > > 	Date:   Tue May 20 08:53:21 2014 -0600
-> > > > >
-> > > > >     	PCI: Introduce new device binding path using pci_dev.driver_override
-> > > > >
-> > > > > In order to bind PCI slots to specific drivers use:
-> > > > > 	pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
-> > > > >
-> > > > > Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
-> > > > > ---
-> > > > > v3 -> v4:
-> > > > >  - Addressed Alex Williamson's comments:
-> > > > >    - Modified the type of driver_override_entry's fields
-> > > > >    - Used PCI_DEVFN when appropriated
-> > > > >    - Removed redundant checks
-> > > > >    - Replaced BUG_ON with pr_err messages
-> > > > >    - Simpler command line parsing
-> > > > >  - Addressed Michael S. Tsirkin comments
-> > > > >    - removed DRIVER_OVERRIDE_NAME_LENGTH limitation
-> > > > > v2 -> v3:
-> > > > >  - Corrected subject line
-> > > > > v1 -> v2:
-> > > > >  - Addressed Michael S. Tsirkin comments
-> > > > >    - Removed 32 slots limitation
-> > > > >    - Better handling of memory allocation failures
-> > > > >      (preferred BUG_ON over error messages)
-> > > > >  - Addressed Alex Williamson's comments:
-> > > > >    - Modified commit message to show parameter usage more clear.
-> > > > >  - I preferred to re-use parse_args instead of manually using
-> > > > >    strstr in order to better comply with command line parsing
-> > > > >    rules.
-> > > > >  - I didn't use any locking when parsing the command line args
-> > > > >    (see parse_done usage) assuming that first call will be
-> > > > >    early in system boot and no race can occur. Please correct
-> > > > >    me if I am wrong.
-> > > > >
-> > > > > Notes:
-> > > > >  - I have further ideas on top of this patch based on your reviews.
-> > > > >    I thought of:
-> > > > >    - Use wildcards to specify entire buses/devices, something like:
-> > > > >      	driver[0001:02:*.*]=pci-stub
-> > > > >    - Use comma to separate several devices:
-> > > > >      	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
-> > > > >    - Make domain optional:
-> > > > >    	driver[00:03.0]=pci-stub
-> > > > >
-> > > > > Comments will be appreciated,
-> > > > > Thanks,
-> > > > > Marcel
-> > > > >  Documentation/kernel-parameters.txt |   4 ++
-> > > > >  drivers/pci/bus.c                   | 111 ++++++++++++++++++++++++++++++++++++
-> > > > >  drivers/pci/pci.c                   |   2 +
-> > > > >  3 files changed, 117 insertions(+)
-> > > >
-> > > > The driver_override feature that we're making use of here is also going
-> > > > to be supported by platform devices and potentially more bustypes in the
-> > > > future, so I'm concerned that making a pci specific kernel parameter is
-> > > > too shortsighted.  Instead we could hook on to BUS_NOTIFY_ADD_DEVICE for
-> > > > bustypes that support driver_override so we can have a common interface.
-> > > The real question here if those bus types/devices would benefit from this
-> > > feature, and I also must confess that I have no knowledge of the other buses.
-> > > Can anyone confirm that it does make sense for them?
-> >
-> > Platform devices are adding vfio support, so I expect the next logical
-> > question will be how to reserve devices for use by vfio at boot.
-> Well, I'll have to learn more about vfio before saying anything,
-> but my question is if it can be deferred or it has to be part of
-> this patch. If the platform devices do not have a slot like hw address,
-> maybe it can be configured separately.
+> What about checking "E6 report" and if that pass reset device and 
+> do full alps_identify? With check for "E6 report" we can filter 
+> probably all PS/2 devices which are not ALPS.
 > 
-> I saw this patch as a PCI patch, and not "driver_override" expansion;
-> meaning that I only leveraged an existing feature, not trying to
-> extend it.
 
-I think other buses may want to use the same mechanism to specify driver
-bindings, so I think the main thing is to not define a syntax that makes
-that problematic.
+Why don't you pull alps_probe_trackstick_v3() from alps_identify(),
+rename it into __alps_identify() and then have real alps_identify be:
 
-Looking at your original syntax, I think it could work for different
-bus types.  Could have something like:
+static int alps_identfy(struct psmouse *psmouse, struct alps_data *priv)
+{
+	int error;
 
-   platform=driver[xxxx]=foo,driver[xxxx]=vfio-platform
-   pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar
+	error = __alps_identify(psmouse, priv);
+	if (error)
+		return error;
 
-So no strong opinion on that vs Alex's proposal:
+	if (priv->proto_version == ALPS_PROTO_V3 &&
+	    (priv->flags & ALPS_IS_RUSHMORE)) {
+		/*
+		 * Some Dell Lattitudes may not always recognize
+		 * tracksticks without resetting the device.
+		 */
+		psmouse_reset(psmouse);
 
-   driver_override=pci,0000:02:00.0=pci-stub;platform,xxxx=vfio-platform
+		error =  __alps_identify(psmouse, priv);
+		if (error)
+			return error;
 
-It seems to me that either could work.
+		if (alps_probe_trackstick_v3(psmouse,
+					     ALPS_REG_BASE_RUSHMORE))
+			priv->flags &= ~ALPS_DUALPOINT;
+	}
 
-Thanks,
-Stuart
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	return 0;
+}
+
+This way you minimize number of devices exposed to extra reset.
+
+Thanks.
+
+-- 
+Dmitry
