@@ -1,63 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaJWFKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 01:10:43 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:40244 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaJWFKk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 01:10:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAE1zot+FL54r3a6-qJwDti3D2dGCSwN=a0g0ki28cy1ToXgSfg@mail.gmail.com>
-References: <1413384491-23703-1-git-send-email-octavian.purdila@intel.com>
- <1413384491-23703-4-git-send-email-octavian.purdila@intel.com>
- <CAAVeFuJ4B37YgvTBctXqmtWJtg3b19PDt1EEZF5Rc6KVXZzUtw@mail.gmail.com> <CAE1zot+FL54r3a6-qJwDti3D2dGCSwN=a0g0ki28cy1ToXgSfg@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 23 Oct 2014 14:10:19 +0900
-Message-ID: <CAAVeFuKcteLaNp6C3EuSmGxpb_8aGYXw4FYjFqXXH2St5mbZDA@mail.gmail.com>
-Subject: Re: [PATCH v8 3/4] gpiolib: add irq_not_threaded flag to gpio_chip
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Johan Hovold <johan@kernel.org>,
-        Daniel Baluta <daniel.baluta@intel.com>,
-        Laurentiu Palcu <laurentiu.palcu@intel.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751612AbaJWFPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 01:15:45 -0400
+Received: from mga14.intel.com ([192.55.52.115]:43022 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102AbaJWFPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 01:15:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,773,1406617200"; 
+   d="scan'208";a="609767848"
+Message-ID: <1414041345.2380.3.camel@rzhang1-toshiba>
+Subject: Re: [GIT PULL] thermal-soc changes
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 23 Oct 2014 13:15:45 +0800
+In-Reply-To: <20141021134941.GA4937@developer>
+References: <20141021134941.GA4937@developer>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 7:19 PM, Octavian Purdila
-<octavian.purdila@intel.com> wrote:
-> On Mon, Oct 20, 2014 at 8:08 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
->>
->> On Wed, Oct 15, 2014 at 11:48 PM, Octavian Purdila
->> <octavian.purdila@intel.com> wrote:
->> > Some GPIO chips (e.g. the DLN2 USB adapter) have blocking get/set
->> > operation but do not need a threaded irq handler.
->>
->> Sorry if you already explained this (I have been a little bit late
->> with the GPIO reviews recently), but does this optimization bring a
->> significant benefit that justifies adding another field in struct
->> gpio_chip? If so it would be nice to have it in the commit message. If
->> not, do we need this at all?
->
-> Hi Alexandre,
->
-> In the case DLN2 USB GPIO adapter the GPIO interrupt is generated in
-> the completion routine of a receive URB, which means that we are in
-> interrupt context. If a threaded irq is used, we would have to
-> schedule work instead of running to interrupt handler directly which
-> is unnecessary and adds latency.
->
-> BTW, AFAIC Linus W already merged this patch in his next tree, I am
-> keeping it in this series because it was not pulled in the mfd-next
-> tree.
+On 二, 2014-10-21 at 09:49 -0400, Eduardo Valentin wrote:
+> Hello Rui,
+> 
+> Here are a couple of changes that are in my tree. They include:
+> - a few code refactoring improving the Exynos code base;
+> - new feature on the Exynos code base (TRIMINFO and TRIMRELOAD);
+> - a documentation of RCAR thermal; and
+> - a fix in the of-thermal, regarding the proper usage of of APIs.
+> 
+what's their target?
+please send me separate pull requests for different targets.
 
-You're right, it's all good then. Thanks for the explanation.
+thanks,
+rui
+> They are based on your next branch.
+> 
+> BR,
+> 
+> Eduardo Valentin
+> 
+> The following changes since commit 6ceaf58abe25e86292152005c51169796bad3407:
+> 
+>   Merge branch 'int340x-thermal' of .git into next (2014-10-17 14:30:58 +0800)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git next
+> 
+> for you to fetch changes up to df67e40f51398fef8dd705dfe4e287ad9b10ba4b:
+> 
+>   thermal: fix multiple disbalanced device node counters (2014-10-21 08:05:50 -0400)
+> 
+> ----------------------------------------------------------------
+> Bartlomiej Zolnierkiewicz (9):
+>       thermal: exynos: remove unused struct exynos_tmu_registers entries
+>       thermal: exynos: remove dead code for HW_MODE calibration
+>       thermal: exynos: remove redundant pdata checks from exynos_tmu_initialize()
+>       thermal: exynos: remove redundant threshold_code checks from exynos_tmu_initialize()
+>       thermal: exynos: simplify temp_to_code() and code_to_temp()
+>       thermal: exynos: cache non_hw_trigger_levels in pdata
+>       thermal: exynos: remove redundant pdata checks from exynos_tmu_control()
+>       thermal: exynos: remove identical values from exynos*_tmu_registers structures
+>       thermal: samsung: Exynos5260 and Exynos5420 should not use TRIM_RELOAD flag
+> 
+> Chanwoo Choi (2):
+>       thermal: exynos: Add support for many TRIMINFO_CTRL registers
+>       thermal: exynos: Add support for TRIM_RELOAD feature at Exynos3250
+> 
+> Geert Uytterhoeven (1):
+>       thermal: rcar: Add binding docs for new R-Car Gen2 SoCs
+> 
+> Vladimir Zapolskiy (1):
+>       thermal: fix multiple disbalanced device node counters
+> 
+>  .../devicetree/bindings/thermal/rcar-thermal.txt   |   5 +-
+>  drivers/thermal/of-thermal.c                       |  40 ++++--
+>  drivers/thermal/samsung/exynos_thermal_common.h    |   2 +-
+>  drivers/thermal/samsung/exynos_tmu.c               | 141 ++++++---------------
+>  drivers/thermal/samsung/exynos_tmu.h               |  81 ++----------
+>  drivers/thermal/samsung/exynos_tmu_data.c          |  83 ++++--------
+>  drivers/thermal/samsung/exynos_tmu_data.h          |  39 +-----
+>  7 files changed, 111 insertions(+), 280 deletions(-)
+
+
