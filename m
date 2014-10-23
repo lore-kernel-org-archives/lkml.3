@@ -1,18 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872AbaJWWBl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 18:01:41 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:56203 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaJWV7I (ORCPT
+	id S1752936AbaJWV7H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 17:59:07 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:52399 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752109AbaJWV7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 17:59:08 -0400
+	Thu, 23 Oct 2014 17:59:01 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com
-Subject: [PATCH v2 06/14] perf kbuild: remove legacy tui/gui-related build variables
-Date: Thu, 23 Oct 2014 23:56:04 +0200
-Message-Id: <1414101372-14443-7-git-send-email-alexis.berlemont@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>,
+        Alexis Berlemont <alexis.berlemont@gmail.com>
+Subject: [PATCH v2 03/14] perf tools: Kbuild source related fixies
+Date: Thu, 23 Oct 2014 23:56:01 +0200
+Message-Id: <1414101372-14443-4-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414101372-14443-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1414101372-14443-1-git-send-email-alexis.berlemont@gmail.com>
@@ -22,348 +31,237 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove NO_SLANG (replaced by CONFIG_LIBSLANG)
-Remove HAVE_SLANG_SUPPORT from CFLAGS (replaced by CONFIG_LIBSLANG)
-Remove NO_GTK2 (replaced by CONFIG_LIBGTK2 or CONFIG_GTK2)
-Remove HAVE_GTK2_SUPPORT from CFLAGS (replaced by CONFIG_LIBGTK2)
-Remove HAVE_GTK_INFO_BAR_SUPPORT from CFLAGS (replaced by
-CONFIG_LIBGTK2_INFOBAR)
+From: Jiri Olsa <jolsa@redhat.com>
 
+Fixing several sources config dependencies to allow
+separate config builds.
+
+This commit was originally created by Jiri Olsa in 2013. Minor changes
+were needed to get it working one year later:
+* Remove #ifdef directives related with GUI / TUI (because of code
+  changes in ui/setup.c)
+* Fix a link issue if the option BUILTIN_TRACE is disabled.
+* Fix typo (CONFIG_BULTIN_ instead CONFIG_BUILTIN_)
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org
+Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Alexis Berlemont <alexis.berlemont@gmail.com>
 ---
- tools/perf/Kconfig                    | 21 +++++++++++++++++++++
- tools/perf/config/Makefile            | 20 ++++++--------------
- tools/perf/config/Makefile.fix-config | 24 ------------------------
- tools/perf/config/Makefile.fix-legacy |  8 --------
- tools/perf/ui/gtk/browser.c           |  4 +++-
- tools/perf/ui/gtk/gtk.h               |  5 +++--
- tools/perf/ui/gtk/util.c              |  6 ++++--
- tools/perf/ui/setup.c                 |  4 +++-
- tools/perf/ui/ui.h                    |  4 +++-
- tools/perf/util/annotate.h            |  4 +++-
- tools/perf/util/hist.h                |  3 ++-
- 11 files changed, 48 insertions(+), 55 deletions(-)
+ tools/perf/builtin-annotate.c    |  6 +++---
+ tools/perf/builtin-lock.c        |  5 ++++-
+ tools/perf/builtin-report.c      |  2 +-
+ tools/perf/builtin-sched.c       |  3 +++
+ tools/perf/builtin-top.c         |  4 ++--
+ tools/perf/perf.c                | 10 ++++++++--
+ tools/perf/ui/browsers/scripts.c |  4 ++++
+ tools/perf/ui/setup.c            |  6 +++---
+ 8 files changed, 28 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
-index f9fcf9e..eb59567 100644
---- a/tools/perf/Kconfig
-+++ b/tools/perf/Kconfig
-@@ -171,6 +171,7 @@ config STDIO
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 19cb967..a46af8f 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -155,7 +155,7 @@ find_next:
  
- config TUI
- 	bool "Tui (slang based)"
-+	depends on LIBSLANG
- 	default y
-         ---help---
- 	  Text-based user interface which provides windowing
-@@ -179,6 +180,7 @@ config TUI
- config GTK2
- 	bool "Gtk2"
- 	default y
-+	depends on LIBGTK2
-         ---help---
- 	  Elaborate display mode based on libgtk2.
+ 			/* skip missing symbols */
+ 			nd = rb_next(nd);
+-#ifdef CONFIG_TUI
++#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
+ 		} else if (use_browser == 1) {
+ 			struct rb_node *next = NULL;
+ 			key = hist_entry__tui_annotate(he, evsel, NULL);
+@@ -303,9 +303,9 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+ 		    "dump raw trace in ASCII"),
+ 	OPT_BOOLEAN(0, "gtk", &annotate.use_gtk, "Use the GTK interface"),
+-#ifdef CONFIG_TUI
++#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
+ 	OPT_BOOLEAN(0, "tui", &annotate.use_tui, "Use the TUI interface"),
+-#endif /* CONFIG_TUI */
++#endif
+ 	OPT_BOOLEAN(0, "stdio", &annotate.use_stdio, "Use the stdio interface"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index e7ec715..05c0e1c 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -1,4 +1,5 @@
+ #include "builtin.h"
++#include "builtin-cmds.h"
+ #include "perf.h"
  
-@@ -186,12 +188,31 @@ endmenu
+ #include "util/evlist.h"
+@@ -995,9 +996,11 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+ 				usage_with_options(report_usage, report_options);
+ 		}
+ 		rc = __cmd_report(false);
++#ifdef CONFIG_BUILTIN_SCRIPT
+ 	} else if (!strcmp(argv[0], "script")) {
+ 		/* Aliased to 'perf script' */
+-		return cmd_script(argc, argv, prefix);
++		rc = cmd_script(argc, argv, prefix);
++#endif
+ 	} else if (!strcmp(argv[0], "info")) {
+ 		if (argc) {
+ 			argc = parse_options(argc, argv,
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 00d93ff..b639e58 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -407,7 +407,7 @@ static int report__browse_hists(struct report *rep)
+ 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
  
- menu "Libraries / Dependencies"
+ 	switch (use_browser) {
+-#ifdef CONFIG_TUI
++#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
+ 	case 1:
+ 		ret = perf_evlist__tui_browse_hists(evlist, help, NULL,
+ 						    rep->min_percent,
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 891c393..e38b021 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -1,4 +1,5 @@
+ #include "builtin.h"
++#include "builtin-cmds.h"
+ #include "perf.h"
  
-+config LIBSLANG
-+	bool "Slang (libslang)"
-+	default y
-+        ---help---
-+	  libslang
-+
- config LIBAUDIT
- 	bool "Audit (libaudit)"
- 	default y
-         ---help---
- 	  Linux audit framework dependency.
+ #include "util/util.h"
+@@ -1742,11 +1743,13 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (!argc)
+ 		usage_with_options(sched_usage, sched_options);
  
-+config LIBGTK2
-+	bool "Gtk2 (libgtk2)"
-+	default y
-+        ---help---
-+	  libgtk2
-+
-+config LIBGTK2_INFOBAR
-+	bool "Gtk2 infobar (libgtk2)"
-+	depends on LIBGTK2
-+	default y
-+        ---help---
-+	  libgtk2-infobar
-+
- config LIBPERL
- 	bool "Perl"
- 	default y
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 6106e24..27b092c 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -445,32 +445,26 @@ ifndef NO_LIBAUDIT
-   endif
- endif
++#ifdef CONFIG_BUILTIN_SCRIPT
+ 	/*
+ 	 * Aliased to 'perf script' for now:
+ 	 */
+ 	if (!strcmp(argv[0], "script"))
+ 		return cmd_script(argc, argv, prefix);
++#endif
  
--ifdef NO_NEWT
--  NO_SLANG=1
--endif
--
--ifndef NO_SLANG
-+ifdef CONFIG_LIBSLANG
-   ifneq ($(feature-libslang), 1)
--    msg := $(warning slang not found, disables TUI support. Please install slang-devel or libslang-dev);
--    NO_SLANG := 1
-+    msg := $(warning slang not found, disables SLANG and TUI supports. Please install slang-devel or libslang-dev);
-+    $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBSLANG)
-   else
-     # Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
-     CFLAGS += -I/usr/include/slang
--    CFLAGS += -DHAVE_SLANG_SUPPORT
-     EXTLIBS += -lslang
-   endif
- endif
- 
--ifndef NO_GTK2
-+ifdef CONFIG_LIBGTK2
-   FLAGS_GTK2=$(CFLAGS) $(LDFLAGS) $(EXTLIBS) $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null)
-   ifneq ($(feature-gtk2), 1)
-     msg := $(warning GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev);
--    NO_GTK2 := 1
-+    $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBGTK2)
-   else
-     ifeq ($(feature-gtk2-infobar), 1)
--      GTK_CFLAGS := -DHAVE_GTK_INFO_BAR_SUPPORT
-+      $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBGTK2_INFOBAR)
-     endif
--    CFLAGS += -DHAVE_GTK2_SUPPORT
-     GTK_CFLAGS += $(shell $(PKG_CONFIG) --cflags gtk+-2.0 2>/dev/null)
-     GTK_LIBS := $(shell $(PKG_CONFIG) --libs gtk+-2.0 2>/dev/null)
-     EXTLIBS += -ldl
-@@ -801,8 +795,6 @@ all:
- 	$(call store,NO_LIBUNWIND)
- 	$(call store,NO_LIBPERL)
- 	$(call store,NO_LIBPYTHON)
--	$(call store,NO_NEWT)
--	$(call store,NO_GTK2)
- 	$(call store,NO_DEMANGLE)
- 	$(call store,NO_LIBELF)
- 	$(call store,NO_LIBUNWIND)
-diff --git a/tools/perf/config/Makefile.fix-config b/tools/perf/config/Makefile.fix-config
-index 7f65fdb..3d84008 100644
---- a/tools/perf/config/Makefile.fix-config
-+++ b/tools/perf/config/Makefile.fix-config
-@@ -19,30 +19,6 @@ dummy := $(shell $(CONFIG) -d CONFIG_LIBPYTHON)
- endif
- endif
- 
--# NO_NEWT
--ifdef CONFIG_TUI
--ifdef NO_NEWT
--dummy := $(info Disabling CONFIG_TUI)
--dummy := $(shell $(CONFIG) -d CONFIG_TUI)
--endif
--endif
--
--# NO_NEWT
--ifdef CONFIG_TUI
--ifdef NO_SLANG
--dummy := $(info Disabling CONFIG_TUI)
--dummy := $(shell $(CONFIG) -d CONFIG_TUI)
--endif
--endif
--
--# NO_GTK2
--ifdef CONFIG_GTK2
--ifdef NO_GTK2
--dummy := $(info Disabling CONFIG_GTK2)
--dummy := $(shell $(CONFIG) -d CONFIG_GTK2)
--endif
--endif
--
- # NO_DEMANGLE
- ifdef CONFIG_DEMANGLE
- ifdef NO_DEMANGLE
-diff --git a/tools/perf/config/Makefile.fix-legacy b/tools/perf/config/Makefile.fix-legacy
-index 2ec91f3..ca219e7 100644
---- a/tools/perf/config/Makefile.fix-legacy
-+++ b/tools/perf/config/Makefile.fix-legacy
-@@ -9,14 +9,6 @@ ifndef CONFIG_LIBPYTHON
- NO_LIBPYTHON := 1
- endif
- 
--ifndef CONFIG_TUI
--NO_SLANG := 1
--endif
--
--ifndef CONFIG_GTK2
--NO_GTK2 := 1
--endif
--
- ifndef CONFIG_DEMANGLE
- NO_DEMANGLE := 1
- endif
-diff --git a/tools/perf/ui/gtk/browser.c b/tools/perf/ui/gtk/browser.c
-index c24d912..f4df6a6 100644
---- a/tools/perf/ui/gtk/browser.c
-+++ b/tools/perf/ui/gtk/browser.c
-@@ -1,3 +1,5 @@
-+#include "generated/autoconf.h"
-+
- #include "../evlist.h"
- #include "../cache.h"
- #include "../evsel.h"
-@@ -43,7 +45,7 @@ const char *perf_gtk__get_percent_color(double percent)
- 	return NULL;
+ 	if (!strncmp(argv[0], "rec", 3)) {
+ 		return __cmd_record(argc, argv);
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index a2ff8b7..6f04452 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -535,7 +535,7 @@ static bool perf_top__handle_keypress(struct perf_top *top, int c)
+ 	return ret;
  }
  
--#ifdef HAVE_GTK_INFO_BAR_SUPPORT
-+#ifdef CONFIG_LIBGTK2_INFOBAR
- GtkWidget *perf_gtk__setup_info_bar(void)
+-#ifdef CONFIG_TUI
++#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
+ static void perf_top__sort_new_samples(void *arg)
  {
- 	GtkWidget *info_bar;
-diff --git a/tools/perf/ui/gtk/gtk.h b/tools/perf/ui/gtk/gtk.h
-index 0a9173f..3762980 100644
---- a/tools/perf/ui/gtk/gtk.h
-+++ b/tools/perf/ui/gtk/gtk.h
-@@ -7,12 +7,13 @@
- #include <gtk/gtk.h>
- #pragma GCC diagnostic error "-Wstrict-prototypes"
+ 	struct perf_top *t = arg;
+@@ -981,7 +981,7 @@ static int __cmd_top(struct perf_top *top)
  
-+#include "generated/autoconf.h"
+ 	ret = -1;
  
- struct perf_gtk_context {
- 	GtkWidget *main_window;
- 	GtkWidget *notebook;
- 
--#ifdef HAVE_GTK_INFO_BAR_SUPPORT
-+#ifdef CONFIG_LIBGTK2_INFOBAR
- 	GtkWidget *info_bar;
- 	GtkWidget *message_label;
+-#ifdef CONFIG_TUI
++#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
+ 	if (use_browser > 0)
+ 		display_fn = display_thread_tui;
  #endif
-@@ -42,7 +43,7 @@ void perf_gtk__resize_window(GtkWidget *window);
- const char *perf_gtk__get_percent_color(double percent);
- GtkWidget *perf_gtk__setup_statusbar(void);
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index ab363b5..976ded6 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -93,8 +93,10 @@ static struct cmd_struct commands[] = {
+ #ifdef CONFIG_BUILTIN_KVM
+ 	{ "kvm",	cmd_kvm,	0 },
+ #endif
++#ifdef CONFIG_BUILTIN_TEST
+ 	{ "test",	cmd_test,	0 },
+-#if defined HAVE_LIBAUDIT_SUPPORT && defined CONFIG_BUILTIN_TRACE
++#endif
++#ifdef CONFIG_BUILTIN_TRACE
+ 	{ "trace",	cmd_trace,	0 },
+ #endif
+ #ifdef CONFIG_BUILTIN_INJECT
+@@ -539,7 +541,7 @@ int main(int argc, const char **argv)
+ 		goto out;
+ 	}
+ 	if (!prefixcmp(cmd, "trace")) {
+-#ifdef HAVE_LIBAUDIT_SUPPORT
++#ifdef CONFIG_BUILTIN_TRACE
+ 		set_buildid_dir();
+ 		setup_path();
+ 		argv[0] = "trace";
+@@ -563,13 +565,17 @@ int main(int argc, const char **argv)
+ 	} else {
+ 		/* The user didn't specify a command; give them help */
+ 		printf("\n usage: %s\n\n", perf_usage_string);
++#ifdef CONFIG_BUILTIN_HELP
+ 		list_common_cmds_help();
+ 		printf("\n %s\n\n", perf_more_info_string);
++#endif
+ 		goto out;
+ 	}
+ 	cmd = argv[0];
  
--#ifdef HAVE_GTK_INFO_BAR_SUPPORT
-+#ifdef CONFIG_LIBGTK2_INFOBAR
- GtkWidget *perf_gtk__setup_info_bar(void);
- #else
- static inline GtkWidget *perf_gtk__setup_info_bar(void)
-diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
-index 52e7fc4..dde1615 100644
---- a/tools/perf/ui/gtk/util.c
-+++ b/tools/perf/ui/gtk/util.c
-@@ -1,3 +1,5 @@
-+#include "generated/autoconf.h"
-+
- #include "../util.h"
- #include "../../util/debug.h"
- #include "gtk.h"
-@@ -52,7 +54,7 @@ static int perf_gtk__error(const char *format, va_list args)
- 	return 0;
- }
++#ifdef CONFIG_BUILTIN_TEST
+ 	test_attr__init();
++#endif
  
--#ifdef HAVE_GTK_INFO_BAR_SUPPORT
-+#ifdef CONFIG_LIBGTK2_INFOBAR
- static int perf_gtk__warning_info_bar(const char *format, va_list args)
- {
- 	char *msg;
-@@ -104,7 +106,7 @@ static int perf_gtk__warning_statusbar(const char *format, va_list args)
+ 	/*
+ 	 * We use PATH to find perf commands, but we prepend some higher
+diff --git a/tools/perf/ui/browsers/scripts.c b/tools/perf/ui/browsers/scripts.c
+index 402d2bd..128988d 100644
+--- a/tools/perf/ui/browsers/scripts.c
++++ b/tools/perf/ui/browsers/scripts.c
+@@ -59,7 +59,11 @@ static int list_scripts(char *script_name)
+ 		paths[i] = names[i] + SCRIPT_NAMELEN;
+ 	}
  
- struct perf_error_ops perf_gtk_eops = {
- 	.error		= perf_gtk__error,
--#ifdef HAVE_GTK_INFO_BAR_SUPPORT
-+#ifdef CONFIG_LIBGTK2_INFOBAR
- 	.warning	= perf_gtk__warning_info_bar,
- #else
- 	.warning	= perf_gtk__warning_statusbar,
++#ifdef CONFIG_BUILTIN_SCRIPT
+ 	num = find_scripts(names, paths);
++#else
++	num = 0;
++#endif
+ 	if (num > 0) {
+ 		choice = ui__popup_menu(num, names);
+ 		if (choice < num && choice >= 0) {
 diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
-index 7928984..0acaf1b 100644
+index ec7fd36..efc2b21 100644
 --- a/tools/perf/ui/setup.c
 +++ b/tools/perf/ui/setup.c
-@@ -1,6 +1,8 @@
- #include <pthread.h>
- #include <dlfcn.h>
+@@ -77,7 +77,7 @@ void setup_browser(bool fallback_to_pager)
+ 		       PERF_GTK_DSO);
+ 		sleep(1);
+ 		/* fall through */
+-#ifdef CONFIG_TUI
++#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
+ 	case 1:
+ 		use_browser = 1;
+ 		if (ui__init() == 0)
+@@ -92,13 +92,13 @@ void setup_browser(bool fallback_to_pager)
+ 	}
+ }
  
-+#include "generated/autoconf.h"
-+
- #include "../util/cache.h"
- #include "../util/debug.h"
- #include "../util/hist.h"
-@@ -8,7 +10,7 @@
- pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
- void *perf_gtk_handle;
- 
--#ifdef HAVE_GTK2_SUPPORT
-+#ifdef CONFIG_GTK2
- static int setup_gtk_browser(void)
+-void exit_browser(bool wait_for_ok)
++void exit_browser(bool wait_for_ok __maybe_unused)
  {
- 	int (*perf_ui_init)(void);
-diff --git a/tools/perf/ui/ui.h b/tools/perf/ui/ui.h
-index ab88383..bba3a0e 100644
---- a/tools/perf/ui/ui.h
-+++ b/tools/perf/ui/ui.h
-@@ -5,6 +5,8 @@
- #include <stdbool.h>
- #include <linux/compiler.h>
- 
-+#include "generated/autoconf.h"
-+
- extern pthread_mutex_t ui__lock;
- extern void *perf_gtk_handle;
- 
-@@ -13,7 +15,7 @@ extern int use_browser;
- void setup_browser(bool fallback_to_pager);
- void exit_browser(bool wait_for_ok);
- 
--#ifdef HAVE_SLANG_SUPPORT
-+#ifdef CONFIG_LIBSLANG
- int ui__init(void);
- void ui__exit(bool wait_for_ok);
- #else
-diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-index 112d6e2..692f46c 100644
---- a/tools/perf/util/annotate.h
-+++ b/tools/perf/util/annotate.h
-@@ -11,6 +11,8 @@
- #include <linux/rbtree.h>
- #include <pthread.h>
- 
-+#include "generated/autoconf.h"
-+
- struct ins;
- 
- struct ins_operands {
-@@ -157,7 +159,7 @@ int symbol__tty_annotate(struct symbol *sym, struct map *map,
- 			 struct perf_evsel *evsel, bool print_lines,
- 			 bool full_paths, int min_pcnt, int max_lines);
- 
--#ifdef HAVE_SLANG_SUPPORT
-+#ifdef CONFIG_LIBSLANG
- int symbol__tui_annotate(struct symbol *sym, struct map *map,
- 			 struct perf_evsel *evsel,
- 			 struct hist_browser_timer *hbt);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index d0ef9a1..622597d 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/types.h>
- #include <pthread.h>
-+#include "generated/autoconf.h"
- #include "callchain.h"
- #include "evsel.h"
- #include "header.h"
-@@ -298,7 +299,7 @@ struct hist_browser_timer {
- 	int refresh;
- };
- 
--#ifdef HAVE_SLANG_SUPPORT
-+#ifdef CONFIG_LIBSLANG
- #include "../ui/keysyms.h"
- int hist_entry__tui_annotate(struct hist_entry *he, struct perf_evsel *evsel,
- 			     struct hist_browser_timer *hbt);
+ 	switch (use_browser) {
+ 	case 2:
+ 		exit_gtk_browser(wait_for_ok);
+ 		break;
+-#ifdef CONFIG_TUI
++#if defined(CONFIG_TUI) || !defined(CONFIG_KBUILD)
+ 	case 1:
+ 		ui__exit(wait_for_ok);
+ 		break;
 -- 
 2.1.1
 
