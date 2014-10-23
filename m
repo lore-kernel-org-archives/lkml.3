@@ -1,74 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062AbaJWUFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 16:05:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45861 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaJWUFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 16:05:24 -0400
-Date: Thu, 23 Oct 2014 13:05:24 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/1 linux-next] fs/affs/file.c: adding support to
- O_DIRECT
-Message-Id: <20141023130524.086f8b07e9d3c6dcf21be761@linux-foundation.org>
-In-Reply-To: <1413908891-6038-1-git-send-email-fabf@skynet.be>
-References: <1413908891-6038-1-git-send-email-fabf@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932437AbaJWUJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 16:09:06 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39572 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754174AbaJWUJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 16:09:04 -0400
+Date: Thu, 23 Oct 2014 13:05:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Yanko Kaneti <yaneti@declera.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141023200507.GC4977@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141022181135.GH4977@linux.vnet.ibm.com>
+ <87d29kezby.fsf@x220.int.ebiederm.org>
+ <20141022185511.GI4977@linux.vnet.ibm.com>
+ <CA+5PVA56ajrBQ-C9orSb9-_qhMKe994QL2x0FcKbe6BYmaWFBw@mail.gmail.com>
+ <20141022224032.GA1240@declera.com>
+ <20141022232421.GN4977@linux.vnet.ibm.com>
+ <1414044566.2031.1.camel@declera.com>
+ <20141023122750.GP4977@linux.vnet.ibm.com>
+ <20141023153333.GA19278@linux.vnet.ibm.com>
+ <20141023195159.GA2331@declera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023195159.GA2331@declera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102320-0033-0000-0000-000000D0EB34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Oct 2014 18:28:11 +0200 Fabian Frederick <fabf@skynet.be> wrote:
-
-> Based on ext2_direct_IO
+On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
+> On Thu-10/23/14-2014 08:33, Paul E. McKenney wrote:
+> > On Thu, Oct 23, 2014 at 05:27:50AM -0700, Paul E. McKenney wrote:
+> > > On Thu, Oct 23, 2014 at 09:09:26AM +0300, Yanko Kaneti wrote:
+> > > > On Wed, 2014-10-22 at 16:24 -0700, Paul E. McKenney wrote:
+> > > > > On Thu, Oct 23, 2014 at 01:40:32AM +0300, Yanko Kaneti wrote:
+> > > > > > On Wed-10/22/14-2014 15:33, Josh Boyer wrote:
+> > > > > > > On Wed, Oct 22, 2014 at 2:55 PM, Paul E. McKenney
+> > > > > > > <paulmck@linux.vnet.ibm.com> wrote:
+> > > > > 
+> > > > > [ . . . ]
+> > > > > 
+> > > > > > > > Don't get me wrong -- the fact that this kthread appears to 
+> > > > > > > > have
+> > > > > > > > blocked within rcu_barrier() for 120 seconds means that 
+> > > > > > > > something is
+> > > > > > > > most definitely wrong here.  I am surprised that there are no 
+> > > > > > > > RCU CPU
+> > > > > > > > stall warnings, but perhaps the blockage is in the callback 
+> > > > > > > > execution
+> > > > > > > > rather than grace-period completion.  Or something is 
+> > > > > > > > preventing this
+> > > > > > > > kthread from starting up after the wake-up callback executes.  
+> > > > > > > > Or...
+> > > > > > > > 
+> > > > > > > > Is this thing reproducible?
+> > > > > > > 
+> > > > > > > I've added Yanko on CC, who reported the backtrace above and can
+> > > > > > > recreate it reliably.  Apparently reverting the RCU merge commit
+> > > > > > > (d6dd50e) and rebuilding the latest after that does not show the
+> > > > > > > issue.  I'll let Yanko explain more and answer any questions you 
+> > > > > > > have.
+> > > > > > 
+> > > > > > - It is reproducible
+> > > > > > - I've done another build here to double check and its definitely 
+> > > > > > the rcu merge
+> > > > > >   that's causing it.
+> > > > > > 
+> > > > > > Don't think I'll be able to dig deeper, but I can do testing if 
+> > > > > > needed.
+> > > > > 
+> > > > > Please!  Does the following patch help?
+> > > > 
+> > > > Nope, doesn't seem to make a difference to the modprobe ppp_generic 
+> > > > test
+> > > 
+> > > Well, I was hoping.  I will take a closer look at the RCU merge commit
+> > > and see what suggests itself.  I am likely to ask you to revert specific
+> > > commits, if that works for you.
+> > 
+> > Well, rather than reverting commits, could you please try testing the
+> > following commits?
+> > 
+> > 11ed7f934cb8 (rcu: Make nocb leader kthreads process pending callbacks after spawning)
+> > 
+> > 73a860cd58a1 (rcu: Replace flush_signals() with WARN_ON(signal_pending()))
+> > 
+> > c847f14217d5 (rcu: Avoid misordering in nocb_leader_wait())
+> > 
+> > 	For whatever it is worth, I am guessing this one.
 > 
-> --- a/fs/affs/file.c
-> +++ b/fs/affs/file.c
-> @@ -12,6 +12,7 @@
->   *  affs regular file handling primitives
->   */
->  
-> +#include <linux/aio.h>
->  #include "affs.h"
->  
->  #if PAGE_SIZE < 4096
-> @@ -392,6 +393,22 @@ static void affs_write_failed(struct address_space *mapping, loff_t to)
->  	}
->  }
->  
-> +static ssize_t
-> +affs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
-> +	       loff_t offset)
-> +{
-> +	struct file *file = iocb->ki_filp;
-> +	struct address_space *mapping = file->f_mapping;
-> +	struct inode *inode = mapping->host;
-> +	size_t count = iov_iter_count(iter);
-> +	ssize_t ret;
-> +
-> +	ret = blockdev_direct_IO(rw, iocb, inode, iter, offset, affs_get_block);
-> +	if (ret < 0 && (rw & WRITE))
-> +		affs_write_failed(mapping, offset + count);
-> +	return ret;
-> +}
-> +
->  static int affs_write_begin(struct file *file, struct address_space *mapping,
->  			loff_t pos, unsigned len, unsigned flags,
->  			struct page **pagep, void **fsdata)
-> @@ -418,6 +435,7 @@ const struct address_space_operations affs_aops = {
->  	.writepage = affs_writepage,
->  	.write_begin = affs_write_begin,
->  	.write_end = generic_write_end,
-> +	.direct_IO = affs_direct_IO,
->  	.bmap = _affs_bmap
->  };
+> Indeed, c847f14217d5 it is.
+> 
+> Much to my embarrasment I just noticed that in addition to the
+> rcu merge, triggering the bug "requires" my specific Fedora rawhide network
+> setup. Booting in single mode and modprobe ppp_generic is fine. The bug
+> appears when starting with my regular fedora network setup, which in my case 
+> includes 3 ethernet adapters and a libvirt birdge+nat setup.
+> 
+> Hope that helps. 
+> 
+> I am attaching the config.
 
-Has this been runtime tested?  If so, please add the results to the
-changelog.  Some performance numbers would be useful.
+It does help a lot, thank you!!!
+
+The following patch is a bit of a shot in the dark, and assumes that
+commit 1772947bd012 (rcu: Handle NOCB callbacks from irq-disabled idle
+code) introduced the problem.  Does this patch fix things up?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu: Kick rcuo kthreads after their CPU goes offline
+
+If a no-CBs CPU were to post an RCU callback with interrupts disabled
+after it entered the idle loop for the last time, there might be no
+deferred wakeup for the corresponding rcuo kthreads.  This commit
+therefore adds a set of calls to do_nocb_deferred_wakeup() after the
+CPU has gone completely offline.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 84b41b3c6ebd..4f3d25a58786 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -3493,8 +3493,10 @@ static int rcu_cpu_notify(struct notifier_block *self,
+ 	case CPU_DEAD_FROZEN:
+ 	case CPU_UP_CANCELED:
+ 	case CPU_UP_CANCELED_FROZEN:
+-		for_each_rcu_flavor(rsp)
++		for_each_rcu_flavor(rsp) {
+ 			rcu_cleanup_dead_cpu(cpu, rsp);
++			do_nocb_deferred_wakeup(this_cpu_ptr(rsp->rda));
++		}
+ 		break;
+ 	default:
+ 		break;
 
