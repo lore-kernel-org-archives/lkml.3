@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417AbaJWSXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 14:23:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44827 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755308AbaJWSXO (ORCPT
+	id S1755470AbaJWS2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 14:28:10 -0400
+Received: from smtprelay.synopsys.com ([198.182.60.111]:56178 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658AbaJWS2I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 14:23:14 -0400
-Date: Thu, 23 Oct 2014 11:23:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Wise <pabs3@bonedaddy.net>,
-        Ingo Molnar <mingo@kernel.org>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>,
-        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
-        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Jens Axboe <axboe@fb.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] sysctl: terminate strings also on \r
-Message-Id: <20141023112314.8d62733c202a527b4107eb11@linux-foundation.org>
-In-Reply-To: <CAGXu5jL-6sGy2QSH39Qmu0-8MEg6aX5GCPvPKeWaheXcai0TDA@mail.gmail.com>
-References: <20141021202137.GA20114@www.outflux.net>
-	<20141022162638.875681da6bbb9e027d2d3bee@linux-foundation.org>
-	<CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
-	<20141022190051.7c0d5df1.akpm@linux-foundation.org>
-	<CAGXu5jL-6sGy2QSH39Qmu0-8MEg6aX5GCPvPKeWaheXcai0TDA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Oct 2014 14:28:08 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "dinh.linux@gmail.com" <dinh.linux@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "matthijs@stdin.nl" <matthijs@stdin.nl>,
+        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>,
+        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "dianders@chromium.org" <dianders@chromium.org>,
+        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCHv5 7/7] usb: dwc2: Update Kconfig to support dual-role
+Thread-Topic: [PATCHv5 7/7] usb: dwc2: Update Kconfig to support dual-role
+Thread-Index: AQHP7JesnDFIW03SEUaNZEZCzxwRS5w8gsUAgAGAllA=
+Date: Thu, 23 Oct 2014 18:28:03 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844E54AC@US01WEMBX2.internal.synopsys.com>
+References: <1413831126-24193-1-git-send-email-dinguyen@opensource.altera.com>
+ <1413831126-24193-8-git-send-email-dinguyen@opensource.altera.com>
+ <9429092.fliZzSsbVp@amdc1032>
+In-Reply-To: <9429092.fliZzSsbVp@amdc1032>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.240]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Oct 2014 09:39:09 -0700 Kees Cook <keescook@chromium.org> wrote:
-
-> > I wonder if the chances of damage would be lower if we were to continue
-> > to accept the \r, but turn it into something else ("\r"?) when it is
-> > read.
+> From: Bartlomiej Zolnierkiewicz [mailto:b.zolnierkie@samsung.com]
+> Sent: Wednesday, October 22, 2014 5:26 AM
 > 
-> I think that would complicate things more than help them.
+> On Monday, October 20, 2014 01:52:06 PM dinguyen@opensource.altera.com wrote:
+> > From: Dinh Nguyen <dinguyen@opensource.altera.com>
+> >
+> >  config USB_DWC2_PLATFORM
+> >  	bool "DWC2 Platform"
+> > -	depends on USB_DWC2_HOST
+> >  	default USB_DWC2_HOST
+> 
+> It should be "default USB_DWC2_HOST || USB_DWC2_PERIPHERAL" because
+> USB_DWC2_PLATFORM replaces current USB_DWC2_PERIPHERAL functionality.
+> 
+> Additionaly USB_DWC2_PLATFORM should be changed to tristate
+> (USB_DWC2_PERIPHERAL was a tristeate before your changes).
 
-Why.
+Dinh, I think this is a good point. Is there any reason why
+USB_DWC2_PLATFORM (and USB_DWC2_PCI for that matter) can't be
+tristate? That's what DWC3 does.
 
-> If there's a
-> legit use of \r, I'll let Paul Wise debate how to proceed. :)
-
-I don't know who Paul is.  Please take this seriously; we don't want to
-have to revert this after breaking a bunch of people's setups.
+-- 
+Paul
 
