@@ -1,144 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551AbaJWRIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 13:08:17 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:44186 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798AbaJWRIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 13:08:16 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] pinctrl: rockchip: Protect read-modify-write with the spinlock
-Date: Thu, 23 Oct 2014 18:32:18 +0200
-Message-ID: <2662114.YSJpathv6W@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1413913655-22351-4-git-send-email-dianders@chromium.org>
-References: <1413913655-22351-1-git-send-email-dianders@chromium.org> <1413913655-22351-4-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754722AbaJWRKU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 13:10:20 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:39066 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737AbaJWRKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 13:10:17 -0400
+From: Roberto Medina <robertoxmed@gmail.com>
+X-Google-Original-From: Roberto Medina
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Roberto Medina <robertoxmed@gmail.com>
+Subject: [PATCH] net: ethernet: realtek: atp: checkpatch errors and warnings corrected
+Date: Thu, 23 Oct 2014 19:10:00 +0200
+Message-Id: <1414084200-5377-1-git-send-email-robertoxmed@gmail.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 21. Oktober 2014, 10:47:35 schrieb Doug Anderson:
-> There were a few instances where the rockchip pinctrl driver would do
-> read-modify-write with no spinlock.  Add a spinlock for these cases.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+From: Roberto Medina <robertoxmed@gmail.com>
 
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+Several warnings and errors of coding style errors corrected.
 
-thanks for catching those
+Signed-off-by: Roberto Medina <robertoxmed@gmail.com>
 
-> ---
-> Changes in v2:
-> - Made sure to release the lock in an error condition.
-> 
->  drivers/pinctrl/pinctrl-rockchip.c | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-rockchip.c
-> b/drivers/pinctrl/pinctrl-rockchip.c index 6c14f6c..59a5461 100644
-> --- a/drivers/pinctrl/pinctrl-rockchip.c
-> +++ b/drivers/pinctrl/pinctrl-rockchip.c
-> @@ -861,6 +861,7 @@ static int _rockchip_pmx_gpio_set_direction(struct
-> gpio_chip *chip, {
->  	struct rockchip_pin_bank *bank;
->  	int ret;
-> +	unsigned long flags;
->  	u32 data;
-> 
->  	bank = gc_to_pin_bank(chip);
-> @@ -869,6 +870,8 @@ static int _rockchip_pmx_gpio_set_direction(struct
-> gpio_chip *chip, if (ret < 0)
->  		return ret;
-> 
-> +	spin_lock_irqsave(&bank->slock, flags);
-> +
->  	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
->  	/* set bit to 1 for output, 0 for input */
->  	if (!input)
-> @@ -877,6 +880,8 @@ static int _rockchip_pmx_gpio_set_direction(struct
-> gpio_chip *chip, data &= ~BIT(pin);
->  	writel_relaxed(data, bank->reg_base + GPIO_SWPORT_DDR);
-> 
-> +	spin_unlock_irqrestore(&bank->slock, flags);
-> +
->  	return 0;
->  }
-> 
-> @@ -1394,6 +1399,7 @@ static void rockchip_irq_demux(unsigned int irq,
-> struct irq_desc *desc) u32 polarity = 0, data = 0;
->  	u32 pend;
->  	bool edge_changed = false;
-> +	unsigned long flags;
-> 
->  	dev_dbg(bank->drvdata->dev, "got irq for bank %s\n", bank->name);
-> 
-> @@ -1439,10 +1445,14 @@ static void rockchip_irq_demux(unsigned int irq,
-> struct irq_desc *desc)
-> 
->  	if (bank->toggle_edge_mode && edge_changed) {
->  		/* Interrupt params should only be set with ints disabled */
-> +		spin_lock_irqsave(&bank->slock, flags);
-> +
->  		data = readl_relaxed(bank->reg_base + GPIO_INTEN);
->  		writel_relaxed(0, bank->reg_base + GPIO_INTEN);
->  		writel(polarity, bank->reg_base + GPIO_INT_POLARITY);
->  		writel(data, bank->reg_base + GPIO_INTEN);
-> +
-> +		spin_unlock_irqrestore(&bank->slock, flags);
->  	}
-> 
->  	chained_irq_exit(chip, desc);
-> @@ -1456,6 +1466,7 @@ static int rockchip_irq_set_type(struct irq_data *d,
-> unsigned int type) u32 polarity;
->  	u32 level;
->  	u32 data;
-> +	unsigned long flags;
->  	int ret;
-> 
->  	/* make sure the pin is configured as gpio input */
-> @@ -1463,15 +1474,20 @@ static int rockchip_irq_set_type(struct irq_data *d,
-> unsigned int type) if (ret < 0)
->  		return ret;
-> 
-> +	spin_lock_irqsave(&bank->slock, flags);
-> +
->  	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
->  	data &= ~mask;
->  	writel_relaxed(data, bank->reg_base + GPIO_SWPORT_DDR);
-> 
-> +	spin_unlock_irqrestore(&bank->slock, flags);
-> +
->  	if (type & IRQ_TYPE_EDGE_BOTH)
->  		__irq_set_handler_locked(d->irq, handle_edge_irq);
->  	else
->  		__irq_set_handler_locked(d->irq, handle_level_irq);
-> 
-> +	spin_lock_irqsave(&bank->slock, flags);
->  	irq_gc_lock(gc);
-> 
->  	level = readl_relaxed(gc->reg_base + GPIO_INTTYPE_LEVEL);
-> @@ -1514,6 +1530,7 @@ static int rockchip_irq_set_type(struct irq_data *d,
-> unsigned int type) break;
->  	default:
->  		irq_gc_unlock(gc);
-> +		spin_unlock_irqrestore(&bank->slock, flags);
->  		return -EINVAL;
->  	}
-> 
-> @@ -1521,6 +1538,7 @@ static int rockchip_irq_set_type(struct irq_data *d,
-> unsigned int type) writel_relaxed(polarity, gc->reg_base +
-> GPIO_INT_POLARITY);
-> 
->  	irq_gc_unlock(gc);
-> +	spin_unlock_irqrestore(&bank->slock, flags);
-> 
->  	return 0;
->  }
+---
+ drivers/net/ethernet/realtek/atp.h | 242 +++++++++++++++++++------------------
+ 1 file changed, 124 insertions(+), 118 deletions(-)
+
+diff --git a/drivers/net/ethernet/realtek/atp.h b/drivers/net/ethernet/realtek/atp.h
+index 040b137..1e08a24 100644
+--- a/drivers/net/ethernet/realtek/atp.h
++++ b/drivers/net/ethernet/realtek/atp.h
+@@ -6,10 +6,10 @@
+ 
+ /* The header prepended to received packets. */
+ struct rx_header {
+-    ushort pad;			/* Pad. */
+-    ushort rx_count;
+-    ushort rx_status;		/* Unknown bit assignments :-<.  */
+-    ushort cur_addr;		/* Apparently the current buffer address(?) */
++	ushort pad;		/* Pad. */
++	ushort rx_count;
++	ushort rx_status;	/* Unknown bit assignments :-<.  */
++	ushort cur_addr;	/* Apparently the current buffer address(?) */
+ };
+ 
+ #define PAR_DATA	0
+@@ -29,22 +29,23 @@ struct rx_header {
+ #define RdAddr	0xC0
+ #define HNib	0x10
+ 
+-enum page0_regs
+-{
++enum page0_regs {
+     /* The first six registers hold the ethernet physical station address. */
+-    PAR0 = 0, PAR1 = 1, PAR2 = 2, PAR3 = 3, PAR4 = 4, PAR5 = 5,
+-    TxCNT0 = 6, TxCNT1 = 7,		/* The transmit byte count. */
+-    TxSTAT = 8, RxSTAT = 9,		/* Tx and Rx status. */
+-    ISR = 10, IMR = 11,			/* Interrupt status and mask. */
+-    CMR1 = 12,				/* Command register 1. */
+-    CMR2 = 13,				/* Command register 2. */
+-    MODSEL = 14,			/* Mode select register. */
+-    MAR = 14,				/* Memory address register (?). */
+-    CMR2_h = 0x1d, };
+-
+-enum eepage_regs
+-{ PROM_CMD = 6, PROM_DATA = 7 };	/* Note that PROM_CMD is in the "high" bits. */
++	PAR0 = 0, PAR1 = 1, PAR2 = 2, PAR3 = 3, PAR4 = 4, PAR5 = 5,
++	TxCNT0 = 6, TxCNT1 = 7,		/* The transmit byte count. */
++	TxSTAT = 8, RxSTAT = 9,		/* Tx and Rx status. */
++	ISR = 10, IMR = 11,		/* Interrupt status and mask. */
++	CMR1 = 12,			/* Command register 1. */
++	CMR2 = 13,			/* Command register 2. */
++	MODSEL = 14,			/* Mode select register. */
++	MAR = 14,			/* Memory address register (?). */
++	CMR2_h = 0x1d,
++};
+ 
++enum eepage_regs {
++	PROM_CMD = 6,	/* Note that PROM_CMD is in the "high" bits. */
++	PROM_DATA = 7
++}
+ 
+ #define ISR_TxOK	0x01
+ #define ISR_RxOK	0x04
+@@ -72,141 +73,146 @@ enum eepage_regs
+ #define CMR2h_Normal	2	/* Accept physical and broadcast address. */
+ #define CMR2h_PROMISC	3	/* Promiscuous mode. */
+ 
+-/* An inline function used below: it differs from inb() by explicitly return an unsigned
+-   char, saving a truncation. */
++/* An inline function used below: it differs from inb() by explicitly
++ * return an unsigned char, saving a truncation.
++ */
+ static inline unsigned char inbyte(unsigned short port)
+ {
+-    unsigned char _v;
+-    __asm__ __volatile__ ("inb %w1,%b0" :"=a" (_v):"d" (port));
+-    return _v;
++	unsigned char _v;
++
++	__asm__ __volatile__ ("inb %w1,%b0" : "=a" (_v) : "d" (port));
++	return _v;
+ }
+ 
+ /* Read register OFFSET.
+-   This command should always be terminated with read_end(). */
++ * This command should always be terminated with read_end().
++ */
+ static inline unsigned char read_nibble(short port, unsigned char offset)
+ {
+-    unsigned char retval;
+-    outb(EOC+offset, port + PAR_DATA);
+-    outb(RdAddr+offset, port + PAR_DATA);
+-    inbyte(port + PAR_STATUS);		/* Settling time delay */
+-    retval = inbyte(port + PAR_STATUS);
+-    outb(EOC+offset, port + PAR_DATA);
+-
+-    return retval;
++	unsigned char retval;
++
++	outb(EOC+offset, port + PAR_DATA);
++	outb(RdAddr+offset, port + PAR_DATA);
++	inbyte(port + PAR_STATUS);		/* Settling time delay */
++	retval = inbyte(port + PAR_STATUS);
++	outb(EOC+offset, port + PAR_DATA);
++
++	return retval;
+ }
+ 
+ /* Functions for bulk data read.  The interrupt line is always disabled. */
+ /* Get a byte using read mode 0, reading data from the control lines. */
+ static inline unsigned char read_byte_mode0(short ioaddr)
+ {
+-    unsigned char low_nib;
+-
+-    outb(Ctrl_LNibRead, ioaddr + PAR_CONTROL);
+-    inbyte(ioaddr + PAR_STATUS);
+-    low_nib = (inbyte(ioaddr + PAR_STATUS) >> 3) & 0x0f;
+-    outb(Ctrl_HNibRead, ioaddr + PAR_CONTROL);
+-    inbyte(ioaddr + PAR_STATUS);	/* Settling time delay -- needed!  */
+-    inbyte(ioaddr + PAR_STATUS);	/* Settling time delay -- needed!  */
+-    return low_nib | ((inbyte(ioaddr + PAR_STATUS) << 1) & 0xf0);
++	unsigned char low_nib;
++
++	outb(Ctrl_LNibRead, ioaddr + PAR_CONTROL);
++	inbyte(ioaddr + PAR_STATUS);
++	low_nib = (inbyte(ioaddr + PAR_STATUS) >> 3) & 0x0f;
++	outb(Ctrl_HNibRead, ioaddr + PAR_CONTROL);
++	inbyte(ioaddr + PAR_STATUS);	/* Settling time delay -- needed!  */
++	inbyte(ioaddr + PAR_STATUS);	/* Settling time delay -- needed!  */
++	return low_nib | ((inbyte(ioaddr + PAR_STATUS) << 1) & 0xf0);
+ }
+ 
+ /* The same as read_byte_mode0(), but does multiple inb()s for stability. */
+ static inline unsigned char read_byte_mode2(short ioaddr)
+ {
+-    unsigned char low_nib;
+-
+-    outb(Ctrl_LNibRead, ioaddr + PAR_CONTROL);
+-    inbyte(ioaddr + PAR_STATUS);
+-    low_nib = (inbyte(ioaddr + PAR_STATUS) >> 3) & 0x0f;
+-    outb(Ctrl_HNibRead, ioaddr + PAR_CONTROL);
+-    inbyte(ioaddr + PAR_STATUS);	/* Settling time delay -- needed!  */
+-    return low_nib | ((inbyte(ioaddr + PAR_STATUS) << 1) & 0xf0);
++	unsigned char low_nib;
++
++	outb(Ctrl_LNibRead, ioaddr + PAR_CONTROL);
++	inbyte(ioaddr + PAR_STATUS);
++	low_nib = (inbyte(ioaddr + PAR_STATUS) >> 3) & 0x0f;
++	outb(Ctrl_HNibRead, ioaddr + PAR_CONTROL);
++	inbyte(ioaddr + PAR_STATUS);	/* Settling time delay -- needed!  */
++	return low_nib | ((inbyte(ioaddr + PAR_STATUS) << 1) & 0xf0);
+ }
+ 
+ /* Read a byte through the data register. */
+ static inline unsigned char read_byte_mode4(short ioaddr)
+ {
+-    unsigned char low_nib;
++	unsigned char low_nib;
+ 
+-    outb(RdAddr | MAR, ioaddr + PAR_DATA);
+-    low_nib = (inbyte(ioaddr + PAR_STATUS) >> 3) & 0x0f;
+-    outb(RdAddr | HNib | MAR, ioaddr + PAR_DATA);
+-    return low_nib | ((inbyte(ioaddr + PAR_STATUS) << 1) & 0xf0);
++	outb(RdAddr | MAR, ioaddr + PAR_DATA);
++	low_nib = (inbyte(ioaddr + PAR_STATUS) >> 3) & 0x0f;
++	outb(RdAddr | HNib | MAR, ioaddr + PAR_DATA);
++	return low_nib | ((inbyte(ioaddr + PAR_STATUS) << 1) & 0xf0);
+ }
+ 
+ /* Read a byte through the data register, double reading to allow settling. */
+ static inline unsigned char read_byte_mode6(short ioaddr)
+ {
+-    unsigned char low_nib;
+-
+-    outb(RdAddr | MAR, ioaddr + PAR_DATA);
+-    inbyte(ioaddr + PAR_STATUS);
+-    low_nib = (inbyte(ioaddr + PAR_STATUS) >> 3) & 0x0f;
+-    outb(RdAddr | HNib | MAR, ioaddr + PAR_DATA);
+-    inbyte(ioaddr + PAR_STATUS);
+-    return low_nib | ((inbyte(ioaddr + PAR_STATUS) << 1) & 0xf0);
++	unsigned char low_nib;
++
++	outb(RdAddr | MAR, ioaddr + PAR_DATA);
++	inbyte(ioaddr + PAR_STATUS);
++	low_nib = (inbyte(ioaddr + PAR_STATUS) >> 3) & 0x0f;
++	outb(RdAddr | HNib | MAR, ioaddr + PAR_DATA);
++	inbyte(ioaddr + PAR_STATUS);
++	return low_nib | ((inbyte(ioaddr + PAR_STATUS) << 1) & 0xf0);
+ }
+ 
+ static inline void
+ write_reg(short port, unsigned char reg, unsigned char value)
+ {
+-    unsigned char outval;
+-    outb(EOC | reg, port + PAR_DATA);
+-    outval = WrAddr | reg;
+-    outb(outval, port + PAR_DATA);
+-    outb(outval, port + PAR_DATA);	/* Double write for PS/2. */
+-
+-    outval &= 0xf0;
+-    outval |= value;
+-    outb(outval, port + PAR_DATA);
+-    outval &= 0x1f;
+-    outb(outval, port + PAR_DATA);
+-    outb(outval, port + PAR_DATA);
+-
+-    outb(EOC | outval, port + PAR_DATA);
++	unsigned char outval;
++
++	outb(EOC | reg, port + PAR_DATA);
++	outval = WrAddr | reg;
++	outb(outval, port + PAR_DATA);
++	outb(outval, port + PAR_DATA);	/* Double write for PS/2. */
++
++	outval &= 0xf0;
++	outval |= value;
++	outb(outval, port + PAR_DATA);
++	outval &= 0x1f;
++	outb(outval, port + PAR_DATA);
++	outb(outval, port + PAR_DATA);
++
++	outb(EOC | outval, port + PAR_DATA);
+ }
+ 
+ static inline void
+ write_reg_high(short port, unsigned char reg, unsigned char value)
+ {
+-    unsigned char outval = EOC | HNib | reg;
++	unsigned char outval = EOC | HNib | reg;
+ 
+-    outb(outval, port + PAR_DATA);
+-    outval &= WrAddr | HNib | 0x0f;
+-    outb(outval, port + PAR_DATA);
+-    outb(outval, port + PAR_DATA);	/* Double write for PS/2. */
++	outb(outval, port + PAR_DATA);
++	outval &= WrAddr | HNib | 0x0f;
++	outb(outval, port + PAR_DATA);
++	outb(outval, port + PAR_DATA);	/* Double write for PS/2. */
+ 
+-    outval = WrAddr | HNib | value;
+-    outb(outval, port + PAR_DATA);
+-    outval &= HNib | 0x0f;		/* HNib | value */
+-    outb(outval, port + PAR_DATA);
+-    outb(outval, port + PAR_DATA);
++	outval = WrAddr | HNib | value;
++	outb(outval, port + PAR_DATA);
++	outval &= HNib | 0x0f;		/* HNib | value */
++	outb(outval, port + PAR_DATA);
++	outb(outval, port + PAR_DATA);
+ 
+-    outb(EOC | HNib | outval, port + PAR_DATA);
++	outb(EOC | HNib | outval, port + PAR_DATA);
+ }
+ 
+ /* Write a byte out using nibble mode.  The low nibble is written first. */
+ static inline void
+ write_reg_byte(short port, unsigned char reg, unsigned char value)
+ {
+-    unsigned char outval;
+-    outb(EOC | reg, port + PAR_DATA); 	/* Reset the address register. */
+-    outval = WrAddr | reg;
+-    outb(outval, port + PAR_DATA);
+-    outb(outval, port + PAR_DATA);	/* Double write for PS/2. */
+-
+-    outb((outval & 0xf0) | (value & 0x0f), port + PAR_DATA);
+-    outb(value & 0x0f, port + PAR_DATA);
+-    value >>= 4;
+-    outb(value, port + PAR_DATA);
+-    outb(0x10 | value, port + PAR_DATA);
+-    outb(0x10 | value, port + PAR_DATA);
+-
+-    outb(EOC  | value, port + PAR_DATA); 	/* Reset the address register. */
++	unsigned char outval;
++
++	outb(EOC | reg, port + PAR_DATA);  /* Reset the address register. */
++	outval = WrAddr | reg;
++	outb(outval, port + PAR_DATA);
++	outb(outval, port + PAR_DATA);	/* Double write for PS/2. */
++
++	outb((outval & 0xf0) | (value & 0x0f), port + PAR_DATA);
++	outb(value & 0x0f, port + PAR_DATA);
++	value >>= 4;
++	outb(value, port + PAR_DATA);
++	outb(0x10 | value, port + PAR_DATA);
++	outb(0x10 | value, port + PAR_DATA);
++
++	outb(EOC  | value, port + PAR_DATA);  /* Reset the address register. */
+ }
+ 
+-/*
+- * Bulk data writes to the packet buffer.  The interrupt line remains enabled.
++/* Bulk data writes to the packet buffer.  The interrupt line remains enabled.
+  * The first, faster method uses only the dataport (data modes 0, 2 & 4).
+  * The second (backup) method uses data and control regs (modes 1, 3 & 5).
+  * It should only be needed when there is skew between the individual data
+@@ -214,28 +220,28 @@ write_reg_byte(short port, unsigned char reg, unsigned char value)
+  */
+ static inline void write_byte_mode0(short ioaddr, unsigned char value)
+ {
+-    outb(value & 0x0f, ioaddr + PAR_DATA);
+-    outb((value>>4) | 0x10, ioaddr + PAR_DATA);
++	outb(value & 0x0f, ioaddr + PAR_DATA);
++	outb((value>>4) | 0x10, ioaddr + PAR_DATA);
+ }
+ 
+ static inline void write_byte_mode1(short ioaddr, unsigned char value)
+ {
+-    outb(value & 0x0f, ioaddr + PAR_DATA);
+-    outb(Ctrl_IRQEN | Ctrl_LNibWrite, ioaddr + PAR_CONTROL);
+-    outb((value>>4) | 0x10, ioaddr + PAR_DATA);
+-    outb(Ctrl_IRQEN | Ctrl_HNibWrite, ioaddr + PAR_CONTROL);
++	outb(value & 0x0f, ioaddr + PAR_DATA);
++	outb(Ctrl_IRQEN | Ctrl_LNibWrite, ioaddr + PAR_CONTROL);
++	outb((value>>4) | 0x10, ioaddr + PAR_DATA);
++	outb(Ctrl_IRQEN | Ctrl_HNibWrite, ioaddr + PAR_CONTROL);
+ }
+ 
+ /* Write 16bit VALUE to the packet buffer: the same as above just doubled. */
+ static inline void write_word_mode0(short ioaddr, unsigned short value)
+ {
+-    outb(value & 0x0f, ioaddr + PAR_DATA);
+-    value >>= 4;
+-    outb((value & 0x0f) | 0x10, ioaddr + PAR_DATA);
+-    value >>= 4;
+-    outb(value & 0x0f, ioaddr + PAR_DATA);
+-    value >>= 4;
+-    outb((value & 0x0f) | 0x10, ioaddr + PAR_DATA);
++	outb(value & 0x0f, ioaddr + PAR_DATA);
++	value >>= 4;
++	outb((value & 0x0f) | 0x10, ioaddr + PAR_DATA);
++	value >>= 4;
++	outb(value & 0x0f, ioaddr + PAR_DATA);
++	value >>= 4;
++	outb((value & 0x0f) | 0x10, ioaddr + PAR_DATA);
+ }
+ 
+ /*  EEPROM_Ctrl bits. */
+@@ -248,10 +254,10 @@ static inline void write_word_mode0(short ioaddr, unsigned short value)
+ 
+ /* Delay between EEPROM clock transitions. */
+ #define eeprom_delay(ticks) \
+-do { int _i = 40; while (--_i > 0) { __SLOW_DOWN_IO; }} while (0)
++do { int _i = 40; while (--_i > 0) { __SLOW_DOWN_IO; } } while (0)
+ 
+ /* The EEPROM commands include the alway-set leading bit. */
+ #define EE_WRITE_CMD(offset)	(((5 << 6) + (offset)) << 17)
+-#define EE_READ(offset) 	(((6 << 6) + (offset)) << 17)
++#define EE_READ(offset)		(((6 << 6) + (offset)) << 17)
+ #define EE_ERASE(offset)	(((7 << 6) + (offset)) << 17)
+ #define EE_CMD_SIZE	27	/* The command+address+data size. */
+-- 
+2.1.2
 
