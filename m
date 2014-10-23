@@ -1,155 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043AbaJWOGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:06:24 -0400
-Received: from mail-bl2on0142.outbound.protection.outlook.com ([65.55.169.142]:20064
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755811AbaJWOGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:06:14 -0400
-X-Greylist: delayed 1274 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Oct 2014 10:06:14 EDT
-From: Stuart Yoder <stuart.yoder@freescale.com>
-To: Marcel Apfelbaum <marcel.a@redhat.com>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "marcel@redhat.com" <marcel@redhat.com>,
-        "mst@redhat.com" <mst@redhat.com>
-Subject: RE: [PATCH v4] PCI: add kernel parameter to override devid<->driver
- mapping.
-Thread-Topic: [PATCH v4] PCI: add kernel parameter to override devid<->driver
- mapping.
-Thread-Index: AQHP7iaRIqQChkARrE2ClRQTljGKipw9nmKAgAAUzZA=
-Date: Thu, 23 Oct 2014 13:51:06 +0000
-Message-ID: <78dc034416ad42f1a2c8343ea1401fae@CY1PR0301MB0748.namprd03.prod.outlook.com>
-References: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
-	 <1414002755.4202.253.camel@ul30vt.home>
- <1414067521.2376.54.camel@localhost.localdomain>
-In-Reply-To: <1414067521.2376.54.camel@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-ms-exchange-transport-fromentityheader: Hosted
-x-originating-ip: [192.88.168.50]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0747;
-x-forefront-prvs: 0373D94D15
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(13464003)(377454003)(51704005)(199003)(164054003)(377424004)(24454002)(74316001)(40100003)(122556002)(2656002)(77096002)(120916001)(46102003)(101416001)(87936001)(64706001)(20776003)(76482002)(99396003)(4396001)(85852003)(50986999)(21056001)(66066001)(19580395003)(86362001)(95666004)(92566001)(97736003)(19580405001)(31966008)(99286002)(76176999)(108616004)(76576001)(107046002)(106356001)(80022003)(85306004)(54356999)(106116001)(105586002)(33646002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0747;H:CY1PR0301MB0748.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S932473AbaJWOHC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:07:02 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42076 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756048AbaJWOG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:06:58 -0400
+Date: Thu, 23 Oct 2014 15:06:44 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marcin Jabrzyk <m.jabrzyk@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>, kyungmin.park@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: =?iso-8859-1?Q?PROBLEM=3A=A0BUG__appea?=
+ =?iso-8859-1?Q?ring_when_tryin?= =?iso-8859-1?Q?g?= to allocate interrupt on
+ Exynos MCT after CPU hotplug
+Message-ID: <20141023140644.GI27405@n2100.arm.linux.org.uk>
+References: <544907D4.1020409@samsung.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544907D4.1020409@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9NE6WgB016475
 
+On Thu, Oct 23, 2014 at 03:51:16PM +0200, Marcin Jabrzyk wrote:
+> [1.] One line summary of the problem: "BUG: sleeping function called from
+> invalid context at mm/slub.c:1250" after CPU hotplug
 
+I'm really not surprised.
 
-> -----Original Message-----
-> From: Marcel Apfelbaum [mailto:marcel.a@redhat.com]
-> Sent: Thursday, October 23, 2014 7:32 AM
-> To: Alex Williamson
-> Cc: linux-pci@vger.kernel.org; bhelgaas@google.com; linux-kernel@vger.kernel.org; marcel@redhat.com;
-> mst@redhat.com; Yoder Stuart-B08248
-> Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver mapping.
-> 
-> On Wed, 2014-10-22 at 12:32 -0600, Alex Williamson wrote:
-> > [cc+ stuart]
-> >
-> > On Mon, 2014-10-20 at 17:04 +0300, Marcel Apfelbaum wrote:
-> > > Scanning a lot of devices during boot requires a lot of time.
-> > > On other scenarios there is a need to bind a driver to a specific slot.
-> > >
-> > > Binding devices to pci-stub driver does not work,
-> > > as it will not differentiate between devices of the
-> > > same type. Using some start scripts is error prone.
-> > >
-> > > The solution leverages driver_override functionality introduced by
-> > >
-> > > 	commit: 782a985d7af26db39e86070d28f987cad21313c0
-> > > 	Author: Alex Williamson <alex.williamson@redhat.com>
-> > > 	Date:   Tue May 20 08:53:21 2014 -0600
-> > >
-> > >     	PCI: Introduce new device binding path using pci_dev.driver_override
-> > >
-> > > In order to bind PCI slots to specific drivers use:
-> > > 	pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
-> > >
-> > > Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
-> > > ---
-> > > v3 -> v4:
-> > >  - Addressed Alex Williamson's comments:
-> > >    - Modified the type of driver_override_entry's fields
-> > >    - Used PCI_DEVFN when appropriated
-> > >    - Removed redundant checks
-> > >    - Replaced BUG_ON with pr_err messages
-> > >    - Simpler command line parsing
-> > >  - Addressed Michael S. Tsirkin comments
-> > >    - removed DRIVER_OVERRIDE_NAME_LENGTH limitation
-> > > v2 -> v3:
-> > >  - Corrected subject line
-> > > v1 -> v2:
-> > >  - Addressed Michael S. Tsirkin comments
-> > >    - Removed 32 slots limitation
-> > >    - Better handling of memory allocation failures
-> > >      (preferred BUG_ON over error messages)
-> > >  - Addressed Alex Williamson's comments:
-> > >    - Modified commit message to show parameter usage more clear.
-> > >  - I preferred to re-use parse_args instead of manually using
-> > >    strstr in order to better comply with command line parsing
-> > >    rules.
-> > >  - I didn't use any locking when parsing the command line args
-> > >    (see parse_done usage) assuming that first call will be
-> > >    early in system boot and no race can occur. Please correct
-> > >    me if I am wrong.
-> > >
-> > > Notes:
-> > >  - I have further ideas on top of this patch based on your reviews.
-> > >    I thought of:
-> > >    - Use wildcards to specify entire buses/devices, something like:
-> > >      	driver[0001:02:*.*]=pci-stub
-> > >    - Use comma to separate several devices:
-> > >      	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
-> > >    - Make domain optional:
-> > >    	driver[00:03.0]=pci-stub
-> > >
-> > > Comments will be appreciated,
-> > > Thanks,
-> > > Marcel
-> > >  Documentation/kernel-parameters.txt |   4 ++
-> > >  drivers/pci/bus.c                   | 111 ++++++++++++++++++++++++++++++++++++
-> > >  drivers/pci/pci.c                   |   2 +
-> > >  3 files changed, 117 insertions(+)
-> >
-> > The driver_override feature that we're making use of here is also going
-> > to be supported by platform devices and potentially more bustypes in the
-> > future, so I'm concerned that making a pci specific kernel parameter is
-> > too shortsighted.  Instead we could hook on to BUS_NOTIFY_ADD_DEVICE for
-> > bustypes that support driver_override so we can have a common interface.
-> The real question here if those bus types/devices would benefit from this
-> feature, and I also must confess that I have no knowledge of the other buses.
-> Can anyone confirm that it does make sense for them?
+> When SoC have MCT_INT_SPI interrupt it is being allocated after hotplugging
+> of the CPU, secondary_start_kernel() is sending CPU boot notifications which
+> are send when preemption and interrupts are disabled. Exynos_mct
+> notification handler tries to set up and allocate IRQ for SPI type interrupt
+> for started CPU and then BUG appears.
+> There might be similar problem on qcom-timer I think just after looking on
+> the code.
 
-We don't have vfio-platform in use yet, so not much actual real world user
-experience yet.  But, I think it makes sense.   Especially, given that we are
-inventing a kernel parameter I think we should design the syntax so that it
-can work buses can implement support for this.  The driver_override mechanism
-is not bus specific, so let's not make the kernel parameter bus specific.
+The CPU notifier is called via notify_cpu_starting(), which is called
+with interrupts disabled, and a reason code of CPU_STARTING.  Interrupts
+at this point /must/ remain disabled.
 
-> > Perhaps:
-> >
-> > driver_override=pci,0000:02:00.0=pci-stub;platform,fakename=vfio-platform
-> >
-> > Finding delimiters that don't conflict may be challenging.  Also, can we
-> > assume that bus-name:dev-name is unique for every bustype?  It is for
-> > pci, platform?
-> For PCI, sure the domain:bus:dev.func is unique, for platform I have no idea,
-> can anyone that knows "platform" confirm or deny?
+The Exynos code then goes on to call exynos4_local_timer_setup() which
+tries to reverse the free_irq() in exynos4_local_timer_stop() by calling
+request_irq().  Calling request_irq() with interrupts off has never been
+permissible.
 
-Yes, dev-name will be unique.  All platform devices are under a single
-platform bus.
+So, this code is wrong today, and it was also wrong when it was written.
+It /couldn't/ have been tested.  It looks like this commit added this
+buggy code:
 
-Stuart
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+commit ee98d27df6827b5ba4bd99cb7d5cb1239b6a1a31
+Author: Stephen Boyd <sboyd@codeaurora.org>
+Date:   Fri Feb 15 16:40:51 2013 -0800
+
+    ARM: EXYNOS4: Divorce mct from local timer API
+
+    Separate the mct local timers from the local timer API. This will
+    allow us to remove ARM local timer support in the near future and
+    gets us closer to moving this driver to drivers/clocksource.
+
+    Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+    Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+    Cc: Thomas Abraham <thomas.abraham@linaro.org>
+    Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+
+A good question would be: why doesn't this happen at boot time when CPU1
+is first brought up?  The conditions here are no different from hotplugging
+CPU1 back in.  Do you see a similar warning on boot too?
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
