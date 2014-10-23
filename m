@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755870AbaJWNhB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:37:01 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:47550 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190AbaJWNg7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:36:59 -0400
+	id S1755917AbaJWNhf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:37:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:53261 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752439AbaJWNhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 09:37:31 -0400
+Date: Thu, 23 Oct 2014 10:37:24 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Anton Blanchard <anton@au1.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/powerpc: Cache the DWARF debug info
+Message-ID: <20141023133724.GE14687@kernel.org>
+References: <20141021185610.GA18366@us.ibm.com>
+ <20141021190839.GA4160@kernel.org>
+ <20141022000958.GB2228@us.ibm.com>
+ <20141022081730.GB9860@krava.brq.redhat.com>
+ <20141022174659.GA5119@us.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1414064309-22232-1-git-send-email-prarit@redhat.com>
-References: <1414064309-22232-1-git-send-email-prarit@redhat.com>
-Date: Thu, 23 Oct 2014 06:36:58 -0700
-Message-ID: <CAPcyv4jR9taV+uL8yDM_gFAMSTpVk7U_4K5NFA6LEj+TRmi_Bw@mail.gmail.com>
-Subject: Re: [RESEND PATCH] ioatdma, fix dma mapping errors
-From: Dan Williams <dan.j.williams@intel.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vinod Koul <vinod.koul@intel.com>, Dave Jiang <dave.jiang@intel.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022174659.GA5119@us.ibm.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 4:38 AM, Prarit Bhargava <prarit@redhat.com> wrote:
-> No response from anyone the first time ...
->
+Em Wed, Oct 22, 2014 at 10:46:59AM -0700, Sukadev Bhattiprolu escreveu:
+> Jiri Olsa [jolsa@redhat.com] wrote:
+> | > +			goto out;
+> | > +		}
+> | > +		dso->dwfl = dwfl;
+> | 
+> | so by this we get powerpc arch code sharing dw handle via dso object,
+> | but we have lot of generic code too ;-)
+> 
+> Well, this applies to powerpc...
+> 
+> | 
+> | could you make this happen for unwind__get_entries.. probably
+> | both sharing same generic code I guess
+> 
+> and unwind_get_entries() applies only to x86 and arm right ? ;-)
+> Or at least thats what the config/Makefile says.
+ 
+> I can take a look at unwind_get_entries(), but can you please merge
+> this fix for now, since the current performance is bad?
 
-Sorry about that, thanks for re-posting.
+Right, I think the way it is now is a good compromise, i.e. you seem to
+be using the right place to cache this, this is restricted to powerpc,
+i.e. if leaks or excessive memory usage happens in workloads with lots
+of DSOs having dwfl handlers open at the same times happens, it doesn't
+affect users in other arches.
 
-> P.
->
-> ----8<----
->
-> Several systems are showing the following stack trace:
->
-> WARNING: CPU: 0 PID: 2352 at lib/dma-debug.c:1140 check_unmap+0x4ee/0x9e0()
-> ioatdma 0000:00:04.0: DMA-API: device driver failed to check map error[device address=0x0000000465bad000] [size=4096 bytes] [mapped as page]
-> Modules linked in: ioatdma(E+) nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal intel_powerclamp coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel cdc_ether ses ghash_clmulni_intel usbnet mii enclosure aesni_intel lrw gf128mul glue_helper iTCO_wdt shpchp ablk_helper iTCO_vendor_support cryptd pcspkr ipmi_devintf sb_edac lpc_ich edac_core mfd_core ipmi_si i2c_i801 wmi ipmi_msghandler nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sd_mod crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt drm_kms_helper ttm igb drm ptp pps_core dca i2c_algo_bit i2ccore megaraid_sas dm_mirror dm_region_hash dm_log dm_mod [last unloaded: ioatdma]
-> CPU: 0 PID: 2352 Comm: insmod Tainted: G            E  3.17.0-rc4+ #14
-> Hardware name: HP ProLiant m300 Server Cartridge/, BIOS H02 01/30/2014
->  0000000000000009 ffff88007994b7d8 ffffffff816e7225 ffff88007994b820
->  ffff88007994b810 ffffffff8107e51d ffff88045fc56c00 ffff88046643ee90
->  ffffffff8338ccd0 0000000000000286 ffffffff81956629 ffff88007994b870
-> Call Trace:
->  [<ffffffff816e7225>] dump_stack+0x4d/0x66
->  [<ffffffff8107e51d>] warn_slowpath_common+0x7d/0xa0
->  [<ffffffff8107e58c>] warn_slowpath_fmt+0x4c/0x50
->  [<ffffffff81381e6e>] check_unmap+0x4ee/0x9e0
->  [<ffffffff813823bf>] debug_dma_unmap_page+0x5f/0x70
->  [<ffffffffa04546d8>] ioat_xor_val_self_test+0x498/0xcf0 [ioatdma]
->  [<ffffffff81204f0a>] ? kfree+0xda/0x2b0
->  [<ffffffffa044d510>] ? ioat_dma_setup_interrupts+0x120/0x2d0 [ioatdma]
->  [<ffffffffa0454f4e>] ioat3_dma_self_test+0x1e/0x30 [ioatdma]
->  [<ffffffffa044f904>] ioat_probe+0xf4/0x110 [ioatdma]
->  [<ffffffffa04550f8>] ioat3_dma_probe+0x198/0x3a0 [ioatdma]
->  [<ffffffffa044d18e>] ioat_pci_probe+0x11e/0x1b0 [ioatdma]
->  [<ffffffff81393a15>] local_pci_probe+0x45/0xa0
->  [<ffffffff81394be5>] ? pci_match_device+0xe5/0x110
->  [<ffffffff81394d29>] pci_device_probe+0xd9/0x130
->  [<ffffffff81462860>] driver_probe_device+0x90/0x3c0
->  [<ffffffff81462c63>] __driver_attach+0x93/0xa0
->  [<ffffffff81462bd0>] ? __device_attach+0x40/0x40
->  [<ffffffff8146080b>] bus_for_each_dev+0x6b/0xb0
->  [<ffffffff814622ce>] driver_attach+0x1e/0x20
->  [<ffffffff81461ed8>] bus_add_driver+0x188/0x260
->  [<ffffffffa0423000>] ? 0xffffffffa0423000
->  [<ffffffff81463734>] driver_register+0x64/0xf0
->  [<ffffffff813933a0>] __pci_register_driver+0x60/0x70
->  [<ffffffffa0423089>] ioat_init_module+0x89/0x1000 [ioatdma]
->  [<ffffffff8100212c>] do_one_initcall+0xbc/0x200
->  [<ffffffff811e8b22>] ? __vunmap+0xd2/0x120
->  [<ffffffff8111e73c>] load_module+0x14ec/0x1b50
->  [<ffffffff81119970>] ? store_uevent+0x40/0x40
->  [<ffffffff8111ef36>] SyS_finit_module+0x86/0xb0
->  [<ffffffff816f1469>] system_call_fastpath+0x16/0x1b
-> ---[ end trace 1052ccbbc3db4d08 ]---
-> Mapped at:
->  [<ffffffff81380be1>] debug_dma_map_page+0x91/0x140
->  [<ffffffffa045440e>] ioat_xor_val_self_test+0x1ce/0xcf0 [ioatdma]
->  [<ffffffffa0454f4e>] ioat3_dma_self_test+0x1e/0x30 [ioatdma]
->  [<ffffffffa044f904>] ioat_probe+0xf4/0x110 [ioatdma]
->  [<ffffffffa04550f8>] ioat3_dma_probe+0x198/0x3a0 [ioatdma]
->
-> This happens because the current ioatdma DMA test code does not check the return
-> value of dma_map_page() calls with dma_mapping_error().  In addition, it was
-> noticed that mapping for the variable dest_dma is free'd before the last use.
->
-> This patch fixes these errors by initializing the dma_srcs[] array and checking
-> the returns with dma_mapping_error().
->
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dave Jiang <dave.jiang@intel.com>
+Jiri: do you agree?
 
-Dave, can you check this out / ack so Vinod can take this?
+I'm applying it on my local tree, as I need to change some of those
+functions, places where machine and thread are being passed are being
+changed to receive just a thread pointer, since the machine where a
+thread is can be obtained, after a patch I added on my local tree, can
+be obtained from thread->mg->machine.
+
+- Arnaldo
