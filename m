@@ -1,143 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952AbaJWPAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:00:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34394 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039AbaJWPAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753575AbaJWPAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:00:47 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47308 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbaJWPAm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Oct 2014 11:00:42 -0400
-Date: Thu, 23 Oct 2014 17:00:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcontrol: fix missed end-writeback page
- accounting
-Message-ID: <20141023150039.GI23011@dhcp22.suse.cz>
-References: <1414002568-21042-1-git-send-email-hannes@cmpxchg.org>
- <1414002568-21042-3-git-send-email-hannes@cmpxchg.org>
- <20141022133936.44f2d2931948ce13477b5e64@linux-foundation.org>
- <20141023135412.GA24269@phnom.home.cmpxchg.org>
+Date: Thu, 23 Oct 2014 07:56:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jiri Kosina <jkosina@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nicolas Pitre <nico@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: lockdep splat in CPU hotplug
+Message-ID: <20141023145633.GS4977@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LNX.2.00.1410211255531.24255@pobox.suse.cz>
+ <alpine.LNX.2.00.1410221125280.22681@pobox.suse.cz>
+ <20141022143837.GW4977@linux.vnet.ibm.com>
+ <20141022165433.GA22874@linux.vnet.ibm.com>
+ <20141022185712.GA9570@linux.vnet.ibm.com>
+ <alpine.LNX.2.00.1410222255540.17725@pobox.suse.cz>
+ <20141022210943.GL4977@linux.vnet.ibm.com>
+ <20141023081125.GA4643@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141023135412.GA24269@phnom.home.cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141023081125.GA4643@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102315-0033-0000-0000-000002703243
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 23-10-14 09:54:12, Johannes Weiner wrote:
-[...]
-> From 1808b8e2114a7d3cc6a0a52be2fe568ff6e1457e Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Date: Thu, 23 Oct 2014 09:12:01 -0400
-> Subject: [patch] mm: memcontrol: fix missed end-writeback page accounting fix
+On Thu, Oct 23, 2014 at 10:11:25AM +0200, Borislav Petkov wrote:
+> On Wed, Oct 22, 2014 at 02:09:43PM -0700, Paul E. McKenney wrote:
+> > > Yes, this works. FWIW, please feel free to add 
+> > > 
+> > > 	Reported-and-tested-by: Jiri Kosina <jkosina@suse.cz>
+> > > 
+> > > once merging it.
+> > 
+> > Done, and thank you for both the bug report and the testing!
 > 
-> Add kernel-doc to page state accounting functions.
+> Works here too.
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Tested-by: Borislav Petkov <bp@suse.de>
 
-Nice!
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Thank you as well, recorded!
 
-> ---
->  mm/memcontrol.c | 51 +++++++++++++++++++++++++++++++++++----------------
->  1 file changed, 35 insertions(+), 16 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 024177df7aae..ae9b630e928b 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2109,21 +2109,31 @@ cleanup:
->  	return true;
->  }
->  
-> -/*
-> - * Used to update mapped file or writeback or other statistics.
-> +/**
-> + * mem_cgroup_begin_page_stat - begin a page state statistics transaction
-> + * @page: page that is going to change accounted state
-> + * @locked: &memcg->move_lock slowpath was taken
-> + * @flags: IRQ-state flags for &memcg->move_lock
->   *
-> - * Notes: Race condition
-> + * This function must mark the beginning of an accounted page state
-> + * change to prevent double accounting when the page is concurrently
-> + * being moved to another memcg:
->   *
-> - * Charging occurs during page instantiation, while the page is
-> - * unmapped and locked in page migration, or while the page table is
-> - * locked in THP migration.  No race is possible.
-> + *   memcg = mem_cgroup_begin_page_stat(page, &locked, &flags);
-> + *   if (TestClearPageState(page))
-> + *     mem_cgroup_update_page_stat(memcg, state, -1);
-> + *   mem_cgroup_end_page_stat(memcg, locked, flags);
->   *
-> - * Uncharge happens to pages with zero references, no race possible.
-> + * The RCU lock is held throughout the transaction.  The fast path can
-> + * get away without acquiring the memcg->move_lock (@locked is false)
-> + * because page moving starts with an RCU grace period.
->   *
-> - * Charge moving between groups is protected by checking mm->moving
-> - * account and taking the move_lock in the slowpath.
-> + * The RCU lock also protects the memcg from being freed when the page
-> + * state that is going to change is the only thing preventing the page
-> + * from being uncharged.  E.g. end-writeback clearing PageWriteback(),
-> + * which allows migration to go ahead and uncharge the page before the
-> + * account transaction might be complete.
->   */
-> -
->  struct mem_cgroup *mem_cgroup_begin_page_stat(struct page *page,
->  					      bool *locked,
->  					      unsigned long *flags)
-> @@ -2141,12 +2151,7 @@ again:
->  	memcg = pc->mem_cgroup;
->  	if (unlikely(!memcg))
->  		return NULL;
-> -	/*
-> -	 * If this memory cgroup is not under account moving, we don't
-> -	 * need to take move_lock_mem_cgroup(). Because we already hold
-> -	 * rcu_read_lock(), any calls to move_account will be delayed until
-> -	 * rcu_read_unlock().
-> -	 */
-> +
->  	*locked = false;
->  	if (atomic_read(&memcg->moving_account) <= 0)
->  		return memcg;
-> @@ -2161,6 +2166,12 @@ again:
->  	return memcg;
->  }
->  
-> +/**
-> + * mem_cgroup_end_page_stat - finish a page state statistics transaction
-> + * @memcg: the memcg that was accounted against
-> + * @locked: value received from mem_cgroup_begin_page_stat()
-> + * @flags: value received from mem_cgroup_begin_page_stat()
-> + */
->  void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool locked,
->  			      unsigned long flags)
->  {
-> @@ -2170,6 +2181,14 @@ void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool locked,
->  	rcu_read_unlock();
->  }
->  
-> +/**
-> + * mem_cgroup_update_page_stat - update page state statistics
-> + * @memcg: memcg to account against
-> + * @idx: page state item to account
-> + * @val: number of pages (positive or negative)
-> + *
-> + * See mem_cgroup_begin_page_stat() for locking requirements.
-> + */
->  void mem_cgroup_update_page_stat(struct mem_cgroup *memcg,
->  				 enum mem_cgroup_stat_index idx, int val)
->  {
-> -- 
-> 2.1.2
-> 
+							Thanx, Paul
 
--- 
-Michal Hocko
-SUSE Labs
