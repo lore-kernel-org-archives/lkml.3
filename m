@@ -1,135 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111AbaJWQb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:31:29 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:43942 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755408AbaJWQb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:31:27 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] pinctrl: rockchip: Don't call pinctrl_gpio_direction_output() in pin_config_set()
-Date: Thu, 23 Oct 2014 18:34:27 +0200
-Message-ID: <1787271.XF3xqyK6yr@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1413913655-22351-2-git-send-email-dianders@chromium.org>
-References: <1413913655-22351-1-git-send-email-dianders@chromium.org> <1413913655-22351-2-git-send-email-dianders@chromium.org>
+	id S932359AbaJWQcH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:32:07 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:51315 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754769AbaJWQcF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 12:32:05 -0400
+Message-ID: <54492D82.30402@lwfinger.net>
+Date: Thu, 23 Oct 2014 11:32:02 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Murilo Opsfelder Araujo <mopsfelder@gmail.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Thadeu Cascardo <cascardo@cascardo.eti.br>
+Subject: Re: Possible wireless issue introduced in next-20140930
+References: <54487346.4080604@gmail.com> <1414041815.5228.37.camel@marge.simpson.net> <54491E1E.6090001@gmail.com>
+In-Reply-To: <54491E1E.6090001@gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------030801030304040608010406"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 21. Oktober 2014, 10:47:33 schrieb Doug Anderson:
-> The Rockchip pinctrl driver was calling
-> rockchip_gpio_direction_output() in the pin_config_set() callback.
-> This was just a shortcut for:
-> * rockchip_gpio_set()
-> * pinctrl_gpio_direction_output()
-> 
-> Unfortunately it's not so good to call pinctrl_gpio_direction_output()
-> from pin_config_set().  Specifically when initting hogs you'll get an
-> error.
-> 
-> Let's refactor a little so we can call
-> _rockchip_pmx_gpio_set_direction() directly.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Chris Zhong <zyw@rock-chips.com>
+This is a multi-part message in MIME format.
+--------------030801030304040608010406
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
-
-> ---
-> Changes in v2:
-> - The 'flags' variable is now in the locking patch.
-> - Fix confusion between 'pin' and 'offset'.
-> 
->  drivers/pinctrl/pinctrl-rockchip.c | 41
-> +++++++++++++++++++++++--------------- 1 file changed, 25 insertions(+), 16
-> deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinctrl-rockchip.c
-> b/drivers/pinctrl/pinctrl-rockchip.c index 230d8f3..8a3c582 100644
-> --- a/drivers/pinctrl/pinctrl-rockchip.c
-> +++ b/drivers/pinctrl/pinctrl-rockchip.c
-> @@ -856,22 +856,14 @@ static int rockchip_pmx_set(struct pinctrl_dev
-> *pctldev, unsigned selector, * leads to this function call (via the
-> pinctrl_gpio_direction_{input|output}() * function called from the gpiolib
-> interface).
->   */
-> -static int rockchip_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
-> -					      struct pinctrl_gpio_range *range,
-> -					      unsigned offset, bool input)
-> +static int _rockchip_pmx_gpio_set_direction(struct gpio_chip *chip,
-> +					    int pin, bool input)
->  {
-> -	struct rockchip_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
->  	struct rockchip_pin_bank *bank;
-> -	struct gpio_chip *chip;
-> -	int pin, ret;
-> +	int ret;
->  	u32 data;
-> 
-> -	chip = range->gc;
->  	bank = gc_to_pin_bank(chip);
-> -	pin = offset - chip->base;
-> -
-> -	dev_dbg(info->dev, "gpio_direction for pin %u as %s-%d to %s\n",
-> -		 offset, range->name, pin, input ? "input" : "output");
-> 
->  	ret = rockchip_set_mux(bank, pin, RK_FUNC_GPIO);
->  	if (ret < 0)
-> @@ -888,6 +880,23 @@ static int rockchip_pmx_gpio_set_direction(struct
-> pinctrl_dev *pctldev, return 0;
->  }
-> 
-> +static int rockchip_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
-> +					      struct pinctrl_gpio_range *range,
-> +					      unsigned offset, bool input)
+On 10/23/2014 10:26 AM, Murilo Opsfelder Araujo wrote:
+> On 10/23/2014 03:23 AM, Mike Galbraith wrote:
+>> On Thu, 2014-10-23 at 01:17 -0200, Murilo Opsfelder Araujo wrote:
+>>> Hello, everyone.
+>>>
+>>> With next-20140930 my laptop does not work, i.e. after I enter my login
+>>> and password in KDM, the entire system becomes unresponsive and I need
+>>> to reset it in order to reboot (it does not even show the KDE splash
+>>> screen).
+>>>
+>>> It was working pretty fine with next-20140926.
+>>>
+>>> I've also tested with next-20141022 and v3.18-rc1 and no luck.
+>>>
+>>> git bisect pointed me to the commit below [1].  My wireless card is a
+>>> RTL8191SEvA [2].
+>>
+>> Mine is RTL8191SEvB.
+>>
+>> I was going to bisect RTL8191SE regression when I got a chance, but you
+>> beat me to it.
+>>
+>>> commit 38506ecefab911785d5e1aa5889f6eeb462e0954
+>>> Author: Larry Finger <Larry.Finger@lwfinger.net>
+>>> Date:   Mon Sep 22 09:39:19 2014 -0500
+>>>
+>>>       rtlwifi: rtl_pci: Start modification for new drivers
+>>
+>> Did you confirm that bisection result, ie revert it at HEAD of whichever
+>> tree you bisected?
+>>
+>> The revert (master) removed some warnings on the way to kaboom here, but
+>> the drivers is still toxic.  My log follows in case it's the same thing.
+>> I can't go hunting atm, maybe during the weekend if the problem hasn't
+>> evaporate by then.
+>
+> next-20141023 does not work as well.
+>
+> With commit 38506ecefab911785d5e1aa5889f6eeb462e0954 reverted, kernel blows up
+> very early in boot.
+>
+> Cascardo (CC:) helped me to investigate and it seems that when
+> rtlpriv->cfg->ops->get_btc_status() is called, it is pointing to a NULL function.
+>
+> With the changes below, written by Cascardo, I could get rid of oops/panic and
+> system booted normally.  But there was no wifi network available (like if wifi
+> card was disabled).
+>
+> diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+> b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+> index 1bff2a0..807f0f7 100644
+> --- a/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+> +++ b/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+> @@ -253,6 +253,11 @@ static void rtl92s_deinit_sw_vars(struct ieee80211_hw *hw)
+>          }
+>   }
+>
+> +static bool rtl92s_get_btc_status(void)
 > +{
-> +	struct rockchip_pinctrl *info = pinctrl_dev_get_drvdata(pctldev);
-> +	struct gpio_chip *chip;
-> +	int pin;
-> +
-> +	chip = range->gc;
-> +	pin = offset - chip->base;
-> +	dev_dbg(info->dev, "gpio_direction for pin %u as %s-%d to %s\n",
-> +		 offset, range->name, pin, input ? "input" : "output");
-> +
-> +	return _rockchip_pmx_gpio_set_direction(chip, offset - chip->base,
-> +						input);
+> +       return false;
 > +}
 > +
->  static const struct pinmux_ops rockchip_pmx_ops = {
->  	.get_functions_count	= rockchip_pmx_get_funcs_count,
->  	.get_function_name	= rockchip_pmx_get_func_name,
-> @@ -917,8 +926,7 @@ static bool rockchip_pinconf_pull_valid(struct
-> rockchip_pin_ctrl *ctrl, return false;
->  }
-> 
-> -static int rockchip_gpio_direction_output(struct gpio_chip *gc,
-> -					  unsigned offset, int value);
-> +static void rockchip_gpio_set(struct gpio_chip *gc, unsigned offset, int
-> value); static int rockchip_gpio_get(struct gpio_chip *gc, unsigned
-> offset);
-> 
->  /* set the pin config settings for a specified pin */
-> @@ -959,9 +967,10 @@ static int rockchip_pinconf_set(struct pinctrl_dev
-> *pctldev, unsigned int pin, return rc;
->  			break;
->  		case PIN_CONFIG_OUTPUT:
-> -			rc = rockchip_gpio_direction_output(&bank->gpio_chip,
-> -							    pin - bank->pin_base,
-> -							    arg);
-> +			rockchip_gpio_set(&bank->gpio_chip,
-> +					  pin - bank->pin_base, arg);
-> +			rc = _rockchip_pmx_gpio_set_direction(&bank->gpio_chip,
-> +					  pin - bank->pin_base, false);
->  			if (rc)
->  				return rc;
->  			break;
+>   static struct rtl_hal_ops rtl8192se_hal_ops = {
+>          .init_sw_vars = rtl92s_init_sw_vars,
+>          .deinit_sw_vars = rtl92s_deinit_sw_vars,
+> @@ -294,6 +299,7 @@ static struct rtl_hal_ops rtl8192se_hal_ops = {
+>          .set_bbreg = rtl92s_phy_set_bb_reg,
+>          .get_rfreg = rtl92s_phy_query_rf_reg,
+>          .set_rfreg = rtl92s_phy_set_rf_reg,
+> +       .get_btc_status = rtl92s_get_btc_status,
+>   };
+>
+>   static struct rtl_mod_params rtl92se_mod_params = {
 
+The above patch is correct; however, the one I just submitted will fix several 
+drivers rather than just this one. For your convenience, I have attached a copy 
+to this message.
+
+Larry
+
+
+
+--------------030801030304040608010406
+Content-Type: text/x-patch;
+ name="0001-rtlwifi-Add-check-for-get_btc_status-callback.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-rtlwifi-Add-check-for-get_btc_status-callback.patch"
+
+>From 9fee70e0af554bc7827d13ef8cfb22ce95f61514 Mon Sep 17 00:00:00 2001
+From: Larry Finger <Larry.Finger@lwfinger.net>
+Date: Thu, 23 Oct 2014 11:18:05 -0500
+Subject: [PATCH] rtlwifi: Add check for get_btc_status callback
+To: Marcel Holtmann <marcel@holtmann.org>,
+    Gustavo Padovan <gustavo@padovan.org>,
+    Johan Hedberg <johan.hedberg@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org,
+    netdev@vger.kernel.org
+
+Drivers that do not use the get_btc_status() callback may not define a
+dummy routine. The caller needs to check before making the call.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Murilo Opsfelder Araujo <mopsfelder@gmail.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>
+Thadeu Cascardo <cascardo@cascardo.eti.br>
+---
+ drivers/net/wireless/rtlwifi/pci.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 667aba8..25daa87 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1796,7 +1796,8 @@ static int rtl_pci_start(struct ieee80211_hw *hw)
+ 	rtl_pci_reset_trx_ring(hw);
+ 
+ 	rtlpci->driver_is_goingto_unload = false;
+-	if (rtlpriv->cfg->ops->get_btc_status()) {
++	if (rtlpriv->cfg->ops->get_btc_status &&
++	    rtlpriv->cfg->ops->get_btc_status()) {
+ 		rtlpriv->btcoexist.btc_ops->btc_init_variables(rtlpriv);
+ 		rtlpriv->btcoexist.btc_ops->btc_init_hal_vars(rtlpriv);
+ 	}
+-- 
+1.8.4.5
+
+
+--------------030801030304040608010406--
