@@ -1,100 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729AbaJWOmP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:42:15 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42761 "EHLO gum.cmpxchg.org"
+	id S932765AbaJWOt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:49:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4645 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240AbaJWOmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:42:13 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: fold mem_cgroup_start_move()/mem_cgroup_end_move()
-Date: Thu, 23 Oct 2014 10:42:07 -0400
-Message-Id: <1414075327-15039-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.1.2
+	id S932237AbaJWOty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:49:54 -0400
+Message-ID: <1414075786.27420.19.camel@ul30vt.home>
+Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver
+ mapping.
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Marcel Apfelbaum <marcel.a@redhat.com>
+Cc: Stuart Yoder <stuart.yoder@freescale.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "marcel@redhat.com" <marcel@redhat.com>,
+        "mst@redhat.com" <mst@redhat.com>
+Date: Thu, 23 Oct 2014 08:49:46 -0600
+In-Reply-To: <1414074808.2376.88.camel@localhost.localdomain>
+References: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
+	 <1414002755.4202.253.camel@ul30vt.home>
+	 <d093a0738f61433aafe5ddd36d0393e9@CY1PR0301MB0748.namprd03.prod.outlook.com>
+	 <1414072672.27420.12.camel@ul30vt.home>
+	 <1414074808.2376.88.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having these functions and their documentation split out and somewhere
-makes it harder, not easier, to follow what's going on.
+On Thu, 2014-10-23 at 17:33 +0300, Marcel Apfelbaum wrote:
+> On Thu, 2014-10-23 at 07:57 -0600, Alex Williamson wrote:
+> > On Thu, 2014-10-23 at 13:44 +0000, Stuart Yoder wrote:
+> > > 
+> > > > -----Original Message-----
+> > > > From: Alex Williamson [mailto:alex.williamson@redhat.com]
+> > > > Sent: Wednesday, October 22, 2014 1:33 PM
+> > > > To: Marcel Apfelbaum
+> > > > Cc: linux-pci@vger.kernel.org; bhelgaas@google.com; linux-kernel@vger.kernel.org; marcel@redhat.com;
+> > > > mst@redhat.com; Yoder Stuart-B08248
+> > > > Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver mapping.
+> > > > 
+> > > > [cc+ stuart]
+> > > > 
+> > > > On Mon, 2014-10-20 at 17:04 +0300, Marcel Apfelbaum wrote:
+> > > > > Scanning a lot of devices during boot requires a lot of time.
+> > > > > On other scenarios there is a need to bind a driver to a specific slot.
+> > > > >
+> > > > > Binding devices to pci-stub driver does not work,
+> > > > > as it will not differentiate between devices of the
+> > > > > same type. Using some start scripts is error prone.
+> > > > >
+> > > > > The solution leverages driver_override functionality introduced by
+> > > > >
+> > > > > 	commit: 782a985d7af26db39e86070d28f987cad21313c0
+> > > > > 	Author: Alex Williamson <alex.williamson@redhat.com>
+> > > > > 	Date:   Tue May 20 08:53:21 2014 -0600
+> > > > >
+> > > > >     	PCI: Introduce new device binding path using pci_dev.driver_override
+> > > > >
+> > > > > In order to bind PCI slots to specific drivers use:
+> > > > > 	pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
+> > > > >
+> > > > > Signed-off-by: Marcel Apfelbaum <marcel.a@redhat.com>
+> > > > > ---
+> > > > > v3 -> v4:
+> > > > >  - Addressed Alex Williamson's comments:
+> > > > >    - Modified the type of driver_override_entry's fields
+> > > > >    - Used PCI_DEVFN when appropriated
+> > > > >    - Removed redundant checks
+> > > > >    - Replaced BUG_ON with pr_err messages
+> > > > >    - Simpler command line parsing
+> > > > >  - Addressed Michael S. Tsirkin comments
+> > > > >    - removed DRIVER_OVERRIDE_NAME_LENGTH limitation
+> > > > > v2 -> v3:
+> > > > >  - Corrected subject line
+> > > > > v1 -> v2:
+> > > > >  - Addressed Michael S. Tsirkin comments
+> > > > >    - Removed 32 slots limitation
+> > > > >    - Better handling of memory allocation failures
+> > > > >      (preferred BUG_ON over error messages)
+> > > > >  - Addressed Alex Williamson's comments:
+> > > > >    - Modified commit message to show parameter usage more clear.
+> > > > >  - I preferred to re-use parse_args instead of manually using
+> > > > >    strstr in order to better comply with command line parsing
+> > > > >    rules.
+> > > > >  - I didn't use any locking when parsing the command line args
+> > > > >    (see parse_done usage) assuming that first call will be
+> > > > >    early in system boot and no race can occur. Please correct
+> > > > >    me if I am wrong.
+> > > > >
+> > > > > Notes:
+> > > > >  - I have further ideas on top of this patch based on your reviews.
+> > > > >    I thought of:
+> > > > >    - Use wildcards to specify entire buses/devices, something like:
+> > > > >      	driver[0001:02:*.*]=pci-stub
+> > > > >    - Use comma to separate several devices:
+> > > > >      	driver[0001:02:03.4,0001:02:04.0,...]=pci-stub
+> > > > >    - Make domain optional:
+> > > > >    	driver[00:03.0]=pci-stub
+> > > > >
+> > > > > Comments will be appreciated,
+> > > > > Thanks,
+> > > > > Marcel
+> > > > >  Documentation/kernel-parameters.txt |   4 ++
+> > > > >  drivers/pci/bus.c                   | 111 ++++++++++++++++++++++++++++++++++++
+> > > > >  drivers/pci/pci.c                   |   2 +
+> > > > >  3 files changed, 117 insertions(+)
+> > > > 
+> > > > The driver_override feature that we're making use of here is also going
+> > > > to be supported by platform devices and potentially more bustypes in the
+> > > > future, so I'm concerned that making a pci specific kernel parameter is
+> > > > too shortsighted.  Instead we could hook on to BUS_NOTIFY_ADD_DEVICE for
+> > > > bustypes that support driver_override so we can have a common interface.
+> > > > Perhaps:
+> > > > 
+> > > > driver_override=pci,0000:02:00.0=pci-stub;platform,fakename=vfio-platform
+> > > > 
+> > > > Finding delimiters that don't conflict may be challenging.
+> > > 
+> > > I think what you proposed works--  <bus-name>,<bus-dev>=<driver>;
+> > > 
+> > > Think that will work for PCI, platform, and the new fsl-mc bus we are working
+> > > on.
+> > > 
+> > > > Also, can we
+> > > > assume that bus-name:dev-name is unique for every bustype?  It is for
+> > > > pci, platform?
+> > > 
+> > > I think that has to be the case.
+> > > 
+> > > > It also seems like there's a question of how long should this override
+> > > > last and how does the user disable it?
+> > > 
+> > > Isn't that a general question for the "driver_overrride" mechanism?
+> > > I'm forgetting if the mechanism in the kernel now has a way to disable
+> > > it--  e.g. echo /dev/null > /sys/pci/devices/.../driver_override ??
+> > > 
+> > > So, it would last until explicitly disabled through sysfs.
+> > 
+> > Yes, when you set a driver_override on a device you cancel it by writing
+> > a NULL string to the same interface.  The problem is that here we have a
+> > new entity in the driver scan that keeps re-applying the driver_override
+> > as devices are scanned with no way to stop it.  So you can certainly
+> > undo the immediate effect and bind the device to another driver, but if
+> > the device is removed and re-scanned there's no way to stop if from
+> > re-applying the override.  Thanks,
+> Hi Alex,
+> 
+> I checked the above scenario and after driver_override is cleared
+> an we do bind/unbind, the mapping defined in the command line
+> does not apply anymore.
+> 
+> My steps were:
+> 1. define the override in command-line -> the mapped driver is used instead of the native one
+> 2. unbind the device from the slot -> no driver for device
+> 3. remove the driver_override mapping form the slot -> no mapping defined
+> 3, bind the device again -> native driver in use.
 
-Inline them directly where charge moving is prepared and finished, and
-put an explanation right next to it.
+That's not the scenario I'm describing.  Use the remove and rescan sysfs
+attributes to do a software hotplug and you'll see that the
+driver_override will always be re-applied to the device.  For example:
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 40 ++++++++++++----------------------------
- 1 file changed, 12 insertions(+), 28 deletions(-)
+# echo "" > /sys/bus/pci/devices/0000:02:00.0/driver_override
+# echo 1 > /sys/bus/pci/devices/0000:02:00.0/remove
+# echo 1 > /sys/bus/pci/rescan
+# cat /sys/bus/pci/devices/0000:02:00.0/driver_override
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3cd4f1e0bfb3..5b5c784dc39d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1447,32 +1447,6 @@ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
- }
- 
- /*
-- * memcg->moving_account is used for checking possibility that some thread is
-- * calling move_account(). When a thread on CPU-A starts moving pages under
-- * a memcg, other threads should check memcg->moving_account under
-- * rcu_read_lock(), like this:
-- *
-- *         CPU-A                                    CPU-B
-- *                                              rcu_read_lock()
-- *         memcg->moving_account+1              if (memcg->mocing_account)
-- *                                                   take heavy locks.
-- *         synchronize_rcu()                    update something.
-- *                                              rcu_read_unlock()
-- *         start move here.
-- */
--
--static void mem_cgroup_start_move(struct mem_cgroup *memcg)
--{
--	atomic_inc(&memcg->moving_account);
--	synchronize_rcu();
--}
--
--static void mem_cgroup_end_move(struct mem_cgroup *memcg)
--{
--	atomic_dec(&memcg->moving_account);
--}
--
--/*
-  * A routine for checking "mem" is under move_account() or not.
-  *
-  * Checking a cgroup is mc.from or mc.to or under hierarchy of
-@@ -5431,7 +5405,8 @@ static void mem_cgroup_clear_mc(void)
- 	mc.from = NULL;
- 	mc.to = NULL;
- 	spin_unlock(&mc.lock);
--	mem_cgroup_end_move(from);
-+
-+	atomic_dec(&memcg->moving_account);
- }
- 
- static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
-@@ -5464,7 +5439,16 @@ static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
- 			VM_BUG_ON(mc.precharge);
- 			VM_BUG_ON(mc.moved_charge);
- 			VM_BUG_ON(mc.moved_swap);
--			mem_cgroup_start_move(from);
-+
-+			/*
-+			 * Signal mem_cgroup_begin_page_stat() to take
-+			 * the memcg's move_lock while we're moving
-+			 * its pages to another memcg.  Then wait for
-+			 * already started RCU-only updates to finish.
-+			 */
-+			atomic_inc(&memcg->moving_account);
-+			synchronize_rcu();
-+
- 			spin_lock(&mc.lock);
- 			mc.from = from;
- 			mc.to = memcg;
--- 
-2.1.2
+I expect the last step will show the original override re-applied.
+Thanks,
+
+Alex
 
