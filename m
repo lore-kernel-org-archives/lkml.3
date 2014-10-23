@@ -1,94 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917AbaJWEGZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 00:06:25 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:62699 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaJWEGT (ORCPT
+	id S1753807AbaJWEGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 00:06:11 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:49511 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaJWEED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 00:06:19 -0400
-X-AuditID: cbfee690-f79ab6d0000046f7-9f-54487eb92125
-From: Vishnu Pratap Singh <vishnu.ps@samsung.com>
-To: akpm@linux-foundation.org, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com, mgorman@suse.de,
-        liwanp@linux.vnet.ibm.com, qiuxishi@huawei.com,
-        linux-kernel@vger.kernel.org
-Cc: cpgs@samsung.com, pintu.k@samsung.com, vishu13285@gmail.com,
-        Vishnu Pratap Singh <vishnu.ps@samsung.com>
-Subject: [PATCH] lib: show_mem: This patch adds cma reserved infromation
-Date: Thu, 23 Oct 2014 09:33:51 +0530
-Message-id: <1414037031-20548-1-git-send-email-vishnu.ps@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsWyRsSkTndnnUeIweQZQhZz1q9hs3h5SNOi
-	7dg/FovLu+awWWw7vIPJYvK7Z4wWfd8Ps1t8m7ab0aJtyUYmiyl9dxkttqx4yOrA7bFz1l12
-	jwWbSj1ajrxl9Tjx5BKbx4kZv1k8HhzazOLRt2UVo8fm09UenzfJBXBGcdmkpOZklqUW6dsl
-	cGVMunqEtaCHs+LspGPMDYxn2LsYOTkkBEwkWroWMkPYYhIX7q1n62Lk4hASWMooMXHjRVaY
-	oru3DjFBJBYxStw59gTK+cMocePHbyaQKjYBQ4kNs4+wgyREBLYySvQfuc8GkmAWyJP4ePsn
-	2A5hAQ+J/UsOgMVZBFQllq+9AbaCV8BVYs+KXqh1ChLLvqxlBhkkIbCLXeL6pBfsEA0CEt8m
-	H2LpYuQASshKbDoAdbekxMEVN1gmMAouYGRYxSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iREY
-	Baf/PZuwg/HeAetDjAIcjEo8vBXJHiFCrIllxZW5hxhNgTZMZJYSTc4HxlpeSbyhsZmRhamJ
-	qbGRuaWZkjjva6mfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYox6mTp5290NNPptV2P/+
-	ODaXKY0/m07vPbHlhuP9acEZRftzZmvLLk7WvjzTO/CltYnJUbHZlrY8gjcrws5HrLu72IIx
-	wyzuh0BR0f8HV2/J2L43mVk6tzhtyZHyo0++/92t7JmZWf3V2Tb+/zvJlQG5ApvmNIjYC+pY
-	lPw58XTtpBlH2RpvK7EUZyQaajEXFScCAMNm4ah9AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t9jAd2ddR4hBtv3c1rMWb+GzeLlIU2L
-	tmP/WCwu75rDZrHt8A4mi8nvnjFa9H0/zG7xbdpuRou2JRuZLKb03WW02LLiIasDt8fOWXfZ
-	PRZsKvVoOfKW1ePEk0tsHidm/GbxeHBoM4tH35ZVjB6bT1d7fN4kF8AZ1cBok5GamJJapJCa
-	l5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0rJJCWWJOKVAoILG4WEnf
-	DtOE0BA3XQuYxghd35AguB4jAzSQsIYxY9LVI6wFPZwVZycdY25gPMPexcjJISFgInH31iEm
-	CFtM4sK99WxdjFwcQgKLGCXuHHvCBOH8YZS48eM3WBWbgKHEhtlH2EESIgJbGSX6j9xnA0kw
-	C+RJfLz9kxnEFhbwkNi/5ABYnEVAVWL52husIDavgKvEnhW9rBDrFCSWfVnLPIGRewEjwypG
-	0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Bh7JrWDcWWDxSFGAQ5GJR7eimSPECHWxLLiytxD
-	jBIczEoivLXWQCHelMTKqtSi/Pii0pzU4kOMpkDbJzJLiSbnA+M/ryTe0NjE3NTY1NLEwsTM
-	Ukmc90CrdaCQQHpiSWp2ampBahFMHxMHp1QDo8DJ0k+RC6+wbNht+1SuS5bh4JQvApa3wvTt
-	1xWv3jtzcu38SYsUYtS3fl+kuavf9/jHNwUfsnN5jWoP7NL1dvTwznoodfESV6an/+yQL5O+
-	C1vNjgkKSd7YtO5AxNIlsisW7NpyPP+vkuTqxwsMunfcl/dQ1e+Kv20b9/Lbm1PVN0Us/aza
-	3iqxFGckGmoxFxUnAgD5RhhqxwIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 23 Oct 2014 00:04:03 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 11/14] net: dsa: Add support for reading switch registers with ethtool
+Date: Wed, 22 Oct 2014 21:03:19 -0700
+Message-Id: <1414037002-25528-12-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
+References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54487E33.002D,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 69
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds cma reserved information which is currently
-shown as a part of total reserved only. This patch is
-continuation of our previos cma patches related to this.
-https://lkml.org/lkml/2014/10/20/64
-https://lkml.org/lkml/2014/10/22/383
+Add support for reading switch registers with 'ethtool -d'.
 
-Signed-off-by: Vishnu Pratap Singh <vishnu.ps@samsung.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- lib/show_mem.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ include/net/dsa.h |  7 +++++++
+ net/dsa/slave.c   | 22 ++++++++++++++++++++++
+ 2 files changed, 29 insertions(+)
 
-diff --git a/lib/show_mem.c b/lib/show_mem.c
-index 0922579..a0e50d7 100644
---- a/lib/show_mem.c
-+++ b/lib/show_mem.c
-@@ -8,6 +8,9 @@
- #include <linux/mm.h>
- #include <linux/nmi.h>
- #include <linux/quicklist.h>
-+#ifdef CONFIG_CMA
-+#include <linux/cma.h>
-+#endif
+diff --git a/include/net/dsa.h b/include/net/dsa.h
+index 73146b7..edc5e71 100644
+--- a/include/net/dsa.h
++++ b/include/net/dsa.h
+@@ -255,6 +255,13 @@ struct dsa_switch_driver {
+ 			      struct ethtool_eeprom *eeprom, u8 *data);
+ 	int	(*set_eeprom)(struct dsa_switch *ds,
+ 			      struct ethtool_eeprom *eeprom, u8 *data);
++
++	/*
++	 * Register access.
++	 */
++	int	(*get_regs_len)(struct dsa_switch *ds, int port);
++	void	(*get_regs)(struct dsa_switch *ds, int port,
++			    struct ethtool_regs *regs, void *p);
+ };
  
- void show_mem(unsigned int filter)
+ void register_switch_driver(struct dsa_switch_driver *type);
+diff --git a/net/dsa/slave.c b/net/dsa/slave.c
+index a54ee43..e988d07 100644
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -249,6 +249,26 @@ static void dsa_slave_get_drvinfo(struct net_device *dev,
+ 	strlcpy(drvinfo->bus_info, "platform", sizeof(drvinfo->bus_info));
+ }
+ 
++static int dsa_slave_get_regs_len(struct net_device *dev)
++{
++	struct dsa_slave_priv *p = netdev_priv(dev);
++	struct dsa_switch *ds = p->parent;
++
++	if (ds->drv->get_regs_len != NULL)
++		return ds->drv->get_regs_len(ds, p->port);
++
++	return -EOPNOTSUPP;
++}
++
++static void
++dsa_slave_get_regs(struct net_device *dev, struct ethtool_regs *regs, void *_p)
++{
++	struct dsa_slave_priv *p = netdev_priv(dev);
++	struct dsa_switch *ds = p->parent;
++
++	ds->drv->get_regs(ds, p->port, regs, _p);
++}
++
+ static int dsa_slave_nway_reset(struct net_device *dev)
  {
-@@ -38,7 +41,12 @@ void show_mem(unsigned int filter)
- 
- 	printk("%lu pages RAM\n", total);
- 	printk("%lu pages HighMem/MovableOnly\n", highmem);
-+#ifdef CONFIG_CMA
-+	printk("%lu pages reserved\n", (reserved - totalcma_pages));
-+	printk("%lu pages cma reserved\n", totalcma_pages);
-+#else
- 	printk("%lu pages reserved\n", reserved);
-+#endif
- #ifdef CONFIG_QUICKLIST
- 	printk("%lu pages in pagetable cache\n",
- 		quicklist_total_size());
+ 	struct dsa_slave_priv *p = netdev_priv(dev);
+@@ -420,6 +440,8 @@ static const struct ethtool_ops dsa_slave_ethtool_ops = {
+ 	.get_settings		= dsa_slave_get_settings,
+ 	.set_settings		= dsa_slave_set_settings,
+ 	.get_drvinfo		= dsa_slave_get_drvinfo,
++	.get_regs_len		= dsa_slave_get_regs_len,
++	.get_regs		= dsa_slave_get_regs,
+ 	.nway_reset		= dsa_slave_nway_reset,
+ 	.get_link		= dsa_slave_get_link,
+ 	.get_eeprom_len		= dsa_slave_get_eeprom_len,
 -- 
-1.8.3.2
+1.9.1
 
