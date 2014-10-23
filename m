@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847AbaJWNGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:06:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60210 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821AbaJWNGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:06:33 -0400
-Date: Thu, 23 Oct 2014 15:06:31 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the akpm-current tree with the pm
- tree
-Message-ID: <20141023130631.GE23011@dhcp22.suse.cz>
-References: <20141023140905.3bd78e51@canb.auug.org.au>
+	id S1755866AbaJWNHD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:07:03 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:41686 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585AbaJWNHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 09:07:00 -0400
+Message-ID: <5448FD72.9040301@codeaurora.org>
+Date: Thu, 23 Oct 2014 09:06:58 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023140905.3bd78e51@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Michael Ellerman <mpe@ellerman.id.au>
+CC: linux-kernel@vger.kernel.org, shuahkh@osg.samsung.com,
+        linux-api@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+        gorcunov@openvz.org
+Subject: Re: [PATCH 3/3] selftests/kcmp: Always try to build the test
+References: <1414040834-30209-1-git-send-email-mpe@ellerman.id.au> <1414040834-30209-3-git-send-email-mpe@ellerman.id.au>
+In-Reply-To: <1414040834-30209-3-git-send-email-mpe@ellerman.id.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 23-10-14 14:09:05, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> Today's linux-next merge of the akpm-current tree got a conflict in
-> include/linux/oom.h, kernel/power/process.c and mm/oom_kill.c between
-> commit 5695be142e20 ("OOM, PM: OOM killed task shouldn't escape PM
-> suspend") from the pm tree and commit e039ae202d34 ("OOM, PM: OOM
-> killed task cannot escape PM suspend") from the akpm-current tree.
-> 
-> I fixed it up (the pm tree version seems to be newer, so I used that)
-> and can carry the fix as necessary (no action is required).
+Hi Michael,
 
-Yes that is correct. I thought Andrew has dropped the previous version
-of the patch from his tree. Rafael has merged his in the meantime.
+On 10/23/2014 01:07 AM, Michael Ellerman wrote:
+> Don't prevent the test building on non-x86. Just try and build it and
+> let the chips fall where they may.
 
-Thanks!
+As a user of kcmp via CRIU on arm and arm64, thanks!
+
+> diff --git a/tools/testing/selftests/kcmp/Makefile b/tools/testing/selftests/kcmp/Makefile
+> index 4f00c0524501..cda9cc4004c9 100644
+> --- a/tools/testing/selftests/kcmp/Makefile
+> +++ b/tools/testing/selftests/kcmp/Makefile
+> @@ -1,21 +1,7 @@
+> -uname_M := $(shell uname -m 2>/dev/null || echo not)
+> -ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
+> -ifeq ($(ARCH),i386)
+> -        ARCH := x86
+> -	CFLAGS := -DCONFIG_X86_32 -D__i386__
+> -endif
+> -ifeq ($(ARCH),x86_64)
+> -	ARCH := x86
+> -	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
+> -endif
+>  CFLAGS += -I../../../../usr/include/
+>  
+>  all:
+> -ifeq ($(ARCH),x86)
+>  	gcc $(CFLAGS) kcmp_test.c -o kcmp_test
+
+Not that this needs to be addressed in this patch, but this looks broken for
+cross compilation. It looks like some of the other selftests use:
+
+CC = $(CROSS_COMPILE)gcc
+
+But perhaps this should be set (and perhaps with ':=') once at the top level.
+
+Chris
+
 -- 
-Michal Hocko
-SUSE Labs
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
