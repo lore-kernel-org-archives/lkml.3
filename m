@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411AbaJWKeN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:34:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14191 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552AbaJWKeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:34:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
-   d="scan'208";a="619098530"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc 3.10 backport] mei: bus: fix possible boundaries violation
-Date: Thu, 23 Oct 2014 13:32:54 +0300
-Message-Id: <1414060374-1879-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1754090AbaJWKhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:37:01 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:59317 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752216AbaJWKhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 06:37:00 -0400
+X-IronPort-AV: E=Sophos;i="5.04,774,1406563200"; 
+   d="scan'208";a="37818026"
+Message-ID: <5448DB05.5050803@cn.fujitsu.com>
+Date: Thu, 23 Oct 2014 18:40:05 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Ingo Molnar <mingo@kernel.org>, <torvalds@linux-foundation.org>,
+        <paulmck@linux.vnet.ibm.com>, <tglx@linutronix.de>,
+        <akpm@linux-foundation.org>, <riel@redhat.com>, <mgorman@suse.de>,
+        <oleg@redhat.com>, <mingo@redhat.com>, <minchan@kernel.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <viro@zeniv.linux.org.uk>,
+        <dave@stgolabs.net>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
+References: <20141020215633.717315139@infradead.org> <20141021162340.GA5508@gmail.com> <20141021170948.GA25964@node.dhcp.inet.fi> <20141021175603.GI3219@twins.programming.kicks-ass.net>
+In-Reply-To: <20141021175603.GI3219@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+On 10/22/2014 01:56 AM, Peter Zijlstra wrote:
+> On Tue, Oct 21, 2014 at 08:09:48PM +0300, Kirill A. Shutemov wrote:
+>> It would be interesting to see if the patchset affects non-condended case.
+>> Like a one-threaded workload.
+> 
+> It does, and not in a good way, I'll have to look at that... :/
 
-commit cfda2794b5afe7ce64ee9605c64bef0e56a48125 upstream.
+Maybe it is blamed to find_vma_srcu() that it doesn't take the advantage of
+the vmacache_find() and cause more cache-misses.
 
-function 'strncpy' will fill whole buffer 'id.name' of fixed size (32)
-with string value and will not leave place for NULL-terminator.
-Possible buffer boundaries violation in following string operations.
-Replace strncpy with strlcpy.
 
-Cc: stable@vger.kernel.org # 3.10
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/misc/mei/bus.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Is it hard to use the vmacache in the find_vma_srcu()?
 
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index 99cc0b07a713..0513ea0906dd 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -71,7 +71,7 @@ static int mei_cl_device_probe(struct device *dev)
- 
- 	dev_dbg(dev, "Device probe\n");
- 
--	strncpy(id.name, dev_name(dev), MEI_CL_NAME_SIZE);
-+	strlcpy(id.name, dev_name(dev), sizeof(id.name));
- 
- 	return driver->probe(device, &id);
- }
--- 
-1.9.3
+> 
+>  Performance counter stats for './multi-fault 1' (5 runs):
+> 
+>         73,860,251      page-faults                                                   ( +-  0.28% )
+>             40,914      cache-misses                                                  ( +- 41.26% )
+> 
+>       60.001484913 seconds time elapsed                                          ( +-  0.00% )
+> 
+> 
+>  Performance counter stats for './multi-fault 1' (5 runs):
+> 
+>         70,700,838      page-faults                                                   ( +-  0.03% )
+>             31,466      cache-misses                                                  ( +-  8.62% )
+> 
+>       60.001753906 seconds time elapsed                                          ( +-  0.00% )
+> .
+> 
 
