@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676AbaJVX4U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 19:56:20 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:52965 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275AbaJVX4S (ORCPT
+	id S1754715AbaJWAEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 20:04:12 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:40773 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028AbaJWAEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 19:56:18 -0400
-Date: Wed, 22 Oct 2014 16:56:14 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: w.danford@electronics-software.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: source file /drivers/base/platform.c
-Message-ID: <20141022235614.GF1193@ld-irv-0074>
-References: <20141022160955.802aba6dbaeed9f5026600c863362da9.2d1b0160c3.wbe@email22.secureserver.net>
+	Wed, 22 Oct 2014 20:04:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022160955.802aba6dbaeed9f5026600c863362da9.2d1b0160c3.wbe@email22.secureserver.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1413933981-25875-1-git-send-email-zyw@rock-chips.com>
+References: <1413933461-25602-1-git-send-email-zyw@rock-chips.com>
+	<1413933981-25875-1-git-send-email-zyw@rock-chips.com>
+Date: Wed, 22 Oct 2014 17:04:08 -0700
+X-Google-Sender-Auth: 9F_a9U-1CSiK0jLDOLUpUfJcq7A
+Message-ID: <CAD=FV=VAxmju6L6AEkU4VSuAEKDGmoN6rxE17JsTttWPHKKvBA@mail.gmail.com>
+Subject: Re: [PATCH v4 6/6] ARM: dts: add RK3288 suspend support
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Xie <xxx@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 04:09:55PM -0700, w.danford@electronics-software.com wrote:
-> /**
->  * platform_get_resource - get a resource for a device
->  * @dev: platform device
->  * @type: resource type
->  * @num: resource index
->  */
-> struct resource *platform_get_resource(struct platform_device *dev,
-> 				       unsigned int type, unsigned int num)
-[...]
-> As a result I now suggest a more specific definition is desirable.
-> The definition of the 'num' is the offset index for the specific
-> resource 'type' to be searched for ignoring all others not of this
-> 'type'. ... still convoluted.  By example, first resource of 'type'
-> is num=0, second resource of 'type' is num=1 even though say they
-> may be [1] and [3] in the complete resource array of resource structs.
-> 
-> Note my example has type IORESOURCE_MEM as members [0] and [2] in the
-> arrya.  So to look for [2] it is the second, num = 1, of type
-> IORESOURCE_MEM.
-> 
-> In conclusion this is a documentation issue!
+Chris,
 
-You spent a lot of words to get to this point! Yes, the problem is with
-the assumptions you were making, not with the implementation of
-platform_get_resource().
+On Tue, Oct 21, 2014 at 4:26 PM, Chris Zhong <zyw@rock-chips.com> wrote:
+> add pmu_intmem node for suspend, add global_pwroff pinctrl.
+> The pmu_intmem is used to store the resume code.
+> global_pwroff is held low level at work, it would be pull to high
+> when entering suspend. PMICs can get this signal, then shut down
+> some power rails. So please reference the global_pwroff pinctrl
+> as part of the PMIC config.
 
-AIUI, your latest interpretation is correct. The indexing of resources
-is on a per-resource-type basis. So you're requesting the Nth resource
-of type M when type=M and num=N.
+nit: I would just say to reference this in the board DTS file since
+some boards need it.  You could imagine this being useful to something
+other than a PMIC.
 
-Feel free to send a proper patch to improve the comments above
-platform_get_resource(), if you think that will help the next person to
-come across this API.
 
-Brian
+> +       pmu_intmem@ff720000 {
+> +               compatible = "rockchip,rk3288-pmu-sram", "mmio-sram";
+> +               reg = <0xff720000 0x4000>;
+
+My TRM says this is 4K big.  You're specifying 16K here.  If it's
+really 4K, it should be <0xff720000 0x1000>
