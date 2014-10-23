@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaJWFjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 01:39:08 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:37197 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808AbaJWFjD (ORCPT
+	id S1751499AbaJWFl2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 01:41:28 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:48451 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812AbaJWFlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 01:39:03 -0400
-Date: Wed, 22 Oct 2014 23:38:58 -0600
+	Thu, 23 Oct 2014 01:41:25 -0400
+Date: Wed, 22 Oct 2014 23:41:21 -0600
 From: Bjorn Helgaas <bhelgaas@google.com>
 To: Yijing Wang <wangyijing@huawei.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -33,124 +33,46 @@ Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Thierry Reding <thierry.reding@gmail.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Liviu Dudau <liviu@dudau.co.uk>
-Subject: Re: [PATCH v3 09/27] arm/PCI: Clean unused pcibios_add_bus() and
- pcibios_remove_bus()
-Message-ID: <20141023053858.GD11770@google.com>
+Subject: Re: [PATCH v3 10/27] PCI/MSI: Remove useless bus->msi assignment
+Message-ID: <20141023054121.GE11770@google.com>
 References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
- <1413342435-7876-10-git-send-email-wangyijing@huawei.com>
+ <1413342435-7876-11-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413342435-7876-10-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <1413342435-7876-11-git-send-email-wangyijing@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 11:06:57AM +0800, Yijing Wang wrote:
-> MSI chip will be saved in pci_sys_data, now we can
-> clean up pcibios_add_bus() and pcibios_remove_bus()
-> in arm, and use pci_find_msi_chip() to get msi chip
-> in core MSI code.
+On Wed, Oct 15, 2014 at 11:06:58AM +0800, Yijing Wang wrote:
+> Now msi chip is saved in pci_sys_data in arm,
+> we could clean the bus->msi assignment in
+> pci core.
 > 
 > Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> CC: Thierry Reding <thierry.reding@gmail.com>
+> CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 > ---
->  arch/arm/include/asm/mach/pci.h |    4 ----
->  arch/arm/kernel/bios32.c        |   16 ----------------
->  drivers/pci/msi.c               |   11 +++--------
->  3 files changed, 3 insertions(+), 28 deletions(-)
+>  drivers/pci/probe.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
-> index 59b0d87..230b2c9 100644
-> --- a/arch/arm/include/asm/mach/pci.h
-> +++ b/arch/arm/include/asm/mach/pci.h
-> @@ -39,8 +39,6 @@ struct hw_pci {
->  					  resource_size_t start,
->  					  resource_size_t size,
->  					  resource_size_t align);
-> -	void		(*add_bus)(struct pci_bus *bus);
-> -	void		(*remove_bus)(struct pci_bus *bus);
->  };
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index efa48dc..98bf4c3 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -682,7 +682,6 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
 >  
->  /*
-> @@ -71,8 +69,6 @@ struct pci_sys_data {
->  					  resource_size_t start,
->  					  resource_size_t size,
->  					  resource_size_t align);
-> -	void		(*add_bus)(struct pci_bus *bus);
-> -	void		(*remove_bus)(struct pci_bus *bus);
->  	void		*private_data;	/* platform controller private data	*/
->  };
->  
-> diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-> index a19038d..b1b872e 100644
-> --- a/arch/arm/kernel/bios32.c
-> +++ b/arch/arm/kernel/bios32.c
-> @@ -360,20 +360,6 @@ void pcibios_fixup_bus(struct pci_bus *bus)
->  }
->  EXPORT_SYMBOL(pcibios_fixup_bus);
->  
-> -void pcibios_add_bus(struct pci_bus *bus)
-> -{
-> -	struct pci_sys_data *sys = bus->sysdata;
-> -	if (sys->add_bus)
-> -		sys->add_bus(bus);
-> -}
-> -
-> -void pcibios_remove_bus(struct pci_bus *bus)
-> -{
-> -	struct pci_sys_data *sys = bus->sysdata;
-> -	if (sys->remove_bus)
-> -		sys->remove_bus(bus);
-> -}
-> -
->  /*
->   * Swizzle the device pin each time we cross a bridge.  If a platform does
->   * not provide a swizzle function, we perform the standard PCI swizzling.
-> @@ -478,8 +464,6 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
->  		sys->swizzle = hw->swizzle;
->  		sys->map_irq = hw->map_irq;
->  		sys->align_resource = hw->align_resource;
-> -		sys->add_bus = hw->add_bus;
-> -		sys->remove_bus = hw->remove_bus;
->  		INIT_LIST_HEAD(&sys->resources);
->  
->  		if (hw->private_data)
+>  	child->parent = parent;
+>  	child->ops = parent->ops;
+> -	child->msi = parent->msi;
 
-What do the core changes below have to do with the ARM changes above?
-They should be a separate patch unless they can't be separated.
+This needs an explanation of why ARM was the only arch to depend on this.
 
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index f11108c..56e54ad 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -32,12 +32,10 @@ int pci_msi_ignore_mask;
+>  	child->sysdata = parent->sysdata;
+>  	child->bus_flags = parent->bus_flags;
 >  
->  int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
->  {
-> -	struct msi_chip *chip = dev->bus->msi;
-> +	struct msi_chip *chip;
->  	int err;
->  
-> -	if (!chip)
-> -		chip = pci_msi_chip(dev->bus);
-> -
-> +	chip = pci_msi_chip(dev->bus);
->  	if (!chip || !chip->setup_irq)
->  		return -EINVAL;
->  
-> @@ -51,10 +49,7 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
->  void __weak arch_teardown_msi_irq(unsigned int irq)
->  {
->  	struct msi_desc *entry = irq_get_msi_desc(irq);
-> -	struct msi_chip *chip = entry->dev->bus->msi;
-> -
-> -	if (!chip)
-> -		chip = pci_msi_chip(entry->dev->bus);
-> +	struct msi_chip *chip = pci_msi_chip(entry->dev->bus);
->  
->  	if (!chip || !chip->teardown_irq)
->  		return;
 > -- 
 > 1.7.1
 > 
