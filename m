@@ -1,110 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359AbaJWIPx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 04:15:53 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:13905 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602AbaJWIPs (ORCPT
+	id S1752293AbaJWIOu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 04:14:50 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:34176 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436AbaJWIJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 04:15:48 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed
-X-AuditID: cbfec7f4-b7f6c6d00000120b-b8-5448b931eec8
-Content-transfer-encoding: 8BIT
-Message-id: <5448B930.7070800@samsung.com>
-Date: Thu, 23 Oct 2014 10:15:44 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-To: Laura Abbott <lauraa@codeaurora.org>,
-        Stefan Hengelein <stefan.hengelein@fau.de>
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        akpm@linux-foundation.org, linux-arm-kernel@lists.infradead.org,
-        andreas.herrmann@calxeda.com,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        iommu@lists.linux-foundation.org
-Subject: Re: [PATCH] arm: dma-mapping: fix compilation error when CONFIG_MMU is
- not present
-References: <1413734340-53108-1-git-send-email-stefan.hengelein@fau.de>
- <5444BCFF.8030803@samsung.com>
- <CABv5NL_GdtZegpw8wxau9oD6xXWdX3GUySLqCaoaoa549Kg_GQ@mail.gmail.com>
- <5445A345.7010401@codeaurora.org>
-In-reply-to: <5445A345.7010401@codeaurora.org>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xq7qGOz1CDBZ9lbOYs34Nm8XiIzEW
-	C/ZbW2zvnMFusenxNVaLy7vmsFncvsxr0X1/EpvFp+Y2ZgdOj5bmHjaPBZ+vsHtc7utl8jjf
-	PpvFY+esu+weJ2b8ZvHYvKTeY/KN5YwenzfJBXBGcdmkpOZklqUW6dslcGWceLaUrWCqcMWZ
-	/Q+YGhgnC3QxcnJICJhITLu6gRnCFpO4cG89WxcjF4eQwFJGiQ9XzzCCJHgFBCV+TL7H0sXI
-	wcEsIC9x5FI2SJhZwEziy8vDrBD1nxgl9sy6wwxRryUxZ84mZpB6FgFViSUHuUHCbAKGEl1v
-	u9hAbFGBGIn7O1eD2SICYRJ3Dz8F28ss8J5RYlnbCiaQhLBArMTKvkNMEAsuM0rcbZoP1sEp
-	oCdx7vZ8pgmMArOQ3DcL4b5ZSO5bwMi8ilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyMkMr7s
-	YFx8zOoQowAHoxIPb0WyR4gQa2JZcWXuIUYJDmYlEd60HUAh3pTEyqrUovz4otKc1OJDjEwc
-	nFINjCXfqnOy4/MeMRT/iI/6tDj7ocnKVdMjDt3ybmANk1z0N3irgX516e6aYy4ZH7sm6dvn
-	JEvdOLNf+OSFZeHtv47XrA2TO5fPJJI9K+ooX77w1agblWs+mfX4pdQJ5NvIx+zijdcuq1+h
-	4iBS8vR05UuGOmsW5vuzWW2fXC07Y5oTxHnl53oPJZbijERDLeai4kQAdjLcUmoCAAA=
+	Thu, 23 Oct 2014 04:09:23 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Minchan Kim <minchan@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Heesub Shin <heesub.shin@samsung.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
+        Gioh Kim <gioh.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <stable@vger.kernel.org>
+Subject: [PATCH v4 2/4] mm/page_alloc: add freepage on isolate pageblock to correct buddy list
+Date: Thu, 23 Oct 2014 17:10:19 +0900
+Message-Id: <1414051821-12769-3-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1414051821-12769-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1414051821-12769-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+In free_pcppages_bulk(), we use cached migratetype of freepage
+to determine type of buddy list where freepage will be added.
+This information is stored when freepage is added to pcp list, so
+if isolation of pageblock of this freepage begins after storing,
+this cached information could be stale. In other words, it has
+original migratetype rather than MIGRATE_ISOLATE.
 
-On 2014-10-21 02:05, Laura Abbott wrote:
-> On 10/20/2014 6:50 AM, Stefan Hengelein wrote:
->> Well,
->>
->> arch/arm/mm/dma-mapping.c: In function ‘__atomic_get_pages’:
->> arch/arm/mm/dma-mapping.c:1265:31: error: ‘atomic_pool’ undeclared
->> (first use in this function)
->>
->> arch/arm/mm/dma-mapping.c: In function ‘__iommu_get_pages’:
->> arch/arm/mm/dma-mapping.c:1275:2: error: implicit declaration of
->> function ‘__in_atomic_pool’ [-Werror=implicit-function-declaration]
->>
->>
->> others:
->> arch/arm/mm/dma-mapping.c: In function ‘__iommu_alloc_remap’:
->> arch/arm/mm/dma-mapping.c:1200:4: error: ‘VM_ARM_DMA_CONSISTENT’
->> undeclared (first use in this function)
->> arch/arm/mm/dma-mapping.c:1200:4: note: each undeclared identifier is
->> reported only once for each function it appears in
->>
->> arch/arm/mm/dma-mapping.c: In function ‘__iommu_get_pages’:
->> arch/arm/mm/dma-mapping.c:1282:29: error: ‘VM_ARM_DMA_CONSISTENT’
->> undeclared (first use in this function)
->> arch/arm/mm/dma-mapping.c: In function ‘arm_iommu_free_attrs’:
->> arch/arm/mm/dma-mapping.c:1411:4: error: ‘VM_ARM_DMA_CONSISTENT’
->> undeclared (first use in this function)
->>
->>
->> i've attached a configuration where it happens.
->> when you place the configuration in your tree and compile the file,
->> the errors should show up.
->>
->> However, within the configuration CONFIG_ARM_DMA_USE_IOMMU is defined
->> and CONFIG_MMU is not. AFAIUI, if both should be enabled together, it
->> should be mapped in Kconfig somewhere, right?
->
-> There isn't a nice way to fixup the dma consistent flags so I would
-> say this option should just depend on MMU.
+There are two problems caused by this stale information. One is that
+we can't keep these freepages from being allocated. Although this
+pageblock is isolated, freepage will be added to normal buddy list
+so that it could be allocated without any restriction. And the other
+problem is incorrect freepage accounting. Freepages on isolate pageblock
+should not be counted for number of freepage.
 
-The question is which option should depend on MMU? Making 
-CONFIG_ARM_DMA_USE_IOMMU
-to depend on MMU doesn't solve this case. It only gives following 
-warning with the
-mentioned .config:
-warning: (VIDEO_OMAP3 && EXYNOS_IOMMU && SHMOBILE_IOMMU && IPMMU_VMSA && 
-ARM_SMMU) selects ARM_DMA_USE_IOMMU which has unmet direct dependencies 
-(MMU)
+Following is the code snippet in free_pcppages_bulk().
 
-IMHO the best solution will be to either make the whole IOMMU subsystem 
-to depend
-on MMU or alternatively, add this dependency to all IOMMU drivers which 
-can be
-enabled by COMPILE_TEST option (here the issue is caused by 
-SHMOBILE_IOMMU, which
-otherwise cannot be enabled when no-mmu systems are selected).
+/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+__free_one_page(page, page_to_pfn(page), zone, 0, mt);
+trace_mm_page_pcpu_drain(page, 0, mt);
+if (likely(!is_migrate_isolate_page(page))) {
+	__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
+	if (is_migrate_cma(mt))
+		__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
+}
 
-Best regards
+As you can see above snippet, current code already handle second problem,
+incorrect freepage accounting, by re-fetching pageblock migratetype
+through is_migrate_isolate_page(page). But, because this re-fetched
+information isn't used for __free_one_page(), first problem would not be
+solved. This patch try to solve this situation to re-fetch pageblock
+migratetype before __free_one_page() and to use it for __free_one_page().
+
+In addition to move up position of this re-fetch, this patch use
+optimization technique, re-fetching migratetype only if there is
+isolate pageblock. Pageblock isolation is rare event, so we can
+avoid re-fetching in common case with this optimization.
+
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ mm/page_alloc.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4a5d8e5..5d2f807 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -725,14 +725,17 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 			/* must delete as __free_one_page list manipulates */
+ 			list_del(&page->lru);
+ 			mt = get_freepage_migratetype(page);
++			if (unlikely(has_isolate_pageblock(zone))) {
++				mt = get_pageblock_migratetype(page);
++				if (is_migrate_isolate(mt))
++					goto skip_counting;
++			}
++			__mod_zone_freepage_state(zone, 1, mt);
++
++skip_counting:
+ 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+ 			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
+ 			trace_mm_page_pcpu_drain(page, 0, mt);
+-			if (likely(!is_migrate_isolate_page(page))) {
+-				__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
+-				if (is_migrate_cma(mt))
+-					__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
+-			}
+ 		} while (--to_free && --batch_free && !list_empty(list));
+ 	}
+ 	spin_unlock(&zone->lock);
 -- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
+1.7.9.5
 
