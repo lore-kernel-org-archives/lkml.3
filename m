@@ -1,77 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258AbaJWUWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 16:22:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45994 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaJWUWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 16:22:32 -0400
-Date: Thu, 23 Oct 2014 13:22:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH] mm/cma: Make kmemleak ignore CMA regions
-Message-Id: <20141023132233.b156cd79badc1254eff08494@linux-foundation.org>
-In-Reply-To: <1413893696-25484-1-git-send-email-thierry.reding@gmail.com>
-References: <1413893696-25484-1-git-send-email-thierry.reding@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	id S932767AbaJWUXu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 16:23:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48326 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932303AbaJWUXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 16:23:49 -0400
+Message-ID: <1414092624.2363.13.camel@redhat.com>
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+From: Eric Paris <eparis@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Richard Guy Briggs <rgb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-audit@redhat.com
+Date: Thu, 23 Oct 2014 15:30:24 -0400
+In-Reply-To: <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+	 <54494B74.2080504@amacapital.net> <1414091732.2363.11.camel@redhat.com>
+	 <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Oct 2014 14:14:56 +0200 Thierry Reding <thierry.reding@gmail.com> wrote:
-
-> From: Thierry Reding <treding@nvidia.com>
+On Thu, 2014-10-23 at 12:20 -0700, Andy Lutomirski wrote:
+> On Thu, Oct 23, 2014 at 12:15 PM, Eric Paris <eparis@redhat.com> wrote:
+> > On Thu, 2014-10-23 at 11:39 -0700, Andy Lutomirski wrote:
+> >> On 10/22/2014 09:04 PM, Eric Paris wrote:
+> >> > git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
+> >> > It was writing over %esp/pt_regs semi-randomly on i686  with the expected
+> >> > "system can't boot" results.  As noted in:
+> >> >
+> >> > https://bugs.freedesktop.org/show_bug.cgi?id=85277
+> >> >
+> >> > This patch stops fscking with pt_regs.  Instead it sets up the registers
+> >> > for the call to __audit_syscall_entry in the most obvious conceivable
+> >> > way.  It then does just a tiny tiny touch of magic.  We need to get what
+> >> > started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
+> >> > as a pair of pushes.
+> >> >
+> >> > After the call to __audit_syscall_entry all we need to do is get that
+> >> > now useless junk off the stack (pair of pops) and reload %eax with the
+> >> > original syscall so other stuff can keep going about it's business.
+> >> >
+> >> > Signed-off-by: Eric Paris <eparis@redhat.com>
+> >> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> >> > Cc: Ingo Molnar <mingo@redhat.com>
+> >> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> >> > Cc: x86@kernel.org
+> >> > Cc: linux-kernel@vger.kernel.org
+> >> > Cc: linux-audit@redhat.com
+> >> > ---
+> >> >  arch/x86/kernel/entry_32.S | 15 +++++++--------
+> >> >  1 file changed, 7 insertions(+), 8 deletions(-)
+> >> >
+> >> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> >> > index f9e3fab..fb01d22 100644
+> >> > --- a/arch/x86/kernel/entry_32.S
+> >> > +++ b/arch/x86/kernel/entry_32.S
+> >> > @@ -447,15 +447,14 @@ sysenter_exit:
+> >> >  sysenter_audit:
+> >> >     testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+> >> >     jnz syscall_trace_entry
+> >> > -   addl $4,%esp
+> >> > -   CFI_ADJUST_CFA_OFFSET -4
+> >> > -   movl %esi,4(%esp)               /* 5th arg: 4th syscall arg */
+> >> > -   movl %edx,(%esp)                /* 4th arg: 3rd syscall arg */
+> >> > -   /* %ecx already in %ecx            3rd arg: 2nd syscall arg */
+> >> > -   movl %ebx,%edx                  /* 2nd arg: 1st syscall arg */
+> >> > -   /* %eax already in %eax            1st arg: syscall number */
+> >> > +   /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
+> >> > +   movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
+> >> > +   /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
+> >> > +   pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
+> >> > +   pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
+> >> >     call __audit_syscall_entry
+> >> > -   pushl_cfi %ebx
+> >> > +   popl_cfi %ecx /* get that remapped edx off the stack */
+> >> > +   popl_cfi %ecx /* get that remapped esi off the stack */
+> >> >     movl PT_EAX(%esp),%eax          /* reload syscall number */
+> >> >     jmp sysenter_do_call
+> >> >
+> >> >
+> >>
+> >> This looks reasonably likely to be correct, but this code is complicated
+> >> and now ever slower.
+> >
+> > I guess I could just use push/pop and do the CFI_ADJUST_CFA_OFFSET by
+> > hand.  But I figured this was reasonable enough...
+> >
 > 
-> kmemleak will add allocations as objects to a pool. The memory allocated
-> for each object in this pool is periodically searched for pointers to
-> other allocated objects. This only works for memory that is mapped into
-> the kernel's virtual address space, which happens not to be the case for
-> most CMA regions.
+> I'm not complaining about your new assembly in particular.  There's
+> just too much assembly in there in general.
 > 
-> Furthermore, CMA regions are typically used to store data transferred to
-> or from a device and therefore don't contain pointers to other objects.
-> 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
-> Note: I'm not sure this is really the right fix. But without this, the
-> kernel crashes on the first execution of the scan_gray_list() because
-> it tries to access highmem. Perhaps a more appropriate fix would be to
-> reject any object that can't map to a kernel virtual address?
+> But I feel like I'm missing something in the new code.  Aren't you
+> corrupting ecx with those popl_cfi insns?
 
-Let's cc Catalin.
+After the call __audit_syscall_entry aren't they already polluted?
+Isn't that the reason we need to reload EAX?  You can verify this leaves
+things in a similar state (although slightly differently polluted) than
+before it got screwed up.  Here is diff between before the breakage and
+what I propose we do now.
 
-> --- a/mm/cma.c
-> +++ b/mm/cma.c
-> @@ -280,6 +280,7 @@ int __init cma_declare_contiguous(phys_addr_t base,
->  			ret = -ENOMEM;
->  			goto err;
->  		} else {
-> +			kmemleak_ignore(phys_to_virt(addr));
->  			base = addr;
->  		}
->  	}
+(I admit I don't understand how the pushl_cfi %ebx wasn't messing up
+PT_EBX)
 
-And let's tell our poor readers why we did stuff.  Something like this.
+/me anxiously awaits x86 guy to tell me how dumb I am....
 
---- a/mm/cma.c~mm-cma-make-kmemleak-ignore-cma-regions-fix
-+++ a/mm/cma.c
-@@ -280,6 +280,10 @@ int __init cma_declare_contiguous(phys_a
- 			ret = -ENOMEM;
- 			goto err;
- 		} else {
-+			/*
-+			 * kmemleak writes metadata to the tracked objects, but
-+			 * this address isn't mapped and accessible.
-+			 */
- 			kmemleak_ignore(phys_to_virt(addr));
- 			base = addr;
- 		}
-_
+$ git diff a17c8b54dc738c4fda31e8be0302cd131a04c19f -- arch/x86/kernel/entry_32.S
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 0d0c9d4..fb01d22 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -447,16 +447,14 @@ sysenter_exit:
+ sysenter_audit:
+        testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+        jnz syscall_trace_entry
+-       addl $4,%esp
+-       CFI_ADJUST_CFA_OFFSET -4
+-       /* %esi already in 8(%esp)         6th arg: 4th syscall arg */
+-       /* %edx already in 4(%esp)         5th arg: 3rd syscall arg */
+-       /* %ecx already in 0(%esp)         4th arg: 2nd syscall arg */
+-       movl %ebx,%ecx                  /* 3rd arg: 1st syscall arg */
+-       movl %eax,%edx                  /* 2nd arg: syscall number */
+-       movl $AUDIT_ARCH_I386,%eax      /* 1st arg: audit arch */
++       /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
++       movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
++       /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
++       pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
++       pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
+        call __audit_syscall_entry
+-       pushl_cfi %ebx
++       popl_cfi %ecx /* get that remapped edx off the stack */
++       popl_cfi %ecx /* get that remapped esi off the stack */
+        movl PT_EAX(%esp),%eax          /* reload syscall number */
+        jmp sysenter_do_call
+
 
