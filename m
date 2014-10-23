@@ -1,150 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323AbaJWTif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 15:38:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60154 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932071AbaJWTid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 15:38:33 -0400
-Message-ID: <1414093104.2363.14.camel@redhat.com>
-Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
-From: Eric Paris <eparis@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Richard Guy Briggs <rgb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-audit@redhat.com
-Date: Thu, 23 Oct 2014 15:38:24 -0400
-In-Reply-To: <1414092624.2363.13.camel@redhat.com>
-References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
-	 <54494B74.2080504@amacapital.net> <1414091732.2363.11.camel@redhat.com>
-	 <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com>
-	 <1414092624.2363.13.camel@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1755254AbaJWTkg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 15:40:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45536 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaJWTke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 15:40:34 -0400
+Date: Thu, 23 Oct 2014 12:40:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH V3] kernel, add bug_on_warn
+Message-Id: <20141023124034.f835060a667cde2bf6e9190c@linux-foundation.org>
+In-Reply-To: <1414068794-22788-1-git-send-email-prarit@redhat.com>
+References: <1414068794-22788-1-git-send-email-prarit@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-23 at 15:30 -0400, Eric Paris wrote:
-> On Thu, 2014-10-23 at 12:20 -0700, Andy Lutomirski wrote:
-> > On Thu, Oct 23, 2014 at 12:15 PM, Eric Paris <eparis@redhat.com> wrote:
-> > > On Thu, 2014-10-23 at 11:39 -0700, Andy Lutomirski wrote:
-> > >> On 10/22/2014 09:04 PM, Eric Paris wrote:
-> > >> > git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
-> > >> > It was writing over %esp/pt_regs semi-randomly on i686  with the expected
-> > >> > "system can't boot" results.  As noted in:
-> > >> >
-> > >> > https://bugs.freedesktop.org/show_bug.cgi?id=85277
-> > >> >
-> > >> > This patch stops fscking with pt_regs.  Instead it sets up the registers
-> > >> > for the call to __audit_syscall_entry in the most obvious conceivable
-> > >> > way.  It then does just a tiny tiny touch of magic.  We need to get what
-> > >> > started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
-> > >> > as a pair of pushes.
-> > >> >
-> > >> > After the call to __audit_syscall_entry all we need to do is get that
-> > >> > now useless junk off the stack (pair of pops) and reload %eax with the
-> > >> > original syscall so other stuff can keep going about it's business.
-> > >> >
-> > >> > Signed-off-by: Eric Paris <eparis@redhat.com>
-> > >> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > >> > Cc: Ingo Molnar <mingo@redhat.com>
-> > >> > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > >> > Cc: x86@kernel.org
-> > >> > Cc: linux-kernel@vger.kernel.org
-> > >> > Cc: linux-audit@redhat.com
-> > >> > ---
-> > >> >  arch/x86/kernel/entry_32.S | 15 +++++++--------
-> > >> >  1 file changed, 7 insertions(+), 8 deletions(-)
-> > >> >
-> > >> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> > >> > index f9e3fab..fb01d22 100644
-> > >> > --- a/arch/x86/kernel/entry_32.S
-> > >> > +++ b/arch/x86/kernel/entry_32.S
-> > >> > @@ -447,15 +447,14 @@ sysenter_exit:
-> > >> >  sysenter_audit:
-> > >> >     testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
-> > >> >     jnz syscall_trace_entry
-> > >> > -   addl $4,%esp
-> > >> > -   CFI_ADJUST_CFA_OFFSET -4
-> > >> > -   movl %esi,4(%esp)               /* 5th arg: 4th syscall arg */
-> > >> > -   movl %edx,(%esp)                /* 4th arg: 3rd syscall arg */
-> > >> > -   /* %ecx already in %ecx            3rd arg: 2nd syscall arg */
-> > >> > -   movl %ebx,%edx                  /* 2nd arg: 1st syscall arg */
-> > >> > -   /* %eax already in %eax            1st arg: syscall number */
-> > >> > +   /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
-> > >> > +   movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
-> > >> > +   /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
-> > >> > +   pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
-> > >> > +   pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
-> > >> >     call __audit_syscall_entry
-> > >> > -   pushl_cfi %ebx
-> > >> > +   popl_cfi %ecx /* get that remapped edx off the stack */
-> > >> > +   popl_cfi %ecx /* get that remapped esi off the stack */
-> > >> >     movl PT_EAX(%esp),%eax          /* reload syscall number */
-> > >> >     jmp sysenter_do_call
-> > >> >
-> > >> >
-> > >>
-> > >> This looks reasonably likely to be correct, but this code is complicated
-> > >> and now ever slower.
-> > >
-> > > I guess I could just use push/pop and do the CFI_ADJUST_CFA_OFFSET by
-> > > hand.  But I figured this was reasonable enough...
-> > >
-> > 
-> > I'm not complaining about your new assembly in particular.  There's
-> > just too much assembly in there in general.
-> > 
-> > But I feel like I'm missing something in the new code.  Aren't you
-> > corrupting ecx with those popl_cfi insns?
-> 
-> After the call __audit_syscall_entry aren't they already polluted?
-> Isn't that the reason we need to reload EAX?
+On Thu, 23 Oct 2014 08:53:14 -0400 Prarit Bhargava <prarit@redhat.com> wrote:
 
-Well, I guess EAX is special...
+> There have been several times where I have had to rebuild a kernel to
+> cause a panic when hitting a WARN() in the code in order to get a crash
+> dump from a system.  Sometimes this is easy to do, other times (such as
+> in the case of a remote admin) it is not trivial to send new images to the
+> user.
+> 
+> A much easier method would be a switch to change the WARN() over to a
+> BUG().  This makes debugging easier in that I can now test the actual
+> image the WARN() was seen on and I do not have to engage in remote
+> debugging.
+> 
+> This patch adds a bug_on_warn kernel parameter, which calls BUG() in the
+> warn_slowpath_common() path.  The function will still print out the
+> location of the warning.
 
->   You can verify this leaves
-> things in a similar state (although slightly differently polluted) than
-> before it got screwed up.  Here is diff between before the breakage and
-> what I propose we do now.
-> 
-> (I admit I don't understand how the pushl_cfi %ebx wasn't messing up
-> PT_EBX)
-> 
-> /me anxiously awaits x86 guy to tell me how dumb I am....
-> 
-> $ git diff a17c8b54dc738c4fda31e8be0302cd131a04c19f -- arch/x86/kernel/entry_32.S
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index 0d0c9d4..fb01d22 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -447,16 +447,14 @@ sysenter_exit:
->  sysenter_audit:
->         testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
->         jnz syscall_trace_entry
-> -       addl $4,%esp
-> -       CFI_ADJUST_CFA_OFFSET -4
-> -       /* %esi already in 8(%esp)         6th arg: 4th syscall arg */
-> -       /* %edx already in 4(%esp)         5th arg: 3rd syscall arg */
-> -       /* %ecx already in 0(%esp)         4th arg: 2nd syscall arg */
-> -       movl %ebx,%ecx                  /* 3rd arg: 1st syscall arg */
-> -       movl %eax,%edx                  /* 2nd arg: syscall number */
-> -       movl $AUDIT_ARCH_I386,%eax      /* 1st arg: audit arch */
-> +       /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
-> +       movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
-> +       /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
-> +       pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
-> +       pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
->         call __audit_syscall_entry
-> -       pushl_cfi %ebx
-> +       popl_cfi %ecx /* get that remapped edx off the stack */
-> +       popl_cfi %ecx /* get that remapped esi off the stack */
->         movl PT_EAX(%esp),%eax          /* reload syscall number */
->         jmp sysenter_do_call
-> 
+The changelog doesn't mention /proc/sys/kernel/bug_on_warn?
 
+Why do we need both the sysctl and the kernel parameter?  Only to
+trigger BUG for warnings which occur prior to initscripts.  Is there a
+legitimate case for this?  Is kdump even usable at this time?
 
+> --- a/include/asm-generic/bug.h
+> +++ b/include/asm-generic/bug.h
+> @@ -75,10 +75,18 @@ extern void warn_slowpath_null(const char *file, const int line);
+>  #define __WARN_printf_taint(taint, arg...)				\
+>  	warn_slowpath_fmt_taint(__FILE__, __LINE__, taint, arg)
+>  #else
+> -#define __WARN()		__WARN_TAINT(TAINT_WARN)
+> +#define check_bug_on_warn()						\
+> +	do {								\
+> +		if (bug_on_warn)					\
+> +			BUG();						\
+> +	} while (0)
+
+#define check_bug_on_warn() BUG_ON(bug_on_warn)
+
+would suffice?
+
+> +#define __WARN()							\
+> +	do { __WARN_TAINT(TAINT_WARN); check_bug_on_warn(); } while (0)
+> +
+>  #define __WARN_printf(arg...)	do { printk(arg); __WARN(); } while (0)
+>  #define __WARN_printf_taint(taint, arg...)				\
+> -	do { printk(arg); __WARN_TAINT(taint); } while (0)
+> +	do { printk(arg); __WARN_TAINT(taint); check_bug_on_warn(); } while (0)
+>  #endif
+
+What's this code here for anyway?  The changes to
+warn_slowpath_common() aren't sufficient?
+
+>  #ifndef WARN_ON
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 40728cf..4094a60 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -422,6 +422,7 @@ extern int panic_on_oops;
+>  extern int panic_on_unrecovered_nmi;
+>  extern int panic_on_io_nmi;
+>  extern int sysctl_panic_on_stackoverflow;
+> +extern int bug_on_warn;
+>  /*
+>   * Only to be used by arch init code. If the user over-wrote the default
+>   * CONFIG_PANIC_TIMEOUT, honor it.
+> diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
+> index 43aaba1..2ba0a58 100644
+> --- a/include/uapi/linux/sysctl.h
+> +++ b/include/uapi/linux/sysctl.h
+> @@ -153,6 +153,7 @@ enum
+>  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
+>  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
+>  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
+> +	KERN_BUG_ON_WARN=77, /* int: call BUG() in WARN() functions */
+>  };
+>  
+>  
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index d09dc5c..a6d2e2f 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -33,6 +33,7 @@ static int pause_on_oops;
+>  static int pause_on_oops_flag;
+>  static DEFINE_SPINLOCK(pause_on_oops_lock);
+>  static bool crash_kexec_post_notifiers;
+> +int bug_on_warn;
+
+I suppose this should be __read_mostly.  Assuming __read_mostly is
+useful :(
+
+>
+> ...
+>
