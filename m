@@ -1,241 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932858AbaJWOY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:24:56 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:53070 "EHLO arroyo.ext.ti.com"
+	id S932921AbaJWO0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:26:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:58456 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932330AbaJWOXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:23:51 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        <khilman@linaro.org>
-CC: <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        <grant.likely@secretlab.ca>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH v3 4/5] ARM: keystone: pm: switch to use generic pm domains
-Date: Thu, 23 Oct 2014 17:23:01 +0300
-Message-ID: <1414074182-25980-5-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
-References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
+	id S932774AbaJWO0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:26:40 -0400
+Date: Thu, 23 Oct 2014 11:26:34 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@au1.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/powerpc: Cache the DWARF debug info
+Message-ID: <20141023142634.GF14687@kernel.org>
+References: <20141021185610.GA18366@us.ibm.com>
+ <20141021190839.GA4160@kernel.org>
+ <20141022000958.GB2228@us.ibm.com>
+ <20141022081730.GB9860@krava.brq.redhat.com>
+ <20141022174659.GA5119@us.ibm.com>
+ <20141023133724.GE14687@kernel.org>
+ <20141023141213.GA24079@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023141213.GA24079@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch switches Keystone 2 PM code to use Generic PM domains
-instead of PM clock domains because of the lack of DT support
-for the last.
+Em Thu, Oct 23, 2014 at 04:12:13PM +0200, Jiri Olsa escreveu:
+> On Thu, Oct 23, 2014 at 10:37:24AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Wed, Oct 22, 2014 at 10:46:59AM -0700, Sukadev Bhattiprolu escreveu:
+> > > Jiri Olsa [jolsa@redhat.com] wrote:
+> > > | > +			goto out;
+> > > | > +		}
+> > > | > +		dso->dwfl = dwfl;
 
-CC: Ulf Hansson <ulf.hansson@linaro.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Reviewed-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- .../bindings/power/ti,keystone-powerdomain.txt     |  31 ++++++
- arch/arm/mach-keystone/Kconfig                     |   1 +
- arch/arm/mach-keystone/pm_domain.c                 | 105 +++++++++++++--------
- 3 files changed, 100 insertions(+), 37 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
+> > > | so by this we get powerpc arch code sharing dw handle via dso object,
+> > > | but we have lot of generic code too ;-)
 
-diff --git a/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt b/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
-new file mode 100644
-index 0000000..d4e24d5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
-@@ -0,0 +1,31 @@
-+* TI Keystone 2 Generic PM Controller
-+
-+The TI Keystone 2 Generic PM Controller is responsible for Clock gating
-+for each controlled IP module.
-+
-+Required properties:
-+- compatible: Should be "ti,keystone-powerdomain"
-+- #power-domain-cells: Should be 0, see below:
-+
-+The PM Controller node is a PM domain as documented in
-+Documentation/devicetree/bindings/power/power_domain.txt.
-+
-+Example:
-+
-+	pm_controller: pm-controller {
-+		compatible = "ti,keystone-powerdomain";
-+		#power-domain-cells = <0>;
-+	};
-+
-+	netcp: netcp@2090000 {
-+		reg = <0x2620110 0x8>;
-+		reg-names = "efuse";
-+		...
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+		power-domains = <&pm_controller>;
-+
-+		clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
-+		dma-coherent;
-+	}
-diff --git a/arch/arm/mach-keystone/Kconfig b/arch/arm/mach-keystone/Kconfig
-index 98a156a..de43107 100644
---- a/arch/arm/mach-keystone/Kconfig
-+++ b/arch/arm/mach-keystone/Kconfig
-@@ -9,6 +9,7 @@ config ARCH_KEYSTONE
- 	select COMMON_CLK_KEYSTONE
- 	select ARCH_SUPPORTS_BIG_ENDIAN
- 	select ZONE_DMA if ARM_LPAE
-+	select PM_GENERIC_DOMAINS if PM
- 	help
- 	  Support for boards based on the Texas Instruments Keystone family of
- 	  SoCs.
-diff --git a/arch/arm/mach-keystone/pm_domain.c b/arch/arm/mach-keystone/pm_domain.c
-index ca79dda..3341da1 100644
---- a/arch/arm/mach-keystone/pm_domain.c
-+++ b/arch/arm/mach-keystone/pm_domain.c
-@@ -12,69 +12,100 @@
-  * version 2, as published by the Free Software Foundation.
-  */
- 
-+#include <linux/clk.h>
- #include <linux/init.h>
--#include <linux/pm_runtime.h>
- #include <linux/pm_clock.h>
-+#include <linux/pm_domain.h>
- #include <linux/platform_device.h>
--#include <linux/clk-provider.h>
- #include <linux/of.h>
- 
--#ifdef CONFIG_PM_RUNTIME
--static int keystone_pm_runtime_suspend(struct device *dev)
-+#ifdef CONFIG_PM_GENERIC_DOMAINS
-+
-+struct keystone_domain {
-+	struct generic_pm_domain genpd;
-+	struct device	*dev;
-+};
-+
-+void keystone_pm_domain_attach_dev(struct device *dev)
- {
-+	struct clk *clk;
- 	int ret;
-+	int i = 0;
- 
- 	dev_dbg(dev, "%s\n", __func__);
- 
--	ret = pm_generic_runtime_suspend(dev);
--	if (ret)
--		return ret;
--
--	ret = pm_clk_suspend(dev);
-+	ret = pm_clk_create(dev);
- 	if (ret) {
--		pm_generic_runtime_resume(dev);
--		return ret;
-+		dev_err(dev, "pm_clk_create failed %d\n", ret);
-+		return;
-+	};
-+
-+	while ((clk = of_clk_get(dev->of_node, i++)) && !IS_ERR(clk)) {
-+		ret = pm_clk_add_clk(dev, clk);
-+		if (ret) {
-+			dev_err(dev, "pm_clk_add_clk failed %d\n", ret);
-+			goto clk_err;
-+		};
- 	}
- 
--	return 0;
-+	return;
-+
-+clk_err:
-+	pm_clk_destroy(dev);
- }
- 
--static int keystone_pm_runtime_resume(struct device *dev)
-+void keystone_pm_domain_detach_dev(struct device *dev)
- {
- 	dev_dbg(dev, "%s\n", __func__);
--
--	pm_clk_resume(dev);
--
--	return pm_generic_runtime_resume(dev);
-+	pm_clk_destroy(dev);
- }
--#endif
- 
--static struct dev_pm_domain keystone_pm_domain = {
--	.ops = {
--		SET_RUNTIME_PM_OPS(keystone_pm_runtime_suspend,
--				   keystone_pm_runtime_resume, NULL)
--		USE_PLATFORM_PM_SLEEP_OPS
-+static const struct keystone_domain keystone_domain = {
-+	.genpd = {
-+		.name = "keystone",
-+		.attach_dev = keystone_pm_domain_attach_dev,
-+		.detach_dev = keystone_pm_domain_detach_dev,
-+		.dev_ops = {
-+			.stop = pm_clk_suspend,
-+			.start = pm_clk_resume,
-+		},
- 	},
- };
- 
--static struct pm_clk_notifier_block platform_domain_notifier = {
--	.pm_domain = &keystone_pm_domain,
-+static int keystone_pm_domain_probe(struct platform_device *pdev)
-+{
-+	struct keystone_domain *domain;
-+
-+	domain = devm_kzalloc(&pdev->dev,
-+			      sizeof(struct keystone_domain), GFP_KERNEL);
-+	if (!domain)
-+		return -ENOMEM;
-+
-+	domain->genpd = keystone_domain.genpd;
-+	domain->dev = &pdev->dev;
-+
-+	pm_genpd_init(&domain->genpd, NULL, false);
-+	return of_genpd_add_provider_simple(pdev->dev.of_node, &domain->genpd);
-+}
-+
-+static struct of_device_id keystone_pm_domain_dt_ids[] = {
-+	{ .compatible = "ti,keystone-powerdomain" },
-+	{ }
- };
- 
--static struct of_device_id of_keystone_table[] = {
--	{.compatible = "ti,keystone"},
--	{ /* end of list */ },
-+static struct platform_driver keystone_pm_domain_driver = {
-+	.driver = {
-+		.name = "ti,keystone-powerdomain",
-+		.owner = THIS_MODULE,
-+		.of_match_table = keystone_pm_domain_dt_ids,
-+	},
-+	.probe = keystone_pm_domain_probe,
- };
- 
- int __init keystone_pm_runtime_init(void)
- {
--	struct device_node *np;
--
--	np = of_find_matching_node(NULL, of_keystone_table);
--	if (!np)
--		return 0;
--
--	pm_clk_add_notifier(&platform_bus_type, &platform_domain_notifier);
--
--	return 0;
-+	return platform_driver_register(&keystone_pm_domain_driver);
- }
-+#else
-+int __init keystone_pm_runtime_init(void) { return 0; }
-+#endif /* CONFIG_PM_GENERIC_DOMAINS */
--- 
-1.9.1
+> > > Well, this applies to powerpc...
 
+> > > | could you make this happen for unwind__get_entries.. probably
+> > > | both sharing same generic code I guess
+
+> > > and unwind_get_entries() applies only to x86 and arm right ? ;-)
+> > > Or at least thats what the config/Makefile says.
+
+> > > I can take a look at unwind_get_entries(), but can you please merge
+> > > this fix for now, since the current performance is bad?
+
+> > Right, I think the way it is now is a good compromise, i.e. you seem to
+> > be using the right place to cache this, this is restricted to powerpc,
+> > i.e. if leaks or excessive memory usage happens in workloads with lots
+> > of DSOs having dwfl handlers open at the same times happens, it doesn't
+> > affect users in other arches.
+> > 
+> > Jiri: do you agree?
+> 
+> well it's powerpc specific now.. anyway the code in the patch
+> to open the dwfl is generic and should be in in generic
+> place.. like in some extern function that the x86 would call
+> to get the dwfl handle
+> 
+> also the current patch leaks the dso->dwfl, which is never freed -> dwfl_end-ed,
+> dwfl_end should be called of in dso__delete I think
+
+Yeah, as my comment implies, I guess those are all valid concerns, i.e.
+the patch needs more work, I was willing to accept it as-is because it
+would hurt just Sukadev (i.e. powerpc), as he seems to be in a hurry to
+get the performance improved :-)
+
+I will remove it from my tree for now, as in the end what I'm doing
+doesn't touch those specific functions.
+
+But I think this will go on dragging extra work, i.e.: how to limit the
+number of dwfl handlers used? Should we have just a front end cache like
+what is done for machine__findnew_thread() (with just the last hit) and
+perhaps then have a few slots for keeping N dwfl open and when that
+number is up we check the one with less queries and close it?
+
+Jiri, are you doing that on that cache stuff you did? I mean how do
+you keep this stuff:
+
+/*
+ * Global list of open DSOs and the counter.
+ */
+static LIST_HEAD(dso__data_open);
+static long dso__data_open_cnt;
+
+Also this should not be global at all, this should be on struct machine,
+since a DSO that is present on a machine may have the same name as the
+dso on another machine (two guests, hosts, etc) and thus should not be
+kept on the same list, etc.
+
+So reading a bit more you seem to check rlimit, do LRUing when hitting
+the limit, etc, that is why I thought about that stuff when Sukadev
+first posted this patch...
+
+Sukadev, all this is in tools/perf/util/dso.c
+
+That is why I thought it would be a compromise to put what he did, it
+would not make the existing situation that much worse, work needs to be
+done in this area :-\
+
+- Arnaldo
