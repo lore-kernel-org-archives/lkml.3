@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932734AbaJWOYA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:24:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36065 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755970AbaJWOXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:23:47 -0400
+	id S932670AbaJWOX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:23:57 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53599 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107AbaJWOXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:23:46 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         <khilman@linaro.org>
@@ -14,10 +15,11 @@ CC: <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         Grygorii Strashko <grygorii.strashko@ti.com>,
         Ulf Hansson <ulf.hansson@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v3 5/5] ARM: dts: keystone: add generic pm controller node
-Date: Thu, 23 Oct 2014 17:23:02 +0300
-Message-ID: <1414074182-25980-6-git-send-email-grygorii.strashko@ti.com>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH v3 2/5] PM / clock_ops: make __pm_clk_enable more generic
+Date: Thu, 23 Oct 2014 17:22:59 +0300
+Message-ID: <1414074182-25980-3-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
 References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
@@ -27,41 +29,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add TI Keystone 2 Generic PM Controller node and attach
-the Davinci MDIO device to it.
+Now there are two places in code which do the same things,
+so allow __pm_clk_enable() to accept pointer on pm_clock_entry
+structure as second parameter instead of pointer on clock and
+remove duplicated code.
+
+Also, updated function intended to be used by the following patch.
 
 CC: Santosh Shilimkar <ssantosh@kernel.org>
 CC: Kevin Hilman <khilman@linaro.org>
 CC: Ulf Hansson <ulf.hansson@linaro.org>
 CC: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 ---
- arch/arm/boot/dts/keystone.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/base/power/clock_ops.c | 38 ++++++++++++++++----------------------
+ 1 file changed, 16 insertions(+), 22 deletions(-)
 
-diff --git a/arch/arm/boot/dts/keystone.dtsi b/arch/arm/boot/dts/keystone.dtsi
-index 5d3e83f..c669d0d 100644
---- a/arch/arm/boot/dts/keystone.dtsi
-+++ b/arch/arm/boot/dts/keystone.dtsi
-@@ -85,6 +85,11 @@
- 
- 		/include/ "keystone-clocks.dtsi"
- 
-+		pm_controller: pm-controller {
-+			compatible = "ti,keystone-powerdomain";
-+			#power-domain-cells = <0>;
-+		};
+diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+index f14b767..c3b44c1 100644
+--- a/drivers/base/power/clock_ops.c
++++ b/drivers/base/power/clock_ops.c
+@@ -34,14 +34,20 @@ struct pm_clock_entry {
+ /**
+  * pm_clk_enable - Enable a clock, reporting any errors
+  * @dev: The device for the given clock
+- * @clk: The clock being enabled.
++ * @ce: PM clock entry corresponding to the clock.
+  */
+-static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
++static inline int __pm_clk_enable(struct device *dev, struct pm_clock_entry *ce)
+ {
+-	int ret = clk_enable(clk);
+-	if (ret)
+-		dev_err(dev, "%s: failed to enable clk %p, error %d\n",
+-			__func__, clk, ret);
++	int ret;
 +
- 		uart0: serial@02530c00 {
- 			compatible = "ns16550a";
- 			current-speed = <115200>;
-@@ -275,6 +280,7 @@
- 			status = "disabled";
- 			clocks = <&clkpa>;
- 			clock-names = "fck";
-+			power-domains = <&pm_controller>;
- 			bus_freq	= <2500000>;
- 		};
++	if (ce->status < PCE_STATUS_ERROR) {
++		ret = clk_enable(ce->clk);
++		if (!ret)
++			ce->status = PCE_STATUS_ENABLED;
++		else
++			dev_err(dev, "%s: failed to enable clk %p, error %d\n",
++				__func__, ce->clk, ret);
++	}
+ 
+ 	return ret;
+ }
+@@ -287,7 +293,6 @@ int pm_clk_resume(struct device *dev)
+ 	struct pm_subsys_data *psd = dev_to_psd(dev);
+ 	struct pm_clock_entry *ce;
+ 	unsigned long flags;
+-	int ret;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+ 
+@@ -296,13 +301,8 @@ int pm_clk_resume(struct device *dev)
+ 
+ 	spin_lock_irqsave(&psd->lock, flags);
+ 
+-	list_for_each_entry(ce, &psd->clock_list, node) {
+-		if (ce->status < PCE_STATUS_ERROR) {
+-			ret = __pm_clk_enable(dev, ce->clk);
+-			if (!ret)
+-				ce->status = PCE_STATUS_ENABLED;
+-		}
+-	}
++	list_for_each_entry(ce, &psd->clock_list, node)
++		__pm_clk_enable(dev, ce);
+ 
+ 	spin_unlock_irqrestore(&psd->lock, flags);
+ 
+@@ -411,7 +411,6 @@ int pm_clk_resume(struct device *dev)
+ 	struct pm_subsys_data *psd = dev_to_psd(dev);
+ 	struct pm_clock_entry *ce;
+ 	unsigned long flags;
+-	int ret;
+ 
+ 	dev_dbg(dev, "%s()\n", __func__);
+ 
+@@ -421,13 +420,8 @@ int pm_clk_resume(struct device *dev)
+ 
+ 	spin_lock_irqsave(&psd->lock, flags);
+ 
+-	list_for_each_entry(ce, &psd->clock_list, node) {
+-		if (ce->status < PCE_STATUS_ERROR) {
+-			ret = __pm_clk_enable(dev, ce->clk);
+-			if (!ret)
+-				ce->status = PCE_STATUS_ENABLED;
+-		}
+-	}
++	list_for_each_entry(ce, &psd->clock_list, node)
++		__pm_clk_enable(dev, ce);
+ 
+ 	spin_unlock_irqrestore(&psd->lock, flags);
  
 -- 
 1.9.1
