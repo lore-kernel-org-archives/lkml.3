@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617AbaJWSac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 14:30:32 -0400
-Received: from mail-bn1bon0054.outbound.protection.outlook.com ([157.56.111.54]:27200
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753557AbaJWSab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 14:30:31 -0400
-Message-ID: <54494861.80102@opensource.altera.com>
-Date: Thu, 23 Oct 2014 13:26:41 -0500
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1755743AbaJWSdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 14:33:06 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:51476 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197AbaJWSdD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 14:33:03 -0400
 MIME-Version: 1.0
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "dinh.linux@gmail.com" <dinh.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "matthijs@stdin.nl" <matthijs@stdin.nl>,
-        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCHv5 7/7] usb: dwc2: Update Kconfig to support dual-role
-References: <1413831126-24193-1-git-send-email-dinguyen@opensource.altera.com> <1413831126-24193-8-git-send-email-dinguyen@opensource.altera.com> <9429092.fliZzSsbVp@amdc1032> <A2CA0424C0A6F04399FB9E1CD98E0304844E54AC@US01WEMBX2.internal.synopsys.com>
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844E54AC@US01WEMBX2.internal.synopsys.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BY1PR0201CA0009.namprd02.prod.outlook.com (25.160.191.147)
- To BY1PR0301MB1192.namprd03.prod.outlook.com (25.160.195.150)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1192;
-X-Forefront-PRVS: 0373D94D15
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(6049001)(189002)(199003)(479174003)(377454003)(51704005)(24454002)(164054003)(80022003)(99396003)(86362001)(107046002)(77096002)(76482002)(105586002)(21056001)(106356001)(65806001)(54356999)(66066001)(97736003)(64706001)(50986999)(65816999)(31966008)(95666004)(120916001)(76176999)(23746002)(50466002)(20776003)(117636001)(4396001)(92726001)(92566001)(40100003)(122386002)(85306004)(93886004)(87976001)(102836001)(83506001)(85852003)(46102003)(47776003)(42186005)(19580395003)(101416001)(19580405001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1192;H:[137.57.160.210];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+In-Reply-To: <20141022045848.GA99023@ubuntu-hedt>
+References: <1413296756-25071-5-git-send-email-seth.forshee@canonical.com>
+ <OFD40DA8DF.F78EA39D-ON86257D71.0057C4DC-86257D71.0064055D@us.ibm.com>
+ <878ukis9oh.fsf@x220.int.ebiederm.org> <20141014205955.GA10908@ubuntu-mba51>
+ <877g02pd7f.fsf@x220.int.ebiederm.org> <CALCETrU3Gzo-dx9uNH3Wuqa8Brk8xcxQsw7YGgVd74simXK0gw@mail.gmail.com>
+ <20141015073951.GB10908@ubuntu-mba51> <CALCETrWnHfXN9VK9P-97XiVN6LkWr1nV4CxMpsRPGCOMc1xvvg@mail.gmail.com>
+ <20141021212151.GB83801@ubuntu-hedt> <CALCETrWrqDAbq5uxPxZ=MjfSDetuZa94pNF2EH3abE6PhJm6=g@mail.gmail.com>
+ <20141022045848.GA99023@ubuntu-hedt>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 23 Oct 2014 11:32:41 -0700
+Message-ID: <CALCETrUTxsH=p8QhK80Z3nS3JHT-14-BC0Q1bmAm29UYBo69tA@mail.gmail.com>
+Subject: Re: [fuse-devel] [PATCH v4 4/5] fuse: Support privileged xattrs only
+ with a mount option
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Serge H. Hallyn" <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Michael j Theall <mtheall@us.ibm.com>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        fuse-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2014 01:28 PM, Paul Zimmerman wrote:
->> From: Bartlomiej Zolnierkiewicz [mailto:b.zolnierkie@samsung.com]
->> Sent: Wednesday, October 22, 2014 5:26 AM
->>
->> On Monday, October 20, 2014 01:52:06 PM dinguyen@opensource.altera.com wrote:
->>> From: Dinh Nguyen <dinguyen@opensource.altera.com>
->>>
->>>  config USB_DWC2_PLATFORM
->>>  	bool "DWC2 Platform"
->>> -	depends on USB_DWC2_HOST
->>>  	default USB_DWC2_HOST
->>
->> It should be "default USB_DWC2_HOST || USB_DWC2_PERIPHERAL" because
->> USB_DWC2_PLATFORM replaces current USB_DWC2_PERIPHERAL functionality.
->>
->> Additionaly USB_DWC2_PLATFORM should be changed to tristate
->> (USB_DWC2_PERIPHERAL was a tristeate before your changes).
-> 
-> Dinh, I think this is a good point. Is there any reason why
-> USB_DWC2_PLATFORM (and USB_DWC2_PCI for that matter) can't be
-> tristate? That's what DWC3 does.
-> 
+On Oct 21, 2014 9:59 PM, "Seth Forshee" <seth.forshee@canonical.com> wrote:
+>
+> On Tue, Oct 21, 2014 at 02:27:13PM -0700, Andy Lutomirski wrote:
+> > On Tue, Oct 21, 2014 at 2:21 PM, Seth Forshee
+> >
+> > >         return s;
+> > >
+> > >  fail:
+> > > diff --git a/fs/xattr.c b/fs/xattr.c
+> > > index 64e83efb742d..383bb9f25555 100644
+> > > --- a/fs/xattr.c
+> > > +++ b/fs/xattr.c
+> > > @@ -40,6 +40,12 @@ xattr_permission(struct inode *inode, const char *name, int mask)
+> > >                         return -EPERM;
+> > >         }
+> > >
+> > > +       /* Restrict security.* and trusted.* to mounts from init_user_ns. */
+> > > +       if (inode->i_sb->s_user_ns != &init_user_ns &&
+> > > +           (!strcmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) ||
+> > > +            !strcmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN)))
+> > > +               return -EPERM;
+> > > +
+> >
+> > trusted.* should be fine already, I think -- it checks global
+> > capabilities.  And I still think that security.* should be left to
+> > LSMs, which IMO really do need to be fixed for user namespaces.
+> >
+> > But how does this help with FUSE at all?   Does FUSE end up calling
+> > xattr_permission?
+>
+> It gets called from vfs_getxattr, and thus for the getxattr syscall for
+> all fs types, so this would block reading any trusted.* xattrs from the
+> fuse userspace process.
 
-Yes, in my v6, I have made this change.
+Oh.  It seems weird to me that getxattr would get an error instead of
+FUSE being prevented from setting those attributes.
 
-Thanks,
-Dinh
+I'm still unconvinced that this is the right approach.  And anything
+that tries to use LSMs in a container will eventually want those
+attributes.
+
+
+--Andy
