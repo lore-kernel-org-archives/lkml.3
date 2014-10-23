@@ -1,119 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068AbaJWP4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:56:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35407 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756048AbaJWP4K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 11:56:10 -0400
-Date: Thu, 23 Oct 2014 17:56:07 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: fold
- mem_cgroup_start_move()/mem_cgroup_end_move()
-Message-ID: <20141023155607.GN23011@dhcp22.suse.cz>
-References: <1414075327-15039-1-git-send-email-hannes@cmpxchg.org>
+	id S1756084AbaJWP4j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:56:39 -0400
+Received: from mailgw02.mediatek.com ([210.61.82.184]:49967 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755470AbaJWPyW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 11:54:22 -0400
+X-Listener-Flag: 11101
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Rob Herring <robh+dt@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>, <arm@kernel.org>
+CC: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <srv_heupstream@mediatek.com>, <yingjoe.chen@gmail.com>,
+        <hc.yen@mediatek.com>, <eddie.huang@mediatek.com>,
+        <nathan.chung@mediatek.com>, <yh.chen@mediatek.com>
+Subject: [PATCH v4 3/7] genirq: Add more helper functions to support stacked irq_chip
+Date: Thu, 23 Oct 2014 23:53:11 +0800
+Message-ID: <1414079595-26129-4-git-send-email-yingjoe.chen@mediatek.com>
+X-Mailer: git-send-email 1.8.1.1.dirty
+In-Reply-To: <1414079595-26129-1-git-send-email-yingjoe.chen@mediatek.com>
+References: <1414079595-26129-1-git-send-email-yingjoe.chen@mediatek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414075327-15039-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 23-10-14 10:42:07, Johannes Weiner wrote:
-> Having these functions and their documentation split out and somewhere
-> makes it harder, not easier, to follow what's going on.
-> 
-> Inline them directly where charge moving is prepared and finished, and
-> put an explanation right next to it.
+Add more helper function for stacked irq_chip to just call parent's
+function.
 
-I do not see the open coded version much more readable or maintainable to be
-honest. mem_cgroup_{start,end}_move are a good markers of the transaction.
-But I do not have strong opinion about this. The preparation and
-move_lock parts are so far from each other that either way would be
-non-trivial to follow. That being said, I do not really care much.
+Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+---
+ include/linux/irq.h |  6 ++++++
+ kernel/irq/chip.c   | 28 ++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
 
-Your comment is better and more clear though.
-
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/memcontrol.c | 40 ++++++++++++----------------------------
->  1 file changed, 12 insertions(+), 28 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3cd4f1e0bfb3..5b5c784dc39d 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1447,32 +1447,6 @@ int mem_cgroup_swappiness(struct mem_cgroup *memcg)
->  }
->  
->  /*
-> - * memcg->moving_account is used for checking possibility that some thread is
-> - * calling move_account(). When a thread on CPU-A starts moving pages under
-> - * a memcg, other threads should check memcg->moving_account under
-> - * rcu_read_lock(), like this:
-> - *
-> - *         CPU-A                                    CPU-B
-> - *                                              rcu_read_lock()
-> - *         memcg->moving_account+1              if (memcg->mocing_account)
-> - *                                                   take heavy locks.
-> - *         synchronize_rcu()                    update something.
-> - *                                              rcu_read_unlock()
-> - *         start move here.
-> - */
-> -
-> -static void mem_cgroup_start_move(struct mem_cgroup *memcg)
-> -{
-> -	atomic_inc(&memcg->moving_account);
-> -	synchronize_rcu();
-> -}
-> -
-> -static void mem_cgroup_end_move(struct mem_cgroup *memcg)
-> -{
-> -	atomic_dec(&memcg->moving_account);
-> -}
-> -
-> -/*
->   * A routine for checking "mem" is under move_account() or not.
->   *
->   * Checking a cgroup is mc.from or mc.to or under hierarchy of
-> @@ -5431,7 +5405,8 @@ static void mem_cgroup_clear_mc(void)
->  	mc.from = NULL;
->  	mc.to = NULL;
->  	spin_unlock(&mc.lock);
-> -	mem_cgroup_end_move(from);
-> +
-> +	atomic_dec(&memcg->moving_account);
->  }
->  
->  static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
-> @@ -5464,7 +5439,16 @@ static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
->  			VM_BUG_ON(mc.precharge);
->  			VM_BUG_ON(mc.moved_charge);
->  			VM_BUG_ON(mc.moved_swap);
-> -			mem_cgroup_start_move(from);
-> +
-> +			/*
-> +			 * Signal mem_cgroup_begin_page_stat() to take
-> +			 * the memcg's move_lock while we're moving
-> +			 * its pages to another memcg.  Then wait for
-> +			 * already started RCU-only updates to finish.
-> +			 */
-> +			atomic_inc(&memcg->moving_account);
-> +			synchronize_rcu();
-> +
->  			spin_lock(&mc.lock);
->  			mc.from = from;
->  			mc.to = memcg;
-> -- 
-> 2.1.2
-> 
-
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 07abf5a..071b1e8 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -437,6 +437,12 @@ extern void handle_nested_irq(unsigned int irq);
+ 
+ #ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+ extern void irq_chip_ack_parent(struct irq_data *data);
++extern void irq_chip_mask_parent(struct irq_data *data);
++extern void irq_chip_unmask_parent(struct irq_data *data);
++extern void irq_chip_eoi_parent(struct irq_data *data);
++extern int irq_chip_set_affinity_parent(struct irq_data *data,
++					const struct cpumask *dest,
++					bool force);
+ extern int irq_chip_retrigger_hierarchy(struct irq_data *data);
+ #endif
+ 
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 58ed9ed..0ecc270 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -829,6 +829,34 @@ void irq_chip_ack_parent(struct irq_data *data)
+ 	data->chip->irq_ack(data);
+ }
+ 
++void irq_chip_mask_parent(struct irq_data *data)
++{
++	data = data->parent_data;
++	data->chip->irq_mask(data);
++}
++
++void irq_chip_unmask_parent(struct irq_data *data)
++{
++	data = data->parent_data;
++	data->chip->irq_unmask(data);
++}
++
++void irq_chip_eoi_parent(struct irq_data *data)
++{
++	data = data->parent_data;
++	data->chip->irq_eoi(data);
++}
++
++int irq_chip_set_affinity_parent(struct irq_data *data,
++				 const struct cpumask *dest, bool force)
++{
++	data = data->parent_data;
++	if (data->chip->irq_set_affinity)
++		return data->chip->irq_set_affinity(data, dest, force);
++
++	return -ENOSYS;
++}
++
+ int irq_chip_retrigger_hierarchy(struct irq_data *data)
+ {
+ 	for (data = data->parent_data; data; data = data->parent_data)
 -- 
-Michal Hocko
-SUSE Labs
+1.8.1.1.dirty
+
