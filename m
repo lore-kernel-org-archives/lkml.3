@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068AbaJWLGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 07:06:16 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45814 "EHLO
+	id S1755130AbaJWLGh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 07:06:37 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:58428 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244AbaJWLGN convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755095AbaJWLGf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 07:06:13 -0400
-Message-ID: <5448E11D.1020306@arm.com>
-Date: Thu, 23 Oct 2014 13:06:05 +0200
+	Thu, 23 Oct 2014 07:06:35 -0400
+Message-ID: <5448E134.50006@arm.com>
+Date: Thu, 23 Oct 2014 13:06:28 +0200
 From: Dietmar Eggemann <dietmar.eggemann@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
@@ -27,8 +27,8 @@ Subject: Re: [RESEND PATCH 2/3 v5] sched: Rewrite per entity runnable load
  average tracking
 References: <1412907717-2871-1-git-send-email-yuyang.du@intel.com> <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
 In-Reply-To: <1412907717-2871-3-git-send-email-yuyang.du@intel.com>
-X-OriginalArrivalTime: 23 Oct 2014 11:06:07.0571 (UTC) FILETIME=[58565A30:01CFEEB1]
-X-MC-Unique: 114102312060815601
+X-OriginalArrivalTime: 23 Oct 2014 11:06:30.0430 (UTC) FILETIME=[65F65BE0:01CFEEB1]
+X-MC-Unique: 114102312063210601
 Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
