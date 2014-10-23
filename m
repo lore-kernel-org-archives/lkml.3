@@ -1,89 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607AbaJWM4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:56:38 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:64386 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755296AbaJWM4h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:56:37 -0400
-Message-ID: <5448FB01.1090108@mentor.com>
-Date: Thu, 23 Oct 2014 15:56:33 +0300
-From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.0
+	id S1755690AbaJWM5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:57:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:64308 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755648AbaJWM5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 08:57:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
+   d="scan'208";a="623954461"
+Date: Thu, 23 Oct 2014 15:56:55 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio:
+ Support for unified device properties interface)
+Message-ID: <20141023125655.GJ1484@lahna.fi.intel.com>
+References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com>
+ <1971792.8pKYWlGxB9@vostro.rjw.lan>
+ <20141022145651.GH1484@lahna.fi.intel.com>
+ <13758254.acHP1NJN1b@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] fs: sysfs: return EFBIG on write if offset is
- larger than binary file size
-References: <1412876515-12057-1-git-send-email-vladimir_zapolskiy@mentor.com> <20141009184631.GA17554@mtj.dyndns.org>
-In-Reply-To: <20141009184631.GA17554@mtj.dyndns.org>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [137.202.0.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <13758254.acHP1NJN1b@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+On Thu, Oct 23, 2014 at 01:21:06AM +0200, Rafael J. Wysocki wrote:
+> OK, would the below make sense, then (completely untested, on top of the v6
+> of the device properties patchset)?
 
-On 09.10.2014 21:46, Tejun Heo wrote:
-> Hello, Vladimir.
-> 
-> On Thu, Oct 09, 2014 at 08:41:55PM +0300, Vladimir Zapolskiy wrote:
->> According to the user expectations common utilities like dd or sh
->> redirection operator '>' should work correctly over binary files from
->> sysfs. At the moment doing excessive write can not be ever completed
->> (no error is returned), e.g. for 4-byte file:
->>
->>   write(1, "\0\0\0\0\0\0\0\0", 8)         = 4
->>   write(1, "\0\0\0\0", 4)                 = 0
->>   write(1, "\0\0\0\0", 4)                 = 0
->>   write(1, "\0\0\0\0", 4)                 = 0
->>   write(1, "\0\0\0\0", 4)                 = 0
->>   write(1, "\0\0\0\0", 4)                 = 0
->>   .......
->>
->> This is not a successful completion of write(2), so fix the problem by
->> returning EFBIG as described in POSIX.1-2001:
->>
->>   [EFBIG]
->>     The file is a regular file, nbyte is greater than 0, and the
->>     starting position is greater than or equal to the offset maximum
->>     established in the open file description associated with fildes.
->>
->> Note, the write(2) ABI is changed, however
->> 1) write(2) behaviour is corrected in conformance to POSIX, the
->>    existing userspace applications must be aware of possible errors on
->>    a syscall,
->> 2) the return value is changed on error path, so it is an exceptional
->>    situation,
->> 3) the change is related only to binary sysfs files, which is a very
->>    small class of files, mainly representing non-volatile registers or
->>    ram, eeproms etc, many of such files are read-only.
->>
->> Presumably it is safe to apply the change, the described problem is
->> definitely in the kernel and userspace utilities can not be changed to
->> process 0 return value as an error, because it is just not an error
->> according to POSIX.
->>
->> Signed-off-by: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Tejun Heo <tj@kernel.org>
-> 
-> This is a bit risky but the current behavior is problematic and as you
-> pointed out the danger of actual breakge is relatively low.  We might
-> as well give it a shot.
-> 
->  Cautiously-acked-by: Tejun Heo <tj@kernel.org>
-> 
-> Please also cc stable.
-> 
-> Thanks.
+Yes it does :-)
 
-have you had time to look at the problem? Understanding the risk of the
-change, should the inconsistency with POSIX be documented in
-Documentation/ABI/stable/syscalls instead?
+With the the below fix it works nicely with the modified rfkill-gpio.c
+driver.
 
-With best wishes,
-Vladimir
+> +static bool acpi_get_driver_gpio_data(struct acpi_device *adev,
+> +				      const char *name,
+> +				      struct acpi_reference_args *args)
+> +{
+> +	struct acpi_gpio_data *gd;
+> +
+> +	mutex_lock(&driver_gpio_data_lock);
+> +
+> +	list_for_each_entry(gd, &adev->driver_gpios, item)
+> +		if (!strcmp(name, gd->name)) {
+> +			args->adev = adev;
+> +			args->args[0] = gd->entry_index;
+> +			args->args[1] = gd->pin_index;
+> +			args->args[2] = gd->active_low;
+> +			args->nargs = 3;
+
+			mutex_unlock(&driver_gpio_data_lock);
+
+> +			return true;
+> +		}
+> +
+> +	mutex_unlock(&driver_gpio_data_lock);
+> +
+> +	return false;
+> +}
+
+Also I think the two functions should be exported to modules as well.
+
+Here are the modifications needed for rfkill-gpio.c driver. I think it
+is not that bad considering that now the driver supports both ACPI _DSD
+and non-_DSD at the same time.
+
+diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+index 0f62326c0f5e..f8754e7d81ea 100644
+--- a/net/rfkill/rfkill-gpio.c
++++ b/net/rfkill/rfkill-gpio.c
+@@ -67,6 +67,8 @@ static int rfkill_gpio_acpi_probe(struct device *dev,
+ 				  struct rfkill_gpio_data *rfkill)
+ {
+ 	const struct acpi_device_id *id;
++	struct acpi_device *adev = ACPI_COMPANION(dev);
++	int ret;
+ 
+ 	id = acpi_match_device(dev->driver->acpi_match_table, dev);
+ 	if (!id)
+@@ -75,6 +77,20 @@ static int rfkill_gpio_acpi_probe(struct device *dev,
+ 	rfkill->name = dev_name(dev);
+ 	rfkill->type = (unsigned)id->driver_data;
+ 
++	/*
++	 * Add default mapping for ACPI _DSD properties now just in case
++	 * there is no _DSD for this device.
++	 */
++	ret = acpi_dev_add_driver_gpio(adev, "reset-gpios", 0, 0, false);
++	if (ret)
++		return ret;
++
++	ret = acpi_dev_add_driver_gpio(adev, "shutdown-gpios", 1, 0, false);
++	if (ret) {
++		acpi_dev_remove_driver_gpios(adev);
++		return ret;
++	}
++
+ 	return 0;
+ }
+ 
+@@ -110,7 +126,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+ 		rfkill->reset_gpio = gpio;
+ 	}
+ 
+-	gpio = devm_gpiod_get_index(&pdev->dev, "shutdown", 1);
++	gpio = devm_gpiod_get_index(&pdev->dev, "shutdown", 0);
+ 	if (!IS_ERR(gpio)) {
+ 		ret = gpiod_direction_output(gpio, 0);
+ 		if (ret)
+@@ -150,6 +166,9 @@ static int rfkill_gpio_remove(struct platform_device *pdev)
+ 	rfkill_unregister(rfkill->rfkill_dev);
+ 	rfkill_destroy(rfkill->rfkill_dev);
+ 
++	if (ACPI_COMPANION(&pdev->dev))
++		acpi_dev_remove_driver_gpios(ACPI_COMPANION(&pdev->dev));
++
+ 	return 0;
+ }
+ 
