@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160AbaJWCuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 22:50:05 -0400
-Received: from relay2.sgi.com ([192.48.180.65]:52659 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932432AbaJWCtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 22:49:35 -0400
-From: Alex Thorlton <athorlton@sgi.com>
-To: linux-mm@kvack.org, athorlton@sgi.com
-Cc: Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] Disable khugepaged thread
-Date: Wed, 22 Oct 2014 21:49:24 -0500
-Message-Id: <1414032567-109765-2-git-send-email-athorlton@sgi.com>
-X-Mailer: git-send-email 1.7.12.4
-In-Reply-To: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
-References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+	id S932729AbaJWDFq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 23:05:46 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:59693 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932379AbaJWDFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 23:05:45 -0400
+Date: Thu, 23 Oct 2014 05:05:41 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 02/20] perf: Add AUX area to ring buffer for raw data
+ streams
+Message-ID: <20141023030537.GA14570@lerouge>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1413207948-28202-3-git-send-email-alexander.shishkin@linux.intel.com>
+ <20141022123547.GL12706@worktop.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141022123547.GL12706@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch just removes any call to start khugepaged for now.  If we decide to
-go forward with this new approach, then this patch will also dismantle the other
-bits of khugepaged that we'll no longer need.
+On Wed, Oct 22, 2014 at 02:35:47PM +0200, Peter Zijlstra wrote:
+> On Mon, Oct 13, 2014 at 04:45:30PM +0300, Alexander Shishkin wrote:
+> > +	struct kref			aux_refcount;
+> 
+> I'm not a fan of kref, pointless obfuscation that.
 
-Signed-off-by: Alex Thorlton <athorlton@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Bob Liu <lliubbo@gmail.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Vladimir Davydov <vdavydov@parallels.com>
-Cc: linux-kernel@vger.kernel.org
+It has a good potential for debugging though. Sure right now
+the get/put simple APIs only performs counting sanity checks
+but I've seen patches that extend it to object debugging.
 
----
- mm/huge_memory.c | 23 +++--------------------
- 1 file changed, 3 insertions(+), 20 deletions(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 74c78aa..63abf52 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -295,24 +295,9 @@ static ssize_t enabled_store(struct kobject *kobj,
- 			     struct kobj_attribute *attr,
- 			     const char *buf, size_t count)
- {
--	ssize_t ret;
--
--	ret = double_flag_store(kobj, attr, buf, count,
--				TRANSPARENT_HUGEPAGE_FLAG,
--				TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG);
--
--	if (ret > 0) {
--		int err;
--
--		mutex_lock(&khugepaged_mutex);
--		err = start_khugepaged();
--		mutex_unlock(&khugepaged_mutex);
--
--		if (err)
--			ret = err;
--	}
--
--	return ret;
-+	return double_flag_store(kobj, attr, buf, count,
-+				 TRANSPARENT_HUGEPAGE_FLAG,
-+				 TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG);
- }
- static struct kobj_attribute enabled_attr =
- 	__ATTR(enabled, 0644, enabled_show, enabled_store);
-@@ -655,8 +640,6 @@ static int __init hugepage_init(void)
- 	if (totalram_pages < (512 << (20 - PAGE_SHIFT)))
- 		transparent_hugepage_flags = 0;
- 
--	start_khugepaged();
--
- 	return 0;
- out:
- 	hugepage_exit_sysfs(hugepage_kobj);
--- 
-1.7.12.4
-
+Sounds quite valuable on complicated object lifecycles like
+perf events.
