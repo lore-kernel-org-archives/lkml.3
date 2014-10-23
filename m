@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375AbaJWCCG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 22:02:06 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:58198 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750928AbaJWCCD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 22:02:03 -0400
-Date: Wed, 22 Oct 2014 21:02:13 -0500
-From: Brian Vandre <bvandre@gmail.com>
-To: Hartmut Knaack <knaack.h@gmx.de>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, gregkh@linuxfoundation.org,
-        jic23@kernel.org, alexandre.belloni@free-electrons.com,
-        linux-iio@vger.kernel.org, marex@denx.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Staging: iio: adc: fix line over 80 characters
-Message-ID: <20141023020213.GA30907@brian-U>
-References: <cover.1413858979.git.bvandre@gmail.com>
- <cover.1413931615.git.bvandre@gmail.com>
- <ec4b497827f6c7615f6b5eef5669144f8c68d034.1413931615.git.bvandre@gmail.com>
- <20141022042115.GA2530@sudip-PC>
- <54484219.5000708@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54484219.5000708@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754359AbaJWCMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 22:12:08 -0400
+Received: from mga14.intel.com ([192.55.52.115]:2574 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750928AbaJWCMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 22:12:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="404553034"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Fei Yang <fei.yang@intel.com>
+Subject: [PATCH 0/6] ACPI/OSL: Rework of ACPICA memory OSLs to improve performance.
+Date: Thu, 23 Oct 2014 10:11:57 +0800
+Message-Id: <cover.1414029477.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 01:47:37AM +0200, Hartmut Knaack wrote:
-> Sudip Mukherjee schrieb am 22.10.2014 06:21:
-> > On Tue, Oct 21, 2014 at 05:56:47PM -0500, Brian Vandre wrote:
-> >> This fixes the 2 checkpatch.pl warnings:
-> >> WARNING: line over 80 characters
-> >>
-> > please check your patch with --strict option of checkpatch.pl , and you will get :
-> > "Alignment should match open parenthesis" .
-> > 
-> Good point, but what solution would you propose?
+It is reported that there is a performance issue in the ACPICA OSL
+implementation around memory mappings.
 
-Hey All,
+On the reported platforms, there is a debugging facility implemented in the
+ACPI namespace using circular logging buffer:
+        Name (DPTR, 0x3AFEB000)
+        Name (EPTR, 0x3AFFB000)
+        Name (CPTR, 0x3AFEB010)
+        Mutex (MMUT, 0x00)
+        Method (MDBG, 1, Serialized)
+        {
+            Store (Acquire (MMUT, 0x03E8), Local0)
+            If (Local0 == Zero)
+            {
+                OperationRegion (ABLK, SystemMemory, CPTR, 0x10)
+                Field (ABLK, ByteAcc, NoLock, Preserve)
+                {
+                    AAAA,   128
+                }
+                Store (Arg0, AAAA) /* \MDBG.AAAA */
+                CPTR = (CPTR + 0x10) /* \CPTR */
+                If (CPTR >= EPTR)
+                {
+                    CPTR = (DPTR + 0x10) /* \CPTR */
+                }
+                Release (MMUT)
+            }
+            Return (Local0)
+        }
+This function is heavily invoked by other ACPI control methods.
+The reported platforms suffer from 2-5 minutes kernel stuck in the end of
+accessing the mapped circular buffer system memory region. By
+instrumentation, the 2-5 minutes time consumption overhead can be seen to
+happen on the synchronize_rcu() invoked in the acpi_os_unmap_memory().
 
-Thanks for all the feedback.  This is my first attempt at a patch so I thank you all
-for helping me through it.  I have a question about the strict option on checkpatch.pl.
-I thought that the stict option was not necessarily part of the coding standards but
-more of a nice to have.  Should I be always using the strict option?
+This patchset removes the synchronize_rcu() from the hot path to improve
+the performance.
 
-On this particular patch if I were to align to the open parenthesis it would push the
-comment "/* trigger DELAY unit#3 */" off to the next line which I thought we be less
-clear.  If --strict is optional then I would argue to leave it the way it is, but again
-this is my first time and I am learning.
+Lv Zheng (6):
+  ACPI/OSL: Split memory operation region implementations to a seperate
+    file.
+  ACPI/OSL: Rename system memory functions.
+  ACPI/OSL: Cleanup memory access functions by merging duplicate code.
+  ACPI/OSL: Add acpi_map2virt() to merge duplicate code.
+  ACPI/OSL: Cleanup branch logics.
+  ACPI/OSL: Fix performance issue in system memory lockings.
 
-If I were to align to the parenthesis should I just move the comment to the next line
-or possibly delete the comment altogether?  The code is clear and the comment might not
-be necessary but I didn't want to remove anything the original author wrote.
+ drivers/acpi/Makefile |    2 +-
+ drivers/acpi/mem.c    |  414 +++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/acpi/osl.c    |  381 ---------------------------------------------
+ 3 files changed, 415 insertions(+), 382 deletions(-)
+ create mode 100644 drivers/acpi/mem.c
 
-Thanks,
-Brian Vandre
+-- 
+1.7.10
+
