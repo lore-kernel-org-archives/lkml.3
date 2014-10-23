@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaJWGDL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 02:03:11 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:54307 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaJWGDI (ORCPT
+	id S1752257AbaJWGDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 02:03:46 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:59823 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbaJWGDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 02:03:08 -0400
+	Thu, 23 Oct 2014 02:03:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <4582579.9WMrIMALsy@wuerfel>
-References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com>
- <4582579.9WMrIMALsy@wuerfel>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 23 Oct 2014 15:02:46 +0900
-Message-ID: <CAAVeFuJzZJdh+Z7hY-Ws3orxyO=PSqCB_eBphbWk3nRb15op2w@mail.gmail.com>
-Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio: Support
- for unified device properties interface)
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
+In-Reply-To: <20141009020410.GA7968@wfg-t540p.sh.intel.com>
+References: <20141009020410.GA7968@wfg-t540p.sh.intel.com>
+Date: Thu, 23 Oct 2014 14:03:43 +0800
+Message-ID: <CAL1ERfOneR5ix3y0Q6GFyPondQp8MpPZY=8nJWZc9n1FC=d9Gw@mail.gmail.com>
+Subject: Re: [mm] BUG: Int 6: CR2 (null)
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org, mina86@mina86.com,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Linux-MM <linux-mm@kvack.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 4:54 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 21 October 2014 14:14:02 Alexandre Courbot wrote:
->> >
->> > We have enforced naming things for the dmaengine binding, which has
->> > just led to everyone calling things "rx" and "tx". My fear is that
->> > if we start to enforce giving a name, we'd end up with lots of
->> > drivers that use a "gpio-gpios" property or something silly.
->>
->> Checking the bindings is also part of the review process.  Things
->> like "gpio-gpios" should simply not be accepted to begin with.
->>
->> This sounds like a good chance to finally land some guidelines
->> regarding GPIO bindings. Let's summarize the situation:
->> - GPIO bindings can be defined using both DT and ACPI (both interfaces
->> nicely abstracted by the interface introduced by this series)
->> - Both firmware interfaces support indexed GPIOs
->> - Both firmware interfaces support named GPIO properties, with an
->> optional index (can we absolutely take this for granted on ACPI now?)
+On Thu, Oct 9, 2014 at 10:04 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Hi Marek,
 >
-> The developers working on it have said that they definitely want to
-> be compatible with the existing bindings, so the answer to your question
-> is yes.
+> FYI, we noticed the below changes on
 >
->> - For DT bindings, both foo-gpio and foo-gpios are valid properties
->> for the GPIO "foo".
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
+> commit 478e86d7c8c5f41e29abb81b05b459d24bdc71a2 ("mm: cma: adjust address limit to avoid hitting low/high memory boundary")
 >
-> I would like to see the documentation recommend one over the other for
-> new bindings. Most other subsystems use the plural form even for
-> properties that only have one entry, so I'd like to see "foo-gpios"
-> become the canonical form for named gpio lines.
-
-Sounds good.
-
-> Drivers that use
-> existing bindings with the "foo-gpio" form (or worse, "foo-somethingelse"
-> can use the same internal interface as the drivers that use name plus
-> index. Do you see a problem using what I suggested for the combined
-> API:
 >
-> __gpiod_get(dev, propname, index); // use property name plus index
-> gpiod_get(dev, index); // use "gpios" plus index
-> gpiod_get_named(dev, "name"); use "name-gpios" with index 0
+> +------------------------------------------+------------+------------+
+> |                                          | 81febe58a8 | 478e86d7c8 |
+> +------------------------------------------+------------+------------+
+> | boot_successes                           | 10         | 0          |
+> | boot_failures                            | 5          | 10         |
+> | kernel_BUG_at_arch/x86/mm/physaddr.c     | 5          |            |
+> | invalid_opcode                           | 5          |            |
+> | EIP_is_at__phys_addr                     | 5          |            |
+> | Kernel_panic-not_syncing:Fatal_exception | 5          |            |
+> | backtrace:vm_mmap_pgoff                  | 5          |            |
+> | backtrace:SyS_mmap_pgoff                 | 5          |            |
+> | BUG:Int_CR2(null)                        | 0          | 10         |
+> +------------------------------------------+------------+------------+
+>
+> [    0.000000] BRK [0x025ee000, 0x025eefff] PGTABLE
+> [    0.000000] cma: dma_contiguous_reserve(limit 13ffe000)
+> [    0.000000] cma: dma_contiguous_reserve: reserving 31 MiB for global area
+> [    0.000000] BUG: Int 6: CR2   (null)
+> [    0.000000]      EDI c0000000  ESI   (null)  EBP 41c11ea4  EBX 425cc101
+> [    0.000000]      ESP 41c11e98   ES 0000007b   DS 0000007b
+> [    0.000000]      EDX 00000001  ECX   (null)  EAX 41cd8150
+> [    0.000000]      vec 00000006  err   (null)  EIP 41072227   CS 00000060  flg 00210002
+> [    0.000000] Stack: 425cc150   (null)   (null) 41c11ef4 41d4ee4d   (null) 13ffe000 41c11ec4
+> [    0.000000]        41c2d900   (null) 13ffe000   (null) 4185793e 0000002e 410c2982 41c11f00
+> [    0.000000]        410c2df5   (null)   (null)   (null) 425cc150 00013efe   (null) 41c11f28
+> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-next-20141008 #815
+> [    0.000000]  00000000 425cc101 41c11e48 41850786 41c11ea4 41d2b1db 41d95f71 00000006
+> [    0.000000]  00000000 c0000000 00000000 41c11ea4 425cc101 41c11e98 0000007b 0000007b
+> [    0.000000]  00000001 00000000 41cd8150 00000006 00000000 41072227 00000060 00210002
+> [    0.000000] Call Trace:
+> [    0.000000]  [<41850786>] dump_stack+0x16/0x18
+> [    0.000000]  [<41d2b1db>] early_idt_handler+0x6b/0x6b
+> [    0.000000]  [<41072227>] ? __phys_addr+0x2e/0xca
+> [    0.000000]  [<41d4ee4d>] cma_declare_contiguous+0x3c/0x2d7
+> [    0.000000]  [<4185793e>] ? _raw_spin_unlock_irqrestore+0x59/0x91
+> [    0.000000]  [<410c2982>] ? wake_up_klogd+0x8/0x33
+> [    0.000000]  [<410c2df5>] ? console_unlock+0x448/0x461
+> [    0.000000]  [<41d6d359>] dma_contiguous_reserve_area+0x27/0x47
+> [    0.000000]  [<41d6d4d1>] dma_contiguous_reserve+0x158/0x163
+> [    0.000000]  [<41d33e0f>] setup_arch+0x79b/0xc68
+> [    0.000000]  [<4184c0b4>] ? printk+0x1c/0x1e
+> [    0.000000]  [<41d2b7cf>] start_kernel+0x9c/0x456
+> [    0.000000]  [<41d2b2ca>] i386_start_kernel+0x79/0x7d
+>
 
-Apart from the loosy naming practices which we sometimes see (and
-which should be caught during review), do you have something against
-requiring a name for all new GPIO bindings, i.e. for ensuring that all
-new properties are "name-gpio" and forbidding "gpios"?
+I notice that code has been merged into mainline kernel without fix,
+maybe fengguang's mail was missed.
 
-Requiring a proper name for all GPIOs makes a lot of sense IMHO, it
-makes drivers easier to understand and is less error-prone than long
-arrays of GPIOs. The API would then be basically what we have today:
+I review the code, dma_contiguous_reserve() is called before initmem_init(),
+so the variable high_memory is not initialized and calculated by
+__pa(high_memory),
+in x86 arch high_memory is initialized after dma_contiguous_reserve(), while
+in arm arch high_memory is initialized before dma_contiguous_reserve(),
+I think that is the reason which causes the BUG in x86.
 
-gpiod_get(dev, name) // use "name-gpios" with index 0
-gpiod_get_index(dev, name, index) // for the rare case where several
-GPIOs serve the same function. Not to be used lightly.
+However, I'm not familiar with system init sequence, so I send this
+notice mail rather than a patch :-(
 
-... with stronger guidelines for the definition of new bindings, and a
-big warning in the kerneldoc of gpiod_get_index().
+cc more people
 
-ACPI drivers that may use tables without _DSD should then use a way to
-bind GPIO names to indexes as a fallback for older hardware.
+>
+> Thanks,
+> Fengguang
