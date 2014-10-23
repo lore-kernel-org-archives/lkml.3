@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaJWH2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 03:28:13 -0400
-Received: from mail2.tiolive.com ([94.23.229.207]:58648 "EHLO
-	mail2.tiolive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887AbaJWH2M (ORCPT
+	id S1752834AbaJWHaQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 03:30:16 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:37613 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442AbaJWHaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 03:28:12 -0400
-Date: Thu, 23 Oct 2014 11:28:10 +0400
-From: Kirill Smelkov <kirr@nexedi.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Ken Chen <kenchen@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH,RESEND] hugetlbfs: document that sticky mounts are allowed
-Message-ID: <20141023072810.GA15697@teco.navytux.spb.ru>
-References: <1409836833-4320-1-git-send-email-kirr@nexedi.com>
- <CABQzsv_9K0WrddMW60DkUbsv2B5BwLNFCES2TNvfVNaG-ym6YA@mail.gmail.com>
- <20141022155446.GA20240@teco.navytux.spb.ru>
- <20141022142826.109c27cc@lwn.net>
+	Thu, 23 Oct 2014 03:30:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141022142826.109c27cc@lwn.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141022155058.GN4939@x1>
+References: <1413991587-11110-1-git-send-email-romain.perier@gmail.com>
+	<CABgxDoKus_D=ooCz3TqyXP9CTJUgbZVxQSsw4ZgBx1oYaTefbw@mail.gmail.com>
+	<20141022155058.GN4939@x1>
+Date: Thu, 23 Oct 2014 09:30:12 +0200
+Message-ID: <CABgxDoJSLrAOMMA7=ZGd4F6z7_FkojCdjUNi52wbocZk7yJowQ@mail.gmail.com>
+Subject: Re: [PATCH v1 1/5] mfd: tps65910: Convert ti,system-power-controller
+ DT property to poweroff-source
+From: PERIER Romain <romain.perier@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>, robh+dt@kernel.org,
+        "pawel.moll" <pawel.moll@arm.com>, mark.rutland@arm.com,
+        "ijc+devicetree" <ijc+devicetree@hellion.org.uk>,
+        galak <galak@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        swarren <swarren@wwwdotorg.org>,
+        "thierry.reding" <thierry.reding@gmail.com>, gnurou <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 02:28:26PM -0400, Jonathan Corbet wrote:
-> On Wed, 22 Oct 2014 19:54:46 +0400
-> Kirill Smelkov <kirr@nexedi.com> wrote:
-> 
-> > Please apply the below patch documenting that hugetlbfs can be sticky-mounted.
-> 
-> It documents it in a rather obscure way...but, then, to be clear, that
-> document needs a lot of help in general.
+2014-10-22 17:50 GMT+02:00 Lee Jones <lee.jones@linaro.org>:
+> On Wed, 22 Oct 2014, PERIER Romain wrote:
+>
+>> This is related to the following subject "[RFC v3 PATCH 1/5] of: Add
+>> standard property for poweroff capability" and depends on the
+>> corresponding patch.
+>
+> Then it should be sent in the same patch-set.
+>
+> There's nothing I can do with this patch as is.
+>
 
-I agree the documentation is a bit obscure and it was not a proper fix,
-but "let's at least restore consistency between .txt & .c"
+Even if this patch is already commited and present in "linux-next" ?
+(or in Mark Brown's regulator tree)
 
-> Applied.  Redundant Cc tag removed.
-
-Thanks,
-Kirill
+Romain
