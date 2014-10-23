@@ -1,43 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153AbaJWCO7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 22:14:59 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48830 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932353AbaJWCO4 (ORCPT
+	id S1754512AbaJWCTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 22:19:54 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:56489 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaJWCTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 22:14:56 -0400
-Message-ID: <5448649D.7090403@kernel.dk>
-Date: Wed, 22 Oct 2014 20:14:53 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 22 Oct 2014 22:19:53 -0400
+Message-ID: <544865B8.1010405@huawei.com>
+Date: Thu, 23 Oct 2014 10:19:36 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: Re: linux-next: build warning after merge of the block tree
-References: <20141023122822.2c362904@canb.auug.org.au>
-In-Reply-To: <20141023122822.2c362904@canb.auug.org.au>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Ingo Molnar <mingo@redhat.com>
+CC: Namhyung Kim <namhyung@kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Li Zefan" <lizefan@huawei.com>
+Subject: Re: [PATCH] perf tools: ensure return negitive value when write header
+ error
+References: <1413428909-80017-1-git-send-email-wangnan0@huawei.com> <87siigeghv.fsf@sejong.aot.lge.com>
+In-Reply-To: <87siigeghv.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-10-22 19:28, Stephen Rothwell wrote:
-> Hi Jens,
->
-> After merging the block tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
->
-> block/scsi_ioctl.c: In function 'sg_scsi_ioctl':
-> block/scsi_ioctl.c:520:1: warning: label 'out' defined but not used [-Wunused-label]
->   out:
->   ^
+Hi Ingo,
 
-Fixed up, thanks.
+Could you please collect this patch which fixes a perf problem?
 
+Thanks.
 
--- 
-Jens Axboe
+On 2014/10/22 15:00, Namhyung Kim wrote:
+> On Thu, 16 Oct 2014 11:08:29 +0800, Wang Nan wrote:
+>> When 'perf record' write headers, it calls write_xxx in
+>> tools/perf/util/header.c, and check return value. It rolls back all
+>> working only when return value is negative.
+>>
+>> This patch ensures write_cpudesc() and write_total_mem() return negative number
+>> when error. Without this patch, headers reported by 'perf report' header is
+>> error in some platform. Following output is caputured on ARM, which doesn't
+>> contain "Processor" field in /proc/cpuinfo. See "cpudesc", "total memory" and
+>> "cmdline" field.
+>>
+>>    bash-4.2# perf record ls
+>>    ...
+>>    [ perf record: Woken up 1 times to write data ]
+>>    [ perf record: Captured and wrote 0.001 MB perf.data (~36 samples) ]
+>>    bash-4.2# perf report --stdio --header
+>>    Error:
+>>    The perf.data file has no samples!
+>>    # ========
+>>    # captured on: Fri Sep 12 10:09:10 2014
+>>    # hostname : arma15el
+>>    # os release : 3.17.0+
+>>    # perf version : 3.10.53
+>>    # arch : armv7l
+>>    # nrcpus online : 4
+>>    # nrcpus avail : 1
+>>    # cpudesc : (null)
+>>    # total memory : 0 kB
+>>    # cmdline :
+>>    # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, excl_host = 0, excl_guest = 1, precise_ip = 0
+>>    # pmu mappings: not available
+>>    # ========
+>>    #
+>>
+>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> 
+> I guess the total_memory, cmdline and pmu mappings are somehow affected
+> by the broken cpudesc.  Do they have their own problem on ARM?
+> 
+> Anyway I think it's good to check the result properly, so
+> 
+> Acked-by: Namhyung Kim <namhyung@kernel.org>
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+>> ---
+>>  tools/perf/util/header.c | 7 +++++--
+>>  1 file changed, 5 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+>> index ce0de00..39b80ac 100644
+>> --- a/tools/perf/util/header.c
+>> +++ b/tools/perf/util/header.c
+>> @@ -605,8 +605,10 @@ static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
+>>  			break;
+>>  	}
+>>  
+>> -	if (ret)
+>> +	if (ret) {
+>> +		ret = -1;
+>>  		goto done;
+>> +	}
+>>  
+>>  	s = buf;
+>>  
+>> @@ -950,7 +952,8 @@ static int write_total_mem(int fd, struct perf_header *h __maybe_unused,
+>>  		n = sscanf(buf, "%*s %"PRIu64, &mem);
+>>  		if (n == 1)
+>>  			ret = do_write(fd, &mem, sizeof(mem));
+>> -	}
+>> +	} else
+>> +		ret = -1;
+>>  	free(buf);
+>>  	fclose(fp);
+>>  	return ret;
+
 
