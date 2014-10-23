@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452AbaJWUgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 16:36:19 -0400
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:46805 "EHLO
-	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493AbaJWUgS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 16:36:18 -0400
+	id S1755291AbaJWUsN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 16:48:13 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:42719 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753265AbaJWUsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 16:48:11 -0400
+Date: Thu, 23 Oct 2014 13:44:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        htejun@gmail.com, oleg@redhat.com
+Subject: Re: rcu_preempt detected stalls.
+Message-ID: <20141023204418.GG4977@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141013173504.GA27955@redhat.com>
+ <20141023183232.GW4977@linux.vnet.ibm.com>
+ <20141023184018.GA12274@redhat.com>
+ <20141023192807.GY4977@linux.vnet.ibm.com>
+ <20141023193759.GA14188@redhat.com>
+ <20141023195221.GA4977@linux.vnet.ibm.com>
+ <20141023202816.GA17561@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1414068740-9553-2-git-send-email-gioh.kim@lge.com>
-References: <1414068740-9553-1-git-send-email-gioh.kim@lge.com>
-	<1414068740-9553-2-git-send-email-gioh.kim@lge.com>
-Date: Fri, 24 Oct 2014 02:06:17 +0530
-Message-ID: <CAOFgiypyxykRPpYn7dAXnnDHhCR-MwRnNT46BdwS28TKobnxuw@mail.gmail.com>
-Subject: Re: [RFC 1/2] staging: ion: shrink page-pool by page unit
-From: Devendra Naga <devendranaga4@gmail.com>
-To: Gioh Kim <gioh.kim@lge.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        gunho.lee@lge.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023202816.GA17561@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102320-0029-0000-0000-000000DC9EA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Oct 23, 2014 at 04:28:16PM -0400, Dave Jones wrote:
+> On Thu, Oct 23, 2014 at 12:52:21PM -0700, Paul E. McKenney wrote:
+>  > On Thu, Oct 23, 2014 at 03:37:59PM -0400, Dave Jones wrote:
+>  > > On Thu, Oct 23, 2014 at 12:28:07PM -0700, Paul E. McKenney wrote:
+>  > > 
+>  > >  > >  > This one will require more looking.  But did you do something like
+>  > >  > >  > create a pair of mutually recursive symlinks or something?  ;-)
+>  > >  > > 
+>  > >  > > I'm not 100% sure, but this may have been on a box that I was running
+>  > >  > > tests on NFS. So maybe the server had disappeared with the mount
+>  > >  > > still active..
+>  > >  > > 
+>  > >  > > Just a guess tbh.
+>  > >  > 
+>  > >  > Another possibility might be that the box was so overloaded that tasks
+>  > >  > were getting preempted for 21 seconds as a matter of course, and sometimes
+>  > >  > within RCU read-side critical sections.  Or did the box have ample idle
+>  > >  > time?
+>  > > 
+>  > > I fairly recently upped the number of child processes I typically run
+>  > > with, so it being overloaded does sound highly likely.
+>  > 
+>  > Ah, that could do it!  One way to test extreme loads and not trigger
+>  > RCU CPU stall warnings might be to make all of your child processes all
+>  > sleep during a given interval of a few hundred milliseconds during each
+>  > ten-second interval.  Would that work for you?
+> 
+> This feels like hiding from the problem rather than fixing it.
+> I'm not sure it even makes sense to add sleeps to the fuzzer, other than
+> to slow things down, and if I were to do that, I may as well just run
+> it with fewer threads instead.
 
-On Thu, Oct 23, 2014 at 6:22 PM, Gioh Kim <gioh.kim@lge.com> wrote:
-> This patch shrink page-pool by page unit.
->
-> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> ---
->  drivers/staging/android/ion/ion_page_pool.c   |    5 +++--
->  drivers/staging/android/ion/ion_system_heap.c |    7 +++++--
->  2 files changed, 8 insertions(+), 4 deletions(-)
+I was thinking of the RCU CPU stall warnings that were strictly due to
+overload as being false positives.  If trinity caused a kthread to loop
+within an RCU read-side critical section, you would still get the RCU
+CPU stall warning even with the sleeps.
 
->
+But just a suggestion, no strong feelings.  Might change if there is an
+excess of false-positive RCU CPU stall warnings, of course.  ;-)
 
---- cut --
+> While the fuzzer is doing pretty crazy stuff, what's different about it
+> from any other application that overcommits the CPU with too many threads?
 
-> diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-> index da2a63c..36e73c3 100644
-> --- a/drivers/staging/android/ion/ion_system_heap.c
-> +++ b/drivers/staging/android/ion/ion_system_heap.c
-> @@ -211,7 +211,7 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
->                                         int nr_to_scan)
->  {
->         struct ion_system_heap *sys_heap;
-> -       int nr_total = 0;
-> +       int nr_total = 0, nr_freed;
->         int i;
->
->         sys_heap = container_of(heap, struct ion_system_heap, heap);
-> @@ -219,7 +219,10 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
->         for (i = 0; i < num_orders; i++) {
->                 struct ion_page_pool *pool = sys_heap->pools[i];
->
-> -               nr_total += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
-> +               nr_freed += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
+The (presumably) much higher probability of being preempted in the kernel,
+and thus within an RCU read-side critical section.
 
-nr_freed is not initialised to zero. This might result in updating of
-a garbage value stored initially after nr_freed is created.
+> We impose rlimits to stop people from forkbombing and the like, but this
+> doesn't even need that many processes to trigger, and with some effort
+> could probably done with even fewer if I found ways to keep other cores
+> busy in the kernel for long enough.
+> 
+> That all said, I don't have easy reproducers for this right now, due
+> to other bugs manifesting long before this gets to be a problem.
 
-> +               nr_total += nr_freed;
-> +               /* nr_to_scan can be negative */
-> +               nr_to_scan -= nr_freed;
->         }
->
->         return nr_total;
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Fair enough!  ;-)
+
+							Thanx, Paul
+
