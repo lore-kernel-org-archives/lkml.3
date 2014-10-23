@@ -1,226 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaJWH0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 03:26:08 -0400
-Received: from mga03.intel.com ([134.134.136.65]:61838 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752057AbaJWH0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 03:26:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
-   d="scan'208";a="623793352"
-From: "Chang, Rebecca Swee Fun" <rebecca.swee.fun.chang@intel.com>
-To: "'Alexandre Courbot'" <gnurou@gmail.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Denis Turischev <denis.turischev@compulab.co.il>
-Subject: RE: [PATCHv3 1/3] gpio: sch: Consolidate similar algorithms
-Thread-Topic: [PATCHv3 1/3] gpio: sch: Consolidate similar algorithms
-Thread-Index: AQHP6eZ7JeEtgf7yJkGiy9DuNcKC1Zw9TTGA
-Date: Thu, 23 Oct 2014 07:23:25 +0000
-Message-ID: <50B33AC5ED75F74F991980326F1C438D0FC00913@PGSMSX108.gar.corp.intel.com>
-References: <1413431475-12799-1-git-send-email-rebecca.swee.fun.chang@intel.com>
- <1413431475-12799-2-git-send-email-rebecca.swee.fun.chang@intel.com>
- <CAAVeFuKVH4R0r1mdxgNRJY=D9hVSyO7NQ5eCOn4qcYMz6+vR3w@mail.gmail.com>
-In-Reply-To: <CAAVeFuKVH4R0r1mdxgNRJY=D9hVSyO7NQ5eCOn4qcYMz6+vR3w@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="utf-8"
+	id S1752756AbaJWH0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 03:26:41 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:28099 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658AbaJWH0j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 03:26:39 -0400
+Message-ID: <5448AD9A.7060300@hp.com>
+Date: Thu, 23 Oct 2014 15:26:18 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Takao Indoh <indou.takao@jp.fujitsu.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linda.knippers@hp.com, jerry.hoemann@hp.com, lisa.mitchell@hp.com,
+        alexander.duyck@gmail.com, rwright@hp.com,
+        Joerg Roedel <joro@8bytes.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Tom Vaden <tom.vaden@hp.com>, David Woodhouse <dwmw2@infradead.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>
+Subject: Re: [PATCH 1/1] pci: fix dmar fault for kdump kernel
+References: <1412925191-27970-1-git-send-email-zhen-hual@hp.com> <543CEE32.50109@hp.com> <543E2CD5.60708@jp.fujitsu.com> <CAErSpo4isVMeBipp3TngVtZ2CmeQva-6RSHgS8O4C9M+p1ua=Q@mail.gmail.com>
+In-Reply-To: <CAErSpo4isVMeBipp3TngVtZ2CmeQva-6RSHgS8O4C9M+p1ua=Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9N7QEr2013650
 
-Thanks for the review comments. Please check my reply below.
+On 10/22/2014 10:47 AM, Bjorn Helgaas wrote:
+> [+cc Joerg, Eric, Tom, David, iommu list]
+>
+> On Wed, Oct 15, 2014 at 2:14 AM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+>> (2014/10/14 18:34), Li, ZhenHua wrote:
+>>> I tested on the latest stable version 3.17, it works well.
+>>>
+>>> On 10/10/2014 03:13 PM, Li, Zhen-Hua wrote:
+>>>> On a HP system with Intel vt-d supported and many PCI devices on it,
+>>>> when kernel crashed and the kdump kernel boots with intel_iommu=on,
+>>>> there may be some unexpected DMA requests on this adapter, which will
+>>>> cause DMA Remapping faults like:
+>>>>       dmar: DRHD: handling fault status reg 102
+>>>>       dmar: DMAR:[DMA Read] Request device [41:00.0] fault addr fff81000
+>>>>       DMAR:[fault reason 01] Present bit in root entry is clear
+>>>>
+>>>> This bug may happen on *any* PCI device.
+>>>> Analysis for this bug:
+>>>>
+>>>> The present bit is set in this function:
+>>>>
+>>>> static struct context_entry * device_to_context_entry(
+>>>>                   struct intel_iommu *iommu, u8 bus, u8 devfn)
+>>>> {
+>>>>       ......
+>>>>                   set_root_present(root);
+>>>>       ......
+>>>> }
+>>>>
+>>>> Calling tree:
+>>>>       device driver
+>>>>           intel_alloc_coherent
+>>>>               __intel_map_single
+>>>>                   domain_context_mapping
+>>>>                       domain_context_mapping_one
+>>>>                           device_to_context_entry
+>>>>
+>>>> This means, the present bit in root entry will not be set until the device
+>>>> driver is loaded.
+>>>>
+>>>> But in the kdump kernel, hardware devices are not aware that control has
+>>>> transferred to the second kernel, and those drivers must initialize again.
+>>>> Consequently there may be unexpected DMA requests from devices activity
+>>>> initiated in the first kernel leading to the DMA Remapping errors in the
+>>>> second kernel.
+>>>>
+>>>> To fix this DMAR fault, we need to reset the bus that this device on. Reset
+>>>> the device itself does not work.
+>
+> You have not explained why the DMAR faults are a problem.  The fault
+> is just an indication that the IOMMU prevented a DMA from completing.
+> If the DMA is an artifact of the crashed kernel, we probably don't
+> *want* it to complete, so taking a DMAR fault seems like exactly the
+> right thing.
+>
+> If the problem is that we're being flooded with messages, it's easy
+> enough to just tone down the printks.
+>
+>>>> A patch for this bug that has been sent before:
+>>>> https://lkml.org/lkml/2014/9/30/55
+>>>> As in discussion, this bug may happen on *any* device, so we need to reset all
+>>>> pci devices.
+>>>>
+>>>> There was an original version(Takao Indoh) that resets the pcie devices:
+>>>> https://lkml.org/lkml/2013/5/14/9
+>>
+>> As far as I can remember, the original patch was nacked by
+>> the following reasons:
+>>
+>> 1) On sparc, the IOMMU is initialized before PCI devices are enumerated,
+>>     so there would still be a window where ongoing DMA could cause an
+>>     IOMMU error.
+>>
+>> 2) Basically Bjorn is thinking device reset should be done in the
+>>     1st kernel before jumping into 2nd kernel.
+>
+> If you're referring to this: https://lkml.org/lkml/2013/6/12/16, what
+> I said was "It would be at least conceivable to reset the devices ...
+> before the kexec."  That's not a requirement to do it in the first
+> kernel, just an idea that I thought should be investigated.  And Eric
+> has good reasons for *not* doing the reset in the first kernel, so it
+> turned out not to be a very good idea.
+>
+> My fundamental problem with this whole reset thing is that it's a
+> sledgehammer approach and it's ugly.  Using the IOMMU seems like a
+> much more elegant approach.
+>
+> So if we are forced to accept the reset solution, I want to at least
+> have a concise explanation of why we can't use the IOMMU.
+>
+In my understanding, the reset is necessary, because no one knows if
+there are any other problems if the devices are not reset in the kdump
+kernel.  OS must boot with the devices in a clean state.
 
-> -----Original Message-----
-> From: Alexandre Courbot [mailto:gnurou@gmail.com]
-> Sent: 17 October, 2014 4:44 PM
-> To: Chang, Rebecca Swee Fun
-> Cc: Linus Walleij; Westerberg, Mika; GPIO Subsystem Mailing List; Linux Kernel
-> Mailing List; Denis Turischev
-> Subject: Re: [PATCHv3 1/3] gpio: sch: Consolidate similar algorithms
-> 
-> On Thu, Oct 16, 2014 at 12:51 PM, Chang Rebecca Swee Fun
-> <rebecca.swee.fun.chang@intel.com> wrote:
-> > Consolidating similar algorithms into common functions to make GPIO
-> > SCH simpler and manageable.
-> >
-> > Signed-off-by: Chang Rebecca Swee Fun
-> > <rebecca.swee.fun.chang@intel.com>
-> > ---
-> >  drivers/gpio/gpio-sch.c |   95 ++++++++++++++++++++++++++--------------------
-> -
-> >  1 file changed, 53 insertions(+), 42 deletions(-)
-> >
-> > diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c index
-> > 99720c8..6e89be9 100644
-> > --- a/drivers/gpio/gpio-sch.c
-> > +++ b/drivers/gpio/gpio-sch.c
-> > @@ -63,94 +63,105 @@ static unsigned sch_gpio_bit(struct sch_gpio *sch,
-> unsigned gpio)
-> >         return gpio % 8;
-> >  }
-> >
-> > -static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio)
-> > +static void sch_gpio_register_set(struct sch_gpio *sch, unsigned gpio,
-> > +                                 unsigned reg)
-> >  {
-> >         unsigned short offset, bit;
-> >         u8 enable;
-> >
-> >         spin_lock(&sch->lock);
-> 
-> ...
-> 
-> >
-> > -       offset = sch_gpio_offset(sch, gpio, GEN);
-> > +       offset = sch_gpio_offset(sch, gpio, reg);
-> >         bit = sch_gpio_bit(sch, gpio);
-> >
-> >         enable = inb(sch->iobase + offset);
-> 
-> I see identical blocks of code in sch_gpio_register_clear(),
-> sch_gpio_reg_get() and sch_gpio_reg_set() (and possibly other functions?).
-> Maybe this could be factorized into an inline function that would return the
-> "enable" variable?
-> 
-> Also, "enable" looks like the wrong name here. The exact same result is later
-> called "disable" and "curr_dirs" later.
+But this will not prevent us from using Bill's iommu patch. I think the
+most important part for Bill's patch is to dump the data, not to fix
+the dmar faults, though it also fixed that.
 
-Referring to your comments below, this will be get rid of after the sch_gpio_register_set() and sch_gpio_register_clear() being replaced by sch_gpio_reg_set(gc, gpio, reg, 1) and sch_gpio_reg_set(gc, gpio, reg, 0).
-There will be less identical block of "offset", "bit", and "enable" nor "disable". So there is no need to factorize the identical blocks into inline function.
+Zhenhua
+> The changelog above is perfectly accurate, but it's really not very
+> useful because it only explains the code without exploring any of the
+> interesting issues.
+>
+> Bjorn
+>
+>> And Bill Sumner proposed another idea.
+>> http://comments.gmane.org/gmane.linux.kernel.iommu/4828
+>> I don't know the current status of this patch, but I think Jerry Hoemann
+>> is working on this.
+>>
+>> Thanks,
+>> Takao Indoh
+>>
+>>
 
-> 
-> > -       if (!(enable & (1 << bit)))
-> > -               outb(enable | (1 << bit), sch->iobase + offset);
-> > +       if (!(enable & BIT(bit)))
-> > +               outb(enable | BIT(bit), sch->iobase + offset);
-> >
-> >         spin_unlock(&sch->lock);
-> >  }
-> >
-> > -static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned
-> > gpio_num)
-> > +static void sch_gpio_register_clear(struct sch_gpio *sch, unsigned gpio,
-> > +                                   unsigned reg)
-> >  {
-> > -       struct sch_gpio *sch = to_sch_gpio(gc);
-> > -       u8 curr_dirs;
-> >         unsigned short offset, bit;
-> > +       u8 disable;
-> >
-> >         spin_lock(&sch->lock);
-> >
-> > -       offset = sch_gpio_offset(sch, gpio_num, GIO);
-> > -       bit = sch_gpio_bit(sch, gpio_num);
-> > -
-> > -       curr_dirs = inb(sch->iobase + offset);
-> > +       offset = sch_gpio_offset(sch, gpio, reg);
-> > +       bit = sch_gpio_bit(sch, gpio);
-> >
-> > -       if (!(curr_dirs & (1 << bit)))
-> > -               outb(curr_dirs | (1 << bit), sch->iobase + offset);
-> > +       disable = inb(sch->iobase + offset);
-> > +       if (disable & BIT(bit))
-> > +               outb(disable & ~BIT(bit), sch->iobase + offset);
-> >
-> >         spin_unlock(&sch->lock);
-> > -       return 0;
-> >  }
-> >
-> > -static int sch_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
-> > +static int sch_gpio_reg_get(struct gpio_chip *gc, unsigned gpio,
-> > +unsigned reg)
-> >  {
-> >         struct sch_gpio *sch = to_sch_gpio(gc);
-> > -       int res;
-> >         unsigned short offset, bit;
-> > +       u8 curr_dirs;
-> >
-> > -       offset = sch_gpio_offset(sch, gpio_num, GLV);
-> > -       bit = sch_gpio_bit(sch, gpio_num);
-> > +       offset = sch_gpio_offset(sch, gpio, reg);
-> > +       bit = sch_gpio_bit(sch, gpio);
-> >
-> > -       res = !!(inb(sch->iobase + offset) & (1 << bit));
-> > +       curr_dirs = !!(inb(sch->iobase + offset) & BIT(bit));
-> >
-> > -       return res;
-> > +       return curr_dirs;
-> >  }
-> >
-> > -static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int
-> > val)
-> > +static void sch_gpio_reg_set(struct gpio_chip *gc, unsigned gpio, unsigned
-> reg,
-> > +                            int val)
-> >  {
-> >         struct sch_gpio *sch = to_sch_gpio(gc);
-> > -       u8 curr_vals;
-> >         unsigned short offset, bit;
-> > +       u8 curr_dirs;
-> >
-> > -       spin_lock(&sch->lock);
-> > -
-> > -       offset = sch_gpio_offset(sch, gpio_num, GLV);
-> > -       bit = sch_gpio_bit(sch, gpio_num);
-> > +       offset = sch_gpio_offset(sch, gpio, reg);
-> > +       bit = sch_gpio_bit(sch, gpio);
-> >
-> > -       curr_vals = inb(sch->iobase + offset);
-> > +       curr_dirs = inb(sch->iobase + offset);
-> >
-> >         if (val)
-> > -               outb(curr_vals | (1 << bit), sch->iobase + offset);
-> > +               outb(curr_dirs | BIT(bit), sch->iobase + offset);
-> >         else
-> > -               outb((curr_vals & ~(1 << bit)), sch->iobase + offset);
-> > +               outb((curr_dirs & ~BIT(bit)), sch->iobase + offset); }
-> 
-> Mmmm this really looks like sch_gpio_register_set() and
-> sch_gpio_register_clear() could just call sch_gpio_reg_set() right after
-> acquiring the spinlock. Also the names are very similar and it is not clear why
-> you need two different functions here. Couldn't you call sch_gpio_reg_set(gc,
-> gpio, reg, 1) in place of
-> sch_gpio_register_set() and sch_gpio_reg_set(gc, gpio, reg, 0) for
-> sch_gpio_register_clear()? You may need to acquire the spinlock before some
-> call sites, but that's preferable to having very similar functions bearing a very
-> similar name IMHO.
-
-Thanks for pointing that out. I think I can replaced all sch_gpio_register_set() and sch_gpio_register_clear() with sch_gpio_reg_set(gc, gpio, reg, 0/1).
-Regarding the spinlock, in fact, I have tested using the GPIO driver through sysfs. I didn't encounter any deadlock issue, but the double locking is really an issue.
-This double lock problem can also be fix by calling sch_gpio_reg_set(gc, gpio, reg, 0/1) in place of sch_gpio_register_set() and sch_gpio_register_clear().
-
-> 
-> >
-> > +static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned
-> > +gpio_num) {
-> > +       struct sch_gpio *sch = to_sch_gpio(gc);
-> > +
-> > +       spin_lock(&sch->lock);
-> > +       sch_gpio_register_set(sch, gpio_num, GIO);
-> 
-> So here you are acquiring sch->lock, then calling
-> sch_gpio_register_set() which will try to acquire the same spinlock first thing.
-> Wouldn't that deadlock? Have you tested changing the direction of a GPIO? This
-> again speaks in favor or reducing the number of similar functions in this file.
-> 
-> Unless I misunderstood something there are still some issues that make this file
-> harder to understand than it should, and which can sometimes bork the system
-> altogether. It is a good idea to cleanup this file, but please try to go one step
-> further - this should simplify locking and ultimately get rid of the locking issues.
-> 
-> And hopefully I will also take less time to review v4. :P
-
-Thanks for the review. I will take note on the locking part and resend later or next week. Appreciate your review comments. Thank you!
-
-Rebecca
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
