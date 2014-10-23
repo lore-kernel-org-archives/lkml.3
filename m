@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013AbaJWKHc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:07:32 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:58447 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865AbaJWKH1 (ORCPT
+	id S1753056AbaJWKLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:11:42 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:30191 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750799AbaJWKLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:07:27 -0400
-Date: Thu, 23 Oct 2014 15:37:14 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/2] usb: dwc2: gadget: sparse warning of context
- imbalance
-Message-ID: <20141023100714.GA2386@sudip-PC>
-References: <1413521043-7587-1-git-send-email-sudipm.mukherjee@gmail.com>
- <A2CA0424C0A6F04399FB9E1CD98E0304844E345C@US01WEMBX2.internal.synopsys.com>
- <20141017185209.GY26260@saruman>
- <A2CA0424C0A6F04399FB9E1CD98E0304844E34A6@US01WEMBX2.internal.synopsys.com>
+	Thu, 23 Oct 2014 06:11:40 -0400
+X-IronPort-AV: E=Sophos;i="5.04,774,1406563200"; 
+   d="scan'208";a="37816269"
+Message-ID: <5448D515.90006@cn.fujitsu.com>
+Date: Thu, 23 Oct 2014 18:14:45 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844E34A6@US01WEMBX2.internal.synopsys.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <torvalds@linux-foundation.org>, <paulmck@linux.vnet.ibm.com>,
+        <tglx@linutronix.de>, <akpm@linux-foundation.org>, <riel@redhat.com>,
+        <mgorman@suse.de>, <oleg@redhat.com>, <mingo@redhat.com>,
+        <minchan@kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <viro@zeniv.linux.org.uk>, <dave@stgolabs.net>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [RFC][PATCH 4/6] SRCU free VMAs
+References: <20141020215633.717315139@infradead.org> <20141020222841.419869904@infradead.org>
+In-Reply-To: <20141020222841.419869904@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 07:05:19PM +0000, Paul Zimmerman wrote:
-> > From: Felipe Balbi [mailto:balbi@ti.com]
-> > Sent: Friday, October 17, 2014 11:52 AM
-> > 
-> > On Fri, Oct 17, 2014 at 06:50:19PM +0000, Paul Zimmerman wrote:
-> > > > From: Sudip Mukherjee [mailto:sudipm.mukherjee@gmail.com]
-> > > > Sent: Thursday, October 16, 2014 9:44 PM
-> > > >
-> > > > sparse was giving the following warning:
-> > > >         warning: context imbalance in 's3c_hsotg_ep_enable'
-> > > > 	                - different lock contexts for basic block
-> > > >
-> > > > we were returning ENOMEM while still holding the spinlock.
-> > > > The sparse warning was fixed by releasing the spinlock before return.
-> > > >
-> > > > Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> > > > ---
-> > > >  drivers/usb/dwc2/gadget.c | 7 +++++--
-> > > >  1 file changed, 5 insertions(+), 2 deletions(-)
-> > > >
-> > > > diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-> > > > index 7b5856f..7f25527 100644
-> > > > --- a/drivers/usb/dwc2/gadget.c
-> > > > +++ b/drivers/usb/dwc2/gadget.c
-> > > > @@ -2561,8 +2561,10 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
-> > > >  			hs_ep->fifo_size = val;
-> > > >  			break;
-> > > >  		}
-> > > > -		if (i == 8)
-> > > > -			return -ENOMEM;
-> > > > +		if (i == 8) {
-> > > > +			ret = -ENOMEM;
-> > > > +			goto error;
-> > > > +		}
-> > > >  	}
-> > > >
-> > > >  	/* for non control endpoints, set PID to D0 */
-> > > > @@ -2579,6 +2581,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
-> > > >  	/* enable the endpoint interrupt */
-> > > >  	s3c_hsotg_ctrl_epint(hsotg, index, dir_in, 1);
-> > > >
-> > > > +error:
-> > > >  	spin_unlock_irqrestore(&hsotg->lock, flags);
-> > > >  	return ret;
-> > > >  }
-> > >
-> > > Acked-by: Paul Zimmerman <paulz@synopsys.com>
-> > 
-> > v3.18-rc or v3.19 ?
-> 
-> v3.18-rc, since it's a bugfix. And I forgot, this should be marked for
-> 3.17 stable too.
-> 
-hi,
-this is not yet added to linux-next , is something pending from my side?
 
-thanks
-sudip
+>  
+> +struct vm_area_struct *find_vma_srcu(struct mm_struct *mm, unsigned long addr)
+> +{
+> +	struct vm_area_struct *vma;
+> +	unsigned int seq;
+> +
+> +	WARN_ON_ONCE(!srcu_read_lock_held(&vma_srcu));
+> +
+> +	do {
+> +		seq = read_seqbegin(&mm->mm_seq);
+> +		vma = __find_vma(mm, addr);
 
+will the __find_vma() loops for ever due to the rotations in the RBtree?
 
-> -- 
-> Paul
-> 
+> +	} while (read_seqretry(&mm->mm_seq, seq));
+> +
+> +	return vma;
+> +}
