@@ -1,136 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaJWMo3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:44:29 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:52544 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389AbaJWMo1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:44:27 -0400
+	id S1755545AbaJWMsC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:48:02 -0400
+Received: from ozlabs.org ([103.22.144.67]:52309 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755323AbaJWMr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 08:47:59 -0400
+Date: Thu, 23 Oct 2014 23:47:50 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Oct 23
+Message-ID: <20141023234750.012b1f56@canb.auug.org.au>
+In-Reply-To: <20141023152129.28558ddf@canb.auug.org.au>
+References: <20141023152129.28558ddf@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=UhdHHYqaF=Nprr2Lz2b4w7guuBquBdBrB82BmYhGC0=Q@mail.gmail.com>
-References: <1413304389-6580-1-git-send-email-dianders@chromium.org>
- <CAGOxZ507j5QjnT_hW2y0KPZsw6WDJWRPLdesTBm4+C8D2EznWw@mail.gmail.com>
- <CAD=FV=X+q2ymbB0EZkjj_tip9_PLdFV+Tfee+MkeUDSfD3E-ig@mail.gmail.com>
- <CAGOxZ51x8cd9XmNg49aaUdZQkw-hhEA-mC=34ZSjLf0XF8Zbvw@mail.gmail.com>
- <54448023.1050008@samsung.com> <CAD=FV=UhdHHYqaF=Nprr2Lz2b4w7guuBquBdBrB82BmYhGC0=Q@mail.gmail.com>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Thu, 23 Oct 2014 18:13:45 +0530
-Message-ID: <CAGOxZ53QH+XhUJcAk7oDK4cEMp4sOWcsTbJzrvggOC55LBaz2A@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Remove old card detect infrastructure
-To: Doug Anderson <dianders@chromium.org>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>, Addy Ke <addy.ke@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/PDxh8CfcSyxr84x.ri8CDFf"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+--Sig_/PDxh8CfcSyxr84x.ri8CDFf
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Oct 22, 2014 at 10:06 PM, Doug Anderson <dianders@chromium.org> wrote:
-> Hi,
->
-> On Sun, Oct 19, 2014 at 8:23 PM, Jaehoon Chung <jh80.chung@samsung.com> wrote:
->> Hi.
->>
->> On 10/17/2014 09:44 PM, Alim Akhtar wrote:
->>> Hi Doug,
->>>
->>> On Thu, Oct 16, 2014 at 9:40 PM, Doug Anderson <dianders@chromium.org> wrote:
->>>> Alim,
->>>>
->>>> On Thu, Oct 16, 2014 at 5:57 AM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
->>>>> Hi Doug,
->>>>>
->>>>> On Tue, Oct 14, 2014 at 10:03 PM, Doug Anderson <dianders@chromium.org> wrote:
->>>>>> The dw_mmc driver had a bunch of code that ran whenever a card was
->>>>>> ejected and inserted.  However, this code was old and crufty and
->>>>>> should be removed.  Some evidence that it's really not needed:
->>>>>>
->>>>>> 1. Is is supposed to be legal to use 'cd-gpio' on dw_mmc instead of
->>>>>>    using the built-in card detect mechanism.  The 'cd-gpio' code
->>>>>>    doesn't run any of the crufty old code but yet still works.
->>>>>>
->>>>>> 2. While looking at this, I realized that my old change (369ac86 mmc:
->>>>>>    dw_mmc: don't queue up a card detect at slot startup) actually
->>>>>>    castrated the old code a little bit already and nobody noticed.
->>>>>>    Specifically "last_detect_state" was left as 0 at bootup.  That
->>>>>>    means that on the first card removal none of the crufty code ran.
->>>>>>
->>>>> Yes, right most of these codes are _almost_ never call. But I see
->>>>> dw_mci_reset() being called on card removal (after first
->>>>> insert/removal).
->>>>
->>>> Right.  The old crufty code was called on the 2nd removal, not the
->>>> 1st.  That meant that the two were accidentally different.  My point
->>>> was that if the old code was really required that someone would have
->>>> noticed crashes on the 1st removal after each boot.  Since nobody is
->>>> reporting crashes with that then it means it can't be too terrible.
->>>>
->>>> One thing to note: I remember in the last Chromebook project you were
->>>> trying to track down crashes associated with constant eject / insert
->>>> of SD Cards.  I wonder if my patch will fix these crashes?
->>>>
->>> Ah, yes, reproducing that and checking with this patch will be really
->>> interesting.
->>>
->>>>
->>>>> I tested this on exynos5800 and this looks working fine. We need to
->>>>> test once cross suspend/resume as well.
->>>>
->>>> Good idea.  Can you test that?  I know that there's been lots of flux
->>>> with suspend/resume on exynos and I'm not sure I have all the latest
->>>> patches, but I'll search for them if you are unable to test easily.
->>>>
->>> Sure, I will do that..but probably sometime next week, as I will out
->>> of office for few days.
->>>>
->>>>> And as Jaehoon pointed out,probably lets look in TRM if there are some
->>>>> recommended  steps for cd-detect.
->>>>> Otherwise this looks good to me.
->>>>
->>>> If you see some other requirement than the one I addressed in my email
->>>> to Jaehoon, please let me know.
->>
->> I know there is no other requirement for detecting card.
->> So this patch can be applied after testing the above case(suspend/resume).
->
-> I put a kernel based upon 3.17 on an exynos5250-snow (specifically
-> git://git.collabora.co.uk/git/user/javier/linux.git branch
-> max77802-op-modes-v3, git hash 98cf5a0).  Snow uses the builtin card
-> detect on dw_mmc.  Resume wasn't terribly reliable to start with even
-> without my patch (it often woke up right after suspend), but it worked
-> well enough for testing.  I tested the following scenarios:
->
-> 1. Leave card in and mounted.  Suspend/resume.  Card is still usable
-> after resume
->
-> 2. Suspend and insert card.  Resume.  Card is detected upon resume.
->
-> 3. Suspend and remove card.  Resume.  Card is removed upon resume.
->
-> How does that sound?
->
-Sounds good to me.
-I tested this on Peach-Pi with v3.17 based kernel across suspend
-resume and cards works fine.
-Even I back-ported this to chromium 3.8 and tested on peach-pi, no
-issue over a hundred s2r cycles.
+Hi all,
 
-Tested-by: alim.akhtar <alim.akhtar@samsung.com>
-> -Doug
+I neglected to mention that there will be no linux-next tomorrow.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/PDxh8CfcSyxr84x.ri8CDFf
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
--- 
-Regards,
-Alim
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUSPj7AAoJEMDTa8Ir7ZwVZ2wP/3JtcxN7tGaojUihFj6cQRQq
+Q+R186u9AQ0pHHHnz1Bh59U/n+b/bseMkjoVayQdMGuGTX3kbRzwHAGJii3YA+cL
+UC+b2I6SbzAq3t0yQuecFYYpCrUzQBC83hrYEMEjFoIGNxyIAaTIaKiOWKYjsf+1
+3pQ1BAIMe2Traxl9AyCy4Pw0w/Y7GIYxSo4uEUQJ2UsNU6Q4vj9ninwE9RoPN7K2
+npmiOqBwK4q6NU8xPKjDJJx87ONVo2b4ChMXFi0xfDT/B2VybEqDHBN4wqhIMtdc
+VfQzJIAufHN7U2/0oncGqrbkgmyCDQBLqfRhvT0s907v0h+I9OwcjLcMQVtbPKZg
+L6SDJuWR1DKGLArSb3+Kf17UxW6Oa4MmLoiCsrfOvSOjDuWyPPAUE60o5VpLxHzv
+TvHMvjrzpbZInHZFSru+nwtBxCkdwsVuJUnX9MpiCTmKTUUS5b4a9x195FFJFx/y
+13WUNRgpaDT9VOE5ZwoCiWFQTHml2FT+MMksp0+Fl83iW8bDN7JNyCv46WJFjIT9
+eBr6BLAdn4vLjmMd0Ud5dq7oXuOHO1jOeQIUPaVv49QF/Ra72cfiH71vneeUcBxK
+4rDcbvHCwB5B7UZH7fBaeTE+Xg3mrG4n3mDZIt18Pw4epx1ey+KU+98xztgPr3k7
+45KcT5Y2IcVfmzdhm8iO
+=3uoX
+-----END PGP SIGNATURE-----
+
+--Sig_/PDxh8CfcSyxr84x.ri8CDFf--
