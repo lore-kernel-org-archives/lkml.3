@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498AbaJWMZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:25:46 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:62044 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932396AbaJWMZl (ORCPT
+	id S1755407AbaJWM2U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:28:20 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:59055 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168AbaJWM2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:25:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141022174544.GA4250@dtor-ws>
-References: <1413882808-4669-1-git-send-email-jinkun.hong@rock-chips.com>
-	<1413882808-4669-2-git-send-email-jinkun.hong@rock-chips.com>
-	<20141021195854.GE8609@dtor-ws>
-	<544725C4.4040703@rock-chips.com>
-	<CAPDyKFp+aNJd_FEY6=-ubK0zvVDWh+x5ZsVG+AVpuBzpSqynOQ@mail.gmail.com>
-	<20141022174544.GA4250@dtor-ws>
-Date: Thu, 23 Oct 2014 14:25:40 +0200
-Message-ID: <CAPDyKFoimakHLdonJ5-NuCpNceU+s4ie8a5n9sLiMCrwrhWcfA@mail.gmail.com>
-Subject: Re: [PATCH v5 1/3] power-domain: add power domain drivers for
- Rockchip platform
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Hong jinkun <jinkun.hong@rock-chips.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
-        Jack Dai <jack.dai@rock-chips.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 23 Oct 2014 08:28:16 -0400
+Date: Thu, 23 Oct 2014 14:28:08 +0200
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC v3 09/16] virtio: set FEATURES_OK
+Message-ID: <20141023142808.377551d8.cornelia.huck@de.ibm.com>
+In-Reply-To: <1414003404-505-10-git-send-email-mst@redhat.com>
+References: <1414003404-505-1-git-send-email-mst@redhat.com>
+	<1414003404-505-10-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102312-0021-0000-0000-000001836EF0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 October 2014 19:45, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> On Wed, Oct 22, 2014 at 09:58:34AM +0200, Ulf Hansson wrote:
->>
->> Using the devm_*API is supposed to work from here. I have kept this in
->> mind, while we added the new dev_pm_domain_attach|detach() API. The
->> buses also handles -EPROBE_DEFER.
->
-> How do you ensure this? You have no control over from where API is
-> called. If I happen to call it form anywhere but bus probe code path I
-> will be leaking memory at least until the device is unbound completely
-> (which would be in this case an unrelated event).
+On Wed, 22 Oct 2014 21:44:44 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-You are right, devm_*API is currently not a good idea! I didn't
-realize that the ->attach_dev() callback was invoked from
-__pm_genpd_add_device(). Sorry for the noise.
+> set FEATURES_OK as per virtio 1.0 spec
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  include/uapi/linux/virtio_config.h |  2 ++
+>  drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
+>  2 files changed, 24 insertions(+), 7 deletions(-)
+> 
 
-Anyway,  I am working on adding the option to return -EPROBE_DEFER
-from the ->attach_dev() callback, since that could be useful to
-support.
+>  	dev->config->finalize_features(dev);
+> 
+> +	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
+> +		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
+> +		status = dev->config->get_status(dev);
+> +		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
+> +			printk(KERN_ERR "virtio: device refuses features: %x\n",
+> +			       status);
+> +			err = -ENODEV;
+> +			goto err;
+> +		}
+> +	}
+> +
 
-Kind regards
-Uffe
+Ugh, I just realize that virtio-ccw has a problem with that mechanism :(
+
+Up to now, the driver only propagated status to the device: For
+virtio-ccw, this was easily implemented via a ccw that transmitted
+"status" to the device. However, the "read back status" part now
+actually requires that the driver can get "status" from the device, or
+has a comparable way to find out that the device won't accept the
+status it tried to write.
+
+I can think of two solutions:
+
+(1) Introduce a new ccw that actually reads the device status.
+(2) Make the WRITE_STATUS ccw fail (with a unit check) if the driver
+    sets FEATURES_OK after it tried to set features the device won't
+    accept.
+
+(1) is probably more generic, while (2) is more straightforward to
+implement.
+
+Good thing we actually try to finally implement this, I did not notice
+this problem during the review :(
+
