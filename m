@@ -1,46 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078AbaJWVnD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 17:43:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51994 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752619AbaJWVm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 17:42:59 -0400
-Date: Fri, 24 Oct 2014 00:46:32 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: [PATCH RFC] virtio_blk: WCE is assumed on under VIRTIO 1.0
-Message-ID: <1414100763-546-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mailer: git-send-email 2.0.0.545.gd9cabeb
-X-Mutt-Fcc: =sent
+	id S1753346AbaJWVpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 17:45:45 -0400
+Received: from mail.declera.com ([87.118.141.5]:59613 "HELO mail.declera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751180AbaJWVpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 17:45:43 -0400
+Message-ID: <1414100740.2065.2.camel@declera.com>
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+From: Yanko Kaneti <yaneti@declera.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Oct 2014 00:45:40 +0300
+In-Reply-To: <20141023200507.GC4977@linux.vnet.ibm.com>
+References: <20141022181135.GH4977@linux.vnet.ibm.com>
+	 <87d29kezby.fsf@x220.int.ebiederm.org>
+	 <20141022185511.GI4977@linux.vnet.ibm.com>
+	 <CA+5PVA56ajrBQ-C9orSb9-_qhMKe994QL2x0FcKbe6BYmaWFBw@mail.gmail.com>
+	 <20141022224032.GA1240@declera.com>
+	 <20141022232421.GN4977@linux.vnet.ibm.com>
+	 <1414044566.2031.1.camel@declera.com>
+	 <20141023122750.GP4977@linux.vnet.ibm.com>
+	 <20141023153333.GA19278@linux.vnet.ibm.com>
+	 <20141023195159.GA2331@declera.com>
+	 <20141023200507.GC4977@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.13.6 (3.13.6-1.fc22) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/block/virtio_blk.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index adfba9f..1f8b111 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -478,7 +478,8 @@ static int virtblk_get_cache_mode(struct virtio_device *vdev)
- 				   struct virtio_blk_config, wce,
- 				   &writeback);
- 	if (err)
--		writeback = virtio_has_feature(vdev, VIRTIO_BLK_F_WCE);
-+		writeback = virtio_has_feature(vdev, VIRTIO_BLK_F_WCE) ||
-+		            virtio_has_feature(vdev, VIRTIO_F_VERSION_1);
- 
- 	return writeback;
- }
--- 
-MST
+On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
+> On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
+> > On Thu-10/23/14-2014 08:33, Paul E. McKenney wrote:
+> > > On Thu, Oct 23, 2014 at 05:27:50AM -0700, Paul E. McKenney wrote:
+> > > > On Thu, Oct 23, 2014 at 09:09:26AM +0300, Yanko Kaneti wrote:
+> > > > > On Wed, 2014-10-22 at 16:24 -0700, Paul E. McKenney wrote:
+> > > > > > On Thu, Oct 23, 2014 at 01:40:32AM +0300, Yanko Kaneti 
+> > > > > > wrote:
+> > > > > > > On Wed-10/22/14-2014 15:33, Josh Boyer wrote:
+> > > > > > > > On Wed, Oct 22, 2014 at 2:55 PM, Paul E. McKenney
+> > > > > > > > <paulmck@linux.vnet.ibm.com> wrote:
+> > > > > > 
+> > > > > > [ . . . ]
+> > > > > > 
+> > > > > > > > > Don't get me wrong -- the fact that this kthread 
+> > > > > > > > > appears to
+> > > > > > > > > have
+> > > > > > > > > blocked within rcu_barrier() for 120 seconds means 
+> > > > > > > > > that
+> > > > > > > > > something is
+> > > > > > > > > most definitely wrong here.  I am surprised that 
+> > > > > > > > > there are no
+> > > > > > > > > RCU CPU
+> > > > > > > > > stall warnings, but perhaps the blockage is in the 
+> > > > > > > > > callback
+> > > > > > > > > execution
+> > > > > > > > > rather than grace-period completion.  Or something is
+> > > > > > > > > preventing this
+> > > > > > > > > kthread from starting up after the wake-up callback 
+> > > > > > > > > executes.
+> > > > > > > > > Or...
+> > > > > > > > > 
+> > > > > > > > > Is this thing reproducible?
+> > > > > > > > 
+> > > > > > > > I've added Yanko on CC, who reported the backtrace 
+> > > > > > > > above and can
+> > > > > > > > recreate it reliably.  Apparently reverting the RCU 
+> > > > > > > > merge commit
+> > > > > > > > (d6dd50e) and rebuilding the latest after that does 
+> > > > > > > > not show the
+> > > > > > > > issue.  I'll let Yanko explain more and answer any 
+> > > > > > > > questions you
+> > > > > > > > have.
+> > > > > > > 
+> > > > > > > - It is reproducible
+> > > > > > > - I've done another build here to double check and its 
+> > > > > > > definitely
+> > > > > > > the rcu merge
+> > > > > > >   that's causing it.
+> > > > > > > 
+> > > > > > > Don't think I'll be able to dig deeper, but I can do 
+> > > > > > > testing if
+> > > > > > > needed.
+> > > > > > 
+> > > > > > Please!  Does the following patch help?
+> > > > > 
+> > > > > Nope, doesn't seem to make a difference to the modprobe 
+> > > > > ppp_generic
+> > > > > test
+> > > > 
+> > > > Well, I was hoping.  I will take a closer look at the RCU 
+> > > > merge commit
+> > > > and see what suggests itself.  I am likely to ask you to 
+> > > > revert specific
+> > > > commits, if that works for you.
+> > > 
+> > > Well, rather than reverting commits, could you please try 
+> > > testing the
+> > > following commits?
+> > > 
+> > > 11ed7f934cb8 (rcu: Make nocb leader kthreads process pending 
+> > > callbacks after spawning)
+> > > 
+> > > 73a860cd58a1 (rcu: Replace flush_signals() with 
+> > > WARN_ON(signal_pending()))
+> > > 
+> > > c847f14217d5 (rcu: Avoid misordering in nocb_leader_wait())
+> > > 
+> > >         For whatever it is worth, I am guessing this one.
+> > 
+> > Indeed, c847f14217d5 it is.
+> > 
+> > Much to my embarrasment I just noticed that in addition to the
+> > rcu merge, triggering the bug "requires" my specific Fedora 
+> > rawhide network
+> > setup. Booting in single mode and modprobe ppp_generic is fine. 
+> > The bug
+> > appears when starting with my regular fedora network setup, which 
+> > in my case
+> > includes 3 ethernet adapters and a libvirt birdge+nat setup.
+> > 
+> > Hope that helps.
+> > 
+> > I am attaching the config.
+> 
+> It does help a lot, thank you!!!
+> 
+> The following patch is a bit of a shot in the dark, and assumes that
+> commit 1772947bd012 (rcu: Handle NOCB callbacks from irq-disabled 
+> idle
+> code) introduced the problem.  Does this patch fix things up?
+
+Unfortunately not, This is linus-tip + patch
+
+
+INFO: task kworker/u16:6:96 blocked for more than 120 seconds.
+      Not tainted 3.18.0-rc1+ #4
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+kworker/u16:6   D ffff8800ca84cec0 11168    96      2 0x00000000
+Workqueue: netns cleanup_net
+ ffff8802218339e8 0000000000000096 ffff8800ca84cec0 00000000001d5f00
+ ffff880221833fd8 00000000001d5f00 ffff880223264ec0 ffff8800ca84cec0
+ ffffffff82c52040 7fffffffffffffff ffffffff81ee2658 ffffffff81ee2650
+Call Trace:
+ [<ffffffff8185b8e9>] schedule+0x29/0x70
+ [<ffffffff81860b0c>] schedule_timeout+0x26c/0x410
+ [<ffffffff81028bea>] ? native_sched_clock+0x2a/0xa0
+ [<ffffffff8110759c>] ? mark_held_locks+0x7c/0xb0
+ [<ffffffff81861b90>] ? _raw_spin_unlock_irq+0x30/0x50
+ [<ffffffff8110772d>] ? trace_hardirqs_on_caller+0x15d/0x200
+ [<ffffffff8185d31c>] wait_for_completion+0x10c/0x150
+ [<ffffffff810e4ed0>] ? wake_up_state+0x20/0x20
+ [<ffffffff8112a219>] _rcu_barrier+0x159/0x200
+ [<ffffffff8112a315>] rcu_barrier+0x15/0x20
+ [<ffffffff8171657f>] netdev_run_todo+0x6f/0x310
+ [<ffffffff8170b145>] ? rollback_registered_many+0x265/0x2e0
+ [<ffffffff817235ee>] rtnl_unlock+0xe/0x10
+ [<ffffffff8170cfa6>] default_device_exit_batch+0x156/0x180
+ [<ffffffff810fd390>] ? abort_exclusive_wait+0xb0/0xb0
+ [<ffffffff81705053>] ops_exit_list.isra.1+0x53/0x60
+ [<ffffffff81705c00>] cleanup_net+0x100/0x1f0
+ [<ffffffff810cca98>] process_one_work+0x218/0x850
+ [<ffffffff810cc9ff>] ? process_one_work+0x17f/0x850
+ [<ffffffff810cd1b7>] ? worker_thread+0xe7/0x4a0
+ [<ffffffff810cd13b>] worker_thread+0x6b/0x4a0
+ [<ffffffff810cd0d0>] ? process_one_work+0x850/0x850
+ [<ffffffff810d348b>] kthread+0x10b/0x130
+ [<ffffffff81028c69>] ? sched_clock+0x9/0x10
+ [<ffffffff810d3380>] ? kthread_create_on_node+0x250/0x250
+ [<ffffffff818628bc>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810d3380>] ? kthread_create_on_node+0x250/0x250
+4 locks held by kworker/u16:6/96:
+ #0:  ("%s""netns"){.+.+.+}, at: [<ffffffff810cc9ff>] process_one_work+0x17f/0x850
+ #1:  (net_cleanup_work){+.+.+.}, at: [<ffffffff810cc9ff>] process_one_work+0x17f/0x850
+ #2:  (net_mutex){+.+.+.}, at: [<ffffffff81705b8c>] cleanup_net+0x8c/0x1f0
+ #3:  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff8112a0f5>] _rcu_barrier+0x35/0x200
+INFO: task modprobe:1045 blocked for more than 120 seconds.
+      Not tainted 3.18.0-rc1+ #4
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+modprobe        D ffff880218343480 12920  1045   1044 0x00000080
+ ffff880218353bf8 0000000000000096 ffff880218343480 00000000001d5f00
+ ffff880218353fd8 00000000001d5f00 ffffffff81e1b580 ffff880218343480
+ ffff880218343480 ffffffff81f8f748 0000000000000246 ffff880218343480
+Call Trace:
+ [<ffffffff8185be91>] schedule_preempt_disabled+0x31/0x80
+ [<ffffffff8185d6e3>] mutex_lock_nested+0x183/0x440
+ [<ffffffff81705a1f>] ? register_pernet_subsys+0x1f/0x50
+ [<ffffffff81705a1f>] ? register_pernet_subsys+0x1f/0x50
+ [<ffffffffa0673000>] ? 0xffffffffa0673000
+ [<ffffffff81705a1f>] register_pernet_subsys+0x1f/0x50
+ [<ffffffffa0673048>] br_init+0x48/0xd3 [bridge]
+ [<ffffffff81002148>] do_one_initcall+0xd8/0x210
+ [<ffffffff81153052>] load_module+0x20c2/0x2870
+ [<ffffffff8114e030>] ? store_uevent+0x70/0x70
+ [<ffffffff81278717>] ? kernel_read+0x57/0x90
+ [<ffffffff811539e6>] SyS_finit_module+0xa6/0xe0
+ [<ffffffff81862969>] system_call_fastpath+0x12/0x17
+1 lock held by modprobe/1045:
+ #0:  (net_mutex){+.+.+.}, at: [<ffffffff81705a1f>] register_pernet_subsys+0x1f/0x50
+
+
+>                 Thanx, Paul
+> 
+> ---------------------------------------------------------------------
+> ---
+> 
+> rcu: Kick rcuo kthreads after their CPU goes offline
+> 
+> If a no-CBs CPU were to post an RCU callback with interrupts disabled
+> after it entered the idle loop for the last time, there might be no
+> deferred wakeup for the corresponding rcuo kthreads.  This commit
+> therefore adds a set of calls to do_nocb_deferred_wakeup() after the
+> CPU has gone completely offline.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index 84b41b3c6ebd..4f3d25a58786 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -3493,8 +3493,10 @@ static int rcu_cpu_notify(struct 
+> notifier_block *self,
+>         case CPU_DEAD_FROZEN:
+>         case CPU_UP_CANCELED:
+>         case CPU_UP_CANCELED_FROZEN:
+> -       for_each_rcu_flavor(rsp)
+> +       for_each_rcu_flavor(rsp) {
+>         rcu_cleanup_dead_cpu(cpu, rsp);
+> +       do_nocb_deferred_wakeup(this_cpu_ptr(rsp->rda));
+> +       }
+>         break;
+>         default:
+>         break;
+> 
+> 
