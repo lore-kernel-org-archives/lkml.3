@@ -1,75 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349AbaJWTcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 15:32:00 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:48341 "EHLO e7.ny.us.ibm.com"
+	id S1754801AbaJWTgD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 15:36:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41569 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752293AbaJWTb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 15:31:59 -0400
-Date: Thu, 23 Oct 2014 12:28:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        htejun@gmail.com, oleg@redhat.com
-Subject: Re: rcu_preempt detected stalls.
-Message-ID: <20141023192807.GY4977@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141013173504.GA27955@redhat.com>
- <20141023183232.GW4977@linux.vnet.ibm.com>
- <20141023184018.GA12274@redhat.com>
+	id S1751062AbaJWTgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 15:36:01 -0400
+Date: Thu, 23 Oct 2014 21:32:00 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <lliubbo@gmail.com>, David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <peterz@infradead.org>,
+        Rik van Riel <riel@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] Convert khugepaged scan functions to work with
+	task_work
+Message-ID: <20141023193200.GA6751@redhat.com>
+References: <1414089963-73165-1-git-send-email-athorlton@sgi.com> <1414089963-73165-4-git-send-email-athorlton@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141023184018.GA12274@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102319-0025-0000-0000-000000D86A0C
+In-Reply-To: <1414089963-73165-4-git-send-email-athorlton@sgi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 02:40:18PM -0400, Dave Jones wrote:
-> On Thu, Oct 23, 2014 at 11:32:32AM -0700, Paul E. McKenney wrote:
-> 
->  > > trinity-c225    R  running task    13448   646  32295 0x00000000
->  > >  ffff880161ccfb28 0000000000000002 ffff880161ccfe10 ffff88000bf85e00
->  > >  00000000001d4100 0000000000000003 ffff880161ccffd8 00000000001d4100
->  > >  ffff880030124680 ffff88000bf85e00 ffff880161ccffd8 0000000000000000
->  > > Call Trace:
->  > >  [<ffffffff888368e2>] preempt_schedule_irq+0x52/0xb0
->  > >  [<ffffffff8883df10>] retint_kernel+0x20/0x30
->  > >  [<ffffffff88233d41>] ? __d_lookup_rcu+0xd1/0x1e0
->  > >  [<ffffffff88233dd6>] ? __d_lookup_rcu+0x166/0x1e0
->  > >  [<ffffffff88222f9f>] lookup_fast+0x4f/0x3d0
->  > >  [<ffffffff88224857>] link_path_walk+0x1a7/0x8a0
->  > >  [<ffffffff88224f95>] ? path_lookupat+0x45/0x7b0
->  > >  [<ffffffff88224fb7>] path_lookupat+0x67/0x7b0
->  > >  [<ffffffff880d385d>] ? trace_hardirqs_off+0xd/0x10
->  > >  [<ffffffff8883dda4>] ? retint_restore_args+0xe/0xe
->  > >  [<ffffffff8822572b>] filename_lookup+0x2b/0xc0
->  > >  [<ffffffff88229c77>] user_path_at_empty+0x67/0xc0
->  > >  [<ffffffff880d3dbe>] ? put_lock_stats.isra.27+0xe/0x30
->  > >  [<ffffffff880d42a6>] ? lock_release_holdtime.part.28+0xe6/0x160
->  > >  [<ffffffff880b15ad>] ? get_parent_ip+0xd/0x50
->  > >  [<ffffffff88229ce1>] user_path_at+0x11/0x20
->  > >  [<ffffffff8824fac1>] do_utimes+0xd1/0x180
->  > >  [<ffffffff8824fbef>] SyS_utime+0x7f/0xc0
->  > >  [<ffffffff8883d345>] ? tracesys+0x7e/0xe2
->  > >  [<ffffffff8883d3a4>] tracesys+0xdd/0xe2
->  > 
->  > This one will require more looking.  But did you do something like
->  > create a pair of mutually recursive symlinks or something?  ;-)
-> 
-> I'm not 100% sure, but this may have been on a box that I was running
-> tests on NFS. So maybe the server had disappeared with the mount
-> still active..
-> 
-> Just a guess tbh.
+I don't understand this patch, but...
 
-Another possibility might be that the box was so overloaded that tasks
-were getting preempted for 21 seconds as a matter of course, and sometimes
-within RCU read-side critical sections.  Or did the box have ample idle
-time?
+On 10/23, Alex Thorlton wrote:
+>
+>  static inline int khugepaged_fork(struct mm_struct *mm, struct mm_struct *oldmm)
+>  {
+> +	/* this will add task_pgcollapse_work to task_works */
+>  	if (test_bit(MMF_VM_HUGEPAGE, &oldmm->flags))
+> -		return __khugepaged_enter(mm);
+> +		return __khugepaged_enter();
 
-							Thanx, Paul
+This looks certainly wrong or I am totally confused. __khugepaged_enter()
+does task_work_add(current) but we want to kick the child, not the parent.
+
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -30,6 +30,8 @@
+>  #include <linux/mempolicy.h>
+>  #include <linux/migrate.h>
+>  #include <linux/task_work.h>
+> +#include <linux/types.h>
+> +#include <linux/khugepaged.h>
+>  
+>  #include <trace/events/sched.h>
+>  
+> @@ -2060,6 +2062,23 @@ static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)
+>  }
+>  #endif /* CONFIG_NUMA_BALANCING */
+>  
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +void task_pgcollapse_work(struct callback_head *work)
+> +{
+> +	WARN_ON_ONCE(current != container_of(work, struct task_struct, pgcollapse_work));
+> +
+> +	work->next = work; /* protect against double add */
+> +
+> +	pr_info("!!! debug - INFO: task: %s/%d in task_pgcollapse_work\n",
+> +		current->comm, (int) current->pid);
+> +	khugepaged_do_scan();
+> +}
+> +#else
+
+Why do you add it into kernel/sched/ ??
+
+> -int __khugepaged_enter(struct mm_struct *mm)
+> +int __khugepaged_enter(void)
+>  {
+> -	struct mm_slot *mm_slot;
+> -	int wakeup;
+> +	unsigned long period = msecs_to_jiffies(current->pgcollapse_scan_sleep_millisecs);
+>  
+> -	mm_slot = alloc_mm_slot();
+> -	if (!mm_slot)
+> -		return -ENOMEM;
+> +	pr_info("!!! debug - INFO: task: %s/%d jiffies: %lu period: %lu last_scan: %lu\n",
+> +		current->comm, (int) current->pid, jiffies, period,
+> +		current->pgcollapse_last_scan);
+>  
+> -	/* __khugepaged_exit() must not run from under us */
+> -	VM_BUG_ON_MM(khugepaged_test_exit(mm), mm);
+> -	if (unlikely(test_and_set_bit(MMF_VM_HUGEPAGE, &mm->flags))) {
+> -		free_mm_slot(mm_slot);
+> -		return 0;
+> -	}
+> +	/* may want to move this up to where we actually do the scan... */
+> +	if (time_after(jiffies, current->pgcollapse_last_scan + period)) {
+> +		current->pgcollapse_last_scan = jiffies;
+>  
+> -	spin_lock(&khugepaged_mm_lock);
+> -	insert_to_mm_slots_hash(mm, mm_slot);
+> -	/*
+> -	 * Insert just behind the scanning cursor, to let the area settle
+> -	 * down a little.
+> -	 */
+> -	wakeup = list_empty(&khugepaged_scan.mm_head);
+> -	list_add_tail(&mm_slot->mm_node, &khugepaged_scan.mm_head);
+> -	spin_unlock(&khugepaged_mm_lock);
+> +		pr_info("!!! debug - INFO: task: %s/%d adding pgcollapse work\n",
+> +			current->comm, (int) current->pid);
+>  
+> -	atomic_inc(&mm->mm_count);
+> -	if (wakeup)
+> -		wake_up_interruptible(&khugepaged_wait);
+> +		/* debug - actual new code */
+> +		init_task_work(&current->pgcollapse_work, task_pgcollapse_work);
+> +		task_work_add(current, &current->pgcollapse_work, true);
+> +	} else {
+> +		pr_info("!!! debug - INFO: task: %s/%d skipping pgcollapse_scan\n",
+> +			current->comm, (int) current->pid);
+> +	}
+>  
+>  	return 0;
+>  }
+
+so mm_slots_hash becomes unused?
+
+Oleg.
+
+> @@ -2069,6 +2063,8 @@ int khugepaged_enter_vma_merge(struct vm_area_struct *vma)
+>  	VM_BUG_ON_VMA(vma->vm_flags & VM_NO_THP, vma);
+>  	hstart = (vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK;
+>  	hend = vma->vm_end & HPAGE_PMD_MASK;
+> +
+> +	/* this will add task_pgcollapse_work to task_works */
+>  	if (hstart < hend)
+>  		return khugepaged_enter(vma);
+>  	return 0;
+> @@ -2417,6 +2413,9 @@ static void collapse_huge_page(struct mm_struct *mm,
+>  	if (!new_page)
+>  		return;
+>  
+> +	pr_info("!!! debug - INFO: task: %s/%d pgcollapse alloc: %lx on node %d\n",
+> +		current->comm, (int) current->pid, address, node);
+> +
+>  	if (unlikely(mem_cgroup_try_charge(new_page, mm,
+>  					   GFP_TRANSHUGE, &memcg)))
+>  		return;
+> @@ -2514,7 +2513,7 @@ static void collapse_huge_page(struct mm_struct *mm,
+>  
+>  	*hpage = NULL;
+>  
+> -	khugepaged_pages_collapsed++;
+> +	current->pgcollapse_pages_collapsed++;
+>  out_up_write:
+>  	up_write(&mm->mmap_sem);
+>  	return;
+> @@ -2616,44 +2615,34 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
+>  }
+>  
+>  static unsigned int khugepaged_scan_mm_slot(unsigned int pages,
+> -					    struct page **hpage)
+> -	__releases(&khugepaged_mm_lock)
+> -	__acquires(&khugepaged_mm_lock)
+> +					   struct page **hpage)
+>  {
+> -	struct mm_slot *mm_slot;
+>  	struct mm_struct *mm;
+>  	struct vm_area_struct *vma;
+>  	int progress = 0;
+> +	/*
+> +	 * grab this pointer here to avoid dereferencing
+> +	 * the task struct multiple times later
+> +	 */
+> +	unsigned long *scan_addr_p = &current->pgcollapse_scan_address;
+>  
+>  	VM_BUG_ON(!pages);
+> -	VM_BUG_ON(NR_CPUS != 1 && !spin_is_locked(&khugepaged_mm_lock));
+>  
+> -	if (khugepaged_scan.mm_slot)
+> -		mm_slot = khugepaged_scan.mm_slot;
+> -	else {
+> -		mm_slot = list_entry(khugepaged_scan.mm_head.next,
+> -				     struct mm_slot, mm_node);
+> -		khugepaged_scan.address = 0;
+> -		khugepaged_scan.mm_slot = mm_slot;
+> -	}
+> -	spin_unlock(&khugepaged_mm_lock);
+> +	pr_info("!!! debug - task: %s/%d starting scan at %lx\n",
+> +		current->comm, (int) current->pid, *scan_addr_p);
+>  
+> -	mm = mm_slot->mm;
+> +	mm = current->mm;
+>  	down_read(&mm->mmap_sem);
+>  	if (unlikely(khugepaged_test_exit(mm)))
+>  		vma = NULL;
+>  	else
+> -		vma = find_vma(mm, khugepaged_scan.address);
+> +		vma = find_vma(mm, *scan_addr_p);
+>  
+>  	progress++;
+>  	for (; vma; vma = vma->vm_next) {
+>  		unsigned long hstart, hend;
+>  
+>  		cond_resched();
+> -		if (unlikely(khugepaged_test_exit(mm))) {
+> -			progress++;
+> -			break;
+> -		}
+>  		if (!hugepage_vma_check(vma)) {
+>  skip:
+>  			progress++;
+> @@ -2663,26 +2652,24 @@ skip:
+>  		hend = vma->vm_end & HPAGE_PMD_MASK;
+>  		if (hstart >= hend)
+>  			goto skip;
+> -		if (khugepaged_scan.address > hend)
+> +		if (*scan_addr_p > hend)
+>  			goto skip;
+> -		if (khugepaged_scan.address < hstart)
+> -			khugepaged_scan.address = hstart;
+> -		VM_BUG_ON(khugepaged_scan.address & ~HPAGE_PMD_MASK);
+> +		if (*scan_addr_p < hstart)
+> +			*scan_addr_p = hstart;
+> +		VM_BUG_ON(*scan_addr_p & ~HPAGE_PMD_MASK);
+>  
+> -		while (khugepaged_scan.address < hend) {
+> +		while (*scan_addr_p < hend) {
+>  			int ret;
+>  			cond_resched();
+>  			if (unlikely(khugepaged_test_exit(mm)))
+>  				goto breakouterloop;
+>  
+> -			VM_BUG_ON(khugepaged_scan.address < hstart ||
+> -				  khugepaged_scan.address + HPAGE_PMD_SIZE >
+> -				  hend);
+> -			ret = khugepaged_scan_pmd(mm, vma,
+> -						  khugepaged_scan.address,
+> +			VM_BUG_ON(*scan_addr_p < hstart ||
+> +				  *scan_addr_p + HPAGE_PMD_SIZE > hend);
+> +			ret = khugepaged_scan_pmd(mm, vma, *scan_addr_p,
+>  						  hpage);
+>  			/* move to next address */
+> -			khugepaged_scan.address += HPAGE_PMD_SIZE;
+> +			*scan_addr_p += HPAGE_PMD_SIZE;
+>  			progress += HPAGE_PMD_NR;
+>  			if (ret)
+>  				/* we released mmap_sem so break loop */
+> @@ -2694,30 +2681,14 @@ skip:
+>  breakouterloop:
+>  	up_read(&mm->mmap_sem); /* exit_mmap will destroy ptes after this */
+>  breakouterloop_mmap_sem:
+> -
+> -	spin_lock(&khugepaged_mm_lock);
+> -	VM_BUG_ON(khugepaged_scan.mm_slot != mm_slot);
+>  	/*
+>  	 * Release the current mm_slot if this mm is about to die, or
+> -	 * if we scanned all vmas of this mm.
+> +	 * if we scanned all vmas of this mm.  Don't think we need the
+> +	 * khugepaged_test_exit for the task_work style scan...
+>  	 */
+>  	if (khugepaged_test_exit(mm) || !vma) {
+> -		/*
+> -		 * Make sure that if mm_users is reaching zero while
+> -		 * khugepaged runs here, khugepaged_exit will find
+> -		 * mm_slot not pointing to the exiting mm.
+> -		 */
+> -		if (mm_slot->mm_node.next != &khugepaged_scan.mm_head) {
+> -			khugepaged_scan.mm_slot = list_entry(
+> -				mm_slot->mm_node.next,
+> -				struct mm_slot, mm_node);
+> -			khugepaged_scan.address = 0;
+> -		} else {
+> -			khugepaged_scan.mm_slot = NULL;
+> -			khugepaged_full_scans++;
+> -		}
+> -
+> -		collect_mm_slot(mm_slot);
+> +		*scan_addr_p = 0;
+> +		current->pgcollapse_full_scans++;
+>  	}
+>  
+>  	return progress;
+> @@ -2735,11 +2706,11 @@ static int khugepaged_wait_event(void)
+>  		kthread_should_stop();
+>  }
+>  
+> -static void khugepaged_do_scan(void)
+> +void khugepaged_do_scan(void)
+>  {
+>  	struct page *hpage = NULL;
+> -	unsigned int progress = 0, pass_through_head = 0;
+> -	unsigned int pages = khugepaged_pages_to_scan;
+> +	unsigned int progress = 0;
+> +	unsigned int pages = current->pgcollapse_pages_to_scan;
+>  	bool wait = true;
+>  
+>  	barrier(); /* write khugepaged_pages_to_scan to local stack */
+> @@ -2750,19 +2721,12 @@ static void khugepaged_do_scan(void)
+>  
+>  		cond_resched();
+>  
+> -		if (unlikely(kthread_should_stop() || freezing(current)))
+> +		if (unlikely(freezing(current)))
+>  			break;
+>  
+> -		spin_lock(&khugepaged_mm_lock);
+> -		if (!khugepaged_scan.mm_slot)
+> -			pass_through_head++;
+> -		if (khugepaged_has_work() &&
+> -		    pass_through_head < 2)
+> -			progress += khugepaged_scan_mm_slot(pages - progress,
+> -							    &hpage);
+> -		else
+> -			progress = pages;
+> -		spin_unlock(&khugepaged_mm_lock);
+> +		progress += khugepaged_scan_mm_slot(pages - progress, &hpage);
+> +		pr_info("!!! debug - INFO: task: %s/%d scan iteration progress %u\n",
+> +			current->comm, (int) current->pid, progress);
+>  	}
+>  
+>  	if (!IS_ERR_OR_NULL(hpage))
+> -- 
+> 1.7.12.4
+> 
 
