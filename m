@@ -1,82 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754909AbaJWXwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 19:52:20 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:46096 "EHLO gloria.sntech.de"
+	id S1754976AbaJWXxJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 19:53:09 -0400
+Received: from mail.kernel.org ([198.145.19.201]:56996 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753761AbaJWXwT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 19:52:19 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/4] pinctrl: rockchip: Set wake_enabled
-Date: Fri, 24 Oct 2014 01:55:17 +0200
-Message-ID: <3672443.givx50pOhv@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <CAD=FV=X5T0z9QhPsxBtQ8ffS+x90TZ9kYAvNcmU0uNsx1+2wNA@mail.gmail.com>
-References: <1413913655-22351-1-git-send-email-dianders@chromium.org> <1522951.uUd1Gprpbn@diego> <CAD=FV=X5T0z9QhPsxBtQ8ffS+x90TZ9kYAvNcmU0uNsx1+2wNA@mail.gmail.com>
+	id S1753576AbaJWXxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 19:53:07 -0400
+Date: Thu, 23 Oct 2014 20:53:02 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Wang Nan <wangnan0@huawei.com>, a.p.zijlstra@chello.nl, paulus@samba.org,
+        mingo@redhat.com, jolsa@redhat.com, adrian.hunter@intel.com,
+        Waiman.Long@hp.com, linux-kernel@vger.kernel.org, lizefan@huawei.com
+Subject: Re: [PATCH v2 RESEND] perf tools: makes CPUINFO_PROC to array for
+ different kernel version
+Message-ID: <20141023235302.GU14687@kernel.org>
+References: <1413963614-7251-1-git-send-email-wangnan0@huawei.com>
+ <87k33qe5be.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k33qe5be.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 23. Oktober 2014, 09:55:27 schrieb Doug Anderson:
-> Heiko,
-> 
-> On Thu, Oct 23, 2014 at 9:43 AM, Heiko Stübner <heiko@sntech.de> wrote:
-> > Am Dienstag, 21. Oktober 2014, 10:47:32 schrieb Doug Anderson:
-> >> The rockchip pinctrl driver uses irq_gc_set_wake() but doesn't setup
-> >> the .wake_enabled member.  That means that we can never actually use a
-> >> pin for wakeup.  When "irq_set_irq_wake()" tries to call through it
-> >> will always get a failure from set_irq_wake_real() and will then set
-> >> wake_depth to 0.  Assuming you can resume you'll later get an error
-> >> message about "Unbalanced IRQ x wake disable".
-> > 
-> > The change itself looks reasonable. But now being able to read the docs
-> > for
-> > it, it doesn't look like all gpios are able to wake the system.
-> > 
-> > On the rk3288 it seems to be only the pins from gpio0 that can do this
-> > (similar for different banks on the other Rockchip SoCs) - see
-> > PMU_WAKEUP_CFG0 and PMU_WAKEUP_CFG1[1].
-> > 
-> > So I guess we'll need something more eloquent to handle this.
-> 
-> I think long term we're going to need something more elegant, yes.
-> ...but it turns out that as long as you're not in the low, low power
-> state that all pins can wake up the system.
-> 
-> Check out "Table 4-5 Power Domain Status Summary in all Work Mode".
-> In Mode 3 (called "sleep") all GPIOs can wake the system up.  This is
-> the mode that Chris's current suspend/resume patch uses (actually, it
-> doesn't quite get all the way to that mode yet, but that's the
-> target).  It would be ideal if we could get to Mode 4 (called
-> "poweroff"), but when I talked to Rockchip they were a little hesitant
-> about promising that it would work.
+Em Fri, Oct 24, 2014 at 08:26:13AM +0900, Namhyung Kim escreveu:
+> On Wed, 22 Oct 2014 15:40:14 +0800, Wang Nan wrote:
+> > After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
+> > /proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
+> > CPUINFO_PROC to an array and provides two choices for ARM, makes it
+> > compatible for different kernel version.
 
-You're right ... didn't read far enough it seems, so this patch also
+> > v1 -> v2: minor changes as suggested by Namhyung Kim:
 
-Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+> >  - Doesn't pass @h and @evlist to __write_cpudesc;
+> >  - Coding style fix.
 
+> > Signed-off-by: Wang Nan <wangnan0@huawei.com>
+ 
+> Acked-by: Namhyung Kim <namhyung@kernel.org>
 
+So now this will work with older kernels and new ones? Cool, thanks for
+working on it, but:
 
-> NOTE: One unresolved thing with the current series (this series +
-> Chris's) is that pretty much any interrupt can wake up the system.
-> Even typing on the UART seems to do it.  Somehow we're not masking
-> interrupts in a way that prevents this, but I haven't tracked it down
-> yet.  I don't think it's related to this patch.
+[acme@ssdandy linux]$ patch -p1 < /wb/1.patch 
+patching file tools/perf/perf.h
+Hunk #1 FAILED at 6.
+Hunk #2 FAILED at 15.
+Hunk #3 FAILED at 25.
+Hunk #4 FAILED at 40.
+Hunk #5 FAILED at 74.
+Hunk #6 FAILED at 91.
+6 out of 6 hunks FAILED -- saving rejects to file tools/perf/perf.h.rej
+patching file tools/perf/util/header.c
+Hunk #1 succeeded at 579 (offset 29 lines).
+Hunk #2 succeeded at 636 (offset 29 lines).
+[acme@ssdandy linux]$
 
-I guess the interrupts that aren't wakeup sources should then get masked when 
-going to sleep?
+[acme@ssdandy linux]$ git log --oneline tools/perf/perf.h | head -10
+87c43ee perf tools: Export usage string and option table of perf record
+72a128a perf tools: Move callchain config from record_opts to callchain_param
+73a31b7 perf tools: Move ACCESS_ONCE from perf.h header
+82baa0e perf tools: Move sys_perf_event_open function from perf.h
+43599d1 perf tools: Move syscall and arch specific defines from perf.h
+2c83bc0 perf tools: Move perf_call_graph_mode enum from perf.h
+0776eb5 perf tools: Move sample data structures from perf.h
+36446f4 perf tools: Remove PR_TASK_PERF_EVENTS_* from perf.h
+273a0a7 perf tools: Remove asmlinkage define from perf.h
+1b7ae1c perf tools: Remove min define from perf.h
+[acme@ssdandy linux]$
 
+This is:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
 
+If you don't have time to fix this up, I'll try to find time tomorrow
+and do it.
 
-Heiko
+- Arnaldo
