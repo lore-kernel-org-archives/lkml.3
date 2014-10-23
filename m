@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361AbaJWRXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 13:23:52 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:58008 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037AbaJWRXv (ORCPT
+	id S1753007AbaJWR2P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 13:28:15 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42131 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaJWR2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 13:23:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <54493433.4090703@arm.com>
-References: <54493433.4090703@arm.com>
-Date: Thu, 23 Oct 2014 10:23:49 -0700
-Message-ID: <CABg9mcu0-AFNNOn+C4kbS7_rWqc-6WXZTyKUJYz6rA7-8OBqZA@mail.gmail.com>
-Subject: Re: BPF crash with 3.18-rc1 on arm64 Juno hardware
-From: Z Lim <zlim.lnx@gmail.com>
-To: Andre Przywara <andre.przywara@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 23 Oct 2014 13:28:14 -0400
+Date: Thu, 23 Oct 2014 13:02:58 -0400 (EDT)
+Message-Id: <20141023.130258.548864295965807596.davem@davemloft.net>
+To: mroos@linux.ee
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: unaligned accesses in SLAB etc.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LRH.2.11.1410230221360.28745@adalberg.ut.ee>
+References: <20141020.145746.428441452740929005.davem@davemloft.net>
+	<20141022.163949.1761351331649936601.davem@davemloft.net>
+	<alpine.LRH.2.11.1410230221360.28745@adalberg.ut.ee>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 23 Oct 2014 10:28:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andre,
+From: Meelis Roos <mroos@linux.ee>
+Date: Thu, 23 Oct 2014 02:22:36 +0300 (EEST)
 
-On Thu, Oct 23, 2014 at 10:00 AM, Andre Przywara <andre.przywara@arm.com> wrote:
-> Hi,
->
-> I see a crash with 3.18-rc1 on a Juno board related to bpf_jit (see dump
-> below). Userland tries to carry on afterwards, but eventually hangs in
-> RCU stalls.
-> The kernel has just CONFIG_BPF_JIT enabled, I guess Ubuntu enables this
-> automatically if detected.
->
+>> Whilst I don't have access to my reproducer machine until tomorrow in
+>> order to test this myself, I wanted to toss this patch your way so you
+>> could get a head start on me.
+> 
+> Unfortunately it fails earlier during the boot:
+> 
+> [   25.232318] clocksource: mult[53555555] shift[24]
+> [   25.288559] clockevent: mult[3126e98] shift[32]
+> [   25.342813] Console: colour dummy device 80x25
+> [   25.395990] console [tty0] enabled
+> [   25.436726] bootconsole [earlyprom0] disabled
+> ERROR: Last Trap: Memory Address not Aligned
+> 
+> ok
 
-When net-next and arm64-next merged in mainline, a silent failure is
-introduced due to new enhancements in net/bpf.
-This was actually uncovered before 3.18 merge window, and Daniel's
-patch to fix this was discussed here [1].
-I see that Catalin has queued up this patch in fixes/core [2].
+I can reproduce and I know what the problem is, fixed patch coming up
+shortly.
 
-[1] https://lkml.org/lkml/2014/9/16/73
-[2] https://git.kernel.org/cgit/linux/kernel/git/arm64/linux.git/commit/?h=fixes/core&id=b569c1c622c5e60c960a6ae5bd0880e0cdbd56b1)
-
-> The backtrace doesn't make too much sense to me:
->
-> void bpf_jit_free(struct bpf_prog *prog)
-> {
->         if (prog->jited)
->                 module_free(NULL, prog->bpf_func);
->
->         kfree(prog);
-> }
-> It crashes in kfree, but has survived the dereference before.
->
-> I have no clue about BPF, so if anyone could help me debug this, I'd be
-> grateful.
->
-> Cheers,
-> Andre.
->
->
->  * Starting Signal sysvinit that local filesystems are mounted   [ OK ]
->  * Starting configure network device security                    [ OK ]
-> Unable to handle kernel paging request at virtual address 37fffbd21c02290
-> pgd = ffffffc976538000
-> [37fffbd21c02290] *pgd=0000000000000000, *pud=0000000000000000
-> Internal error: Oops: 96000004 [#1] PREEMPT SMP
-> Modules linked in:
-> CPU: 3 PID: 737 Comm: kworker/3:1 Not tainted 3.18.0-rc1+ #1666
-> Workqueue: events bpf_prog_free_deferred
-> task: ffffffc977a89580 ti: ffffffc976494000 task.ti: ffffffc976494000
-> PC is at kfree+0x70/0x260
-> LR is at bpf_jit_free+0x34/0x40
-> pc : [<ffffffc0001b0634>] lr : [<ffffffc000099290>] pstate: a0000145
-> sp : ffffffc976497ca0
-> x29: ffffffc976497ca0 x28: 0000000000000000
-> x27: ffffffc97feff400 x26: ffffffc0009b0000
-> x25: 0000000000000000 x24: 0000000000000000
-> x23: ffffffc97ff03900 x22: ffffffc97feff400
-> x21: ffffffc000099290 x20: ffffff800009e000
-> x19: ffffff800009e000 x18: 0000007feb492820
-> x17: 0000007fb71c6980 x16: ffffffc0001fcc14
-> x15: 003b9aca00000000 x14: 0027947614000000
-> x13: ffffffffabb6d0e3 x12: 0000000000000018
-> x11: 0000000033c2a168 x10: 0000000000000006
-> x9 : ffffffc976497bd0 x8 : ffffffc977a89a90
-> x7 : ffffffc97736c4d0 x6 : 00000000000009be
-> x5 : 0000000000000000 x4 : 0000000000000001
-> x3 : ffffffc97feff7c0 x2 : 03ffffff02002780
-> x1 : 037fffff21c02290 x0 : ffffffbe00000000
->
-> Process kworker/3:1 (pid: 737, stack limit = 0xffffffc976494058)
-> Stack: (0xffffffc976497ca0 to 0xffffffc976498000)
-> ....
+Thanks for all of your help so far!
