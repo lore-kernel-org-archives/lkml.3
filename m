@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670AbaJWOX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:23:57 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53599 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaJWOXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:23:46 -0400
+	id S932858AbaJWOY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:24:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53070 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932330AbaJWOXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:23:51 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         <khilman@linaro.org>
@@ -17,9 +16,9 @@ CC: <linux-pm@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
         Ulf Hansson <ulf.hansson@linaro.org>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH v3 2/5] PM / clock_ops: make __pm_clk_enable more generic
-Date: Thu, 23 Oct 2014 17:22:59 +0300
-Message-ID: <1414074182-25980-3-git-send-email-grygorii.strashko@ti.com>
+Subject: [PATCH v3 4/5] ARM: keystone: pm: switch to use generic pm domains
+Date: Thu, 23 Oct 2014 17:23:01 +0300
+Message-ID: <1414074182-25980-5-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
 References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
@@ -29,102 +28,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there are two places in code which do the same things,
-so allow __pm_clk_enable() to accept pointer on pm_clock_entry
-structure as second parameter instead of pointer on clock and
-remove duplicated code.
+This patch switches Keystone 2 PM code to use Generic PM domains
+instead of PM clock domains because of the lack of DT support
+for the last.
 
-Also, updated function intended to be used by the following patch.
-
-CC: Santosh Shilimkar <ssantosh@kernel.org>
-CC: Kevin Hilman <khilman@linaro.org>
 CC: Ulf Hansson <ulf.hansson@linaro.org>
 CC: Geert Uytterhoeven <geert@linux-m68k.org>
 CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 ---
- drivers/base/power/clock_ops.c | 38 ++++++++++++++++----------------------
- 1 file changed, 16 insertions(+), 22 deletions(-)
+ .../bindings/power/ti,keystone-powerdomain.txt     |  31 ++++++
+ arch/arm/mach-keystone/Kconfig                     |   1 +
+ arch/arm/mach-keystone/pm_domain.c                 | 105 +++++++++++++--------
+ 3 files changed, 100 insertions(+), 37 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
 
-diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-index f14b767..c3b44c1 100644
---- a/drivers/base/power/clock_ops.c
-+++ b/drivers/base/power/clock_ops.c
-@@ -34,14 +34,20 @@ struct pm_clock_entry {
- /**
-  * pm_clk_enable - Enable a clock, reporting any errors
-  * @dev: The device for the given clock
-- * @clk: The clock being enabled.
-+ * @ce: PM clock entry corresponding to the clock.
-  */
--static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
-+static inline int __pm_clk_enable(struct device *dev, struct pm_clock_entry *ce)
- {
--	int ret = clk_enable(clk);
--	if (ret)
--		dev_err(dev, "%s: failed to enable clk %p, error %d\n",
--			__func__, clk, ret);
-+	int ret;
+diff --git a/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt b/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
+new file mode 100644
+index 0000000..d4e24d5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power/ti,keystone-powerdomain.txt
+@@ -0,0 +1,31 @@
++* TI Keystone 2 Generic PM Controller
 +
-+	if (ce->status < PCE_STATUS_ERROR) {
-+		ret = clk_enable(ce->clk);
-+		if (!ret)
-+			ce->status = PCE_STATUS_ENABLED;
-+		else
-+			dev_err(dev, "%s: failed to enable clk %p, error %d\n",
-+				__func__, ce->clk, ret);
++The TI Keystone 2 Generic PM Controller is responsible for Clock gating
++for each controlled IP module.
++
++Required properties:
++- compatible: Should be "ti,keystone-powerdomain"
++- #power-domain-cells: Should be 0, see below:
++
++The PM Controller node is a PM domain as documented in
++Documentation/devicetree/bindings/power/power_domain.txt.
++
++Example:
++
++	pm_controller: pm-controller {
++		compatible = "ti,keystone-powerdomain";
++		#power-domain-cells = <0>;
++	};
++
++	netcp: netcp@2090000 {
++		reg = <0x2620110 0x8>;
++		reg-names = "efuse";
++		...
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		power-domains = <&pm_controller>;
++
++		clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
++		dma-coherent;
 +	}
+diff --git a/arch/arm/mach-keystone/Kconfig b/arch/arm/mach-keystone/Kconfig
+index 98a156a..de43107 100644
+--- a/arch/arm/mach-keystone/Kconfig
++++ b/arch/arm/mach-keystone/Kconfig
+@@ -9,6 +9,7 @@ config ARCH_KEYSTONE
+ 	select COMMON_CLK_KEYSTONE
+ 	select ARCH_SUPPORTS_BIG_ENDIAN
+ 	select ZONE_DMA if ARM_LPAE
++	select PM_GENERIC_DOMAINS if PM
+ 	help
+ 	  Support for boards based on the Texas Instruments Keystone family of
+ 	  SoCs.
+diff --git a/arch/arm/mach-keystone/pm_domain.c b/arch/arm/mach-keystone/pm_domain.c
+index ca79dda..3341da1 100644
+--- a/arch/arm/mach-keystone/pm_domain.c
++++ b/arch/arm/mach-keystone/pm_domain.c
+@@ -12,69 +12,100 @@
+  * version 2, as published by the Free Software Foundation.
+  */
  
- 	return ret;
++#include <linux/clk.h>
+ #include <linux/init.h>
+-#include <linux/pm_runtime.h>
+ #include <linux/pm_clock.h>
++#include <linux/pm_domain.h>
+ #include <linux/platform_device.h>
+-#include <linux/clk-provider.h>
+ #include <linux/of.h>
+ 
+-#ifdef CONFIG_PM_RUNTIME
+-static int keystone_pm_runtime_suspend(struct device *dev)
++#ifdef CONFIG_PM_GENERIC_DOMAINS
++
++struct keystone_domain {
++	struct generic_pm_domain genpd;
++	struct device	*dev;
++};
++
++void keystone_pm_domain_attach_dev(struct device *dev)
+ {
++	struct clk *clk;
+ 	int ret;
++	int i = 0;
+ 
+ 	dev_dbg(dev, "%s\n", __func__);
+ 
+-	ret = pm_generic_runtime_suspend(dev);
+-	if (ret)
+-		return ret;
+-
+-	ret = pm_clk_suspend(dev);
++	ret = pm_clk_create(dev);
+ 	if (ret) {
+-		pm_generic_runtime_resume(dev);
+-		return ret;
++		dev_err(dev, "pm_clk_create failed %d\n", ret);
++		return;
++	};
++
++	while ((clk = of_clk_get(dev->of_node, i++)) && !IS_ERR(clk)) {
++		ret = pm_clk_add_clk(dev, clk);
++		if (ret) {
++			dev_err(dev, "pm_clk_add_clk failed %d\n", ret);
++			goto clk_err;
++		};
+ 	}
+ 
+-	return 0;
++	return;
++
++clk_err:
++	pm_clk_destroy(dev);
  }
-@@ -287,7 +293,6 @@ int pm_clk_resume(struct device *dev)
- 	struct pm_subsys_data *psd = dev_to_psd(dev);
- 	struct pm_clock_entry *ce;
- 	unsigned long flags;
--	int ret;
  
- 	dev_dbg(dev, "%s()\n", __func__);
+-static int keystone_pm_runtime_resume(struct device *dev)
++void keystone_pm_domain_detach_dev(struct device *dev)
+ {
+ 	dev_dbg(dev, "%s\n", __func__);
+-
+-	pm_clk_resume(dev);
+-
+-	return pm_generic_runtime_resume(dev);
++	pm_clk_destroy(dev);
+ }
+-#endif
  
-@@ -296,13 +301,8 @@ int pm_clk_resume(struct device *dev)
+-static struct dev_pm_domain keystone_pm_domain = {
+-	.ops = {
+-		SET_RUNTIME_PM_OPS(keystone_pm_runtime_suspend,
+-				   keystone_pm_runtime_resume, NULL)
+-		USE_PLATFORM_PM_SLEEP_OPS
++static const struct keystone_domain keystone_domain = {
++	.genpd = {
++		.name = "keystone",
++		.attach_dev = keystone_pm_domain_attach_dev,
++		.detach_dev = keystone_pm_domain_detach_dev,
++		.dev_ops = {
++			.stop = pm_clk_suspend,
++			.start = pm_clk_resume,
++		},
+ 	},
+ };
  
- 	spin_lock_irqsave(&psd->lock, flags);
+-static struct pm_clk_notifier_block platform_domain_notifier = {
+-	.pm_domain = &keystone_pm_domain,
++static int keystone_pm_domain_probe(struct platform_device *pdev)
++{
++	struct keystone_domain *domain;
++
++	domain = devm_kzalloc(&pdev->dev,
++			      sizeof(struct keystone_domain), GFP_KERNEL);
++	if (!domain)
++		return -ENOMEM;
++
++	domain->genpd = keystone_domain.genpd;
++	domain->dev = &pdev->dev;
++
++	pm_genpd_init(&domain->genpd, NULL, false);
++	return of_genpd_add_provider_simple(pdev->dev.of_node, &domain->genpd);
++}
++
++static struct of_device_id keystone_pm_domain_dt_ids[] = {
++	{ .compatible = "ti,keystone-powerdomain" },
++	{ }
+ };
  
--	list_for_each_entry(ce, &psd->clock_list, node) {
--		if (ce->status < PCE_STATUS_ERROR) {
--			ret = __pm_clk_enable(dev, ce->clk);
--			if (!ret)
--				ce->status = PCE_STATUS_ENABLED;
--		}
--	}
-+	list_for_each_entry(ce, &psd->clock_list, node)
-+		__pm_clk_enable(dev, ce);
+-static struct of_device_id of_keystone_table[] = {
+-	{.compatible = "ti,keystone"},
+-	{ /* end of list */ },
++static struct platform_driver keystone_pm_domain_driver = {
++	.driver = {
++		.name = "ti,keystone-powerdomain",
++		.owner = THIS_MODULE,
++		.of_match_table = keystone_pm_domain_dt_ids,
++	},
++	.probe = keystone_pm_domain_probe,
+ };
  
- 	spin_unlock_irqrestore(&psd->lock, flags);
- 
-@@ -411,7 +411,6 @@ int pm_clk_resume(struct device *dev)
- 	struct pm_subsys_data *psd = dev_to_psd(dev);
- 	struct pm_clock_entry *ce;
- 	unsigned long flags;
--	int ret;
- 
- 	dev_dbg(dev, "%s()\n", __func__);
- 
-@@ -421,13 +420,8 @@ int pm_clk_resume(struct device *dev)
- 
- 	spin_lock_irqsave(&psd->lock, flags);
- 
--	list_for_each_entry(ce, &psd->clock_list, node) {
--		if (ce->status < PCE_STATUS_ERROR) {
--			ret = __pm_clk_enable(dev, ce->clk);
--			if (!ret)
--				ce->status = PCE_STATUS_ENABLED;
--		}
--	}
-+	list_for_each_entry(ce, &psd->clock_list, node)
-+		__pm_clk_enable(dev, ce);
- 
- 	spin_unlock_irqrestore(&psd->lock, flags);
- 
+ int __init keystone_pm_runtime_init(void)
+ {
+-	struct device_node *np;
+-
+-	np = of_find_matching_node(NULL, of_keystone_table);
+-	if (!np)
+-		return 0;
+-
+-	pm_clk_add_notifier(&platform_bus_type, &platform_domain_notifier);
+-
+-	return 0;
++	return platform_driver_register(&keystone_pm_domain_driver);
+ }
++#else
++int __init keystone_pm_runtime_init(void) { return 0; }
++#endif /* CONFIG_PM_GENERIC_DOMAINS */
 -- 
 1.9.1
 
