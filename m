@@ -1,129 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073AbaJWTLK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 15:11:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36714 "EHLO arroyo.ext.ti.com"
+	id S1752511AbaJWTPB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 15:15:01 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37459 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751709AbaJWTLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 15:11:08 -0400
-Date: Thu, 23 Oct 2014 14:08:19 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "balbi@ti.com" <balbi@ti.com>,
-        "dinh.linux@gmail.com" <dinh.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "matthijs@stdin.nl" <matthijs@stdin.nl>,
-        "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "sachin.kamat@linaro.org" <sachin.kamat@linaro.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "dianders@chromium.org" <dianders@chromium.org>,
-        "kever.yang@rock-chips.com" <kever.yang@rock-chips.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: Re: [PATCHv5 2/7] usb: dwc2: Move gadget probe function into
- platform code
-Message-ID: <20141023190819.GH21407@saruman>
-Reply-To: <balbi@ti.com>
-References: <1413831126-24193-1-git-send-email-dinguyen@opensource.altera.com>
- <1413831126-24193-3-git-send-email-dinguyen@opensource.altera.com>
- <29460399.4PyRbDpEzA@amdc1032>
- <A2CA0424C0A6F04399FB9E1CD98E0304844E4FDC@US01WEMBX2.internal.synopsys.com>
+	id S1751062AbaJWTO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 15:14:59 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <54494B74.2080504@amacapital.net>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com> <54494B74.2080504@amacapital.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3VRmKSg17yJg2MZg"
-Content-Disposition: inline
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304844E4FDC@US01WEMBX2.internal.synopsys.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 23 Oct 2014 12:13:31 -0700
+To: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>,
+        rgb@redhat.com
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org, linux-audit@redhat.com
+Message-ID: <E55618B5-4535-45F7-9C61-F7DE9B98398A@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3VRmKSg17yJg2MZg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Well, probably not something for stable/urgent...
 
-On Wed, Oct 22, 2014 at 08:54:00PM +0000, Paul Zimmerman wrote:
-> > From: Bartlomiej Zolnierkiewicz [mailto:b.zolnierkie@samsung.com]
-> > Sent: Wednesday, October 22, 2014 4:16 AM
-> >=20
-> > On Monday, October 20, 2014 01:52:01 PM dinguyen@opensource.altera.com =
-wrote:
-> > > From: Dinh Nguyen <dinguyen@opensource.altera.com>
-> > >
-> > > This patch will aggregate the probing of gadget/hcd driver into platf=
-orm.c.
-> > > The gadget probe funtion is converted into gadget_init that is now on=
-ly
-> > > responsible for gadget only initialization. All the gadget resources =
-is now
-> > > handled by platform.c
-> > >
-> > > Since the host workqueue will not get initialized if the driver is co=
-nfigured
-> > > for peripheral mode only. Thus we need to check for wq_otg before cal=
-ling
-> > > queue_work().
-> > >
-> > > Also, we move spin_lock_init to common location for both host and gad=
-get that
-> > > is either in platform.c or pci.c.
-> > >
-> > > We also ove suspend/resume code to common platform code, and update i=
-t to use
-> > > the new PM API (struct dev_pm_ops).
-> > >
-> > > Lastly, move the "samsung,s3c6400-hsotg" binding into dwc2_of_match_t=
-able.
-> >=20
-> > This patch seems to break bisectability.  It moves all the gadget probi=
-ng
-> > to platform.c but Kconfig/Makefile are not updated (platform.c will be
-> > compiled only for CONFIG_USB_DWC2_PLATFORM=3Dy which in turn depends on
-> > CONFIG_USB_DWC2_HOST).  IMO patch #7 should be merged into this one (#2=
-).
->=20
-> It doesn't break the compile, I already tested it. It does break the
-> operation of the driver until patch #7 is applied, but I think that's
-> OK in the middle of a patch series. I think it's a bit much to expect
-> the driver to keep working at each step of a patch series like this.
+On October 23, 2014 11:39:48 AM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>On 10/22/2014 09:04 PM, Eric Paris wrote:
+>> git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very
+>dumb.
+>> It was writing over %esp/pt_regs semi-randomly on i686  with the
+>expected
+>> "system can't boot" results.  As noted in:
+>> 
+>> https://bugs.freedesktop.org/show_bug.cgi?id=85277
+>> 
+>> This patch stops fscking with pt_regs.  Instead it sets up the
+>registers
+>> for the call to __audit_syscall_entry in the most obvious conceivable
+>> way.  It then does just a tiny tiny touch of magic.  We need to get
+>what
+>> started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as
+>easy
+>> as a pair of pushes.
+>> 
+>> After the call to __audit_syscall_entry all we need to do is get that
+>> now useless junk off the stack (pair of pops) and reload %eax with
+>the
+>> original syscall so other stuff can keep going about it's business.
+>> 
+>> Signed-off-by: Eric Paris <eparis@redhat.com>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> Cc: x86@kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: linux-audit@redhat.com
+>> ---
+>>  arch/x86/kernel/entry_32.S | 15 +++++++--------
+>>  1 file changed, 7 insertions(+), 8 deletions(-)
+>> 
+>> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+>> index f9e3fab..fb01d22 100644
+>> --- a/arch/x86/kernel/entry_32.S
+>> +++ b/arch/x86/kernel/entry_32.S
+>> @@ -447,15 +447,14 @@ sysenter_exit:
+>>  sysenter_audit:
+>>  	testl $(_TIF_WORK_SYSCALL_ENTRY &
+>~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+>>  	jnz syscall_trace_entry
+>> -	addl $4,%esp
+>> -	CFI_ADJUST_CFA_OFFSET -4
+>> -	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
+>> -	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
+>> -	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
+>> -	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
+>> -	/* %eax already in %eax		   1st arg: syscall number */
+>> +	/* movl PT_EAX(%esp), %eax	already set, syscall number: 1st arg to
+>audit */
+>> +	movl PT_EBX(%esp), %edx		/* ebx/a0: 2nd arg to audit */
+>> +	/* movl PT_ECX(%esp), %ecx	already set, a1: 3nd arg to audit */
+>> +	pushl_cfi PT_ESI(%esp)		/* a3: 5th arg */
+>> +	pushl_cfi PT_EDX+4(%esp)	/* a2: 4th arg */
+>>  	call __audit_syscall_entry
+>> -	pushl_cfi %ebx
+>> +	popl_cfi %ecx /* get that remapped edx off the stack */
+>> +	popl_cfi %ecx /* get that remapped esi off the stack */
+>>  	movl PT_EAX(%esp),%eax		/* reload syscall number */
+>>  	jmp sysenter_do_call
+>>  
+>> 
+>
+>This looks reasonably likely to be correct, but this code is
+>complicated
+>and now ever slower.
+>
+>How hard would it be to just delete it and replace it with a
+>straightforward two-phase trace invocation a la x86_64?
+>
+>--Andy
 
-It's your driver and, at the end of the day, your headache; but the
-very day you need to run a git bisect and you end up in the middle of
-one of these commits, you'll regret this statement :-)
-
-There's usually a way to make sure things continue to work even if it
-means duplicating some code until the conversion is completed, or adding
-temporary flags which get added and removed within the same series, etc.
-
-my 2 cents
-
---=20
-balbi
-
---3VRmKSg17yJg2MZg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUSVIjAAoJEIaOsuA1yqRE/uoQAJGVBqtjYseTe/pPGAAdfNYY
-H1gSYRlv+ufD94zjQ077WsfR4yVsjMJWtVzZ7Tr2mPrQi0B+V7Ln0vtHERP4/CmI
-Yq6AQ7y21mmZJLr838ZKWD180hWS5lIakw+wIcTKOq4GVX57yMFz+U7HoJDuWZ/t
-kVPQTvWcWdNsqmTf/0cJOYiA9beHWRlzByHGEndX3pB4dT5dmKJUxaKxN4JSMyTR
-5wshkaPszXTS/gpREfRGDThR3J7+QJnBpB5GiEv44VCNylu3tiyToSQBlMOdg/4U
-PvjDmsAKGEScohunrmJ6Hajxn9g+xev6v75Xky4wMjErXXTs6YV5bXD7G9koT8oA
-hOK3s647yn7v0jorngmc4MGWbiQfw+RYtHsxCzTaIlJrn5pKtBUh+4pXcLNF0YnW
-/QzngVEV6HWelcu5qNqermQJaDdP6ZlHAp5tMhNa8JGJuTReb4GSWMc6uIKeNcV7
-tFjXmYoiRk9trZ9S71tmJdL4DsHr6AZqK0EjeYWJQeRegt0c5bHO/TvvWsPZE+fC
-SMD3GxEbTPp8gz2DiBXVgNz1NaDIk6BajRQzT/kkM58Wml99cLMgZmJ8z3KUOCvW
-GOXQgKCmBYiIhBGAtr4W8qkrv4sxSJRBguxxJqOc2nRQ99T8hoYwHWlTwtW+sI01
-Pjwt3N9/6MCSv+RWhnF9
-=w6a4
------END PGP SIGNATURE-----
-
---3VRmKSg17yJg2MZg--
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
