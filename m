@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057AbaJWQQg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:16:36 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:40717 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341AbaJWQQH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:16:07 -0400
+	id S1751912AbaJWQTa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:19:30 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58408 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813AbaJWQT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 12:19:28 -0400
+Message-ID: <54492A69.5070505@ti.com>
+Date: Thu, 23 Oct 2014 19:18:49 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141022152019.GK10074@8bytes.org>
-References: <1412158843-8115-1-git-send-email-djkurtz@chromium.org> <20141022152019.GK10074@8bytes.org>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Fri, 24 Oct 2014 00:15:44 +0800
-X-Google-Sender-Auth: PtaykxvPLmRI6_C4a85dSADRM5w
-Message-ID: <CAGS+omDyKLVqmvVtJBez7SuC_oqkpov1e-ikfLE=NBcY0Mx45A@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Rockchip IOMMU driver and devicetree bindings
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, Simon Xue <xxm@rock-chips.com>,
-        Grant Grundler <grundler@chromium.org>,
-        =?UTF-8?Q?St=C3=A9phane_Marchesin?= <marcheu@chromium.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:IOMMU DRIVERS" <iommu@lists.linux-foundation.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        <khilman@linaro.org>, <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, <grant.likely@secretlab.ca>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH v3 1/5] PM / clock_ops: Add pm_clk_add_clk()
+References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com> <1414074182-25980-2-git-send-email-grygorii.strashko@ti.com> <20141023154928.GC18714@dtor-ws>
+In-Reply-To: <20141023154928.GC18714@dtor-ws>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 11:20 PM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Wed, Oct 01, 2014 at 06:20:40PM +0800, Daniel Kurtz wrote:
->> Add a driver and devicetree bindings for the IOMMU found in Rockchip RK3288
->> SoCs.
+On 10/23/2014 06:49 PM, Dmitry Torokhov wrote:
+> On Thu, Oct 23, 2014 at 05:22:58PM +0300, Grygorii Strashko wrote:
+>> From: Geert Uytterhoeven <geert+renesas@glider.be>
 >>
->> Daniel Kurtz (3):
->>   iommu/rockchip: rk3288 iommu driver
->>   dt-bindings: iommu: Add documentation for rockchip iommu
->>   ARM: dts: rk3288: add VOP iommu nodes
+>> The existing pm_clk_add() allows to pass a clock by con_id. However,
+>> when referring to a specific clock from DT, no con_id is available.
 >>
->>  .../devicetree/bindings/iommu/rockchip,iommu.txt   |  26 +
->>  arch/arm/boot/dts/rk3288.dtsi                      |  18 +
->>  drivers/iommu/Kconfig                              |  11 +
->>  drivers/iommu/Makefile                             |   1 +
->>  drivers/iommu/rockchip-iommu.c                     | 924 +++++++++++++++++++++
->>  5 files changed, 980 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/iommu/rockchip,iommu.txt
->>  create mode 100644 drivers/iommu/rockchip-iommu.c
+>> Add pm_clk_add_clk(), which allows to specify the struct clk * directly.
+>>
+>> CC: Ulf Hansson <ulf.hansson@linaro.org>
+>> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Reviewed-by: Kevin Hilman <khilman@linaro.org>
+>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> ---
+>>   drivers/base/power/clock_ops.c | 41 +++++++++++++++++++++++++++++++----------
+>>   include/linux/pm_clock.h       |  8 ++++++++
+>>   2 files changed, 39 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
+>> index 7836930..f14b767 100644
+>> --- a/drivers/base/power/clock_ops.c
+>> +++ b/drivers/base/power/clock_ops.c
+>> @@ -53,7 +53,8 @@ static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
+>>    */
+>>   static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+>>   {
+>> -	ce->clk = clk_get(dev, ce->con_id);
+>> +	if (!ce->clk)
+>> +		ce->clk = clk_get(dev, ce->con_id);
+>>   	if (IS_ERR(ce->clk)) {
+>>   		ce->status = PCE_STATUS_ERROR;
+>>   	} else {
+>> @@ -63,15 +64,8 @@ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
+>>   	}
+>>   }
+>>
+>> -/**
+>> - * pm_clk_add - Start using a device clock for power management.
+>> - * @dev: Device whose clock is going to be used for power management.
+>> - * @con_id: Connection ID of the clock.
+>> - *
+>> - * Add the clock represented by @con_id to the list of clocks used for
+>> - * the power management of @dev.
+>> - */
+>> -int pm_clk_add(struct device *dev, const char *con_id)
+>> +static int __pm_clk_add(struct device *dev, const char *con_id,
+>> +			struct clk *clk)
+>>   {
+>>   	struct pm_subsys_data *psd = dev_to_psd(dev);
+>>   	struct pm_clock_entry *ce;
+>> @@ -93,6 +87,8 @@ int pm_clk_add(struct device *dev, const char *con_id)
+>>   			kfree(ce);
+>>   			return -ENOMEM;
+>>   		}
+>> +	} else {
 >
-> Please make sure you also get Acks for the DT bindings. With that and
-> the issue I mentioned in the other email fixed, I will apply these
-> patches?
+> You need __clk_get(clk) here, otherwise when you will be removing clocks
+> you'll be dropping a reference that does not belong to you (as yiou have
+> not taken it).
+
+No, I don't ;)
+
+pm_clk_add_clk is intended to be used with valid pointer on clk,
+which means clk_get() has been called already. In our case:
+	clk = of_clk_get(dev->of_node, i));
+	ret = pm_clk_add_clk(dev, clk);
+
+It's just a different way to fill list of clocks for device,
+once pm_clk_add_clk() is called - PM clock framework will be the owner
+of clock.
+
 >
+>> +		ce->clk = clk;
+>>   	}
+>>
 >
->         Joerg
 
-Hi Joerg,
+regards,
+-grygorii
 
-Thanks for your reviews.
-Can you help get these DT bindings Acked?
-AFAICT, the DT maintainers are CC'ed on this patch, I'm not sure what
-else to do.
-
-Thanks,
--Daniel
