@@ -1,355 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111AbaJWEGO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 00:06:14 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49510 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaJWEED (ORCPT
+	id S1753917AbaJWEGZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 00:06:25 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:62699 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaJWEGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 00:04:03 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 10/14] net: dsa/mv88e6352: Implement EEPROM access functions
-Date: Wed, 22 Oct 2014 21:03:18 -0700
-Message-Id: <1414037002-25528-11-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
-References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54487E32.019D,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 68
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 23 Oct 2014 00:06:19 -0400
+X-AuditID: cbfee690-f79ab6d0000046f7-9f-54487eb92125
+From: Vishnu Pratap Singh <vishnu.ps@samsung.com>
+To: akpm@linux-foundation.org, rientjes@google.com,
+        kosaki.motohiro@jp.fujitsu.com, mgorman@suse.de,
+        liwanp@linux.vnet.ibm.com, qiuxishi@huawei.com,
+        linux-kernel@vger.kernel.org
+Cc: cpgs@samsung.com, pintu.k@samsung.com, vishu13285@gmail.com,
+        Vishnu Pratap Singh <vishnu.ps@samsung.com>
+Subject: [PATCH] lib: show_mem: This patch adds cma reserved infromation
+Date: Thu, 23 Oct 2014 09:33:51 +0530
+Message-id: <1414037031-20548-1-git-send-email-vishnu.ps@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsWyRsSkTndnnUeIweQZQhZz1q9hs3h5SNOi
+	7dg/FovLu+awWWw7vIPJYvK7Z4wWfd8Ps1t8m7ab0aJtyUYmiyl9dxkttqx4yOrA7bFz1l12
+	jwWbSj1ajrxl9Tjx5BKbx4kZv1k8HhzazOLRt2UVo8fm09UenzfJBXBGcdmkpOZklqUW6dsl
+	cGVMunqEtaCHs+LspGPMDYxn2LsYOTkkBEwkWroWMkPYYhIX7q1n62Lk4hASWMooMXHjRVaY
+	oru3DjFBJBYxStw59gTK+cMocePHbyaQKjYBQ4kNs4+wgyREBLYySvQfuc8GkmAWyJP4ePsn
+	2A5hAQ+J/UsOgMVZBFQllq+9AbaCV8BVYs+KXqh1ChLLvqxlBhkkIbCLXeL6pBfsEA0CEt8m
+	H2LpYuQASshKbDoAdbekxMEVN1gmMAouYGRYxSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iREY
+	Baf/PZuwg/HeAetDjAIcjEo8vBXJHiFCrIllxZW5hxhNgTZMZJYSTc4HxlpeSbyhsZmRhamJ
+	qbGRuaWZkjjva6mfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYox6mTp5290NNPptV2P/+
+	ODaXKY0/m07vPbHlhuP9acEZRftzZmvLLk7WvjzTO/CltYnJUbHZlrY8gjcrws5HrLu72IIx
+	wyzuh0BR0f8HV2/J2L43mVk6tzhtyZHyo0++/92t7JmZWf3V2Tb+/zvJlQG5ApvmNIjYC+pY
+	lPw58XTtpBlH2RpvK7EUZyQaajEXFScCAMNm4ah9AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t9jAd2ddR4hBtv3c1rMWb+GzeLlIU2L
+	tmP/WCwu75rDZrHt8A4mi8nvnjFa9H0/zG7xbdpuRou2JRuZLKb03WW02LLiIasDt8fOWXfZ
+	PRZsKvVoOfKW1ePEk0tsHidm/GbxeHBoM4tH35ZVjB6bT1d7fN4kF8AZ1cBok5GamJJapJCa
+	l5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0rJJCWWJOKVAoILG4WEnf
+	DtOE0BA3XQuYxghd35AguB4jAzSQsIYxY9LVI6wFPZwVZycdY25gPMPexcjJISFgInH31iEm
+	CFtM4sK99WxdjFwcQgKLGCXuHHvCBOH8YZS48eM3WBWbgKHEhtlH2EESIgJbGSX6j9xnA0kw
+	C+RJfLz9kxnEFhbwkNi/5ABYnEVAVWL52husIDavgKvEnhW9rBDrFCSWfVnLPIGRewEjwypG
+	0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Bh7JrWDcWWDxSFGAQ5GJR7eimSPECHWxLLiytxD
+	jBIczEoivLXWQCHelMTKqtSi/Pii0pzU4kOMpkDbJzJLiSbnA+M/ryTe0NjE3NTY1NLEwsTM
+	Ukmc90CrdaCQQHpiSWp2ampBahFMHxMHp1QDo8DJ0k+RC6+wbNht+1SuS5bh4JQvApa3wvTt
+	1xWv3jtzcu38SYsUYtS3fl+kuavf9/jHNwUfsnN5jWoP7NL1dvTwznoodfESV6an/+yQL5O+
+	C1vNjgkKSd7YtO5AxNIlsisW7NpyPP+vkuTqxwsMunfcl/dQ1e+Kv20b9/Lbm1PVN0Us/aza
+	3iqxFGckGmoxFxUnAgD5RhhqxwIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MV88E6352 supports read and write access to its configuration eeprom.
+This patch adds cma reserved information which is currently
+shown as a part of total reserved only. This patch is
+continuation of our previos cma patches related to this.
+https://lkml.org/lkml/2014/10/20/64
+https://lkml.org/lkml/2014/10/22/383
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Vishnu Pratap Singh <vishnu.ps@samsung.com>
 ---
- drivers/net/dsa/mv88e6352.c | 228 +++++++++++++++++++++++++++++++++++++++++++-
- drivers/net/dsa/mv88e6xxx.h |   5 +
- 2 files changed, 230 insertions(+), 3 deletions(-)
+ lib/show_mem.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/net/dsa/mv88e6352.c b/drivers/net/dsa/mv88e6352.c
-index aff6695..9dddcba 100644
---- a/drivers/net/dsa/mv88e6352.c
-+++ b/drivers/net/dsa/mv88e6352.c
-@@ -22,18 +22,18 @@
- #include <net/dsa.h>
- #include "mv88e6xxx.h"
+diff --git a/lib/show_mem.c b/lib/show_mem.c
+index 0922579..a0e50d7 100644
+--- a/lib/show_mem.c
++++ b/lib/show_mem.c
+@@ -8,6 +8,9 @@
+ #include <linux/mm.h>
+ #include <linux/nmi.h>
+ #include <linux/quicklist.h>
++#ifdef CONFIG_CMA
++#include <linux/cma.h>
++#endif
  
--static int mv88e6352_phy_wait(struct dsa_switch *ds)
-+static int mv88e6352_wait(struct dsa_switch *ds, int reg, u16 mask)
+ void show_mem(unsigned int filter)
  {
- 	unsigned long timeout = jiffies + HZ / 10;
+@@ -38,7 +41,12 @@ void show_mem(unsigned int filter)
  
- 	while (time_before(jiffies, timeout)) {
- 		int ret;
- 
--		ret = REG_READ(REG_GLOBAL2, 0x18);
-+		ret = REG_READ(REG_GLOBAL2, reg);
- 		if (ret < 0)
- 			return ret;
- 
--		if (!(ret & 0x8000))
-+		if (!(ret & mask))
- 			return 0;
- 
- 		usleep_range(1000, 2000);
-@@ -41,6 +41,21 @@ static int mv88e6352_phy_wait(struct dsa_switch *ds)
- 	return -ETIMEDOUT;
- }
- 
-+static inline int mv88e6352_phy_wait(struct dsa_switch *ds)
-+{
-+	return mv88e6352_wait(ds, 0x18, 0x8000);
-+}
-+
-+static inline int mv88e6352_eeprom_load_wait(struct dsa_switch *ds)
-+{
-+	return mv88e6352_wait(ds, 0x14, 0x0800);
-+}
-+
-+static inline int mv88e6352_eeprom_busy_wait(struct dsa_switch *ds)
-+{
-+	return mv88e6352_wait(ds, 0x14, 0x8000);
-+}
-+
- static int __mv88e6352_phy_read(struct dsa_switch *ds, int addr, int regnum)
- {
- 	int ret;
-@@ -426,6 +441,7 @@ static int mv88e6352_setup(struct dsa_switch *ds)
- 	mutex_init(&ps->smi_mutex);
- 	mutex_init(&ps->stats_mutex);
- 	mutex_init(&ps->phy_mutex);
-+	mutex_init(&ps->eeprom_mutex);
- 
- 	ps->id = REG_READ(REG_PORT(0), 0x03) & 0xfff0;
- 
-@@ -522,6 +538,209 @@ static struct mv88e6xxx_hw_stat mv88e6352_hw_stats[] = {
- 	{ "hist_1024_max_bytes", 4, 0x0d, },
- };
- 
-+static int mv88e6352_get_eeprom_len(struct dsa_switch *ds)
-+{
-+	return 0x200;
-+}
-+
-+static int mv88e6352_read_eeprom_word(struct dsa_switch *ds, int addr)
-+{
-+	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
-+	int ret;
-+
-+	mutex_lock(&ps->eeprom_mutex);
-+
-+	ret = mv88e6xxx_reg_write(ds, REG_GLOBAL2, 0x14,
-+				  0xc000 | (addr & 0xff));
-+	if (ret < 0)
-+		goto error;
-+
-+	ret = mv88e6352_eeprom_busy_wait(ds);
-+	if (ret < 0)
-+		goto error;
-+
-+	ret = mv88e6xxx_reg_read(ds, REG_GLOBAL2, 0x15);
-+error:
-+	mutex_unlock(&ps->eeprom_mutex);
-+	return ret;
-+}
-+
-+static int mv88e6352_get_eeprom(struct dsa_switch *ds,
-+				struct ethtool_eeprom *eeprom, u8 *data)
-+{
-+	int offset;
-+	int len;
-+	int ret;
-+
-+	offset = eeprom->offset;
-+	len = eeprom->len;
-+	eeprom->len = 0;
-+
-+	eeprom->magic = 0xc3ec4951;
-+
-+	ret = mv88e6352_eeprom_load_wait(ds);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (offset & 1) {
-+		int word;
-+
-+		word = mv88e6352_read_eeprom_word(ds, offset >> 1);
-+		if (word < 0)
-+			return word;
-+
-+		*data++ = (word >> 8) & 0xff;
-+
-+		offset++;
-+		len--;
-+		eeprom->len++;
-+	}
-+
-+	while (len >= 2) {
-+		int word;
-+
-+		word = mv88e6352_read_eeprom_word(ds, offset >> 1);
-+		if (word < 0)
-+			return word;
-+
-+		*data++ = word & 0xff;
-+		*data++ = (word >> 8) & 0xff;
-+
-+		offset += 2;
-+		len -= 2;
-+		eeprom->len += 2;
-+	}
-+
-+	if (len) {
-+		int word;
-+
-+		word = mv88e6352_read_eeprom_word(ds, offset >> 1);
-+		if (word < 0)
-+			return word;
-+
-+		*data++ = word & 0xff;
-+
-+		offset++;
-+		len--;
-+		eeprom->len++;
-+	}
-+
-+	return 0;
-+}
-+
-+static int mv88e6352_eeprom_is_readonly(struct dsa_switch *ds)
-+{
-+	int ret;
-+
-+	ret = mv88e6xxx_reg_read(ds, REG_GLOBAL2, 0x14);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (!(ret & 0x0400))
-+		return -EROFS;
-+
-+	return 0;
-+}
-+
-+static int mv88e6352_write_eeprom_word(struct dsa_switch *ds, int addr,
-+				       u16 data)
-+{
-+	struct mv88e6xxx_priv_state *ps = ds_to_priv(ds);
-+	int ret;
-+
-+	mutex_lock(&ps->eeprom_mutex);
-+
-+	ret = mv88e6xxx_reg_write(ds, REG_GLOBAL2, 0x15, data);
-+	if (ret < 0)
-+		goto error;
-+
-+	ret = mv88e6xxx_reg_write(ds, REG_GLOBAL2, 0x14,
-+				  0xb000 | (addr & 0xff));
-+	if (ret < 0)
-+		goto error;
-+
-+	ret = mv88e6352_eeprom_busy_wait(ds);
-+error:
-+	mutex_unlock(&ps->eeprom_mutex);
-+	return ret;
-+}
-+
-+static int mv88e6352_set_eeprom(struct dsa_switch *ds,
-+				struct ethtool_eeprom *eeprom, u8 *data)
-+{
-+	int offset;
-+	int ret;
-+	int len;
-+
-+	if (eeprom->magic != 0xc3ec4951)
-+		return -EINVAL;
-+
-+	ret = mv88e6352_eeprom_is_readonly(ds);
-+	if (ret)
-+		return ret;
-+
-+	offset = eeprom->offset;
-+	len = eeprom->len;
-+	eeprom->len = 0;
-+
-+	ret = mv88e6352_eeprom_load_wait(ds);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (offset & 1) {
-+		int word;
-+
-+		word = mv88e6352_read_eeprom_word(ds, offset >> 1);
-+		if (word < 0)
-+			return word;
-+
-+		word = (*data++ << 8) | (word & 0xff);
-+
-+		ret = mv88e6352_write_eeprom_word(ds, offset >> 1, word);
-+		if (ret < 0)
-+			return ret;
-+
-+		offset++;
-+		len--;
-+		eeprom->len++;
-+	}
-+
-+	while (len >= 2) {
-+		int word;
-+
-+		word = *data++;
-+		word |= *data++ << 8;
-+
-+		ret = mv88e6352_write_eeprom_word(ds, offset >> 1, word);
-+		if (ret < 0)
-+			return ret;
-+
-+		offset += 2;
-+		len -= 2;
-+		eeprom->len += 2;
-+	}
-+
-+	if (len) {
-+		int word;
-+
-+		word = mv88e6352_read_eeprom_word(ds, offset >> 1);
-+		if (word < 0)
-+			return word;
-+
-+		word = (word & 0xff00) | *data++;
-+
-+		ret = mv88e6352_write_eeprom_word(ds, offset >> 1, word);
-+		if (ret < 0)
-+			return ret;
-+
-+		offset++;
-+		len--;
-+		eeprom->len++;
-+	}
-+
-+	return 0;
-+}
-+
- static void
- mv88e6352_get_strings(struct dsa_switch *ds, int port, uint8_t *data)
- {
-@@ -557,6 +776,9 @@ struct dsa_switch_driver mv88e6352_switch_driver = {
- 	.get_temp_limit		= mv88e6352_get_temp_limit,
- 	.set_temp_limit		= mv88e6352_set_temp_limit,
- 	.get_temp_alarm		= mv88e6352_get_temp_alarm,
-+	.get_eeprom_len		= mv88e6352_get_eeprom_len,
-+	.get_eeprom		= mv88e6352_get_eeprom,
-+	.set_eeprom		= mv88e6352_set_eeprom,
- };
- 
- MODULE_ALIAS("platform:mv88e6352");
-diff --git a/drivers/net/dsa/mv88e6xxx.h b/drivers/net/dsa/mv88e6xxx.h
-index 77beff5..d4d53ae 100644
---- a/drivers/net/dsa/mv88e6xxx.h
-+++ b/drivers/net/dsa/mv88e6xxx.h
-@@ -43,6 +43,11 @@ struct mv88e6xxx_priv_state {
- 	 */
- 	struct mutex phy_mutex;
- 
-+	/* This mutex serializes eeprom access for chips with
-+	 * eeprom support.
-+	 */
-+	struct mutex eeprom_mutex;
-+
- 	int		id; /* switch product id */
- };
- 
+ 	printk("%lu pages RAM\n", total);
+ 	printk("%lu pages HighMem/MovableOnly\n", highmem);
++#ifdef CONFIG_CMA
++	printk("%lu pages reserved\n", (reserved - totalcma_pages));
++	printk("%lu pages cma reserved\n", totalcma_pages);
++#else
+ 	printk("%lu pages reserved\n", reserved);
++#endif
+ #ifdef CONFIG_QUICKLIST
+ 	printk("%lu pages in pagetable cache\n",
+ 		quicklist_total_size());
 -- 
-1.9.1
+1.8.3.2
 
