@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932814AbaJWCnj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 22:43:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8761 "EHLO mx1.redhat.com"
+	id S933016AbaJWCth (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 22:49:37 -0400
+Received: from relay1.sgi.com ([192.48.180.66]:33140 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932353AbaJWCni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 22:43:38 -0400
-Message-ID: <54486B26.30703@redhat.com>
-Date: Wed, 22 Oct 2014 22:42:46 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        kamalesh@linux.vnet.ibm.com, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        Tuukka Tikkanen <tuukka.tikkanen@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>
-Subject: Re: [PATCH RFC 5/7] sched: cfs: cpu frequency scaling arch functions
-References: <1413958051-7103-1-git-send-email-mturquette@linaro.org>	 <1413958051-7103-6-git-send-email-mturquette@linaro.org>	 <54480E58.5060600@redhat.com>	 <CAPtuhThe9dQkbwbXoCV0VpHohrC8UacPoL5vCn2uDqHcjbtKGA@mail.gmail.com>	 <54485D03.9070107@redhat.com> <1414030360.5228.12.camel@marge.simpson.net>
-In-Reply-To: <1414030360.5228.12.camel@marge.simpson.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	id S932379AbaJWCtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 22:49:35 -0400
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-mm@kvack.org, athorlton@sgi.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Add pgcollapse controls to task_struct
+Date: Wed, 22 Oct 2014 21:49:25 -0500
+Message-Id: <1414032567-109765-3-git-send-email-athorlton@sgi.com>
+X-Mailer: git-send-email 1.7.12.4
+In-Reply-To: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+This patch just adds the necessary bits to the task_struct so that the scans can
+eventually be controlled on a per-mm basis.  As I mentioned previously, we might
+want to add some more counters here.
 
-On 10/22/2014 10:12 PM, Mike Galbraith wrote:
-> On Wed, 2014-10-22 at 21:42 -0400, Rik van Riel wrote:
->> On 10/22/2014 07:20 PM, Mike Turquette wrote:
->>> On Wed, Oct 22, 2014 at 1:06 PM, Rik van Riel
->>> <riel@redhat.com> wrote: On 10/22/2014 02:07 AM, Mike Turquette
->>> wrote:
->>>>>> arch_eval_cpu_freq and arch_scale_cpu_freq are added to
->>>>>> allow the scheduler to evaluate if cpu frequency should
->>>>>> change and to invoke that change from a safe context.
->>>>>> 
->>>>>> They are weakly defined arch functions that do nothing
->>>>>> by default. A CPUfreq governor could use these functions
->>>>>> to implement a frequency scaling policy based on updates
->>>>>> to per-task statistics or updates to per-cpu
->>>>>> utilization.
->>>>>> 
->>>>>> As discussed at Linux Plumbers Conference 2014, the goal
->>>>>> will be to focus on a single cpu frequency scaling policy
->>>>>> that works for everyone. That may mean that the weak
->>>>>> arch functions definitions can be removed entirely and a
->>>>>> single policy implements that logic for all
->>>>>> architectures.
->>> 
->>> On virtual machines, we probably want to use both frequency and
->>>  steal time to calculate the factor.
->>> 
->>>> You mean for calculating desired cpu frequency on a virtual 
->>>> guest? Is that something we want to do?
->> 
->> A guest will be unable to set the cpu frequency, but it should 
->> know what the frequency is, so it can take the capacity of each 
->> CPU into account when doing things like load balancing.
-> 
-> Hm.  Why does using vaporite freq/capacity/whatever make any sense,
-> the silicon under the V(aporite)PU can/does change at the drop of a
-> hat, no?
+Signed-off-by: Alex Thorlton <athorlton@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Bob Liu <lliubbo@gmail.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Vladimir Davydov <vdavydov@parallels.com>
+Cc: linux-kernel@vger.kernel.org
 
-It can, but IIRC that should cause the kvmclock data for that VCPU
-to be regenerated, and the VCPU should be able to use that to figure
-out that the frequency changed the next time it runs the scheduler
-code on that VCPU.
+---
+ include/linux/sched.h | 12 ++++++++++++
+ kernel/fork.c         |  6 ++++++
+ 2 files changed, 18 insertions(+)
 
-- -- 
-All rights reversed
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5e344bb..109be66 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1661,6 +1661,18 @@ struct task_struct {
+ 	unsigned int	sequential_io;
+ 	unsigned int	sequential_io_avg;
+ #endif
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	struct callback_head pgcollapse_work;
++	/* default scan 8*512 pte (or vmas) every 30 second */
++	unsigned int pgcollapse_pages_to_scan;
++	unsigned int pgcollapse_pages_collapsed;
++	unsigned int pgcollapse_full_scans;
++	unsigned int pgcollapse_scan_sleep_millisecs;
++	/* during fragmentation poll the hugepage allocator once every minute */
++	unsigned int pgcollapse_alloc_sleep_millisecs;
++	unsigned long pgcollapse_last_scan;
++	unsigned long pgcollapse_scan_address;
++#endif
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 9b7d746..8c55309 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1355,6 +1355,12 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	p->sequential_io	= 0;
+ 	p->sequential_io_avg	= 0;
+ #endif
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	/* need to pull these values from sysctl or something */
++	p->pgcollapse_pages_to_scan = HPAGE_PMD_NR * 8;
++	p->pgcollapse_scan_sleep_millisecs = 10000;
++	p->pgcollapse_alloc_sleep_millisecs = 60000;
++#endif
+ 
+ 	/* Perform scheduler related setup. Assign this task to a CPU. */
+ 	retval = sched_fork(clone_flags, p);
+-- 
+1.7.12.4
 
-iQEcBAEBAgAGBQJUSGsmAAoJEM553pKExN6DlhUH/RLmVoHmab2zfPgZfRXWD9PX
-yKkx1tmoNPFAdp7l1xgz+fIVtp5I7gUnCo03r0x3JDL8dYiEfU1BfX1bs2WSresL
-7q50DVLQe8VXIqgmu1INqzQSJGfF9yOW4Kgg2xHkNBoWUdt+3fjF9JSEMJFxOZOs
-pFT85ITTs0zFIRDlwdEBEs0kRLEqh0JBeLx501RSC9VQ9OIZ3lp9O1BnawQ8WI0o
-Qq8ODXFgy1BGUE+Ow+skP8MnQUyBgb6b+f0Q6AmK/Er6lzw8PMwNvnmYN14ruR3R
-YkTjsyYxlYlzrx2IKZNWuYy5OXguRIslWi67fI0k/yE2WVHy/yXPbRErYQfM2o8=
-=PeDr
------END PGP SIGNATURE-----
