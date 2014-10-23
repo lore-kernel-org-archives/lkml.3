@@ -1,127 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911AbaJWPVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:21:13 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:44941 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107AbaJWPVL (ORCPT
+	id S1755927AbaJWPWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:22:47 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:40630 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439AbaJWPWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 11:21:11 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Richard Weinberger <richard@nod.at>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fat: Fix d_splice_alias() return code checking
-References: <1413715184-30196-1-git-send-email-richard@nod.at>
-	<20141020123415.GN7996@ZenIV.linux.org.uk>
-Date: Fri, 24 Oct 2014 00:21:04 +0900
-In-Reply-To: <20141020123415.GN7996@ZenIV.linux.org.uk> (Al Viro's message of
-	"Mon, 20 Oct 2014 13:34:15 +0100")
-Message-ID: <87siie95i7.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/25.0.50 (gnu/linux)
+	Thu, 23 Oct 2014 11:22:44 -0400
+X-Google-Original-Sender: <johan@hovold.com>
+Date: Thu, 23 Oct 2014 17:19:40 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
+        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
+        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
+        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v8 2/4] i2c: add support for Diolan DLN-2 USB-I2C adapter
+Message-ID: <20141023151940.GA21210@localhost>
+References: <1413384491-23703-1-git-send-email-octavian.purdila@intel.com>
+ <1413384491-23703-3-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413384491-23703-3-git-send-email-octavian.purdila@intel.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
+On Wed, Oct 15, 2014 at 05:48:09PM +0300, Octavian Purdila wrote:
 
-> On Sun, Oct 19, 2014 at 12:39:43PM +0200, Richard Weinberger wrote:
->> d_splice_alias() can return a valid dentry, NULL or an ERR_PTR.
->> Currently the code checks not for ERR_PTR.
->> Fix this by using IS_ERR_OR_NULL().
->
-> Why do we need to set ->d_time for non-NULL inode anyway?  AFAICS,
-> it's never checked for positive dentries, and the moment when positive
-> dentry become negative is when we want to set it anyway.
->
-> What am I missing here?  Why not simply do this:
+> +static int dln2_i2c_xfer(struct i2c_adapter *adapter,
+> +			 struct i2c_msg *msgs, int num)
+> +{
+> +	struct dln2_i2c *dln2 = i2c_get_adapdata(adapter);
+> +	struct i2c_msg *pmsg;
+> +	struct device *dev = &dln2->pdev->dev;
 
-Hm, at least, this changes behavior though (old one drops if parent
-changed after target dentry created, then when become negative. New one
-drops if changed parent after target became negative.).
+You want to use the i2c-adapter device here (not the platform device).
 
-However, looks like new behavior is workable. And I think it is worth to try.
+> +	int i;
+> +
+> +	for (i = 0; i < num; i++) {
+> +		int ret;
+> +
+> +		pmsg = &msgs[i];
+> +
+> +		if (pmsg->len > DLN2_I2C_MAX_XFER_SIZE) {
+> +			dev_warn(dev, "maximum transfer size exceeded\n");
+> +			return -EOPNOTSUPP;
+> +		}
+> +
+> +		if (pmsg->flags & I2C_M_RD) {
+> +			ret = dln2_i2c_read(dln2, pmsg->addr, pmsg->buf,
+> +					    pmsg->len);
+> +			if (ret < 0)
+> +				return ret;
+> +
+> +			pmsg->len = ret;
+> +		} else {
+> +			ret = dln2_i2c_write(dln2, pmsg->addr, pmsg->buf,
+> +					     pmsg->len);
+> +			if (ret != pmsg->len)
+> +				return -EPROTO;
+> +		}
+> +	}
+> +
+> +	return num;
+> +}
 
-Can you add Signed-off-by:?
+[...]
 
-> diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
-> index 6df8d3d..e2dc6bf 100644
-> --- a/fs/fat/namei_vfat.c
-> +++ b/fs/fat/namei_vfat.c
-> @@ -725,15 +725,14 @@ static struct dentry *vfat_lookup(struct inode *dir, struct dentry *dentry,
->  			inode = NULL;
->  			goto out;
->  		}
-> -		goto error;
-> +		inode = ERR_PTR(inode);
-> +		goto out;
->  	}
->  
->  	inode = fat_build_inode(sb, sinfo.de, sinfo.i_pos);
->  	brelse(sinfo.bh);
-> -	if (IS_ERR(inode)) {
-> -		err = PTR_ERR(inode);
-> -		goto error;
-> -	}
-> +	if (IS_ERR(inode))
-> +		goto out;
->  
->  	alias = d_find_alias(inode);
->  	if (alias && !vfat_d_anon_disconn(alias)) {
-> @@ -754,16 +753,10 @@ static struct dentry *vfat_lookup(struct inode *dir, struct dentry *dentry,
->  		dput(alias);
->  
->  out:
-> +	if (!inode)
-> +		dentry->d_time = dir->i_version;
->  	mutex_unlock(&MSDOS_SB(sb)->s_lock);
-> -	dentry->d_time = dentry->d_parent->d_inode->i_version;
-> -	dentry = d_splice_alias(inode, dentry);
-> -	if (dentry)
-> -		dentry->d_time = dentry->d_parent->d_inode->i_version;
-> -	return dentry;
-> -
-> -error:
-> -	mutex_unlock(&MSDOS_SB(sb)->s_lock);
-> -	return ERR_PTR(err);
-> +	return d_splice_alias(inode, dentry);
->  }
->  
->  static int vfat_create(struct inode *dir, struct dentry *dentry, umode_t mode,
-> @@ -793,7 +786,6 @@ static int vfat_create(struct inode *dir, struct dentry *dentry, umode_t mode,
->  	inode->i_mtime = inode->i_atime = inode->i_ctime = ts;
->  	/* timestamp is already written, so mark_inode_dirty() is unneeded. */
->  
-> -	dentry->d_time = dentry->d_parent->d_inode->i_version;
->  	d_instantiate(dentry, inode);
->  out:
->  	mutex_unlock(&MSDOS_SB(sb)->s_lock);
-> @@ -824,6 +816,7 @@ static int vfat_rmdir(struct inode *dir, struct dentry *dentry)
->  	clear_nlink(inode);
->  	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
->  	fat_detach(inode);
-> +	dentry->d_time = dir->i_version;
->  out:
->  	mutex_unlock(&MSDOS_SB(sb)->s_lock);
->  
-> @@ -849,6 +842,7 @@ static int vfat_unlink(struct inode *dir, struct dentry *dentry)
->  	clear_nlink(inode);
->  	inode->i_mtime = inode->i_atime = CURRENT_TIME_SEC;
->  	fat_detach(inode);
-> +	dentry->d_time = dir->i_version;
->  out:
->  	mutex_unlock(&MSDOS_SB(sb)->s_lock);
->  
-> @@ -889,7 +883,6 @@ static int vfat_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
->  	inode->i_mtime = inode->i_atime = inode->i_ctime = ts;
->  	/* timestamp is already written, so mark_inode_dirty() is unneeded. */
->  
-> -	dentry->d_time = dentry->d_parent->d_inode->i_version;
->  	d_instantiate(dentry, inode);
->  
->  	mutex_unlock(&MSDOS_SB(sb)->s_lock);
+> +static int dln2_i2c_probe(struct platform_device *pdev)
+> +{
+> +	int ret;
+> +	struct dln2_i2c *dln2;
+> +	struct device *dev = &pdev->dev;
+> +	struct dln2_platform_data *pdata = dev_get_platdata(&pdev->dev);
+> +
+> +	dln2 = devm_kzalloc(dev, sizeof(*dln2), GFP_KERNEL);
+> +	if (!dln2)
+> +		return -ENOMEM;
+> +
+> +	dln2->buf = devm_kmalloc(dev, DLN2_I2C_BUF_SIZE, GFP_KERNEL);
+> +	if (!dln2->buf)
+> +		return -ENOMEM;
+> +
+> +	dln2->pdev = pdev;
+> +	dln2->port = pdata->port;
+> +
+> +	/* setup i2c adapter description */
+> +	dln2->adapter.owner = THIS_MODULE;
+> +	dln2->adapter.class = I2C_CLASS_HWMON;
+> +	dln2->adapter.algo = &dln2_i2c_usb_algorithm;
+> +	dln2->adapter.dev.parent = dev;
+> +	i2c_set_adapdata(&dln2->adapter, dln2);
+> +	snprintf(dln2->adapter.name, sizeof(dln2->adapter.name), "%s-%s-%d",
+> +		 "dln2-i2c", dev_name(pdev->dev.parent), dln2->port);
+> +
+> +	platform_set_drvdata(pdev, dln2);
+> +
+> +	/* initialize the i2c interface */
 
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+No longer "initialisation" since you dropped the frequency setup?
+
+> +	ret = dln2_i2c_enable(dln2, true);
+> +	if (ret < 0) {
+> +		dev_err(dev, "failed to initialize adapter: %d\n", ret);
+
+Same here.
+
+> +		return ret;
+> +	}
+> +
+> +	/* and finally attach to i2c layer */
+> +	ret = i2c_add_adapter(&dln2->adapter);
+> +	if (ret < 0) {
+> +		dev_err(dev, "failed to add I2C adapter: %d\n", ret);
+> +		goto out_disable;
+> +	}
+> +
+> +	return 0;
+> +
+> +out_disable:
+> +	dln2_i2c_enable(dln2, false);
+> +
+> +	return ret;
+> +}
+
+Looks good otherwise.
+
+Johan
