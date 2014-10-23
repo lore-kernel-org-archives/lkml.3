@@ -1,129 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591AbaJWRNN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 13:13:13 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:41031 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109AbaJWRNK (ORCPT
+	id S1754625AbaJWROu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 13:14:50 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:58539 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721AbaJWROt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 13:13:10 -0400
-Date: Thu, 23 Oct 2014 10:13:05 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: ssantosh@kernel.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        khilman@linaro.org, linux-pm@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, grant.likely@secretlab.ca,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH v3 1/5] PM / clock_ops: Add pm_clk_add_clk()
-Message-ID: <20141023171305.GA24671@dtor-ws>
-References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
- <1414074182-25980-2-git-send-email-grygorii.strashko@ti.com>
- <20141023154928.GC18714@dtor-ws>
- <54492A69.5070505@ti.com>
+	Thu, 23 Oct 2014 13:14:49 -0400
+Date: Thu, 23 Oct 2014 11:14:45 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Harvey Harrison <harvey.harrison@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: [GIT PULL] Remove weak function declarations
+Message-ID: <20141023171445.GB15847@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54492A69.5070505@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 07:18:49PM +0300, Grygorii Strashko wrote:
-> On 10/23/2014 06:49 PM, Dmitry Torokhov wrote:
-> >On Thu, Oct 23, 2014 at 05:22:58PM +0300, Grygorii Strashko wrote:
-> >>From: Geert Uytterhoeven <geert+renesas@glider.be>
-> >>
-> >>The existing pm_clk_add() allows to pass a clock by con_id. However,
-> >>when referring to a specific clock from DT, no con_id is available.
-> >>
-> >>Add pm_clk_add_clk(), which allows to specify the struct clk * directly.
-> >>
-> >>CC: Ulf Hansson <ulf.hansson@linaro.org>
-> >>CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> >>Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >>Reviewed-by: Kevin Hilman <khilman@linaro.org>
-> >>Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> >>Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> >>---
-> >>  drivers/base/power/clock_ops.c | 41 +++++++++++++++++++++++++++++++----------
-> >>  include/linux/pm_clock.h       |  8 ++++++++
-> >>  2 files changed, 39 insertions(+), 10 deletions(-)
-> >>
-> >>diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
-> >>index 7836930..f14b767 100644
-> >>--- a/drivers/base/power/clock_ops.c
-> >>+++ b/drivers/base/power/clock_ops.c
-> >>@@ -53,7 +53,8 @@ static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
-> >>   */
-> >>  static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
-> >>  {
-> >>-	ce->clk = clk_get(dev, ce->con_id);
-> >>+	if (!ce->clk)
-> >>+		ce->clk = clk_get(dev, ce->con_id);
-> >>  	if (IS_ERR(ce->clk)) {
-> >>  		ce->status = PCE_STATUS_ERROR;
-> >>  	} else {
-> >>@@ -63,15 +64,8 @@ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
-> >>  	}
-> >>  }
-> >>
-> >>-/**
-> >>- * pm_clk_add - Start using a device clock for power management.
-> >>- * @dev: Device whose clock is going to be used for power management.
-> >>- * @con_id: Connection ID of the clock.
-> >>- *
-> >>- * Add the clock represented by @con_id to the list of clocks used for
-> >>- * the power management of @dev.
-> >>- */
-> >>-int pm_clk_add(struct device *dev, const char *con_id)
-> >>+static int __pm_clk_add(struct device *dev, const char *con_id,
-> >>+			struct clk *clk)
-> >>  {
-> >>  	struct pm_subsys_data *psd = dev_to_psd(dev);
-> >>  	struct pm_clock_entry *ce;
-> >>@@ -93,6 +87,8 @@ int pm_clk_add(struct device *dev, const char *con_id)
-> >>  			kfree(ce);
-> >>  			return -ENOMEM;
-> >>  		}
-> >>+	} else {
-> >
-> >You need __clk_get(clk) here, otherwise when you will be removing clocks
-> >you'll be dropping a reference that does not belong to you (as yiou have
-> >not taken it).
-> 
-> No, I don't ;)
-> 
-> pm_clk_add_clk is intended to be used with valid pointer on clk,
-> which means clk_get() has been called already. In our case:
-> 	clk = of_clk_get(dev->of_node, i));
-> 	ret = pm_clk_add_clk(dev, clk);
-> 
-> It's just a different way to fill list of clocks for device,
-> once pm_clk_add_clk() is called - PM clock framework will be the owner
-> of clock.
+Hi Linus,
 
-No, this is not how the rest of refcounted APIs work in the kernel. You
-do not take over other's references and if you need to store pointer to
-refcounted object you are responsible for taking your own reference. See
-how we work with device structures, OF nodes, etc, etc.
+Here are some changes to fix possible issues with "weak" functions.
+They're not PCI-related; I just put them in my tree to get them into
+linux-next for a few days.
 
-The proper pattern here should be (unless the driver wants to hold on to
-the clock for its own purposes):
+I don't have any problem reports for these, so they're just potential
+issues at this point, but I think it's worth including these changes in
+v3.18 because the current behavior is so counter-intuitive.
 
-	clk = of_clk_get(dev->of_node, i));
-	ret = pm_clk_add_clk(dev, clk);
-	clk_put(clk);
+Bjorn
 
-with pm_clk_add_clk() taking and managing _its own_ reference and the
-caller (driver) managing _its_ reference.
 
-So FWIW strong NAK here from me.
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
 
-Thanks.
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
 
--- 
-Dmitry
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/remove-weak-declarations
+
+for you to fetch changes up to 271a9c35158910496f6fc3a635c2ed85df6be3d9:
+
+  uprobes: Remove "weak" from function declarations (2014-10-22 16:14:04 -0600)
+
+----------------------------------------------------------------
+The "weak" attribute is commonly used for the default version of a
+function, where an architecture can override it by providing a strong
+version.
+
+Some header file declarations included the "weak" attribute.  That's
+error-prone because it causes every implementation to be weak, with no
+strong version at all, and the linker chooses one based on link order.
+
+What we want is the "weak" attribute only on the *definition* of the
+default implementation.  These changes remove "weak" from the declarations,
+leaving it on the default definitions.
+
+----------------------------------------------------------------
+Bjorn Helgaas (7):
+      audit: Remove "weak" from audit_classify_compat_syscall() declaration
+      x86, intel-mid: Remove "weak" from function declarations
+      clocksource: Remove "weak" from clocksource_default_clock() declaration
+      vmcore: Remove "weak" from function declarations
+      kgdb: Remove "weak" from kgdb_arch_pc() declaration
+      memory-hotplug: Remove "weak" from memory_block_size_bytes() declaration
+      uprobes: Remove "weak" from function declarations
+
+Vineet Gupta (1):
+      ARC: kgdb: generic kgdb_arch_pc() suffices
+
+ arch/arc/kernel/kgdb.c                             |  5 -----
+ arch/x86/platform/intel-mid/intel_mid_weak_decls.h |  7 +++----
+ include/linux/audit.h                              |  2 +-
+ include/linux/clocksource.h                        |  2 +-
+ include/linux/crash_dump.h                         | 15 +++++++--------
+ include/linux/kgdb.h                               |  2 +-
+ include/linux/memory.h                             |  2 +-
+ include/linux/uprobes.h                            | 14 +++++++-------
+ 8 files changed, 21 insertions(+), 28 deletions(-)
