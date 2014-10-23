@@ -1,99 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695AbaJWMs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:48:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21417 "EHLO mx1.redhat.com"
+	id S1755731AbaJWMtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:49:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54899 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755555AbaJWMsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:48:11 -0400
-Date: Thu, 23 Oct 2014 15:51:39 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Cornelia Huck <cornelia.huck@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH RFC v3 09/16] virtio: set FEATURES_OK
-Message-ID: <20141023125139.GA10033@redhat.com>
-References: <1414003404-505-1-git-send-email-mst@redhat.com>
- <1414003404-505-10-git-send-email-mst@redhat.com>
- <20141023142808.377551d8.cornelia.huck@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141023142808.377551d8.cornelia.huck@de.ibm.com>
+	id S1755387AbaJWMtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 08:49:45 -0400
+Message-ID: <1414068531.2376.69.camel@localhost.localdomain>
+Subject: Re: [PATCH v4] PCI: add kernel parameter to override devid<->driver
+ mapping.
+From: Marcel Apfelbaum <marcel.a@redhat.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        marcel@redhat.com, "Michael S. Tsirkin" <mst@redhat.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>
+Date: Thu, 23 Oct 2014 15:48:51 +0300
+In-Reply-To: <CAErSpo4bx1tZMi1rhKhRoE6v9EVr6iTFVw=oQaLEpzT+h=U5Tg@mail.gmail.com>
+References: <1413813882-27047-1-git-send-email-marcel.a@redhat.com>
+	 <CAErSpo4bx1tZMi1rhKhRoE6v9EVr6iTFVw=oQaLEpzT+h=U5Tg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 02:28:08PM +0200, Cornelia Huck wrote:
-> On Wed, 22 Oct 2014 21:44:44 +0300
-> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+On Wed, 2014-10-22 at 15:28 -0600, Bjorn Helgaas wrote:
+> Hi Marcel,
+Hi Bjorn,
+Thank you for the review!
+
 > 
-> > set FEATURES_OK as per virtio 1.0 spec
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  include/uapi/linux/virtio_config.h |  2 ++
-> >  drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
-> >  2 files changed, 24 insertions(+), 7 deletions(-)
-> > 
+> I'm not quite clear on what the objective is here, so I apologize for
+> some questions that probably seem silly.
+I appreciate you took your time to go over it.
+
 > 
-> >  	dev->config->finalize_features(dev);
-> > 
-> > +	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
-> > +		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
-> > +		status = dev->config->get_status(dev);
-> > +		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
-> > +			printk(KERN_ERR "virtio: device refuses features: %x\n",
-> > +			       status);
-> > +			err = -ENODEV;
-> > +			goto err;
-> > +		}
-> > +	}
-> > +
+> On Mon, Oct 20, 2014 at 8:04 AM, Marcel Apfelbaum <marcel.a@redhat.com> wrote:
+> > Scanning a lot of devices during boot requires a lot of time.
 > 
-> Ugh, I just realize that virtio-ccw has a problem with that mechanism :(
+> I think what takes a lot of time is the .probe() method for some
+> drivers, right?  I first thought you meant that it took a long time
+> for the PCI core to enumerate a lot of devices, but you're not
+> changing anything there.
+Yes indeed.
+
 > 
-> Up to now, the driver only propagated status to the device: For
-> virtio-ccw, this was easily implemented via a ccw that transmitted
-> "status" to the device. However, the "read back status" part now
-> actually requires that the driver can get "status" from the device, or
-> has a comparable way to find out that the device won't accept the
-> status it tried to write.
+> If the intent is to reduce boot time, I don't think this is a general
+> solution.  Drivers should be able to schedule asynchronous things in
+> their .probe() methods if necessary.
+I agree, but sadly we cannot go over *all* existing drivers and fix,
+we can of course do the best effort :)
+By the way this was not the only reason as you also thought, see bellow
 
-Ugh, it actually caches the status in the transport :(
-
-
-> I can think of two solutions:
 > 
-> (1) Introduce a new ccw that actually reads the device status.
-> (2) Make the WRITE_STATUS ccw fail (with a unit check) if the driver
->     sets FEATURES_OK after it tried to set features the device won't
->     accept.
+> > On other scenarios there is a need to bind a driver to a specific slot.
 > 
-> (1) is probably more generic, while (2) is more straightforward to
-> implement.
+> A short example here would be good.  Are you talking about something
+> like binding a NIC driver to one device while leaving others unbound
+> for use by guests?
+Exactly! This is the "perfect" example, thanks!
 > 
-> Good thing we actually try to finally implement this,
+> > Binding devices to pci-stub driver does not work,
+> > as it will not differentiate between devices of the
+> > same type.
+> 
+> I assume you mean booting with "pci-stub.ids=$VENDOR:$DEVICE" will
+> make pci-stub bind to *all* matching devices, and you only want it to
+> bind to some.
+You are right again.
 
-> I did not notice
-> this problem during the review :(
+>   Maybe pci-stub could be extended to pay attention to
+> PCI bus addresses in addition to vendor/device IDs.
+A few thoughts here:
+- We will have a race here between the "native" driver and pci-stub, right?
+- Why not leverage the existing driver_override feature that is already
+there and gives us exactly what we want: slot<->driver mapping?
+- Maybe there are other scenarios that can benefit from slot<->driver mapping,
+not only pci-stub.
 
-Well, it's a nuisance, but the spec is out.
-It seems to me a new command would be a substantive change so we can't
-do this in errata.
-
-Option (2) would require two statements for drivers and devices,
-but since it's clearly the case for correct drivers/devices
-that command does not fail, it follows that this
-is not a substantive change so it can be fixed
-in an errata.
-
-So the new command would have to be optional, please open
-two issues in the TC: one documenting that driver must check
-WRITE_STATUS and device can fail WRITE_STATUS, and another
-for adding READ_STATUS (which will have to wait until
-the next CS).
+ 
 
 
--- 
-MST
+> 
+> > Using some start scripts is error prone.
+> >
+> > The solution leverages driver_override functionality introduced by
+> >
+> >         commit: 782a985d7af26db39e86070d28f987cad21313c0
+> >         Author: Alex Williamson <alex.williamson@redhat.com>
+> >         Date:   Tue May 20 08:53:21 2014 -0600
+> >
+> >         PCI: Introduce new device binding path using pci_dev.driver_override
+> >
+> > In order to bind PCI slots to specific drivers use:
+> >         pci=driver[xxxx:xx:xx.x]=foo,driver[xxxx:xx:xx.x]=bar,...
+> 
+> If/when you address Alex's comments about other bus types, can you
+> also update the changelog to use the canonical commit reference
+> format, i.e., 782a985d7af2 ("PCI: Introduce new device binding path
+> using pci_dev.driver_override") in this case?
+Sure, thanks for the tip.
+
+> 
+> PCI bus numbers are mutable, e.g., they can change with hotplug or
+> other configuration changes.  But I don't have any better suggestion,
+> so I guess all we can do is be aware of this.
+Well, indeed, there is so much that can be done. (We can listen to an event and remap...)
+
+> 
+> Speaking of hotplug, this is only a boot-time kernel parameter, with
+> no opportunity to use this, e.g., to add slot/driver pairs, after
+> boot.  Do you not need that because of Alex's driver_override thing?
+Well actually Alex's "driver_override" feature does that for runtime
+(adds slot/driver pair), the only thing missing is the boot time
+mapping.
+
+> How can we integrate this all together into a coherent whole?  I'm a
+> little confused as to how this would all be documented in a form
+> usable by end-users.
+For end-users it will be like this:
+They want to create a slot/driver mapping.
+In order to do that they will use the "driver_override" feature:
+1. Run-time use:
+   - Use sysfs to edit driver_override file associated with the slot.
+2. Boot-time use:
+   - Use the pci's driver_override parameter. 
+
+Thanks,
+Marcel
+> 
+> Bjorn
+
+
+
