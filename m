@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944AbaJWSra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 14:47:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755888AbaJWSqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 14:46:16 -0400
-Date: Thu, 23 Oct 2014 14:45:54 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Benson Leung <bleung@chromium.org>, jkosina@suse.cz, aduggan@synaptics.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        olofj@chromium.org, satoshi.noguchi@jp.synaptics.com
-Subject: Re: [PATCH] HID: i2c-hid: Add hid-over-i2c name to i2c id table.
-Message-ID: <20141023184554.GB18048@mail.corp.redhat.com>
-References: <1413323041-19468-1-git-send-email-bleung@chromium.org>
- <20141014225935.GA22177@dtor-ws>
+	id S932991AbaJWSru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 14:47:50 -0400
+Received: from mail.imsco-us.com ([69.178.150.47]:43573 "EHLO ImsEx1.ims.dom"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932321AbaJWSrt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 14:47:49 -0400
+X-Greylist: delayed 305 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Oct 2014 14:47:48 EDT
+From: Chris Healy <chealy@imsco-us.com>
+To: Guenter Roeck <linux@roeck-us.net>, Andrew Lunn <andrew@lunn.ch>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 10/14] net: dsa/mv88e6352: Implement EEPROM
+ 	accessfunctions
+Thread-Topic: [PATCH 10/14] net: dsa/mv88e6352: Implement EEPROM
+ 	accessfunctions
+Thread-Index: AQHP7uAMX9Wa0xyc10OITY9LmlueXJw+A/uF
+Date: Thu, 23 Oct 2014 18:41:59 +0000
+Message-ID: <724F6C6CDC8C86478473775085778C4E0A465931@ImsEx1.ims.dom>
+References: <1414037002-25528-1-git-send-email-linux@roeck-us.net><141403700
+	2-25528-11-git-send-email-linux@roeck-us.net><20141023135412.GC25190@lunn.ch>,<20141023164052.GB21343@roeck-us.net>
+In-Reply-To: <20141023164052.GB21343@roeck-us.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.168.3.77]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141014225935.GA22177@dtor-ws>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 14 2014 or thereabouts, Dmitry Torokhov wrote:
-> On Tue, Oct 14, 2014 at 02:44:01PM -0700, Benson Leung wrote:
-> > When using the device tree binding of compatible = "hid-over-i2c"
-> > the i2c id table also needs to have that name in order to
-> > auto load this driver.
-> > 
-> > Signed-off-by: Benson Leung <bleung@chromium.org>
-> > ---
-> >  drivers/hid/i2c-hid/i2c-hid.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> > index 747d544..1a7605f 100644
-> > --- a/drivers/hid/i2c-hid/i2c-hid.c
-> > +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> > @@ -1123,6 +1123,7 @@ static const struct dev_pm_ops i2c_hid_pm = {
-> >  
-> >  static const struct i2c_device_id i2c_hid_id_table[] = {
-> >  	{ "hid", 0 },
-> > +	{ "hid-over-i2c", 0 },
-> >  	{ },
-> >  };
-> >  MODULE_DEVICE_TABLE(i2c, i2c_hid_id_table);
-> 
-> So we already emit this string this as a module device table (OF one),
-> why do we need to duplicate it in I2C? This seems like a generic problem
-> and not an individual driver one.
-> 
+Hi Guenter,
 
-Correct me if I am wrong, but isn't it a chromium problem, rather than a
-generic OF one?
-IIRC, when I introduced the OF binding, the name did not need to be in
-the i2c id table because udev was taking that in charge. At least I do
-not remember having to manually modprobing the driver.
+I do not believe it is possible to know if an EEPROM is attached or not.
 
-A quick check in the drivers/input/touchscreen shows that many OF
-enumerated touchscreens do not have an exact duplicate of the of
-compatible name and the i2c device id one. Most of them have a vendor
-prefix in the of name.
+Chris
+________________________________________
+From: Guenter Roeck [linux@roeck-us.net]
+Sent: Thursday, October 23, 2014 9:40 AM
+To: Andrew Lunn
+Cc: netdev@vger.kernel.org; David S. Miller; Florian Fainelli; linux-kernel@vger.kernel.org; Chris Healy
+Subject: Re: [PATCH 10/14] net: dsa/mv88e6352: Implement EEPROM         accessfunctions
 
-I did not used this binding for a long time, so I can not guarantee I am
-right, but this change seems weird to me.
+On Thu, Oct 23, 2014 at 03:54:12PM +0200, Andrew Lunn wrote:
+> On Wed, Oct 22, 2014 at 09:03:18PM -0700, Guenter Roeck wrote:
+> > MV88E6352 supports read and write access to its configuration eeprom.
+>
+> Hi Guenter
+>
+> I don't have the datasheet for the MV88E6352. Is the EEPROM built in,
+> or external on an i2c bus?
+>
+External.
 
-Cheers,
-Benjamin
+> > +static int mv88e6352_get_eeprom_len(struct dsa_switch *ds)
+> > +{
+> > +   return 0x200;
+> > +}
+>
+> How do you handle the case of it being external and not populated.
+> Would it not be better to try to detect it here, and return 0 if it
+> does not exist?
+>
+Makes sense, if it is detectable that it the EEPROM not there. Browsing
+through the datasheet, I don't see how I could detect it; there does not
+seem to be a status bit indicating if the EEPROM is there or not. There
+are sw_mode pins which determine if the eeprom should be loaded after
+reset or not, but I don't see anything in the register set which would
+tell me.
 
+Chris, do you know if there is a means to detect if the EEPROM is present
+on the MV88E6352 ?
+
+Thanks,
+Guenter
+
+________________________________
+
+
+This email and any files transmitted with it are confidential & proprietary to Systems and Software Enterprises, LLC. This information is intended solely for the use of the individual or entity to which it is addressed. Access or transmittal of the information contained in this e-mail, in full or in part, to any other organization or persons is not authorized.
