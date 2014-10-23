@@ -1,170 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373AbaJWKvi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:51:38 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:32781 "EHLO mail.skyhub.de"
+	id S932421AbaJWKv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:51:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11817 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754384AbaJWKrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:47:22 -0400
-Date: Thu, 23 Oct 2014 12:47:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Chen Yucong <slaoub@gmail.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Subject: Re: [PATCH] x86, MCE: support memory error recovery for both UCNA
- and Deferred error in machine_check_poll
-Message-ID: <20141023104717.GB4619@pd.tnic>
-References: <1412921020.3631.7.camel@debian>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1412921020.3631.7.camel@debian>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754480AbaJWKrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 06:47:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
+   d="scan'208";a="594446014"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 08/16] perf tools: Add branch type to db export
+Date: Thu, 23 Oct 2014 13:45:16 +0300
+Message-Id: <1414061124-26830-9-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 10, 2014 at 02:03:40PM +0800, Chen Yucong wrote:
-> From: Chen Yucong <slaoub@gmail.com>
-> 
-> dram_ce_error() stems from Boris's patch set. Thanks!
-> Link: http://lkml.org/lkml/2014/7/1/545
-> 
-> Uncorrected no action required (UCNA) - is a UCR error that is not
-> signaled via a machine check exception and, instead, is reported to
-> system software as a corrected machine check error. UCNA errors indicate
-> that some data in the system is corrupted, but the data has not been
-> consumed and the processor state is valid and you may continue execution
-> on this processor. UCNA errors require no action from system software
-> to continue execution. Note that UCNA errors are supported by the
-> processor only when IA32_MCG_CAP[24] (MCG_SER_P) is set.
->                                            -- Intel SDM Volume 3B
-> 
-> Deferred errors are errors that cannot be corrected by hardware, but
-> do not cause an immediate interruption in program flow, loss of data
-> integrity, or corruption of processor state. These errors indicate
-> that data has been corrupted but not consumed. Hardware writes information
-> to the status and address registers in the corresponding bank that
-> identifies the source of the error if deferred errors are enabled for
-> logging. Deferred errors are not reported via machine check exceptions;
-> they can be seen by polling the MCi_STATUS registers.
->                                             -- ADM64 APM Volume 2
-> 
-> Above two items, both UCNA and Deferred errors belong to detected
-> errors, but they can't be corrected by hardware, and this is very
-> similar to Software Recoverable Action Optional (SRAO) errors.
-> Therefore, we can take some actions that have been used for handling
-> SRAO errors to handle UCNA and Deferred errors.
-> 
-> Signed-off-by: Chen Yucong <slaoub@gmail.com>
-> ---
->  arch/x86/include/asm/mce.h       |    4 ++++
->  arch/x86/kernel/cpu/mcheck/mce.c |   39 ++++++++++++++++++++++++++++++++++++++
->  2 files changed, 43 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> index 958b90f..c9ac7df4 100644
-> --- a/arch/x86/include/asm/mce.h
-> +++ b/arch/x86/include/asm/mce.h
-> @@ -34,6 +34,10 @@
->  #define MCI_STATUS_S	 (1ULL<<56)  /* Signaled machine check */
->  #define MCI_STATUS_AR	 (1ULL<<55)  /* Action required */
->  
-> +/* AMD-specific bits */
-> +#define MCI_STATUS_DEFERRED     (1ULL<<44)  /* declare an uncorrected error */
-> +#define MCI_STATUS_POISON       (1ULL<<43)  /* access poisonous data */
-> +
->  /*
->   * Note that the full MCACOD field of IA32_MCi_STATUS MSR is
->   * bits 15:0.  But bit 12 is the 'F' bit, defined for corrected
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 61a9668ce..4030c77 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -575,6 +575,35 @@ static void mce_read_aux(struct mce *m, int i)
->  	}
->  }
->  
-> +static bool dram_ce_error(struct mce *m)
-> +{
-> +	struct cpuinfo_x86 *c = &boot_cpu_data;
-> +
-> +	if (c->x86_vendor == X86_VENDOR_AMD) {
-> +		/* ErrCodeExt[20:16] */
-> +		u8 xec = (m->status >> 16) & 0x1f;
-> +
-> +		if (m->status & MCI_STATUS_DEFERRED)
-> +			return (xec == 0x0 || xec == 0x8);
-> +	} else if (c->x86_vendor == X86_VENDOR_INTEL) {
-> +		/*
-> +		 * SDM Volume 3B - 15.9.2 Compound Error Codes (Table 15-9)
-> +		 *
-> +		 * Bit 7 of the MCACOD field of IA32_MCi_STATUS is used for
-> +		 * indicating a memory error. But we can't just blindly check
-> +		 * bit 7 because if bit 8 is set, then this is a cache error,
-> +		 * and if bit 11 is set, then it is a bus/ interconnect error
-> +		 * - and either way bit 7 just gives more detail on what
-> +		 * cache/bus/interconnect error happened. Note that we can
-> +		 * ignore bit 12, as it's the "filter" bit.
-> +		 */
-> +		if ((m->mcgcap & MCG_SER_P) && (m->status & MCI_STATUS_UC))
-> +			return (m->status & 0xef80) == BIT(7);
+Add the ability to export branch types through the
+database export facility.
 
-This is wrong - dram_ce_error is supposed to tell us whether this is a
-correctable error, not uncorrectable.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/db-export.c | 48 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/db-export.h |  6 ++++++
+ 2 files changed, 54 insertions(+)
 
-> +	}
-> +
-> +	return false;
-> +}
-> +
->  DEFINE_PER_CPU(unsigned, mce_poll_count);
->  
->  /*
-> @@ -630,6 +659,16 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
->  
->  		if (!(flags & MCP_TIMESTAMP))
->  			m.tsc = 0;
-> +
-> +		/*
-> +		 * In the cases where we don't have a valid address after all,
-> +		 * do not add it into the ring buffer.
-> +		 */
-> +		if (dram_ce_error(&m) && (m.status & MCI_STATUS_ADDRV)) {
-> +			mce_ring_add(m.addr >> PAGE_SHIFT);
-> +			mce_schedule_work();
-> +		}
-
-The general idea of preemptively poisoning pages which contain deferred
-errors is fine though.
-
-You need to figure out how exactly you're going to detect such errors.
-On AMD it is easy - MCI_STATUS_DEFERRED. The problem there is to find
-out which models actually set that bit and what the other bits in
-MCi_STATUS are set to. For that we should ask Aravind.
-
-On Intel, SDM says something like this:
-
-"A UNCA error is indicated with UC=1, PCC=0, S=0 and AR=0 in the
-IA32_MCi_STATUS register."
-
-I think a proper solution would be to extend the mce_severity mechanism
-to handle that and return AO_SEVERITY.
-
-What I would love even more, though, if in conjunction with this someone
-(you?) would sit down and actually make that severities[] array readable
-because it makes my eyes bleed and my brain twist everytime I look at
-it.
-
-Thanks.
-
+diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
+index 53d0e75..c5b6e02 100644
+--- a/tools/perf/util/db-export.c
++++ b/tools/perf/util/db-export.c
+@@ -205,6 +205,15 @@ static int db_ids_from_al(struct db_export *dbe, struct addr_location *al,
+ 	return 0;
+ }
+ 
++int db_export__branch_type(struct db_export *dbe, u32 branch_type,
++			   const char *name)
++{
++	if (dbe->export_branch_type)
++		return dbe->export_branch_type(dbe, branch_type, name);
++
++	return 0;
++}
++
+ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 		      struct perf_sample *sample, struct perf_evsel *evsel,
+ 		      struct thread *thread, struct addr_location *al)
+@@ -266,3 +275,42 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 
+ 	return 0;
+ }
++
++static struct {
++	u32 branch_type;
++	const char *name;
++} branch_types[] = {
++	{0, "no branch"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_CALL, "call"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_RETURN, "return"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_CONDITIONAL, "conditional jump"},
++	{PERF_FLAG_BRANCH, "unconditional jump"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_CALL | PERF_FLAG_INTERRUPT,
++	 "software interrupt"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_RETURN | PERF_FLAG_INTERRUPT,
++	 "return from interrupt"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_CALL | PERF_FLAG_SYSCALLRET,
++	 "system call"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_RETURN | PERF_FLAG_SYSCALLRET,
++	 "return from system call"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_ASYNC, "asynchronous branch"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_CALL | PERF_FLAG_ASYNC |
++	 PERF_FLAG_INTERRUPT, "hardware interrupt"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_TX_ABORT, "transaction abort"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_TRACE_BEGIN, "trace begin"},
++	{PERF_FLAG_BRANCH | PERF_FLAG_TRACE_END, "trace end"},
++	{0, NULL}
++};
++
++int db_export__branch_types(struct db_export *dbe)
++{
++	int i, err = 0;
++
++	for (i = 0; branch_types[i].name ; i++) {
++		err = db_export__branch_type(dbe, branch_types[i].branch_type,
++					     branch_types[i].name);
++		if (err)
++			break;
++	}
++	return err;
++}
+diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
+index b3643e8..e4baa45 100644
+--- a/tools/perf/util/db-export.h
++++ b/tools/perf/util/db-export.h
+@@ -54,6 +54,8 @@ struct db_export {
+ 			  struct machine *machine);
+ 	int (*export_symbol)(struct db_export *dbe, struct symbol *sym,
+ 			     struct dso *dso);
++	int (*export_branch_type)(struct db_export *dbe, u32 branch_type,
++				  const char *name);
+ 	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
+ 	u64 evsel_last_db_id;
+ 	u64 machine_last_db_id;
+@@ -79,8 +81,12 @@ int db_export__dso(struct db_export *dbe, struct dso *dso,
+ 		   struct machine *machine);
+ int db_export__symbol(struct db_export *dbe, struct symbol *sym,
+ 		      struct dso *dso);
++int db_export__branch_type(struct db_export *dbe, u32 branch_type,
++			   const char *name);
+ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 		      struct perf_sample *sample, struct perf_evsel *evsel,
+ 		      struct thread *thread, struct addr_location *al);
+ 
++int db_export__branch_types(struct db_export *dbe);
++
+ #endif
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
