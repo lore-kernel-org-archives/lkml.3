@@ -1,52 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaJWRFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 13:05:38 -0400
-Received: from marcansoft.com ([213.138.101.166]:50507 "EHLO
-	mail.marcansoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaJWRFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 13:05:37 -0400
-Message-ID: <5449355C.2060301@marcansoft.com>
-Date: Fri, 24 Oct 2014 02:05:32 +0900
-From: Hector Martin <hector@marcansoft.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754551AbaJWRIR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 13:08:17 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:44186 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751798AbaJWRIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 13:08:16 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, Chris Zhong <zyw@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] pinctrl: rockchip: Protect read-modify-write with the spinlock
+Date: Thu, 23 Oct 2014 18:32:18 +0200
+Message-ID: <2662114.YSJpathv6W@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1413913655-22351-4-git-send-email-dianders@chromium.org>
+References: <1413913655-22351-1-git-send-email-dianders@chromium.org> <1413913655-22351-4-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-To: Russ Dill <russ.dill@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: serial: Perform verification for FTDI FT232R devices
-References: <5448F83A.7010903@marcansoft.com> <CA+Bv8XbpqJZiKFA2PsY7DFMcGxzG=bfZv5oR45k2gx7rQivLGA@mail.gmail.com>
-In-Reply-To: <CA+Bv8XbpqJZiKFA2PsY7DFMcGxzG=bfZv5oR45k2gx7rQivLGA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/10/14 23:14, Russ Dill wrote:
-> On Thu, Oct 23, 2014 at 5:44 AM, Hector Martin <hector@marcansoft.com> wrote:
->> +       write_eeprom(port, 0, eeprom_data[0]);
->> +       write_eeprom(port, 1, 0);
->> +       write_eeprom(port, eeprom_size - 2, eeprom_data[eeprom_size - 2]);
->> +       write_eeprom(port, eeprom_size - 1, checksum);
+Am Dienstag, 21. Oktober 2014, 10:47:35 schrieb Doug Anderson:
+> There were a few instances where the rockchip pinctrl driver would do
+> read-modify-write with no spinlock.  Add a spinlock for these cases.
 > 
-> Damned off by one errors. Yes, it should be the product ID, not the
-> vendor ID. These write u16's though, writing to wIndex 2 writes to
-> bytes 4 and 5. the correct code is:
-> 
-> write_eeprom(port, 2, 0);
-> write_eeprom(port, eeprom_size - 2, checksum);
-> 
-> And yes, the checksum code needs to be modified to create a specially
-> crafted value that allows the existing checksum to pass.
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Oh, I thought/assumed that the switch to VID and the real checksum was a
-deliberate attempt at perversing the original code into something that
-bricks even real FTDIs :-) (In which case all you'd need to add is the
-two extra dummy writes, to load the proper data into the buffer register
-on a real FT232RL to prevent it from corrupting the adjacent EEPROM words).
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
 
--- 
-Hector Martin (hector@marcansoft.com)
-Public Key: http://www.marcansoft.com/marcan.asc
+thanks for catching those
+
+> ---
+> Changes in v2:
+> - Made sure to release the lock in an error condition.
+> 
+>  drivers/pinctrl/pinctrl-rockchip.c | 18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+> 
+> diff --git a/drivers/pinctrl/pinctrl-rockchip.c
+> b/drivers/pinctrl/pinctrl-rockchip.c index 6c14f6c..59a5461 100644
+> --- a/drivers/pinctrl/pinctrl-rockchip.c
+> +++ b/drivers/pinctrl/pinctrl-rockchip.c
+> @@ -861,6 +861,7 @@ static int _rockchip_pmx_gpio_set_direction(struct
+> gpio_chip *chip, {
+>  	struct rockchip_pin_bank *bank;
+>  	int ret;
+> +	unsigned long flags;
+>  	u32 data;
+> 
+>  	bank = gc_to_pin_bank(chip);
+> @@ -869,6 +870,8 @@ static int _rockchip_pmx_gpio_set_direction(struct
+> gpio_chip *chip, if (ret < 0)
+>  		return ret;
+> 
+> +	spin_lock_irqsave(&bank->slock, flags);
+> +
+>  	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
+>  	/* set bit to 1 for output, 0 for input */
+>  	if (!input)
+> @@ -877,6 +880,8 @@ static int _rockchip_pmx_gpio_set_direction(struct
+> gpio_chip *chip, data &= ~BIT(pin);
+>  	writel_relaxed(data, bank->reg_base + GPIO_SWPORT_DDR);
+> 
+> +	spin_unlock_irqrestore(&bank->slock, flags);
+> +
+>  	return 0;
+>  }
+> 
+> @@ -1394,6 +1399,7 @@ static void rockchip_irq_demux(unsigned int irq,
+> struct irq_desc *desc) u32 polarity = 0, data = 0;
+>  	u32 pend;
+>  	bool edge_changed = false;
+> +	unsigned long flags;
+> 
+>  	dev_dbg(bank->drvdata->dev, "got irq for bank %s\n", bank->name);
+> 
+> @@ -1439,10 +1445,14 @@ static void rockchip_irq_demux(unsigned int irq,
+> struct irq_desc *desc)
+> 
+>  	if (bank->toggle_edge_mode && edge_changed) {
+>  		/* Interrupt params should only be set with ints disabled */
+> +		spin_lock_irqsave(&bank->slock, flags);
+> +
+>  		data = readl_relaxed(bank->reg_base + GPIO_INTEN);
+>  		writel_relaxed(0, bank->reg_base + GPIO_INTEN);
+>  		writel(polarity, bank->reg_base + GPIO_INT_POLARITY);
+>  		writel(data, bank->reg_base + GPIO_INTEN);
+> +
+> +		spin_unlock_irqrestore(&bank->slock, flags);
+>  	}
+> 
+>  	chained_irq_exit(chip, desc);
+> @@ -1456,6 +1466,7 @@ static int rockchip_irq_set_type(struct irq_data *d,
+> unsigned int type) u32 polarity;
+>  	u32 level;
+>  	u32 data;
+> +	unsigned long flags;
+>  	int ret;
+> 
+>  	/* make sure the pin is configured as gpio input */
+> @@ -1463,15 +1474,20 @@ static int rockchip_irq_set_type(struct irq_data *d,
+> unsigned int type) if (ret < 0)
+>  		return ret;
+> 
+> +	spin_lock_irqsave(&bank->slock, flags);
+> +
+>  	data = readl_relaxed(bank->reg_base + GPIO_SWPORT_DDR);
+>  	data &= ~mask;
+>  	writel_relaxed(data, bank->reg_base + GPIO_SWPORT_DDR);
+> 
+> +	spin_unlock_irqrestore(&bank->slock, flags);
+> +
+>  	if (type & IRQ_TYPE_EDGE_BOTH)
+>  		__irq_set_handler_locked(d->irq, handle_edge_irq);
+>  	else
+>  		__irq_set_handler_locked(d->irq, handle_level_irq);
+> 
+> +	spin_lock_irqsave(&bank->slock, flags);
+>  	irq_gc_lock(gc);
+> 
+>  	level = readl_relaxed(gc->reg_base + GPIO_INTTYPE_LEVEL);
+> @@ -1514,6 +1530,7 @@ static int rockchip_irq_set_type(struct irq_data *d,
+> unsigned int type) break;
+>  	default:
+>  		irq_gc_unlock(gc);
+> +		spin_unlock_irqrestore(&bank->slock, flags);
+>  		return -EINVAL;
+>  	}
+> 
+> @@ -1521,6 +1538,7 @@ static int rockchip_irq_set_type(struct irq_data *d,
+> unsigned int type) writel_relaxed(polarity, gc->reg_base +
+> GPIO_INT_POLARITY);
+> 
+>  	irq_gc_unlock(gc);
+> +	spin_unlock_irqrestore(&bank->slock, flags);
+> 
+>  	return 0;
+>  }
 
