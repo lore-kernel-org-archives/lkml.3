@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087AbaJWRTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 13:19:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10607 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755665AbaJWRTS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 13:19:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,776,1406617200"; 
-   d="scan'208";a="610093068"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@alien8.de>, Chen Yucong <slaoub@gmail.com>
-CC: Andi Kleen <ak@linux.intel.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-Subject: RE: [PATCH] x86, MCE: support memory error recovery for both UCNA
- and Deferred error in machine_check_poll
-Thread-Topic: [PATCH] x86, MCE: support memory error recovery for both UCNA
- and Deferred error in machine_check_poll
-Thread-Index: AQHP5FAMtVPteB+EEE28SKVlaIO66Jw+CiWA///2T6A=
-Date: Thu, 23 Oct 2014 17:18:29 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F3290F9B0@ORSMSX114.amr.corp.intel.com>
-References: <1412921020.3631.7.camel@debian> <20141023104717.GB4619@pd.tnic>
-In-Reply-To: <20141023104717.GB4619@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1754035AbaJWRWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 13:22:44 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35363 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915AbaJWRWm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 13:22:42 -0400
+Date: Thu, 23 Oct 2014 19:22:33 +0200
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux390@de.ibm.com,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH RFC v4 16/17] KVM: s390 allow virtio_ccw status writes
+ to fail
+Message-ID: <20141023192233.29ca143e.cornelia.huck@de.ibm.com>
+In-Reply-To: <1414081380-14623-17-git-send-email-mst@redhat.com>
+References: <1414081380-14623-1-git-send-email-mst@redhat.com>
+	<1414081380-14623-17-git-send-email-mst@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102317-0021-0000-0000-000001848E14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9NHJP38017764
 
-> The general idea of preemptively poisoning pages which contain deferred
-> errors is fine though.
+On Thu, 23 Oct 2014 19:25:01 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-Agreed. I used to think that it wasn't likely to be very useful because in many
-cases the UCNA errors are just a trail of breadcrumbs set by different units
-on the chip as the poison passed through on the way to consumption - where
-there would be a fatal (or recoverable) error.
+> Gracefully handle failure to write device status.
+> We really should handle other errors as well, but this one is needed for
+> virtio 1.0 compliance.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/s390/kvm/virtio_ccw.c | 7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+> index a994078..26e737c 100644
+> --- a/drivers/s390/kvm/virtio_ccw.c
+> +++ b/drivers/s390/kvm/virtio_ccw.c
+> @@ -862,7 +862,9 @@ static u8 virtio_ccw_get_status(struct virtio_device *vdev)
+>  static void virtio_ccw_set_status(struct virtio_device *vdev, u8 status)
+>  {
+>  	struct virtio_ccw_device *vcdev = to_vc_device(vdev);
+> +	u8 old_status = vcdev->status;
 
-But recently I found that a partial write to a poisoned cache line only sets the
-trail of UCNA errors - there is no consumption, so no machine check.  So in
-this case it would definitely be worthwhile to trigger the same action that we
-do for SRAO to unmap the page before someone does do a read.
+*vcdev->status
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>  	struct ccw1 *ccw;
+> +	int ret;
+> 
+>  	ccw = kzalloc(sizeof(*ccw), GFP_DMA | GFP_KERNEL);
+>  	if (!ccw)
+> @@ -874,7 +876,10 @@ static void virtio_ccw_set_status(struct virtio_device *vdev, u8 status)
+>  	ccw->flags = 0;
+>  	ccw->count = sizeof(status);
+>  	ccw->cda = (__u32)(unsigned long)vcdev->status;
+> -	ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_WRITE_STATUS);
+> +	ret = ccw_io_helper(vcdev, ccw, VIRTIO_CCW_DOING_WRITE_STATUS);
+> +	/* Write failed? We assume status is unchanged. */
+> +	if (ret)
+> +		*vcdev->status = old_status;
+
+If we fail the write, ccw->cda should be unchanged; but this doesn't
+hurt.
+
+>  	kfree(ccw);
+>  }
+> 
+
