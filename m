@@ -1,125 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449AbaJWNuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 09:50:07 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:60784 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755968AbaJWNuE (ORCPT
+	id S1755817AbaJWNsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 09:48:45 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:40172 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087AbaJWNsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 09:50:04 -0400
-Date: Thu, 23 Oct 2014 15:46:51 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: dmaengine@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        lars@metafoo.de, Russell King <linux@arm.linux.org.uk>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH v3 58/59] dmaengine: Add a warning for drivers not using
- the generic slave caps retrieval
-Message-ID: <20141023134651.GQ7893@lukather>
-References: <1413992653-21963-1-git-send-email-maxime.ripard@free-electrons.com>
- <2006617.Jsn4xl9O1U@avalon>
- <20141023131933.GO7893@lukather>
- <4793064.0sBqs1vkQS@avalon>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3sseE1tnmEs+TkKq"
-Content-Disposition: inline
-In-Reply-To: <4793064.0sBqs1vkQS@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Oct 2014 09:48:39 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-8e-544907343962
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Inki Dae <inki.dae@samsung.com>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        David Airlie <airlied@linux.ie>, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Andrzej Hajda <a.hajda@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [RFC 0/2] PM and DRM: Add runtime PM to Exynos DSI
+Date: Thu, 23 Oct 2014 15:48:08 +0200
+Message-id: <1414072090-11293-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t/xa7om7J4hBp079S1urTvHatF77iST
+	xcYZ61ktrnx9z2bRvHg9m8Wk+xNYLF7cu8hi8fqFoUXvgqtsFmeb3rBbzJqyl8li0+NrrBaX
+	d81hs/jce4TRYsb5fUwWa4/cZbe4e+oom8WZ05dYLWZMfsnmIOyxeM9LJo/t3x6weuyfu4bd
+	4373cSaPzUvqPbZcbWfx6NuyitFjxerv7B6fN8kFcEZx2aSk5mSWpRbp2yVwZXQ0t7IUfGOt
+	aPk6j7WB8SRLFyMHh4SAicTCGQ5djJxAppjEhXvr2UBsIYGljBKNbWJdjFxAdh+TxOdbi8ES
+	bALGEpuXLwGzRQTWs0hcOugFUsQssJ9R4tfdlawgCWEBa4nT626CFbEIqEqc//6aEcTmFXCX
+	6G68xAaxTU7i5LHJrBMYuRcwMqxiFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAngLzsYFx+z
+	OsQowMGoxMNbkewRIsSaWFZcmXuIUYKDWUmEN57VM0SINyWxsiq1KD++qDQntfgQIxMHp1QD
+	46rXno9Y+IRENn/+WZRY98rfJiC/S8KX3WzV87V3eIRKTGWrLFLPT5biZf5VbfAs489tqSAz
+	kVXe9ad/Sz0XnpB2dd3MO0HpzjfVo3X2+X5k5El6nDv/rHZzu/cF99SXWv9fzxKx8FKyv3Ru
+	88tAR609WfdUNda6BLDvSVxx3TzG6tH5gwH7lViKMxINtZiLihMBdRU6/T4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---3sseE1tnmEs+TkKq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The goal of the patch 2 is to add runtime PM to the Exynos DSI driver.
+This allows LCD power domain to be turned off.
 
-On Thu, Oct 23, 2014 at 04:38:39PM +0300, Laurent Pinchart wrote:
-> Hi Maxime,
->=20
-> On Thursday 23 October 2014 15:19:33 Maxime Ripard wrote:
-> > On Thu, Oct 23, 2014 at 12:21:31AM +0300, Laurent Pinchart wrote:
-> > > Hi Maxime,
-> > >=20
-> > > Thank you for the patch.
-> > >=20
-> > > On Wednesday 22 October 2014 17:44:12 Maxime Ripard wrote:
-> > > > For the slave caps retrieval to be really useful, most drivers need=
- to
-> > > > implement it.
-> > > >=20
-> > > > Hence, we need to be slightly more aggressive, and trigger a warnin=
-g at
-> > > > registration time for drivers that don't fill their caps infos in o=
-rder
-> > > > to
-> > > > encourage them to implement it.
-> > > >=20
-> > > > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> > > > ---
-> > > >=20
-> > > >  drivers/dma/dmaengine.c | 3 +++
-> > > >  1 file changed, 3 insertions(+)
-> > > >=20
-> > > > diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-> > > > index 98e9431f85ec..4e18981b16bd 100644
-> > > > --- a/drivers/dma/dmaengine.c
-> > > > +++ b/drivers/dma/dmaengine.c
-> > > > @@ -827,6 +827,9 @@ int dma_async_device_register(struct dma_device
-> > > > *device) BUG_ON(!device->device_issue_pending);
-> > > >=20
-> > > >  	BUG_ON(!device->dev);
-> > > >=20
-> > > > +	WARN(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
-> > > > !device->generic_slave_caps,
-> > > > +	     "this driver doesn't support generic slave capabilities
-> > > > reporting\n");
-> > > > +
-> > >=20
-> > > This might be slightly too aggressive.
-> >=20
-> > I disagree with that. If we want at some point to have the drivers
-> > implement it, we should be aggressive (and note that we don't break
-> > anything, the driver will still work as it used to).
->=20
-> I meant too aggressive given the possibility that a driver might need its=
- own=20
-> implementation if not all channels have the same capability.
+However after adding this patch an interesing issue came in. The DSI
+driver could not runtime resume during sustem resume because power
+domain was not allowed to power on.
 
-Then we'll remove this warning, or rework it, when we will need it,
-and hopefully by then, a lot of drivers will have fixed theirs :)
+The issue is solved by patch 1.
 
-Maxime
+Tested on Trats2 board.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Comments are welcomed.
 
---3sseE1tnmEs+TkKq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best regards,
+Krzysztof
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Krzysztof Kozlowski (2):
+  PM / Domains: Power on domain early during system resume
+  drm/exynos/dsi: Add runtime PM so LCD power domain could be turned off
 
-iQIcBAEBAgAGBQJUSQbLAAoJEBx+YmzsjxAgPcQQAIpgTuu3prSa/Ka+Na15bmvB
-IgkF4k8rhmo7/65lyWkOv6GkKiMn284otJBiq/GbYS7nl9epJSpILxw+TGwnuNHG
-wpx1H2BoF6s2lthuM10Pq+qok1DoaFd3HASB14+qGD+Dy3Ef/CFP3sBUAfMlBaYx
-W52LS4fUhPbhTsZyt6oZG92fslS8oi02holrJ+hseVp0LhhsJ0nUOMEFW8MVXub3
-B1/K3IZRTOSdM4fveARuau7J9ivaw21Om8AKjQUuX8RoMNeCzI1acamVQKn0M9G/
-0WD8RaPtLjGccwmjC6ZBp2rbMyVrqvEfs0Ig5x1z2TZKZw/L2T0Dzd1yIVqq7KQg
-X0xCWBX2eITRzqanUCaQytKuSly5hIXPFfC5U7gsAvoSzBkaUt4Rluv0yTBQj/ts
-Q2b3LFkUTW/E25XIJun76N3pEv2Q+dE0zh5A7KdGT4P7Gn+JtsjiVIf9tfLl/TEJ
-GHfv5L+EtB+qrafIHl394yGS/FeiWEs0JSunEZAeVcJsD9t7lTgV69PMeQ+QakL7
-nlspxxn2PUPA46w6YGdVkRnCWHCVwa+/20XRqvCmvUNyrK1rv+cVjb1BQN7ziywW
-iSYv5zBwKhTHLNnYvCMFk0q86iTwRI0Dt3S4ufExYZzYQk/hsM/n/cJzQg5DztW8
-qtdIeE+rPmK/uRSKV/JB
-=a5I8
------END PGP SIGNATURE-----
+ drivers/base/power/domain.c             | 3 +--
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c | 9 +++++++++
+ 2 files changed, 10 insertions(+), 2 deletions(-)
 
---3sseE1tnmEs+TkKq--
+-- 
+1.9.1
+
