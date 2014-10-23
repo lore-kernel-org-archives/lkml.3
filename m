@@ -1,151 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437AbaJWUJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 16:09:06 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39572 "EHLO e9.ny.us.ibm.com"
+	id S932783AbaJWUKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 16:10:00 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39167 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754174AbaJWUJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 16:09:04 -0400
-Date: Thu, 23 Oct 2014 13:05:07 -0700
+	id S932449AbaJWUJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 16:09:59 -0400
+Date: Thu, 23 Oct 2014 12:58:08 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yanko Kaneti <yaneti@declera.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141023200507.GC4977@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        htejun@gmail.com
+Subject: Re: rcu_preempt detected stalls.
+Message-ID: <20141023195808.GB4977@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141022181135.GH4977@linux.vnet.ibm.com>
- <87d29kezby.fsf@x220.int.ebiederm.org>
- <20141022185511.GI4977@linux.vnet.ibm.com>
- <CA+5PVA56ajrBQ-C9orSb9-_qhMKe994QL2x0FcKbe6BYmaWFBw@mail.gmail.com>
- <20141022224032.GA1240@declera.com>
- <20141022232421.GN4977@linux.vnet.ibm.com>
- <1414044566.2031.1.camel@declera.com>
- <20141023122750.GP4977@linux.vnet.ibm.com>
- <20141023153333.GA19278@linux.vnet.ibm.com>
- <20141023195159.GA2331@declera.com>
+References: <20141013173504.GA27955@redhat.com>
+ <543DDD5E.9080602@oracle.com>
+ <20141023183917.GX4977@linux.vnet.ibm.com>
+ <54494F2F.6020005@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141023195159.GA2331@declera.com>
+In-Reply-To: <54494F2F.6020005@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102320-0033-0000-0000-000000D0EB34
+x-cbid: 14102320-0025-0000-0000-000000D897A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
-> On Thu-10/23/14-2014 08:33, Paul E. McKenney wrote:
-> > On Thu, Oct 23, 2014 at 05:27:50AM -0700, Paul E. McKenney wrote:
-> > > On Thu, Oct 23, 2014 at 09:09:26AM +0300, Yanko Kaneti wrote:
-> > > > On Wed, 2014-10-22 at 16:24 -0700, Paul E. McKenney wrote:
-> > > > > On Thu, Oct 23, 2014 at 01:40:32AM +0300, Yanko Kaneti wrote:
-> > > > > > On Wed-10/22/14-2014 15:33, Josh Boyer wrote:
-> > > > > > > On Wed, Oct 22, 2014 at 2:55 PM, Paul E. McKenney
-> > > > > > > <paulmck@linux.vnet.ibm.com> wrote:
-> > > > > 
-> > > > > [ . . . ]
-> > > > > 
-> > > > > > > > Don't get me wrong -- the fact that this kthread appears to 
-> > > > > > > > have
-> > > > > > > > blocked within rcu_barrier() for 120 seconds means that 
-> > > > > > > > something is
-> > > > > > > > most definitely wrong here.  I am surprised that there are no 
-> > > > > > > > RCU CPU
-> > > > > > > > stall warnings, but perhaps the blockage is in the callback 
-> > > > > > > > execution
-> > > > > > > > rather than grace-period completion.  Or something is 
-> > > > > > > > preventing this
-> > > > > > > > kthread from starting up after the wake-up callback executes.  
-> > > > > > > > Or...
-> > > > > > > > 
-> > > > > > > > Is this thing reproducible?
-> > > > > > > 
-> > > > > > > I've added Yanko on CC, who reported the backtrace above and can
-> > > > > > > recreate it reliably.  Apparently reverting the RCU merge commit
-> > > > > > > (d6dd50e) and rebuilding the latest after that does not show the
-> > > > > > > issue.  I'll let Yanko explain more and answer any questions you 
-> > > > > > > have.
-> > > > > > 
-> > > > > > - It is reproducible
-> > > > > > - I've done another build here to double check and its definitely 
-> > > > > > the rcu merge
-> > > > > >   that's causing it.
-> > > > > > 
-> > > > > > Don't think I'll be able to dig deeper, but I can do testing if 
-> > > > > > needed.
-> > > > > 
-> > > > > Please!  Does the following patch help?
-> > > > 
-> > > > Nope, doesn't seem to make a difference to the modprobe ppp_generic 
-> > > > test
-> > > 
-> > > Well, I was hoping.  I will take a closer look at the RCU merge commit
-> > > and see what suggests itself.  I am likely to ask you to revert specific
-> > > commits, if that works for you.
+On Thu, Oct 23, 2014 at 02:55:43PM -0400, Sasha Levin wrote:
+> On 10/23/2014 02:39 PM, Paul E. McKenney wrote:
+> > On Tue, Oct 14, 2014 at 10:35:10PM -0400, Sasha Levin wrote:
+> >> On 10/13/2014 01:35 PM, Dave Jones wrote:
+> >>> oday in "rcu stall while fuzzing" news:
+> >>>
+> >>> INFO: rcu_preempt detected stalls on CPUs/tasks:
+> >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+> >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+> >>> 	(detected by 0, t=6502 jiffies, g=75434, c=75433, q=0)
+> >>
+> >> I've complained about RCU stalls couple days ago (in a different context)
+> >> on -next. I guess whatever causing them made it into Linus's tree?
+> >>
+> >> https://lkml.org/lkml/2014/10/11/64
 > > 
-> > Well, rather than reverting commits, could you please try testing the
-> > following commits?
+> > And on that one, I must confess that I don't see where the RCU read-side
+> > critical section might be.
 > > 
-> > 11ed7f934cb8 (rcu: Make nocb leader kthreads process pending callbacks after spawning)
-> > 
-> > 73a860cd58a1 (rcu: Replace flush_signals() with WARN_ON(signal_pending()))
-> > 
-> > c847f14217d5 (rcu: Avoid misordering in nocb_leader_wait())
-> > 
-> > 	For whatever it is worth, I am guessing this one.
+> > Hmmm...  Maybe someone forgot to put an rcu_read_unlock() somewhere.
+> > Can you reproduce this with CONFIG_PROVE_RCU=y?
 > 
-> Indeed, c847f14217d5 it is.
-> 
-> Much to my embarrasment I just noticed that in addition to the
-> rcu merge, triggering the bug "requires" my specific Fedora rawhide network
-> setup. Booting in single mode and modprobe ppp_generic is fine. The bug
-> appears when starting with my regular fedora network setup, which in my case 
-> includes 3 ethernet adapters and a libvirt birdge+nat setup.
-> 
-> Hope that helps. 
-> 
-> I am attaching the config.
+> Paul, if that was directed to me - Yes, I see stalls with CONFIG_PROVE_RCU
+> set and nothing else is showing up before/after that.
 
-It does help a lot, thank you!!!
+Indeed it was directed to you.  ;-)
 
-The following patch is a bit of a shot in the dark, and assumes that
-commit 1772947bd012 (rcu: Handle NOCB callbacks from irq-disabled idle
-code) introduced the problem.  Does this patch fix things up?
+Does the following crude diagnostic patch turn up anything?
 
 							Thanx, Paul
 
 ------------------------------------------------------------------------
 
-rcu: Kick rcuo kthreads after their CPU goes offline
+softirq: Check for RCU read-side misnesting in softirq handlers
 
-If a no-CBs CPU were to post an RCU callback with interrupts disabled
-after it entered the idle loop for the last time, there might be no
-deferred wakeup for the corresponding rcuo kthreads.  This commit
-therefore adds a set of calls to do_nocb_deferred_wakeup() after the
-CPU has gone completely offline.
+This commit adds checks for RCU read-side misnesting in softirq handlers.
+Please note that this works only for CONFIG_TREE_PREEMPT_RCU=y because
+the other RCU flavors have no way of knowing how deeply nested they are.
 
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 84b41b3c6ebd..4f3d25a58786 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -3493,8 +3493,10 @@ static int rcu_cpu_notify(struct notifier_block *self,
- 	case CPU_DEAD_FROZEN:
- 	case CPU_UP_CANCELED:
- 	case CPU_UP_CANCELED_FROZEN:
--		for_each_rcu_flavor(rsp)
-+		for_each_rcu_flavor(rsp) {
- 			rcu_cleanup_dead_cpu(cpu, rsp);
-+			do_nocb_deferred_wakeup(this_cpu_ptr(rsp->rda));
-+		}
- 		break;
- 	default:
- 		break;
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 501baa9ac1be..c6b63a4c576d 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -257,11 +257,13 @@ restart:
+ 	while ((softirq_bit = ffs(pending))) {
+ 		unsigned int vec_nr;
+ 		int prev_count;
++		int rcu_depth;
+ 
+ 		h += softirq_bit - 1;
+ 
+ 		vec_nr = h - softirq_vec;
+ 		prev_count = preempt_count();
++		rcu_depth = rcu_preempt_depth();
+ 
+ 		kstat_incr_softirqs_this_cpu(vec_nr);
+ 
+@@ -274,6 +276,11 @@ restart:
+ 			       prev_count, preempt_count());
+ 			preempt_count_set(prev_count);
+ 		}
++		if (IS_ENABLED(CONFIG_PROVE_RCU) &&
++		    rcu_depth != rcu_preempt_depth())
++			pr_err("huh, entered softirq %u %s %p with RCU nesting %08x, exited with %08x?\n",
++			       vec_nr, softirq_to_name[vec_nr], h->action,
++			       rcu_depth, rcu_preempt_depth());
+ 		h++;
+ 		pending >>= softirq_bit;
+ 	}
 
