@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290AbaJWKuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:50:07 -0400
-Received: from smtp-out-101.synserver.de ([212.40.185.101]:1065 "EHLO
-	smtp-out-101.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932211AbaJWKuC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:50:02 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 25897
-Message-ID: <5448DD58.7030705@metafoo.de>
-Date: Thu, 23 Oct 2014 12:50:00 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.1
-MIME-Version: 1.0
-To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Brian Vandre <bvandre@gmail.com>
-CC: gregkh@linuxfoundation.org, jic23@kernel.org,
-        alexandre.belloni@free-electrons.com, linux-iio@vger.kernel.org,
-        marex@denx.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Staging: iio: adc: fix line over 80 characters
-References: <cover.1413858979.git.bvandre@gmail.com> <cover.1413931615.git.bvandre@gmail.com> <ec4b497827f6c7615f6b5eef5669144f8c68d034.1413931615.git.bvandre@gmail.com> <20141022042115.GA2530@sudip-PC>
-In-Reply-To: <20141022042115.GA2530@sudip-PC>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754731AbaJWKr1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:47:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19432 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753934AbaJWKrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 06:47:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
+   d="scan'208";a="594445898"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 03/16] perf session: Add perf_session__deliver_synth_event()
+Date: Thu, 23 Oct 2014 13:45:11 +0300
+Message-Id: <1414061124-26830-4-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 06:21 AM, Sudip Mukherjee wrote:
-> On Tue, Oct 21, 2014 at 05:56:47PM -0500, Brian Vandre wrote:
->> This fixes the 2 checkpatch.pl warnings:
->> WARNING: line over 80 characters
->>
-> please check your patch with --strict option of checkpatch.pl , and you will get :
-> "Alignment should match open parenthesis" .
+Add a function to deliver synthesized events from
+within a session.
 
-Those checkpatch warnings are suggestions, not hard requirements. The idea 
-is to improve code legibility, but if the change has the adverse effect the 
-warning can and should be ignored. Also when making a change you should keep 
-the existing indention style of a file.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/session.c | 14 ++++++++++++++
+ tools/perf/util/session.h |  5 +++++
+ 2 files changed, 19 insertions(+)
 
-- Lars
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index d70e37d..09635d1 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -907,6 +907,20 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+ 	}
+ }
+ 
++int perf_session__deliver_synth_event(struct perf_session *session,
++				      union perf_event *event,
++				      struct perf_sample *sample,
++				      struct perf_tool *tool)
++{
++	events_stats__inc(&session->stats, event->header.type);
++
++	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
++		return perf_session__process_user_event(session, event, tool,
++							0);
++
++	return perf_session__deliver_event(session, event, sample, tool, 0);
++}
++
+ static void event_swap(union perf_event *event, bool sample_id_all)
+ {
+ 	perf_event__swap_op swap;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index d8521ac..dc26ebf 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -127,6 +127,11 @@ extern volatile int session_done;
+ 
+ #define session_done()	ACCESS_ONCE(session_done)
+ 
++int perf_session__deliver_synth_event(struct perf_session *session,
++				      union perf_event *event,
++				      struct perf_sample *sample,
++				      struct perf_tool *tool);
++
+ int perf_event__process_id_index(struct perf_tool *tool,
+ 				 union perf_event *event,
+ 				 struct perf_session *session);
+-- 
+1.9.1
+
