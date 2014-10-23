@@ -1,83 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316AbaJWKvV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:51:21 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:21113 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753253AbaJWKvR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:51:17 -0400
-Date: Thu, 23 Oct 2014 06:51:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        Peter Foley <pefoley2@pefoley.com>, linux-kbuild@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] kbuild: Fix output of make kernelrelease
-Message-ID: <20141023065107.587ab9f6@gandalf.local.home>
-In-Reply-To: <5448C315.9000001@suse.cz>
-References: <20141022101944.70d637cc@gandalf.local.home>
-	<20141022194408.GA20989@pobox.suse.cz>
-	<20141022211115.576b0053@gandalf.local.home>
-	<5448C315.9000001@suse.cz>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+	id S1754592AbaJWKrW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:47:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19432 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753892AbaJWKrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 06:47:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
+   d="scan'208";a="594445873"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 02/16] perf pmu: Let pmu's with no events show up on perf list
+Date: Thu, 23 Oct 2014 13:45:10 +0300
+Message-Id: <1414061124-26830-3-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Oct 2014 10:57:57 +0200
-Michal Marek <mmarek@suse.cz> wrote:
+perf list only lists PMUs with events.  Add a
+flag to cause a PMU to be also listed separately.
 
-> On 2014-10-23 03:11, Steven Rostedt wrote:
-> > On Wed, 22 Oct 2014 21:44:08 +0200
-> > Michal Marek <mmarek@suse.cz> wrote:
-> > 
-> >> Dne 22.10.2014 v 16:19 Steven Rostedt napsal(a):
-> >>>
-> >>> Commit 7ff525712acf "kbuild: fake the "Entering directory ..." message
-> >>> more simply" changed the output of "make kernelrelease" such that the
-> >>> kernel release version was not the last line printed. This broke various
-> >>> tools that would find the kernel release with "make kernelrelease | tail -1".
-> >>
-> >> The cleaner and recommended (see recent make help) way is to use make -s:
-> >>
-> >> $ make O=build -s kernelrelease
-> >> 3.18.0-rc1+
-> >>
-> >> no further processing is needed.
-> > 
-> > 
-> > I don't mind changing my script with your patch. But this does break
-> > other scripts of mine that I need to hunt down and change. My fear is
-> > why do we need the '-s' when there may be other methods to preserve the
-> > old functionality.
-> 
-> If you have scripts that only do x=$(make kernelrelease), then you
-> should definitely fix them. You are right that the make kernelrelease |
-> tail -1 trick had always been working until 7ff525712acf, so I can apply
-> your patch.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/pmu.c | 13 +++++++++++--
+ tools/perf/util/pmu.h |  1 +
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-Thanks, because that's what my scripts indeed do ;-)
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index e243ad9..91dca60 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -747,15 +747,18 @@ void print_pmu_events(const char *event_glob, bool name_only)
+ 
+ 	pmu = NULL;
+ 	len = 0;
+-	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
+ 		list_for_each_entry(alias, &pmu->aliases, list)
+ 			len++;
++		if (pmu->selectable)
++			len++;
++	}
+ 	aliases = malloc(sizeof(char *) * len);
+ 	if (!aliases)
+ 		return;
+ 	pmu = NULL;
+ 	j = 0;
+-	while ((pmu = perf_pmu__scan(pmu)) != NULL)
++	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
+ 		list_for_each_entry(alias, &pmu->aliases, list) {
+ 			char *name = format_alias(buf, sizeof(buf), pmu, alias);
+ 			bool is_cpu = !strcmp(pmu->name, "cpu");
+@@ -772,6 +775,12 @@ void print_pmu_events(const char *event_glob, bool name_only)
+ 			aliases[j] = strdup(aliases[j]);
+ 			j++;
+ 		}
++		if (pmu->selectable) {
++			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
++			aliases[j] = strdup(buf);
++			j++;
++		}
++	}
+ 	len = j;
+ 	qsort(aliases, len, sizeof(char *), cmp_string);
+ 	for (j = 0; j < len; j++) {
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index fe9dfbe..8092de7 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -18,6 +18,7 @@ struct perf_event_attr;
+ struct perf_pmu {
+ 	char *name;
+ 	__u32 type;
++	bool selectable;
+ 	struct perf_event_attr *default_config;
+ 	struct cpu_map *cpus;
+ 	struct list_head format;  /* HEAD struct perf_pmu_format -> list */
+-- 
+1.9.1
 
-> But please fix ktest.pl so that it's consistent with what
-> the help text says.
-
-Yeah, regardless I was planning on applying your patch as it needs to
-handle bisects, and without it, ktest will fail to bisect after
-7ff525712acf.
-
-> Also, the Makefile patch should cover kernelversion
-> and image_name as well.
-
-OK, I'll make the update.
-
-Thanks!
-
--- Steve
