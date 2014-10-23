@@ -1,127 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301AbaJWSFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 14:05:11 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39758 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932090AbaJWSFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 14:05:06 -0400
-Message-ID: <54494323.7030805@ti.com>
-Date: Thu, 23 Oct 2014 21:04:19 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <ssantosh@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        <khilman@linaro.org>, <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, <grant.likely@secretlab.ca>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH v3 1/5] PM / clock_ops: Add pm_clk_add_clk()
-References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com> <1414074182-25980-2-git-send-email-grygorii.strashko@ti.com> <20141023154928.GC18714@dtor-ws> <54492A69.5070505@ti.com> <20141023171305.GA24671@dtor-ws>
-In-Reply-To: <20141023171305.GA24671@dtor-ws>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754407AbaJWSO6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 14:14:58 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:34350 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751721AbaJWSO5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 14:14:57 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] Hot plug support for Armada 38x
+Date: Thu, 23 Oct 2014 20:14:26 +0200
+Message-Id: <1414088070-12510-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2014 08:13 PM, Dmitry Torokhov wrote:
-> On Thu, Oct 23, 2014 at 07:18:49PM +0300, Grygorii Strashko wrote:
->> On 10/23/2014 06:49 PM, Dmitry Torokhov wrote:
->>> On Thu, Oct 23, 2014 at 05:22:58PM +0300, Grygorii Strashko wrote:
->>>> From: Geert Uytterhoeven <geert+renesas@glider.be>
->>>>
->>>> The existing pm_clk_add() allows to pass a clock by con_id. However,
->>>> when referring to a specific clock from DT, no con_id is available.
->>>>
->>>> Add pm_clk_add_clk(), which allows to specify the struct clk * directly.
->>>>
->>>> CC: Ulf Hansson <ulf.hansson@linaro.org>
->>>> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->>>> Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>> Reviewed-by: Kevin Hilman <khilman@linaro.org>
->>>> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
->>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->>>> ---
->>>>   drivers/base/power/clock_ops.c | 41 +++++++++++++++++++++++++++++++----------
->>>>   include/linux/pm_clock.h       |  8 ++++++++
->>>>   2 files changed, 39 insertions(+), 10 deletions(-)
->>>>
->>>> diff --git a/drivers/base/power/clock_ops.c b/drivers/base/power/clock_ops.c
->>>> index 7836930..f14b767 100644
->>>> --- a/drivers/base/power/clock_ops.c
->>>> +++ b/drivers/base/power/clock_ops.c
->>>> @@ -53,7 +53,8 @@ static inline int __pm_clk_enable(struct device *dev, struct clk *clk)
->>>>    */
->>>>   static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
->>>>   {
->>>> -	ce->clk = clk_get(dev, ce->con_id);
->>>> +	if (!ce->clk)
->>>> +		ce->clk = clk_get(dev, ce->con_id);
->>>>   	if (IS_ERR(ce->clk)) {
->>>>   		ce->status = PCE_STATUS_ERROR;
->>>>   	} else {
->>>> @@ -63,15 +64,8 @@ static void pm_clk_acquire(struct device *dev, struct pm_clock_entry *ce)
->>>>   	}
->>>>   }
->>>>
->>>> -/**
->>>> - * pm_clk_add - Start using a device clock for power management.
->>>> - * @dev: Device whose clock is going to be used for power management.
->>>> - * @con_id: Connection ID of the clock.
->>>> - *
->>>> - * Add the clock represented by @con_id to the list of clocks used for
->>>> - * the power management of @dev.
->>>> - */
->>>> -int pm_clk_add(struct device *dev, const char *con_id)
->>>> +static int __pm_clk_add(struct device *dev, const char *con_id,
->>>> +			struct clk *clk)
->>>>   {
->>>>   	struct pm_subsys_data *psd = dev_to_psd(dev);
->>>>   	struct pm_clock_entry *ce;
->>>> @@ -93,6 +87,8 @@ int pm_clk_add(struct device *dev, const char *con_id)
->>>>   			kfree(ce);
->>>>   			return -ENOMEM;
->>>>   		}
->>>> +	} else {
->>>
->>> You need __clk_get(clk) here, otherwise when you will be removing clocks
->>> you'll be dropping a reference that does not belong to you (as yiou have
->>> not taken it).
->>
->> No, I don't ;)
->>
->> pm_clk_add_clk is intended to be used with valid pointer on clk,
->> which means clk_get() has been called already. In our case:
->> 	clk = of_clk_get(dev->of_node, i));
->> 	ret = pm_clk_add_clk(dev, clk);
->>
->> It's just a different way to fill list of clocks for device,
->> once pm_clk_add_clk() is called - PM clock framework will be the owner
->> of clock.
->
-> No, this is not how the rest of refcounted APIs work in the kernel. You
-> do not take over other's references and if you need to store pointer to
-> refcounted object you are responsible for taking your own reference. See
-> how we work with device structures, OF nodes, etc, etc.
->
-> The proper pattern here should be (unless the driver wants to hold on to
-> the clock for its own purposes):
->
-> 	clk = of_clk_get(dev->of_node, i));
-> 	ret = pm_clk_add_clk(dev, clk);
-> 	clk_put(clk);
->
-> with pm_clk_add_clk() taking and managing _its own_ reference and the
-> caller (driver) managing _its_ reference.
->
-> So FWIW strong NAK here from me.
+Hi,
 
-Ok. I'll update and resend.
+This patch set adds the hot plug and also kexec support for the Armada
+38x Socs.
 
-regards,
--grygorii
+The first patch was done in order to have the same code between Armada
+XP and the Cortex A9 based mvebu SoCs. In order to ensure the the
+backward compatibility for the device tree, it is only a preliminary
+work for it.
+
+The second patch moves the SCU power up sequence in a dedicated
+assembly function. It was done in order to reuse it in the 3rd patch.
+
+The third patch fixes the secondary startup for the cortex A9 mvebu
+SoC. Indeed, the initial code was written with the assumption the SCU
+will be always power on, which is not only true especially in the
+kexec case.
+
+These 2 patches may worth to be pushed to the stable kernel.
+
+Then the last patch adds the CPU hotplug support for Armada 38x. I
+tested the hotplug using the /sys/devices/system/cpu/cpu1/online
+virtual file.  I also tested the kexec feature and managed to switch
+to a new kernel using kexec.
+
+Thanks,
+
+Gregory
+
+
+Gregory CLEMENT (4):
+  ARM: mvebu: Clean-up the Armada XP support
+  ARM: mvebu: Move SCU power up in a function
+  ARM: mvebu: Fix secondary startup for Cortex A9 SoC
+  ARM: mvebu: Implement CPU hotplug support for Armada 38x
+
+ arch/arm/mach-mvebu/armada-370-xp.h |  6 -----
+ arch/arm/mach-mvebu/board-v7.c      |  4 +++
+ arch/arm/mach-mvebu/coherency.c     |  1 -
+ arch/arm/mach-mvebu/cpu-reset.c     |  1 -
+ arch/arm/mach-mvebu/headsmp-a9.S    |  1 +
+ arch/arm/mach-mvebu/platsmp-a9.c    | 53 +++++++++++++++++++++++++++++++++++--
+ arch/arm/mach-mvebu/platsmp.c       |  2 ++
+ arch/arm/mach-mvebu/pmsu.c          |  3 +--
+ arch/arm/mach-mvebu/pmsu.h          |  2 ++
+ arch/arm/mach-mvebu/pmsu_ll.S       | 20 +++++++++-----
+ 10 files changed, 74 insertions(+), 19 deletions(-)
+
+-- 
+1.9.1
 
