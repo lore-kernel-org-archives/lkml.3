@@ -1,147 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaJWTU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 15:20:56 -0400
-Received: from mout.web.de ([212.227.17.12]:62860 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062AbaJWTUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 15:20:54 -0400
-Message-ID: <544954FD.8040607@users.sourceforge.net>
-Date: Thu, 23 Oct 2014 21:20:29 +0200
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754996AbaJWTVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 15:21:16 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:60230 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709AbaJWTVO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 15:21:14 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org
-CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        trivial@kernel.org, Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] staging - rtl8188eu: Deletion of unnecessary checks
- before three function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:AXdIiP8YiusqjRILH9M7h618vqAQU2nzB4sqRaPDlTVC27LXdzz
- 265Cnw/Feb4RdH9GVaeRXE9vr3t6uM9/iCluRDrVrSVCaPR9hyrfBUm4XvzH1HfSLzVjeZn
- hHyvW9BH2etlwqbfghZGUuwsgA/FgwPHW0RwEIWWuhLvAUDvnqNc3bcQf0iu8PvUteY76qO
- 9BKvQfkiRzuWG4LmXMTxg==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <1414091732.2363.11.camel@redhat.com>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+ <54494B74.2080504@amacapital.net> <1414091732.2363.11.camel@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 23 Oct 2014 12:20:51 -0700
+Message-ID: <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com>
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+To: Eric Paris <eparis@redhat.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-audit@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 45970693cad6c12da2d5ac7da3d2bd7a566170d7 Mon Sep 17 00:00:00 2001
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Thu, 23 Oct 2014 20:55:13 +0200
-Subject: [PATCH] staging - rtl8188eu: Deletion of unnecessary checks before
- three function calls
+On Thu, Oct 23, 2014 at 12:15 PM, Eric Paris <eparis@redhat.com> wrote:
+> On Thu, 2014-10-23 at 11:39 -0700, Andy Lutomirski wrote:
+>> On 10/22/2014 09:04 PM, Eric Paris wrote:
+>> > git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
+>> > It was writing over %esp/pt_regs semi-randomly on i686  with the expected
+>> > "system can't boot" results.  As noted in:
+>> >
+>> > https://bugs.freedesktop.org/show_bug.cgi?id=85277
+>> >
+>> > This patch stops fscking with pt_regs.  Instead it sets up the registers
+>> > for the call to __audit_syscall_entry in the most obvious conceivable
+>> > way.  It then does just a tiny tiny touch of magic.  We need to get what
+>> > started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
+>> > as a pair of pushes.
+>> >
+>> > After the call to __audit_syscall_entry all we need to do is get that
+>> > now useless junk off the stack (pair of pops) and reload %eax with the
+>> > original syscall so other stuff can keep going about it's business.
+>> >
+>> > Signed-off-by: Eric Paris <eparis@redhat.com>
+>> > Cc: Thomas Gleixner <tglx@linutronix.de>
+>> > Cc: Ingo Molnar <mingo@redhat.com>
+>> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> > Cc: x86@kernel.org
+>> > Cc: linux-kernel@vger.kernel.org
+>> > Cc: linux-audit@redhat.com
+>> > ---
+>> >  arch/x86/kernel/entry_32.S | 15 +++++++--------
+>> >  1 file changed, 7 insertions(+), 8 deletions(-)
+>> >
+>> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+>> > index f9e3fab..fb01d22 100644
+>> > --- a/arch/x86/kernel/entry_32.S
+>> > +++ b/arch/x86/kernel/entry_32.S
+>> > @@ -447,15 +447,14 @@ sysenter_exit:
+>> >  sysenter_audit:
+>> >     testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+>> >     jnz syscall_trace_entry
+>> > -   addl $4,%esp
+>> > -   CFI_ADJUST_CFA_OFFSET -4
+>> > -   movl %esi,4(%esp)               /* 5th arg: 4th syscall arg */
+>> > -   movl %edx,(%esp)                /* 4th arg: 3rd syscall arg */
+>> > -   /* %ecx already in %ecx            3rd arg: 2nd syscall arg */
+>> > -   movl %ebx,%edx                  /* 2nd arg: 1st syscall arg */
+>> > -   /* %eax already in %eax            1st arg: syscall number */
+>> > +   /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
+>> > +   movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
+>> > +   /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
+>> > +   pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
+>> > +   pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
+>> >     call __audit_syscall_entry
+>> > -   pushl_cfi %ebx
+>> > +   popl_cfi %ecx /* get that remapped edx off the stack */
+>> > +   popl_cfi %ecx /* get that remapped esi off the stack */
+>> >     movl PT_EAX(%esp),%eax          /* reload syscall number */
+>> >     jmp sysenter_do_call
+>> >
+>> >
+>>
+>> This looks reasonably likely to be correct, but this code is complicated
+>> and now ever slower.
+>
+> I guess I could just use push/pop and do the CFI_ADJUST_CFA_OFFSET by
+> hand.  But I figured this was reasonable enough...
+>
 
-The functions kfree(), rtw_free_netdev() and vfree() test whether their
-argument is NULL and then return immediately. Thus the test around the call
-is not needed.
+I'm not complaining about your new assembly in particular.  There's
+just too much assembly in there in general.
 
-This issue was detected by using the Coccinelle software.
+But I feel like I'm missing something in the new code.  Aren't you
+corrupting ecx with those popl_cfi insns?
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/staging/rtl8188eu/core/rtw_efuse.c   | 3 +--
- drivers/staging/rtl8188eu/core/rtw_mlme.c    | 3 +--
- drivers/staging/rtl8188eu/core/rtw_sta_mgt.c | 3 +--
- drivers/staging/rtl8188eu/core/rtw_xmit.c    | 6 ++----
- drivers/staging/rtl8188eu/os_dep/usb_intf.c  | 5 ++---
- 5 files changed, 7 insertions(+), 13 deletions(-)
+>> How hard would it be to just delete it and replace it with a
+>> straightforward two-phase trace invocation a la x86_64?
+>
+> For me?  Hard.
+>
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-index 7006088..77f7552 100644
---- a/drivers/staging/rtl8188eu/core/rtw_efuse.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_efuse.c
-@@ -212,8 +212,7 @@ efuse_phymap_to_logical(u8 *phymap, u16 _offset, u16
-_size_byte, u8  *pbuf)
- exit:
- 	kfree(efuseTbl);
+I can try it eventually, but my track record with the 32-bit entry
+code isn't so good.  I agree that this would be pretty nasty for
+urgent, but at least neither that or your fix would need to go to
+-stable.
 
--	if (eFuseWord)
--		kfree(eFuseWord);
-+	kfree(eFuseWord);
- }
-
- static void efuse_read_phymap_from_txpktbuf(
-diff --git a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-index 149c271..df54350 100644
---- a/drivers/staging/rtl8188eu/core/rtw_mlme.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_mlme.c
-@@ -122,8 +122,7 @@ void rtw_free_mlme_priv(struct mlme_priv *pmlmepriv)
- 	rtw_free_mlme_priv_ie_data(pmlmepriv);
-
- 	if (pmlmepriv) {
--		if (pmlmepriv->free_bss_buf)
--			vfree(pmlmepriv->free_bss_buf);
-+		vfree(pmlmepriv->free_bss_buf);
- 	}
- }
-
-diff --git a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-index e1dc8fa..af1de9c 100644
---- a/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_sta_mgt.c
-@@ -201,8 +201,7 @@ u32	_rtw_free_sta_priv(struct	sta_priv *pstapriv)
-
- 		rtw_mfree_sta_priv_lock(pstapriv);
-
--		if (pstapriv->pallocated_stainfo_buf)
--			vfree(pstapriv->pallocated_stainfo_buf);
-+		vfree(pstapriv->pallocated_stainfo_buf);
- 	}
-
- 	return _SUCCESS;
-diff --git a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-index 639ace0..011c9cf 100644
---- a/drivers/staging/rtl8188eu/core/rtw_xmit.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_xmit.c
-@@ -246,11 +246,9 @@ void _rtw_free_xmit_priv (struct xmit_priv *pxmitpriv)
- 		pxmitbuf++;
- 	}
-
--	if (pxmitpriv->pallocated_frame_buf)
--		vfree(pxmitpriv->pallocated_frame_buf);
-+	vfree(pxmitpriv->pallocated_frame_buf);
-
--	if (pxmitpriv->pallocated_xmitbuf)
--		vfree(pxmitpriv->pallocated_xmitbuf);
-+	vfree(pxmitpriv->pallocated_xmitbuf);
-
- 	/*  free xmit extension buff */
- 	pxmitbuf = (struct xmit_buf *)pxmitpriv->pxmit_extbuf;
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index 407a318..cdb70e4 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -456,7 +456,7 @@ free_adapter:
- 	if (status != _SUCCESS) {
- 		if (pnetdev)
- 			rtw_free_netdev(pnetdev);
--		else if (padapter)
-+		else
- 			vfree(padapter);
- 		padapter = NULL;
- 	}
-@@ -487,8 +487,7 @@ static void rtw_usb_if1_deinit(struct adapter *if1)
- 	DBG_88E("+r871xu_dev_remove, hw_init_completed=%d\n",
- 		if1->hw_init_completed);
- 	rtw_free_drv_sw(if1);
--	if (pnetdev)
--		rtw_free_netdev(pnetdev);
-+	rtw_free_netdev(pnetdev);
- }
-
- static int rtw_drv_init(struct usb_interface *pusb_intf, const struct
-usb_device_id *pdid)
--- 
-2.1.2
-
-
+--Andy
