@@ -1,84 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574AbaJWQEN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 12:04:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35560 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752511AbaJWQEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 12:04:09 -0400
-Date: Thu, 23 Oct 2014 18:04:05 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-ima-devel <linux-ima-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ima: check xattr value length in ima_inode_setxattr()
-Message-ID: <20141023160405.GC21034@quack.suse.cz>
-References: <cover.1414071910.git.d.kasatkin@samsung.com>
- <5b1f234e8515c10c96a16868ff4341f29460f38f.1414071910.git.d.kasatkin@samsung.com>
- <20141023154007.GA21034@quack.suse.cz>
- <CACE9dm9zB0h6CU+oHUowm3=Oy7Kpx9q4tp78pb-5myRCpTXLZA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACE9dm9zB0h6CU+oHUowm3=Oy7Kpx9q4tp78pb-5myRCpTXLZA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755961AbaJWQEq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 12:04:46 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:35348 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019AbaJWQEo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 12:04:44 -0400
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] block: wrong return value
+Date: Thu, 23 Oct 2014 21:34:31 +0530
+Message-Id: <1414080271-6551-1-git-send-email-sudipm.mukherjee@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 23-10-14 18:59:07, Dmitry Kasatkin wrote:
-> On 23 October 2014 18:40, Jan Kara <jack@suse.cz> wrote:
-> > On Thu 23-10-14 16:47:17, Dmitry Kasatkin wrote:
-> >> ima_inode_setxattr() can be called with no value. Function does not
-> >> check the length so that following command can be used to produce
-> >> kernel oops: setfattr -n security.ima FOO. This patch fixes it.
-> >>
-> > ..
-> >>
-> >> Reported-by: Jan Kara <jack@suse.cz>
-> >> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> >> ---
-> >>  security/integrity/ima/ima_appraise.c | 2 ++
-> >>  1 file changed, 2 insertions(+)
-> >>
-> >> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-> >> index 5b845af..f07aacd 100644
-> >> --- a/security/integrity/ima/ima_appraise.c
-> >> +++ b/security/integrity/ima/ima_appraise.c
-> >> @@ -378,6 +378,8 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
-> >>       result = ima_protect_xattr(dentry, xattr_name, xattr_value,
-> >>                                  xattr_value_len);
-> >>       if (result == 1) {
-> >> +             if (!xattr_value_len)
-> >> +                     return -EINVAL;
-> >   Wouldn't it be safer to return EINVAL whenever xattr_value_len !=
-> > sizeof(evm_ima_xattr_data)?
-> 
-> In this function we only use first byte to identify attribute type.
-> sizeof(evm_ima_xattr_data) is SHA1_DIGEST_SIZE + 1.
-> But IMA may use any other algorithm where digest size is different.
-  I see. Thanks for explanation.
+while compiling integer err was showing as a set but unused variable.
+elevator_init_fn can be either cfq_init_queue or deadline_init_queue
+or noop_init_queue.
+all three of these functions are returning -ENOMEM if they fail to
+allocate the queue.
+so we should actually be returning the error code rather than
+returning 0 always.
 
-								Honza
+Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
+---
 
-> >>               ima_reset_appraise_flags(dentry->d_inode,
-> >>                        (xvalue->type == EVM_IMA_XATTR_DIGSIG) ? 1 : 0);
-> >>               result = 0;
-> >> --
-> >> 1.9.1
-> >>
-> > --
-> > Jan Kara <jack@suse.cz>
-> > SUSE Labs, CR
-> 
-> 
-> 
-> -- 
-> Thanks,
-> Dmitry
+change in v2: added elevator_put
+
+ block/elevator.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/block/elevator.c b/block/elevator.c
+index 24c28b6..1267c2b 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -184,7 +184,7 @@ static void elevator_release(struct kobject *kobj)
+ int elevator_init(struct request_queue *q, char *name)
+ {
+ 	struct elevator_type *e = NULL;
+-	int err;
++	int err = 0;
+ 
+ 	/*
+ 	 * q->sysfs_lock must be held to provide mutual exclusion between
+@@ -229,7 +229,9 @@ int elevator_init(struct request_queue *q, char *name)
+ 	}
+ 
+ 	err = e->ops.elevator_init_fn(q, e);
+-	return 0;
++	if (err)
++		elevator_put(e);
++	return err;
+ }
+ EXPORT_SYMBOL(elevator_init);
+ 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.1.2
+
