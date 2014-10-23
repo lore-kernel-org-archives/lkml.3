@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbaJWMOV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:14:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17406 "EHLO mx1.redhat.com"
+	id S1755461AbaJWMQY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:16:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43764 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754781AbaJWMOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:14:18 -0400
-Date: Thu, 23 Oct 2014 15:17:54 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v3 00/16] linux: towards virtio-1 guest support
-Message-ID: <20141023121754.GA9866@redhat.com>
-References: <1414003404-505-1-git-send-email-mst@redhat.com>
+	id S1755237AbaJWMQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 08:16:23 -0400
+Date: Thu, 23 Oct 2014 14:16:19 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, tglx@linutronix.de, ak@linux.intel.com,
+        eranian@google.com, dzickus@redhat.com, andi@firstfloor.org,
+        jmario@redhat.com, acme@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] perf,x86: De-obfuscate HSW offcore bits
+Message-ID: <20141023121619.GB4643@pd.tnic>
+References: <20141023105119.173457103@infradead.org>
+ <20141023105658.111371548@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1414003404-505-1-git-send-email-mst@redhat.com>
+In-Reply-To: <20141023105658.111371548@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:44:05PM +0300, Michael S. Tsirkin wrote:
-> Based on patches by Cornelia and others, but
-> with an API that should allow better static checking of code,
-> and slightly more concervative changes in vring.
+On Thu, Oct 23, 2014 at 12:51:20PM +0200, Peter Zijlstra wrote:
+> Andi introduced the HSW cache events array, but used magic constants
+> against convention as set by all the other uarchs. Try and deobfuscate
+> these a bit.
+> 
+> This patch should not change the actual values generated; however
+> weird they seems.
+> 
+> In that patch Andi also said there were differences between the
+> SNB/IVB and HSW/BDW offcore tables but failed to specify which and
+> why.
+> 
+> Fixes: 86a349a28b24 ("perf/x86/intel: Add Broadwell core support")
+> Cc: Andi Kleen <ak@linux.intel.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+> Link: http://lkml.kernel.org/n/tip-@git.kernel.org
 
-Note: sparse found some issues, so please wait a bit with testing,
-I'll send v4 shortly.
+This link looks funny.
 
-> Changes from v2:
-> 	add missing virtio_byteorder.h
+> ---
+>  arch/x86/kernel/cpu/perf_event_intel.c |   48 +++++++++++++++++++++++++++------
+>  1 file changed, 40 insertions(+), 8 deletions(-)
 > 
-> Cornelia Huck (4):
->   virtio: allow transports to get avail/used addresses
->   virtio_blk: use virtio v1.0 endian
->   KVM: s390: virtio-ccw revision 1 SET_VQ
->   KVM: s390: enable virtio-ccw revision 1
-> 
-> Michael S. Tsirkin (8):
->   virtio: memory access APIs
->   virtio_ring: switch to new memory access APIs
->   virtio: add virtio 1.0 feature bit
->   virtio: make endian-ness depend on virtio 1.0
->   virtio_config: endian conversion for v1.0
->   virtio: set FEATURES_OK
->   virtio_net: fix types for in memory structures
->   virtio_blk: fix types for in memory structures
-> 
-> Rusty Russell (3):
->   virtio: use u32, not bitmap for struct virtio_device's features
->   virtio: add support for 64 bit features.
->   virtio_net: use v1.0 endian.
-> 
-> Thomas Huth (1):
->   KVM: s390: Set virtio-ccw transport revision
-> 
->  include/linux/virtio.h                 |   6 +-
->  include/linux/virtio_byteorder.h       |  29 ++++++
->  include/linux/virtio_config.h          |  33 +++++--
->  include/uapi/linux/virtio_blk.h        |  15 +--
->  include/uapi/linux/virtio_config.h     |   9 +-
->  include/uapi/linux/virtio_net.h        |  15 +--
->  include/uapi/linux/virtio_ring.h       |  49 +++++-----
->  tools/virtio/linux/virtio.h            |  22 +----
->  tools/virtio/linux/virtio_config.h     |   2 +-
->  drivers/block/virtio_blk.c             |   4 +
->  drivers/char/virtio_console.c          |   2 +-
->  drivers/lguest/lguest_device.c         |  16 ++--
->  drivers/net/virtio_net.c               |  31 ++++---
->  drivers/remoteproc/remoteproc_virtio.c |   7 +-
->  drivers/s390/kvm/kvm_virtio.c          |  10 +-
->  drivers/s390/kvm/virtio_ccw.c          | 165 +++++++++++++++++++++++++++------
->  drivers/virtio/virtio.c                |  47 ++++++----
->  drivers/virtio/virtio_mmio.c           |  20 ++--
->  drivers/virtio/virtio_pci.c            |   8 +-
->  drivers/virtio/virtio_ring.c           | 109 +++++++++++++---------
->  tools/virtio/virtio_test.c             |   5 +-
->  tools/virtio/vringh_test.c             |  16 ++--
->  include/uapi/linux/Kbuild              |   1 +
->  23 files changed, 406 insertions(+), 215 deletions(-)
->  create mode 100644 include/linux/virtio_byteorder.h
-> 
-> -- 
-> MST
-> 
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -247,6 +247,7 @@ static u64 intel_pmu_event_map(int hw_ev
+>  #define SNB_BUS_LOCKS		(1ULL << 10)
+>  #define SNB_STRM_ST		(1ULL << 11)
+>  #define SNB_OTHER		(1ULL << 15)
+> +
+>  #define SNB_RESP_ANY		(1ULL << 16)
+>  #define SNB_NO_SUPP		(1ULL << 17)
+>  #define SNB_LLC_HITM		(1ULL << 18)
+> @@ -255,6 +256,7 @@ static u64 intel_pmu_event_map(int hw_ev
+>  #define SNB_LLC_HITF		(1ULL << 21)
+>  #define SNB_LOCAL		(1ULL << 22)
+>  #define SNB_REMOTE		(0xffULL << 23)
+> +
+>  #define SNB_SNP_NONE		(1ULL << 31)
+>  #define SNB_SNP_NOT_NEEDED	(1ULL << 32)
+>  #define SNB_SNP_MISS		(1ULL << 33)
+> @@ -519,6 +521,40 @@ static __initconst const u64 hsw_hw_cach
+>   },
+>  };
+>  
+> +/* HSW Request type */
+> +#define HSW_DMND_DATA_RD	(1ULL << 0)
+> +#define HSW_DMND_RFO		(1ULL << 1)
+> +#define HSW_DMND_IFETCH		(1ULL << 2)
+> +
+> +#define HSW_PF_DATA_RD		(1ULL << 4)
+> +#define HSW_PF_RFO		(1ULL << 5)
+> +#define HSW_PF_IFETCH		(1ULL << 6)
+> +
+> +#define HSW_OTHER		(1ULL << 15)
+> +
+> +/* HSW Supplier info := SNB Supplier info */
+> +/* HSW Snoop Info := SNB Snoop Info */
+> +
+> +/*
+> + * SNB_LLC_* is specified as 'reserved' in the SDM
+> + * but Andi added it anyhow, suggesting HSW/BDW have it just fine
+> + *
+> + * XXX NHM/WSM/SNB/IVB don't have the PF/IFETCH bits set
+> + */
+> +#define HSW_DMND_READ		(HSW_DMND_DATA_RD|HSW_DMND_IFETCH| \
+> +				 HSW_PF_DATA_RD|HSW_PF_IFETCH| \
+> +				 SNB_LLC_DATA_RD|SNB_LLC_IFETCH)
+> +
+> +/* XXX NHM/WSM/SNB/IVB dont have the PF bits set */
+> +#define HSW_DMND_WRITE		(HSW_DMND_RFO|HSW_PF_RFO|SNB_LLC_RFO)
+> +
+> +#define HSW_DMND_PREFETCH	(0) /* XXX broken ? */
+> +
+> +#define HSW_DRAM_ANY		(SNB_NO_SUPP|SNB_SNP_ANY|(0x78ULL << 23)) /* WTF */
+> +
+> +#define HSW_L3_ACCESS		(0) /* XXX no supplier! */
+> +#define NSW_L3_MISS		(HSW_DRAM_ANY|SNB_NON_DRAM)
+
+You probably mean HSW and not NSW here...
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
