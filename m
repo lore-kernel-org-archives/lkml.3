@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622AbaJWOdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 10:33:10 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42751 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755968AbaJWOdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 10:33:08 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: inline memcg->move_lock locking
-Date: Thu, 23 Oct 2014 10:33:02 -0400
-Message-Id: <1414074782-14340-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.1.2
+	id S932936AbaJWOeB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 10:34:01 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:43911 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932774AbaJWOd6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 10:33:58 -0400
+From: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-sh@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH 4/4] mm: cma: Use %pa to print physical addresses
+Date: Thu, 23 Oct 2014 17:33:48 +0300
+Message-Id: <1414074828-4488-5-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+References: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wrappers around taking and dropping the memcg->move_lock spinlock
-add nothing of value.  Inline the spinlock calls into the callsites.
+Casting physical addresses to unsigned long and using %lu truncates the
+values on systems where physical addresses are larger than 32 bits. Use
+%pa and get rid of the cast instead.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Vladimir Davydov <vdavydov@parallels.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 ---
- mm/memcontrol.c | 28 ++++++----------------------
- 1 file changed, 6 insertions(+), 22 deletions(-)
+ mm/cma.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 09fece0eb9f1..a5c9aa4688e8 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1522,23 +1522,6 @@ static bool mem_cgroup_wait_acct_move(struct mem_cgroup *memcg)
- 	return false;
- }
+diff --git a/mm/cma.c b/mm/cma.c
+index b83597b..741c7ec 100644
+--- a/mm/cma.c
++++ b/mm/cma.c
+@@ -212,9 +212,8 @@ int __init cma_declare_contiguous(phys_addr_t base,
+ 	phys_addr_t highmem_start = __pa(high_memory);
+ 	int ret = 0;
  
--/*
-- * Take this lock when
-- * - a code tries to modify page's memcg while it's USED.
-- * - a code tries to modify page state accounting in a memcg.
-- */
--static void move_lock_mem_cgroup(struct mem_cgroup *memcg,
--				  unsigned long *flags)
--{
--	spin_lock_irqsave(&memcg->move_lock, *flags);
--}
--
--static void move_unlock_mem_cgroup(struct mem_cgroup *memcg,
--				unsigned long *flags)
--{
--	spin_unlock_irqrestore(&memcg->move_lock, *flags);
--}
--
- #define K(x) ((x) << (PAGE_SHIFT-10))
- /**
-  * mem_cgroup_print_oom_info: Print OOM information relevant to memory controller.
-@@ -2156,9 +2139,9 @@ again:
- 	if (atomic_read(&memcg->moving_account) <= 0)
- 		return memcg;
+-	pr_debug("%s(size %lx, base %08lx, limit %08lx alignment %08lx)\n",
+-		__func__, (unsigned long)size, (unsigned long)base,
+-		(unsigned long)limit, (unsigned long)alignment);
++	pr_debug("%s(size %pa, base %pa, limit %pa alignment %pa)\n",
++		__func__, &size, &base, &limit, &alignment);
  
--	move_lock_mem_cgroup(memcg, flags);
-+	spin_lock_irqsave(&memcg->move_lock, *flags);
- 	if (memcg != pc->mem_cgroup) {
--		move_unlock_mem_cgroup(memcg, flags);
-+		spin_unlock_irqrestore(&memcg->move_lock, *flags);
- 		goto again;
+ 	if (cma_area_count == ARRAY_SIZE(cma_areas)) {
+ 		pr_err("Not enough slots for CMA reserved regions!\n");
+@@ -257,8 +256,8 @@ int __init cma_declare_contiguous(phys_addr_t base,
+ 	 */
+ 	if (fixed && base < highmem_start && base + size > highmem_start) {
+ 		ret = -EINVAL;
+-		pr_err("Region at %08lx defined on low/high memory boundary (%08lx)\n",
+-			(unsigned long)base, (unsigned long)highmem_start);
++		pr_err("Region at %pa defined on low/high memory boundary (%pa)\n",
++			&base, &highmem_start);
+ 		goto err;
  	}
- 	*locked = true;
-@@ -2176,7 +2159,7 @@ void mem_cgroup_end_page_stat(struct mem_cgroup *memcg, bool locked,
- 			      unsigned long flags)
- {
- 	if (memcg && locked)
--		move_unlock_mem_cgroup(memcg, &flags);
-+		spin_unlock_irqrestore(&memcg->move_lock, flags);
  
- 	rcu_read_unlock();
- }
-@@ -3219,7 +3202,7 @@ static int mem_cgroup_move_account(struct page *page,
- 	if (pc->mem_cgroup != from)
- 		goto out_unlock;
+@@ -316,8 +315,8 @@ int __init cma_declare_contiguous(phys_addr_t base,
+ 	if (ret)
+ 		goto err;
  
--	move_lock_mem_cgroup(from, &flags);
-+	spin_lock_irqsave(&from->move_lock, flags);
+-	pr_info("Reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
+-		(unsigned long)base);
++	pr_info("Reserved %ld MiB at %pa\n", (unsigned long)size / SZ_1M,
++		&base);
+ 	return 0;
  
- 	if (!PageAnon(page) && page_mapped(page)) {
- 		__this_cpu_sub(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED],
-@@ -3243,7 +3226,8 @@ static int mem_cgroup_move_account(struct page *page,
- 
- 	/* caller should have done css_get */
- 	pc->mem_cgroup = to;
--	move_unlock_mem_cgroup(from, &flags);
-+	spin_unlock_irqrestore(&from->move_lock, flags);
-+
- 	ret = 0;
- 
- 	local_irq_disable();
+ err:
 -- 
-2.1.2
+2.0.4
 
