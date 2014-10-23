@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251AbaJWKuv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:50:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60790 "EHLO mga02.intel.com"
+	id S1754670AbaJWKrZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:47:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:19432 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753210AbaJWKr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:47:26 -0400
+	id S1753210AbaJWKq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 06:46:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,774,1406617200"; 
-   d="scan'208";a="594446029"
+   d="scan'208";a="594445846"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 09/16] perf tools: Add branch_type and in_tx to Python export
-Date: Thu, 23 Oct 2014 13:45:17 +0300
-Message-Id: <1414061124-26830-10-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 01/16] perf tools: Add id index
+Date: Thu, 23 Oct 2014 13:45:09 +0300
+Message-Id: <1414061124-26830-2-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
 References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
@@ -27,189 +27,337 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add branch_type and in_tx to Python db export and
-the export-to-postgresql.py script.
+Add an index of the event identifiers.
+
+This is needed to queue Instruction
+Trace samples according to the mmap
+buffer from which they were recorded.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/scripts/python/export-to-postgresql.py  | 32 ++++++++++++++++++----
- .../util/scripting-engines/trace-event-python.c    | 30 +++++++++++++++++++-
- 2 files changed, 55 insertions(+), 7 deletions(-)
+ tools/perf/builtin-inject.c |   1 +
+ tools/perf/util/event.c     |   1 +
+ tools/perf/util/event.h     |  15 ++++++
+ tools/perf/util/evlist.c    |  26 ++++++++--
+ tools/perf/util/evsel.h     |   3 ++
+ tools/perf/util/session.c   | 122 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/session.h   |  10 ++++
+ tools/perf/util/tool.h      |   3 +-
+ 8 files changed, 177 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/scripts/python/export-to-postgresql.py b/tools/perf/scripts/python/export-to-postgresql.py
-index d8f6df0..bb79aec 100644
---- a/tools/perf/scripts/python/export-to-postgresql.py
-+++ b/tools/perf/scripts/python/export-to-postgresql.py
-@@ -123,6 +123,10 @@ do_query(query, 'CREATE TABLE symbols ('
- 		'sym_end	bigint,'
- 		'binding	integer,'
- 		'name		varchar(2048))')
-+do_query(query, 'CREATE TABLE branch_types ('
-+		'id		integer		NOT NULL,'
-+		'name		varchar(80))')
-+
- if branches:
- 	do_query(query, 'CREATE TABLE samples ('
- 		'id		bigint		NOT NULL,'
-@@ -139,7 +143,9 @@ if branches:
- 		'to_dso_id	bigint,'
- 		'to_symbol_id	bigint,'
- 		'to_sym_offset	bigint,'
--		'to_ip		bigint)')
-+		'to_ip		bigint,'
-+		'branch_type	integer,'
-+		'in_tx		boolean)')
- else:
- 	do_query(query, 'CREATE TABLE samples ('
- 		'id		bigint		NOT NULL,'
-@@ -160,7 +166,9 @@ else:
- 		'period		bigint,'
- 		'weight		bigint,'
- 		'transaction	bigint,'
--		'data_src	bigint)')
-+		'data_src	bigint,'
-+		'branch_type	integer,'
-+		'in_tx		boolean)')
- 
- do_query(query, 'CREATE VIEW samples_view AS '
- 	'SELECT '
-@@ -178,7 +186,9 @@ do_query(query, 'CREATE VIEW samples_view AS '
- 		'to_hex(to_ip) AS to_ip_hex,'
- 		'(SELECT name FROM symbols WHERE id = to_symbol_id) AS to_symbol,'
- 		'to_sym_offset,'
--		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name'
-+		'(SELECT short_name FROM dsos WHERE id = to_dso_id) AS to_dso_short_name,'
-+		'(SELECT name FROM branch_types WHERE id = branch_type) AS branch_type_name,'
-+		'in_tx'
- 	' FROM samples')
- 
- 
-@@ -234,6 +244,7 @@ comm_file		= open_output_file("comm_table.bin")
- comm_thread_file	= open_output_file("comm_thread_table.bin")
- dso_file		= open_output_file("dso_table.bin")
- symbol_file		= open_output_file("symbol_table.bin")
-+branch_type_file	= open_output_file("branch_type_table.bin")
- sample_file		= open_output_file("sample_table.bin")
- 
- def trace_begin():
-@@ -257,6 +268,7 @@ def trace_end():
- 	copy_output_file(comm_thread_file,	"comm_threads")
- 	copy_output_file(dso_file,		"dsos")
- 	copy_output_file(symbol_file,		"symbols")
-+	copy_output_file(branch_type_file,	"branch_types")
- 	copy_output_file(sample_file,		"samples")
- 
- 	print datetime.datetime.today(), "Removing intermediate files..."
-@@ -267,6 +279,7 @@ def trace_end():
- 	remove_output_file(comm_thread_file)
- 	remove_output_file(dso_file)
- 	remove_output_file(symbol_file)
-+	remove_output_file(branch_type_file)
- 	remove_output_file(sample_file)
- 	os.rmdir(output_dir_name)
- 	print datetime.datetime.today(), "Adding primary keys"
-@@ -277,6 +290,7 @@ def trace_end():
- 	do_query(query, 'ALTER TABLE comm_threads    ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE dsos            ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE symbols         ADD PRIMARY KEY (id)')
-+	do_query(query, 'ALTER TABLE branch_types    ADD PRIMARY KEY (id)')
- 	do_query(query, 'ALTER TABLE samples         ADD PRIMARY KEY (id)')
- 
- 	print datetime.datetime.today(), "Adding foreign keys"
-@@ -352,9 +366,15 @@ def symbol_table(symbol_id, dso_id, sym_start, sym_end, binding, symbol_name, *x
- 	value = struct.pack(fmt, 6, 8, symbol_id, 8, dso_id, 8, sym_start, 8, sym_end, 4, binding, n, symbol_name)
- 	symbol_file.write(value)
- 
--def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, *x):
-+def branch_type_table(branch_type, name, *x):
-+	n = len(name)
-+	fmt = "!hiii" + str(n) + "s"
-+	value = struct.pack(fmt, 2, 4, branch_type, n, name)
-+	branch_type_file.write(value)
-+
-+def sample_table(sample_id, evsel_id, machine_id, thread_id, comm_id, dso_id, symbol_id, sym_offset, ip, time, cpu, to_dso_id, to_symbol_id, to_sym_offset, to_ip, period, weight, transaction, data_src, branch_type, in_tx, *x):
- 	if branches:
--		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiq", 15, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip)
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiiiB", 17, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 4, branch_type, 1, in_tx)
- 	else:
--		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiq", 19, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src)
-+		value = struct.pack("!hiqiqiqiqiqiqiqiqiqiqiiiqiqiqiqiqiqiqiqiiiB", 21, 8, sample_id, 8, evsel_id, 8, machine_id, 8, thread_id, 8, comm_id, 8, dso_id, 8, symbol_id, 8, sym_offset, 8, ip, 8, time, 4, cpu, 8, to_dso_id, 8, to_symbol_id, 8, to_sym_offset, 8, to_ip, 8, period, 8, weight, 8, transaction, 8, data_src, 4, branch_type, 1, in_tx)
- 	sample_file.write(value)
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 539e23d..553aded 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -66,6 +66,7 @@ struct tables {
- 	PyObject		*comm_thread_handler;
- 	PyObject		*dso_handler;
- 	PyObject		*symbol_handler;
-+	PyObject		*branch_type_handler;
- 	PyObject		*sample_handler;
- 	bool			db_export_mode;
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index de99ca1..046c719 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -410,6 +410,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.tracing_data	= perf_event__repipe_op2_synth,
+ 			.finished_round	= perf_event__repipe_op2_synth,
+ 			.build_id	= perf_event__repipe_op2_synth,
++			.id_index	= perf_event__repipe_op2_synth,
+ 		},
+ 		.input_name  = "-",
+ 		.samples = LIST_HEAD_INIT(inject.samples),
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 4af6b27..bbf6705 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -28,6 +28,7 @@ static const char *perf_event__names[] = {
+ 	[PERF_RECORD_HEADER_TRACING_DATA]	= "TRACING_DATA",
+ 	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
+ 	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
++	[PERF_RECORD_ID_INDEX]			= "ID_INDEX",
  };
-@@ -663,13 +664,31 @@ static int python_export_symbol(struct db_export *dbe, struct symbol *sym,
+ 
+ const char *perf_event__name(unsigned int id)
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 5699e7e..c89518e 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -187,6 +187,7 @@ enum perf_user_event_type { /* above any possible kernel type */
+ 	PERF_RECORD_HEADER_TRACING_DATA		= 66,
+ 	PERF_RECORD_HEADER_BUILD_ID		= 67,
+ 	PERF_RECORD_FINISHED_ROUND		= 68,
++	PERF_RECORD_ID_INDEX			= 69,
+ 	PERF_RECORD_HEADER_MAX
+ };
+ 
+@@ -239,6 +240,19 @@ struct tracing_data_event {
+ 	u32 size;
+ };
+ 
++struct id_index_entry {
++	u64 id;
++	u64 idx;
++	u64 cpu;
++	u64 tid;
++};
++
++struct id_index_event {
++	struct perf_event_header header;
++	u64 nr;
++	struct id_index_entry entries[0];
++};
++
+ union perf_event {
+ 	struct perf_event_header	header;
+ 	struct mmap_event		mmap;
+@@ -253,6 +267,7 @@ union perf_event {
+ 	struct event_type_event		event_type;
+ 	struct tracing_data_event	tracing_data;
+ 	struct build_id_event		build_id;
++	struct id_index_event		id_index;
+ };
+ 
+ void perf_event__print_totals(void);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 3c9e77d..0babd39 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -527,6 +527,22 @@ static int perf_evlist__id_add_fd(struct perf_evlist *evlist,
  	return 0;
  }
  
-+static int python_export_branch_type(struct db_export *dbe, u32 branch_type,
-+				     const char *name)
++static void perf_evlist__set_sid_idx(struct perf_evlist *evlist,
++				     struct perf_evsel *evsel, int idx, int cpu,
++				     int thread)
 +{
-+	struct tables *tables = container_of(dbe, struct tables, dbe);
-+	PyObject *t;
++	struct perf_sample_id *sid = SID(evsel, cpu, thread);
++	sid->idx = idx;
++	if (evlist->cpus && cpu >= 0)
++		sid->cpu = evlist->cpus->map[cpu];
++	else
++		sid->cpu = -1;
++	if (!evsel->system_wide && evlist->threads && thread >= 0)
++		sid->tid = evlist->threads->map[thread];
++	else
++		sid->tid = -1;
++}
 +
-+	t = tuple_new(2);
-+
-+	tuple_set_s32(t, 0, branch_type);
-+	tuple_set_string(t, 1, name);
-+
-+	call_object(tables->branch_type_handler, t, "branch_type_table");
-+
-+	Py_DECREF(t);
-+
+ struct perf_sample_id *perf_evlist__id2sid(struct perf_evlist *evlist, u64 id)
+ {
+ 	struct hlist_head *head;
+@@ -805,9 +821,13 @@ static int perf_evlist__mmap_per_evsel(struct perf_evlist *evlist, int idx,
+ 			return -1;
+ 		}
+ 
+-		if ((evsel->attr.read_format & PERF_FORMAT_ID) &&
+-		    perf_evlist__id_add_fd(evlist, evsel, cpu, thread, fd) < 0)
+-			return -1;
++		if (evsel->attr.read_format & PERF_FORMAT_ID) {
++			if (perf_evlist__id_add_fd(evlist, evsel, cpu, thread,
++						   fd) < 0)
++				return -1;
++			perf_evlist__set_sid_idx(evlist, evsel, idx, cpu,
++						 thread);
++		}
+ 	}
+ 
+ 	return 0;
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 163c560..4861e8c 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -36,6 +36,9 @@ struct perf_sample_id {
+ 	struct hlist_node 	node;
+ 	u64		 	id;
+ 	struct perf_evsel	*evsel;
++	int			idx;
++	int			cpu;
++	pid_t			tid;
+ 
+ 	/* Holds total ID period value for PERF_SAMPLE_READ processing. */
+ 	u64			period;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 6702ac2..d70e37d 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -228,6 +228,15 @@ static int process_finished_round(struct perf_tool *tool,
+ 				  union perf_event *event,
+ 				  struct perf_session *session);
+ 
++static int process_id_index_stub(struct perf_tool *tool __maybe_unused,
++				 union perf_event *event __maybe_unused,
++				 struct perf_session *perf_session
++				 __maybe_unused)
++{
++	dump_printf(": unhandled!\n");
 +	return 0;
 +}
 +
- static int python_export_sample(struct db_export *dbe,
- 				struct export_sample *es)
+ void perf_tool__fill_defaults(struct perf_tool *tool)
  {
- 	struct tables *tables = container_of(dbe, struct tables, dbe);
- 	PyObject *t;
- 
--	t = tuple_new(19);
-+	t = tuple_new(21);
- 
- 	tuple_set_u64(t, 0, es->db_id);
- 	tuple_set_u64(t, 1, es->evsel->db_id);
-@@ -690,6 +709,8 @@ static int python_export_sample(struct db_export *dbe,
- 	tuple_set_u64(t, 16, es->sample->weight);
- 	tuple_set_u64(t, 17, es->sample->transaction);
- 	tuple_set_u64(t, 18, es->sample->data_src);
-+	tuple_set_s32(t, 19, es->sample->flags & PERF_BRANCH_MASK);
-+	tuple_set_s32(t, 20, !!(es->sample->flags & PERF_FLAG_IN_TX));
- 
- 	call_object(tables->sample_handler, t, "sample_table");
- 
-@@ -856,6 +877,7 @@ static void set_table_handlers(struct tables *tables)
- 	SET_TABLE_HANDLER(comm_thread);
- 	SET_TABLE_HANDLER(dso);
- 	SET_TABLE_HANDLER(symbol);
-+	SET_TABLE_HANDLER(branch_type);
- 	SET_TABLE_HANDLER(sample);
+ 	if (tool->sample == NULL)
+@@ -262,6 +271,8 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
+ 		else
+ 			tool->finished_round = process_finished_round_stub;
+ 	}
++	if (tool->id_index == NULL)
++		tool->id_index = process_id_index_stub;
  }
+  
+ static void swap_sample_id_all(union perf_event *event, void *data)
+@@ -460,6 +471,7 @@ static perf_event__swap_op perf_event__swap_ops[] = {
+ 	[PERF_RECORD_HEADER_EVENT_TYPE]	  = perf_event__event_type_swap,
+ 	[PERF_RECORD_HEADER_TRACING_DATA] = perf_event__tracing_data_swap,
+ 	[PERF_RECORD_HEADER_BUILD_ID]	  = NULL,
++	[PERF_RECORD_ID_INDEX]		  = perf_event__all64_swap,
+ 	[PERF_RECORD_HEADER_MAX]	  = NULL,
+ };
  
-@@ -905,6 +927,12 @@ static int python_start_script(const char *script, int argc, const char **argv)
- 
- 	set_table_handlers(tables);
- 
-+	if (tables->db_export_mode) {
-+		err = db_export__branch_types(&tables->dbe);
-+		if (err)
-+			goto error;
+@@ -888,6 +900,8 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+ 		return tool->build_id(tool, event, session);
+ 	case PERF_RECORD_FINISHED_ROUND:
+ 		return tool->finished_round(tool, event, session);
++	case PERF_RECORD_ID_INDEX:
++		return tool->id_index(tool, event, session);
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -1594,3 +1608,111 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+ out:
+ 	return err;
+ }
++
++int perf_event__process_id_index(struct perf_tool *tool __maybe_unused,
++				 union perf_event *event,
++				 struct perf_session *session)
++{
++	struct perf_evlist *evlist = session->evlist;
++	struct id_index_event *ie = &event->id_index;
++	size_t i, nr, max_nr;
++
++	max_nr = (ie->header.size - sizeof(struct id_index_event)) /
++		 sizeof(struct id_index_entry);
++	nr = ie->nr;
++	if (nr > max_nr)
++		return -EINVAL;
++
++	if (dump_trace)
++		fprintf(stdout, " nr: %zu\n", nr);
++
++	for (i = 0; i < nr; i++) {
++		struct id_index_entry *e = &ie->entries[i];
++		struct perf_sample_id *sid;
++
++		if (dump_trace) {
++			fprintf(stdout,	" ... id: %"PRIu64, e->id);
++			fprintf(stdout,	"  idx: %"PRIu64, e->idx);
++			fprintf(stdout,	"  cpu: %"PRId64, e->cpu);
++			fprintf(stdout,	"  tid: %"PRId64"\n", e->tid);
++		}
++
++		sid = perf_evlist__id2sid(evlist, e->id);
++		if (!sid)
++			return -ENOENT;
++		sid->idx = e->idx;
++		sid->cpu = e->cpu;
++		sid->tid = e->tid;
++	}
++	return 0;
++}
++
++int perf_event__synthesize_id_index(struct perf_tool *tool,
++				    perf_event__handler_t process,
++				    struct perf_evlist *evlist,
++				    struct machine *machine)
++{
++	union perf_event *ev;
++	struct perf_evsel *evsel;
++	size_t nr = 0, i = 0, sz, max_nr, n;
++	int err;
++
++	pr_debug2("Synthesizing id index\n");
++
++	max_nr = (UINT16_MAX - sizeof(struct id_index_event)) /
++		 sizeof(struct id_index_entry);
++
++	list_for_each_entry(evsel, &evlist->entries, node)
++		nr += evsel->ids;
++
++	n = nr > max_nr ? max_nr : nr;
++	sz = sizeof(struct id_index_event) + n * sizeof(struct id_index_entry);
++	ev = zalloc(sz);
++	if (!ev)
++		return -ENOMEM;
++
++	ev->id_index.header.type = PERF_RECORD_ID_INDEX;
++	ev->id_index.header.size = sz;
++	ev->id_index.nr = n;
++
++	list_for_each_entry(evsel, &evlist->entries, node) {
++		u32 j;
++
++		for (j = 0; j < evsel->ids; j++) {
++			struct id_index_entry *e;
++			struct perf_sample_id *sid;
++
++			if (i >= n) {
++				err = process(tool, ev, NULL, machine);
++				if (err)
++					goto out_err;
++				nr -= n;
++				i = 0;
++			}
++
++			e = &ev->id_index.entries[i++];
++
++			e->id = evsel->id[j];
++
++			sid = perf_evlist__id2sid(evlist, e->id);
++			if (!sid) {
++				free(ev);
++				return -ENOENT;
++			}
++
++			e->idx = sid->idx;
++			e->cpu = sid->cpu;
++			e->tid = sid->tid;
++		}
 +	}
 +
- 	return err;
- error:
- 	Py_Finalize();
++	sz = sizeof(struct id_index_event) + nr * sizeof(struct id_index_entry);
++	ev->id_index.header.size = sz;
++	ev->id_index.nr = nr;
++
++	err = process(tool, ev, NULL, machine);
++out_err:
++	free(ev);
++
++	return err;
++}
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index a4be851..d8521ac 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -126,4 +126,14 @@ int __perf_session__set_tracepoints_handlers(struct perf_session *session,
+ extern volatile int session_done;
+ 
+ #define session_done()	ACCESS_ONCE(session_done)
++
++int perf_event__process_id_index(struct perf_tool *tool,
++				 union perf_event *event,
++				 struct perf_session *session);
++
++int perf_event__synthesize_id_index(struct perf_tool *tool,
++				    perf_event__handler_t process,
++				    struct perf_evlist *evlist,
++				    struct machine *machine);
++
+ #endif /* __PERF_SESSION_H */
+diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
+index f116369..bb2708b 100644
+--- a/tools/perf/util/tool.h
++++ b/tools/perf/util/tool.h
+@@ -39,7 +39,8 @@ struct perf_tool {
+ 	event_attr_op	attr;
+ 	event_op2	tracing_data;
+ 	event_op2	finished_round,
+-			build_id;
++			build_id,
++			id_index;
+ 	bool		ordered_events;
+ 	bool		ordering_requires_timestamps;
+ };
 -- 
 1.9.1
 
