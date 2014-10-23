@@ -1,566 +1,511 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751152AbaJWEQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 00:16:28 -0400
-Received: from mail-by2on0145.outbound.protection.outlook.com ([207.46.100.145]:21504
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750764AbaJWEQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 00:16:27 -0400
-From: Chenhui Zhao <chenhui.zhao@freescale.com>
-To: <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Subject: [PATCH v2 2/2] arm: pm: add deep sleep support for LS1
-Date: Thu, 23 Oct 2014 12:16:13 +0800
-Message-ID: <1414037773-7735-2-git-send-email-chenhui.zhao@freescale.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1414037773-7735-1-git-send-email-chenhui.zhao@freescale.com>
-References: <1414037773-7735-1-git-send-email-chenhui.zhao@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(62966002)(47776003)(89996001)(105606002)(6806004)(44976005)(19580405001)(106466001)(107046002)(120916001)(20776003)(87286001)(76482002)(64706001)(84676001)(85852003)(50466002)(95666004)(50226001)(99396003)(87936001)(88136002)(48376002)(93916002)(76176999)(85306004)(50986999)(102836001)(26826002)(92726001)(2201001)(86362001)(92566001)(46102003)(31966008)(21056001)(229853001)(80022003)(104166001)(36756003)(68736004)(4396001)(19580395003)(33646002)(97736003)(77156001)(104016003)(2004002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0734;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1751022AbaJWEVl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 00:21:41 -0400
+Received: from ozlabs.org ([103.22.144.67]:42041 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750716AbaJWEVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 00:21:37 -0400
+Date: Thu, 23 Oct 2014 15:21:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: linux-next: Tree for Oct 23
+Message-ID: <20141023152129.28558ddf@canb.auug.org.au>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0734;
-X-Forefront-PRVS: 0373D94D15
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=chenhui.zhao@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/lTakS1lCK4UBrbzmqMYXx6V"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LS1 supports deep sleep feature that can switch off most parts of
-the SoC when it is in deep sleep state.
+--Sig_/lTakS1lCK4UBrbzmqMYXx6V
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The DDR controller will also be powered off in deep sleep. Therefore,
-copy the last stage code to enter deep sleep to SRAM and run it
-with disabling MMU and caches.
+Hi all,
 
-Signed-off-by: Chenhui Zhao <chenhui.zhao@freescale.com>
----
-Changes for v2:
- * use identity mapping to smooth the process of disabling MMU
- * change the value of registers
+Changes since 20141022:
 
- arch/arm/mach-imx/Kconfig     |    1 +
- arch/arm/mach-imx/Makefile    |    1 +
- arch/arm/mach-imx/pm-ls1.c    |  341 +++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-imx/sleep-ls1.S |  132 ++++++++++++++++
- 4 files changed, 475 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-imx/pm-ls1.c
- create mode 100644 arch/arm/mach-imx/sleep-ls1.S
+The sound-asoc tree still had its build failure so I used the version from
+next-20141020.
 
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index b85534c..716bb1b 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -866,6 +866,7 @@ config SOC_LS1021A
- 	select HAVE_SMP
- 	select ARCH_LAYERSCAPE
- 	select ZONE_DMA if ARM_LPAE
-+	select FSL_SLEEP_FSM if PM
- 
- 	help
- 	  This enable support for Freescale Layerscape LS1021A  processor.
-diff --git a/arch/arm/mach-imx/Makefile b/arch/arm/mach-imx/Makefile
-index 41b8044..9931528 100644
---- a/arch/arm/mach-imx/Makefile
-+++ b/arch/arm/mach-imx/Makefile
-@@ -102,6 +102,7 @@ obj-$(CONFIG_SOC_IMX6SL) += clk-imx6sl.o mach-imx6sl.o
- 
- ifeq ($(CONFIG_PM),y)
- obj-$(CONFIG_SOC_IMX6Q) += pm-imx6q.o headsmp.o
-+obj-$(CONFIG_SOC_LS1021A) += pm-ls1.o sleep-ls1.o
- endif
- 
- # i.MX5 based machines
-diff --git a/arch/arm/mach-imx/pm-ls1.c b/arch/arm/mach-imx/pm-ls1.c
-new file mode 100644
-index 0000000..8fd7aee
---- /dev/null
-+++ b/arch/arm/mach-imx/pm-ls1.c
-@@ -0,0 +1,341 @@
-+/*
-+ * Support deep sleep feature for LS1
-+ *
-+ * Copyright 2014 Freescale Semiconductor Inc.
-+ *
-+ * This program is free software; you can redistribute	it and/or modify it
-+ * under  the terms of	the GNU General	 Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/suspend.h>
-+#include <linux/io.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_address.h>
-+#include <linux/cpu_pm.h>
-+#include <asm/suspend.h>
-+#include <asm/delay.h>
-+#include <asm/cp15.h>
-+#include <asm/cacheflush.h>
-+#include <asm/idmap.h>
-+
-+#include "common.h"
-+
-+#define FSL_SLEEP		0x1
-+#define FSL_DEEP_SLEEP		0x2
-+
-+#define DCSR_EPU_EPSMCR15	0x278
-+#define DCSR_EPU_EPECR0		0x300
-+#define DCSR_RCPM_CG1CR0	0x31c
-+#define DCSR_RCPM_CSTTACR0	0xb00
-+
-+#define CCSR_SCFG_DPSLPCR	0
-+#define CCSR_SCFG_DPSLPCR_VAL	0x1
-+#define CCSR_SCFG_SPARECR2	0x504
-+#define CCSR_SCFG_SPARECR3	0x508
-+
-+#define CCSR_DCFG_CRSTSR	0x400
-+#define CCSR_DCFG_CRSTSR_VAL	0x00000008
-+
-+#define CCSR_RCPM_POWMGTCSR		0x130
-+#define CCSR_RCPM_POWMGTCSR_LPM20_REQ	0x00100000
-+#define CCSR_RCPM_POWMGTCSR_LPM20_ST	0x00000200
-+#define CCSR_RCPM_POWMGTCSR_P_LPM20_ST	0x00000100
-+#define CCSR_RCPM_CLPCL10SETR		0x1c4
-+#define CCSR_RCPM_CLPCL10SETR_C0	0x1
-+
-+#define OCRAM_BASE	0x10000000
-+#define OCRAM_SIZE	0x10000		/* 64K */
-+/* use the last page of SRAM */
-+#define SRAM_CODE_BASE_PHY	(OCRAM_BASE + OCRAM_SIZE - PAGE_SIZE)
-+
-+struct ls1_pm_baseaddr {
-+	void __iomem *epu;
-+	void __iomem *dcsr_rcpm1;
-+	void __iomem *dcsr_rcpm2;
-+	void __iomem *rcpm;
-+	void __iomem *scfg;
-+	void __iomem *dcfg;
-+	void __iomem *fpga;
-+	void __iomem *sram;
-+};
-+
-+/* 128 bytes buffer for restoring data broke by DDR training initialization */
-+#define DDR_BUF_SIZE	128
-+static u8 ddr_buff[DDR_BUF_SIZE] __aligned(64);
-+static struct ls1_pm_baseaddr ls1_pm_base;
-+/* supported sleep modes by the present platform */
-+static unsigned int sleep_modes;
-+
-+extern void ls1_do_deepsleep(unsigned long addr);
-+extern void ls1_start_fsm(void);
-+extern void ls1_deepsleep_resume(void);
-+extern void ls1021a_set_secondary_entry(void);
-+extern int ls1_sram_code_size;
-+extern void fsl_epu_setup_default(void __iomem *epu_base);
-+
-+static void ls1_pm_iomap(void)
-+{
-+	struct device_node *np;
-+	void *base;
-+
-+	np = of_find_compatible_node(NULL, NULL, "fsl,ls1021a-dcsr-epu");
-+	base = of_iomap(np, 0);
-+	BUG_ON(!base);
-+	ls1_pm_base.epu = base;
-+
-+	np = of_find_compatible_node(NULL, NULL, "fsl,ls1021a-dcsr-rcpm");
-+	base = of_iomap(np, 0);
-+	BUG_ON(!base);
-+	ls1_pm_base.dcsr_rcpm1 = base;
-+	base = of_iomap(np, 1);
-+	BUG_ON(!base);
-+	ls1_pm_base.dcsr_rcpm2 = base;
-+
-+	np = of_find_compatible_node(NULL, NULL, "fsl,ls1021a-scfg");
-+	base = of_iomap(np, 0);
-+	BUG_ON(!base);
-+	ls1_pm_base.scfg = base;
-+
-+	np = of_find_compatible_node(NULL, NULL, "fsl,ls1021a-dcfg");
-+	base = of_iomap(np, 0);
-+	BUG_ON(!base);
-+	ls1_pm_base.dcfg = base;
-+
-+	np = of_find_compatible_node(NULL, NULL, "fsl,ls1021aqds-fpga");
-+	base = of_iomap(np, 0);
-+	BUG_ON(!base);
-+	ls1_pm_base.fpga = base;
-+
-+	base = ioremap(SRAM_CODE_BASE_PHY, PAGE_SIZE);
-+	BUG_ON(!base);
-+	ls1_pm_base.sram = base;
-+}
-+
-+static void ls1_pm_uniomap(void)
-+{
-+	iounmap(ls1_pm_base.epu);
-+	iounmap(ls1_pm_base.dcsr_rcpm1);
-+	iounmap(ls1_pm_base.dcsr_rcpm2);
-+	iounmap(ls1_pm_base.scfg);
-+	iounmap(ls1_pm_base.dcfg);
-+	iounmap(ls1_pm_base.fpga);
-+	iounmap(ls1_pm_base.sram);
-+}
-+
-+static void ls1_save_ddr(void *base)
-+{
-+	u32 ddr_buff_addr;
-+
-+	/*
-+	 * DDR training initialization will break 128 bytes at the beginning
-+	 * of DDR, therefore, save them so that the bootloader will restore
-+	 * them. Assume that DDR is mapped to the address space started with
-+	 * CONFIG_PAGE_OFFSET.
-+	 */
-+	memcpy(ddr_buff, (void *)CONFIG_PAGE_OFFSET, DDR_BUF_SIZE);
-+
-+	ddr_buff_addr = (u32)__pa(ddr_buff);
-+
-+	/*
-+	 * the bootloader will restore the first 128 bytes of DDR from
-+	 * the location indicated by the register SPARECR3
-+	 */
-+	iowrite32(ddr_buff_addr, base + CCSR_SCFG_SPARECR3);
-+}
-+
-+static void ls1_set_resume_entry(void *base)
-+{
-+	u32 resume_addr;
-+
-+	/* the bootloader will finally jump to this address to resume kernel */
-+	resume_addr = (u32)(__pa(ls1_deepsleep_resume));
-+
-+	/* use the register SPARECR2 to save the return entry */
-+	iowrite32(resume_addr, base + CCSR_SCFG_SPARECR2);
-+}
-+
-+static void ls1_copy_sram_code(void)
-+{
-+	memcpy(ls1_pm_base.sram, ls1_start_fsm, ls1_sram_code_size);
-+}
-+
-+static int ls1_start_deepsleep(unsigned long addr)
-+{
-+	typedef void (*ls1_deepsleep_t)(unsigned long);
-+	ls1_deepsleep_t ls1_do_deepsleep_phy;
-+
-+	/* Switch to the identity mapping */
-+	setup_mm_for_reboot();
-+	v7_exit_coherency_flush(all);
-+
-+	ls1_do_deepsleep_phy =
-+		(ls1_deepsleep_t)(unsigned long)virt_to_phys(ls1_do_deepsleep);
-+	ls1_do_deepsleep_phy(addr);
-+
-+	/* never get here  */
-+	BUG();
-+
-+	return 0;
-+}
-+
-+void ls1_fsm_setup(void)
-+{
-+	iowrite32be(0x00001001, ls1_pm_base.dcsr_rcpm1 + DCSR_RCPM_CSTTACR0);
-+	iowrite32be(0x00000001, ls1_pm_base.dcsr_rcpm1 + DCSR_RCPM_CG1CR0);
-+
-+	fsl_epu_setup_default(ls1_pm_base.epu);
-+
-+	/*
-+	 * pull the MCKE signal(EVT4_B pin) low before enabling
-+	 * deep sleep signals by FPGA
-+	 */
-+	iowrite32be(0x5, ls1_pm_base.epu + DCSR_EPU_EPECR0);
-+
-+	iowrite32be(0x76300000, ls1_pm_base.epu + DCSR_EPU_EPSMCR15);
-+}
-+
-+static inline void ls1_clrsetbits_be32(void __iomem *addr, u32 clear, u32 set)
-+{
-+	u32 tmp;
-+
-+	tmp = ioread32be(addr);
-+	tmp = (tmp & ~clear) | set;
-+	iowrite32be(tmp, addr);
-+}
-+
-+static void ls1_enter_deepsleep(void)
-+{
-+	u32 tmp;
-+
-+	/* save DDR data */
-+	ls1_save_ddr(ls1_pm_base.scfg);
-+
-+	/* save kernel resume entry */
-+	ls1_set_resume_entry(ls1_pm_base.scfg);
-+
-+	/* Request to put cluster 0 in PCL10 state */
-+	ls1_clrsetbits_be32(ls1_pm_base.rcpm + CCSR_RCPM_CLPCL10SETR,
-+			    CCSR_RCPM_CLPCL10SETR_C0,
-+			    CCSR_RCPM_CLPCL10SETR_C0);
-+
-+	/* setup the registers of the EPU FSM for deep sleep */
-+	ls1_fsm_setup();
-+
-+	/* enable deep sleep signals in FPGA */
-+	tmp = ioread8(ls1_pm_base.fpga + QIXIS_PWR_CTL2);
-+	iowrite8(tmp | QIXIS_PWR_CTL2_PCTL, ls1_pm_base.fpga + QIXIS_PWR_CTL2);
-+
-+	/* enable Warm Device Reset */
-+	ls1_clrsetbits_be32(ls1_pm_base.scfg + CCSR_SCFG_DPSLPCR,
-+			    CCSR_SCFG_DPSLPCR_VAL, CCSR_SCFG_DPSLPCR_VAL);
-+
-+	ls1_clrsetbits_be32(ls1_pm_base.dcfg + CCSR_DCFG_CRSTSR,
-+			    CCSR_DCFG_CRSTSR_VAL, CCSR_DCFG_CRSTSR_VAL);
-+
-+	/* copy the last stage code to sram */
-+	ls1_copy_sram_code();
-+
-+	cpu_suspend(SRAM_CODE_BASE_PHY, ls1_start_deepsleep);
-+
-+	/* disable Warm Device Reset */
-+	ls1_clrsetbits_be32(ls1_pm_base.scfg + CCSR_SCFG_DPSLPCR,
-+			    CCSR_SCFG_DPSLPCR_VAL, 0);
-+
-+	/* disable deep sleep signals in FPGA */
-+	tmp = ioread8(ls1_pm_base.fpga + QIXIS_PWR_CTL2);
-+	iowrite8(tmp & ~QIXIS_PWR_CTL2_PCTL, ls1_pm_base.fpga + QIXIS_PWR_CTL2);
-+
-+	/* call smp_prepare_cpus */
-+	ls1021a_set_secondary_entry();
-+}
-+
-+static int ls1_suspend_enter(suspend_state_t state)
-+{
-+	int ret = 0;
-+
-+	switch (state) {
-+	case PM_SUSPEND_STANDBY:
-+		flush_cache_louis();
-+		ls1_clrsetbits_be32(ls1_pm_base.rcpm + CCSR_RCPM_POWMGTCSR,
-+				    CCSR_RCPM_POWMGTCSR_LPM20_REQ,
-+				    CCSR_RCPM_POWMGTCSR_LPM20_REQ);
-+
-+		cpu_do_idle();
-+		break;
-+
-+	case PM_SUSPEND_MEM:
-+		ls1_enter_deepsleep();
-+		break;
-+
-+	default:
-+		ret = -EINVAL;
-+	}
-+
-+	return ret;
-+}
-+
-+static int ls1_suspend_valid(suspend_state_t state)
-+{
-+	if (state == PM_SUSPEND_STANDBY && (sleep_modes & FSL_SLEEP))
-+		return 1;
-+
-+	if (state == PM_SUSPEND_MEM && (sleep_modes & FSL_DEEP_SLEEP))
-+		return 1;
-+
-+	return 0;
-+}
-+
-+static int ls1_suspend_begin(suspend_state_t state)
-+{
-+	ls1_pm_iomap();
-+
-+	return 0;
-+}
-+
-+static void ls1_suspend_end(void)
-+{
-+	ls1_pm_uniomap();
-+}
-+
-+static const struct platform_suspend_ops ls1_suspend_ops = {
-+	.valid = ls1_suspend_valid,
-+	.enter = ls1_suspend_enter,
-+	.begin = ls1_suspend_begin,
-+	.end = ls1_suspend_end,
-+};
-+
-+
-+static const struct of_device_id rcpm_matches[] = {
-+	{
-+		.compatible = "fsl,ls1021a-rcpm",
-+		.data = (void *)(FSL_SLEEP | FSL_DEEP_SLEEP),
-+	},
-+	{}
-+};
-+
-+static int __init ls1_pm_init(void)
-+{
-+	const struct of_device_id *match;
-+	struct device_node *np;
-+	void *base;
-+
-+	np = of_find_matching_node_and_match(NULL, rcpm_matches, &match);
-+	if (!np) {
-+		pr_err("%s: can't find the rcpm node.\n", __func__);
-+		return -EINVAL;
-+	}
-+
-+	base = of_iomap(np, 0);
-+	of_node_put(np);
-+	if (!base)
-+		return -ENOMEM;
-+
-+	sleep_modes = (unsigned int)match->data;
-+	ls1_pm_base.rcpm = base;
-+	suspend_set_ops(&ls1_suspend_ops);
-+	return 0;
-+}
-+arch_initcall(ls1_pm_init);
-diff --git a/arch/arm/mach-imx/sleep-ls1.S b/arch/arm/mach-imx/sleep-ls1.S
-new file mode 100644
-index 0000000..deccfa8
---- /dev/null
-+++ b/arch/arm/mach-imx/sleep-ls1.S
-@@ -0,0 +1,132 @@
-+/*
-+ * Support deep sleep feature for LS1
-+ *
-+ * Copyright 2014 Freescale Semiconductor Inc.
-+ *
-+ * This program is free software; you can redistribute	it and/or modify it
-+ * under  the terms of	the GNU General	 Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/linkage.h>
-+#include <asm/assembler.h>
-+#include <asm/cache.h>
-+#include <asm/cp15.h>
-+
-+#define CCSR_DDR_BASE			0x01080000
-+#define CCSR_DDR_SDRAM_CFG_2		0x114
-+
-+#define CCSR_SCFG_BASE			0x01570000
-+#define CCSR_SCFG_HRSTCR		0x1a8
-+
-+#define DCSR_EPU_BASE			0x20000000
-+#define DCSR_EPU_EPGCR			0x0
-+#define DCSR_EPU_EPECR0			0x300
-+#define DCSR_EPU_EPECR15		0x33c
-+
-+/* for big endian registers */
-+.macro ls1_set_bits, addr, value
-+	ldr	r4, \addr
-+	ldr	r5, [r4]
-+	ldr	r6, \value
-+	rev	r6, r6
-+	orr	r5, r5, r6
-+	str	r5, [r4]
-+.endm
-+
-+/* 1000 loops per round */
-+.macro ls1_delay, count
-+	mov	r0, \count
-+11:	mov	r7, #1000
-+12:	subs	r7, r7, #1
-+	bne	12b
-+	subs	r0, r0, #1
-+	bne	11b
-+.endm
-+
-+/*
-+ * r0: the physical entry address of SRAM code
-+ *
-+ */
-+	.align L1_CACHE_SHIFT
-+	.pushsection	.idmap.text,"ax"
-+ENTRY(ls1_do_deepsleep)
-+	/* disable MMU, M bit in SCTLR */
-+	mrc	p15, 0, r3, c1, c0, 0
-+	bic	r3, r3, #CR_M
-+	mcr	p15, 0, r3, c1, c0, 0
-+	isb
-+
-+	/* jump to sram code using physical address */
-+	bx	r0
-+ENDPROC(ls1_do_deepsleep)
-+	.popsection
-+
-+/*
-+ * The code will be copied to SRAM.
-+ */
-+	.align L1_CACHE_SHIFT
-+ENTRY(ls1_start_fsm)
-+	/* set HRSTCR */
-+	ls1_set_bits	ls1_ccsr_scfg_hrstcr_addr, ls1_ccsr_scfg_hrstcr_val
-+
-+	/* Place DDR controller in self refresh mode */
-+	ls1_set_bits	ls1_ddr_cfg2_addr, ls1_ddr_cfg2_val
-+
-+	ls1_delay	#2000
-+
-+	/* Set EVT4_B to lock the signal MCKE down */
-+	ldr	r4, ls1_dcsr_epu_epecr0
-+	ldr	r5, ls1_dcsr_epu_epecr0_val
-+	rev	r5, r5
-+	str	r5, [r4]
-+
-+	ls1_delay	#2000
-+
-+	/* Enable all EPU Counters */
-+	ls1_set_bits	ls1_dcsr_epu_epgcr_addr, ls1_dcsr_epu_epgcr_val
-+
-+	/* Enable SCU15 */
-+	ls1_set_bits	ls1_dcsr_epu_epecr15, ls1_dcsr_epu_epecr15_val
-+
-+	/* Enter WFI mode, and EPU FSM will start */
-+20:	wfi
-+	b	20b
-+
-+ls1_ccsr_scfg_hrstcr_addr:
-+	.word	CCSR_SCFG_BASE + CCSR_SCFG_HRSTCR
-+ls1_ccsr_scfg_hrstcr_val:
-+	.word	0x80000000
-+
-+ls1_ddr_cfg2_addr:
-+	.word	CCSR_DDR_BASE + CCSR_DDR_SDRAM_CFG_2
-+ls1_ddr_cfg2_val:
-+	.word	(1 << 31)
-+
-+ls1_dcsr_epu_epgcr_addr:
-+	.word	DCSR_EPU_BASE + DCSR_EPU_EPGCR
-+ls1_dcsr_epu_epgcr_val:
-+	.word	0x80000000
-+
-+ls1_dcsr_epu_epecr0:
-+	.word	DCSR_EPU_BASE + DCSR_EPU_EPECR0
-+ls1_dcsr_epu_epecr0_val:
-+	.word	0
-+
-+ls1_dcsr_epu_epecr15:
-+	.word	DCSR_EPU_BASE + DCSR_EPU_EPECR15
-+ls1_dcsr_epu_epecr15_val:
-+	.word	0x90000004
-+
-+ENTRY(ls1_sram_code_size)
-+	.word	. - ls1_start_fsm
-+
-+/* the bootloader will jump to here after wakeup from deep sleep  */
-+	.align L1_CACHE_SHIFT
-+ENTRY(ls1_deepsleep_resume)
-+ THUMB(	adr	r6, BSYM(1f)	)
-+ THUMB(	bx	r6		)
-+ THUMB(	.thumb			)
-+ THUMB(1:			)
-+	b cpu_resume
--- 
-1.7.3
+The akpm-current tree gained a conflict against the pm tree.
 
+Non-merge commits (relative to Linus' tree): 969
+ 1089 files changed, 21364 insertions(+), 36533 deletions(-)
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" and checkout or reset to the new
+master.
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
+multi_v7_defconfig for arm. After the final fixups (if any), it is also
+built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
+allyesconfig (this fails its final link) and i386, sparc, sparc64 and arm
+defconfig.
+
+Below is a summary of the state of the merge.
+
+I am currently merging 225 trees (counting Linus' and 32 trees of patches
+pending for Linus' tree).
+
+Stats about the size of the tree over time can be seen at
+http://neuling.org/linux-next-size.html .
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
+Gortmaker for triage and bug fixes.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master (c3351dfabf5c Merge branch 'for-next' of git://git.ke=
+rnel.org/pub/scm/linux/kernel/git/nab/target-pending)
+Merging fixes/master (b94d525e58dc Merge git://git.kernel.org/pub/scm/linux=
+/kernel/git/davem/net)
+Merging kbuild-current/rc-fixes (7d1311b93e58 Linux 3.17-rc1)
+Merging arc-current/for-curr (2ce7598c9a45 Linux 3.17-rc4)
+Merging arm-current/fixes (178c3dfe853a ARM: fix some printk formats)
+Merging m68k-current/for-linus (24cae7934cf1 m68k: Reformat arch/m68k/mm/hw=
+test.c)
+Merging metag-fixes/fixes (ffe6902b66aa asm-generic: remove _STK_LIM_MAX)
+Merging mips-fixes/mips-fixes (1795cd9b3a91 Linux 3.16-rc5)
+Merging powerpc-merge/merge (396a34340cdf powerpc: Fix endianness of flash_=
+block_list in rtas_flash)
+Merging powerpc-merge-mpe/for-linus (e89dafb5ca50 powerpc: Only do dynamic =
+DMA zone limits on platforms that need it)
+Merging sparc/master (61ed53deb1c6 Merge tag 'ntb-3.18' of git://github.com=
+/jonmason/ntb)
+Merging net/master (942396b01989 hyperv: Fix the total_data_buflen in send =
+path)
+Merging ipsec/master (d10845fc85b2 Merge branch 'gso_encap_fixes')
+Merging sound-current/for-linus (dde1c652d7b1 ALSA: pcm: Fix false lockdep =
+warnings)
+Merging pci-current/for-linus (f10e3cd690b8 Merge branch 'remove-weak-funct=
+ion-declarations' into for-linus)
+Merging wireless/master (f8adaf0ae978 brcmfmac: Fix off by one bug in brcmf=
+_count_20mhz_channels())
+Merging driver-core.current/driver-core-linus (f114040e3ea6 Linux 3.18-rc1)
+Merging tty.current/tty-linus (f114040e3ea6 Linux 3.18-rc1)
+Merging usb.current/usb-linus (f114040e3ea6 Linux 3.18-rc1)
+Merging usb-gadget-fixes/fixes (0b93a4c838fa usb: dwc3: fix TRB completion =
+when multiple TRBs are started)
+Merging usb-serial-fixes/usb-linus (dc477ad386fb USB: kobil_sct: Remove unu=
+sed transfer buffer allocs)
+Merging staging.current/staging-linus (54d5c5cd0fb2 staging: rtl8723au: Fix=
+ alignment of mac_addr for ether_addr_copy() usage)
+Merging char-misc.current/char-misc-linus (f114040e3ea6 Linux 3.18-rc1)
+Merging input-current/for-linus (4dfb15cd5aaa Input: xpad - add Thrustmaste=
+r as Xbox 360 controller vendor)
+Merging md-current/for-linus (d47648fcf061 raid5: avoid finding "discard" s=
+tripe)
+Merging crypto-current/master (be34c4ef693f crypto: sha - Handle unaligned =
+input data in generic sha256 and sha512.)
+Merging ide/master (7546e52b5e3d Drivers: ide: Remove typedef atiixp_ide_ti=
+ming)
+Merging dwmw2/master (5950f0803ca9 pcmcia: remove RPX board stuff)
+Merging devicetree-current/devicetree/merge (e66c98c7a0ea of: Fix NULL dere=
+ference in selftest removal code)
+Merging rr-fixes/fixes (f49819560f53 virtio-rng: skip reading when we start=
+ to remove the device)
+Merging vfio-fixes/for-linus (239a87020b26 Merge branch 'for-joerg/arm-smmu=
+/fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux into fo=
+r-linus)
+Merging kselftest-fixes/fixes (ce6a144a0d01 selftests/memfd: Run test on al=
+l architectures)
+Merging drm-intel-fixes/for-linux-next-fixes (03a3780b0c82 drm/i915: Fix GM=
+BUSFREQ on vlv/chv)
+Merging asm-generic/master (f3670394c29f Revert "x86/efi: Fixup GOT in all =
+boot code paths")
+Merging arc/for-next (21d2271fd081 Merge git://www.linux-watchdog.org/linux=
+-watchdog)
+Merging arm/for-next (178c3dfe853a ARM: fix some printk formats)
+Merging arm-perf/for-next/perf (f114040e3ea6 Linux 3.18-rc1)
+Merging arm-soc/for-next (c60c536716fd Merge branch 'fixes' into for-next)
+Merging bcm2835/for-next (fa389e220254 Linux 3.14-rc6)
+Merging berlin/berlin/for-next (36483b843974 Merge branch 'berlin/dt' into =
+berlin/for-next)
+Merging cortex-m/for-next (f0d7515372ff ARM: v7m: add trivial suspend suppo=
+rt)
+Merging ep93xx/ep93xx-for-next (bfb0709fd17b Merge branch 'ep93xx-fixes' in=
+to ep93xx-for-next)
+Merging imx-mxs/for-next (2b2244a3e7c3 ARM: dts: imx6: make gpt per clock c=
+an be from OSC)
+Merging ixp4xx/next (19f949f52599 Linux 3.8)
+Merging keystone/next (c9eaa447e77e Linux 3.15-rc1)
+Merging msm/for-next (81cf1e061d00 ARM: msm: Rename msm devicetrees to have=
+ standard 'qcom' prefix)
+Merging mvebu/for-next (65a3bb88bb33 Merge branch 'mvebu/dt' into mvebu/for=
+-next)
+Merging renesas/next (cc38f02b87ef Merge branches 'heads/dt-for-v3.18' and =
+'heads/soc-for-v3.18' into next)
+Merging samsung/for-next (2b5fa1d5dabb Merge branch 'v3.19-next/dt-samsung'=
+ into for-next)
+Merging sunxi/sunxi/for-next (3f9f9abe20a1 Merge branches 'sunxi/core-for-3=
+.19' and 'sunxi/dt-for-3.19' into sunxi/for-next)
+Merging tegra/for-next (5599b9197647 Merge branch for-3.18/defconfig into f=
+or-next)
+Merging arm64/for-next/core (0a6479b0ffad arm64: Remove unneeded extern key=
+word)
+Merging blackfin/for-linus (275f5a8573e7 blackfin: defconfigs: cleanup unus=
+ed CONFIG_MTD_CHAR, add MTD_SPI_NOR for BF537-STAMP)
+Merging c6x/for-linux-next (ae72758f1dd9 c6x: fix build failure caused by c=
+ache.h)
+Merging cris/for-next (cd065a010a97 CRISv10: Readd missing header)
+Merging hexagon/linux-next (a9a44fdf3296 Hexagon: update CR year for elf.h)
+Merging ia64/next (0f33be009b89 Linux 3.17-rc6)
+Merging m68k/for-next (24cae7934cf1 m68k: Reformat arch/m68k/mm/hwtest.c)
+Merging m68knommu/for-next (e803d4bd3118 m68k: Fix typo 'COFNIG_MBAR')
+Merging metag/for-next (f93125ae17d1 metag: cachepart: Fix failure check)
+Merging microblaze/next (554336c714f4 microblaze: Use empty asm-generic/lin=
+kage.h)
+Merging mips/mips-for-linux-next (2fd1ca93ab87 Merge branch '3.18-fixes' in=
+to mips-for-linux-next)
+Merging openrisc/for-upstream (548dafe880ad openrisc: Use get_signal() sign=
+al_setup_done())
+Merging parisc/for-next (6c700d71f7fa [PARISC] hpux: Remove obsolete regs p=
+arameter from do_execve() in hpux_execve())
+Merging parisc-hd/for-next (5e40d331bd72 Merge branch 'next' of git://git.k=
+ernel.org/pub/scm/linux/kernel/git/jmorris/linux-security)
+Merging powerpc/next (9e813308a5c1 powerpc/thp: Add tracepoints to track hu=
+gepage invalidate)
+Merging powerpc-mpe/next (e89dafb5ca50 powerpc: Only do dynamic DMA zone li=
+mits on platforms that need it)
+Merging fsl/next (cb0446c1b625 Revert "powerpc/fsl_msi: spread msi ints acr=
+oss different MSIRs")
+Merging mpc5xxx/next (9e813308a5c1 powerpc/thp: Add tracepoints to track hu=
+gepage invalidate)
+Merging s390/features (d6fe5be34cf0 s390/uprobes: fix kprobes dependency)
+Merging sparc-next/master (61ed53deb1c6 Merge tag 'ntb-3.18' of git://githu=
+b.com/jonmason/ntb)
+Merging tile/master (78410af51146 tile: add clock_gettime support to vDSO)
+Merging uml/next (989e59fa41c5 um: Include generic barrier.h)
+CONFLICT (content): Merge conflict in arch/um/include/asm/Kbuild
+Merging unicore32/unicore32 (d670878e2c9a unicore32: Remove ARCH_HAS_CPUFRE=
+Q config option)
+Merging xtensa/for_next (f2589bff1ce8 xtensa/uapi: Add definition of TIOC[S=
+G]RS485)
+Merging btrfs/next (a43bb39b5c71 btrfs: Fix compile error when CONFIG_SECUR=
+ITY is not set.)
+Merging ceph/master (c27a3e4d667f libceph: do not hard code max auth ticket=
+ len)
+Merging cifs/for-next (6212096bb0a1 [CIFS] Update modinfo cifs version for =
+cifs.ko)
+Merging configfs/linux-next (b930c26416c4 Merge branch 'for-linus' of git:/=
+/git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
+Merging ecryptfs/next (35425ea24921 ecryptfs: avoid to access NULL pointer =
+when write metadata in xattr)
+Merging ext3/for_next (6174c2eb8ece udf: Fix loading of special inodes)
+Merging ext4/dev (813d32f91333 ext4: check s_chksum_driver when looking for=
+ bg csum presence)
+Merging f2fs/dev (e82a62d14c44 f2fs: fix possible data corruption in f2fs_w=
+rite_begin())
+Merging fscache/fscache (1a8ed18fb7db cachefiles: remove two unused pagevec=
+s.)
+CONFLICT (content): Merge conflict in fs/fscache/object.c
+Merging fuse/for-next (d7afaec0b564 fuse: add FUSE_NO_OPEN_SUPPORT flag to =
+INIT)
+Merging gfs2/master (d29c0afe4db7 GFS2: use _RET_IP_ instead of (unsigned l=
+ong)__builtin_return_address(0))
+Merging jfs/jfs-next (bb5e50aaa805 fs/jfs/super.c: convert simple_str to ks=
+tr)
+Merging logfs/master (339466142b3f Fix the call to BUG() caused by no free =
+segment found)
+Merging nfs/linux-next (f114040e3ea6 Linux 3.18-rc1)
+Merging nfsd/nfsd-next (04a04675107b NFSD: Always initialize cl_cb_addr)
+Merging omfs/for-next (976d167615b6 Linux 3.1-rc9)
+Merging squashfs/master (6d565409503f Squashfs: fix failure to unlock pages=
+ on decompress error)
+Merging v9fs/for-next (f15844e0777f 9P: fix return value in v9fs_fid_xattr_=
+set)
+Merging ubifs/linux-next (91401a34038e UBI: Fastmap: Calc fastmap size corr=
+ectly)
+Merging xfs/for-next (6889e783cd68 Merge branch 'xfs-misc-fixes-for-3.18-3'=
+ into for-next)
+Merging file-locks/linux-next (1b2b32dcdb3d locks: fix fcntl_setlease/getle=
+ase return when !CONFIG_FILE_LOCKING)
+Merging vfs/for-next (a457606a6f81 fs/file_table.c: Update alloc_file() com=
+ment)
+Merging pci/next (f114040e3ea6 Linux 3.18-rc1)
+Merging hid/for-next (afdb5cce979b HID: input: Map unknown consumer page co=
+des to KEY_UNKNOWN)
+Merging i2c/i2c/for-next (f114040e3ea6 Linux 3.18-rc1)
+Merging jdelvare-hwmon/master (6f524c0e53c0 hwmon: (i5500_temp) Convert to =
+devm_hwmon_device_register_with_groups)
+Merging hwmon-staging/hwmon-next (8c7ff586a6f8 hwmon: (iio_hwmon) Add suppo=
+rt for humidity sensors)
+Merging v4l-dvb/master (9f93c52783fa [media] hackrf: harmless off by one in=
+ debug code)
+Merging kbuild/for-next (e9f717fb534c Merge branch 'kbuild/misc' into kbuil=
+d/for-next)
+Merging kconfig/for-next (95edca5c523c localmodconfig: Add config depends b=
+y default settings)
+Merging libata/for-next (8ccee3cf7d8e Merge branch 'for-3.18' into for-next)
+Merging pm/linux-next (78a484e98b94 Merge branch 'freezer')
+Merging idle/next (e7c95ff32d00 tools/power turbostat: tweak whitespace in =
+output format)
+Merging apm/for-next (53675abbd1e5 x86, apm: Remove unused variable)
+Merging cpupowerutils/master (f16603386b38 cpupower tools: add install targ=
+et to the debug tools' makefiles)
+Merging thermal/next (6ceaf58abe25 Merge branch 'int340x-thermal' of .git i=
+nto next)
+CONFLICT (content): Merge conflict in drivers/acpi/fan.c
+Merging ieee1394/for-next (d584a6627994 firewire: ohci: disable MSI for VIA=
+ VT6315 again)
+Merging dlm/next (c07127b48c63 dlm: fix missing endian conversion of rcom_s=
+tatus flags)
+Merging swiotlb/linux-next (8e0629c1d4ce swiotlb: don't assume PA 0 is inva=
+lid)
+Merging slave-dma/next (f114040e3ea6 Linux 3.18-rc1)
+Merging net-next/master (61ed53deb1c6 Merge tag 'ntb-3.18' of git://github.=
+com/jonmason/ntb)
+Merging ipsec-next/master (61ed53deb1c6 Merge tag 'ntb-3.18' of git://githu=
+b.com/jonmason/ntb)
+Merging wireless-next/master (1fca350b7616 rtlwifi: Fix possible unaligned =
+array in ether_addr_copy())
+Merging bluetooth/master (c783b68d11d8 Bluetooth: Fix missing channel unloc=
+k in l2cap_le_credits)
+Merging infiniband/for-next (7b909bb49ac2 Merge branches 'core', 'cxgb4', '=
+iser', 'mlx5' and 'ocrdma' into for-next)
+Merging mtd/master (8b3d58e55445 mtd: nand: omap: Correct CONFIG_MTD_NAND_O=
+MAP_BCH help message)
+Merging l2-mtd/master (d4efafcc040d mtd: docg3: fix 'defined but not used' =
+warning)
+Merging crypto/master (be34c4ef693f crypto: sha - Handle unaligned input da=
+ta in generic sha256 and sha512.)
+Merging drm/drm-next (dfda0df34264 drm/mst: rework payload table allocation=
+ to conform better.)
+Merging drm-panel/drm/panel/for-next (7d1311b93e58 Linux 3.17-rc1)
+Merging drm-intel/for-linux-next (07c338ce9826 drm/i915: fix short vs. long=
+ hpd detection)
+Merging drm-tegra/drm/tegra/for-next (8ed05f485498 drm/tegra: Depend on COM=
+MON_CLK)
+Merging drm-misc/topic/core-stuff (2d164fbd0b3b drm/dp-helper: Move the leg=
+acy helpers to gma500)
+Merging sound/for-next (b46882b6eb71 Merge branch 'topic/hda-lo-jack' into =
+for-next)
+Merging sound-asoc/for-next (0fb8f1621d9d Merge remote-tracking branches 'a=
+soc/topic/sta32x', 'asoc/topic/sta350', 'asoc/topic/sta529', 'asoc/topic/st=
+ac9766' and 'asoc/topic/tegra' into asoc-next)
+$ git reset --hard HEAD^
+Merging next-20141020 version of sound-asoc
+Merging modules/modules-next (d3051b489aa8 modules, lock around setting of =
+MODULE_STATE_UNFORMED)
+Merging virtio/virtio-next (1bbc26062754 virtio-rng: refactor probe error h=
+andling)
+Merging input/next (29fbd64b0fd2 Input: add driver for Elan I2C/SMbus touch=
+pad)
+Merging input-mt/for-next (5e01dc7b26d9 Linux 3.12)
+Merging block/for-next (b3ea6e035ac9 Merge branch 'for-linus' into for-next)
+Merging device-mapper/for-next (330f26b97345 dm thin: refactor requeue_io t=
+o eliminate spinlock bouncing)
+Merging embedded/master (4744b43431e8 embedded: fix vc_translate operator p=
+recedence)
+Merging firmware/master (6e03a201bbe8 firmware: speed up request_firmware()=
+, v3)
+Merging pcmcia/master (80af9e6d7ae6 pcmcia at91_cf: fix raw gpio number usa=
+ge)
+Merging mmc/mmc-next (11bc9381b277 mmc: sdhci-s3c: use mmc_of_parse and rem=
+ove the card_tasklet)
+Merging mmc-uh/next (f114040e3ea6 Linux 3.18-rc1)
+Merging kgdb/kgdb-next (662bfa325be1 kernel/debug/debug_core.c: Logging cle=
+an-up)
+Merging uclinux/for-next (6dbe51c251a3 Linux 3.9-rc1)
+Merging md/for-next (b395f75eabb3 lib/raid6: Add log level to printks)
+Merging mfd/for-mfd-next (69ef42279d3a mfd/regulator: dt-bindings: max77686=
+: Document regulators off in suspend)
+Merging backlight/for-backlight-next (b6af73b42219 backlight: omap1: add bl=
+ank line after declarations)
+Merging battery/master (7881c64716f3 power: ab8500_fg: Fix build warning)
+Merging fbdev/for-next (718b90ac4c21 video: xilinxfb: Simplify error path)
+Merging viafb/viafb-next (838ac785d521 viafb: avoid refresh and mode lookup=
+ in set_par)
+Merging omap_dss2/for-next (f114040e3ea6 Linux 3.18-rc1)
+Merging regulator/for-next (63c0e4ce7d4e Merge remote-tracking branches 're=
+gulator/topic/rn5t618', 'regulator/topic/s2mps11', 'regulator/topic/sky8145=
+2' and 'regulator/topic/suspend' into regulator-next)
+Merging security/next (594081ee7145 integrity: do zero padding of the key i=
+d)
+Merging integrity/next (1b68bdf9cded ima: detect violations for mmaped file=
+s)
+Merging selinux/next (4093a8443941 selinux: normalize audit log formatting)
+Merging lblnet/next (d8ec26d7f828 Linux 3.13)
+Merging watchdog/master (d2aa9ba6cdf4 watchdog: meson: remove magic value f=
+or reboot)
+Merging iommu/next (09b5269a1b3d Merge branches 'arm/exynos', 'arm/omap', '=
+arm/smmu', 'x86/vt-d', 'x86/amd' and 'core' into next)
+Merging dwmw2-iommu/master (1860e379875d Linux 3.15)
+Merging vfio/next (93899a679fd6 vfio-pci: Fix remove path locking)
+Merging osd/linux-next (1fa3a002b254 Boaz Harrosh - fix email in Documentat=
+ion)
+Merging jc_docs/docs-next (011bc4870fb2 Docs: Document that the sticky bit =
+is understood by hugetlbfs)
+Merging trivial/for-next (7bb38d57fd75 Remove MN10300_PROC_MN2WS0038)
+Merging audit/next (915f389d9c52 audit: add Paul Moore to the MAINTAINERS e=
+ntry)
+Merging fsnotify/for-next (1ca39ab9d21a inotify: automatically restart sysc=
+alls)
+Merging devicetree/devicetree/next (2118f4b8dfc6 of/selftest: Move hash tab=
+le off stack to fix large frame size)
+Merging dt-rh/for-next (d22e9131187d of: add vendor prefix for Chipidea)
+Merging mailbox/mailbox-for-next (9f3e3cacb2ff dt: mailbox: add generic bin=
+dings)
+Merging spi/for-next (828617219082 Merge remote-tracking branches 'spi/topi=
+c/atmel', 'spi/topic/dw' and 'spi/topic/fsl-dspi' into spi-next)
+Merging tip/auto-latest (fc287d7ee5f0 Merge branch 'x86/urgent' into auto-l=
+atest)
+Merging clockevents/clockevents/next (3252a646aa2c clocksource: exynos_mct:=
+ Only use 32-bits where possible)
+Merging edac/linux_next (d0585cd815fa sb_edac: Claim a different PCI device)
+Merging edac-amd/for-next (a18c3f16a907 mpc85xx_edac: Make L2 interrupt sha=
+red too)
+Merging irqchip/irqchip/for-next (3bbccffba8d5 Merge branch 'irqchip/core' =
+into irqchip/for-next)
+Merging tiny/tiny/next (d45461ff03ad Merge branches 'tiny/bloat-o-meter-no-=
+SyS', 'tiny/more-procless', 'tiny/no-advice', 'tiny/tinyconfig' and 'tiny/x=
+86-boot-compressed-use-yn' into tiny/next)
+Merging ftrace/for-next (70c738a64478 Merge branch 'trace/ftrace/testing' i=
+nto trace/for-next)
+Merging rcu/rcu/next (22b38d950e70 rcu: Remove "cpu" argument to rcu_needs_=
+cpu())
+Merging uprobes/for-next (0326f5a94dde uprobes/core: Handle breakpoint and =
+singlestep exceptions)
+Merging kvm/linux-next (da01e61428aa Merge tag 'f2fs-for-3.18' of git://git=
+.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs)
+Merging kvm-arm/next (2df36a5dd679 arm/arm64: KVM: Fix BE accesses to GICv2=
+ EISR and ELRSR regs)
+Merging kvm-ppc/kvm-ppc-next (8d0eff638564 KVM: PPC: Pass enum to kvmppc_ge=
+t_last_inst)
+Merging oprofile/for-next (6ce4eac1f600 Linux 3.13-rc1)
+Merging fw-nohz/nohz/next (74876a98a87a printk: Wake up klogd using irq_wor=
+k)
+Merging xen-tip/linux-next (95afae481414 xen: remove DEFINE_XENBUS_DRIVER()=
+ macro)
+Merging percpu/for-next (0a15cbdaefcd Merge branch 'for-3.18' into for-next)
+Merging workqueues/for-next (e09c2c295468 workqueue: apply __WQ_ORDERED to =
+create_singlethread_workqueue())
+Merging drivers-x86/for-next (eabde0fa9670 toshiba_acpi: Adapt kbd_bl_timeo=
+ut_store to the new kbd type)
+Merging chrome-platform/for-next (5502486a2077 platform/chrome: chromeos_la=
+ptop - Add a limit for deferred retries)
+Merging sysctl/master (4e474a00d7ff sysctl: protect poll() in entries that =
+may go away)
+Merging regmap/for-next (46f6c620e8a1 Merge remote-tracking branches 'regma=
+p/topic/cache' and 'regmap/topic/headers' into regmap-next)
+Merging hsi/for-next (a26a42508157 HSI: remove deprecated IRQF_DISABLED)
+Merging leds/for-next (a4c84e6aafda leds: gpio: cleanup the leds-gpio drive=
+r)
+Merging ipmi/for-next (ef4a48c51321 Merge tag 'locks-v3.18-1' of git://git.=
+samba.org/jlayton/linux)
+Merging driver-core/driver-core-next (f114040e3ea6 Linux 3.18-rc1)
+Merging tty/tty-next (f114040e3ea6 Linux 3.18-rc1)
+Merging usb/usb-next (f114040e3ea6 Linux 3.18-rc1)
+Merging usb-gadget/next (72a65a0d19c1 Revert "usb: gadget: composite: deque=
+ue cdev->req before free its buffer")
+Merging usb-serial/usb-next (5f9f975b7984 USB: serial: keyspan_pda: fix Ent=
+rega company name spelling)
+Merging staging/staging-next (9246a4a98a01 android: binder: remove binder.h)
+Merging char-misc/char-misc-next (f114040e3ea6 Linux 3.18-rc1)
+Merging cgroup/for-next (55e8955e6eba Merge branch 'for-3.18' into for-next)
+Merging scsi/for-next (e166e75ff6e6 scsi_debug: error message should say sc=
+si_host_alloc not scsi_register)
+Merging target-updates/for-next (62d3ab49b8a5 target/file: fix inclusive vf=
+s_fsync_range() end)
+Merging target-merge/for-next-merge (b28a960c42fc Linux 3.14-rc2)
+Merging writeback/writeback-for-next (f9b0e058cbd0 writeback: Fix data corr=
+uption on NFS)
+Merging hwspinlock/linux-next (8b37fcfc9b34 hwspinlock: add MAINTAINERS ent=
+ries)
+Merging pinctrl/for-next (b55d0deddcd9 Merge branch 'devel' into for-next)
+Merging vhost/linux-next (970379f59d81 vhost: move memory pointer to VQs)
+CONFLICT (content): Merge conflict in drivers/vhost/net.c
+Merging remoteproc/for-next (9a3c4145af32 Linux 3.16-rc6)
+Merging rpmsg/for-next (397944df3290 rpmsg: fix kconfig dependencies for VI=
+RTIO)
+Merging gpio/for-next (0429fbc0bdc2 Merge branch 'for-3.18-consistent-ops' =
+of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu)
+Merging dma-mapping/dma-mapping-next (b4bbb107d73b dma-mapping: Provide wri=
+te-combine allocations)
+Merging pwm/for-next (e2e08970100d pwm: atmel: Fix calculation of prescale =
+value)
+Merging dma-buf/for-next (101e31050bf1 dma-buf/fence: Fix one more kerneldo=
+c warning)
+Merging userns/for-next (a1998908ba46 nfs: fix kernel warning when removing=
+ proc entry)
+CONFLICT (content): Merge conflict in fs/nfs/client.c
+Merging ktest/for-next (d832d743385d ktest: Don't bother with bisect good o=
+r bad on replay)
+Merging signal/for-next (20b4fb485227 Merge branch 'for-linus' of git://git=
+.kernel.org/pub/scm/linux/kernel/git/viro/vfs)
+Merging clk/clk-next (98d147f50eb0 clk: pxa clocks build system fix)
+Merging random/dev (7185ad2672a7 crypto: memzero_explicit - make sure to cl=
+ear out sensitive data)
+Merging lzo-update/lzo-update (42b775abafaf lib/lzo: huge LZO decompression=
+ speedup on ARM by using unaligned access)
+Merging aio/master (668044a5d632 aio: Make it possible to remap aio ring)
+Merging llvmlinux/for-next (ec25a590c29c arm: LLVMLinux: Use global stack r=
+egister variable for percpu)
+Merging documentation/for-next (0415447aa3b4 Documentation: fix broken v4l-=
+utils URL)
+Merging kselftest/next (49296470830a selftests/timers: change test to use k=
+sft framework)
+Merging akpm-current/current (7a152b7f7e60 gcov: enable GCOV_PROFILE_ALL fr=
+om ARCH Kconfigs)
+CONFLICT (content): Merge conflict in mm/oom_kill.c
+CONFLICT (content): Merge conflict in kernel/power/process.c
+CONFLICT (content): Merge conflict in include/linux/oom.h
+$ git checkout -b akpm remotes/origin/akpm/master
+Applying: drivers/gpio/gpio-zevio.c: fix build
+Applying: fat: add i_disksize to represent uninitialized size
+Applying: fat: add fat_fallocate operation
+Applying: fat: skip cluster allocation on fallocated region
+Applying: fat: permit to return phy block number by fibmap in fallocated re=
+gion
+Applying: Documentation/filesystems/vfat.txt: update the limitation for fat=
+ fallocate
+Applying: mm: replace remap_file_pages() syscall with emulation
+Applying: drivers/w1/w1_int.c: call put_device if device_register fails
+Applying: mm: add strictlimit knob
+Merging akpm/master (b5e7f3b79c52 mm: add strictlimit knob)
+
+--Sig_/lTakS1lCK4UBrbzmqMYXx6V
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUSIJNAAoJEMDTa8Ir7ZwVNmYP/3MJ1NSCuQRfEnoHYDC9uBJu
+k5aSMPfr4Bt0iv38jSxZtGoqyQd+mN/nywP6EMngfkGoExEMf+527U76js/R7PLN
+X5xJ/1GGg8naNw5ZTYt+syJEM0ck7U+THUYLhicr1wEcbNO4VNXRLDhXKGLKb0XQ
+bFnwCIO9sSZlZiGWMGMbKQ1B2uDHMuKfpWF1mAmrd7iNwiIBTed/Ay6uiMtD85La
+LIgDxA/4t+JnW3QyCuvS5hbF1XR7AfqkbFM+zzFPD4EsWkc2NReLxcDg1KqwDK/r
+QhDTLiSbeunlutIZkzOd3Z88+zaHsvvl8iZ0MCT8yfDLW/AWj/qCtHrQ0fe8zYaC
+grEMF1n/S+hPK7gt2Q5QZjThf0aq8NxQepZQkG4aKex37GyAblpjrulAvaGhC5gt
+c1Yp2dCVZe4ZUCK+dPrVJZTpshNx94ASWDkmsRnFlb6AV7vplrNaUBuQDVt61qkY
++IIWV18LoCZhR9pV5ME9D0Jt+/N7TkE7AaG5hZV1NRybTWDEJ98f9OnB7MSrw3cd
+YXnIeOGcwCyzC+OK0CDdoThxtd4DFoX2CcOhedLDU7jWjE9hXZ7tRCgtbDENlLMf
+tFAr1qJ1To60g/pPPfdjuEBjYtRqdhVU91bV8PiMXytkKIJdfj/tmpzeWD7kjd3f
+AthQDTc2KrtEgcL3iUQl
+=3SNy
+-----END PGP SIGNATURE-----
+
+--Sig_/lTakS1lCK4UBrbzmqMYXx6V--
