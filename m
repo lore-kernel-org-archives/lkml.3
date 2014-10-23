@@ -1,124 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612AbaJWMsM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:48:12 -0400
-Received: from smtp121.iad3a.emailsrvr.com ([173.203.187.121]:36234 "EHLO
-	smtp121.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755323AbaJWMsI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:48:08 -0400
-X-Sender-Id: abbotti@mev.co.uk
-From: Ian Abbott <abbotti@mev.co.uk>
-To: <driverdev-devel@linuxdriverproject.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: introduce some sample size manipulation functions
-Date: Thu, 23 Oct 2014 13:47:51 +0100
-Message-Id: <1414068471-25575-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.1
+	id S1755695AbaJWMs3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:48:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21417 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755555AbaJWMsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 08:48:11 -0400
+Date: Thu, 23 Oct 2014 15:51:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Cornelia Huck <cornelia.huck@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH RFC v3 09/16] virtio: set FEATURES_OK
+Message-ID: <20141023125139.GA10033@redhat.com>
+References: <1414003404-505-1-git-send-email-mst@redhat.com>
+ <1414003404-505-10-git-send-email-mst@redhat.com>
+ <20141023142808.377551d8.cornelia.huck@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023142808.377551d8.cornelia.huck@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a few static inline helper functions:
+On Thu, Oct 23, 2014 at 02:28:08PM +0200, Cornelia Huck wrote:
+> On Wed, 22 Oct 2014 21:44:44 +0300
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > set FEATURES_OK as per virtio 1.0 spec
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/uapi/linux/virtio_config.h |  2 ++
+> >  drivers/virtio/virtio.c            | 29 ++++++++++++++++++++++-------
+> >  2 files changed, 24 insertions(+), 7 deletions(-)
+> > 
+> 
+> >  	dev->config->finalize_features(dev);
+> > 
+> > +	if (virtio_has_feature(dev, VIRTIO_F_VERSION_1)) {
+> > +		add_status(dev, VIRTIO_CONFIG_S_FEATURES_OK);
+> > +		status = dev->config->get_status(dev);
+> > +		if (!(status & VIRTIO_CONFIG_S_FEATURES_OK)) {
+> > +			printk(KERN_ERR "virtio: device refuses features: %x\n",
+> > +			       status);
+> > +			err = -ENODEV;
+> > +			goto err;
+> > +		}
+> > +	}
+> > +
+> 
+> Ugh, I just realize that virtio-ccw has a problem with that mechanism :(
+> 
+> Up to now, the driver only propagated status to the device: For
+> virtio-ccw, this was easily implemented via a ccw that transmitted
+> "status" to the device. However, the "read back status" part now
+> actually requires that the driver can get "status" from the device, or
+> has a comparable way to find out that the device won't accept the
+> status it tried to write.
 
-`comedi_bytes_per_sample(s)` is the same as the existing
-`bytes_per_sample(s)` and determines the size of a comedi sample in
-bytes.  (`bytes_per_sample(s)` will be removed.)
+Ugh, it actually caches the status in the transport :(
 
-`comedi_sample_shift(s)` determines the log2 of the comedi sample size,
-so it can be used in bit-shift operations to multiply or divide by the
-sample size.
 
-`comedi_bytes_to_samples(s, nbytes)` converts a number of bytes to a
-number of samples (rounding down).
+> I can think of two solutions:
+> 
+> (1) Introduce a new ccw that actually reads the device status.
+> (2) Make the WRITE_STATUS ccw fail (with a unit check) if the driver
+>     sets FEATURES_OK after it tried to set features the device won't
+>     accept.
+> 
+> (1) is probably more generic, while (2) is more straightforward to
+> implement.
+> 
+> Good thing we actually try to finally implement this,
 
-`comedi_samples_to_bytes(s, nsamples)` converts a number of samples to a
-number of bytes.
+> I did not notice
+> this problem during the review :(
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
- drivers/staging/comedi/comedidev.h | 63 +++++++++++++++++++++++++++++++++++---
- 1 file changed, 59 insertions(+), 4 deletions(-)
+Well, it's a nuisance, but the spec is out.
+It seems to me a new command would be a substantive change so we can't
+do this in errata.
 
-diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-index 1b2bbd5..69cf6fe 100644
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -391,12 +391,67 @@ static inline unsigned int comedi_offset_munge(struct comedi_subdevice *s,
- 	return val ^ s->maxdata ^ (s->maxdata >> 1);
- }
- 
--static inline unsigned int bytes_per_sample(const struct comedi_subdevice *subd)
-+/**
-+ * comedi_bytes_per_sample - determine subdevice sample size
-+ * @s:		comedi_subdevice struct
-+ *
-+ * The sample size will be 4 (sizeof int) or 2 (sizeof short) depending on
-+ * whether the SDF_LSAMPL subdevice flag is set or not.
-+ *
-+ * Returns the subdevice sample size.
-+ */
-+static inline unsigned int comedi_bytes_per_sample(struct comedi_subdevice *s)
- {
--	if (subd->subdev_flags & SDF_LSAMPL)
--		return sizeof(unsigned int);
-+	return s->subdev_flags & SDF_LSAMPL ? sizeof(int) : sizeof(short);
-+}
- 
--	return sizeof(short);
-+/* to be removed */
-+static inline unsigned int bytes_per_sample(struct comedi_subdevice *s)
-+{
-+	return comedi_bytes_per_sample(s);
-+}
-+
-+/**
-+ * comedi_sample_shift - determine log2 of subdevice sample size
-+ * @s:		comedi_subdevice struct
-+ *
-+ * The sample size will be 4 (sizeof int) or 2 (sizeof short) depending on
-+ * whether the SDF_LSAMPL subdevice flag is set or not.  The log2 of the
-+ * sample size will be 2 or 1 and can be used as the right operand of a
-+ * bit-shift operator to multiply or divide something by the sample size.
-+ *
-+ * Returns log2 of the subdevice sample size.
-+ */
-+static inline unsigned int comedi_sample_shift(struct comedi_subdevice *s)
-+{
-+	return s->subdev_flags & SDF_LSAMPL ? 2 : 1;
-+}
-+
-+/**
-+ * comedi_bytes_to_samples - converts a number of bytes to a number of samples
-+ * @s:		comedi_subdevice struct
-+ * @nbytes:	number of bytes
-+ *
-+ * Returns the number of bytes divided by the subdevice sample size.
-+ */
-+static inline unsigned int comedi_bytes_to_samples(struct comedi_subdevice *s,
-+						   unsigned int nbytes)
-+{
-+	return nbytes >> comedi_sample_shift(s);
-+}
-+
-+/**
-+ * comedi_samples_to_bytes - converts a number of samples to a number of bytes
-+ * @s:		comedi_subdevice struct
-+ * @nsamples:	number of samples
-+ *
-+ * Returns the number of samples multiplied by the subdevice sample size.
-+ * Does not check for arithmetic overflow.
-+ */
-+static inline unsigned int comedi_samples_to_bytes(struct comedi_subdevice *s,
-+						   unsigned int nsamples)
-+{
-+	return nsamples << comedi_sample_shift(s);
- }
- 
- /*
+Option (2) would require two statements for drivers and devices,
+but since it's clearly the case for correct drivers/devices
+that command does not fail, it follows that this
+is not a substantive change so it can be fixed
+in an errata.
+
+So the new command would have to be optional, please open
+two issues in the TC: one documenting that driver must check
+WRITE_STATUS and device can fail WRITE_STATUS, and another
+for adding READ_STATUS (which will have to wait until
+the next CS).
+
+
 -- 
-2.1.1
-
+MST
