@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056AbaJWKLm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 06:11:42 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:30191 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750799AbaJWKLk (ORCPT
+	id S1754258AbaJWKRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 06:17:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41458 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587AbaJWKQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 06:11:40 -0400
-X-IronPort-AV: E=Sophos;i="5.04,774,1406563200"; 
-   d="scan'208";a="37816269"
-Message-ID: <5448D515.90006@cn.fujitsu.com>
-Date: Thu, 23 Oct 2014 18:14:45 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Thu, 23 Oct 2014 06:16:58 -0400
+Message-ID: <5448D594.4090300@linutronix.de>
+Date: Thu, 23 Oct 2014 12:16:52 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.1.2
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: <torvalds@linux-foundation.org>, <paulmck@linux.vnet.ibm.com>,
-        <tglx@linutronix.de>, <akpm@linux-foundation.org>, <riel@redhat.com>,
-        <mgorman@suse.de>, <oleg@redhat.com>, <mingo@redhat.com>,
-        <minchan@kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <viro@zeniv.linux.org.uk>, <dave@stgolabs.net>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [RFC][PATCH 4/6] SRCU free VMAs
-References: <20141020215633.717315139@infradead.org> <20141020222841.419869904@infradead.org>
-In-Reply-To: <20141020222841.419869904@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
+To: Nishanth Menon <nm@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tony Lindgren <tony@atomide.com>
+CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "Franklin Cooper Jr." <fcooper@ti.com>
+Subject: Re: [PATCH V2] tty: serial: omap: Increase max consoles and add check
+ to prevent crash
+References: <1413908616-843-1-git-send-email-nm@ti.com> <1413982010-11599-1-git-send-email-nm@ti.com>
+In-Reply-To: <1413982010-11599-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/22/2014 02:46 PM, Nishanth Menon wrote:
+> Increase the maximum number of consoles possible to 10 since DRA7 now
+> has the maximum number of consoles possible. without doing this, for
+> example, enabling DRA7 UART10 results in internal data structures and
+> console cannot match up and we endup with a crash as follows:
 
->  
-> +struct vm_area_struct *find_vma_srcu(struct mm_struct *mm, unsigned long addr)
-> +{
-> +	struct vm_area_struct *vma;
-> +	unsigned int seq;
-> +
-> +	WARN_ON_ONCE(!srcu_read_lock_held(&vma_srcu));
-> +
-> +	do {
-> +		seq = read_seqbegin(&mm->mm_seq);
-> +		vma = __find_vma(mm, addr);
+good, Thanks.
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-will the __find_vma() loops for ever due to the rotations in the RBtree?
-
-> +	} while (read_seqretry(&mm->mm_seq, seq));
-> +
-> +	return vma;
-> +}
+Sebastian
