@@ -1,186 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082AbaJWBSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Oct 2014 21:18:07 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:17445 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941AbaJWBSE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Oct 2014 21:18:04 -0400
-Message-ID: <5448571F.6030105@huawei.com>
-Date: Thu, 23 Oct 2014 09:17:19 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1753761AbaJWBWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Oct 2014 21:22:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49304 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850AbaJWBWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Oct 2014 21:22:45 -0400
+Date: Wed, 22 Oct 2014 21:22:36 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com, jbacik@fb.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: btrfs: WARN_ON(data_sinfo->bytes_may_use < bytes);
+Message-ID: <20141023012236.GA28429@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com,
+	jbacik@fb.com, linux-btrfs@vger.kernel.org
+References: <20141023010731.GA27796@redhat.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
-        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
-        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
-        Liviu Dudau <liviu@dudau.co.uk>
-Subject: Re: [PATCH v3 24/27] IA64/MSI: Use MSI chip framework to configure
- MSI/MSI-X irq
-References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com> <1413342435-7876-25-git-send-email-wangyijing@huawei.com> <20141022235345.GE4795@google.com>
-In-Reply-To: <20141022235345.GE4795@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023010731.GA27796@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/23 7:53, Bjorn Helgaas wrote:
-> On Wed, Oct 15, 2014 at 11:07:12AM +0800, Yijing Wang wrote:
->> Use MSI chip framework instead of arch MSI functions to configure
->> MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
-> 
-> This needs slightly more detail.  You're using the MSI chip framework
-> "instead of arch MSI functions".  Well, there are still arch-specific
-> functions, i.e., arch_ia64_setup_msi_irq() and
-> arch_ia64_teardown_msi_irq().
-> 
-> We used to have arch_setup_msi_irq() which had a weak default
-> implementation, and a strong arch-specific implementation here, and you're
-> replacing that model with the new "msi-ops" model.  I don't know how you
-> want to write that, but it's not that you're getting rid of the
-> arch-specific code; you're keeping arch-specific code but structuring it
-> differently.
+On Wed, Oct 22, 2014 at 09:07:31PM -0400, Dave Jones wrote:
+ > Just hit this while running trinity.
+ > 
+ > WARNING: CPU: 3 PID: 9612 at fs/btrfs/extent-tree.c:3799 btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]()
+ > Modules linked in: rfcomm hidp bnep af_key llc2 scsi_transport_iscsi nfnetlink sctp libcrc32c can_raw can_bcm nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill btrfs xor coretemp hwmon x86_pkg_temp_thermal kvm_intel snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_codec_generic kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel raid6_pq snd_hda_intel microcode snd_hda_controller pcspkr snd_hda_codec serio_raw snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp shpchp pps_core snd_timer snd soundcore
+ > CPU: 3 PID: 9612 Comm: trinity-c85 Not tainted 3.18.0-rc1+ #74
+ >  0000000000000009 000000009989d5b8 ffff88018a337ba8 ffffffffaf86cc97
+ >  0000000000000000 0000000000000000 ffff88018a337be8 ffffffffaf07f301
+ >  ffff88022ddf8d40 ffff88023f799148 000000007fbbf000 ffff88009c2b59c8
+ > Call Trace:
+ >  [<ffffffffaf86cc97>] dump_stack+0x4f/0x7c
+ >  [<ffffffffaf07f301>] warn_slowpath_common+0x81/0xa0
+ >  [<ffffffffaf07f41a>] warn_slowpath_null+0x1a/0x20
+ >  [<ffffffffc045b831>] btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]
+ >  [<ffffffffc045d0b2>] btrfs_delalloc_release_space+0x22/0x30 [btrfs]
+ >  [<ffffffffc047994b>] btrfs_direct_IO+0x33b/0x350 [btrfs]
+ >  [<ffffffffc0487400>] ? btrfs_page_exists_in_range+0x2c0/0x2c0 [btrfs]
+ >  [<ffffffffc047b2b0>] ? btrfs_real_readdir+0x5e0/0x5e0 [btrfs]
+ >  [<ffffffffaf1adbb4>] generic_file_direct_write+0xc4/0x1a0
+ >  [<ffffffffc048b246>] btrfs_file_write_iter+0x186/0x560 [btrfs]
+ >  [<ffffffffaf22abde>] new_sync_write+0x8e/0xd0
+ >  [<ffffffffaf22b5ca>] vfs_write+0xba/0x1f0
+ >  [<ffffffffaf24fbce>] ? __fget_light+0xbe/0xe0
+ >  [<ffffffffaf22c2d2>] SyS_pwrite64+0x92/0xc0
+ >  [<ffffffffaf877d49>] tracesys_phase2+0xd4/0xd9
 
-Hm, I will rename the msi-ops functions.
+I also see this WARN_ON being hit from the sync path..
 
-> 
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> ---
->>  arch/ia64/include/asm/pci.h |   10 ++++++++++
->>  arch/ia64/kernel/msi_ia64.c |   14 ++++++++++----
->>  arch/ia64/pci/pci.c         |    1 +
->>  3 files changed, 21 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/ia64/include/asm/pci.h b/arch/ia64/include/asm/pci.h
->> index 52af5ed..907dcba 100644
->> --- a/arch/ia64/include/asm/pci.h
->> +++ b/arch/ia64/include/asm/pci.h
->> @@ -94,6 +94,7 @@ struct pci_controller {
->>  	int segment;
->>  	int node;		/* nearest node with memory or NUMA_NO_NODE for global allocation */
->>  
->> +	struct msi_chip *msi_chip;
->>  	void *platform_data;
->>  };
->>  
->> @@ -101,6 +102,15 @@ struct pci_controller {
->>  #define PCI_CONTROLLER(busdev) ((struct pci_controller *) busdev->sysdata)
->>  #define pci_domain_nr(busdev)    (PCI_CONTROLLER(busdev)->segment)
->>  
->> +extern struct msi_chip chip;
-> 
-> Please make this name more descriptive.  "chip" is way too generic for a
-> global name.
+WARNING: CPU: 2 PID: 11166 at fs/btrfs/extent-tree.c:3799 btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]()
+CPU: 2 PID: 11166 Comm: trinity-c61 Tainted: G        W      3.18.0-rc1+ #74
+ 0000000000000009 00000000aee2e4e2 ffff8801b0dfbcc8 ffffffff8d86cc97
+ 0000000000000000 0000000000000000 ffff8801b0dfbd08 ffffffff8d07f301
+ ffff88023f328000 ffff88023953d668 0000000000040000 ffff880239358548
+Call Trace:
+ [<ffffffff8d86cc97>] dump_stack+0x4f/0x7c
+ [<ffffffff8d07f301>] warn_slowpath_common+0x81/0xa0
+ [<ffffffff8d07f41a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffffc0253831>] btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]
+ [<ffffffffc025ca63>] btrfs_write_dirty_block_groups+0x6f3/0x740 [btrfs]
+ [<ffffffffc02f7a41>] commit_cowonly_roots+0x17a/0x234 [btrfs]
+ [<ffffffffc026e60b>] btrfs_commit_transaction+0x45b/0xc10 [btrfs]
+ [<ffffffffc023a09b>] btrfs_sync_fs+0x8b/0x270 [btrfs]
+ [<ffffffff8d266ad0>] ? do_fsync+0x80/0x80
+ [<ffffffff8d266af0>] sync_fs_one_sb+0x20/0x30
+ [<ffffffff8d22f2f2>] iterate_supers+0xb2/0x110
+ [<ffffffff8d266c24>] sys_sync+0x64/0xb0
+ [<ffffffff8d877d49>] tracesys_phase2+0xd4/0xd9
 
-OK, what about rename it to ia64_msi_chip, and rename the original static irq_chip ia64_msi_chip to
-static irq_chip msi_chip like in x86.
+After rebooting, and restarting the fuzzer, it happened again very quickly.
 
-> 
->> +static inline struct msi_chip *pci_msi_chip(struct pci_bus *bus)
->> +{
->> +	struct pci_controller *ctrl = bus->sysdata;
->> +
->> +	return ctrl->msi_chip;
->> +}
->> +
->>  extern struct pci_ops pci_root_ops;
->>  
->>  static inline int pci_proc_domain(struct pci_bus *bus)
->> diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
->> index 8c3730c..401fc98 100644
->> --- a/arch/ia64/kernel/msi_ia64.c
->> +++ b/arch/ia64/kernel/msi_ia64.c
->> @@ -112,15 +112,16 @@ static struct irq_chip ia64_msi_chip = {
->>  };
->>  
->>  
->> -int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
->> +static int arch_ia64_setup_msi_irq(struct msi_chip *chip,
->> +		struct pci_dev *dev, struct msi_desc *desc)
->>  {
->>  	if (platform_setup_msi_irq)
->> -		return platform_setup_msi_irq(pdev, desc);
->> +		return platform_setup_msi_irq(dev, desc);
->>  
->> -	return ia64_setup_msi_irq(pdev, desc);
->> +	return ia64_setup_msi_irq(dev, desc);
-> 
-> Please don't make gratuitous changes ("pdev" -> "dev") at the same time,
-> especially since the rest of the file still uses "pdev".
-
-OK.
-
-> 
->>  }
->>  
->> -void arch_teardown_msi_irq(unsigned int irq)
->> +static void arch_ia64_teardown_msi_irq(struct msi_chip *chip, unsigned int irq)
->>  {
->>  	if (platform_teardown_msi_irq)
->>  		return platform_teardown_msi_irq(irq);
->> @@ -128,6 +129,11 @@ void arch_teardown_msi_irq(unsigned int irq)
->>  	return ia64_teardown_msi_irq(irq);
->>  }
->>  
->> +struct msi_chip chip = {
->> +	.setup_irq = arch_ia64_setup_msi_irq,
->> +	.teardown_irq = arch_ia64_teardown_msi_irq,
->> +};
->> +
->>  #ifdef CONFIG_INTEL_IOMMU
->>  #ifdef CONFIG_SMP
->>  static int dmar_msi_set_affinity(struct irq_data *data,
->> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
->> index 291a582..299b67d 100644
->> --- a/arch/ia64/pci/pci.c
->> +++ b/arch/ia64/pci/pci.c
->> @@ -437,6 +437,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
->>  
->>  	controller->companion = device;
->>  	controller->node = acpi_get_node(device->handle);
->> +	controller->msi_chip = &chip;
->>  
->>  	info = kzalloc(sizeof(*info), GFP_KERNEL);
->>  	if (!info) {
->> -- 
->> 1.7.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> .
-> 
-
-
--- 
-Thanks!
-Yijing
+	Dave
 
