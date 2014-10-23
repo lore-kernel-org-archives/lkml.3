@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593AbaJWEFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 00:05:12 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49521 "EHLO
+	id S1752862AbaJWEEF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 00:04:05 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:49465 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753150AbaJWEEM (ORCPT
+	with ESMTP id S1751452AbaJWEDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 00:04:12 -0400
+	Thu, 23 Oct 2014 00:03:48 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: netdev@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
         Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
         linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 14/14] net: dsa: Provide additional RMON statistics
-Date: Wed, 22 Oct 2014 21:03:22 -0700
-Message-Id: <1414037002-25528-15-git-send-email-linux@roeck-us.net>
+Subject: [PATCH 05/14] net: dsa/mv88e6352: Add support for MV88E6176
+Date: Wed, 22 Oct 2014 21:03:13 -0700
+Message-Id: <1414037002-25528-6-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
 References: <1414037002-25528-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54487E3B.0175,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020205.54487E24.00B9,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 75
+X-CTCH-SenderID-TotalMessages: 42
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -50,91 +50,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Display sw_in_discards, sw_in_filtered, and sw_out_filtered for chips
-supported by mv88e6123_61_65 and mv88e6352 drivers.
-
-The variables are provided in port registers, not the normal status registers.
-Mark by adding 0x100 to the register offset and add special handling code
-to mv88e6xxx_get_ethtool_stats.
+MV88E6176 is mostly compatible to MV88E6352 and is documented
+in the same functional specification. Add support for it.
 
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- drivers/net/dsa/mv88e6123_61_65.c |  3 +++
- drivers/net/dsa/mv88e6352.c       |  3 +++
- drivers/net/dsa/mv88e6xxx.c       | 26 +++++++++++++++++++++-----
- 3 files changed, 27 insertions(+), 5 deletions(-)
+ drivers/net/dsa/Kconfig     | 5 +++--
+ drivers/net/dsa/mv88e6352.c | 2 ++
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/dsa/mv88e6123_61_65.c b/drivers/net/dsa/mv88e6123_61_65.c
-index a3aeba4..18c026f 100644
---- a/drivers/net/dsa/mv88e6123_61_65.c
-+++ b/drivers/net/dsa/mv88e6123_61_65.c
-@@ -430,6 +430,9 @@ static struct mv88e6xxx_hw_stat mv88e6123_61_65_hw_stats[] = {
- 	{ "hist_256_511bytes", 4, 0x0b, },
- 	{ "hist_512_1023bytes", 4, 0x0c, },
- 	{ "hist_1024_max_bytes", 4, 0x0d, },
-+	{ "sw_in_discards", 4, 0x110, },
-+	{ "sw_in_filtered", 2, 0x112, },
-+	{ "sw_out_filtered", 2, 0x113, },
- };
+diff --git a/drivers/net/dsa/Kconfig b/drivers/net/dsa/Kconfig
+index 0987c33..2d1a55e 100644
+--- a/drivers/net/dsa/Kconfig
++++ b/drivers/net/dsa/Kconfig
+@@ -46,12 +46,13 @@ config NET_DSA_MV88E6171
+ 	  chip.
  
- static void
+ config NET_DSA_MV88E6352
+-	tristate "Marvell 88E6352 ethernet switch chip support"
++	tristate "Marvell 88E6176/88E6352 ethernet switch chip support"
+ 	select NET_DSA
+ 	select NET_DSA_MV88E6XXX
+ 	select NET_DSA_TAG_EDSA
+ 	---help---
+-	  This enables support for the Marvell 88E6352 ethernet switch chip.
++	  This enables support for the Marvell 88E6176 and 88E6352 ethernet
++	  switch chips.
+ 
+ config NET_DSA_BCM_SF2
+ 	tristate "Broadcom Starfighter 2 Ethernet switch support"
 diff --git a/drivers/net/dsa/mv88e6352.c b/drivers/net/dsa/mv88e6352.c
-index 2f31e28..85dabd9 100644
+index 43a5826..f17364f 100644
 --- a/drivers/net/dsa/mv88e6352.c
 +++ b/drivers/net/dsa/mv88e6352.c
-@@ -536,6 +536,9 @@ static struct mv88e6xxx_hw_stat mv88e6352_hw_stats[] = {
- 	{ "hist_256_511bytes", 4, 0x0b, },
- 	{ "hist_512_1023bytes", 4, 0x0c, },
- 	{ "hist_1024_max_bytes", 4, 0x0d, },
-+	{ "sw_in_discards", 4, 0x110, },
-+	{ "sw_in_filtered", 2, 0x112, },
-+	{ "sw_out_filtered", 2, 0x113, },
- };
+@@ -73,6 +73,8 @@ static char *mv88e6352_probe(struct device *host_dev, int sw_addr)
  
- static int mv88e6352_get_eeprom_len(struct dsa_switch *ds)
-diff --git a/drivers/net/dsa/mv88e6xxx.c b/drivers/net/dsa/mv88e6xxx.c
-index c071fde..da558d8 100644
---- a/drivers/net/dsa/mv88e6xxx.c
-+++ b/drivers/net/dsa/mv88e6xxx.c
-@@ -485,17 +485,33 @@ void mv88e6xxx_get_ethtool_stats(struct dsa_switch *ds,
- 	for (i = 0; i < nr_stats; i++) {
- 		struct mv88e6xxx_hw_stat *s = stats + i;
- 		u32 low;
--		u32 high;
--
-+		u32 high = 0;
-+
-+		if (s->reg >= 0x100) {
-+			int ret;
-+
-+			ret = mv88e6xxx_reg_read(ds, REG_PORT(port),
-+						 s->reg - 0x100);
-+			if (ret < 0)
-+				goto error;
-+			low = ret;
-+			if (s->sizeof_stat == 4) {
-+				ret = mv88e6xxx_reg_read(ds, REG_PORT(port),
-+							 s->reg - 0x100 + 1);
-+				if (ret < 0)
-+					goto error;
-+				high = ret;
-+			}
-+			data[i] = (((u64)high) << 16) | low;
-+			continue;
-+		}
- 		mv88e6xxx_stats_read(ds, s->reg, &low);
- 		if (s->sizeof_stat == 8)
- 			mv88e6xxx_stats_read(ds, s->reg + 1, &high);
--		else
--			high = 0;
- 
- 		data[i] = (((u64)high) << 32) | low;
- 	}
--
-+error:
- 	mutex_unlock(&ps->stats_mutex);
- }
- 
+ 	ret = __mv88e6xxx_reg_read(bus, sw_addr, REG_PORT(0), 0x03);
+ 	if (ret >= 0) {
++		if ((ret & 0xfff0) == 0x1760)
++			return "Marvell 88E6176";
+ 		if (ret == 0x3521)
+ 			return "Marvell 88E6352 (A0)";
+ 		if (ret == 0x3522)
 -- 
 1.9.1
 
