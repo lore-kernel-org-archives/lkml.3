@@ -1,115 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461AbaJWMQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 08:16:24 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43764 "EHLO mail.skyhub.de"
+	id S1755344AbaJWMWB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 08:22:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59139 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755237AbaJWMQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 08:16:23 -0400
-Date: Thu, 23 Oct 2014 14:16:19 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, tglx@linutronix.de, ak@linux.intel.com,
-        eranian@google.com, dzickus@redhat.com, andi@firstfloor.org,
-        jmario@redhat.com, acme@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] perf,x86: De-obfuscate HSW offcore bits
-Message-ID: <20141023121619.GB4643@pd.tnic>
-References: <20141023105119.173457103@infradead.org>
- <20141023105658.111371548@infradead.org>
+	id S1754971AbaJWMV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 08:21:57 -0400
+Date: Thu, 23 Oct 2014 14:21:54 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2] mm: page-writeback: inline account_page_dirtied()
+ into single caller
+Message-ID: <20141023122154.GB23011@dhcp22.suse.cz>
+References: <1414002568-21042-1-git-send-email-hannes@cmpxchg.org>
+ <1414002568-21042-2-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141023105658.111371548@infradead.org>
+In-Reply-To: <1414002568-21042-2-git-send-email-hannes@cmpxchg.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 12:51:20PM +0200, Peter Zijlstra wrote:
-> Andi introduced the HSW cache events array, but used magic constants
-> against convention as set by all the other uarchs. Try and deobfuscate
-> these a bit.
+On Wed 22-10-14 14:29:27, Johannes Weiner wrote:
+> A follow-up patch would have changed the call signature.  To save the
+> trouble, just fold it instead.
 > 
-> This patch should not change the actual values generated; however
-> weird they seems.
-> 
-> In that patch Andi also said there were differences between the
-> SNB/IVB and HSW/BDW offcore tables but failed to specify which and
-> why.
-> 
-> Fixes: 86a349a28b24 ("perf/x86/intel: Add Broadwell core support")
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-> Link: http://lkml.kernel.org/n/tip-@git.kernel.org
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: "3.17" <stable@kernel.org>
 
-This link looks funny.
+It seems that the function was added just for nilfs but that wasn't using
+the symbol at the time memcg part went in. Funny...
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
 > ---
->  arch/x86/kernel/cpu/perf_event_intel.c |   48 +++++++++++++++++++++++++++------
->  1 file changed, 40 insertions(+), 8 deletions(-)
+>  include/linux/mm.h  |  1 -
+>  mm/page-writeback.c | 23 ++++-------------------
+>  2 files changed, 4 insertions(+), 20 deletions(-)
 > 
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -247,6 +247,7 @@ static u64 intel_pmu_event_map(int hw_ev
->  #define SNB_BUS_LOCKS		(1ULL << 10)
->  #define SNB_STRM_ST		(1ULL << 11)
->  #define SNB_OTHER		(1ULL << 15)
-> +
->  #define SNB_RESP_ANY		(1ULL << 16)
->  #define SNB_NO_SUPP		(1ULL << 17)
->  #define SNB_LLC_HITM		(1ULL << 18)
-> @@ -255,6 +256,7 @@ static u64 intel_pmu_event_map(int hw_ev
->  #define SNB_LLC_HITF		(1ULL << 21)
->  #define SNB_LOCAL		(1ULL << 22)
->  #define SNB_REMOTE		(0xffULL << 23)
-> +
->  #define SNB_SNP_NONE		(1ULL << 31)
->  #define SNB_SNP_NOT_NEEDED	(1ULL << 32)
->  #define SNB_SNP_MISS		(1ULL << 33)
-> @@ -519,6 +521,40 @@ static __initconst const u64 hsw_hw_cach
->   },
->  };
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 27eb1bfbe704..b46461116cd2 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1235,7 +1235,6 @@ int __set_page_dirty_no_writeback(struct page *page);
+>  int redirty_page_for_writepage(struct writeback_control *wbc,
+>  				struct page *page);
+>  void account_page_dirtied(struct page *page, struct address_space *mapping);
+> -void account_page_writeback(struct page *page);
+>  int set_page_dirty(struct page *page);
+>  int set_page_dirty_lock(struct page *page);
+>  int clear_page_dirty_for_io(struct page *page);
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index ff24c9d83112..ff6a5b07211e 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -2116,23 +2116,6 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
+>  EXPORT_SYMBOL(account_page_dirtied);
 >  
-> +/* HSW Request type */
-> +#define HSW_DMND_DATA_RD	(1ULL << 0)
-> +#define HSW_DMND_RFO		(1ULL << 1)
-> +#define HSW_DMND_IFETCH		(1ULL << 2)
-> +
-> +#define HSW_PF_DATA_RD		(1ULL << 4)
-> +#define HSW_PF_RFO		(1ULL << 5)
-> +#define HSW_PF_IFETCH		(1ULL << 6)
-> +
-> +#define HSW_OTHER		(1ULL << 15)
-> +
-> +/* HSW Supplier info := SNB Supplier info */
-> +/* HSW Snoop Info := SNB Snoop Info */
-> +
-> +/*
-> + * SNB_LLC_* is specified as 'reserved' in the SDM
-> + * but Andi added it anyhow, suggesting HSW/BDW have it just fine
-> + *
-> + * XXX NHM/WSM/SNB/IVB don't have the PF/IFETCH bits set
-> + */
-> +#define HSW_DMND_READ		(HSW_DMND_DATA_RD|HSW_DMND_IFETCH| \
-> +				 HSW_PF_DATA_RD|HSW_PF_IFETCH| \
-> +				 SNB_LLC_DATA_RD|SNB_LLC_IFETCH)
-> +
-> +/* XXX NHM/WSM/SNB/IVB dont have the PF bits set */
-> +#define HSW_DMND_WRITE		(HSW_DMND_RFO|HSW_PF_RFO|SNB_LLC_RFO)
-> +
-> +#define HSW_DMND_PREFETCH	(0) /* XXX broken ? */
-> +
-> +#define HSW_DRAM_ANY		(SNB_NO_SUPP|SNB_SNP_ANY|(0x78ULL << 23)) /* WTF */
-> +
-> +#define HSW_L3_ACCESS		(0) /* XXX no supplier! */
-> +#define NSW_L3_MISS		(HSW_DRAM_ANY|SNB_NON_DRAM)
-
-You probably mean HSW and not NSW here...
+>  /*
+> - * Helper function for set_page_writeback family.
+> - *
+> - * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
+> - * while calling this function.
+> - * See test_set_page_writeback for example.
+> - *
+> - * NOTE: Unlike account_page_dirtied this does not rely on being atomic
+> - * wrt interrupts.
+> - */
+> -void account_page_writeback(struct page *page)
+> -{
+> -	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
+> -	inc_zone_page_state(page, NR_WRITEBACK);
+> -}
+> -EXPORT_SYMBOL(account_page_writeback);
+> -
+> -/*
+>   * For address_spaces which do not use buffers.  Just tag the page as dirty in
+>   * its radix tree.
+>   *
+> @@ -2410,8 +2393,10 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
+>  	} else {
+>  		ret = TestSetPageWriteback(page);
+>  	}
+> -	if (!ret)
+> -		account_page_writeback(page);
+> +	if (!ret) {
+> +		mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
+> +		inc_zone_page_state(page, NR_WRITEBACK);
+> +	}
+>  	mem_cgroup_end_update_page_stat(page, &locked, &memcg_flags);
+>  	return ret;
+>  
+> -- 
+> 2.1.2
+> 
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Michal Hocko
+SUSE Labs
