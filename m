@@ -1,145 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaJWGdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 02:33:07 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:46037 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827AbaJWGdE (ORCPT
+	id S1752176AbaJWGdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 02:33:46 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:42037 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaJWGdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 02:33:04 -0400
-Message-ID: <5448A0F8.1040004@huawei.com>
-Date: Thu, 23 Oct 2014 14:32:24 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 23 Oct 2014 02:33:45 -0400
+Message-ID: <5448A141.7050601@hitachi.com>
+Date: Thu, 23 Oct 2014 15:33:37 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-arch@vger.kernel.org>,
-        <arnab.basu@freescale.com>, <Bharat.Bhushan@freescale.com>,
-        <x86@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
-        Liviu Dudau <liviu@dudau.co.uk>
-Subject: Re: [PATCH v3 04/27] arm/MSI: Save MSI chip in pci_sys_data
-References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com> <1413342435-7876-5-git-send-email-wangyijing@huawei.com> <20141023053555.GC11770@google.com>
-In-Reply-To: <20141023053555.GC11770@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, oleg@redhat.com,
+        hegdevasant@linux.vnet.ibm.com, mingo@redhat.com, anton@redhat.com,
+        systemtap@sourceware.org, namhyung@kernel.org,
+        aravinda@linux.vnet.ibm.com, penberg@iki.fi
+Subject: Re: [PATCH v3 5/5] perf/sdt: Add support to perf record to trace
+ SDT events
+References: <20141010104402.15506.73285.stgit@hemant-fedora> <20141010105914.15506.84827.stgit@hemant-fedora> <54475292.20409@hitachi.com> <544768C6.6090105@linux.vnet.ibm.com> <54477BE6.2060006@hitachi.com> <20141023055422.GA27939@linux.vnet.ibm.com>
+In-Reply-To: <20141023055422.GA27939@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->> index 22e413c..f11108c 100644
->> --- a/drivers/pci/msi.c
->> +++ b/drivers/pci/msi.c
->> @@ -35,6 +35,9 @@ int __weak arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
->>  	struct msi_chip *chip = dev->bus->msi;
->>  	int err;
->>  
->> +	if (!chip)
->> +		chip = pci_msi_chip(dev->bus);
->> +
->>  	if (!chip || !chip->setup_irq)
->>  		return -EINVAL;
->>  
->> @@ -50,6 +53,9 @@ void __weak arch_teardown_msi_irq(unsigned int irq)
->>  	struct msi_desc *entry = irq_get_msi_desc(irq);
->>  	struct msi_chip *chip = entry->dev->bus->msi;
->>  
->> +	if (!chip)
->> +		chip = pci_msi_chip(entry->dev->bus);
->> +
->>  	if (!chip || !chip->teardown_irq)
->>  		return;
->>  
->> diff --git a/include/linux/pci.h b/include/linux/pci.h
->> index 9cd2721..7a48b40 100644
->> --- a/include/linux/pci.h
->> +++ b/include/linux/pci.h
->> @@ -1433,6 +1433,15 @@ static inline int pci_get_new_domain_nr(void) { return -ENOSYS; }
->>  
->>  #include <asm/pci.h>
->>  
->> +/* Just avoid compile error, will be clean up later */
->> +#ifdef CONFIG_PCI_MSI
->> +
->> +#ifndef pci_msi_chip
->> +#define pci_msi_chip(bus)	NULL
->> +#endif
->> +#endif
+(2014/10/23 14:54), Srikar Dronamraju wrote:
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> [2014-10-22 18:41:58]:
 > 
-> I don't like the mixture of ARM changes and PCI core changes in the same
-> patch.  Can you split this into a core patch that does something like this:
-> 
->   struct msi_chip * __weak pcibios_msi_controller(struct pci_bus *bus)
->   {
->     return NULL;
->   }
-> 
->   struct msi_chip *pci_msi_controller(struct pci_bus *bus)
->   {
->     msi_chip *controller = bus->msi;
-> 
->     if (controller)
->       return controller;
->     return pcibios_msi_controller(bus);
->   }
-> 
-> followed by an ARM patch that puts the msi_chip pointer in struct hw_pci
-> and implements pcibios_msi_controller()?
-
-OK, I will split it in half.
-
-> 
-> I know you're trying to *remove* weak functions, and this adds one, but
-> this section of the series is more about getting rid of the ARM
-> pcibios_add_bus() because all it was used for was setting the bus->msi
-> pointer.
-
-Yes, agree.
-
-> 
-> Eventually we might have a way to stash an MSI controller pointer in the
-> generic pci_host_bridge struct, and then the pcibios_msi_controller()
-> interface could go away.
-
-Yep, I am doing the work to make a generic pci_host_bridge, and try to rip it out from
-pci_create_root_bus, that's also a large changes across many archs.
-
-> 
->> +
->>  /* these helpers provide future and backwards compatibility
->>   * for accessing popular PCI BAR info */
->>  #define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
->> -- 
->> 1.7.1
+>> (2014/10/22 17:20), Hemant Kumar wrote:
+>>>>> From "file_sdt_ent" we will find out the file name.
+>>>>> Convert this sdt note into a perf event and then write this into uprobe_events
+>>>>> file to be able to record the event.
+>>>>> Then, corresponding entries are added to uprobe_events file for
+>>>>> the SDT events.
+>>>>> After recording is done, these events are silently deleted from uprobe_events
+>>>>> file. The uprobe_events file is present in debugfs/tracing directory.
+>>>>>
+>>>>> To support the addition and deletion of SDT events to/from uprobe_events
+>>>>> file, a record_sdt struct is maintained which has the event data.
+>>>> OK, I have some comments on this.
+>>>>
+>>>>> An example usage:
+>>>>>
+>>>>> # ./perf record -e %user_app:fun_start -aR /home/user_app
+>>>> At first, I'd like to add SDT support for adding probes too, like below;
+>>>>
+>>>> ./perf probe -a '%user_app:fun_start $vars'
+>>>
+>>> But I think, previously we discussed that we won't be having "perf
+>>> probe" for SDT events.
+>>> We list them and probe/trace them using "perf record" directly.
+>>
+>> Right, sorry for confusing you. I meant that I'd like to support SDT on both of
+>> perf-record and perf-probe :)
+>> And even if we'll hide sdt related events via perf, users can access it via ftrace.
+>> So, I doubt that we can completely hide them, in that case, honesty is the best way;)
 >>
 > 
-> .
+> I am somehow not able to figure out how perf probe comes into the
+> current workflow.
 > 
+> I think the current design was
+> 1. perf sdt-cache --add <file> (only once per file)
+> 2. perf record -e <sdt-event>
+> 
+> So what is the additional thing that perf probe does or Is it going to
+> replace any of the above steps?
 
+3. perf probe -a <sdt-event>
+
+And this will be done subsequently in this series (without user interface part).
+However, current implementation of 2. will do the following steps
+
+s1. get sdt event data from sdt-cache
+s2. set up sdt events with suppressing messages
+s3. do recording events
+(s4. and hiding existing sdt events from perf-probe --list)
+s5. remove sdt events
+
+So, what I proposed were ;
+- to implement s2., we can introduce --quiet(-q) option and use it
+  instead of ->sdt flag checking
+- removing s4. and s5.
+- and add verification of existing sdt events at s2. if needed.
+
+This will simplify your patch and removing complex part of sdt-specific code.
+What would you think about this?
+
+Thank you,
 
 -- 
-Thanks!
-Yijing
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
