@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751782AbaJWFHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 01:07:31 -0400
-Received: from ozlabs.org ([103.22.144.67]:47929 "EHLO ozlabs.org"
+	id S1751935AbaJWFHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 01:07:50 -0400
+Received: from ozlabs.org ([103.22.144.67]:34177 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633AbaJWFHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 01:07:24 -0400
+	id S1751572AbaJWFHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 01:07:23 -0400
 From: Michael Ellerman <mpe@ellerman.id.au>
 To: <linux-kernel@vger.kernel.org>
 Cc: shuahkh@osg.samsung.com, linux-api@vger.kernel.org,
         Andrew Morton <akpm@osdl.org>, gorcunov@openvz.org
-Subject: [PATCH 3/3] selftests/kcmp: Always try to build the test
-Date: Thu, 23 Oct 2014 16:07:14 +1100
-Message-Id: <1414040834-30209-3-git-send-email-mpe@ellerman.id.au>
+Subject: [PATCH 2/3] selftests/kcmp: Don't include kernel headers
+Date: Thu, 23 Oct 2014 16:07:13 +1100
+Message-Id: <1414040834-30209-2-git-send-email-mpe@ellerman.id.au>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414040834-30209-1-git-send-email-mpe@ellerman.id.au>
 References: <1414040834-30209-1-git-send-email-mpe@ellerman.id.au>
@@ -20,40 +20,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't prevent the test building on non-x86. Just try and build it and
-let the chips fall where they may.
+The kcmp test mucks with the include path to bring in the kernel
+headers, and x86 headers too for reasons that are not clear.
+
+Now that kcmp.h is exported none of that should be necessary.
 
 Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 ---
- tools/testing/selftests/kcmp/Makefile | 14 --------------
- 1 file changed, 14 deletions(-)
+ tools/testing/selftests/kcmp/Makefile | 4 ----
+ 1 file changed, 4 deletions(-)
 
 diff --git a/tools/testing/selftests/kcmp/Makefile b/tools/testing/selftests/kcmp/Makefile
-index 4f00c0524501..cda9cc4004c9 100644
+index 8aabd82db9e4..4f00c0524501 100644
 --- a/tools/testing/selftests/kcmp/Makefile
 +++ b/tools/testing/selftests/kcmp/Makefile
-@@ -1,21 +1,7 @@
--uname_M := $(shell uname -m 2>/dev/null || echo not)
--ARCH ?= $(shell echo $(uname_M) | sed -e s/i.86/i386/)
--ifeq ($(ARCH),i386)
--        ARCH := x86
--	CFLAGS := -DCONFIG_X86_32 -D__i386__
--endif
--ifeq ($(ARCH),x86_64)
--	ARCH := x86
--	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
--endif
+@@ -8,11 +8,7 @@ ifeq ($(ARCH),x86_64)
+ 	ARCH := x86
+ 	CFLAGS := -DCONFIG_X86_64 -D__x86_64__
+ endif
+-
+-CFLAGS += -I../../../../arch/x86/include/generated/
+-CFLAGS += -I../../../../include/
  CFLAGS += -I../../../../usr/include/
+-CFLAGS += -I../../../../arch/x86/include/
  
  all:
--ifeq ($(ARCH),x86)
- 	gcc $(CFLAGS) kcmp_test.c -o kcmp_test
--else
--	echo "Not an x86 target, can't build kcmp selftest"
--endif
- 
- run_tests: all
- 	@./kcmp_test || echo "kcmp_test: [FAIL]"
+ ifeq ($(ARCH),x86)
 -- 
 1.9.1
 
