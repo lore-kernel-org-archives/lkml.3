@@ -1,92 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaJWFPp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 01:15:45 -0400
-Received: from mga14.intel.com ([192.55.52.115]:43022 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102AbaJWFPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 01:15:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,773,1406617200"; 
-   d="scan'208";a="609767848"
-Message-ID: <1414041345.2380.3.camel@rzhang1-toshiba>
-Subject: Re: [GIT PULL] thermal-soc changes
-From: Zhang Rui <rui.zhang@intel.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 23 Oct 2014 13:15:45 +0800
-In-Reply-To: <20141021134941.GA4937@developer>
-References: <20141021134941.GA4937@developer>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1751734AbaJWFSj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 01:18:39 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:51988 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282AbaJWFSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 01:18:35 -0400
+Date: Wed, 22 Oct 2014 23:18:31 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <liviu@dudau.co.uk>
+Subject: Re: [PATCH v3 05/27] PCI: tegra: Save msi chip in pci_sys_data
+Message-ID: <20141023051831.GB11770@google.com>
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
+ <1413342435-7876-6-git-send-email-wangyijing@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413342435-7876-6-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 二, 2014-10-21 at 09:49 -0400, Eduardo Valentin wrote:
-> Hello Rui,
+On Wed, Oct 15, 2014 at 11:06:53AM +0800, Yijing Wang wrote:
+> Save msi chip in pci_sys_data instead of assign
+> msi chip to every pci bus in .add_bus().
 > 
-> Here are a couple of changes that are in my tree. They include:
-> - a few code refactoring improving the Exynos code base;
-> - new feature on the Exynos code base (TRIMINFO and TRIMRELOAD);
-> - a documentation of RCAR thermal; and
-> - a fix in the of-thermal, regarding the proper usage of of APIs.
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> ---
+>  drivers/pci/host/pci-tegra.c |   13 +++----------
+>  1 files changed, 3 insertions(+), 10 deletions(-)
 > 
-what's their target?
-please send me separate pull requests for different targets.
+> diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
+> index 3d43874..5af0525 100644
+> --- a/drivers/pci/host/pci-tegra.c
+> +++ b/drivers/pci/host/pci-tegra.c
+> @@ -694,15 +694,6 @@ static int tegra_pcie_map_irq(const struct pci_dev *pdev, u8 slot, u8 pin)
+>  	return irq;
+>  }
+>  
+> -static void tegra_pcie_add_bus(struct pci_bus *bus)
+> -{
+> -	if (IS_ENABLED(CONFIG_PCI_MSI)) {
+> -		struct tegra_pcie *pcie = sys_to_pcie(bus->sysdata);
+> -
+> -		bus->msi = &pcie->msi.chip;
+> -	}
+> -}
+> -
+>  static struct pci_bus *tegra_pcie_scan_bus(int nr, struct pci_sys_data *sys)
+>  {
+>  	struct tegra_pcie *pcie = sys_to_pcie(sys);
+> @@ -1881,11 +1872,13 @@ static int tegra_pcie_enable(struct tegra_pcie *pcie)
+>  
+>  	memset(&hw, 0, sizeof(hw));
+>  
+> +#ifdef CONFIG_PCI_MSI
+> +	hw.msi_chip = &pcie->msi.chip;
+> +#endif
 
-thanks,
-rui
-> They are based on your next branch.
-> 
-> BR,
-> 
-> Eduardo Valentin
-> 
-> The following changes since commit 6ceaf58abe25e86292152005c51169796bad3407:
-> 
->   Merge branch 'int340x-thermal' of .git into next (2014-10-17 14:30:58 +0800)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git next
-> 
-> for you to fetch changes up to df67e40f51398fef8dd705dfe4e287ad9b10ba4b:
-> 
->   thermal: fix multiple disbalanced device node counters (2014-10-21 08:05:50 -0400)
-> 
-> ----------------------------------------------------------------
-> Bartlomiej Zolnierkiewicz (9):
->       thermal: exynos: remove unused struct exynos_tmu_registers entries
->       thermal: exynos: remove dead code for HW_MODE calibration
->       thermal: exynos: remove redundant pdata checks from exynos_tmu_initialize()
->       thermal: exynos: remove redundant threshold_code checks from exynos_tmu_initialize()
->       thermal: exynos: simplify temp_to_code() and code_to_temp()
->       thermal: exynos: cache non_hw_trigger_levels in pdata
->       thermal: exynos: remove redundant pdata checks from exynos_tmu_control()
->       thermal: exynos: remove identical values from exynos*_tmu_registers structures
->       thermal: samsung: Exynos5260 and Exynos5420 should not use TRIM_RELOAD flag
-> 
-> Chanwoo Choi (2):
->       thermal: exynos: Add support for many TRIMINFO_CTRL registers
->       thermal: exynos: Add support for TRIM_RELOAD feature at Exynos3250
-> 
-> Geert Uytterhoeven (1):
->       thermal: rcar: Add binding docs for new R-Car Gen2 SoCs
-> 
-> Vladimir Zapolskiy (1):
->       thermal: fix multiple disbalanced device node counters
-> 
->  .../devicetree/bindings/thermal/rcar-thermal.txt   |   5 +-
->  drivers/thermal/of-thermal.c                       |  40 ++++--
->  drivers/thermal/samsung/exynos_thermal_common.h    |   2 +-
->  drivers/thermal/samsung/exynos_tmu.c               | 141 ++++++---------------
->  drivers/thermal/samsung/exynos_tmu.h               |  81 ++----------
->  drivers/thermal/samsung/exynos_tmu_data.c          |  83 ++++--------
->  drivers/thermal/samsung/exynos_tmu_data.h          |  39 +-----
->  7 files changed, 111 insertions(+), 280 deletions(-)
+Why did you use "#ifdef CONFIG_PCI_MSI" instead of the
+"IS_ENABLED(CONFIG_PCI_MSI)" used previously?
 
+It's true that CONFIG_PCI_MSI will never be a tristate symbol, so we don't
+really *need* the extra smarts of IS_ENABLED(), but I'm fairly sympathetic
+to James' argument [1] that we should just use IS_ENABLED() all the time
+because it's simpler overall.
 
+If you want to change the #ifdef to IS_ENABLED(), that should be a separate
+patch from your msi_chip change, and we can debate the merits of that by
+itself.
+
+[1] http://lkml.iu.edu//hypermail/linux/kernel/1204.3/00081.html
+
+>  	hw.nr_controllers = 1;
+>  	hw.private_data = (void **)&pcie;
+>  	hw.setup = tegra_pcie_setup;
+>  	hw.map_irq = tegra_pcie_map_irq;
+> -	hw.add_bus = tegra_pcie_add_bus;
+>  	hw.scan = tegra_pcie_scan_bus;
+>  	hw.ops = &tegra_pcie_ops;
+>  
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
