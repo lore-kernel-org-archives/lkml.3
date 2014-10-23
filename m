@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaJWPhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 11:37:35 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:43304 "EHLO e8.ny.us.ibm.com"
+	id S1754653AbaJWPjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 11:39:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57259 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850AbaJWPhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 11:37:34 -0400
-Date: Thu, 23 Oct 2014 08:33:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yanko Kaneti <yaneti@declera.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141023153333.GA19278@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAHA+R7OUHy8XFPoip5gPvr1uqwkxgKxoSMf_pSgB1aFx=XCs8g@mail.gmail.com>
- <8738aghtyj.fsf@x220.int.ebiederm.org>
- <20141022181135.GH4977@linux.vnet.ibm.com>
- <87d29kezby.fsf@x220.int.ebiederm.org>
- <20141022185511.GI4977@linux.vnet.ibm.com>
- <CA+5PVA56ajrBQ-C9orSb9-_qhMKe994QL2x0FcKbe6BYmaWFBw@mail.gmail.com>
- <20141022224032.GA1240@declera.com>
- <20141022232421.GN4977@linux.vnet.ibm.com>
- <1414044566.2031.1.camel@declera.com>
- <20141023122750.GP4977@linux.vnet.ibm.com>
+	id S1753019AbaJWPjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 11:39:42 -0400
+Date: Thu, 23 Oct 2014 17:39:32 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@au1.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/powerpc: Cache the DWARF debug info
+Message-ID: <20141023153932.GB25215@krava.brq.redhat.com>
+References: <20141021185610.GA18366@us.ibm.com>
+ <20141021190839.GA4160@kernel.org>
+ <20141022000958.GB2228@us.ibm.com>
+ <20141022081730.GB9860@krava.brq.redhat.com>
+ <20141022174659.GA5119@us.ibm.com>
+ <20141023133724.GE14687@kernel.org>
+ <20141023141213.GA24079@krava.brq.redhat.com>
+ <20141023142634.GF14687@kernel.org>
+ <20141023151306.GA25215@krava.brq.redhat.com>
+ <20141023153322.GH14687@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141023122750.GP4977@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102315-0029-0000-0000-000000DAE049
+In-Reply-To: <20141023153322.GH14687@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 05:27:50AM -0700, Paul E. McKenney wrote:
-> On Thu, Oct 23, 2014 at 09:09:26AM +0300, Yanko Kaneti wrote:
-> > On Wed, 2014-10-22 at 16:24 -0700, Paul E. McKenney wrote:
-> > > On Thu, Oct 23, 2014 at 01:40:32AM +0300, Yanko Kaneti wrote:
-> > > > On Wed-10/22/14-2014 15:33, Josh Boyer wrote:
-> > > > > On Wed, Oct 22, 2014 at 2:55 PM, Paul E. McKenney
-> > > > > <paulmck@linux.vnet.ibm.com> wrote:
-> > > 
-> > > [ . . . ]
-> > > 
-> > > > > > Don't get me wrong -- the fact that this kthread appears to 
-> > > > > > have
-> > > > > > blocked within rcu_barrier() for 120 seconds means that 
-> > > > > > something is
-> > > > > > most definitely wrong here.  I am surprised that there are no 
-> > > > > > RCU CPU
-> > > > > > stall warnings, but perhaps the blockage is in the callback 
-> > > > > > execution
-> > > > > > rather than grace-period completion.  Or something is 
-> > > > > > preventing this
-> > > > > > kthread from starting up after the wake-up callback executes.  
-> > > > > > Or...
-> > > > > > 
-> > > > > > Is this thing reproducible?
-> > > > > 
-> > > > > I've added Yanko on CC, who reported the backtrace above and can
-> > > > > recreate it reliably.  Apparently reverting the RCU merge commit
-> > > > > (d6dd50e) and rebuilding the latest after that does not show the
-> > > > > issue.  I'll let Yanko explain more and answer any questions you 
-> > > > > have.
-> > > > 
-> > > > - It is reproducible
-> > > > - I've done another build here to double check and its definitely 
-> > > > the rcu merge
-> > > >   that's causing it.
-> > > > 
-> > > > Don't think I'll be able to dig deeper, but I can do testing if 
-> > > > needed.
-> > > 
-> > > Please!  Does the following patch help?
-> > 
-> > Nope, doesn't seem to make a difference to the modprobe ppp_generic 
-> > test
+On Thu, Oct 23, 2014 at 12:33:22PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Oct 23, 2014 at 05:13:06PM +0200, Jiri Olsa escreveu:
+> > On Thu, Oct 23, 2014 at 11:26:34AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > That is why I thought it would be a compromise to put what he did, it
+> > > would not make the existing situation that much worse, work needs to be
+> > > done in this area :-\
+>  
+> > I think we just need to put that libdw handle into dso object
+> > as I suggested above
 > 
-> Well, I was hoping.  I will take a closer look at the RCU merge commit
-> and see what suggests itself.  I am likely to ask you to revert specific
-> commits, if that works for you.
+> Isn't it there already?
+> 
+> The patch does:
+> 
+> +++ b/tools/perf/util/dso.h
+> @@ -127,6 +127,7 @@ struct dso {
+>         const char       *long_name;
+>         u16              long_name_len;
+>         u16              short_name_len;
+> +       void            *dwfl;                  /* DWARF debug info */
+> 
+> 
+> ----------
+> 
+> What you want, on top of that, at a minimum, we somehow limit the number
+> of simultaneously dwfl_begin()'ed DSOs, right?
 
-Well, rather than reverting commits, could you please try testing the
-following commits?
+no, the patch is doing that.. as I wrote:
 
-11ed7f934cb8 (rcu: Make nocb leader kthreads process pending callbacks after spawning)
+---
+I think this can stay in 'struct dso' which is limited
+by that code you show below (dso__data_open code)
 
-73a860cd58a1 (rcu: Replace flush_signals() with WARN_ON(signal_pending()))
+I think we need just add generic functions that allocates/destroys
+the dwfl handle and lazy allocate&store this handle whenever it's
+needed and destroy it in dso__delete
+---
 
-c847f14217d5 (rcu: Avoid misordering in nocb_leader_wait())
+so just:
+  1) generic function to do the lazy allocation of dwlf handle
+  2) store the handle within dso object
+  3) destroy it in dso__delete
 
-	For whatever it is worth, I am guessing this one.
+the limitation for opened dso objects number should cover
+the dwlf limit
 
-a53dd6a65668 (rcutorture: Add RCU-tasks tests to default rcutorture list)
-
-	If any of the above fail, this one should also fail.
-
-Also, could you please send along your .config?
-
-							Thanx, Paul
-
+thanks,
+jirka
