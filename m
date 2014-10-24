@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186AbaJXJPi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 05:15:38 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55821 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaJXJPd (ORCPT
+	id S1755743AbaJXJQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 05:16:54 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37735 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaJXJQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 05:15:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <1414139071-3818-5-git-send-email-lftan@altera.com>
-References: <1414139071-3818-1-git-send-email-lftan@altera.com>
-	<1414139071-3818-5-git-send-email-lftan@altera.com>
-Date: Fri, 24 Oct 2014 11:15:30 +0200
-X-Google-Sender-Auth: zvmj_NeFzJbpkWq_Hg5R9yk4PzM
-Message-ID: <CAMuHMdVb8k_6zHm0deAWUKcKNfTpt2VL3RkJuv-99SCRwtUQEQ@mail.gmail.com>
-Subject: Re: [PATCH v5 04/29] nios2: Exception handling
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, LeyFoon Tan <lftan.linux@gmail.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 24 Oct 2014 05:16:52 -0400
+From: Juri Lelli <juri.lelli@arm.com>
+To: linux-kernel@vger.kernel.org, peterz@infradead.org
+Cc: juri.lelli@gmail.com, mingo@redhat.com, daniel.wagner@bmw-carit.de,
+        vincent@legout.info, Juri Lelli <juri.lelli@arm.com>
+Subject: [PATCH 0/4] Fix various bits of AC and PI for SCHED_DEADLINE
+Date: Fri, 24 Oct 2014 10:16:34 +0100
+Message-Id: <1414142198-18552-1-git-send-email-juri.lelli@arm.com>
+X-Mailer: git-send-email 2.1.2
+X-OriginalArrivalTime: 24 Oct 2014 09:16:49.0435 (UTC) FILETIME=[3DCBF6B0:01CFEF6B]
+X-MC-Unique: 114102410165006301
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id s9O9Gxa8022054
 
-On Fri, Oct 24, 2014 at 10:24 AM, Ley Foon Tan <lftan@altera.com> wrote:
-> --- /dev/null
-> +++ b/arch/nios2/kernel/entry.S
-> @@ -0,0 +1,559 @@
-> +/*
-> + * linux/arch/nios2/kernel/entry.S
-> + *
-> + * Copyright (C) 2013-2014  Altera Corporation
-> + * Copyright (C) 2009, Wind River Systems Inc
-> + *
-> + * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-> + *
-> + * Based on:
-> + *
-> + * linux/arch/nios2/kernel/entry.S
+Hi all,
 
-And here you did one s/m68k/nios2/ too much ;-)
+this is basically a resend of 4 patches fixing problems around AC
+and PI related to SCHED_DEADLINE. You can find the full story here:
 
-As this doesn't seem to come from a single file
-"Based on the various m68k entry.S files"?
+ - https://lkml.org/lkml/2014/9/19/134
+ - https://lkml.org/lkml/2014/9/24/493
 
-> + *  Copyright (C) 1999-2002, Greg Ungerer (gerg@snapgear.com)
-> + *  Copyright (C) 1998  D. Jeff Dionne <jeff@lineo.ca>,
-> + *                      Kenneth Albanowski <kjahds@kjahds.com>,
-> + *  Copyright (C) 2000  Lineo Inc. (www.lineo.com)
-> + *  Copyright (C) 2004  Microtronix Datacom Ltd.
-> + *
-> + * This file is subject to the terms and conditions of the GNU General Public
-> + * License.  See the file "COPYING" in the main directory of this archive
-> + * for more details.
-> + *
-> + * Linux/m68k support by Hamish Macdonald
-> + *
-> + * 68060 fixes by Jesper Skov
-> + * ColdFire support by Greg Ungerer (gerg@snapgear.com)
-> + * 5307 fixes by David W. Miller
-> + * linux 2.4 support David McCullough <davidm@snapgear.com>
+First two patches fix AC. They are the same as the previous version,
+plus aligning to commit f10e00f4bf36 ("sched/dl: Use dl_bw_of() under
+rcu_read_lock_sched()"). Last two fix PI.
 
-Gr{oetje,eeting}s,
+Thanks a lot again to Daniel for spending time fixing and testing
+the PI stuff! And to Peter and Vincent for reviews and comments.
 
-                        Geert
+Best Regards,
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+- Juri
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Juri Lelli (4):
+  sched/deadline: fix bandwidth check/update when migrating tasks
+    between exclusive cpusets
+  sched/deadline: ensure that updates to exclusive cpusets don't break
+    AC
+  sched/deadline: don't replenish from a !SCHED_DEADLINE entity
+  sched/deadline: fix races between rt_mutex_setprio and dl_task_timer
+
+ include/linux/sched.h   |  4 +++
+ kernel/cpuset.c         | 23 ++++++------
+ kernel/sched/core.c     | 94 +++++++++++++++++++++++++++++++++++++++----------
+ kernel/sched/deadline.c | 58 +++++++++++++++++++++++++-----
+ kernel/sched/sched.h    | 19 ++++++++++
+ 5 files changed, 160 insertions(+), 38 deletions(-)
+
+-- 
+2.1.2
+
+
