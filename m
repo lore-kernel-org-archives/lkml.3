@@ -1,118 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187AbaJXQRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 12:17:32 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56107 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756141AbaJXQRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 12:17:31 -0400
-Date: Fri, 24 Oct 2014 09:13:37 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        htejun@gmail.com
-Subject: Re: rcu_preempt detected stalls.
-Message-ID: <20141024161337.GQ4977@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141013173504.GA27955@redhat.com>
- <543DDD5E.9080602@oracle.com>
- <20141023183917.GX4977@linux.vnet.ibm.com>
- <54494F2F.6020005@oracle.com>
- <20141023195808.GB4977@linux.vnet.ibm.com>
- <544A45F8.2030207@oracle.com>
+	id S932653AbaJXQRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 12:17:35 -0400
+Received: from mail.windriver.com ([147.11.1.11]:51153 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932247AbaJXQRd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 12:17:33 -0400
+Message-ID: <544A7B9B.2030508@windriver.com>
+Date: Fri, 24 Oct 2014 10:17:31 -0600
+From: Chris Friesen <chris.friesen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544A45F8.2030207@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102416-0033-0000-0000-000000D507F6
+To: lkml <linux-kernel@vger.kernel.org>
+Subject: semantics of reader/writer semaphores in rt patch?
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.118.123]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 08:28:40AM -0400, Sasha Levin wrote:
-> On 10/23/2014 03:58 PM, Paul E. McKenney wrote:
-> > On Thu, Oct 23, 2014 at 02:55:43PM -0400, Sasha Levin wrote:
-> >> > On 10/23/2014 02:39 PM, Paul E. McKenney wrote:
-> >>> > > On Tue, Oct 14, 2014 at 10:35:10PM -0400, Sasha Levin wrote:
-> >>>> > >> On 10/13/2014 01:35 PM, Dave Jones wrote:
-> >>>>> > >>> oday in "rcu stall while fuzzing" news:
-> >>>>> > >>>
-> >>>>> > >>> INFO: rcu_preempt detected stalls on CPUs/tasks:
-> >>>>> > >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
-> >>>>> > >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
-> >>>>> > >>> 	(detected by 0, t=6502 jiffies, g=75434, c=75433, q=0)
-> >>>> > >>
-> >>>> > >> I've complained about RCU stalls couple days ago (in a different context)
-> >>>> > >> on -next. I guess whatever causing them made it into Linus's tree?
-> >>>> > >>
-> >>>> > >> https://lkml.org/lkml/2014/10/11/64
-> >>> > > 
-> >>> > > And on that one, I must confess that I don't see where the RCU read-side
-> >>> > > critical section might be.
-> >>> > > 
-> >>> > > Hmmm...  Maybe someone forgot to put an rcu_read_unlock() somewhere.
-> >>> > > Can you reproduce this with CONFIG_PROVE_RCU=y?
-> >> > 
-> >> > Paul, if that was directed to me - Yes, I see stalls with CONFIG_PROVE_RCU
-> >> > set and nothing else is showing up before/after that.
-> > Indeed it was directed to you.  ;-)
-> > 
-> > Does the following crude diagnostic patch turn up anything?
-> 
-> Nope, seeing stalls but not seeing that pr_err() you added.
 
-OK, color me confused.  Could you please send me the full dmesg or a
-pointer to it?
+I recently noticed that when CONFIG_PREEMPT_RT_FULL is enabled the 
+semantics change. From "include/linux/rwsem_rt.h":
 
-							Thanx, Paul
+  * Note that the semantics are different from the usual
+  * Linux rw-sems, in PREEMPT_RT mode we do not allow
+  * multiple readers to hold the lock at once, we only allow
+  * a read-lock owner to read-lock recursively. This is
+  * better for latency, makes the implementation inherently
+  * fair and makes it simpler as well.
 
-> [ 5107.395916] INFO: rcu_preempt detected stalls on CPUs/tasks:
-> [ 5107.395916]  0: (776 ticks this GP) idle=a8d/140000000000002/0 softirq=16356/16356 last_accelerate: f5b7/55e5, nonlazy_posted: 24252, ..
-> [ 5107.395916]  (detected by 1, t=20502 jiffies, g=13949, c=13948, q=0)
-> [ 5107.395916] Task dump for CPU 0:
-> [ 5107.395916] trinity-c0      R  running task    12848 20357   9041 0x0008000e
-> [ 5107.395916]  0000000000000000 ffff88006bfd76c0 ffff88065722b988 ffffffffa10af964
-> [ 5107.395916]  ffff88065722b998 ffffffffa106ad23 ffff88065722b9c8 ffffffffa119dce5
-> [ 5107.395916]  00000000001d76c0 ffff88006bfd76c0 00000000001d76c0 ffff8806473cbd10
-> [ 5107.395916] Call Trace:
-> [ 5107.395916]  [<ffffffffa10af964>] ? kvm_clock_read+0x24/0x40
-> [ 5107.395916]  [<ffffffffa106ad23>] ? sched_clock+0x13/0x30
-> [ 5107.395916]  [<ffffffffa119dce5>] ? sched_clock_local+0x25/0x90
-> [ 5107.395916]  [<ffffffffa1303dfb>] ? __slab_free+0xbb/0x3a0
-> [ 5107.395916]  [<ffffffffa1b71167>] ? debug_smp_processor_id+0x17/0x20
-> [ 5107.395916]  [<ffffffffa451cb64>] ? _raw_spin_unlock_irqrestore+0x64/0xa0
-> [ 5107.395916]  [<ffffffffa1303dfb>] ? __slab_free+0xbb/0x3a0
-> [ 5107.395916]  [<ffffffffa1b71bce>] ? __debug_check_no_obj_freed+0x10e/0x210
-> [ 5107.395916]  [<ffffffffa1305871>] ? kmem_cache_free+0xb1/0x4f0
-> [ 5107.395916]  [<ffffffffa1305883>] ? kmem_cache_free+0xc3/0x4f0
-> [ 5107.395916]  [<ffffffffa1305bb2>] ? kmem_cache_free+0x3f2/0x4f0
-> [ 5107.395916]  [<ffffffffa12e0cbe>] ? unlink_anon_vmas+0x10e/0x180
-> [ 5107.395916]  [<ffffffffa12e0cbe>] ? unlink_anon_vmas+0x10e/0x180
-> [ 5107.395916]  [<ffffffffa12cfbdf>] ? free_pgtables+0x3f/0x130
-> [ 5107.395916]  [<ffffffffa12dc1a4>] ? exit_mmap+0xc4/0x180
-> [ 5107.395916]  [<ffffffffa13143fe>] ? __khugepaged_exit+0xbe/0x120
-> [ 5107.395916]  [<ffffffffa115bbb3>] ? mmput+0x73/0x110
-> [ 5107.395916]  [<ffffffffa1162eb7>] ? do_exit+0x2c7/0xd30
-> [ 5107.395916]  [<ffffffffa1173fb9>] ? get_signal+0x3c9/0xaf0
-> [ 5107.395916]  [<ffffffffa1b71167>] ? debug_smp_processor_id+0x17/0x20
-> [ 5107.395916]  [<ffffffffa11bccbe>] ? put_lock_stats.isra.13+0xe/0x30
-> [ 5107.395916]  [<ffffffffa451c810>] ? _raw_spin_unlock_irq+0x30/0x70
-> [ 5107.395916]  [<ffffffffa11639c2>] ? do_group_exit+0x52/0xe0
-> [ 5107.395916]  [<ffffffffa1173ef6>] ? get_signal+0x306/0xaf0
-> [ 5107.395916]  [<ffffffffa119dce5>] ? sched_clock_local+0x25/0x90
-> [ 5107.395916]  [<ffffffffa105f2f0>] ? do_signal+0x20/0x130
-> [ 5107.395916]  [<ffffffffa1298558>] ? context_tracking_user_exit+0x78/0x2d0
-> [ 5107.395916]  [<ffffffffa1b71183>] ? __this_cpu_preempt_check+0x13/0x20
-> [ 5107.395916]  [<ffffffffa11c04cb>] ? trace_hardirqs_on_caller+0xfb/0x280
-> [ 5107.395916]  [<ffffffffa11c065d>] ? trace_hardirqs_on+0xd/0x10
-> [ 5107.395916]  [<ffffffffa105f469>] ? do_notify_resume+0x69/0xb0
-> [ 5107.395916]  [<ffffffffa451d74f>] ? int_signal+0x12/0x17
-> 
-> 
-> Thanks,
-> Sasha
-> 
+How is this valid? It seems to me that the mainline kernel could have 
+code paths that depend on having multiple threads of execution be able 
+to hold the reader lock simultaneously. For example:
 
+
+thread A:
+take rw_semaphore X for reading
+take lock Y, modify data, release lock Y
+wake up thread B
+wait on conditional protected by lock Y
+free rw_semaphore X
+
+thread B:
+take rw_semaphore X for reading
+wait on conditional protected by lock Y
+send message to wake up thread A
+free rw_semaphore X
+
+
+In the regular kernel this would work, in the RT kernel it would deadlock.
+
+Does the RT kernel just disallow this sort of algorithm?
+
+Thanks,
+Chris
