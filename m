@@ -1,130 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822AbaJXUxp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 16:53:45 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:38701 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754308AbaJXUxm (ORCPT
+	id S1754960AbaJXU6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 16:58:31 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46902 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753347AbaJXU6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 16:53:42 -0400
-Message-ID: <544ABC53.5030300@codeaurora.org>
-Date: Fri, 24 Oct 2014 13:53:39 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Gioh Kim <gioh.kim@lge.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>
-CC: devel@driverdev.osuosl.org, gunho.lee@lge.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFCv2 3/3] staging: ion: limit pool size
-References: <1414133248-639-1-git-send-email-gioh.kim@lge.com> <1414133248-639-4-git-send-email-gioh.kim@lge.com>
-In-Reply-To: <1414133248-639-4-git-send-email-gioh.kim@lge.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 24 Oct 2014 16:58:30 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>
+Date: Fri, 24 Oct 2014 21:58:15 +0100
+Message-Id: <1414184295-14260-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 2.1.1
+X-SA-Exim-Connect-IP: 94.174.112.79
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regulator: Return an error from stubbed regulator_get_exclusive()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The user hasn't got a regulator and shouldn't be mislead into thinking
+they have one; really we should probably remove this stub entirely (and
+may well before the next merge window).
 
-On 10/23/2014 11:47 PM, Gioh Kim wrote:
-> This patch limits pool size by page unit.
->
+Signed-off-by: Mark Brown <broonie@kernel.org>
+---
+ include/linux/regulator/consumer.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This looks useful. Might be nice to add a debugfs option
-to change this at runtime as well.
-
-> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> ---
->   drivers/staging/android/ion/Kconfig         |    4 ++++
->   drivers/staging/android/ion/ion_page_pool.c |   26 ++++++++++++++++----------
->   2 files changed, 20 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/staging/android/ion/Kconfig b/drivers/staging/android/ion/Kconfig
-> index 3452346..e6b1a54 100644
-> --- a/drivers/staging/android/ion/Kconfig
-> +++ b/drivers/staging/android/ion/Kconfig
-> @@ -33,3 +33,7 @@ config ION_TEGRA
->   	help
->   	  Choose this option if you wish to use ion on an nVidia Tegra.
->
-> +config ION_POOL_LIMIT
-> +	int "Limit count of pages in pool"
-> +	depends on ION
-> +	default "0"
-
-Can you add help text here? It would be useful to clarify that the
-units are in pages and that 0 will allow unlimited growth of the
-pool. This should also clarify that this is a limit per
-individual pool and not a limit for all page pools in the system.
-
-> diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-> index 165152f..d63e93f 100644
-> --- a/drivers/staging/android/ion/ion_page_pool.c
-> +++ b/drivers/staging/android/ion/ion_page_pool.c
-> @@ -22,8 +22,11 @@
->   #include <linux/module.h>
->   #include <linux/slab.h>
->   #include <linux/swap.h>
-> +#include <linux/kconfig.h>
->   #include "ion_priv.h"
->
-> +#define POOL_LIMIT CONFIG_ION_POOL_LIMIT
-> +
-
-I don't think the extra #define helps anything here, was
-there something else intended here?
-
->   static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
->   {
->   	struct page *page = alloc_pages(pool->gfp_mask, pool->order);
-> @@ -41,8 +44,21 @@ static void ion_page_pool_free_pages(struct ion_page_pool *pool,
->   	__free_pages(page, pool->order);
->   }
->
-> +static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
-> +{
-> +	int count = pool->low_count;
-> +
-> +	if (high)
-> +		count += pool->high_count;
-> +
-> +	return count << pool->order;
-> +}
-> +
->   static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
->   {
-> +	if (POOL_LIMIT && ion_page_pool_total(pool, 1) > POOL_LIMIT)
-> +		return 1;
-> +
->   	mutex_lock(&pool->mutex);
->   	if (PageHighMem(page)) {
->   		list_add_tail(&page->lru, &pool->high_items);
-> @@ -103,16 +119,6 @@ void ion_page_pool_free(struct ion_page_pool *pool, struct page *page)
->   		ion_page_pool_free_pages(pool, page);
->   }
->
-> -static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
-> -{
-> -	int count = pool->low_count;
-> -
-> -	if (high)
-> -		count += pool->high_count;
-> -
-> -	return count << pool->order;
-> -}
-> -
->   int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
->   				int nr_to_scan)
->   {
->
-
-Thanks,
-Laura
-
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index f540b14..3c4fad5 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -284,7 +284,7 @@ devm_regulator_get(struct device *dev, const char *id)
+ static inline struct regulator *__must_check
+ regulator_get_exclusive(struct device *dev, const char *id)
+ {
+-	return NULL;
++	return ERR_PTR(-ENODEV);
+ }
+ 
+ static inline struct regulator *__must_check
 -- 
-Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+2.1.1
+
