@@ -1,63 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280AbaJXTmw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 15:42:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34271 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729AbaJXTmu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 15:42:50 -0400
-Message-ID: <544AABB8.10302@codeaurora.org>
-Date: Fri, 24 Oct 2014 12:42:48 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755461AbaJXTni (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 15:43:38 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43215 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754745AbaJXTng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 15:43:36 -0400
+Date: Fri, 24 Oct 2014 14:42:50 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Johan Hovold <johan@kernel.org>
+CC: Felipe Balbi <balbi@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: remove redundant irq disable at halt and restart
+Message-ID: <20141024194250.GF11455@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414177592-14547-1-git-send-email-johan@kernel.org>
+ <20141024191627.GA11455@saruman>
+ <20141024192111.GC11455@saruman>
+ <20141024192845.GC19377@localhost>
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Andersson <bjorn@kryo.se>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-Subject: Re: [PATCH] genirq: Introduce irq_read_line()
-References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com> <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com> <alpine.DEB.2.11.1410211120430.5308@nanos>	<544628BF.8010809@arm.com> <CAJAp7OjpN-+S=OH1BW6Fcme9mp4qj8AsSNC3_41fhfpYzX-Shg@mail.gmail.com> <544A936D.5040409@arm.com>
-In-Reply-To: <544A936D.5040409@arm.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="E69HUUNAyIJqGpVn"
+Content-Disposition: inline
+In-Reply-To: <20141024192845.GC19377@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2014 10:59 AM, Marc Zyngier wrote:
-> Hi Bjorn,
->
-> On 24/10/14 18:31, Bjorn Andersson wrote:
->>
->> Stephen Boyd talked about the need to be able to mask/unmask interrupts from
->> client code in the Qualcomm platform as well - most likely to block wakeup
->> sources(?)
-> What's wrong with irq_disable?
+--E69HUUNAyIJqGpVn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The problem is irq_disable() is lazy and doesn't actually disable the
-interrupt.
+On Fri, Oct 24, 2014 at 09:28:45PM +0200, Johan Hovold wrote:
+> On Fri, Oct 24, 2014 at 02:21:11PM -0500, Felipe Balbi wrote:
+> > On Fri, Oct 24, 2014 at 02:16:27PM -0500, Felipe Balbi wrote:
+> > > On Fri, Oct 24, 2014 at 09:06:32PM +0200, Johan Hovold wrote:
+> > > > Remove redundant local_irq_disable() at machine halt and restart.
+> > > >=20
+> > > > Since commit 44424c34049f ("ARM: 7803/1: Fix deadlock scenario with
+> > > > smp_send_stop()") interrupts are disabled before stopping secondary
+> > > > CPUs.
+> > >=20
+> > > Assuming this is correct, you should have:
+> > >=20
+> > > Fixes: 44424c3 (ARM: 7803/1: Fix deadlock scenario with smp_send_stop=
+())
+> > > Cc: <stable@vger.kernel.org> # v3.12+
+>=20
+> It's not a bug. Just a redundant disabling of already disabled
+> interrupts, something which could possibly lead someone to believe that
+> interrupts could be re-enabled by the power-off handler.
 
-This is the scenario. During idle we want to communicate with another
-processor in the SoC and tell it to turn off something after we go to
-idle. The communication mechanism uses some shared memory and an
-interrupt to trigger the other processor to go look at what we told it
-to do. When the other processor is done handling the message it will
-send us an ack interrupt. We want to temporarily ignore that ack
-interrupt because 1) we're going to execute a wfi to trigger a deep idle
-and any pending interrupt will abort that instruction and 2) if the
-interrupt comes after we execute the wfi it will wake us up out of deep
-idle unnecessarily and waste power. There isn't anything in the
-communication protocol that says we don't want the interrupt to be sent
-and it would probably make things more complicated anyway. The solution
-is to mask the interrupt before we send the message, and then execute
-the wfi. Once we wake up, we unmask the interrupt and then handle the ack.
+I didn't dig any of this out but I'll assume you did :-) So I withdraw
+my comment ;-)
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+> > > > diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> > > > index a35f6ebbd2c2..5663ab57cf07 100644
+> > > > --- a/arch/arm/kernel/process.c
+> > > > +++ b/arch/arm/kernel/process.c
+> > > > @@ -195,7 +195,6 @@ void machine_halt(void)
+> > > >  	local_irq_disable();
+> > > >  	smp_send_stop();
+> > > > =20
+> > > > -	local_irq_disable();
+> > > >  	while (1);
+> > > >  }
+> > > > =20
+> > > > @@ -237,7 +236,6 @@ void machine_restart(char *cmd)
+> > > > =20
+> > > >  	/* Whoops - the platform was unable to reboot. Tell the user! */
+> > > >  	printk("Reboot failed -- System halted\n");
+> > > > -	local_irq_disable();
+> > >=20
+> > > ... but wouldn't this reintroduce the the buck which that commit fixe=
+d ?
+> >=20
+> > s/buck/bug :-) my fingers have a mind of their own, aparently.
+>=20
+> :)
+>=20
+> No, the interrupts would still be disabled.
 
+alright... so far I couldn't find where IRQs are disable before
+machine_power_off() is called. Starting a do_poweroff(), couldn't find
+it... Oh well, I'll keep digging.
+
+cheers
+
+--=20
+balbi
+
+--E69HUUNAyIJqGpVn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUSqu5AAoJEIaOsuA1yqREpWgP/RLu8bLHDu1TfYg36aXH9OJE
+rXeXZI6yP27SrzEzIIEoIPrqyrYxcyX0bo+n/T8dnB42jEdSgc/MbMkIAiS0Cu3q
+TDyzimTUAV/ys9Ngbq7cjhBguruubvAwG8YF/1ZIx3ic+0jaE3ee9OdP4OOeESdG
+GlQs3oLLfaasUP4XAWzDCJ0HoUAr6a0G+RNoSa0JFY/9cQsAQbOiu7Y19oAA93FC
+ugyfakc6DchzX6/O6ldo68SoEHlRA/JYiIg67m4vyAU06O7nC5SwOgKAUyu8IZhC
+DUKsbPMyKX+QHD95rfG2gJN/y7sk+QWti+ebOBcixJBT1QhXbdstCrCKQcl7wTnw
+7CHu7UBmcEAkTWlh2qjTCbvXra9f45XwLEOcW+YhR2MrDITSKvf7In2Tb2p6CKNl
+9PiZyqR/JBFhwgRb8iJqYAvLxRaLzBAHMLmRsE5tDsoOjPhTLj+TRd5Og5CtWLt2
+FCc6yNce5kWngDA9oRoTFoqttEABy8OSA8YxxeLVinJfBo/sGuZSOHWdKvNY9Anz
+i/5UsJ581ax8/WVl6aambOJVdXypKnG+xIu7br3yw3jQiM9KsRQuMkTQJB7LShAu
+J2dStRQ1IjrXRENK3QmrdpNTejzvtRnVnwO6Fx/iEqxJlNVg+aM7lCfnXkbdnFNc
+XkogukZWf1V9NNRvlxWO
+=rH5H
+-----END PGP SIGNATURE-----
+
+--E69HUUNAyIJqGpVn--
