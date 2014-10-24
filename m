@@ -1,594 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaJXBD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 21:03:26 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:57745 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152AbaJXBDX (ORCPT
+	id S1752971AbaJXBHs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 21:07:48 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:54717 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaJXBHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 21:03:23 -0400
+	Thu, 23 Oct 2014 21:07:47 -0400
+X-Original-SENDERIP: 10.177.222.33
+X-Original-MAILFROM: byungchul.park@lge.com
+Date: Fri, 24 Oct 2014 10:07:42 +0900
+From: Byungchul Park <byungchul.park@lge.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: rostedt@goodmis.org, mingo@redhat.com, jolsa@redhat.com,
+        vanilla@blackduck.lge.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tracing, function_graph: fix micro seconds notation
+ in comment
+Message-ID: <20141024010742.GB18008@byungchulpark-X58A-UD3R>
+References: <1414052242-9828-1-git-send-email-byungchul.park@lge.com>
+ <1414052242-9828-2-git-send-email-byungchul.park@lge.com>
+ <87fveee2tg.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-In-Reply-To: <20141016163703.GE1392@mail.hallyn.com>
-References: <1413235430-22944-1-git-send-email-adityakali@google.com>
- <1413235430-22944-6-git-send-email-adityakali@google.com> <20141016163703.GE1392@mail.hallyn.com>
-From: Aditya Kali <adityakali@google.com>
-Date: Thu, 23 Oct 2014 18:03:01 -0700
-Message-ID: <CAGr1F2E0VdBafZg6P2yeP6bgxsMEm53fEuT29HTLygTKobgi-w@mail.gmail.com>
-Subject: Re: [PATCHv1 5/8] cgroup: introduce cgroup namespaces
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Andy Lutomirski <luto@amacapital.net>, cgroups@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87fveee2tg.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I will include the suggested changes in the new patchset. Some comments inline.
+On Fri, Oct 24, 2014 at 09:20:11AM +0900, Namhyung Kim wrote:
+> Hi Byungchul,
+> 
+> On Thu, 23 Oct 2014 17:17:21 +0900, byungchul park wrote:
+> > From: Byungchul Park <byungchul.park@lge.com>
+> >
+> > Usually, "msecs" notation means milli-seconds, and "usecs" notation
+> > means micro-seconds. Since the unit used in the code is
+> > micro-seconds, the notation should be replaced from msecs to usecs.
+> > This confusing notation prevents us from understanding the code
+> > correctly.
+> >
+> > Signed-off-by: Byungchul Park <byungchul.park@lge.com>
+> > ---
+> >  kernel/trace/trace_functions_graph.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+> > index f0a0c98..c18a1e3 100644
+> > --- a/kernel/trace/trace_functions_graph.c
+> > +++ b/kernel/trace/trace_functions_graph.c
+> > @@ -822,10 +822,10 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
+> >  
+> >  	/* Signal a overhead of time execution to the output */
+> >  	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
+> > -		/* Duration exceeded 100 msecs */
+> > +		/* Duration exceeded 100 usecs */
+> >  		if (duration > 100000ULL)
+> >  			ret = trace_seq_puts(s, "! ");
+> > -		/* Duration exceeded 10 msecs */
+> > +		/* Duration exceeded 10 usecs */
+> >  		else if (duration > 10000ULL)
+> 
+> I thought the duration was in usec, but it seems not, it's in nsec, hmm.
+> Then this exceeding 10/100 usec is not meaningful - what about increaing
+> numbers in the conditional so that it can match to the comment?  That
+> will eliminate the need of the patch 2.
 
-On Thu, Oct 16, 2014 at 9:37 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> Quoting Aditya Kali (adityakali@google.com):
->> Introduce the ability to create new cgroup namespace. The newly created
->> cgroup namespace remembers the 'struct cgroup *root_cgrp' at the point
->> of creation of the cgroup namespace. The task that creates the new
->> cgroup namespace and all its future children will now be restricted only
->> to the cgroup hierarchy under this root_cgrp.
->> The main purpose of cgroup namespace is to virtualize the contents
->> of /proc/self/cgroup file. Processes inside a cgroup namespace
->> are only able to see paths relative to their namespace root.
->> This allows container-tools (like libcontainer, lxc, lmctfy, etc.)
->> to create completely virtualized containers without leaking system
->> level cgroup hierarchy to the task.
->> This patch only implements the 'unshare' part of the cgroupns.
->>
->> Signed-off-by: Aditya Kali <adityakali@google.com>
->
-> I'm not sure that the CONFIG_CGROUP_NS is worthwhile.  If you already
-> have cgroups in the kernel this won't add much in the way of memory
-> usage, right?  And I think the 'experimental' argument has long since
-> been squashed.  So I'd argue for simplifying this patch by removing
-> CONFIG_CGROUP_NS.
->
+The approach you suggested also looks good to me. But I just wonder if it
+would be ok even if it changes meaning of the marks, "!", "+", because the
+marks have used with the meaning of exceeding 10/100 usec until now.
 
-With no pinning involved, I think its safe to enable the feature
-without needing a config option. Removed it from next version. This
-feature is now implicitly available with CONFIG_CGROUPS.
+Isn't there anything wrong with increasing numbers in the conditions? :)
 
-> (more below)
->
->> ---
->>  fs/proc/namespaces.c             |   3 +
->>  include/linux/cgroup.h           |  18 +++++-
->>  include/linux/cgroup_namespace.h |  62 +++++++++++++++++++
->>  include/linux/nsproxy.h          |   2 +
->>  include/linux/proc_ns.h          |   4 ++
->>  init/Kconfig                     |   9 +++
->>  kernel/Makefile                  |   1 +
->>  kernel/cgroup.c                  |  11 ++++
->>  kernel/cgroup_namespace.c        | 128 +++++++++++++++++++++++++++++++++++++++
->>  kernel/fork.c                    |   2 +-
->>  kernel/nsproxy.c                 |  19 +++++-
->>  11 files changed, 255 insertions(+), 4 deletions(-)
->>
->> diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
->> index 8902609..e04ed4b 100644
->> --- a/fs/proc/namespaces.c
->> +++ b/fs/proc/namespaces.c
->> @@ -32,6 +32,9 @@ static const struct proc_ns_operations *ns_entries[] = {
->>       &userns_operations,
->>  #endif
->>       &mntns_operations,
->> +#ifdef CONFIG_CGROUP_NS
->> +     &cgroupns_operations,
->> +#endif
->>  };
->>
->>  static const struct file_operations ns_file_operations = {
->> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
->> index 4a0eb2d..aa86495 100644
->> --- a/include/linux/cgroup.h
->> +++ b/include/linux/cgroup.h
->> @@ -22,6 +22,8 @@
->>  #include <linux/seq_file.h>
->>  #include <linux/kernfs.h>
->>  #include <linux/wait.h>
->> +#include <linux/nsproxy.h>
->> +#include <linux/types.h>
->>
->>  #ifdef CONFIG_CGROUPS
->>
->> @@ -460,6 +462,13 @@ struct cftype {
->>  #endif
->>  };
->>
->> +struct cgroup_namespace {
->> +     atomic_t                count;
->> +     unsigned int            proc_inum;
->> +     struct user_namespace   *user_ns;
->> +     struct cgroup           *root_cgrp;
->> +};
->> +
->>  extern struct cgroup_root cgrp_dfl_root;
->>  extern struct css_set init_css_set;
->>
->> @@ -584,10 +593,17 @@ static inline int cgroup_name(struct cgroup *cgrp, char *buf, size_t buflen)
->>       return kernfs_name(cgrp->kn, buf, buflen);
->>  }
->>
->> +static inline char * __must_check cgroup_path_ns(struct cgroup_namespace *ns,
->> +                                              struct cgroup *cgrp, char *buf,
->> +                                              size_t buflen)
->> +{
->> +     return kernfs_path_from_node(ns->root_cgrp->kn, cgrp->kn, buf, buflen);
->> +}
->> +
->>  static inline char * __must_check cgroup_path(struct cgroup *cgrp, char *buf,
->>                                             size_t buflen)
->>  {
->> -     return kernfs_path(cgrp->kn, buf, buflen);
->> +     return cgroup_path_ns(current->nsproxy->cgroup_ns, cgrp, buf, buflen);
->>  }
->>
->>  static inline void pr_cont_cgroup_name(struct cgroup *cgrp)
->> diff --git a/include/linux/cgroup_namespace.h b/include/linux/cgroup_namespace.h
->> new file mode 100644
->> index 0000000..9f637fe
->> --- /dev/null
->> +++ b/include/linux/cgroup_namespace.h
->> @@ -0,0 +1,62 @@
->> +#ifndef _LINUX_CGROUP_NAMESPACE_H
->> +#define _LINUX_CGROUP_NAMESPACE_H
->> +
->> +#include <linux/nsproxy.h>
->> +#include <linux/cgroup.h>
->> +#include <linux/types.h>
->> +#include <linux/user_namespace.h>
->> +
->> +extern struct cgroup_namespace init_cgroup_ns;
->> +
->> +static inline struct cgroup *task_cgroupns_root(struct task_struct *tsk)
->> +{
->> +     return tsk->nsproxy->cgroup_ns->root_cgrp;
->
-> Per the rules in nsproxy.h, you should be taking the task_lock here.
->
-> (If you are making assumptions about tsk then you need to state them
-> here - I only looked quickly enough that you pass in 'leader')
->
+> 
+> Also I think msecs_str in trace_print_graph_duration() should be renamed
+> to usecs_str.
 
-In the new version of the patch, we call this function only for the
-'current' task. As per nsproxy.h, no special precautions needed when
-reading current task's nsproxy. So I just remodeled this function into
-"current_cgroupns_root(void)".
+I agree. It should be also renamed. Such words made me hard to understand
+the code correctly. :(
 
->> +}
->> +
->> +#ifdef CONFIG_CGROUP_NS
->> +
->> +extern void free_cgroup_ns(struct cgroup_namespace *ns);
->> +
->> +static inline struct cgroup_namespace *get_cgroup_ns(
->> +             struct cgroup_namespace *ns)
->> +{
->> +     if (ns)
->> +             atomic_inc(&ns->count);
->> +     return ns;
->> +}
->> +
->> +static inline void put_cgroup_ns(struct cgroup_namespace *ns)
->> +{
->> +     if (ns && atomic_dec_and_test(&ns->count))
->> +             free_cgroup_ns(ns);
->> +}
->> +
->> +extern struct cgroup_namespace *copy_cgroup_ns(unsigned long flags,
->> +                                            struct user_namespace *user_ns,
->> +                                            struct cgroup_namespace *old_ns);
->> +
->> +#else  /* CONFIG_CGROUP_NS */
->> +
->> +static inline struct cgroup_namespace *get_cgroup_ns(
->> +             struct cgroup_namespace *ns)
->> +{
->> +     return &init_cgroup_ns;
->> +}
->> +
->> +static inline void put_cgroup_ns(struct cgroup_namespace *ns)
->> +{
->> +}
->> +
->> +static inline struct cgroup_namespace *copy_cgroup_ns(
->> +             unsigned long flags,
->> +             struct user_namespace *user_ns,
->> +             struct cgroup_namespace *old_ns) {
->> +     if (flags & CLONE_NEWCGROUP)
->> +             return ERR_PTR(-EINVAL);
->> +
->> +     return old_ns;
->> +}
->> +
->> +#endif  /* CONFIG_CGROUP_NS */
->> +
->> +#endif  /* _LINUX_CGROUP_NAMESPACE_H */
->> diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
->> index 35fa08f..ac0d65b 100644
->> --- a/include/linux/nsproxy.h
->> +++ b/include/linux/nsproxy.h
->> @@ -8,6 +8,7 @@ struct mnt_namespace;
->>  struct uts_namespace;
->>  struct ipc_namespace;
->>  struct pid_namespace;
->> +struct cgroup_namespace;
->>  struct fs_struct;
->>
->>  /*
->> @@ -33,6 +34,7 @@ struct nsproxy {
->>       struct mnt_namespace *mnt_ns;
->>       struct pid_namespace *pid_ns_for_children;
->>       struct net           *net_ns;
->> +     struct cgroup_namespace *cgroup_ns;
->>  };
->>  extern struct nsproxy init_nsproxy;
->>
->> diff --git a/include/linux/proc_ns.h b/include/linux/proc_ns.h
->> index 34a1e10..e56dd73 100644
->> --- a/include/linux/proc_ns.h
->> +++ b/include/linux/proc_ns.h
->> @@ -6,6 +6,8 @@
->>
->>  struct pid_namespace;
->>  struct nsproxy;
->> +struct task_struct;
->> +struct inode;
->>
->>  struct proc_ns_operations {
->>       const char *name;
->> @@ -27,6 +29,7 @@ extern const struct proc_ns_operations ipcns_operations;
->>  extern const struct proc_ns_operations pidns_operations;
->>  extern const struct proc_ns_operations userns_operations;
->>  extern const struct proc_ns_operations mntns_operations;
->> +extern const struct proc_ns_operations cgroupns_operations;
->>
->>  /*
->>   * We always define these enumerators
->> @@ -37,6 +40,7 @@ enum {
->>       PROC_UTS_INIT_INO       = 0xEFFFFFFEU,
->>       PROC_USER_INIT_INO      = 0xEFFFFFFDU,
->>       PROC_PID_INIT_INO       = 0xEFFFFFFCU,
->> +     PROC_CGROUP_INIT_INO    = 0xEFFFFFFBU,
->>  };
->>
->>  #ifdef CONFIG_PROC_FS
->> diff --git a/init/Kconfig b/init/Kconfig
->> index e84c642..c3be001 100644
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -1144,6 +1144,15 @@ config DEBUG_BLK_CGROUP
->>       Enable some debugging help. Currently it exports additional stat
->>       files in a cgroup which can be useful for debugging.
->>
->> +config CGROUP_NS
->> +     bool "CGroup Namespaces"
->> +     default n
->> +     help
->> +       This options enables CGroup Namespaces which can be used to isolate
->> +       cgroup paths. This feature is only useful when unified cgroup
->> +       hierarchy is in use (i.e. cgroups are mounted with sane_behavior
->> +       option).
->> +
->>  endif # CGROUPS
->>
->>  config CHECKPOINT_RESTORE
->> diff --git a/kernel/Makefile b/kernel/Makefile
->> index dc5c775..75334f8 100644
->> --- a/kernel/Makefile
->> +++ b/kernel/Makefile
->> @@ -51,6 +51,7 @@ obj-$(CONFIG_KEXEC) += kexec.o
->>  obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
->>  obj-$(CONFIG_COMPAT) += compat.o
->>  obj-$(CONFIG_CGROUPS) += cgroup.o
->> +obj-$(CONFIG_CGROUP_NS) += cgroup_namespace.o
->>  obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
->>  obj-$(CONFIG_CPUSETS) += cpuset.o
->>  obj-$(CONFIG_UTS_NS) += utsname.o
->> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
->> index 2b3e9f9..f8099b4 100644
->> --- a/kernel/cgroup.c
->> +++ b/kernel/cgroup.c
->> @@ -57,6 +57,8 @@
->>  #include <linux/vmalloc.h> /* TODO: replace with more sophisticated array */
->>  #include <linux/kthread.h>
->>  #include <linux/delay.h>
->> +#include <linux/proc_ns.h>
->> +#include <linux/cgroup_namespace.h>
->>
->>  #include <linux/atomic.h>
->>
->> @@ -195,6 +197,15 @@ static void kill_css(struct cgroup_subsys_state *css);
->>  static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
->>                             bool is_add);
->>
->> +struct cgroup_namespace init_cgroup_ns = {
->> +     .count = {
->> +             .counter = 1,
->> +     },
->> +     .proc_inum = PROC_CGROUP_INIT_INO,
->> +     .user_ns = &init_user_ns,
->
-> This might mean that you should bump the init_user_ns refcount.
->
-
-Humm. Doesn't look like all other namespaces are doing it though (ex:
-init_pid_ns or init_ipc_ns). The initial count in init_user_ns is set
-to 3 which only accounts for some current users, but not all. I will
-increment it for init_cgroup_ns nevertheless (in cgroup_init()).
-
->> +     .root_cgrp = &cgrp_dfl_root.cgrp,
->> +};
->> +
->>  /* IDR wrappers which synchronize using cgroup_idr_lock */
->>  static int cgroup_idr_alloc(struct idr *idr, void *ptr, int start, int end,
->>                           gfp_t gfp_mask)
->> diff --git a/kernel/cgroup_namespace.c b/kernel/cgroup_namespace.c
->> new file mode 100644
->> index 0000000..c16604f
->> --- /dev/null
->> +++ b/kernel/cgroup_namespace.c
->> @@ -0,0 +1,128 @@
->> +
->> +#include <linux/cgroup.h>
->> +#include <linux/cgroup_namespace.h>
->> +#include <linux/sched.h>
->> +#include <linux/slab.h>
->> +#include <linux/nsproxy.h>
->> +#include <linux/proc_ns.h>
->> +
->> +static struct cgroup_namespace *alloc_cgroup_ns(void)
->> +{
->> +     struct cgroup_namespace *new_ns;
->> +
->> +     new_ns = kmalloc(sizeof(struct cgroup_namespace), GFP_KERNEL);
->> +     if (new_ns)
->> +             atomic_set(&new_ns->count, 1);
->> +     return new_ns;
->> +}
->> +
->> +void free_cgroup_ns(struct cgroup_namespace *ns)
->> +{
->> +     cgroup_put(ns->root_cgrp);
->> +     put_user_ns(ns->user_ns);
->
-> This is a problem on error patch in copy_cgroup_ns.  The
-> alloc_cgroup_ns() doesn't initialize these values, so if
-> you should fail in proc_alloc_inum() you'll show up here
-> with fandom values in ns->*.
->
-
-I don't see the codepath that leads to calling free_cgroup_ns() with
-uninitialized members. We don't call free_cgroup_ns() on the error
-path in copy_cgroup_ns().
-
->> +     proc_free_inum(ns->proc_inum);
-
-BTW, I was missing the actual kfree(ns) here. Added it.
-
->> +}
->> +EXPORT_SYMBOL(free_cgroup_ns);
->> +
->> +struct cgroup_namespace *copy_cgroup_ns(unsigned long flags,
->> +                                     struct user_namespace *user_ns,
->> +                                     struct cgroup_namespace *old_ns)
->> +{
->> +     struct cgroup_namespace *new_ns = NULL;
->> +     struct cgroup *cgrp = NULL;
->> +     int err;
->> +
->> +     BUG_ON(!old_ns);
->> +
->> +     if (!(flags & CLONE_NEWCGROUP))
->> +             return get_cgroup_ns(old_ns);
->> +
->> +     /* Allow only sysadmin to create cgroup namespace. */
->> +     err = -EPERM;
->> +     if (!ns_capable(user_ns, CAP_SYS_ADMIN))
->> +             goto err_out;
->> +
->> +     /* Prevent cgroup changes for this task. */
->> +     threadgroup_lock(current);
->> +
->> +     cgrp = get_task_cgroup(current);
->> +
->> +     /* Creating new CGROUPNS is supported only when unified hierarchy is in
->> +      * use. */
->
-> Oh, drat.  Well, I'll take, it, but under protest  :)
->
-
-Actually, I realized that this comment and the check below is bogus.
-The 'get_task_cgroup(current)' always only returns the cgroup on the
-default hierarchy. And so, the check below is unnecessary.
-What this comment should really say is that cgroup namespace only
-virtualizes the cgroup path for the default(unified) hierarchy. Its
-fine if you have other hierarchies mounted too. Just that for those
-hierarchies, full (non-virtualized) cgroup path will be visible in
-/proc/self/cgroup. So cgroupns won't help there.
-
-I have updated the comment in the new version of the patch.
-
->> +     err = -EINVAL;
->> +     if (!cgroup_on_dfl(cgrp))
->> +             goto err_out_unlock;
->> +
->> +     err = -ENOMEM;
->> +     new_ns = alloc_cgroup_ns();
->> +     if (!new_ns)
->> +             goto err_out_unlock;
->> +
->> +     err = proc_alloc_inum(&new_ns->proc_inum);
->> +     if (err)
->> +             goto err_out_unlock;
->> +
->> +     new_ns->user_ns = get_user_ns(user_ns);
->> +     new_ns->root_cgrp = cgrp;
->> +
->> +     threadgroup_unlock(current);
->> +
->> +     return new_ns;
->> +
->> +err_out_unlock:
->> +     threadgroup_unlock(current);
->> +err_out:
->> +     if (cgrp)
->> +             cgroup_put(cgrp);
->> +     kfree(new_ns);
->> +     return ERR_PTR(err);
->> +}
->> +
->> +static int cgroupns_install(struct nsproxy *nsproxy, void *ns)
->> +{
->> +     pr_info("setns not supported for cgroup namespace");
->> +     return -EINVAL;
->> +}
->> +
->> +static void *cgroupns_get(struct task_struct *task)
->> +{
->> +     struct cgroup_namespace *ns = NULL;
->> +     struct nsproxy *nsproxy;
->> +
->> +     rcu_read_lock();
->> +     nsproxy = task->nsproxy;
->> +     if (nsproxy) {
->> +             ns = nsproxy->cgroup_ns;
->> +             get_cgroup_ns(ns);
->> +     }
->> +     rcu_read_unlock();
->> +
->> +     return ns;
->> +}
->> +
->> +static void cgroupns_put(void *ns)
->> +{
->> +     put_cgroup_ns(ns);
->> +}
->> +
->> +static unsigned int cgroupns_inum(void *ns)
->> +{
->> +     struct cgroup_namespace *cgroup_ns = ns;
->> +
->> +     return cgroup_ns->proc_inum;
->> +}
->> +
->> +const struct proc_ns_operations cgroupns_operations = {
->> +     .name           = "cgroup",
->> +     .type           = CLONE_NEWCGROUP,
->> +     .get            = cgroupns_get,
->> +     .put            = cgroupns_put,
->> +     .install        = cgroupns_install,
->> +     .inum           = cgroupns_inum,
->> +};
->> +
->> +static __init int cgroup_namespaces_init(void)
->> +{
->> +     return 0;
->> +}
->> +subsys_initcall(cgroup_namespaces_init);
->> diff --git a/kernel/fork.c b/kernel/fork.c
->> index 0cf9cdb..cc06851 100644
->> --- a/kernel/fork.c
->> +++ b/kernel/fork.c
->> @@ -1790,7 +1790,7 @@ static int check_unshare_flags(unsigned long unshare_flags)
->>       if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
->>                               CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
->>                               CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET|
->> -                             CLONE_NEWUSER|CLONE_NEWPID))
->> +                             CLONE_NEWUSER|CLONE_NEWPID|CLONE_NEWCGROUP))
->>               return -EINVAL;
->>       /*
->>        * Not implemented, but pretend it works if there is nothing to
->> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
->> index ef42d0a..a8b1970 100644
->> --- a/kernel/nsproxy.c
->> +++ b/kernel/nsproxy.c
->> @@ -25,6 +25,7 @@
->>  #include <linux/proc_ns.h>
->>  #include <linux/file.h>
->>  #include <linux/syscalls.h>
->> +#include <linux/cgroup_namespace.h>
->>
->>  static struct kmem_cache *nsproxy_cachep;
->>
->> @@ -39,6 +40,7 @@ struct nsproxy init_nsproxy = {
->>  #ifdef CONFIG_NET
->>       .net_ns                 = &init_net,
->>  #endif
->> +     .cgroup_ns              = &init_cgroup_ns,
->>  };
->>
->>  static inline struct nsproxy *create_nsproxy(void)
->> @@ -92,6 +94,13 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
->>               goto out_pid;
->>       }
->>
->> +     new_nsp->cgroup_ns = copy_cgroup_ns(flags, user_ns,
->> +                                         tsk->nsproxy->cgroup_ns);
->> +     if (IS_ERR(new_nsp->cgroup_ns)) {
->> +             err = PTR_ERR(new_nsp->cgroup_ns);
->> +             goto out_cgroup;
->> +     }
->> +
->>       new_nsp->net_ns = copy_net_ns(flags, user_ns, tsk->nsproxy->net_ns);
->>       if (IS_ERR(new_nsp->net_ns)) {
->>               err = PTR_ERR(new_nsp->net_ns);
->> @@ -101,6 +110,9 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
->>       return new_nsp;
->>
->>  out_net:
->> +     if (new_nsp->cgroup_ns)
->> +             put_cgroup_ns(new_nsp->cgroup_ns);
->> +out_cgroup:
->>       if (new_nsp->pid_ns_for_children)
->>               put_pid_ns(new_nsp->pid_ns_for_children);
->>  out_pid:
->> @@ -128,7 +140,8 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
->>       struct nsproxy *new_ns;
->>
->>       if (likely(!(flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
->> -                           CLONE_NEWPID | CLONE_NEWNET)))) {
->> +                           CLONE_NEWPID | CLONE_NEWNET |
->> +                           CLONE_NEWCGROUP)))) {
->>               get_nsproxy(old_ns);
->>               return 0;
->>       }
->> @@ -165,6 +178,8 @@ void free_nsproxy(struct nsproxy *ns)
->>               put_ipc_ns(ns->ipc_ns);
->>       if (ns->pid_ns_for_children)
->>               put_pid_ns(ns->pid_ns_for_children);
->> +     if (ns->cgroup_ns)
->> +             put_cgroup_ns(ns->cgroup_ns);
->>       put_net(ns->net_ns);
->>       kmem_cache_free(nsproxy_cachep, ns);
->>  }
->> @@ -180,7 +195,7 @@ int unshare_nsproxy_namespaces(unsigned long unshare_flags,
->>       int err = 0;
->>
->>       if (!(unshare_flags & (CLONE_NEWNS | CLONE_NEWUTS | CLONE_NEWIPC |
->> -                            CLONE_NEWNET | CLONE_NEWPID)))
->> +                            CLONE_NEWNET | CLONE_NEWPID | CLONE_NEWCGROUP)))
->>               return 0;
->>
->>       user_ns = new_cred ? new_cred->user_ns : current_user_ns();
->> --
->> 2.1.0.rc2.206.gedb03e5
->>
->> _______________________________________________
->> Containers mailing list
->> Containers@lists.linux-foundation.org
->> https://lists.linuxfoundation.org/mailman/listinfo/containers
-
-
-Thanks for the review!
--- 
-Aditya
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> >  			ret = trace_seq_puts(s, "+ ");
+> >  	}
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
