@@ -1,184 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078AbaJXReU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:34:20 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:56852 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756580AbaJXReS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:34:18 -0400
-From: Ravindra Kumar <ravindrakumar@vmware.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Steve French <smfrench@gmail.com>
-CC: "balbi@ti.com" <balbi@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Alok Kataria <akataria@vmware.com>
-Subject: RE: current mainline doesn't boot on VWware platform
-Thread-Topic: current mainline doesn't boot on VWware platform
-Thread-Index: AQHP76W1JzKRPeg+00yQ1GILAboUdZw/gPoA
-Date: Fri, 24 Oct 2014 17:34:15 +0000
-Message-ID: <779999aedd3844bd9ad60abf0941721c@EX13-MBX-026.vmware.com>
-References: <CAH2r5mvBOJHLbRXHMt50E97_1E2Q8F_=PH9=u6N3yuuqSQVmDg@mail.gmail.com>
- <20141017234445.GA28891@saruman>
- <CAH2r5mtsh9KsVYJJWebJffvdQxOVTzM4cNM30q8hYOG=Bwj8eA@mail.gmail.com>
- <CAH2r5msu+=8Ae_OCP92oRT1UnybBBYLKpx-YbVUe8hhifxouaA@mail.gmail.com>
- <CAH2r5mtORD1K-L49cNJaAFb1=ZRvS7JjQ5fba+SLedHaSYdnBg@mail.gmail.com>
- <20141024161354.GB19933@dtor-ws>
-In-Reply-To: <20141024161354.GB19933@dtor-ws>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.113.160.246]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757109AbaJXRf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:35:29 -0400
+Received: from mail.declera.com ([87.118.141.5]:58987 "HELO mail.declera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756211AbaJXRf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 13:35:28 -0400
+Date: Fri, 24 Oct 2014 20:35:26 +0300
+From: Yanko Kaneti <yaneti@declera.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        jay.vosburgh@canonical.com, mroos@linux.ee
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141024173526.GA26058@declera.com>
+References: <20141023195159.GA2331@declera.com>
+ <20141023200507.GC4977@linux.vnet.ibm.com>
+ <1414100740.2065.2.camel@declera.com>
+ <20141023220406.GJ4977@linux.vnet.ibm.com>
+ <20141024090857.GA4083@declera.com>
+ <20141024154006.GP4977@linux.vnet.ibm.com>
+ <20141024162943.GA16621@declera.com>
+ <20141024165454.GS4977@linux.vnet.ibm.com>
+ <20141024170931.GA21849@declera.com>
+ <20141024172009.GV4977@linux.vnet.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141024172009.GV4977@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas, could it be same as https://bugs.freedesktop.org/show_bug.cgi?id=80645 again?
-
------Original Message-----
-From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com] 
-Sent: Friday, October 24, 2014 9:14 AM
-To: Steve French
-Cc: balbi@ti.com; LKML; Ravindra Kumar; Thomas Hellstrom; Alok Kataria
-Subject: Re: current mainline doesn't boot on VWware platform
-
-Hi Steve,
-
-On Sat, Oct 18, 2014 at 09:02:15PM -0500, Steve French wrote:
-> Interesting to see that Fedora has similar problems with current 
-> kernel (I pulled mainline again a few hours ago).
+On Fri-10/24/14-2014 10:20, Paul E. McKenney wrote:
+> On Fri, Oct 24, 2014 at 08:09:31PM +0300, Yanko Kaneti wrote:
+> > On Fri-10/24/14-2014 09:54, Paul E. McKenney wrote:
+> > > On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
+> > > > On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
+> > > > > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
+> > > > > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
+> > > > > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
+> > > > > > > > 
+> > > > > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
+> > > > > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
+> > > 
+> > > [ . . . ]
+> > > 
+> > > > > > Ok, unless I've messsed up something major, bisecting points to:
+> > > > > > 
+> > > > > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
+> > > > > > 
+> > > > > > Makes any sense ?
+> > > > > 
+> > > > > Good question.  ;-)
+> > > > > 
+> > > > > Are any of your online CPUs missing rcuo kthreads?  There should be
+> > > > > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
+> > > > 
+> > > > Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
+> > > > and the modprobe ppp_generic testcase reliably works, libvirt also manages
+> > > > to setup its bridge.
+> > > > 
+> > > > Just with linux-tip , the rcuos are 6 but the failure is as reliable as
+> > > > before.
+> > 
+> > > Thank you, very interesting.  Which 6 of the rcuos are present?
+> > 
+> > Well, the rcuos are 0 to 5. Which sounds right for a 6 core CPU like this   
+> > Phenom II.
 > 
-> Fedora 20 x86_64 in vmware boots to logon prompt but no mouse, no 
-> keyboard, system hung.  Ctl-alt-f1 doesn't do anything.  Even with 
-> verbose on kernel boot line, the extra debug messages have all been 
-> cleared by the time the hang occurs so nothing useful displayed.
+> Ah, you get 8 without the patch because it creates them for potential
+> CPUs as well as real ones.  OK, got it.
 > 
-> To be as safe as possible I used their default .config
-> /boot/config-3.16.6-200.fc20.x86_64 to do a clean build of mainline.
-> Once again, 3.16 and 3.17 work but not current mainline.
+> > > > Awating instructions: :)
+> > > 
+> > > Well, I thought I understood the problem until you found that only 6 of
+> > > the expected 8 rcuos are present with linux-tip without the revert.  ;-)
+> > > 
+> > > I am putting together a patch for the part of the problem that I think
+> > > I understand, of course, but it would help a lot to know which two of
+> > > the rcuos are missing.  ;-)
+> > 
+> > Ready to test
+> 
+> Well, if you are feeling aggressive, give the following patch a spin.
+> I am doing sanity tests on it in the meantime.
 
-Let's add a few VMware people. I am pretty sure they'd be interested in why it does not work.
+Doesn't seem to make a difference here
 
-Guys, could you please route as appropriate.
-
-Thanks.
-
+ 
+> 							Thanx, Paul
 > 
-> On Sat, Oct 18, 2014 at 4:52 PM, Steve French <smfrench@gmail.com> wrote:
-> > Same thing happened after pulling newly updated mainline kernel 
-> > changes a few minutes ago.
-> >
-> > Black screen on boot just when you would expect x to be starting.
-> > Hung. Ctl-alt-F1 doesn't do anything.
-> >
-> > arch is x86_64.
-> >
-> > 3.17.1 works.  When I get time I will see if I can figure out more 
-> > useful info but this looks like a pretty boring setup:
-> >
-> > sfrench@ubuntu:~$ glxinfo | grep -i "vendor"
-> > server glx vendor string: SGI
-> > client glx vendor string: Mesa Project and SGI OpenGL vendor string: 
-> > VMware, Inc.
-> > sfrench@ubuntu:~$ grep LoadModule /var/log/Xorg.0.log
-> > [    18.271] (II) LoadModule: "glx"
-> > [    18.288] (II) LoadModule: "vmware"
-> > [    18.352] (II) LoadModule: "modesetting"
-> > [    18.355] (II) LoadModule: "fbdev"
-> > [    18.360] (II) LoadModule: "vesa"
-> > [    18.369] (II) LoadModule: "fbdevhw"
-> > [    18.372] (II) LoadModule: "fb"
-> > [    18.379] (II) LoadModule: "dri2"
-> > [    18.479] (II) LoadModule: "evdev"
-> > [    18.484] (II) LoadModule: "vmmouse"
-> >
-> > On Fri, Oct 17, 2014 at 6:52 PM, Steve French <smfrench@gmail.com> wrote:
-> >> This is vmware guest
-> >>
-> >> sfrench@ubuntu:~/xfstests$ cat /proc/cpuinfo
-> >> processor    : 0
-> >> vendor_id    : GenuineIntel
-> >> cpu family    : 6
-> >> model        : 70
-> >> model name    : Intel(R) Core(TM) i7-4750HQ CPU @ 2.00GHz
-> >>
-> >> (and using 64 bit kernel build) ...
-> >>
-> >> I don't have the Ubuntu config for their mainline kernel test 
-> >> builds any more (deleted the kernel since it didn't work) but they 
-> >> post their .config diffs at
-> >> https://urldefense.proofpoint.com/v1/url?u=http://kernel.ubuntu.com
-> >> /~kernel-ppa/mainline/daily/current/&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%
-> >> 3D%0A&r=oGRqRJb%2BhkJPg50%2BV8ZXHpwGAxAMbFoFF8Oa3SfNFqg%3D%0A&m=KT3
-> >> nd2WvOtmE3TxnuxeU7ySPrD7G91YtKCITDaK7aC0%3D%0A&s=84cc4ce1780ae7d054
-> >> e8d381139ece045075711529a3f3a8a1b7080c86d56324
-> >>
-> >> I could not get to a console so assumed it died in kernel as x was 
-> >> coming up.  I will have to reinstall current mainline to see if I 
-> >> can hook up a serial console (I had maximum kernel boot verbose in 
-> >> the grub.cfg but nothing interesting before the black screen)
-> >>
-> >> On Fri, Oct 17, 2014 at 6:44 PM, Felipe Balbi <balbi@ti.com> wrote:
-> >>> Hi,
-> >>>
-> >>> On Fri, Oct 17, 2014 at 05:44:02PM -0500, Steve French wrote:
-> >>>> Anyone know a workaround for the problem booting current mainline?
-> >>>> 3.17 works fine for me, but recent mainline since 3.17 goes to a 
-> >>>> black screen near the end of boot as X is about to start.
-> >>>>
-> >>>> I also tried the Ubuntu build of the day (which also is based on 
-> >>>> current mainline but with the Ubuntu config just in case it was 
-> >>>> some driver issue) which fails the same way.
-> >>>
-> >>> you need to provide more information, here are a few queries which 
-> >>> might
-> >>> help:
-> >>>
-> >>> 1. which architecture ?
-> >>> 2. Can you get a serial console to get some dmesg output ?
-> >>> 3. after screen is black, can you ctrl + alt + F1 and get a console ?
-> >>> 4. where's you .config ?
-> >>>
-> >>> --
-> >>> balbi
-> >>
-> >>
-> >>
-> >> --
-> >> Thanks,
-> >>
-> >> Steve
-> >
-> >
-> >
-> > --
-> > Thanks,
-> >
-> > Steve
+> ------------------------------------------------------------------------
 > 
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 29fb23f33c18..927c17b081c7 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2546,9 +2546,13 @@ static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
+>  			rdp->nocb_leader = rdp_spawn;
+>  			if (rdp_last && rdp != rdp_spawn)
+>  				rdp_last->nocb_next_follower = rdp;
+> -			rdp_last = rdp;
+> -			rdp = rdp->nocb_next_follower;
+> -			rdp_last->nocb_next_follower = NULL;
+> +			if (rdp == rdp_spawn) {
+> +				rdp = rdp->nocb_next_follower;
+> +			} else {
+> +				rdp_last = rdp;
+> +				rdp = rdp->nocb_next_follower;
+> +				rdp_last->nocb_next_follower = NULL;
+> +			}
+>  		} while (rdp);
+>  		rdp_spawn->nocb_next_follower = rdp_old_leader;
+>  	}
 > 
-> 
-> --
-> Thanks,
-> 
-> Steve
-> --
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in the body of a message to majordomo@vger.kernel.org 
-> More majordomo info at  
-> https://urldefense.proofpoint.com/v1/url?u=http://vger.kernel.org/majo
-> rdomo-info.html&k=oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=oGRqRJb%2BhkJPg5
-> 0%2BV8ZXHpwGAxAMbFoFF8Oa3SfNFqg%3D%0A&m=KT3nd2WvOtmE3TxnuxeU7ySPrD7G91
-> YtKCITDaK7aC0%3D%0A&s=f6dee438ce2574b1716d6a58b14eb1caba3359030b6078f4
-> 4b03085dcee6e646 Please read the FAQ at  
-> https://urldefense.proofpoint.com/v1/url?u=http://www.tux.org/lkml/&k=
-> oIvRg1%2BdGAgOoM1BIlLLqw%3D%3D%0A&r=oGRqRJb%2BhkJPg50%2BV8ZXHpwGAxAMbF
-> oFF8Oa3SfNFqg%3D%0A&m=KT3nd2WvOtmE3TxnuxeU7ySPrD7G91YtKCITDaK7aC0%3D%0
-> A&s=5dd0796c72e00951cd35629a25ba29a57334984e4e164fd69c9052abe8380319
-
---
-Dmitry
