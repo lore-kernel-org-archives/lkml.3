@@ -1,336 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096AbaJXKQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:16:36 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:1337 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751907AbaJXKQL convert rfc822-to-8bit (ORCPT
+	id S932143AbaJXKQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:16:50 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:33722 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756062AbaJXKQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:16:11 -0400
-X-IronPort-AV: E=Sophos;i="5.04,779,1406563200"; 
-   d="scan'208";a="38811059"
-From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
-To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
-Subject: [RESEND][PATCH 1/2v5] procfs: show hierarchy of pid namespace
-Date: Fri, 24 Oct 2014 18:15:44 +0800
-Message-ID: <1414145745-30293-2-git-send-email-chenhanxiao@cn.fujitsu.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1414145745-30293-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-References: <1414145745-30293-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.167.226.237]
+	Fri, 24 Oct 2014 06:16:34 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-3e-544a26fe6e4e
+Message-id: <544A26FD.9060406@samsung.com>
+Date: Fri, 24 Oct 2014 14:16:29 +0400
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        Sasha Levin <sasha.levin@oracle.com>, x86@kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: drivers: random: Shift out-of-bounds in _mix_pool_bytes
+References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
+ <5444EBFA.5030103@samsung.com> <20141020124929.GA23177@thunk.org>
+ <54451501.2070700@samsung.com> <5445179A.4080804@redhat.com>
+ <20141020141635.GA4499@thunk.org>
+ <20141024100108.GF12706@worktop.programming.kicks-ass.net>
+In-reply-to: <20141024100108.GF12706@worktop.programming.kicks-ass.net>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsVy+t/xq7r/1LxCDK432Vh8/dLBYjFn/Ro2
+	ixP/jzBaTHjYxm4xbaO4xcrOB6wWf3btYLK4vGsOm8WlAwuYLFr2XWCyON57gMli8ZHbzBab
+	N01ltmjt+clu8WPDY1YHfo+WzeUeO2fdZfdYsKnUY/MKLY9NqzrZPN6dO8fucWLGbxaPpjNH
+	mT0+Pr3F4vF+31U2jzMLjrB7fN4k53Gi5QtrAG8Ul01Kak5mWWqRvl0CV8aDtsiC1dwVr/f9
+	YmpgvM7RxcjJISFgIrHu40ImCFtM4sK99WxdjFwcQgJLGSXurV7CDuE0M0m8ej4HrIpXQEti
+	6qnlrCA2i4CqxK7338BsNgE9iX+ztrOB2KICERJX1sxhhKgXlPgx+R4LyCARgTksEof7J4MV
+	CQu4SJy694gdxBYSWMUksbGbG8TmFHCXWPTnEtAyDg5moKH3L2qBhJkF5CU2r3nLPIGRfxaS
+	sbMQqmYhqVrAyLyKUTS1NLmgOCk910ivODG3uDQvXS85P3cTIyTGvu5gXHrM6hCjAAejEg/v
+	jy2eIUKsiWXFlbmHGCU4mJVEeGdJe4UI8aYkVlalFuXHF5XmpBYfYmTi4JRqYFRdpTLptP3H
+	5ROFdI0WlH28tKe3nlXoQHdp93r+VzO0G9RbD7xyX7Kx9rqI2NV+lcR3V2c8Kehqmb2V48hy
+	3XMPE9a1CNW0WtiKSlx8/NXdoT3Q/iHX5PPH3mtlPEnUYv2mkMpXH3svPWytkdK29ScqvuZM
+	kDa2b0r4oSmluUt263ax9U4blyuxFGckGmoxFxUnAgC4NQAnjwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We lack of pid hierarchy information, and this will lead to:
-a) we don't know pids' relationship, who is whose child:
-   /proc/PID/ns/pid only tell us whether two pids live in different ns
-b) bring trouble to nested lxc container check/restore/migration
-c) bring trouble to pid translation between containers;
+On 10/24/2014 02:01 PM, Peter Zijlstra wrote:
+> On Mon, Oct 20, 2014 at 10:16:35AM -0400, Theodore Ts'o wrote:
+>> On Mon, Oct 20, 2014 at 04:09:30PM +0200, Daniel Borkmann wrote:
+>>>>
+>>>> It's triggering when input_rotate == 0, so UBSan complains about right shift in rol32()
+>>>>
+>>>> static inline __u32 rol32(__u32 word, unsigned int shift)
+>>>> {
+>>>> 	return (word << shift) | (word >> (32 - shift));
+>>>> }
+>>>
+>>> So that would be the case when the entropy store's input_rotate calls
+>>> _mix_pool_bytes() for the very first time ... I don't think it's an
+>>> issue though.
+>>
+>> I'm sure it's not an issue, but it's still true that 
+>>
+>> 	return (word << 0) | (word >> 32);
+>>
+>> is technically not undefined, and while it would be unfortunate (and
+>> highly unlikely) if gcc were to say, start nethack, it's technically
+>> allowed by the C spec.  :-)
+> 
+> In fact, n >> 32 == n.
+> 
+> #include <stdio.h>
+> 
+> int main(int argc, char **argv)
+> {
+> 	int i = atoi(argv[1]);
+> 	int shift = atoi(argv[2]);
+> 	printf("%x\n", i >> shift);
+> 	return 0;
+> }
+> 
+> $ ./shift 5 32
+> 5
+> 
+> On x86 at least the shift ops simply mask out the upper bits and
+> therefore the 32 == 0.
+> 
+> So you end up OR-ing the same value twice, which is harmless.
+> 
+> So no misbehaviour on the rol32() function.
+> 
 
-This patch will show the hierarchy of pid namespace
-by pidns_hierarchy like:
-
-[root@localhost ~]#cat /proc/pidns_hierarchy
-18060 18102 1534
-18060 18102 1600
-1550
-*Note: numbers represent the pid 1 in different ns
-
-It shows the pid hierarchy below:
-
-      init_pid_ns (not showed in /proc/pidns_hierarchy)
-              │
-┌────────────┐
-ns1                      ns2
-│                        │
-1550                    18060
-                          │
-                          │
-                         ns3
-                          │
-                        18102
-                          │
-                 ┌──────────┐
-                 ns4                   ns5
-                 │                    │
-                1534                  1600
-
-Every pid printed in pidns_hierarchy
-is the init pid of that pid ns level.
-
-Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
----
- fs/proc/Kconfig           |   6 ++
- fs/proc/Makefile          |   1 +
- fs/proc/pidns_hierarchy.c | 226 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 233 insertions(+)
- create mode 100644 fs/proc/pidns_hierarchy.c
-
-diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
-index 2183fcf..4bb111c 100644
---- a/fs/proc/Kconfig
-+++ b/fs/proc/Kconfig
-@@ -71,3 +71,9 @@ config PROC_PAGE_MONITOR
- 	  /proc/pid/smaps, /proc/pid/clear_refs, /proc/pid/pagemap,
- 	  /proc/kpagecount, and /proc/kpageflags. Disabling these
-           interfaces will reduce the size of the kernel by approximately 4kb.
-+
-+config PROC_PID_HIERARCHY
-+	bool "Enable /proc/pidns_hierarchy support" if EXPERT
-+	depends on PROC_FS
-+	help
-+	  Show pid namespace hierarchy information
-diff --git a/fs/proc/Makefile b/fs/proc/Makefile
-index 7151ea4..33e384b 100644
---- a/fs/proc/Makefile
-+++ b/fs/proc/Makefile
-@@ -30,3 +30,4 @@ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
- proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
- proc-$(CONFIG_PRINTK)	+= kmsg.o
- proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
-+proc-$(CONFIG_PROC_PID_HIERARCHY)	+= pidns_hierarchy.o
-diff --git a/fs/proc/pidns_hierarchy.c b/fs/proc/pidns_hierarchy.c
-new file mode 100644
-index 0000000..2f5148c
---- /dev/null
-+++ b/fs/proc/pidns_hierarchy.c
-@@ -0,0 +1,226 @@
-+#include <linux/init.h>
-+#include <linux/errno.h>
-+#include <linux/proc_fs.h>
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+#include <linux/pid_namespace.h>
-+#include <linux/seq_file.h>
-+
-+/*
-+ *  /proc/pidns_hierarchy
-+ *
-+ *  show the hierarchy of pid namespace
-+ */
-+
-+#define NS_HIERARCHY	"pidns_hierarchy"
-+
-+/* list for host pid collection */
-+struct pidns_list {
-+	struct list_head list;
-+	struct pid *pid;
-+};
-+
-+static void free_pidns_list(struct list_head *head)
-+{
-+	struct pidns_list *tmp, *pos;
-+
-+	list_for_each_entry_safe(pos, tmp, head, list) {
-+		list_del(&pos->list);
-+		put_pid(pos->pid);
-+		kfree(pos);
-+	}
-+}
-+
-+static int
-+pidns_list_add(struct pid *pid, struct list_head *list_head,
-+		struct pid_namespace *curr_ns)
-+{
-+	struct pidns_list *ent;
-+	struct pid_namespace *ns;
-+
-+	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
-+	if (!ent)
-+		return -ENOMEM;
-+
-+	ent->pid = pid;
-+	ns = pid->numbers[pid->level].ns;
-+	if (curr_ns) {
-+		/* add pids who is the child of curr_ns */
-+		for (; ns != NULL; ns = ns->parent)
-+			if (ns == curr_ns) {
-+				list_add_tail(&ent->list, list_head);
-+				break;
-+			}
-+	} else
-+		list_add_tail(&ent->list, list_head);
-+
-+	return 0;
-+}
-+
-+static int
-+pidns_list_filter(struct list_head *pidns_list,
-+		struct list_head *pidns_tree)
-+{
-+	struct pidns_list *pos, *pos_t;
-+	struct pid_namespace *ns0, *ns1;
-+	struct pid *pid0, *pid1;
-+	int rc, flag = 0;
-+
-+	/* screen pid with relationship
-+	 * in pidns_list, we may add pids like
-+	 * ns0   ns1   ns2
-+	 * pid1->pid2->pid3
-+	 * we should screen pid1, pid2 and keep pid3
-+	 */
-+	list_for_each_entry(pos, pidns_list, list) {
-+		list_for_each_entry(pos_t, pidns_list, list) {
-+			flag = 0;
-+			pid0 = pos->pid;
-+			pid1 = pos_t->pid;
-+			ns0 = pid0->numbers[pid0->level].ns;
-+			ns1 = pid1->numbers[pid1->level].ns;
-+			if (pos->pid->level < pos_t->pid->level)
-+				for (; ns1 != NULL; ns1 = ns1->parent)
-+					if (ns0 == ns1) {
-+						flag = 1;
-+						break;
-+					}
-+			if (flag == 1)
-+				break;
-+		}
-+
-+		if (flag == 0) {
-+			rcu_read_lock();
-+			get_pid(pos->pid);
-+			rcu_read_unlock();
-+			rc = pidns_list_add(pos->pid, pidns_tree, NULL);
-+			if (rc)
-+				goto out;
-+		}
-+	}
-+
-+	/* Now all usefull stuffs are in pidns_tree, free pidns_list*/
-+	free_pidns_list(pidns_list);
-+
-+	return 0;
-+
-+out:
-+	free_pidns_list(pidns_tree);
-+	return rc;
-+}
-+
-+/* collect pids in pidns_list,
-+ * then remove duplicated ones,
-+ * add the rest to pidns_tree
-+ */
-+static int proc_pidns_list_refresh(struct pid_namespace *curr_ns,
-+		struct list_head *pidns_list,
-+		struct list_head *pidns_tree)
-+{
-+	struct pid *pid;
-+	int new_nr, nr = 0;
-+	int rc;
-+
-+	/* collect pid in differet ns */
-+	while (nr < PID_MAX_LIMIT) {
-+		rcu_read_lock();
-+		pid = find_ge_pid(nr, curr_ns);
-+		if (pid) {
-+			new_nr = pid_vnr(pid);
-+			if (!is_child_reaper(pid)) {
-+				nr = new_nr + 1;
-+				rcu_read_unlock();
-+				continue;
-+			}
-+			get_pid(pid);
-+			rcu_read_unlock();
-+			rc = pidns_list_add(pid, pidns_list, curr_ns);
-+			if (rc)
-+				goto out;
-+		} else {
-+			rcu_read_unlock();
-+			break;
-+		}
-+		nr = new_nr + 1;
-+	}
-+
-+	/* Only one pid found as child reaper,
-+	 * no sub-namespace of current pid namespace,
-+	 * return 0 directly.
-+	 */
-+	if (list_is_singular(pidns_list)) {
-+		rc = 0;
-+		goto out;
-+	}
-+
-+	/* screen duplicate pids from list pidns_list
-+	* and form a new list pidns_tree
-+	*/
-+	rc = pidns_list_filter(pidns_list, pidns_tree);
-+	if (rc)
-+		goto out;
-+
-+	return 0;
-+
-+out:
-+	free_pidns_list(pidns_list);
-+	return rc;
-+}
-+
-+static int nslist_proc_show(struct seq_file *m, void *v)
-+{
-+	struct pidns_list *pos;
-+	struct pid_namespace *ns, *curr_ns;
-+	struct pid *pid;
-+	char pid_buf[16];
-+	int i, rc;
-+
-+	LIST_HEAD(pidns_list);
-+	LIST_HEAD(pidns_tree);
-+
-+	curr_ns = task_active_pid_ns(current);
-+
-+	rc = proc_pidns_list_refresh(curr_ns, &pidns_list, &pidns_tree);
-+	if (rc)
-+		return rc;
-+
-+	/* print pid namespace hierarchy */
-+	list_for_each_entry(pos, &pidns_tree, list) {
-+		pid = pos->pid;
-+		for (i = curr_ns->level + 1; i <= pid->level; i++) {
-+			ns = pid->numbers[i].ns;
-+			/* show PID '1' in specific pid ns */
-+			snprintf(pid_buf, 16, "%u",
-+				pid_vnr(find_pid_ns(1, ns)));
-+			seq_printf(m, "%s ", pid_buf);
-+		}
-+
-+		seq_putc(m, '\n');
-+	}
-+
-+	free_pidns_list(&pidns_tree);
-+
-+	return 0;
-+}
-+
-+static int nslist_proc_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, nslist_proc_show, NULL);
-+}
-+
-+static const struct file_operations proc_nspid_nslist_fops = {
-+	.open		= nslist_proc_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static int __init pidns_hierarchy_init(void)
-+{
-+	proc_create(NS_HIERARCHY, S_IWUGO,
-+		NULL, &proc_nspid_nslist_fops);
-+
-+	return 0;
-+}
-+fs_initcall(pidns_hierarchy_init);
--- 
-1.9.3
+E.g. on arm (i >> 32) == 0, so rol32() will also work as expected.
+But what about other architectures?
 
