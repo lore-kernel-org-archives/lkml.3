@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756501AbaJXMXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 08:23:36 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:54614 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216AbaJXMXe (ORCPT
+	id S1756570AbaJXMYZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 08:24:25 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:39133 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756225AbaJXMYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 08:23:34 -0400
+	Fri, 24 Oct 2014 08:24:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <12bd7950696ad30aa05348270df2e024ba113e63.1413488264.git.stefan@agner.ch>
+In-Reply-To: <150ed46ff5102dc0fc8bd81160387cfeee748a27.1413488264.git.stefan@agner.ch>
 References: <cover.1413488264.git.stefan@agner.ch>
-	<12bd7950696ad30aa05348270df2e024ba113e63.1413488264.git.stefan@agner.ch>
-Date: Fri, 24 Oct 2014 14:23:34 +0200
-Message-ID: <CACRpkdZwtexz_85CPfhMWXj0=Xmo=7kuOh8BA9H8zBGdmshwEg@mail.gmail.com>
-Subject: Re: [PATCH v5 4/4] Documentation: dts: add bindings for Vybrid
- GPIO/PORT module
+	<150ed46ff5102dc0fc8bd81160387cfeee748a27.1413488264.git.stefan@agner.ch>
+Date: Fri, 24 Oct 2014 14:24:23 +0200
+Message-ID: <CACRpkdYBBucVNeG7kAjZdqnKYTk6ZCcHa6aBrtgBL+h5AoWNvw@mail.gmail.com>
+Subject: Re: [PATCH v5 3/4] ARM: dts: vf610: use new GPIO support
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Stefan Agner <stefan@agner.ch>
 Cc: Alexandre Courbot <gnurou@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
@@ -29,18 +28,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 9:48 PM, Stefan Agner <stefan@agner.ch> wrote:
+On Thu, Oct 16, 2014 at 9:47 PM, Stefan Agner <stefan@agner.ch> wrote:
 
-> The Vybrid SoC device tree (vf610.dtsi) used this bindings since
-> its initial commit in May 2013. However, a proper gpiolib driver
-> was missing so far. With the addition of the gpiolib driver,
-> the bindings proved to be useful and complete, hence a good time
-> to add the documentation.
+> Use GPIO support by adding SD card detection configuration and
+> GPIO pinmux for Colibri's standard GPIO pins. Attach the GPIO
+> pins to the iomuxc node to get the GPIO pin settings applied.
 >
 > Signed-off-by: Stefan Agner <stefan@agner.ch>
-> Acked-by: Shawn Guo <shawn.guo@freescale.com>
 
-Patch applied to the GPIO tree.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Please take this through whatever platform tree funnels those DTS
+patches.
 
 Yours,
 Linus Walleij
