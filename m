@@ -1,116 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975AbaJXRTU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:19:20 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:38051 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756653AbaJXRTT (ORCPT
+	id S1757021AbaJXRUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:20:12 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:65139 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174AbaJXRUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:19:19 -0400
-Date: Fri, 24 Oct 2014 19:19:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Weijie Yang <weijie.yang@samsung.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>
-Cc: tglx@linutronix.de, hpa@zytor.com, fengguang.wu@intel.com,
-        m.szyprowski@samsung.com, mina86@mina86.com, iamjoonsoo.kim@lge.com,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux-MM'" <linux-mm@kvack.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>
-Subject: Re: [PATCH] x86, cma: reserve dma contiguous area after
- initmem_init()
-Message-ID: <20141024171913.GA31052@gmail.com>
-References: <000101cfef69$31e528a0$95af79e0$%yang@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000101cfef69$31e528a0$95af79e0$%yang@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 24 Oct 2014 13:20:10 -0400
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        stable@vger.kernel.org
+Subject: [PATCH] mfd: tc6393xb fail ohci suspend if full state restore is required
+Date: Fri, 24 Oct 2014 21:19:57 +0400
+Message-Id: <1414171197-18620-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some boards with TC6393XB chip require full state restore during system
+resume thanks to chip's VCC being cut off during suspend (Sharp SL-6000
+tosa is one of them). Failing to do so would result in ohci Oops on
+resume due to internal memory contentes being changed. Fail ohci suspend
+on tc6393xb is full state restore is required.
 
-* Weijie Yang <weijie.yang@samsung.com> wrote:
+Recommended workaround is to unbind tmio-ohci driver before suspend and
+rebind it after resume.
 
-> Fengguang Wu reported a BUG: Int 6: CR2 (null) on x86 platform in
-> 0-day Linux Kernel Performance Test:
-> 
-> [    0.000000] BRK [0x025ee000, 0x025eefff] PGTABLE
-> [    0.000000] cma: dma_contiguous_reserve(limit 13ffe000)
-> [    0.000000] cma: dma_contiguous_reserve: reserving 31 MiB for global area
-> [    0.000000] BUG: Int 6: CR2   (null)
-> [    0.000000]      EDI c0000000  ESI   (null)  EBP 41c11ea4  EBX 425cc101
-> [    0.000000]      ESP 41c11e98   ES 0000007b   DS 0000007b
-> [    0.000000]      EDX 00000001  ECX   (null)  EAX 41cd8150
-> [    0.000000]      vec 00000006  err   (null)  EIP 41072227   CS 00000060  flg 00210002
-> [    0.000000] Stack: 425cc150   (null)   (null) 41c11ef4 41d4ee4d   (null) 13ffe000 41c11ec4
-> [    0.000000]        41c2d900   (null) 13ffe000   (null) 4185793e 0000002e 410c2982 41c11f00
-> [    0.000000]        410c2df5   (null)   (null)   (null) 425cc150 00013efe   (null) 41c11f28
-> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-next-20141008 #815
-> [    0.000000]  00000000 425cc101 41c11e48 41850786 41c11ea4 41d2b1db 41d95f71 00000006
-> [    0.000000]  00000000 c0000000 00000000 41c11ea4 425cc101 41c11e98 0000007b 0000007b
-> [    0.000000]  00000001 00000000 41cd8150 00000006 00000000 41072227 00000060 00210002
-> [    0.000000] Call Trace:
-> [    0.000000]  [<41850786>] dump_stack+0x16/0x18
-> [    0.000000]  [<41d2b1db>] early_idt_handler+0x6b/0x6b
-> [    0.000000]  [<41072227>] ? __phys_addr+0x2e/0xca
-> [    0.000000]  [<41d4ee4d>] cma_declare_contiguous+0x3c/0x2d7
-> [    0.000000]  [<4185793e>] ? _raw_spin_unlock_irqrestore+0x59/0x91
-> [    0.000000]  [<410c2982>] ? wake_up_klogd+0x8/0x33
-> [    0.000000]  [<410c2df5>] ? console_unlock+0x448/0x461
-> [    0.000000]  [<41d6d359>] dma_contiguous_reserve_area+0x27/0x47
-> [    0.000000]  [<41d6d4d1>] dma_contiguous_reserve+0x158/0x163
-> [    0.000000]  [<41d33e0f>] setup_arch+0x79b/0xc68
-> [    0.000000]  [<4184c0b4>] ? printk+0x1c/0x1e
-> [    0.000000]  [<41d2b7cf>] start_kernel+0x9c/0x456
-> [    0.000000]  [<41d2b2ca>] i386_start_kernel+0x79/0x7d
-> 
-> see detail: https://lkml.org/lkml/2014/10/8/708
-> 
-> It is because dma_contiguous_reserve() is called before initmem_init() in x86,
-> the variable high_memory is not initialized but accessed by __pa(high_memory)
-> in dma_contiguous_reserve().
-> 
-> This patch moves dma_contiguous_reserve() after initmem_init() so that
-> high_memory is initialized before accessed.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-> ---
->  arch/x86/kernel/setup.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index 235cfd3..ab08aa2 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -1128,7 +1128,6 @@ void __init setup_arch(char **cmdline_p)
->  	setup_real_mode();
->  
->  	memblock_set_current_limit(get_max_mapped());
-> -	dma_contiguous_reserve(max_pfn_mapped << PAGE_SHIFT);
->  
->  	/*
->  	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
-> @@ -1159,6 +1158,7 @@ void __init setup_arch(char **cmdline_p)
->  	early_acpi_boot_init();
->  
->  	initmem_init();
-> +	dma_contiguous_reserve(max_pfn_mapped << PAGE_SHIFT);
->  
->  	/*
->  	 * Reserve memory for crash kernel after SRAT is parsed so that it
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/mfd/tc6393xb.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-I think this might be a boot regression that went upstream via 
-akpm's tree, via the recent 'cma' change:
+diff --git a/drivers/mfd/tc6393xb.c b/drivers/mfd/tc6393xb.c
+index 11c19e5..48579e5 100644
+--- a/drivers/mfd/tc6393xb.c
++++ b/drivers/mfd/tc6393xb.c
+@@ -263,6 +263,17 @@ static int tc6393xb_ohci_disable(struct platform_device *dev)
+ 	return 0;
+ }
+ 
++static int tc6393xb_ohci_suspend(struct platform_device *dev)
++{
++	struct tc6393xb_platform_data *tcpd = dev_get_platdata(dev->dev.parent);
++
++	/* We can't properly store/restore OHCI state, so fail here */
++	if (tcpd->resume_restore)
++		return -EBUSY;
++
++	return tc6393xb_ohci_disable(dev);
++}
++
+ static int tc6393xb_fb_enable(struct platform_device *dev)
+ {
+ 	struct tc6393xb *tc6393xb = dev_get_drvdata(dev->dev.parent);
+@@ -403,7 +414,7 @@ static struct mfd_cell tc6393xb_cells[] = {
+ 		.num_resources = ARRAY_SIZE(tc6393xb_ohci_resources),
+ 		.resources = tc6393xb_ohci_resources,
+ 		.enable = tc6393xb_ohci_enable,
+-		.suspend = tc6393xb_ohci_disable,
++		.suspend = tc6393xb_ohci_suspend,
+ 		.resume = tc6393xb_ohci_enable,
+ 		.disable = tc6393xb_ohci_disable,
+ 	},
+-- 
+2.1.1
 
-5ea3b1b2f8ad cma: add placement specifier for "cma=" kernel parameter
-
-Next time around please put 'x86' into patches that 
-enable features on x86 and which change its early init 
-behavior. The 'cma: ...' prefix was rather misleading.
-
-Thanks,
-
-	Ingo
