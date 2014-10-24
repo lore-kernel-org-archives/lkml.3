@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518AbaJXH3F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 03:29:05 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:38122 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499AbaJXH3D (ORCPT
+	id S1755274AbaJXHaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 03:30:06 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:55693 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaJXHaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 03:29:03 -0400
-Date: Fri, 24 Oct 2014 09:26:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
-        mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        dave@stgolabs.net, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 4/6] SRCU free VMAs
-Message-ID: <20141024072607.GT21513@worktop.programming.kicks-ass.net>
-References: <20141020215633.717315139@infradead.org>
- <20141020222841.419869904@infradead.org>
- <5448D515.90006@cn.fujitsu.com>
- <20141023110346.GP21513@worktop.programming.kicks-ass.net>
- <5449C8A6.9080403@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5449C8A6.9080403@cn.fujitsu.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	Fri, 24 Oct 2014 03:30:03 -0400
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        linux-doc@vger.kernel.org, dianders@chromium.org,
+        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "jinkun.hong" <jinkun.hong@rock-chips.com>
+Subject: [PATCH v7 0/3] ARM: rk3288 : Add PM Domain support
+Date: Fri, 24 Oct 2014 00:29:18 -0700
+Message-Id: <1414135761-3406-1-git-send-email-jinkun.hong@rock-chips.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 11:33:58AM +0800, Lai Jiangshan wrote:
-> On 10/23/2014 07:03 PM, Peter Zijlstra wrote:
-> > On Thu, Oct 23, 2014 at 06:14:45PM +0800, Lai Jiangshan wrote:
-> >>
-> >>>  
-> >>> +struct vm_area_struct *find_vma_srcu(struct mm_struct *mm, unsigned long addr)
-> >>> +{
-> >>> +	struct vm_area_struct *vma;
-> >>> +	unsigned int seq;
-> >>> +
-> >>> +	WARN_ON_ONCE(!srcu_read_lock_held(&vma_srcu));
-> >>> +
-> >>> +	do {
-> >>> +		seq = read_seqbegin(&mm->mm_seq);
-> >>> +		vma = __find_vma(mm, addr);
-> >>
-> >> will the __find_vma() loops for ever due to the rotations in the RBtree?
-> > 
-> > No, a rotation takes a tree and generates a tree, furthermore the
-> > rotation has a fairly strict fwd progress guarantee seeing how its now
-> > done with preemption disabled.
-> 
-> I can't get the magic.
-> 
-> __find_vma is visiting vma_a,
-> vma_a is rotated to near the top due to multiple updates to the mm.
-> __find_vma is visiting down to near the bottom, vma_b.
-> now vma_b is rotated up to near the top again.
-> __find_vma is visiting down to near the bottom, vma_c.
-> now vma_c is rotated up to near the top again.
-> 
-> ...
+From: "jinkun.hong" <jinkun.hong@rock-chips.com>
 
-Why would there be that much rotations? Is this a scenario where someone
-is endlessly changing the tree?
+Add power domain drivers based on generic power domain for Rockchip platform,
+and support RK3288.
 
-If you stop updating the tree, the traversal will finish.
+https://chromium-review.googlesource.com/#/c/220253/9
+This is the GPU driver, add the following information in DT,
+and it can support the PMDOMAIN.
 
-This is no different to the reader starvation already present with
-seqlocks.
+gpu: gpu@ffa30000 {
+	compatible = "arm,malit764",
+		     "arm,malit76x",
+		     "arm,malit7xx",
+		     "arm,mali-midgard";
+	reg = <0xffa30000 0x10000>;
+	interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
+		     <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>,
+		     <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
+	interrupt-names = "JOB", "MMU", "GPU";
+	clocks = <&cru ACLK_GPU>;
+	clock-names = "aclk_gpu";
+	operating-points = <
+		/* KHz uV */
+		100000 800000
+		200000 850000
+		300000 950000
+		400000 1000000
+		600000 1150000
+	>;
+	power-domains = <&gpu_power>;
+	status = "disabled";
+};
+
+Based on:
+- [PATCH v1 1/4] PM / clock_ops: Add pm_clk_add_clk()
+  http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg735599.html
+
+Changes in v7:
+- Delete unused variables
+
+Changes in v6:
+- delete pmu_lock
+- modify dev_lock using mutex
+- pm_clk_resume(pd->dev) change to pm_clk_resume(ed->dev)
+- pm_clk_suspend(pd->dev) change to pm_clk_suspend(ed->dev)
+- add devm_kfree(pd->dev, de) in rockchip_pm_domain_detach_dev
+
+Changes in v5:
+- delete idle_lock
+- add timeout in rockchip_pmu_set_idle_request()
+
+Changes in v4:
+- use list storage dev
+
+Changes in v3:
+- change use pm_clk_resume() and pm_clk_suspend()
+- DT structure has changed
+- Decomposition power-controller, changed to multiple controller
+   (gpu-power-controller, hevc-power-controller)
+
+Changes in v2:
+- remove the "pd->pd.of_node = np"
+- move clocks to "optional"
+- make pd_vio clocks all one entry per line and alphabetize.
+- power: power-controller move back to pinctrl: pinctrl.
+
+jinkun.hong (3):
+  power-domain: add power domain drivers for Rockchip platform
+  dt-bindings: add document of Rockchip power domain
+  ARM: dts: add rk3288 power-domain node
+
+ .../bindings/arm/rockchip/power_domain.txt         |   46 +++
+ arch/arm/boot/dts/rk3288.dtsi                      |   24 ++
+ arch/arm/mach-rockchip/Kconfig                     |    1 +
+ arch/arm/mach-rockchip/Makefile                    |    1 +
+ arch/arm/mach-rockchip/pm_domains.c                |  355 ++++++++++++++++++++
+ 5 files changed, 427 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
+ create mode 100644 arch/arm/mach-rockchip/pm_domains.c
+
+-- 
+1.7.9.5
+
