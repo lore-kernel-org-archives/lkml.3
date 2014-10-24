@@ -1,94 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932600AbaJXWbr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 18:31:47 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:63423 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756114AbaJXWbo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932367AbaJXWbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 18:31:46 -0400
+Received: from mout.gmx.net ([212.227.17.21]:56847 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755905AbaJXWbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Oct 2014 18:31:44 -0400
-Date: Fri, 24 Oct 2014 17:29:34 -0500
-From: Eric Rost <eric.rost@mybabylon.net>
-To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
-        antonysaraev@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 1/7] staging: skein: Collapses threefish module
-Message-ID: <d0e59d4120e4e85a33277590d8e6f17daefa01b8.1414189566.git.eric.rost@mybabylon.net>
-References: <cover.1414189566.git.eric.rost@mybabylon.net>
+Message-ID: <544AD34A.9070005@gmx.de>
+Date: Sat, 25 Oct 2014 00:31:38 +0200
+From: Hartmut Knaack <knaack.h@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:32.0) Gecko/20100101 Firefox/32.0 SeaMonkey/2.29
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1414189566.git.eric.rost@mybabylon.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Daniel Baluta <daniel.baluta@intel.com>, jic23@kernel.org
+CC: irina.tirdea@intel.com, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 4/7] iio: core: Introduce STEPS channel
+ type, ENABLE mask and INSTANCE event
+References: <1412858385-11954-1-git-send-email-daniel.baluta@intel.com> <1412858385-11954-5-git-send-email-daniel.baluta@intel.com>
+In-Reply-To: <1412858385-11954-5-git-send-email-daniel.baluta@intel.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:3keKRB+Wg5DNUuFP5HaN9+CDz89l1/AYY16YTw4xLpafQAsAz4J
+ 3SFohG58YViRSX6W05gOrlsZ2chgrzs3++W2ZwVD8YO9HzDjzu7eeqcdHqj/EBvA7TOBRwm
+ 0CGMG2EtT6Uu+VQjOhUy0LZN3V5yDSEJJDjuLOhMDNZvuV39ciOqCRIyLXAX9c3CRmqaoYJ
+ C2jIPwjKfDj+iNIyw+5dg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Collapses threefish module into skein module.
+Daniel Baluta schrieb am 09.10.2014 14:39:
+> From: Irina Tirdea <irina.tirdea@intel.com>
+> 
+> These changes are needed to support the functionality of a pedometer.
+> A pedometer has two basic functionalities: step counter and step detector.
+> 
+> The step counter needs to be enabled and then it will count the steps
+> in its hardware register. Whenever the application needs to check
+> the step count, it will read the step counter register. To support the
+> step counter a new channel type STEPS is added. Since the pedometer needs
+> to be enabled first so that the hardware can count and store the steps,
+> we need a specific ENABLE channel info mask.
+> 
+> The step detector will generate an interrupt each time a step is detected.
+> To support this functionality we add a new event type INSTANCE.
+> 
+Hi,
+I was wondering, if it would be better to name this channel somehow more generic. What you are actually counting are some pulses, and only the implementation of the hardware leads to the interpretation of these pulses as for example steps.
+Other devices for this category would be pulse counters - either stand alone, or as part of SoCs. Some use cases I could think of are: liquid/gas flow measurements, engine rotation/RPM counts, object counts, ...
+Any opinions?
+Thanks
 
-Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
----
- drivers/staging/skein/Kconfig  | 22 +++-------------------
- drivers/staging/skein/Makefile | 11 +++++------
- 2 files changed, 8 insertions(+), 25 deletions(-)
-
-diff --git a/drivers/staging/skein/Kconfig b/drivers/staging/skein/Kconfig
-index b9172bf..de8bdd7 100644
---- a/drivers/staging/skein/Kconfig
-+++ b/drivers/staging/skein/Kconfig
-@@ -1,8 +1,8 @@
- config CRYPTO_SKEIN
- 	bool "Skein digest algorithm"
- 	depends on (X86 || UML_X86) && 64BIT && CRYPTO
--	select CRYPTO_THREEFISH
- 	select CRYPTO_HASH
-+	select CRYPTO_ALGAPI
- 	help
- 	  Skein secure hash algorithm is one of 5 finalists from the NIST SHA3
- 	  competition.
-@@ -12,21 +12,5 @@ config CRYPTO_SKEIN
- 
- 	  http://www.skein-hash.info/sites/default/files/skein1.3.pdf
- 
--	  for more information.  This module depends on the threefish block
--	  cipher module.
--
--config CRYPTO_THREEFISH
--	bool "Threefish tweakable block cipher"
--	depends on (X86 || UML_X86) && 64BIT && CRYPTO
--	select CRYPTO_ALGAPI
--	help
--	  Threefish cipher algorithm is the tweakable block cipher underneath
--	  the Skein family of secure hash algorithms.  Skein is one of 5
--	  finalists from the NIST SHA3 competition.
--
--	  Skein is optimized for modern, 64bit processors and is highly
--	  customizable.  See:
--
--	  http://www.skein-hash.info/sites/default/files/skein1.3.pdf
--
--	  for more information.
-+	  for more information. This module also contains the threefish block
-+	  cipher algorithm.
-diff --git a/drivers/staging/skein/Makefile b/drivers/staging/skein/Makefile
-index a14aadd..4b60171 100644
---- a/drivers/staging/skein/Makefile
-+++ b/drivers/staging/skein/Makefile
-@@ -1,9 +1,8 @@
- #
- # Makefile for the skein secure hash algorithm
- #
--obj-$(CONFIG_CRYPTO_SKEIN) +=   skein.o \
--				skein_api.o \
--				skein_block.o
--
--obj-$(CONFIG_CRYPTO_THREEFISH) += threefish_block.o \
--				  threefish_api.o
-+obj-$(CONFIG_CRYPTO_SKEIN) += skein.o \
-+			      skein_api.o \
-+			      skein_block.o \
-+			      threefish_block.o \
-+			      threefish_api.o
--- 
-2.1.1
+Hartmut
+> For more information on the Android requirements for step counter and step
+> detector see:
+> http://source.android.com/devices/sensors/composite_sensors.html#counter
+> and http://source.android.com/devices/sensors/composite_sensors.html#detector.
+> 
+> A device that has the pedometer functionality this interface needs to
+> support is Freescale's MMA9553L:
+> http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+> 
+> Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
+> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> ---
+>  Documentation/ABI/testing/sysfs-bus-iio | 22 ++++++++++++++++++++++
+>  drivers/iio/industrialio-core.c         |  2 ++
+>  drivers/iio/industrialio-event.c        |  1 +
+>  include/linux/iio/iio.h                 |  1 +
+>  include/linux/iio/types.h               |  2 ++
+>  5 files changed, 28 insertions(+)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
+> index 12d0385..3557a69 100644
+> --- a/Documentation/ABI/testing/sysfs-bus-iio
+> +++ b/Documentation/ABI/testing/sysfs-bus-iio
+> @@ -842,6 +842,13 @@ Description:
+>  		number or direction is not specified, applies to all channels of
+>  		this type.
+>  
+> +What:		/sys/.../events/in_steps_instance_en
+> +KernelVersion:	3.19
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Enables or disables step detection. Each time the user takes a step an
+> +		event of this type will be generated.
+> +
+>  What:		/sys/bus/iio/devices/iio:deviceX/trigger/current_trigger
+>  KernelVersion:	2.6.35
+>  Contact:	linux-iio@vger.kernel.org
+> @@ -1072,3 +1079,18 @@ Contact:	linux-iio@vger.kernel.org
+>  Description:
+>  		Raw value of rotation from true/magnetic north measured with
+>  		or without compensation from tilt sensors.
+> +
+> +What:		/sys/.../iio:deviceX/in_steps_enable
+> +KernelVersion:	3.19
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Activates the step counter. After activation, the number of steps
+> +		taken by the user will be counted in hardware and exported through
+> +		in_steps_input.
+> +
+> +What:		/sys/.../iio:deviceX/in_steps_input
+> +KernelVersion:	3.19
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		This attribute is used to read the number of steps taken by the user
+> +		since the last reboot while activated.
+> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+> index e453ef9..1e060f3 100644
+> --- a/drivers/iio/industrialio-core.c
+> +++ b/drivers/iio/industrialio-core.c
+> @@ -71,6 +71,7 @@ static const char * const iio_chan_type_name_spec[] = {
+>  	[IIO_PRESSURE] = "pressure",
+>  	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
+>  	[IIO_ACTIVITY] = "activity",
+> +	[IIO_STEPS] = "steps",
+>  };
+>  
+>  static const char * const iio_modifier_names[] = {
+> @@ -118,6 +119,7 @@ static const char * const iio_chan_info_postfix[] = {
+>  	[IIO_CHAN_INFO_HARDWAREGAIN] = "hardwaregain",
+>  	[IIO_CHAN_INFO_HYSTERESIS] = "hysteresis",
+>  	[IIO_CHAN_INFO_INT_TIME] = "integration_time",
+> +	[IIO_CHAN_INFO_ENABLE] = "en",
+>  };
+>  
+>  /**
+> diff --git a/drivers/iio/industrialio-event.c b/drivers/iio/industrialio-event.c
+> index a9c9f34..db63d29 100644
+> --- a/drivers/iio/industrialio-event.c
+> +++ b/drivers/iio/industrialio-event.c
+> @@ -198,6 +198,7 @@ static const char * const iio_ev_type_text[] = {
+>  	[IIO_EV_TYPE_THRESH_ADAPTIVE] = "thresh_adaptive",
+>  	[IIO_EV_TYPE_MAG_ADAPTIVE] = "mag_adaptive",
+>  	[IIO_EV_TYPE_TRANSITION] = "transition",
+> +	[IIO_EV_TYPE_INSTANCE] = "instance",
+>  };
+>  
+>  static const char * const iio_ev_dir_text[] = {
+> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+> index 15dc6bc..3d3f06f 100644
+> --- a/include/linux/iio/iio.h
+> +++ b/include/linux/iio/iio.h
+> @@ -37,6 +37,7 @@ enum iio_chan_info_enum {
+>  	IIO_CHAN_INFO_HARDWAREGAIN,
+>  	IIO_CHAN_INFO_HYSTERESIS,
+>  	IIO_CHAN_INFO_INT_TIME,
+> +	IIO_CHAN_INFO_ENABLE,
+>  };
+>  
+>  enum iio_shared_by {
+> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+> index 9a1cc01..af0b6e0 100644
+> --- a/include/linux/iio/types.h
+> +++ b/include/linux/iio/types.h
+> @@ -31,6 +31,7 @@ enum iio_chan_type {
+>  	IIO_PRESSURE,
+>  	IIO_HUMIDITYRELATIVE,
+>  	IIO_ACTIVITY,
+> +	IIO_STEPS,
+>  };
+>  
+>  enum iio_modifier {
+> @@ -74,6 +75,7 @@ enum iio_event_type {
+>  	IIO_EV_TYPE_THRESH_ADAPTIVE,
+>  	IIO_EV_TYPE_MAG_ADAPTIVE,
+>  	IIO_EV_TYPE_TRANSITION,
+> +	IIO_EV_TYPE_INSTANCE,
+>  };
+>  
+>  enum iio_event_info {
+> 
 
