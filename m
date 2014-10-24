@@ -1,119 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442AbaJXVtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 17:49:53 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:62037 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752197AbaJXVtv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 17:49:51 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <darren.hart@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>, Grant Likely <grant.likely@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>
-Subject: Re: [PATCH v6 00/12] Add ACPI _DSD and unified device properties support
-Date: Sat, 25 Oct 2014 00:10:20 +0200
-Message-ID: <2453849.ZcbreFmRlO@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <13750506.S2yVlRRDa2@vostro.rjw.lan>
-References: <13750506.S2yVlRRDa2@vostro.rjw.lan>
+	id S1755540AbaJXVxV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 17:53:21 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58331 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752109AbaJXVxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 17:53:19 -0400
+Date: Fri, 24 Oct 2014 14:49:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Yanko Kaneti <yaneti@declera.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        jay.vosburgh@canonical.com, mroos@linux.ee, tj@kernel.org
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141024214927.GA4977@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141023220406.GJ4977@linux.vnet.ibm.com>
+ <20141024090857.GA4083@declera.com>
+ <20141024154006.GP4977@linux.vnet.ibm.com>
+ <20141024162943.GA16621@declera.com>
+ <20141024165454.GS4977@linux.vnet.ibm.com>
+ <20141024170931.GA21849@declera.com>
+ <20141024172009.GV4977@linux.vnet.ibm.com>
+ <20141024173526.GA26058@declera.com>
+ <20141024183226.GW4977@linux.vnet.ibm.com>
+ <20141024212557.GA15537@declera.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141024212557.GA15537@declera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102421-0033-0000-0000-000000D66580
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 21, 2014 11:08:59 PM Rafael J. Wysocki wrote:
-> Hi Everyone,
-> 
-> This is version 6 of the unified device properties interface patchset.
-> 
-> The original cover letter from Mika is here:
-> 
-> http://marc.info/?l=devicetree&m=141087052200600&w=4
-> 
-> and my cover letters for previous iterations are at:
-> 
-> http://marc.info/?l=linux-acpi&m=141212903816560&w=4
-> http://marc.info/?l=linux-kernel&m=141354745011569&w=4
-> 
-> There are a few changes with respect to v5 and the affected patches are
-> [02-03/12] and [09-12/12].  The remaining ones have not been modified.
-> 
-> Most importantly, requesting the first element of a list (package) property
-> from _DSD is now equivalent to accessing a single-value property of the
-> same type, so device_property_read_u8(dev, pname, val) will now be equivalent
-> to device_property_read_u8_array(dev, pname, val, 1), for example.
-> Consequently, this _DSD definition:
-> 
-> Name (_DSD, Package () {
->     ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
->     Package () {
->         Package () {"blah", "A string"},
->     }
-> })
-> 
-> can be used instead of
-> 
-> Name (_DSD, Package () {
->     ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
->     Package () {
->         Package () {"blah", Package () {"A string"}},
->     }
-> })
-> 
-> and the code will be able to retrieve the property value from the both of
-> them just fine.
-> 
-> This means, among other things, that accessors for single-value properties
-> can be implemented in terms of the analogous "array" property accessors
-> which allows the code size to be reduced somewhat.
-> 
-> Patches [02/12] and [09/12] have been modified to achieve that and patch
-> [03/12] have been modified accordingly for the "compatible" property in
-> _DSD to behave in an analogous way.  Additionally, the bodies of the
-> numerical property accessors in patches [02/12] and [09/12] are now
-> generated using macros (string property accessors have slightly different
-> rules and are simply open coded for that reason).
-> 
-> Patch [10/12] has been modified to drop function arguments that happened to
-> have the same values for both of the current users of those functions and
-> patches [11-12/12] have been modified to take that change into account.  If
-> the code in question needs to be made more complex in the future, there
-> should not be any problems with that.
-> 
-> Due to the nature of the changes I have retained all ACKs except for the
-> Grant's Reviewed-by on patch [03/12] (if that had been Acked-by, I would have
-> retained it too, but that didn't feel appropriate for the "reviewed by" thing
-> to me).  If any of you think that the ACKs are not applicable any more, please
-> let me know and I'll drop them.
-> 
-> Finally, many thanks to Mika for testing the series on MinnowBoard 1 and
-> MinnowBoard Max.  In case anybody else would like to test it, it is available
-> from the device-properties branch of the linux-pm.git tree:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git device-properties
-> 
-> Thanks!
+On Sat, Oct 25, 2014 at 12:25:57AM +0300, Yanko Kaneti wrote:
+> On Fri-10/24/14-2014 11:32, Paul E. McKenney wrote:
+> > On Fri, Oct 24, 2014 at 08:35:26PM +0300, Yanko Kaneti wrote:
+> > > On Fri-10/24/14-2014 10:20, Paul E. McKenney wrote:
 
-Crickets ...
+[ . . . ]
 
-OK, so I'm taking the lack of comments as the lack of objections and I'm already
-getting merge conflicts for this series.  Moreover, we already have done some
-work on top of it.
+> > > > Well, if you are feeling aggressive, give the following patch a spin.
+> > > > I am doing sanity tests on it in the meantime.
+> > > 
+> > > Doesn't seem to make a difference here
+> > 
+> > OK, inspection isn't cutting it, so time for tracing.  Does the system
+> > respond to user input?  If so, please enable rcu:rcu_barrier ftrace before
+> > the problem occurs, then dump the trace buffer after the problem occurs.
+> 
+> Sorry for being unresposive here, but I know next to nothing about tracing
+> or most things about the kernel, so I have some cathing up to do.
+> 
+> In the meantime some layman observations while I tried to find what exactly
+> triggers the problem.
+> - Even in runlevel 1 I can reliably trigger the problem by starting libvirtd
+> - libvirtd seems to be very active in using all sorts of kernel facilities
+>   that are modules on fedora so it seems to cause many simultaneous kworker 
+>   calls to modprobe
+> - there are 8 kworker/u16 from 0 to 7
+> - one of these kworkers always deadlocks, while there appear to be two
+>   kworker/u16:6 - the seventh
 
-So, if there still are no comments by Sunday evening, I'll add this series to
-my linux-next branch with 3.19-rc1 as the target.
+Adding Tejun on CC in case this duplication of kworker/u16:6 is important.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+>   6 vs 8 as in 6 rcuos where before they were always 8
+> 
+> Just observations from someone who still doesn't know what the u16
+> kworkers are..
+
+Could you please run the following diagnostic patch?  This will help
+me see if I have managed to miswire the rcuo kthreads.  It should
+print some information at task-hang time.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu: Dump no-CBs CPU state at task-hung time
+
+Strictly diagnostic commit for rcu_barrier() hang.  Not for inclusion.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index 0e5366200154..34048140577b 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -157,4 +157,8 @@ static inline bool rcu_is_watching(void)
+ 
+ #endif /* #else defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) */
+ 
++static inline void rcu_show_nocb_setup(void)
++{
++}
++
+ #endif /* __LINUX_RCUTINY_H */
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 52953790dcca..0b813bdb971b 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -97,4 +97,6 @@ extern int rcu_scheduler_active __read_mostly;
+ 
+ bool rcu_is_watching(void);
+ 
++void rcu_show_nocb_setup(void);
++
+ #endif /* __LINUX_RCUTREE_H */
+diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+index 06db12434d72..e6e4d0f6b063 100644
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -118,6 +118,7 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
+ 		" disables this message.\n");
+ 	sched_show_task(t);
+ 	debug_show_held_locks(t);
++	rcu_show_nocb_setup();
+ 
+ 	touch_nmi_watchdog();
+ 
+diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+index 240fa9094f83..6b373e79ce0e 100644
+--- a/kernel/rcu/rcutorture.c
++++ b/kernel/rcu/rcutorture.c
+@@ -1513,6 +1513,7 @@ rcu_torture_cleanup(void)
+ {
+ 	int i;
+ 
++	rcu_show_nocb_setup();
+ 	rcutorture_record_test_transition();
+ 	if (torture_cleanup_begin()) {
+ 		if (cur_ops->cb_barrier != NULL)
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 927c17b081c7..285b3f6fb229 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2699,6 +2699,31 @@ static bool init_nocb_callback_list(struct rcu_data *rdp)
+ 
+ #endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
+ 
++void rcu_show_nocb_setup(void)
++{
++#ifdef CONFIG_RCU_NOCB_CPU
++	int cpu;
++	struct rcu_data *rdp;
++	struct rcu_state *rsp;
++
++	for_each_rcu_flavor(rsp) {
++		pr_alert("rcu_show_nocb_setup(): %s nocb state:\n", rsp->name);
++		for_each_possible_cpu(cpu) {
++			if (!rcu_is_nocb_cpu(cpu))
++				continue;
++			rdp = per_cpu_ptr(rsp->rda, cpu);
++			pr_alert("%3d: %p l:%p n:%p %c%c%c\n",
++				 cpu,
++				 rdp, rdp->nocb_leader, rdp->nocb_next_follower,
++				 ".N"[!!rdp->nocb_head],
++				 ".G"[!!rdp->nocb_gp_head],
++				 ".F"[!!rdp->nocb_follower_head]);
++		}
++	}
++#endif /* #ifdef CONFIG_RCU_NOCB_CPU */
++}
++EXPORT_SYMBOL_GPL(rcu_show_nocb_setup);
++
+ /*
+  * An adaptive-ticks CPU can potentially execute in kernel mode for an
+  * arbitrarily long period of time with the scheduling-clock tick turned
+
