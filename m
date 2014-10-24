@@ -1,66 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869AbaJXRAr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:00:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756103AbaJXRAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:00:45 -0400
-Date: Fri, 24 Oct 2014 13:00:29 -0400
-From: Dave Jones <davej@redhat.com>
-To: Liu Bo <bo.li.liu@oracle.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com, jbacik@fb.com,
-        linux-btrfs@vger.kernel.org
-Subject: Re: btrfs: WARN_ON(data_sinfo->bytes_may_use < bytes);
-Message-ID: <20141024170029.GA15926@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Liu Bo <bo.li.liu@oracle.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com,
-	jbacik@fb.com, linux-btrfs@vger.kernel.org
-References: <20141023010731.GA27796@redhat.com>
- <20141023012236.GA28429@redhat.com>
- <20141024155245.GA14709@localhost.localdomain>
+	id S1756723AbaJXRDo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:03:44 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:42651 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755894AbaJXRDn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 13:03:43 -0400
+X-IronPort-AV: E=Sophos;i="5.04,781,1406592000"; 
+   d="scan'208";a="185970812"
+Date: Fri, 24 Oct 2014 18:01:12 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v4 3/7] [RFC] arm/arm64: introduce is_dma_coherent
+In-Reply-To: <20141024154353.GE20534@e104818-lin.cambridge.arm.com>
+Message-ID: <alpine.DEB.2.02.1410241751160.22875@kaball.uk.xensource.com>
+References: <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com> <20141010120702.GI7755@arm.com> <alpine.DEB.2.02.1410101401250.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410131215400.17038@kaball.uk.xensource.com> <20141013125725.GA19156@arm.com>
+ <alpine.DEB.2.02.1410131358490.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410221703560.876@kaball.uk.xensource.com> <alpine.DEB.2.02.1410231516450.876@kaball.uk.xensource.com> <20141024104746.GC1955@localhost> <alpine.DEB.2.02.1410241233080.22875@kaball.uk.xensource.com>
+ <20141024154353.GE20534@e104818-lin.cambridge.arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141024155245.GA14709@localhost.localdomain>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 11:52:47PM +0800, Liu Bo wrote:
- 
- > > I also see this WARN_ON being hit from the sync path..
- > > 
- > > WARNING: CPU: 2 PID: 11166 at fs/btrfs/extent-tree.c:3799 btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]()
- > > CPU: 2 PID: 11166 Comm: trinity-c61 Tainted: G        W      3.18.0-rc1+ #74
- > >  0000000000000009 00000000aee2e4e2 ffff8801b0dfbcc8 ffffffff8d86cc97
- > >  0000000000000000 0000000000000000 ffff8801b0dfbd08 ffffffff8d07f301
- > >  ffff88023f328000 ffff88023953d668 0000000000040000 ffff880239358548
- > > Call Trace:
- > >  [<ffffffff8d86cc97>] dump_stack+0x4f/0x7c
- > >  [<ffffffff8d07f301>] warn_slowpath_common+0x81/0xa0
- > >  [<ffffffff8d07f41a>] warn_slowpath_null+0x1a/0x20
- > >  [<ffffffffc0253831>] btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]
- > >  [<ffffffffc025ca63>] btrfs_write_dirty_block_groups+0x6f3/0x740 [btrfs]
- > >  [<ffffffffc02f7a41>] commit_cowonly_roots+0x17a/0x234 [btrfs]
- > >  [<ffffffffc026e60b>] btrfs_commit_transaction+0x45b/0xc10 [btrfs]
- > >  [<ffffffffc023a09b>] btrfs_sync_fs+0x8b/0x270 [btrfs]
- > >  [<ffffffff8d266ad0>] ? do_fsync+0x80/0x80
- > >  [<ffffffff8d266af0>] sync_fs_one_sb+0x20/0x30
- > >  [<ffffffff8d22f2f2>] iterate_supers+0xb2/0x110
- > >  [<ffffffff8d266c24>] sys_sync+0x64/0xb0
- > >  [<ffffffff8d877d49>] tracesys_phase2+0xd4/0xd9
- > > 
- > > After rebooting, and restarting the fuzzer, it happened again very quickly.
- > 
- > Could you please show us the trinity options you're using?
- > 
- > I also see this WARNing from other reports, but still try to reproduce..
+On Fri, 24 Oct 2014, Catalin Marinas wrote:
+> On Fri, Oct 24, 2014 at 12:39:59PM +0100, Stefano Stabellini wrote:
+> > On Fri, 24 Oct 2014, Catalin Marinas wrote:
+> > > I think a better way would be some Xen hook around
+> > > set_arch_dma_coherent_ops(). Does Xen have its own device tracking
+> > > structures? If not, you may be able to add another bitfield to the
+> > > kernel one.
+> > 
+> > We don't have an additional device tracking struct on Xen.
+> > I agree that a new bit somewhere would be the best solution, but I am
+> > not sure where. Maybe in dev_archdata under arm and arm64? After all it
+> > is already used to keep pointers to dma and coherency related
+> > structures.
+> 
+> I was thinking about something like below (maybe with some additional
+> ARCH_HAS_NONCOHERENT_DMA config for architectures that are always
+> coherent):
+> 
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 3b64d0bf5bba..ae399ccbd569 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -183,6 +183,7 @@ static void of_dma_configure(struct device *dev)
+>  	 * dma coherent operations.
+>  	 */
+>  	if (of_dma_is_coherent(dev->of_node)) {
+> +		dev->dma_coherent = 1;
+>  		set_arch_dma_coherent_ops(dev);
+>  		dev_dbg(dev, "device is dma coherent\n");
+>  	}
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index ce1f21608b16..e00ca876db01 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -796,6 +796,7 @@ struct device {
+>  
+>  	bool			offline_disabled:1;
+>  	bool			offline:1;
+> +	bool			dma_coherent:1;
+>  };
+>  
+>  static inline struct device *kobj_to_dev(struct kobject *kobj)
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index d5d388160f42..9c9ba5a5428e 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -78,6 +78,11 @@ static inline int is_device_dma_capable(struct device *dev)
+>  	return dev->dma_mask != NULL && *dev->dma_mask != DMA_MASK_NONE;
+>  }
+>  
+> +static inline int is_device_dma_coherent(struct device *dev)
+> +{
+> +	return dev->dma_coherent;
+> +}
+> +
+>  #ifdef CONFIG_HAS_DMA
+>  #include <asm/dma-mapping.h>
+>  #else
 
-That one was nothing special, just -q -l off.
-I've not been able to reproduce it in the last two days though.
+This is probably the cleanest option. I am going to send it out and see
+what the comments are.
 
-	Dave
+I might still be able to request a backport if it doesn't make 3.18.
 
+
+> > However given the timing constraints I hope you would be OK with the
+> > suboptimal solution for now and create a common is_dma_coherent function
+> > in 3.19?
+> 
+> If you want to push something for 3.18, you could have a temporary
+> solution but I would prefer a bool or something in the dev_archdata
+> structure. Another untested patch:
+> 
+> diff --git a/arch/arm64/include/asm/device.h b/arch/arm64/include/asm/device.h
+> index cf98b362094b..243ef256b8c9 100644
+> --- a/arch/arm64/include/asm/device.h
+> +++ b/arch/arm64/include/asm/device.h
+> @@ -21,6 +21,7 @@ struct dev_archdata {
+>  #ifdef CONFIG_IOMMU_API
+>  	void *iommu;			/* private IOMMU data */
+>  #endif
+> +	bool dma_coherent;
+>  };
+>  
+>  struct pdev_archdata {
+> diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
+> index adeae3f6f0fc..b6bc4c268878 100644
+> --- a/arch/arm64/include/asm/dma-mapping.h
+> +++ b/arch/arm64/include/asm/dma-mapping.h
+> @@ -54,11 +54,17 @@ static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
+>  
+>  static inline int set_arch_dma_coherent_ops(struct device *dev)
+>  {
+> +	dev->dev_archdata.dma_coherent = true;
+>  	set_dma_ops(dev, &coherent_swiotlb_dma_ops);
+>  	return 0;
+>  }
+>  #define set_arch_dma_coherent_ops	set_arch_dma_coherent_ops
+>  
+> +static inline int is_device_dma_coherent(struct device *dev)
+> +{
+> +	return dev->dev_archdata.dma_coherent;
+> +}
+> +
+>  #include <asm-generic/dma-mapping-common.h>
+>  
+>  static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> 
+> 
+> This way you don't have to test for swiotlb vs iommu ops (we don't have
+> the latter yet on arm64 but they are coming).
+> 
+> -- 
+> Catalin
+> 
