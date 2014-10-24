@@ -1,99 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784AbaJXNk2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:40:28 -0400
-Received: from gum.cmpxchg.org ([85.214.110.215]:42853 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756167AbaJXNk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:40:26 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: shorten the page statistics update slowpath
-Date: Fri, 24 Oct 2014 09:40:20 -0400
-Message-Id: <1414158020-25347-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 2.1.2
+	id S1756801AbaJXNmQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:42:16 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60138 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756787AbaJXNmN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 09:42:13 -0400
+Date: Fri, 24 Oct 2014 15:42:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Daniel Borkmann <dborkman@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        x86@kernel.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: drivers: random: Shift out-of-bounds in _mix_pool_bytes
+Message-ID: <20141024134205.GB21513@worktop.programming.kicks-ass.net>
+References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
+ <5444EBFA.5030103@samsung.com>
+ <20141020124929.GA23177@thunk.org>
+ <54451501.2070700@samsung.com>
+ <5445179A.4080804@redhat.com>
+ <20141020141635.GA4499@thunk.org>
+ <20141024100108.GF12706@worktop.programming.kicks-ass.net>
+ <544A52D7.6000202@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544A52D7.6000202@oracle.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While moving charges from one memcg to another, page stat updates must
-acquire the old memcg's move_lock to prevent double accounting.  That
-situation is denoted by an increased memcg->move_accounting.  However,
-the charge moving code declares this way too early for now, even
-before summing up the RSS and pre-allocating destination charges.
+On Fri, Oct 24, 2014 at 09:23:35AM -0400, Sasha Levin wrote:
+> 
+> i >> 32 may happen to be "i", but is there anything that prevents the compiler
+> from returning, let's say, 42?
 
-Shorten this slowpath mode by increasing memcg->move_accounting only
-right before walking the task's address space with the intention of
-actually moving the pages.
+Not really, although gcc seems to opt for the 'sane' option and emit the
+instruction and let the arch figure out how to deal with it. Hence the
+'fun' difference between x86 and ARM.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 21 ++++++++-------------
- 1 file changed, 8 insertions(+), 13 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index c50176429fa3..23cf27cca370 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5263,8 +5263,6 @@ static void __mem_cgroup_clear_mc(void)
- 
- static void mem_cgroup_clear_mc(void)
- {
--	struct mem_cgroup *from = mc.from;
--
- 	/*
- 	 * we must clear moving_task before waking up waiters at the end of
- 	 * task migration.
-@@ -5275,8 +5273,6 @@ static void mem_cgroup_clear_mc(void)
- 	mc.from = NULL;
- 	mc.to = NULL;
- 	spin_unlock(&mc.lock);
--
--	atomic_dec(&from->moving_account);
- }
- 
- static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
-@@ -5310,15 +5306,6 @@ static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
- 			VM_BUG_ON(mc.moved_charge);
- 			VM_BUG_ON(mc.moved_swap);
- 
--			/*
--			 * Signal mem_cgroup_begin_page_stat() to take
--			 * the memcg's move_lock while we're moving
--			 * its pages to another memcg.  Then wait for
--			 * already started RCU-only updates to finish.
--			 */
--			atomic_inc(&from->moving_account);
--			synchronize_rcu();
--
- 			spin_lock(&mc.lock);
- 			mc.from = from;
- 			mc.to = memcg;
-@@ -5450,6 +5437,13 @@ static void mem_cgroup_move_charge(struct mm_struct *mm)
- 	struct vm_area_struct *vma;
- 
- 	lru_add_drain_all();
-+	/*
-+	 * Signal mem_cgroup_begin_page_stat() to take the memcg's
-+	 * move_lock while we're moving its pages to another memcg.
-+	 * Then wait for already started RCU-only updates to finish.
-+	 */
-+	atomic_inc(&mc.from->moving_account);
-+	synchronize_rcu();
- retry:
- 	if (unlikely(!down_read_trylock(&mm->mmap_sem))) {
- 		/*
-@@ -5482,6 +5476,7 @@ retry:
- 			break;
- 	}
- 	up_read(&mm->mmap_sem);
-+	atomic_dec(&mc.from->moving_account);
- }
- 
- static void mem_cgroup_move_task(struct cgroup_subsys_state *css,
--- 
-2.1.2
 
