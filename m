@@ -1,235 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130AbaJXRgQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:36:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54715 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755894AbaJXRgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:36:14 -0400
-Date: Fri, 24 Oct 2014 12:35:49 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Huang Rui <ray.huang@amd.com>
-CC: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+	id S1756925AbaJXRjf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:39:35 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:48436 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756015AbaJXRjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 13:39:33 -0400
+Date: Fri, 24 Oct 2014 18:39:20 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
         Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
-        <linux-usb@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 07/16] usb: dwc3: add lpm erratum support
-Message-ID: <20141024173549.GP26941@saruman>
-Reply-To: <balbi@ti.com>
-References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
- <1413536021-4886-8-git-send-email-ray.huang@amd.com>
- <20141017144859.GC26260@saruman>
- <20141024170128.GA5149@hr-slim.amd.com>
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Robert Moore <robert.moore@intel.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v5 12/18] ACPI / processor: Make it possible to get CPU
+ hardware ID via GICC
+Message-ID: <20141024173920.GB8303@red-moon>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+ <1413553034-20956-13-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="p6hDAtPN9q+ZnUca"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141024170128.GA5149@hr-slim.amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1413553034-20956-13-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---p6hDAtPN9q+ZnUca
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 17, 2014 at 02:37:08PM +0100, Hanjun Guo wrote:
+> Introduce a new function map_gicc_mpidr() to allow MPIDRs to be obtained
+> from the GICC Structure introduced by ACPI 5.1.
+> 
+> MPIDR is the CPU hardware ID as local APIC ID on x86 platform, so we use
+> MPIDR not the GIC CPU interface ID to identify CPUs.
+> 
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  arch/arm64/include/asm/acpi.h |   29 +++++++++++++++++++++++++++++
+>  arch/arm64/kernel/acpi.c      |    1 -
+>  drivers/acpi/processor_core.c |   37 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 66 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm64/include/asm/acpi.h b/arch/arm64/include/asm/acpi.h
+> index c82d4a1..483ff45 100644
+> --- a/arch/arm64/include/asm/acpi.h
+> +++ b/arch/arm64/include/asm/acpi.h
+> @@ -12,6 +12,8 @@
+>  #ifndef _ASM_ACPI_H
+>  #define _ASM_ACPI_H
+>  
+> +#include <asm/smp_plat.h>
+> +
+>  /* Basic configuration for ACPI */
+>  #ifdef	CONFIG_ACPI
+>  #define acpi_strict 1	/* No out-of-spec workarounds on ARM64 */
+> @@ -45,6 +47,33 @@ static inline void enable_acpi(void)
+>  	acpi_noirq = 0;
+>  }
+>  
+> +/* MPIDR value provided in GICC structure is 64 bits, but the
+> + * existing apic_id (CPU hardware ID) using in acpi processor
+> + * driver is 32-bit, to conform to the same datatype we need
+> + * to repack the GICC structure MPIDR.
+> + *
+> + * Only 32 bits of MPIDR are used:
+> + * 
+> + * Bits [0:7] Aff0;
+> + * Bits [8:15] Aff1;
+> + * Bits [16:23] Aff2;
+> + * Bits [32:39] Aff3;
+> + */
+> +static inline u32 pack_mpidr(u64 mpidr)
+> +{
+> +	return (u32) ((mpidr & 0xff00000000) >> 8) | mpidr;
+> +}
+> +
+> +/*
+> + * The ACPI processor driver for ACPI core code needs this macro
+> + * to find out this cpu was already mapped (mapping from CPU hardware
+> + * ID to CPU logical ID) or not.
+> + *
+> + * cpu_logical_map(cpu) is the mapping of MPIDR and the logical cpu,
+> + * and MPIDR is the cpu hardware ID we needed to pack.
+> + */
+> +#define cpu_physical_id(cpu) pack_mpidr(cpu_logical_map(cpu))
+> +
+>  /*
+>   * It's used from ACPI core in kdump to boot UP system with SMP kernel,
+>   * with this check the ACPI core will not override the CPU index
+> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
+> index 34837e0..e91ec76 100644
+> --- a/arch/arm64/kernel/acpi.c
+> +++ b/arch/arm64/kernel/acpi.c
+> @@ -24,7 +24,6 @@
+>  #include <linux/bootmem.h>
+>  #include <linux/smp.h>
+>  
+> -#include <asm/smp_plat.h>
+>  #include <asm/cputype.h>
+>  #include <asm/cpu_ops.h>
+>  
+> diff --git a/drivers/acpi/processor_core.c b/drivers/acpi/processor_core.c
+> index e32321c..4007313 100644
+> --- a/drivers/acpi/processor_core.c
+> +++ b/drivers/acpi/processor_core.c
+> @@ -64,6 +64,38 @@ static int map_lsapic_id(struct acpi_subtable_header *entry,
+>  	return 0;
+>  }
+>  
+> +/*
+> + * On ARM platform, MPIDR value is the hardware ID as apic ID
+> + * on Intel platforms
+> + */
+> +static int map_gicc_mpidr(struct acpi_subtable_header *entry,
+> +		int device_declaration, u32 acpi_id, int *mpidr)
+> +{
+> +	struct acpi_madt_generic_interrupt *gicc =
+> +	    container_of(entry, struct acpi_madt_generic_interrupt, header);
+> +
+> +	if (!(gicc->flags & ACPI_MADT_ENABLED))
+> +		return -ENODEV;
+> +
+> +	/* In the GIC interrupt model, logical processors are
+> +	 * required to have a Processor Device object in the DSDT,
+> +	 * so we should check device_declaration here
+> +	 */
+> +	if (device_declaration && (gicc->uid == acpi_id)) {
+> +		/*
+> +		 * Only bits [0:7] Aff0, bits [8:15] Aff1, bits [16:23] Aff2
+> +		 * and bits [32:39] Aff3 are meaningful, so pack the Affx
+> +		 * fields into a single 32 bit identifier to accommodate the
+> +		 * acpi processor drivers.
+> +		 */
+> +		*mpidr = ((gicc->arm_mpidr & 0xff00000000) >> 8)
+> +			 | gicc->arm_mpidr;
 
-Hi,
+The simple fact that you define a function to pack the mpidr value and
+you can't use it here because this is *generic* code is telling, and
+a very bad omen. At the cost of sounding like a broken record, I do not
+like this mpidr->apic->logical_cpu song and dance at all.
+ACPI is peppered with code (eg hotplug is another example, CPUidle driver
+even worse) that is supposed to be generic but contains x86 code to carry
+out this cpuid conversion, I really think that in order to start an ARM64
+ACPI port properly we should at least try to factor out this physical to
+logical cpu id conversion, and it is not the first time that I mention this
+on the lists.
 
-On Sat, Oct 25, 2014 at 01:01:28AM +0800, Huang Rui wrote:
-> On Fri, Oct 17, 2014 at 09:48:59AM -0500, Felipe Balbi wrote:
-> > On Fri, Oct 17, 2014 at 04:53:32PM +0800, Huang Rui wrote:
-> > > When parameter DWC_USB3_LPM_ERRATA_ENABLE is enabled in Andvanced Con=
-figuration
-> > > of coreConsultant, it supports of xHCI BESL Errata Dated 10/19/2011 i=
-s enabled
-> > > in host mode. In device mode it adds the capability to send NYET resp=
-onse based
-> > > on the BESL value received in the LPM token.
-> > >=20
-> > > This patch add an entry that soc platform is able to define the lpm c=
-apacity
-> > > with their own device tree or bus glue layer.
-> > >=20
-> > > Suggested-by: Felipe Balbi <balbi@ti.com>
-> > > Signed-off-by: Huang Rui <ray.huang@amd.com>
-> > > ---
-> > >  drivers/usb/dwc3/core.c          |  2 ++
-> > >  drivers/usb/dwc3/core.h          | 24 +++++++++++++++---------
-> > >  drivers/usb/dwc3/dwc3-pci.c      |  1 +
-> > >  drivers/usb/dwc3/gadget.c        |  7 +++++++
-> > >  drivers/usb/dwc3/platform_data.h |  1 +
-> > >  5 files changed, 26 insertions(+), 9 deletions(-)
-> > >=20
-> > > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> > > index 819e501..25db533 100644
-> > > --- a/drivers/usb/dwc3/core.c
-> > > +++ b/drivers/usb/dwc3/core.c
-> > > @@ -708,11 +708,13 @@ static int dwc3_probe(struct platform_device *p=
-dev)
-> > > =20
-> > >  	if (node) {
-> > >  		dwc->maximum_speed =3D of_usb_get_maximum_speed(node);
-> > > +		dwc->has_lpm_erratum =3D of_property_read_bool(node, "snps,has-lpm=
--erratum");
-> > > =20
-> > >  		dwc->needs_fifo_resize =3D of_property_read_bool(node, "tx-fifo-re=
-size");
-> > >  		dwc->dr_mode =3D of_usb_get_dr_mode(node);
-> > >  	} else if (pdata) {
-> > >  		dwc->maximum_speed =3D pdata->maximum_speed;
-> > > +		dwc->has_lpm_erratum =3D pdata->has_lpm_erratum;
-> > > =20
-> > >  		dwc->needs_fifo_resize =3D pdata->tx_fifo_resize;
-> > >  		dwc->dr_mode =3D pdata->dr_mode;
-> > > diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-> > > index cfe0d57..d58479e 100644
-> > > --- a/drivers/usb/dwc3/core.h
-> > > +++ b/drivers/usb/dwc3/core.h
-> > > @@ -246,16 +246,19 @@
-> > >  #define DWC3_DCTL_TRGTULST_SS_INACT	(DWC3_DCTL_TRGTULST(6))
-> > > =20
-> > >  /* These apply for core versions 1.94a and later */
-> > > -#define DWC3_DCTL_KEEP_CONNECT	(1 << 19)
-> > > -#define DWC3_DCTL_L1_HIBER_EN	(1 << 18)
-> > > -#define DWC3_DCTL_CRS		(1 << 17)
-> > > -#define DWC3_DCTL_CSS		(1 << 16)
-> > > +#define DWC3_DCTL_LPM_ERRATA_MASK	DWC3_DCTL_LPM_ERRATA(0xf)
-> > > +#define DWC3_DCTL_LPM_ERRATA(n)		((n) << 20)
-> > > -#define DWC3_DCTL_INITU2ENA	(1 << 12)
-> > > -#define DWC3_DCTL_ACCEPTU2ENA	(1 << 11)
-> > > -#define DWC3_DCTL_INITU1ENA	(1 << 10)
-> > > -#define DWC3_DCTL_ACCEPTU1ENA	(1 << 9)
-> > > -#define DWC3_DCTL_TSTCTRL_MASK	(0xf << 1)
-> > > +#define DWC3_DCTL_KEEP_CONNECT		(1 << 19)
-> > > +#define DWC3_DCTL_L1_HIBER_EN		(1 << 18)
-> > > +#define DWC3_DCTL_CRS			(1 << 17)
-> > > +#define DWC3_DCTL_CSS			(1 << 16)
-> > > +
-> > > +#define DWC3_DCTL_INITU2ENA		(1 << 12)
-> > > +#define DWC3_DCTL_ACCEPTU2ENA		(1 << 11)
-> > > +#define DWC3_DCTL_INITU1ENA		(1 << 10)
-> > > +#define DWC3_DCTL_ACCEPTU1ENA		(1 << 9)
-> > > +#define DWC3_DCTL_TSTCTRL_MASK		(0xf << 1)
-> > > =20
-> > >  #define DWC3_DCTL_ULSTCHNGREQ_MASK	(0x0f << 5)
-> > >  #define DWC3_DCTL_ULSTCHNGREQ(n) (((n) << 5) & DWC3_DCTL_ULSTCHNGREQ=
-_MASK)
-> > > @@ -665,6 +668,8 @@ struct dwc3_scratchpad_array {
-> > >   * @ep0_bounced: true when we used bounce buffer
-> > >   * @ep0_expect_in: true when we expect a DATA IN transfer
-> > >   * @has_hibernation: true when dwc3 was configured with Hibernation
-> > > + * @has_lpm_erratum: true when core was configured with LPM Erratum.=
- Note that
-> > > + *			there's now way for software to detect this in runtime.
-> > >   * @is_selfpowered: true when we are selfpowered
-> > >   * @is_fpga: true when we are using the FPGA board
-> > >   * @needs_fifo_resize: not all users might want fifo resizing, flag =
-it
-> > > @@ -771,6 +776,7 @@ struct dwc3 {
-> > >  	unsigned		ep0_bounced:1;
-> > >  	unsigned		ep0_expect_in:1;
-> > >  	unsigned		has_hibernation:1;
-> > > +	unsigned		has_lpm_erratum:1;
-> > >  	unsigned		is_selfpowered:1;
-> > >  	unsigned		is_fpga:1;
-> > >  	unsigned		needs_fifo_resize:1;
-> > > diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
-> > > index a89db6c..bbe946c 100644
-> > > --- a/drivers/usb/dwc3/dwc3-pci.c
-> > > +++ b/drivers/usb/dwc3/dwc3-pci.c
-> > > @@ -148,6 +148,7 @@ static int dwc3_pci_probe(struct pci_dev *pci,
-> > > =20
-> > >  	if (pci->vendor =3D=3D PCI_VENDOR_ID_AMD && pci->device =3D=3D
-> > >  			PCI_DEVICE_ID_AMD_NL) {
-> > > +		dwc3_pdata.has_lpm_erratum =3D true;
-> > >  		dwc3_pdata.quirks |=3D DWC3_QUIRK_AMD_NL;
-> > >  	}
-> > > =20
-> >=20
-> > let's combine all AMD patches as the last patch in the series so we add
-> > AMD support with all quirks in one place.
-> >=20
-> > > diff --git a/drivers/usb/dwc3/gadget.c b/drivers/usb/dwc3/gadget.c
-> > > index 1f2a719..33bfc70 100644
-> > > --- a/drivers/usb/dwc3/gadget.c
-> > > +++ b/drivers/usb/dwc3/gadget.c
-> > > @@ -1581,6 +1581,13 @@ static int dwc3_gadget_start(struct usb_gadget=
- *g,
-> > >  	}
-> > >  	dwc3_writel(dwc->regs, DWC3_DCFG, reg);
-> > > =20
-> > > +	if (dwc->has_lpm_erratum) {
-> > > +		reg =3D dwc3_readl(dwc->regs, DWC3_DCTL);
-> > > +		/* REVISIT should this be configurable ? */
-> > > +		reg |=3D DWC3_DCTL_LPM_ERRATA(0xf);
-> >=20
-> > as Paul mentioned, this should definitely be configurable. So we need to
-> > discuss how to make that configurable too.
-> >=20
->=20
-> Can I define a 4-bits variable (lpm_nyet_thres) to let platform vendor ab=
-le to configure
-> the besl value at DT or glue layer?
->=20
-> struct dwc3_platform_data {
->         ...
->         unsigned has_lpm_erratum:1;
->         unsigned lpm_nyet_thres:4;
+I will also talk to Rafael about this at the earliest opportunity, I
+guess that x86 code relies on apic-id because some ACPI versions could
+not rely on the acpi-id or some other reasons I have to investigate.
 
-this threshold can be a u8, no problem :-) (also, please spell out
-threshold completely :-)
+Thanks,
+Lorenzo
 
-> Then put the value at probe like:
->=20
-> dwc->has_lpm_erratum =3D of_property_read_u8(node, "snps,lpm-nyet-thres");
-
-yup, that's fine :-)
-
-> I don't find a 4-bit "Find from a property" interface, so can I use
-> of_property_read_u8 instead for ARM platforms?
->=20
-> Then do:
-> if (dwc->has_lpm_erratum)
->         reg |=3D DWC3_DCTL_LPM_ERRATA(dwc->lpm_nyet_thres);
-
-perfect :-) But then default to highest possible threshold, perhaps ?
-
-lpm_nyet_threshold =3D 0xff;
-
-if (pdata->lpm_nyet_threshold)
-	lpm_nyet_threshold =3D pdata->lpm_nyet_threshold;
-
-and likewise for DT.
-
---=20
-balbi
-
---p6hDAtPN9q+ZnUca
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUSo31AAoJEIaOsuA1yqREpc4P/RCntnTQa48wY+WvvgCIN1rk
-yB8hl23iv3pInNHLMW1CEPG9W3qpGt6gGEzp94c203ZaBXe1Osj2tHz0OlVcaxBs
-Iw0bMCEp8MtOCFY5o0Dp+2v56Esh88YqMwsGDz4O3vKac+uXYwaomZnI1Eywfjul
-O7KpJ0rLBFuod9Locw/vxDJZGEEFuqJAybfwZtoveGgKITE/tKCOLPF7wTQmph0w
-u4f379EZwKpZZcmKgfqbmMI77XGBuKPoS4mfavpLjcH/KfRjhMYYmglETmumkpTw
-St91hUMXcRmRl81hTAjOBQ8AXG9aqDbiazbyJWv65xYU6F/wJKnlixuPzcX80KLb
-ZeQRm753dLUOY2sdTbimQ3aw9lWrV9S1XlaAIO4zp+vBZ6ohYvRC7OeJGT7KcIDJ
-yy2Dp1J9anfJ6LDzN7Jym+rSWQXNwpyar5LNawqoq4yB7iaAU0Wtp2uC8zj8TFdz
-kR47gfSAeWrJuLBTT2k2bGHlqIGaLt4qAJKtVmECk3djqMUNJ/LPQGv0d+IQ8Wk7
-A71mLLvrMM+lGi6jVJ461ll1NouMsZmbAeyKlVLaw8TggsWe/IfoWgGeL5qC9vPH
-qnbZk2G3EL7VATp/Vh0RWPSwUBkoGrTOBCAYzM2VQDUOVWrZsuMPNQ4AxCZo8H/L
-MHBeH0rweNI76l4jQ/56
-=hm1Z
------END PGP SIGNATURE-----
-
---p6hDAtPN9q+ZnUca--
+> +		return 0;
+> +	}
+> +
+> +	return -EINVAL;
+> +}
+> +
+>  static int map_madt_entry(int type, u32 acpi_id)
+>  {
+>  	unsigned long madt_end, entry;
+> @@ -99,6 +131,9 @@ static int map_madt_entry(int type, u32 acpi_id)
+>  		} else if (header->type == ACPI_MADT_TYPE_LOCAL_SAPIC) {
+>  			if (!map_lsapic_id(header, type, acpi_id, &apic_id))
+>  				break;
+> +		} else if (header->type == ACPI_MADT_TYPE_GENERIC_INTERRUPT) {
+> +			if (!map_gicc_mpidr(header, type, acpi_id, &apic_id))
+> +				break;
+>  		}
+>  		entry += header->length;
+>  	}
+> @@ -131,6 +166,8 @@ static int map_mat_entry(acpi_handle handle, int type, u32 acpi_id)
+>  		map_lsapic_id(header, type, acpi_id, &apic_id);
+>  	} else if (header->type == ACPI_MADT_TYPE_LOCAL_X2APIC) {
+>  		map_x2apic_id(header, type, acpi_id, &apic_id);
+> +	} else if (header->type == ACPI_MADT_TYPE_GENERIC_INTERRUPT) {
+> +		map_gicc_mpidr(header, type, acpi_id, &apic_id);
+>  	}
+>  
+>  exit:
+> -- 
+> 1.7.9.5
+> 
+> 
