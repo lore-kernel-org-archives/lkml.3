@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752490AbaJXTKE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 15:10:04 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:41821 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaJXTKC (ORCPT
+	id S1754195AbaJXTKe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 15:10:34 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57944 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345AbaJXTKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 15:10:02 -0400
-From: Johan Hovold <johan@kernel.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH] ARM: remove redundant irq disable at halt and restart
-Date: Fri, 24 Oct 2014 21:06:32 +0200
-Message-Id: <1414177592-14547-1-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.4
+	Fri, 24 Oct 2014 15:10:30 -0400
+Message-ID: <544AA421.6040705@infradead.org>
+Date: Fri, 24 Oct 2014 12:10:25 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+MIME-Version: 1.0
+To: Masanari Iida <standby24x7@gmail.com>, catalin.marinas@arm.com,
+        corbet@lwn.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Documentation: Add CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
+ case
+References: <1414153500-29150-1-git-send-email-standby24x7@gmail.com> <1414153500-29150-3-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1414153500-29150-3-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove redundant local_irq_disable() at machine halt and restart.
+On 10/24/14 05:25, Masanari Iida wrote:
+> This patch add a case with CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF=y.
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+>  Documentation/kmemleak.txt | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
+> index f4f033c..0f2bbd8 100644
+> --- a/Documentation/kmemleak.txt
+> +++ b/Documentation/kmemleak.txt
+> @@ -62,6 +62,10 @@ Memory may be allocated or freed before kmemleak is initialised and
+>  these actions are stored in an early log buffer. The size of this buffer
+>  is configured via the CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE option.
+>  
+> +If CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF are enabled, the kmemleak is
 
-Since commit 44424c34049f ("ARM: 7803/1: Fix deadlock scenario with
-smp_send_stop()") interrupts are disabled before stopping secondary
-CPUs.
+                                        is enabled, kmemleak is
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
----
- arch/arm/kernel/process.c | 2 --
- 1 file changed, 2 deletions(-)
+> +disabled by default. Passing "kmemleak=on" on the kernel command
+> +line enables the function. 
+> +
+>  Basic Algorithm
+>  ---------------
+>  
+> 
 
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index a35f6ebbd2c2..5663ab57cf07 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -195,7 +195,6 @@ void machine_halt(void)
- 	local_irq_disable();
- 	smp_send_stop();
- 
--	local_irq_disable();
- 	while (1);
- }
- 
-@@ -237,7 +236,6 @@ void machine_restart(char *cmd)
- 
- 	/* Whoops - the platform was unable to reboot. Tell the user! */
- 	printk("Reboot failed -- System halted\n");
--	local_irq_disable();
- 	while (1);
- }
- 
+
 -- 
-2.0.4
-
+~Randy
