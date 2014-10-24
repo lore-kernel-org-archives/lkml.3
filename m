@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627AbaJXN2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:28:12 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64666 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756522AbaJXN2J (ORCPT
+	id S1756628AbaJXNaI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:30:08 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:62029 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756444AbaJXNaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:28:09 -0400
-Message-ID: <544A53E3.7040501@gmail.com>
-Date: Fri, 24 Oct 2014 15:28:03 +0200
+	Fri, 24 Oct 2014 09:30:06 -0400
+Message-ID: <544A5459.9020006@gmail.com>
+Date: Fri, 24 Oct 2014 15:30:01 +0200
 From: Tomasz Figa <tomasz.figa@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
@@ -28,38 +28,31 @@ CC: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         InKi Dae <inki.dae@samsung.com>, geunsik.lim@samsung.com,
         jh80.chung@samsung.com, jaewon02.kim@samsung.com,
         ideal.song@samsung.com, yj44.cho@samsung.com,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH 2/5] clk: samsung: exynos4415: Add clocks using common
- clock framework
-References: <1413775749-17539-1-git-send-email-cw00.choi@samsung.com>	<1413775935-17743-2-git-send-email-cw00.choi@samsung.com> <CAD8Lp45F_6UWXx0f2xVGZL+Rgemg2fzkYhnfPdaeaiky0rKPgw@mail.gmail.com>
-In-Reply-To: <CAD8Lp45F_6UWXx0f2xVGZL+Rgemg2fzkYhnfPdaeaiky0rKPgw@mail.gmail.com>
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 5/5] ARM: dts: Add dts files for Exynos4415 SoC
+References: <1413775749-17539-1-git-send-email-cw00.choi@samsung.com>	<1413775935-17743-5-git-send-email-cw00.choi@samsung.com> <CAD8Lp46Y1WBF2Bq5SKtQDZ4kUb2fDCsbBs1THFWcV=8-OXh_SQ@mail.gmail.com>
+In-Reply-To: <CAD8Lp46Y1WBF2Bq5SKtQDZ4kUb2fDCsbBs1THFWcV=8-OXh_SQ@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.10.2014 15:18, Daniel Drake wrote:
+On 24.10.2014 15:23, Daniel Drake wrote:
 > On Sun, Oct 19, 2014 at 9:32 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> This patch adds the new clock driver of Exynos4415 SoC based on Cortex-A9
->> using common clock framework. The CMU (Clock Management Unit) of Exynos4415
->> controls PLLs(Phase Locked Loops) and generates system clocks for CPU, buses
->> and function clocks for individual IPs.
+>> This patch adds new exynos4415.dtsi to support Exynos4415 SoC
+>> based on Cortex-A9 quad cores and includes following dt nodes:
 > 
-> There seems to be a lot in common here with other exynos4 variants in
-> clk-exynos4.c. Have you considered just adding support for the 4415 in
-> the existing driver?
+> There's a lot in common between your new exynos4415.dtsi and the
+> existing exynos4.dtsi.
+> Would it make more sense for the 4415 code to extend the existing
+> exynos4.dtsi like the other Exynos4 variants do?
 
-I tried when I was still at Samsung and the outcome was far from being
-nice. There are certain differences, such as separate address spaces of
-few clock controllers and different bit fields in apparently similar
-registers, which made resulting code quite ugly.
-
-Also another advantage of separate driver is that it can be made without
-duplicating initial fails of the driver for Exynos4, such as private
-bindings for external clocks or clock controllers in different power
-domains grouped together into one big logical clock controller, because
-at development time they looked so (contiguous address space).
+This would make sense, but then existing Exynos 4 device tree sources
+would have to be refactored to use reference-based syntax for extending
+nodes. (Which is desirable anyway, but adds quite a bit of effort and
+could be prone to conflicts.) I'd say that they could be merged later
+anyway.
 
 Best regards,
 Tomasz
