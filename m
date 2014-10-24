@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933105AbaJXL62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 07:58:28 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:56895 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933017AbaJXL6X (ORCPT
+	id S933137AbaJXL6i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 07:58:38 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:49235 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933017AbaJXL6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 07:58:23 -0400
-Date: Fri, 24 Oct 2014 06:56:16 -0500
+	Fri, 24 Oct 2014 07:58:36 -0400
+Date: Fri, 24 Oct 2014 06:56:28 -0500
 From: Eric Rost <eric.rost@mybabylon.net>
 To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
         antonysaraev@gmail.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 6/7] staging: skein: Removes unneeded #define
-Message-ID: <70a1f2485b5f4b068b60d20ed683ecfc8cd9a508.1414151639.git.eric.rost@mybabylon.net>
+Subject: [PATCH v5 7/7] staging: skein: Removes skein_debug include
+Message-ID: <c1a842e77e86b572beb220dc23931de1a49d9c59.1414151639.git.eric.rost@mybabylon.net>
 References: <cover.1414151639.git.eric.rost@mybabylon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,27 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes unneeded #define SKEIN_PORT_CODE since skein_port.h is
-nonexistent.
+Removes skein_debug.h include since skein_debug.h is nonexistent.
 
 Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
 ---
- drivers/staging/skein/skein_base.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/staging/skein/skein_base.h | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
-diff --git a/drivers/staging/skein/skein_base.c b/drivers/staging/skein/skein_base.c
-index e0994ea..ebc436a 100644
---- a/drivers/staging/skein/skein_base.c
-+++ b/drivers/staging/skein/skein_base.c
-@@ -8,8 +8,6 @@
+diff --git a/drivers/staging/skein/skein_base.h b/drivers/staging/skein/skein_base.h
+index 0111fa4..5b69e5a 100644
+--- a/drivers/staging/skein/skein_base.h
++++ b/drivers/staging/skein/skein_base.h
+@@ -15,10 +15,6 @@
  **
- ************************************************************************/
+ ** The "default" note explains what happens when the switch is not defined.
+ **
+-**  SKEIN_DEBUG            -- make callouts from inside Skein code
+-**                            to examine/display intermediate values.
+-**                            [default: no callouts (no overhead)]
+-**
+ **  SKEIN_ERR_CHECK        -- how error checking is handled inside Skein
+ **                            code. If not defined, most error checking
+ **                            is disabled (for performance). Otherwise,
+@@ -282,15 +278,12 @@ int skein_1024_output(struct skein_1024_ctx *ctx, u8 *hash_val);
+ /*****************************************************************
+ ** "Internal" Skein definitions for debugging and error checking
+ ******************************************************************/
+-#ifdef SKEIN_DEBUG             /* examine/display intermediate values? */
+-#include "skein_debug.h"
+-#else                           /* default is no callouts */
+ #define skein_show_block(bits, ctx, x, blk_ptr, w_ptr, ks_event_ptr, ks_odd_ptr)
+ #define skein_show_round(bits, ctx, r, x)
+ #define skein_show_r_ptr(bits, ctx, r, x_ptr)
+ #define skein_show_final(bits, ctx, cnt, out_ptr)
+ #define skein_show_key(bits, ctx, key, key_bytes)
+-#endif
++
  
--#define  SKEIN_PORT_CODE /* instantiate any code in skein_port.h */
--
- #include <linux/string.h>       /* get the memcpy/memset functions */
- #include <linux/export.h>
- #include "skein_base.h" /* get the Skein API definitions   */
+ /* ignore all asserts, for performance */
+ #define skein_assert_ret(x, ret_code)
 -- 
 2.1.1
 
