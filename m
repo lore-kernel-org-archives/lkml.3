@@ -1,269 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601AbaJXRxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:53:53 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:40975 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757163AbaJXRxu (ORCPT
+	id S932977AbaJXRyO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:54:14 -0400
+Received: from mail-oi0-f49.google.com ([209.85.218.49]:54236 "EHLO
+	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932624AbaJXRyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:53:50 -0400
-Message-ID: <544A922B.5070505@amacapital.net>
-Date: Fri, 24 Oct 2014 10:53:47 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 24 Oct 2014 13:54:12 -0400
 MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-CC: Nadav Amit <namit@cs.technion.ac.il>, stable@vger.kernel.org
-Subject: Re: [PATCH 05/14] KVM: x86: Emulator fixes for eip canonical checks
- on near branches
-References: <1414163245-18555-1-git-send-email-pbonzini@redhat.com> <1414163245-18555-6-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1414163245-18555-6-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141024161634.GG20534@e104818-lin.cambridge.arm.com>
+References: <1413993983-17310-1-git-send-email-mathieu.poirier@linaro.org>
+	<20141022164454.GI15370@e104818-lin.cambridge.arm.com>
+	<CANLsYkx08dw=YYBoRJ47QC+iL578HxPoMFcRDw6aKsvyqaqtkw@mail.gmail.com>
+	<20141024092832.GD20534@e104818-lin.cambridge.arm.com>
+	<CANLsYkz+UZv+vd9hbQOTNvsdyR7MyMrb0DxCOpMcgCr+1NQR5Q@mail.gmail.com>
+	<20141024161634.GG20534@e104818-lin.cambridge.arm.com>
+Date: Fri, 24 Oct 2014 11:54:12 -0600
+Message-ID: <CANLsYkzbnNy0kOjuOCQi4LgXGXTYVMH2nc8CFs1dQsgmpD4TrQ@mail.gmail.com>
+Subject: Re: [PATCH] ARM: supplementing IO accessors with 64 bit capability
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2014 08:07 AM, Paolo Bonzini wrote:
-> From: Nadav Amit <namit@cs.technion.ac.il>
-> 
-> Before changing rip (during jmp, call, ret, etc.) the target should be asserted
-> to be canonical one, as real CPUs do.  During sysret, both target rsp and rip
-> should be canonical. If any of these values is noncanonical, a #GP exception
-> should occur.  The exception to this rule are syscall and sysenter instructions
-> in which the assigned rip is checked during the assignment to the relevant
-> MSRs.
+On 24 October 2014 10:16, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> On Fri, Oct 24, 2014 at 04:05:13PM +0100, Mathieu Poirier wrote:
+>> On 24 October 2014 03:28, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>> > On Wed, Oct 22, 2014 at 08:10:27PM +0100, Mathieu Poirier wrote:
+>> >> On 22 October 2014 18:44, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>> >> > On Wed, Oct 22, 2014 at 05:06:23PM +0100, mathieu.poirier@linaro.org wrote:
+>> >> >> +static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
+>> >> >> +{
+>> >> >> +     asm volatile("strd %1, %0"
+>> >> >> +                  : "+Qo" (*(volatile u64 __force *)addr)
+>> >> >> +                  : "r" (val));
+>> >> >> +}
+>> >> >> +
+>> >> >> +static inline u64 __raw_readq(const volatile void __iomem *addr)
+>> >> >> +{
+>> >> >> +     u64 val;
+>> >> >> +     asm volatile("ldrd %1, %0"
+>> >> >> +                  : "+Qo" (*(volatile u64 __force *)addr),
+>> >> >> +                    "=r" (val));
+>> >> >> +     return val;
+>> >> >> +}
+>> >> >> +#endif
+>> >> >
+>> >> > I'm curious why you need these. Do you have a device that needs a 64-bit
+>> >> > single access or you are trying to read two consecutive registers?
+>> >>
+>> >> The fundamental data size of Coresight STM32 for ARMv7 is
+>> >> implementation defined and can be 32 or 64bit.  As such stimulus ports
+>> >> can support transaction sizes of up to 64 bit.
+>> >
+>> > The STM programmer's model spec recommends something else (though I find
+>> > the "3.6 Data sizes" chapter a bit confusing):
+>> >
+>> >   To ensure that code is portable between processor micro-architectures
+>> >   and system implementations, ARM recommends that only the native data
+>> >   size of the machine is used, and smaller sizes. For the 32-bit ARMv7
+>> >   architecture, only 8, 16, and 32-bit transfers are recommended. For an
+>> >   ARMv8 processor that supports the AArch64 Execution state, it is
+>> >   recommended that the fundamental data size of 64-bits is implemented.
+>> >
+>> > Which means that you should not use readq/writeq on a 32-bit system.
+>>
+>> Not quite.  ARM documentation IHI0054B (ARM System Trace Macrocell:
+>> Programmers' Model Architecture Specification) stipulate that "For
+>> systems with an ARMv7 processor, ARM recommends configuration 1 or
+>> configuration 2.", where configuration 2 has a fundamental size of 64
+>> bit.
+>
+> As I said, it's confusing. Anyway, you can go ahead and add the
+> readq/writeq for ARMv6 and later, though it won't be guaranteed to have
+> a 64-bit access, it depends on the bus.
 
-Careful here.  AMD CPUs (IIUC) send #PF (or maybe #GP) from CPL3 instead
-of #GP from CPL0 on sysret to a non-canonical address.  That behavior is
-*far* better than the Intel behavior, and it may be important.
+Agreed.
 
-If an OS relies on that behavior on AMD CPUs, and guest ring 3 can force
-guest ring 0 to do an emulated sysret to a non-canonical address, than
-the guest ring3 code can own the guest ring0 code.
+>
+> BTW, do you need to define the non-relaxed accessors as well? That would
+> be readq/writeq.
 
---Andy
+No other master in the system is consuming this data and the channels
+return '0' on read.  As such I didn't plan on implementing the
+non-relaxed accessors.  Would you like me to do so for completeness?
 
-> 
-> This patch fixes the emulator to behave as real CPUs do for near branches.
-> Far branches are handled by the next patch.
-> 
-> This fixes CVE-2014-3647.
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
->  arch/x86/kvm/emulate.c | 78 ++++++++++++++++++++++++++++++++++----------------
->  1 file changed, 54 insertions(+), 24 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-> index 047698974799..a1b9139169f6 100644
-> --- a/arch/x86/kvm/emulate.c
-> +++ b/arch/x86/kvm/emulate.c
-> @@ -564,7 +564,8 @@ static int emulate_nm(struct x86_emulate_ctxt *ctxt)
->  	return emulate_exception(ctxt, NM_VECTOR, 0, false);
->  }
->  
-> -static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
-> +static inline int assign_eip_far(struct x86_emulate_ctxt *ctxt, ulong dst,
-> +			       int cs_l)
->  {
->  	switch (ctxt->op_bytes) {
->  	case 2:
-> @@ -574,16 +575,25 @@ static inline void assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
->  		ctxt->_eip = (u32)dst;
->  		break;
->  	case 8:
-> +		if ((cs_l && is_noncanonical_address(dst)) ||
-> +		    (!cs_l && (dst & ~(u32)-1)))
-> +			return emulate_gp(ctxt, 0);
->  		ctxt->_eip = dst;
->  		break;
->  	default:
->  		WARN(1, "unsupported eip assignment size\n");
->  	}
-> +	return X86EMUL_CONTINUE;
-> +}
-> +
-> +static inline int assign_eip_near(struct x86_emulate_ctxt *ctxt, ulong dst)
-> +{
-> +	return assign_eip_far(ctxt, dst, ctxt->mode == X86EMUL_MODE_PROT64);
->  }
->  
-> -static inline void jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
-> +static inline int jmp_rel(struct x86_emulate_ctxt *ctxt, int rel)
->  {
-> -	assign_eip_near(ctxt, ctxt->_eip + rel);
-> +	return assign_eip_near(ctxt, ctxt->_eip + rel);
->  }
->  
->  static u16 get_segment_selector(struct x86_emulate_ctxt *ctxt, unsigned seg)
-> @@ -1998,13 +2008,15 @@ static int em_grp45(struct x86_emulate_ctxt *ctxt)
->  	case 2: /* call near abs */ {
->  		long int old_eip;
->  		old_eip = ctxt->_eip;
-> -		ctxt->_eip = ctxt->src.val;
-> +		rc = assign_eip_near(ctxt, ctxt->src.val);
-> +		if (rc != X86EMUL_CONTINUE)
-> +			break;
->  		ctxt->src.val = old_eip;
->  		rc = em_push(ctxt);
->  		break;
->  	}
->  	case 4: /* jmp abs */
-> -		ctxt->_eip = ctxt->src.val;
-> +		rc = assign_eip_near(ctxt, ctxt->src.val);
->  		break;
->  	case 5: /* jmp far */
->  		rc = em_jmp_far(ctxt);
-> @@ -2039,10 +2051,14 @@ static int em_cmpxchg8b(struct x86_emulate_ctxt *ctxt)
->  
->  static int em_ret(struct x86_emulate_ctxt *ctxt)
->  {
-> -	ctxt->dst.type = OP_REG;
-> -	ctxt->dst.addr.reg = &ctxt->_eip;
-> -	ctxt->dst.bytes = ctxt->op_bytes;
-> -	return em_pop(ctxt);
-> +	int rc;
-> +	unsigned long eip;
-> +
-> +	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
-> +	if (rc != X86EMUL_CONTINUE)
-> +		return rc;
-> +
-> +	return assign_eip_near(ctxt, eip);
->  }
->  
->  static int em_ret_far(struct x86_emulate_ctxt *ctxt)
-> @@ -2323,7 +2339,7 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
->  {
->  	const struct x86_emulate_ops *ops = ctxt->ops;
->  	struct desc_struct cs, ss;
-> -	u64 msr_data;
-> +	u64 msr_data, rcx, rdx;
->  	int usermode;
->  	u16 cs_sel = 0, ss_sel = 0;
->  
-> @@ -2339,6 +2355,9 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
->  	else
->  		usermode = X86EMUL_MODE_PROT32;
->  
-> +	rcx = reg_read(ctxt, VCPU_REGS_RCX);
-> +	rdx = reg_read(ctxt, VCPU_REGS_RDX);
-> +
->  	cs.dpl = 3;
->  	ss.dpl = 3;
->  	ops->get_msr(ctxt, MSR_IA32_SYSENTER_CS, &msr_data);
-> @@ -2356,6 +2375,9 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
->  		ss_sel = cs_sel + 8;
->  		cs.d = 0;
->  		cs.l = 1;
-> +		if (is_noncanonical_address(rcx) ||
-> +		    is_noncanonical_address(rdx))
-> +			return emulate_gp(ctxt, 0);
->  		break;
->  	}
->  	cs_sel |= SELECTOR_RPL_MASK;
-> @@ -2364,8 +2386,8 @@ static int em_sysexit(struct x86_emulate_ctxt *ctxt)
->  	ops->set_segment(ctxt, cs_sel, &cs, 0, VCPU_SREG_CS);
->  	ops->set_segment(ctxt, ss_sel, &ss, 0, VCPU_SREG_SS);
->  
-> -	ctxt->_eip = reg_read(ctxt, VCPU_REGS_RDX);
-> -	*reg_write(ctxt, VCPU_REGS_RSP) = reg_read(ctxt, VCPU_REGS_RCX);
-> +	ctxt->_eip = rdx;
-> +	*reg_write(ctxt, VCPU_REGS_RSP) = rcx;
->  
->  	return X86EMUL_CONTINUE;
->  }
-> @@ -2905,10 +2927,13 @@ static int em_aad(struct x86_emulate_ctxt *ctxt)
->  
->  static int em_call(struct x86_emulate_ctxt *ctxt)
->  {
-> +	int rc;
->  	long rel = ctxt->src.val;
->  
->  	ctxt->src.val = (unsigned long)ctxt->_eip;
-> -	jmp_rel(ctxt, rel);
-> +	rc = jmp_rel(ctxt, rel);
-> +	if (rc != X86EMUL_CONTINUE)
-> +		return rc;
->  	return em_push(ctxt);
->  }
->  
-> @@ -2940,11 +2965,12 @@ static int em_call_far(struct x86_emulate_ctxt *ctxt)
->  static int em_ret_near_imm(struct x86_emulate_ctxt *ctxt)
->  {
->  	int rc;
-> +	unsigned long eip;
->  
-> -	ctxt->dst.type = OP_REG;
-> -	ctxt->dst.addr.reg = &ctxt->_eip;
-> -	ctxt->dst.bytes = ctxt->op_bytes;
-> -	rc = emulate_pop(ctxt, &ctxt->dst.val, ctxt->op_bytes);
-> +	rc = emulate_pop(ctxt, &eip, ctxt->op_bytes);
-> +	if (rc != X86EMUL_CONTINUE)
-> +		return rc;
-> +	rc = assign_eip_near(ctxt, eip);
->  	if (rc != X86EMUL_CONTINUE)
->  		return rc;
->  	rsp_increment(ctxt, ctxt->src.val);
-> @@ -3271,20 +3297,24 @@ static int em_lmsw(struct x86_emulate_ctxt *ctxt)
->  
->  static int em_loop(struct x86_emulate_ctxt *ctxt)
->  {
-> +	int rc = X86EMUL_CONTINUE;
-> +
->  	register_address_increment(ctxt, reg_rmw(ctxt, VCPU_REGS_RCX), -1);
->  	if ((address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) != 0) &&
->  	    (ctxt->b == 0xe2 || test_cc(ctxt->b ^ 0x5, ctxt->eflags)))
-> -		jmp_rel(ctxt, ctxt->src.val);
-> +		rc = jmp_rel(ctxt, ctxt->src.val);
->  
-> -	return X86EMUL_CONTINUE;
-> +	return rc;
->  }
->  
->  static int em_jcxz(struct x86_emulate_ctxt *ctxt)
->  {
-> +	int rc = X86EMUL_CONTINUE;
-> +
->  	if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0)
-> -		jmp_rel(ctxt, ctxt->src.val);
-> +		rc = jmp_rel(ctxt, ctxt->src.val);
->  
-> -	return X86EMUL_CONTINUE;
-> +	return rc;
->  }
->  
->  static int em_in(struct x86_emulate_ctxt *ctxt)
-> @@ -4743,7 +4773,7 @@ special_insn:
->  		break;
->  	case 0x70 ... 0x7f: /* jcc (short) */
->  		if (test_cc(ctxt->b, ctxt->eflags))
-> -			jmp_rel(ctxt, ctxt->src.val);
-> +			rc = jmp_rel(ctxt, ctxt->src.val);
->  		break;
->  	case 0x8d: /* lea r16/r32, m */
->  		ctxt->dst.val = ctxt->src.addr.mem.ea;
-> @@ -4773,7 +4803,7 @@ special_insn:
->  		break;
->  	case 0xe9: /* jmp rel */
->  	case 0xeb: /* jmp rel short */
-> -		jmp_rel(ctxt, ctxt->src.val);
-> +		rc = jmp_rel(ctxt, ctxt->src.val);
->  		ctxt->dst.type = OP_NONE; /* Disable writeback. */
->  		break;
->  	case 0xf4:              /* hlt */
-> @@ -4898,7 +4928,7 @@ twobyte_insn:
->  		break;
->  	case 0x80 ... 0x8f: /* jnz rel, etc*/
->  		if (test_cc(ctxt->b, ctxt->eflags))
-> -			jmp_rel(ctxt, ctxt->src.val);
-> +			rc = jmp_rel(ctxt, ctxt->src.val);
->  		break;
->  	case 0x90 ... 0x9f:     /* setcc r/m8 */
->  		ctxt->dst.val = test_cc(ctxt->b, ctxt->eflags);
-> 
-
+>
+> --
+> Catalin
