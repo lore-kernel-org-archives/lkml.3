@@ -1,144 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082AbaJXU0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 16:26:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47681 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752397AbaJXUZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 16:25:59 -0400
-Date: Fri, 24 Oct 2014 15:25:10 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] phy: berlin-sata: Move PHY_BASE into private data
- struct
-Message-ID: <20141024202510.GK11455@saruman>
-Reply-To: <balbi@ti.com>
-References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com>
- <54462865.6000205@ti.com>
- <544629F0.3090505@gmail.com>
- <544AB33F.9030701@gmail.com>
+	id S1754982AbaJXUbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 16:31:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47777 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752397AbaJXUbc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 16:31:32 -0400
+Date: Fri, 24 Oct 2014 13:31:16 -0700
+From: tip-bot for Eric Paris <tipbot@zytor.com>
+Message-ID: <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
+Cc: przanoni@gmail.com, linux-kernel@vger.kernel.org, eparis@redhat.com,
+        rgb@redhat.com, hpa@zytor.com, mingo@kernel.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: linux-kernel@vger.kernel.org, eparis@redhat.com, przanoni@gmail.com,
+        mingo@kernel.org, hpa@linux.intel.com, tglx@linutronix.de,
+        rgb@redhat.com, hpa@zytor.com
+In-Reply-To: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] i386/audit: stop scribbling on the stack frame
+Git-Commit-ID: 26c2d2b39128adba276d140eefa2745591b88536
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HBg0C3yr6HVa1ZCc"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <544AB33F.9030701@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---HBg0C3yr6HVa1ZCc
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  26c2d2b39128adba276d140eefa2745591b88536
+Gitweb:     http://git.kernel.org/tip/26c2d2b39128adba276d140eefa2745591b88536
+Author:     Eric Paris <eparis@redhat.com>
+AuthorDate: Thu, 23 Oct 2014 00:04:03 -0400
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 24 Oct 2014 13:27:56 -0700
 
-Hi,
+i386/audit: stop scribbling on the stack frame
 
-On Fri, Oct 24, 2014 at 10:14:55PM +0200, Sebastian Hesselbarth wrote:
-> On 21.10.2014 11:40, Sebastian Hesselbarth wrote:
-> >On 10/21/2014 11:33 AM, Kishon Vijay Abraham I wrote:
-> >>On Tuesday 21 October 2014 02:37 PM, Sebastian Hesselbarth wrote:
-> >>>Currently, Berlin SATA PHY driver assumes PHY_BASE address being
-> >>>constant. While this PHY_BASE is correct for BG2Q, older BG2 PHY_BASE
-> >>>is different. Prepare the driver for BG2 support by moving the phy_base
-> >>>into private driver data.
-> >>>
-> >>>Acked-by: Antoine T=E9nart <antoine.tenart@free-electrons.com>
-> >>>Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> >...
-> >>>---
-> >>>  drivers/phy/phy-berlin-sata.c | 42
-> >>>++++++++++++++++++++++++++++--------------
-> >>>  1 file changed, 28 insertions(+), 14 deletions(-)
-> >>>
-> >>>diff --git a/drivers/phy/phy-berlin-sata.c
-> >>>b/drivers/phy/phy-berlin-sata.c
-> >>>index 69ced52d72aa..9682b0f66177 100644
-> >>>--- a/drivers/phy/phy-berlin-sata.c
-> >>>+++ b/drivers/phy/phy-berlin-sata.c
-> >>>@@ -30,7 +30,7 @@
-> >>>  #define MBUS_WRITE_REQUEST_SIZE_128    (BIT(2) << 16)
-> >>>  #define MBUS_READ_REQUEST_SIZE_128    (BIT(2) << 19)
-> >>>
-> >>>-#define PHY_BASE        0x200
-> >>>+#define BG2Q_PHY_BASE        0x200
-> >[...]
-> >>>+static u32 bg2q_sata_phy_base =3D BG2Q_PHY_BASE;
-> >>>+
-> >>>+static const struct of_device_id phy_berlin_sata_of_match[] =3D {
-> >>>+    {
-> >>>+        .compatible =3D "marvell,berlin2q-sata-phy",
-> >>>+        .data =3D &bg2q_sata_phy_base,
-> >>
-> >>Can't the base directly come from dt?
-> >
-> >You are suggesting a "marvell,phy-base-address" property, right?
-> >I have no strong opinion about it, I accept your call (or DT maintainer
-> >ones).
->=20
-> Kishon,
->=20
-> I still have the DT patches for BG2Q queued up for v3.19 (I missed the
-> arm-soc merge window for v3.18). That means, there has been no release
-> with the phy binding used and I can rework a little more.
->=20
-> Can you please confirm that you want a DT property for the phy base addre=
-ss,
-> e.g. marvell,phy-base-address =3D <{0x200,0x80}> ?
->=20
-> If so, I'd also rename the compatible from berlin2q-sata-phy to more
-> generic berlin-sata-phy.
+git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
+It was writing over %esp/pt_regs semi-randomly on i686  with the expected
+"system can't boot" results.  As noted in:
 
-I think what Kishon is asking, is why this 0x200 offset isn't already on
-reg. so that instead of, e.g.:
+https://bugs.freedesktop.org/show_bug.cgi?id=85277
 
-	reg =3D <0x40000000 0x1000>;
+This patch stops fscking with pt_regs.  Instead it sets up the registers
+for the call to __audit_syscall_entry in the most obvious conceivable
+way.  It then does just a tiny tiny touch of magic.  We need to get what
+started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
+as a pair of pushes.
 
-you would have:
+After the call to __audit_syscall_entry all we need to do is get that
+now useless junk off the stack (pair of pops) and reload %eax with the
+original syscall so other stuff can keep going about it's business.
 
-	reg =3D <0x40000200 0x1000>;
+Reported-by: Paulo Zanoni <przanoni@gmail.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Link: http://lkml.kernel.org/r/1414037043-30647-1-git-send-email-eparis@redhat.com
+Cc: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/entry_32.S | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-then everybody's happy. It's unfortunate, however, that we already
-shipped DT sources with the bogus (?) reg property and now we have to
-support that broken binding. My suggestion would be to add a new
-compatible which comes with proper reg property and still add that weird
-phy_base for the old compatible, so that:
-
-	if (of_device_is_compatible(node, "marvell,berlin2q-sata-phy"))
-		phy->phy_base =3D PHY_BASE;
-
-then, if new compatible comes with proper 'reg', phy->phy_base would be
-zero and everything should still work. How does this sound ?
-
---=20
-balbi
-
---HBg0C3yr6HVa1ZCc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUSrWmAAoJEIaOsuA1yqREer0P/jt1nbqH9VGhTjPepAaFlb/k
-qqvvs38OUI9HFG/KYTGYEu+kOQJa34YgpClzP/nmghc9Uvu4gP2Mtnws2rKmYF77
-B+7G4uFAAl9r7nrH3xfINcx15hMxbWcVHGiX+H1Qtx1IB5zDuyvVxhRm8ED7N5Eb
-zIKlhuf3Nyil3phV7DirNaB4+T47ASobRyyaz1JoxsmJrg6QEOgiJW8ln2E8OC7z
-jEX0o6IrONOSl0SYGJLIkmm/dbyFPuhehlAgusmbEPRslMqcxBvyfv3EJUyzIV/w
-mB4h5ZycpwKLiR3LxkUneLH8tyUd1GZdRKrIMcBIAK2ajMhYa1bRfvu6ive/Fh2V
-Z9pPxgzoElwKigGpIai8uCABnYvgow/Dc9CFZ8xL/+tPWYhOWLfGvYz1QvbVWO7r
-NeOYbvHjqL71Q8HI/B4dmcq0SCDkobZhQb4GfbRyL+eBS/+RvDomWThjcoS8eTEz
-E3Eqofk/Ry0ydir8/OjI44Ol929rLOoiFvJzRmAqgwg1Hd6LVcZH7brgGXhX+IFm
-GIjALogpQf3RaQdTBZozTRpWVKtQF/RNbqccDpd4sPbyV614Rmr4soGjs8AeWBPF
-TrCv3Dz+AxdC+/2YG+pX92XLu57Q550ZZSTABajqvR+jl6o0NB0f3c3bOHsFzerh
-SWs+2AiuW4tWX7HGfHrt
-=B86C
------END PGP SIGNATURE-----
-
---HBg0C3yr6HVa1ZCc--
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index b553ed8..344b63f 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -447,15 +447,14 @@ sysenter_exit:
+ sysenter_audit:
+ 	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+ 	jnz syscall_trace_entry
+-	addl $4,%esp
+-	CFI_ADJUST_CFA_OFFSET -4
+-	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
+-	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
+-	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
+-	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
+-	/* %eax already in %eax		   1st arg: syscall number */
++	/* movl PT_EAX(%esp), %eax	already set, syscall number: 1st arg to audit */
++	movl PT_EBX(%esp), %edx		/* ebx/a0: 2nd arg to audit */
++	/* movl PT_ECX(%esp), %ecx	already set, a1: 3nd arg to audit */
++	pushl_cfi PT_ESI(%esp)		/* a3: 5th arg */
++	pushl_cfi PT_EDX+4(%esp)	/* a2: 4th arg */
+ 	call __audit_syscall_entry
+-	pushl_cfi %ebx
++	popl_cfi %ecx /* get that remapped edx off the stack */
++	popl_cfi %ecx /* get that remapped esi off the stack */
+ 	movl PT_EAX(%esp),%eax		/* reload syscall number */
+ 	jmp sysenter_do_call
+ 
