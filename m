@@ -1,115 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924AbaJXPMT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:12:19 -0400
-Received: from relay.parallels.com ([195.214.232.42]:48443 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856AbaJXPMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:12:16 -0400
-Message-ID: <1414163521.19914.167.camel@tkhai>
-Subject: Re: [PATCH v4 1/6] sched/fair: Fix reschedule which is generated on
- throttled cfs_rq
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Wanpeng Li <kernellwp@gmail.com>
-CC: <tkhai@yandex.ru>, <linux-kernel@vger.kernel.org>, <peterz@infradead.org>,
-        <pjt@google.com>, <oleg@redhat.com>, <rostedt@goodmis.org>,
-        <umgwanakikbuti@gmail.com>, <tim.c.chen@linux.intel.com>,
-        <mingo@kernel.org>, <nicolas.pitre@linaro.org>
-Date: Fri, 24 Oct 2014 19:12:01 +0400
-In-Reply-To: <544A1C96.10009@gmail.com>
-References: <20140806075138.24858.23816.stgit@tkhai>
-		 <1407312361.8424.35.camel@tkhai> <54498ED2.1070308@gmail.com>
-	 <1414130514.21462.2.camel@yandex.ru> <544A1C96.10009@gmail.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+	id S1756884AbaJXPMD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:12:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33013 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933027AbaJXPHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 11:07:48 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Cc: Petr Matousek <pmatouse@redhat.com>, stable@vger.kernel.org
+Subject: [PATCH 07/14] kvm: vmx: handle invvpid vm exit gracefully
+Date: Fri, 24 Oct 2014 17:07:18 +0200
+Message-Id: <1414163245-18555-8-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1414163245-18555-1-git-send-email-pbonzini@redhat.com>
+References: <1414163245-18555-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Пт, 24/10/2014 в 17:32 +0800, Wanpeng Li пишет:
-> Hi Kirill,
-> 10/24/14, 2:01 PM, Kirill Tkhai:
-> > Hi, Wanpeng,
-> >
-> > the commit commentary confuses, I'm agree. Really it's just a cleanup.
-> >
-> > On Пт, 2014-10-24 at 07:27 +0800, Wanpeng Li wrote:
-> >> Hi Kirill,
-> >> 8/6/14, 4:06 PM, Kirill Tkhai:
-> >>> (sched_entity::on_rq == 1) does not guarantee the task is pickable;
-> >>> changes on throttled cfs_rq must not lead to reschedule.
-> >> Why (sched_entity::on_rq == 1) doesn't guarantee the task is pickable
-> >> since entity will be dequeued during throttling cfs_rq?
-> > Because one of task's (grand)parents in hierarhy may be throtthed and
-> > dequeued.
-> >
-> > But task_struct::on_rq check doesn't guarantee this too. So, just ignore
-> > commit commentary; the commentary is wrong.
-> >
-> >>> Check for task_struct::on_rq instead.
-> >> Do you mean task_struct::on_rq will be cleared during throttling cfs_rq?
-> >> I can't find codes do this.
-> > No, it not cleared. The commit commentary should be:
-> > "sched: Cleanup. Check task_struct::on_rq instead of sched_entity::on_rq,
-> > because it is the same for a task"
-> 
-> IIUR, for fair class, sched_entity::on_rq will be set/clear during 
-> enqueue/dequeue, task_struct::on_rq will changed during task migration, 
-> I'm not sure why they are the same.
+From: Petr Matousek <pmatouse@redhat.com>
 
-prio_changed_fair() and switched_to_fair() can't be called during migration.
-They are called under pi_lock, and migration needs this lock too.
+On systems with invvpid instruction support (corresponding bit in
+IA32_VMX_EPT_VPID_CAP MSR is set) guest invocation of invvpid
+causes vm exit, which is currently not handled and results in
+propagation of unknown exit to userspace.
 
-> >>> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-> >>> ---
-> >>>    kernel/sched/fair.c |    6 +++---
-> >>>    1 file changed, 3 insertions(+), 3 deletions(-)
-> >>>
-> >>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> >>> index bfa3c86..6f0ce2b 100644
-> >>> --- a/kernel/sched/fair.c
-> >>> +++ b/kernel/sched/fair.c
-> >>> @@ -7465,7 +7465,7 @@ static void task_fork_fair(struct task_struct *p)
-> >>>    static void
-> >>>    prio_changed_fair(struct rq *rq, struct task_struct *p, int oldprio)
-> >>>    {
-> >>> -	if (!p->se.on_rq)
-> >>> +	if (!p->on_rq)
-> >>>    		return;
-> >>>    
-> >>>    	/*
-> >>> @@ -7521,15 +7521,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
-> >>>     */
-> >>>    static void switched_to_fair(struct rq *rq, struct task_struct *p)
-> >>>    {
-> >>> -	struct sched_entity *se = &p->se;
-> >>>    #ifdef CONFIG_FAIR_GROUP_SCHED
-> >>> +	struct sched_entity *se = &p->se;
-> >>>    	/*
-> >>>    	 * Since the real-depth could have been changed (only FAIR
-> >>>    	 * class maintain depth value), reset depth properly.
-> >>>    	 */
-> >>>    	se->depth = se->parent ? se->parent->depth + 1 : 0;
-> >>>    #endif
-> >>> -	if (!se->on_rq)
-> >>> +	if (!p->on_rq)
-> >>>    		return;
-> >>>    
-> >>>    	/*
-> >>>
-> >>>
-> >>>
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>> Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> 
+Fix this by installing an invvpid vm exit handler.
+
+This is CVE-2014-3646.
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/include/uapi/asm/vmx.h | 2 ++
+ arch/x86/kvm/vmx.c              | 9 ++++++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/include/uapi/asm/vmx.h b/arch/x86/include/uapi/asm/vmx.h
+index 0e79420376eb..990a2fe1588d 100644
+--- a/arch/x86/include/uapi/asm/vmx.h
++++ b/arch/x86/include/uapi/asm/vmx.h
+@@ -67,6 +67,7 @@
+ #define EXIT_REASON_EPT_MISCONFIG       49
+ #define EXIT_REASON_INVEPT              50
+ #define EXIT_REASON_PREEMPTION_TIMER    52
++#define EXIT_REASON_INVVPID             53
+ #define EXIT_REASON_WBINVD              54
+ #define EXIT_REASON_XSETBV              55
+ #define EXIT_REASON_APIC_WRITE          56
+@@ -114,6 +115,7 @@
+ 	{ EXIT_REASON_EOI_INDUCED,           "EOI_INDUCED" }, \
+ 	{ EXIT_REASON_INVALID_STATE,         "INVALID_STATE" }, \
+ 	{ EXIT_REASON_INVD,                  "INVD" }, \
++	{ EXIT_REASON_INVVPID,               "INVVPID" }, \
+ 	{ EXIT_REASON_INVPCID,               "INVPCID" }
+ 
+ #endif /* _UAPIVMX_H */
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 7e2c098b59c9..cf3cd079ec52 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6746,6 +6746,12 @@ static int handle_invept(struct kvm_vcpu *vcpu)
+ 	return 1;
+ }
+ 
++static int handle_invvpid(struct kvm_vcpu *vcpu)
++{
++	kvm_queue_exception(vcpu, UD_VECTOR);
++	return 1;
++}
++
+ /*
+  * The exit handlers return 1 if the exit was handled fully and guest execution
+  * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
+@@ -6791,6 +6797,7 @@ static int (*const kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
+ 	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_mwait,
+ 	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_monitor,
+ 	[EXIT_REASON_INVEPT]                  = handle_invept,
++	[EXIT_REASON_INVVPID]                 = handle_invvpid,
+ };
+ 
+ static const int kvm_vmx_max_exit_handlers =
+@@ -7026,7 +7033,7 @@ static bool nested_vmx_exit_handled(struct kvm_vcpu *vcpu)
+ 	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
+ 	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
+ 	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
+-	case EXIT_REASON_INVEPT:
++	case EXIT_REASON_INVEPT: case EXIT_REASON_INVVPID:
+ 		/*
+ 		 * VMX instructions trap unconditionally. This allows L1 to
+ 		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
+-- 
+1.8.3.1
 
 
