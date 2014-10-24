@@ -1,139 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756908AbaJXOpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 10:45:14 -0400
-Received: from mail.kernel.org ([198.145.19.201]:39238 "EHLO mail.kernel.org"
+	id S1756541AbaJXOlA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:41:00 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:44763 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755296AbaJXOpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 10:45:09 -0400
-Date: Fri, 24 Oct 2014 11:45:00 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/16] perf pmu: Let pmu's with no events show up on perf
- list
-Message-ID: <20141024144500.GE14687@kernel.org>
-References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
- <1414061124-26830-3-git-send-email-adrian.hunter@intel.com>
- <87y4s6cak7.fsf@sejong.aot.lge.com>
- <20141024125702.GZ14687@kernel.org>
- <20141024130320.GA14687@kernel.org>
- <20141024132141.GB14687@kernel.org>
- <544A63FE.60902@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544A63FE.60902@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756445AbaJXOkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 10:40:55 -0400
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
+        pdeschrijver@nvidia.com, rjw@rjwysocki.net, viresh.kumar@linaro.org
+Cc: mturquette@linaro.org, pwalmsley@nvidia.com, vinceh@nvidia.com,
+        pgaikwad@nvidia.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tuomas.tynkkynen@iki.fi,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Subject: [PATCH v5 07/16] clk: tegra: Save/restore CCLKG_BURST_POLICY on suspend
+Date: Fri, 24 Oct 2014 17:39:14 +0300
+Message-Id: <1414161563-16812-8-git-send-email-mikko.perttunen@kapsi.fi>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi>
+References: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi>
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 24, 2014 at 05:36:46PM +0300, Adrian Hunter escreveu:
-> On 24/10/2014 4:21 p.m., Arnaldo Carvalho de Melo wrote:
-> >Em Fri, Oct 24, 2014 at 10:03:20AM -0300, Arnaldo Carvalho de Melo escreveu:
-> >>Em Fri, Oct 24, 2014 at 09:57:02AM -0300, Arnaldo Carvalho de Melo escreveu:
-> >>>Em Fri, Oct 24, 2014 at 02:15:52PM +0900, Namhyung Kim escreveu:
-> >>>>On Thu, 23 Oct 2014 13:45:10 +0300, Adrian Hunter wrote:
-> >>>>>+		if (pmu->selectable) {
-> >>>>>+			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
-> >>>>>+			aliases[j] = strdup(buf);
-> >>>>
-> >>>>You need to check the return value here (and above too).
-> >>>
-> >>>Well spotted, fixing this up.
-> >>
-> >>Oh well, this print_pmu_events() function needs some care, it starts by
-> >>trying to alloc the array, if it fails, it silently returns, does that
-> >>mean that there are no pmu events? Or that memory allocation failed?
-> >>
-> >>Ok, will do the fixes in a separate patch...
-> >>
-> >>- Arnaldo
-> >
-> >The patch below should check everything and warn the user, even
-> >maintaining that void return...
-> >
-> >Acked-by tags welcome as always :-)
-> >
-> >- Arnaldo
-> >
-> >
-> >diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-> >index 91dca60..881b754 100644
-> >--- a/tools/perf/util/pmu.c
-> >+++ b/tools/perf/util/pmu.c
-> >@@ -753,9 +753,9 @@ void print_pmu_events(const char *event_glob, bool name_only)
-> >  		if (pmu->selectable)
-> >  			len++;
-> >  	}
-> >-	aliases = malloc(sizeof(char *) * len);
-> >+	aliases = zalloc(sizeof(char *) * len);
-> >  	if (!aliases)
-> >-		return;
-> >+		goto out_enomem;
-> 
-> That path tries to free aliases[j] but aliases is null.  You could set len to 0 in that case.
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 
+Save and restore this register since the LP1 restore assembly routines
+fiddle with it. Otherwise the CPU would keep running on PLLX after
+resume from suspend even when DFLL was the original clocksource.
 
-Oops, yeah, my bad, it should not have the !, fixing...
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+---
+ drivers/clk/tegra/clk-tegra124.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index 7c3cef7..daedbcf 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -89,6 +89,8 @@
+ #define PMC_PLLM_WB0_OVERRIDE 0x1dc
+ #define PMC_PLLM_WB0_OVERRIDE_2 0x2b0
  
-> >  	pmu = NULL;
-> >  	j = 0;
-> >  	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
-> >@@ -768,16 +768,20 @@ void print_pmu_events(const char *event_glob, bool name_only)
-> >  			      (!is_cpu && strglobmatch(alias->name,
-> >  						       event_glob))))
-> >  				continue;
-> >-			aliases[j] = name;
-> >+
-> >  			if (is_cpu && !name_only)
-> >-				aliases[j] = format_alias_or(buf, sizeof(buf),
-> >-							      pmu, alias);
-> >-			aliases[j] = strdup(aliases[j]);
-> >+				name = format_alias_or(buf, sizeof(buf), pmu, alias);
-> >+
-> >+			aliases[j] = strdup(name);
-> >+			if (aliases[j] == NULL)
-> >+				goto out_enomem;
-> >  			j++;
-> >  		}
-> >  		if (pmu->selectable) {
-> >-			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
-> >-			aliases[j] = strdup(buf);
-> >+			char *s;
-> >+			if (asprintf(&s, "%s//", pmu->name) < 0)
-> >+				goto out_enomem;
-> >+			aliases[j] = s;
-> >  			j++;
-> >  		}
-> >  	}
-> >@@ -789,12 +793,20 @@ void print_pmu_events(const char *event_glob, bool name_only)
-> >  			continue;
-> >  		}
-> >  		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
-> >-		zfree(&aliases[j]);
-> >  		printed++;
-> >  	}
-> >  	if (printed)
-> >  		printf("\n");
-> >-	free(aliases);
-> >+out_free:
-> >+	for (j = 0; j < len; j++)
-> >+		zfree(&aliases[j]);
-> >+	zfree(&aliases);
-> >+	return;
-> >+
-> >+out_enomem:
-> >+	printf("FATAL: not enough memory to print PMU events\n");
-> >+	if (aliases)
-> >+		goto out_free;
-> >  }
-> >
-> >  bool pmu_have_event(const char *pname, const char *name)
-> >
++#define CCLKG_BURST_POLICY 0x368
++
+ #define UTMIP_PLL_CFG2 0x488
+ #define UTMIP_PLL_CFG2_STABLE_COUNT(x) (((x) & 0xffff) << 6)
+ #define UTMIP_PLL_CFG2_ACTIVE_DLY_COUNT(x) (((x) & 0x3f) << 18)
+@@ -121,6 +123,8 @@
+ #ifdef CONFIG_PM_SLEEP
+ static struct cpu_clk_suspend_context {
+ 	u32 clk_csite_src;
++	u32 cclkg_burst;
++	u32 cclkg_divider;
+ } tegra124_cpu_clk_sctx;
+ #endif
+ 
+@@ -1326,12 +1330,22 @@ static void tegra124_cpu_clock_suspend(void)
+ 	tegra124_cpu_clk_sctx.clk_csite_src =
+ 				readl(clk_base + CLK_SOURCE_CSITE);
+ 	writel(3 << 30, clk_base + CLK_SOURCE_CSITE);
++
++	tegra124_cpu_clk_sctx.cclkg_burst =
++				readl(clk_base + CCLKG_BURST_POLICY);
++	tegra124_cpu_clk_sctx.cclkg_divider =
++				readl(clk_base + CCLKG_BURST_POLICY + 4);
+ }
+ 
+ static void tegra124_cpu_clock_resume(void)
+ {
+ 	writel(tegra124_cpu_clk_sctx.clk_csite_src,
+ 				clk_base + CLK_SOURCE_CSITE);
++
++	writel(tegra124_cpu_clk_sctx.cclkg_burst,
++					clk_base + CCLKG_BURST_POLICY);
++	writel(tegra124_cpu_clk_sctx.cclkg_divider,
++					clk_base + CCLKG_BURST_POLICY + 4);
+ }
+ #endif
+ 
+-- 
+2.1.0
+
