@@ -1,171 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126AbaJXTlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 15:41:17 -0400
-Received: from gproxy2-pub.mail.unifiedlayer.com ([69.89.18.3]:38464 "HELO
-	gproxy2-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751377AbaJXTlP (ORCPT
+	id S1755280AbaJXTmw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 15:42:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34271 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729AbaJXTmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 15:41:15 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Oct 2014 15:41:15 EDT
-X-Authority-Analysis: v=2.1 cv=e5mVF8Z/ c=1 sm=1 tr=0
- a=9W6Fsu4pMcyimqnCr1W0/w==:117 a=9W6Fsu4pMcyimqnCr1W0/w==:17 a=cNaOj0WVAAAA:8
- a=f5113yIGAAAA:8 a=TBVoxVdAAAAA:8 a=QyXUC8HyAAAA:8 a=GhZ5P8ky69gA:10
- a=noBwr2J6l1kA:10 a=I6b9oLjGAi8hB1UVyA4A:9 a=bCht6v-pe87LC_55:21
- a=DXvlEdeLGI0LFHAo:21
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: linux-kernel@vger.kernel.org
-Cc: jroedel@suse.de
-Subject: [PATCH 2/2] iommu/amd: use handle_mm_fault directly
-Date: Fri, 24 Oct 2014 12:34:31 -0700
-Message-Id: <1414179271-7621-2-git-send-email-jbarnes@virtuousgeek.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414179271-7621-1-git-send-email-jbarnes@virtuousgeek.org>
-References: <1414179271-7621-1-git-send-email-jbarnes@virtuousgeek.org>
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 24 Oct 2014 15:42:50 -0400
+Message-ID: <544AABB8.10302@codeaurora.org>
+Date: Fri, 24 Oct 2014 12:42:48 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Andersson <bjorn@kryo.se>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Subject: Re: [PATCH] genirq: Introduce irq_read_line()
+References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com> <CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com> <alpine.DEB.2.11.1410211120430.5308@nanos>	<544628BF.8010809@arm.com> <CAJAp7OjpN-+S=OH1BW6Fcme9mp4qj8AsSNC3_41fhfpYzX-Shg@mail.gmail.com> <544A936D.5040409@arm.com>
+In-Reply-To: <544A936D.5040409@arm.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This could be useful for debug in the future if we want to track
-major/minor faults more closely, and also avoids the put_page trick we
-used with gup.
+On 10/24/2014 10:59 AM, Marc Zyngier wrote:
+> Hi Bjorn,
+>
+> On 24/10/14 18:31, Bjorn Andersson wrote:
+>>
+>> Stephen Boyd talked about the need to be able to mask/unmask interrupts from
+>> client code in the Qualcomm platform as well - most likely to block wakeup
+>> sources(?)
+> What's wrong with irq_disable?
 
-In order to do this, we also track the task struct in the PASID state
-structure.  This lets us update the appropriate task stats after the
-fault has been handled, and may aid with debug in the future as well.
+The problem is irq_disable() is lazy and doesn't actually disable the
+interrupt.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/iommu/amd_iommu_v2.c | 93 +++++++++++++++++++++++++++++---------------
- 1 file changed, 62 insertions(+), 31 deletions(-)
+This is the scenario. During idle we want to communicate with another
+processor in the SoC and tell it to turn off something after we go to
+idle. The communication mechanism uses some shared memory and an
+interrupt to trigger the other processor to go look at what we told it
+to do. When the other processor is done handling the message it will
+send us an ack interrupt. We want to temporarily ignore that ack
+interrupt because 1) we're going to execute a wfi to trigger a deep idle
+and any pending interrupt will abort that instruction and 2) if the
+interrupt comes after we execute the wfi it will wake us up out of deep
+idle unnecessarily and waste power. There isn't anything in the
+communication protocol that says we don't want the interrupt to be sent
+and it would probably make things more complicated anyway. The solution
+is to mask the interrupt before we send the message, and then execute
+the wfi. Once we wake up, we unmask the interrupt and then handle the ack.
 
-diff --git a/drivers/iommu/amd_iommu_v2.c b/drivers/iommu/amd_iommu_v2.c
-index 90d734b..b23481b 100644
---- a/drivers/iommu/amd_iommu_v2.c
-+++ b/drivers/iommu/amd_iommu_v2.c
-@@ -47,6 +47,7 @@ struct pasid_state {
- 	atomic_t count;				/* Reference count */
- 	unsigned mmu_notifier_count;		/* Counting nested mmu_notifier
- 						   calls */
-+	struct task_struct *task;		/* task_struct for accounting */
- 	struct mm_struct *mm;			/* mm_struct for the faults */
- 	struct mmu_notifier mn;                 /* mmu_notifier handle */
- 	struct pri_queue pri[PRI_QUEUE_SIZE];	/* PRI tag states */
-@@ -513,45 +514,74 @@ static void finish_pri_tag(struct device_state *dev_state,
- 	spin_unlock_irqrestore(&pasid_state->lock, flags);
- }
- 
-+static void handle_fault_error(struct fault *fault)
-+{
-+	int status;
-+
-+	if (!fault->dev_state->inv_ppr_cb) {
-+		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
-+		return;
-+	}
-+
-+	status = fault->dev_state->inv_ppr_cb(fault->dev_state->pdev,
-+					      fault->pasid,
-+					      fault->address,
-+					      fault->flags);
-+	switch (status) {
-+	case AMD_IOMMU_INV_PRI_RSP_SUCCESS:
-+		set_pri_tag_status(fault->state, fault->tag, PPR_SUCCESS);
-+		break;
-+	case AMD_IOMMU_INV_PRI_RSP_INVALID:
-+		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
-+		break;
-+	case AMD_IOMMU_INV_PRI_RSP_FAIL:
-+		set_pri_tag_status(fault->state, fault->tag, PPR_FAILURE);
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
-+
- static void do_fault(struct work_struct *work)
- {
- 	struct fault *fault = container_of(work, struct fault, work);
--	int npages, write;
--	struct page *page;
-+	struct mm_struct *mm;
-+	struct vm_area_struct *vma;
-+	struct task_struct *task;
-+	u64 address;
-+	int ret, write;
- 
- 	write = !!(fault->flags & PPR_FAULT_WRITE);
- 
--	down_read(&fault->state->mm->mmap_sem);
--	npages = get_user_pages(NULL, fault->state->mm,
--				fault->address, 1, write, 0, &page, NULL);
--	up_read(&fault->state->mm->mmap_sem);
--
--	if (npages == 1) {
--		put_page(page);
--	} else if (fault->dev_state->inv_ppr_cb) {
--		int status;
--
--		status = fault->dev_state->inv_ppr_cb(fault->dev_state->pdev,
--						      fault->pasid,
--						      fault->address,
--						      fault->flags);
--		switch (status) {
--		case AMD_IOMMU_INV_PRI_RSP_SUCCESS:
--			set_pri_tag_status(fault->state, fault->tag, PPR_SUCCESS);
--			break;
--		case AMD_IOMMU_INV_PRI_RSP_INVALID:
--			set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
--			break;
--		case AMD_IOMMU_INV_PRI_RSP_FAIL:
--			set_pri_tag_status(fault->state, fault->tag, PPR_FAILURE);
--			break;
--		default:
--			BUG();
--		}
--	} else {
--		set_pri_tag_status(fault->state, fault->tag, PPR_INVALID);
-+	task = fault->state->task;
-+	mm = fault->state->mm;
-+	address = fault->address;
-+
-+	down_read(&mm->mmap_sem);
-+	vma = find_extend_vma(mm, address);
-+	if (!vma || address < vma->vm_start) {
-+		/* failed to get a vma in the right range */
-+		up_read(&mm->mmap_sem);
-+		handle_fault_error(fault);
-+		goto out;
- 	}
- 
-+	ret = handle_mm_fault(mm, vma, address, write);
-+	if (ret & VM_FAULT_ERROR) {
-+		/* failed to service fault */
-+		up_read(&mm->mmap_sem);
-+		handle_fault_error(fault);
-+		goto out;
-+	}
-+
-+	if (ret & VM_FAULT_MAJOR)
-+		task->maj_flt++;
-+	else
-+		task->min_flt++;
-+
-+	up_read(&mm->mmap_sem);
-+
-+out:
- 	finish_pri_tag(fault->dev_state, fault->state, fault->tag);
- 
- 	put_pasid_state(fault->state);
-@@ -663,6 +693,7 @@ int amd_iommu_bind_pasid(struct pci_dev *pdev, int pasid,
- 	spin_lock_init(&pasid_state->lock);
- 
- 	mm                        = get_task_mm(task);
-+	pasid_state->task	  = task;
- 	pasid_state->mm           = mm;
- 	pasid_state->device_state = dev_state;
- 	pasid_state->pasid        = pasid;
 -- 
-1.9.1
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
 
