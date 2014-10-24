@@ -1,67 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463AbaJXHrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 03:47:39 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:49536 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833AbaJXHrh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 03:47:37 -0400
-Date: Fri, 24 Oct 2014 09:47:32 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/1] perf/urgent fix
-Message-ID: <20141024074732.GA22517@gmail.com>
-References: <1414012017-26261-1-git-send-email-acme@kernel.org>
+	id S1755534AbaJXHtR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 03:49:17 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:37770 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752127AbaJXHtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 03:49:15 -0400
+Date: Fri, 24 Oct 2014 10:49:12 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: David Miller <davem@davemloft.net>
+cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: unaligned accesses in SLAB etc.
+In-Reply-To: <20141023.172258.1371479087269518956.davem@davemloft.net>
+Message-ID: <alpine.LRH.2.11.1410241048290.15464@adalberg.ut.ee>
+References: <20141022.163949.1761351331649936601.davem@davemloft.net> <alpine.LRH.2.11.1410230221360.28745@adalberg.ut.ee> <20141023.130258.548864295965807596.davem@davemloft.net> <20141023.172258.1371479087269518956.davem@davemloft.net>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414012017-26261-1-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > I can reproduce and I know what the problem is, fixed patch coming up
+> > shortly.
+> 
+> Ok, please test this patch below.
 
-* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
+Thank you, it works fine on my V210, V440 and newly added V245.
 
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 3b10ea7f922b538ba5dcb3d979a6b6b4d07daae2:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2014-10-18 09:04:02 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-urgent-for-mingo
-> 
-> for you to fetch changes up to 9ab1f50876dbb8b962db058259be7aae920d4c25:
-> 
->   perf diff: Add missing hists__init() call at tool start (2014-10-22 16:31:06 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/urgent fix:
-> 
-> * Fix 'perf diff' initialization, calling the recently added hists__init()
->   function so that extra space is allocated per perf_evsel for the hists storage
->   that it also uses, just like report and top.  (Kan Liang)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Kan Liang (1):
->       perf diff: Add missing hists__init() call at tool start
-> 
->  tools/perf/builtin-diff.c | 5 +++++
->  1 file changed, 5 insertions(+)
-
-Pulled, thanks a lot Arnaldo!
-
-	Ingo
+-- 
+Meelis Roos (mroos@linux.ee)
