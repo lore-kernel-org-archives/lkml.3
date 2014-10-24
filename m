@@ -1,121 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069AbaJXRYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:24:06 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:35611 "EHLO e9.ny.us.ibm.com"
+	id S1756889AbaJXR3P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:29:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3987 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756100AbaJXRYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:24:03 -0400
-Date: Fri, 24 Oct 2014 10:20:09 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yanko Kaneti <yaneti@declera.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        jay.vosburgh@canonical.com, mroos@linux.ee
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141024172009.GV4977@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141023153333.GA19278@linux.vnet.ibm.com>
- <20141023195159.GA2331@declera.com>
- <20141023200507.GC4977@linux.vnet.ibm.com>
- <1414100740.2065.2.camel@declera.com>
- <20141023220406.GJ4977@linux.vnet.ibm.com>
- <20141024090857.GA4083@declera.com>
- <20141024154006.GP4977@linux.vnet.ibm.com>
- <20141024162943.GA16621@declera.com>
- <20141024165454.GS4977@linux.vnet.ibm.com>
- <20141024170931.GA21849@declera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141024170931.GA21849@declera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102417-0033-0000-0000-000000D56146
+	id S1756094AbaJXR3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 13:29:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,781,1406617200"; 
+   d="scan'208";a="610739371"
+From: Imre Deak <imre.deak@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/2] PM / Sleep: fix async suspend_late/freeze_late error handling
+Date: Fri, 24 Oct 2014 20:29:09 +0300
+Message-Id: <1414171750-6858-1-git-send-email-imre.deak@intel.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1414137549-30005-1-git-send-email-imre.deak@intel.com>
+References: <1414137549-30005-1-git-send-email-imre.deak@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 08:09:31PM +0300, Yanko Kaneti wrote:
-> On Fri-10/24/14-2014 09:54, Paul E. McKenney wrote:
-> > On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
-> > > On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
-> > > > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
-> > > > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
-> > > > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
-> > > > > > > 
-> > > > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
-> > > > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
-> > 
-> > [ . . . ]
-> > 
-> > > > > Ok, unless I've messsed up something major, bisecting points to:
-> > > > > 
-> > > > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
-> > > > > 
-> > > > > Makes any sense ?
-> > > > 
-> > > > Good question.  ;-)
-> > > > 
-> > > > Are any of your online CPUs missing rcuo kthreads?  There should be
-> > > > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
-> > > 
-> > > Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
-> > > and the modprobe ppp_generic testcase reliably works, libvirt also manages
-> > > to setup its bridge.
-> > > 
-> > > Just with linux-tip , the rcuos are 6 but the failure is as reliable as
-> > > before.
-> 
-> > Thank you, very interesting.  Which 6 of the rcuos are present?
-> 
-> Well, the rcuos are 0 to 5. Which sounds right for a 6 core CPU like this   
-> Phenom II.
+If an asynchronous suspend_late or freeze_late callback fails
+during the SUSPEND, FREEZE or QUIESCE phases we don't propagate the
+corresponding error correctly, in effect ignoring the error and
+continuing the suspend-to-ram/hibernation. During suspend-to-ram this
+could leave some devices without a valid saved context, leading to a
+failure to reinitialize them during resume. During hibernation this
+could leave some devices active interfeering with the creation /
+restoration of the hibernation image. Also this could leave the
+corresponding devices without a valid saved context and failure to
+reinitialize them during resume.
 
-Ah, you get 8 without the patch because it creates them for potential
-CPUs as well as real ones.  OK, got it.
+v3 (added to patchset):
+- split out this fix into a separate patch (Rafael)
 
-> > > Awating instructions: :)
-> > 
-> > Well, I thought I understood the problem until you found that only 6 of
-> > the expected 8 rcuos are present with linux-tip without the revert.  ;-)
-> > 
-> > I am putting together a patch for the part of the problem that I think
-> > I understand, of course, but it would help a lot to know which two of
-> > the rcuos are missing.  ;-)
-> 
-> Ready to test
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+---
+ drivers/base/power/main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Well, if you are feeling aggressive, give the following patch a spin.
-I am doing sanity tests on it in the meantime.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 29fb23f33c18..927c17b081c7 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -2546,9 +2546,13 @@ static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
- 			rdp->nocb_leader = rdp_spawn;
- 			if (rdp_last && rdp != rdp_spawn)
- 				rdp_last->nocb_next_follower = rdp;
--			rdp_last = rdp;
--			rdp = rdp->nocb_next_follower;
--			rdp_last->nocb_next_follower = NULL;
-+			if (rdp == rdp_spawn) {
-+				rdp = rdp->nocb_next_follower;
-+			} else {
-+				rdp_last = rdp;
-+				rdp = rdp->nocb_next_follower;
-+				rdp_last->nocb_next_follower = NULL;
-+			}
- 		} while (rdp);
- 		rdp_spawn->nocb_next_follower = rdp_old_leader;
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 4497319..9717d5f 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -1266,6 +1266,8 @@ int dpm_suspend_late(pm_message_t state)
  	}
+ 	mutex_unlock(&dpm_list_mtx);
+ 	async_synchronize_full();
++	if (!error)
++		error = async_error;
+ 	if (error) {
+ 		suspend_stats.failed_suspend_late++;
+ 		dpm_save_failed_step(SUSPEND_SUSPEND_LATE);
+-- 
+1.8.4
 
