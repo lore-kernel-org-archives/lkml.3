@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755625AbaJXVGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 17:06:39 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:41246 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271AbaJXVGi (ORCPT
+	id S1754557AbaJXVTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 17:19:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:46946 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862AbaJXVTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 17:06:38 -0400
-Date: Fri, 24 Oct 2014 22:05:02 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Dmitry Vyukov <dvyukov@google.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        "x86@kernel.org" <x86@kernel.org>, linux-kbuild@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: drivers: random: Shift out-of-bounds in _mix_pool_bytes
-Message-ID: <20141024220502.54cac82d@alan.etchedpixels.co.uk>
-In-Reply-To: <CACT4Y+boMTKpTovCWYQa6baSAWjagCN=mwXBZGAjbobzG80oWA@mail.gmail.com>
-References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
-	<5444EBFA.5030103@samsung.com>
-	<20141020124929.GA23177@thunk.org>
-	<54451501.2070700@samsung.com>
-	<5445179A.4080804@redhat.com>
-	<20141020141635.GA4499@thunk.org>
-	<20141024100108.GF12706@worktop.programming.kicks-ass.net>
-	<544A52D7.6000202@oracle.com>
-	<20141024134205.GB21513@worktop.programming.kicks-ass.net>
-	<544A6A6B.3040602@oracle.com>
-	<CACT4Y+boMTKpTovCWYQa6baSAWjagCN=mwXBZGAjbobzG80oWA@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Fri, 24 Oct 2014 17:19:04 -0400
+Date: Fri, 24 Oct 2014 22:18:48 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Felipe Balbi <balbi@ti.com>, lgirdwood@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, David Brown <davidb@codeaurora.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Message-ID: <20141024211848.GP3729@sirena.org.uk>
+References: <1414178111-19525-1-git-send-email-balbi@ti.com>
+ <20141024201138.GL3729@sirena.org.uk>
+ <CAF6AEGssn23wSaSCY-MH+CUk1YD2g7Ld+rejQq0BSHUAcXgZEQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="oSMU0HVueUMCAvn0"
+Content-Disposition: inline
+In-Reply-To: <CAF6AEGssn23wSaSCY-MH+CUk1YD2g7Ld+rejQq0BSHUAcXgZEQ@mail.gmail.com>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.174.112.79
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: stub out devm_regulator_get_exclusive
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014 19:10:49 +0400
-Dmitry Vyukov <dvyukov@google.com> wrote:
 
-> On Fri, Oct 24, 2014 at 7:04 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> > On 10/24/2014 09:42 AM, Peter Zijlstra wrote:
-> >> On Fri, Oct 24, 2014 at 09:23:35AM -0400, Sasha Levin wrote:
-> >>>
-> >>> i >> 32 may happen to be "i", but is there anything that prevents the compiler
-> >>> from returning, let's say, 42?
-> >>
-> >> Not really, although gcc seems to opt for the 'sane' option and emit the
-> >> instruction and let the arch figure out how to deal with it. Hence the
-> >> 'fun' difference between x86 and ARM.
-> >
-> > It's interesting how many different views on undefined behaviour there are between
-> > kernel folks.
-> >
-> > Everything between Ted Ts'o saying that GCC can launch nethack on oversized shifts,
-> > to DaveM saying he will file a GCC bug if the behaviour isn't sane w.r.t to memcpy().
-> 
-> One of the benefits of fixing such issues (or not letting them into
-> code in the first place) is just saving numerous hours of top-notch
-> engineers spent on disputes like this.
+--oSMU0HVueUMCAvn0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Also it means when someone quietly changes the default behaviour next
-year in the compiler they won't spend months trying to work out why it
-broke.
+On Fri, Oct 24, 2014 at 04:36:24PM -0400, Rob Clark wrote:
 
-gcc has one behaviour but people also try and build the kernel with icc
-and with llvm. In addition in some cases you risk the compiler simply
-generating an undefined in hardware operation and the hardware behaviour
-changing. If x >> 32 is undefined then generating "load Y with the
-shift, shift X left by Y" is fine. What happens in future silicon - who
-knows.
+> iirc, I was using _get_exclusive() in a few places where I wanted to
+> be sure not to get dummy-regulator in cases where I should
+> -EPROBE_DEFER instead (since probe order with DT is slightly
+> hilarious, and since I depend on a few other drivers I end up
+> deferring at least a couple times at boot)... I don't quite remember
+> the details.  But afaict regulator_get() still allows dummy-regulator,
+> which is what I specifically don't want.
 
-Most of the kernel is already very careful about the >> 32 problem.
+No, this is actually making things worse.  You will only get a dummy
+regulator from regulator_get() if no regulator at all is mapped in the
+DT, if one is mapped then you'll always get either an -EPROBE_DEFER or
+the real regulator.  Right now the driver is broken with respect to
+-EPROBE_DEFER since it just completely ignores the error code and
+carries on happily if any error is returned which means that the
+behaviour is going to be unstable on any given system, what happens will
+depend on probe order which could in turn depend on what's been built
+modular and so on.
 
-Alan
+As far as I can tell the only thing the driver does with the regulator
+it's grabbing exclusively is enable it in probe() and that's going to
+work just as well with the dummy regulator anyway so I can't see any
+reason to worry if the driver is getting one.
+
+> If you have a recommendation for a better way, I am all ears.
+
+Just use regulator_get() (or better, devm_regulator_get()) and pay
+attention to the errors.  The driver should also disable the regulator
+on remove and I'd be surprised if the other two regulators shouldn't be
+using a normal _get() too.  If there is a good reason to use _optional()
+then the code should be changed to use ERR_PTR() rather than NULL to
+check for missing regulators and the driver needs to keep them enabled
+as long as it's using them.
+
+Given that the two optional regulators are only set to one specific
+value it's a bit surprising that the DT doesn't do this but I guess it's
+possible there could be broken DTs out there that do give permission for
+set_voltage() for a range rather than specifying the correct voltage.
+
+--oSMU0HVueUMCAvn0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUSsI3AAoJECTWi3JdVIfQeUwH/jPLNZhRL4z2STMPZ6I3A1B/
+o9ELkEqtrRbyFQ5B+icjv0pDm9c/OyqQcFk/ciFXmI8WJMa63HcWOh0EzR7G07hC
+/30dJ1UlK9sz92OgNQBjeztS6ZLAioFnUfMRvM1OIxlQZXxB8Sec48Z8VAcEO8U+
+zXll+fEeJB7X/z05K2lwXj8ojGA+nNh4h7WbrUaUnQ8HJOGZ0J7tSFlz6ho7aqJQ
+7bo+OWQGufcJC46gTJrUr7zX/9QBo98Ub6GkfU1QZx+Z9rUnwIZnjtlEDCI+fqNg
+gzM/+i5LzO3eeg0ynzFKf7UbmgxfDz1i3tnQoVu4soti0j1VghXK1QJJg7AyYSA=
+=trrL
+-----END PGP SIGNATURE-----
+
+--oSMU0HVueUMCAvn0--
