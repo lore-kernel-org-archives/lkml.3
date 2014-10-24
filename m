@@ -1,32 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534AbaJXHtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 03:49:17 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:37770 "EHLO smtp1.it.da.ut.ee"
+	id S1755704AbaJXHtk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 03:49:40 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37219 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127AbaJXHtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 03:49:15 -0400
-Date: Fri, 24 Oct 2014 10:49:12 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: David Miller <davem@davemloft.net>
-cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: unaligned accesses in SLAB etc.
-In-Reply-To: <20141023.172258.1371479087269518956.davem@davemloft.net>
-Message-ID: <alpine.LRH.2.11.1410241048290.15464@adalberg.ut.ee>
-References: <20141022.163949.1761351331649936601.davem@davemloft.net> <alpine.LRH.2.11.1410230221360.28745@adalberg.ut.ee> <20141023.130258.548864295965807596.davem@davemloft.net> <20141023.172258.1371479087269518956.davem@davemloft.net>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1755329AbaJXHtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 03:49:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,778,1406617200"; 
+   d="scan'208";a="624506098"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
+In-Reply-To: <20141022142003.GQ12706@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com> <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com> <20141022142003.GQ12706@worktop.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 24 Oct 2014 10:49:33 +0300
+Message-ID: <878uk53o1e.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I can reproduce and I know what the problem is, fixed patch coming up
-> > shortly.
-> 
-> Ok, please test this patch below.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-Thank you, it works fine on my V210, V440 and newly added V245.
+> On Mon, Oct 13, 2014 at 04:45:40PM +0300, Alexander Shishkin wrote:
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+>> @@ -1528,6 +1528,14 @@ again:
+>>  	}
+>>  
+>>  	/*
+>> +	 * Intel PT
+>> +	 */
+>> +	if (__test_and_clear_bit(55, (unsigned long *)&status)) {
+>> +		handled++;
+>> +		intel_pt_interrupt();
+>> +	}
+>> +
+>
+> How does the PT interrupt interact with the regular PMI? In particular
+> does it respect stuff like FREEZE_ON_PMI etc?
 
--- 
-Meelis Roos (mroos@linux.ee)
+It ignores the FREEZE_ON_PMI bit. I stop it by hand inside the PMI
+handler, so you can see parts of the handler in the trace if you're
+tracing the kernel.
+
+Regards,
+--
+Alex
