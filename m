@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251AbaJXLb5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 07:31:57 -0400
-Received: from laurent.telenet-ops.be ([195.130.137.89]:33790 "EHLO
-	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768AbaJXLb4 (ORCPT
+	id S1756283AbaJXLey (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 07:34:54 -0400
+Received: from mail.bmw-carit.de ([62.245.222.98]:52365 "EHLO
+	mail.bmw-carit.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093AbaJXLex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 07:31:56 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Cc: linux-sh@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH v2] clocksource: sh_mtu2: Drop incorrect SoC family name
-Date: Fri, 24 Oct 2014 13:29:38 +0200
-Message-Id: <1414150178-4986-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
+	Fri, 24 Oct 2014 07:34:53 -0400
+Message-ID: <544A3949.30305@bmw-carit.de>
+Date: Fri, 24 Oct 2014 13:34:33 +0200
+From: Daniel Wagner <daniel.wagner@bmw-carit.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Juri Lelli <juri.lelli@arm.com>, <linux-kernel@vger.kernel.org>,
+        <peterz@infradead.org>
+CC: <juri.lelli@gmail.com>, <mingo@redhat.com>, <vincent@legout.info>
+Subject: Re: [PATCH 0/4] Fix various bits of AC and PI for SCHED_DEADLINE
+References: <1414142198-18552-1-git-send-email-juri.lelli@arm.com>
+In-Reply-To: <1414142198-18552-1-git-send-email-juri.lelli@arm.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TPU2 hardware block is found in many Renesas SH and ARM SoCs, but
-not in R-Car.
+Hi everyone,
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
-v2:
-  - Drop family name instead of changing it to RZ.
----
- Documentation/devicetree/bindings/timer/renesas,mtu2.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On 10/24/2014 11:16 AM, Juri Lelli wrote:
+> Hi all,
+> 
+> this is basically a resend of 4 patches fixing problems around AC
+> and PI related to SCHED_DEADLINE. You can find the full story here:
+> 
+>  - https://lkml.org/lkml/2014/9/19/134
+>  - https://lkml.org/lkml/2014/9/24/493
+> 
+> First two patches fix AC. They are the same as the previous version,
+> plus aligning to commit f10e00f4bf36 ("sched/dl: Use dl_bw_of() under
+> rcu_read_lock_sched()"). Last two fix PI.
+> 
+> Thanks a lot again to Daniel for spending time fixing and testing
+> the PI stuff! And to Peter and Vincent for reviews and comments.
 
-diff --git a/Documentation/devicetree/bindings/timer/renesas,mtu2.txt b/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
-index d9a8d5af1a21270f..ba0a34d97eb80261 100644
---- a/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
-+++ b/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
-@@ -1,4 +1,4 @@
--* Renesas R-Car Multi-Function Timer Pulse Unit 2 (MTU2)
-+* Renesas Multi-Function Timer Pulse Unit 2 (MTU2)
- 
- The MTU2 is a multi-purpose, multi-channel timer/counter with configurable
- clock inputs and programmable compare match.
--- 
-1.9.1
+Thanks for the patches!
 
+> Best Regards,
+> 
+> - Juri
+> 
+> Juri Lelli (4):
+>   sched/deadline: fix bandwidth check/update when migrating tasks
+>     between exclusive cpusets
+>   sched/deadline: ensure that updates to exclusive cpusets don't break
+>     AC
+>   sched/deadline: don't replenish from a !SCHED_DEADLINE entity
+>   sched/deadline: fix races between rt_mutex_setprio and dl_task_timer
+
+I have tested the whole patch set with my test program and everything
+seems to work fine. If you like you can add a
+
+Tested-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+
+cheers,
+daniel
