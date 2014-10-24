@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaJXTbt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 15:31:49 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:54136 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212AbaJXTbs (ORCPT
+	id S1753955AbaJXTiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 15:38:07 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:49903 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729AbaJXTiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 15:31:48 -0400
-Date: Fri, 24 Oct 2014 21:28:45 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Johan Hovold <johan@kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: remove redundant irq disable at halt and restart
-Message-ID: <20141024192845.GC19377@localhost>
-References: <1414177592-14547-1-git-send-email-johan@kernel.org>
- <20141024191627.GA11455@saruman>
- <20141024192111.GC11455@saruman>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141024192111.GC11455@saruman>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 24 Oct 2014 15:38:05 -0400
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: vinod.koul@intel.com
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        dan.j.williams@intel.com, s.hauer@pengutronix.de, shawn.guo@linaro.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmaengine@vger.kernel.org, b38343@freescale.com
+Subject: [PATCH] dma: imx-sdma: Add a new DMATYPE for SAI
+Date: Fri, 24 Oct 2014 12:37:41 -0700
+Message-Id: <1414179461-3522-1-git-send-email-nicoleotsuka@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 02:21:11PM -0500, Felipe Balbi wrote:
-> On Fri, Oct 24, 2014 at 02:16:27PM -0500, Felipe Balbi wrote:
-> > On Fri, Oct 24, 2014 at 09:06:32PM +0200, Johan Hovold wrote:
-> > > Remove redundant local_irq_disable() at machine halt and restart.
-> > > 
-> > > Since commit 44424c34049f ("ARM: 7803/1: Fix deadlock scenario with
-> > > smp_send_stop()") interrupts are disabled before stopping secondary
-> > > CPUs.
-> > 
-> > Assuming this is correct, you should have:
-> > 
-> > Fixes: 44424c3 (ARM: 7803/1: Fix deadlock scenario with smp_send_stop())
-> > Cc: <stable@vger.kernel.org> # v3.12+
+This patch simply adds a new DMATYPE for SAI which's included
+in i.MX6 Solo X.
 
-It's not a bug. Just a redundant disabling of already disabled
-interrupts, something which could possibly lead someone to believe that
-interrupts could be re-enabled by the power-off handler.
+Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
+---
+ Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt | 1 +
+ drivers/dma/imx-sdma.c                                 | 1 +
+ include/linux/platform_data/dma-imx.h                  | 1 +
+ 3 files changed, 3 insertions(+)
 
-And if that was the case, wouldn't that introduce the bug that
-44424c34049f ("ARM: 7803/1: Fix deadlock scenario with smp_send_stop()")
-was trying to fix?
+diff --git a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
+index 4659fd9..dc8d3aa 100644
+--- a/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
++++ b/Documentation/devicetree/bindings/dma/fsl-imx-sdma.txt
+@@ -48,6 +48,7 @@ The full ID of peripheral types can be found below.
+ 	21	ESAI
+ 	22	SSI Dual FIFO	(needs firmware ver >= 2)
+ 	23	Shared ASRC
++	24	SAI
+ 
+ The third cell specifies the transfer priority as below.
+ 
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 88afc48..05fd6b1 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -729,6 +729,7 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
+ 	case IMX_DMATYPE_CSPI:
+ 	case IMX_DMATYPE_EXT:
+ 	case IMX_DMATYPE_SSI:
++	case IMX_DMATYPE_SAI:
+ 		per_2_emi = sdma->script_addrs->app_2_mcu_addr;
+ 		emi_2_per = sdma->script_addrs->mcu_2_app_addr;
+ 		break;
+diff --git a/include/linux/platform_data/dma-imx.h b/include/linux/platform_data/dma-imx.h
+index 6a1357d..7d964e7 100644
+--- a/include/linux/platform_data/dma-imx.h
++++ b/include/linux/platform_data/dma-imx.h
+@@ -41,6 +41,7 @@ enum sdma_peripheral_type {
+ 	IMX_DMATYPE_ESAI,	/* ESAI */
+ 	IMX_DMATYPE_SSI_DUAL,	/* SSI Dual FIFO */
+ 	IMX_DMATYPE_ASRC_SP,	/* Shared ASRC */
++	IMX_DMATYPE_SAI,	/* SAI */
+ };
+ 
+ enum imx_dma_prio {
+-- 
+1.9.1
 
-> > > Signed-off-by: Johan Hovold <johan@kernel.org>
-> > > ---
-> > >  arch/arm/kernel/process.c | 2 --
-> > >  1 file changed, 2 deletions(-)
-> > > 
-> > > diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-> > > index a35f6ebbd2c2..5663ab57cf07 100644
-> > > --- a/arch/arm/kernel/process.c
-> > > +++ b/arch/arm/kernel/process.c
-> > > @@ -195,7 +195,6 @@ void machine_halt(void)
-> > >  	local_irq_disable();
-> > >  	smp_send_stop();
-> > >  
-> > > -	local_irq_disable();
-> > >  	while (1);
-> > >  }
-> > >  
-> > > @@ -237,7 +236,6 @@ void machine_restart(char *cmd)
-> > >  
-> > >  	/* Whoops - the platform was unable to reboot. Tell the user! */
-> > >  	printk("Reboot failed -- System halted\n");
-> > > -	local_irq_disable();
-> > 
-> > ... but wouldn't this reintroduce the the buck which that commit fixed ?
-> 
-> s/buck/bug :-) my fingers have a mind of their own, aparently.
-
-:)
-
-No, the interrupts would still be disabled.
-
-Thanks,
-Johan
