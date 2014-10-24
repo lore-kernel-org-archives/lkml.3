@@ -1,140 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838AbaJXIRy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 04:17:54 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:61291 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaJXIRt (ORCPT
+	id S1755452AbaJXITe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 04:19:34 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:48611 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaJXITb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 04:17:49 -0400
-Date: Fri, 24 Oct 2014 01:17:44 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Caesar Wang <caesar.wang@rock-chips.com>
-Cc: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
-        zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
-        cjf@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH v13 4/5] ARM: dts: add main Thermal info to rk3288
-Message-ID: <20141024081744.GA39338@dtor-ws>
-References: <1414057207-1576-1-git-send-email-caesar.wang@rock-chips.com>
- <1414057207-1576-5-git-send-email-caesar.wang@rock-chips.com>
- <20141024004625.GD9463@dtor-ws>
- <5449A6A4.3070608@rock-chips.com>
- <E4EEE800-5701-45E5-9E97-D3B036DC2F17@gmail.com>
- <5449B433.5040003@rock-chips.com>
- <20141024023236.GA19910@dtor-ws>
- <5449C5CA.9000009@rock-chips.com>
+	Fri, 24 Oct 2014 04:19:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5449C5CA.9000009@rock-chips.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141024081139.GA8861@thin>
+References: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
+	<20141024032355.GB7879@thin>
+	<CAMEtUuxsk=iLDsD4XXZ8EcurFXgFxD-9iePv=NbBZn+b3YOXJA@mail.gmail.com>
+	<20141024081139.GA8861@thin>
+Date: Fri, 24 Oct 2014 10:19:29 +0200
+X-Google-Sender-Auth: ZZSib38eMWloi9_xrSLQ-eA_DmU
+Message-ID: <CAMuHMdURm_6Mx8d4hh+TvAHLnC_nQ_0jfLGhjDw5pru2eVWyvw@mail.gmail.com>
+Subject: Re: [PATCH net] bpf: split eBPF out of NET
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Alexei Starovoitov <ast@plumgrid.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Caesar,
+On Fri, Oct 24, 2014 at 10:11 AM, Josh Triplett <josh@joshtriplett.org> wrote:
+>> >> +config BPF_SYSCALL
+>> >> +     bool "Enable bpf() system call" if EXPERT
+>> >> +     select ANON_INODES
+>> >> +     select BPF
+>> >> +     default n
+>> >> +     help
+>> >> +       Enable the bpf() system call that allows to manipulate eBPF
+>> >> +       programs and maps via file descriptors.
+>> >
+>> > Not sure this one goes under EXPERT, especially since it currently has
+>> > "default n".
+>>
+>> I followed the same style as EPOLL, EVENTFD and others
+>> in the same category.
+>
+> I was thinking of CROSS_MEMORY_ATTACH and FHANDLE in the same file.
 
-On Fri, Oct 24, 2014 at 11:21:46AM +0800, Caesar Wang wrote:
-> Dmitry,
-> 
-> 在 2014/10/24 10:32, Dmitry Torokhov 写道:
-> >On Fri, Oct 24, 2014 at 10:06:43AM +0800, Caesar Wang wrote:
-> >>在 2014/10/24 9:37, Dmitry Torokhov 写道:
-> >>>On October 23, 2014 6:08:52 PM PDT, Caesar Wang <caesar.wang@rock-chips.com> wrote:
-> >>>>Dmitry,
-> >>>>
-> >>>>在 2014/10/24 8:46, Dmitry Torokhov 写道:
-> >>>>>Hi Caesar,
-> >>>>>
-> >>>>>On Thu, Oct 23, 2014 at 05:40:06PM +0800, Caesar Wang wrote:
-> >>>>>>This patch is depend on rk3288-thermal.dtsi,or
-> >>>>>>it will compile error.
-> >>>>>>
-> >>>>>>If the temperature over a period of time High,over 120C
-> >>>>>>the resulting TSHUT gave CRU module,let it reset
-> >>>>>>the entire chip,or via GPIO give PMIC.
-> >>>>>>
-> >>>>>>Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> >>>>>>---
-> >>>>>>   arch/arm/boot/dts/rk3288.dtsi | 21 +++++++++++++++++++++
-> >>>>>>   1 file changed, 21 insertions(+)
-> >>>>>>
-> >>>>>>diff --git a/arch/arm/boot/dts/rk3288.dtsi
-> >>>>b/arch/arm/boot/dts/rk3288.dtsi
-> >>>>>>index cb18bb4..85fc17a 100644
-> >>>>>>--- a/arch/arm/boot/dts/rk3288.dtsi
-> >>>>>>+++ b/arch/arm/boot/dts/rk3288.dtsi
-> >>>>>>@@ -15,6 +15,7 @@
-> >>>>>>   #include <dt-bindings/interrupt-controller/arm-gic.h>
-> >>>>>>   #include <dt-bindings/pinctrl/rockchip.h>
-> >>>>>>   #include <dt-bindings/clock/rk3288-cru.h>
-> >>>>>>+#include <dt-bindings/thermal/thermal.h>
-> >>>>>>   #include "skeleton.dtsi"
-> >>>>>>   / {
-> >>>>>>@@ -66,6 +67,7 @@
-> >>>>>>   				 216000  900000
-> >>>>>>   				 126000  900000
-> >>>>>>   			>;
-> >>>>>>+			#cooling-cells = <2>; /* min followed by max */
-> >>>>>>   			clock-latency = <40000>;
-> >>>>>>   			clocks = <&cru ARMCLK>;
-> >>>>>>   		};
-> >>>>>>@@ -346,6 +348,19 @@
-> >>>>>>   		status = "disabled";
-> >>>>>>   	};
-> >>>>>>+	tsadc: tsadc@ff280000 {
-> >>>>>>+		compatible = "rockchip,rk3288-tsadc";
-> >>>>>>+		reg = <0xff280000 0x100>;
-> >>>>>>+		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-> >>>>>>+		clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-> >>>>>>+		clock-names = "tsadc", "apb_pclk";
-> >>>>>>+		pinctrl-names = "default";
-> >>>>>>+		pinctrl-0 = <&otp_out>;
-> >>>>>>+		#thermal-sensor-cells = <1>;
-> >>>>>>+		hw-shut-temp = <120000>;
-> >>>>>I do not think this is a good value. You have (in the other DTS file)
-> >>>>>passive trip point at 80 and critical (which should result in orderly
-> >>>>>shutdown) at 125. But here you define hardware-controlled shutdown at
-> >>>>>120C, which is backwards. You should have:
-> >>>>>
-> >>>>>passive <= critical <= hardware
-> >>>>Hmmm....
-> >>>>but, the system will shutdown when temperature over critial value,
-> >>>>there is no chance of triggering the TSHUT.
-> >>>>
-> >>>>If the temperature over a period of time High,as we know,
-> >>>>the resulting TSHUT gave CRU module,let it hot-reset the entire chip,
-> >>>>or via GPIO give PMIC cold-reset the entire chip.
-> >>>Having tshut trigger is not the goal, tshut is the measure of last resort. If we can handle thermal conditions without triggering tshut, we achieved our goal.
-> >>>
-> >>>Tshut triggering is " oh, crap, nothing we tried works" scenario.
-> >>I don't think so.
-> >>
-> >>In general,We should have:
-> >>passive <= hardware(reset entire chip) <= critical(shutdown)
-> >>
-> >>The temperature be rising qulckly if have some other conditions,
-> >>the "critical" will play a role.
-> >No, I think it should be the other way around: if we are unable to cool
-> >down the laptop under load we need to shut it down and let it cool. If
-> >for some reason we are unable to shut it down in orderly fashion (kernel
-> >is stuck holding a lock or similar) then hardware will reset it.
-> >
-> >At least that's how I understand it.
-> hmmm....
-> 
-> OK,agree,this is a option.
-> 
-> I think I should set hw-shut-temp = <125000>;
-> and critical = <120000>;
-> 
+Those indeed look like better examples.
+With if EXPERT and default n, you need to enable EXPERT before you can
+enable the syscall, which is probably not what you want.
 
-Yes, this should work, thanks!
+Thanks!
 
--- 
-Dmitry
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
