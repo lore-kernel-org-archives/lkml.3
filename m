@@ -1,52 +1,462 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762AbaJXND0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:03:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:60880 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932576AbaJXNDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:03:24 -0400
-Date: Fri, 24 Oct 2014 10:03:20 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/16] perf pmu: Let pmu's with no events show up on perf
- list
-Message-ID: <20141024130320.GA14687@kernel.org>
-References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
- <1414061124-26830-3-git-send-email-adrian.hunter@intel.com>
- <87y4s6cak7.fsf@sejong.aot.lge.com>
- <20141024125702.GZ14687@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141024125702.GZ14687@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S932921AbaJXNGG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:06:06 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:21123 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932570AbaJXNGD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 09:06:03 -0400
+X-AuditID: cbfee68e-f79b46d000002b74-33-544a4eb83e3c
+Message-id: <544A4EB8.1060507@samsung.com>
+Date: Fri, 24 Oct 2014 22:06:00 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: tomasz.figa@gmail.com, kgene.kim@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com, inki.dae@samsung.com,
+        geunsik.lim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/2] clk: samsung: exynos4415: Add clocks using common
+ clock framework
+References: <1414148828-23719-1-git-send-email-cw00.choi@samsung.com>
+ <1414148828-23719-2-git-send-email-cw00.choi@samsung.com>
+ <544A402F.1010207@samsung.com>
+In-reply-to: <544A402F.1010207@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMIsWRmVeSWpSXmKPExsWyRsSkSHeHn1eIwaT5NhZ/JrSyWUy6P4HF
+	onfBVTaLs01v2C0u75rDZjHj/D4mi8Nv2lktZkx+yWaxatcfRgdOj52z7rJ79G1ZxejxeZNc
+	AHMUl01Kak5mWWqRvl0CV8arB9fYCnqzKg5fmsbawHg/rIuRk0NCwERix8xX7BC2mMSFe+vZ
+	uhi5OIQEljJK9Kw5yApTtKbrHztEYjqjRPe84ywQzmtGiUObFjB2MXJw8ApoSUy44w/SwCKg
+	KnH8xjs2EJsNKLz/xQ0wW1QgTGLl9CssIDavgKDEj8n3wGwRAX2JJasugm1mFrjOKPHn1zxm
+	kISwQJzE21vtrBDLFjFK7J51FewkTgFtib+nu9lAFjML6Encv6gFEmYWkJfYvOYtM0i9hMA1
+	dolFe36xQVwkIPFt8iEWkHoJAVmJTQeYIT6TlDi44gbLBEaxWUhumoUwdRaSqQsYmVcxiqYW
+	JBcUJ6UXGekVJ+YWl+al6yXn525iBMbd6X/P+nYw3jxgfYhRgINRiYf3xgzPECHWxLLiytxD
+	jKZAR0xklhJNzgdGd15JvKGxmZGFqYmpsZG5pZmSOG+C1M9gIYH0xJLU7NTUgtSi+KLSnNTi
+	Q4xMHJxSDYy8y5ax+Jo93S788fPSd+/aNxeEmfF+5Dgw6/ijYzazmBJZtS+Gfvc+0VbtFG72
+	xnpH8xHlgyu53QNfs/rMmKRU3/Do1o6Nc9oybvjVmiVHcpp2XpFRCeczD7hv7NfjqHqtU13l
+	h0XupOtLS+VuL9tho7+oKyZi5YlDt+4lZZn28iU91ylrr1JiKc5INNRiLipOBAC8gvMitgIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t9jQd0dfl4hBh/vGVr8mdDKZjHp/gQW
+	i94FV9kszja9Ybe4vGsOm8WM8/uYLA6/aWe1mDH5JZvFql1/GB04PXbOusvu0bdlFaPH501y
+	AcxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUB3
+	KCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgzXj24xlbQm1Vx+NI01gbG
+	+2FdjJwcEgImEmu6/rFD2GISF+6tZ+ti5OIQEpjOKNE97zgLhPOaUeLQpgWMXYwcHLwCWhIT
+	7viDNLAIqEocv/GODcRmAwrvf3EDzBYVCJNYOf0KC4jNKyAo8WPyPTBbREBfYsmqi2ALmAWu
+	M0r8+TWPGSQhLBAn8fZWOyvEskWMErtnXWUFSXAKaEv8Pd3NBrKYWUBP4v5FLZAws4C8xOY1
+	b5knMArMQrJjFkLVLCRVCxiZVzGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER/UzqR2MKxss
+	DjEKcDAq8fDemOEZIsSaWFZcmXuIUYKDWUmE18vEK0SINyWxsiq1KD++qDQntfgQoykwBCYy
+	S4km5wMTTl5JvKGxiZmRpZG5oYWRsbmSOO+BVutAIYH0xJLU7NTUgtQimD4mDk6pBkY21kn6
+	ve3ndt719vvft7l/FadnY88NzkyO7YvFOqZvyjbcb2BofJs1a8Gl92vizzkUuM7P3rkiJlbt
+	9LMLe3t3RZtF2R/SeKzwa82O263nev2d77NtnsXz1j34Sa2EFdMHL1OTpyGKb3QWLmeZerHF
+	wXnKsQCZcItNeusvnz7ftkVWaEfZml9KLMUZiYZazEXFiQCqL+hNAAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 24, 2014 at 09:57:02AM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Fri, Oct 24, 2014 at 02:15:52PM +0900, Namhyung Kim escreveu:
-> > On Thu, 23 Oct 2014 13:45:10 +0300, Adrian Hunter wrote:
-> > > +		if (pmu->selectable) {
-> > > +			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
-> > > +			aliases[j] = strdup(buf);
-> > 
-> > You need to check the return value here (and above too).
+Hi Sylwester,
+
+On 10/24/2014 09:03 PM, Sylwester Nawrocki wrote:
+> On 24/10/14 13:07, Chanwoo Choi wrote:
+>> This patch adds the new clock driver of Exynos4415 SoC based on Cortex-A9
+>> using common clock framework. The CMU (Clock Management Unit) of Exynos4415
+>> controls PLLs(Phase Locked Loops) and generates system clocks for CPU, buses
+>> and function clocks for individual IPs.
+>>
+>> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>> Cc: Tomasz Figa <tomasz.figa@gmail.com>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
+>> Signed-off-by: Seung-Woo Kim <sw0312.kim@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 > 
-> Well spotted, fixing this up.
+> Thanks for the update, there are still couple issues pointed out
+> by checkpatch.pl unfortunately, please see below.
+> Please fix the errors, I added also some more comments inline below.
+> In future please put DT binding documentation patch first in the
+> series, before the actual driver patch.
 
-Oh well, this print_pmu_events() function needs some care, it starts by
-trying to alloc the array, if it fails, it silently returns, does that
-mean that there are no pmu events? Or that memory allocation failed?
+I'm so sorry.
+I'll fix it using checkpatch script right now.
 
-Ok, will do the fixes in a separate patch...
+Best Regards,
+Chanwoo Choi
 
-- Arnaldo
+> 
+> WARNING: kfree(NULL) is safe this check is probably not required
+> #252: FILE: drivers/clk/samsung/clk-exynos4415.c:252:
+> +	if (clk_regs)
+> +		kfree(clk_regs);
+> 
+> ERROR: space required after that ',' (ctx:VxV)
+> #423: FILE: drivers/clk/samsung/clk-exynos4415.c:423:
+> +		0,4),
+>  		 ^
+> 
+> WARNING: line over 80 characters
+> #726: FILE: drivers/clk/samsung/clk-exynos4415.c:726:
+> +		"div_pxlasync_csis0_fimc", GATE_SCLK_CAM, 10, CLK_SET_RATE_PARENT, 0),
+> 
+> WARNING: line over 80 characters
+> #817: FILE: drivers/clk/samsung/clk-exynos4415.c:817:
+> +	GATE(CLK_SMMUFIMC_LITE2, "smmufimc_lite2", "div_aclk_160", GATE_IP_CAM, 22,
+> 
+> WARNING: line over 80 characters
+> #875: FILE: drivers/clk/samsung/clk-exynos4415.c:875:
+> +	GATE(CLK_USBDEVICE, "usbdevice", "div_aclk_200", GATE_IP_FSYS, 13, 0, 0),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #920: FILE: drivers/clk/samsung/clk-exynos4415.c:920:
+> +	PLL_35XX_RATE( 960000000, 320, 4,  1),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #921: FILE: drivers/clk/samsung/clk-exynos4415.c:921:
+> +	PLL_35XX_RATE( 900000000, 300, 4,  1),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #922: FILE: drivers/clk/samsung/clk-exynos4415.c:922:
+> +	PLL_35XX_RATE( 850000000, 425, 6,  1),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #923: FILE: drivers/clk/samsung/clk-exynos4415.c:923:
+> +	PLL_35XX_RATE( 800000000, 200, 3,  1),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #924: FILE: drivers/clk/samsung/clk-exynos4415.c:924:
+> +	PLL_35XX_RATE( 700000000, 175, 3,  1),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #925: FILE: drivers/clk/samsung/clk-exynos4415.c:925:
+> +	PLL_35XX_RATE( 667000000, 667, 12, 1),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #926: FILE: drivers/clk/samsung/clk-exynos4415.c:926:
+> +	PLL_35XX_RATE( 600000000, 400, 4,  2),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #927: FILE: drivers/clk/samsung/clk-exynos4415.c:927:
+> +	PLL_35XX_RATE( 550000000, 275, 3,  2),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #928: FILE: drivers/clk/samsung/clk-exynos4415.c:928:
+> +	PLL_35XX_RATE( 533000000, 533, 6,  2),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #929: FILE: drivers/clk/samsung/clk-exynos4415.c:929:
+> +	PLL_35XX_RATE( 520000000, 260, 3,  2),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #930: FILE: drivers/clk/samsung/clk-exynos4415.c:930:
+> +	PLL_35XX_RATE( 500000000, 250, 3,  2),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #931: FILE: drivers/clk/samsung/clk-exynos4415.c:931:
+> +	PLL_35XX_RATE( 440000000, 220, 3,  2),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #932: FILE: drivers/clk/samsung/clk-exynos4415.c:932:
+> +	PLL_35XX_RATE( 400000000, 200, 3,  2),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #933: FILE: drivers/clk/samsung/clk-exynos4415.c:933:
+> +	PLL_35XX_RATE( 350000000, 175, 3,  2),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #934: FILE: drivers/clk/samsung/clk-exynos4415.c:934:
+> +	PLL_35XX_RATE( 300000000, 300, 3,  3),
+> #935: FILE: drivers/clk/samsung/clk-exynos4415.c:935:
+> +	PLL_35XX_RATE( 266000000, 266, 3,  3),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #936: FILE: drivers/clk/samsung/clk-exynos4415.c:936:
+> +	PLL_35XX_RATE( 200000000, 200, 3,  3),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #937: FILE: drivers/clk/samsung/clk-exynos4415.c:937:
+> +	PLL_35XX_RATE( 160000000, 160, 3,  3),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #938: FILE: drivers/clk/samsung/clk-exynos4415.c:938:
+> +	PLL_35XX_RATE( 100000000, 200, 3,  4),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #948: FILE: drivers/clk/samsung/clk-exynos4415.c:948:
+> +	PLL_36XX_RATE( 96000000, 128, 2, 4,     0),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #949: FILE: drivers/clk/samsung/clk-exynos4415.c:949:
+> +	PLL_36XX_RATE( 84000000, 112, 2, 4,     0),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #950: FILE: drivers/clk/samsung/clk-exynos4415.c:950:
+> +	PLL_36XX_RATE( 80750011, 107, 2, 4, 43691),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #951: FILE: drivers/clk/samsung/clk-exynos4415.c:951:
+> +	PLL_36XX_RATE( 73728004,  98, 2, 4, 19923),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #952: FILE: drivers/clk/samsung/clk-exynos4415.c:952:
+> +	PLL_36XX_RATE( 67987602, 271, 3, 5, 62285),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #953: FILE: drivers/clk/samsung/clk-exynos4415.c:953:
+> +	PLL_36XX_RATE( 65911004, 175, 2, 5, 49982),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #954: FILE: drivers/clk/samsung/clk-exynos4415.c:954:
+> +	PLL_36XX_RATE( 50000000, 200, 3, 5,     0),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #955: FILE: drivers/clk/samsung/clk-exynos4415.c:955:
+> +	PLL_36XX_RATE( 49152003, 131, 2, 5,  4719),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #956: FILE: drivers/clk/samsung/clk-exynos4415.c:956:
+> +	PLL_36XX_RATE( 48000000, 128, 2, 5,     0),
+> 
+> ERROR: space prohibited after that open parenthesis '('
+> #957: FILE: drivers/clk/samsung/clk-exynos4415.c:957:
+> +	PLL_36XX_RATE( 45250000, 181, 3, 5,     0),
+> 
+> total: 30 errors, 4 warnings, 1133 lines checked
+> 
+> drivers/clk/samsung/clk-exynos4415.c has style problems, please review.
+> 
+>> ---
+>>  drivers/clk/samsung/Makefile           |    1 +
+>>  drivers/clk/samsung/clk-exynos4415.c   | 1133 ++++++++++++++++++++++++++++++++
+>>  include/dt-bindings/clock/exynos4415.h |  360 ++++++++++
+>>  3 files changed, 1494 insertions(+)
+>>  create mode 100644 drivers/clk/samsung/clk-exynos4415.c
+>>  create mode 100644 include/dt-bindings/clock/exynos4415.h
+> 
+>> diff --git a/drivers/clk/samsung/clk-exynos4415.c b/drivers/clk/samsung/clk-exynos4415.c
+>> new file mode 100644
+>> index 0000000..a4b6211
+>> --- /dev/null
+>> +++ b/drivers/clk/samsung/clk-exynos4415.c
+>> @@ -0,0 +1,1133 @@
+> 
+>> +static struct samsung_clk_reg_dump *clk_regs;
+>> +static struct samsung_clk_provider *ctx;
+>> +
+>> +static unsigned long cmu_clk_regs[] __initdata = {
+> 
+>> +};
+>> +
+>> +static int exynos_clk_suspend(void)
+> 
+> Please prefix such function (and above variable) names with exynos4415,
+> as is done for other SoC drivers.
+> 
+>> +{
+>> +	samsung_clk_save(ctx->reg_base, clk_regs, ARRAY_SIZE(cmu_clk_regs));
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void exynos_clk_resume(void)
+> 
+> exynos4415_clk_resume ?
+> 
+>> +{
+>> +	samsung_clk_restore(ctx->reg_base, clk_regs, ARRAY_SIZE(cmu_clk_regs));
+>> +}
+>> +
+>> +static struct syscore_ops exynos_clk_syscore_ops = {
+> 
+> exynos4415_clk_syscore_ops ?
+> 
+>> +	.suspend = exynos_clk_suspend,
+>> +	.resume = exynos_clk_resume,
+>> +};
+>> +
+>> +static void exynos_clk_sleep_init(void)
+> 
+> exynos4415_clk_sleep_init ?
+> 
+>> +{
+>> +	clk_regs = samsung_clk_alloc_reg_dump(cmu_clk_regs,
+>> +						ARRAY_SIZE(cmu_clk_regs));
+>> +	if (!clk_regs) {
+>> +		pr_warn("%s: Failed to allocate sleep save data\n", __func__);
+>> +		goto err;
+> 
+> You could just return here.
+> 
+>> +	}
+>> +
+>> +	register_syscore_ops(&exynos_clk_syscore_ops);
+>> +
+>> +	return;
+>> +err:
+>> +	if (clk_regs)
+>> +		kfree(clk_regs);
+> 
+> kfree() can be removed (and the condition could never be true anyway).
+> 
+>> +}
+>> +#else
+>> +static inline void exynos_clk_sleep_init(void) { }
+> 
+> exynos4415_clk_sleep_init ?
+> 
+>> +#endif
+> 
+> How about prefixing the table names below with "exynos4415", rather than
+> "samsung" ?
+> 
+>> +static struct samsung_fixed_factor_clock fixed_factor_clks[] __initdata = {
+> 
+>> +};
+>> +
+>> +static struct samsung_fixed_rate_clock fixed_rate_clks[] __initdata = {
+>> +	FRATE(CLK_SCLK_HDMIPHY, "sclk_hdmiphy", NULL, CLK_IS_ROOT, 27000000),
+>> +};
+>> +
+>> +static struct samsung_mux_clock mux_clks[] __initdata = {
+> 
+>> +};
+>> +
+>> +static struct samsung_div_clock div_clks[] __initdata = {
+> 
+>> +};
+>> +
+>> +static struct samsung_gate_clock gate_clks[] __initdata = {
+> 
+>> +};
+>> +
+>> +/*
+>> + * APLL & MPLL & BPLL & ISP_PLL & DISP_PLL & G3D_PLL
+>> + */
+>> +static struct samsung_pll_rate_table exynos4415_pll_rates[] = {
+>> +	PLL_35XX_RATE(1600000000, 400, 3,  1),
+>> +	PLL_35XX_RATE(1500000000, 250, 2,  1),
+>> +	PLL_35XX_RATE(1400000000, 175, 3,  0),
+>> +	PLL_35XX_RATE(1300000000, 325, 3,  1),
+>> +	PLL_35XX_RATE(1200000000, 400, 4,  1),
+>> +	PLL_35XX_RATE(1100000000, 275, 3,  1),
+>> +	PLL_35XX_RATE(1066000000, 533, 6,  1),
+>> +	PLL_35XX_RATE(1000000000, 250, 3,  1),
+>> +	PLL_35XX_RATE( 960000000, 320, 4,  1),
+>> +	PLL_35XX_RATE( 900000000, 300, 4,  1),
+>> +	PLL_35XX_RATE( 850000000, 425, 6,  1),
+>> +	PLL_35XX_RATE( 800000000, 200, 3,  1),
+>> +	PLL_35XX_RATE( 700000000, 175, 3,  1),
+>> +	PLL_35XX_RATE( 667000000, 667, 12, 1),
+>> +	PLL_35XX_RATE( 600000000, 400, 4,  2),
+>> +	PLL_35XX_RATE( 550000000, 275, 3,  2),
+>> +	PLL_35XX_RATE( 533000000, 533, 6,  2),
+>> +	PLL_35XX_RATE( 520000000, 260, 3,  2),
+>> +	PLL_35XX_RATE( 500000000, 250, 3,  2),
+>> +	PLL_35XX_RATE( 440000000, 220, 3,  2),
+>> +	PLL_35XX_RATE( 400000000, 200, 3,  2),
+>> +	PLL_35XX_RATE( 350000000, 175, 3,  2),
+>> +	PLL_35XX_RATE( 300000000, 300, 3,  3),
+>> +	PLL_35XX_RATE( 266000000, 266, 3,  3),
+>> +	PLL_35XX_RATE( 200000000, 200, 3,  3),
+>> +	PLL_35XX_RATE( 160000000, 160, 3,  3),
+>> +	PLL_35XX_RATE( 100000000, 200, 3,  4),
+>> +	{ /* sentinel */ }
+>> +};
+>> +
+>> +/* EPLL */
+>> +static struct samsung_pll_rate_table exynos4415_epll_rates[] = {
+>> +	PLL_36XX_RATE(800000000, 200, 3, 1,     0),
+>> +	PLL_36XX_RATE(288000000,  96, 2, 2,     0),
+>> +	PLL_36XX_RATE(192000000, 128, 2, 3,     0),
+>> +	PLL_36XX_RATE(144000000,  96, 2, 3,     0),
+>> +	PLL_36XX_RATE( 96000000, 128, 2, 4,     0),
+>> +	PLL_36XX_RATE( 84000000, 112, 2, 4,     0),
+>> +	PLL_36XX_RATE( 80750011, 107, 2, 4, 43691),
+>> +	PLL_36XX_RATE( 73728004,  98, 2, 4, 19923),
+>> +	PLL_36XX_RATE( 67987602, 271, 3, 5, 62285),
+>> +	PLL_36XX_RATE( 65911004, 175, 2, 5, 49982),
+>> +	PLL_36XX_RATE( 50000000, 200, 3, 5,     0),
+>> +	PLL_36XX_RATE( 49152003, 131, 2, 5,  4719),
+>> +	PLL_36XX_RATE( 48000000, 128, 2, 5,     0),
+>> +	PLL_36XX_RATE( 45250000, 181, 3, 5,     0),
+>> +	{ /* sentinel */ }
+>> +};
+>> +
+>> +static struct samsung_pll_clock plls[nr_plls] __initdata = {
+> 
+>> +};
+>> +
+>> +static void __init exynos4415_cmu_init(struct device_node *np)
+>> +{
+> 
+>> +}
+>> +CLK_OF_DECLARE(exynos4415_cmu, "samsung,exynos4415-cmu", exynos4415_cmu_init);
+>> +
+>> +/*
+>> + * CMU DMC
+>> + */
+>> +
+> 
+>> +#ifdef CONFIG_PM_SLEEP
+> 
+> Similarly for dmc, can we have function, table and below two static
+> variable names prefixed with exynos4415, like in exynos3250 driver ?
+> 
+>> +static struct samsung_clk_reg_dump *dmc_clk_regs;
+>> +static struct samsung_clk_provider *dmc_ctx;
+>> +
+>> +static unsigned long dmc_save_list[] __initdata = {
+> 
+>> +};
+>> +
+>> +static int dmc_clk_suspend(void)
+>> +{
+>> +	samsung_clk_save(dmc_ctx->reg_base,
+>> +				dmc_clk_regs, ARRAY_SIZE(dmc_save_list));
+>> +	return 0;
+>> +}
+>> +
+>> +static void dmc_clk_resume(void)
+>> +{
+>> +	samsung_clk_restore(dmc_ctx->reg_base,
+>> +				dmc_clk_regs, ARRAY_SIZE(dmc_save_list));
+>> +}
+>> +
+>> +static struct syscore_ops dmc_clk_syscore_ops = {
+>> +	.suspend = dmc_clk_suspend,
+>> +	.resume = dmc_clk_resume,
+>> +};
+>> +
+>> +static void dmc_clk_sleep_init(void)
+>> +{
+> 
+>> +}
+>> +#else
+>> +static inline void dmc_clk_sleep_init(void) { }
+>> +#endif /* CONFIG_PM_SLEEP */
+>> +
+> 
+>> +static struct samsung_mux_clock dmc_mux_clks[] __initdata = {
+> 
+>> +};
+>> +
+>> +static struct samsung_div_clock dmc_div_clks[] __initdata = {
+> 
+>> +};
+>> +
+>> +static struct samsung_pll_clock dmc_plls[nr_dmc_plls] __initdata = {
+> 
+>> +};
+> 
+> --
+> Thanks,
+> Sylwester
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
