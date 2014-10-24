@@ -1,77 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104AbaJXShT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 14:37:19 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:45827 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756825AbaJXShR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 14:37:17 -0400
-Date: Fri, 24 Oct 2014 11:33:23 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jay Vosburgh <jay.vosburgh@canonical.com>
-Cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141024183323.GX4977@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1414044566.2031.1.camel@declera.com>
- <20141023122750.GP4977@linux.vnet.ibm.com>
- <20141023153333.GA19278@linux.vnet.ibm.com>
- <20141023195159.GA2331@declera.com>
- <20141023200507.GC4977@linux.vnet.ibm.com>
- <1414100740.2065.2.camel@declera.com>
- <20141023220406.GJ4977@linux.vnet.ibm.com>
- <31920.1414126114@famine>
- <20141024145028.GN4977@linux.vnet.ibm.com>
- <5677.1414174811@famine>
+	id S1757135AbaJXSkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 14:40:07 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:52285 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756890AbaJXSkE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 14:40:04 -0400
+Message-ID: <544A9BC8.7040608@gmail.com>
+Date: Fri, 24 Oct 2014 14:34:48 -0400
+From: Jerry Stralko <gerb.stralko@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5677.1414174811@famine>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102418-0029-0000-0000-000000E25620
+To: gregkh@linuxfoundation.org, oleg.drokin@intel.com,
+        andreas.dilger@intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging : lustre : Fixed static symbol sparse warnings
+References: <1413766604-3658-1-git-send-email-gerb.stralko@gmail.com>
+In-Reply-To: <1413766604-3658-1-git-send-email-gerb.stralko@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 11:20:11AM -0700, Jay Vosburgh wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> >On Thu, Oct 23, 2014 at 09:48:34PM -0700, Jay Vosburgh wrote:
-> >> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> [...]
-> >> >Either way, my patch assumed that 39953dfd4007 (rcu: Avoid misordering in
-> >> >__call_rcu_nocb_enqueue()) would work and that 1772947bd012 (rcu: Handle
-> >> >NOCB callbacks from irq-disabled idle code) would fail.  Is that the case?
-> >> >If not, could you please bisect the commits between 11ed7f934cb8 (rcu:
-> >> >Make nocb leader kthreads process pending callbacks after spawning)
-> >> >and c847f14217d5 (rcu: Avoid misordering in nocb_leader_wait())?
-> >> 
-> >> 	Just a note to add that I am also reliably inducing what appears
-> >> to be this issue on a current -net tree, when configuring openvswitch
-> >> via script.  I am available to test patches or bisect tomorrow (Friday)
-> >> US time if needed.
-> >
-> >Thank you, Jay!  Could you please check to see if reverting this commit
-> >fixes things for you?
-> >
-> >35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
-> >
-> >Reverting is not a long-term fix, as this commit is itself a bug fix,
-> >but would be good to check to see if you are seeing the same thing that
-> >Yanko is.  ;-)
-> 
-> 	Just to confirm what Yanko found, reverting this commit makes
-> the problem go away for me.
-
-Thank you!
-
-I take it that the patches that don't help Yanko also don't help you?
-
-							Thanx, Paul
-
+On 10/19/2014 08:56 PM, Jerry Stralko wrote:
+> Signed-off-by: Jerry Stralko <gerb.stralko@gmail.com>
+> ---
+>  drivers/staging/lustre/lnet/lnet/lib-move.c | 16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/staging/lustre/lnet/lnet/lib-move.c b/drivers/staging/lustre/lnet/lnet/lib-move.c
+> index 4b9567d..5754725 100644
+> --- a/drivers/staging/lustre/lnet/lnet/lib-move.c
+> +++ b/drivers/staging/lustre/lnet/lnet/lib-move.c
+> @@ -561,7 +561,7 @@ lnet_extract_kiov(int dst_niov, lnet_kiov_t *dst,
+>  }
+>  EXPORT_SYMBOL(lnet_extract_kiov);
+>  
+> -void
+> +static void
+>  lnet_ni_recv(lnet_ni_t *ni, void *private, lnet_msg_t *msg, int delayed,
+>  	     unsigned int offset, unsigned int mlen, unsigned int rlen)
+>  {
+> @@ -599,7 +599,7 @@ lnet_ni_recv(lnet_ni_t *ni, void *private, lnet_msg_t *msg, int delayed,
+>  		lnet_finalize(ni, msg, rc);
+>  }
+>  
+> -void
+> +static void
+>  lnet_setpayloadbuffer(lnet_msg_t *msg)
+>  {
+>  	lnet_libmd_t *md = msg->msg_md;
+> @@ -639,7 +639,7 @@ lnet_prep_send(lnet_msg_t *msg, int type, lnet_process_id_t target,
+>  	msg->msg_hdr.payload_length = cpu_to_le32(len);
+>  }
+>  
+> -void
+> +static void
+>  lnet_ni_send(lnet_ni_t *ni, lnet_msg_t *msg)
+>  {
+>  	void   *priv = msg->msg_private;
+> @@ -654,7 +654,7 @@ lnet_ni_send(lnet_ni_t *ni, lnet_msg_t *msg)
+>  		lnet_finalize(ni, msg, rc);
+>  }
+>  
+> -int
+> +static int
+>  lnet_ni_eager_recv(lnet_ni_t *ni, lnet_msg_t *msg)
+>  {
+>  	int	rc;
+> @@ -679,7 +679,7 @@ lnet_ni_eager_recv(lnet_ni_t *ni, lnet_msg_t *msg)
+>  }
+>  
+>  /* NB: caller shall hold a ref on 'lp' as I'd drop lnet_net_lock */
+> -void
+> +static void
+>  lnet_ni_query_locked(lnet_ni_t *ni, lnet_peer_t *lp)
+>  {
+>  	unsigned long last_alive = 0;
+> @@ -731,7 +731,7 @@ lnet_peer_is_alive(lnet_peer_t *lp, unsigned long now)
+>  
+>  /* NB: returns 1 when alive, 0 when dead, negative when error;
+>   *     may drop the lnet_net_lock */
+> -int
+> +static int
+>  lnet_peer_alive_locked(lnet_peer_t *lp)
+>  {
+>  	unsigned long now = cfs_time_current();
+> @@ -871,7 +871,7 @@ lnet_post_send_locked(lnet_msg_t *msg, int do_send)
+>  }
+>  
+>  
+> -lnet_rtrbufpool_t *
+> +static lnet_rtrbufpool_t *
+>  lnet_msg2bufpool(lnet_msg_t *msg)
+>  {
+>  	lnet_rtrbufpool_t	*rbp;
+> @@ -891,7 +891,7 @@ lnet_msg2bufpool(lnet_msg_t *msg)
+>  	return rbp;
+>  }
+>  
+> -int
+> +static int
+>  lnet_post_routed_recv_locked(lnet_msg_t *msg, int do_recv)
+>  {
+>  	/* lnet_parse is going to lnet_net_unlock immediately after this, so it
+Ping?
