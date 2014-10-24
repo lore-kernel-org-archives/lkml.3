@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617AbaJXQHZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 12:07:25 -0400
-Received: from smtp-1.concepts.nl ([213.197.30.124]:46765 "EHLO
-	smtp-1.concepts.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894AbaJXQHX (ORCPT
+	id S1756691AbaJXQIT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 12:08:19 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:26033 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752680AbaJXQIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 12:07:23 -0400
-Message-ID: <544A7933.3010702@xmsnet.nl>
-Date: Fri, 24 Oct 2014 18:07:15 +0200
-From: Hans de Bruin <jmdebruin@xmsnet.nl>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.8.1
+	Fri, 24 Oct 2014 12:08:18 -0400
+Date: Fri, 24 Oct 2014 12:08:15 -0400
+From: Eric B Munson <emunson@akamai.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Commit 35ce7f29a breaks hibernation for XPS 13
+Message-ID: <20141024160815.GA2968@akamai.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-nfs@vger.kernel.org,
-        "Eric W. Biederman" <ebiederman@twitter.com>
-Subject: Re: 3.17.0+ files disappearing after playing old dos game on nfsroot
- laptop
-References: <543ED24D.4070905@xmsnet.nl> <5443F5A1.1050004@xmsnet.nl>
-In-Reply-To: <5443F5A1.1050004@xmsnet.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Concepts-MailScanner-Information: Please contact abuse@concepts.nl for more information
-X-Concepts-MailScanner-ID: 1XhhOV-0002Qp-MH
-X-Concepts-MailScanner: Found to be clean
-X-Concepts-MailScanner-SpamCheck: 
-X-Concepts-MailScanner-From: jmdebruin@xmsnet.nl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/19/2014 07:32 PM, Hans de Bruin wrote:
-> On 10/15/2014 10:00 PM, Hans de Bruin wrote:
->> After playing an old dos game i am missing files on my nfsroot installed
->> laptop. Which one, wel /bin/ls is at least one of them. After a reboot
->> there all back again.  But not al is well. Some icons on my kde panel
->> where gone. I have seen this twice in the last day's
->>
->
-> The problem appears immediately after starting dosemu so this bisectable
->
+Paul,
+
+As of 3.18-rc1 I can no longer hibernate my Dell XPS-13.  Bisect points
+the finger at 35ce7f29a.  A revert of that commit confirms, I can once
+again hibernate my machine without it.
+
+When the hibernation fails I see this in dmesg:
+[   37.953313] PM: Syncing filesystems ... done.
+[   37.963694] Freezing user space processes ... (elapsed 0.001 seconds) done.
+[   37.965297] PM: Marking nosave pages: [mem 0x00000000-0x00000fff]
+[   37.965299] PM: Marking nosave pages: [mem 0x00058000-0x00058fff]
+[   37.965301] PM: Marking nosave pages: [mem 0x0009d000-0x000fffff]
+[   37.965304] PM: Marking nosave pages: [mem 0xc496a000-0xc4b6bfff]
+[   37.965315] PM: Marking nosave pages: [mem 0xdadb7000-0xdcffefff]
+[   37.965479] PM: Marking nosave pages: [mem 0xdd000000-0xffffffff]
+[   37.966000] PM: Basic memory bitmaps created
+[   37.966046] PM: Preallocating image memory... done (allocated 181989 pages)
+[   38.141524] PM: Allocated 727956 kbytes in 0.17 seconds (4282.09 MB/s)
+[   38.141525] Freezing remaining freezable tasks ... 
+[   58.151863] Freezing of tasks failed after 20.004 seconds (0 tasks refusing to freeze, wq_busy=1):
+[   58.151894] 
+[   58.151896] Restarting kernel threads ... done.
+[   58.181915] PM: Basic memory bitmaps freed
+[   58.181917] Restarting tasks ... done.
 
 
-My bisect ended here:
+I am not sure what else I can provide that might be useful, but I did
+see the thread on net-dev about this same commit.  Please CC me on any
+fixes and I will be happy to test.
 
-commit 8ed936b5671bfb33d89bc60bdcc7cf0470ba52fe
-Author: Eric W. Biederman <ebiederman@twitter.com>
-Date:   Tue Oct 1 18:33:48 2013 -0700
-
-
-     vfs: Lazily remove mounts on unlinked files and directories.
-
-
-I haven reverted it yet.
-
-
-
-Eric,
-
-Immediately after starting dosemu all files under mount point /usr are 
-gone. When I play a old dos game for a while (binaries are under /home) 
-even /bin/ls disappears. Al mounts are nfs, even /.
-
-Could you look in to this and cc this to the relevant kernel mailinglist?
-
--- 
-Hans
+Eric
