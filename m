@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049AbaJXIgZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 04:36:25 -0400
-Received: from mail-bn1bon0080.outbound.protection.outlook.com ([157.56.111.80]:60889
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1756165AbaJXIhF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 04:37:05 -0400
+Received: from mail-bl2on0100.outbound.protection.outlook.com ([65.55.169.100]:54592
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755743AbaJXIZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 04:25:21 -0400
+	id S1755723AbaJXIY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 04:24:59 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v5 09/29] nios2: Page table management
-Date: Fri, 24 Oct 2014 16:24:11 +0800
-Message-ID: <1414139071-3818-10-git-send-email-lftan@altera.com>
+Subject: [PATCH v5 04/29] nios2: Exception handling
+Date: Fri, 24 Oct 2014 16:24:06 +0800
+Message-ID: <1414139071-3818-5-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1414139071-3818-1-git-send-email-lftan@altera.com>
 References: <1414139071-3818-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(22564002)(50466002)(48376002)(76176999)(50986999)(92726001)(86362001)(93916002)(2201001)(92566001)(97736003)(120916001)(99396003)(106466001)(102836001)(62966002)(77156001)(36756003)(50226001)(42186005)(85306004)(21056001)(4396001)(77096002)(104166001)(31966008)(87936001)(87286001)(88136002)(85852003)(89996001)(107046002)(64706001)(20776003)(46102003)(95666004)(229853001)(105596002)(47776003)(19580395003)(84676001)(44976005)(6806004)(68736004)(33646002)(19580405001)(76482002)(80022003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB222;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(22564002)(19580405001)(62966002)(229853001)(48376002)(80022003)(46102003)(97736003)(44976005)(85852003)(106466001)(31966008)(76176999)(85306004)(50466002)(76482002)(89996001)(93916002)(77096002)(107046002)(50226001)(21056001)(99396003)(6806004)(575784001)(4396001)(120916001)(42186005)(19580395003)(92566001)(88136002)(2201001)(102836001)(87286001)(95666004)(105596002)(68736004)(64706001)(36756003)(92726001)(33646002)(20776003)(50986999)(84676001)(77156001)(104166001)(47776003)(87936001)(86362001);DIR:OUT;SFP:1101;SCL:1;SRVR:CH1PR03MB598;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB222;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CH1PR03MB598;
 X-Forefront-PRVS: 0374433C81
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
  smtp.mailfrom=lftan@altera.com; 
@@ -32,543 +32,843 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for page table management.
+This patch contains the exception entry code (kernel/entry.S) and
+misaligned exception.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/pgalloc.h      |  86 ++++++++++
- arch/nios2/include/asm/pgtable-bits.h |  35 ++++
- arch/nios2/include/asm/pgtable.h      | 305 ++++++++++++++++++++++++++++++++++
- arch/nios2/mm/pgtable.c               |  73 ++++++++
- 4 files changed, 499 insertions(+)
- create mode 100644 arch/nios2/include/asm/pgalloc.h
- create mode 100644 arch/nios2/include/asm/pgtable-bits.h
- create mode 100644 arch/nios2/include/asm/pgtable.h
- create mode 100644 arch/nios2/mm/pgtable.c
+ arch/nios2/kernel/entry.S      | 559 +++++++++++++++++++++++++++++++++++++++++
+ arch/nios2/kernel/misaligned.c | 255 +++++++++++++++++++
+ 2 files changed, 814 insertions(+)
+ create mode 100644 arch/nios2/kernel/entry.S
+ create mode 100644 arch/nios2/kernel/misaligned.c
 
-diff --git a/arch/nios2/include/asm/pgalloc.h b/arch/nios2/include/asm/pgalloc.h
+diff --git a/arch/nios2/kernel/entry.S b/arch/nios2/kernel/entry.S
 new file mode 100644
-index 0000000..6e2985e
+index 0000000..29c7aec
 --- /dev/null
-+++ b/arch/nios2/include/asm/pgalloc.h
-@@ -0,0 +1,86 @@
++++ b/arch/nios2/kernel/entry.S
+@@ -0,0 +1,559 @@
 +/*
++ * linux/arch/nios2/kernel/entry.S
++ *
++ * Copyright (C) 2013-2014  Altera Corporation
++ * Copyright (C) 2009, Wind River Systems Inc
++ *
++ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ * Based on:
++ *
++ * linux/arch/nios2/kernel/entry.S
++ *
++ *  Copyright (C) 1999-2002, Greg Ungerer (gerg@snapgear.com)
++ *  Copyright (C) 1998  D. Jeff Dionne <jeff@lineo.ca>,
++ *                      Kenneth Albanowski <kjahds@kjahds.com>,
++ *  Copyright (C) 2000  Lineo Inc. (www.lineo.com)
++ *  Copyright (C) 2004  Microtronix Datacom Ltd.
++ *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + *
-+ * Copyright (C) 1994 - 2001, 2003 by Ralf Baechle
-+ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
++ * Linux/m68k support by Hamish Macdonald
++ *
++ * 68060 fixes by Jesper Skov
++ * ColdFire support by Greg Ungerer (gerg@snapgear.com)
++ * 5307 fixes by David W. Miller
++ * linux 2.4 support David McCullough <davidm@snapgear.com>
 + */
 +
-+#ifndef _ASM_NIOS2_PGALLOC_H
-+#define _ASM_NIOS2_PGALLOC_H
++#include <linux/sys.h>
++#include <linux/linkage.h>
++#include <asm/asm-offsets.h>
++#include <asm/asm-macros.h>
++#include <asm/thread_info.h>
++#include <asm/errno.h>
++#include <asm/setup.h>
++#include <asm/entry.h>
++#include <asm/unistd.h>
++#include <asm/processor.h>
 +
-+#include <linux/mm.h>
++.macro GET_THREAD_INFO reg
++.if THREAD_SIZE & 0xffff0000
++	andhi	\reg, sp, %hi(~(THREAD_SIZE-1))
++.else
++	addi	\reg, r0, %lo(~(THREAD_SIZE-1))
++	and	\reg, \reg, sp
++.endif
++.endm
 +
-+static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
-+	pte_t *pte)
-+{
-+	set_pmd(pmd, __pmd((unsigned long)pte));
-+}
++.macro	kuser_cmpxchg_check
++	/*
++	 * Make sure our user space atomic helper is restarted if it was
++	 * interrupted in a critical region.
++	 * ea-4 = address of interrupted insn (ea must be preserved).
++	 * sp = saved regs.
++	 * cmpxchg_ldw = first critical insn, cmpxchg_stw = last critical insn.
++	 * If ea <= cmpxchg_stw and ea > cmpxchg_ldw then saved EA is set to
++	 * cmpxchg_ldw + 4.
++	*/
++	/* et = cmpxchg_stw + 4 */
++	movui   et, (KUSER_BASE + 4 + (cmpxchg_stw - __kuser_helper_start))
++	bgtu	ea, et, 1f
 +
-+static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
-+	pgtable_t pte)
-+{
-+	set_pmd(pmd, __pmd((unsigned long)page_address(pte)));
-+}
-+#define pmd_pgtable(pmd) pmd_page(pmd)
++	subi	et, et, (cmpxchg_stw - cmpxchg_ldw) /* et = cmpxchg_ldw + 4 */
++	bltu	ea, et, 1f
++	stw	et, PT_EA(sp)	/* fix up EA */
++	mov	ea, et
++1:
++.endm
++
++.section .rodata
++.align 4
++exception_table:
++	.word unhandled_exception	/* 0 - Reset */
++	.word unhandled_exception	/* 1 - Processor-only Reset */
++	.word external_interrupt	/* 2 - Interrupt */
++	.word handle_trap		/* 3 - Trap Instruction */
++
++	.word instruction_trap		/* 4 - Unimplemented instruction */
++	.word handle_illegal		/* 5 - Illegal instruction */
++	.word handle_unaligned		/* 6 - Misaligned data access */
++	.word handle_unaligned		/* 7 - Misaligned destination address */
++
++	.word handle_diverror		/* 8 - Division error */
++	.word protection_exception_ba	/* 9 - Supervisor-only instr. address */
++	.word protection_exception_instr /* 10 - Supervisor only instruction */
++	.word protection_exception_ba	/* 11 - Supervisor only data address */
++
++	.word unhandled_exception	/* 12 - Double TLB miss (data) */
++	.word protection_exception_pte	/* 13 - TLB permission violation (x) */
++	.word protection_exception_pte	/* 14 - TLB permission violation (r) */
++	.word protection_exception_pte	/* 15 - TLB permission violation (w) */
++
++	.word unhandled_exception	/* 16 - MPU region violation */
++
++trap_table:
++	.word	handle_system_call	/* 0  */
++	.word	instruction_trap	/* 1  */
++	.word	instruction_trap	/* 2  */
++	.word	instruction_trap	/* 3  */
++	.word	instruction_trap	/* 4  */
++	.word	instruction_trap	/* 5  */
++	.word	instruction_trap	/* 6  */
++	.word	instruction_trap	/* 7  */
++	.word	instruction_trap	/* 8  */
++	.word	instruction_trap	/* 9  */
++	.word	instruction_trap	/* 10 */
++	.word	instruction_trap	/* 11 */
++	.word	instruction_trap	/* 12 */
++	.word	instruction_trap	/* 13 */
++	.word	instruction_trap	/* 14 */
++	.word	instruction_trap	/* 15 */
++	.word	instruction_trap	/* 16 */
++	.word	instruction_trap	/* 17 */
++	.word	instruction_trap	/* 18 */
++	.word	instruction_trap	/* 19 */
++	.word	instruction_trap	/* 20 */
++	.word	instruction_trap	/* 21 */
++	.word	instruction_trap	/* 22 */
++	.word	instruction_trap	/* 23 */
++	.word	instruction_trap	/* 24 */
++	.word	instruction_trap	/* 25 */
++	.word	instruction_trap	/* 26 */
++	.word	instruction_trap	/* 27 */
++	.word	instruction_trap	/* 28 */
++	.word	instruction_trap	/* 29 */
++	.word	instruction_trap	/* 30 */
++	.word	handle_breakpoint	/* 31 */
++
++.text
++.set noat
++.set nobreak
++
++ENTRY(inthandler)
++	SAVE_ALL
++
++	kuser_cmpxchg_check
++
++	/* Clear EH bit before we get a new excpetion in the kernel
++	 * and after we have saved it to the exception frame. This is done
++	 * wheter it's trap, tlb-miss or interrupt. If we don't do this
++	 * estatus is not updated the next exception.
++	 */
++	rdctl	r24, status
++	movi	r9, %lo(~STATUS_EH)
++	and	r24, r24, r9
++	wrctl	status, r24
++
++	/* Read cause and vector and branch to the associated handler */
++	mov	r4, sp
++	rdctl	r5, exception
++	movia	r9, exception_table
++	add	r24, r9, r5
++	ldw	r24, 0(r24)
++	jmp	r24
++
++
++/***********************************************************************
++ * Handle traps
++ ***********************************************************************
++ */
++ENTRY(handle_trap)
++	ldw	r24, -4(ea)	/* instruction that caused the exception */
++	srli	r24, r24, 4
++	andi	r24, r24, 0x7c
++	movia	r9,trap_table
++	add	r24, r24, r9
++	ldw	r24, 0(r24)
++	jmp	r24
++
++
++/***********************************************************************
++ * Handle system calls
++ ***********************************************************************
++ */
++ENTRY(handle_system_call)
++	/* Enable interrupts */
++	rdctl	r10, status
++	ori	r10, r10, STATUS_PIE
++	wrctl	status, r10
++
++	/* Reload registers destroyed by common code. */
++	ldw	r4, PT_R4(sp)
++	ldw	r5, PT_R5(sp)
++
++local_restart:
++	/* Check that the requested system call is within limits */
++	movui	r1, __NR_syscalls
++	bgeu	r2, r1, ret_invsyscall
++	slli	r1, r2, 2
++	movhi	r11, %hiadj(sys_call_table)
++	add	r1, r1, r11
++	ldw	r1, %lo(sys_call_table)(r1)
++	beq	r1, r0, ret_invsyscall
++
++	/* Check if we are being traced */
++	GET_THREAD_INFO r11
++	ldw	r11,TI_FLAGS(r11)
++	BTBNZ   r11,r11,TIF_SYSCALL_TRACE,traced_system_call
++
++	/* Execute the system call */
++	callr	r1
++
++	/* If the syscall returns a negative result:
++	 *   Set r7 to 1 to indicate error,
++	 *   Negate r2 to get a positive error code
++	 * If the syscall returns zero or a positive value:
++	 *   Set r7 to 0.
++	 * The sigreturn system calls will skip the code below by
++	 * adding to register ra. To avoid destroying registers
++	 */
++translate_rc_and_ret:
++	movi	r1, 0
++	bge	r2, zero, 3f
++	sub	r2, zero, r2
++	movi	r1, 1
++3:
++	stw	r2, PT_R2(sp)
++	stw	r1, PT_R7(sp)
++end_translate_rc_and_ret:
++
++ret_from_exception:
++	ldw	r1, PT_ESTATUS(sp)
++	/* if so, skip resched, signals */
++	TSTBNZ	r1, r1, ESTATUS_EU, Luser_return
++
++restore_all:
++	rdctl	r10, status			/* disable intrs */
++	andi	r10, r10, %lo(~STATUS_PIE)
++	wrctl	status, r10
++	RESTORE_ALL
++	eret
++
++	/* If the syscall number was invalid return ENOSYS */
++ret_invsyscall:
++	movi	r2, -ENOSYS
++	br	translate_rc_and_ret
++
++	/* This implements the same as above, except it calls
++	 * do_syscall_trace_enter and do_syscall_trace_exit before and after the
++	 * syscall in order for utilities like strace and gdb to work.
++	 */
++traced_system_call:
++	SAVE_SWITCH_STACK
++	call	do_syscall_trace_enter
++	RESTORE_SWITCH_STACK
++
++	/* Create system call register arguments. The 5th and 6th
++	   arguments on stack are already in place at the beginning
++	   of pt_regs. */
++	ldw	r2, PT_R2(sp)
++	ldw	r4, PT_R4(sp)
++	ldw	r5, PT_R5(sp)
++	ldw	r6, PT_R6(sp)
++	ldw	r7, PT_R7(sp)
++
++	/* Fetch the syscall function, we don't need to check the boundaries
++	 * since this is already done.
++	 */
++	slli	r1, r2, 2
++	movhi	r11,%hiadj(sys_call_table)
++	add	r1, r1, r11
++	ldw	r1, %lo(sys_call_table)(r1)
++
++	callr	r1
++
++	/* If the syscall returns a negative result:
++	 *   Set r7 to 1 to indicate error,
++	 *   Negate r2 to get a positive error code
++	 * If the syscall returns zero or a positive value:
++	 *   Set r7 to 0.
++	 * The sigreturn system calls will skip the code below by
++	 * adding to register ra. To avoid destroying registers
++	 */
++translate_rc_and_ret2:
++	movi	r1, 0
++	bge	r2, zero, 4f
++	sub	r2, zero, r2
++	movi	r1, 1
++4:
++	stw	r2, PT_R2(sp)
++	stw	r1, PT_R7(sp)
++end_translate_rc_and_ret2:
++	SAVE_SWITCH_STACK
++	call	do_syscall_trace_exit
++	RESTORE_SWITCH_STACK
++	br	ret_from_exception
++
++Luser_return:
++	GET_THREAD_INFO	r11			/* get thread_info pointer */
++	ldw	r10, TI_FLAGS(r11)		/* get thread_info->flags */
++	ANDI32	r11, r10, _TIF_WORK_MASK
++	beq	r11, r0, restore_all		/* Nothing to do */
++	BTBZ	r1, r10, TIF_NEED_RESCHED, Lsignal_return
++
++	/* Reschedule work */
++	call	schedule
++	br	ret_from_exception
++
++Lsignal_return:
++	ANDI32	r1, r10, _TIF_SIGPENDING | _TIF_NOTIFY_RESUME
++	beq	r1, r0, restore_all
++	mov	r4, sp			/* pt_regs */
++	SAVE_SWITCH_STACK
++	call	do_notify_resume
++	beq	r2, r0, no_work_pending
++	RESTORE_SWITCH_STACK
++	/* prepare restart syscall here without leaving kernel */
++	ldw	r2, PT_R2(sp)	/* reload syscall number in r2 */
++	ldw 	r4, PT_R4(sp)	/* reload syscall arguments r4-r9 */
++	ldw 	r5, PT_R5(sp)
++	ldw 	r6, PT_R6(sp)
++	ldw 	r7, PT_R7(sp)
++	ldw 	r8, PT_R8(sp)
++	ldw 	r9, PT_R9(sp)
++	br	local_restart	/* restart syscall */
++
++no_work_pending:
++	RESTORE_SWITCH_STACK
++	br	ret_from_exception
++
++/***********************************************************************
++ * Handle external interrupts.
++ ***********************************************************************
++ */
++/*
++ * This is the generic interrupt handler (for all hardware interrupt
++ * sources). It figures out the vector number and calls the appropriate
++ * interrupt service routine directly.
++ */
++external_interrupt:
++	rdctl	r12, ipending
++	rdctl	r9, ienable
++	and	r12, r12, r9
++	/* skip if no interrupt is pending */
++	beq	r12, r0, ret_from_interrupt
++
++	movi	r24, -1
++	stw	r24, PT_ORIG_R2(sp)
++
++	/*
++	 * Process an external hardware interrupt.
++	 */
++
++	addi	ea, ea, -4	/* re-issue the interrupted instruction */
++	stw	ea, PT_EA(sp)
++2:	movi	r4, %lo(-1)	/* Start from bit position 0,
++					highest priority */
++				/* This is the IRQ # for handler call */
++1:	andi	r10, r12, 1	/* Isolate bit we are interested in */
++	srli	r12, r12, 1	/* shift count is costly without hardware
++					multiplier */
++	addi	r4, r4, 1
++	beq	r10, r0, 1b
++	mov	r5, sp		/* Setup pt_regs pointer for handler call */
++	call	do_IRQ
++	rdctl	r12, ipending	/* check again if irq still pending */
++	rdctl	r9, ienable	/* Isolate possible interrupts */
++	and	r12, r12, r9
++	bne	r12, r0, 2b
++	/* br	ret_from_interrupt */ /* fall throught to ret_from_interrupt */
++
++ENTRY(ret_from_interrupt)
++	ldw	r1, PT_ESTATUS(sp)	/* check if returning to kernel */
++	TSTBNZ	r1, r1, ESTATUS_EU, Luser_return
++
++#ifdef CONFIG_PREEMPT
++	GET_THREAD_INFO	r1
++	ldw	r4, TI_PREEMPT_COUNT(r1)
++	bne	r4, r0, restore_all
++
++need_resched:
++	ldw	r4, TI_FLAGS(r1)		/* ? Need resched set */
++	BTBZ	r10, r4, TIF_NEED_RESCHED, restore_all
++	ldw	r4, PT_ESTATUS(sp)	/* ? Interrupts off */
++	andi	r10, r4, ESTATUS_EPIE
++	beq	r10, r0, restore_all
++	movia	r4, PREEMPT_ACTIVE
++	stw	r4, TI_PREEMPT_COUNT(r1)
++	rdctl	r10, status		/* enable intrs again */
++	ori	r10, r10 ,STATUS_PIE
++	wrctl	status, r10
++	PUSH	r1
++	call	schedule
++	POP	r1
++	mov	r4, r0
++	stw	r4, TI_PREEMPT_COUNT(r1)
++	rdctl	r10, status		/* disable intrs */
++	andi	r10, r10, %lo(~STATUS_PIE)
++	wrctl	status, r10
++	br	need_resched
++#else
++	br	restore_all
++#endif
++
++/***********************************************************************
++ * A few syscall wrappers
++ ***********************************************************************
++ */
++/*
++ * int clone(unsigned long clone_flags, unsigned long newsp,
++ *		int __user * parent_tidptr, int __user * child_tidptr,
++ *		int tls_val)
++ */
++ENTRY(sys_clone)
++	SAVE_SWITCH_STACK
++	addi	sp, sp, -4
++	stw	r7, 0(sp)	/* Pass 5th arg thru stack */
++	mov	r7, r6		/* 4th arg is 3rd of clone() */
++	mov	r6, zero	/* 3rd arg always 0 */
++	call	do_fork
++	addi	sp, sp, 4
++	RESTORE_SWITCH_STACK
++	ret
++
++ENTRY(sys_rt_sigreturn)
++	SAVE_SWITCH_STACK
++	mov	r4, sp
++	call	do_rt_sigreturn
++	RESTORE_SWITCH_STACK
++	addi	ra, ra, (end_translate_rc_and_ret - translate_rc_and_ret)
++	ret
++
++/***********************************************************************
++ * A few other wrappers and stubs
++ ***********************************************************************
++ */
++protection_exception_pte:
++	rdctl	r6, pteaddr
++	slli	r6, r6, 10
++	call	do_page_fault
++	br	ret_from_exception
++
++protection_exception_ba:
++	rdctl	r6, badaddr
++	call	do_page_fault
++	br	ret_from_exception
++
++protection_exception_instr:
++	call	handle_supervisor_instr
++	br	ret_from_exception
++
++handle_breakpoint:
++	call	breakpoint_c
++	br	ret_from_exception
++
++#ifdef CONFIG_NIOS2_ALIGNMENT_TRAP
++handle_unaligned:
++	SAVE_SWITCH_STACK
++	call	handle_unaligned_c
++	RESTORE_SWITCH_STACK
++	br	ret_from_exception
++#else
++handle_unaligned:
++	call	handle_unaligned_c
++	br	ret_from_exception
++#endif
++
++handle_illegal:
++	call	handle_illegal_c
++	br	ret_from_exception
++
++handle_diverror:
++	call	handle_diverror_c
++	br	ret_from_exception
 +
 +/*
-+ * Initialize a new pmd table with invalid pointers.
++ * Beware - when entering resume, prev (the current task) is
++ * in r4, next (the new task) is in r5, don't change these
++ * registers.
 + */
-+extern void pmd_init(unsigned long page, unsigned long pagetable);
++ENTRY(resume)
 +
-+extern pgd_t *pgd_alloc(struct mm_struct *mm);
++	rdctl	r7, status			/* save thread status reg */
++	stw	r7, TASK_THREAD + THREAD_KPSR(r4)
 +
-+static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
-+{
-+	free_pages((unsigned long)pgd, PGD_ORDER);
-+}
++	andi	r7, r7, %lo(~STATUS_PIE)	/* disable interrupts */
++	wrctl	status, r7
 +
-+static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
-+	unsigned long address)
-+{
-+	pte_t *pte;
++	SAVE_SWITCH_STACK
++	stw	sp, TASK_THREAD + THREAD_KSP(r4)/* save kernel stack pointer */
++	ldw	sp, TASK_THREAD + THREAD_KSP(r5)/* restore new thread stack */
++	movia	r24, _current_thread		/* save thread */
++	GET_THREAD_INFO r1
++	stw	r1, 0(r24)
++	RESTORE_SWITCH_STACK
 +
-+	pte = (pte_t *) __get_free_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO,
-+					PTE_ORDER);
++	ldw	r7, TASK_THREAD + THREAD_KPSR(r5)/* restore thread status reg */
++	wrctl	status, r7
++	ret
 +
-+	return pte;
-+}
++ENTRY(ret_from_fork)
++	call	schedule_tail
++	br	ret_from_exception
 +
-+static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
-+	unsigned long address)
-+{
-+	struct page *pte;
++ENTRY(ret_from_kernel_thread)
++	call	schedule_tail
++	mov	r4,r17	/* arg */
++	callr	r16	/* function */
++	br	ret_from_exception
 +
-+	pte = alloc_pages(GFP_KERNEL | __GFP_REPEAT, PTE_ORDER);
-+	if (pte) {
-+		if (!pgtable_page_ctor(pte)) {
-+			__free_page(pte);
-+			return NULL;
-+		}
-+		clear_highpage(pte);
-+	}
-+	return pte;
-+}
++/*
++ * Kernel user helpers.
++ *
++ * Each segment is 64-byte aligned and will be mapped to the <User space>.
++ * New segments (if ever needed) must be added after the existing ones.
++ * This mechanism should be used only for things that are really small and
++ * justified, and not be abused freely.
++ *
++ */
 +
-+static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
-+{
-+	free_pages((unsigned long)pte, PTE_ORDER);
-+}
++ /* Filling pads with undefined instructions. */
++.macro	kuser_pad sym size
++	.if	((. - \sym) & 3)
++	.rept	(4 - (. - \sym) & 3)
++	.byte	0
++	.endr
++	.endif
++	.rept	((\size - (. - \sym)) / 4)
++	.word	0xdeadbeef
++	.endr
++.endm
 +
-+static inline void pte_free(struct mm_struct *mm, struct page *pte)
-+{
-+	pgtable_page_dtor(pte);
-+	__free_pages(pte, PTE_ORDER);
-+}
++	.align	6
++	.globl	__kuser_helper_start
++__kuser_helper_start:
 +
-+#define __pte_free_tlb(tlb, pte, addr)				\
-+	do {							\
-+		pgtable_page_dtor(pte);				\
-+		tlb_remove_page((tlb), (pte));			\
-+	} while (0)
++__kuser_helper_version:				/* @ 0x1000 */
++	.word	((__kuser_helper_end - __kuser_helper_start) >> 6)
 +
-+#define check_pgt_cache()	do { } while (0)
++__kuser_cmpxchg:				/* @ 0x1004 */
++	/*
++	 * r4 pointer to exchange variable
++	 * r5 old value
++	 * r6 new value
++	 */
++cmpxchg_ldw:
++	ldw	r2, 0(r4)			/* load current value */
++	sub	r2, r2, r5			/* compare with old value */
++	bne	r2, zero, cmpxchg_ret
 +
-+#endif /* _ASM_NIOS2_PGALLOC_H */
-diff --git a/arch/nios2/include/asm/pgtable-bits.h b/arch/nios2/include/asm/pgtable-bits.h
++	/* We had a match, store the new value */
++cmpxchg_stw:
++	stw	r6, 0(r4)
++cmpxchg_ret:
++	ret
++
++	kuser_pad __kuser_cmpxchg, 64
++
++	.globl	__kuser_sigtramp
++__kuser_sigtramp:
++	movi	r2, __NR_rt_sigreturn
++	trap
++
++	kuser_pad __kuser_sigtramp, 64
++
++	.globl	__kuser_helper_end
++__kuser_helper_end:
+diff --git a/arch/nios2/kernel/misaligned.c b/arch/nios2/kernel/misaligned.c
 new file mode 100644
-index 0000000..ce9e706
+index 0000000..db5c54a
 --- /dev/null
-+++ b/arch/nios2/include/asm/pgtable-bits.h
-@@ -0,0 +1,35 @@
++++ b/arch/nios2/kernel/misaligned.c
+@@ -0,0 +1,255 @@
 +/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
++ *  linux/arch/nios2/kernel/misaligned.c
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_PGTABLE_BITS_H
-+#define _ASM_NIOS2_PGTABLE_BITS_H
-+
-+/*
-+ * These are actual hardware defined protection bits in the tlbacc register
-+ * which looks like this:
++ *  basic emulation for mis-aligned accesses on the NIOS II cpu
++ *  modeled after the version for arm in arm/alignment.c
 + *
-+ * 31 30 ... 26 25 24 23 22 21 20 19 18 ...  1  0
-+ * ignored........  C  R  W  X  G PFN............
-+ */
-+#define _PAGE_GLOBAL	(1<<20)
-+#define _PAGE_EXEC	(1<<21)
-+#define _PAGE_WRITE	(1<<22)
-+#define _PAGE_READ	(1<<23)
-+#define _PAGE_CACHED	(1<<24)	/* C: data access cacheable */
-+
-+/*
-+ * Software defined bits. They are ignored by the hardware and always read back
-+ * as zero, but can be written as non-zero.
-+ */
-+#define _PAGE_PRESENT	(1<<25)	/* PTE contains a translation */
-+#define _PAGE_ACCESSED	(1<<26)	/* page referenced */
-+#define _PAGE_DIRTY	(1<<27)	/* dirty page */
-+#define _PAGE_FILE	(1<<28)	/* PTE used for file mapping or swap */
-+
-+#endif /* _ASM_NIOS2_PGTABLE_BITS_H */
-diff --git a/arch/nios2/include/asm/pgtable.h b/arch/nios2/include/asm/pgtable.h
-new file mode 100644
-index 0000000..ec85481
---- /dev/null
-+++ b/arch/nios2/include/asm/pgtable.h
-@@ -0,0 +1,305 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
++ *  Brad Parker <brad@heeltoe.com>
++ *  Copyright (C) 2010 Ambient Corporation
++ *  Copyright (c) 2010 Altera Corporation, San Jose, California, USA.
++ *  Copyright (c) 2010 Arrow Electronics, Inc.
 + *
-+ * Based on asm/pgtable-32.h from mips which is:
-+ *
-+ * Copyright (C) 1994, 95, 96, 97, 98, 99, 2000, 2003 Ralf Baechle
-+ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License.  See the file COPYING in the main directory of
++ * this archive for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_PGTABLE_H
-+#define _ASM_NIOS2_PGTABLE_H
-+
-+#include <linux/io.h>
-+#include <linux/bug.h>
-+#include <asm/page.h>
-+#include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
-+
-+#include <asm/pgtable-bits.h>
-+#include <asm-generic/pgtable-nopmd.h>
-+
-+#define FIRST_USER_ADDRESS	0
-+
-+#define VMALLOC_START		CONFIG_NIOS2_KERNEL_MMU_REGION_BASE
-+#define VMALLOC_END		(CONFIG_NIOS2_KERNEL_REGION_BASE - 1)
-+
-+struct mm_struct;
-+
-+/* Helper macro */
-+#define MKP(x, w, r) __pgprot(_PAGE_PRESENT | _PAGE_CACHED |		\
-+				((x) ? _PAGE_EXEC : 0) |		\
-+				((r) ? _PAGE_READ : 0) |		\
-+				((w) ? _PAGE_WRITE : 0))
-+/*
-+ * These are the macros that generic kernel code needs
-+ * (to populate protection_map[])
-+ */
-+
-+/* Remove W bit on private pages for COW support */
-+#define __P000	MKP(0, 0, 0)
-+#define __P001	MKP(0, 0, 1)
-+#define __P010	MKP(0, 0, 0)	/* COW */
-+#define __P011	MKP(0, 0, 1)	/* COW */
-+#define __P100	MKP(1, 0, 0)
-+#define __P101	MKP(1, 0, 1)
-+#define __P110	MKP(1, 0, 0)	/* COW */
-+#define __P111	MKP(1, 0, 1)	/* COW */
-+
-+/* Shared pages can have exact HW mapping */
-+#define __S000	MKP(0, 0, 0)
-+#define __S001	MKP(0, 0, 1)
-+#define __S010	MKP(0, 1, 0)
-+#define __S011	MKP(0, 1, 1)
-+#define __S100	MKP(1, 0, 0)
-+#define __S101	MKP(1, 0, 1)
-+#define __S110	MKP(1, 1, 0)
-+#define __S111	MKP(1, 1, 1)
-+
-+/* Used all over the kernel */
-+#define PAGE_KERNEL __pgprot(_PAGE_PRESENT | _PAGE_CACHED | _PAGE_READ | \
-+			     _PAGE_WRITE | _PAGE_EXEC | _PAGE_GLOBAL)
-+
-+#define PAGE_COPY MKP(0, 0, 1)
-+
-+#define PGD_ORDER	0
-+#define PTE_ORDER	0
-+
-+#define PTRS_PER_PGD	((PAGE_SIZE << PGD_ORDER) / sizeof(pgd_t))
-+#define PTRS_PER_PTE	((PAGE_SIZE << PTE_ORDER) / sizeof(pte_t))
-+
-+#define USER_PTRS_PER_PGD	\
-+	(CONFIG_NIOS2_KERNEL_MMU_REGION_BASE / PGDIR_SIZE)
-+
-+#define PGDIR_SHIFT	22
-+#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
-+#define PGDIR_MASK	(~(PGDIR_SIZE-1))
-+
-+/*
-+ * ZERO_PAGE is a global shared page that is always zero: used
-+ * for zero-mapped memory areas etc..
-+ */
-+extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
-+#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
-+
-+extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
-+extern pte_t invalid_pte_table[PAGE_SIZE/sizeof(pte_t)];
-+
-+/*
-+ * (pmds are folded into puds so this doesn't get actually called,
-+ * but the define is needed for a generic inline function.)
-+ */
-+static inline void set_pmd(pmd_t *pmdptr, pmd_t pmdval)
-+{
-+	pmdptr->pud.pgd.pgd = pmdval.pud.pgd.pgd;
-+}
-+
-+/* to find an entry in a page-table-directory */
-+#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
-+#define pgd_offset(mm, addr)	((mm)->pgd + pgd_index(addr))
-+
-+static inline int pte_write(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_WRITE; }
-+static inline int pte_dirty(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_DIRTY; }
-+static inline int pte_young(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_ACCESSED; }
-+static inline int pte_file(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_FILE; }
-+static inline int pte_special(pte_t pte)	{ return 0; }
-+
-+#define pgprot_noncached pgprot_noncached
-+
-+static inline pgprot_t pgprot_noncached(pgprot_t _prot)
-+{
-+	unsigned long prot = pgprot_val(_prot);
-+
-+	prot &= ~_PAGE_CACHED;
-+
-+	return __pgprot(prot);
-+}
-+
-+static inline int pte_none(pte_t pte)
-+{
-+	return !(pte_val(pte) & ~(_PAGE_GLOBAL|0xf));
-+}
-+
-+static inline int pte_present(pte_t pte)	\
-+	{ return pte_val(pte) & _PAGE_PRESENT; }
-+
-+/*
-+ * The following only work if pte_present() is true.
-+ * Undefined behaviour if not..
-+ */
-+static inline pte_t pte_wrprotect(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_WRITE;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkclean(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_DIRTY;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkold(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_ACCESSED;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkwrite(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_WRITE;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkdirty(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_DIRTY;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkspecial(pte_t pte)	{ return pte; }
-+
-+static inline pte_t pte_mkyoung(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_ACCESSED;
-+	return pte;
-+}
-+
-+static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
-+{
-+	const unsigned long mask = _PAGE_READ | _PAGE_WRITE | _PAGE_EXEC;
-+	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
-+	return pte;
-+}
-+
-+static inline int pmd_present(pmd_t pmd)
-+{
-+	return (pmd_val(pmd) != (unsigned long) invalid_pte_table)
-+			&& (pmd_val(pmd) != 0UL);
-+}
-+
-+static inline void pmd_clear(pmd_t *pmdp)
-+{
-+	pmd_val(*pmdp) = (unsigned long) invalid_pte_table;
-+}
-+
-+#define pte_pfn(pte)		(pte_val(pte) & 0xfffff)
-+#define pfn_pte(pfn, prot)	(__pte(pfn | pgprot_val(prot)))
-+#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
-+
-+/*
-+ * Store a linux PTE into the linux page table.
-+ */
-+static inline void set_pte(pte_t *ptep, pte_t pteval)
-+{
-+	*ptep = pteval;
-+}
-+
-+static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
-+			      pte_t *ptep, pte_t pteval)
-+{
-+	unsigned long paddr = page_to_virt(pte_page(pteval));
-+	flush_dcache_range(paddr, paddr + PAGE_SIZE);
-+	set_pte(ptep, pteval);
-+}
-+
-+static inline int pmd_none(pmd_t pmd)
-+{
-+	return (pmd_val(pmd) ==
-+		(unsigned long) invalid_pte_table) || (pmd_val(pmd) == 0UL);
-+}
-+
-+#define pmd_bad(pmd)	(pmd_val(pmd) & ~PAGE_MASK)
-+
-+static inline void pte_clear(struct mm_struct *mm,
-+				unsigned long addr, pte_t *ptep)
-+{
-+	pte_t null;
-+
-+	pte_val(null) = (addr >> PAGE_SHIFT) & 0xf;
-+
-+	set_pte_at(mm, addr, ptep, null);
-+	flush_tlb_one(addr);
-+}
-+
-+/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
-+ */
-+#define mk_pte(page, prot)	(pfn_pte(page_to_pfn(page), prot))
-+
-+#define pte_unmap(pte)	do { } while (0)
-+
-+/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
-+ */
-+#define pmd_phys(pmd)		virt_to_phys((void *)pmd_val(pmd))
-+#define pmd_page(pmd)		(pfn_to_page(pmd_phys(pmd) >> PAGE_SHIFT))
-+#define pmd_page_vaddr(pmd)	pmd_val(pmd)
-+
-+#define pte_offset_map(dir, addr)			\
-+	((pte_t *) page_address(pmd_page(*dir)) +	\
-+	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
-+
-+/* to find an entry in a kernel page-table-directory */
-+#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
-+
-+/* Get the address to the PTE for a vaddr in specfic directory */
-+#define pte_offset_kernel(dir, addr)			\
-+	((pte_t *) pmd_page_vaddr(*(dir)) +		\
-+	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
-+
-+#define pte_ERROR(e) \
-+	pr_err("%s:%d: bad pte %08lx.\n", \
-+		__FILE__, __LINE__, pte_val(e))
-+#define pgd_ERROR(e) \
-+	pr_err("%s:%d: bad pgd %08lx.\n", \
-+		__FILE__, __LINE__, pgd_val(e))
-+
-+/*
-+ * Encode and decode a swap entry (must be !pte_none(pte) && !pte_present(pte)
-+ * && !pte_file(pte)):
-+ *
-+ * 31 30 29 28 27 26 25 24 23 22 21 20 19 18 ...  1  0
-+ *  0  0  0  0 type.  0  0  0  0  0  0 offset.........
-+ *
-+ * This gives us up to 2**2 = 4 swap files and 2**20 * 4K = 4G per swap file.
-+ *
-+ * Note that the offset field is always non-zero, thus !pte_none(pte) is always
-+ * true.
-+ */
-+#define __swp_type(swp)		(((swp).val >> 26) & 0x3)
-+#define __swp_offset(swp)	((swp).val & 0xfffff)
-+#define __swp_entry(type, off)	((swp_entry_t) { (((type) & 0x3) << 26) \
-+						 | ((off) & 0xfffff) })
-+#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
-+#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
-+
-+/* Encode and decode a nonlinear file mapping entry */
-+#define PTE_FILE_MAX_BITS	25
-+#define pte_to_pgoff(pte)	(pte_val(pte) & 0x1ffffff)
-+#define pgoff_to_pte(off)	__pte(((off) & 0x1ffffff) | _PAGE_FILE)
-+
-+#define kern_addr_valid(addr)		(1)
-+
-+#include <asm-generic/pgtable.h>
-+
-+#define pgtable_cache_init()		do { } while (0)
-+
-+extern void __init paging_init(void);
-+extern void __init mmu_init(void);
-+
-+extern void update_mmu_cache(struct vm_area_struct *vma,
-+			     unsigned long address, pte_t *pte);
-+
-+#endif /* _ASM_NIOS2_PGTABLE_H */
-diff --git a/arch/nios2/mm/pgtable.c b/arch/nios2/mm/pgtable.c
-new file mode 100644
-index 0000000..21e865f
---- /dev/null
-+++ b/arch/nios2/mm/pgtable.c
-@@ -0,0 +1,73 @@
-+/*
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/mm.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/proc_fs.h>
++#include <linux/init.h>
 +#include <linux/sched.h>
++#include <linux/uaccess.h>
++#include <linux/seq_file.h>
 +
-+#include <asm/pgtable.h>
-+#include <asm/cpuinfo.h>
++#include <asm/traps.h>
++#include <asm/unaligned.h>
 +
-+/* pteaddr:
-+ *   ptbase | vpn* | zero
-+ *   31-22  | 21-2 | 1-0
-+ *
-+ *   *vpn is preserved on double fault
-+ *
-+ * tlbacc:
-+ *   IG   |*flags| pfn
-+ *   31-25|24-20 | 19-0
-+ *
-+ *   *crwxg
-+ *
-+ * tlbmisc:
-+ *   resv  |way   |rd | we|pid |dbl|bad|perm|d
-+ *   31-24 |23-20 |19 | 20|17-4|3  |2  |1   |0
-+ *
-+ */
++/* instructions we emulate */
++#define INST_LDHU	0x0b
++#define INST_STH	0x0d
++#define INST_LDH	0x0f
++#define INST_STW	0x15
++#define INST_LDW	0x17
++
++static unsigned long ma_user, ma_kern, ma_skipped, ma_half, ma_word;
++
++static unsigned int ma_usermode;
++#define UM_WARN		0x01
++#define UM_FIXUP	0x02
++#define UM_SIGNAL	0x04
++#define KM_WARN		0x08
++
++/* see arch/nios2/include/asm/ptrace.h */
++static u8 sys_stack_frame_reg_offset[] = {
++	/* struct pt_regs */
++	8, 9, 10, 11, 12, 13, 14, 15, 1, 2, 3, 4, 5, 6, 7, 0,
++	/* struct switch_stack */
++	16, 17, 18, 19, 20, 21, 22, 23, 0, 0, 0, 0, 0, 0, 0, 0
++};
++
++static int reg_offsets[32];
++
++static inline u32 get_reg_val(struct pt_regs *fp, int reg)
++{
++	u8 *p = ((u8 *)fp) + reg_offsets[reg];
++	return *(u32 *)p;
++}
++
++static inline void put_reg_val(struct pt_regs *fp, int reg, u32 val)
++{
++	u8 *p = ((u8 *)fp) + reg_offsets[reg];
++	*(u32 *)p = val;
++}
 +
 +/*
-+ * Initialize a new pgd / pmd table with invalid pointers.
++ * (mis)alignment handler
 + */
-+static void pgd_init(pgd_t *pgd)
++asmlinkage void handle_unaligned_c(struct pt_regs *fp, int cause)
 +{
-+	unsigned long *p = (unsigned long *) pgd;
-+	int i;
++	u32 isn, addr, val;
++	int in_kernel;
++	u8 a, b, d0, d1, d2, d3;
++	u16 imm16;
++	unsigned int fault;
 +
-+	for (i = 0; i < USER_PTRS_PER_PGD; i += 8) {
-+		p[i + 0] = (unsigned long) invalid_pte_table;
-+		p[i + 1] = (unsigned long) invalid_pte_table;
-+		p[i + 2] = (unsigned long) invalid_pte_table;
-+		p[i + 3] = (unsigned long) invalid_pte_table;
-+		p[i + 4] = (unsigned long) invalid_pte_table;
-+		p[i + 5] = (unsigned long) invalid_pte_table;
-+		p[i + 6] = (unsigned long) invalid_pte_table;
-+		p[i + 7] = (unsigned long) invalid_pte_table;
++	/* back up one instruction */
++	fp->ea -= 4;
++
++	if (fixup_exception(fp)) {
++		ma_skipped++;
++		return;
++	}
++
++	in_kernel = !user_mode(fp);
++
++	isn = *(unsigned long *)(fp->ea);
++
++	fault = 0;
++
++	/* do fixup if in kernel or mode turned on */
++	if (in_kernel || (ma_usermode & UM_FIXUP)) {
++		/* decompose instruction */
++		a = (isn >> 27) & 0x1f;
++		b = (isn >> 22) & 0x1f;
++		imm16 = (isn >> 6) & 0xffff;
++		addr = get_reg_val(fp, a) + imm16;
++
++		/* do fixup to saved registers */
++		switch (isn & 0x3f) {
++		case INST_LDHU:
++			fault |= __get_user(d0, (u8 *)(addr+0));
++			fault |= __get_user(d1, (u8 *)(addr+1));
++			val = (d1 << 8) | d0;
++			put_reg_val(fp, b, val);
++			ma_half++;
++			break;
++		case INST_STH:
++			val = get_reg_val(fp, b);
++			d1 = val >> 8;
++			d0 = val >> 0;
++
++			pr_debug("sth: ra=%d (%08x) rb=%d (%08x), imm16 %04x addr %08x val %08x\n",
++				a, get_reg_val(fp, a),
++				b, get_reg_val(fp, b),
++				imm16, addr, val);
++
++			if (in_kernel) {
++				*(u8 *)(addr+0) = d0;
++				*(u8 *)(addr+1) = d1;
++			} else {
++				fault |= __put_user(d0, (u8 *)(addr+0));
++				fault |= __put_user(d1, (u8 *)(addr+1));
++			}
++			ma_half++;
++			break;
++		case INST_LDH:
++			fault |= __get_user(d0, (u8 *)(addr+0));
++			fault |= __get_user(d1, (u8 *)(addr+1));
++			val = (short)((d1 << 8) | d0);
++			put_reg_val(fp, b, val);
++			ma_half++;
++			break;
++		case INST_STW:
++			val = get_reg_val(fp, b);
++			d3 = val >> 24;
++			d2 = val >> 16;
++			d1 = val >> 8;
++			d0 = val >> 0;
++			if (in_kernel) {
++				*(u8 *)(addr+0) = d0;
++				*(u8 *)(addr+1) = d1;
++				*(u8 *)(addr+2) = d2;
++				*(u8 *)(addr+3) = d3;
++			} else {
++				fault |= __put_user(d0, (u8 *)(addr+0));
++				fault |= __put_user(d1, (u8 *)(addr+1));
++				fault |= __put_user(d2, (u8 *)(addr+2));
++				fault |= __put_user(d3, (u8 *)(addr+3));
++			}
++			ma_word++;
++			break;
++		case INST_LDW:
++			fault |= __get_user(d0, (u8 *)(addr+0));
++			fault |= __get_user(d1, (u8 *)(addr+1));
++			fault |= __get_user(d2, (u8 *)(addr+2));
++			fault |= __get_user(d3, (u8 *)(addr+3));
++			val = (d3 << 24) | (d2 << 16) | (d1 << 8) | d0;
++			put_reg_val(fp, b, val);
++			ma_word++;
++			break;
++		}
++	}
++
++	addr = RDCTL(CTL_BADADDR);
++	cause >>= 2;
++
++	if (fault) {
++		if (in_kernel) {
++			pr_err("fault during kernel misaligned fixup @ %#lx; addr 0x%08lx; isn=0x%08x\n",
++				fp->ea, (long unsigned int)addr,
++				(unsigned int)isn);
++		} else {
++			pr_err("fault during user misaligned fixup @ %#lx; isn=%08x addr=0x%08x sp=0x%08lx pid=%d\n",
++				fp->ea,
++				(unsigned int)isn, addr, fp->sp,
++				current->pid);
++
++			_exception(SIGSEGV, fp, SEGV_MAPERR, fp->ea);
++			return;
++		}
++	}
++
++	/*
++	 * kernel mode -
++	 *  note exception and skip bad instruction (return)
++	 */
++	if (in_kernel) {
++		ma_kern++;
++		fp->ea += 4;
++
++		if (ma_usermode & KM_WARN) {
++			pr_err("kernel unaligned access @ %#lx; BADADDR 0x%08lx; cause=%d, isn=0x%08lx\n",
++				fp->ea,
++				(long unsigned int)addr, cause,
++				(long unsigned int)isn);
++			/* show_regs(fp); */
++		}
++
++		return;
++	}
++
++	ma_user++;
++
++	/*
++	 * user mode -
++	 *  possibly warn,
++	 *  possibly send SIGBUS signal to process
++	 */
++	if (ma_usermode & UM_WARN) {
++		pr_err("user unaligned access @ %#lx; isn=0x%08lx ea=0x%08lx ra=0x%08lx sp=0x%08lx\n",
++			(unsigned long)addr, (unsigned long)isn,
++			fp->ea, fp->ra, fp->sp);
++	}
++
++	if (ma_usermode & UM_SIGNAL)
++		_exception(SIGBUS, fp, BUS_ADRALN, fp->ea);
++	else
++		fp->ea += 4;	/* else advance */
++}
++
++static void __init misaligned_calc_reg_offsets(void)
++{
++	int i, r, offset;
++
++	/* pre-calc offsets of registers on sys call stack frame */
++	offset = 0;
++
++	/* struct pt_regs */
++	for (i = 0; i < 16; i++) {
++		r = sys_stack_frame_reg_offset[i];
++		reg_offsets[r] = offset;
++		offset += 4;
++	}
++
++	/* struct switch_stack */
++	offset = -sizeof(struct switch_stack);
++	for (i = 16; i < 32; i++) {
++		r = sys_stack_frame_reg_offset[i];
++		reg_offsets[r] = offset;
++		offset += 4;
 +	}
 +}
 +
-+pgd_t *pgd_alloc(struct mm_struct *mm)
-+{
-+	pgd_t *ret, *init;
-+	ret = (pgd_t *) __get_free_pages(GFP_KERNEL, PGD_ORDER);
-+	if (ret) {
-+		init = pgd_offset(&init_mm, 0UL);
-+		pgd_init(ret);
-+		memcpy(ret + USER_PTRS_PER_PGD, init + USER_PTRS_PER_PGD,
-+		       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
-+	}
 +
-+	return ret;
++static int __init misaligned_init(void)
++{
++	/* default mode - silent fix */
++	ma_usermode = UM_FIXUP | KM_WARN;
++
++	misaligned_calc_reg_offsets();
++
++	return 0;
 +}
 +
-+void __init pagetable_init(void)
-+{
-+	/* Initialize the entire pgd.  */
-+	pgd_init(swapper_pg_dir);
-+	pgd_init(swapper_pg_dir + USER_PTRS_PER_PGD);
-+}
++fs_initcall(misaligned_init);
 -- 
 1.8.2.1
 
