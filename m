@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874AbaJXHwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 03:52:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56699 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755446AbaJXHwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 03:52:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,779,1406617200"; 
-   d="scan'208";a="595067400"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+	id S1755233AbaJXHy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 03:54:29 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:37161 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354AbaJXHy2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 03:54:28 -0400
+Date: Fri, 24 Oct 2014 09:54:23 +0200
+From: Ingo Molnar <mingo@kernel.org>
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
-Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
-In-Reply-To: <20141022143418.GU12706@worktop.programming.kicks-ass.net>
-References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com> <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com> <20141022143418.GU12706@worktop.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 24 Oct 2014 10:52:05 +0300
-Message-ID: <8738ad3nx6.fsf@ashishki-desk.ger.corp.intel.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
+        mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
+        dave@stgolabs.net, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
+Message-ID: <20141024075423.GA24479@gmail.com>
+References: <20141020215633.717315139@infradead.org>
+ <20141021162340.GA5508@gmail.com>
+ <20141021170948.GA25964@node.dhcp.inet.fi>
+ <20141021175603.GI3219@twins.programming.kicks-ass.net>
+ <5448DB05.5050803@cn.fujitsu.com>
+ <20141023110438.GQ21513@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141023110438.GQ21513@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
 
-> On Mon, Oct 13, 2014 at 04:45:40PM +0300, Alexander Shishkin wrote:
->> +static bool pt_event_valid(struct perf_event *event)
->> +{
->> +	u64 config = event->attr.config;
->> +
->> +	/* admin can set any packet generation parameters */
->> +	if (capable(CAP_SYS_ADMIN) && (config & PT_BYPASS_MASK) == config)
->> +		return true;
->> +
->> +	if ((config & PT_CONFIG_MASK) != config)
->> +		return false;
->> +
->> +	return true;
->> +}
->
-> This seems to suggest PT is available to !priv users, is this right?
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-Yes, that's the intention. PT does CPL-based filtering in hardware and
-unlike previous attempts at branch tracing, does not leak out-of-context
-addresses (or any other information for that matter).
+> On Thu, Oct 23, 2014 at 06:40:05PM +0800, Lai Jiangshan wrote:
+> > On 10/22/2014 01:56 AM, Peter Zijlstra wrote:
+> > > On Tue, Oct 21, 2014 at 08:09:48PM +0300, Kirill A. Shutemov wrote:
+> > >> It would be interesting to see if the patchset affects non-condended case.
+> > >> Like a one-threaded workload.
+> > > 
+> > > It does, and not in a good way, I'll have to look at that... :/
+> > 
+> > Maybe it is blamed to find_vma_srcu() that it doesn't take the advantage of
+> > the vmacache_find() and cause more cache-misses.
+> 
+> Its what I thought initially, I tried doing perf record with and
+> without, but then I ran into perf diff not quite working for me and I've
+> yet to find time to kick that thing into shape.
 
-Regards,
---
-Alex
+Might be the 'perf diff' regression fixed by this:
+
+  9ab1f50876db perf diff: Add missing hists__init() call at tool start
+
+I just pushed it out into tip:master.
+
+Thanks,
+
+	Ingo
