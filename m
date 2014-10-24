@@ -1,70 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235AbaJXKzD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:55:03 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:56242 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaJXKzA (ORCPT
+	id S1756270AbaJXKzV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:55:21 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:54052 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756123AbaJXKzS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:55:00 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-55-544a30014a33
-Message-id: <544A2FF2.1000105@samsung.com>
-Date: Fri, 24 Oct 2014 12:54:42 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        ben-linux@fluff.org, linux@arm.linux.org.uk, mark.rutland@arm.com,
-        arnd@arndb.de, olof@lixom.net, tomasz.figa@gmail.com,
-        mturquette@linaro.org, thomas.abraham@linaro.org,
-        linus.walleij@linaro.org, sw0312.kim@samsung.com,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        geunsik.lim@samsung.com, jh80.chung@samsung.com,
-        jaewon02.kim@samsung.com, ideal.song@samsung.com, yj44.cho@samsung.com
-Subject: Re: [PATCH 2/5] clk: samsung: exynos4415: Add clocks using common
- clock framework
-References: <1413775749-17539-1-git-send-email-cw00.choi@samsung.com>
- <1413775935-17743-2-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1413775935-17743-2-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsVy+t/xa7qMBl4hBpd+81j8nXSM3WLSugNM
-	Fte/PGe1+DOhlc1i19/7jBaT7k9gsdjRcITV4savNlaL3gVX2SzONr1ht5jyZzmTxabH11gt
-	Lu+aw2Yx4/w+Jovbl3ktll6/yGTxdMJFNotT1z8DxSe/ZLM4NmMJo8WqXX8YLfbunMzoIOax
-	Zt4aRo+W5h42j9+/JjF6/F31gtlj56y77B53ru1h89i8pN7jyokmVo++LasYPT5vkgvgiuKy
-	SUnNySxLLdK3S+DKaJ6SW7CCreL+8UnMDYzzWbsYOTkkBEwkdv24wARhi0lcuLeerYuRi0NI
-	YCmjxPmNU5ggnE+MEqf33GQGqeIV0JL4fvkyWDeLgKrEwuu7wLrZBAwleo/2MYLYogIREifv
-	7mGHqBeU+DH5HguILSKgITHz7xWwGmaBqSwSf9+ZgNjCAjESXbOusEIsa2SU2P9wDlgzp4Cb
-	RMunX0CLOYAa9CTuX9SC6JWX2LzmLfMERoFZSFbMQqiahaRqASPzKkbR1NLkguKk9FwjveLE
-	3OLSvHS95PzcTYyQOP26g3HpMatDjAIcjEo8vD+2eIYIsSaWFVfmHmKU4GBWEuF9qeYVIsSb
-	klhZlVqUH19UmpNafIiRiYNTqoHRyufp1S9zV82xvJRTd5p/BZc2Y3Bf28Qc6cjnFuflzMuN
-	9ry+YS181P255KYViZLfd1w4/H7Lf4ugxu8uNbd0VCYtCnttxv546lPxcLGU1RU7uti9Xuoc
-	3nd5uVHEwznSGptUzlqkXJTijVfRmvflVfKZpTPu3Ug/3H8i1nbFRYsX21YJ5SgeVmIpzkg0
-	1GIuKk4EAHs/ZGGxAgAA
+	Fri, 24 Oct 2014 06:55:18 -0400
+Subject: Re: [PATCH v2 2/3] fpga manager: framework core
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <20141024105200.GA20775@amd>
+Date: Fri, 24 Oct 2014 13:55:10 +0300
+Cc: atull@opensource.altera.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        jgunthorpe@obsidianresearch.com, hpa@zytor.com,
+        Michal Simek <monstr@monstr.eu>, michal.simek@xilinx.com,
+        rdunlap@infradead.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        philip@balister.org, rubini@gnudd.com,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
+        m.chehab@samsung.com, davidb@codeaurora.org,
+        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
+        sameo@linux.intel.com, akpm@linux-foundation.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B914D894-E486-4EF1-8F84-169E939C58B4@konsulko.com>
+References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com> <1414007405-32186-3-git-send-email-atull@opensource.altera.com> <20141024105200.GA20775@amd>
+To: Pavel Machek <pavel@denx.de>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/10/14 05:32, Chanwoo Choi wrote:
-> This patch adds the new clock driver of Exynos4415 SoC based on Cortex-A9
-> using common clock framework. The CMU (Clock Management Unit) of Exynos4415
-> controls PLLs(Phase Locked Loops) and generates system clocks for CPU, buses
-> and function clocks for individual IPs.
+Hi Pavel,
+
+> On Oct 24, 2014, at 1:52 PM, Pavel Machek <pavel@denx.de> wrote:
 > 
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Tomasz Figa <tomasz.figa@gmail.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-> Signed-off-by: Seung-Woo Kim <sw0312.kim@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Hi!
+> 
+>> * /sys/class/fpga_manager/<fpga>/firmware
+>>  Name of FPGA image file to load using firmware class.
+>>  $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
+> 
+> I .. still don't think this is good idea. What about namespaces?
+> The path corresponds to path in which namespace?
+> 
 
-The patch looks good to me, I've applied it to my tree and will
-be sending in a pull request to Mike next week, if there is no
-objections.
+FWIW the overlays patchset uses binary configfs attribute to make this work.
 
---
-Thanks,
-Sylwester
+>> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
+>> +{
+>> +	int ret;
+>> +
+>> +	if (test_and_set_bit_lock(FPGA_MGR_BUSY, &mgr->flags))
+>> +		return -EBUSY;
+>> +
+>> +	dev_info(mgr->dev, "writing buffer to %s\n", mgr->name);
+>> +
+>> +	ret = __fpga_mgr_write(mgr, buf, count);
+>> +	clear_bit_unlock(FPGA_MGR_BUSY, &mgr->flags);
+>> +
+>> +	return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(fpga_mgr_write);
+> 
+> Is the EBUSY -- userspace please try again, but you don't know when to
+> try again -- right interface? I mean, normally kernel would wait, so
+> that userland does not have to poll?
+> 
+>> +static ssize_t fpga_mgr_firmware_store(struct device *dev,
+>> +				       struct device_attribute *attr,
+>> +				       const char *buf, size_t count)
+>> +{
+>> +	struct fpga_manager *mgr = dev_get_drvdata(dev);
+>> +	unsigned int len;
+>> +	char image_name[NAME_MAX];
+>> +	int ret;
+>> +
+>> +	/* lose terminating \n */
+>> +	strcpy(image_name, buf);
+>> +	len = strlen(image_name);
+>> +	if (image_name[len - 1] == '\n')
+>> +		image_name[len - 1] = 0;
+>> +
+>> +	ret = fpga_mgr_firmware_write(mgr, image_name);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	return count;
+>> +}
+> 
+> This shows why the interface is not right... Valid filename may
+> contain \n, right? It may even end with \n.
+> 
+
+I could argue that a valid firmware file is one that’s well formed and does not
+contain those characters.
+
+I guess this is only for make echo file >foo work. You could specify that echo -n file >foo is
+required.
+
+
+> Best regards,
+> 									Pavel
+> -- 
+> (english) http://www.livejournal.com/~pavelmachek
+> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+Regards
+
+— Pantelis
+
