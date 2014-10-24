@@ -1,863 +1,746 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150AbaJXIhD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 04:37:03 -0400
-Received: from mail-bn1bon0055.outbound.protection.outlook.com ([157.56.111.55]:6656
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1756108AbaJXIhA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 04:37:00 -0400
+Received: from mail-bl2on0083.outbound.protection.outlook.com ([65.55.169.83]:28704
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755732AbaJXIZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 04:25:03 -0400
+	id S1755735AbaJXIZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 04:25:08 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v5 05/29] nios2: Traps exception handling
-Date: Fri, 24 Oct 2014 16:24:07 +0800
-Message-ID: <1414139071-3818-6-git-send-email-lftan@altera.com>
+Subject: [PATCH v5 06/29] nios2: Memory management
+Date: Fri, 24 Oct 2014 16:24:08 +0800
+Message-ID: <1414139071-3818-7-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1414139071-3818-1-git-send-email-lftan@altera.com>
 References: <1414139071-3818-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(22564002)(104166001)(44976005)(19580395003)(19580405001)(86362001)(93916002)(87936001)(15975445006)(68736004)(42186005)(15202345003)(6806004)(77096002)(47776003)(64706001)(102836001)(4396001)(50226001)(95666004)(88136002)(89996001)(20776003)(92726001)(85852003)(87286001)(2201001)(92566001)(107046002)(105596002)(229853001)(106466001)(31966008)(84676001)(33646002)(48376002)(50466002)(36756003)(76482002)(97736003)(77156001)(76176999)(50986999)(46102003)(99396003)(62966002)(85306004)(80022003)(120916001)(21056001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB211;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB211;
-X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(22564002)(189002)(199003)(50986999)(36756003)(4396001)(50226001)(21056001)(87936001)(106466001)(76176999)(87286001)(88136002)(575784001)(85852003)(86362001)(95666004)(77096002)(20776003)(85306004)(47776003)(89996001)(92566001)(92726001)(62966002)(64706001)(93916002)(2201001)(77156001)(42186005)(105596002)(48376002)(31966008)(102836001)(50466002)(6806004)(229853001)(97736003)(19580395003)(19580405001)(44976005)(68736004)(107046002)(120916001)(104166001)(80022003)(46102003)(76482002)(33646002)(84676001)(99396003)(21314002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB214;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB214;
 X-Forefront-PRVS: 0374433C81
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
  smtp.mailfrom=lftan@altera.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB248;
 X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains traps exception handling.
+This patch contains the initialisation of the memory blocks, MMU
+attributes and the memory map.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/traps.h |  19 ++
- arch/nios2/kernel/insnemu.S    | 592 +++++++++++++++++++++++++++++++++++++++++
- arch/nios2/kernel/traps.c      | 185 +++++++++++++
- 3 files changed, 796 insertions(+)
- create mode 100644 arch/nios2/include/asm/traps.h
- create mode 100644 arch/nios2/kernel/insnemu.S
- create mode 100644 arch/nios2/kernel/traps.c
+ arch/nios2/include/asm/mmu.h     |  16 +++
+ arch/nios2/include/asm/page.h    | 111 +++++++++++++++++++
+ arch/nios2/include/asm/uaccess.h | 231 +++++++++++++++++++++++++++++++++++++++
+ arch/nios2/mm/init.c             | 142 ++++++++++++++++++++++++
+ arch/nios2/mm/uaccess.c          | 162 +++++++++++++++++++++++++++
+ 5 files changed, 662 insertions(+)
+ create mode 100644 arch/nios2/include/asm/mmu.h
+ create mode 100644 arch/nios2/include/asm/page.h
+ create mode 100644 arch/nios2/include/asm/uaccess.h
+ create mode 100644 arch/nios2/mm/init.c
+ create mode 100644 arch/nios2/mm/uaccess.c
 
-diff --git a/arch/nios2/include/asm/traps.h b/arch/nios2/include/asm/traps.h
+diff --git a/arch/nios2/include/asm/mmu.h b/arch/nios2/include/asm/mmu.h
 new file mode 100644
-index 0000000..82a4847
+index 0000000..d9c0b10
 --- /dev/null
-+++ b/arch/nios2/include/asm/traps.h
-@@ -0,0 +1,19 @@
++++ b/arch/nios2/include/asm/mmu.h
+@@ -0,0 +1,16 @@
++/*
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_MMU_H
++#define _ASM_NIOS2_MMU_H
++
++/* Default "unsigned long" context */
++typedef unsigned long mm_context_t;
++
++#endif /* _ASM_NIOS2_MMU_H */
+diff --git a/arch/nios2/include/asm/page.h b/arch/nios2/include/asm/page.h
+new file mode 100644
+index 0000000..7a0d9bd
+--- /dev/null
++++ b/arch/nios2/include/asm/page.h
+@@ -0,0 +1,111 @@
 +/*
 + * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
 + * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * MMU support based on asm/page.h from mips which is:
++ *
++ * Copyright (C) 1994 - 1999, 2000, 03 Ralf Baechle
++ * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_TRAPS_H
-+#define _ASM_NIOS2_TRAPS_H
++#ifndef _ASM_NIOS2_PAGE_H
++#define _ASM_NIOS2_PAGE_H
 +
-+#define TRAP_ID_SYSCALL		0
++#include <linux/pfn.h>
++#include <linux/const.h>
++
++/*
++ * PAGE_SHIFT determines the page size
++ */
++#define PAGE_SHIFT	12
++#define PAGE_SIZE	(_AC(1, UL) << PAGE_SHIFT)
++#define PAGE_MASK	(~(PAGE_SIZE - 1))
++
++/*
++ * PAGE_OFFSET -- the first address of the first page of memory.
++ */
++#define PAGE_OFFSET	\
++	(CONFIG_NIOS2_MEM_BASE + CONFIG_NIOS2_KERNEL_REGION_BASE)
 +
 +#ifndef __ASSEMBLY__
-+void _exception(int signo, struct pt_regs *regs, int code, unsigned long addr);
-+#endif
 +
-+#endif /* _ASM_NIOS2_TRAPS_H */
-diff --git a/arch/nios2/kernel/insnemu.S b/arch/nios2/kernel/insnemu.S
-new file mode 100644
-index 0000000..8a47a77
---- /dev/null
-+++ b/arch/nios2/kernel/insnemu.S
-@@ -0,0 +1,592 @@
 +/*
-+ *  Copyright (C) 2003-2013 Altera Corporation
-+ *  All rights reserved.
++ * This gives the physical RAM offset.
++ */
++#define PHYS_OFFSET		CONFIG_NIOS2_MEM_BASE
++
++/*
++ * It's normally defined only for FLATMEM config but it's
++ * used in our early mem init code for all memory models.
++ * So always define it.
++ */
++#define ARCH_PFN_OFFSET		PFN_UP(PHYS_OFFSET)
++
++#define clear_page(page)	memset((page), 0, PAGE_SIZE)
++#define copy_page(to, from)	memcpy((to), (from), PAGE_SIZE)
++
++struct page;
++
++extern void clear_user_page(void *addr, unsigned long vaddr, struct page *page);
++extern void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
++				struct page *to);
++
++extern unsigned long shm_align_mask;
++
++/*
++ * These are used to make use of C type-checking.
++ */
++typedef struct page *pgtable_t;
++typedef struct { unsigned long pte; } pte_t;
++typedef struct { unsigned long pgd; } pgd_t;
++typedef struct { unsigned long pgprot; } pgprot_t;
++
++#define pte_val(x)	((x).pte)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)	((x).pgprot)
++
++#define __pte(x)	((pte_t) { (x) })
++#define __pgd(x)	((pgd_t) { (x) })
++#define __pgprot(x)	((pgprot_t) { (x) })
++
++extern unsigned long memory_start;
++extern unsigned long memory_end;
++extern unsigned long memory_size;
++
++extern struct page *mem_map;
++
++#endif /* !__ASSEMBLY__ */
++
++# define __pa(x)		\
++	((unsigned long)(x) - PAGE_OFFSET + PHYS_OFFSET)
++# define __va(x)		\
++	((void *)((unsigned long)(x) + PAGE_OFFSET - PHYS_OFFSET))
++
++#define page_to_virt(page)	\
++	((((page) - mem_map) << PAGE_SHIFT) + PAGE_OFFSET)
++
++# define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
++# define pfn_valid(pfn)		((pfn) >= ARCH_PFN_OFFSET &&	\
++					(pfn) < max_mapnr)
++
++# define virt_to_page(vaddr)	pfn_to_page(PFN_DOWN(virt_to_phys(vaddr)))
++# define virt_addr_valid(vaddr)	pfn_valid(PFN_DOWN(virt_to_phys(vaddr)))
++
++# define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | \
++				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
++
++# define UNCAC_ADDR(addr)	\
++	((void *)((unsigned)(addr) | CONFIG_NIOS2_IO_REGION_BASE))
++# define CAC_ADDR(addr)		\
++	((void *)(((unsigned)(addr) & ~CONFIG_NIOS2_IO_REGION_BASE) |	\
++		CONFIG_NIOS2_KERNEL_REGION_BASE))
++
++#include <asm-generic/memory_model.h>
++
++#include <asm-generic/getorder.h>
++
++#endif /* _ASM_NIOS2_PAGE_H */
+diff --git a/arch/nios2/include/asm/uaccess.h b/arch/nios2/include/asm/uaccess.h
+new file mode 100644
+index 0000000..acedc0a
+--- /dev/null
++++ b/arch/nios2/include/asm/uaccess.h
+@@ -0,0 +1,231 @@
++/*
++ * User space memory access functions for Nios II
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * Copyright (C) 2010-2011, Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009, Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
++#ifndef _ASM_NIOS2_UACCESS_H
++#define _ASM_NIOS2_UACCESS_H
 +
-+#include <linux/linkage.h>
-+#include <asm/entry.h>
++#include <linux/errno.h>
++#include <linux/thread_info.h>
++#include <linux/string.h>
 +
-+.set noat
-+.set nobreak
++#include <asm/page.h>
++
++#define VERIFY_READ	0
++#define VERIFY_WRITE	1
 +
 +/*
-+* Explicitly allow the use of r1 (the assembler temporary register)
-+* within this code. This register is normally reserved for the use of
-+* the compiler.
-+*/
-+
-+ENTRY(instruction_trap)
-+	ldw	r1, PT_R1(sp)		// Restore registers
-+	ldw	r2, PT_R2(sp)
-+	ldw	r3, PT_R3(sp)
-+	ldw	r4, PT_R4(sp)
-+	ldw	r5, PT_R5(sp)
-+	ldw	r6, PT_R6(sp)
-+	ldw	r7, PT_R7(sp)
-+	ldw	r8, PT_R8(sp)
-+	ldw	r9, PT_R9(sp)
-+	ldw	r10, PT_R10(sp)
-+	ldw	r11, PT_R11(sp)
-+	ldw	r12, PT_R12(sp)
-+	ldw	r13, PT_R13(sp)
-+	ldw	r14, PT_R14(sp)
-+	ldw	r15, PT_R15(sp)
-+	ldw	ra, PT_RA(sp)
-+	ldw	fp, PT_FP(sp)
-+	ldw	gp, PT_GP(sp)
-+	ldw	et, PT_ESTATUS(sp)
-+	wrctl	estatus, et
-+	ldw	ea, PT_EA(sp)
-+	ldw	et, PT_SP(sp)		/* backup sp in et */
-+
-+	addi	sp, sp, PT_REGS_SIZE
-+
-+	/* INSTRUCTION EMULATION
-+	*  ---------------------
-+	*
-+	* Nios II processors generate exceptions for unimplemented instructions.
-+	* The routines below emulate these instructions.  Depending on the
-+	* processor core, the only instructions that might need to be emulated
-+	* are div, divu, mul, muli, mulxss, mulxsu, and mulxuu.
-+	*
-+	* The emulations match the instructions, except for the following
-+	* limitations:
-+	*
-+	* 1) The emulation routines do not emulate the use of the exception
-+	*    temporary register (et) as a source operand because the exception
-+	*    handler already has modified it.
-+	*
-+	* 2) The routines do not emulate the use of the stack pointer (sp) or
-+	*    the exception return address register (ea) as a destination because
-+	*    modifying these registers crashes the exception handler or the
-+	*    interrupted routine.
-+	*
-+	* Detailed Design
-+	* ---------------
-+	*
-+	* The emulation routines expect the contents of integer registers r0-r31
-+	* to be on the stack at addresses sp, 4(sp), 8(sp), ... 124(sp).  The
-+	* routines retrieve source operands from the stack and modify the
-+	* destination register's value on the stack prior to the end of the
-+	* exception handler.  Then all registers except the destination register
-+	* are restored to their previous values.
-+	*
-+	* The instruction that causes the exception is found at address -4(ea).
-+	* The instruction's OP and OPX fields identify the operation to be
-+	* performed.
-+	*
-+	* One instruction, muli, is an I-type instruction that is identified by
-+	* an OP field of 0x24.
-+	*
-+	* muli   AAAAA,BBBBB,IIIIIIIIIIIIIIII,-0x24-
-+	*           27    22                6      0    <-- LSB of field
-+	*
-+	* The remaining emulated instructions are R-type and have an OP field
-+	* of 0x3a.  Their OPX fields identify them.
-+	*
-+	* R-type AAAAA,BBBBB,CCCCC,XXXXXX,NNNNN,-0x3a-
-+	*           27    22    17     11     6      0  <-- LSB of field
-+	*
-+	*
-+	* Opcode Encoding.  muli is identified by its OP value.  Then OPX & 0x02
-+	* is used to differentiate between the division opcodes and the
-+	* remaining multiplication opcodes.
-+	*
-+	* Instruction   OP      OPX    OPX & 0x02
-+	* -----------   ----    ----   ----------
-+	* muli          0x24
-+	* divu          0x3a    0x24         0
-+	* div           0x3a    0x25         0
-+	* mul           0x3a    0x27      != 0
-+	* mulxuu        0x3a    0x07      != 0
-+	* mulxsu        0x3a    0x17      != 0
-+	* mulxss        0x3a    0x1f      != 0
-+	*/
-+
-+
-+	/*
-+	* Save everything on the stack to make it easy for the emulation
-+	* routines to retrieve the source register operands.
-+	*/
-+
-+	addi sp, sp, -128
-+	stw zero, 0(sp)	/* Save zero on stack to avoid special case for r0. */
-+	stw r1, 4(sp)
-+	stw r2,  8(sp)
-+	stw r3, 12(sp)
-+	stw r4, 16(sp)
-+	stw r5, 20(sp)
-+	stw r6, 24(sp)
-+	stw r7, 28(sp)
-+	stw r8, 32(sp)
-+	stw r9, 36(sp)
-+	stw r10, 40(sp)
-+	stw r11, 44(sp)
-+	stw r12, 48(sp)
-+	stw r13, 52(sp)
-+	stw r14, 56(sp)
-+	stw r15, 60(sp)
-+	stw r16, 64(sp)
-+	stw r17, 68(sp)
-+	stw r18, 72(sp)
-+	stw r19, 76(sp)
-+	stw r20, 80(sp)
-+	stw r21, 84(sp)
-+	stw r22, 88(sp)
-+	stw r23, 92(sp)
-+		/* Don't bother to save et.  It's already been changed. */
-+	rdctl r5, estatus
-+	stw r5,  100(sp)
-+
-+	stw gp, 104(sp)
-+	stw et, 108(sp)	/* et containts previous sp value. */
-+	stw fp, 112(sp)
-+	stw ea, 116(sp)
-+	stw ra, 120(sp)
-+
-+
-+	/*
-+	* Split the instruction into its fields.  We need 4*A, 4*B, and 4*C as
-+	* offsets to the stack pointer for access to the stored register values.
-+	*/
-+	ldw r2,-4(ea)	/* r2 = AAAAA,BBBBB,IIIIIIIIIIIIIIII,PPPPPP */
-+	roli r3, r2, 7	/* r3 = BBB,IIIIIIIIIIIIIIII,PPPPPP,AAAAA,BB */
-+	roli r4, r3, 3	/* r4 = IIIIIIIIIIIIIIII,PPPPPP,AAAAA,BBBBB */
-+	roli r5, r4, 2	/* r5 = IIIIIIIIIIIIII,PPPPPP,AAAAA,BBBBB,II */
-+	srai r4, r4, 16	/* r4 = (sign-extended) IMM16 */
-+	roli r6, r5, 5	/* r6 = XXXX,NNNNN,PPPPPP,AAAAA,BBBBB,CCCCC,XX */
-+	andi r2, r2, 0x3f	/* r2 = 00000000000000000000000000,PPPPPP */
-+	andi r3, r3, 0x7c	/* r3 = 0000000000000000000000000,AAAAA,00 */
-+	andi r5, r5, 0x7c	/* r5 = 0000000000000000000000000,BBBBB,00 */
-+	andi r6, r6, 0x7c	/* r6 = 0000000000000000000000000,CCCCC,00 */
-+
-+	/* Now
-+	* r2 = OP
-+	* r3 = 4*A
-+	* r4 = IMM16 (sign extended)
-+	* r5 = 4*B
-+	* r6 = 4*C
-+	*/
-+
-+	/*
-+	* Get the operands.
-+	*
-+	* It is necessary to check for muli because it uses an I-type
-+	* instruction format, while the other instructions are have an R-type
-+	* format.
-+	*
-+	*  Prepare for either multiplication or division loop.
-+	*  They both loop 32 times.
-+	*/
-+	movi r14, 32
-+
-+	add  r3, r3, sp		/* r3 = address of A-operand. */
-+	ldw  r3, 0(r3)		/* r3 = A-operand. */
-+	movi r7, 0x24		/* muli opcode (I-type instruction format) */
-+	beq r2, r7, mul_immed /* muli doesn't use the B register as a source */
-+
-+	add  r5, r5, sp		/* r5 = address of B-operand. */
-+	ldw  r5, 0(r5)		/* r5 = B-operand. */
-+				/* r4 = SSSSSSSSSSSSSSSS,-----IMM16------ */
-+				/* IMM16 not needed, align OPX portion */
-+				/* r4 = SSSSSSSSSSSSSSSS,CCCCC,-OPX--,00000 */
-+	srli r4, r4, 5		/* r4 = 00000,SSSSSSSSSSSSSSSS,CCCCC,-OPX-- */
-+	andi r4, r4, 0x3f	/* r4 = 00000000000000000000000000,-OPX-- */
-+
-+	/* Now
-+	* r2 = OP
-+	* r3 = src1
-+	* r5 = src2
-+	* r4 = OPX (no longer can be muli)
-+	* r6 = 4*C
-+	*/
-+
-+
-+	/*
-+	*  Multiply or Divide?
-+	*/
-+	andi r7, r4, 0x02	/* For R-type multiply instructions,
-+				   OPX & 0x02 != 0 */
-+	bne r7, zero, multiply
-+
-+
-+	/* DIVISION
-+	*
-+	* Divide an unsigned dividend by an unsigned divisor using
-+	* a shift-and-subtract algorithm.  The example below shows
-+	* 43 div 7 = 6 for 8-bit integers.  This classic algorithm uses a
-+	* single register to store both the dividend and the quotient,
-+	* allowing both values to be shifted with a single instruction.
-+	*
-+	*                               remainder dividend:quotient
-+	*                               --------- -----------------
-+	*   initialize                   00000000     00101011:
-+	*   shift                        00000000     0101011:_
-+	*   remainder >= divisor? no     00000000     0101011:0
-+	*   shift                        00000000     101011:0_
-+	*   remainder >= divisor? no     00000000     101011:00
-+	*   shift                        00000001     01011:00_
-+	*   remainder >= divisor? no     00000001     01011:000
-+	*   shift                        00000010     1011:000_
-+	*   remainder >= divisor? no     00000010     1011:0000
-+	*   shift                        00000101     011:0000_
-+	*   remainder >= divisor? no     00000101     011:00000
-+	*   shift                        00001010     11:00000_
-+	*   remainder >= divisor? yes    00001010     11:000001
-+	*       remainder -= divisor   - 00000111
-+	*                              ----------
-+	*                                00000011     11:000001
-+	*   shift                        00000111     1:000001_
-+	*   remainder >= divisor? yes    00000111     1:0000011
-+	*       remainder -= divisor   - 00000111
-+	*                              ----------
-+	*                                00000000     1:0000011
-+	*   shift                        00000001     :0000011_
-+	*   remainder >= divisor? no     00000001     :00000110
-+	*
-+	* The quotient is 00000110.
-+	*/
-+
-+divide:
-+	/*
-+	*  Prepare for division by assuming the result
-+	*  is unsigned, and storing its "sign" as 0.
-+	*/
-+	movi r17, 0
-+
-+
-+	/* Which division opcode? */
-+	xori r7, r4, 0x25		/* OPX of div */
-+	bne r7, zero, unsigned_division
-+
-+
-+	/*
-+	*  OPX is div.  Determine and store the sign of the quotient.
-+	*  Then take the absolute value of both operands.
-+	*/
-+	xor r17, r3, r5		/* MSB contains sign of quotient */
-+	bge r3,zero,dividend_is_nonnegative
-+	sub r3, zero, r3	/* -r3 */
-+dividend_is_nonnegative:
-+	bge r5, zero, divisor_is_nonnegative
-+	sub r5, zero, r5	/* -r5 */
-+divisor_is_nonnegative:
-+
-+
-+unsigned_division:
-+	/* Initialize the unsigned-division loop. */
-+	movi r13, 0	/* remainder = 0 */
-+
-+	/* Now
-+	* r3 = dividend : quotient
-+	* r4 = 0x25 for div, 0x24 for divu
-+	* r5 = divisor
-+	* r13 = remainder
-+	* r14 = loop counter (already initialized to 32)
-+	* r17 = MSB contains sign of quotient
-+	*/
-+
-+
-+	/*
-+	*   for (count = 32; count > 0; --count)
-+	*   {
-+	*/
-+divide_loop:
-+
-+	/*
-+	*       Division:
-+	*
-+	*       (remainder:dividend:quotient) <<= 1;
-+	*/
-+	slli r13, r13, 1
-+	cmplt r7, r3, zero	/* r7 = MSB of r3 */
-+	or r13, r13, r7
-+	slli r3, r3, 1
-+
-+
-+	/*
-+	*       if (remainder >= divisor)
-+	*       {
-+	*           set LSB of quotient
-+	*           remainder -= divisor;
-+	*       }
-+	*/
-+	bltu r13, r5, div_skip
-+	ori r3, r3, 1
-+	sub r13, r13, r5
-+div_skip:
-+
-+	/*
-+	*   }
-+	*/
-+	subi r14, r14, 1
-+	bne r14, zero, divide_loop
-+
-+
-+	/* Now
-+	* r3 = quotient
-+	* r4 = 0x25 for div, 0x24 for divu
-+	* r6 = 4*C
-+	* r17 = MSB contains sign of quotient
-+	*/
-+
-+
-+	/*
-+	*  Conditionally negate signed quotient.  If quotient is unsigned,
-+	*  the sign already is initialized to 0.
-+	*/
-+	bge r17, zero, quotient_is_nonnegative
-+	sub r3, zero, r3		/* -r3 */
-+	quotient_is_nonnegative:
-+
-+
-+	/*
-+	*  Final quotient is in r3.
-+	*/
-+	add r6, r6, sp
-+	stw r3, 0(r6)	/* write quotient to stack */
-+	br restore_registers
-+
-+
-+
-+
-+	/* MULTIPLICATION
-+	*
-+	* A "product" is the number that one gets by summing a "multiplicand"
-+	* several times.  The "multiplier" specifies the number of copies of the
-+	* multiplicand that are summed.
-+	*
-+	* Actual multiplication algorithms don't use repeated addition, however.
-+	* Shift-and-add algorithms get the same answer as repeated addition, and
-+	* they are faster.  To compute the lower half of a product (pppp below)
-+	* one shifts the product left before adding in each of the partial
-+	* products (a * mmmm) through (d * mmmm).
-+	*
-+	* To compute the upper half of a product (PPPP below), one adds in the
-+	* partial products (d * mmmm) through (a * mmmm), each time following
-+	* the add by a right shift of the product.
-+	*
-+	*     mmmm
-+	*   * abcd
-+	*   ------
-+	*     ####  = d * mmmm
-+	*    ####   = c * mmmm
-+	*   ####    = b * mmmm
-+	*  ####     = a * mmmm
-+	* --------
-+	* PPPPpppp
-+	*
-+	* The example above shows 4 partial products.  Computing actual Nios II
-+	* products requires 32 partials.
-+	*
-+	* It is possible to compute the result of mulxsu from the result of
-+	* mulxuu because the only difference between the results of these two
-+	* opcodes is the value of the partial product associated with the sign
-+	* bit of rA.
-+	*
-+	*   mulxsu = mulxuu - (rA < 0) ? rB : 0;
-+	*
-+	* It is possible to compute the result of mulxss from the result of
-+	* mulxsu because the only difference between the results of these two
-+	* opcodes is the value of the partial product associated with the sign
-+	* bit of rB.
-+	*
-+	*   mulxss = mulxsu - (rB < 0) ? rA : 0;
-+	*
-+	*/
-+
-+mul_immed:
-+	/* Opcode is muli.  Change it into mul for remainder of algorithm. */
-+	mov r6, r5		/* Field B is dest register, not field C. */
-+	mov r5, r4		/* Field IMM16 is src2, not field B. */
-+	movi r4, 0x27		/* OPX of mul is 0x27 */
-+
-+multiply:
-+	/* Initialize the multiplication loop. */
-+	movi r9, 0	/* mul_product    = 0 */
-+	movi r10, 0	/* mulxuu_product = 0 */
-+	mov r11, r5	/* save original multiplier for mulxsu and mulxss */
-+	mov r12, r5	/* mulxuu_multiplier (will be shifted) */
-+	movi r16, 1	/* used to create "rori B,A,1" from "ror B,A,r16" */
-+
-+	/* Now
-+	* r3 = multiplicand
-+	* r5 = mul_multiplier
-+	* r6 = 4 * dest_register (used later as offset to sp)
-+	* r7 = temp
-+	* r9 = mul_product
-+	* r10 = mulxuu_product
-+	* r11 = original multiplier
-+	* r12 = mulxuu_multiplier
-+	* r14 = loop counter (already initialized)
-+	* r16 = 1
-+	*/
-+
-+
-+	/*
-+	*   for (count = 32; count > 0; --count)
-+	*   {
-+	*/
-+multiply_loop:
-+
-+	/*
-+	*       mul_product <<= 1;
-+	*       lsb = multiplier & 1;
-+	*/
-+	slli r9, r9, 1
-+	andi r7, r12, 1
-+
-+	/*
-+	*       if (lsb == 1)
-+	*       {
-+	*           mulxuu_product += multiplicand;
-+	*       }
-+	*/
-+	beq r7, zero, mulx_skip
-+	add r10, r10, r3
-+	cmpltu r7, r10, r3 /* Save the carry from the MSB of mulxuu_product. */
-+	ror r7, r7, r16	/* r7 = 0x80000000 on carry, or else 0x00000000 */
-+mulx_skip:
-+
-+	/*
-+	*       if (MSB of mul_multiplier == 1)
-+	*       {
-+	*           mul_product += multiplicand;
-+	*       }
-+	*/
-+	bge r5, zero, mul_skip
-+	add r9, r9, r3
-+mul_skip:
-+
-+	/*
-+	*       mulxuu_product >>= 1;           logical shift
-+	*       mul_multiplier <<= 1;           done with MSB
-+	*       mulx_multiplier >>= 1;          done with LSB
-+	*/
-+	srli r10, r10, 1
-+	or r10, r10, r7		/* OR in the saved carry bit. */
-+	slli r5, r5, 1
-+	srli r12, r12, 1
-+
-+
-+	/*
-+	*   }
-+	*/
-+	subi r14, r14, 1
-+	bne r14, zero, multiply_loop
-+
-+
-+	/*
-+	*  Multiply emulation loop done.
-+	*/
-+
-+	/* Now
-+	* r3 = multiplicand
-+	* r4 = OPX
-+	* r6 = 4 * dest_register (used later as offset to sp)
-+	* r7 = temp
-+	* r9 = mul_product
-+	* r10 = mulxuu_product
-+	* r11 = original multiplier
-+	*/
-+
-+
-+	/* Calculate address for result from 4 * dest_register */
-+	add r6, r6, sp
-+
-+
-+	/*
-+	* Select/compute the result based on OPX.
-+	*/
-+
-+
-+	/* OPX == mul?  Then store. */
-+	xori r7, r4, 0x27
-+	beq r7, zero, store_product
-+
-+	/* It's one of the mulx.. opcodes.  Move over the result. */
-+	mov r9, r10
-+
-+	/* OPX == mulxuu?  Then store. */
-+	xori r7, r4, 0x07
-+	beq r7, zero, store_product
-+
-+	/* Compute mulxsu
-+	 *
-+	 * mulxsu = mulxuu - (rA < 0) ? rB : 0;
-+	 */
-+	bge r3, zero, mulxsu_skip
-+	sub r9, r9, r11
-+mulxsu_skip:
-+
-+	/* OPX == mulxsu?  Then store. */
-+	xori r7, r4, 0x17
-+	beq r7, zero, store_product
-+
-+	/* Compute mulxss
-+	 *
-+	 * mulxss = mulxsu - (rB < 0) ? rA : 0;
-+	 */
-+	bge r11,zero,mulxss_skip
-+	sub r9, r9, r3
-+mulxss_skip:
-+	/* At this point, assume that OPX is mulxss, so store*/
-+
-+
-+store_product:
-+	stw r9, 0(r6)
-+
-+
-+restore_registers:
-+			/* No need to restore r0. */
-+	ldw r5, 100(sp)
-+	wrctl estatus, r5
-+
-+	ldw r1, 4(sp)
-+	ldw r2, 8(sp)
-+	ldw r3, 12(sp)
-+	ldw r4, 16(sp)
-+	ldw r5, 20(sp)
-+	ldw r6, 24(sp)
-+	ldw r7, 28(sp)
-+	ldw r8, 32(sp)
-+	ldw r9, 36(sp)
-+	ldw r10, 40(sp)
-+	ldw r11, 44(sp)
-+	ldw r12, 48(sp)
-+	ldw r13, 52(sp)
-+	ldw r14, 56(sp)
-+	ldw r15, 60(sp)
-+	ldw r16, 64(sp)
-+	ldw r17, 68(sp)
-+	ldw r18, 72(sp)
-+	ldw r19, 76(sp)
-+	ldw r20, 80(sp)
-+	ldw r21, 84(sp)
-+	ldw r22, 88(sp)
-+	ldw r23, 92(sp)
-+			/* Does not need to restore et */
-+	ldw gp, 104(sp)
-+
-+	ldw fp, 112(sp)
-+	ldw ea, 116(sp)
-+	ldw ra, 120(sp)
-+	ldw sp, 108(sp)	/* last restore sp */
-+	eret
-+
-+.set at
-+.set break
-diff --git a/arch/nios2/kernel/traps.c b/arch/nios2/kernel/traps.c
-new file mode 100644
-index 0000000..b7b9764
---- /dev/null
-+++ b/arch/nios2/kernel/traps.c
-@@ -0,0 +1,185 @@
-+/*
-+ * Hardware exception handling
++ * The exception table consists of pairs of addresses: the first is the
++ * address of an instruction that is allowed to fault, and the second is
++ * the address at which the program should continue.  No registers are
++ * modified, so it is entirely up to the continuation code to figure out
++ * what to do.
 + *
++ * All the routines below use bits of fixup code that are out of line
++ * with the main instruction path.  This means when everything is well,
++ * we don't even have to jump over them.  Further, they do not intrude
++ * on our cache or tlb entries.
++ */
++struct exception_table_entry {
++	unsigned long insn;
++	unsigned long fixup;
++};
++
++extern int fixup_exception(struct pt_regs *regs);
++
++/*
++ * Segment stuff
++ */
++#define MAKE_MM_SEG(s)		((mm_segment_t) { (s) })
++#define USER_DS			MAKE_MM_SEG(0x80000000UL)
++#define KERNEL_DS		MAKE_MM_SEG(0)
++
++#define get_ds()		(KERNEL_DS)
++
++#define get_fs()		(current_thread_info()->addr_limit)
++#define set_fs(seg)		(current_thread_info()->addr_limit = (seg))
++
++#define segment_eq(a, b)	((a).seg == (b).seg)
++
++#define __access_ok(addr, len)			\
++	(((signed long)(((long)get_fs().seg) &	\
++		((long)(addr) | (((long)(addr)) + (len)) | (len)))) == 0)
++
++#define access_ok(type, addr, len)		\
++	likely(__access_ok((unsigned long)(addr), (unsigned long)(len)))
++
++# define __EX_TABLE_SECTION	".section __ex_table,\"a\"\n"
++
++/*
++ * Zero Userspace
++ */
++
++static inline unsigned long __must_check __clear_user(void __user *to,
++						      unsigned long n)
++{
++	__asm__ __volatile__ (
++		"1:     stb     zero, 0(%1)\n"
++		"       addi    %0, %0, -1\n"
++		"       addi    %1, %1, 1\n"
++		"       bne     %0, zero, 1b\n"
++		"2:\n"
++		__EX_TABLE_SECTION
++		".word  1b, 2b\n"
++		".previous\n"
++		: "=r" (n), "=r" (to)
++		: "0" (n), "1" (to)
++	);
++
++	return n;
++}
++
++static inline unsigned long __must_check clear_user(void __user *to,
++						    unsigned long n)
++{
++	if (!access_ok(VERIFY_WRITE, to, n))
++		return n;
++	return __clear_user(to, n);
++}
++
++extern long __copy_from_user(void *to, const void __user *from,
++				unsigned long n);
++extern long __copy_to_user(void __user *to, const void *from, unsigned long n);
++
++static inline long copy_from_user(void *to, const void __user *from,
++				unsigned long n)
++{
++	if (!access_ok(VERIFY_READ, from, n))
++		return n;
++	return __copy_from_user(to, from, n);
++}
++
++static inline long copy_to_user(void __user *to, const void *from,
++				unsigned long n)
++{
++	if (!access_ok(VERIFY_WRITE, to, n))
++		return n;
++	return __copy_to_user(to, from, n);
++}
++
++extern long strncpy_from_user(char *__to, const char __user *__from,
++				long __len);
++extern long strnlen_user(const char __user *s, long n);
++
++#define __copy_from_user_inatomic	__copy_from_user
++#define __copy_to_user_inatomic		__copy_to_user
++
++/* Optimized macros */
++#define __get_user_asm(val, insn, addr, err)				\
++{									\
++	__asm__ __volatile__(						\
++	"       movi    %0, %3\n"					\
++	"1:   " insn " %1, 0(%2)\n"					\
++	"       movi     %0, 0\n"					\
++	"2:\n"								\
++	"       .section __ex_table,\"a\"\n"				\
++	"       .word 1b, 2b\n"						\
++	"       .previous"						\
++	: "=&r" (err), "=r" (val)					\
++	: "r" (addr), "i" (-EFAULT));					\
++}
++
++#define __get_user_unknown(val, size, ptr, err) do {			\
++	err = 0;							\
++	if (copy_from_user(&(val), ptr, size)) {			\
++		err = -EFAULT;						\
++	}								\
++	} while (0)
++
++#define __get_user_common(val, size, ptr, err)				\
++do {									\
++	switch (size) {							\
++	case 1:								\
++		__get_user_asm(val, "ldbu", ptr, err);			\
++		break;							\
++	case 2:								\
++		__get_user_asm(val, "ldhu", ptr, err);			\
++		break;							\
++	case 4:								\
++		__get_user_asm(val, "ldw", ptr, err);			\
++		break;							\
++	default:							\
++		__get_user_unknown(val, size, ptr, err);		\
++		break;							\
++	}								\
++} while (0)
++
++#define __get_user(x, ptr)						\
++	({								\
++	long __gu_err = -EFAULT;					\
++	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
++	unsigned long __gu_val;						\
++	__get_user_common(__gu_val, sizeof(*(ptr)), __gu_ptr, __gu_err);\
++	(x) = (__typeof__(x))__gu_val;					\
++	__gu_err;							\
++	})
++
++#define get_user(x, ptr)						\
++({									\
++	long __gu_err = -EFAULT;					\
++	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
++	unsigned long __gu_val = 0;					\
++	if (access_ok(VERIFY_READ,  __gu_ptr, sizeof(*__gu_ptr)))	\
++		__get_user_common(__gu_val, sizeof(*__gu_ptr),		\
++			__gu_ptr, __gu_err);				\
++	(x) = (__typeof__(x))__gu_val;					\
++	__gu_err;							\
++})
++
++#define __put_user_asm(val, insn, ptr, err)				\
++{									\
++	__asm__ __volatile__(						\
++	"       movi    %0, %3\n"					\
++	"1:   " insn " %1, 0(%2)\n"					\
++	"       movi     %0, 0\n"					\
++	"2:\n"								\
++	"       .section __ex_table,\"a\"\n"				\
++	"       .word 1b, 2b\n"						\
++	"       .previous\n"						\
++	: "=&r" (err)							\
++	: "r" (val), "r" (ptr), "i" (-EFAULT));				\
++}
++
++#define put_user(x, ptr)						\
++({									\
++	long __pu_err = -EFAULT;					\
++	__typeof__(*(ptr)) __user *__pu_ptr = (ptr);			\
++	__typeof__(*(ptr)) __pu_val = (__typeof(*ptr))(x);		\
++	if (access_ok(VERIFY_WRITE, __pu_ptr, sizeof(*__pu_ptr))) {	\
++		switch (sizeof(*__pu_ptr)) {				\
++		case 1:							\
++			__put_user_asm(__pu_val, "stb", __pu_ptr, __pu_err); \
++			break;						\
++		case 2:							\
++			__put_user_asm(__pu_val, "sth", __pu_ptr, __pu_err); \
++			break;						\
++		case 4:							\
++			__put_user_asm(__pu_val, "stw", __pu_ptr, __pu_err); \
++			break;						\
++		default:						\
++			/* XXX: This looks wrong... */			\
++			__pu_err = 0;					\
++			if (copy_to_user(__pu_ptr, &(__pu_val),		\
++				sizeof(*__pu_ptr)))			\
++				__pu_err = -EFAULT;			\
++			break;						\
++		}							\
++	}								\
++	__pu_err;							\
++})
++
++#define __put_user(x, ptr) put_user(x, ptr)
++
++#endif /* _ASM_NIOS2_UACCESS_H */
+diff --git a/arch/nios2/mm/init.c b/arch/nios2/mm/init.c
+new file mode 100644
+index 0000000..e75c75d
+--- /dev/null
++++ b/arch/nios2/mm/init.c
+@@ -0,0 +1,142 @@
++/*
++ * Copyright (C) 2013 Altera Corporation
 + * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ * Copyright (C) 2001 Vic Phillips
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ * Copyright (C) 2004 Microtronix Datacom Ltd
 + *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License.  See the file COPYING in the main directory of this
-+ * archive for more details.
++ * based on arch/m68k/mm/init.c
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
++#include <linux/signal.h>
 +#include <linux/sched.h>
 +#include <linux/kernel.h>
-+#include <linux/signal.h>
-+#include <linux/export.h>
-+#include <linux/mm.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/types.h>
 +#include <linux/ptrace.h>
++#include <linux/mman.h>
++#include <linux/mm.h>
++#include <linux/init.h>
++#include <linux/pagemap.h>
++#include <linux/bootmem.h>
++#include <linux/slab.h>
++#include <linux/binfmts.h>
 +
-+#include <asm/traps.h>
++#include <asm/setup.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
 +#include <asm/sections.h>
-+#include <asm/uaccess.h>
++#include <asm/tlb.h>
++#include <asm/mmu_context.h>
++#include <asm/cpuinfo.h>
++#include <asm/processor.h>
 +
-+static DEFINE_SPINLOCK(die_lock);
-+
-+void die(const char *str, struct pt_regs *regs, long err)
-+{
-+	console_verbose();
-+	spin_lock_irq(&die_lock);
-+	pr_warn("Oops: %s, sig: %ld\n", str, err);
-+	show_regs(regs);
-+	spin_unlock_irq(&die_lock);
-+	/*
-+	 * do_exit() should take care of panic'ing from an interrupt
-+	 * context so we don't handle it here
-+	 */
-+	do_exit(err);
-+}
-+
-+void _exception(int signo, struct pt_regs *regs, int code, unsigned long addr)
-+{
-+	siginfo_t info;
-+
-+	if (!user_mode(regs))
-+		die("Exception in kernel mode", regs, signo);
-+
-+	info.si_signo = signo;
-+	info.si_errno = 0;
-+	info.si_code = code;
-+	info.si_addr = (void __user *) addr;
-+	force_sig_info(signo, &info, current);
-+}
++pgd_t *pgd_current;
 +
 +/*
-+ * The show_stack is an external API which we do not use ourselves.
++ * paging_init() continues the virtual memory environment setup which
++ * was begun by the code in arch/head.S.
++ * The parameters are pointers to where to stick the starting and ending
++ * addresses of available kernel virtual memory.
++ */
++void __init paging_init(void)
++{
++	unsigned long zones_size[MAX_NR_ZONES];
++
++	memset(zones_size, 0, sizeof(zones_size));
++
++	pagetable_init();
++	pgd_current = swapper_pg_dir;
++
++	zones_size[ZONE_NORMAL] = max_mapnr;
++
++	/* pass the memory from the bootmem allocator to the main allocator */
++	free_area_init(zones_size);
++
++	flush_dcache_range((unsigned long)empty_zero_page,
++			(unsigned long)empty_zero_page + PAGE_SIZE);
++}
++
++void __init mem_init(void)
++{
++	unsigned long end_mem   = memory_end; /* this must not include
++						kernel stack at top */
++
++	pr_debug("mem_init: start=%lx, end=%lx\n", memory_start, memory_end);
++
++	end_mem &= PAGE_MASK;
++	high_memory = __va(end_mem);
++
++	/* this will put all memory onto the freelists */
++	free_all_bootmem();
++	mem_init_print_info(NULL);
++}
++
++void __init mmu_init(void)
++{
++	flush_tlb_all();
++}
++
++#ifdef CONFIG_BLK_DEV_INITRD
++void __init free_initrd_mem(unsigned long start, unsigned long end)
++{
++	free_reserved_area((void *)start, (void *)end, -1, "initrd");
++}
++#endif
++
++void __init_refok free_initmem(void)
++{
++	free_initmem_default(-1);
++}
++
++#define __page_aligned(order) __aligned(PAGE_SIZE << (order))
++pgd_t swapper_pg_dir[PTRS_PER_PGD] __page_aligned(PGD_ORDER);
++pte_t invalid_pte_table[PTRS_PER_PTE] __page_aligned(PTE_ORDER);
++static struct page *kuser_page[1];
++
++static int alloc_kuser_page(void)
++{
++	extern char __kuser_helper_start[], __kuser_helper_end[];
++	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
++	unsigned long vpage;
++
++	vpage = get_zeroed_page(GFP_ATOMIC);
++	if (!vpage)
++		return -ENOMEM;
++
++	/* Copy kuser helpers */
++	memcpy((void *)vpage, __kuser_helper_start, kuser_sz);
++
++	flush_icache_range(vpage, vpage + KUSER_SIZE);
++	kuser_page[0] = virt_to_page(vpage);
++
++	return 0;
++}
++arch_initcall(alloc_kuser_page);
++
++int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++{
++	struct mm_struct *mm = current->mm;
++	int ret;
++
++	down_write(&mm->mmap_sem);
++
++	/* Map kuser helpers to user space address */
++	ret = install_special_mapping(mm, KUSER_BASE, KUSER_SIZE,
++				      VM_READ | VM_EXEC | VM_MAYREAD |
++				      VM_MAYEXEC, kuser_page);
++
++	up_write(&mm->mmap_sem);
++
++	return ret;
++}
++
++const char *arch_vma_name(struct vm_area_struct *vma)
++{
++	return (vma->vm_start == KUSER_BASE) ? "[kuser]" : NULL;
++}
+diff --git a/arch/nios2/mm/uaccess.c b/arch/nios2/mm/uaccess.c
+new file mode 100644
+index 0000000..4a38ad3
+--- /dev/null
++++ b/arch/nios2/mm/uaccess.c
+@@ -0,0 +1,162 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2009, Wind River Systems Inc
++ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + */
 +
-+int kstack_depth_to_print = 48;
++#include <linux/export.h>
++#include <linux/uaccess.h>
 +
-+void show_stack(struct task_struct *task, unsigned long *stack)
++asm(".global	__copy_from_user\n"
++	"   .type __copy_from_user, @function\n"
++	"__copy_from_user:\n"
++	"   movi  r2,7\n"
++	"   mov   r3,r4\n"
++	"   bge   r2,r6,1f\n"
++	"   xor   r2,r4,r5\n"
++	"   andi  r2,r2,3\n"
++	"   movi  r7,3\n"
++	"   beq   r2,zero,4f\n"
++	"1: addi  r6,r6,-1\n"
++	"   movi  r2,-1\n"
++	"   beq   r6,r2,3f\n"
++	"   mov   r7,r2\n"
++	"2: ldbu  r2,0(r5)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r5,r5,1\n"
++	"   stb   r2,0(r3)\n"
++	"   addi  r3,r3,1\n"
++	"   bne   r6,r7,2b\n"
++	"3:\n"
++	"   addi  r2,r6,1\n"
++	"   ret\n"
++	"13:mov   r2,r6\n"
++	"   ret\n"
++	"4: andi  r2,r4,1\n"
++	"   cmpeq r2,r2,zero\n"
++	"   beq   r2,zero,7f\n"
++	"5: andi  r2,r3,2\n"
++	"   beq   r2,zero,6f\n"
++	"9: ldhu  r2,0(r5)\n"
++	"   addi  r6,r6,-2\n"
++	"   addi  r5,r5,2\n"
++	"   sth   r2,0(r3)\n"
++	"   addi  r3,r3,2\n"
++	"6: bge   r7,r6,1b\n"
++	"10:ldw   r2,0(r5)\n"
++	"   addi  r6,r6,-4\n"
++	"   addi  r5,r5,4\n"
++	"   stw   r2,0(r3)\n"
++	"   addi  r3,r3,4\n"
++	"   br    6b\n"
++	"7: ldbu  r2,0(r5)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r5,r5,1\n"
++	"   addi  r3,r4,1\n"
++	"   stb   r2,0(r4)\n"
++	"   br    5b\n"
++	".section __ex_table,\"a\"\n"
++	".word 2b,3b\n"
++	".word 9b,13b\n"
++	".word 10b,13b\n"
++	".word 7b,13b\n"
++	".previous\n"
++	);
++EXPORT_SYMBOL(__copy_from_user);
++
++asm(
++	"   .global __copy_to_user\n"
++	"   .type __copy_to_user, @function\n"
++	"__copy_to_user:\n"
++	"   movi  r2,7\n"
++	"   mov   r3,r4\n"
++	"   bge   r2,r6,1f\n"
++	"   xor   r2,r4,r5\n"
++	"   andi  r2,r2,3\n"
++	"   movi  r7,3\n"
++	"   beq   r2,zero,4f\n"
++	/* Bail if we try to copy zero bytes  */
++	"1: addi  r6,r6,-1\n"
++	"   movi  r2,-1\n"
++	"   beq   r6,r2,3f\n"
++	/* Copy byte by byte for small copies and if src^dst != 0 */
++	"   mov   r7,r2\n"
++	"2: ldbu  r2,0(r5)\n"
++	"   addi  r5,r5,1\n"
++	"9: stb   r2,0(r3)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r3,r3,1\n"
++	"   bne   r6,r7,2b\n"
++	"3: addi  r2,r6,1\n"
++	"   ret\n"
++	"13:mov   r2,r6\n"
++	"   ret\n"
++	/*  If 'to' is an odd address byte copy */
++	"4: andi  r2,r4,1\n"
++	"   cmpeq r2,r2,zero\n"
++	"   beq   r2,zero,7f\n"
++	/* If 'to' is not divideable by four copy halfwords */
++	"5: andi  r2,r3,2\n"
++	"   beq   r2,zero,6f\n"
++	"   ldhu  r2,0(r5)\n"
++	"   addi  r5,r5,2\n"
++	"10:sth   r2,0(r3)\n"
++	"   addi  r6,r6,-2\n"
++	"   addi  r3,r3,2\n"
++	/* Copy words */
++	"6: bge   r7,r6,1b\n"
++	"   ldw   r2,0(r5)\n"
++	"   addi  r5,r5,4\n"
++	"11:stw   r2,0(r3)\n"
++	"   addi  r6,r6,-4\n"
++	"   addi  r3,r3,4\n"
++	"   br    6b\n"
++	/* Copy remaining bytes */
++	"7: ldbu  r2,0(r5)\n"
++	"   addi  r5,r5,1\n"
++	"   addi  r3,r4,1\n"
++	"12: stb  r2,0(r4)\n"
++	"   addi  r6,r6,-1\n"
++	"   br    5b\n"
++	".section __ex_table,\"a\"\n"
++	".word 9b,3b\n"
++	".word 10b,13b\n"
++	".word 11b,13b\n"
++	".word 12b,13b\n"
++	".previous\n");
++EXPORT_SYMBOL(__copy_to_user);
++
++long strncpy_from_user(char *__to, const char __user *__from, long __len)
 +{
-+	unsigned long *endstack, addr;
-+	int i;
++	int l = strnlen_user(__from, __len);
++	int is_zt = 1;
 +
-+	if (!stack) {
-+		if (task)
-+			stack = (unsigned long *)task->thread.ksp;
-+		else
-+			stack = (unsigned long *)&stack;
++	if (l > __len) {
++		is_zt = 0;
++		l = __len;
 +	}
 +
-+	addr = (unsigned long) stack;
-+	endstack = (unsigned long *) PAGE_ALIGN(addr);
++	if (l == 0 || copy_from_user(__to, __from, l))
++		return -EFAULT;
 +
-+	pr_emerg("Stack from %08lx:", (unsigned long)stack);
-+	for (i = 0; i < kstack_depth_to_print; i++) {
-+		if (stack + 1 > endstack)
-+			break;
-+		if (i % 8 == 0)
-+			pr_emerg("\n       ");
-+		pr_emerg(" %08lx", *stack++);
++	if (is_zt)
++		l--;
++	return l;
++}
++
++long strnlen_user(const char __user *s, long n)
++{
++	long i;
++
++	for (i = 0; i < n; i++) {
++		char c;
++		if (get_user(c, s + i) == -EFAULT)
++			return 0;
++		if (c == 0)
++			return i + 1;
 +	}
-+
-+	pr_emerg("\nCall Trace:");
-+	i = 0;
-+	while (stack + 1 <= endstack) {
-+		addr = *stack++;
-+		/*
-+		 * If the address is either in the text segment of the
-+		 * kernel, or in the region which contains vmalloc'ed
-+		 * memory, it *may* be the address of a calling
-+		 * routine; if so, print it so that someone tracing
-+		 * down the cause of the crash will be able to figure
-+		 * out the call path that was taken.
-+		 */
-+		if (((addr >= (unsigned long) _stext) &&
-+		     (addr <= (unsigned long) _etext))) {
-+			if (i % 4 == 0)
-+				pr_emerg("\n       ");
-+			pr_emerg(" [<%08lx>]", addr);
-+			i++;
-+		}
-+	}
-+	pr_emerg("\n");
-+}
-+
-+void __init trap_init(void)
-+{
-+	/* Nothing to do here */
-+}
-+
-+/* Breakpoint handler */
-+asmlinkage void breakpoint_c(struct pt_regs *fp)
-+{
-+	/*
-+	 * The breakpoint entry code has moved the PC on by 4 bytes, so we must
-+	 * move it back. This could be done on the host but we do it here
-+	 * because monitor.S of JTAG gdbserver does it too.
-+	 */
-+	fp->ea -= 4;
-+	_exception(SIGTRAP, fp, TRAP_BRKPT, fp->ea);
-+}
-+
-+#ifndef CONFIG_NIOS2_ALIGNMENT_TRAP
-+/* Alignment exception handler */
-+asmlinkage void handle_unaligned_c(struct pt_regs *fp, int cause)
-+{
-+	unsigned long addr = RDCTL(CTL_BADADDR);
-+
-+	cause >>= 2;
-+	fp->ea -= 4;
-+
-+	if (fixup_exception(fp))
-+		return;
-+
-+	if (!user_mode(fp)) {
-+		pr_alert("Unaligned access from kernel mode, this might be a hardware\n");
-+		pr_alert("problem, dump registers and restart the instruction\n");
-+		pr_alert("  BADADDR 0x%08lx\n", addr);
-+		pr_alert("  cause   %d\n", cause);
-+		pr_alert("  op-code 0x%08lx\n", *(unsigned long *)(fp->ea));
-+		show_regs(fp);
-+		return;
-+	}
-+
-+	_exception(SIGBUS, fp, BUS_ADRALN, addr);
-+}
-+#endif /* CONFIG_NIOS2_ALIGNMENT_TRAP */
-+
-+/* Illegal instruction handler */
-+asmlinkage void handle_illegal_c(struct pt_regs *fp)
-+{
-+	fp->ea -= 4;
-+	_exception(SIGILL, fp, ILL_ILLOPC, fp->ea);
-+}
-+
-+/* Supervisor instruction handler */
-+asmlinkage void handle_supervisor_instr(struct pt_regs *fp)
-+{
-+	fp->ea -= 4;
-+	_exception(SIGILL, fp, ILL_PRVOPC, fp->ea);
-+}
-+
-+/* Division error handler */
-+asmlinkage void handle_diverror_c(struct pt_regs *fp)
-+{
-+	fp->ea -= 4;
-+	_exception(SIGFPE, fp, FPE_INTDIV, fp->ea);
-+}
-+
-+/* Unhandled exception handler */
-+asmlinkage void unhandled_exception(struct pt_regs *regs, int cause)
-+{
-+	unsigned long addr = RDCTL(CTL_BADADDR);
-+
-+	cause /= 4;
-+
-+	pr_emerg("Unhandled exception #%d in %s mode (badaddr=0x%08lx)\n",
-+			cause, user_mode(regs) ? "user" : "kernel", addr);
-+
-+	regs->ea -= 4;
-+	show_regs(regs);
-+
-+	pr_emerg("opcode: 0x%08lx\n", *(unsigned long *)(regs->ea));
++	return n + 1;
 +}
 -- 
 1.8.2.1
