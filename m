@@ -1,144 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980AbaJXUiY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 16:38:24 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:37962 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754480AbaJXUiX (ORCPT
+	id S1754212AbaJXUxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 16:53:36 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:18205 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaJXUxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 16:38:23 -0400
-Message-ID: <544AB8BD.70201@codeaurora.org>
-Date: Fri, 24 Oct 2014 13:38:21 -0700
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 24 Oct 2014 16:53:34 -0400
+Message-ID: <544ABC47.2000700@hp.com>
+Date: Fri, 24 Oct 2014 16:53:27 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Gioh Kim <gioh.kim@lge.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Rebecca Schultz Zavin <rebecca@android.com>
-CC: devel@driverdev.osuosl.org, gunho.lee@lge.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFCv2 2/3] staging: ion: debugfs to shrink pool
-References: <1414133248-639-1-git-send-email-gioh.kim@lge.com> <1414133248-639-3-git-send-email-gioh.kim@lge.com>
-In-Reply-To: <1414133248-639-3-git-send-email-gioh.kim@lge.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>
+Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization support
+References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com> <1413483040-58399-10-git-send-email-Waiman.Long@hp.com> <20141024084738.GU21513@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141024084738.GU21513@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 10/24/2014 04:47 AM, Peter Zijlstra wrote:
+> On Thu, Oct 16, 2014 at 02:10:38PM -0400, Waiman Long wrote:
+>> +static inline void pv_init_node(struct mcs_spinlock *node)
+>> +{
+>> +	struct pv_qnode *pn = (struct pv_qnode *)node;
+>> +
+>> +	BUILD_BUG_ON(sizeof(struct pv_qnode)>  5*sizeof(struct mcs_spinlock));
+>> +
+>> +	if (!pv_enabled())
+>> +		return;
+>> +
+>> +	pn->cpustate = PV_CPU_ACTIVE;
+>> +	pn->mayhalt  = false;
+>> +	pn->mycpu    = smp_processor_id();
+>> +	pn->head     = PV_INVALID_HEAD;
+>> +}
+>
+>> @@ -333,6 +393,7 @@ queue:
+>>   	node += idx;
+>>   	node->locked = 0;
+>>   	node->next = NULL;
+>> +	pv_init_node(node);
+>>
+>>   	/*
+>>   	 * We touched a (possibly) cold cacheline in the per-cpu queue node;
+>
+> So even if !pv_enabled() the compiler will still have to emit the code
+> for that inline, which will generate additional register pressure,
+> icache pressure and lovely stuff like that.
+>
+> The patch I had used pv-ops for these things that would turn into NOPs
+> in the regular case and callee-saved function calls for the PV case.
+>
+> That still does not entirely eliminate cost, but does reduce it
+> significant. Please consider using that.
 
-On 10/23/2014 11:47 PM, Gioh Kim wrote:
-> This patch creates debugfs files, /sys/kernel/debug/ion/heaps/system_shrink,
-> to shrink pool or get pool size.
-> Reading the file returns pool size and writing occurs to shrink pool.
->
+The additional register pressure may just cause a few more register 
+moves which should be negligible in the overall performance . The 
+additional icache pressure, however, may have some impact on 
+performance. I was trying to balance the performance of the pv and 
+non-pv versions so that we won't penalize the pv code too much for a bit 
+more performance in the non-pv code. Doing it your way will add a lot of 
+function call and register saving/restoring to the pv code.
 
-Can you clarify here that you are updating the existing debugfs
-infrastructure? Since the shrinker debugfs was commented out before
-it missed the API update so it would be good to note that as well.
+Another alternative that I can think of is to generate 2 versions of the 
+slowpath code - one pv and one non-pv out of the same source code. The 
+non-pv code will call into the pv code once if pv is enabled. In this 
+way, it won't increase the icache and register pressure of the non-pv 
+code. However, this may make the source code a bit harder to read.
 
-> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
-> ---
->   drivers/staging/android/ion/ion.c |   31 ++++++++-----------------------
->   1 file changed, 8 insertions(+), 23 deletions(-)
->
-> diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-> index 290d4d2..ecc1121 100644
-> --- a/drivers/staging/android/ion/ion.c
-> +++ b/drivers/staging/android/ion/ion.c
-> @@ -1463,43 +1463,29 @@ static const struct file_operations debug_heap_fops = {
->   	.release = single_release,
->   };
->
-> -#ifdef DEBUG_HEAP_SHRINKER
+Please let me know your thought on this alternate approach.
 
-We're now unconditionally adding the shrinker debugfs. I'm not sure if
-this is something we want in production code. Could you turn this
-into a proper Kconfig?
+-Longman
 
->   static int debug_shrink_set(void *data, u64 val)
->   {
->   	struct ion_heap *heap = data;
-> -	struct shrink_control sc;
->   	int objs;
->
-> -	sc.gfp_mask = -1;
-> -	sc.nr_to_scan = 0;
-> -
-> -	if (!val)
-> -		return 0;
-> -
-> -	objs = heap->shrinker.shrink(&heap->shrinker, &sc);
-> -	sc.nr_to_scan = objs;
-> +	if (val)
-> +		objs = val;
-> +	else
-> +		objs = heap->ops->shrink(heap, __GFP_HIGHMEM, 0);
->
-> -	heap->shrinker.shrink(&heap->shrinker, &sc);
-> +	(void)heap->ops->shrink(heap, __GFP_HIGHMEM, objs);
 
-The shrinker API now has separate functions for counting and scanning
-and ion wraps the calls to those as well to account for the deferred
-freelist. I realize the existing behavior may have been broken but the
-debugfs seems incomplete if it's not taking that into account as well.
-
->   	return 0;
->   }
->
->   static int debug_shrink_get(void *data, u64 *val)
->   {
->   	struct ion_heap *heap = data;
-> -	struct shrink_control sc;
-> -	int objs;
-> -
-> -	sc.gfp_mask = -1;
-> -	sc.nr_to_scan = 0;
-> -
-> -	objs = heap->shrinker.shrink(&heap->shrinker, &sc);
-> -	*val = objs;
-> +	*val = heap->ops->shrink(heap, __GFP_HIGHMEM, 0);
->   	return 0;
->   }
->
->   DEFINE_SIMPLE_ATTRIBUTE(debug_shrink_fops, debug_shrink_get,
->   			debug_shrink_set, "%llu\n");
-> -#endif
->
->   void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
->   {
-> @@ -1534,8 +1520,7 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
->   			path, heap->name);
->   	}
->
-> -#ifdef DEBUG_HEAP_SHRINKER
-> -	if (heap->shrinker.shrink) {
-> +	if (heap->ops->shrink) {
-
-Technically a heap doesn't need to set ops->shrink to have a shrinker
-set up (not that it really matters for the current setup). Checking
-for scan_objects would be better.
-
->   		char debug_name[64];
->
->   		snprintf(debug_name, 64, "%s_shrink", heap->name);
-> @@ -1550,7 +1535,7 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
->   				path, debug_name);
->   		}
->   	}
-> -#endif
-> +
->   	up_write(&dev->lock);
->   }
->
->
-
-Thanks,
-Laura
-
--- 
-Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
