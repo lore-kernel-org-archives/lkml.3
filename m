@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847AbaJXFP4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 01:15:56 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:48343 "EHLO
+	id S1755263AbaJXFWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 01:22:08 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:50953 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524AbaJXFPy (ORCPT
+	with ESMTP id S1751482AbaJXFWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 01:15:54 -0400
+	Fri, 24 Oct 2014 01:22:04 -0400
 X-Original-SENDERIP: 10.177.222.235
 X-Original-MAILFROM: namhyung@gmail.com
 From: Namhyung Kim <namhyung@kernel.org>
@@ -17,13 +17,13 @@ Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/16] perf pmu: Let pmu's with no events show up on perf list
+Subject: Re: [PATCH 03/16] perf session: Add perf_session__deliver_synth_event()
 References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
-	<1414061124-26830-3-git-send-email-adrian.hunter@intel.com>
-Date: Fri, 24 Oct 2014 14:15:52 +0900
-In-Reply-To: <1414061124-26830-3-git-send-email-adrian.hunter@intel.com>
-	(Adrian Hunter's message of "Thu, 23 Oct 2014 13:45:10 +0300")
-Message-ID: <87y4s6cak7.fsf@sejong.aot.lge.com>
+	<1414061124-26830-4-git-send-email-adrian.hunter@intel.com>
+Date: Fri, 24 Oct 2014 14:22:03 +0900
+In-Reply-To: <1414061124-26830-4-git-send-email-adrian.hunter@intel.com>
+	(Adrian Hunter's message of "Thu, 23 Oct 2014 13:45:11 +0300")
+Message-ID: <87tx2uca9w.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -31,76 +31,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Oct 2014 13:45:10 +0300, Adrian Hunter wrote:
-> perf list only lists PMUs with events.  Add a
-> flag to cause a PMU to be also listed separately.
+On Thu, 23 Oct 2014 13:45:11 +0300, Adrian Hunter wrote:
+> Add a function to deliver synthesized events from
+> within a session.
 >
 > Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 > ---
->  tools/perf/util/pmu.c | 13 +++++++++++--
->  tools/perf/util/pmu.h |  1 +
->  2 files changed, 12 insertions(+), 2 deletions(-)
+>  tools/perf/util/session.c | 14 ++++++++++++++
+>  tools/perf/util/session.h |  5 +++++
+>  2 files changed, 19 insertions(+)
 >
-> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-> index e243ad9..91dca60 100644
-> --- a/tools/perf/util/pmu.c
-> +++ b/tools/perf/util/pmu.c
-> @@ -747,15 +747,18 @@ void print_pmu_events(const char *event_glob, bool name_only)
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index d70e37d..09635d1 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -907,6 +907,20 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+>  	}
+>  }
 >  
->  	pmu = NULL;
->  	len = 0;
-> -	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-> +	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
->  		list_for_each_entry(alias, &pmu->aliases, list)
->  			len++;
-> +		if (pmu->selectable)
-> +			len++;
-> +	}
->  	aliases = malloc(sizeof(char *) * len);
->  	if (!aliases)
->  		return;
->  	pmu = NULL;
->  	j = 0;
-> -	while ((pmu = perf_pmu__scan(pmu)) != NULL)
-> +	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
->  		list_for_each_entry(alias, &pmu->aliases, list) {
->  			char *name = format_alias(buf, sizeof(buf), pmu, alias);
->  			bool is_cpu = !strcmp(pmu->name, "cpu");
-> @@ -772,6 +775,12 @@ void print_pmu_events(const char *event_glob, bool name_only)
->  			aliases[j] = strdup(aliases[j]);
->  			j++;
->  		}
-> +		if (pmu->selectable) {
-> +			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
-> +			aliases[j] = strdup(buf);
+> +int perf_session__deliver_synth_event(struct perf_session *session,
+> +				      union perf_event *event,
+> +				      struct perf_sample *sample,
+> +				      struct perf_tool *tool)
+> +{
+> +	events_stats__inc(&session->stats, event->header.type);
+> +
+> +	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
+> +		return perf_session__process_user_event(session, event, tool,
+> +							0);
+> +
+> +	return perf_session__deliver_event(session, event, sample, tool, 0);
+> +}
 
-You need to check the return value here (and above too).
-
-
-> +			j++;
-> +		}
-> +	}
->  	len = j;
->  	qsort(aliases, len, sizeof(char *), cmp_string);
->  	for (j = 0; j < len; j++) {
-> diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-> index fe9dfbe..8092de7 100644
-> --- a/tools/perf/util/pmu.h
-> +++ b/tools/perf/util/pmu.h
-> @@ -18,6 +18,7 @@ struct perf_event_attr;
->  struct perf_pmu {
->  	char *name;
->  	__u32 type;
-> +	bool selectable;
-
-I think it's a bit confusing.  IIUC this 'selectable' means that this
-PMU doesn't contain any events but wants to be listed.  So the normal
-PMUs which contain events are not selectable, right?
+It seems that it's basically same as what perf_session__process_event()
+does.  So it might deserve a comment or better changelog why it's needed.
 
 Thanks,
 Namhyung
 
 
->  	struct perf_event_attr *default_config;
->  	struct cpu_map *cpus;
->  	struct list_head format;  /* HEAD struct perf_pmu_format -> list */
+> +
+>  static void event_swap(union perf_event *event, bool sample_id_all)
+>  {
+>  	perf_event__swap_op swap;
+> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+> index d8521ac..dc26ebf 100644
+> --- a/tools/perf/util/session.h
+> +++ b/tools/perf/util/session.h
+> @@ -127,6 +127,11 @@ extern volatile int session_done;
+>  
+>  #define session_done()	ACCESS_ONCE(session_done)
+>  
+> +int perf_session__deliver_synth_event(struct perf_session *session,
+> +				      union perf_event *event,
+> +				      struct perf_sample *sample,
+> +				      struct perf_tool *tool);
+> +
+>  int perf_event__process_id_index(struct perf_tool *tool,
+>  				 union perf_event *event,
+>  				 struct perf_session *session);
