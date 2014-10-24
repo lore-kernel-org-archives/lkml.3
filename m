@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663AbaJXPKx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:10:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48326 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaJXPKt (ORCPT
+	id S1756813AbaJXPLP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:11:15 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:38768 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756790AbaJXPLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:10:49 -0400
-Date: Fri, 24 Oct 2014 17:10:35 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH v9 10/12] x86, mpx: add prctl commands PR_MPX_ENABLE_MANAGEMENT,
- PR_MPX_DISABLE_MANAGEMENT
-In-Reply-To: <alpine.DEB.2.11.1410241436560.5308@nanos>
-Message-ID: <alpine.DEB.2.11.1410241710020.5308@nanos>
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-11-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241436560.5308@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 24 Oct 2014 11:11:12 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <544A6A6B.3040602@oracle.com>
+References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
+ <5444EBFA.5030103@samsung.com> <20141020124929.GA23177@thunk.org>
+ <54451501.2070700@samsung.com> <5445179A.4080804@redhat.com>
+ <20141020141635.GA4499@thunk.org> <20141024100108.GF12706@worktop.programming.kicks-ass.net>
+ <544A52D7.6000202@oracle.com> <20141024134205.GB21513@worktop.programming.kicks-ass.net>
+ <544A6A6B.3040602@oracle.com>
+From: Dmitry Vyukov <dvyukov@google.com>
+Date: Fri, 24 Oct 2014 19:10:49 +0400
+Message-ID: <CACT4Y+boMTKpTovCWYQa6baSAWjagCN=mwXBZGAjbobzG80oWA@mail.gmail.com>
+Subject: Re: drivers: random: Shift out-of-bounds in _mix_pool_bytes
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        "x86@kernel.org" <x86@kernel.org>, linux-kbuild@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014, Thomas Gleixner wrote:
-> On Sun, 12 Oct 2014, Qiaowei Ren wrote:
-> > +int mpx_enable_management(struct task_struct *tsk)
-> > +{
-> > +	struct mm_struct *mm = tsk->mm;
-> > +	void __user *bd_base = MPX_INVALID_BOUNDS_DIR;
-> 
-> What's the point of initializing bd_base here. I had to look twice to
-> figure out that it gets overwritten by task_get_bounds_dir()
-> 
-> > @@ -285,6 +285,7 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
-> >  	struct xsave_struct *xsave_buf;
-> >  	struct task_struct *tsk = current;
-> >  	siginfo_t info;
-> > +	int ret = 0;
-> >  
-> >  	prev_state = exception_enter();
-> >  	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
-> > @@ -312,8 +313,35 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
-> >  	 */
-> >  	switch (status & MPX_BNDSTA_ERROR_CODE) {
-> >  	case 2: /* Bound directory has invalid entry. */
-> > -		if (do_mpx_bt_fault(xsave_buf))
-> > +		down_write(&current->mm->mmap_sem);
-> 
-> The handling of mm->mmap_sem here is horrible. The only reason why you
-> want to hold mmap_sem write locked in the first place is that you want
-> to cover the allocation and the mm->bd_addr check.
-> 
-> I think it's wrong to tie this to mmap_sem in the first place. If MPX
-> is enabled then you should have mm->bd_addr and an explicit mutex to
-> protect it.
-> 
-> So the logic would look like this:
-> 
->    mutex_lock(&mm->bd_mutex);
->    if (!kernel_managed(mm))
->       do_trap();
->    else if (do_mpx_bt_fault())
->       force_sig();
->    mutex_unlock(&mm->bd_mutex);
->    
-> No tricks with mmap_sem, no special return value handling. Straight
-> forward code instead of a convoluted and error prone mess.
+On Fri, Oct 24, 2014 at 7:04 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> On 10/24/2014 09:42 AM, Peter Zijlstra wrote:
+>> On Fri, Oct 24, 2014 at 09:23:35AM -0400, Sasha Levin wrote:
+>>>
+>>> i >> 32 may happen to be "i", but is there anything that prevents the compiler
+>>> from returning, let's say, 42?
+>>
+>> Not really, although gcc seems to opt for the 'sane' option and emit the
+>> instruction and let the arch figure out how to deal with it. Hence the
+>> 'fun' difference between x86 and ARM.
+>
+> It's interesting how many different views on undefined behaviour there are between
+> kernel folks.
+>
+> Everything between Ted Ts'o saying that GCC can launch nethack on oversized shifts,
+> to DaveM saying he will file a GCC bug if the behaviour isn't sane w.r.t to memcpy().
 
-After thinking about the deallocation issue, this would be mm->bd_sem.
-
-Thanks,
-
-	tglx
+One of the benefits of fixing such issues (or not letting them into
+code in the first place) is just saving numerous hours of top-notch
+engineers spent on disputes like this.
