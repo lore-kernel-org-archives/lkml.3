@@ -1,157 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658AbaJXPJB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:09:01 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:13271 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756594AbaJXPI6 (ORCPT
+	id S1756695AbaJXPJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:09:05 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:40509 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664AbaJXPJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:08:58 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-5f-544a6b875fd7
-Message-id: <544A6B66.6060009@samsung.com>
-Date: Fri, 24 Oct 2014 18:08:22 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-security-module@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        jack@suse.cz, jmorris@namei.org, dmitry.kasatkin@gmail.com
-Subject: Re: [PATCH v2 1/2] ima: check xattr value length in
- ima_inode_setxattr()
-References: <cover.1414134113.git.d.kasatkin@samsung.com>
- <53afed717c1dc6b3588cca7c0a6b69650edc2ad2.1414134113.git.d.kasatkin@samsung.com>
- <1414160329.2120.30.camel@dhcp-9-2-203-236.watson.ibm.com>
- <544A699B.5080806@samsung.com>
-In-reply-to: <544A699B.5080806@samsung.com>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t/xq7rt2V4hBjcmCVl8WVpnMXt6M5PF
-	uvWLmSxezpjHbnF51xw2iw89j9gsPq2YxOzA7rFz1l12jweHNrN47F7wmcmj53uyx5kFR9g9
-	Pm+SC2CL4rJJSc3JLEst0rdL4Mr4dX4Jc8FT3Yo7rcvZGhhfq3YxcnJICJhITL24mBXCFpO4
-	cG89G4gtJLCUUeLjk5IuRi4gu5FJYu22x2wQzixGia73E8A6eAW0JM40zGcEsVkEVCWm/X3C
-	DGKzCehJbGj+wQ5iiwpESFxZM4cRol5Q4sfkeywgtoiApsSx1o+MIEOZBdYxSvzYPg+sWVgg
-	WKJx1Q9GiDNeMUrsPAY2iFNAW+LtzBdAcQ6gBnWJKVNyQcLMAvISm9e8ZYYoV5XoXruWDeIb
-	RYnTk88xT2AUnoVk9SyE7llIuhcwMq9iFE0tTS4oTkrPNdIrTswtLs1L10vOz93ECImZrzsY
-	lx6zOsQowMGoxMP7Y4tniBBrYllxZe4hRgkOZiUR3nNpXiFCvCmJlVWpRfnxRaU5qcWHGJk4
-	OKUaGDu7ugOX2K55H1tSZ1GR+LmqzOhuzvOdn7NvrJKI0hF1TVkiWG4ovnHm5uKrp2YH3C6V
-	3/Awb/0P4dTl/nvnWz0xar8b5p/TYem3vWN3gsDDCgGxo6Z1SwsPGHzaWmHrp3V+xrriqgtu
-	tp+X7Vzde7ro2qVPjrm/jJSEZwXqZQg1ez9XrV5WpsRSnJFoqMVcVJwIADBpVsJ3AgAA
+	Fri, 24 Oct 2014 11:09:01 -0400
+Message-ID: <544A6B84.2000508@mentor.com>
+Date: Fri, 24 Oct 2014 18:08:52 +0300
+From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Mikko Perttunen <mikko.perttunen@kapsi.fi>, <viresh.kumar@linaro.org>
+CC: <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>, <gnurou@gmail.com>,
+        <pdeschrijver@nvidia.com>, <rjw@rjwysocki.net>,
+        <mturquette@linaro.org>, <pwalmsley@nvidia.com>, <vinceh@nvidia.com>,
+        <pgaikwad@nvidia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <tuomas.tynkkynen@iki.fi>,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: Re: [PATCH v5 02/16] clk: tegra: Add library for the DFLL clock source
+ (open-loop mode)
+References: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi> <1414161563-16812-3-git-send-email-mikko.perttunen@kapsi.fi>
+In-Reply-To: <1414161563-16812-3-git-send-email-mikko.perttunen@kapsi.fi>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [137.202.0.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/10/14 18:00, Dmitry Kasatkin wrote:
-> On 24/10/14 17:18, Mimi Zohar wrote:
->> On Fri, 2014-10-24 at 10:07 +0300, Dmitry Kasatkin wrote: 
->>> ima_inode_setxattr() can be called with no value. Function does not
->>> check the length so that following command can be used to produce
->>> kernel oops: setfattr -n security.ima FOO. This patch fixes it.
->>>
->>> Changes in v2:
->>> * testing validity of xattr type
->>> * allow setting hash only in fix or log mode (Mimi)
->> I only mentioned "fix" mode, not "log" mode (explanation below).
->>
-> We need it in log mode as well (explanation bellow)
->>> [  261.562522] BUG: unable to handle kernel NULL pointer dereference at           (null)
->>> [  261.564109] IP: [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
->>> [  261.564109] PGD 3112f067 PUD 42965067 PMD 0
->>> [  261.564109] Oops: 0000 [#1] SMP
->>> [  261.564109] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
->>> [  261.564109] CPU: 0 PID: 3299 Comm: setxattr Not tainted 3.16.0-kds+ #2924
->>> [  261.564109] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
->>> [  261.564109] task: ffff8800428c2430 ti: ffff880042be0000 task.ti: ffff880042be0000
->>> [  261.564109] RIP: 0010:[<ffffffff812af272>]  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
->>> [  261.564109] RSP: 0018:ffff880042be3d50  EFLAGS: 00010246
->>> [  261.564109] RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000015
->>> [  261.564109] RDX: 0000001500000000 RSI: 0000000000000000 RDI: ffff8800375cc600
->>> [  261.564109] RBP: ffff880042be3d68 R08: 0000000000000000 R09: 00000000004d6256
->>> [  261.564109] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88002149ba00
->>> [  261.564109] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
->>> [  261.564109] FS:  00007f6c1e219740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
->>> [  261.564109] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->>> [  261.564109] CR2: 0000000000000000 CR3: 000000003b35a000 CR4: 00000000000006f0
->>> [  261.564109] Stack:
->>> [  261.564109]  ffff88002149ba00 ffff880042be3df8 0000000000000000 ffff880042be3d98
->>> [  261.564109]  ffffffff812a101b ffff88002149ba00 ffff880042be3df8 0000000000000000
->>> [  261.564109]  0000000000000000 ffff880042be3de0 ffffffff8116d08a ffff880042be3dc8
->>> [  261.564109] Call Trace:
->>> [  261.564109]  [<ffffffff812a101b>] security_inode_setxattr+0x48/0x6a
->>> [  261.564109]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
->>> [  261.564109]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
->>> [  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
->>> [  261.564109]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
->>> [  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
->>> [  261.564109]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
->>> [  261.564109]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
->>> [  261.564109]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
->>> [  261.564109] Code: 48 89 f7 48 c7 c6 58 36 81 81 53 31 db e8 73 27 04 00 85 c0 75 28 bf 15 00 00 00 e8 8a a5 d9 ff 84 c0 75 05 83 cb ff eb 15 31 f6 <41> 80 7d 00 03 49 8b 7c 24 68 40 0f 94 c6 e8 e1 f9 ff ff 89 d8
->>> [  261.564109] RIP  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
->>> [  261.564109]  RSP <ffff880042be3d50>
->>> [  261.564109] CR2: 0000000000000000
->>> [  261.599998] ---[ end trace 39a89a3fc267e652 ]---
->>>
->>> Reported-by: Jan Kara <jack@suse.cz>
->>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
->>> ---
->>>  security/integrity/ima/ima_appraise.c | 13 +++++++++++--
->>>  1 file changed, 11 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
->>> index 9226854..e302cbf 100644
->>> --- a/security/integrity/ima/ima_appraise.c
->>> +++ b/security/integrity/ima/ima_appraise.c
->>> @@ -378,8 +378,17 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
->>>  	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
->>>  				   xattr_value_len);
->>>  	if (result == 1) {
->>> -		ima_reset_appraise_flags(dentry->d_inode,
->>> -			 (xvalue->type == EVM_IMA_XATTR_DIGSIG) ? 1 : 0);
->>> +		bool digsig;
->>> +
->>> +		if (!xattr_value_len ||
->>> +		    (xvalue->type != IMA_XATTR_DIGEST &&
->>> +		     xvalue->type != IMA_XATTR_DIGEST_NG &&
->>> +		     xvalue->type != EVM_IMA_XATTR_DIGSIG))
->> "xvalue->type" is an enumerated type.  Testing each possible value seems
->> kind of a brittle method for vetting the value.  I suggest testing the
->> existing last value or, better yet, define a last value, so if someone
->> adds or changes the order, nothing breaks.
-> I was considering to define _LAST value, but we have EVM_XATTR_HMAC in
-> the middle...
-> In fact I was expecting to get some feedback about it, because in
-> reality it is just a sanity check.
-> It does not prevent DoS because it is possible to set correctly
-> formatted but wrong value and force DoS.
->
+Hello Mikko,
 
-Forgot to ask. If possibility to set HMAC type is fine with you I can
-define _LAST..
+On 24.10.2014 17:39, Mikko Perttunen wrote:
+> From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+> 
+> Add shared code to support the Tegra DFLL clocksource in open-loop
+> mode. This root clocksource is present on the Tegra124 SoCs. The
+> DFLL is the intended primary clock source for the fast CPU cluster.
+> 
+> This code is very closely based on a patch by Paul Walmsley from
+> December (http://comments.gmane.org/gmane.linux.ports.tegra/15273),
+> which in turn comes from the internal driver by originally created
+> by Aleksandr Frid <afrid@nvidia.com>.
+> 
+> Subsequent patches will add support for closed loop mode and drivers
+> for the Tegra124 fast CPU cluster DFLL devices, which rely on this
+> code.
+> 
+> Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+> Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+> ---
+> - Style fixes
+> - Removed incorrect and unused DFLL_I2C_CFG_SLAVE_ADDR_MASK define
+> - Documented that dfll_register_clk can return -ENOMEM
+> - Harmonized clock operation order
+> - Check !soc before allocating
+> - Comment fixes
+> 
+>  drivers/clk/tegra/Makefile   |    1 +
+>  drivers/clk/tegra/clk-dfll.c | 1090 ++++++++++++++++++++++++++++++++++++++++++
+>  drivers/clk/tegra/clk-dfll.h |   55 +++
+>  3 files changed, 1146 insertions(+)
+>  create mode 100644 drivers/clk/tegra/clk-dfll.c
+>  create mode 100644 drivers/clk/tegra/clk-dfll.h
+> 
+> diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
+> index f7dfb72..47320ca 100644
+> --- a/drivers/clk/tegra/Makefile
+> +++ b/drivers/clk/tegra/Makefile
+> @@ -1,5 +1,6 @@
+>  obj-y					+= clk.o
+>  obj-y					+= clk-audio-sync.o
+> +obj-y					+= clk-dfll.o
+>  obj-y					+= clk-divider.o
+>  obj-y					+= clk-periph.o
+>  obj-y					+= clk-periph-gate.o
+> diff --git a/drivers/clk/tegra/clk-dfll.c b/drivers/clk/tegra/clk-dfll.c
+> new file mode 100644
+> index 0000000..405fa9d
+> --- /dev/null
+> +++ b/drivers/clk/tegra/clk-dfll.c
 
-Thanks.
+[snip]
 
->>> +			return -EINVAL;
->>> +		digsig = (xvalue->type == EVM_IMA_XATTR_DIGSIG);
->>> +		if (!digsig && (ima_appraise & IMA_APPRAISE_ENFORCE))
->>> +			return -EPERM;
->> According to the new ima_appraise "log" mode, commit "2faa6ef ima:
->> provide 'ima_appraise=log' kernel option", "log" mode permits normal
->> execution without "fixing" anything.  Normal execution, here, prevents
->> writing the extended attribute.
-> 'log' mode is also special mode for system developing and debugging.
-> It is beneficial to be able to 'label' target object with correct value...
->
-> - Dmitry
->
->
->> Mimi
->>
->>> +		ima_reset_appraise_flags(dentry->d_inode, digsig);
->>>  		result = 0;
->>>  	}
->>>  	return result;
->>
+> +/*
+> + * Runtime PM suspend/resume callbacks
+> + */
+> +
+> +/**
+> + * tegra_dfll_runtime_resume - enable all clocks needed by the DFLL
+> + * @dev: DFLL device *
+> + *
+> + * Enable all clocks needed by the DFLL. Assumes that clk_prepare()
+> + * has already been called on all the clocks.
+> + *
+> + * XXX Should also handle context restore when returning from off.
+> + */
+> +int tegra_dfll_runtime_resume(struct device *dev)
+> +{
+> +	struct tegra_dfll *td = dev_get_drvdata(dev);
+> +	int ret;
+> +
+> +	ret = clk_enable(td->ref_clk);
+> +	if (ret) {
+> +		dev_err(dev, "could not enable ref clock: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	ret = clk_enable(td->soc_clk);
+> +	if (ret) {
 
+What is the correct behaviour on error? Should you fallback and try to
+enable td->i2c_clk clock or may be disable right enabled above td->ref_clk?
+
+> +		dev_err(dev, "could not enable register clock: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	ret = clk_enable(td->i2c_clk);
+> +	if (ret) {
+
+See the comment above.
+
+> +		dev_err(dev, "could not enable i2c clock: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(tegra_dfll_runtime_resume);
+> +
+> +/**
+> + * tegra_dfll_runtime_suspend - disable all clocks needed by the DFLL
+> + * @dev: DFLL device *
+> + *
+> + * Disable all clocks needed by the DFLL. Assumes that other code
+> + * will later call clk_unprepare().
+> + */
+> +int tegra_dfll_runtime_suspend(struct device *dev)
+> +{
+> +	struct tegra_dfll *td = dev_get_drvdata(dev);
+> +
+> +	clk_disable(td->ref_clk);
+> +	clk_disable(td->soc_clk);
+> +	clk_disable(td->i2c_clk);
+
+Relevant to the comment above.
+
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(tegra_dfll_runtime_suspend);
+> +
+
+[snip]
+
+> +/**
+> + * dfll_register_clk - register the DFLL output clock with the clock framework
+> + * @td: DFLL instance
+> + *
+> + * Register the DFLL's output clock with the Linux clock framework and register
+> + * the DFLL driver as an OF clock provider. Returns 0 upon success or -EINVAL
+> + * or -ENOMEM upon failure.
+> + */
+> +static int dfll_register_clk(struct tegra_dfll *td)
+> +{
+> +	int ret;
+> +
+> +	dfll_clk_init_data.name = td->output_clock_name;
+> +	td->dfll_clk_hw.init = &dfll_clk_init_data;
+> +
+> +	td->dfll_clk = clk_register(td->dev, &td->dfll_clk_hw);
+> +	if (IS_ERR(td->dfll_clk)) {
+> +		dev_err(td->dev, "DFLL clock registration error\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = of_clk_add_provider(td->dev->of_node, of_clk_src_simple_get,
+> +				  td->dfll_clk);
+> +	if (ret) {
+> +		dev_err(td->dev, "of_clk_add_provider() failed\n");
+> +		goto out_unregister_clk;
+> +	}
+> +
+> +	return 0;
+> +
+> +out_unregister_clk:
+> +	clk_unregister(td->dfll_clk);
+
+---8<---
+	if (ret) {
+		dev_err(td->dev, "of_clk_add_provider() failed\n");
+		clk_unregister(td->dfll_clk);
+	}
+---8<---
+
+version is 5 lines and one label less.
+
+> +	return ret;
+> +}
+> +
+
+[snip]
+
+> +/**
+> + * read_dt_param - helper function for reading required parameters from the DT
+> + * @td: DFLL instance
+> + * @param: DT property name
+> + * @dest: output pointer for the value read
+> + *
+> + * Read a required numeric parameter from the DFLL device node, or complain
+> + * if the property doesn't exist. Returns a boolean indicating success for
+> + * easy chaining of multiple calls to this function.
+> + */
+> +static bool read_dt_param(struct tegra_dfll *td, const char *param, u32 *dest)
+> +{
+> +	int err = of_property_read_u32(td->dev->of_node, param, dest);
+> +
+> +	if (err < 0) {
+> +		dev_err(td->dev, "failed to read DT parameter %s: %d\n",
+> +			param, err);
+> +		return false;
+> +	}
+> +
+> +	return true;
+> +}
+
+^^^^ Relatively useless wrapper function used only once. You are anyway
+going to check the return value again...
+
+> +
+> +/**
+> + * dfll_fetch_common_params - read DFLL parameters from the device tree
+> + * @td: DFLL instance
+> + *
+> + * Read all the DT parameters that are common to both I2C and PWM operation.
+> + * Returns 0 on success or -EINVAL on any failure.
+> + */
+> +static int dfll_fetch_common_params(struct tegra_dfll *td)
+> +{
+> +	bool ok = true;
+> +
+> +	ok &= read_dt_param(td, "nvidia,droop-ctrl", &td->droop_ctrl);
+
+See the comment above.
+
+> +	if (of_property_read_string(td->dev->of_node, "clock-output-names",
+> +				    &td->output_clock_name)) {
+> +		dev_err(td->dev, "missing clock-output-names property\n");
+> +		ok = false;
+> +	}
+> +
+> +	return ok ? 0 : -EINVAL;
+> +}
+
+
+--
+With best wishes,
+Vladimir
