@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085AbaJXWfu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 18:35:50 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:40950 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933026AbaJXWft (ORCPT
+	id S933157AbaJXWgW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 18:36:22 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:39564 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932393AbaJXWgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 18:35:49 -0400
-Date: Fri, 24 Oct 2014 17:33:41 -0500
+	Fri, 24 Oct 2014 18:36:21 -0400
+Date: Fri, 24 Oct 2014 17:34:13 -0500
 From: Eric Rost <eric.rost@mybabylon.net>
 To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
         antonysaraev@gmail.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 4/7] staging: skein: Adds Loadable Module Support
-Message-ID: <929291496f96b0da2a04f16ff45a95816f249b28.1414189566.git.eric.rost@mybabylon.net>
+Subject: [PATCH v6 5/7] staging: skein: Inlines rotl_64
+Message-ID: <047b1b62dacb2e166b687ca0903a822117b9a1c6.1414189566.git.eric.rost@mybabylon.net>
 References: <cover.1414189566.git.eric.rost@mybabylon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,102 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds loadable module support to the Skein Hashing Algorithm driver.
+Inlines the rotl_64 macro.
 
 Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
 ---
- drivers/staging/skein/Kconfig         |  2 +-
- drivers/staging/skein/Makefile        | 13 +++++++------
- drivers/staging/skein/skein_generic.c | 19 ++++++++++++++++++-
- 3 files changed, 26 insertions(+), 8 deletions(-)
+ drivers/staging/skein/skein_base.h | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/skein/Kconfig b/drivers/staging/skein/Kconfig
-index de8bdd7..012a823 100644
---- a/drivers/staging/skein/Kconfig
-+++ b/drivers/staging/skein/Kconfig
-@@ -1,5 +1,5 @@
- config CRYPTO_SKEIN
--	bool "Skein digest algorithm"
-+	tristate "Skein digest algorithm"
- 	depends on (X86 || UML_X86) && 64BIT && CRYPTO
- 	select CRYPTO_HASH
- 	select CRYPTO_ALGAPI
-diff --git a/drivers/staging/skein/Makefile b/drivers/staging/skein/Makefile
-index d8177cc..b7f947f 100644
---- a/drivers/staging/skein/Makefile
-+++ b/drivers/staging/skein/Makefile
-@@ -1,9 +1,10 @@
- #
- # Makefile for the skein secure hash algorithm
- #
--obj-$(CONFIG_CRYPTO_SKEIN) += skein_base.o \
--			      skein_api.o \
--			      skein_block.o \
--			      threefish_block.o \
--			      threefish_api.o \
--			      skein_generic.o
-+obj-$(CONFIG_CRYPTO_SKEIN) += skein.o
-+skein-y := skein_base.o \
-+	   skein_api.o \
-+	   skein_block.o \
-+	   threefish_block.o \
-+	   threefish_api.o \
-+	   skein_generic.o
-diff --git a/drivers/staging/skein/skein_generic.c b/drivers/staging/skein/skein_generic.c
-index f2d6dfb..60d16b6 100644
---- a/drivers/staging/skein/skein_generic.c
-+++ b/drivers/staging/skein/skein_generic.c
-@@ -16,6 +16,7 @@
-  */
- #include <linux/types.h>
- #include <linux/init.h>
-+#include <linux/module.h>
- #include <crypto/internal/hash.h>
- #include "skein_base.h"
+diff --git a/drivers/staging/skein/skein_base.h b/drivers/staging/skein/skein_base.h
+index 9f10af9..0111fa4 100644
+--- a/drivers/staging/skein/skein_base.h
++++ b/drivers/staging/skein/skein_base.h
+@@ -33,10 +33,6 @@
+ #define SKEIN512_DIGEST_BIT_SIZE 512
+ #define SKEIN1024_DIGEST_BIT_SIZE 1024
  
-@@ -139,6 +140,7 @@ static struct shash_alg alg256 = {
- 		.cra_driver_name	=	"skein",
- 		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
- 		.cra_blocksize		=	SKEIN_256_BLOCK_BYTES,
-+		.cra_module		=	THIS_MODULE,
- 	}
+-#ifndef rotl_64
+-#define rotl_64(x, N)    (((x) << (N)) | ((x) >> (64-(N))))
+-#endif
+-
+ /* below two prototype assume we are handed aligned data */
+ #define skein_put64_lsb_first(dst08, src64, b_cnt) memcpy(dst08, src64, b_cnt)
+ #define skein_get64_lsb_first(dst64, src08, w_cnt) \
+@@ -49,12 +45,12 @@ enum {
+ 	SKEIN_BAD_HASHLEN     =      2
  };
  
-@@ -156,6 +158,7 @@ static struct shash_alg alg512 = {
- 		.cra_driver_name	=	"skein",
- 		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
- 		.cra_blocksize		=	SKEIN_512_BLOCK_BYTES,
-+		.cra_module		=	THIS_MODULE,
- 	}
+-#define  SKEIN_MODIFIER_WORDS   (2) /* number of modifier (tweak) words */
++#define  SKEIN_MODIFIER_WORDS   2 /* number of modifier (tweak) words */
+ 
+-#define  SKEIN_256_STATE_WORDS  (4)
+-#define  SKEIN_512_STATE_WORDS  (8)
+-#define  SKEIN_1024_STATE_WORDS (16)
+-#define  SKEIN_MAX_STATE_WORDS (16)
++#define  SKEIN_256_STATE_WORDS  4
++#define  SKEIN_512_STATE_WORDS  8
++#define  SKEIN_1024_STATE_WORDS 16
++#define  SKEIN_MAX_STATE_WORDS	16
+ 
+ #define  SKEIN_256_STATE_BYTES  (8*SKEIN_256_STATE_WORDS)
+ #define  SKEIN_512_STATE_BYTES  (8*SKEIN_512_STATE_WORDS)
+@@ -92,6 +88,11 @@ struct skein_1024_ctx { /* 1024-bit Skein hash context structure */
+ 	u8 b[SKEIN_1024_BLOCK_BYTES];	/* partial block buf (8-byte aligned) */
  };
  
-@@ -173,6 +176,7 @@ static struct shash_alg alg1024 = {
- 		.cra_driver_name	=	"skein",
- 		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
- 		.cra_blocksize		=	SKEIN_1024_BLOCK_BYTES,
-+		.cra_module		=	THIS_MODULE,
- 	}
- };
- 
-@@ -196,4 +200,17 @@ out:
- 	return -1;
- }
- 
--device_initcall(skein_generic_init);
-+static void __exit skein_generic_fini(void)
++static inline int rotl_64(int x, int N)
 +{
-+	crypto_unregister_shash(&alg256);
-+	crypto_unregister_shash(&alg512);
-+	crypto_unregister_shash(&alg1024);
++	return (x << N) | (x >> (64 - N));
 +}
 +
-+module_init(skein_generic_init);
-+module_exit(skein_generic_fini);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Skein Hash Algorithm");
-+
-+MODULE_ALIAS("skein");
+ /* Skein APIs for (incremental) "straight hashing" */
+ int skein_256_init(struct skein_256_ctx *ctx, size_t hash_bit_len);
+ int skein_512_init(struct skein_512_ctx *ctx, size_t hash_bit_len);
 -- 
 2.1.1
 
