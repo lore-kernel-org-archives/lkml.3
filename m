@@ -1,86 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954AbaJXCdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 22:33:37 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:44586 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585AbaJXCdf (ORCPT
+	id S1755101AbaJXCfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 22:35:00 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:44273 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287AbaJXCe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 22:33:35 -0400
+	Thu, 23 Oct 2014 22:34:58 -0400
+Date: Fri, 24 Oct 2014 11:34:55 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>, linux-sh@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] clocksource: sh_tmu: Document R-Mobile r8a7740
+ binding
+Message-ID: <20141024023451.GE7537@verge.net.au>
+References: <1413970709-26607-1-git-send-email-geert+renesas@glider.be>
+ <1413970709-26607-2-git-send-email-geert+renesas@glider.be>
+ <6890235.hnMLlLN6KA@avalon>
 MIME-Version: 1.0
-In-Reply-To: <20141023074739.GH13512@nuc-i3427.alporthouse.com>
-References: <1413991731-20628-1-git-send-email-robert@sixbynine.org>
- <1413991731-20628-4-git-send-email-robert@sixbynine.org> <20141023074739.GH13512@nuc-i3427.alporthouse.com>
-From: Robert Bragg <robert@sixbynine.org>
-Date: Fri, 24 Oct 2014 03:33:14 +0100
-X-Google-Sender-Auth: I8RaR_En1VzQ7rFOezKUAXV0I0A
-Message-ID: <CAMou1-3n5pC4C_7x_5oxz0WG3sOifKvG-wCER_5g6VeniEJ=6A@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/3] i915: Expose PMU for Observation Architecture
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Rob Clark <robdclark@gmail.com>,
-        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6890235.hnMLlLN6KA@avalon>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 8:47 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Wed, Oct 22, 2014 at 04:28:51PM +0100, Robert Bragg wrote:
->> +     /* XXX: Not sure that this is really acceptable...
->> +      *
->> +      * i915_gem_context.c currently owns pinning/unpinning legacy
->> +      * context buffers and although that code has a
->> +      * get_context_alignment() func to handle a different
->> +      * constraint for gen6 we are assuming it's fixed for gen7
->> +      * here. Another option besides pinning here would be to
->> +      * instead hook into context switching and update the
->> +      * OACONTROL configuration on the fly.
->> +      */
->> +     if (dev_priv->oa_pmu.specific_ctx) {
->> +             struct intel_context *ctx = dev_priv->oa_pmu.specific_ctx;
->> +             int ret;
->> +
->> +             ret = i915_gem_obj_ggtt_pin(ctx->legacy_hw_ctx.rcs_state,
->> +                                         4096, 0);
->
-> Right if you pin it here with a different alignment, when we try to  pin
-> it with the required hw ctx alignment it will fail. Easiest way is to
-> record the ctx->legacy_hw_ctx.alignment and reuse that here.
+On Wed, Oct 22, 2014 at 05:59:25PM +0300, Laurent Pinchart wrote:
+> Hi Geert,
+> 
+> Thank you for the patch.
+> 
+> On Wednesday 22 October 2014 11:38:27 Geert Uytterhoeven wrote:
+> > Compared to the r8a7779, the r8a7740 lacks the input capture register,
+> > which is not used by the driver (the current driver already handles the
+> > r8a7740 in the non-DT case).
+> > 
+> > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> 
+> Acked-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 
-Ok I can look into that a bit more. I'm not currently sure I can assume the
-ctx will have been pinned before, to be able to record the alignment.
-Skimming i915_gem_context.c, it looks like we only pin the default context
-on creation and a user could open a perf even before we first switch to that
-context.
+Acked-by: Simon Horman <horms+renesas@verge.net.au>
 
-I wonder if it would be ok to expose an i915_get_context_alignment() api to
-deal with this?
-
->
->> +             if (ret) {
->> +                     DRM_DEBUG_DRIVER("Couldn't pin %d\n", ret);
->> +                     ret = -EBUSY;
->
-> As an exercise, think of all the possible error values from pin() and
-> tell me why overriding that here is a bad, bad idea.
-
-Hmm, I'm not quite sure why I decided to squash the error code there, it
-looks pretty arbitrary. My take on your comment a.t.m is essentially that
-some of the pin() errors don't really represent a busy state where it would
-make sense for userspace to try again later; such as -ENODEV. Sorry if you
-saw a very specific case that offended you :-) I have removed the override
-locally.
-
-Thanks for taking a look.
-
-- Robert
-
-> -Chris
->
+> 
+> > ---
+> >  Documentation/devicetree/bindings/timer/renesas,tmu.txt | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/timer/renesas,tmu.txt
+> > b/Documentation/devicetree/bindings/timer/renesas,tmu.txt index
+> > 7db89fb2544411b5..4ae7910af09ffcb4 100644
+> > --- a/Documentation/devicetree/bindings/timer/renesas,tmu.txt
+> > +++ b/Documentation/devicetree/bindings/timer/renesas,tmu.txt
+> > @@ -1,4 +1,4 @@
+> > -* Renesas R-Car Timer Unit (TMU)
+> > +* Renesas R-Mobile/R-Car Timer Unit (TMU)
+> > 
+> >  The TMU is a 32-bit timer/counter with configurable clock inputs and
+> >  programmable compare match.
+> > @@ -9,6 +9,7 @@ are independent. The TMU hardware supports up to three
+> > channels. Required Properties:
+> > 
+> >    - compatible: must contain one or more of the following:
+> > +    - "renesas,tmu-r8a7740" for the r8a7740 TMU
+> >      - "renesas,tmu-r8a7779" for the r8a7779 TMU
+> >      - "renesas,tmu" for any TMU.
+> >        This is a fallback for the above renesas,tmu-* entries
+> 
+> -- 
+> Regards,
+> 
+> Laurent Pinchart
+> 
 > --
-> Chris Wilson, Intel Open Source Technology Centre
+> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
