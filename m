@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119AbaJXKwI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:52:08 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50485 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404AbaJXKwF (ORCPT
+	id S1756152AbaJXKxM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:53:12 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:60103 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878AbaJXKxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:52:05 -0400
-Date: Fri, 24 Oct 2014 12:52:00 +0200
-From: Pavel Machek <pavel@denx.de>
-To: atull@opensource.altera.com
-Cc: gregkh@linuxfoundation.org, jgunthorpe@obsidianresearch.com, hpa@zytor.com,
-        monstr@monstr.eu, michal.simek@xilinx.com, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
-        grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
-        rubini@gnudd.com, s.trumtrar@pengutronix.de, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v2 2/3] fpga manager: framework core
-Message-ID: <20141024105200.GA20775@amd>
-References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>
- <1414007405-32186-3-git-send-email-atull@opensource.altera.com>
+	Fri, 24 Oct 2014 06:53:11 -0400
+Date: Fri, 24 Oct 2014 12:53:06 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: vikas <vikas.shivappa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "matt.fleming" <matt.fleming@intel.com>,
+        "will.auld" <will.auld@intel.com>, tj@kernel.org,
+        "vikas.shivappa" <vikas.shivappa@intel.com>
+Subject: Re: Cache Allocation Technology Design
+Message-ID: <20141024105306.GI12706@worktop.programming.kicks-ass.net>
+References: <1413485050.28564.14.camel@vshiva-Udesk>
+ <20141020161855.GF12020@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414007405-32186-3-git-send-email-atull@opensource.altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141020161855.GF12020@console-pimps.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Oct 20, 2014 at 05:18:55PM +0100, Matt Fleming wrote:
+> > What is Cache Allocation Technology ( CAT )
+> > -------------------------------------------
 
-> * /sys/class/fpga_manager/<fpga>/firmware
->   Name of FPGA image file to load using firmware class.
->   $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
+Its a horrible name is what it is, please consider using the old name,
+that at least was clear in purpose.
 
-I .. still don't think this is good idea. What about namespaces?
-The path corresponds to path in which namespace?
+> > Kernel implementation Overview
+> > -------------------------------
+> > 
+> > Kernel implements a cgroup subsystem to support Cache Allocation.
+> > 
+> > Creating a CAT cgroup would create a new CLOS <-> CBM mapping. Each
+> > cgroup would have one CBM and would just represent one cache 'subset'.
+> > 
+> > The user would be allowed to create as many directories as there are
+> > CLOSs defined by the h/w. If user tries to create more than the
+> > available CLOSs , -ENOSPC is returned. Currently we support only one
+> > level of directory, ie directory can be created only under the root. 
 
-> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
-> +{
-> +	int ret;
-> +
-> +	if (test_and_set_bit_lock(FPGA_MGR_BUSY, &mgr->flags))
-> +		return -EBUSY;
-> +
-> +	dev_info(mgr->dev, "writing buffer to %s\n", mgr->name);
-> +
-> +	ret = __fpga_mgr_write(mgr, buf, count);
-> +	clear_bit_unlock(FPGA_MGR_BUSY, &mgr->flags);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_write);
+NAK, cgroups must support full hierarchies, simply enforce that the
+child cgroup's mask is a subset of the parent's.
 
-Is the EBUSY -- userspace please try again, but you don't know when to
-try again -- right interface? I mean, normally kernel would wait, so
-that userland does not have to poll?
+> > There are 2 modes supported 
+> > 
+> > 1. Affinitized mode : Each CAT cgroup is affinitized to a set of CPUs
+> > specified by the 'cpus' file. The tasks in the CAT cgroup would be
+> > constrained only on the CPUs in the 'cpus' file. The CPUs in this file 
+> > are exclusively used for this cgroup. Requests by task
+> > using the sched_setaffinity() would be filtered through the tasks
+> > 'cpus'.
 
-> +static ssize_t fpga_mgr_firmware_store(struct device *dev,
-> +				       struct device_attribute *attr,
-> +				       const char *buf, size_t count)
-> +{
-> +	struct fpga_manager *mgr = dev_get_drvdata(dev);
-> +	unsigned int len;
-> +	char image_name[NAME_MAX];
-> +	int ret;
-> +
-> +	/* lose terminating \n */
-> +	strcpy(image_name, buf);
-> +	len = strlen(image_name);
-> +	if (image_name[len - 1] == '\n')
-> +		image_name[len - 1] = 0;
-> +
-> +	ret = fpga_mgr_firmware_write(mgr, image_name);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return count;
-> +}
+NAK, we will not have yet another cgroup mucking about with task
+affinities.
 
-This shows why the interface is not right... Valid filename may
-contain \n, right? It may even end with \n.
+> > These tasks would get to fill the LLC cache represented by the
+> > cgroup's 'cbm' file.  'cpus'  is a cpumask and works the same way as
+> > the existing cpumask datastructure.
+> > 
+> > 2. Non Affinitized mode : Each CAT cgroup(inturn 'subset') would be
+> > for a group of tasks. There is no 'cpus' file and the CPUs that the
+> > tasks run are not restricted by the CAT cgroup 
 
-Best regards,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+It appears to me this 'mode' thing is entirely superfluous and can be
+constructed by voluntary operation of this and cpusets or manual
+affinity calls.
+
+> > Assignment of CBM,CLOS and modes
+> > ---------------------------------
+> > 
+> > Root directory would have all bits in 'cbm' file by default.
+> > 
+> > The cbm_max file in the root defines the maximum number of bits
+> > describing the available cache units. Say if cbm_max is 16 then the
+> > 'cbm' cannot have more than 16 bits.
+
+This seems redundant, if you've already stated that the root cbm is the
+full set, there is no need to further provide this.
+
+> > The 'cbm' file is restricted to having no more than its cbm_max least
+> > significant bits set. Any contiguous subset of these bits maybe set to
+> > indication the cache mapping desired.  The 'cbm' between 2 directories
+> > can overlap. The 'cbm' would represent the cache 'subset' of the CAT
+> > cgroup. 
+
+This would follow from the hierarchy requirement/conditions.
+
+> > Scheduling and Context Switch
+> > ------------------------------
+
+> > In non-affinitized mode the 'affinitized' is 0 , and the 'tasks' file
+> > indicate the tasks the cache subset is affinitized to.  When user adds
+> > tasks to the tasks file , the tasks would get to fill the cache subset
+> > represented by the CAT cgroup's 'cbm' file.  
+> > 
+> > During context switch kernel implements this by writing the
+> > corresponding CLOSid (internally maintained by kernel) of the CAT
+> > cgroup to the CPU's IA32_PQR_ASSOC MSR. 
+
+Right.
