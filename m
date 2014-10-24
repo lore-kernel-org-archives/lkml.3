@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374AbaJXRI5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:08:57 -0400
-Received: from resqmta-po-01v.sys.comcast.net ([96.114.154.160]:33622 "EHLO
-	resqmta-po-01v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756211AbaJXRIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:08:55 -0400
-Date: Fri, 24 Oct 2014 12:08:50 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Davidlohr Bueso <dave@stgolabs.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [RFC][PATCH 4/6] SRCU free VMAs
-In-Reply-To: <20141024155101.GE21513@worktop.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.11.1410241206001.30305@gentwo.org>
-References: <20141020215633.717315139@infradead.org> <20141020222841.419869904@infradead.org> <CA+55aFwd04q+O5ejbmDL-H7_GB6DEBMiiHkn+2R1u4uWxfDO9w@mail.gmail.com> <20141021080740.GJ23531@worktop.programming.kicks-ass.net> <alpine.DEB.2.11.1410241003430.29419@gentwo.org>
- <20141024155101.GE21513@worktop.programming.kicks-ass.net>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932925AbaJXRJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:09:34 -0400
+Received: from mail.declera.com ([87.118.141.5]:34758 "HELO mail.declera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932421AbaJXRJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 13:09:33 -0400
+Date: Fri, 24 Oct 2014 20:09:31 +0300
+From: Yanko Kaneti <yaneti@declera.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        jay.vosburgh@canonical.com, mroos@linux.ee
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141024170931.GA21849@declera.com>
+References: <20141023122750.GP4977@linux.vnet.ibm.com>
+ <20141023153333.GA19278@linux.vnet.ibm.com>
+ <20141023195159.GA2331@declera.com>
+ <20141023200507.GC4977@linux.vnet.ibm.com>
+ <1414100740.2065.2.camel@declera.com>
+ <20141023220406.GJ4977@linux.vnet.ibm.com>
+ <20141024090857.GA4083@declera.com>
+ <20141024154006.GP4977@linux.vnet.ibm.com>
+ <20141024162943.GA16621@declera.com>
+ <20141024165454.GS4977@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141024165454.GS4977@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014, Peter Zijlstra wrote:
+On Fri-10/24/14-2014 09:54, Paul E. McKenney wrote:
+> On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
+> > On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
+> > > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
+> > > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
+> > > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
+> > > > > > 
+> > > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
+> > > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
+> 
+> [ . . . ]
+> 
+> > > > Ok, unless I've messsed up something major, bisecting points to:
+> > > > 
+> > > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
+> > > > 
+> > > > Makes any sense ?
+> > > 
+> > > Good question.  ;-)
+> > > 
+> > > Are any of your online CPUs missing rcuo kthreads?  There should be
+> > > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
+> > 
+> > Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
+> > and the modprobe ppp_generic testcase reliably works, libvirt also manages
+> > to setup its bridge.
+> > 
+> > Just with linux-tip , the rcuos are 6 but the failure is as reliable as
+> > before.
 
-> The hold time isn't relevant, in fact breaking up the mmap_sem such that
-> we require multiple acquisitions will just increase the cacheline
-> bouncing.
+ 
+> Thank you, very interesting.  Which 6 of the rcuos are present?
 
-Well this wont be happening anymore once you RCUify the stuff. If you go
-to sleep then its best to release mmap_sem and then the bouncing wont
-matter.
+Well, the rcuos are 0 to 5. Which sounds right for a 6 core CPU like this   
+Phenom II.
 
-Dropping mmap_sem there will also expose you to races you will see later
-too when you RCUify the code paths. That way those can be deal with
-beforehand.
+ 
+> > Awating instructions: :)
+> 
+> Well, I thought I understood the problem until you found that only 6 of
+> the expected 8 rcuos are present with linux-tip without the revert.  ;-)
+> 
+> I am putting together a patch for the part of the problem that I think
+> I understand, of course, but it would help a lot to know which two of
+> the rcuos are missing.  ;-)
+>
 
-> Also I think it makes more sense to continue an entire fault operation,
-> including blocking, if at all possible. Every retry will just waste more
-> time.
+Ready to test
 
-Ok then dont retry. Just drop mmap_sem before going to sleep. When you
-come back evaluate the situation and if we can proceed do so otherwise
-retry.
+--Yanko
