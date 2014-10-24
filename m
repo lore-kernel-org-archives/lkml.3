@@ -1,325 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530AbaJXMqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 08:46:44 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:59819 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225AbaJXMqn (ORCPT
+	id S1756557AbaJXMuG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 08:50:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47647 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756398AbaJXMuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 08:46:43 -0400
-Date: Fri, 24 Oct 2014 09:46:01 -0300
-From: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
-To: Alexis Berlemont <alexis.berlemont@gmail.com>
-Cc: linux-kernel@vger.kernel.org, jolsa@redhat.com, dsahern@gmail.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, paulus@samba.org,
-        namhyung@kernel.org, mmarek@suse.cz
-Subject: Re: [PATCH v3 00/14] Kbuild for perf
-Message-ID: <20141024124601.GX14687@kernel.org>
-References: <1414101372-14443-1-git-send-email-alexis.berlemont@gmail.com>
- <1414103302-14906-1-git-send-email-alexis.berlemont@gmail.com>
- <20141023234800.GT14687@kernel.org>
- <20141024123954.GA15654@marx-slim>
+	Fri, 24 Oct 2014 08:50:05 -0400
+Date: Fri, 24 Oct 2014 14:49:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH v9 10/12] x86, mpx: add prctl commands PR_MPX_ENABLE_MANAGEMENT,
+ PR_MPX_DISABLE_MANAGEMENT
+In-Reply-To: <1413088915-13428-11-git-send-email-qiaowei.ren@intel.com>
+Message-ID: <alpine.DEB.2.11.1410241436560.5308@nanos>
+References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-11-git-send-email-qiaowei.ren@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141024123954.GA15654@marx-slim>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 24, 2014 at 02:39:54PM +0200, Alexis Berlemont escreveu:
-> Arnaldo Carvalho de Melo wrote:
-> > Em Fri, Oct 24, 2014 at 12:28:08AM +0200, Alexis Berlemont escreveu:
-> > > Hello,
-> > > 
-> > > Here is a proposal of perf's build process managed by Kbuild:
-> > > * The file Makefile.perf is replaced by Makefile.kbuild
-> > > * Makefile.kbuild generates a default .config file if none exists
-> > >   (allyesconfig)
-> > > * Makefile.kbuild adapts the .config file according to the
-> > >   features-check tests results
-> > > * Makefile.kbuild builds external dependencies (linux/tools/lib/*)
-> > > * Makefile.kbuild leaves the rest to Kbuild 
-> > > 
-> > > Regards,
-> > 
-> > Thanks for working on this!
-> > 
-> > What was the branch this was made against?
-> >  
-> 
-> I used Linus Torvalds' master branch:
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> 
-> Do you want me to use another branch ? 
+On Sun, 12 Oct 2014, Qiaowei Ren wrote:
+> +int mpx_enable_management(struct task_struct *tsk)
+> +{
+> +	struct mm_struct *mm = tsk->mm;
+> +	void __user *bd_base = MPX_INVALID_BOUNDS_DIR;
 
-Yes, please:
+What's the point of initializing bd_base here. I had to look twice to
+figure out that it gets overwritten by task_get_bounds_dir()
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
+> @@ -285,6 +285,7 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
+>  	struct xsave_struct *xsave_buf;
+>  	struct task_struct *tsk = current;
+>  	siginfo_t info;
+> +	int ret = 0;
+>  
+>  	prev_state = exception_enter();
+>  	if (notify_die(DIE_TRAP, "bounds", regs, error_code,
+> @@ -312,8 +313,35 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long error_code)
+>  	 */
+>  	switch (status & MPX_BNDSTA_ERROR_CODE) {
+>  	case 2: /* Bound directory has invalid entry. */
+> -		if (do_mpx_bt_fault(xsave_buf))
+> +		down_write(&current->mm->mmap_sem);
 
-This is where the latest perf tooling development takes place, and it is
-where I am going to (try to) apply your patches.
+The handling of mm->mmap_sem here is horrible. The only reason why you
+want to hold mmap_sem write locked in the first place is that you want
+to cover the allocation and the mm->bd_addr check.
 
-- Arnaldo
- 
-> Alexis.
-> 
-> > > Alexis.
-> > > 
-> > > Alexis Berlemont (11):
-> > >   kbuild: add support of custom paths for "auto.conf*" files
-> > >   perf kbuild: remove Makefile.perf
-> > >   perf kbuild: remove legacy tui/gui-related build variables
-> > >   perf kbuild: remove legacy demangle-related build variables
-> > >   perf kbuild: cross-compilation variables are now handled in Kconfig
-> > >   perf kbuild: remove legacy misc build variables
-> > >   perf kbuild: remove legacy libelf-related build variables
-> > >   perf kbuild: remove legacy libdwarf-related build variables
-> > >   perf kbuild: remove legacy script-related build variables
-> > >   perf kbuild: final cosmetic changes
-> > >   perf kbuild: add generated Kconfig build-test cases
-> > > 
-> > > Jiri Olsa (3):
-> > >   perf tools: Kbuild builtin source related fixies
-> > >   perf tools: Kbuild source related fixies
-> > >   perf tools: Add kbuild support into Makefile.kbuild
-> > > 
-> > >  scripts/Makefile.build                             |   3 +-
-> > >  scripts/kconfig/confdata.c                         |  23 +-
-> > >  scripts/kconfig/lkc.h                              |   1 +
-> > >  tools/perf/Kbuild                                  |  47 +
-> > >  tools/perf/Kconfig                                 | 436 ++++++++++
-> > >  tools/perf/MANIFEST                                |   1 +
-> > >  tools/perf/Makefile                                |   2 +-
-> > >  tools/perf/Makefile.kbuild                         | 443 ++++++++++
-> > >  tools/perf/Makefile.perf                           | 949 ---------------------
-> > >  tools/perf/arch/Kbuild                             |   3 +
-> > >  tools/perf/arch/arm/Kbuild                         |   2 +
-> > >  tools/perf/arch/arm/Makefile                       |  14 -
-> > >  tools/perf/arch/arm/tests/Kbuild                   |   2 +
-> > >  tools/perf/arch/arm/util/Kbuild                    |   3 +
-> > >  tools/perf/arch/arm64/Kbuild                       |   1 +
-> > >  tools/perf/arch/arm64/Makefile                     |   7 -
-> > >  tools/perf/arch/arm64/util/Kbuild                  |   2 +
-> > >  tools/perf/arch/powerpc/Kbuild                     |   1 +
-> > >  tools/perf/arch/powerpc/Makefile                   |   6 -
-> > >  tools/perf/arch/powerpc/util/Kbuild                |   3 +
-> > >  tools/perf/arch/s390/Kbuild                        |   1 +
-> > >  tools/perf/arch/s390/Makefile                      |   7 -
-> > >  tools/perf/arch/s390/util/Kbuild                   |   2 +
-> > >  tools/perf/arch/sh/Kbuild                          |   1 +
-> > >  tools/perf/arch/sh/Makefile                        |   4 -
-> > >  tools/perf/arch/sh/util/Kbuild                     |   1 +
-> > >  tools/perf/arch/sparc/Kbuild                       |   1 +
-> > >  tools/perf/arch/sparc/Makefile                     |   4 -
-> > >  tools/perf/arch/sparc/util/Kbuild                  |   1 +
-> > >  tools/perf/arch/x86/Kbuild                         |   2 +
-> > >  tools/perf/arch/x86/Makefile                       |  19 -
-> > >  tools/perf/arch/x86/include/perf_regs.h            |   8 +-
-> > >  tools/perf/arch/x86/tests/Kbuild                   |   3 +
-> > >  tools/perf/{ => arch/x86}/tests/perf-time-to-tsc.c |   2 +-
-> > >  tools/perf/arch/x86/tests/regs_load.S              |   3 +-
-> > >  tools/perf/arch/x86/util/Kbuild                    |   6 +
-> > >  tools/perf/arch/x86/util/unwind-libunwind.c        |   5 +-
-> > >  tools/perf/bench/Kbuild                            |  12 +
-> > >  tools/perf/bench/mem-memcpy-arch.h                 |   4 +-
-> > >  tools/perf/bench/mem-memcpy.c                      |   4 +-
-> > >  tools/perf/bench/mem-memset-arch.h                 |   4 +-
-> > >  tools/perf/bench/mem-memset.c                      |   4 +-
-> > >  tools/perf/builtin-annotate.c                      |   8 +-
-> > >  tools/perf/builtin-bench.c                         |   5 +-
-> > >  tools/perf/builtin-help.c                          |   1 +
-> > >  tools/perf/builtin-inject.c                        |   2 +-
-> > >  tools/perf/builtin-kvm.c                           |  38 +-
-> > >  tools/perf/builtin-lock.c                          |   5 +-
-> > >  tools/perf/builtin-probe.c                         |  15 +-
-> > >  tools/perf/builtin-record.c                        |   4 +-
-> > >  tools/perf/builtin-report.c                        |   3 +
-> > >  tools/perf/builtin-sched.c                         |   3 +
-> > >  tools/perf/builtin-script.c                        |   6 +-
-> > >  tools/perf/builtin-top.c                           |  19 +-
-> > >  tools/perf/config/Makefile                         | 430 +++++-----
-> > >  tools/perf/config/defconfig                        |  54 ++
-> > >  tools/perf/perf-sys.h                              |   4 +-
-> > >  tools/perf/perf.c                                  |  53 +-
-> > >  tools/perf/scripts/perl/Perf-Trace-Util/Kbuild     |   6 +
-> > >  tools/perf/scripts/python/Perf-Trace-Util/Kbuild   |   5 +
-> > >  tools/perf/tests/Kbuild                            |  40 +
-> > >  tools/perf/tests/builtin-test.c                    |   3 +-
-> > >  tools/perf/tests/configs/MINIMAL_config            |  60 ++
-> > >  tools/perf/tests/configs/NO_BACKTRACE_config       |  73 ++
-> > >  .../perf/tests/configs/NO_BUILTIN_ANNOTATE_config  |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_BENCH_config   |  73 ++
-> > >  .../tests/configs/NO_BUILTIN_BUILDID_CACHE_config  |  73 ++
-> > >  .../tests/configs/NO_BUILTIN_BUILDID_LIST_config   |  71 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_DIFF_config    |  71 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_EVLIST_config  |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_HELP_config    |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_INJECT_config  |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_KMEM_config    |  73 ++
-> > >  .../perf/tests/configs/NO_BUILTIN_KVM_STAT_config  |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_KVM_config     |  72 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_LIST_config    |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_LOCK_config    |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_MEM_config     |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_PROBE_config   |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_RECORD_config  |  63 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_REPORT_config  |  68 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_SCHED_config   |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_SCRIPT_config  |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_STAT_config    |  71 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_TEST_config    |  73 ++
-> > >  .../perf/tests/configs/NO_BUILTIN_TIMECHART_config |  73 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_TOP_config     |  71 ++
-> > >  tools/perf/tests/configs/NO_BUILTIN_TRACE_config   |  73 ++
-> > >  tools/perf/tests/configs/NO_DEMANGLE_config        |  71 ++
-> > >  tools/perf/tests/configs/NO_GTK2_config            |  73 ++
-> > >  tools/perf/tests/configs/NO_LIBAUDIT_config        |  72 ++
-> > >  tools/perf/tests/configs/NO_LIBDWARF_config        |  71 ++
-> > >  tools/perf/tests/configs/NO_LIBELF_MMAP_config     |  73 ++
-> > >  tools/perf/tests/configs/NO_LIBGTK2_INFOBAR_config |  73 ++
-> > >  tools/perf/tests/configs/NO_LIBGTK2_config         |  71 ++
-> > >  tools/perf/tests/configs/NO_LIBNUMA_config         |  73 ++
-> > >  tools/perf/tests/configs/NO_LIBPERL_config         |  73 ++
-> > >  tools/perf/tests/configs/NO_LIBPYTHON_config       |  73 ++
-> > >  tools/perf/tests/configs/NO_LIBSLANG_config        |  72 ++
-> > >  .../tests/configs/NO_LIBUNWIND_DEBUG_FRAME_config  |  73 ++
-> > >  tools/perf/tests/configs/NO_PERF_REGS_config       |  73 ++
-> > >  tools/perf/tests/configs/NO_STDIO_config           |  73 ++
-> > >  tools/perf/tests/configs/NO_TIMERFD_config         |  73 ++
-> > >  tools/perf/tests/configs/NO_TUI_config             |  73 ++
-> > >  tools/perf/tests/configs/NO_UNWIND_config          |  69 ++
-> > >  tools/perf/tests/configs/REF_config                |  73 ++
-> > >  tools/perf/tests/generate_configs.py               |  43 +
-> > >  tools/perf/tests/make                              |  70 +-
-> > >  tools/perf/tests/tests.h                           |   6 +-
-> > >  tools/perf/ui/Kbuild                               |  15 +
-> > >  tools/perf/ui/browsers/Kbuild                      |   9 +
-> > >  tools/perf/ui/browsers/scripts.c                   |   4 +
-> > >  tools/perf/ui/gtk/Kbuild                           |   9 +
-> > >  tools/perf/ui/gtk/browser.c                        |   4 +-
-> > >  tools/perf/ui/gtk/gtk.h                            |   5 +-
-> > >  tools/perf/ui/gtk/util.c                           |   6 +-
-> > >  tools/perf/ui/setup.c                              |  12 +-
-> > >  tools/perf/ui/stdio/Kbuild                         |   1 +
-> > >  tools/perf/ui/tui/Kbuild                           |   4 +
-> > >  tools/perf/ui/ui.h                                 |   4 +-
-> > >  tools/perf/util/Kbuild                             | 128 +++
-> > >  tools/perf/util/PERF-VERSION-GEN                   |   4 +
-> > >  tools/perf/util/annotate.h                         |   4 +-
-> > >  tools/perf/util/callchain.c                        |  11 +-
-> > >  tools/perf/util/callchain.h                        |   3 +-
-> > >  tools/perf/util/generate-cmdlist.sh                |  22 +-
-> > >  tools/perf/util/hist.h                             |   3 +-
-> > >  tools/perf/util/include/dwarf-regs.h               |   4 +-
-> > >  tools/perf/util/machine.c                          |   3 +-
-> > >  tools/perf/util/map.c                              |   3 +-
-> > >  tools/perf/util/perf_regs.c                        |   1 +
-> > >  tools/perf/util/perf_regs.h                        |   6 +-
-> > >  tools/perf/util/probe-event.c                      |   6 +-
-> > >  tools/perf/util/probe-finder.h                     |   5 +-
-> > >  tools/perf/util/scripting-engines/Kbuild           |  11 +
-> > >  tools/perf/util/setup.py                           |   8 +-
-> > >  tools/perf/util/srcline.c                          |   8 +-
-> > >  tools/perf/util/symbol-elf.c                       |   3 +-
-> > >  tools/perf/util/symbol.h                           |  33 +-
-> > >  tools/perf/util/trace-event-scripting.c            |  13 +-
-> > >  tools/perf/util/unwind-libunwind.c                 |   5 +-
-> > >  tools/perf/util/unwind.h                           |   7 +-
-> > >  tools/perf/util/util.c                             |   5 +-
-> > >  143 files changed, 4992 insertions(+), 1410 deletions(-)
-> > >  create mode 100644 tools/perf/Kbuild
-> > >  create mode 100644 tools/perf/Kconfig
-> > >  create mode 100644 tools/perf/Makefile.kbuild
-> > >  delete mode 100644 tools/perf/Makefile.perf
-> > >  create mode 100644 tools/perf/arch/Kbuild
-> > >  create mode 100644 tools/perf/arch/arm/Kbuild
-> > >  delete mode 100644 tools/perf/arch/arm/Makefile
-> > >  create mode 100644 tools/perf/arch/arm/tests/Kbuild
-> > >  create mode 100644 tools/perf/arch/arm/util/Kbuild
-> > >  create mode 100644 tools/perf/arch/arm64/Kbuild
-> > >  delete mode 100644 tools/perf/arch/arm64/Makefile
-> > >  create mode 100644 tools/perf/arch/arm64/util/Kbuild
-> > >  create mode 100644 tools/perf/arch/powerpc/Kbuild
-> > >  delete mode 100644 tools/perf/arch/powerpc/Makefile
-> > >  create mode 100644 tools/perf/arch/powerpc/util/Kbuild
-> > >  create mode 100644 tools/perf/arch/s390/Kbuild
-> > >  delete mode 100644 tools/perf/arch/s390/Makefile
-> > >  create mode 100644 tools/perf/arch/s390/util/Kbuild
-> > >  create mode 100644 tools/perf/arch/sh/Kbuild
-> > >  delete mode 100644 tools/perf/arch/sh/Makefile
-> > >  create mode 100644 tools/perf/arch/sh/util/Kbuild
-> > >  create mode 100644 tools/perf/arch/sparc/Kbuild
-> > >  delete mode 100644 tools/perf/arch/sparc/Makefile
-> > >  create mode 100644 tools/perf/arch/sparc/util/Kbuild
-> > >  create mode 100644 tools/perf/arch/x86/Kbuild
-> > >  delete mode 100644 tools/perf/arch/x86/Makefile
-> > >  create mode 100644 tools/perf/arch/x86/tests/Kbuild
-> > >  rename tools/perf/{ => arch/x86}/tests/perf-time-to-tsc.c (99%)
-> > >  create mode 100644 tools/perf/arch/x86/util/Kbuild
-> > >  create mode 100644 tools/perf/bench/Kbuild
-> > >  create mode 100644 tools/perf/config/defconfig
-> > >  create mode 100644 tools/perf/scripts/perl/Perf-Trace-Util/Kbuild
-> > >  create mode 100644 tools/perf/scripts/python/Perf-Trace-Util/Kbuild
-> > >  create mode 100644 tools/perf/tests/Kbuild
-> > >  create mode 100644 tools/perf/tests/configs/MINIMAL_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BACKTRACE_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_ANNOTATE_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_BENCH_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_BUILDID_CACHE_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_BUILDID_LIST_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_DIFF_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_EVLIST_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_HELP_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_INJECT_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_KMEM_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_KVM_STAT_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_KVM_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_LIST_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_LOCK_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_MEM_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_PROBE_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_RECORD_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_REPORT_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_SCHED_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_SCRIPT_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_STAT_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TEST_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TIMECHART_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TOP_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TRACE_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_DEMANGLE_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_GTK2_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBAUDIT_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBDWARF_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBELF_MMAP_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBGTK2_INFOBAR_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBGTK2_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBNUMA_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBPERL_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBPYTHON_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBSLANG_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_LIBUNWIND_DEBUG_FRAME_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_PERF_REGS_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_STDIO_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_TIMERFD_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_TUI_config
-> > >  create mode 100644 tools/perf/tests/configs/NO_UNWIND_config
-> > >  create mode 100644 tools/perf/tests/configs/REF_config
-> > >  create mode 100644 tools/perf/tests/generate_configs.py
-> > >  create mode 100644 tools/perf/ui/Kbuild
-> > >  create mode 100644 tools/perf/ui/browsers/Kbuild
-> > >  create mode 100644 tools/perf/ui/gtk/Kbuild
-> > >  create mode 100644 tools/perf/ui/stdio/Kbuild
-> > >  create mode 100644 tools/perf/ui/tui/Kbuild
-> > >  create mode 100644 tools/perf/util/Kbuild
-> > >  create mode 100644 tools/perf/util/scripting-engines/Kbuild
-> > > 
-> > > -- 
-> > > 
-> > > Changes since v2:
-> > >  * All the CCs addresses were missing
-> > > 
-> > > 2.1.1
+I think it's wrong to tie this to mmap_sem in the first place. If MPX
+is enabled then you should have mm->bd_addr and an explicit mutex to
+protect it.
+
+So the logic would look like this:
+
+   mutex_lock(&mm->bd_mutex);
+   if (!kernel_managed(mm))
+      do_trap();
+   else if (do_mpx_bt_fault())
+      force_sig();
+   mutex_unlock(&mm->bd_mutex);
+   
+No tricks with mmap_sem, no special return value handling. Straight
+forward code instead of a convoluted and error prone mess.
+
+Hmm?
+
+Thanks,
+
+	tglx
