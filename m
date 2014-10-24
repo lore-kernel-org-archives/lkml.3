@@ -1,184 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700AbaJXPVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:21:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:46371 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752197AbaJXPVI convert rfc822-to-8bit (ORCPT
+	id S1756508AbaJXPXF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:23:05 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:39461 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186AbaJXPXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:21:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,780,1406617200"; 
-   d="scan'208";a="619880359"
-From: "Liang, Kan" <kan.liang@intel.com>
-To: Jiri Olsa <jolsa@redhat.com>
-CC: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "eranian@google.com" <eranian@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "acme@kernel.org" <acme@kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: RE: [PATCH V6 17/17] perf tools: choose to dump callchain from LBR
- and FP
-Thread-Topic: [PATCH V6 17/17] perf tools: choose to dump callchain from LBR
- and FP
-Thread-Index: AQHP6+jVSxfa+6qSJ0Sih5TOfMVew5w+wPiAgAAFWgCAAJQIQA==
-Date: Fri, 24 Oct 2014 15:20:34 +0000
-Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077016492F7@SHSMSX103.ccr.corp.intel.com>
-References: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
- <1413755712-8259-18-git-send-email-kan.liang@intel.com>
- <20141024133600.GC1036@krava.brq.redhat.com>
- <20141024135510.GA17720@krava.brq.redhat.com>
-In-Reply-To: <20141024135510.GA17720@krava.brq.redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 24 Oct 2014 11:23:01 -0400
+Date: Fri, 24 Oct 2014 19:22:51 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 3/3] mm: memcontrol: drop bogus RCU locking from
+ mem_cgroup_same_or_subtree()
+Message-ID: <20141024152251.GC28055@esperanza>
+References: <1414158589-26094-1-git-send-email-hannes@cmpxchg.org>
+ <1414158589-26094-3-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1414158589-26094-3-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 24, 2014 at 09:49:49AM -0400, Johannes Weiner wrote:
+> None of the mem_cgroup_same_or_subtree() callers actually require it
+> to take the RCU lock, either because they hold it themselves or they
+> have css references.  Remove it.
 
+It seems we don't need these rcu_read_lock/unlock there since commit
+b47f77b5a224 ("memcg: convert to use cgroup_is_descendant()"), which
+removed RCU-ish css_is_ancestor() from mem_cgroup_same_or_subtree().
 
-> 
-> On Fri, Oct 24, 2014 at 03:36:00PM +0200, Jiri Olsa wrote:
-> > On Sun, Oct 19, 2014 at 05:55:12PM -0400, Kan Liang wrote:
-> >
-> > SNIP
-> >
-> > > -				return 0;
-> > > -			}
-> > > -			continue;
-> > > +		mix_chain_nr = i + 2 + lbr_nr;
-> > > +		if (mix_chain_nr > PERF_MAX_STACK_DEPTH) {
-> > > +			pr_warning("corrupted callchain. skipping...\n");
-> > > +			return 0;
-> > >  		}
-> > >
-> > > -		al.filtered = 0;
-> > > -		thread__find_addr_location(thread, machine, cpumode,
-> > > -					   MAP__FUNCTION, ip, &al);
-> > > -		if (al.sym != NULL) {
-> > > -			if (sort__has_parent && !*parent &&
-> > > -			    symbol__match_regex(al.sym, &parent_regex))
-> > > -				*parent = al.sym;
-> > > -			else if (have_ignore_callees && root_al &&
-> > > -			  symbol__match_regex(al.sym,
-> &ignore_callees_regex)) {
-> > > -				/* Treat this symbol as the root,
-> > > -				   forgetting its callees. */
-> > > -				*root_al = al;
-> > > -				callchain_cursor_reset(&callchain_cursor);
-> > > +		for (j = 0; j < mix_chain_nr; j++) {
-> > > +			struct addr_location al;
-> > > +
-> > > +			if (callchain_param.order == ORDER_CALLEE) {
-> > > +				if (j < i + 2)
-> > > +					ip = chain->ips[j];
-> > > +				else
-> > > +					ip = lbr_stack->entries[j - i - 2].from;
-> > > +			} else {
-> > > +				if (j < lbr_nr)
-> > > +					ip = lbr_stack->entries[lbr_nr - j -
-> 1].from;
-> > > +				else
-> > > +					ip = chain->ips[i + 1 - (j - lbr_nr)];
-> > >  			}
-> > > +			err =
-> __machine__resolve_callchain_sample(machine,
-> > > +				thread, ip, &cpumode, parent, root_al, &al);
-> > > +			/* Discard all when the callchain is corrupted */
-> > > +			if (err > 0)
-> > > +				return 0;
-> > > +			else if (err)
-> > > +				return err;
-> >
-> > so you print FP callchains followed by LBR stack data, right?
-> >
-> > but AFAICS from kernel changes the FP callchains and LBR callchains
-> > data are unrelated.. 2 datasources of the same information
-> >
-> > do we rather want to print them separately? or using an option as Andi
-> > did in his lbr-as-callgraph patchset:
-> >   http://marc.info/?l=linux-kernel&m=141177467802602&w=2
-> 
-> hum, sorry I've got confused by perf report -D output:
-> 
-> 5719019682019 0x2128 [0x80]: PERF_RECORD_SAMPLE(IP, 0x2): 2499/2499:
-> 0x401791 period: 327077 addr: 0 ... chain: nr:3 .....  0: fffffffffffffe00 FP .....  1:
-> 0000000000401791 FP .....  2: 00000032dca21d63 LBR .....  3: 000000000040184c
-> LBR
-> 
-> which sometimes displays user space FP data with LBR.. but I guess the
-> intention was to display either userspace FP or LBR, right?
-> 
-
-It depends on how user set the perf report --call-graph options, and
-if both data are available.
-
-Let's say both FP and LBR data are available.
-
-If the user prefer the fp data,
-here is the command and the call chain from last sample. 
-perf report --call-graph fractal,0.5,callee,function,fp -D
-
-3741913434263 0x3a2960 [0xe8]: PERF_RECORD_SAMPLE(IP, 0x2):
-20920/20920: 0x400568 period: 611393 addr: 0
-... chain: nr:6
-.....  0: fffffffffffffe00
-.....  1: 0000000000400568
-.....  2: 000000000040058c <---- FP data start from here
-.....  3: 00000000004005b8
-.....  4: 00000000004005fe
-.....  5: 0000003d1cc21b45
-.....  6: 0000000000000005
- ... thread: a.out:20920
- ...... dso: /home/lk/a.out
-
-
-If the user prefer the lbr data source,
-here is the command and the call chain from last sample. 
-perf report --call-graph fractal,0.5,callee,function,lbr -D
-
-
-3741913434263 0x3a2960 [0xe8]: PERF_RECORD_SAMPLE(IP, 0x2):
-20920/20920: 0x400568 period: 611393 addr: 0
-... chain: nr:6
-.....  0: fffffffffffffe00
-.....  1: 0000000000400568
-.....  2: 0000000000400587 <---- LBR data start from here
-.....  3: 00000000004005b3
-.....  4: 00000000004005f9
-.....  5: 0000003d1cc21b43
-.....  6: 0000000000400474
- ... thread: a.out:20920
- ...... dso: /home/lk/a.out 
-
-
-If there is only one data source available (either fp or lbr),
-no matter what option is set, the only available data is printed. 
-
-> I think we should have an option to be able to choose/switch.
-> Once general option that will tell report to use:
->   FP, DWARF, LBR (branches), LBR (callchain)
-
-We cannot collect LBR branch and LBR callchain at the same time.
-If both call-chain and branch are required, it only collects branch.
-
-The choose/switch can only happen when the user only want to
-collect call chain by FP. So I only extend the reporter's --call-graph
-option to callchain source (fp or lbr). The default one is fp.
-
-Thanks,
-Kan
+Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
 
 > 
-> setting by default whatever the best option is based on the data we have.
+> To make the API change clear, rename the leftover helper to
+> mem_cgroup_is_descendant() to match cgroup_is_descendant().
 > 
-> thanks,
-> jirka
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  include/linux/memcontrol.h | 13 +++++-----
+>  mm/memcontrol.c            | 59 +++++++++++++---------------------------------
+>  mm/oom_kill.c              |  4 ++--
+>  3 files changed, 24 insertions(+), 52 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index e32ab948f589..d4575a1d6e99 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -68,10 +68,9 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+>  struct lruvec *mem_cgroup_zone_lruvec(struct zone *, struct mem_cgroup *);
+>  struct lruvec *mem_cgroup_page_lruvec(struct page *, struct zone *);
+>  
+> -bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> -				  struct mem_cgroup *memcg);
+> -bool task_in_mem_cgroup(struct task_struct *task,
+> -			const struct mem_cgroup *memcg);
+> +bool mem_cgroup_is_descendant(struct mem_cgroup *memcg,
+> +			      struct mem_cgroup *root);
+> +bool task_in_mem_cgroup(struct task_struct *task, struct mem_cgroup *memcg);
+>  
+>  extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+>  extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+> @@ -79,8 +78,8 @@ extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+>  extern struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg);
+>  extern struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *css);
+>  
+> -static inline
+> -bool mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *memcg)
+> +static inline bool mm_match_cgroup(struct mm_struct *mm,
+> +				   struct mem_cgroup *memcg)
+>  {
+>  	struct mem_cgroup *task_memcg;
+>  	bool match = false;
+> @@ -88,7 +87,7 @@ bool mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *memcg)
+>  	rcu_read_lock();
+>  	task_memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
+>  	if (task_memcg)
+> -		match = __mem_cgroup_same_or_subtree(memcg, task_memcg);
+> +		match = mem_cgroup_is_descendant(task_memcg, memcg);
+>  	rcu_read_unlock();
+>  	return match;
+>  }
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 15b1c5110a8f..f75b92a44ac6 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1307,41 +1307,24 @@ void mem_cgroup_update_lru_size(struct lruvec *lruvec, enum lru_list lru,
+>  	VM_BUG_ON((long)(*lru_size) < 0);
+>  }
+>  
+> -/*
+> - * Checks whether given mem is same or in the root_mem_cgroup's
+> - * hierarchy subtree
+> - */
+> -bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> -				  struct mem_cgroup *memcg)
+> +bool mem_cgroup_is_descendant(struct mem_cgroup *memcg, struct mem_cgroup *root)
+>  {
+> -	if (root_memcg == memcg)
+> +	if (root == memcg)
+>  		return true;
+> -	if (!root_memcg->use_hierarchy)
+> +	if (!root->use_hierarchy)
+>  		return false;
+> -	return cgroup_is_descendant(memcg->css.cgroup, root_memcg->css.cgroup);
+> -}
+> -
+> -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> -				       struct mem_cgroup *memcg)
+> -{
+> -	bool ret;
+> -
+> -	rcu_read_lock();
+> -	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
+> -	rcu_read_unlock();
+> -	return ret;
+> +	return cgroup_is_descendant(memcg->css.cgroup, root->css.cgroup);
+>  }
+>  
+> -bool task_in_mem_cgroup(struct task_struct *task,
+> -			const struct mem_cgroup *memcg)
+> +bool task_in_mem_cgroup(struct task_struct *task, struct mem_cgroup *memcg)
+>  {
+> -	struct mem_cgroup *curr;
+> +	struct mem_cgroup *task_memcg;
+>  	struct task_struct *p;
+>  	bool ret;
+>  
+>  	p = find_lock_task_mm(task);
+>  	if (p) {
+> -		curr = get_mem_cgroup_from_mm(p->mm);
+> +		task_memcg = get_mem_cgroup_from_mm(p->mm);
+>  		task_unlock(p);
+>  	} else {
+>  		/*
+> @@ -1350,18 +1333,12 @@ bool task_in_mem_cgroup(struct task_struct *task,
+>  		 * killed to prevent needlessly killing additional tasks.
+>  		 */
+>  		rcu_read_lock();
+> -		curr = mem_cgroup_from_task(task);
+> -		css_get(&curr->css);
+> +		task_memcg = mem_cgroup_from_task(task);
+> +		css_get(&task_memcg->css);
+>  		rcu_read_unlock();
+>  	}
+> -	/*
+> -	 * We should check use_hierarchy of "memcg" not "curr". Because checking
+> -	 * use_hierarchy of "curr" here make this function true if hierarchy is
+> -	 * enabled in "curr" and "curr" is a child of "memcg" in *cgroup*
+> -	 * hierarchy(even if use_hierarchy is disabled in "memcg").
+> -	 */
+> -	ret = mem_cgroup_same_or_subtree(memcg, curr);
+> -	css_put(&curr->css);
+> +	ret = mem_cgroup_is_descendant(task_memcg, memcg);
+> +	css_put(&task_memcg->css);
+>  	return ret;
+>  }
+>  
+> @@ -1446,8 +1423,8 @@ static bool mem_cgroup_under_move(struct mem_cgroup *memcg)
+>  	if (!from)
+>  		goto unlock;
+>  
+> -	ret = mem_cgroup_same_or_subtree(memcg, from)
+> -		|| mem_cgroup_same_or_subtree(memcg, to);
+> +	ret = mem_cgroup_is_descendant(from, memcg) ||
+> +		mem_cgroup_is_descendant(to, memcg);
+>  unlock:
+>  	spin_unlock(&mc.lock);
+>  	return ret;
+> @@ -1813,12 +1790,8 @@ static int memcg_oom_wake_function(wait_queue_t *wait,
+>  	oom_wait_info = container_of(wait, struct oom_wait_info, wait);
+>  	oom_wait_memcg = oom_wait_info->memcg;
+>  
+> -	/*
+> -	 * Both of oom_wait_info->memcg and wake_memcg are stable under us.
+> -	 * Then we can use css_is_ancestor without taking care of RCU.
+> -	 */
+> -	if (!mem_cgroup_same_or_subtree(oom_wait_memcg, wake_memcg)
+> -		&& !mem_cgroup_same_or_subtree(wake_memcg, oom_wait_memcg))
+> +	if (!mem_cgroup_is_descendant(wake_memcg, oom_wait_memcg) &&
+> +	    !mem_cgroup_is_descendant(oom_wait_memcg, wake_memcg))
+>  		return 0;
+>  	return autoremove_wake_function(wait, mode, sync, arg);
+>  }
+> @@ -2138,7 +2111,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg)
+>  		memcg = stock->cached;
+>  		if (!memcg || !stock->nr_pages)
+>  			continue;
+> -		if (!mem_cgroup_same_or_subtree(root_memcg, memcg))
+> +		if (!mem_cgroup_is_descendant(memcg, root_memcg))
+>  			continue;
+>  		if (!test_and_set_bit(FLUSHING_CACHED_CHARGE, &stock->flags)) {
+>  			if (cpu == curcpu)
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 3348280eef89..864bba992735 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -119,7 +119,7 @@ found:
+>  
+>  /* return true if the task is not adequate as candidate victim task. */
+>  static bool oom_unkillable_task(struct task_struct *p,
+> -		const struct mem_cgroup *memcg, const nodemask_t *nodemask)
+> +		struct mem_cgroup *memcg, const nodemask_t *nodemask)
+>  {
+>  	if (is_global_init(p))
+>  		return true;
+> @@ -353,7 +353,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+>   * State information includes task's pid, uid, tgid, vm size, rss, nr_ptes,
+>   * swapents, oom_score_adj value, and name.
+>   */
+> -static void dump_tasks(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
+> +static void dump_tasks(struct mem_cgroup *memcg, const nodemask_t *nodemask)
+>  {
+>  	struct task_struct *p;
+>  	struct task_struct *task;
+> -- 
+> 2.1.2
+> 
