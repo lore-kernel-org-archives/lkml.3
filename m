@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756831AbaJXNoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:44:25 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:33329 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756639AbaJXNoW (ORCPT
+	id S1756674AbaJXNsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:48:10 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:45791 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756580AbaJXNsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:44:22 -0400
+	Fri, 24 Oct 2014 09:48:08 -0400
+Date: Fri, 24 Oct 2014 15:48:00 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
+Message-ID: <20141024134800.GC21513@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
+ <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
+ <20141022144543.GV12706@worktop.programming.kicks-ass.net>
+ <87tx2t27yb.fsf@ashishki-desk.ger.corp.intel.com>
+ <20141024115131.GY21513@worktop.programming.kicks-ass.net>
+ <87wq7pd5sw.fsf@ashishki-desk.ger.corp.intel.com>
+ <20141024130228.GM3219@twins.programming.kicks-ass.net>
+ <87tx2td2rt.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <544A5578.7030009@samsung.com>
-References: <1413775749-17539-1-git-send-email-cw00.choi@samsung.com>
-	<1413775935-17743-5-git-send-email-cw00.choi@samsung.com>
-	<CAD8Lp46Y1WBF2Bq5SKtQDZ4kUb2fDCsbBs1THFWcV=8-OXh_SQ@mail.gmail.com>
-	<544A5578.7030009@samsung.com>
-Date: Fri, 24 Oct 2014 07:44:21 -0600
-Message-ID: <CAD8Lp45thqGRm-SjFnnht1EGuFYWabG_D9vWUQt+NnCcgVG7bg@mail.gmail.com>
-Subject: Re: [PATCH 5/5] ARM: dts: Add dts files for Exynos4415 SoC
-From: Daniel Drake <drake@endlessm.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, ben-linux@fluff.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>, thomas.abraham@linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        InKi Dae <inki.dae@samsung.com>, geunsik.lim@samsung.com,
-        jh80.chung@samsung.com, jaewon02.kim@samsung.com,
-        ideal.song@samsung.com, yj44.cho@samsung.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87tx2td2rt.fsf@ashishki-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 7:34 AM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
-> Well, I also thought about such approach, but there are some fundamental
-> differences:
-> interrupt and clock controllers are completely different. Using a common
-> exynos4.dtsi
-> and overriding them in every node will result in a code, which is a bit hard
-> to follow.
-> IMHO with such differences justifies using separate base dtsi file.
+On Fri, Oct 24, 2014 at 04:18:46PM +0300, Alexander Shishkin wrote:
+> Peter Zijlstra <peterz@infradead.org> writes:
 
-For the things that aren't in common, they are already split out into
-soc-specific files for the existing Exynos4 variants. Taking your
-example of the CMU, it already differs in different exynos4 versions
-therefore is not listed in exynos4.dtsi at all.
+> Ah, I see what you mean. The main point of this whole reserved region
+> proposal is that one shouldn't have to update one's kernel to enable new
+> PT packets by doing -e intel_pt/config=0xf00d/, if one is CAP_SYS_ADMIN.
+> 
+> > No need to probe in that case. That is the same thing we do for all
+> > unenumerated model specific things.
+> 
+> They are, actually, enumerated, we just want to be able to enable them
+> before they are. If the driver is aware of feature X, it can test for it
+> in CPUID and allow/disallow it based on that.
 
-So this argument only seems valid if the differences are really huge,
-or if you are also saying the existing exynos4 dts files are bad?
-Personally I have come to like the current layout, although would
-definitely appreciate the reference-based syntax mentioned by Tomasz,
-and this seems like a good opportunity to at least fix up exynos4.dtsi
-for that.
+If you've got hardware that 'exposes' functionality not enumerated in
+CPUID you have the capability of modifying the kernel.
 
-Daniel
+And while it might seem like a cute feature when you have early
+hardware, that is no reason to make the code horrible. Either just patch
+your firmware such that CPUID reports the right bits for your hardware
+or frob the kernel.
+
+
