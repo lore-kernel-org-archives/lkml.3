@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050AbaJXRWQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:22:16 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59436 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756065AbaJXRWP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:22:15 -0400
-Date: Fri, 24 Oct 2014 10:18:18 -0700
+	id S1757069AbaJXRYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:24:06 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:35611 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756100AbaJXRYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 13:24:03 -0400
+Date: Fri, 24 Oct 2014 10:20:09 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric B Munson <emunson@akamai.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Commit 35ce7f29a breaks hibernation for XPS 13
-Message-ID: <20141024171818.GU4977@linux.vnet.ibm.com>
+To: Yanko Kaneti <yaneti@declera.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        jay.vosburgh@canonical.com, mroos@linux.ee
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141024172009.GV4977@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141024160815.GA2968@akamai.com>
- <20141024161634.GR4977@linux.vnet.ibm.com>
- <20141024163612.GA2256@akamai.com>
+References: <20141023153333.GA19278@linux.vnet.ibm.com>
+ <20141023195159.GA2331@declera.com>
+ <20141023200507.GC4977@linux.vnet.ibm.com>
+ <1414100740.2065.2.camel@declera.com>
+ <20141023220406.GJ4977@linux.vnet.ibm.com>
+ <20141024090857.GA4083@declera.com>
+ <20141024154006.GP4977@linux.vnet.ibm.com>
+ <20141024162943.GA16621@declera.com>
+ <20141024165454.GS4977@linux.vnet.ibm.com>
+ <20141024170931.GA21849@declera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141024163612.GA2256@akamai.com>
+In-Reply-To: <20141024170931.GA21849@declera.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102417-0033-0000-0000-00000274A292
+x-cbid: 14102417-0033-0000-0000-000000D56146
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 12:36:12PM -0400, Eric B Munson wrote:
-> On Fri, 24 Oct 2014, Paul E. McKenney wrote:
-> 
-> > On Fri, Oct 24, 2014 at 12:08:15PM -0400, Eric B Munson wrote:
-> > > Paul,
-> > > 
-> > > As of 3.18-rc1 I can no longer hibernate my Dell XPS-13.  Bisect points
-> > > the finger at 35ce7f29a.  A revert of that commit confirms, I can once
-> > > again hibernate my machine without it.
-> > > 
-> > > When the hibernation fails I see this in dmesg:
-> > > [   37.953313] PM: Syncing filesystems ... done.
-> > > [   37.963694] Freezing user space processes ... (elapsed 0.001 seconds) done.
-> > > [   37.965297] PM: Marking nosave pages: [mem 0x00000000-0x00000fff]
-> > > [   37.965299] PM: Marking nosave pages: [mem 0x00058000-0x00058fff]
-> > > [   37.965301] PM: Marking nosave pages: [mem 0x0009d000-0x000fffff]
-> > > [   37.965304] PM: Marking nosave pages: [mem 0xc496a000-0xc4b6bfff]
-> > > [   37.965315] PM: Marking nosave pages: [mem 0xdadb7000-0xdcffefff]
-> > > [   37.965479] PM: Marking nosave pages: [mem 0xdd000000-0xffffffff]
-> > > [   37.966000] PM: Basic memory bitmaps created
-> > > [   37.966046] PM: Preallocating image memory... done (allocated 181989 pages)
-> > > [   38.141524] PM: Allocated 727956 kbytes in 0.17 seconds (4282.09 MB/s)
-> > > [   38.141525] Freezing remaining freezable tasks ... 
-> > > [   58.151863] Freezing of tasks failed after 20.004 seconds (0 tasks refusing to freeze, wq_busy=1):
-> > > [   58.151894] 
-> > > [   58.151896] Restarting kernel threads ... done.
-> > > [   58.181915] PM: Basic memory bitmaps freed
-> > > [   58.181917] Restarting tasks ... done.
-> > > 
-> > > 
-> > > I am not sure what else I can provide that might be useful, but I did
-> > > see the thread on net-dev about this same commit.  Please CC me on any
-> > > fixes and I will be happy to test.
+On Fri, Oct 24, 2014 at 08:09:31PM +0300, Yanko Kaneti wrote:
+> On Fri-10/24/14-2014 09:54, Paul E. McKenney wrote:
+> > On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
+> > > On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
+> > > > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
+> > > > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
+> > > > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
+> > > > > > > 
+> > > > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
+> > > > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
 > > 
-> > Thank you for the bug report!
+> > [ . . . ]
 > > 
-> > Does the following patch help?
-> > 
-> > 							Thanx, Paul
+> > > > > Ok, unless I've messsed up something major, bisecting points to:
+> > > > > 
+> > > > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
+> > > > > 
+> > > > > Makes any sense ?
+> > > > 
+> > > > Good question.  ;-)
+> > > > 
+> > > > Are any of your online CPUs missing rcuo kthreads?  There should be
+> > > > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
+> > > 
+> > > Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
+> > > and the modprobe ppp_generic testcase reliably works, libvirt also manages
+> > > to setup its bridge.
+> > > 
+> > > Just with linux-tip , the rcuos are 6 but the failure is as reliable as
+> > > before.
 > 
-> Paul,
+> > Thank you, very interesting.  Which 6 of the rcuos are present?
 > 
-> This patch does not help.  I see the same dmesg output and failure to
-> hibernate.
+> Well, the rcuos are 0 to 5. Which sounds right for a 6 core CPU like this   
+> Phenom II.
 
-Thank you for testing it.  Does the following (untested, might not even
-build) patch help?  (Or feel free to wait until I have done some testing
-on it.)
+Ah, you get 8 without the patch because it creates them for potential
+CPUs as well as real ones.  OK, got it.
+
+> > > Awating instructions: :)
+> > 
+> > Well, I thought I understood the problem until you found that only 6 of
+> > the expected 8 rcuos are present with linux-tip without the revert.  ;-)
+> > 
+> > I am putting together a patch for the part of the problem that I think
+> > I understand, of course, but it would help a lot to know which two of
+> > the rcuos are missing.  ;-)
+> 
+> Ready to test
+
+Well, if you are feeling aggressive, give the following patch a spin.
+I am doing sanity tests on it in the meantime.
 
 							Thanx, Paul
 
