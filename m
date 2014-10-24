@@ -1,87 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655AbaJXF1r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 01:27:47 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:34726 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbaJXF1q (ORCPT
+	id S1755510AbaJXFcy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 01:32:54 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:52722 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752733AbaJXFcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 01:27:46 -0400
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Fri, 24 Oct 2014 14:28:50 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Hui Zhu <zhuhui@xiaomi.com>
-Cc: rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz,
-        m.szyprowski@samsung.com, akpm@linux-foundation.org, mina86@mina86.com,
-        aneesh.kumar@linux.vnet.ibm.com, hannes@cmpxchg.org, riel@redhat.com,
-        mgorman@suse.de, minchan@kernel.org, nasa4836@gmail.com,
-        ddstreet@ieee.org, hughd@google.com, mingo@kernel.org,
-        rientjes@google.com, peterz@infradead.org, keescook@chromium.org,
-        atomlin@redhat.com, raistlin@linux.it, axboe@fb.com,
-        paulmck@linux.vnet.ibm.com, kirill.shutemov@linux.intel.com,
-        n-horiguchi@ah.jp.nec.com, k.khlebnikov@samsung.com,
-        msalter@redhat.com, deller@gmx.de, tangchen@cn.fujitsu.com,
-        ben@decadent.org.uk, akinobu.mita@gmail.com, lauraa@codeaurora.org,
-        vbabka@suse.cz, sasha.levin@oracle.com, vdavydov@parallels.com,
-        suleiman@google.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/4] (CMA_AGGRESSIVE) Update page alloc function
-Message-ID: <20141024052849.GF15243@js1304-P5Q-DELUXE>
-References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
- <1413430551-22392-5-git-send-email-zhuhui@xiaomi.com>
+	Fri, 24 Oct 2014 01:32:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413430551-22392-5-git-send-email-zhuhui@xiaomi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141024032355.GB7879@thin>
+References: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
+	<20141024032355.GB7879@thin>
+Date: Thu, 23 Oct 2014 22:32:50 -0700
+Message-ID: <CAMEtUuxsk=iLDsD4XXZ8EcurFXgFxD-9iePv=NbBZn+b3YOXJA@mail.gmail.com>
+Subject: Re: [PATCH net] bpf: split eBPF out of NET
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 11:35:51AM +0800, Hui Zhu wrote:
-> If page alloc function __rmqueue try to get pages from MIGRATE_MOVABLE and
-> conditions (cma_alloc_counter, cma_aggressive_free_min, cma_alloc_counter)
-> allow, MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.
-> 
-> Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
-> ---
->  mm/page_alloc.c | 42 +++++++++++++++++++++++++++++++-----------
->  1 file changed, 31 insertions(+), 11 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 736d8e1..87bc326 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -65,6 +65,10 @@
->  #include <asm/div64.h>
->  #include "internal.h"
->  
-> +#ifdef CONFIG_CMA_AGGRESSIVE
-> +#include <linux/cma.h>
-> +#endif
-> +
->  /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
->  static DEFINE_MUTEX(pcp_batch_high_lock);
->  #define MIN_PERCPU_PAGELIST_FRACTION	(8)
-> @@ -1189,20 +1193,36 @@ static struct page *__rmqueue(struct zone *zone, unsigned int order,
->  {
->  	struct page *page;
->  
-> -retry_reserve:
-> +#ifdef CONFIG_CMA_AGGRESSIVE
-> +	if (cma_aggressive_switch
-> +	    && migratetype == MIGRATE_MOVABLE
-> +	    && atomic_read(&cma_alloc_counter) == 0
-> +	    && global_page_state(NR_FREE_CMA_PAGES) > cma_aggressive_free_min
-> +							+ (1 << order))
-> +		migratetype = MIGRATE_CMA;
-> +#endif
-> +retry:
+On Thu, Oct 23, 2014 at 8:23 PM, Josh Triplett <josh@joshtriplett.org> wrote:
+> On Thu, Oct 23, 2014 at 06:41:08PM -0700, Alexei Starovoitov wrote:
+>> introduce two configs:
+>> - hidden CONFIG_BPF to select eBPF interpreter that classic socket filters
+>>   depend on
+>> - visible CONFIG_BPF_SYSCALL (default off) that tracing and sockets can use
+>>
+>> that solves several problems:
+>> - tracing and others that wish to use eBPF don't need to depend on NET.
+>>   They can use BPF_SYSCALL to allow loading from userspace or select BPF
+>>   to use it directly from kernel in NET-less configs.
+>> - in 3.18 programs cannot be attached to events yet, so don't force it on
+>> - when the rest of eBPF infra is there in 3.19+, it's still useful to
+>>   switch it off to minimize kernel size
+>>
+>> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+>
+> Thanks for working on this!  A few nits below, but otherwise this looks
+> good to me.  Once this gets appropriate reviews from net and bpf folks,
+> please let me know if you want this to go through the net tree, the tiny
+> tree, or some other tree.
 
-I don't get it why cma_alloc_counter should be tested.
-When cma alloc is progress, pageblock is isolated so that pages on that
-pageblock cannot be allocated. Why should we prevent aggressive
-allocation in this case?
+Thanks :)
+I've sent it to Dave and marked it as 'net', so it's for
+his net tree. I don't mind if he decides to steer it into net-next
+when it opens, since changing Kconfig is always tricky.
+I just felt that this patch deserves to be in 'net' and in 3.18-rc
 
-Thanks.
+>> bloat-o-meter on x64 shows:
+>> add/remove: 0/60 grow/shrink: 0/2 up/down: 0/-15601 (-15601)
+>
+> Very nice!  Please do include the bloat-o-meter stats in the commit
+> message.
+
+I don't think that's necessary. eBPF is in early stages of adoption.
+More things to come, so bloat-o-meter stats will be obsolete
+very quickly.
+
+>> +# interpreter that classic socket filters depend on
+>> +config BPF
+>> +     boolean
+>
+> s/boolean/bool/
+
+Is there a difference? I thought it's an alias.
+
+>> +config BPF_SYSCALL
+>> +     bool "Enable bpf() system call" if EXPERT
+>> +     select ANON_INODES
+>> +     select BPF
+>> +     default n
+>> +     help
+>> +       Enable the bpf() system call that allows to manipulate eBPF
+>> +       programs and maps via file descriptors.
+>
+> Not sure this one goes under EXPERT, especially since it currently has
+> "default n".
+
+I followed the same style as EPOLL, EVENTFD and others
+in the same category.
+
+>> +/* To execute LD_ABS/LD_IND instructions __bpf_prog_run() may call
+>> + * skb_copy_bits(), so provide a weak definition of it for NET-less config.
+>> + */
+>> +int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
+>> +                      int len)
+>> +{
+>> +     return -EFAULT;
+>> +}
+>
+> Please discuss this in the commit message.  What are the implications of
+> ending up with this implementation that always returns -EFAULT?
+
+because that's what real skb_copy_bits() would return.
+In this case it's actually irrelevant, since non-socket programs
+are not allowed to have LD_ABS/LD_IND instructions and
+I'm only resolving linker error here.
+But returning negative error helps prevent bugs in cases
+where verifier or some in-kernel generated program uses
+LD_ABS by mistake.
+I don't think these type of explanations are necessary in
+commit logs.
+
+>> @@ -6,7 +6,7 @@ menuconfig NET
+>>       bool "Networking support"
+>>       select NLATTR
+>>       select GENERIC_NET_UTILS
+>> -     select ANON_INODES
+>> +     select BPF
+>
+> Why does this not need to select ANON_INODES anymore?  Did *only* BPF
+> use that, so it only needs to occur via BPF_SYSCALL?  If so, can you
+> document that in the commit message?
+
+I hope that folks who were following this work on netdev
+remember commit 38b3629adb8c04 that added it.
+So here I'm actually removing this ANON_INODES dependency
+from NET and moving it into BPF_SYSCALL where it belongs.
+
+btw, the goal of this patch is not tinification, but rather being
+good citizen and not forcing new syscall on everyone.
+It was tested with upcoming tracing patches that select
+BPF instead of NET.
+It will also help parallelize the development, since my old
+predicate-tree into eBPF optimization for vanilla tracing filters:
+http://lwn.net/Articles/598545/
+can potentially go into tip tree a release earlier.
+Back then full NET dependency was a show stopper.
+This patch finally addresses it.
