@@ -1,136 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225AbaJXOiz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 10:38:55 -0400
-Received: from mga03.intel.com ([134.134.136.65]:57706 "EHLO mga03.intel.com"
+	id S1756239AbaJXOkL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:40:11 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38524 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127AbaJXOiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 10:38:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,780,1406617200"; 
-   d="scan'208";a="595292759"
-Message-ID: <544A6479.8030601@intel.com>
-Date: Fri, 24 Oct 2014 17:38:49 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+	id S1754174AbaJXOkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 10:40:08 -0400
+Date: Fri, 24 Oct 2014 11:40:02 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 02/16] perf pmu: Let pmu's with no events show up on perf
- list
-References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com> <1414061124-26830-3-git-send-email-adrian.hunter@intel.com> <87y4s6cak7.fsf@sejong.aot.lge.com> <20141024125702.GZ14687@kernel.org> <20141024130320.GA14687@kernel.org> <20141024132141.GB14687@kernel.org> <544A63FE.60902@intel.com>
-In-Reply-To: <544A63FE.60902@intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 05/16] perf tools: Add facility to export data in
+ database-friendly way
+Message-ID: <20141024144002.GC14687@kernel.org>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+ <1414061124-26830-6-git-send-email-adrian.hunter@intel.com>
+ <87lho6c8ec.fsf@sejong.aot.lge.com>
+ <544A099C.50104@intel.com>
+ <544A2E5F.80508@intel.com>
+ <CAM9d7ci6bv_JnK8DkqqTEttPkEp1mtMPN07XjqX=K4ADOUC6SA@mail.gmail.com>
+ <544A505C.5030203@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544A505C.5030203@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/10/2014 5:36 p.m., Adrian Hunter wrote:
-> On 24/10/2014 4:21 p.m., Arnaldo Carvalho de Melo wrote:
->> Em Fri, Oct 24, 2014 at 10:03:20AM -0300, Arnaldo Carvalho de Melo escreveu:
->>> Em Fri, Oct 24, 2014 at 09:57:02AM -0300, Arnaldo Carvalho de Melo escreveu:
->>>> Em Fri, Oct 24, 2014 at 02:15:52PM +0900, Namhyung Kim escreveu:
->>>>> On Thu, 23 Oct 2014 13:45:10 +0300, Adrian Hunter wrote:
->>>>>> +        if (pmu->selectable) {
->>>>>> +            scnprintf(buf, sizeof(buf), "%s//", pmu->name);
->>>>>> +            aliases[j] = strdup(buf);
->>>>>
->>>>> You need to check the return value here (and above too).
->>>>
->>>> Well spotted, fixing this up.
->>>
->>> Oh well, this print_pmu_events() function needs some care, it starts by
->>> trying to alloc the array, if it fails, it silently returns, does that
->>> mean that there are no pmu events? Or that memory allocation failed?
->>>
->>> Ok, will do the fixes in a separate patch...
->>>
->>> - Arnaldo
->>
->> The patch below should check everything and warn the user, even
->> maintaining that void return...
->>
->> Acked-by tags welcome as always :-)
->>
->> - Arnaldo
->>
->>
->> diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
->> index 91dca60..881b754 100644
->> --- a/tools/perf/util/pmu.c
->> +++ b/tools/perf/util/pmu.c
->> @@ -753,9 +753,9 @@ void print_pmu_events(const char *event_glob, bool name_only)
->>           if (pmu->selectable)
->>               len++;
->>       }
->> -    aliases = malloc(sizeof(char *) * len);
->> +    aliases = zalloc(sizeof(char *) * len);
->>       if (!aliases)
->> -        return;
->> +        goto out_enomem;
->
-> That path tries to free aliases[j] but aliases is null.  You could set len to 0 in that case.
+Em Fri, Oct 24, 2014 at 04:13:00PM +0300, Adrian Hunter escreveu:
+> On 24/10/14 15:26, Namhyung Kim wrote:
+> > Hi Adrian,
+> > 
+> > On Fri, Oct 24, 2014 at 7:47 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+> >> On 24/10/14 11:11, Adrian Hunter wrote:
+> >>> On 24/10/14 09:02, Namhyung Kim wrote:
+> >>>> Can we do it somewhere in a script not in the core code?  I don't feel
+> >>>> comfortable to add those bits into the core code.  What if we export
+> >>>
+> >>> Please explain what you mean by "comfortable".
+> >>
+> >> Or rather: What about it is wrong for core code?
+> > 
+> > Well, there's nothing "wrong" about it. :)
+> > 
+> > But I think if some code is used only by a specific bits, it'd be
+> > better hiding it from the rest as much as possible.
+> 
+> It is pretty self-contained in db-export.[ch] and the scripting
+> engines.
 
-Than again, no it doesn't sorry for the noise.
+So, what I meant was the patch below, on top of yours.
 
->
->>       pmu = NULL;
->>       j = 0;
->>       while ((pmu = perf_pmu__scan(pmu)) != NULL) {
->> @@ -768,16 +768,20 @@ void print_pmu_events(const char *event_glob, bool name_only)
->>                     (!is_cpu && strglobmatch(alias->name,
->>                                  event_glob))))
->>                   continue;
->> -            aliases[j] = name;
->> +
->>               if (is_cpu && !name_only)
->> -                aliases[j] = format_alias_or(buf, sizeof(buf),
->> -                                  pmu, alias);
->> -            aliases[j] = strdup(aliases[j]);
->> +                name = format_alias_or(buf, sizeof(buf), pmu, alias);
->> +
->> +            aliases[j] = strdup(name);
->> +            if (aliases[j] == NULL)
->> +                goto out_enomem;
->>               j++;
->>           }
->>           if (pmu->selectable) {
->> -            scnprintf(buf, sizeof(buf), "%s//", pmu->name);
->> -            aliases[j] = strdup(buf);
->> +            char *s;
->> +            if (asprintf(&s, "%s//", pmu->name) < 0)
->> +                goto out_enomem;
->> +            aliases[j] = s;
->>               j++;
->>           }
->>       }
->> @@ -789,12 +793,20 @@ void print_pmu_events(const char *event_glob, bool name_only)
->>               continue;
->>           }
->>           printf("  %-50s [Kernel PMU event]\n", aliases[j]);
->> -        zfree(&aliases[j]);
->>           printed++;
->>       }
->>       if (printed)
->>           printf("\n");
->> -    free(aliases);
->> +out_free:
->> +    for (j = 0; j < len; j++)
->> +        zfree(&aliases[j]);
->> +    zfree(&aliases);
->> +    return;
->> +
->> +out_enomem:
->> +    printf("FATAL: not enough memory to print PMU events\n");
->> +    if (aliases)
->> +        goto out_free;
->>   }
->>
->>   bool pmu_have_event(const char *pname, const char *name)
->>
+In some data structures where there were no provision for tool specific
+storage, I added an unnamed union with db_id and a void *priv pointer,
+where there were, be it a priv pointer, like in perf_evsel, I moved
+db_id to it, no extra costs for the other tools.
+
+And in struct symbol, I made it use symbol__priv(), that will access the
+area reserved by setting symbol.priv_size at tool start time, like done
+for the annotation case in top, report, annotate. I.e. on the tool that
+will use symbol->db_id you will need to add this just before calling
+symbol__init():
+
+	symbol_conf.priv_size = sizeof(u64);
+
+Since this is all specific to your tool, there should be no problems and
+I'm now applying this change merged with your original patch + note
+about that and then moving on to the other patches that make use of it.
+
+- Arnaldo
