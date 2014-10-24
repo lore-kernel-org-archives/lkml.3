@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732AbaJXOlp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 10:41:45 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:35687 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756654AbaJXOlK (ORCPT
+	id S1756762AbaJXOly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:41:54 -0400
+Received: from resqmta-po-04v.sys.comcast.net ([96.114.154.163]:45708 "EHLO
+	resqmta-po-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756654AbaJXOlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 10:41:10 -0400
-Date: Fri, 24 Oct 2014 18:41:01 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/3] mm: memcontrol: remove bogus NULL check after
- mem_cgroup_from_task()
-Message-ID: <20141024144101.GA28055@esperanza>
-References: <1414158589-26094-1-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1414158589-26094-1-git-send-email-hannes@cmpxchg.org>
+	Fri, 24 Oct 2014 10:41:51 -0400
+Date: Fri, 24 Oct 2014 09:41:49 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com
+Subject: Re: [RFC 0/4] [RFC] slub: Fastpath optimization (especially for
+ RT)
+In-Reply-To: <20141024045630.GD15243@js1304-P5Q-DELUXE>
+Message-ID: <alpine.DEB.2.11.1410240938460.29214@gentwo.org>
+References: <20141022155517.560385718@linux.com> <20141023080942.GA7598@js1304-P5Q-DELUXE> <alpine.DEB.2.11.1410230916090.19494@gentwo.org> <20141024045630.GD15243@js1304-P5Q-DELUXE>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 09:49:47AM -0400, Johannes Weiner wrote:
-> That function acts like a typecast - unless NULL is passed in, no NULL
-> can come out.  task_in_mem_cgroup() callers don't pass NULL tasks.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> I found that you said retrieving tid first is sufficient to do
+> things right in old discussion. :)
 
-Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
+Right but the tid can be obtained from a different processor.
 
-> ---
->  mm/memcontrol.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 23cf27cca370..bdf8520979cf 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1335,7 +1335,7 @@ static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
->  bool task_in_mem_cgroup(struct task_struct *task,
->  			const struct mem_cgroup *memcg)
->  {
-> -	struct mem_cgroup *curr = NULL;
-> +	struct mem_cgroup *curr;
->  	struct task_struct *p;
->  	bool ret;
->  
-> @@ -1351,8 +1351,7 @@ bool task_in_mem_cgroup(struct task_struct *task,
->  		 */
->  		rcu_read_lock();
->  		curr = mem_cgroup_from_task(task);
-> -		if (curr)
-> -			css_get(&curr->css);
-> +		css_get(&curr->css);
->  		rcu_read_unlock();
->  	}
->  	/*
-> -- 
-> 2.1.2
-> 
+
+One other aspect of this patchset is that it reduces the cache footprint
+of the alloc and free functions. This typically results in a performance
+increase for the allocator. If we can avoid the page_address() and
+virt_to_head_page() stuff that is required because we drop the ->page
+field in a sufficient number of places then this may be a benefit that
+goes beyond the RT and CONFIG_PREEMPT case.
+
+
