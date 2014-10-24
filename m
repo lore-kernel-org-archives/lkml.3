@@ -1,84 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755807AbaJXV51 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 17:57:27 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:62796 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753347AbaJXV5Z (ORCPT
+	id S1755461AbaJXWCW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 18:02:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:35841 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaJXWCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 17:57:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141024211848.GP3729@sirena.org.uk>
-References: <1414178111-19525-1-git-send-email-balbi@ti.com>
-	<20141024201138.GL3729@sirena.org.uk>
-	<CAF6AEGssn23wSaSCY-MH+CUk1YD2g7Ld+rejQq0BSHUAcXgZEQ@mail.gmail.com>
-	<20141024211848.GP3729@sirena.org.uk>
-Date: Fri, 24 Oct 2014 17:57:24 -0400
-Message-ID: <CAF6AEGsDhv6V8ggOsLHgk6YgWEaL4iV1yX4qOdA_=KzCAWqR=w@mail.gmail.com>
-Subject: Re: [PATCH] regulator: stub out devm_regulator_get_exclusive
-From: Rob Clark <robdclark@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Felipe Balbi <balbi@ti.com>, lgirdwood@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, David Brown <davidb@codeaurora.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 24 Oct 2014 18:02:20 -0400
+From: Jay Vosburgh <jay.vosburgh@canonical.com>
+To: paulmck@linux.vnet.ibm.com
+cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        mroos@linux.ee, tj@kernel.org
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+In-reply-to: <20141024214927.GA4977@linux.vnet.ibm.com>
+References: <20141023220406.GJ4977@linux.vnet.ibm.com> <20141024090857.GA4083@declera.com> <20141024154006.GP4977@linux.vnet.ibm.com> <20141024162943.GA16621@declera.com> <20141024165454.GS4977@linux.vnet.ibm.com> <20141024170931.GA21849@declera.com> <20141024172009.GV4977@linux.vnet.ibm.com> <20141024173526.GA26058@declera.com> <20141024183226.GW4977@linux.vnet.ibm.com> <20141024212557.GA15537@declera.com> <20141024214927.GA4977@linux.vnet.ibm.com>
+Comments: In-reply-to "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+   message dated "Fri, 24 Oct 2014 14:49:27 -0700."
+X-Mailer: MH-E 8.5+bzr; nmh 1.5; GNU Emacs 24.4.50
+Date: Fri, 24 Oct 2014 15:02:04 -0700
+Message-ID: <8451.1414188124@famine>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 5:18 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Fri, Oct 24, 2014 at 04:36:24PM -0400, Rob Clark wrote:
->
->> iirc, I was using _get_exclusive() in a few places where I wanted to
->> be sure not to get dummy-regulator in cases where I should
->> -EPROBE_DEFER instead (since probe order with DT is slightly
->> hilarious, and since I depend on a few other drivers I end up
->> deferring at least a couple times at boot)... I don't quite remember
->> the details.  But afaict regulator_get() still allows dummy-regulator,
->> which is what I specifically don't want.
->
-> No, this is actually making things worse.  You will only get a dummy
-> regulator from regulator_get() if no regulator at all is mapped in the
-> DT, if one is mapped then you'll always get either an -EPROBE_DEFER or
-> the real regulator.  Right now the driver is broken with respect to
-> -EPROBE_DEFER since it just completely ignores the error code and
-> carries on happily if any error is returned which means that the
-> behaviour is going to be unstable on any given system, what happens will
-> depend on probe order which could in turn depend on what's been built
-> modular and so on.
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Oh, you are only looking at the one in mdp4_kms_init(), which could
-possibly be a simple regulator_get().  Look instead at the ones in
-hdmi_init(), where I need to know whether to defer or not.  At one
-point I was having a problem getting dummy regulators with
-regulator_get() but that could have been a symptom of another problem.
-I will re-try regulator_get() next time I am working on the kernel
-part of the driver..
-
-The mdp4_kms->vdd logic is a bit of a hack right now, since we are
-missing a driver upstream for that regulator (and just relying on
-bootloader to leave it on for us).
-
-BR,
--R
-
-> As far as I can tell the only thing the driver does with the regulator
-> it's grabbing exclusively is enable it in probe() and that's going to
-> work just as well with the dummy regulator anyway so I can't see any
-> reason to worry if the driver is getting one.
+>On Sat, Oct 25, 2014 at 12:25:57AM +0300, Yanko Kaneti wrote:
+>> On Fri-10/24/14-2014 11:32, Paul E. McKenney wrote:
+>> > On Fri, Oct 24, 2014 at 08:35:26PM +0300, Yanko Kaneti wrote:
+>> > > On Fri-10/24/14-2014 10:20, Paul E. McKenney wrote:
 >
->> If you have a recommendation for a better way, I am all ears.
+>[ . . . ]
 >
-> Just use regulator_get() (or better, devm_regulator_get()) and pay
-> attention to the errors.  The driver should also disable the regulator
-> on remove and I'd be surprised if the other two regulators shouldn't be
-> using a normal _get() too.  If there is a good reason to use _optional()
-> then the code should be changed to use ERR_PTR() rather than NULL to
-> check for missing regulators and the driver needs to keep them enabled
-> as long as it's using them.
+>> > > > Well, if you are feeling aggressive, give the following patch a spin.
+>> > > > I am doing sanity tests on it in the meantime.
+>> > > 
+>> > > Doesn't seem to make a difference here
+>> > 
+>> > OK, inspection isn't cutting it, so time for tracing.  Does the system
+>> > respond to user input?  If so, please enable rcu:rcu_barrier ftrace before
+>> > the problem occurs, then dump the trace buffer after the problem occurs.
+>> 
+>> Sorry for being unresposive here, but I know next to nothing about tracing
+>> or most things about the kernel, so I have some cathing up to do.
+>> 
+>> In the meantime some layman observations while I tried to find what exactly
+>> triggers the problem.
+>> - Even in runlevel 1 I can reliably trigger the problem by starting libvirtd
+>> - libvirtd seems to be very active in using all sorts of kernel facilities
+>>   that are modules on fedora so it seems to cause many simultaneous kworker 
+>>   calls to modprobe
+>> - there are 8 kworker/u16 from 0 to 7
+>> - one of these kworkers always deadlocks, while there appear to be two
+>>   kworker/u16:6 - the seventh
 >
-> Given that the two optional regulators are only set to one specific
-> value it's a bit surprising that the DT doesn't do this but I guess it's
-> possible there could be broken DTs out there that do give permission for
-> set_voltage() for a range rather than specifying the correct voltage.
+>Adding Tejun on CC in case this duplication of kworker/u16:6 is important.
+>
+>>   6 vs 8 as in 6 rcuos where before they were always 8
+>> 
+>> Just observations from someone who still doesn't know what the u16
+>> kworkers are..
+>
+>Could you please run the following diagnostic patch?  This will help
+>me see if I have managed to miswire the rcuo kthreads.  It should
+>print some information at task-hang time.
+
+	I can give this a spin after the ftrace (now that I've got
+CONFIG_RCU_TRACE turned on).
+
+	I've got an ftrace capture from unmodified -net, it looks like
+this:
+
+    ovs-vswitchd-902   [000] ....   471.778441: rcu_barrier: rcu_sched Begin cpu -1 remaining 0 # 0
+    ovs-vswitchd-902   [000] ....   471.778452: rcu_barrier: rcu_sched Check cpu -1 remaining 0 # 0
+    ovs-vswitchd-902   [000] ....   471.778452: rcu_barrier: rcu_sched Inc1 cpu -1 remaining 0 # 1
+    ovs-vswitchd-902   [000] ....   471.778453: rcu_barrier: rcu_sched OnlineNoCB cpu 0 remaining 1 # 1
+    ovs-vswitchd-902   [000] ....   471.778453: rcu_barrier: rcu_sched OnlineNoCB cpu 1 remaining 2 # 1
+    ovs-vswitchd-902   [000] ....   471.778453: rcu_barrier: rcu_sched OnlineNoCB cpu 2 remaining 3 # 1
+    ovs-vswitchd-902   [000] ....   471.778454: rcu_barrier: rcu_sched OnlineNoCB cpu 3 remaining 4 # 1
+    ovs-vswitchd-902   [000] ....   471.778454: rcu_barrier: rcu_sched Inc2 cpu -1 remaining 4 # 2
+         rcuos/0-9     [000] ..s.   471.793150: rcu_barrier: rcu_sched CB cpu -1 remaining 3 # 2
+         rcuos/1-18    [001] ..s.   471.793308: rcu_barrier: rcu_sched CB cpu -1 remaining 2 # 2
+
+	I let it sit through several "hung task" cycles but that was all
+there was for rcu:rcu_barrier.
+
+	I should have ftrace with the patch as soon as the kernel is
+done building, then I can try the below patch (I'll start it building
+now).
+
+	-J
+
+
+
+
+>							Thanx, Paul
+>
+>------------------------------------------------------------------------
+>
+>rcu: Dump no-CBs CPU state at task-hung time
+>
+>Strictly diagnostic commit for rcu_barrier() hang.  Not for inclusion.
+>
+>Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>
+>diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+>index 0e5366200154..34048140577b 100644
+>--- a/include/linux/rcutiny.h
+>+++ b/include/linux/rcutiny.h
+>@@ -157,4 +157,8 @@ static inline bool rcu_is_watching(void)
+> 
+> #endif /* #else defined(CONFIG_DEBUG_LOCK_ALLOC) || defined(CONFIG_RCU_TRACE) */
+> 
+>+static inline void rcu_show_nocb_setup(void)
+>+{
+>+}
+>+
+> #endif /* __LINUX_RCUTINY_H */
+>diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+>index 52953790dcca..0b813bdb971b 100644
+>--- a/include/linux/rcutree.h
+>+++ b/include/linux/rcutree.h
+>@@ -97,4 +97,6 @@ extern int rcu_scheduler_active __read_mostly;
+> 
+> bool rcu_is_watching(void);
+> 
+>+void rcu_show_nocb_setup(void);
+>+
+> #endif /* __LINUX_RCUTREE_H */
+>diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+>index 06db12434d72..e6e4d0f6b063 100644
+>--- a/kernel/hung_task.c
+>+++ b/kernel/hung_task.c
+>@@ -118,6 +118,7 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
+> 		" disables this message.\n");
+> 	sched_show_task(t);
+> 	debug_show_held_locks(t);
+>+	rcu_show_nocb_setup();
+> 
+> 	touch_nmi_watchdog();
+> 
+>diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+>index 240fa9094f83..6b373e79ce0e 100644
+>--- a/kernel/rcu/rcutorture.c
+>+++ b/kernel/rcu/rcutorture.c
+>@@ -1513,6 +1513,7 @@ rcu_torture_cleanup(void)
+> {
+> 	int i;
+> 
+>+	rcu_show_nocb_setup();
+> 	rcutorture_record_test_transition();
+> 	if (torture_cleanup_begin()) {
+> 		if (cur_ops->cb_barrier != NULL)
+>diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+>index 927c17b081c7..285b3f6fb229 100644
+>--- a/kernel/rcu/tree_plugin.h
+>+++ b/kernel/rcu/tree_plugin.h
+>@@ -2699,6 +2699,31 @@ static bool init_nocb_callback_list(struct rcu_data *rdp)
+> 
+> #endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
+> 
+>+void rcu_show_nocb_setup(void)
+>+{
+>+#ifdef CONFIG_RCU_NOCB_CPU
+>+	int cpu;
+>+	struct rcu_data *rdp;
+>+	struct rcu_state *rsp;
+>+
+>+	for_each_rcu_flavor(rsp) {
+>+		pr_alert("rcu_show_nocb_setup(): %s nocb state:\n", rsp->name);
+>+		for_each_possible_cpu(cpu) {
+>+			if (!rcu_is_nocb_cpu(cpu))
+>+				continue;
+>+			rdp = per_cpu_ptr(rsp->rda, cpu);
+>+			pr_alert("%3d: %p l:%p n:%p %c%c%c\n",
+>+				 cpu,
+>+				 rdp, rdp->nocb_leader, rdp->nocb_next_follower,
+>+				 ".N"[!!rdp->nocb_head],
+>+				 ".G"[!!rdp->nocb_gp_head],
+>+				 ".F"[!!rdp->nocb_follower_head]);
+>+		}
+>+	}
+>+#endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+>+}
+>+EXPORT_SYMBOL_GPL(rcu_show_nocb_setup);
+>+
+> /*
+>  * An adaptive-ticks CPU can potentially execute in kernel mode for an
+>  * arbitrarily long period of time with the scheduling-clock tick turned
+>
+
+---
+	-Jay Vosburgh, jay.vosburgh@canonical.com
