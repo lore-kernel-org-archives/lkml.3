@@ -1,136 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906AbaJXJaP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 05:30:15 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:54620 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaJXJaN (ORCPT
+	id S1755925AbaJXJb5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 05:31:57 -0400
+Received: from smtprelay0169.hostedemail.com ([216.40.44.169]:45187 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751510AbaJXJbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 05:30:13 -0400
-X-IronPort-AV: E=Sophos;i="5.04,779,1406592000"; 
-   d="scan'208";a="185832687"
-Message-ID: <1414143007.15687.27.camel@citrix.com>
-Subject: Re: [PATCH v5 5/6] xen/arm/arm64: introduce xen_arch_need_swiotlb
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <will.deacon@arm.com>
-Date: Fri, 24 Oct 2014 10:30:07 +0100
-In-Reply-To: <1414085246-16160-5-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1410231821520.876@kaball.uk.xensource.com>
-	 <1414085246-16160-5-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-MIME-Version: 1.0
+	Fri, 24 Oct 2014 05:31:55 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3871:3872:3874:4321:5007:6261:6299:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: aunt65_107c05256bd14
+X-Filterd-Recvd-Size: 1600
+Message-ID: <1414143110.15751.13.camel@perches.com>
+Subject: Re: [PATCH] checkpatch: fix use via symlink, make missing spelling
+ file non-fatal
+From: Joe Perches <joe@perches.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jani Nikula <jani.nikula@intel.com>, Kees Cook <keescook@chromium.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Oct 2014 02:31:50 -0700
+In-Reply-To: <20141024090252.GC2910@bark>
+References: <874muwv0ym.fsf@intel.com>
+	 <1413980418.18654.8.camel@perches.com> <87ppdktewn.fsf@intel.com>
+	 <1414085351.15751.10.camel@perches.com> <20141024090252.GC2910@bark>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-23 at 18:27 +0100, Stefano Stabellini wrote:
-> Introduce an arch specific function to find out whether a particular dma
-> mapping operation needs to bounce on the swiotlb buffer.
+On Fri, 2014-10-24 at 10:02 +0100, Andy Whitcroft wrote:
+> On Thu, Oct 23, 2014 at 10:29:11AM -0700, Joe Perches wrote:
 > 
-> On ARM and ARM64, if the page involved is a foreign page and the device
-> is not coherent, we need to bounce because at unmap time we cannot
-> execute any required cache maintenance operations (we don't know how to
-> find the pfn from the mfn).
+> [...]
+> >  my $P = $0;
+> > -$P =~ s@(.*)/@@g;
+> > -my $D = $1;
+> > +my $D = dirname(abs_path($P));
 > 
-> No change of behaviour for x86.
+> That changes the value of $P, I don't know if that is intended:
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>   my $D = dirname(abs_path($0));
+> 
+> or
+> 
+>   my $D = abs_path($1);
+> 
+> perhaps to keep $P as it was.
 
-Your tab stops are messed up on almost every new line you added. Looks 
-like you have ts=4 or something.
+I did it to show the executable passed on the cmdline better.
 
-The actual changes look ok though, so with the coding style fixed you
-can add:
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+It changes --help and some warn/die messages.
 
-> 
-> ---
-> 
-> Changes in v5:
-> - fix indentation.
-> ---
->  arch/arm/include/asm/xen/page.h |    4 ++++
->  arch/arm/xen/mm.c               |    7 +++++++
->  arch/x86/include/asm/xen/page.h |    7 +++++++
->  drivers/xen/swiotlb-xen.c       |    5 ++++-
->  4 files changed, 22 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> index 135c24a..fb7839d 100644
-> --- a/arch/arm/include/asm/xen/page.h
-> +++ b/arch/arm/include/asm/xen/page.h
-> @@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->  #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
->  #define xen_unmap(cookie) iounmap((cookie))
->  
-> +bool xen_arch_need_swiotlb(struct device *dev,
-> +						   unsigned long pfn,
-> +						   unsigned long mfn);
-> +
->  #endif /* _ASM_ARM_XEN_PAGE_H */
-> diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-> index 659e1c3..728c245 100644
-> --- a/arch/arm/xen/mm.c
-> +++ b/arch/arm/xen/mm.c
-> @@ -140,6 +140,13 @@ void xen_dma_sync_single_for_device(struct device *hwdev,
->  	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
->  }
->  
-> +bool xen_arch_need_swiotlb(struct device *dev,
-> +						   unsigned long pfn,
-> +						   unsigned long mfn)
-> +{
-> +	return ((pfn != mfn) && !xen_is_dma_coherent(dev));
-> +}
-> +
->  int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
->  				 unsigned int address_bits,
->  				 dma_addr_t *dma_handle)
-> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> index c949923..800b6a9 100644
-> --- a/arch/x86/include/asm/xen/page.h
-> +++ b/arch/x86/include/asm/xen/page.h
-> @@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
->  #define xen_remap(cookie, size) ioremap((cookie), (size));
->  #define xen_unmap(cookie) iounmap((cookie))
->  
-> +static inline bool xen_arch_need_swiotlb(struct device *dev,
-> +		                                 unsigned long pfn,
-> +		                                 unsigned long mfn)
-> +{
-> +	return false;
-> +}
-> +
->  #endif /* _ASM_X86_XEN_PAGE_H */
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index ebd8f21..ac0bd60 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
->  	 * buffering it.
->  	 */
->  	if (dma_capable(dev, dev_addr, size) &&
-> -	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-> +	    !range_straddles_page_boundary(phys, size) &&
-> +		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
-> +		!swiotlb_force) {
->  		/* we are not interested in the dma_addr returned by
->  		 * xen_dma_map_page, only in the potential cache flushes executed
->  		 * by the function. */
-> @@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
->  		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
->  
->  		if (swiotlb_force ||
-> +			xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
->  		    !dma_capable(hwdev, dev_addr, sg->length) ||
->  		    range_straddles_page_boundary(paddr, sg->length)) {
->  			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
-
+It's not particularly important either way.
 
