@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074AbaJXS1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 14:27:55 -0400
-Received: from mout.gmx.com ([74.208.4.200]:61938 "EHLO mout.gmx.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140AbaJXS1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 14:27:54 -0400
+	id S1757114AbaJXS3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 14:29:16 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:46765 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756962AbaJXS3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 14:29:14 -0400
+Date: Fri, 24 Oct 2014 20:29:11 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/3] mm: memcontrol: remove bogus NULL check after
+ mem_cgroup_from_task()
+Message-ID: <20141024182911.GA18956@dhcp22.suse.cz>
+References: <1414158589-26094-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Message-ID: <trinity-702703cf-2e1d-47d4-a785-2ef41168017c-1414175266462@3capp-mailcom-lxa14>
-From: "John Garret" <johngarret2014@mail.com>
-To: linux-kernel@vger.kernel.org, debian-mirrors@lists.debian.org,
-        debian-security@lists.debian.org, debian-project@lists.debian.org,
-        debian-ctte@lists.debian.org, debian-devel@lists.debian.org,
-        debian-user@lists.debian.org
-Subject: (Sng) Sendoff for Linux, People(Devs) want out
-Content-Type: text/plain; charset=UTF-8
-Date: Fri, 24 Oct 2014 20:27:46 +0200
-Importance: normal
-Sensitivity: Normal
-X-Priority: 3
-X-Provags-ID: V03:K0:7gpjzALTCGVB+FnBAraHwhWddGXjfKcJ6I4rOKYot37
- o4/GyPNwG0pkGeP1UztGvwUn28E+q6BATUO3Ypucqqfb9nh7H2
- d8AG6ALeo8ZOyMM7jW6RUQ4d2R5zwuKBGfjo3eDFJfq1T9owMu
- 3tWpii9o3xr58RgwnspB6LgOO69ZqsM7kF9e1thrcsqlug7rkT
- a+0e/H5s+9+yXAS6x7gjvcCJALu9HfdLf95VkTmRPVpDCeYW30
- QB6ZzWkf5fRmE8dCJWQlSl7DmlJdrxKMpJ27RT0+zCIH3DWIpg
- b95zANrwVXbdQxZLxq2MhyQHB+1
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414158589-26094-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-youtu.be/K86UKVW2dZo
+On Fri 24-10-14 09:49:47, Johannes Weiner wrote:
+> That function acts like a typecast - unless NULL is passed in, no NULL
+> can come out.  task_in_mem_cgroup() callers don't pass NULL tasks.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Sendoff for Linux - Because even Linus wants a Mac or Windows clone.
-His main concern lately is that some distro he uses (doesn't roll his own)
-requires a password to add printers.
+Thanks and sorry about my bogus version earlier today.
 
-He has no problem with systemd (Why should he, it is a poor reimplemtation
-of OS X's launchd which is an even poorer reimplementation of Solaris SMF)
+Acked-by: Michal Hocko <mhocko@suse.cz
 
-He started linux because 386 BSD was in legal dispute. He wanted a real
-unix OS on cheap x86 hardware. Well now there's a proper one: Mac OSX
-He might aswell use that. Perhaps he does.
+> ---
+>  mm/memcontrol.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 23cf27cca370..bdf8520979cf 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1335,7 +1335,7 @@ static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+>  bool task_in_mem_cgroup(struct task_struct *task,
+>  			const struct mem_cgroup *memcg)
+>  {
+> -	struct mem_cgroup *curr = NULL;
+> +	struct mem_cgroup *curr;
+>  	struct task_struct *p;
+>  	bool ret;
+>  
+> @@ -1351,8 +1351,7 @@ bool task_in_mem_cgroup(struct task_struct *task,
+>  		 */
+>  		rcu_read_lock();
+>  		curr = mem_cgroup_from_task(task);
+> -		if (curr)
+> -			css_get(&curr->css);
+> +		css_get(&curr->css);
+>  		rcu_read_unlock();
+>  	}
+>  	/*
+> -- 
+> 2.1.2
+> 
 
-Linux is on its last legs. In userspace there is constant "regression" 
-between versions (things that used to work don't any more or are
-intentionally ripped out, that almost appears to be sabotage. The kernel
-is presided over by those who don't care anymore and will let any
-garbage in so long as it is written by a RedHat employee - they will
-never allow sensible things like /dev/dsp multiplexing however - audio
-needs to go through atleast 4 levels of redirection! And proper security
-patches (Like GRSecurity) - Never (though that remaining seperate and
-divorced from the linux kernel dev culture is probably a blessing in disguise)
-
-It's been a good 20 years, but the people that started it don't give a
-damn anymore and want out.
-
-(C) Gnu GPL v2
+-- 
+Michal Hocko
+SUSE Labs
