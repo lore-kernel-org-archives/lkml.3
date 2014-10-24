@@ -1,79 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239AbaJXOkL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 10:40:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:38524 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754174AbaJXOkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 10:40:08 -0400
-Date: Fri, 24 Oct 2014 11:40:02 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 05/16] perf tools: Add facility to export data in
- database-friendly way
-Message-ID: <20141024144002.GC14687@kernel.org>
-References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
- <1414061124-26830-6-git-send-email-adrian.hunter@intel.com>
- <87lho6c8ec.fsf@sejong.aot.lge.com>
- <544A099C.50104@intel.com>
- <544A2E5F.80508@intel.com>
- <CAM9d7ci6bv_JnK8DkqqTEttPkEp1mtMPN07XjqX=K4ADOUC6SA@mail.gmail.com>
- <544A505C.5030203@intel.com>
+	id S1756402AbaJXOke (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:40:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48108 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174AbaJXOkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 10:40:32 -0400
+Date: Fri, 24 Oct 2014 16:40:17 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Qiaowei Ren <qiaowei.ren@intel.com>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, x86@kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH v9 11/12] x86, mpx: cleanup unused bound tables
+In-Reply-To: <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com>
+Message-ID: <alpine.DEB.2.11.1410241451280.5308@nanos>
+References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544A505C.5030203@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 24, 2014 at 04:13:00PM +0300, Adrian Hunter escreveu:
-> On 24/10/14 15:26, Namhyung Kim wrote:
-> > Hi Adrian,
-> > 
-> > On Fri, Oct 24, 2014 at 7:47 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
-> >> On 24/10/14 11:11, Adrian Hunter wrote:
-> >>> On 24/10/14 09:02, Namhyung Kim wrote:
-> >>>> Can we do it somewhere in a script not in the core code?  I don't feel
-> >>>> comfortable to add those bits into the core code.  What if we export
-> >>>
-> >>> Please explain what you mean by "comfortable".
-> >>
-> >> Or rather: What about it is wrong for core code?
-> > 
-> > Well, there's nothing "wrong" about it. :)
-> > 
-> > But I think if some code is used only by a specific bits, it'd be
-> > better hiding it from the rest as much as possible.
-> 
-> It is pretty self-contained in db-export.[ch] and the scripting
-> engines.
+On Sun, 12 Oct 2014, Qiaowei Ren wrote:
+> Since we are doing the freeing from munmap() (and other paths like it),
+> we hold mmap_sem for write. If we fault, the page fault handler will
+> attempt to acquire mmap_sem for read and we will deadlock. For now, to
+> avoid deadlock, we disable page faults while touching the bounds directory
+> entry. This keeps us from being able to free the tables in this case.
+> This deficiency will be addressed in later patches.
 
-So, what I meant was the patch below, on top of yours.
+This is wrong to begin with. You need a proper design for addressing
+this short coming in the first place. Retrofitting it into your
+current design will just not work at all or end up with some major
+mess.
+ 
+The problem to solve is, that the kernel needs to unmap the bounds
+table if the data mapping which it covers goes away.
 
-In some data structures where there were no provision for tool specific
-storage, I added an unnamed union with db_id and a void *priv pointer,
-where there were, be it a priv pointer, like in perf_evsel, I moved
-db_id to it, no extra costs for the other tools.
+You decided to do that at the end of unmap with mmap_sem write
+held. As I explained last time, that's not an absolute requirement,
+it's just a random choice. And that choice is obvioulsy not a really
+good one as your own observation of the page fault issue proves.
 
-And in struct symbol, I made it use symbol__priv(), that will access the
-area reserved by setting symbol.priv_size at tool start time, like done
-for the annotation case in top, report, annotate. I.e. on the tool that
-will use symbol->db_id you will need to add this just before calling
-symbol__init():
+So perhaps we should look at it the other way round. We already know
+before the actual unmap happens what's the start and the end of the
+area.
 
-	symbol_conf.priv_size = sizeof(u64);
+So we can be way smarter and do the following:
 
-Since this is all specific to your tool, there should be no problems and
-I'm now applying this change merged with your original patch + note
-about that and then moving on to the other patches that make use of it.
+   mpx_pre_unmap(from, len);
 
-- Arnaldo
+   down_write(mmap_sem);
+   do_unmap(from, len);
+   up_write(mmap_sem);
+
+   mpx_post_unmap(mpx_unmap);
+
+int mpx_pre_unmap(...)
+{
+    down_write(mm->bd_sem);
+    
+    down_read(mm->mmap_sem);
+
+    Here we do the following: 
+
+    1) Invalidate the bounds table entries for the to be unmapped area in
+       the bounds directory. This can fault as we only hold mmap sem for
+       read.
+    
+    2) Mark the corresponding VMAs which should be unmapped and
+       removed.  This can be done with mmap sem down read held as the
+       VMA chain cannot be changed and the 'Mark for removal" field is
+       protected by mm->bd_sem.
+   
+       For each to be removed VMA we increment mm->bd_remove_vmas
+ 
+    Holding mm->bd_sem also prevents that a new bound table to be
+    inserted, if we do the whole protection thing right.
+
+    up_read(mm->mmap_sem);
+}
+
+void mpx_post_unmap(void)
+{
+	if (mm->bd_remove_vmas) {
+	   down_write(mm->mmap_sem);
+ 	   cleanup_to_be_removed_vmas();		
+	   up_write(mm->mmap_sem);
+	}
+
+	up_write(mm->bd_sem);
+}
+
+The mpx_pre_unmap/post_unmap calls can be either added explicit to the
+relevant down_write/unmap/up_write code pathes or you hide it behind
+some wrapper function.
+
+Now you need to acquire mm->bd_sem for the fault handling code as well
+in order to serialize the creation of new bound table entries. In that
+case a down_read(mm->bd_sem) is sufficient as the cmpxchg() prevents
+the insertion of multiple tables for the same directory entries.
+
+So we'd end up with the following serialization scheme:
+
+prctl enable/disable management:  down_write(mm->bd_sem);
+
+bounds violation:    		  down_read(mm->bd_sem);
+
+directory entry allocation:	  down_read(mm->bd_sem);
+
+directory entry removal:	  down_write(mm->bd_sem);
+
+Now we need to check whether there is a potential deadlock lurking
+around the corner. We get the following nesting scenarios:
+
+- prctl enable/disable management:  down_write(mm->bd_sem);
+
+   No mmap_sem nesting at all
+
+- bounds violation:    	     down_read(mm->bd_sem);
+
+   Might nest down_read(mm->mmap_sem) if the copy code from user space
+   faults.
+
+- directory entry allocation:	     down_read(mm->bd_sem);
+
+   Nests down_write(mm->mmap_sem) for the VMA allocation.
+
+   Might nest down_read(mm->mmap_sem) if the cmpxchg() for the
+   directory entry faults
+
+- directory entry removal:	  down_write(mm->bd_sem);
+
+   Might nest down_read(mm->mmap_sem) if the invalidation of the
+   directory entry faults
+
+In other words here is the possible nesting:
+
+  #1 down_read(mm->bd_sem);  down_read(mm->mmap_sem);
+
+  #2 down_read(mm->bd_sem);  down_write(mm->mmap_sem);
+
+  #3 down_write(mm->bd_sem); down_read(mm->mmap_sem);
+
+  #4 down_write(mm->bd_sem); down_write(mm->mmap_sem);
+
+We never execute any of those nested on a single task. The bounds
+fault handler is never nested as it always comes from user space. So
+we should be safe.
+
+And this prevents all the nasty race conditions I discussed in
+Portland with Dave which happen when we try do to stuff outside of the
+mmap_sem write held region.
+
+Performance wise it's not an issue either. The prctl case is not a a
+hotpath anyway. The fault handlers get away with down_read() and the
+unmap code is heavyweight on mmap sem write held anyway.
+
+Thoughts?
+
+Thanks,
+
+	tglx
