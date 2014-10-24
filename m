@@ -1,134 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaJXPmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:42:32 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:43755 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752680AbaJXPmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:42:31 -0400
-Date: Fri, 24 Oct 2014 16:42:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "cross-distro@lists.linaro.org" <cross-distro@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Serban Constantinescu <Serban.Constantinescu@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ghackmann@google.com" <ghackmann@google.com>,
-        "ijc@hellion.org.uk" <ijc@hellion.org.uk>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/1] arm64: Fix /proc/cpuinfo
-Message-ID: <20141024154217.GT27405@n2100.arm.linux.org.uk>
-References: <1414159000-27059-1-git-send-email-mark.rutland@arm.com>
- <20141024141936.GS27405@n2100.arm.linux.org.uk>
- <20141024142435.GK24265@leverpostej>
+	id S932516AbaJXPoE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:44:04 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57055 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751630AbaJXPoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 11:44:01 -0400
+Date: Fri, 24 Oct 2014 08:40:06 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Yanko Kaneti <yaneti@declera.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        jay.vosburgh@canonical.com, mroos@linux.ee
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141024154006.GP4977@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141022224032.GA1240@declera.com>
+ <20141022232421.GN4977@linux.vnet.ibm.com>
+ <1414044566.2031.1.camel@declera.com>
+ <20141023122750.GP4977@linux.vnet.ibm.com>
+ <20141023153333.GA19278@linux.vnet.ibm.com>
+ <20141023195159.GA2331@declera.com>
+ <20141023200507.GC4977@linux.vnet.ibm.com>
+ <1414100740.2065.2.camel@declera.com>
+ <20141023220406.GJ4977@linux.vnet.ibm.com>
+ <20141024090857.GA4083@declera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141024142435.GK24265@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141024090857.GA4083@declera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102415-0029-0000-0000-000000E10B19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 03:24:35PM +0100, Mark Rutland wrote:
-> On Fri, Oct 24, 2014 at 03:19:36PM +0100, Russell King - ARM Linux wrote:
-> > It's unfortunate that people have decided that parsing the ELF HWCAPs
-> > from /proc/cpuinfo is an acceptable way to go, rather than using the
-> > binary information passed, but procfs is a much more visible source
-> > of information than some binary interface which you need to read man
-> > pages to find.
+On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
+> On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
+> > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
+> > > 
+> > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
+> > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
+
+[ . . . ]
+
+> > > > > Indeed, c847f14217d5 it is.
+> > > > > 
+> > > > > Much to my embarrasment I just noticed that in addition to the
+> > > > > rcu merge, triggering the bug "requires" my specific Fedora 
+> > > > > rawhide network
+> > > > > setup. Booting in single mode and modprobe ppp_generic is fine. 
+> > > > > The bug
+> > > > > appears when starting with my regular fedora network setup, which 
+> > > > > in my case
+> > > > > includes 3 ethernet adapters and a libvirt birdge+nat setup.
+> > > > > 
+> > > > > Hope that helps.
+> > > > > 
+> > > > > I am attaching the config.
+> > > > 
+> > > > It does help a lot, thank you!!!
+> > > > 
+> > > > The following patch is a bit of a shot in the dark, and assumes that
+> > > > commit 1772947bd012 (rcu: Handle NOCB callbacks from irq-disabled 
+> > > > idle
+> > > > code) introduced the problem.  Does this patch fix things up?
+> > > 
+> > > Unfortunately not, This is linus-tip + patch
 > > 
-> > That's the danger of publishing information in either procfs or sysfs.
-> > Once published, it becomes part of the userspace API, and it can become
-> > hard to remove it.  This is why we should /always/ think very carefully
-> > about what we expose through these filesystems.
+> > OK.  Can't have everything, I guess.
+> > 
+> > > INFO: task kworker/u16:6:96 blocked for more than 120 seconds.
+> > >       Not tainted 3.18.0-rc1+ #4
+> > > "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> > > kworker/u16:6   D ffff8800ca84cec0 11168    96      2 0x00000000
+> > > Workqueue: netns cleanup_net
+> > >  ffff8802218339e8 0000000000000096 ffff8800ca84cec0 00000000001d5f00
+> > >  ffff880221833fd8 00000000001d5f00 ffff880223264ec0 ffff8800ca84cec0
+> > >  ffffffff82c52040 7fffffffffffffff ffffffff81ee2658 ffffffff81ee2650
+> > > Call Trace:
+> > >  [<ffffffff8185b8e9>] schedule+0x29/0x70
+> > >  [<ffffffff81860b0c>] schedule_timeout+0x26c/0x410
+> > >  [<ffffffff81028bea>] ? native_sched_clock+0x2a/0xa0
+> > >  [<ffffffff8110759c>] ? mark_held_locks+0x7c/0xb0
+> > >  [<ffffffff81861b90>] ? _raw_spin_unlock_irq+0x30/0x50
+> > >  [<ffffffff8110772d>] ? trace_hardirqs_on_caller+0x15d/0x200
+> > >  [<ffffffff8185d31c>] wait_for_completion+0x10c/0x150
+> > >  [<ffffffff810e4ed0>] ? wake_up_state+0x20/0x20
+> > >  [<ffffffff8112a219>] _rcu_barrier+0x159/0x200
+> > >  [<ffffffff8112a315>] rcu_barrier+0x15/0x20
+> > >  [<ffffffff8171657f>] netdev_run_todo+0x6f/0x310
+> > >  [<ffffffff8170b145>] ? rollback_registered_many+0x265/0x2e0
+> > >  [<ffffffff817235ee>] rtnl_unlock+0xe/0x10
+> > >  [<ffffffff8170cfa6>] default_device_exit_batch+0x156/0x180
+> > >  [<ffffffff810fd390>] ? abort_exclusive_wait+0xb0/0xb0
+> > >  [<ffffffff81705053>] ops_exit_list.isra.1+0x53/0x60
+> > >  [<ffffffff81705c00>] cleanup_net+0x100/0x1f0
+> > >  [<ffffffff810cca98>] process_one_work+0x218/0x850
+> > >  [<ffffffff810cc9ff>] ? process_one_work+0x17f/0x850
+> > >  [<ffffffff810cd1b7>] ? worker_thread+0xe7/0x4a0
+> > >  [<ffffffff810cd13b>] worker_thread+0x6b/0x4a0
+> > >  [<ffffffff810cd0d0>] ? process_one_work+0x850/0x850
+> > >  [<ffffffff810d348b>] kthread+0x10b/0x130
+> > >  [<ffffffff81028c69>] ? sched_clock+0x9/0x10
+> > >  [<ffffffff810d3380>] ? kthread_create_on_node+0x250/0x250
+> > >  [<ffffffff818628bc>] ret_from_fork+0x7c/0xb0
+> > >  [<ffffffff810d3380>] ? kthread_create_on_node+0x250/0x250
+> > > 4 locks held by kworker/u16:6/96:
+> > >  #0:  ("%s""netns"){.+.+.+}, at: [<ffffffff810cc9ff>] process_one_work+0x17f/0x850
+> > >  #1:  (net_cleanup_work){+.+.+.}, at: [<ffffffff810cc9ff>] process_one_work+0x17f/0x850
+> > >  #2:  (net_mutex){+.+.+.}, at: [<ffffffff81705b8c>] cleanup_net+0x8c/0x1f0
+> > >  #3:  (rcu_sched_state.barrier_mutex){+.+...}, at: [<ffffffff8112a0f5>] _rcu_barrier+0x35/0x200
+> > > INFO: task modprobe:1045 blocked for more than 120 seconds.
+> > >       Not tainted 3.18.0-rc1+ #4
+> > > "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> > > modprobe        D ffff880218343480 12920  1045   1044 0x00000080
+> > >  ffff880218353bf8 0000000000000096 ffff880218343480 00000000001d5f00
+> > >  ffff880218353fd8 00000000001d5f00 ffffffff81e1b580 ffff880218343480
+> > >  ffff880218343480 ffffffff81f8f748 0000000000000246 ffff880218343480
+> > > Call Trace:
+> > >  [<ffffffff8185be91>] schedule_preempt_disabled+0x31/0x80
+> > >  [<ffffffff8185d6e3>] mutex_lock_nested+0x183/0x440
+> > >  [<ffffffff81705a1f>] ? register_pernet_subsys+0x1f/0x50
+> > >  [<ffffffff81705a1f>] ? register_pernet_subsys+0x1f/0x50
+> > >  [<ffffffffa0673000>] ? 0xffffffffa0673000
+> > >  [<ffffffff81705a1f>] register_pernet_subsys+0x1f/0x50
+> > >  [<ffffffffa0673048>] br_init+0x48/0xd3 [bridge]
+> > >  [<ffffffff81002148>] do_one_initcall+0xd8/0x210
+> > >  [<ffffffff81153052>] load_module+0x20c2/0x2870
+> > >  [<ffffffff8114e030>] ? store_uevent+0x70/0x70
+> > >  [<ffffffff81278717>] ? kernel_read+0x57/0x90
+> > >  [<ffffffff811539e6>] SyS_finit_module+0xa6/0xe0
+> > >  [<ffffffff81862969>] system_call_fastpath+0x12/0x17
+> > > 1 lock held by modprobe/1045:
+> > >  #0:  (net_mutex){+.+.+.}, at: [<ffffffff81705a1f>] register_pernet_subsys+0x1f/0x50
+> > 
+> > Presumably the kworker/u16:6 completed, then modprobe hung?
+> > 
+> > If not, I have some very hard questions about why net_mutex can be
+> > held by two tasks concurrently, given that it does not appear to be a
+> > reader-writer lock...
+> > 
+> > Either way, my patch assumed that 39953dfd4007 (rcu: Avoid misordering in
+> > __call_rcu_nocb_enqueue()) would work and that 1772947bd012 (rcu: Handle
+> > NOCB callbacks from irq-disabled idle code) would fail.  Is that the case?
+> > If not, could you please bisect the commits between 11ed7f934cb8 (rcu:
+> > Make nocb leader kthreads process pending callbacks after spawning)
+> > and c847f14217d5 (rcu: Avoid misordering in nocb_leader_wait())?
 > 
-> Yes. We made a mistake here with the arm64 format. Hopefully there's a
-> way by which we can keep applications happy.
+> Ok, unless I've messsed up something major, bisecting points to:
 > 
-> For future architectures, it's probably worth putting stronger
-> guidelines in place to prevent precisely the issues we've hit here.
+> 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
+> 
+> Makes any sense ?
 
-You know, I saw something like this happening years ago.
+Good question.  ;-)
 
-I guess that if people had listened to me when ARM64 was in the process
-of being released about my concerns about the ARM64 code diverging from
-the ARM32 code, we wouldn't be having this problem right now, because
-we would have been aware of the API differences much earlier on.
+Are any of your online CPUs missing rcuo kthreads?  There should be
+kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
 
-As ARM64 wants to be compatible with ARM32 (in that it wants to be able
-to run ARM32 applications), ARM64 *has* to offer a compatible user API
-for everything that is a user API.
+> Another thing I noticed is that in failure mode the libvirtd bridge actually 
+> doesn't show up. So maybe ppp is just the first thing to try that bumps up
+> into whatever libvirtd is failing to do to setup those.
+> 
+> Truly hope this is not something with random timing dependency....
 
-That means you have to generate an ARM32 compatible /proc/cpuinfo, ARM32
-compatible hwcap information, ARM32 compatible signal structures, ARM32
-compatible everything else.  Which means you basically need to have a
-copy of the ARM32 core code in ARM64, even if you want a different
-native ARM64 user API.
+Me too.  ;-)
 
-This is _exactly_ the reason why architectures like X86 decided it was
-silly having separated 32 and 64-bit, and why they went through a
-process of merging the two together.  A lot of the code was identical,
-and a lot of the 32-bit specific code was needed for 64-bit to provide
-the 32-bit API.
+							Thanx, Paul
 
-Right now, you're finding out this the hard way, and hitting these API
-problems in the process, and going "oh fsck" when you hit them - quite
-simply because you've backed yourselves into a corner over this.  You
-have established a different ARM64 API because you didn't want the ARM32
-legacy, but then you've found that you /do/ need the ARM32 legacy.  Now
-you're in the position of having to change the ARM64 API, possibly
-breaking ARM64 applications in the process.
+> --Yanko
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Welcome to the problems of being separate. :)
-
-For example, some of the differences between ARM64 and ARM32 are really
-trivial, and would've been nice to have them reflected into the ARM32
-code base.  Here's an example from __die():
-
--       printk(KERN_EMERG "Internal error: %s: %x [#%d]" S_PREEMPT S_SMP
--              S_ISA "\n", str, err, ++die_counter);
-+       pr_emerg("Internal error: %s: %x [#%d]" S_PREEMPT S_SMP "\n",
-+                str, err, ++die_counter);
-
-        /* trap and error numbers are mostly meaningless on ARM */
--       ret = notify_die(DIE_OOPS, str, regs, err, tsk->thread.trap_no, SIGSEGV);
-+       ret = notify_die(DIE_OOPS, str, regs, err, 0, SIGSEGV);
-        if (ret == NOTIFY_STOP)
--               return 1;
-+               return ret;
-
-        print_modules();
-        __show_regs(regs);
--       printk(KERN_EMERG "Process %.*s (pid: %d, stack limit = 0x%p)\n",
--               TASK_COMM_LEN, tsk->comm, task_pid_nr(tsk), end_of_stack(tsk));
-+       pr_emerg("Process %.*s (pid: %d, stack limit = 0x%p)\n",
-+                TASK_COMM_LEN, tsk->comm, task_pid_nr(tsk), thread + 1);
-
-        if (!user_mode(regs) || in_interrupt()) {
--               dump_mem(KERN_EMERG, "Stack: ", regs->ARM_sp,
-+               dump_mem(KERN_EMERG, "Stack: ", regs->sp,
-                         THREAD_SIZE + (unsigned long)task_stack_page(tsk));
-                dump_backtrace(regs, tsk);
-                dump_instr(KERN_EMERG, regs);
-        }
-
--       return 0;
-+       return ret;
- }
-
-Having the printk(KERN_EMERG -> pr_emerg( would be nice.  What's also
-revealed is that you've missed out on the end_of_stack() cleanup which
-Rabin Vincent submitted in 2012.
-
-I'm sure that there's plenty more instances of stuff which should be
-aligned between the two copies of what is essentially the same core
-code.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
