@@ -1,171 +1,527 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402AbaJXOke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 10:40:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48108 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754174AbaJXOkc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 10:40:32 -0400
-Date: Fri, 24 Oct 2014 16:40:17 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Qiaowei Ren <qiaowei.ren@intel.com>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH v9 11/12] x86, mpx: cleanup unused bound tables
-In-Reply-To: <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com>
-Message-ID: <alpine.DEB.2.11.1410241451280.5308@nanos>
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-12-git-send-email-qiaowei.ren@intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1756684AbaJXOlL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:41:11 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:52930 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756445AbaJXOlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 10:41:01 -0400
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
+        pdeschrijver@nvidia.com, rjw@rjwysocki.net, viresh.kumar@linaro.org
+Cc: mturquette@linaro.org, pwalmsley@nvidia.com, vinceh@nvidia.com,
+        pgaikwad@nvidia.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, tuomas.tynkkynen@iki.fi,
+        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>
+Subject: [PATCH v5 12/16] cpufreq: tegra: Rename tegra-cpufreq to tegra20-cpufreq
+Date: Fri, 24 Oct 2014 17:39:19 +0300
+Message-Id: <1414161563-16812-13-git-send-email-mikko.perttunen@kapsi.fi>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi>
+References: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi>
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 12 Oct 2014, Qiaowei Ren wrote:
-> Since we are doing the freeing from munmap() (and other paths like it),
-> we hold mmap_sem for write. If we fault, the page fault handler will
-> attempt to acquire mmap_sem for read and we will deadlock. For now, to
-> avoid deadlock, we disable page faults while touching the bounds directory
-> entry. This keeps us from being able to free the tables in this case.
-> This deficiency will be addressed in later patches.
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 
-This is wrong to begin with. You need a proper design for addressing
-this short coming in the first place. Retrofitting it into your
-current design will just not work at all or end up with some major
-mess.
+The Tegra124 will use a different driver for frequency scaling, so
+rename the old driver (which handles only Tegra20) appropriately.
+
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+---
+ drivers/cpufreq/Kconfig.arm       |   6 +-
+ drivers/cpufreq/Makefile          |   2 +-
+ drivers/cpufreq/tegra-cpufreq.c   | 218 --------------------------------------
+ drivers/cpufreq/tegra20-cpufreq.c | 218 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 222 insertions(+), 222 deletions(-)
+ delete mode 100644 drivers/cpufreq/tegra-cpufreq.c
+ create mode 100644 drivers/cpufreq/tegra20-cpufreq.c
+
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index 83a75dc..22419f4 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -241,9 +241,9 @@ config ARM_SPEAR_CPUFREQ
+ 	help
+ 	  This adds the CPUFreq driver support for SPEAr SOCs.
  
-The problem to solve is, that the kernel needs to unmap the bounds
-table if the data mapping which it covers goes away.
-
-You decided to do that at the end of unmap with mmap_sem write
-held. As I explained last time, that's not an absolute requirement,
-it's just a random choice. And that choice is obvioulsy not a really
-good one as your own observation of the page fault issue proves.
-
-So perhaps we should look at it the other way round. We already know
-before the actual unmap happens what's the start and the end of the
-area.
-
-So we can be way smarter and do the following:
-
-   mpx_pre_unmap(from, len);
-
-   down_write(mmap_sem);
-   do_unmap(from, len);
-   up_write(mmap_sem);
-
-   mpx_post_unmap(mpx_unmap);
-
-int mpx_pre_unmap(...)
-{
-    down_write(mm->bd_sem);
-    
-    down_read(mm->mmap_sem);
-
-    Here we do the following: 
-
-    1) Invalidate the bounds table entries for the to be unmapped area in
-       the bounds directory. This can fault as we only hold mmap sem for
-       read.
-    
-    2) Mark the corresponding VMAs which should be unmapped and
-       removed.  This can be done with mmap sem down read held as the
-       VMA chain cannot be changed and the 'Mark for removal" field is
-       protected by mm->bd_sem.
-   
-       For each to be removed VMA we increment mm->bd_remove_vmas
+-config ARM_TEGRA_CPUFREQ
+-	bool "TEGRA CPUFreq support"
++config ARM_TEGRA20_CPUFREQ
++	bool "Tegra20 CPUFreq support"
+ 	depends on ARCH_TEGRA
+ 	default y
+ 	help
+-	  This adds the CPUFreq driver support for TEGRA SOCs.
++	  This adds the CPUFreq driver support for Tegra20 SOCs.
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index 40c53dc..0d3ec1c 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -75,7 +75,7 @@ obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+= s5pv210-cpufreq.o
+ obj-$(CONFIG_ARM_SA1100_CPUFREQ)	+= sa1100-cpufreq.o
+ obj-$(CONFIG_ARM_SA1110_CPUFREQ)	+= sa1110-cpufreq.o
+ obj-$(CONFIG_ARM_SPEAR_CPUFREQ)		+= spear-cpufreq.o
+-obj-$(CONFIG_ARM_TEGRA_CPUFREQ)		+= tegra-cpufreq.o
++obj-$(CONFIG_ARM_TEGRA20_CPUFREQ)	+= tegra20-cpufreq.o
+ obj-$(CONFIG_ARM_VEXPRESS_SPC_CPUFREQ)	+= vexpress-spc-cpufreq.o
  
-    Holding mm->bd_sem also prevents that a new bound table to be
-    inserted, if we do the whole protection thing right.
+ ##################################################################################
+diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
+deleted file mode 100644
+index 8084c7f..0000000
+--- a/drivers/cpufreq/tegra-cpufreq.c
++++ /dev/null
+@@ -1,218 +0,0 @@
+-/*
+- * Copyright (C) 2010 Google, Inc.
+- *
+- * Author:
+- *	Colin Cross <ccross@google.com>
+- *	Based on arch/arm/plat-omap/cpu-omap.c, (C) 2005 Nokia Corporation
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/types.h>
+-#include <linux/sched.h>
+-#include <linux/cpufreq.h>
+-#include <linux/delay.h>
+-#include <linux/init.h>
+-#include <linux/err.h>
+-#include <linux/clk.h>
+-#include <linux/io.h>
+-
+-static struct cpufreq_frequency_table freq_table[] = {
+-	{ .frequency = 216000 },
+-	{ .frequency = 312000 },
+-	{ .frequency = 456000 },
+-	{ .frequency = 608000 },
+-	{ .frequency = 760000 },
+-	{ .frequency = 816000 },
+-	{ .frequency = 912000 },
+-	{ .frequency = 1000000 },
+-	{ .frequency = CPUFREQ_TABLE_END },
+-};
+-
+-#define NUM_CPUS	2
+-
+-static struct clk *cpu_clk;
+-static struct clk *pll_x_clk;
+-static struct clk *pll_p_clk;
+-static struct clk *emc_clk;
+-static bool pll_x_prepared;
+-
+-static unsigned int tegra_get_intermediate(struct cpufreq_policy *policy,
+-					   unsigned int index)
+-{
+-	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
+-
+-	/*
+-	 * Don't switch to intermediate freq if:
+-	 * - we are already at it, i.e. policy->cur == ifreq
+-	 * - index corresponds to ifreq
+-	 */
+-	if ((freq_table[index].frequency == ifreq) || (policy->cur == ifreq))
+-		return 0;
+-
+-	return ifreq;
+-}
+-
+-static int tegra_target_intermediate(struct cpufreq_policy *policy,
+-				     unsigned int index)
+-{
+-	int ret;
+-
+-	/*
+-	 * Take an extra reference to the main pll so it doesn't turn
+-	 * off when we move the cpu off of it as enabling it again while we
+-	 * switch to it from tegra_target() would take additional time.
+-	 *
+-	 * When target-freq is equal to intermediate freq we don't need to
+-	 * switch to an intermediate freq and so this routine isn't called.
+-	 * Also, we wouldn't be using pll_x anymore and must not take extra
+-	 * reference to it, as it can be disabled now to save some power.
+-	 */
+-	clk_prepare_enable(pll_x_clk);
+-
+-	ret = clk_set_parent(cpu_clk, pll_p_clk);
+-	if (ret)
+-		clk_disable_unprepare(pll_x_clk);
+-	else
+-		pll_x_prepared = true;
+-
+-	return ret;
+-}
+-
+-static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
+-{
+-	unsigned long rate = freq_table[index].frequency;
+-	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
+-	int ret = 0;
+-
+-	/*
+-	 * Vote on memory bus frequency based on cpu frequency
+-	 * This sets the minimum frequency, display or avp may request higher
+-	 */
+-	if (rate >= 816000)
+-		clk_set_rate(emc_clk, 600000000); /* cpu 816 MHz, emc max */
+-	else if (rate >= 456000)
+-		clk_set_rate(emc_clk, 300000000); /* cpu 456 MHz, emc 150Mhz */
+-	else
+-		clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
+-
+-	/*
+-	 * target freq == pll_p, don't need to take extra reference to pll_x_clk
+-	 * as it isn't used anymore.
+-	 */
+-	if (rate == ifreq)
+-		return clk_set_parent(cpu_clk, pll_p_clk);
+-
+-	ret = clk_set_rate(pll_x_clk, rate * 1000);
+-	/* Restore to earlier frequency on error, i.e. pll_x */
+-	if (ret)
+-		pr_err("Failed to change pll_x to %lu\n", rate);
+-
+-	ret = clk_set_parent(cpu_clk, pll_x_clk);
+-	/* This shouldn't fail while changing or restoring */
+-	WARN_ON(ret);
+-
+-	/*
+-	 * Drop count to pll_x clock only if we switched to intermediate freq
+-	 * earlier while transitioning to a target frequency.
+-	 */
+-	if (pll_x_prepared) {
+-		clk_disable_unprepare(pll_x_clk);
+-		pll_x_prepared = false;
+-	}
+-
+-	return ret;
+-}
+-
+-static int tegra_cpu_init(struct cpufreq_policy *policy)
+-{
+-	int ret;
+-
+-	if (policy->cpu >= NUM_CPUS)
+-		return -EINVAL;
+-
+-	clk_prepare_enable(emc_clk);
+-	clk_prepare_enable(cpu_clk);
+-
+-	/* FIXME: what's the actual transition time? */
+-	ret = cpufreq_generic_init(policy, freq_table, 300 * 1000);
+-	if (ret) {
+-		clk_disable_unprepare(cpu_clk);
+-		clk_disable_unprepare(emc_clk);
+-		return ret;
+-	}
+-
+-	policy->clk = cpu_clk;
+-	policy->suspend_freq = freq_table[0].frequency;
+-	return 0;
+-}
+-
+-static int tegra_cpu_exit(struct cpufreq_policy *policy)
+-{
+-	clk_disable_unprepare(cpu_clk);
+-	clk_disable_unprepare(emc_clk);
+-	return 0;
+-}
+-
+-static struct cpufreq_driver tegra_cpufreq_driver = {
+-	.flags			= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
+-	.verify			= cpufreq_generic_frequency_table_verify,
+-	.get_intermediate	= tegra_get_intermediate,
+-	.target_intermediate	= tegra_target_intermediate,
+-	.target_index		= tegra_target,
+-	.get			= cpufreq_generic_get,
+-	.init			= tegra_cpu_init,
+-	.exit			= tegra_cpu_exit,
+-	.name			= "tegra",
+-	.attr			= cpufreq_generic_attr,
+-#ifdef CONFIG_PM
+-	.suspend		= cpufreq_generic_suspend,
+-#endif
+-};
+-
+-static int __init tegra_cpufreq_init(void)
+-{
+-	cpu_clk = clk_get_sys(NULL, "cclk");
+-	if (IS_ERR(cpu_clk))
+-		return PTR_ERR(cpu_clk);
+-
+-	pll_x_clk = clk_get_sys(NULL, "pll_x");
+-	if (IS_ERR(pll_x_clk))
+-		return PTR_ERR(pll_x_clk);
+-
+-	pll_p_clk = clk_get_sys(NULL, "pll_p");
+-	if (IS_ERR(pll_p_clk))
+-		return PTR_ERR(pll_p_clk);
+-
+-	emc_clk = clk_get_sys("cpu", "emc");
+-	if (IS_ERR(emc_clk)) {
+-		clk_put(cpu_clk);
+-		return PTR_ERR(emc_clk);
+-	}
+-
+-	return cpufreq_register_driver(&tegra_cpufreq_driver);
+-}
+-
+-static void __exit tegra_cpufreq_exit(void)
+-{
+-        cpufreq_unregister_driver(&tegra_cpufreq_driver);
+-	clk_put(emc_clk);
+-	clk_put(cpu_clk);
+-}
+-
+-
+-MODULE_AUTHOR("Colin Cross <ccross@android.com>");
+-MODULE_DESCRIPTION("cpufreq driver for Nvidia Tegra2");
+-MODULE_LICENSE("GPL");
+-module_init(tegra_cpufreq_init);
+-module_exit(tegra_cpufreq_exit);
+diff --git a/drivers/cpufreq/tegra20-cpufreq.c b/drivers/cpufreq/tegra20-cpufreq.c
+new file mode 100644
+index 0000000..8084c7f
+--- /dev/null
++++ b/drivers/cpufreq/tegra20-cpufreq.c
+@@ -0,0 +1,218 @@
++/*
++ * Copyright (C) 2010 Google, Inc.
++ *
++ * Author:
++ *	Colin Cross <ccross@google.com>
++ *	Based on arch/arm/plat-omap/cpu-omap.c, (C) 2005 Nokia Corporation
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/types.h>
++#include <linux/sched.h>
++#include <linux/cpufreq.h>
++#include <linux/delay.h>
++#include <linux/init.h>
++#include <linux/err.h>
++#include <linux/clk.h>
++#include <linux/io.h>
++
++static struct cpufreq_frequency_table freq_table[] = {
++	{ .frequency = 216000 },
++	{ .frequency = 312000 },
++	{ .frequency = 456000 },
++	{ .frequency = 608000 },
++	{ .frequency = 760000 },
++	{ .frequency = 816000 },
++	{ .frequency = 912000 },
++	{ .frequency = 1000000 },
++	{ .frequency = CPUFREQ_TABLE_END },
++};
++
++#define NUM_CPUS	2
++
++static struct clk *cpu_clk;
++static struct clk *pll_x_clk;
++static struct clk *pll_p_clk;
++static struct clk *emc_clk;
++static bool pll_x_prepared;
++
++static unsigned int tegra_get_intermediate(struct cpufreq_policy *policy,
++					   unsigned int index)
++{
++	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
++
++	/*
++	 * Don't switch to intermediate freq if:
++	 * - we are already at it, i.e. policy->cur == ifreq
++	 * - index corresponds to ifreq
++	 */
++	if ((freq_table[index].frequency == ifreq) || (policy->cur == ifreq))
++		return 0;
++
++	return ifreq;
++}
++
++static int tegra_target_intermediate(struct cpufreq_policy *policy,
++				     unsigned int index)
++{
++	int ret;
++
++	/*
++	 * Take an extra reference to the main pll so it doesn't turn
++	 * off when we move the cpu off of it as enabling it again while we
++	 * switch to it from tegra_target() would take additional time.
++	 *
++	 * When target-freq is equal to intermediate freq we don't need to
++	 * switch to an intermediate freq and so this routine isn't called.
++	 * Also, we wouldn't be using pll_x anymore and must not take extra
++	 * reference to it, as it can be disabled now to save some power.
++	 */
++	clk_prepare_enable(pll_x_clk);
++
++	ret = clk_set_parent(cpu_clk, pll_p_clk);
++	if (ret)
++		clk_disable_unprepare(pll_x_clk);
++	else
++		pll_x_prepared = true;
++
++	return ret;
++}
++
++static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
++{
++	unsigned long rate = freq_table[index].frequency;
++	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
++	int ret = 0;
++
++	/*
++	 * Vote on memory bus frequency based on cpu frequency
++	 * This sets the minimum frequency, display or avp may request higher
++	 */
++	if (rate >= 816000)
++		clk_set_rate(emc_clk, 600000000); /* cpu 816 MHz, emc max */
++	else if (rate >= 456000)
++		clk_set_rate(emc_clk, 300000000); /* cpu 456 MHz, emc 150Mhz */
++	else
++		clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
++
++	/*
++	 * target freq == pll_p, don't need to take extra reference to pll_x_clk
++	 * as it isn't used anymore.
++	 */
++	if (rate == ifreq)
++		return clk_set_parent(cpu_clk, pll_p_clk);
++
++	ret = clk_set_rate(pll_x_clk, rate * 1000);
++	/* Restore to earlier frequency on error, i.e. pll_x */
++	if (ret)
++		pr_err("Failed to change pll_x to %lu\n", rate);
++
++	ret = clk_set_parent(cpu_clk, pll_x_clk);
++	/* This shouldn't fail while changing or restoring */
++	WARN_ON(ret);
++
++	/*
++	 * Drop count to pll_x clock only if we switched to intermediate freq
++	 * earlier while transitioning to a target frequency.
++	 */
++	if (pll_x_prepared) {
++		clk_disable_unprepare(pll_x_clk);
++		pll_x_prepared = false;
++	}
++
++	return ret;
++}
++
++static int tegra_cpu_init(struct cpufreq_policy *policy)
++{
++	int ret;
++
++	if (policy->cpu >= NUM_CPUS)
++		return -EINVAL;
++
++	clk_prepare_enable(emc_clk);
++	clk_prepare_enable(cpu_clk);
++
++	/* FIXME: what's the actual transition time? */
++	ret = cpufreq_generic_init(policy, freq_table, 300 * 1000);
++	if (ret) {
++		clk_disable_unprepare(cpu_clk);
++		clk_disable_unprepare(emc_clk);
++		return ret;
++	}
++
++	policy->clk = cpu_clk;
++	policy->suspend_freq = freq_table[0].frequency;
++	return 0;
++}
++
++static int tegra_cpu_exit(struct cpufreq_policy *policy)
++{
++	clk_disable_unprepare(cpu_clk);
++	clk_disable_unprepare(emc_clk);
++	return 0;
++}
++
++static struct cpufreq_driver tegra_cpufreq_driver = {
++	.flags			= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
++	.verify			= cpufreq_generic_frequency_table_verify,
++	.get_intermediate	= tegra_get_intermediate,
++	.target_intermediate	= tegra_target_intermediate,
++	.target_index		= tegra_target,
++	.get			= cpufreq_generic_get,
++	.init			= tegra_cpu_init,
++	.exit			= tegra_cpu_exit,
++	.name			= "tegra",
++	.attr			= cpufreq_generic_attr,
++#ifdef CONFIG_PM
++	.suspend		= cpufreq_generic_suspend,
++#endif
++};
++
++static int __init tegra_cpufreq_init(void)
++{
++	cpu_clk = clk_get_sys(NULL, "cclk");
++	if (IS_ERR(cpu_clk))
++		return PTR_ERR(cpu_clk);
++
++	pll_x_clk = clk_get_sys(NULL, "pll_x");
++	if (IS_ERR(pll_x_clk))
++		return PTR_ERR(pll_x_clk);
++
++	pll_p_clk = clk_get_sys(NULL, "pll_p");
++	if (IS_ERR(pll_p_clk))
++		return PTR_ERR(pll_p_clk);
++
++	emc_clk = clk_get_sys("cpu", "emc");
++	if (IS_ERR(emc_clk)) {
++		clk_put(cpu_clk);
++		return PTR_ERR(emc_clk);
++	}
++
++	return cpufreq_register_driver(&tegra_cpufreq_driver);
++}
++
++static void __exit tegra_cpufreq_exit(void)
++{
++        cpufreq_unregister_driver(&tegra_cpufreq_driver);
++	clk_put(emc_clk);
++	clk_put(cpu_clk);
++}
++
++
++MODULE_AUTHOR("Colin Cross <ccross@android.com>");
++MODULE_DESCRIPTION("cpufreq driver for Nvidia Tegra2");
++MODULE_LICENSE("GPL");
++module_init(tegra_cpufreq_init);
++module_exit(tegra_cpufreq_exit);
+-- 
+2.1.0
 
-    up_read(mm->mmap_sem);
-}
-
-void mpx_post_unmap(void)
-{
-	if (mm->bd_remove_vmas) {
-	   down_write(mm->mmap_sem);
- 	   cleanup_to_be_removed_vmas();		
-	   up_write(mm->mmap_sem);
-	}
-
-	up_write(mm->bd_sem);
-}
-
-The mpx_pre_unmap/post_unmap calls can be either added explicit to the
-relevant down_write/unmap/up_write code pathes or you hide it behind
-some wrapper function.
-
-Now you need to acquire mm->bd_sem for the fault handling code as well
-in order to serialize the creation of new bound table entries. In that
-case a down_read(mm->bd_sem) is sufficient as the cmpxchg() prevents
-the insertion of multiple tables for the same directory entries.
-
-So we'd end up with the following serialization scheme:
-
-prctl enable/disable management:  down_write(mm->bd_sem);
-
-bounds violation:    		  down_read(mm->bd_sem);
-
-directory entry allocation:	  down_read(mm->bd_sem);
-
-directory entry removal:	  down_write(mm->bd_sem);
-
-Now we need to check whether there is a potential deadlock lurking
-around the corner. We get the following nesting scenarios:
-
-- prctl enable/disable management:  down_write(mm->bd_sem);
-
-   No mmap_sem nesting at all
-
-- bounds violation:    	     down_read(mm->bd_sem);
-
-   Might nest down_read(mm->mmap_sem) if the copy code from user space
-   faults.
-
-- directory entry allocation:	     down_read(mm->bd_sem);
-
-   Nests down_write(mm->mmap_sem) for the VMA allocation.
-
-   Might nest down_read(mm->mmap_sem) if the cmpxchg() for the
-   directory entry faults
-
-- directory entry removal:	  down_write(mm->bd_sem);
-
-   Might nest down_read(mm->mmap_sem) if the invalidation of the
-   directory entry faults
-
-In other words here is the possible nesting:
-
-  #1 down_read(mm->bd_sem);  down_read(mm->mmap_sem);
-
-  #2 down_read(mm->bd_sem);  down_write(mm->mmap_sem);
-
-  #3 down_write(mm->bd_sem); down_read(mm->mmap_sem);
-
-  #4 down_write(mm->bd_sem); down_write(mm->mmap_sem);
-
-We never execute any of those nested on a single task. The bounds
-fault handler is never nested as it always comes from user space. So
-we should be safe.
-
-And this prevents all the nasty race conditions I discussed in
-Portland with Dave which happen when we try do to stuff outside of the
-mmap_sem write held region.
-
-Performance wise it's not an issue either. The prctl case is not a a
-hotpath anyway. The fault handlers get away with down_read() and the
-unmap code is heavyweight on mmap sem write held anyway.
-
-Thoughts?
-
-Thanks,
-
-	tglx
