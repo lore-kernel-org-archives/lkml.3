@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966AbaJXOqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 10:46:48 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:53830 "EHLO mail.kapsi.fi"
+	id S1756950AbaJXOqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:46:46 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:43372 "EHLO mail.kapsi.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756444AbaJXOkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 10:40:55 -0400
+	id S1756458AbaJXOk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 10:40:56 -0400
 From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
         pdeschrijver@nvidia.com, rjw@rjwysocki.net, viresh.kumar@linaro.org
@@ -15,9 +15,9 @@ Cc: mturquette@linaro.org, pwalmsley@nvidia.com, vinceh@nvidia.com,
         linux-arm-kernel@lists.infradead.org, tuomas.tynkkynen@iki.fi,
         Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
         Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Subject: [PATCH v5 04/16] clk: tegra: Add functions for parsing CVB tables
-Date: Fri, 24 Oct 2014 17:39:11 +0300
-Message-Id: <1414161563-16812-5-git-send-email-mikko.perttunen@kapsi.fi>
+Subject: [PATCH v5 05/16] clk: tegra: Add DFLL DVCO reset control for Tegra124
+Date: Fri, 24 Oct 2014 17:39:12 +0300
+Message-Id: <1414161563-16812-6-git-send-email-mikko.perttunen@kapsi.fi>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi>
 References: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi>
@@ -28,252 +28,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+From: Paul Walmsley <pwalmsley@nvidia.com>
 
-Tegra CVB tables encode the relationship between operating voltage
-and optimal frequency as a function of the so-called speedo value.
-The speedo value is written to the on-chip fuses at the factory,
-which allows the voltage-frequency operating points to be calculated
-on an per-chip basis.
+The DVCO present in the DFLL IP block has a separate reset line,
+exposed via the CAR IP block.  This reset line is asserted upon SoC
+reset.  Unless something (such as the DFLL driver) deasserts this
+line, the DVCO will not oscillate, although reads and writes to the
+DFLL IP block will complete.
 
-Add utility functions to parse the Tegra-specific tables and export the
-voltage-frequency pairs to the generic OPP framework for other drivers
-to use.
+Thanks to Aleksandr Frid <afrid@nvidia.com> for identifying this and
+saving hours of debugging time.
 
+Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+[ttynkkynen: ported to tegra124 from tegra114]
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
 ---
- arch/arm/mach-tegra/Kconfig |   1 +
- drivers/clk/tegra/cvb.c     | 133 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/tegra/cvb.h     |  67 ++++++++++++++++++++++
- 3 files changed, 201 insertions(+)
- create mode 100644 drivers/clk/tegra/cvb.c
- create mode 100644 drivers/clk/tegra/cvb.h
+ drivers/clk/tegra/clk-tegra124.c | 47 ++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/tegra/clk.h          |  3 +++
+ 2 files changed, 50 insertions(+)
 
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index 0953996..0d5832f 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -7,6 +7,7 @@ menuconfig ARCH_TEGRA
- 	select HAVE_ARM_SCU if SMP
- 	select HAVE_ARM_TWD if SMP
- 	select PINCTRL
-+	select PM_OPP
- 	select ARCH_HAS_RESET_CONTROLLER
- 	select RESET_CONTROLLER
- 	select SOC_BUS
-diff --git a/drivers/clk/tegra/cvb.c b/drivers/clk/tegra/cvb.c
-new file mode 100644
-index 0000000..69c74ee
---- /dev/null
-+++ b/drivers/clk/tegra/cvb.c
-@@ -0,0 +1,133 @@
-+/*
-+ * Utility functions for parsing Tegra CVB voltage tables
+diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
+index e3a8584..7c3cef7 100644
+--- a/drivers/clk/tegra/clk-tegra124.c
++++ b/drivers/clk/tegra/clk-tegra124.c
+@@ -31,6 +31,9 @@
+ #define CLK_SOURCE_CSITE 0x1d4
+ #define CLK_SOURCE_EMC 0x19c
+ 
++#define RST_DFLL_DVCO			0x2f4
++#define DVFS_DFLL_RESET_SHIFT		0
++
+ #define PLLC_BASE 0x80
+ #define PLLC_OUT 0x84
+ #define PLLC_MISC2 0x88
+@@ -1394,6 +1397,50 @@ static void __init tegra124_clock_apply_init_table(void)
+ 	tegra_init_from_table(init_table, clks, TEGRA124_CLK_CLK_MAX);
+ }
+ 
++/**
++ * tegra124_car_barrier - wait for pending writes to the CAR to complete
 + *
-+ * Copyright (C) 2012-2014 NVIDIA Corporation.  All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
++ * Wait for any outstanding writes to the CAR MMIO space from this CPU
++ * to complete before continuing execution.  No return value.
 + */
-+#include <linux/err.h>
-+#include <linux/kernel.h>
-+#include <linux/pm_opp.h>
-+
-+#include "cvb.h"
-+
-+/* cvb_mv = ((c2 * speedo / s_scale + c1) * speedo / s_scale + c0) */
-+static inline int get_cvb_voltage(int speedo, int s_scale,
-+				  const struct cvb_coefficients *cvb)
++static void tegra124_car_barrier(void)
 +{
-+	int mv;
-+
-+	/* apply only speedo scale: output mv = cvb_mv * v_scale */
-+	mv = DIV_ROUND_CLOSEST(cvb->c2 * speedo, s_scale);
-+	mv = DIV_ROUND_CLOSEST((mv + cvb->c1) * speedo, s_scale) + cvb->c0;
-+	return mv;
-+}
-+
-+static int round_cvb_voltage(int mv, int v_scale,
-+			     const struct rail_alignment *align)
-+{
-+	/* combined: apply voltage scale and round to cvb alignment step */
-+	int uv;
-+	int step = (align->step_uv ? : 1000) * v_scale;
-+	int offset = align->offset_uv * v_scale;
-+
-+	uv = max(mv * 1000, offset) - offset;
-+	uv = DIV_ROUND_UP(uv, step) * align->step_uv + align->offset_uv;
-+	return uv / 1000;
-+}
-+
-+enum {
-+	DOWN,
-+	UP
-+};
-+
-+static int round_voltage(int mv, const struct rail_alignment *align, int up)
-+{
-+	if (align->step_uv) {
-+		int uv;
-+
-+		uv = max(mv * 1000, align->offset_uv) - align->offset_uv;
-+		uv = (uv + (up ? align->step_uv - 1 : 0)) / align->step_uv;
-+		return (uv * align->step_uv + align->offset_uv) / 1000;
-+	}
-+	return mv;
-+}
-+
-+static int build_opp_table(const struct cvb_table *d,
-+			   int speedo_value,
-+			   unsigned long max_freq,
-+			   struct device *opp_dev)
-+{
-+	int i, ret, dfll_mv, min_mv, max_mv;
-+	const struct cvb_table_freq_entry *table = NULL;
-+	const struct rail_alignment *align = &d->alignment;
-+
-+	min_mv = round_voltage(d->min_millivolts, align, UP);
-+	max_mv = round_voltage(d->max_millivolts, align, DOWN);
-+
-+	for (i = 0; i < MAX_DVFS_FREQS; i++) {
-+		table = &d->cvb_table[i];
-+		if (!table->freq || (table->freq > max_freq))
-+			break;
-+
-+		dfll_mv = get_cvb_voltage(
-+			speedo_value, d->speedo_scale, &table->coefficients);
-+		dfll_mv = round_cvb_voltage(dfll_mv, d->voltage_scale, align);
-+		dfll_mv = clamp(dfll_mv, min_mv, max_mv);
-+
-+		ret = dev_pm_opp_add(opp_dev, table->freq, dfll_mv * 1000);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
++	readl_relaxed(clk_base + RST_DFLL_DVCO);
 +}
 +
 +/**
-+ * tegra_cvb_build_opp_table - build OPP table from Tegra CVB tables
-+ * @cvb_tables: array of CVB tables
-+ * @sz: size of the previously mentioned array
-+ * @process_id: process id of the HW module
-+ * @speedo_id: speedo id of the HW module
-+ * @speedo_value: speedo value of the HW module
-+ * @max_rate: highest safe clock rate
-+ * @opp_dev: the struct device * for which the OPP table is built
++ * tegra124_clock_assert_dfll_dvco_reset - assert the DFLL's DVCO reset
 + *
-+ * On Tegra, a CVB table encodes the relationship between operating voltage
-+ * and safe maximal frequency for a given module (e.g. GPU or CPU). This
-+ * function calculates the optimal voltage-frequency operating points
-+ * for the given arguments and exports them via the OPP library for the
-+ * given @opp_dev. Returns a pointer to the struct cvb_table that matched
-+ * or an ERR_PTR on failure.
++ * Assert the reset line of the DFLL's DVCO.  No return value.
 + */
-+const struct cvb_table *tegra_cvb_build_opp_table(
-+		const struct cvb_table *cvb_tables,
-+		size_t sz, int process_id,
-+		int speedo_id, int speedo_value,
-+		unsigned long max_rate,
-+		struct device *opp_dev)
++void tegra124_clock_assert_dfll_dvco_reset(void)
 +{
-+	int i, ret;
++	u32 v;
 +
-+	for (i = 0; i < sz; i++) {
-+		const struct cvb_table *d = &cvb_tables[i];
-+
-+		if (d->speedo_id != -1 && d->speedo_id != speedo_id)
-+			continue;
-+		if (d->process_id != -1 && d->process_id != process_id)
-+			continue;
-+
-+		ret = build_opp_table(d, speedo_value, max_rate, opp_dev);
-+		return ret ? ERR_PTR(ret) : d;
-+	}
-+
-+	return ERR_PTR(-EINVAL);
++	v = readl_relaxed(clk_base + RST_DFLL_DVCO);
++	v |= (1 << DVFS_DFLL_RESET_SHIFT);
++	writel_relaxed(v, clk_base + RST_DFLL_DVCO);
++	tegra124_car_barrier();
 +}
-diff --git a/drivers/clk/tegra/cvb.h b/drivers/clk/tegra/cvb.h
-new file mode 100644
-index 0000000..f62cdc4
---- /dev/null
-+++ b/drivers/clk/tegra/cvb.h
-@@ -0,0 +1,67 @@
-+/*
-+ * Utility functions for parsing Tegra CVB voltage tables
++EXPORT_SYMBOL(tegra124_clock_assert_dfll_dvco_reset);
++
++/**
++ * tegra124_clock_deassert_dfll_dvco_reset - deassert the DFLL's DVCO reset
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
++ * Deassert the reset line of the DFLL's DVCO, allowing the DVCO to
++ * operate.  No return value.
 + */
++void tegra124_clock_deassert_dfll_dvco_reset(void)
++{
++	u32 v;
 +
-+#ifndef __DRIVERS_CLK_TEGRA_CVB_H
-+#define __DRIVERS_CLK_TEGRA_CVB_H
++	v = readl_relaxed(clk_base + RST_DFLL_DVCO);
++	v &= ~(1 << DVFS_DFLL_RESET_SHIFT);
++	writel_relaxed(v, clk_base + RST_DFLL_DVCO);
++	tegra124_car_barrier();
++}
++EXPORT_SYMBOL(tegra124_clock_deassert_dfll_dvco_reset);
 +
-+#include <linux/types.h>
+ static void __init tegra124_clock_init(struct device_node *np)
+ {
+ 	struct device_node *node;
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index 16ec8d6..4b3f3d0 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -627,6 +627,9 @@ void tegra114_clock_tune_cpu_trimmers_init(void);
+ void tegra114_clock_assert_dfll_dvco_reset(void);
+ void tegra114_clock_deassert_dfll_dvco_reset(void);
+ 
++void tegra124_clock_assert_dfll_dvco_reset(void);
++void tegra124_clock_deassert_dfll_dvco_reset(void);
 +
-+struct device;
-+
-+#define MAX_DVFS_FREQS	40
-+
-+struct rail_alignment {
-+	int offset_uv;
-+	int step_uv;
-+};
-+
-+struct cvb_coefficients {
-+	int c0;
-+	int c1;
-+	int c2;
-+};
-+
-+struct cvb_table_freq_entry {
-+	unsigned long freq;
-+	struct cvb_coefficients coefficients;
-+};
-+
-+struct cvb_cpu_dfll_data {
-+	u32 tune0_low;
-+	u32 tune0_high;
-+	u32 tune1;
-+};
-+
-+struct cvb_table {
-+	int speedo_id;
-+	int process_id;
-+
-+	int min_millivolts;
-+	int max_millivolts;
-+	struct rail_alignment alignment;
-+
-+	int speedo_scale;
-+	int voltage_scale;
-+	struct cvb_table_freq_entry cvb_table[MAX_DVFS_FREQS];
-+	struct cvb_cpu_dfll_data cpu_dfll_data;
-+};
-+
-+const struct cvb_table *tegra_cvb_build_opp_table(
-+		const struct cvb_table *cvb_tables,
-+		size_t sz, int process_id,
-+		int speedo_id, int speedo_value,
-+		unsigned long max_rate,
-+		struct device *opp_dev);
-+
-+#endif
+ typedef void (*tegra_clk_apply_init_table_func)(void);
+ extern tegra_clk_apply_init_table_func tegra_clk_apply_init_table;
+ 
 -- 
 2.1.0
 
