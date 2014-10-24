@@ -1,117 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065AbaJXC7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 22:59:06 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55965 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaJXC7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 22:59:03 -0400
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Fri, 24 Oct 2014 12:00:07 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, cl@linux.com,
-        mgorman@suse.de, mina86@mina86.com, minchan@kernel.org,
-        n-horiguchi@ah.jp.nec.com, riel@redhat.com, rientjes@google.com,
-        zhangyanfei@cn.fujitsu.com, mm-commits@vger.kernel.org
-Subject: Re: +
- mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
- added to -mm tree
-Message-ID: <20141024030006.GC15243@js1304-P5Q-DELUXE>
-References: <543d8d58.g9K7YpzF5ZOXeQqj%akpm@linux-foundation.org>
- <20141023081543.GB7598@js1304-P5Q-DELUXE>
- <5448BED1.40909@suse.cz>
+	id S1754745AbaJXDDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 23:03:05 -0400
+Received: from mail-bl2on0082.outbound.protection.outlook.com ([65.55.169.82]:43072
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751747AbaJXDDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 23:03:03 -0400
+X-Greylist: delayed 367 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Oct 2014 23:03:03 EDT
+From: <vndao@altera.com>
+To: <f.fainelli@gmail.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ngachi86@gmail.com>, Viet Nga Dao <vndao@altera.com>
+Subject: [net-next] net: phy: Adding SGMII support for Marvell 88ee1145 driver
+Date: Thu, 23 Oct 2014 19:47:57 -0700
+Message-ID: <1414118877-12837-1-git-send-email-vndao@altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5448BED1.40909@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(43544003)(189002)(46102003)(50986999)(44976005)(19580395003)(19580405001)(85306004)(36756003)(77156001)(87286001)(87936001)(68736004)(64706001)(33646002)(104166001)(84676001)(47776003)(6806004)(110136001)(20776003)(99396003)(80022003)(21056001)(120916001)(76482002)(106466001)(93916002)(105596002)(86362001)(229853001)(2351001)(107046002)(86152002)(92726001)(92566001)(77096002)(95666004)(4396001)(50226001)(50466002)(48376002)(102836001)(88136002)(89996001)(62966002)(16796002)(31966008)(85852003);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB1024;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB1024;
+X-Forefront-PRVS: 0374433C81
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=vndao@altera.com; 
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 10:39:45AM +0200, Vlastimil Babka wrote:
-> On 10/23/2014 10:15 AM, Joonsoo Kim wrote:
-> > On Tue, Oct 14, 2014 at 01:53:44PM -0700, akpm@linux-foundation.org wrote:
-> >>
-> >> The patch titled
-> >>      Subject: mm/compaction.c: avoid premature range skip in isolate_migratepages_range
-> >> has been added to the -mm tree.  Its filename is
-> >>      mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
-> >>
-> >> This patch should soon appear at
-> >>     http://ozlabs.org/~akpm/mmots/broken-out/mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
-> >> and later at
-> >>     http://ozlabs.org/~akpm/mmotm/broken-out/mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
-> >>
-> >> Before you just go and hit "reply", please:
-> >>    a) Consider who else should be cc'ed
-> >>    b) Prefer to cc a suitable mailing list as well
-> >>    c) Ideally: find the original patch on the mailing list and do a
-> >>       reply-to-all to that, adding suitable additional cc's
-> >>
-> >> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> >>
-> >> The -mm tree is included into linux-next and is updated
-> >> there every 3-4 working days
-> >>
-> >> ------------------------------------------------------
-> >> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >> Subject: mm/compaction.c: avoid premature range skip in isolate_migratepages_range
-> >>
-> >> commit edc2ca612496 ("mm, compaction: move pageblock checks up from
-> >> isolate_migratepages_range()") commonizes isolate_migratepages variants
-> >> and make them use isolate_migratepages_block().
-> >>
-> >> isolate_migratepages_block() could stop the execution when enough pages
-> >> are isolated, but, there is no code in isolate_migratepages_range() to
-> >> handle this case.  In the result, even if isolate_migratepages_block()
-> >> returns prematurely without checking all pages in the range,
-> >>
-> >> isolate_migratepages_block() is called repeately on the following
-> >> pageblock and some pages in the previous range are skipped to check.
-> >> Then, CMA is failed frequently due to this fact.
-> >>
-> >> To fix this problem, this patch let isolate_migratepages_range() know the
-> >> situation that enough pages are isolated and stop the isolation in that
-> >> case.
-> >>
-> >> Note that isolate_migratepages() has no such problem, because, it always
-> >> stops the isolation after just one call of isolate_migratepages_block().
-> >>
-> >> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> >> Cc: Vlastimil Babka <vbabka@suse.cz>
-> >> Cc: David Rientjes <rientjes@google.com>
-> >> Cc: Minchan Kim <minchan@kernel.org>
-> >> Cc: Michal Nazarewicz <mina86@mina86.com>
-> >> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> >> Cc: Christoph Lameter <cl@linux.com>
-> >> Cc: Rik van Riel <riel@redhat.com>
-> >> Cc: Mel Gorman <mgorman@suse.de>
-> >> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> >> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> 
-> Acked-by: Vlastimil Babka <vbabka@suse.cz>
-> 
-> Sorry for the trouble. But I think a more robust and future-proof fix
-> would be a check such as: if (pfn < block_end_pfn) break;
-> This should catch any reason where isolate_migratepages_block() did not
-> finish whole pageblock, and which was not fatal enough to return pfn==0.
-> However currently this seems to happen only due to isolating too much,
-> so your patch should work.
-> So it's up to you if you want to make the check more generic now, or
-> later after this bug is fixed for 3.18.
+From: Viet Nga Dao <vndao@altera.com>
 
-'if (pfn < block_end_pfn) break;' has one problem.
-If we have enough isolated pages and reach at block_end_pfn,
-we can't stop with above check.
+Additional code to m88e1145_config_init function to allow the driver to
+support SGMII mode.
 
-More proper check may be as following.
-'if (pfn < block_end_pfn ||
-cc->nr_migratepages == COMPACT_CLUSTER_MAX) break;'
-But, as you mentioned, there is no case where 'pfn < block_end_pfn'
-now, so I'd like to remain the patch as is.
+Signed-off-by: Viet Nga Dao <vndao@altera.com>
+---
+ drivers/net/phy/marvell.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-Thanks.
+diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
+index bd37e45..b14cb10 100644
+--- a/drivers/net/phy/marvell.c
++++ b/drivers/net/phy/marvell.c
+@@ -50,9 +50,13 @@
+ #define MII_M1011_PHY_SCR		0x10
+ #define MII_M1011_PHY_SCR_AUTO_CROSS	0x0060
+ 
++#define MII_M1145_PHY_EXT_SR		0x1b
+ #define MII_M1145_PHY_EXT_CR		0x14
+ #define MII_M1145_RGMII_RX_DELAY	0x0080
+ #define MII_M1145_RGMII_TX_DELAY	0x0002
++#define MII_M1145_HWCFG_MODE_SGMII_NO_CLK	0x4
++#define MII_M1145_HWCFG_MODE_MASK		0xf
++#define MII_M1145_HWCFG_FIBER_COPPER_AUTO	0x8000
+ 
+ #define MII_M1111_PHY_LED_CONTROL	0x18
+ #define MII_M1111_PHY_LED_DIRECT	0x4100
+@@ -620,6 +624,7 @@ static int m88e1149_config_init(struct phy_device *phydev)
+ static int m88e1145_config_init(struct phy_device *phydev)
+ {
+ 	int err;
++	int temp;
+ 
+ 	/* Take care of errata E0 & E1 */
+ 	err = phy_write(phydev, 0x1d, 0x001b);
+@@ -676,6 +681,20 @@ static int m88e1145_config_init(struct phy_device *phydev)
+ 		}
+ 	}
+ 
++	if (phydev->interface == PHY_INTERFACE_MODE_SGMII) {
++		temp = phy_read(phydev, MII_M1145_PHY_EXT_SR);
++		if (temp < 0)
++			return temp;
++
++		temp &= ~(MII_M1145_HWCFG_MODE_MASK);
++		temp |= MII_M1145_HWCFG_MODE_SGMII_NO_CLK;
++		temp |= MII_M1145_HWCFG_FIBER_COPPER_AUTO;
++
++		err = phy_write(phydev, MII_M1145_PHY_EXT_SR, temp);
++		if (err < 0)
++			return err;
++	}
++
+ 	err = marvell_of_reg_init(phydev);
+ 	if (err < 0)
+ 		return err;
+-- 
+1.7.7.4
+
