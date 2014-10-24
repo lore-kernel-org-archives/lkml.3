@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503AbaJXJ2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 05:28:10 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:21748 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751630AbaJXJ2I (ORCPT
+	id S1755933AbaJXJ2n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 05:28:43 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:47964 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaJXJ2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 05:28:08 -0400
-X-IronPort-AV: E=Sophos;i="5.04,779,1406592000"; 
-   d="scan'208";a="185832433"
-Message-ID: <1414142885.15687.25.camel@citrix.com>
-Subject: Re: [PATCH v5 4/6] xen/arm/arm64: merge xen/mm32.c into xen/mm.c
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <will.deacon@arm.com>
-Date: Fri, 24 Oct 2014 10:28:05 +0100
-In-Reply-To: <1414085246-16160-4-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1410231821520.876@kaball.uk.xensource.com>
-	 <1414085246-16160-4-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
+	Fri, 24 Oct 2014 05:28:42 -0400
+Date: Fri, 24 Oct 2014 10:28:32 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
+        "ezequiel.garcia@free-electrons.com" 
+	<ezequiel.garcia@free-electrons.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "thomas.petazzoni@free-electrons.com" 
+	<thomas.petazzoni@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: supplementing IO accessors with 64 bit capability
+Message-ID: <20141024092832.GD20534@e104818-lin.cambridge.arm.com>
+References: <1413993983-17310-1-git-send-email-mathieu.poirier@linaro.org>
+ <20141022164454.GI15370@e104818-lin.cambridge.arm.com>
+ <CANLsYkx08dw=YYBoRJ47QC+iL578HxPoMFcRDw6aKsvyqaqtkw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANLsYkx08dw=YYBoRJ47QC+iL578HxPoMFcRDw6aKsvyqaqtkw@mail.gmail.com>
+Thread-Topic: [PATCH] ARM: supplementing IO accessors with 64 bit capability
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-23 at 18:27 +0100, Stefano Stabellini wrote:
-> Merge xen/mm32.c into xen/mm.c.
-> As a consequence the code gets compiled on arm64 too: introduce a few
-> compat functions to actually be able to compile it.
-> Introduce xen_is_dma_coherent on arm64 and call into the dma_ops
-> functions from the xen_dma wrappers in page-coherent.h to handle
-> non-coherent devices.
+On Wed, Oct 22, 2014 at 08:10:27PM +0100, Mathieu Poirier wrote:
+> On 22 October 2014 18:44, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > On Wed, Oct 22, 2014 at 05:06:23PM +0100, mathieu.poirier@linaro.org wrote:
+> >> +static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
+> >> +{
+> >> +     asm volatile("strd %1, %0"
+> >> +                  : "+Qo" (*(volatile u64 __force *)addr)
+> >> +                  : "r" (val));
+> >> +}
+> >> +
+> >> +static inline u64 __raw_readq(const volatile void __iomem *addr)
+> >> +{
+> >> +     u64 val;
+> >> +     asm volatile("ldrd %1, %0"
+> >> +                  : "+Qo" (*(volatile u64 __force *)addr),
+> >> +                    "=r" (val));
+> >> +     return val;
+> >> +}
+> >> +#endif
+> >
+> > I'm curious why you need these. Do you have a device that needs a 64-bit
+> > single access or you are trying to read two consecutive registers?
 > 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> The fundamental data size of Coresight STM32 for ARMv7 is
+> implementation defined and can be 32 or 64bit.  As such stimulus ports
+> can support transaction sizes of up to 64 bit.
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+The STM programmer's model spec recommends something else (though I find
+the "3.6 Data sizes" chapter a bit confusing):
 
+  To ensure that code is portable between processor micro-architectures
+  and system implementations, ARM recommends that only the native data
+  size of the machine is used, and smaller sizes. For the 32-bit ARMv7
+  architecture, only 8, 16, and 32-bit transfers are recommended. For an
+  ARMv8 processor that supports the AArch64 Execution state, it is
+  recommended that the fundamental data size of 64-bits is implemented.
 
+Which means that you should not use readq/writeq on a 32-bit system.
+
+-- 
+Catalin
