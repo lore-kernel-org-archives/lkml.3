@@ -1,108 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169AbaJXDY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 23:24:27 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38321 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751927AbaJXDYZ (ORCPT
+	id S1755280AbaJXDYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 23:24:38 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:40262 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755195AbaJXDYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 23:24:25 -0400
-Date: Fri, 24 Oct 2014 04:24:22 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-unionfs@vger.kernel.org
-Subject: Re: [GIT PULL] overlay filesystem v25
-Message-ID: <20141024032422.GI7996@ZenIV.linux.org.uk>
-References: <20141023232539.GA4662@tucsk.piliscsaba.szeredi.hu>
- <20141024022055.GH7996@ZenIV.linux.org.uk>
+	Thu, 23 Oct 2014 23:24:36 -0400
+X-Originating-IP: 50.43.41.112
+Date: Thu, 23 Oct 2014 20:23:55 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net] bpf: split eBPF out of NET
+Message-ID: <20141024032355.GB7879@thin>
+References: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141024022055.GH7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 03:20:55AM +0100, Al Viro wrote:
-> Why the hell do you hold ->i_mutex across the entire opening of underlying
-> directory?  All you need is to serialize one assignment; the side that loses
-> the race will simply fput() what it opened...
+On Thu, Oct 23, 2014 at 06:41:08PM -0700, Alexei Starovoitov wrote:
+> introduce two configs:
+> - hidden CONFIG_BPF to select eBPF interpreter that classic socket filters
+>   depend on
+> - visible CONFIG_BPF_SYSCALL (default off) that tracing and sockets can use
 > 
-> Oh, well - that goes under "weird pessimisations, easy to fix in followups"...
+> that solves several problems:
+> - tracing and others that wish to use eBPF don't need to depend on NET.
+>   They can use BPF_SYSCALL to allow loading from userspace or select BPF
+>   to use it directly from kernel in NET-less configs.
+> - in 3.18 programs cannot be attached to events yet, so don't force it on
+> - when the rest of eBPF infra is there in 3.19+, it's still useful to
+>   switch it off to minimize kernel size
+> 
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 
-OK, pulled into vfs.git, followups in question added.  Also there: fix for
-a long-standing leak in d_splice_alias() failure exits.  Guys, could you
-check that current vfs.git#for-linus survives your local tests?  Seems to
-survive here; if I don't hear of any problems by tomorrow morning, to Linus
-it goes...  FWIW, for that pull request stats would be
+Thanks for working on this!  A few nits below, but otherwise this looks
+good to me.  Once this gets appropriate reviews from net and bpf folks,
+please let me know if you want this to go through the net tree, the tiny
+tree, or some other tree.
 
-Shortlog:
-Al Viro (5):
-      fix inode leaks on d_splice_alias() failure exits
-      overlayfs: don't hold ->i_mutex over opening the real directory
-      overlayfs: make ovl_cache_entry->name an array instead of pointer
-      overlayfs: embed root into overlay_readdir_data
-      overlayfs: embed middle into overlay_readdir_data
+> 
+> bloat-o-meter on x64 shows:
+> add/remove: 0/60 grow/shrink: 0/2 up/down: 0/-15601 (-15601)
 
-Andy Whitcroft (1):
-      overlayfs: add statfs support
+Very nice!  Please do include the bloat-o-meter stats in the commit
+message.
 
-Erez Zadok (1):
-      overlayfs: implement show_options
+> tested with many different config combinations. Hopefully didn't miss anything.
+> 
+>  init/Kconfig        |   14 ++++++++++++++
+>  kernel/Makefile     |    2 +-
+>  kernel/bpf/Makefile |    6 +++---
+>  kernel/bpf/core.c   |    9 +++++++++
+>  net/Kconfig         |    2 +-
+>  5 files changed, 28 insertions(+), 5 deletions(-)
+> 
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 3ee28ae..340fd92 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -1341,6 +1341,10 @@ config SYSCTL_ARCH_UNALIGN_ALLOW
+>  config HAVE_PCSPKR_PLATFORM
+>  	bool
+>  
+> +# interpreter that classic socket filters depend on
+> +config BPF
+> +	boolean
 
-Miklos Szeredi (11):
-      vfs: add i_op->dentry_open()
-      vfs: export do_splice_direct() to modules
-      vfs: export __inode_permission() to modules
-      vfs: introduce clone_private_mount()
-      vfs: export check_sticky()
-      vfs: add whiteout support
-      vfs: add RENAME_WHITEOUT
-      ext4: support RENAME_WHITEOUT
-      shmem: support RENAME_WHITEOUT
-      overlay filesystem
-      fs: limit filesystem stacking depth
+s/boolean/bool/
 
-Neil Brown (1):
-      overlay: overlay filesystem documentation
+> +
+>  menuconfig EXPERT
+>  	bool "Configure standard kernel features (expert users)"
+>  	# Unhide debug options, to make the on-by-default options visible
+> @@ -1521,6 +1525,16 @@ config EVENTFD
+>  
+>  	  If unsure, say Y.
+>  
+> +# syscall, maps, verifier
+> +config BPF_SYSCALL
+> +	bool "Enable bpf() system call" if EXPERT
+> +	select ANON_INODES
+> +	select BPF
+> +	default n
+> +	help
+> +	  Enable the bpf() system call that allows to manipulate eBPF
+> +	  programs and maps via file descriptors.
 
-Diffstat:
- Documentation/filesystems/Locking       |    2 +
- Documentation/filesystems/overlayfs.txt |  198 +++++++
- Documentation/filesystems/vfs.txt       |    7 +
- MAINTAINERS                             |    7 +
- fs/Kconfig                              |    1 +
- fs/Makefile                             |    1 +
- fs/btrfs/ioctl.c                        |   20 +-
- fs/dcache.c                             |    2 +
- fs/ecryptfs/main.c                      |    7 +
- fs/ext4/namei.c                         |   95 +++-
- fs/internal.h                           |    7 -
- fs/namei.c                              |   41 +-
- fs/namespace.c                          |   27 +
- fs/open.c                               |   23 +-
- fs/overlayfs/Kconfig                    |   10 +
- fs/overlayfs/Makefile                   |    7 +
- fs/overlayfs/copy_up.c                  |  414 ++++++++++++++
- fs/overlayfs/dir.c                      |  921 +++++++++++++++++++++++++++++++
- fs/overlayfs/inode.c                    |  425 ++++++++++++++
- fs/overlayfs/overlayfs.h                |  191 +++++++
- fs/overlayfs/readdir.c                  |  589 ++++++++++++++++++++
- fs/overlayfs/super.c                    |  796 ++++++++++++++++++++++++++
- fs/splice.c                             |    1 +
- include/linux/fs.h                      |   39 ++
- include/linux/mount.h                   |    3 +
- include/uapi/linux/fs.h                 |    1 +
- mm/shmem.c                              |   36 +-
- 27 files changed, 3813 insertions(+), 58 deletions(-)
- create mode 100644 Documentation/filesystems/overlayfs.txt
- create mode 100644 fs/overlayfs/Kconfig
- create mode 100644 fs/overlayfs/Makefile
- create mode 100644 fs/overlayfs/copy_up.c
- create mode 100644 fs/overlayfs/dir.c
- create mode 100644 fs/overlayfs/inode.c
- create mode 100644 fs/overlayfs/overlayfs.h
- create mode 100644 fs/overlayfs/readdir.c
- create mode 100644 fs/overlayfs/super.c
+Not sure this one goes under EXPERT, especially since it currently has
+"default n".
+
+> --- a/kernel/bpf/core.c
+> +++ b/kernel/bpf/core.c
+> @@ -655,3 +655,12 @@ void bpf_prog_free(struct bpf_prog *fp)
+>  	schedule_work(&aux->work);
+>  }
+>  EXPORT_SYMBOL_GPL(bpf_prog_free);
+> +
+> +/* To execute LD_ABS/LD_IND instructions __bpf_prog_run() may call
+> + * skb_copy_bits(), so provide a weak definition of it for NET-less config.
+> + */
+> +int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
+> +			 int len)
+> +{
+> +	return -EFAULT;
+> +}
+
+Please discuss this in the commit message.  What are the implications of
+ending up with this implementation that always returns -EFAULT?
+
+> diff --git a/net/Kconfig b/net/Kconfig
+> index 6272420..99815b5 100644
+> --- a/net/Kconfig
+> +++ b/net/Kconfig
+> @@ -6,7 +6,7 @@ menuconfig NET
+>  	bool "Networking support"
+>  	select NLATTR
+>  	select GENERIC_NET_UTILS
+> -	select ANON_INODES
+> +	select BPF
+
+Why does this not need to select ANON_INODES anymore?  Did *only* BPF
+use that, so it only needs to occur via BPF_SYSCALL?  If so, can you
+document that in the commit message?
+
+>  	---help---
+>  	  Unless you really know what you are doing, you should say Y here.
+>  	  The reason is that some programs need kernel networking support even
+> -- 
+> 1.7.9.5
+> 
