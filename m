@@ -1,102 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292AbaJXKiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:38:19 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:54556 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756254AbaJXKiP (ORCPT
+	id S1756228AbaJXKiF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:38:05 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:39962 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755855AbaJXKiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:38:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "mathieu.poirier@linaro.org" <mathieu.poirier@linaro.org>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH] ARM: supplementing IO accessors with 64 bit capability
-Date: Fri, 24 Oct 2014 12:37:33 +0200
-Message-ID: <7410166.17BME9oUT7@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.LFD.2.11.1410231607340.6969@knanqh.ubzr>
-References: <1413993983-17310-1-git-send-email-mathieu.poirier@linaro.org> <20141023195119.GL27405@n2100.arm.linux.org.uk> <alpine.LFD.2.11.1410231607340.6969@knanqh.ubzr>
+	Fri, 24 Oct 2014 06:38:00 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm v2 0/9] Per memcg slab shrinkers
+Date: Fri, 24 Oct 2014 14:37:31 +0400
+Message-ID: <cover.1414145862.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:PlnmExFmwrFoBjFicoDbv/tDJqnvIOuuv+QaV83vxza
- vbQbWZydW8M5+hGuWY/YtyIbaoYn1+NoSxRMbP0IjGUOI+j7ur
- YD7RwkgzLKjcXJj80yzMsYKJfqMWUT5dMIpYk5l+G4BU1itSaD
- 4l+iTWy6wwCN5zQIu7hl6IGM0pKWAuiavwDNF6YmzSjv7xOP35
- q0xJKSS60gxWZHx3EDxDh0zLod23BIjYj8EhxnB7w0aW24nKpT
- T4aesfaHiPEBr07d8Qz0/Mxs2HHFRdgG9IBrc3525w+FaWQO9R
- tgj6XffNtmFKN06msyUECoflptTNXEWrzZsHp1x6ACInC4Dp1g
- m3PK8vyfoYXORbS/Xnag=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 October 2014 16:15:19 Nicolas Pitre wrote:
-> On Thu, 23 Oct 2014, Russell King - ARM Linux wrote:
-> 
-> > On Thu, Oct 23, 2014 at 03:47:32PM -0400, Nicolas Pitre wrote:
-> > > On Wed, 22 Oct 2014, Catalin Marinas wrote:
-> > > 
-> > > > On Wed, Oct 22, 2014 at 05:06:23PM +0100, mathieu.poirier@linaro.org wrote:
-> > > > > +#if __LINUX_ARM_ARCH__ >= 5
-> > > > 
-> > > > My old ARMv5 book does not list LDRD/STRD. It looks like they only come
-> > > > with ARMv5TE. Are there any processors prior to this supported by the
-> > > > kernel?
-> > > 
-> > > We still supports ARMv4 targets.
-> > > 
-> > > As far as I know, all the ARMv5 targets we support are also TE capable.
-> > 
-> > Not quite.  We have ARM1020, which according to our proc-*.S files is
-> > only ARMv5T, not ARMv5TE.
+Hi,
 
-Does this actually work when we are building with -march=armv5te?
+Kmem accounting of memcg is unusable now, because it lacks slab shrinker
+support. That means when we hit the limit we will get ENOMEM w/o any
+chance to recover. What we should do then is to call shrink_slab, which
+would reclaim old inode/dentry caches from this cgroup. This is what
+this patch set is intended to do.
 
-The Makefile contains this line:
+Basically, it does two things. First, it introduces the notion of
+per-memcg slab shrinker. A shrinker that wants to reclaim objects per
+cgroup should mark itself as SHRINKER_MEMCG_AWARE. Then it will be
+passed the memory cgroup to scan from in shrink_control->memcg. For such
+shrinkers shrink_slab iterates over the whole cgroup subtree under the
+target cgroup and calls the shrinker for each kmem-active memory cgroup.
 
-arch-$(CONFIG_CPU_32v5) =-D__LINUX_ARM_ARCH__=5 $(call cc-option,-march=armv5te,-march=armv4t)
+Secondly, this patch set makes the list_lru structure per-memcg. It's
+done transparently to list_lru users - everything they have to do is to
+tell list_lru_init that they want memcg-aware list_lru. Then the
+list_lru will automatically distribute objects among per-memcg lists
+basing on which cgroup the object is accounted to. This way to make FS
+shrinkers (icache, dcache) memcg-aware we only need to make them use
+memcg-aware list_lru, and this is what this patch set does.
 
-which looks like it would break for ARM1020.
+As before, this patch set only enables per-memcg kmem reclaim when the
+pressure goes from memory.limit, not from memory.kmem.limit. Handling
+memory.kmem.limit is going to be tricky due to GFP_NOFS allocations, it
+will probably require a sort of soft limit to work properly. I'm leaving
+this for future work.
 
+The main difference in v2 is that I got rid of reparenting of list_lrus.
+Thanks to Johannes' and Tejun's efforts mem_cgroup_iter now iterates
+over all memory cgroups including dead ones, so dangling offline cgroups
+whose css is pinned by kmem allocations is no longer a problem - they
+will be eventually reaped by memory pressure. OTOH, this allowed to
+simplify the patch set significantly. Nevertheless, if we want
+reparenting one day, it won't cause any problems to implement it on top.
+Another differences in v2 include:
 
-On a related note, I also wonder about this part:
+ - Rebased on top of v3.18-rc1-mmotm-2014-10-23-16-26
+ - Simplified handling of the list of all list_lrus
+ - Improved comments and function names
+ - Fix leak on the list_lru_init error path
+ - Fix list_lru_destroy crash on uninitialized zeroed object
 
-tune-$(CONFIG_CPU_ARM946E)      =$(call cc-option,-mtune=arm9e,-mtune=arm9tdmi)
-tune-$(CONFIG_CPU_ARM920T)      =-mtune=arm9tdmi
-tune-$(CONFIG_CPU_ARM922T)      =-mtune=arm9tdmi
-tune-$(CONFIG_CPU_ARM925T)      =-mtune=arm9tdmi
-tune-$(CONFIG_CPU_ARM926T)      =-mtune=arm9tdmi
+v1 can be found at https://lkml.org/lkml/2014/9/21/64
 
-I stumbled over this a while ago and couldn't figure it out. Does ARM926T
-actually exist, or is that a mistake that should actually be ARM926E?
+The patch set is organized as follows:
 
-If this is always ARM926E, shouldn't we build with -mtune=arm9e as we do
-for ARM946E?
+ - Patches 1-3 implement per-memcg shrinker core with patches 1 and 2
+   preparing list_lru users for upcoming changes and patch 3 tuning
+   shrink_slab.
 
-> Oh well.  Never saw such a beast in the field though.
+ - Patches 4 and 5 cleanup handling of max memcg_cache_id in the memcg
+   core.
 
-The only ARM10 implementation aside from integrator/realview that I'm aware
-of is an ARM1026E based Conexant/Ikanos DSL modem SoC (CX94xxx), and that
-is of course ARMv5TE.
+ - Patch 6 gets rid of the useless list_lru->active_nodes, and patch 7
+   links all list_lrus to a list, which is required by memcg.
 
-> Maybe to be on the very safe side, given that no ARMV5TE is likely to 
-> need 64-bit IO accessors at this point, this could simply be 
-> __LINUX_ARM_ARCH__ >= 6 instead.
+ - Patch 8 adds per-memcg lrus to the list_lru structure, and finally
+   patch 9 marks fs shrinkers as memcg aware.
 
-Which drivers need that support anyway? We definitely need to ensure
-that we don't try to build them on architectures without this support
-when CONFIG_COMPILE_TEST is set.
+Reviews are more than welcome.
 
-	Arnd
+Thanks,
+
+Vladimir Davydov (9):
+  list_lru: introduce list_lru_shrink_{count,walk}
+  fs: consolidate {nr,free}_cached_objects args in shrink_control
+  vmscan: shrink slab on memcg pressure
+  memcg: rename some cache id related variables
+  memcg: add rwsem to sync against memcg_caches arrays relocation
+  list_lru: get rid of ->active_nodes
+  list_lru: organize all list_lrus to list
+  list_lru: introduce per-memcg lists
+  fs: make shrinker memcg aware
+
+ fs/dcache.c                |   14 +-
+ fs/gfs2/quota.c            |    6 +-
+ fs/inode.c                 |    7 +-
+ fs/internal.h              |    7 +-
+ fs/super.c                 |   44 +++---
+ fs/xfs/xfs_buf.c           |    7 +-
+ fs/xfs/xfs_qm.c            |    7 +-
+ fs/xfs/xfs_super.c         |    7 +-
+ include/linux/fs.h         |    6 +-
+ include/linux/list_lru.h   |   72 +++++++--
+ include/linux/memcontrol.h |   53 ++++++-
+ include/linux/shrinker.h   |   10 +-
+ mm/list_lru.c              |  361 ++++++++++++++++++++++++++++++++++++++++----
+ mm/memcontrol.c            |  117 +++++++++++---
+ mm/slab_common.c           |   14 +-
+ mm/vmscan.c                |   87 ++++++++---
+ mm/workingset.c            |    6 +-
+ 17 files changed, 678 insertions(+), 147 deletions(-)
+
+-- 
+1.7.10.4
+
