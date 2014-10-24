@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932438AbaJXK7B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:59:01 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:35883 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301AbaJXK66 (ORCPT
+	id S932575AbaJXK7I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:59:08 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:37456 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932301AbaJXK7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:58:58 -0400
+	Fri, 24 Oct 2014 06:59:04 -0400
 From: Daniel Thompson <daniel.thompson@linaro.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: Daniel Thompson <daniel.thompson@linaro.org>,
@@ -15,9 +15,9 @@ Cc: Daniel Thompson <daniel.thompson@linaro.org>,
         Paul Bolle <pebolle@tiscali.nl>,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
         patches@linaro.org, linaro-kernel@lists.linaro.org
-Subject: [PATCH v12 07/15] arm: orion5x: Enable DEBUG_LL_UART_8250
-Date: Fri, 24 Oct 2014 11:54:28 +0100
-Message-Id: <1414148076-12685-8-git-send-email-daniel.thompson@linaro.org>
+Subject: [PATCH v12 09/15] arm: Remove DEBUG_LL_UART_NONE
+Date: Fri, 24 Oct 2014 11:54:30 +0100
+Message-Id: <1414148076-12685-10-git-send-email-daniel.thompson@linaro.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414148076-12685-1-git-send-email-daniel.thompson@linaro.org>
 References: <1414148076-12685-1-git-send-email-daniel.thompson@linaro.org>
@@ -25,28 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This defconfig already enables DEBUG_LL and by default DEBUG_LL_UART_NONE
-will be selected (but due to some back compatibility magic we eventually
-need to remove it is not actually honoured). DEBUG_LL_UART_8250 is a much
-saner default.
+Only a very small handful of platforms support DEBUG_LL_UART_NONE but it
+lurks in the menus of every single platform config ready to break the
+build. This is an especial problem for defconfig/oldconfig since it is
+often selected by default.
+
+This patch solves the problem by removing this option. Any platforms
+still depending upon this option must be migrated.
 
 Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>
 ---
- arch/arm/configs/orion5x_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/Kconfig.debug | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/arch/arm/configs/orion5x_defconfig b/arch/arm/configs/orion5x_defconfig
-index 952430d..855143f 100644
---- a/arch/arm/configs/orion5x_defconfig
-+++ b/arch/arm/configs/orion5x_defconfig
-@@ -156,6 +156,7 @@ CONFIG_LATENCYTOP=y
- # CONFIG_FTRACE is not set
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_8250=y
- CONFIG_CRYPTO_CBC=m
- CONFIG_CRYPTO_ECB=m
- CONFIG_CRYPTO_PCBC=m
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 295428d..5881c94 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -909,15 +909,6 @@ choice
+ 		  This option selects UART0 on VIA/Wondermedia System-on-a-chip
+ 		  devices, including VT8500, WM8505, WM8650 and WM8850.
+ 
+-	config DEBUG_LL_UART_NONE
+-		bool "No low-level debugging UART"
+-		depends on !ARCH_MULTIPLATFORM
+-		help
+-		  Say Y here if your platform doesn't provide a UART option
+-		  above. This relies on your platform choosing the right UART
+-		  definition internally in order for low-level debugging to
+-		  work.
+-
+ 	config DEBUG_ICEDCC
+ 		bool "Kernel low-level debugging via EmbeddedICE DCC channel"
+ 		help
 -- 
 1.9.3
 
