@@ -1,111 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997AbaJXJZb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 05:25:31 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:7480 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755937AbaJXJZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 05:25:26 -0400
-X-IronPort-AV: E=Sophos;i="5.04,779,1406592000"; 
-   d="scan'208";a="184564646"
-Message-ID: <1414142723.15687.24.camel@citrix.com>
-Subject: Re: [PATCH v5 3/6] xen/arm: introduce xen_is_dma_coherent
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <will.deacon@arm.com>
-Date: Fri, 24 Oct 2014 10:25:23 +0100
-In-Reply-To: <1414085246-16160-3-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1410231821520.876@kaball.uk.xensource.com>
-	 <1414085246-16160-3-git-send-email-stefano.stabellini@eu.citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
+	id S1756036AbaJXJ0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 05:26:10 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:57288 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752680AbaJXJ0H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 05:26:07 -0400
+Message-ID: <544A1B2F.7080409@arm.com>
+Date: Fri, 24 Oct 2014 10:26:07 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+To: Wanpeng Li <kernellwp@gmail.com>, Kirill Tkhai <ktkhai@parallels.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <tkhai@yandex.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>
+Subject: Re: [PATCH v2 2/3] sched/dl: Cleanup prio_changed_dl()
+References: <20140930210412.5258.35299.stgit@localhost>	 <20140930210428.5258.32223.stgit@localhost>	 <20141002093600.GC2849@worktop.programming.kicks-ass.net> <1412243541.20287.28.camel@tkhai> <544688A1.7010403@arm.com> <54498998.40707@gmail.com>
+In-Reply-To: <54498998.40707@gmail.com>
+X-OriginalArrivalTime: 24 Oct 2014 09:26:04.0795 (UTC) FILETIME=[88D12CB0:01CFEF6C]
+X-MC-Unique: 114102410260510501
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-23 at 18:27 +0100, Stefano Stabellini wrote:
-> Introduce a utility function to check whether a device is dma coherent.
-> The current implementation is suboptimal. Let's rework it later in
-> common arch/arm code.
-> 
-> Use it to figure out whether we need to issue cache maintenance
-> operations instead of checking on the existence of a particular dma_ops
-> function for the device.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Hi,
 
-As well as refactoring this also changes the nature of the test, making
-it tighter AFAICT. Perhaps it is the same because you happen to know
-that arm_coherent_dma_ops is the only possible one which doesn't set the
-hooks you were checking before.
-
-Either way this should be mentioned in the commit log. With that done:
-
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
+On 24/10/14 00:04, Wanpeng Li wrote:
+> 10/22/14, 12:24 AM, Juri Lelli:
+>> Hi Kirill,
+>>
+>> On 02/10/14 10:52, Kirill Tkhai wrote:
+>>> В Чт, 02/10/2014 в 11:36 +0200, Peter Zijlstra пишет:
+>>>> On Wed, Oct 01, 2014 at 01:04:35AM +0400, Kirill Tkhai wrote:
+>>>>> From: Kirill Tkhai <ktkhai@parallels.com>
+>>>>>
+>>>>> rq->curr task can't be in "dequeued" state in prio_changed_dl().
+>>>>> (The only place we can have that is __schedule()). So, we delete
+>>>>> rq->curr check.
+>>>> the CBS timer can throttle it right?
+>>> Yeah, it's better to check for on_dl_rq():
+>>>
+>>> [PATCH]sched/dl: Cleanup prio_changed_dl()
+>>>      
+>>> rq->curr task can't be in "dequeued" state in prio_changed_dl().
+>>> (The only place we can have that is __schedule()). So, we delete
+>>> rq->curr check.
+>>>
+>>> We shouldn't do balancing if deadline task is throttled too.
+>>>
+>>> Also delete "else" branch which is dead code (switched_to_dl()
+>>> is not interested in dequeued tasks and we are not interested
+>>> in balancing in this case).
+>>>
+>> So, I agree that calling switched_to_dl() makes little sense,
+>> but don't we have to deal with updates to not running tasks as
+>> in rt.c? Something like this maybe?
+>>
+>>  From 75ee75a5fd76526baaed3ba8a58f3ff7daa89cd6 Mon Sep 17 00:00:00 2001
+>> From: Juri Lelli <juri.lelli@arm.com>
+>> Date: Tue, 21 Oct 2014 17:15:15 +0100
+>> Subject: [PATCH] sched/deadline: cleanup prio_changed_dl()
+>>
+>> ---
+>>   kernel/sched/deadline.c | 16 +++++++++++++---
+>>   1 file changed, 13 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+>> index 28d6088..1e62e31 100644
+>> --- a/kernel/sched/deadline.c
+>> +++ b/kernel/sched/deadline.c
+>> @@ -1661,7 +1661,10 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
+>>   static void prio_changed_dl(struct rq *rq, struct task_struct *p,
+>>   			    int oldprio)
+>>   {
+>> -	if (task_on_rq_queued(p) || rq->curr == p) {
+>> +	if (!on_dl_rq(&p->dl))
 > 
-> ---
+> I'm not sure if this should be task_on_rq_queued() check. All 
+> check_class_changed() callsites dequeue entity if task_on_rq_queued() is 
+> true which leads to on_dl_rq(&p->dl) always return false.
 > 
-> Changes in v5:
-> - introduce xen_is_dma_coherent as a xen specific function;
-> - call xen_is_dma_coherent instead of is_dma_coherent.
-> ---
->  arch/arm/include/asm/xen/page-coherent.h |    5 +++++
->  arch/arm/xen/mm32.c                      |    6 +++---
->  2 files changed, 8 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/include/asm/xen/page-coherent.h b/arch/arm/include/asm/xen/page-coherent.h
-> index e8275ea..6f0f882 100644
-> --- a/arch/arm/include/asm/xen/page-coherent.h
-> +++ b/arch/arm/include/asm/xen/page-coherent.h
-> @@ -5,6 +5,11 @@
->  #include <linux/dma-attrs.h>
->  #include <linux/dma-mapping.h>
->  
-> +static inline bool xen_is_dma_coherent(struct device *dev)
-> +{
-> +    return (__generic_dma_ops(dev) == &arm_coherent_dma_ops);
-> +}
-> + 
->  static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
->  		dma_addr_t *dma_handle, gfp_t flags,
->  		struct dma_attrs *attrs)
-> diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
-> index 6153d61..6c0224e 100644
-> --- a/arch/arm/xen/mm32.c
-> +++ b/arch/arm/xen/mm32.c
-> @@ -76,7 +76,7 @@ void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
->  		struct dma_attrs *attrs)
->  
->  {
-> -	if (!__generic_dma_ops(hwdev)->unmap_page)
-> +	if (xen_is_dma_coherent(hwdev))
->  		return;
->  	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
->  		return;
-> @@ -87,7 +87,7 @@ void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
->  void xen_dma_sync_single_for_cpu(struct device *hwdev,
->  		dma_addr_t handle, size_t size, enum dma_data_direction dir)
->  {
-> -	if (!__generic_dma_ops(hwdev)->sync_single_for_cpu)
-> +	if (xen_is_dma_coherent(hwdev))
->  		return;
->  	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
->  }
-> @@ -95,7 +95,7 @@ void xen_dma_sync_single_for_cpu(struct device *hwdev,
->  void xen_dma_sync_single_for_device(struct device *hwdev,
->  		dma_addr_t handle, size_t size, enum dma_data_direction dir)
->  {
-> -	if (!__generic_dma_ops(hwdev)->sync_single_for_device)
-> +	if (xen_is_dma_coherent(hwdev))
->  		return;
->  	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
->  }
 
+Yes, to be able to change class/prio. But they also enqueue it back if
+it was on_rq. So, on_dl_rq() helps us when the tasks is throttled.
+
+Thanks,
+
+- Juri
+
+> Regards,
+> Wanpeng Li
+> 
+>> +		return;
+>> +
+>> +	if (rq->curr == p) {
+>>   #ifdef CONFIG_SMP
+>>   		/*
+>>   		 * This might be too much, but unfortunately
+>> @@ -1688,8 +1691,15 @@ static void prio_changed_dl(struct rq *rq, struct task_struct *p,
+>>   		 */
+>>   		resched_curr(rq);
+>>   #endif /* CONFIG_SMP */
+>> -	} else
+>> -		switched_to_dl(rq, p);
+>> +	} else {
+>> +		/*
+>> +		 * This task is not running, so if its deadline is
+>> +		 * now more imminent than that of the current running
+>> +		 * task then reschedule.
+>> +		 */
+>> +		if (dl_time_before(p->dl.deadline, rq->curr->dl.deadline))
+>> +			resched_curr(rq);
+>> +	}
+>>   }
+>>   
+>>   const struct sched_class dl_sched_class = {
+> 
+> 
 
