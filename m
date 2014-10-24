@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714AbaJXNXx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:23:53 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:37342 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756516AbaJXNXu (ORCPT
+	id S1756739AbaJXNYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:24:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31622 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756723AbaJXNYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:23:50 -0400
+	Fri, 24 Oct 2014 09:24:35 -0400
+Message-ID: <544A52D7.6000202@oracle.com>
+Date: Fri, 24 Oct 2014 09:23:35 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1413775935-17743-5-git-send-email-cw00.choi@samsung.com>
-References: <1413775749-17539-1-git-send-email-cw00.choi@samsung.com>
-	<1413775935-17743-5-git-send-email-cw00.choi@samsung.com>
-Date: Fri, 24 Oct 2014 07:23:49 -0600
-Message-ID: <CAD8Lp46Y1WBF2Bq5SKtQDZ4kUb2fDCsbBs1THFWcV=8-OXh_SQ@mail.gmail.com>
-Subject: Re: [PATCH 5/5] ARM: dts: Add dts files for Exynos4415 SoC
-From: Daniel Drake <drake@endlessm.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, ben-linux@fluff.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>, thomas.abraham@linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        InKi Dae <inki.dae@samsung.com>, geunsik.lim@samsung.com,
-        jh80.chung@samsung.com, jaewon02.kim@samsung.com,
-        ideal.song@samsung.com, yj44.cho@samsung.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
+        x86@kernel.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: drivers: random: Shift out-of-bounds in _mix_pool_bytes
+References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com> <5444EBFA.5030103@samsung.com> <20141020124929.GA23177@thunk.org> <54451501.2070700@samsung.com> <5445179A.4080804@redhat.com> <20141020141635.GA4499@thunk.org> <20141024100108.GF12706@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141024100108.GF12706@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 19, 2014 at 9:32 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patch adds new exynos4415.dtsi to support Exynos4415 SoC
-> based on Cortex-A9 quad cores and includes following dt nodes:
+On 10/24/2014 06:01 AM, Peter Zijlstra wrote:
+> On Mon, Oct 20, 2014 at 10:16:35AM -0400, Theodore Ts'o wrote:
+>> > On Mon, Oct 20, 2014 at 04:09:30PM +0200, Daniel Borkmann wrote:
+>>>> > > >
+>>>> > > >It's triggering when input_rotate == 0, so UBSan complains about right shift in rol32()
+>>>> > > >
+>>>> > > >static inline __u32 rol32(__u32 word, unsigned int shift)
+>>>> > > >{
+>>>> > > >	return (word << shift) | (word >> (32 - shift));
+>>>> > > >}
+>>> > > 
+>>> > > So that would be the case when the entropy store's input_rotate calls
+>>> > > _mix_pool_bytes() for the very first time ... I don't think it's an
+>>> > > issue though.
+>> > 
+>> > I'm sure it's not an issue, but it's still true that 
+>> > 
+>> > 	return (word << 0) | (word >> 32);
+>> > 
+>> > is technically not undefined, and while it would be unfortunate (and
+>> > highly unlikely) if gcc were to say, start nethack, it's technically
+>> > allowed by the C spec.  :-)
+> In fact, n >> 32 == n.
+> 
+> #include <stdio.h>
+> 
+> int main(int argc, char **argv)
+> {
+> 	int i = atoi(argv[1]);
+> 	int shift = atoi(argv[2]);
+> 	printf("%x\n", i >> shift);
+> 	return 0;
+> }
+> 
+> $ ./shift 5 32
+> 5
+> 
+> On x86 at least the shift ops simply mask out the upper bits and
+> therefore the 32 == 0.
+> 
+> So you end up OR-ing the same value twice, which is harmless.
+> 
+> So no misbehaviour on the rol32() function.
+> 
+> I think I've ran into this before, in that case I did get fail because I
+> did indeed expect the 0 and things didn't work out.
 
-There's a lot in common between your new exynos4415.dtsi and the
-existing exynos4.dtsi.
-Would it make more sense for the 4415 code to extend the existing
-exynos4.dtsi like the other Exynos4 variants do?
+i >> 32 may happen to be "i", but is there anything that prevents the compiler
+from returning, let's say, 42?
 
-Thanks
-Daniel
+
+Thanks,
+Sasha
