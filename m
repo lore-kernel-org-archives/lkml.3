@@ -1,527 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756684AbaJXOlL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 10:41:11 -0400
-Received: from mail.kapsi.fi ([217.30.184.167]:52930 "EHLO mail.kapsi.fi"
+	id S1756709AbaJXOl1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:41:27 -0400
+Received: from mail.kernel.org ([198.145.19.201]:38692 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756445AbaJXOlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 10:41:01 -0400
-From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
-        pdeschrijver@nvidia.com, rjw@rjwysocki.net, viresh.kumar@linaro.org
-Cc: mturquette@linaro.org, pwalmsley@nvidia.com, vinceh@nvidia.com,
-        pgaikwad@nvidia.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, tuomas.tynkkynen@iki.fi,
-        Tuomas Tynkkynen <ttynkkynen@nvidia.com>,
-        Mikko Perttunen <mikko.perttunen@kapsi.fi>
-Subject: [PATCH v5 12/16] cpufreq: tegra: Rename tegra-cpufreq to tegra20-cpufreq
-Date: Fri, 24 Oct 2014 17:39:19 +0300
-Message-Id: <1414161563-16812-13-git-send-email-mikko.perttunen@kapsi.fi>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi>
-References: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi>
-X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
-X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
-X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
+	id S1756214AbaJXOlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 10:41:21 -0400
+Date: Fri, 24 Oct 2014 11:41:16 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 05/16] perf tools: Add facility to export data in
+ database-friendly way
+Message-ID: <20141024144116.GD14687@kernel.org>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+ <1414061124-26830-6-git-send-email-adrian.hunter@intel.com>
+ <87lho6c8ec.fsf@sejong.aot.lge.com>
+ <544A099C.50104@intel.com>
+ <544A2E5F.80508@intel.com>
+ <CAM9d7ci6bv_JnK8DkqqTEttPkEp1mtMPN07XjqX=K4ADOUC6SA@mail.gmail.com>
+ <544A505C.5030203@intel.com>
+ <20141024144002.GC14687@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141024144002.GC14687@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Em Fri, Oct 24, 2014 at 11:40:02AM -0300, Arnaldo Carvalho de Melo escreveu:
+> Em Fri, Oct 24, 2014 at 04:13:00PM +0300, Adrian Hunter escreveu:
+> > On 24/10/14 15:26, Namhyung Kim wrote:
+> > > Hi Adrian,
+> > > 
+> > > On Fri, Oct 24, 2014 at 7:47 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+> > >> On 24/10/14 11:11, Adrian Hunter wrote:
+> > >>> On 24/10/14 09:02, Namhyung Kim wrote:
+> > >>>> Can we do it somewhere in a script not in the core code?  I don't feel
+> > >>>> comfortable to add those bits into the core code.  What if we export
+> > >>>
+> > >>> Please explain what you mean by "comfortable".
+> > >>
+> > >> Or rather: What about it is wrong for core code?
+> > > 
+> > > Well, there's nothing "wrong" about it. :)
+> > > 
+> > > But I think if some code is used only by a specific bits, it'd be
+> > > better hiding it from the rest as much as possible.
+> > 
+> > It is pretty self-contained in db-export.[ch] and the scripting
+> > engines.
+> 
+> So, what I meant was the patch below, on top of yours.
+> 
+> In some data structures where there were no provision for tool specific
+> storage, I added an unnamed union with db_id and a void *priv pointer,
+> where there were, be it a priv pointer, like in perf_evsel, I moved
+> db_id to it, no extra costs for the other tools.
+> 
+> And in struct symbol, I made it use symbol__priv(), that will access the
+> area reserved by setting symbol.priv_size at tool start time, like done
+> for the annotation case in top, report, annotate. I.e. on the tool that
+> will use symbol->db_id you will need to add this just before calling
+> symbol__init():
+> 
+> 	symbol_conf.priv_size = sizeof(u64);
+> 
+> Since this is all specific to your tool, there should be no problems and
+> I'm now applying this change merged with your original patch + note
+> about that and then moving on to the other patches that make use of it.
 
-The Tegra124 will use a different driver for frequency scaling, so
-rename the old driver (which handles only Tegra20) appropriately.
+Oops, now with the patch:
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
----
- drivers/cpufreq/Kconfig.arm       |   6 +-
- drivers/cpufreq/Makefile          |   2 +-
- drivers/cpufreq/tegra-cpufreq.c   | 218 --------------------------------------
- drivers/cpufreq/tegra20-cpufreq.c | 218 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 222 insertions(+), 222 deletions(-)
- delete mode 100644 drivers/cpufreq/tegra-cpufreq.c
- create mode 100644 drivers/cpufreq/tegra20-cpufreq.c
-
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index 83a75dc..22419f4 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -241,9 +241,9 @@ config ARM_SPEAR_CPUFREQ
- 	help
- 	  This adds the CPUFreq driver support for SPEAr SOCs.
+diff --git a/tools/perf/util/comm.h b/tools/perf/util/comm.h
+index 99e7021..71c9c39 100644
+--- a/tools/perf/util/comm.h
++++ b/tools/perf/util/comm.h
+@@ -10,9 +10,12 @@ struct comm_str;
+ struct comm {
+ 	struct comm_str *comm_str;
+ 	u64 start;
+-	u64 db_id;
+ 	struct list_head list;
+ 	bool exec;
++	union { /* Tool specific area */
++		void	*priv;
++		u64	db_id;
++	};
+ };
  
--config ARM_TEGRA_CPUFREQ
--	bool "TEGRA CPUFreq support"
-+config ARM_TEGRA20_CPUFREQ
-+	bool "Tegra20 CPUFreq support"
- 	depends on ARCH_TEGRA
- 	default y
- 	help
--	  This adds the CPUFreq driver support for TEGRA SOCs.
-+	  This adds the CPUFreq driver support for Tegra20 SOCs.
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index 40c53dc..0d3ec1c 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -75,7 +75,7 @@ obj-$(CONFIG_ARM_S5PV210_CPUFREQ)	+= s5pv210-cpufreq.o
- obj-$(CONFIG_ARM_SA1100_CPUFREQ)	+= sa1100-cpufreq.o
- obj-$(CONFIG_ARM_SA1110_CPUFREQ)	+= sa1110-cpufreq.o
- obj-$(CONFIG_ARM_SPEAR_CPUFREQ)		+= spear-cpufreq.o
--obj-$(CONFIG_ARM_TEGRA_CPUFREQ)		+= tegra-cpufreq.o
-+obj-$(CONFIG_ARM_TEGRA20_CPUFREQ)	+= tegra20-cpufreq.o
- obj-$(CONFIG_ARM_VEXPRESS_SPC_CPUFREQ)	+= vexpress-spc-cpufreq.o
+ void comm__free(struct comm *comm);
+diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
+index 53d0e75..be128b0 100644
+--- a/tools/perf/util/db-export.c
++++ b/tools/perf/util/db-export.c
+@@ -150,10 +150,12 @@ int db_export__dso(struct db_export *dbe, struct dso *dso,
+ int db_export__symbol(struct db_export *dbe, struct symbol *sym,
+ 		      struct dso *dso)
+ {
+-	if (sym->db_id)
++	u64 *sym_db_id = symbol__priv(sym);
++
++	if (*sym_db_id)
+ 		return 0;
  
- ##################################################################################
-diff --git a/drivers/cpufreq/tegra-cpufreq.c b/drivers/cpufreq/tegra-cpufreq.c
-deleted file mode 100644
-index 8084c7f..0000000
---- a/drivers/cpufreq/tegra-cpufreq.c
-+++ /dev/null
-@@ -1,218 +0,0 @@
--/*
-- * Copyright (C) 2010 Google, Inc.
-- *
-- * Author:
-- *	Colin Cross <ccross@google.com>
-- *	Based on arch/arm/plat-omap/cpu-omap.c, (C) 2005 Nokia Corporation
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
--
--#include <linux/kernel.h>
--#include <linux/module.h>
--#include <linux/types.h>
--#include <linux/sched.h>
--#include <linux/cpufreq.h>
--#include <linux/delay.h>
--#include <linux/init.h>
--#include <linux/err.h>
--#include <linux/clk.h>
--#include <linux/io.h>
--
--static struct cpufreq_frequency_table freq_table[] = {
--	{ .frequency = 216000 },
--	{ .frequency = 312000 },
--	{ .frequency = 456000 },
--	{ .frequency = 608000 },
--	{ .frequency = 760000 },
--	{ .frequency = 816000 },
--	{ .frequency = 912000 },
--	{ .frequency = 1000000 },
--	{ .frequency = CPUFREQ_TABLE_END },
--};
--
--#define NUM_CPUS	2
--
--static struct clk *cpu_clk;
--static struct clk *pll_x_clk;
--static struct clk *pll_p_clk;
--static struct clk *emc_clk;
--static bool pll_x_prepared;
--
--static unsigned int tegra_get_intermediate(struct cpufreq_policy *policy,
--					   unsigned int index)
--{
--	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
--
--	/*
--	 * Don't switch to intermediate freq if:
--	 * - we are already at it, i.e. policy->cur == ifreq
--	 * - index corresponds to ifreq
--	 */
--	if ((freq_table[index].frequency == ifreq) || (policy->cur == ifreq))
--		return 0;
--
--	return ifreq;
--}
--
--static int tegra_target_intermediate(struct cpufreq_policy *policy,
--				     unsigned int index)
--{
--	int ret;
--
--	/*
--	 * Take an extra reference to the main pll so it doesn't turn
--	 * off when we move the cpu off of it as enabling it again while we
--	 * switch to it from tegra_target() would take additional time.
--	 *
--	 * When target-freq is equal to intermediate freq we don't need to
--	 * switch to an intermediate freq and so this routine isn't called.
--	 * Also, we wouldn't be using pll_x anymore and must not take extra
--	 * reference to it, as it can be disabled now to save some power.
--	 */
--	clk_prepare_enable(pll_x_clk);
--
--	ret = clk_set_parent(cpu_clk, pll_p_clk);
--	if (ret)
--		clk_disable_unprepare(pll_x_clk);
--	else
--		pll_x_prepared = true;
--
--	return ret;
--}
--
--static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
--{
--	unsigned long rate = freq_table[index].frequency;
--	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
--	int ret = 0;
--
--	/*
--	 * Vote on memory bus frequency based on cpu frequency
--	 * This sets the minimum frequency, display or avp may request higher
--	 */
--	if (rate >= 816000)
--		clk_set_rate(emc_clk, 600000000); /* cpu 816 MHz, emc max */
--	else if (rate >= 456000)
--		clk_set_rate(emc_clk, 300000000); /* cpu 456 MHz, emc 150Mhz */
--	else
--		clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
--
--	/*
--	 * target freq == pll_p, don't need to take extra reference to pll_x_clk
--	 * as it isn't used anymore.
--	 */
--	if (rate == ifreq)
--		return clk_set_parent(cpu_clk, pll_p_clk);
--
--	ret = clk_set_rate(pll_x_clk, rate * 1000);
--	/* Restore to earlier frequency on error, i.e. pll_x */
--	if (ret)
--		pr_err("Failed to change pll_x to %lu\n", rate);
--
--	ret = clk_set_parent(cpu_clk, pll_x_clk);
--	/* This shouldn't fail while changing or restoring */
--	WARN_ON(ret);
--
--	/*
--	 * Drop count to pll_x clock only if we switched to intermediate freq
--	 * earlier while transitioning to a target frequency.
--	 */
--	if (pll_x_prepared) {
--		clk_disable_unprepare(pll_x_clk);
--		pll_x_prepared = false;
--	}
--
--	return ret;
--}
--
--static int tegra_cpu_init(struct cpufreq_policy *policy)
--{
--	int ret;
--
--	if (policy->cpu >= NUM_CPUS)
--		return -EINVAL;
--
--	clk_prepare_enable(emc_clk);
--	clk_prepare_enable(cpu_clk);
--
--	/* FIXME: what's the actual transition time? */
--	ret = cpufreq_generic_init(policy, freq_table, 300 * 1000);
--	if (ret) {
--		clk_disable_unprepare(cpu_clk);
--		clk_disable_unprepare(emc_clk);
--		return ret;
--	}
--
--	policy->clk = cpu_clk;
--	policy->suspend_freq = freq_table[0].frequency;
--	return 0;
--}
--
--static int tegra_cpu_exit(struct cpufreq_policy *policy)
--{
--	clk_disable_unprepare(cpu_clk);
--	clk_disable_unprepare(emc_clk);
--	return 0;
--}
--
--static struct cpufreq_driver tegra_cpufreq_driver = {
--	.flags			= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
--	.verify			= cpufreq_generic_frequency_table_verify,
--	.get_intermediate	= tegra_get_intermediate,
--	.target_intermediate	= tegra_target_intermediate,
--	.target_index		= tegra_target,
--	.get			= cpufreq_generic_get,
--	.init			= tegra_cpu_init,
--	.exit			= tegra_cpu_exit,
--	.name			= "tegra",
--	.attr			= cpufreq_generic_attr,
--#ifdef CONFIG_PM
--	.suspend		= cpufreq_generic_suspend,
--#endif
--};
--
--static int __init tegra_cpufreq_init(void)
--{
--	cpu_clk = clk_get_sys(NULL, "cclk");
--	if (IS_ERR(cpu_clk))
--		return PTR_ERR(cpu_clk);
--
--	pll_x_clk = clk_get_sys(NULL, "pll_x");
--	if (IS_ERR(pll_x_clk))
--		return PTR_ERR(pll_x_clk);
--
--	pll_p_clk = clk_get_sys(NULL, "pll_p");
--	if (IS_ERR(pll_p_clk))
--		return PTR_ERR(pll_p_clk);
--
--	emc_clk = clk_get_sys("cpu", "emc");
--	if (IS_ERR(emc_clk)) {
--		clk_put(cpu_clk);
--		return PTR_ERR(emc_clk);
--	}
--
--	return cpufreq_register_driver(&tegra_cpufreq_driver);
--}
--
--static void __exit tegra_cpufreq_exit(void)
--{
--        cpufreq_unregister_driver(&tegra_cpufreq_driver);
--	clk_put(emc_clk);
--	clk_put(cpu_clk);
--}
--
--
--MODULE_AUTHOR("Colin Cross <ccross@android.com>");
--MODULE_DESCRIPTION("cpufreq driver for Nvidia Tegra2");
--MODULE_LICENSE("GPL");
--module_init(tegra_cpufreq_init);
--module_exit(tegra_cpufreq_exit);
-diff --git a/drivers/cpufreq/tegra20-cpufreq.c b/drivers/cpufreq/tegra20-cpufreq.c
-new file mode 100644
-index 0000000..8084c7f
---- /dev/null
-+++ b/drivers/cpufreq/tegra20-cpufreq.c
-@@ -0,0 +1,218 @@
-+/*
-+ * Copyright (C) 2010 Google, Inc.
-+ *
-+ * Author:
-+ *	Colin Cross <ccross@google.com>
-+ *	Based on arch/arm/plat-omap/cpu-omap.c, (C) 2005 Nokia Corporation
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
+-	sym->db_id = ++dbe->symbol_last_db_id;
++	*sym_db_id = ++dbe->symbol_last_db_id;
+ 
+ 	if (dbe->export_symbol)
+ 		return dbe->export_symbol(dbe, sym, dso);
+@@ -161,8 +163,7 @@ int db_export__symbol(struct db_export *dbe, struct symbol *sym,
+ 	return 0;
+ }
+ 
+-static struct thread *get_main_thread(struct machine *machine,
+-				      struct thread *thread)
++static struct thread *get_main_thread(struct machine *machine, struct thread *thread)
+ {
+ 	if (thread->pid_ == thread->tid)
+ 		return thread;
+@@ -194,10 +195,12 @@ static int db_ids_from_al(struct db_export *dbe, struct addr_location *al,
+ 		}
+ 
+ 		if (al->sym) {
++			u64 *db_id = symbol__priv(al->sym);
 +
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/sched.h>
-+#include <linux/cpufreq.h>
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/clk.h>
-+#include <linux/io.h>
+ 			err = db_export__symbol(dbe, al->sym, dso);
+ 			if (err)
+ 				return err;
+-			*sym_db_id = al->sym->db_id;
++			*sym_db_id = *db_id;
+ 			*offset = al->addr - al->sym->start;
+ 		}
+ 	}
+@@ -253,8 +256,7 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 	    sample_addr_correlates_sym(&evsel->attr)) {
+ 		struct addr_location addr_al;
+ 
+-		perf_event__preprocess_sample_addr(event, sample, al->machine,
+-						   thread, &addr_al);
++		perf_event__preprocess_sample_addr(event, sample, thread, &addr_al);
+ 		err = db_ids_from_al(dbe, &addr_al, &es.addr_dso_db_id,
+ 				     &es.addr_sym_db_id, &es.addr_offset);
+ 		if (err)
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 66c99cc..a316e4a 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -111,7 +111,6 @@ struct dso {
+ 	enum dso_swap_type	needs_swap;
+ 	enum dso_binary_type	symtab_type;
+ 	enum dso_binary_type	binary_type;
+-	u64		 db_id;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 has_srcline:1;
+@@ -140,6 +139,11 @@ struct dso {
+ 		struct list_head open_entry;
+ 	} data;
+ 
++	union { /* Tool specific area */
++		void	 *priv;
++		u64	 db_id;
++	};
 +
-+static struct cpufreq_frequency_table freq_table[] = {
-+	{ .frequency = 216000 },
-+	{ .frequency = 312000 },
-+	{ .frequency = 456000 },
-+	{ .frequency = 608000 },
-+	{ .frequency = 760000 },
-+	{ .frequency = 816000 },
-+	{ .frequency = 912000 },
-+	{ .frequency = 1000000 },
-+	{ .frequency = CPUFREQ_TABLE_END },
-+};
-+
-+#define NUM_CPUS	2
-+
-+static struct clk *cpu_clk;
-+static struct clk *pll_x_clk;
-+static struct clk *pll_p_clk;
-+static struct clk *emc_clk;
-+static bool pll_x_prepared;
-+
-+static unsigned int tegra_get_intermediate(struct cpufreq_policy *policy,
-+					   unsigned int index)
-+{
-+	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
-+
-+	/*
-+	 * Don't switch to intermediate freq if:
-+	 * - we are already at it, i.e. policy->cur == ifreq
-+	 * - index corresponds to ifreq
-+	 */
-+	if ((freq_table[index].frequency == ifreq) || (policy->cur == ifreq))
-+		return 0;
-+
-+	return ifreq;
-+}
-+
-+static int tegra_target_intermediate(struct cpufreq_policy *policy,
-+				     unsigned int index)
-+{
-+	int ret;
-+
-+	/*
-+	 * Take an extra reference to the main pll so it doesn't turn
-+	 * off when we move the cpu off of it as enabling it again while we
-+	 * switch to it from tegra_target() would take additional time.
-+	 *
-+	 * When target-freq is equal to intermediate freq we don't need to
-+	 * switch to an intermediate freq and so this routine isn't called.
-+	 * Also, we wouldn't be using pll_x anymore and must not take extra
-+	 * reference to it, as it can be disabled now to save some power.
-+	 */
-+	clk_prepare_enable(pll_x_clk);
-+
-+	ret = clk_set_parent(cpu_clk, pll_p_clk);
-+	if (ret)
-+		clk_disable_unprepare(pll_x_clk);
-+	else
-+		pll_x_prepared = true;
-+
-+	return ret;
-+}
-+
-+static int tegra_target(struct cpufreq_policy *policy, unsigned int index)
-+{
-+	unsigned long rate = freq_table[index].frequency;
-+	unsigned int ifreq = clk_get_rate(pll_p_clk) / 1000;
-+	int ret = 0;
-+
-+	/*
-+	 * Vote on memory bus frequency based on cpu frequency
-+	 * This sets the minimum frequency, display or avp may request higher
-+	 */
-+	if (rate >= 816000)
-+		clk_set_rate(emc_clk, 600000000); /* cpu 816 MHz, emc max */
-+	else if (rate >= 456000)
-+		clk_set_rate(emc_clk, 300000000); /* cpu 456 MHz, emc 150Mhz */
-+	else
-+		clk_set_rate(emc_clk, 100000000);  /* emc 50Mhz */
-+
-+	/*
-+	 * target freq == pll_p, don't need to take extra reference to pll_x_clk
-+	 * as it isn't used anymore.
-+	 */
-+	if (rate == ifreq)
-+		return clk_set_parent(cpu_clk, pll_p_clk);
-+
-+	ret = clk_set_rate(pll_x_clk, rate * 1000);
-+	/* Restore to earlier frequency on error, i.e. pll_x */
-+	if (ret)
-+		pr_err("Failed to change pll_x to %lu\n", rate);
-+
-+	ret = clk_set_parent(cpu_clk, pll_x_clk);
-+	/* This shouldn't fail while changing or restoring */
-+	WARN_ON(ret);
-+
-+	/*
-+	 * Drop count to pll_x clock only if we switched to intermediate freq
-+	 * earlier while transitioning to a target frequency.
-+	 */
-+	if (pll_x_prepared) {
-+		clk_disable_unprepare(pll_x_clk);
-+		pll_x_prepared = false;
-+	}
-+
-+	return ret;
-+}
-+
-+static int tegra_cpu_init(struct cpufreq_policy *policy)
-+{
-+	int ret;
-+
-+	if (policy->cpu >= NUM_CPUS)
-+		return -EINVAL;
-+
-+	clk_prepare_enable(emc_clk);
-+	clk_prepare_enable(cpu_clk);
-+
-+	/* FIXME: what's the actual transition time? */
-+	ret = cpufreq_generic_init(policy, freq_table, 300 * 1000);
-+	if (ret) {
-+		clk_disable_unprepare(cpu_clk);
-+		clk_disable_unprepare(emc_clk);
-+		return ret;
-+	}
-+
-+	policy->clk = cpu_clk;
-+	policy->suspend_freq = freq_table[0].frequency;
-+	return 0;
-+}
-+
-+static int tegra_cpu_exit(struct cpufreq_policy *policy)
-+{
-+	clk_disable_unprepare(cpu_clk);
-+	clk_disable_unprepare(emc_clk);
-+	return 0;
-+}
-+
-+static struct cpufreq_driver tegra_cpufreq_driver = {
-+	.flags			= CPUFREQ_NEED_INITIAL_FREQ_CHECK,
-+	.verify			= cpufreq_generic_frequency_table_verify,
-+	.get_intermediate	= tegra_get_intermediate,
-+	.target_intermediate	= tegra_target_intermediate,
-+	.target_index		= tegra_target,
-+	.get			= cpufreq_generic_get,
-+	.init			= tegra_cpu_init,
-+	.exit			= tegra_cpu_exit,
-+	.name			= "tegra",
-+	.attr			= cpufreq_generic_attr,
-+#ifdef CONFIG_PM
-+	.suspend		= cpufreq_generic_suspend,
-+#endif
-+};
-+
-+static int __init tegra_cpufreq_init(void)
-+{
-+	cpu_clk = clk_get_sys(NULL, "cclk");
-+	if (IS_ERR(cpu_clk))
-+		return PTR_ERR(cpu_clk);
-+
-+	pll_x_clk = clk_get_sys(NULL, "pll_x");
-+	if (IS_ERR(pll_x_clk))
-+		return PTR_ERR(pll_x_clk);
-+
-+	pll_p_clk = clk_get_sys(NULL, "pll_p");
-+	if (IS_ERR(pll_p_clk))
-+		return PTR_ERR(pll_p_clk);
-+
-+	emc_clk = clk_get_sys("cpu", "emc");
-+	if (IS_ERR(emc_clk)) {
-+		clk_put(cpu_clk);
-+		return PTR_ERR(emc_clk);
-+	}
-+
-+	return cpufreq_register_driver(&tegra_cpufreq_driver);
-+}
-+
-+static void __exit tegra_cpufreq_exit(void)
-+{
-+        cpufreq_unregister_driver(&tegra_cpufreq_driver);
-+	clk_put(emc_clk);
-+	clk_put(cpu_clk);
-+}
-+
-+
-+MODULE_AUTHOR("Colin Cross <ccross@android.com>");
-+MODULE_DESCRIPTION("cpufreq driver for Nvidia Tegra2");
-+MODULE_LICENSE("GPL");
-+module_init(tegra_cpufreq_init);
-+module_exit(tegra_cpufreq_exit);
--- 
-2.1.0
-
+ 	char		 name[0];
+ };
+ 
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 9459899..d3854c4 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -54,6 +54,7 @@ struct cgroup_sel;
+  * @is_pos: the position (counting backwards) of the event id (PERF_SAMPLE_ID or
+  *          PERF_SAMPLE_IDENTIFIER) in a non-sample event i.e. if sample_id_all
+  *          is used there is an id sample appended to non-sample events
++ * @priv:   And what is in its containing unnamed union are tool specific
+  */
+ struct perf_evsel {
+ 	struct list_head	node;
+@@ -73,6 +74,7 @@ struct perf_evsel {
+ 	union {
+ 		void		*priv;
+ 		off_t		id_offset;
++		u64		db_id;
+ 	};
+ 	struct cgroup_sel	*cgrp;
+ 	void			*handler;
+@@ -92,7 +94,6 @@ struct perf_evsel {
+ 	int			sample_read;
+ 	struct perf_evsel	*leader;
+ 	char			*group_name;
+-	u64			db_id;
+ };
+ 
+ union u64_swap {
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 2e150a2..e8b7779 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -40,7 +40,10 @@ struct machine {
+ 	u64		  kernel_start;
+ 	symbol_filter_t	  symbol_filter;
+ 	pid_t		  *current_tid;
+-	u64		  db_id;
++	union { /* Tool specific area */
++		void	  *priv;
++		u64	  db_id;
++	};
+ };
+ 
+ static inline
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 6f54ade..eb2c19b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -73,7 +73,6 @@ struct symbol {
+ 	struct rb_node	rb_node;
+ 	u64		start;
+ 	u64		end;
+-	u64		db_id;
+ 	u16		namelen;
+ 	u8		binding;
+ 	bool		ignore;
