@@ -1,237 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753AbaJXB50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 21:57:26 -0400
-Received: from mail.kernel.org ([198.145.19.201]:59418 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750964AbaJXB5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 21:57:22 -0400
-Date: Thu, 23 Oct 2014 22:57:17 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: namhyung@kernel.org, linux-kernel@vger.kernel.org, lizefan@huawei.com
-Subject: Re: [PATCH v3] perf tools: makes CPUINFO_PROC to array for different
- kernel version
-Message-ID: <20141024015717.GW14687@kernel.org>
-References: <1414115126-7479-1-git-send-email-wangnan0@huawei.com>
+	id S1754670AbaJXB5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 21:57:36 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:45258 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867AbaJXB5d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 21:57:33 -0400
+Message-ID: <5449B1D5.8010700@huawei.com>
+Date: Fri, 24 Oct 2014 09:56:37 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414115126-7479-1-git-send-email-wangnan0@huawei.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: Namhyung Kim <namhyung@kernel.org>, <a.p.zijlstra@chello.nl>,
+        <paulus@samba.org>, <mingo@redhat.com>, <jolsa@redhat.com>,
+        <adrian.hunter@intel.com>, <Waiman.Long@hp.com>,
+        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
+Subject: Re: [PATCH v2 RESEND] perf tools: makes CPUINFO_PROC to array for
+ different kernel version
+References: <1413963614-7251-1-git-send-email-wangnan0@huawei.com> <87k33qe5be.fsf@sejong.aot.lge.com> <20141023235302.GU14687@kernel.org>
+In-Reply-To: <20141023235302.GU14687@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.5449B207.017A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 83aecc5f7a974db2aaa795196eb876ac
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Oct 24, 2014 at 09:45:26AM +0800, Wang Nan escreveu:
-> After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
-> /proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
-> CPUINFO_PROC to an array and provides two choices for ARM, makes it
-> compatible for different kernel version.
-> 
-> v1 -> v2: minor changes as suggested by Namhyung Kim:
-> 
->  - Doesn't pass @h and @evlist to __write_cpudesc;
->  - Coding style fix.
-> 
-> v2 -> v3:
->   - Rebase:
->     git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
+Hi Arnaldo,
 
-Thanks a lot, applying now.
+A have posted a v3 patch based on your git repository. Please refer to:
 
-- Arnaldo
- 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/perf-sys.h    | 30 +++++++++++++++---------------
->  tools/perf/util/header.c | 27 +++++++++++++++++++++------
->  2 files changed, 36 insertions(+), 21 deletions(-)
+https://lkml.org/lkml/2014/10/23/711 .
+
+Thanks.
+
+
+On 2014/10/24 7:53, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Oct 24, 2014 at 08:26:13AM +0900, Namhyung Kim escreveu:
+>> On Wed, 22 Oct 2014 15:40:14 +0800, Wang Nan wrote:
+>>> After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
+>>> /proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
+>>> CPUINFO_PROC to an array and provides two choices for ARM, makes it
+>>> compatible for different kernel version.
 > 
-> diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
-> index 937e432..a3b13d7 100644
-> --- a/tools/perf/perf-sys.h
-> +++ b/tools/perf/perf-sys.h
-> @@ -13,7 +13,7 @@
->  #define wmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
->  #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
->  #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
-> -#define CPUINFO_PROC	"model name"
-> +#define CPUINFO_PROC	{"model name"}
->  #ifndef __NR_perf_event_open
->  # define __NR_perf_event_open 336
->  #endif
-> @@ -30,7 +30,7 @@
->  #define wmb()		asm volatile("sfence" ::: "memory")
->  #define rmb()		asm volatile("lfence" ::: "memory")
->  #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
-> -#define CPUINFO_PROC	"model name"
-> +#define CPUINFO_PROC	{"model name"}
->  #ifndef __NR_perf_event_open
->  # define __NR_perf_event_open 298
->  #endif
-> @@ -47,14 +47,14 @@
->  #define mb()		asm volatile ("sync" ::: "memory")
->  #define wmb()		asm volatile ("sync" ::: "memory")
->  #define rmb()		asm volatile ("sync" ::: "memory")
-> -#define CPUINFO_PROC	"cpu"
-> +#define CPUINFO_PROC	{"cpu"}
->  #endif
+>>> v1 -> v2: minor changes as suggested by Namhyung Kim:
+> 
+>>>  - Doesn't pass @h and @evlist to __write_cpudesc;
+>>>  - Coding style fix.
+> 
+>>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
 >  
->  #ifdef __s390__
->  #define mb()		asm volatile("bcr 15,0" ::: "memory")
->  #define wmb()		asm volatile("bcr 15,0" ::: "memory")
->  #define rmb()		asm volatile("bcr 15,0" ::: "memory")
-> -#define CPUINFO_PROC	"vendor_id"
-> +#define CPUINFO_PROC	{"vendor_id"}
->  #endif
->  
->  #ifdef __sh__
-> @@ -67,14 +67,14 @@
->  # define wmb()		asm volatile("" ::: "memory")
->  # define rmb()		asm volatile("" ::: "memory")
->  #endif
-> -#define CPUINFO_PROC	"cpu type"
-> +#define CPUINFO_PROC	{"cpu type"}
->  #endif
->  
->  #ifdef __hppa__
->  #define mb()		asm volatile("" ::: "memory")
->  #define wmb()		asm volatile("" ::: "memory")
->  #define rmb()		asm volatile("" ::: "memory")
-> -#define CPUINFO_PROC	"cpu"
-> +#define CPUINFO_PROC	{"cpu"}
->  #endif
->  
->  #ifdef __sparc__
-> @@ -87,14 +87,14 @@
->  #endif
->  #define wmb()		asm volatile("":::"memory")
->  #define rmb()		asm volatile("":::"memory")
-> -#define CPUINFO_PROC	"cpu"
-> +#define CPUINFO_PROC	{"cpu"}
->  #endif
->  
->  #ifdef __alpha__
->  #define mb()		asm volatile("mb" ::: "memory")
->  #define wmb()		asm volatile("wmb" ::: "memory")
->  #define rmb()		asm volatile("mb" ::: "memory")
-> -#define CPUINFO_PROC	"cpu model"
-> +#define CPUINFO_PROC	{"cpu model"}
->  #endif
->  
->  #ifdef __ia64__
-> @@ -102,7 +102,7 @@
->  #define wmb()		asm volatile ("mf" ::: "memory")
->  #define rmb()		asm volatile ("mf" ::: "memory")
->  #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
-> -#define CPUINFO_PROC	"model name"
-> +#define CPUINFO_PROC	{"model name"}
->  #endif
->  
->  #ifdef __arm__
-> @@ -113,7 +113,7 @@
->  #define mb()		((void(*)(void))0xffff0fa0)()
->  #define wmb()		((void(*)(void))0xffff0fa0)()
->  #define rmb()		((void(*)(void))0xffff0fa0)()
-> -#define CPUINFO_PROC	"Processor"
-> +#define CPUINFO_PROC	{"model name", "Processor"}
->  #endif
->  
->  #ifdef __aarch64__
-> @@ -133,28 +133,28 @@
->  				: "memory")
->  #define wmb()	mb()
->  #define rmb()	mb()
-> -#define CPUINFO_PROC	"cpu model"
-> +#define CPUINFO_PROC	{"cpu model"}
->  #endif
->  
->  #ifdef __arc__
->  #define mb()		asm volatile("" ::: "memory")
->  #define wmb()		asm volatile("" ::: "memory")
->  #define rmb()		asm volatile("" ::: "memory")
-> -#define CPUINFO_PROC	"Processor"
-> +#define CPUINFO_PROC	{"Processor"}
->  #endif
->  
->  #ifdef __metag__
->  #define mb()		asm volatile("" ::: "memory")
->  #define wmb()		asm volatile("" ::: "memory")
->  #define rmb()		asm volatile("" ::: "memory")
-> -#define CPUINFO_PROC	"CPU"
-> +#define CPUINFO_PROC	{"CPU"}
->  #endif
->  
->  #ifdef __xtensa__
->  #define mb()		asm volatile("memw" ::: "memory")
->  #define wmb()		asm volatile("memw" ::: "memory")
->  #define rmb()		asm volatile("" ::: "memory")
-> -#define CPUINFO_PROC	"core ID"
-> +#define CPUINFO_PROC	{"core ID"}
->  #endif
->  
->  #ifdef __tile__
-> @@ -162,7 +162,7 @@
->  #define wmb()		asm volatile ("mf" ::: "memory")
->  #define rmb()		asm volatile ("mf" ::: "memory")
->  #define cpu_relax()	asm volatile ("mfspr zero, PASS" ::: "memory")
-> -#define CPUINFO_PROC    "model name"
-> +#define CPUINFO_PROC    {"model name"}
->  #endif
->  
->  #define barrier() asm volatile ("" ::: "memory")
-> diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-> index 39b80ac..0ecf4a3 100644
-> --- a/tools/perf/util/header.c
-> +++ b/tools/perf/util/header.c
-> @@ -579,16 +579,12 @@ static int write_version(int fd, struct perf_header *h __maybe_unused,
->  	return do_write_string(fd, perf_version_string);
->  }
->  
-> -static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
-> -		       struct perf_evlist *evlist __maybe_unused)
-> +static int __write_cpudesc(int fd, const char *cpuinfo_proc)
->  {
-> -#ifndef CPUINFO_PROC
-> -#define CPUINFO_PROC NULL
-> -#endif
->  	FILE *file;
->  	char *buf = NULL;
->  	char *s, *p;
-> -	const char *search = CPUINFO_PROC;
-> +	const char *search = cpuinfo_proc;
->  	size_t len = 0;
->  	int ret = -1;
->  
-> @@ -640,6 +636,25 @@ done:
->  	return ret;
->  }
->  
-> +static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
-> +		       struct perf_evlist *evlist __maybe_unused)
-> +{
-> +#ifndef CPUINFO_PROC
-> +#define CPUINFO_PROC {"model name", }
-> +#endif
-> +	const char *cpuinfo_procs[] = CPUINFO_PROC;
-> +	unsigned int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(cpuinfo_procs); i++) {
-> +		int ret;
-> +		ret = __write_cpudesc(fd, cpuinfo_procs[i]);
-> +		if (ret >= 0)
-> +			return ret;
-> +	}
-> +	return -1;
-> +}
-> +
-> +
->  static int write_nrcpus(int fd, struct perf_header *h __maybe_unused,
->  			struct perf_evlist *evlist __maybe_unused)
->  {
-> -- 
-> 1.8.4
+>> Acked-by: Namhyung Kim <namhyung@kernel.org>
+> 
+> So now this will work with older kernels and new ones? Cool, thanks for
+> working on it, but:
+> 
+> [acme@ssdandy linux]$ patch -p1 < /wb/1.patch 
+> patching file tools/perf/perf.h
+> Hunk #1 FAILED at 6.
+> Hunk #2 FAILED at 15.
+> Hunk #3 FAILED at 25.
+> Hunk #4 FAILED at 40.
+> Hunk #5 FAILED at 74.
+> Hunk #6 FAILED at 91.
+> 6 out of 6 hunks FAILED -- saving rejects to file tools/perf/perf.h.rej
+> patching file tools/perf/util/header.c
+> Hunk #1 succeeded at 579 (offset 29 lines).
+> Hunk #2 succeeded at 636 (offset 29 lines).
+> [acme@ssdandy linux]$
+> 
+> [acme@ssdandy linux]$ git log --oneline tools/perf/perf.h | head -10
+> 87c43ee perf tools: Export usage string and option table of perf record
+> 72a128a perf tools: Move callchain config from record_opts to callchain_param
+> 73a31b7 perf tools: Move ACCESS_ONCE from perf.h header
+> 82baa0e perf tools: Move sys_perf_event_open function from perf.h
+> 43599d1 perf tools: Move syscall and arch specific defines from perf.h
+> 2c83bc0 perf tools: Move perf_call_graph_mode enum from perf.h
+> 0776eb5 perf tools: Move sample data structures from perf.h
+> 36446f4 perf tools: Remove PR_TASK_PERF_EVENTS_* from perf.h
+> 273a0a7 perf tools: Remove asmlinkage define from perf.h
+> 1b7ae1c perf tools: Remove min define from perf.h
+> [acme@ssdandy linux]$
+> 
+> This is:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
+> 
+> If you don't have time to fix this up, I'll try to find time tomorrow
+> and do it.
+> 
+> - Arnaldo
+> 
+
+
+
+
