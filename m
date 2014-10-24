@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaJXS5A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 14:57:00 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:36365 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbaJXS47 (ORCPT
+	id S1752682AbaJXS5Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 14:57:25 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:54479 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752098AbaJXS5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 14:56:59 -0400
+	Fri, 24 Oct 2014 14:57:24 -0400
+Date: Fri, 24 Oct 2014 22:57:19 +0400
+From: Dmitry Voytik <voytikd@gmail.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Balavasu <kp.balavasu@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] staging: lustre: lnet: lnet: do not initialise 0
+Message-ID: <20141024185719.GA10175@ubuntuvm>
+References: <20141018040330.GA23492@vasu-Inspiron-3542>
+ <54429DAB.4060906@cogentembedded.com>
 MIME-Version: 1.0
-X-Originating-IP: [129.2.129.152]
-In-Reply-To: <544A9F1A.4050303@suse.com>
-References: <544A9F1A.4050303@suse.com>
-From: Peter Foley <pefoley2@pefoley.com>
-Date: Fri, 24 Oct 2014 14:56:37 -0400
-Message-ID: <CAOFdcFNV9MQQWazo2difPOwfOEbAj=1_2B5+8vWnMd7n3yqTtA@mail.gmail.com>
-Subject: Re: [PATCH] vdso: don't require 64-bit math in standalone test
-To: Jeff Mahoney <jeffm@suse.com>
-Cc: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54429DAB.4060906@cogentembedded.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 2:48 PM, Jeff Mahoney <jeffm@suse.com> wrote:
-> The use of 64-bit math on i386 causes build failures:
-> vdso_standalone_test_x86.c:(.text+0x101): undefined reference to `__umoddi3'
-> vdso_standalone_test_x86.c:(.text+0x12d): undefined reference to `__udivdi3'
->
-> Commit adb19fb66ee (Documentation: add makefiles for more targets) is
-> now building this by default, so it's failing the kernel build entirely.
->
-> Switching the declaration from uint64_t to time_t does the right thing
-> and handles the x32 case automatically.
->
-> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+On Sat, Oct 18, 2014 at 09:04:43PM +0400, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 10/18/2014 8:03 AM, Balavasu wrote:
+> 
+> >-static int check_routers_before_use = 0;
+> >+static int check_routers_before_use = {0};
+> 
+>    Eh? I thought {} is only for arrays/structures...
 
-Acked-by: Peter Foley <pefoley2@pefoley.com>
+It seems like this is from C++. In C++11 you can even drop '=' like
+this:
+	int i {0};
+;)
+
+WBR,
+voyt
