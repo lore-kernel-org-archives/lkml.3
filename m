@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849AbaJXPYd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:24:33 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:40659 "EHLO
+	id S1756866AbaJXPYk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:24:40 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:40704 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756733AbaJXPY3 (ORCPT
+	with ESMTP id S1756436AbaJXPYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:24:29 -0400
+	Fri, 24 Oct 2014 11:24:33 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: "Kishon Vijay Abraham I" <kishon@ti.com>,
         Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
@@ -19,9 +19,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/6] Phy: DT binding documentation for Marvell MVEBU SATA phy.
-Date: Fri, 24 Oct 2014 17:24:10 +0200
-Message-Id: <1414164254-13053-3-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v2 6/6] ARM: mvebu: add PHY support to the dts for the USB controllers on Armada 375
+Date: Fri, 24 Oct 2014 17:24:14 +0200
+Message-Id: <1414164254-13053-7-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414164254-13053-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1414164254-13053-1-git-send-email-gregory.clement@free-electrons.com>
@@ -29,70 +29,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Lunn <andrew@lunn.ch>
+Now that the USB cluster node has been added, use it as a PHY provider
+for the USB controller linked to it: the first EHCI and the xHCI.
 
-Describe the binding for the Marvell MVEBU SATA phy. This driver
-can be used at least with Kirkwood, Dove and maybe others.
-Additionally, update the SATA binding with the properties to link
-to the phy nodes.
-
-Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- Documentation/devicetree/bindings/ata/marvell.txt  |  6 ++++++
- .../devicetree/bindings/phy/phy-mvebu.txt          | 22 ++++++++++++++++++++++
- 2 files changed, 28 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/phy/phy-mvebu.txt
+ arch/arm/boot/dts/armada-375.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/ata/marvell.txt b/Documentation/devicetree/bindings/ata/marvell.txt
-index 1c8351604d38..b460edd12766 100644
---- a/Documentation/devicetree/bindings/ata/marvell.txt
-+++ b/Documentation/devicetree/bindings/ata/marvell.txt
-@@ -6,11 +6,17 @@ Required Properties:
- - interrupts    : Interrupt controller is using
- - nr-ports      : Number of SATA ports in use.
+diff --git a/arch/arm/boot/dts/armada-375.dtsi b/arch/arm/boot/dts/armada-375.dtsi
+index 8f45cf5d2a50..39a3afbb293d 100644
+--- a/arch/arm/boot/dts/armada-375.dtsi
++++ b/arch/arm/boot/dts/armada-375.dtsi
+@@ -14,6 +14,7 @@
+ #include "skeleton.dtsi"
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/phy/armada-375-usb-cluster.h>
  
-+Optional Properties:
-+- phys		: List of phandles to sata phys
-+- phy-names	: Should be "0", "1", etc, one number per phandle
-+
- Example:
+ #define MBUS_ID(target,attributes) (((target) << 24) | ((attributes) << 16))
  
- 	sata@80000 {
- 		compatible = "marvell,orion-sata";
- 		reg = <0x80000 0x5000>;
- 		interrupts = <21>;
-+		phys = <&sata_phy0>, <&sata_phy1>;
-+		phy-names = "0", "1";
- 		nr-ports = <2>;
- 	}
-diff --git a/Documentation/devicetree/bindings/phy/phy-mvebu.txt b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
-new file mode 100644
-index 000000000000..6cb3364aeafb
---- /dev/null
-+++ b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
-@@ -0,0 +1,22 @@
-+* Marvell MVEBU SATA PHY
-+
-+Power control for the SATA phy found on Marvell MVEBU SoCs.
-+
-+This document extends the binding described in phy-bindings.txt
-+
-+Required properties :
-+
-+ - reg		   : Offset and length of the register set for the SATA device
-+ - compatible	   : Should be "marvell,mvebu-sata-phy"
-+ - clocks	   : phandle of clock and specifier that supplies the device
-+ - clock-names	   : Should be "sata"
-+
-+Example:
-+		sata-phy@84000 {
-+			compatible = "marvell,mvebu-sata-phy";
-+			reg = <0x84000 0x0334>;
-+			clocks = <&gate_clk 15>;
-+			clock-names = "sata";
-+			#phy-cells = <0>;
-+			status = "ok";
-+		};
+@@ -396,6 +397,8 @@
+ 				reg = <0x50000 0x500>;
+ 				interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&gateclk 18>;
++				phys = <&usbcluster PHY_USB2>;
++				phy-names = "usb";
+ 				status = "disabled";
+ 			};
+ 
+@@ -412,6 +415,8 @@
+ 				reg = <0x58000 0x20000>,<0x5b880 0x80>;
+ 				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&gateclk 16>;
++				phys = <&usbcluster PHY_USB3>;
++				phy-names = "usb";
+ 				status = "disabled";
+ 			};
+ 
 -- 
 1.9.1
 
