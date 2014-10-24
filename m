@@ -1,151 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331AbaJXLkD (ORCPT <rfc822;w@1wt.eu>);
+	id S1756373AbaJXLkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 07:40:07 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:65155 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756317AbaJXLkD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 24 Oct 2014 07:40:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58763 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756259AbaJXLkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 07:40:00 -0400
-Message-ID: <544A3A69.6010302@redhat.com>
-Date: Fri, 24 Oct 2014 07:39:21 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, linux-doc@vger.kernel.org,
-        kexec@lists.infradead.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH V3] kernel, add bug_on_warn
-References: <1414068794-22788-1-git-send-email-prarit@redhat.com> <20141023124034.f835060a667cde2bf6e9190c@linux-foundation.org>
-In-Reply-To: <20141023124034.f835060a667cde2bf6e9190c@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-AuditID: cbfee690-f79ab6d0000046f7-e1-544a3a919ffb
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: kgene.kim@samsung.com
+Cc: mark.rutland@arm.com, arnd@arndb.de, olof@lixom.net, tomasz.figa@gmail.com,
+        geunsik.lim@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com, cw00.choi@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCHv3 0/3] ARM: dts: Add new board dts file for Exynos3250-based
+ Rinato board
+Date: Fri, 24 Oct 2014 20:39:52 +0900
+Message-id: <1414150795-31105-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFLMWRmVeSWpSXmKPExsWyRsSkWHeilVeIwZTf4hZ/Jx1jt7j+5Tmr
+	xZ8JrWwWk+5PYLHoXXCVzeJs0xt2i02Pr7FaXN41h81ixvl9TBZLr19ksjh1/TOQO/klm8Wq
+	XX8YHXg91sxbw+jx+9ckRo+ds+6ye2xeUu9x5UQTq0ffllWMHp83yQWwR3HZpKTmZJalFunb
+	JXBldM5oYC74xlOxYs9bxgbGo1xdjBwcEgImEj3fqroYOYFMMYkL99azdTFycQgJLGWUePTl
+	FjtEwkTi/u0mJojEdEaJ9zs6GSGcJiaJq6f6GUGq2AS0JPa/uMEGYosISEo0NfxhBrGZBbYx
+	SbRNygKxhQWiJebv+ApWwyKgKnGyvQ9sA6+Aq8Sk+auhtilILFs+kxVkgYTALnaJG48/skI0
+	CEh8m3yIBeJsWYlNB5gh6iUlDq64wTKBUXABI8MqRtHUguSC4qT0IhO94sTc4tK8dL3k/NxN
+	jMAoOP3v2YQdjPcOWB9iFOBgVOLhNZjtGSLEmlhWXJl7iNEUaMNEZinR5HxgrOWVxBsamxlZ
+	mJqYGhuZW5opifO+lvoZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHRVcY3oNjzwMfVYRaa
+	81UfHgrYbn7g4HG2ty++vzBdz/WH8yVveb3UfDdWlowtczOWCjHxc/7YUJRkZ755em25pnr/
+	1SM8rwpKLt0Oqt83iX/v4WIZvjne8uz+E5Njn5X3BMk/kFt4nsNeak/AhUIFgaXmWwv/+82e
+	esst8F5fdLj74+ZHHoFKLMUZiYZazEXFiQAlY6PDfQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKIsWRmVeSWpSXmKPExsVy+t9jQd2JVl4hBpff8Vv8nXSM3eL6l+es
+	Fn8mtLJZTLo/gcWid8FVNouzTW/YLTY9vsZqcXnXHDaLGef3MVksvX6RyeLU9c9A7uSXbBar
+	dv1hdOD1WDNvDaPH71+TGD12zrrL7rF5Sb3HlRNNrB59W1YxenzeJBfAHtXAaJORmpiSWqSQ
+	mpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdK6SQlliTilQKCCxuFhJ
+	3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMaNzRgNzwTeeihV73jI2MB7l6mLk5JAQMJG4f7uJ
+	CcIWk7hwbz1bFyMXh5DAdEaJ9zs6GSGcJiaJq6f6GUGq2AS0JPa/uMEGYosISEo0NfxhBrGZ
+	BbYxSbRNygKxhQWiJebv+ApWwyKgKnGyvY8dxOYVcJWYNH81O8Q2BYlly2eyTmDkXsDIsIpR
+	NLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOMqeSe9gXNVgcYhRgINRiYf3xgzPECHWxLLiytxD
+	jBIczEoivF4mXiFCvCmJlVWpRfnxRaU5qcWHGE2Btk9klhJNzgcmgLySeENjEzMjSyNzQwsj
+	Y3Mlcd6DrdaBQgLpiSWp2ampBalFMH1MHJxSDYzBmx5GcG06rsF797t6l5M2wxWe/Ec7vzy5
+	9eqNyH3WV1sblqw8WTplycL1Uafc9HKfzfbt+3PmD1up27uSzMfXEqYFszev/rnvS5/qN4lP
+	4Wkp903EZzu/KJg/9x9re/+rgz7GmY9Ln1u0uvz5FxQuZfrZ9Vd7p6Pcfwsh5qbOB9dfOyz5
+	EaWoxFKckWioxVxUnAgAyLVNqsgCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset adds new board dts file for Samsung Rinato board (Gear 2) which
+is based on Exynos3250 SoC and adds sleep mode pin configuration using pinctrl
+subsystem to reduce leakage power-consumption in sleep state.
 
+This patchset is based on linux-samsung.git (for-next branch).
 
-On 10/23/2014 03:40 PM, Andrew Morton wrote:
-> On Thu, 23 Oct 2014 08:53:14 -0400 Prarit Bhargava <prarit@redhat.com> wrote:
-> 
->> There have been several times where I have had to rebuild a kernel to
->> cause a panic when hitting a WARN() in the code in order to get a crash
->> dump from a system.  Sometimes this is easy to do, other times (such as
->> in the case of a remote admin) it is not trivial to send new images to the
->> user.
->>
->> A much easier method would be a switch to change the WARN() over to a
->> BUG().  This makes debugging easier in that I can now test the actual
->> image the WARN() was seen on and I do not have to engage in remote
->> debugging.
->>
->> This patch adds a bug_on_warn kernel parameter, which calls BUG() in the
->> warn_slowpath_common() path.  The function will still print out the
->> location of the warning.
-> 
-> The changelog doesn't mention /proc/sys/kernel/bug_on_warn?
+Changes from v2:
+- Separate patch3 from patchset[1] and then this patchset includes patch3.
+  After applied patch3, the power-consumption of Rinato board is 0.6mA in suspend state.
+  [1] [PATCHv5 0/3] regulator: of: Add support for parsing regulator suspend state
+  : https://lkml.org/lkml/2014/10/10/161
+- Change PDN (Power-down mode) state for GPE0-3 (BT_UART_RTS) because Rinato
+  board uses UART1 for bluetooth device. BT_UART_RTS pin should be disabled in
+  suspend state by setting high state of GPE0-3
+- Turn on always the regulator state of VAP_VMIPI_1.0V because if VAP_VMIPI_1.0V
+  is off state or would be not controlled by DRM driver, happen imprecise external abort.
 
-Oops ... I'll put that into a V4.
+Changes from v1:
+- Remove useless brace
+- Remove unneeded 'regulators' keyword
+- Consolidate memory information in one entry
 
-> 
-> Why do we need both the sysctl and the kernel parameter?  Only to
-> trigger BUG for warnings which occur prior to initscripts.  Is there a
-> legitimate case for this?  Is kdump even usable at this time?
+Chanwoo Choi (3):
+  ARM: dts: Add board dts file for Exynos3250-based Rinato board
+  ARM: dts: Add sleep mode pin configuration for exynos3250-rinato
+  ARM: dts: Add sleep mode of regulator for exynos3250-rinato board
 
-The kernel parameter is more of a catch-all IMO.  I'm going to be instructing
-users to add it as a kernel parameter because I've found that most users are
-willing to do that than muck with echo'ing into a file.
+ arch/arm/boot/dts/Makefile                |   3 +-
+ arch/arm/boot/dts/exynos3250-pinctrl.dtsi |  16 +
+ arch/arm/boot/dts/exynos3250-rinato.dts   | 695 ++++++++++++++++++++++++++++++
+ 3 files changed, 713 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/exynos3250-rinato.dts
 
-As Rusty pointed out, however, there may be cases where we're caught by an early
-WARN() in the boot sequence and we want to avoid BUG()'ing there, so that we
-catch the "run-time" WARN().
+-- 
+1.8.5.5
 
-> 
->> --- a/include/asm-generic/bug.h
->> +++ b/include/asm-generic/bug.h
->> @@ -75,10 +75,18 @@ extern void warn_slowpath_null(const char *file, const int line);
->>  #define __WARN_printf_taint(taint, arg...)				\
->>  	warn_slowpath_fmt_taint(__FILE__, __LINE__, taint, arg)
->>  #else
->> -#define __WARN()		__WARN_TAINT(TAINT_WARN)
->> +#define check_bug_on_warn()						\
->> +	do {								\
->> +		if (bug_on_warn)					\
->> +			BUG();						\
->> +	} while (0)
-> 
-> #define check_bug_on_warn() BUG_ON(bug_on_warn)
-> 
-> would suffice?
-> 
-
-I'll fix that.
-
->> +#define __WARN()							\
->> +	do { __WARN_TAINT(TAINT_WARN); check_bug_on_warn(); } while (0)
->> +
->>  #define __WARN_printf(arg...)	do { printk(arg); __WARN(); } while (0)
->>  #define __WARN_printf_taint(taint, arg...)				\
->> -	do { printk(arg); __WARN_TAINT(taint); } while (0)
->> +	do { printk(arg); __WARN_TAINT(taint); check_bug_on_warn(); } while (0)
->>  #endif
-> 
-> What's this code here for anyway?  The changes to
-> warn_slowpath_common() aren't sufficient?
-
-Oh ... you're right.  I got confused by the WANT_WARN_ON_SLOWPATH config option.
- I'll clean this up.
-
-> 
-
->>  #ifndef WARN_ON
->> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
->> index 40728cf..4094a60 100644
->> --- a/include/linux/kernel.h
->> +++ b/include/linux/kernel.h
->> @@ -422,6 +422,7 @@ extern int panic_on_oops;
->>  extern int panic_on_unrecovered_nmi;
->>  extern int panic_on_io_nmi;
->>  extern int sysctl_panic_on_stackoverflow;
->> +extern int bug_on_warn;
->>  /*
->>   * Only to be used by arch init code. If the user over-wrote the default
->>   * CONFIG_PANIC_TIMEOUT, honor it.
->> diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
->> index 43aaba1..2ba0a58 100644
->> --- a/include/uapi/linux/sysctl.h
->> +++ b/include/uapi/linux/sysctl.h
->> @@ -153,6 +153,7 @@ enum
->>  	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
->>  	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
->>  	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
->> +	KERN_BUG_ON_WARN=77, /* int: call BUG() in WARN() functions */
->>  };
->>  
->>  
->> diff --git a/kernel/panic.c b/kernel/panic.c
->> index d09dc5c..a6d2e2f 100644
->> --- a/kernel/panic.c
->> +++ b/kernel/panic.c
->> @@ -33,6 +33,7 @@ static int pause_on_oops;
->>  static int pause_on_oops_flag;
->>  static DEFINE_SPINLOCK(pause_on_oops_lock);
->>  static bool crash_kexec_post_notifiers;
->> +int bug_on_warn;
-> 
-> I suppose this should be __read_mostly.  Assuming __read_mostly is
-> useful :(
-
-I'll change this too.
-
-P.
-
-> 
->>
->> ...
->>
