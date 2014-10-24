@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977AbaJXRyO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:54:14 -0400
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:54236 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932624AbaJXRyM (ORCPT
+	id S933106AbaJXR55 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:57:57 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:60080 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932608AbaJXR5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:54:12 -0400
+	Fri, 24 Oct 2014 13:57:55 -0400
+Message-ID: <544A9320.6010102@amacapital.net>
+Date: Fri, 24 Oct 2014 10:57:52 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141024161634.GG20534@e104818-lin.cambridge.arm.com>
-References: <1413993983-17310-1-git-send-email-mathieu.poirier@linaro.org>
-	<20141022164454.GI15370@e104818-lin.cambridge.arm.com>
-	<CANLsYkx08dw=YYBoRJ47QC+iL578HxPoMFcRDw6aKsvyqaqtkw@mail.gmail.com>
-	<20141024092832.GD20534@e104818-lin.cambridge.arm.com>
-	<CANLsYkz+UZv+vd9hbQOTNvsdyR7MyMrb0DxCOpMcgCr+1NQR5Q@mail.gmail.com>
-	<20141024161634.GG20534@e104818-lin.cambridge.arm.com>
-Date: Fri, 24 Oct 2014 11:54:12 -0600
-Message-ID: <CANLsYkzbnNy0kOjuOCQi4LgXGXTYVMH2nc8CFs1dQsgmpD4TrQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: supplementing IO accessors with 64 bit capability
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+CC: "Michael S. Tsirkin" <mst@redhat.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 08/14] kvm: x86: don't kill guest on unknown exit reason
+References: <1414163245-18555-1-git-send-email-pbonzini@redhat.com> <1414163245-18555-9-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1414163245-18555-9-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 October 2014 10:16, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On Fri, Oct 24, 2014 at 04:05:13PM +0100, Mathieu Poirier wrote:
->> On 24 October 2014 03:28, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> > On Wed, Oct 22, 2014 at 08:10:27PM +0100, Mathieu Poirier wrote:
->> >> On 22 October 2014 18:44, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> >> > On Wed, Oct 22, 2014 at 05:06:23PM +0100, mathieu.poirier@linaro.org wrote:
->> >> >> +static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
->> >> >> +{
->> >> >> +     asm volatile("strd %1, %0"
->> >> >> +                  : "+Qo" (*(volatile u64 __force *)addr)
->> >> >> +                  : "r" (val));
->> >> >> +}
->> >> >> +
->> >> >> +static inline u64 __raw_readq(const volatile void __iomem *addr)
->> >> >> +{
->> >> >> +     u64 val;
->> >> >> +     asm volatile("ldrd %1, %0"
->> >> >> +                  : "+Qo" (*(volatile u64 __force *)addr),
->> >> >> +                    "=r" (val));
->> >> >> +     return val;
->> >> >> +}
->> >> >> +#endif
->> >> >
->> >> > I'm curious why you need these. Do you have a device that needs a 64-bit
->> >> > single access or you are trying to read two consecutive registers?
->> >>
->> >> The fundamental data size of Coresight STM32 for ARMv7 is
->> >> implementation defined and can be 32 or 64bit.  As such stimulus ports
->> >> can support transaction sizes of up to 64 bit.
->> >
->> > The STM programmer's model spec recommends something else (though I find
->> > the "3.6 Data sizes" chapter a bit confusing):
->> >
->> >   To ensure that code is portable between processor micro-architectures
->> >   and system implementations, ARM recommends that only the native data
->> >   size of the machine is used, and smaller sizes. For the 32-bit ARMv7
->> >   architecture, only 8, 16, and 32-bit transfers are recommended. For an
->> >   ARMv8 processor that supports the AArch64 Execution state, it is
->> >   recommended that the fundamental data size of 64-bits is implemented.
->> >
->> > Which means that you should not use readq/writeq on a 32-bit system.
->>
->> Not quite.  ARM documentation IHI0054B (ARM System Trace Macrocell:
->> Programmers' Model Architecture Specification) stipulate that "For
->> systems with an ARMv7 processor, ARM recommends configuration 1 or
->> configuration 2.", where configuration 2 has a fundamental size of 64
->> bit.
->
-> As I said, it's confusing. Anyway, you can go ahead and add the
-> readq/writeq for ARMv6 and later, though it won't be guaranteed to have
-> a 64-bit access, it depends on the bus.
+On 10/24/2014 08:07 AM, Paolo Bonzini wrote:
+> From: "Michael S. Tsirkin" <mst@redhat.com>
+> 
+> KVM_EXIT_UNKNOWN is a kvm bug, we don't really know whether it was
+> triggered by a priveledged application.  Let's not kill the guest: WARN
+> and inject #UD instead.
 
-Agreed.
+This scares me a bit.  For guest CPL3, it's probably okay.  For guest
+CPL0, on the other hand, #UD might not use IST (or a task switch on
+32-bit guests), resulting in possible corruption if unprivileged code
+controls SP.  Admittedly, there aren't that many contexts from which
+that should happen (on Linux, at least), but something like #DF (or even
+a triple fault) might be safer if the guest is at CPL0 when this happens.
 
->
-> BTW, do you need to define the non-relaxed accessors as well? That would
-> be readq/writeq.
+--Andy
 
-No other master in the system is consuming this data and the channels
-return '0' on read.  As such I didn't plan on implementing the
-non-relaxed accessors.  Would you like me to do so for completeness?
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  arch/x86/kvm/svm.c | 6 +++---
+>  arch/x86/kvm/vmx.c | 6 +++---
+>  2 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index 00bed2c5e948..7527cefc5a43 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -3551,9 +3551,9 @@ static int handle_exit(struct kvm_vcpu *vcpu)
+>  
+>  	if (exit_code >= ARRAY_SIZE(svm_exit_handlers)
+>  	    || !svm_exit_handlers[exit_code]) {
+> -		kvm_run->exit_reason = KVM_EXIT_UNKNOWN;
+> -		kvm_run->hw.hardware_exit_reason = exit_code;
+> -		return 0;
+> +		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_code);
+> +		kvm_queue_exception(vcpu, UD_VECTOR);
+> +		return 1;
+>  	}
+>  
+>  	return svm_exit_handlers[exit_code](svm);
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index cf3cd079ec52..a8b76c4c95e2 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -7174,10 +7174,10 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+>  	    && kvm_vmx_exit_handlers[exit_reason])
+>  		return kvm_vmx_exit_handlers[exit_reason](vcpu);
+>  	else {
+> -		vcpu->run->exit_reason = KVM_EXIT_UNKNOWN;
+> -		vcpu->run->hw.hardware_exit_reason = exit_reason;
+> +		WARN_ONCE(1, "vmx: unexpected exit reason 0x%x\n", exit_reason);
+> +		kvm_queue_exception(vcpu, UD_VECTOR);
+> +		return 1;
+>  	}
+> -	return 0;
+>  }
+>  
+>  static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
+> 
 
->
-> --
-> Catalin
