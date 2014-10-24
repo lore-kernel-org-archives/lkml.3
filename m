@@ -1,130 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933186AbaJXSuA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 14:50:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35084 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932867AbaJXSt7 (ORCPT
+	id S933216AbaJXSui (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 14:50:38 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:55406 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756891AbaJXSuf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 14:49:59 -0400
-From: Jay Vosburgh <jay.vosburgh@canonical.com>
-To: paulmck@linux.vnet.ibm.com
-cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        mroos@linux.ee
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-In-reply-to: <20141024183226.GW4977@linux.vnet.ibm.com>
-References: <20141023200507.GC4977@linux.vnet.ibm.com> <1414100740.2065.2.camel@declera.com> <20141023220406.GJ4977@linux.vnet.ibm.com> <20141024090857.GA4083@declera.com> <20141024154006.GP4977@linux.vnet.ibm.com> <20141024162943.GA16621@declera.com> <20141024165454.GS4977@linux.vnet.ibm.com> <20141024170931.GA21849@declera.com> <20141024172009.GV4977@linux.vnet.ibm.com> <20141024173526.GA26058@declera.com> <20141024183226.GW4977@linux.vnet.ibm.com>
-Comments: In-reply-to "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-   message dated "Fri, 24 Oct 2014 11:32:26 -0700."
-X-Mailer: MH-E 8.5+bzr; nmh 1.5; GNU Emacs 24.4.50
-Date: Fri, 24 Oct 2014 11:49:48 -0700
-Message-ID: <6050.1414176588@famine>
+	Fri, 24 Oct 2014 14:50:35 -0400
+Message-ID: <544A9F6F.4090607@gmail.com>
+Date: Fri, 24 Oct 2014 20:50:23 +0200
+From: Corentin LABBE <clabbe.montjoie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org
+CC: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
+        grant.likely@linaro.org, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, joe@perches.com, mchehab@osg.samsung.com,
+        crope@iki.fi, devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [linux-sunxi] Re: [PATCH v5 4/4] crypto: Add Allwinner Security
+ System crypto accelerator
+References: <1413728182-13569-1-git-send-email-clabbe.montjoie@gmail.com> <1413728182-13569-5-git-send-email-clabbe.montjoie@gmail.com> <2751026.4HEPlZfN7W@wuerfel>
+In-Reply-To: <2751026.4HEPlZfN7W@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Le 22/10/2014 11:00, Arnd Bergmann a écrit :
+> On Sunday 19 October 2014 16:16:22 LABBE Corentin wrote:
+>> Add support for the Security System included in Allwinner SoC A20.
+>> The Security System is a hardware cryptographic accelerator that support AES/MD5/SHA1/DES/3DES/PRNG algorithms.
+>>
+>> Signed-off-by: LABBE Corentin <clabbe.montjoie@gmail.com>
+> 
+> Please wrap lines in the changelog after about 70 characters.
+> 
 
->On Fri, Oct 24, 2014 at 08:35:26PM +0300, Yanko Kaneti wrote:
->> On Fri-10/24/14-2014 10:20, Paul E. McKenney wrote:
->> > On Fri, Oct 24, 2014 at 08:09:31PM +0300, Yanko Kaneti wrote:
->> > > On Fri-10/24/14-2014 09:54, Paul E. McKenney wrote:
->> > > > On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
->> > > > > On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
->> > > > > > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
->> > > > > > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
->> > > > > > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
->> > > > > > > > > 
->> > > > > > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
->> > > > > > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
->> > > > 
->> > > > [ . . . ]
->> > > > 
->> > > > > > > Ok, unless I've messsed up something major, bisecting points to:
->> > > > > > > 
->> > > > > > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
->> > > > > > > 
->> > > > > > > Makes any sense ?
->> > > > > > 
->> > > > > > Good question.  ;-)
->> > > > > > 
->> > > > > > Are any of your online CPUs missing rcuo kthreads?  There should be
->> > > > > > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
->> > > > > 
->> > > > > Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
->> > > > > and the modprobe ppp_generic testcase reliably works, libvirt also manages
->> > > > > to setup its bridge.
->> > > > > 
->> > > > > Just with linux-tip , the rcuos are 6 but the failure is as reliable as
->> > > > > before.
->> > > 
->> > > > Thank you, very interesting.  Which 6 of the rcuos are present?
->> > > 
->> > > Well, the rcuos are 0 to 5. Which sounds right for a 6 core CPU like this   
->> > > Phenom II.
->> > 
->> > Ah, you get 8 without the patch because it creates them for potential
->> > CPUs as well as real ones.  OK, got it.
->> > 
->> > > > > Awating instructions: :)
->> > > > 
->> > > > Well, I thought I understood the problem until you found that only 6 of
->> > > > the expected 8 rcuos are present with linux-tip without the revert.  ;-)
->> > > > 
->> > > > I am putting together a patch for the part of the problem that I think
->> > > > I understand, of course, but it would help a lot to know which two of
->> > > > the rcuos are missing.  ;-)
->> > > 
->> > > Ready to test
->> > 
->> > Well, if you are feeling aggressive, give the following patch a spin.
->> > I am doing sanity tests on it in the meantime.
->> 
->> Doesn't seem to make a difference here
->
->OK, inspection isn't cutting it, so time for tracing.  Does the system
->respond to user input?  If so, please enable rcu:rcu_barrier ftrace before
->the problem occurs, then dump the trace buffer after the problem occurs.
+Oups I just see the corresponding part in submittingpatches.txt
+Sorry
 
-	My system is up and responsive when the problem occurs, so this
-shouldn't be a problem.
+>> --- /dev/null
+>> +++ b/drivers/crypto/sunxi-ss/sunxi-ss-cipher.c
+>> @@ -0,0 +1,489 @@
+> 
+>> +#include "sunxi-ss.h"
+>> +
+>> +extern struct sunxi_ss_ctx *ss;
+> 
+> 'extern' declarations belong into header files, not .c files. It would
+> be even better to avoid this completely and carry the pointer to the
+> context in an object that gets passed around. In general we want drivers
+> to be written in a way that allows having multiple instances of the
+> device, which the global pointer prevents.
+> 
 
-	Do you want the ftrace with your patch below, or unmodified tip
-of tree?
+As I already said I think the driver will never be used with multiple instance.
+But since many people want this pointer dead, I will work on it.
 
-	-J
+>> +
+>> +	src32 = (u32 *)src_addr;
+>> +	dst32 = (u32 *)dst_addr;
+> 
+> 
+> You appear to be missing '__iomem' annotations for the mmio pointers.
+> Please always run your code through the 'sparse' checker using 'make C=1'
+> to catch and fix this and other erros.
+> 
+
+Ok, but with which version of sparse do you have such a warning. I use the 0.5.0 version and I got no warning at all.
+
+>> +	ileft = areq->nbytes / 4;
+>> +	oleft = areq->nbytes / 4;
+>> +	i = 0;
+>> +	do {
+>> +		if (ileft > 0 && rx_cnt > 0) {
+>> +			todo = min(rx_cnt, ileft);
+>> +			ileft -= todo;
+>> +			do {
+>> +				writel_relaxed(*src32++,
+>> +						ss->base +
+>> +						SS_RXFIFO);
+>> +				todo--;
+>> +			} while (todo > 0);
+>> +		}
+> 
+> This looks like it should be using writesl() instead of the 
+> writel_relaxed() loop. That should not only be faster but it will
+> also change the byte ordering if you are running a big-endian
+> kernel.
+> 
+> Since this is a FIFO register, the ordering that writesl uses
+> is likely the correct one.
+
+Great, the code is much cleaner with it. (with up to 10% speed gain)
+
+Thanks
+
+Corentin
 
 
->							Thanx, Paul
->
->> > ------------------------------------------------------------------------
->> > 
->> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
->> > index 29fb23f33c18..927c17b081c7 100644
->> > --- a/kernel/rcu/tree_plugin.h
->> > +++ b/kernel/rcu/tree_plugin.h
->> > @@ -2546,9 +2546,13 @@ static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
->> >  			rdp->nocb_leader = rdp_spawn;
->> >  			if (rdp_last && rdp != rdp_spawn)
->> >  				rdp_last->nocb_next_follower = rdp;
->> > -			rdp_last = rdp;
->> > -			rdp = rdp->nocb_next_follower;
->> > -			rdp_last->nocb_next_follower = NULL;
->> > +			if (rdp == rdp_spawn) {
->> > +				rdp = rdp->nocb_next_follower;
->> > +			} else {
->> > +				rdp_last = rdp;
->> > +				rdp = rdp->nocb_next_follower;
->> > +				rdp_last->nocb_next_follower = NULL;
->> > +			}
->> >  		} while (rdp);
->> >  		rdp_spawn->nocb_next_follower = rdp_old_leader;
->> >  	}
->> > 
-
----
-	-Jay Vosburgh, jay.vosburgh@canonical.com
