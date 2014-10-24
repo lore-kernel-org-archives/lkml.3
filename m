@@ -1,101 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600AbaJXP73 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:59:29 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:18310 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751391AbaJXP71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:59:27 -0400
-Date: Fri, 24 Oct 2014 08:59:38 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Jeffrey Hugo <jhugo@codeaurora.org>
-CC: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 3/7] mfd: devicetree: bindings: Add Qualcomm SMD based RPM
- DT binding
-Message-ID: <20141024155937.GG28611@sonymobile.com>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1412037291-16880-4-git-send-email-bjorn.andersson@sonymobile.com>
- <85C5C172-D309-41B4-B511-7820BAFDA017@codeaurora.org>
- <20140930143740.GK28481@sonymobile.com>
- <542B39BD.3030208@codeaurora.org>
- <20141001000846.GZ28481@sonymobile.com>
- <5435B0DA.1000707@codeaurora.org>
+	id S1756703AbaJXQAl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 12:00:41 -0400
+Received: from mout.gmx.net ([212.227.17.22]:56499 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751510AbaJXQAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 12:00:40 -0400
+Message-ID: <544A77A0.5030603@gmx.de>
+Date: Fri, 24 Oct 2014 18:00:32 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5435B0DA.1000707@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Josh Boyer <jwboyer@fedoraproject.org>
+CC: virtualization@lists.linux-foundation.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: v3.18-rc1 32 bit KVM hangs early in boot process
+References: <5445479C.4030201@gmx.de>	<5446858B.3040107@gmx.de> <CA+5PVA5MCRhwnkbNXpMmLzeM4G=aau0kuRU_wma-5T59M+2vkA@mail.gmail.com> <544A73ED.3080106@gmx.de>
+In-Reply-To: <544A73ED.3080106@gmx.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:9z7fW+ZxMu4h3c8LjFt7xYQzwUgD6Sz3/SHornrtGLT2DbF0jEO
+ XYSWl7QFGh3tMgOFM1N1dG8YgjTmEKnxKrxSQXJW2KrePGkBiCtxkCLnb7O+UAPq6LMadIg
+ 2BgV1ZNrWtdLlsBoWiIL48Aq1oWy6cAo9awWPkyEjOq6NzN2CO5ZKpl+De0HauiokLVxJXZ
+ HJJcIMmHPPRPWIxZcLbwA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 08 Oct 14:47 PDT 2014, Jeffrey Hugo wrote:
-
-> On 9/30/2014 6:08 PM, Bjorn Andersson wrote:
-> > On Tue 30 Sep 16:16 PDT 2014, Jeffrey Hugo wrote:
-> >
-> >> On 9/30/2014 8:37 AM, Bjorn Andersson wrote:
-[..]
-> >
-> > That's right, because you have these tables in devicetree in the caf version.
-> > You have to have this information somewhere!
+On 10/24/2014 05:44 PM, Toralf Förster wrote:
+> I just reverted
 > 
-> True, it must exist somewhere.  However since its information tied 
-> directly to the hardware, it seems like its information that would fit 
-> right in DT.
+> $ grep commit virtcons_*
+> virtcons_1.patch:commit f5866db64f341776c2d9ed48080f82459fea6a55
+> virtcons_2.patch:commit 401bbdc901b268113d7c562616feb7fc37492aca
 > 
+> on top of -rc1 which solved the issue entirely here.
 
-For family B it would be reasonable to move this to device tree, replacing my
-"reg" property with a "resource" property taking type and id for the resource
-(e.g resource = <0x616f646c 17>; for ldo 17).
+(but I had to disable autitd, b/c otherwise the boot of the 32 bit Gentoo KVM would hang during start of auditd (installed version 2.2.2)
 
-For family A this does not work thought, but maybe we should just skip the idea
-of having a common look in favour of not having the tables.
+-- 
+Toralf
+pgp key: 0076 E94E
 
-> I talked to my contact, and it seems like the table attributes vary more 
-> than I thought, target to target, so the single table design seems less 
-> plausible.  Its my understanding you've had an offline discussion with 
-> him and some of our regulator guys to discuss the specifics of our 
-> needs.  I'll let them take over as the experts.
-> 
-
-Yes, I met with Stephen, David and Mahesh to discuss the matter. The issues
-that we discussed was:
-
-1) It must be possible to set the active and sleep state of a resource
-independently.
-
-2) Deferring less important writes (e.g. writes to sleep state) to reduce
-communication
-
-3) With deferred writes, we need to flush the data when going to sleep and that
-requires some special handling - so that we don't wake up again or crash the
-rpm.
-
-4) The scalability of the table
-
-
-I'm working on figuring out how to do 1) in a sane way, as this is needed.
-
-2) gives 3) which gives a bunch of implementation awkwardness and I'm still not
-convinced that it is a problem beyond someones KPI, so I will have to do some
-measurements. If nothing else it's "just" an optimization that we should be
-able to add incrementally later.
-
-I guess 4) is a matter of taste, with the table the client reference a
-resource, with all the data in DT it also describes part of how the rpm works.
-
-Regards,
-Bjorn
