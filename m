@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745AbaJXQ6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 12:58:50 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:52187 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510AbaJXQ6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 12:58:48 -0400
-Date: Fri, 24 Oct 2014 09:54:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yanko Kaneti <yaneti@declera.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        jay.vosburgh@canonical.com, mroos@linux.ee
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141024165454.GS4977@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1414044566.2031.1.camel@declera.com>
- <20141023122750.GP4977@linux.vnet.ibm.com>
- <20141023153333.GA19278@linux.vnet.ibm.com>
- <20141023195159.GA2331@declera.com>
- <20141023200507.GC4977@linux.vnet.ibm.com>
- <1414100740.2065.2.camel@declera.com>
- <20141023220406.GJ4977@linux.vnet.ibm.com>
- <20141024090857.GA4083@declera.com>
- <20141024154006.GP4977@linux.vnet.ibm.com>
- <20141024162943.GA16621@declera.com>
+	id S1756823AbaJXQ7O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 12:59:14 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:51762 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756103AbaJXQ7L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 12:59:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141024162943.GA16621@declera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102416-0033-0000-0000-000000D54369
+In-Reply-To: <x49a94lpkma.fsf@segfault.boston.devel.redhat.com>
+References: <cover.1413923420.git.milosz@adfin.com>
+	<9306856a3ea74bcc41523430d74ef4be93d8f436.1413923420.git.milosz@adfin.com>
+	<x49a94lpkma.fsf@segfault.boston.devel.redhat.com>
+Date: Fri, 24 Oct 2014 12:59:09 -0400
+Message-ID: <CANP1eJHqtpYttwmzhW2K7rN91fc_sxiLOGn56VrWyjEEc8HVtQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] vfs: Prepare for adding a new preadv/pwritev with
+ user flags.
+From: Milosz Tanski <milosz@adfin.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
-> On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
-> > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
-> > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
-> > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
-> > > > > 
-> > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
-> > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
+On Fri, Oct 24, 2014 at 11:12 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Milosz Tanski <milosz@adfin.com> writes:
+>
+>> Plumbing the flags argument through the vfs code so they can be passed down to
+>> __generic_file_(read/write)_iter function that do the acctual work.
+>                                                         ^^^^^^^
+> actual
+>
+>> Signed-off-by: Milosz Tanski <milosz@adfin.com>
+>
+>> diff --git a/fs/read_write.c b/fs/read_write.c
+>> index 7d9318c..9858c06 100644
+>> --- a/fs/read_write.c
+>> +++ b/fs/read_write.c
+> [...]
+>> @@ -1113,6 +1116,7 @@ COMPAT_SYSCALL_DEFINE5(preadv, compat_ulong_t, fd,
+>>       return __compat_sys_preadv64(fd, vec, vlen, pos);
+>>  }
+>>
+>> +
+>>  static size_t compat_writev(struct file *file,
+>>                           const struct compat_iovec __user *vec,
+>>                           unsigned long vlen, loff_t *pos)
+>
+> Lose this hunk.
+>
+>
+>> diff --git a/mm/filemap.c b/mm/filemap.c
+>> index 14b4642..cb7f530 100644
+>> --- a/mm/filemap.c
+>> +++ b/mm/filemap.c
+>> @@ -1465,7 +1465,7 @@ static void shrink_readahead_size_eio(struct file *filp,
+>>   * of the logic when it comes to error handling etc.
+>>   */
+>>  static ssize_t do_generic_file_read(struct file *filp, loff_t *ppos,
+>> -             struct iov_iter *iter, ssize_t written)
+>> +             struct iov_iter *iter, ssize_t written, int flags)
+>>  {
+>>       struct address_space *mapping = filp->f_mapping;
+>>       struct inode *inode = mapping->host;
+>
+> As Christoph mentioned, this belongs elsewhere.
+>
+> Fix that up and you an add my:
+>
+> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
 
-[ . . . ]
+I have addresses both these issues and they'll be in the next submission.
 
-> > > Ok, unless I've messsed up something major, bisecting points to:
-> > > 
-> > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
-> > > 
-> > > Makes any sense ?
-> > 
-> > Good question.  ;-)
-> > 
-> > Are any of your online CPUs missing rcuo kthreads?  There should be
-> > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
-> 
-> Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
-> and the modprobe ppp_generic testcase reliably works, libvirt also manages
-> to setup its bridge.
-> 
-> Just with linux-tip , the rcuos are 6 but the failure is as reliable as
-> before.
+-- 
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
 
-Thank you, very interesting.  Which 6 of the rcuos are present?
-
-> Awating instructions: :)
-
-Well, I thought I understood the problem until you found that only 6 of
-the expected 8 rcuos are present with linux-tip without the revert.  ;-)
-
-I am putting together a patch for the part of the problem that I think
-I understand, of course, but it would help a lot to know which two of
-the rcuos are missing.  ;-)
-
-							Thanx, Paul
-
+p: 646-253-9055
+e: milosz@adfin.com
