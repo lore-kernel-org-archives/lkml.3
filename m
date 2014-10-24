@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126AbaJXCj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 22:39:59 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:48939 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287AbaJXCj5 (ORCPT
+	id S1754212AbaJXCtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 22:49:13 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:65442 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752388AbaJXCtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 22:39:57 -0400
-Date: Fri, 24 Oct 2014 11:39:54 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
+	Thu, 23 Oct 2014 22:49:12 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Fri, 24 Oct 2014 11:50:14 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Weijie Yang <weijie.yang.kh@gmail.com>
 Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ARM: shmobile: armadillo800eva dts: Enable TMU0
-Message-ID: <20141024023953.GF7537@verge.net.au>
-References: <1413970709-26607-1-git-send-email-geert+renesas@glider.be>
- <1413970709-26607-4-git-send-email-geert+renesas@glider.be>
- <1909016.A6gXeHnn7V@avalon>
- <CAMuHMdUDTk=V=07aTt4YmkcXLWLMwS58_+g15BkQ=Gh9Q7Oibw@mail.gmail.com>
+        Michal Nazarewicz <mina86@mina86.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/4] mm: cma: Don't crash on allocation if CMA area can't
+ be activated
+Message-ID: <20141024025014.GA15243@js1304-P5Q-DELUXE>
+References: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+ <1414074828-4488-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+ <xa1tmw8mlobz.fsf@mina86.com>
+ <1463193.4qGZjcvNod@avalon>
+ <CAL1ERfPiv6KG5Lim6F0w72z=j47D1KCWhukLc5T6jJPOHTP_mQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdUDTk=V=07aTt4YmkcXLWLMwS58_+g15BkQ=Gh9Q7Oibw@mail.gmail.com>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAL1ERfPiv6KG5Lim6F0w72z=j47D1KCWhukLc5T6jJPOHTP_mQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 05:17:06PM +0200, Geert Uytterhoeven wrote:
-> On Wed, Oct 22, 2014 at 4:58 PM, Laurent Pinchart
+On Fri, Oct 24, 2014 at 10:02:49AM +0800, Weijie Yang wrote:
+> On Fri, Oct 24, 2014 at 7:42 AM, Laurent Pinchart
 > <laurent.pinchart@ideasonboard.com> wrote:
-> > On Wednesday 22 October 2014 11:38:29 Geert Uytterhoeven wrote:
-> >> ch0 will be used for clock events and for periodic clock events,
-> >> ch1 will be used as clock source.
-> >>
-> >> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> > Hi Michal,
 > >
-> > Simon has posted the same change as "[PATCH v2 20/30] ARM: shmobile:
-> > armadillo800eva-reference: Initialise TMU device using DT". You might want to
-> > credit him.
+> > On Thursday 23 October 2014 18:53:36 Michal Nazarewicz wrote:
+> >> On Thu, Oct 23 2014, Laurent Pinchart wrote:
+> >> > If activation of the CMA area fails its mutex won't be initialized,
+> >> > leading to an oops at allocation time when trying to lock the mutex. Fix
+> >> > this by failing allocation if the area hasn't been successfully actived,
+> >> > and detect that condition by moving the CMA bitmap allocation after page
+> >> > block reservation completion.
+> >> >
+> >> > Signed-off-by: Laurent Pinchart
+> >> > <laurent.pinchart+renesas@ideasonboard.com>
+> >>
+> >> Cc: <stable@vger.kernel.org>  # v3.17
+> >> Acked-by: Michal Nazarewicz <mina86@mina86.com>
 > 
-> Bummer, didn't look hard enough...
+> This patch is good, but how about add a active field in cma struct?
+> use cma->active to check whether cma is actived successfully.
+> I think it will make code more clear and readable.
+> Just my little opinion.
 > 
-> Simon: what's the reason these hadn't been applied yet?
-> Likewise for r8a7778.
 
-Good question. It looks like a number of patches from that series
-slipped through the cracks.
+Or just setting cma->count to 0 would work fine.
 
-I have queued up your r8a7740 patches (patches 2 and 3 of this series)
-and my r8a7778 patches. I have also queued up my r8a73a4 CMT1 patches
-from the same series that Laurent referred to above.
+Thanks.
