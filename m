@@ -1,122 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612AbaJXUft (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 16:35:49 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:44884 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471AbaJXUfr (ORCPT
+	id S1755793AbaJXUgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 16:36:25 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:50085 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755674AbaJXUgY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 16:35:47 -0400
-Message-ID: <544AB81E.4060900@gmail.com>
-Date: Fri, 24 Oct 2014 22:35:42 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-To: balbi@ti.com
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        =?windows-1252?Q?Antoine_T=E9?= =?windows-1252?Q?nart?= 
-	<antoine.tenart@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] phy: berlin-sata: Move PHY_BASE into private data
- struct
-References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com> <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com> <54462865.6000205@ti.com> <544629F0.3090505@gmail.com> <544AB33F.9030701@gmail.com> <20141024202510.GK11455@saruman>
-In-Reply-To: <20141024202510.GK11455@saruman>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 24 Oct 2014 16:36:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141024201138.GL3729@sirena.org.uk>
+References: <1414178111-19525-1-git-send-email-balbi@ti.com>
+	<20141024201138.GL3729@sirena.org.uk>
+Date: Fri, 24 Oct 2014 16:36:24 -0400
+Message-ID: <CAF6AEGssn23wSaSCY-MH+CUk1YD2g7Ld+rejQq0BSHUAcXgZEQ@mail.gmail.com>
+Subject: Re: [PATCH] regulator: stub out devm_regulator_get_exclusive
+From: Rob Clark <robdclark@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Felipe Balbi <balbi@ti.com>, lgirdwood@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>, David Brown <davidb@codeaurora.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.10.2014 22:25, Felipe Balbi wrote:
-> Hi,
->
-> On Fri, Oct 24, 2014 at 10:14:55PM +0200, Sebastian Hesselbarth wrote:
->> On 21.10.2014 11:40, Sebastian Hesselbarth wrote:
->>> On 10/21/2014 11:33 AM, Kishon Vijay Abraham I wrote:
->>>> On Tuesday 21 October 2014 02:37 PM, Sebastian Hesselbarth wrote:
->>>>> Currently, Berlin SATA PHY driver assumes PHY_BASE address being
->>>>> constant. While this PHY_BASE is correct for BG2Q, older BG2 PHY_BASE
->>>>> is different. Prepare the driver for BG2 support by moving the phy_base
->>>>> into private driver data.
->>>>>
->>>>> Acked-by: Antoine T�nart <antoine.tenart@free-electrons.com>
->>>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>> ...
->>>>> ---
->>>>>   drivers/phy/phy-berlin-sata.c | 42
->>>>> ++++++++++++++++++++++++++++--------------
->>>>>   1 file changed, 28 insertions(+), 14 deletions(-)
->>>>>
->>>>> diff --git a/drivers/phy/phy-berlin-sata.c
->>>>> b/drivers/phy/phy-berlin-sata.c
->>>>> index 69ced52d72aa..9682b0f66177 100644
->>>>> --- a/drivers/phy/phy-berlin-sata.c
->>>>> +++ b/drivers/phy/phy-berlin-sata.c
->>>>> @@ -30,7 +30,7 @@
->>>>>   #define MBUS_WRITE_REQUEST_SIZE_128    (BIT(2) << 16)
->>>>>   #define MBUS_READ_REQUEST_SIZE_128    (BIT(2) << 19)
->>>>>
->>>>> -#define PHY_BASE        0x200
->>>>> +#define BG2Q_PHY_BASE        0x200
->>> [...]
->>>>> +static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
->>>>> +
->>>>> +static const struct of_device_id phy_berlin_sata_of_match[] = {
->>>>> +    {
->>>>> +        .compatible = "marvell,berlin2q-sata-phy",
->>>>> +        .data = &bg2q_sata_phy_base,
->>>>
->>>> Can't the base directly come from dt?
->>>
->>> You are suggesting a "marvell,phy-base-address" property, right?
->>> I have no strong opinion about it, I accept your call (or DT maintainer
->>> ones).
+On Fri, Oct 24, 2014 at 4:11 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Oct 24, 2014 at 02:15:11PM -0500, Felipe Balbi wrote:
+>> If we don't stup that call out, we will have
+>> build failures for any drivers using that function
+>> when .config happens to have CONFIG_REGULATOR=n.
 >>
->> Kishon,
+>> One such case below, found with randconfig
 >>
->> I still have the DT patches for BG2Q queued up for v3.19 (I missed the
->> arm-soc merge window for v3.18). That means, there has been no release
->> with the phy binding used and I can rework a little more.
->>
->> Can you please confirm that you want a DT property for the phy base address,
->> e.g. marvell,phy-base-address = <{0x200,0x80}> ?
->>
->> If so, I'd also rename the compatible from berlin2q-sata-phy to more
->> generic berlin-sata-phy.
+>> drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c: In function ‘mdp4_kms_init’:
+>> drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c:384:2: error: implicit declaration \
 >
-> I think what Kishon is asking, is why this 0x200 offset isn't already on
-> reg. so that instead of, e.g.:
->
-> 	reg = <0x40000000 0x1000>;
->
-> you would have:
->
-> 	reg = <0x40000200 0x1000>;
+> As previously and repeatedly reported the regulator usage in this driver
+> appears extremely problematic, among these problems is that it almost
+> certainly has no sensible reason to be using regulator_get_exclusive()
+> or any variant of it.  Sadly every time it's been raised with the video
+> people they've completely ignored the mail so here we are.
 
-Because it is the PHY_BASE offset within the _indirect_ register
-access trough AHCI registers.
+oh, looks like a case of overambitious mailing list filter rules.. I
+did not see the earlier threads on the topic.
 
-> then everybody's happy. It's unfortunate, however, that we already
-> shipped DT sources with the bogus (?) reg property and now we have to
-> support that broken binding. My suggestion would be to add a new
-> compatible which comes with proper reg property and still add that weird
-> phy_base for the old compatible, so that:
+iirc, I was using _get_exclusive() in a few places where I wanted to
+be sure not to get dummy-regulator in cases where I should
+-EPROBE_DEFER instead (since probe order with DT is slightly
+hilarious, and since I depend on a few other drivers I end up
+deferring at least a couple times at boot)... I don't quite remember
+the details.  But afaict regulator_get() still allows dummy-regulator,
+which is what I specifically don't want.
 
-Nope, the reg property is correct and describes the (vendor-specific)
-AHCI registers that are used for indirect access to PHY registers. When
-writing to PHY registers, BG2 and BG2Q are different with respect to
-the PHY_BASE address offset that has to be passed to indirect address
-register.
+If you have a recommendation for a better way, I am all ears.
 
-> 	if (of_device_is_compatible(node, "marvell,berlin2q-sata-phy"))
-> 		phy->phy_base = PHY_BASE;
->
-> then, if new compatible comes with proper 'reg', phy->phy_base would be
-> zero and everything should still work. How does this sound ?
+BR,
+-R
 
-The above is basically equivalent to the node match that I added with
-this patch series. I can, of course, use above compatible match instead
-of passing the phy_base in the of_device_id's .data.
-
-Sebastian
-
+> Right now not having the stub seems to only be affecting buggy users
+> (which given the use cases for _exclusive() isn't *that* surprising) so
+> I'm more inclined to leave this there in the hope that the users get
+> fixed or we can at least get some sort of dialogue with the relevant
+> maintainers.
