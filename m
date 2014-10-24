@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500AbaJXKlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:41:08 -0400
-Received: from dgate10.ts.fujitsu.com ([80.70.172.49]:52549 "EHLO
-	dgate10.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756484AbaJXKlE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:41:04 -0400
-DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
-  h=X-SBRSScore:X-IronPort-AV:Received:Received:From:To:CC:
-   Date:Subject:Thread-Topic:Thread-Index:Message-ID:
-   References:In-Reply-To:Accept-Language:Content-Language:
-   X-MS-Has-Attach:X-MS-TNEF-Correlator:acceptlanguage:
-   Content-Type:Content-Transfer-Encoding:MIME-Version;
-  b=sTVPvWseGiU2z9/i5CutJT08uc9YoLR2QiLke2iokmj6Y99Kj5uwyb5b
-   aCFtZfepRyTYZPOk59eol8Ppaz4GmXppAKykzNyn3KRwfzmo9RJ0WIvIR
-   B1Wk6tJSIVqReqWhJwgw32MN3Gn8VtbJ7LcdAM3qfmxO3jWWN5MpLte7Y
-   uMxxDgFMYs0C9+BIJLr1Z0TyinjzR1a/FzKJu+Bd59TqN34ZnqCpAxTso
-   hWl0s6nKogY4LpHbGfM/rfn8EFenF;
-X-SBRSScore: None
-X-IronPort-AV: E=Sophos;i="5.04,779,1406584800"; 
-   d="scan'208";a="211045402"
-From: "Wilck, Martin" <martin.wilck@ts.fujitsu.com>
-To: "trenn@suse.de" <trenn@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>,
-        "minyard@acm.org" <minyard@acm.org>
-Date: Fri, 24 Oct 2014 12:40:56 +0200
-Subject: Re: [patch 1/3] ipmi: Setup ipmi_devintf automatically if
- ipmi_msghandler gets loaded
-Thread-Topic: [patch 1/3] ipmi: Setup ipmi_devintf automatically if
- ipmi_msghandler gets loaded
-Thread-Index: Ac/vdv5kZfir4aYAR2+EhUAWRgj04g==
-Message-ID: <1414147256.8113.41.camel@pdbcooper.pdb.fsc.net>
-References: <20141014144020.683892494@d46.suse.de>
-	 <54414057.5020806@acm.org> <1413793733.2678.10.camel@pdbcooper.pdb.fsc.net>
-	 <2294896.XUUpIPFQ25@d46>
-In-Reply-To: <2294896.XUUpIPFQ25@d46>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1756285AbaJXKnZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:43:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35455 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756148AbaJXKnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 06:43:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,779,1406617200"; 
+   d="scan'208";a="624561897"
+Message-ID: <544A2CF1.7070802@intel.com>
+Date: Fri, 24 Oct 2014 13:41:53 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 03/16] perf session: Add perf_session__deliver_synth_event()
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>	<1414061124-26830-4-git-send-email-adrian.hunter@intel.com> <87tx2uca9w.fsf@sejong.aot.lge.com>
+In-Reply-To: <87tx2uca9w.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9OAfCss022724
 
-Thomas,
+On 24/10/14 08:22, Namhyung Kim wrote:
+> On Thu, 23 Oct 2014 13:45:11 +0300, Adrian Hunter wrote:
+>> Add a function to deliver synthesized events from
+>> within a session.
+>>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>> ---
+>>  tools/perf/util/session.c | 14 ++++++++++++++
+>>  tools/perf/util/session.h |  5 +++++
+>>  2 files changed, 19 insertions(+)
+>>
+>> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+>> index d70e37d..09635d1 100644
+>> --- a/tools/perf/util/session.c
+>> +++ b/tools/perf/util/session.c
+>> @@ -907,6 +907,20 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+>>  	}
+>>  }
+>>  
+>> +int perf_session__deliver_synth_event(struct perf_session *session,
+>> +				      union perf_event *event,
+>> +				      struct perf_sample *sample,
+>> +				      struct perf_tool *tool)
+>> +{
+>> +	events_stats__inc(&session->stats, event->header.type);
+>> +
+>> +	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
+>> +		return perf_session__process_user_event(session, event, tool,
+>> +							0);
+>> +
+>> +	return perf_session__deliver_event(session, event, sample, tool, 0);
+>> +}
+> 
+> It seems that it's basically same as what perf_session__process_event()
+> does.  So it might deserve a comment or better changelog why it's needed.
 
-> > I vote for MODULE_SOFTDEP for upstream, and modalias for distros that
-> > don't support MODULE_SOFTDEP yet.
-> I vote for ipmi_msghandler.c renaming into ipmi_handler.c
+Intel PT decoding works by synthesizing events (primarily branch events)
+that can then be consumed by existing tools.  This function will be used to
+deliver those events.
 
-sorry, I am not with you here. This is a small problem that should be
-handled with small effort. Why apply a 3-part patch set for a problem
-that can be solved with 2 modalias lines in user space?
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+>> +
+>>  static void event_swap(union perf_event *event, bool sample_id_all)
+>>  {
+>>  	perf_event__swap_op swap;
+>> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+>> index d8521ac..dc26ebf 100644
+>> --- a/tools/perf/util/session.h
+>> +++ b/tools/perf/util/session.h
+>> @@ -127,6 +127,11 @@ extern volatile int session_done;
+>>  
+>>  #define session_done()	ACCESS_ONCE(session_done)
+>>  
+>> +int perf_session__deliver_synth_event(struct perf_session *session,
+>> +				      union perf_event *event,
+>> +				      struct perf_sample *sample,
+>> +				      struct perf_tool *tool);
+>> +
+>>  int perf_event__process_id_index(struct perf_tool *tool,
+>>  				 union perf_event *event,
+>>  				 struct perf_session *session);
+> 
+> 
 
-Martin
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
