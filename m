@@ -1,95 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718AbaJXPJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:09:29 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:50915 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907AbaJXPJE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:09:04 -0400
-From: Nix <nix@esperi.org.uk>
-To: Johan Hovold <johan@kernel.org>
-Cc: Paul Martin <pm@debian.org>, Daniel Silverstone <dsilvers@debian.org>,
-        Oliver Neukum <oliver@neukum.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [3.16.1 BISECTED REGRESSION]: Simtec Entropy Key (cdc-acm) broken in 3.16
-References: <874mwnosz1.fsf@spindle.srvr.nix>
-	<871tqe2zqt.fsf_-_@spindle.srvr.nix>
-	<20141011195108.GA8275@thinkpad.nowster.org.uk>
-	<87y4smz1l0.fsf@spindle.srvr.nix> <20141012185845.GB2786@localhost>
-	<878uklynq9.fsf@spindle.srvr.nix> <20141014083432.GB7958@localhost>
-	<871tq04fiy.fsf@spindle.srvr.nix> <20141022101458.GK2113@localhost>
-	<87y4s8yv38.fsf@spindle.srvr.nix> <20141024111442.GA19377@localhost>
-Emacs: the road to Hell is paved with extensibility.
-Date: Fri, 24 Oct 2014 16:08:41 +0100
-In-Reply-To: <20141024111442.GA19377@localhost> (Johan Hovold's message of
-	"Fri, 24 Oct 2014 13:14:42 +0200")
-Message-ID: <87bnp1y07a.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=7 Fuz1=7 Fuz2=7
+	id S1756770AbaJXPKI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:10:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3973 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933122AbaJXPIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 11:08:01 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Cc: Nadav Amit <namit@cs.technion.ac.il>, stable@vger.kernel.org
+Subject: [PATCH 11/14] KVM: x86: Emulator does not decode clflush well
+Date: Fri, 24 Oct 2014 17:07:22 +0200
+Message-Id: <1414163245-18555-12-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1414163245-18555-1-git-send-email-pbonzini@redhat.com>
+References: <1414163245-18555-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 Oct 2014, Johan Hovold told this:
+From: Nadav Amit <namit@cs.technion.ac.il>
 
-> [ +CC: linux-usb ]
-> On Wed, Oct 22, 2014 at 04:36:59PM +0100, Nix wrote:
->> On 22 Oct 2014, Johan Hovold outgrape:
->> 
->> > On Wed, Oct 22, 2014 at 10:31:17AM +0100, Nix wrote:
->> >> On 14 Oct 2014, Johan Hovold verbalised:
->> >> 
->> >> > On Sun, Oct 12, 2014 at 10:36:30PM +0100, Nix wrote:
->> >> >> I have checked: this code is being executed against a symlink that
->> >> >> points to /dev/ttyACM0, and the tcsetattr() succeeds. (At least, it's
->> >> >> succeeding on the kernel I'm running now, but of course that's 3.16.5
->> >> >> with this commit reverted...)
->> >> >
->> >> > You could verify that by enabling debugging in the cdc-acm driver and
->> >> > making sure that the corresponding control messages are indeed sent on
->> >> > close.
->> >> 
->> >> I have a debugging dump at
->> >> <http://www.esperi.org.uk/~nix/temporary/cdc-acm.log>; it's fairly
->> >
->> > What kernel were you using here? The log seems to suggest that it was
->> > generated with the commit in question reverted.
->> 
->> Look now :) (the previous log is still there in cdc-acm-reverted.log.)
->
-> Unfortunately, it seems the logs are incomplete. There are lots of
-> entries missing (e.g. "acm_tty_install" when opening, but also some
-> "acm_submit_read_urb"), some of which were there in your first log.
+Currently, all group15 instructions are decoded as clflush (e.g., mfence,
+xsave).  In addition, the clflush instruction requires no prefix (66/f2/f3)
+would exist. If prefix exists it may encode a different instruction (e.g.,
+clflushopt).
 
-Curious. It's a straight cut-and-paste from the syslog. Maybe the kmsg
-buffer overflowed, but I start the ekey daemon *after* I start syslogd,
-so that seems unlikely.
+Creating a group for clflush, and different group for each prefix.
 
-I'll have another look.
+This has been the case forever, but the next patch needs the cflush group
+in order to fix a bug introduced in 3.17.
 
-> Is it only after reboot you've seen the device fail?
+Fixes: 41061cdb98a0bec464278b4db8e894a3121671f5
+Cc: stable@vger.kernel.org
+Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/kvm/emulate.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
 
-Yes (though sometimes after reboot of an unaffected kernel into an
-affected one! i.e. sometimes the first boot into an affected kernel is
-broken).
-
->                                                      What if you
-> physically disconnect and reconnect the device instead,
-
-That makes it work.
-
->                                                         or simply
-> repeatedly open and close it?
-
-IIRC -- but I'll have to check this tomorrow when I look at the log
-problem, so don't take it as gospel -- that doesn't affect it: I can
-stop and restart the daemon repeatedly and, if it wasn't working before,
-it's not working afterwards: if it was working before, it'll be working
-afterwards.
-
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index eb3b1c46f995..97da5034d812 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -3462,6 +3462,12 @@ static int em_bswap(struct x86_emulate_ctxt *ctxt)
+ 	return X86EMUL_CONTINUE;
+ }
+ 
++static int em_clflush(struct x86_emulate_ctxt *ctxt)
++{
++	/* emulating clflush regardless of cpuid */
++	return X86EMUL_CONTINUE;
++}
++
+ static bool valid_cr(int nr)
+ {
+ 	switch (nr) {
+@@ -3800,6 +3806,16 @@ static const struct opcode group11[] = {
+ 	X7(D(Undefined)),
+ };
+ 
++static const struct gprefix pfx_0f_ae_7 = {
++	I(0, em_clflush), N, N, N,
++};
++
++static const struct group_dual group15 = { {
++	N, N, N, N, N, N, N, GP(0, &pfx_0f_ae_7),
++}, {
++	N, N, N, N, N, N, N, N,
++} };
++
+ static const struct gprefix pfx_0f_6f_0f_7f = {
+ 	I(Mmx, em_mov), I(Sse | Aligned, em_mov), N, I(Sse | Unaligned, em_mov),
+ };
+@@ -4063,7 +4079,7 @@ static const struct opcode twobyte_table[256] = {
+ 	F(DstMem | SrcReg | ModRM | BitOp | Lock | PageTable, em_bts),
+ 	F(DstMem | SrcReg | Src2ImmByte | ModRM, em_shrd),
+ 	F(DstMem | SrcReg | Src2CL | ModRM, em_shrd),
+-	D(ModRM), F(DstReg | SrcMem | ModRM, em_imul),
++	GD(0, &group15), F(DstReg | SrcMem | ModRM, em_imul),
+ 	/* 0xB0 - 0xB7 */
+ 	I2bv(DstMem | SrcReg | ModRM | Lock | PageTable, em_cmpxchg),
+ 	I(DstReg | SrcMemFAddr | ModRM | Src2SS, em_lseg),
+@@ -4993,8 +5009,6 @@ twobyte_insn:
+ 	case 0x90 ... 0x9f:     /* setcc r/m8 */
+ 		ctxt->dst.val = test_cc(ctxt->b, ctxt->eflags);
+ 		break;
+-	case 0xae:              /* clflush */
+-		break;
+ 	case 0xb6 ... 0xb7:	/* movzx */
+ 		ctxt->dst.bytes = ctxt->op_bytes;
+ 		ctxt->dst.val = (ctxt->src.bytes == 1) ? (u8) ctxt->src.val
 -- 
-NULL && (void)
+1.8.3.1
+
+
