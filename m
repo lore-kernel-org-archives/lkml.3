@@ -1,97 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895AbaJXOpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 10:45:08 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:41966 "EHLO lists.s-osg.org"
+	id S1756908AbaJXOpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:45:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:39238 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755296AbaJXOpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 10:45:04 -0400
-Message-ID: <544A65DE.40108@osg.samsung.com>
-Date: Fri, 24 Oct 2014 08:44:46 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1755296AbaJXOpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 10:45:09 -0400
+Date: Fri, 24 Oct 2014 11:45:00 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 02/16] perf pmu: Let pmu's with no events show up on perf
+ list
+Message-ID: <20141024144500.GE14687@kernel.org>
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
+ <1414061124-26830-3-git-send-email-adrian.hunter@intel.com>
+ <87y4s6cak7.fsf@sejong.aot.lge.com>
+ <20141024125702.GZ14687@kernel.org>
+ <20141024130320.GA14687@kernel.org>
+ <20141024132141.GB14687@kernel.org>
+ <544A63FE.60902@intel.com>
 MIME-Version: 1.0
-To: Devin Heitmueller <dheitmueller@kernellabs.com>,
-        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
-        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: alsa-devel@alsa-project.org,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Antti Palosaari <crope@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "sakari.ailus@linux.intel.com" <sakari.ailus@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        "olebowle@gmx.com" <olebowle@gmx.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH v2 5/6] sound/usb: pcm changes to use media
- token api
-References: <cover.1413246370.git.shuahkh@osg.samsung.com> <cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com> <543FB374.8020604@metafoo.de> <543FC3CD.8050805@osg.samsung.com> <s5h38aow1ub.wl-tiwai@suse.de> <543FD1EC.5010206@osg.samsung.com> <s5hy4sgumjo.wl-tiwai@suse.de> <543FD892.6010209@osg.samsung.com> <s5htx34ul3w.wl-tiwai@suse.de> <54467EFB.7050800@xs4all.nl> <s5hbnp5z9uy.wl-tiwai@suse.de> <CAGoCfixD-zv1MMHUXLnjGV5KVB-DGdp2ZqZ0hUTR14UvLh-Gvw@mail.gmail.com> <544804F1.7090606@linux.intel.com> <CAGoCfiyQVY6Ss2qcp3aQijq3cP3BAM8X4yaCXRtx63dNNm-QKA@mail.gmail.com>
-In-Reply-To: <CAGoCfiyQVY6Ss2qcp3aQijq3cP3BAM8X4yaCXRtx63dNNm-QKA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544A63FE.60902@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 01:45 PM, Devin Heitmueller wrote:
->> this seems like a feature, not a bug. PulseAudio starts streaming before
->> clients push any data and likewise keeps sources active even after for some
->> time after clients stop recording. Closing VLC in your example doesn't
->> immediately close the ALSA device. look for module-suspend-on-idle in your
->> default.pa config file.
+Em Fri, Oct 24, 2014 at 05:36:46PM +0300, Adrian Hunter escreveu:
+> On 24/10/2014 4:21 p.m., Arnaldo Carvalho de Melo wrote:
+> >Em Fri, Oct 24, 2014 at 10:03:20AM -0300, Arnaldo Carvalho de Melo escreveu:
+> >>Em Fri, Oct 24, 2014 at 09:57:02AM -0300, Arnaldo Carvalho de Melo escreveu:
+> >>>Em Fri, Oct 24, 2014 at 02:15:52PM +0900, Namhyung Kim escreveu:
+> >>>>On Thu, 23 Oct 2014 13:45:10 +0300, Adrian Hunter wrote:
+> >>>>>+		if (pmu->selectable) {
+> >>>>>+			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
+> >>>>>+			aliases[j] = strdup(buf);
+> >>>>
+> >>>>You need to check the return value here (and above too).
+> >>>
+> >>>Well spotted, fixing this up.
+> >>
+> >>Oh well, this print_pmu_events() function needs some care, it starts by
+> >>trying to alloc the array, if it fails, it silently returns, does that
+> >>mean that there are no pmu events? Or that memory allocation failed?
+> >>
+> >>Ok, will do the fixes in a separate patch...
+> >>
+> >>- Arnaldo
+> >
+> >The patch below should check everything and warn the user, even
+> >maintaining that void return...
+> >
+> >Acked-by tags welcome as always :-)
+> >
+> >- Arnaldo
+> >
+> >
+> >diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+> >index 91dca60..881b754 100644
+> >--- a/tools/perf/util/pmu.c
+> >+++ b/tools/perf/util/pmu.c
+> >@@ -753,9 +753,9 @@ void print_pmu_events(const char *event_glob, bool name_only)
+> >  		if (pmu->selectable)
+> >  			len++;
+> >  	}
+> >-	aliases = malloc(sizeof(char *) * len);
+> >+	aliases = zalloc(sizeof(char *) * len);
+> >  	if (!aliases)
+> >-		return;
+> >+		goto out_enomem;
 > 
-> The ALSA userland emulation in PulseAudio is supposed to faithfully emulate
-> the behavior of the ALSA kernel ABI... except when it doesn't, then it's not
-> a bug but rather a feature.  :-)
-> 
->> I also agree that the open/close of the alsa device is the only way to
->> control exclusion.
-> 
-> I was also a proponent that we should have fairly coarse locking done
-> at open/close for the various device nodes (ALSA/V4L/DVB).  The challenge here
-> is that we have a large installed based of existing applications that
-> rely on kernel
-> behavior that isn't formally specified in any specification.  Hence
-> we're forced to try
-> to come up with a solution that minimizes the risk of ABI breakage.
-> 
-> If we were doing this from scratch then we could lay down some hard/fast rules
-> about things apps aren't supposed to do and how apps are supposed to respond
-> to those exception cases.  Unfortunately we don't have that luxury here.
-> 
-
-Sounds like we don't have a clear direction on open/close or capture
-start/stop. What I am hearing is open/close isn't acceptable for
-media maintainers and capture trigger start/stop isn't acceptable
-to sound maintainers. :) Fork in the road, which way do we go?
-
-Implementation wise, supporting capture trigger start/stop approach
-will be harder to maintain in longterm. It adds more variables to
-the mix. Applications open sounds device from the main thread and
-then create a new thread to handle streams. I can see that based
-on the token hold requests that come in. So the token hold logic
-will have to take that into account, leading into potential
-unbalanced lock/unlock scenarios. It is not impossible to solve,
-that's what I did in this patch series, but it does get complex.
-
-What I am looking for is some consensus on let's go with an approach
-and try. Doesn't matter which way we go, and how much testing I do,
-I am bound to miss something and this work needs to soak for a bit in
-the media experimental branch.
-
-thanks,
--- Shuah
+> That path tries to free aliases[j] but aliases is null.  You could set len to 0 in that case.
 
 
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Oops, yeah, my bad, it should not have the !, fixing...
+ 
+> >  	pmu = NULL;
+> >  	j = 0;
+> >  	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
+> >@@ -768,16 +768,20 @@ void print_pmu_events(const char *event_glob, bool name_only)
+> >  			      (!is_cpu && strglobmatch(alias->name,
+> >  						       event_glob))))
+> >  				continue;
+> >-			aliases[j] = name;
+> >+
+> >  			if (is_cpu && !name_only)
+> >-				aliases[j] = format_alias_or(buf, sizeof(buf),
+> >-							      pmu, alias);
+> >-			aliases[j] = strdup(aliases[j]);
+> >+				name = format_alias_or(buf, sizeof(buf), pmu, alias);
+> >+
+> >+			aliases[j] = strdup(name);
+> >+			if (aliases[j] == NULL)
+> >+				goto out_enomem;
+> >  			j++;
+> >  		}
+> >  		if (pmu->selectable) {
+> >-			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
+> >-			aliases[j] = strdup(buf);
+> >+			char *s;
+> >+			if (asprintf(&s, "%s//", pmu->name) < 0)
+> >+				goto out_enomem;
+> >+			aliases[j] = s;
+> >  			j++;
+> >  		}
+> >  	}
+> >@@ -789,12 +793,20 @@ void print_pmu_events(const char *event_glob, bool name_only)
+> >  			continue;
+> >  		}
+> >  		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
+> >-		zfree(&aliases[j]);
+> >  		printed++;
+> >  	}
+> >  	if (printed)
+> >  		printf("\n");
+> >-	free(aliases);
+> >+out_free:
+> >+	for (j = 0; j < len; j++)
+> >+		zfree(&aliases[j]);
+> >+	zfree(&aliases);
+> >+	return;
+> >+
+> >+out_enomem:
+> >+	printf("FATAL: not enough memory to print PMU events\n");
+> >+	if (aliases)
+> >+		goto out_free;
+> >  }
+> >
+> >  bool pmu_have_event(const char *pname, const char *name)
+> >
