@@ -1,166 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932966AbaJXL5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 07:57:55 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:59926 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932382AbaJXL5x (ORCPT
+	id S933011AbaJXL6A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 07:58:00 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:36729 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932382AbaJXL55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 07:57:53 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-42-544a3ebdd82e
-Message-id: <544A3EBB.3020906@samsung.com>
-Date: Fri, 24 Oct 2014 13:57:47 +0200
-From: =?UTF-8?B?S3J6eXN6dG9mIEtvesWCb3dza2k=?= <k.kozlowski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, kgene.kim@samsung.com
-Cc: mark.rutland@arm.com, Jaehoon Chung <jh80.chung@samsung.com>,
-        geunsik.lim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        arnd@arndb.de, sw0312.kim@samsung.com, tomasz.figa@gmail.com,
-        linux-kernel@vger.kernel.org, inki.dae@samsung.com,
-        kyungmin.park@samsung.com, olof@lixom.net,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 1/3] ARM: dts: Add board dts file for Exynos3250-based
- Rinato board
-References: <1414150795-31105-1-git-send-email-cw00.choi@samsung.com>
- <1414150795-31105-2-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1414150795-31105-2-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t/xq7p77bxCDG78NrP4O+kYu8X1L89Z
-	Lf5MaGWzmHR/AovFjV9trBavXxha9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaLpdcvMlmc
-	uv4ZyJ38ks1i1a4/jA78HmvmrWH0+P1rEqPHzll32T02L6n3uHKiidWjb8sqRo/Pm+QC2KO4
-	bFJSczLLUov07RK4Mp6df8ResEe2Yvkl/gbGM+JdjJwcEgImEv9vL2GFsMUkLtxbz9bFyMUh
-	JLCUUWLpw24mCOczo8TB2U+YQap4BbQkHl/awQJiswioSkz8/AoszibgITHtew+YLSoQIXFl
-	zRxGiHpBiR+T74HViwjYS+x5sAEszixwnEli7us8EFtYIFri/aRvLBDLGhklltzcxwSS4BRw
-	k7jZ/5gNokFdYtK8RcwQtrzE5jVvmScwCsxCsmMWkrJZSMoWMDKvYhRNLU0uKE5KzzXUK07M
-	LS7NS9dLzs/dxAiJoy87GBcfszrEKMDBqMTDW5HsESLEmlhWXJl7iFGCg1lJhNfLxCtEiDcl
-	sbIqtSg/vqg0J7X4ECMTB6dUA2PLbIbzEzSP3nt6dvWd+G6pCuG07LB0xWV3F5ptrz2c08u+
-	4rzPsQ7rvypysy/Lmj9dfWONyvPMI7O85UPX8mQnuK/OWPXVYKOL2rkoBT2JTwafM20Xu6au
-	UODs+/U0nZfvReLmxYcvVnt51bP1uEqcMzFm65+7X7fQa8bqB+ccbDsVn5XkfVRiKc5INNRi
-	LipOBACpgR39gQIAAA==
+	Fri, 24 Oct 2014 07:57:57 -0400
+Date: Fri, 24 Oct 2014 06:55:50 -0500
+From: Eric Rost <eric.rost@mybabylon.net>
+To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
+        antonysaraev@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 4/7] staging: skein: Adds Loadable Module Support
+Message-ID: <6085984cae6baae07ac81f162d50b7612803f605.1414151639.git.eric.rost@mybabylon.net>
+References: <cover.1414151639.git.eric.rost@mybabylon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1414151639.git.eric.rost@mybabylon.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.10.2014 13:39, Chanwoo Choi wrote:
-> This patch add support for device tree sources for Samsung Rinato baord
-> (Gear 2) based on Exynos3250 SoC.
-> 
-> This dts file support following features:
-> - eMMC
-> - Main PMIC (Samsung S2MPS14)
-> - Interface PMIC (Maxim MAX77836, MUIC, fuel-gauge, charger)
-> - RTC of Exynos3250
-> - ADC of Exynos3250 with NTC thermistor
-> - I2S of Exynos3250
-> - TMU of Exynos3250
-> - MFC of Exynos3250
-> - Secure firmware for Exynos3250 secondary cpu boot
-> - Serial ports of Exynos3250
-> - gpio-key for power key
-> 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Inki Dae <inki.dae@samsung.com>
-> Signed-off-by: Seung-Woo Kim <sw0312.kim@samsung.com>
-> Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/arm/boot/dts/Makefile              |   3 +-
->  arch/arm/boot/dts/exynos3250-rinato.dts | 433 ++++++++++++++++++++++++++++++++
->  2 files changed, 435 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/exynos3250-rinato.dts
-> 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index 4a75e29..91cd4d0 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -67,7 +67,8 @@ dtb-$(CONFIG_ARCH_BRCMSTB) += \
->  dtb-$(CONFIG_ARCH_DAVINCI) += da850-enbw-cmc.dtb \
->  	da850-evm.dtb
->  dtb-$(CONFIG_ARCH_EFM32) += efm32gg-dk3750.dtb
-> -dtb-$(CONFIG_ARCH_EXYNOS) += exynos4210-origen.dtb \
-> +dtb-$(CONFIG_ARCH_EXYNOS) += exynos3250-rinato.dtb \
-> +	exynos4210-origen.dtb \
->  	exynos4210-smdkv310.dtb \
->  	exynos4210-trats.dtb \
->  	exynos4210-universal_c210.dtb \
-> diff --git a/arch/arm/boot/dts/exynos3250-rinato.dts b/arch/arm/boot/dts/exynos3250-rinato.dts
-> new file mode 100644
-> index 0000000..be0ba8d
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/exynos3250-rinato.dts
-> @@ -0,0 +1,433 @@
-> +/*
-> + * Samsung's Exynos3250 based Rinato board device tree source
-> + *
-> + * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-> + *		http://www.samsung.com
-> + *
-> + * Device tree source file for Samsung's Rinato board which is based on
-> + * Samsung Exynos3250 SoC.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +/dts-v1/;
-> +#include "exynos3250.dtsi"
-> +#include <dt-bindings/input/input.h>
-> +
-> +/ {
-> +	model = "Samsung Rinato board";
-> +	compatible = "samsung,rinato", "samsung,exynos3250", "samsung,exynos3";
-> +
-> +	aliases {
-> +		i2c7 = &i2c_max77836;
-> +	};
-> +
-> +	memory {
-> +		reg =  <0x40000000 0x1ff00000>;
-> +	};
-> +
-> +	chosen {
-> +		bootargs = "console=ttySAC1,115200N8 root=/dev/mmcblk0p15 rootwait earlyprintk panic=5";
-> +	};
-> +
-> +	firmware@0205F000 {
-> +		compatible = "samsung,secure-firmware";
-> +		reg = <0x0205F000 0x1000>;
-> +	};
-> +
-> +	gpio_keys {
-> +		compatible = "gpio-keys";
-> +
-> +		power_key {
-> +			interrupt-parent = <&gpx2>;
-> +			interrupts = <7 0>;
-> +			gpios = <&gpx2 7 1>;
-> +			linux,code = <KEY_POWER>;
-> +			label = "power key";
-> +			debounce-interval = <10>;
-> +			gpio-key,wakeup;
-> +		};
-> +	};
-> +
-> +	vemmc_reg: voltage-regulator-0 {
-> +	        compatible = "regulator-fixed";
-> +		regulator-name = "V_EMMC_2.8V-fixed";
-> +		regulator-min-microvolt = <2800000>;
-> +		regulator-max-microvolt = <2800000>;
-> +		gpio = <&gpk0 2 0>;
-> +		enable-active-high;
-> +	};
+Adds loadable module support to the Skein Hashing Algorithm driver.
 
-Hi Chanwoo,
+Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
+---
+ drivers/staging/skein/Kconfig         |  2 +-
+ drivers/staging/skein/Makefile        | 13 +++++++------
+ drivers/staging/skein/skein_generic.c | 19 ++++++++++++++++++-
+ 3 files changed, 26 insertions(+), 8 deletions(-)
 
-I wonder if this regulator-fixed is needed. The LDO11 and LDO12 has
-external GPIO control set up. So maybe this could be removed?
-
-Best regards,
-Krzysztof
-
-
+diff --git a/drivers/staging/skein/Kconfig b/drivers/staging/skein/Kconfig
+index de8bdd7..012a823 100644
+--- a/drivers/staging/skein/Kconfig
++++ b/drivers/staging/skein/Kconfig
+@@ -1,5 +1,5 @@
+ config CRYPTO_SKEIN
+-	bool "Skein digest algorithm"
++	tristate "Skein digest algorithm"
+ 	depends on (X86 || UML_X86) && 64BIT && CRYPTO
+ 	select CRYPTO_HASH
+ 	select CRYPTO_ALGAPI
+diff --git a/drivers/staging/skein/Makefile b/drivers/staging/skein/Makefile
+index d8177cc..b7f947f 100644
+--- a/drivers/staging/skein/Makefile
++++ b/drivers/staging/skein/Makefile
+@@ -1,9 +1,10 @@
+ #
+ # Makefile for the skein secure hash algorithm
+ #
+-obj-$(CONFIG_CRYPTO_SKEIN) += skein_base.o \
+-			      skein_api.o \
+-			      skein_block.o \
+-			      threefish_block.o \
+-			      threefish_api.o \
+-			      skein_generic.o
++obj-$(CONFIG_CRYPTO_SKEIN) += skein.o
++skein-y := skein_base.o \
++	   skein_api.o \
++	   skein_block.o \
++	   threefish_block.o \
++	   threefish_api.o \
++	   skein_generic.o
+diff --git a/drivers/staging/skein/skein_generic.c b/drivers/staging/skein/skein_generic.c
+index 39332e8..46466d0 100644
+--- a/drivers/staging/skein/skein_generic.c
++++ b/drivers/staging/skein/skein_generic.c
+@@ -16,6 +16,7 @@
+  */
+ #include <linux/types.h>
+ #include <linux/init.h>
++#include <linux/module.h>
+ #include <crypto/internal/hash.h>
+ #include "skein_base.h"
+ 
+@@ -139,6 +140,7 @@ static struct shash_alg alg256 = {
+ 		.cra_driver_name	=	"skein",
+ 		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
+ 		.cra_blocksize		=	SKEIN_256_BLOCK_BYTES,
++		.cra_module		=	THIS_MODULE,
+ 	}
+ };
+ 
+@@ -156,6 +158,7 @@ static struct shash_alg alg512 = {
+ 		.cra_driver_name	=	"skein",
+ 		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
+ 		.cra_blocksize		=	SKEIN_512_BLOCK_BYTES,
++		.cra_module		=	THIS_MODULE,
+ 	}
+ };
+ 
+@@ -173,6 +176,7 @@ static struct shash_alg alg1024 = {
+ 		.cra_driver_name	=	"skein",
+ 		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
+ 		.cra_blocksize		=	SKEIN_1024_BLOCK_BYTES,
++		.cra_module		=	THIS_MODULE,
+ 	}
+ };
+ 
+@@ -188,4 +192,17 @@ static int __init skein_generic_init(void)
+ 	return 0;
+ }
+ 
+-device_initcall(skein_generic_init);
++static void __exit skein_generic_fini(void)
++{
++	crypto_unregister_shash(&alg256);
++	crypto_unregister_shash(&alg512);
++	crypto_unregister_shash(&alg1024);
++}
++
++module_init(skein_generic_init);
++module_exit(skein_generic_fini);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Skein Hash Algorithm");
++
++MODULE_ALIAS("skein");
+-- 
+2.1.1
 
