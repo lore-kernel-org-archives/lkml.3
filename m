@@ -1,151 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666AbaJXV0D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 17:26:03 -0400
-Received: from mail.declera.com ([87.118.141.5]:50447 "HELO mail.declera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754212AbaJXVZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 17:25:59 -0400
-Date: Sat, 25 Oct 2014 00:25:57 +0300
-From: Yanko Kaneti <yaneti@declera.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        jay.vosburgh@canonical.com, mroos@linux.ee
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141024212557.GA15537@declera.com>
-References: <1414100740.2065.2.camel@declera.com>
- <20141023220406.GJ4977@linux.vnet.ibm.com>
- <20141024090857.GA4083@declera.com>
- <20141024154006.GP4977@linux.vnet.ibm.com>
- <20141024162943.GA16621@declera.com>
- <20141024165454.GS4977@linux.vnet.ibm.com>
- <20141024170931.GA21849@declera.com>
- <20141024172009.GV4977@linux.vnet.ibm.com>
- <20141024173526.GA26058@declera.com>
- <20141024183226.GW4977@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141024183226.GW4977@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932301AbaJXV0g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 17:26:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18317 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755442AbaJXVVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 17:21:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="405580387"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v12 12/20] ext2: Remove ext2_xip_verify_sb()
+Date: Fri, 24 Oct 2014 17:20:44 -0400
+Message-Id: <1414185652-28663-13-git-send-email-matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri-10/24/14-2014 11:32, Paul E. McKenney wrote:
-> On Fri, Oct 24, 2014 at 08:35:26PM +0300, Yanko Kaneti wrote:
-> > On Fri-10/24/14-2014 10:20, Paul E. McKenney wrote:
-> > > On Fri, Oct 24, 2014 at 08:09:31PM +0300, Yanko Kaneti wrote:
-> > > > On Fri-10/24/14-2014 09:54, Paul E. McKenney wrote:
-> > > > > On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
-> > > > > > On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
-> > > > > > > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
-> > > > > > > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
-> > > > > > > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
-> > > > > > > > > > 
-> > > > > > > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
-> > > > > > > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
-> > > > > 
-> > > > > [ . . . ]
-> > > > > 
-> > > > > > > > Ok, unless I've messsed up something major, bisecting points to:
-> > > > > > > > 
-> > > > > > > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
-> > > > > > > > 
-> > > > > > > > Makes any sense ?
-> > > > > > > 
-> > > > > > > Good question.  ;-)
-> > > > > > > 
-> > > > > > > Are any of your online CPUs missing rcuo kthreads?  There should be
-> > > > > > > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
-> > > > > > 
-> > > > > > Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
-> > > > > > and the modprobe ppp_generic testcase reliably works, libvirt also manages
-> > > > > > to setup its bridge.
-> > > > > > 
-> > > > > > Just with linux-tip , the rcuos are 6 but the failure is as reliable as
-> > > > > > before.
-> > > > 
-> > > > > Thank you, very interesting.  Which 6 of the rcuos are present?
-> > > > 
-> > > > Well, the rcuos are 0 to 5. Which sounds right for a 6 core CPU like this   
-> > > > Phenom II.
-> > > 
-> > > Ah, you get 8 without the patch because it creates them for potential
-> > > CPUs as well as real ones.  OK, got it.
-> > > 
-> > > > > > Awating instructions: :)
-> > > > > 
-> > > > > Well, I thought I understood the problem until you found that only 6 of
-> > > > > the expected 8 rcuos are present with linux-tip without the revert.  ;-)
-> > > > > 
-> > > > > I am putting together a patch for the part of the problem that I think
-> > > > > I understand, of course, but it would help a lot to know which two of
-> > > > > the rcuos are missing.  ;-)
-> > > > 
-> > > > Ready to test
-> > > 
-> > > Well, if you are feeling aggressive, give the following patch a spin.
-> > > I am doing sanity tests on it in the meantime.
-> > 
-> > Doesn't seem to make a difference here
-> 
-> OK, inspection isn't cutting it, so time for tracing.  Does the system
-> respond to user input?  If so, please enable rcu:rcu_barrier ftrace before
-> the problem occurs, then dump the trace buffer after the problem occurs.
+Jan Kara pointed out that calling ext2_xip_verify_sb() in ext2_remount()
+doesn't make sense, since changing the XIP option on remount isn't
+allowed.  It also doesn't make sense to re-check whether blocksize is
+supported since it can't change between mounts.
 
-Sorry for being unresposive here, but I know next to nothing about tracing
-or most things about the kernel, so I have some cathing up to do.
+Replace the call to ext2_xip_verify_sb() in ext2_fill_super() with the
+equivalent check and delete the definition.
 
-In the meantime some layman observations while I tried to find what exactly
-triggers the problem.
-- Even in runlevel 1 I can reliably trigger the problem by starting libvirtd
-- libvirtd seems to be very active in using all sorts of kernel facilities
-  that are modules on fedora so it seems to cause many simultaneous kworker 
-  calls to modprobe
-- there are 8 kworker/u16 from 0 to 7
-- one of these kworkers always deadlocks, while there appear to be two
-  kworker/u16:6 - the seventh
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+---
+ fs/ext2/super.c | 33 ++++++++++++---------------------
+ fs/ext2/xip.c   | 12 ------------
+ fs/ext2/xip.h   |  2 --
+ 3 files changed, 12 insertions(+), 35 deletions(-)
 
-  6 vs 8 as in 6 rcuos where before they were always 8
-
-Just observations from someone who still doesn't know what the u16
-kworkers are..
-
--- Yanko
-
-
-
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index 170dc41..f975854 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -868,9 +868,6 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
+ 		((EXT2_SB(sb)->s_mount_opt & EXT2_MOUNT_POSIX_ACL) ?
+ 		 MS_POSIXACL : 0);
  
-> 							Thanx, Paul
-> 
-> > > ------------------------------------------------------------------------
-> > > 
-> > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> > > index 29fb23f33c18..927c17b081c7 100644
-> > > --- a/kernel/rcu/tree_plugin.h
-> > > +++ b/kernel/rcu/tree_plugin.h
-> > > @@ -2546,9 +2546,13 @@ static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
-> > >  			rdp->nocb_leader = rdp_spawn;
-> > >  			if (rdp_last && rdp != rdp_spawn)
-> > >  				rdp_last->nocb_next_follower = rdp;
-> > > -			rdp_last = rdp;
-> > > -			rdp = rdp->nocb_next_follower;
-> > > -			rdp_last->nocb_next_follower = NULL;
-> > > +			if (rdp == rdp_spawn) {
-> > > +				rdp = rdp->nocb_next_follower;
-> > > +			} else {
-> > > +				rdp_last = rdp;
-> > > +				rdp = rdp->nocb_next_follower;
-> > > +				rdp_last->nocb_next_follower = NULL;
-> > > +			}
-> > >  		} while (rdp);
-> > >  		rdp_spawn->nocb_next_follower = rdp_old_leader;
-> > >  	}
-> > > 
-> > 
-> 
+-	ext2_xip_verify_sb(sb); /* see if bdev supports xip, unset
+-				    EXT2_MOUNT_XIP if not */
+-
+ 	if (le32_to_cpu(es->s_rev_level) == EXT2_GOOD_OLD_REV &&
+ 	    (EXT2_HAS_COMPAT_FEATURE(sb, ~0U) ||
+ 	     EXT2_HAS_RO_COMPAT_FEATURE(sb, ~0U) ||
+@@ -900,11 +897,17 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	blocksize = BLOCK_SIZE << le32_to_cpu(sbi->s_es->s_log_block_size);
+ 
+-	if (ext2_use_xip(sb) && blocksize != PAGE_SIZE) {
+-		if (!silent)
++	if (sbi->s_mount_opt & EXT2_MOUNT_XIP) {
++		if (blocksize != PAGE_SIZE) {
+ 			ext2_msg(sb, KERN_ERR,
+-				"error: unsupported blocksize for xip");
+-		goto failed_mount;
++					"error: unsupported blocksize for xip");
++			goto failed_mount;
++		}
++		if (!sb->s_bdev->bd_disk->fops->direct_access) {
++			ext2_msg(sb, KERN_ERR,
++					"error: device does not support xip");
++			goto failed_mount;
++		}
+ 	}
+ 
+ 	/* If the blocksize doesn't match, re-read the thing.. */
+@@ -1249,7 +1252,6 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
+ {
+ 	struct ext2_sb_info * sbi = EXT2_SB(sb);
+ 	struct ext2_super_block * es;
+-	unsigned long old_mount_opt = sbi->s_mount_opt;
+ 	struct ext2_mount_options old_opts;
+ 	unsigned long old_sb_flags;
+ 	int err;
+@@ -1274,22 +1276,11 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
+ 	sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
+ 		((sbi->s_mount_opt & EXT2_MOUNT_POSIX_ACL) ? MS_POSIXACL : 0);
+ 
+-	ext2_xip_verify_sb(sb); /* see if bdev supports xip, unset
+-				    EXT2_MOUNT_XIP if not */
+-
+-	if ((ext2_use_xip(sb)) && (sb->s_blocksize != PAGE_SIZE)) {
+-		ext2_msg(sb, KERN_WARNING,
+-			"warning: unsupported blocksize for xip");
+-		err = -EINVAL;
+-		goto restore_opts;
+-	}
+-
+ 	es = sbi->s_es;
+-	if ((sbi->s_mount_opt ^ old_mount_opt) & EXT2_MOUNT_XIP) {
++	if ((sbi->s_mount_opt ^ old_opts.s_mount_opt) & EXT2_MOUNT_XIP) {
+ 		ext2_msg(sb, KERN_WARNING, "warning: refusing change of "
+ 			 "xip flag with busy inodes while remounting");
+-		sbi->s_mount_opt &= ~EXT2_MOUNT_XIP;
+-		sbi->s_mount_opt |= old_mount_opt & EXT2_MOUNT_XIP;
++		sbi->s_mount_opt ^= EXT2_MOUNT_XIP;
+ 	}
+ 	if ((*flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY)) {
+ 		spin_unlock(&sbi->s_lock);
+diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+index 132d4da..66ca113 100644
+--- a/fs/ext2/xip.c
++++ b/fs/ext2/xip.c
+@@ -13,15 +13,3 @@
+ #include "ext2.h"
+ #include "xip.h"
+ 
+-void ext2_xip_verify_sb(struct super_block *sb)
+-{
+-	struct ext2_sb_info *sbi = EXT2_SB(sb);
+-
+-	if ((sbi->s_mount_opt & EXT2_MOUNT_XIP) &&
+-	    !sb->s_bdev->bd_disk->fops->direct_access) {
+-		sbi->s_mount_opt &= (~EXT2_MOUNT_XIP);
+-		ext2_msg(sb, KERN_WARNING,
+-			     "warning: ignoring xip option - "
+-			     "not supported by bdev");
+-	}
+-}
+diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
+index e7b9f0a..87eeb04 100644
+--- a/fs/ext2/xip.h
++++ b/fs/ext2/xip.h
+@@ -6,13 +6,11 @@
+  */
+ 
+ #ifdef CONFIG_EXT2_FS_XIP
+-extern void ext2_xip_verify_sb (struct super_block *);
+ static inline int ext2_use_xip (struct super_block *sb)
+ {
+ 	struct ext2_sb_info *sbi = EXT2_SB(sb);
+ 	return (sbi->s_mount_opt & EXT2_MOUNT_XIP);
+ }
+ #else
+-#define ext2_xip_verify_sb(sb)			do { } while (0)
+ #define ext2_use_xip(sb)			0
+ #endif
+-- 
+2.1.1
+
