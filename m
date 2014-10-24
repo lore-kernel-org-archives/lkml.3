@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024AbaJXJji (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 05:39:38 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36924 "EHLO
+	id S1755946AbaJXJku (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 05:40:50 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37090 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865AbaJXJjh (ORCPT
+	with ESMTP id S1751907AbaJXJks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 05:39:37 -0400
-Date: Fri, 24 Oct 2014 11:39:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kan Liang <kan.liang@intel.com>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@redhat.com,
-        paulus@samba.org, acme@kernel.org, jolsa@redhat.com,
-        ak@linux.intel.com, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH V6 01/17] perf, x86: Reduce lbr_sel_map size
-Message-ID: <20141024093930.GD12706@worktop.programming.kicks-ass.net>
-References: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
- <1413755712-8259-2-git-send-email-kan.liang@intel.com>
+	Fri, 24 Oct 2014 05:40:48 -0400
+Date: Fri, 24 Oct 2014 02:40:47 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Milosz Tanski <milosz@adfin.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-api@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 4/4] vfs: RWF_NONBLOCK flag for preadv2
+Message-ID: <20141024094047.GD29178@infradead.org>
+References: <cover.1413923420.git.milosz@adfin.com>
+ <ba8d704a12c7ceffce610fc438a0af11a3422002.1413923420.git.milosz@adfin.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413755712-8259-2-git-send-email-kan.liang@intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <ba8d704a12c7ceffce610fc438a0af11a3422002.1413923420.git.milosz@adfin.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 19, 2014 at 05:54:56PM -0400, Kan Liang wrote:
+On Tue, Oct 21, 2014 at 04:46:59PM -0400, Milosz Tanski wrote:
+> Filesystems that generic_file_read_iter will not be allowed to perform
+> non-blocking reads. This only will read data if it's in the page cache and if
+> there is no page error (causing a re-read).
 
-This should still very much have:
+I can't quite parse the first sentence, can you try to reword it?
 
-From: Yan, Zheng <zheng.z.yan@intel.com>
+> Christoph Hellwig wrote the filesystem specify code (cifs, ofs, shm, xfs).
 
-Seeing how you did not write this patch, probably true for all the
-others too, although I've not checked yet.
-
-> The index of lbr_sel_map is bit value of perf branch_sample_type.
-> PERF_SAMPLE_BRANCH_MAX is 1024 at present, so each lbr_sel_map uses
-> 4096 bytes. By using bit shift as index, we can reduce lbr_sel_map
-> size to 40 bytes. This patch defines 'bit shift' for branch types,
-> and use 'bit shift' to define lbr_sel_maps.
-> 
-> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> Signed-off-by: Kan Liang <kan.liang@intel.com>
-> Reviewed-by: Stephane Eranian <eranian@google.com>
-> ---
+s/specify/specific/.  It's so trivial that I don't think it matters.
 
