@@ -1,93 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbaJXWO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 18:14:57 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:47291 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397AbaJXWOz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 18:14:55 -0400
+	id S1755759AbaJXWTy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 18:19:54 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38874 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754557AbaJXWTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 18:19:52 -0400
+Date: Fri, 24 Oct 2014 15:16:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jay Vosburgh <jay.vosburgh@canonical.com>
+Cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        mroos@linux.ee, tj@kernel.org
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141024221602.GB4977@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141024154006.GP4977@linux.vnet.ibm.com>
+ <20141024162943.GA16621@declera.com>
+ <20141024165454.GS4977@linux.vnet.ibm.com>
+ <20141024170931.GA21849@declera.com>
+ <20141024172009.GV4977@linux.vnet.ibm.com>
+ <20141024173526.GA26058@declera.com>
+ <20141024183226.GW4977@linux.vnet.ibm.com>
+ <20141024212557.GA15537@declera.com>
+ <20141024214927.GA4977@linux.vnet.ibm.com>
+ <8451.1414188124@famine>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.10.1410240835200.15577@pianoman.cluster.toy>
-References: <cover.1413323611.git.luto@amacapital.net> <alpine.DEB.2.10.1410210003300.5251@pianoman.cluster.toy>
- <CALCETrV0UCodO7FAi2fXd9ED6K_RHs-0yb+P4Ubmo=EUKZs3gg@mail.gmail.com>
- <alpine.DEB.2.10.1410211057120.1451@pianoman.cluster.toy> <20141021160411.GF3219@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410211255580.4491@pianoman.cluster.toy> <20141023114228.GB12706@worktop.programming.kicks-ass.net>
- <alpine.DEB.2.10.1410240835200.15577@pianoman.cluster.toy>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 24 Oct 2014 15:14:33 -0700
-Message-ID: <CALCETrWmtOPP115dCo1vEckNVdF5EZceu+r-C8XU9HzHGf62uQ@mail.gmail.com>
-Subject: Re: [RFC 0/5] CR4 handling improvements
-To: Vince Weaver <vince@deater.net>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Erik Bosman <ebn310@few.vu.nl>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8451.1414188124@famine>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102422-0033-0000-0000-000000D67BF5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 5:41 AM, Vince Weaver <vince@deater.net> wrote:
-> On Thu, 23 Oct 2014, Peter Zijlstra wrote:
->
->> On Tue, Oct 21, 2014 at 01:05:49PM -0400, Vince Weaver wrote:
->
->> > There are various reasons why you might want to start events at times
->> > other than the beginning of the program.  Some people don't like kernel
->> > multiplexing so they start/stop manually if they want to switch eventsets.
->>
->> I suppose you could pre-create all events and use ioctl()s to start/stop
->> them where/when desired, this should be faster I think. But yes, this is
->> not a use-case I've though much about.
->
-> The scheduling step is most of what makes the perf_event start call have
-> high overhead.  The other annoyance is the fact that due to the NMI
-> watchdog your can successfully perf_event_open() an event group but still
-> have it fail at start time, so a lot of code has to be done that does
-> extraneous open/start/close calls to make sure the events really fit.
->
->> MAP_POPULATE is your friend there, but yes manually prefaulting is
->> perfectly fine too, and the HPC people are quite familiar with the
->> concept, they do it for a lot of things.
->
-> MAP_POPULATE actually has noticably more overhead than manually
-> prefaulting.  It's on my todo list to drop ftrace on there and find out
-> why, but I've been stuck chasing kernel-crashing fuzzer bugs instead in my
-> spare time.
+On Fri, Oct 24, 2014 at 03:02:04PM -0700, Jay Vosburgh wrote:
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> >On Sat, Oct 25, 2014 at 12:25:57AM +0300, Yanko Kaneti wrote:
+> >> On Fri-10/24/14-2014 11:32, Paul E. McKenney wrote:
+> >> > On Fri, Oct 24, 2014 at 08:35:26PM +0300, Yanko Kaneti wrote:
+> >> > > On Fri-10/24/14-2014 10:20, Paul E. McKenney wrote:
+> >
+> >[ . . . ]
+> >
+> >> > > > Well, if you are feeling aggressive, give the following patch a spin.
+> >> > > > I am doing sanity tests on it in the meantime.
+> >> > > 
+> >> > > Doesn't seem to make a difference here
+> >> > 
+> >> > OK, inspection isn't cutting it, so time for tracing.  Does the system
+> >> > respond to user input?  If so, please enable rcu:rcu_barrier ftrace before
+> >> > the problem occurs, then dump the trace buffer after the problem occurs.
+> >> 
+> >> Sorry for being unresposive here, but I know next to nothing about tracing
+> >> or most things about the kernel, so I have some cathing up to do.
+> >> 
+> >> In the meantime some layman observations while I tried to find what exactly
+> >> triggers the problem.
+> >> - Even in runlevel 1 I can reliably trigger the problem by starting libvirtd
+> >> - libvirtd seems to be very active in using all sorts of kernel facilities
+> >>   that are modules on fedora so it seems to cause many simultaneous kworker 
+> >>   calls to modprobe
+> >> - there are 8 kworker/u16 from 0 to 7
+> >> - one of these kworkers always deadlocks, while there appear to be two
+> >>   kworker/u16:6 - the seventh
+> >
+> >Adding Tejun on CC in case this duplication of kworker/u16:6 is important.
+> >
+> >>   6 vs 8 as in 6 rcuos where before they were always 8
+> >> 
+> >> Just observations from someone who still doesn't know what the u16
+> >> kworkers are..
+> >
+> >Could you please run the following diagnostic patch?  This will help
+> >me see if I have managed to miswire the rcuo kthreads.  It should
+> >print some information at task-hang time.
+> 
+> 	I can give this a spin after the ftrace (now that I've got
+> CONFIG_RCU_TRACE turned on).
+> 
+> 	I've got an ftrace capture from unmodified -net, it looks like
+> this:
+> 
+>     ovs-vswitchd-902   [000] ....   471.778441: rcu_barrier: rcu_sched Begin cpu -1 remaining 0 # 0
+>     ovs-vswitchd-902   [000] ....   471.778452: rcu_barrier: rcu_sched Check cpu -1 remaining 0 # 0
+>     ovs-vswitchd-902   [000] ....   471.778452: rcu_barrier: rcu_sched Inc1 cpu -1 remaining 0 # 1
+>     ovs-vswitchd-902   [000] ....   471.778453: rcu_barrier: rcu_sched OnlineNoCB cpu 0 remaining 1 # 1
+>     ovs-vswitchd-902   [000] ....   471.778453: rcu_barrier: rcu_sched OnlineNoCB cpu 1 remaining 2 # 1
+>     ovs-vswitchd-902   [000] ....   471.778453: rcu_barrier: rcu_sched OnlineNoCB cpu 2 remaining 3 # 1
+>     ovs-vswitchd-902   [000] ....   471.778454: rcu_barrier: rcu_sched OnlineNoCB cpu 3 remaining 4 # 1
 
-Have you checked recently?  IIRC Michael Lespinasse put some effort
-into improving MAP_POPULATE recently.
+OK, so it looks like your system has four CPUs, and rcu_barrier() placed
+callbacks on them all.
 
->
-> perfctr and possibly perfmon2 would automatically pre-fault the mmap page
-> for you in the kernel, so there was no need for the user to do it.
->
->
-> In any case I wasn't really trying to make trouble here, it's just I came
-> across the people using rdpmc w/o perf_event just the other day (on USENET
-> of all places).  They were so happy it worked w/o patches now, that I felt
-> bad breaking it to them that there were patches floating around that were
-> going to make their usecase not work anymore.
->
-> I guess like all things though, you can't have anything fun and useful in
-> the kernel without the security people taking it away.
+>     ovs-vswitchd-902   [000] ....   471.778454: rcu_barrier: rcu_sched Inc2 cpu -1 remaining 4 # 2
 
-I'm sympathetic enough to this use case that I don't really mind
-adding a bit of code to support rdpmc=2 meaning that rdpmc is always
-allowed.  Switching in and out of rdpmc=2 mode will be expensive
-(static key and IPI to all CPUs).  PeterZ, is that OK with you?
+The above removes the extra count used to avoid races between posting new
+callbacks and completion of previously posted callbacks.
 
---Andy
+>          rcuos/0-9     [000] ..s.   471.793150: rcu_barrier: rcu_sched CB cpu -1 remaining 3 # 2
+>          rcuos/1-18    [001] ..s.   471.793308: rcu_barrier: rcu_sched CB cpu -1 remaining 2 # 2
 
->
-> Vince
+Two of the four callbacks fired, but the other two appear to be AWOL.
+And rcu_barrier() won't return until they all fire.
 
+> 	I let it sit through several "hung task" cycles but that was all
+> there was for rcu:rcu_barrier.
+> 
+> 	I should have ftrace with the patch as soon as the kernel is
+> done building, then I can try the below patch (I'll start it building
+> now).
 
+Sounds very good, looking forward to hearing of the results.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+							Thanx, Paul
+
