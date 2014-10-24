@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756076AbaJXIdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 04:33:51 -0400
-Received: from mail-by2on0058.outbound.protection.outlook.com ([207.46.100.58]:41040
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1756084AbaJXIeU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 04:34:20 -0400
+Received: from mail-bn1on0098.outbound.protection.outlook.com ([157.56.110.98]:11298
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755756AbaJXIZm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 04:25:42 -0400
+	id S932421AbaJXIZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 04:25:29 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
         <lftan.linux@gmail.com>, <cltang@codesourcery.com>
-Subject: [PATCH v5 14/29] nios2: DMA mapping API
-Date: Fri, 24 Oct 2014 16:24:16 +0800
-Message-ID: <1414139071-3818-15-git-send-email-lftan@altera.com>
+Subject: [PATCH v5 11/29] nios2: Cache handling
+Date: Fri, 24 Oct 2014 16:24:13 +0800
+Message-ID: <1414139071-3818-12-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1414139071-3818-1-git-send-email-lftan@altera.com>
 References: <1414139071-3818-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(22564002)(87936001)(21056001)(106466001)(19580405001)(76176999)(44976005)(2201001)(107046002)(92566001)(62966002)(6806004)(86362001)(76482002)(93916002)(229853001)(120916001)(92726001)(105596002)(99396003)(87286001)(68736004)(95666004)(19580395003)(85306004)(102836001)(84676001)(104166001)(85852003)(31966008)(20776003)(47776003)(64706001)(48376002)(50226001)(42186005)(46102003)(36756003)(89996001)(97736003)(88136002)(77096002)(4396001)(50986999)(50466002)(80022003)(33646002)(77156001);DIR:OUT;SFP:1101;SCL:1;SRVR:CO2PR03MB1017;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(189002)(22564002)(199003)(76482002)(99396003)(120916001)(77156001)(62966002)(33646002)(102836001)(85306004)(104166001)(47776003)(36756003)(64706001)(20776003)(31966008)(86362001)(50466002)(2201001)(92566001)(48376002)(92726001)(42186005)(50986999)(21056001)(76176999)(87936001)(88136002)(87286001)(44976005)(6806004)(84676001)(89996001)(68736004)(19580405001)(19580395003)(85852003)(229853001)(107046002)(93916002)(106466001)(105596002)(97736003)(95666004)(50226001)(77096002)(46102003)(80022003)(4396001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB213;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO2PR03MB1017;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB213;
+X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0374433C81
 Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
  smtp.mailfrom=lftan@altera.com; 
@@ -32,343 +33,394 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the DMA mapping API.
+This patch adds functionality required for cache maintenance.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/dma-mapping.h | 130 ++++++++++++++++++++++++
- arch/nios2/mm/dma-mapping.c          | 185 +++++++++++++++++++++++++++++++++++
- 2 files changed, 315 insertions(+)
- create mode 100644 arch/nios2/include/asm/dma-mapping.h
- create mode 100644 arch/nios2/mm/dma-mapping.c
+ arch/nios2/include/asm/cache.h      |  36 +++++
+ arch/nios2/include/asm/cacheflush.h |  52 +++++++
+ arch/nios2/mm/cacheflush.c          | 270 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 358 insertions(+)
+ create mode 100644 arch/nios2/include/asm/cache.h
+ create mode 100644 arch/nios2/include/asm/cacheflush.h
+ create mode 100644 arch/nios2/mm/cacheflush.c
 
-diff --git a/arch/nios2/include/asm/dma-mapping.h b/arch/nios2/include/asm/dma-mapping.h
+diff --git a/arch/nios2/include/asm/cache.h b/arch/nios2/include/asm/cache.h
 new file mode 100644
-index 0000000..8c3bf4b
+index 0000000..2293cf5
 --- /dev/null
-+++ b/arch/nios2/include/asm/dma-mapping.h
-@@ -0,0 +1,130 @@
++++ b/arch/nios2/include/asm/cache.h
+@@ -0,0 +1,36 @@
 +/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License.  See the file COPYING in the main directory of this
-+ * archive for more details.
++ * All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for more
++ * details.
 + */
 +
-+#ifndef _ASM_NIOS2_DMA_MAPPING_H
-+#define _ASM_NIOS2_DMA_MAPPING_H
++#ifndef _ASM_NIOS2_CACHE_H
++#define _ASM_NIOS2_CACHE_H
 +
-+#include <linux/scatterlist.h>
-+#include <linux/cache.h>
-+#include <asm/cacheflush.h>
++#define NIOS2_DCACHE_SIZE	CONFIG_NIOS2_DCACHE_SIZE
++#define NIOS2_ICACHE_SIZE	CONFIG_NIOS2_ICACHE_SIZE
++#define NIOS2_DCACHE_LINE_SIZE	CONFIG_NIOS2_DCACHE_LINE_SIZE
++#define NIOS2_ICACHE_LINE_SHIFT	5
++#define NIOS2_ICACHE_LINE_SIZE	(1 << NIOS2_ICACHE_LINE_SHIFT)
 +
-+static inline void __dma_sync_for_device(void *vaddr, size_t size,
-+			      enum dma_data_direction direction)
-+{
-+	switch (direction) {
-+	case DMA_FROM_DEVICE:
-+		invalidate_dcache_range((unsigned long)vaddr,
-+			(unsigned long)(vaddr + size));
-+		break;
-+	case DMA_TO_DEVICE:
-+		/*
-+		 * We just need to flush the caches here , but Nios2 flush
-+		 * instruction will do both writeback and invalidate.
-+		 */
-+	case DMA_BIDIRECTIONAL: /* flush and invalidate */
-+		flush_dcache_range((unsigned long)vaddr,
-+			(unsigned long)(vaddr + size));
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
++/* bytes per L1 cache line */
++#define L1_CACHE_SHIFT		NIOS2_ICACHE_LINE_SHIFT
++#define L1_CACHE_BYTES		NIOS2_ICACHE_LINE_SIZE
 +
-+static inline void __dma_sync_for_cpu(void *vaddr, size_t size,
-+			      enum dma_data_direction direction)
-+{
-+	switch (direction) {
-+	case DMA_BIDIRECTIONAL:
-+	case DMA_FROM_DEVICE:
-+		invalidate_dcache_range((unsigned long)vaddr,
-+			(unsigned long)(vaddr + size));
-+		break;
-+	case DMA_TO_DEVICE:
-+		break;
-+	default:
-+		BUG();
-+	}
-+}
++#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
 +
-+#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
-+#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
++#define __cacheline_aligned
++#define ____cacheline_aligned
 +
-+void *dma_alloc_coherent(struct device *dev, size_t size,
-+			   dma_addr_t *dma_handle, gfp_t flag);
-+
-+void dma_free_coherent(struct device *dev, size_t size,
-+			 void *vaddr, dma_addr_t dma_handle);
-+
-+static inline dma_addr_t dma_map_single(struct device *dev, void *ptr,
-+					size_t size,
-+					enum dma_data_direction direction)
-+{
-+	BUG_ON(!valid_dma_direction(direction));
-+	__dma_sync_for_device(ptr, size, direction);
-+	return virt_to_phys(ptr);
-+}
-+
-+static inline void dma_unmap_single(struct device *dev, dma_addr_t dma_addr,
-+				size_t size, enum dma_data_direction direction)
-+{
-+}
-+
-+extern int dma_map_sg(struct device *dev, struct scatterlist *sg, int nents,
-+	enum dma_data_direction direction);
-+extern dma_addr_t dma_map_page(struct device *dev, struct page *page,
-+	unsigned long offset, size_t size, enum dma_data_direction direction);
-+extern void dma_unmap_page(struct device *dev, dma_addr_t dma_address,
-+	size_t size, enum dma_data_direction direction);
-+extern void dma_unmap_sg(struct device *dev, struct scatterlist *sg,
-+	int nhwentries, enum dma_data_direction direction);
-+extern void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
-+	size_t size, enum dma_data_direction direction);
-+extern void dma_sync_single_for_device(struct device *dev,
-+	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction);
-+extern void dma_sync_single_range_for_cpu(struct device *dev,
-+	dma_addr_t dma_handle, unsigned long offset, size_t size,
-+	enum dma_data_direction direction);
-+extern void dma_sync_single_range_for_device(struct device *dev,
-+	dma_addr_t dma_handle, unsigned long offset, size_t size,
-+	enum dma_data_direction direction);
-+extern void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg,
-+	int nelems, enum dma_data_direction direction);
-+extern void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
-+	int nelems, enum dma_data_direction direction);
-+
-+static inline int dma_supported(struct device *dev, u64 mask)
-+{
-+	return 1;
-+}
-+
-+static inline int dma_set_mask(struct device *dev, u64 mask)
-+{
-+	if (!dev->dma_mask || !dma_supported(dev, mask))
-+		return -EIO;
-+
-+	*dev->dma_mask = mask;
-+
-+	return 0;
-+}
-+
-+static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
-+{
-+	return 0;
-+}
-+
-+/*
-+* dma_alloc_noncoherent() returns non-cacheable memory, so there's no need to
-+* do any flushing here.
-+*/
-+static inline void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
-+				  enum dma_data_direction direction)
-+{
-+}
-+
-+#endif /* _ASM_NIOS2_DMA_MAPPING_H */
-diff --git a/arch/nios2/mm/dma-mapping.c b/arch/nios2/mm/dma-mapping.c
++#endif
+diff --git a/arch/nios2/include/asm/cacheflush.h b/arch/nios2/include/asm/cacheflush.h
 new file mode 100644
-index 0000000..2f00713
+index 0000000..52abba9
 --- /dev/null
-+++ b/arch/nios2/mm/dma-mapping.c
-@@ -0,0 +1,185 @@
++++ b/arch/nios2/include/asm/cacheflush.h
+@@ -0,0 +1,52 @@
 +/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *  Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ *
-+ * Based on DMA code from MIPS.
++ * Copyright (C) 2003 Microtronix Datacom Ltd.
++ * Copyright (C) 2000-2002 Greg Ungerer <gerg@snapgear.com>
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
++ * License. See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#include <linux/types.h>
-+#include <linux/mm.h>
++#ifndef _ASM_NIOS2_CACHEFLUSH_H
++#define _ASM_NIOS2_CACHEFLUSH_H
++
++#include <linux/mm_types.h>
++
++/*
++ * This flag is used to indicate that the page pointed to by a pte is clean
++ * and does not require cleaning before returning it to the user.
++ */
++#define PG_dcache_clean PG_arch_1
++
++struct mm_struct;
++
++extern void flush_cache_all(void);
++extern void flush_cache_mm(struct mm_struct *mm);
++extern void flush_cache_dup_mm(struct mm_struct *mm);
++extern void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
++	unsigned long end);
++extern void flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr,
++	unsigned long pfn);
++#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 1
++extern void flush_dcache_page(struct page *page);
++
++extern void flush_icache_range(unsigned long start, unsigned long end);
++extern void flush_icache_page(struct vm_area_struct *vma, struct page *page);
++
++#define flush_cache_vmap(start, end)		flush_dcache_range(start, end)
++#define flush_cache_vunmap(start, end)		flush_dcache_range(start, end)
++
++extern void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
++				unsigned long user_vaddr,
++				void *dst, void *src, int len);
++extern void copy_from_user_page(struct vm_area_struct *vma, struct page *page,
++				unsigned long user_vaddr,
++				void *dst, void *src, int len);
++
++extern void flush_dcache_range(unsigned long start, unsigned long end);
++extern void invalidate_dcache_range(unsigned long start, unsigned long end);
++
++#define flush_dcache_mmap_lock(mapping)		do { } while (0)
++#define flush_dcache_mmap_unlock(mapping)	do { } while (0)
++
++#endif /* _ASM_NIOS2_CACHEFLUSH_H */
+diff --git a/arch/nios2/mm/cacheflush.c b/arch/nios2/mm/cacheflush.c
+new file mode 100644
+index 0000000..cf06a00
+--- /dev/null
++++ b/arch/nios2/mm/cacheflush.c
+@@ -0,0 +1,270 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2009, Wind River Systems Inc
++ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ */
++
 +#include <linux/export.h>
-+#include <linux/string.h>
-+#include <linux/scatterlist.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/io.h>
-+#include <linux/cache.h>
++#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/fs.h>
++
 +#include <asm/cacheflush.h>
++#include <asm/cpuinfo.h>
 +
-+
-+void *dma_alloc_coherent(struct device *dev, size_t size,
-+			    dma_addr_t *dma_handle, gfp_t gfp)
++static void __flush_dcache(unsigned long start, unsigned long end)
 +{
-+	void *ret;
++	unsigned long addr;
 +
-+	/* ignore region specifiers */
-+	gfp &= ~(__GFP_DMA | __GFP_HIGHMEM);
++	start &= ~(cpuinfo.dcache_line_size - 1);
++	end += (cpuinfo.dcache_line_size - 1);
++	end &= ~(cpuinfo.dcache_line_size - 1);
 +
-+	/* optimized page clearing */
-+	gfp |= __GFP_ZERO;
++	if (end > start + cpuinfo.dcache_size)
++		end = start + cpuinfo.dcache_size;
 +
-+	if (dev == NULL || (dev->coherent_dma_mask < 0xffffffff))
-+		gfp |= GFP_DMA;
-+
-+	ret = (void *) __get_free_pages(gfp, get_order(size));
-+	if (ret != NULL) {
-+		*dma_handle = virt_to_phys(ret);
-+		flush_dcache_range((unsigned long) ret,
-+			(unsigned long) ret + size);
-+		ret = UNCAC_ADDR(ret);
++	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
++		__asm__ __volatile__ ("   flushda 0(%0)\n"
++					: /* Outputs */
++					: /* Inputs  */ "r"(addr)
++					/* : No clobber */);
 +	}
-+
-+	return ret;
 +}
-+EXPORT_SYMBOL(dma_alloc_coherent);
 +
-+void dma_free_coherent(struct device *dev, size_t size, void *vaddr,
-+			dma_addr_t dma_handle)
++static void __flush_dcache_all(unsigned long start, unsigned long end)
 +{
-+	unsigned long addr = (unsigned long) CAC_ADDR((unsigned long) vaddr);
-+	free_pages(addr, get_order(size));
-+}
-+EXPORT_SYMBOL(dma_free_coherent);
++	unsigned long addr;
 +
-+int dma_map_sg(struct device *dev, struct scatterlist *sg, int nents,
-+		enum dma_data_direction direction)
-+{
-+	int i;
++	start &= ~(cpuinfo.dcache_line_size - 1);
++	end += (cpuinfo.dcache_line_size - 1);
++	end &= ~(cpuinfo.dcache_line_size - 1);
 +
-+	BUG_ON(!valid_dma_direction(direction));
++	if (end > start + cpuinfo.dcache_size)
++		end = start + cpuinfo.dcache_size;
 +
-+	for_each_sg(sg, sg, nents, i) {
-+		void *addr;
-+
-+		addr = sg_virt(sg);
-+		if (addr) {
-+			__dma_sync_for_device(addr, sg->length, direction);
-+			sg->dma_address = sg_phys(sg);
-+		}
++	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
++		__asm__ __volatile__ ("   flushd 0(%0)\n"
++					: /* Outputs */
++					: /* Inputs  */ "r"(addr)
++					/* : No clobber */);
 +	}
-+
-+	return nents;
 +}
-+EXPORT_SYMBOL(dma_map_sg);
 +
-+dma_addr_t dma_map_page(struct device *dev, struct page *page,
-+			unsigned long offset, size_t size,
-+			enum dma_data_direction direction)
++static void __invalidate_dcache(unsigned long start, unsigned long end)
 +{
-+	void *addr;
++	unsigned long addr;
 +
-+	BUG_ON(!valid_dma_direction(direction));
++	start &= ~(cpuinfo.dcache_line_size - 1);
++	end += (cpuinfo.dcache_line_size - 1);
++	end &= ~(cpuinfo.dcache_line_size - 1);
 +
-+	addr = page_address(page) + offset;
-+	__dma_sync_for_device(addr, size, direction);
++	if (end > start + cpuinfo.dcache_size)
++		end = start + cpuinfo.dcache_size;
 +
-+	return page_to_phys(page) + offset;
++	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
++		__asm__ __volatile__ ("   initda 0(%0)\n"
++					: /* Outputs */
++					: /* Inputs  */ "r"(addr)
++					/* : No clobber */);
++	}
 +}
-+EXPORT_SYMBOL(dma_map_page);
 +
-+void dma_unmap_page(struct device *dev, dma_addr_t dma_address, size_t size,
-+		    enum dma_data_direction direction)
++static void __flush_icache(unsigned long start, unsigned long end)
 +{
-+	BUG_ON(!valid_dma_direction(direction));
++	unsigned long addr;
 +
-+	__dma_sync_for_cpu(phys_to_virt(dma_address), size, direction);
++	start &= ~(cpuinfo.icache_line_size - 1);
++	end += (cpuinfo.icache_line_size - 1);
++	end &= ~(cpuinfo.icache_line_size - 1);
++
++	if (end > start + cpuinfo.icache_size)
++		end = start + cpuinfo.icache_size;
++
++	for (addr = start; addr < end; addr += cpuinfo.icache_line_size) {
++		__asm__ __volatile__ ("   flushi %0\n"
++					: /* Outputs */
++					: /* Inputs  */ "r"(addr)
++					/* : No clobber */);
++	}
++	__asm__ __volatile(" flushp\n");
 +}
-+EXPORT_SYMBOL(dma_unmap_page);
 +
-+void dma_unmap_sg(struct device *dev, struct scatterlist *sg, int nhwentries,
-+		  enum dma_data_direction direction)
++static void flush_aliases(struct address_space *mapping, struct page *page)
 +{
-+	void *addr;
-+	int i;
++	struct mm_struct *mm = current->active_mm;
++	struct vm_area_struct *mpnt;
++	pgoff_t pgoff;
 +
-+	BUG_ON(!valid_dma_direction(direction));
++	pgoff = page->index;
 +
-+	if (direction == DMA_TO_DEVICE)
++	flush_dcache_mmap_lock(mapping);
++	vma_interval_tree_foreach(mpnt, &mapping->i_mmap, pgoff, pgoff) {
++		unsigned long offset;
++
++		if (mpnt->vm_mm != mm)
++			continue;
++		if (!(mpnt->vm_flags & VM_MAYSHARE))
++			continue;
++
++		offset = (pgoff - mpnt->vm_pgoff) << PAGE_SHIFT;
++		flush_cache_page(mpnt, mpnt->vm_start + offset,
++			page_to_pfn(page));
++	}
++	flush_dcache_mmap_unlock(mapping);
++}
++
++void flush_cache_all(void)
++{
++	__flush_dcache_all(0, cpuinfo.dcache_size);
++	__flush_icache(0, cpuinfo.icache_size);
++}
++
++void flush_cache_mm(struct mm_struct *mm)
++{
++	flush_cache_all();
++}
++
++void flush_cache_dup_mm(struct mm_struct *mm)
++{
++	flush_cache_all();
++}
++
++void flush_icache_range(unsigned long start, unsigned long end)
++{
++	__flush_icache(start, end);
++}
++
++void flush_dcache_range(unsigned long start, unsigned long end)
++{
++	__flush_dcache(start, end);
++}
++EXPORT_SYMBOL(flush_dcache_range);
++
++void invalidate_dcache_range(unsigned long start, unsigned long end)
++{
++	__invalidate_dcache(start, end);
++}
++EXPORT_SYMBOL(invalidate_dcache_range);
++
++void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
++			unsigned long end)
++{
++	__flush_dcache(start, end);
++	if (vma == NULL || (vma->vm_flags & VM_EXEC))
++		__flush_icache(start, end);
++}
++
++void flush_icache_page(struct vm_area_struct *vma, struct page *page)
++{
++	unsigned long start = (unsigned long) page_address(page);
++	unsigned long end = start + PAGE_SIZE;
++
++	__flush_icache(start, end);
++}
++
++void flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr,
++			unsigned long pfn)
++{
++	unsigned long start = vmaddr;
++	unsigned long end = start + PAGE_SIZE;
++
++	__flush_dcache(start, end);
++	if (vma->vm_flags & VM_EXEC)
++		__flush_icache(start, end);
++}
++
++void flush_dcache_page(struct page *page)
++{
++	struct address_space *mapping;
++
++	/*
++	 * The zero page is never written to, so never has any dirty
++	 * cache lines, and therefore never needs to be flushed.
++	 */
++	if (page == ZERO_PAGE(0))
 +		return;
 +
-+	for_each_sg(sg, sg, nhwentries, i) {
-+		addr = sg_virt(sg);
-+		if (addr)
-+			__dma_sync_for_cpu(addr, sg->length, direction);
++	mapping = page_mapping(page);
++
++	/* Flush this page if there are aliases. */
++	if (mapping && !mapping_mapped(mapping)) {
++		clear_bit(PG_dcache_clean, &page->flags);
++	} else {
++		unsigned long start = (unsigned long)page_address(page);
++		__flush_dcache_all(start, start + PAGE_SIZE);
++		if (mapping)
++			flush_aliases(mapping,  page);
++		set_bit(PG_dcache_clean, &page->flags);
 +	}
 +}
-+EXPORT_SYMBOL(dma_unmap_sg);
++EXPORT_SYMBOL(flush_dcache_page);
 +
-+void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle,
-+			     size_t size, enum dma_data_direction direction)
++void update_mmu_cache(struct vm_area_struct *vma,
++		      unsigned long address, pte_t *pte)
 +{
-+	BUG_ON(!valid_dma_direction(direction));
++	unsigned long pfn = pte_pfn(*pte);
++	struct page *page;
 +
-+	__dma_sync_for_cpu(phys_to_virt(dma_handle), size, direction);
++	if (!pfn_valid(pfn))
++		return;
++
++	/*
++	* The zero page is never written to, so never has any dirty
++	* cache lines, and therefore never needs to be flushed.
++	*/
++	page = pfn_to_page(pfn);
++	if (page == ZERO_PAGE(0))
++		return;
++
++	if (!PageReserved(page) &&
++	     !test_and_set_bit(PG_dcache_clean, &page->flags)) {
++		unsigned long start = page_to_virt(page);
++		struct address_space *mapping;
++
++		__flush_dcache(start, start + PAGE_SIZE);
++
++		mapping = page_mapping(page);
++		if (mapping)
++			flush_aliases(mapping, page);
++	}
 +}
-+EXPORT_SYMBOL(dma_sync_single_for_cpu);
 +
-+void dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
-+				size_t size, enum dma_data_direction direction)
++void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
++		    struct page *to)
 +{
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	__dma_sync_for_device(phys_to_virt(dma_handle), size, direction);
++	__flush_dcache(vaddr, vaddr + PAGE_SIZE);
++	copy_page(vto, vfrom);
++	__flush_dcache((unsigned long)vto, (unsigned long)vto + PAGE_SIZE);
 +}
-+EXPORT_SYMBOL(dma_sync_single_for_device);
 +
-+void dma_sync_single_range_for_cpu(struct device *dev, dma_addr_t dma_handle,
-+					unsigned long offset, size_t size,
-+					enum dma_data_direction direction)
++void clear_user_page(void *addr, unsigned long vaddr, struct page *page)
 +{
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	__dma_sync_for_cpu(phys_to_virt(dma_handle), size, direction);
++	__flush_dcache(vaddr, vaddr + PAGE_SIZE);
++	clear_page(addr);
++	__flush_dcache((unsigned long)addr, (unsigned long)addr + PAGE_SIZE);
 +}
-+EXPORT_SYMBOL(dma_sync_single_range_for_cpu);
 +
-+void dma_sync_single_range_for_device(struct device *dev, dma_addr_t dma_handle,
-+					unsigned long offset, size_t size,
-+					enum dma_data_direction direction)
++void copy_from_user_page(struct vm_area_struct *vma, struct page *page,
++			unsigned long user_vaddr,
++			void *dst, void *src, int len)
 +{
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	__dma_sync_for_device(phys_to_virt(dma_handle), size, direction);
++	flush_cache_page(vma, user_vaddr, page_to_pfn(page));
++	memcpy(dst, src, len);
++	__flush_dcache((unsigned long)src, (unsigned long)src + len);
++	if (vma->vm_flags & VM_EXEC)
++		__flush_icache((unsigned long)src, (unsigned long)src + len);
 +}
-+EXPORT_SYMBOL(dma_sync_single_range_for_device);
 +
-+void dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg, int nelems,
-+			 enum dma_data_direction direction)
++void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
++			unsigned long user_vaddr,
++			void *dst, void *src, int len)
 +{
-+	int i;
-+
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	/* Make sure that gcc doesn't leave the empty loop body.  */
-+	for_each_sg(sg, sg, nelems, i)
-+		__dma_sync_for_cpu(sg_virt(sg), sg->length, direction);
++	flush_cache_page(vma, user_vaddr, page_to_pfn(page));
++	memcpy(dst, src, len);
++	__flush_dcache((unsigned long)dst, (unsigned long)dst + len);
++	if (vma->vm_flags & VM_EXEC)
++		__flush_icache((unsigned long)dst, (unsigned long)dst + len);
 +}
-+EXPORT_SYMBOL(dma_sync_sg_for_cpu);
-+
-+void dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
-+				int nelems, enum dma_data_direction direction)
-+{
-+	int i;
-+
-+	BUG_ON(!valid_dma_direction(direction));
-+
-+	/* Make sure that gcc doesn't leave the empty loop body.  */
-+	for_each_sg(sg, sg, nelems, i)
-+		__dma_sync_for_device(sg_virt(sg), sg->length, direction);
-+
-+}
-+EXPORT_SYMBOL(dma_sync_sg_for_device);
 -- 
 1.8.2.1
 
