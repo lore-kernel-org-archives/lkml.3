@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341AbaJXW6Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 18:58:24 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:32950 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524AbaJXW6W (ORCPT
+	id S932527AbaJXW6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 18:58:31 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:56812 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755442AbaJXW6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 18:58:22 -0400
+	Fri, 24 Oct 2014 18:58:25 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -15,95 +15,193 @@ Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Arnaldo Carvalho de Melo <acme@kernel.org>,
         Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
         Andrea Arcangeli <aarcange@redhat.com>,
-        Vince Weaver <vince@deater.net>, "hillf.zj" <hillf.zj@alibaba-inc.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH v2 0/8] CR4 handling improvements
-Date: Fri, 24 Oct 2014 15:58:05 -0700
-Message-Id: <cover.1414190806.git.luto@amacapital.net>
+        Vince Weaver <vince@deater.net>, "hillf.zj" <hillf.zj@alibaba-inc.com>
+Subject: [PATCH v2 1/8] perf: Clean up pmu::event_idx
+Date: Fri, 24 Oct 2014 15:58:06 -0700
+Message-Id: <f432a70ee15787b40afe30c93d44a2e4fc619464.1414190806.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <cover.1414190806.git.luto@amacapital.net>
+References: <cover.1414190806.git.luto@amacapital.net>
+In-Reply-To: <cover.1414190806.git.luto@amacapital.net>
+References: <cover.1414190806.git.luto@amacapital.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This little series tightens up rdpmc permissions.  With it applied,
-rdpmc can only be used if a perf_event is actually mmapped.  For now,
-this is only really useful for seccomp.
+From: Peter Zijlstra <peterz@infradead.org>
 
-At some point this could be further tightened up to only allow rdpmc
-if an actual self-monitoring perf event that is compatible with
-rdpmc is mapped.
+Andy reported that the current state of event_idx is rather confused.
+So remove all but the x86_pmu implementation and change the default to
+return 0 (the safe option).
 
-This should add <50ns to context switches between rdpmc-capable and
-rdpmc-non-capable mms.  I suspect that this is well under 10%
-overhead, given that perf already adds some context switch latency.
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+---
+ arch/powerpc/perf/hv-24x7.c     |  6 ------
+ arch/powerpc/perf/hv-gpci.c     |  6 ------
+ arch/s390/kernel/perf_cpum_sf.c |  6 ------
+ kernel/events/core.c            | 15 +--------------
+ kernel/events/hw_breakpoint.c   |  7 -------
+ 5 files changed, 1 insertion(+), 39 deletions(-)
 
-I think that patches 1-3 are a good idea regardless of any rdpmc changes.
-
-AMD Uncore userspace rdpmc is broken by these patches (cap_user_rdpmc
-will be zero), but it was broken anyway.
-
-Changes from v1 (aka RFC):
- - Rebased on top of the KVM CR4 fix.  This applies to a very recent -linus.
- - Renamed the cr4 helpers (Peter, Borislav)
- - Fixed buggy cr4 helpers (Hilf)
- - Improved lots of comments (everyone)
- - Renamed read_cr4 and write_cr4 to make sure I didn't miss anything.
-   (NB: This will introduce conflicts with Andi's FSGSBASE work.  This is
-    a good thing.)
-
-Andy Lutomirski (7):
-  x86: Clean up cr4 manipulation
-  x86: Store a per-cpu shadow copy of CR4
-  x86: Add a comment clarifying LDT context switching
-  perf: Add pmu callbacks to track event mapping and unmapping
-  perf: Pass the event to arch_perf_update_userpage
-  x86, perf: Only allow rdpmc if a perf_event is mapped
-  x86, perf: Add /sys/devices/cpu/rdpmc=2 to allow rdpmc for all tasks
-
-Peter Zijlstra (1):
-  perf: Clean up pmu::event_idx
-
- arch/powerpc/perf/hv-24x7.c          |  6 ---
- arch/powerpc/perf/hv-gpci.c          |  6 ---
- arch/s390/kernel/perf_cpum_sf.c      |  6 ---
- arch/x86/include/asm/mmu.h           |  2 +
- arch/x86/include/asm/mmu_context.h   | 32 ++++++++++++++-
- arch/x86/include/asm/paravirt.h      |  6 +--
- arch/x86/include/asm/processor.h     | 33 ----------------
- arch/x86/include/asm/special_insns.h |  6 +--
- arch/x86/include/asm/tlbflush.h      | 77 ++++++++++++++++++++++++++++++++----
- arch/x86/include/asm/virtext.h       |  5 ++-
- arch/x86/kernel/acpi/sleep.c         |  2 +-
- arch/x86/kernel/cpu/common.c         | 17 +++++---
- arch/x86/kernel/cpu/mcheck/mce.c     |  3 +-
- arch/x86/kernel/cpu/mcheck/p5.c      |  3 +-
- arch/x86/kernel/cpu/mcheck/winchip.c |  3 +-
- arch/x86/kernel/cpu/mtrr/cyrix.c     |  6 +--
- arch/x86/kernel/cpu/mtrr/generic.c   |  6 +--
- arch/x86/kernel/cpu/perf_event.c     | 76 ++++++++++++++++++++++++++---------
- arch/x86/kernel/cpu/perf_event.h     |  2 +
- arch/x86/kernel/head32.c             |  1 +
- arch/x86/kernel/head64.c             |  2 +
- arch/x86/kernel/i387.c               |  3 +-
- arch/x86/kernel/process.c            |  5 ++-
- arch/x86/kernel/process_32.c         |  2 +-
- arch/x86/kernel/process_64.c         |  2 +-
- arch/x86/kernel/setup.c              |  2 +-
- arch/x86/kernel/xsave.c              |  3 +-
- arch/x86/kvm/svm.c                   |  2 +-
- arch/x86/kvm/vmx.c                   | 10 ++---
- arch/x86/mm/fault.c                  |  2 +-
- arch/x86/mm/init.c                   | 12 +++++-
- arch/x86/mm/tlb.c                    |  3 --
- arch/x86/power/cpu.c                 | 11 ++----
- arch/x86/realmode/init.c             |  2 +-
- arch/x86/xen/enlighten.c             |  4 +-
- drivers/lguest/x86/core.c            |  4 +-
- include/linux/perf_event.h           |  7 ++++
- kernel/events/core.c                 | 29 ++++++--------
- kernel/events/hw_breakpoint.c        |  7 ----
- 39 files changed, 256 insertions(+), 154 deletions(-)
-
+diff --git a/arch/powerpc/perf/hv-24x7.c b/arch/powerpc/perf/hv-24x7.c
+index 6c8710dd90c9..dba34088da28 100644
+--- a/arch/powerpc/perf/hv-24x7.c
++++ b/arch/powerpc/perf/hv-24x7.c
+@@ -417,11 +417,6 @@ static int h_24x7_event_add(struct perf_event *event, int flags)
+ 	return 0;
+ }
+ 
+-static int h_24x7_event_idx(struct perf_event *event)
+-{
+-	return 0;
+-}
+-
+ static struct pmu h_24x7_pmu = {
+ 	.task_ctx_nr = perf_invalid_context,
+ 
+@@ -433,7 +428,6 @@ static struct pmu h_24x7_pmu = {
+ 	.start       = h_24x7_event_start,
+ 	.stop        = h_24x7_event_stop,
+ 	.read        = h_24x7_event_update,
+-	.event_idx   = h_24x7_event_idx,
+ };
+ 
+ static int hv_24x7_init(void)
+diff --git a/arch/powerpc/perf/hv-gpci.c b/arch/powerpc/perf/hv-gpci.c
+index 15fc76c93022..a051fe946c63 100644
+--- a/arch/powerpc/perf/hv-gpci.c
++++ b/arch/powerpc/perf/hv-gpci.c
+@@ -246,11 +246,6 @@ static int h_gpci_event_init(struct perf_event *event)
+ 	return 0;
+ }
+ 
+-static int h_gpci_event_idx(struct perf_event *event)
+-{
+-	return 0;
+-}
+-
+ static struct pmu h_gpci_pmu = {
+ 	.task_ctx_nr = perf_invalid_context,
+ 
+@@ -262,7 +257,6 @@ static struct pmu h_gpci_pmu = {
+ 	.start       = h_gpci_event_start,
+ 	.stop        = h_gpci_event_stop,
+ 	.read        = h_gpci_event_update,
+-	.event_idx   = h_gpci_event_idx,
+ };
+ 
+ static int hv_gpci_init(void)
+diff --git a/arch/s390/kernel/perf_cpum_sf.c b/arch/s390/kernel/perf_cpum_sf.c
+index 08e761318c17..b878f12a9597 100644
+--- a/arch/s390/kernel/perf_cpum_sf.c
++++ b/arch/s390/kernel/perf_cpum_sf.c
+@@ -1411,11 +1411,6 @@ static void cpumsf_pmu_del(struct perf_event *event, int flags)
+ 	perf_pmu_enable(event->pmu);
+ }
+ 
+-static int cpumsf_pmu_event_idx(struct perf_event *event)
+-{
+-	return event->hw.idx;
+-}
+-
+ CPUMF_EVENT_ATTR(SF, SF_CYCLES_BASIC, PERF_EVENT_CPUM_SF);
+ CPUMF_EVENT_ATTR(SF, SF_CYCLES_BASIC_DIAG, PERF_EVENT_CPUM_SF_DIAG);
+ 
+@@ -1458,7 +1453,6 @@ static struct pmu cpumf_sampling = {
+ 	.stop	      = cpumsf_pmu_stop,
+ 	.read	      = cpumsf_pmu_read,
+ 
+-	.event_idx    = cpumsf_pmu_event_idx,
+ 	.attr_groups  = cpumsf_pmu_attr_groups,
+ };
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1425d07018de..2b02c9fda790 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6071,11 +6071,6 @@ static int perf_swevent_init(struct perf_event *event)
+ 	return 0;
+ }
+ 
+-static int perf_swevent_event_idx(struct perf_event *event)
+-{
+-	return 0;
+-}
+-
+ static struct pmu perf_swevent = {
+ 	.task_ctx_nr	= perf_sw_context,
+ 
+@@ -6085,8 +6080,6 @@ static struct pmu perf_swevent = {
+ 	.start		= perf_swevent_start,
+ 	.stop		= perf_swevent_stop,
+ 	.read		= perf_swevent_read,
+-
+-	.event_idx	= perf_swevent_event_idx,
+ };
+ 
+ #ifdef CONFIG_EVENT_TRACING
+@@ -6204,8 +6197,6 @@ static struct pmu perf_tracepoint = {
+ 	.start		= perf_swevent_start,
+ 	.stop		= perf_swevent_stop,
+ 	.read		= perf_swevent_read,
+-
+-	.event_idx	= perf_swevent_event_idx,
+ };
+ 
+ static inline void perf_tp_register(void)
+@@ -6431,8 +6422,6 @@ static struct pmu perf_cpu_clock = {
+ 	.start		= cpu_clock_event_start,
+ 	.stop		= cpu_clock_event_stop,
+ 	.read		= cpu_clock_event_read,
+-
+-	.event_idx	= perf_swevent_event_idx,
+ };
+ 
+ /*
+@@ -6511,8 +6500,6 @@ static struct pmu perf_task_clock = {
+ 	.start		= task_clock_event_start,
+ 	.stop		= task_clock_event_stop,
+ 	.read		= task_clock_event_read,
+-
+-	.event_idx	= perf_swevent_event_idx,
+ };
+ 
+ static void perf_pmu_nop_void(struct pmu *pmu)
+@@ -6542,7 +6529,7 @@ static void perf_pmu_cancel_txn(struct pmu *pmu)
+ 
+ static int perf_event_idx_default(struct perf_event *event)
+ {
+-	return event->hw.idx + 1;
++	return 0;
+ }
+ 
+ /*
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index 1559fb0b9296..9803a6600d49 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -605,11 +605,6 @@ static void hw_breakpoint_stop(struct perf_event *bp, int flags)
+ 	bp->hw.state = PERF_HES_STOPPED;
+ }
+ 
+-static int hw_breakpoint_event_idx(struct perf_event *bp)
+-{
+-	return 0;
+-}
+-
+ static struct pmu perf_breakpoint = {
+ 	.task_ctx_nr	= perf_sw_context, /* could eventually get its own */
+ 
+@@ -619,8 +614,6 @@ static struct pmu perf_breakpoint = {
+ 	.start		= hw_breakpoint_start,
+ 	.stop		= hw_breakpoint_stop,
+ 	.read		= hw_breakpoint_pmu_read,
+-
+-	.event_idx	= hw_breakpoint_event_idx,
+ };
+ 
+ int __init init_hw_breakpoint(void)
 -- 
 1.9.3
 
