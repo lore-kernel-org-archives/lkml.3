@@ -1,136 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933232AbaJXL7u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 07:59:50 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:38823 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932421AbaJXL7q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 07:59:46 -0400
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>, Lior Amsalem <alior@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        devicetree@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/17] irqchip: irq-armada-370-xp: suspend/resume support
-Date: Fri, 24 Oct 2014 13:59:17 +0200
-Message-Id: <1414151970-6626-5-git-send-email-thomas.petazzoni@free-electrons.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1414151970-6626-1-git-send-email-thomas.petazzoni@free-electrons.com>
-References: <1414151970-6626-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	id S933393AbaJXMB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 08:01:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38284 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932626AbaJXMBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 08:01:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,779,1406617200"; 
+   d="scan'208";a="595203859"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
+Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
+In-Reply-To: <20141024112610.GX21513@worktop.programming.kicks-ass.net>
+References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com> <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com> <20141022142003.GQ12706@worktop.programming.kicks-ass.net> <878uk53o1e.fsf@ashishki-desk.ger.corp.intel.com> <20141024112610.GX21513@worktop.programming.kicks-ass.net>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 24 Oct 2014 15:01:49 +0300
+Message-ID: <87zjcld6c2.fsf@ashishki-desk.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds suspend/resume support to the irqchip driver used on
-Armada XP platforms (amongst others). It does so by adding a set of
-suspend/resume syscore_ops, that will respectively save and restore
-the necessary registers to ensure interrupts continue to work after
-resume.
+Peter Zijlstra <peterz@infradead.org> writes:
 
-It is worth mentioning that the affinity is lost during a
-suspend/resume cycle, because when a secondary CPU is brought
-off-line, all interrupts that are assigned to this CPU in terms of
-affinity gets re-assigned to a still running CPU. Therefore, right
-before entering suspend, all interrupts are assigned to the boot CPU.
+> On Fri, Oct 24, 2014 at 10:49:33AM +0300, Alexander Shishkin wrote:
+>> Peter Zijlstra <peterz@infradead.org> writes:
+>> 
+>> > On Mon, Oct 13, 2014 at 04:45:40PM +0300, Alexander Shishkin wrote:
+>> >> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+>> >> @@ -1528,6 +1528,14 @@ again:
+>> >>  	}
+>> >>  
+>> >>  	/*
+>> >> +	 * Intel PT
+>> >> +	 */
+>> >> +	if (__test_and_clear_bit(55, (unsigned long *)&status)) {
+>> >> +		handled++;
+>> >> +		intel_pt_interrupt();
+>> >> +	}
+>> >> +
+>> >
+>> > How does the PT interrupt interact with the regular PMI? In particular
+>> > does it respect stuff like FREEZE_ON_PMI etc?
+>> 
+>> It ignores the FREEZE_ON_PMI bit. I stop it by hand inside the PMI
+>> handler, so you can see parts of the handler in the trace if you're
+>> tracing the kernel.
+>
+> Urgh, horrid that. Routing something to the same interrupt, sharing
+> status registers but not observing the same semantics for the interrupt
+> is a massive fail.
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org
----
- drivers/irqchip/irq-armada-370-xp.c | 52 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
+I can't pretend to understand the logic behind this either.
 
-diff --git a/drivers/irqchip/irq-armada-370-xp.c b/drivers/irqchip/irq-armada-370-xp.c
-index 9e630f2..3c2b89d 100644
---- a/drivers/irqchip/irq-armada-370-xp.c
-+++ b/drivers/irqchip/irq-armada-370-xp.c
-@@ -26,6 +26,7 @@
- #include <linux/of_pci.h>
- #include <linux/irqdomain.h>
- #include <linux/slab.h>
-+#include <linux/syscore_ops.h>
- #include <linux/msi.h>
- #include <asm/mach/arch.h>
- #include <asm/exception.h>
-@@ -66,6 +67,7 @@
- static void __iomem *per_cpu_int_base;
- static void __iomem *main_int_base;
- static struct irq_domain *armada_370_xp_mpic_domain;
-+static u32 doorbell_mask_reg;
- #ifdef CONFIG_PCI_MSI
- static struct irq_domain *armada_370_xp_msi_domain;
- static DECLARE_BITMAP(msi_used, PCI_MSI_DOORBELL_NR);
-@@ -474,6 +476,54 @@ armada_370_xp_handle_irq(struct pt_regs *regs)
- 	} while (1);
- }
- 
-+static int armada_370_xp_mpic_suspend(void)
-+{
-+	doorbell_mask_reg = readl(per_cpu_int_base +
-+				  ARMADA_370_XP_IN_DRBEL_MSK_OFFS);
-+	return 0;
-+}
-+
-+static void armada_370_xp_mpic_resume(void)
-+{
-+	int nirqs;
-+	irq_hw_number_t irq;
-+
-+	/* Re-enable interrupts */
-+	nirqs = (readl(main_int_base + ARMADA_370_XP_INT_CONTROL) >> 2) & 0x3ff;
-+	for (irq = 0; irq < nirqs; irq++) {
-+		struct irq_data *data;
-+		int virq;
-+
-+		virq = irq_linear_revmap(armada_370_xp_mpic_domain, irq);
-+		if (virq == 0)
-+			continue;
-+
-+		if (irq != ARMADA_370_XP_TIMER0_PER_CPU_IRQ)
-+			writel(irq, per_cpu_int_base +
-+			       ARMADA_370_XP_INT_CLEAR_MASK_OFFS);
-+		else
-+			writel(irq, main_int_base +
-+			       ARMADA_370_XP_INT_SET_ENABLE_OFFS);
-+
-+		data = irq_get_irq_data(virq);
-+		if (!irqd_irq_disabled(data))
-+			armada_370_xp_irq_unmask(data);
-+	}
-+
-+	/* Reconfigure doorbells for IPIs and MSIs */
-+	writel(doorbell_mask_reg,
-+	       per_cpu_int_base + ARMADA_370_XP_IN_DRBEL_MSK_OFFS);
-+	if (doorbell_mask_reg & IPI_DOORBELL_MASK)
-+		writel(0, per_cpu_int_base + ARMADA_370_XP_INT_CLEAR_MASK_OFFS);
-+	if (doorbell_mask_reg & PCI_MSI_DOORBELL_MASK)
-+		writel(1, per_cpu_int_base + ARMADA_370_XP_INT_CLEAR_MASK_OFFS);
-+}
-+
-+struct syscore_ops armada_370_xp_mpic_syscore_ops = {
-+	.suspend	= armada_370_xp_mpic_suspend,
-+	.resume		= armada_370_xp_mpic_resume,
-+};
-+
- static int __init armada_370_xp_mpic_of_init(struct device_node *node,
- 					     struct device_node *parent)
- {
-@@ -530,6 +580,8 @@ static int __init armada_370_xp_mpic_of_init(struct device_node *node,
- 					armada_370_xp_mpic_handle_cascade_irq);
- 	}
- 
-+	register_syscore_ops(&armada_370_xp_mpic_syscore_ops);
-+
- 	return 0;
- }
- 
--- 
-2.0.0
+> IIRC Andi was planning to start using FREEZE_ON_PMI to avoid the MSR
+> writes in intel_pmu_{disable,enable}_all(), this interrupt not actually
+> respecting that makes that non-trivial.
+>
+> We already use FREEZE_ON_PMI for LBR, but for now PT and LBR are
+> mutually exclusive so that's not a problem, if we ever get those working
+> together this needs to get fixed.
 
+Agreed.
+
+Regards,
+--
+Alex
