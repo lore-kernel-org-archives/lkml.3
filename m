@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511AbaJXK54 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:57:56 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50994 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887AbaJXK5y (ORCPT
+	id S932282AbaJXK65 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:58:57 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:36262 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755887AbaJXK64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:57:54 -0400
-Date: Fri, 24 Oct 2014 12:57:52 +0200
-From: Pavel Machek <pavel@denx.de>
-To: atull@opensource.altera.com
-Cc: jgunthorpe@obsidianresearch.com, hpa@zytor.com, monstr@monstr.eu,
-        michal.simek@xilinx.com, rdunlap@infradead.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
-        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
-        rubini@gnudd.com, s.trumtrar@pengutronix.de, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, mgerlach@opensource.altera.com,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
-Message-ID: <20141024105752.GC20775@amd>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com>
- <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 24 Oct 2014 06:58:56 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        patches@linaro.org, linaro-kernel@lists.linaro.org
+Subject: [PATCH v12 06/15] arm: mv78xx0: Enable DEBUG_LL_UART_8250
+Date: Fri, 24 Oct 2014 11:54:27 +0100
+Message-Id: <1414148076-12685-7-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1414148076-12685-1-git-send-email-daniel.thompson@linaro.org>
+References: <1414148076-12685-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2014-10-23 18:51:06, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> Add DTS binding documentation for the Altera FPGA bridges.
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+This defconfig already enables DEBUG_LL and by default DEBUG_LL_UART_NONE
+will be selected (but due to some back compatibility magic we eventually
+need to remove it is not actually honoured). DEBUG_LL_UART_8250 is a much
+saner default.
 
-Acked-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ arch/arm/configs/mv78xx0_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/arch/arm/configs/mv78xx0_defconfig b/arch/arm/configs/mv78xx0_defconfig
+index 0dae1c1..85d10d2 100644
+--- a/arch/arm/configs/mv78xx0_defconfig
++++ b/arch/arm/configs/mv78xx0_defconfig
+@@ -132,6 +132,7 @@ CONFIG_SYSCTL_SYSCALL_CHECK=y
+ CONFIG_DEBUG_USER=y
+ CONFIG_DEBUG_ERRORS=y
+ CONFIG_DEBUG_LL=y
++CONFIG_DEBUG_LL_UART_8250=y
+ CONFIG_CRYPTO_CBC=m
+ CONFIG_CRYPTO_ECB=m
+ CONFIG_CRYPTO_PCBC=m
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.3
+
