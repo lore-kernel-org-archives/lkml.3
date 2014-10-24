@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756125AbaJXLHQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 07:07:16 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:14758 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755320AbaJXLHM (ORCPT
+	id S1756175AbaJXLH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 07:07:28 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:62160 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320AbaJXLHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 07:07:12 -0400
-X-AuditID: cbfee68f-f791c6d000004834-15-544a32ded76f
+	Fri, 24 Oct 2014 07:07:18 -0400
+X-AuditID: cbfee691-f79b86d000004a5a-d3-544a32e08484
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: s.nawrocki@samsung.com, tomasz.figa@gmail.com
 Cc: kgene.kim@samsung.com, sw0312.kim@samsung.com, kyungmin.park@samsung.com,
         inki.dae@samsung.com, geunsik.lim@samsung.com, cw00.choi@samsung.com,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 0/2] clk: samsung: Add clock controller driver for Exynos4415
- SoC
-Date: Fri, 24 Oct 2014 20:07:06 +0900
-Message-id: <1414148828-23719-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv2 2/2] clk: samsung: Document binding for Exynos4415 clock
+ controller
+Date: Fri, 24 Oct 2014 20:07:08 +0900
+Message-id: <1414148828-23719-3-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsWyRsSkUPe+kVeIwbomRovrX56zWvyZ0Mpm
-	Men+BBaL3gVX2SzONr1ht7i8aw6bxYzz+5gsDr9pZ7WYMfklm8WqXX8YHbg8ds66y+7Rt2UV
-	o8fnTXIBzFFcNimpOZllqUX6dglcGdcX7WUsaOWoOHyFtYFxN1sXIyeHhICJxMcLf5ggbDGJ
-	C/fWg8WFBJYyShxdFAtTc3BjI3sXIxdQfDqjROfWzawQThOTxNvO24wgVWwCWhL7X9wA6ubg
-	EBEwlLh5SAmkhlngOqPEzFM9YFOFBUIljqz4xAJiswioSjyeegGsnlfAVeL3GmaIZQoSy5bP
-	BJsvIdDMLjF3NsgykHoBiW+TD7GA1EsIyEpsOgBVLylxcMUNlgmMggsYGVYxiqYWJBcUJ6UX
-	GesVJ+YWl+al6yXn525iBAbv6X/P+ncw3j1gfYhRgINRiYf3xgzPECHWxLLiytxDjKZAGyYy
-	S4km5wNjJK8k3tDYzMjC1MTU2Mjc0kxJnHeh1M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxS
-	DYwb/P0iStdxGW06dDz5/uLjYS8ms3TP+vTNrFlrUbDs+yDHC4yrmSKv80y40rnUI6FL/xQr
-	m3HQJV0vvmuivF/7dhvK2XhPTHt1uuhjo98ls2v1azdtLl+rfbKbWS9ww+SqW9v9vFiTOx/8
-	+zhDdHt099xNzl/+pT6b5/x9jZyPk/W7wFtnjk9SYinOSDTUYi4qTgQAv3sqsFkCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t9jQd17Rl4hBqfbzSyuf3nOavFnQiub
-	xaT7E1gsehdcZbM42/SG3eLyrjlsFjPO72OyOPymndVixuSXbBardv1hdODy2DnrLrtH35ZV
-	jB6fN8kFMEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+ATo
-	umXmAB2jpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYcy4vmgvY0ErR8Xh
-	K6wNjLvZuhg5OSQETCQObmxkh7DFJC7cWw8U5+IQEpjOKNG5dTMrhNPEJPG28zYjSBWbgJbE
-	/hc3gKo4OEQEDCVuHlICqWEWuM4oMfNUD9hUYYFQiSMrPrGA2CwCqhKPp14Aq+cVcJX4vYYZ
-	YpmCxLLlM1knMHIvYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcHc+kdzCuarA4xCjA
-	wajEw3tjhmeIEGtiWXFl7iFGCQ5mJRHel2peIUK8KYmVValF+fFFpTmpxYcYTYGWT2SWEk3O
-	B0ZuXkm8obGJmZGlkbmhhZGxuZI478FW60AhgfTEktTs1NSC1CKYPiYOTqkGRgk3QbmeP8Fz
-	r4Ym24X88Pxf7mU3L/DnjWQZiVMTe1JZ5apvvditHBLPEFh49IqBj22sw/Kvs+f2L5cQ21Em
-	53e0g5PboPzVox+HuXvb8z/fPya1rNzo9lORuicPlb4v+RnFv2nzRZ3G2f5PPrMIqd0wVulv
-	MsxYkTR/x8Z5+ucuZ7R/PXKNWYmlOCPRUIu5qDgRALOSKYukAgAA
+In-reply-to: <1414148828-23719-1-git-send-email-cw00.choi@samsung.com>
+References: <1414148828-23719-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsWyRsSkQPeBkVeIwfUbAhbXvzxntfgzoZXN
+	YtL9CSwWvQuuslmcbXrDbnF51xw2ixnn9zFZHH7TzmoxY/JLNotVu/4wOnB57Jx1l92jb8sq
+	Ro/Pm+QCmKO4bFJSczLLUov07RK4MibdUS9oE6g41PaUrYHxAG8XIyeHhICJRMfDJ2wQtpjE
+	hXvrwWwhgaWMEtM22nYxcoDVfPmW0MXIBRSezijxb1ofG4TTxCTxcPNcVpAGNgEtif0vbrCB
+	NIgIGErcPKQEUsMscJ1RYuapHrChwgLhEldXd4LZLAKqEgf3vAbr5RVwlWi8OYkd4ggFiWXL
+	Z4LFOQXcJE4sesIIMlMIqObVchGQmRIC89glZu/+ww4xR0Di2+RDLBCHykpsOsAMMUZS4uCK
+	GywTGIUXMDKsYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAgM9dP/nk3cwXj/gPUhRgEORiUe
+	3hszPEOEWBPLiitzDzGaAm2YyCwlmpwPjKi8knhDYzMjC1MTU2Mjc0szJXFeHemfwUIC6Ykl
+	qdmpqQWpRfFFpTmpxYcYmTg4pRoY3ecExfjK2h4oKFzz0L/uR9WO51nlagx3DTfO0RHsSg8+
+	cbF89fU32o/ncnjms96cPWcF41qPuDzWxfqfPeNfT+9527+XzXbNiqvBBjPXdYvECz34OLvX
+	j/VXltTqHzvnmBo5F6c8/q+0VT677UKSaaot34VtoT9E5hivKxFSrWy9/D1dZEa5EktxRqKh
+	FnNRcSIAQgbFMXACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBIsWRmVeSWpSXmKPExsVy+t9jQd0HRl4hBms+clhc//Kc1eLPhFY2
+	i0n3J7BY9C64ymZxtukNu8XlXXPYLGac38dkcfhNO6vFjMkv2SxW7frD6MDlsXPWXXaPvi2r
+	GD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQ
+	dcvMATpGSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5gx6Y56QZtAxaG2
+	p2wNjAd4uxg5OCQETCS+fEvoYuQEMsUkLtxbz9bFyMUhJDCdUeLftD4op4lJ4uHmuawgVWwC
+	WhL7X9xgA2kWETCUuHlICaSGWeA6o8TMUz1sIDXCAuESV1d3gtksAqoSB/e8BuvlFXCVaLw5
+	iR1im4LEsuUzweKcAm4SJxY9YQSZKQRU82q5yARG3gWMDKsYRVMLkguKk9JzjfSKE3OLS/PS
+	9ZLzczcxgmPpmfQOxlUNFocYBTgYlXh4b8zwDBFiTSwrrsw9xCjBwawkwvtSzStEiDclsbIq
+	tSg/vqg0J7X4EKMp0FETmaVEk/OBcZ5XEm9obGJmZGlkbmhhZGyuJM57sNU6UEggPbEkNTs1
+	tSC1CKaPiYNTqoHR9Ukt67Vv00Ua7apt5004VcTd4iQo2+22Mko1dJv94njV8Ft9zNXCmTr3
+	a+p2yLqFCLHMa1y9gCF9VyXn/Pz70xzvl4npmO45bLMzbR5zSstF7eQ909k/6anN2XFAPDVf
+	/btj6lM2YeEJ3R7XG0M2MhxonpH7oJih7zpD//KWPned91q1ukosxRmJhlrMRcWJAGyJNqu7	AgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -48,28 +51,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds new clock controller device driver for Exynos4415 SoC.
+This patch adds DT binding documentation for Exynos4415 SoC system
+clock controllers.
 
-Changes from v1:
-- Separate only clock patches from Exynos4415 patchset[1]
- [1] [PATCH 0/5] Support new Exynos4415 SoC based on Cortex-A9 quad cores
- : https://lkml.org/lkml/2014/10/19/253
-
-- Fix string issue on documentation file of Exynos4415 clock controller
-
-Chanwoo Choi (2):
-  clk: samsung: exynos4415: Add clocks using common clock framework
-  clk: samsung: Document binding for Exynos4415 clock controller
-
- .../devicetree/bindings/clock/exynos4415-clock.txt |   38 +
- drivers/clk/samsung/Makefile                       |    1 +
- drivers/clk/samsung/clk-exynos4415.c               | 1133 ++++++++++++++++++++
- include/dt-bindings/clock/exynos4415.h             |  360 +++++++
- 4 files changed, 1532 insertions(+)
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ .../devicetree/bindings/clock/exynos4415-clock.txt | 38 ++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/clock/exynos4415-clock.txt
- create mode 100644 drivers/clk/samsung/clk-exynos4415.c
- create mode 100644 include/dt-bindings/clock/exynos4415.h
 
+diff --git a/Documentation/devicetree/bindings/clock/exynos4415-clock.txt b/Documentation/devicetree/bindings/clock/exynos4415-clock.txt
+new file mode 100644
+index 0000000..847d98b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/exynos4415-clock.txt
+@@ -0,0 +1,38 @@
++* Samsung Exynos4415 Clock Controller
++
++The Exynos4415 clock controller generates and supplies clock to various
++consumer devices within the Exynos4415 SoC.
++
++Required properties:
++
++- compatible: should be one of the following:
++  - "samsung,exynos4415-cmu" - for the main system clocks controller
++    (CMU_LEFTBUS, CMU_RIGHTBUS, CMU_TOP, CMU_CPU clock domains).
++  - "samsung,exynos4415-cmu-dmc" - for the Exynos4415 SoC DRAM Memory
++    Controller (DMC) domain clock controller.
++
++- reg: physical base address of the controller and length of memory mapped
++  region.
++
++- #clock-cells: should be 1.
++
++Each clock is assigned an identifier and client nodes can use this identifier
++to specify the clock which they consume.
++
++All available clocks are defined as preprocessor macros in
++dt-bindings/clock/exynos4415.h header and can be used in device
++tree sources.
++
++Example 1: An example of a clock controller node is listed below.
++
++	cmu: clock-controller@10030000 {
++		compatible = "samsung,exynos4415-cmu";
++		reg = <0x10030000 0x18000>;
++		#clock-cells = <1>;
++	};
++
++	cmu-dmc: clock-controller@105C0000 {
++		compatible = "samsung,exynos4415-cmu-dmc";
++		reg = <0x105C0000 0x3000>;
++		#clock-cells = <1>;
++	};
 -- 
 1.8.5.5
 
