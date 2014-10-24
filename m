@@ -1,77 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751086AbaJXEAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 00:00:21 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:50344 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750699AbaJXEAU (ORCPT
+	id S1751825AbaJXECP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 00:02:15 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33790 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaJXECN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 00:00:20 -0400
-X-IronPort-AV: E=Sophos;i="5.04,778,1406563200"; 
-   d="scan'208";a="38468679"
-Message-ID: <5449C8A6.9080403@cn.fujitsu.com>
-Date: Fri, 24 Oct 2014 11:33:58 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Fri, 24 Oct 2014 00:02:13 -0400
+From: "billbonaparte" <programme110@gmail.com>
+To: "'Pablo Neira Ayuso'" <pablo@netfilter.org>,
+        "'Patrick McHardy'" <kaber@trash.net>, <kadlec@blackhole.kfki.hu>,
+        <davem@davemloft.net>
+Cc: "Netfilter Developer Mailing List" <netfilter-devel@vger.kernel.org>,
+        <coreteam@netfilter.org>, <linux-kernel@vger.kernel.org>
+Subject: netfilter: NAT: do the optimization for getting curr_tuple in function nf_nat_setup_info
+Date: Fri, 24 Oct 2014 12:01:42 +0800
+Message-ID: <013f01cfef3f$3d4b31f0$b7e195d0$@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: <torvalds@linux-foundation.org>, <paulmck@linux.vnet.ibm.com>,
-        <tglx@linutronix.de>, <akpm@linux-foundation.org>, <riel@redhat.com>,
-        <mgorman@suse.de>, <oleg@redhat.com>, <mingo@redhat.com>,
-        <minchan@kernel.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <viro@zeniv.linux.org.uk>, <dave@stgolabs.net>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [RFC][PATCH 4/6] SRCU free VMAs
-References: <20141020215633.717315139@infradead.org> <20141020222841.419869904@infradead.org> <5448D515.90006@cn.fujitsu.com> <20141023110346.GP21513@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141023110346.GP21513@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_0140_01CFEF82.4B6F0E30"
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac/vOO1E2r2QSDTHQfyxqg7rBXHWyw==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/23/2014 07:03 PM, Peter Zijlstra wrote:
-> On Thu, Oct 23, 2014 at 06:14:45PM +0800, Lai Jiangshan wrote:
->>
->>>  
->>> +struct vm_area_struct *find_vma_srcu(struct mm_struct *mm, unsigned long addr)
->>> +{
->>> +	struct vm_area_struct *vma;
->>> +	unsigned int seq;
->>> +
->>> +	WARN_ON_ONCE(!srcu_read_lock_held(&vma_srcu));
->>> +
->>> +	do {
->>> +		seq = read_seqbegin(&mm->mm_seq);
->>> +		vma = __find_vma(mm, addr);
->>
->> will the __find_vma() loops for ever due to the rotations in the RBtree?
-> 
-> No, a rotation takes a tree and generates a tree, furthermore the
-> rotation has a fairly strict fwd progress guarantee seeing how its now
-> done with preemption disabled.
+This is a multipart message in MIME format.
 
-I can't get the magic.
+------=_NextPart_000_0140_01CFEF82.4B6F0E30
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 
-__find_vma is visiting vma_a,
-vma_a is rotated to near the top due to multiple updates to the mm.
-__find_vma is visiting down to near the bottom, vma_b.
-now vma_b is rotated up to near the top again.
-__find_vma is visiting down to near the bottom, vma_c.
-now vma_c is rotated up to near the top again.
+Hi all:
+	In function nf_nat_setup_info, we need to get the current tuple
+which is supposed to send to destination. 
+    If we haven't done any NAT (SNAT or DNAT) for the tuple, then the
+current tuple is equal to original tuple,
+    otherwise, we should get current tuple by invoking
+nf_ct_invert_tuplepr(curr_tuple, &ct->tuplehash[IP_CT_DIR_REPLY].tuple);
+    like the existing comment says:
+    /* What we've got will look like inverse of reply. Normally
+	 * this is what is in the conntrack, except for prior
+	 * manipulations (future optimization: if num_manips == 0,
+	 * orig_tp = ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple)
+	 */
+	nf_ct_invert_tuplepr(&curr_tuple, 
+			     &ct->tuplehash[IP_CT_DIR_REPLY].tuple);
+	
+	So, since it is so, why don't we do the optimization for getting
+current tuple ?
+   
+   As mentioned above, if we have not done DNAT for the tuple, then the
+current tuple is equal to original tuple. 
+   So I add the optimization as following:
 
-...
++	if (!(ct->status & IPS_DST_NAT))  /* we do the optimization, as
+mentioned above */
++		curr_tuple = &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple;
++	else 
++		nf_ct_invert_tuplepr(curr_tuple,
+ 			     &ct->tuplehash[IP_CT_DIR_REPLY].tuple);
+	
+	the attachment is the detailed diff. 
 
+------=_NextPart_000_0140_01CFEF82.4B6F0E30
+Content-Type: application/octet-stream;
+	name="do the optimization for getting curr_tuple in function nf_nat_setup_info.diff"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment;
+	filename="do the optimization for getting curr_tuple in function nf_nat_setup_info.diff"
 
+Index: nf_nat_core.c=0A=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=0A=
+--- nf_nat_core.c	(mainline version)=0A=
++++ nf_nat_core.c	(working copy)=0A=
+@@ -358,7 +358,8 @@=0A=
+ 		  enum nf_nat_manip_type maniptype)=0A=
+ {=0A=
+ 	struct net *net =3D nf_ct_net(ct);=0A=
+-	struct nf_conntrack_tuple curr_tuple, new_tuple;=0A=
++	struct nf_conntrack_tuple orig_tuple, new_tuple;=0A=
++	struct nf_conntrack_tuple *curr_tuple =3D &orig_tuple;=0A=
+ 	struct nf_conn_nat *nat;=0A=
+ =0A=
+ 	/* nat helper or nfctnetlink also setup binding */=0A=
+@@ -378,14 +379,18 @@=0A=
+ 	/* What we've got will look like inverse of reply. Normally=0A=
+ 	   this is what is in the conntrack, except for prior=0A=
+ 	   manipulations (future optimization: if num_manips =3D=3D 0,=0A=
+-	   orig_tp =3D=0A=
+-	   conntrack->tuplehash[IP_CT_DIR_ORIGINAL].tuple) */=0A=
+-	nf_ct_invert_tuplepr(&curr_tuple,=0A=
++	   curr_tp =3D orig_tp =3D=0A=
++	   conntrack->tuplehash[IP_CT_DIR_ORIGINAL].tuple) =0A=
++	*/=0A=
++	if (!(ct->status & IPS_DST_NAT)) /* we do the optimization, as =
+mentioned above */=0A=
++		curr_tuple =3D &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple;=0A=
++	else =0A=
++		nf_ct_invert_tuplepr(curr_tuple,=0A=
+ 			     &ct->tuplehash[IP_CT_DIR_REPLY].tuple);=0A=
+ =0A=
+-	get_unique_tuple(&new_tuple, &curr_tuple, ranges, ct, maniptype);=0A=
++	get_unique_tuple(&new_tuple, curr_tuple, ranges, ct, maniptype);=0A=
+ =0A=
+-	if (!nf_ct_tuple_equal(&new_tuple, &curr_tuple)) {=0A=
++	if (!nf_ct_tuple_equal(&new_tuple, curr_tuple)) {=0A=
+ 		struct nf_conntrack_tuple reply;=0A=
+ =0A=
+ 		/* Alter conntrack table so will recognize replies. */=0A=
+@@ -405,19 +410,20 @@=0A=
+ 		srchash =3D nat_hash_by_src(net, 0,=0A=
+ 				      &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple);=0A=
+ 		spin_lock_bh(&nf_nat_lock);=0A=
 
-
-> 
-> Therefore, even if we're in a node that's being rotated up, we can only
-> 'loop' for as long as it takes for the new pointer stores to become
-> visible on our CPU.
-> 
-> Thus we have a tree descent termination guarantee.
-> .
-> 
+------=_NextPart_000_0140_01CFEF82.4B6F0E30--
 
