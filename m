@@ -1,117 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686AbaJXNUD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:20:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756401AbaJXNT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:19:59 -0400
-Date: Fri, 24 Oct 2014 15:19:55 +0200
-From: Karel Zak <kzak@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: [ANNOUNCE] util-linux v2.25.2
-Message-ID: <20141024131955.GE10134@x2.net.home>
+	id S1756668AbaJXNVP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:21:15 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55971 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756505AbaJXNVO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 09:21:14 -0400
+Message-ID: <544A524A.3090305@arm.com>
+Date: Fri, 24 Oct 2014 14:21:14 +0100
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+To: Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>
+CC: "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "vincent@legout.info" <vincent@legout.info>
+Subject: Re: [PATCH 0/4] Fix various bits of AC and PI for SCHED_DEADLINE
+References: <1414142198-18552-1-git-send-email-juri.lelli@arm.com> <544A3949.30305@bmw-carit.de>
+In-Reply-To: <544A3949.30305@bmw-carit.de>
+X-OriginalArrivalTime: 24 Oct 2014 13:21:11.0701 (UTC) FILETIME=[61303450:01CFEF8D]
+X-MC-Unique: 114102414211110001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The util-linux stable release v2.25.2 is available at
- 
-   ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.25
-    
-Feedback and bug reports, as always, are welcomed.
-     
-       Karel
+Hi Daniel,
 
+On 24/10/14 12:34, Daniel Wagner wrote:
+> Hi everyone,
+> 
+> On 10/24/2014 11:16 AM, Juri Lelli wrote:
+>> Hi all,
+>>
+>> this is basically a resend of 4 patches fixing problems around AC
+>> and PI related to SCHED_DEADLINE. You can find the full story here:
+>>
+>>  - https://lkml.org/lkml/2014/9/19/134
+>>  - https://lkml.org/lkml/2014/9/24/493
+>>
+>> First two patches fix AC. They are the same as the previous version,
+>> plus aligning to commit f10e00f4bf36 ("sched/dl: Use dl_bw_of() under
+>> rcu_read_lock_sched()"). Last two fix PI.
+>>
+>> Thanks a lot again to Daniel for spending time fixing and testing
+>> the PI stuff! And to Peter and Vincent for reviews and comments.
+> 
+> Thanks for the patches!
+> 
+>> Best Regards,
+>>
+>> - Juri
+>>
+>> Juri Lelli (4):
+>>   sched/deadline: fix bandwidth check/update when migrating tasks
+>>     between exclusive cpusets
+>>   sched/deadline: ensure that updates to exclusive cpusets don't break
+>>     AC
+>>   sched/deadline: don't replenish from a !SCHED_DEADLINE entity
+>>   sched/deadline: fix races between rt_mutex_setprio and dl_task_timer
+> 
+> I have tested the whole patch set with my test program and everything
+> seems to work fine. If you like you can add a
+> 
 
-Util-linux 2.25.2 Release Notes
-===============================
+Cool! Thanks a lot.
 
-agetty:
-   - fixing FTBFS on !linux (Debian util-linux 2.20.1-1.2)  [Christoph Egger]
-blkdiscard:
-   - fix err->errx()  [Karel Zak]
-   - fix underflow when offset is greater than device size  [Raphael S. Carvalho]
-blkid:
-   - remove extra trailing spaces in output  [Karel Zak]
-build-sys:
-   - build libmount everywhere  [Andreas Henriksson]
-   - check for libtoolize rather than libtool  [Helmut Grohne]
-   - use -lutil for BSD only  [Karel Zak]
-cal:
-   - `color` option documentation should match actual behaviour  [Eugene Yunak]
-cfdisk:
-   - don't modify ncurses LINES and COLS  [Karel Zak]
-docs:
-   - fix mess in Release notes  [Karel Zak]
-   - remove obsolete READMEs for (s)fdisk  [Karel Zak]
-   - update AUTHORS file  [Karel Zak]
-fdisk:
-   - add section about sizes to the man page  [Karel Zak]
-flock:
-   - zero timeout is valid  [Karel Zak]
-hexdump:
-   - remove deprecation message  [Sami Kerola]
-hwclock:
-   - use fabs() instead abs() when argument is double  [Sami Kerola]
-ipcrm:
-   - add hacks to avoid FTBFS  [Andreas Henriksson]
-ipcs:
-   - remaining kFreeBSD hackery for building.  [Aurelien Jarno]
-last:
-   - make is_phantom() when kernel config does not include audit support  [Sami Kerola]
-lib/blkdev:
-   - report correct disk size on GNU/kFreeBSD. Thanks Tuco.  [Robert Millan]
-libblkid:
-   - zeroize errno on blkid_probe_get_buffer() success  [Karel Zak]
-libfdisk:
-   - fix add_logical() assert  [Karel Zak]
-   - make yes/no dialogs more robust  [Karel Zak]
-libmount:
-   - don't return root if path contains // or ending /  [Søren Holm]
-   - fix mnt_is_readonly() #ifdef  [Karel Zak]
-   - hide details about failed search in fstab/mtab  [Karel Zak]
-   - only include context on linux  [Andreas Henriksson]
-   - only invoke loopcxt on linux  [Andreas Henriksson]
-linfdisk:
-   - cleanup fsync usage  [Karel Zak]
-logger:
-   - gettimeofday needs <sys/time.h>  [Andreas Henriksson]
-losetup:
-   - improve man page -D docs  [Karel Zak]
-lsblk:
-   - add notes about udev to the man page  [Karel Zak]
-lscpu:
-   - fix cppcheck warnings  [Boris Egorov]
-lslogins:
-   - cleanup after error [coverity scan]  [Karel Zak]
-   - free after error [coverity scan]  [Karel Zak]
-mkfs.minix:
-   - fix couple compiler warnings  [Sami Kerola]
-mount:
-   - don't ignore mtab for --bind -o remount  [Karel Zak]
-   - improve --move docs  [Karel Zak]
-po:
-   - merge changes  [Karel Zak]
-   - update es.po (from translationproject.org)  [Antonio Ceballos Roa]
-script:
-   - may be hangs  [Andreas Henriksson]
-setterm:
-   - fix dubious one-bit signed bitfield [smatch scan]  [Sami Kerola]
-su:
-   - print proper core dump message when killed  [pcpa]
-terminal-colors.d:
-   - fix filter by name  [Karel Zak]
-tests:
-   - fix the ipcs test for shmall being too big to show  [Karel Zak]
-umount:
-   - read mountinfo if --detach-loop given  [Robert Schiele]
-whereis:
-   - cleanup debug stuff, fix argv[] usage  [Karel Zak]
-   - reset search mask more carefully  [Karel Zak]
+> Tested-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+> 
+
+Peter, maybe you can add it while applying them?
+
+Thanks,
+
+- Juri
+
