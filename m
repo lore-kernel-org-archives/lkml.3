@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759AbaJXWTy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 18:19:54 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38874 "EHLO e9.ny.us.ibm.com"
+	id S1755743AbaJXWYc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 18:24:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48652 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754557AbaJXWTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 18:19:52 -0400
-Date: Fri, 24 Oct 2014 15:16:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jay Vosburgh <jay.vosburgh@canonical.com>
-Cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        mroos@linux.ee, tj@kernel.org
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141024221602.GB4977@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141024154006.GP4977@linux.vnet.ibm.com>
- <20141024162943.GA16621@declera.com>
- <20141024165454.GS4977@linux.vnet.ibm.com>
- <20141024170931.GA21849@declera.com>
- <20141024172009.GV4977@linux.vnet.ibm.com>
- <20141024173526.GA26058@declera.com>
- <20141024183226.GW4977@linux.vnet.ibm.com>
- <20141024212557.GA15537@declera.com>
- <20141024214927.GA4977@linux.vnet.ibm.com>
- <8451.1414188124@famine>
+	id S1751397AbaJXWYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 18:24:30 -0400
+Message-ID: <544AD16C.40904@zytor.com>
+Date: Fri, 24 Oct 2014 15:23:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8451.1414188124@famine>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102422-0033-0000-0000-000000D67BF5
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Dmitry Vyukov <dvyukov@google.com>
+CC: Sasha Levin <sasha.levin@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Michal Marek <mmarek@suse.cz>, "x86@kernel.org" <x86@kernel.org>,
+        linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: drivers: random: Shift out-of-bounds in _mix_pool_bytes
+References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>	<5444EBFA.5030103@samsung.com>	<20141020124929.GA23177@thunk.org>	<54451501.2070700@samsung.com>	<5445179A.4080804@redhat.com>	<20141020141635.GA4499@thunk.org>	<20141024100108.GF12706@worktop.programming.kicks-ass.net>	<544A52D7.6000202@oracle.com>	<20141024134205.GB21513@worktop.programming.kicks-ass.net>	<544A6A6B.3040602@oracle.com>	<CACT4Y+boMTKpTovCWYQa6baSAWjagCN=mwXBZGAjbobzG80oWA@mail.gmail.com> <20141024220502.54cac82d@alan.etchedpixels.co.uk>
+In-Reply-To: <20141024220502.54cac82d@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 03:02:04PM -0700, Jay Vosburgh wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On 10/24/2014 02:05 PM, One Thousand Gnomes wrote:
+> On Fri, 24 Oct 2014 19:10:49 +0400
+> Dmitry Vyukov <dvyukov@google.com> wrote:
 > 
-> >On Sat, Oct 25, 2014 at 12:25:57AM +0300, Yanko Kaneti wrote:
-> >> On Fri-10/24/14-2014 11:32, Paul E. McKenney wrote:
-> >> > On Fri, Oct 24, 2014 at 08:35:26PM +0300, Yanko Kaneti wrote:
-> >> > > On Fri-10/24/14-2014 10:20, Paul E. McKenney wrote:
-> >
-> >[ . . . ]
-> >
-> >> > > > Well, if you are feeling aggressive, give the following patch a spin.
-> >> > > > I am doing sanity tests on it in the meantime.
-> >> > > 
-> >> > > Doesn't seem to make a difference here
-> >> > 
-> >> > OK, inspection isn't cutting it, so time for tracing.  Does the system
-> >> > respond to user input?  If so, please enable rcu:rcu_barrier ftrace before
-> >> > the problem occurs, then dump the trace buffer after the problem occurs.
-> >> 
-> >> Sorry for being unresposive here, but I know next to nothing about tracing
-> >> or most things about the kernel, so I have some cathing up to do.
-> >> 
-> >> In the meantime some layman observations while I tried to find what exactly
-> >> triggers the problem.
-> >> - Even in runlevel 1 I can reliably trigger the problem by starting libvirtd
-> >> - libvirtd seems to be very active in using all sorts of kernel facilities
-> >>   that are modules on fedora so it seems to cause many simultaneous kworker 
-> >>   calls to modprobe
-> >> - there are 8 kworker/u16 from 0 to 7
-> >> - one of these kworkers always deadlocks, while there appear to be two
-> >>   kworker/u16:6 - the seventh
-> >
-> >Adding Tejun on CC in case this duplication of kworker/u16:6 is important.
-> >
-> >>   6 vs 8 as in 6 rcuos where before they were always 8
-> >> 
-> >> Just observations from someone who still doesn't know what the u16
-> >> kworkers are..
-> >
-> >Could you please run the following diagnostic patch?  This will help
-> >me see if I have managed to miswire the rcuo kthreads.  It should
-> >print some information at task-hang time.
+>> On Fri, Oct 24, 2014 at 7:04 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>> On 10/24/2014 09:42 AM, Peter Zijlstra wrote:
+>>>> On Fri, Oct 24, 2014 at 09:23:35AM -0400, Sasha Levin wrote:
+>>>>>
+>>>>> i >> 32 may happen to be "i", but is there anything that prevents the compiler
+>>>>> from returning, let's say, 42?
+>>>>
+>>>> Not really, although gcc seems to opt for the 'sane' option and emit the
+>>>> instruction and let the arch figure out how to deal with it. Hence the
+>>>> 'fun' difference between x86 and ARM.
+>>>
+>>> It's interesting how many different views on undefined behaviour there are between
+>>> kernel folks.
+>>>
+>>> Everything between Ted Ts'o saying that GCC can launch nethack on oversized shifts,
+>>> to DaveM saying he will file a GCC bug if the behaviour isn't sane w.r.t to memcpy().
+>>
+>> One of the benefits of fixing such issues (or not letting them into
+>> code in the first place) is just saving numerous hours of top-notch
+>> engineers spent on disputes like this.
 > 
-> 	I can give this a spin after the ftrace (now that I've got
-> CONFIG_RCU_TRACE turned on).
+> Also it means when someone quietly changes the default behaviour next
+> year in the compiler they won't spend months trying to work out why it
+> broke.
 > 
-> 	I've got an ftrace capture from unmodified -net, it looks like
-> this:
+> gcc has one behaviour but people also try and build the kernel with icc
+> and with llvm. In addition in some cases you risk the compiler simply
+> generating an undefined in hardware operation and the hardware behaviour
+> changing. If x >> 32 is undefined then generating "load Y with the
+> shift, shift X left by Y" is fine. What happens in future silicon - who
+> knows.
 > 
->     ovs-vswitchd-902   [000] ....   471.778441: rcu_barrier: rcu_sched Begin cpu -1 remaining 0 # 0
->     ovs-vswitchd-902   [000] ....   471.778452: rcu_barrier: rcu_sched Check cpu -1 remaining 0 # 0
->     ovs-vswitchd-902   [000] ....   471.778452: rcu_barrier: rcu_sched Inc1 cpu -1 remaining 0 # 1
->     ovs-vswitchd-902   [000] ....   471.778453: rcu_barrier: rcu_sched OnlineNoCB cpu 0 remaining 1 # 1
->     ovs-vswitchd-902   [000] ....   471.778453: rcu_barrier: rcu_sched OnlineNoCB cpu 1 remaining 2 # 1
->     ovs-vswitchd-902   [000] ....   471.778453: rcu_barrier: rcu_sched OnlineNoCB cpu 2 remaining 3 # 1
->     ovs-vswitchd-902   [000] ....   471.778454: rcu_barrier: rcu_sched OnlineNoCB cpu 3 remaining 4 # 1
-
-OK, so it looks like your system has four CPUs, and rcu_barrier() placed
-callbacks on them all.
-
->     ovs-vswitchd-902   [000] ....   471.778454: rcu_barrier: rcu_sched Inc2 cpu -1 remaining 4 # 2
-
-The above removes the extra count used to avoid races between posting new
-callbacks and completion of previously posted callbacks.
-
->          rcuos/0-9     [000] ..s.   471.793150: rcu_barrier: rcu_sched CB cpu -1 remaining 3 # 2
->          rcuos/1-18    [001] ..s.   471.793308: rcu_barrier: rcu_sched CB cpu -1 remaining 2 # 2
-
-Two of the four callbacks fired, but the other two appear to be AWOL.
-And rcu_barrier() won't return until they all fire.
-
-> 	I let it sit through several "hung task" cycles but that was all
-> there was for rcu:rcu_barrier.
+> Most of the kernel is already very careful about the >> 32 problem.
 > 
-> 	I should have ftrace with the patch as soon as the kernel is
-> done building, then I can try the below patch (I'll start it building
-> now).
 
-Sounds very good, looking forward to hearing of the results.
+The real question is if we can rely on the gcc-ism:
 
-							Thanx, Paul
+	(x >> (S-y)) | (x << y)
+
+... where S is the number of bits to indicate a rotate.
+
+This is technically a gcc extension to the C language.
+
+	-hpa
+
 
