@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854AbaJXR74 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:59:56 -0400
-Received: from tex.lwn.net ([70.33.254.29]:59241 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140AbaJXR7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:59:55 -0400
-Date: Fri, 24 Oct 2014 13:59:52 -0400
-From: Jonathan Corbet <corbet@lwn.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Masanari Iida <standby24x7@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Documenation: kmemleak: Add an explanation about
- CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF=y case.
-Message-ID: <20141024135952.6ce5b03a@lwn.net>
-In-Reply-To: <20141024155220.GF20534@e104818-lin.cambridge.arm.com>
-References: <1414153500-29150-1-git-send-email-standby24x7@gmail.com>
-	<20141024155220.GF20534@e104818-lin.cambridge.arm.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1756973AbaJXSDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 14:03:37 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:42746 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756750AbaJXSDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 14:03:36 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        Tero Kristo <t-kristo@ti.com>
+Subject: Re: [PATCH] ARM: OMAP4+: PM: Program CPU logic power state
+References: <1413923076-26063-1-git-send-email-nm@ti.com>
+Date: Fri, 24 Oct 2014 11:03:31 -0700
+In-Reply-To: <1413923076-26063-1-git-send-email-nm@ti.com> (Nishanth Menon's
+	message of "Tue, 21 Oct 2014 15:24:36 -0500")
+Message-ID: <7h61f98hvw.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014 16:52:20 +0100
-Catalin Marinas <catalin.marinas@arm.com> wrote:
+Nishanth Menon <nm@ti.com> writes:
 
-> Both patches look fine to me.
-> 
-> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+> CPU logic power state is never programmed in either the initialization
+> or the suspend/resume logic, instead, we depend on mpuss to program this
+> properly. However, this leaves CPU logic power state indeterminate and
+> most probably in reset configuration (If bootloader or other similar
+> software have'nt monkeyed with the register). This can make powerstate=
+> RET be either programmed for CSWR (logic=ret) or OSWR(logic = OFF) and
+> in OSWR, there can be context loss when the code does not expect it.
+>
+> To prevent all these confusions, just support clearly ON, INA, CSWR,
+> OFF which is the intent of the existing code by explicitly programming
+> logic state.
+>
+> NOTE: since this is a hot path (using in cpuidle), the exit path just
+> programs powerstate (logic state is immaterial when powerstate is ON).
+>
+> Without doing this, we end up with lockups when CPUs enter OSWR and
+> multiple blocks loose context, when we expect them to hit CSWR.
+>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
 
-Both applied, thanks.
-
-jon
+Acked-by: Kevin Hilman <khilman@linaro.org>
