@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932996AbaJXPSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:18:18 -0400
-Received: from mail-bn1bon0085.outbound.protection.outlook.com ([157.56.111.85]:14211
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751391AbaJXPSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:18:14 -0400
-Date: Fri, 24 Oct 2014 10:11:26 -0500
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@atx-linux-37
-To: Pavel Machek <pavel@denx.de>
-CC: <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
-        <michal.simek@xilinx.com>, <rdunlap@infradead.org>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <pantelis.antoniou@konsulko.com>,
-        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
-        <iws@ovro.caltech.edu>, <linux-doc@vger.kernel.org>,
-        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
-        <s.trumtrar@pengutronix.de>, <jason@lakedaemon.net>,
-        <kyle.teske@ni.com>, <nico@linaro.org>, <balbi@ti.com>,
-        <m.chehab@samsung.com>, <davidb@codeaurora.org>, <rob@landley.net>,
-        <davem@davemloft.net>, <cesarb@cesarb.net>, <sameo@linux.intel.com>,
-        <akpm@linux-foundation.org>, <linus.walleij@linaro.org>,
-        <mgerlach@opensource.altera.com>, <delicious.quinoa@gmail.com>,
-        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v2 1/3] add sysfs document for fpga bridges
-In-Reply-To: <20141024105420.GB20775@amd>
-Message-ID: <alpine.DEB.2.02.1410241009010.23446@atx-linux-37>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com> <1414108267-22058-2-git-send-email-atull@opensource.altera.com> <20141024105420.GB20775@amd>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756565AbaJXPTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:19:50 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:51870 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653AbaJXPTt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 11:19:49 -0400
+Message-ID: <544A6E12.2000007@hp.com>
+Date: Fri, 24 Oct 2014 08:19:46 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: CY1PR09CA0013.namprd09.prod.outlook.com (25.160.223.23) To
- BY2PR03MB313.namprd03.prod.outlook.com (10.141.139.13)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB313;
-X-Forefront-PRVS: 0374433C81
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(24454002)(51704005)(199003)(377424004)(50944004)(189002)(19580395003)(19580405001)(15975445006)(83506001)(69596002)(20776003)(21056001)(86152002)(64706001)(86362001)(92566001)(92726001)(87976001)(77096002)(85852003)(31966008)(110136001)(102836001)(53416004)(95666004)(105586002)(81156004)(120916001)(101416001)(99396003)(97736003)(42186005)(106356001)(107046002)(46102003)(80022003)(76482002)(23726002)(122386002)(33716001)(46406003)(54356999)(50986999)(50466002)(66066001)(85306004)(4396001)(40100003)(76176999)(15202345003)(3556765001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB313;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+To: "Zhangjie (HZ)" <zhangjie14@huawei.com>, kvm@vger.kernel.org,
+        Jason Wang <jasowang@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, liuyongan@huawei.com, qinchuanyu@huawei.com
+Subject: Re: [QA-TCP] How to send tcp small packages immediately?
+References: <544A029D.3080508@huawei.com>
+In-Reply-To: <544A029D.3080508@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014, Pavel Machek wrote:
+On 10/24/2014 12:41 AM, Zhangjie (HZ) wrote:
+> Hi,
+>
+> I use netperf to test the performance of small tcp package, with TCP_NODELAY set :
+>
+> netperf -H 129.9.7.164 -l 100 -- -m 512 -D
+>
+> Among the packages I got by tcpdump, there is not only small packages, also lost of
+> big ones (skb->len=65160).
+>
+> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 65160
+> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
+> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
+> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
+> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 65160
+> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
+> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
+> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
+> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 80
+> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 512
+> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 512
+>
+> SO, how to test small tcp packages? Including TCP_NODELAY, What else should be set?
 
-> On Thu 2014-10-23 18:51:05, atull@opensource.altera.com wrote:
-> > From: Alan Tull <atull@opensource.altera.com>
-> > 
-> > Add sysfs document for fpga bridges.
-> > 
-> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> > ---
-> >  Documentation/ABI/testing/sysfs-class-fpga-bridge |    5 +++++
-> >  1 file changed, 5 insertions(+)
-> >  create mode 100644 Documentation/ABI/testing/sysfs-class-fpga-bridge
-> > 
-> > diff --git a/Documentation/ABI/testing/sysfs-class-fpga-bridge b/Documentation/ABI/testing/sysfs-class-fpga-bridge
-> > new file mode 100644
-> > index 0000000..b3303ae
-> > --- /dev/null
-> > +++ b/Documentation/ABI/testing/sysfs-class-fpga-bridge
-> > @@ -0,0 +1,5 @@
-> > +What:		/sys/class/fpga-bridge/<bridge>/enable
-> > +Date:		October 2014
-> > +KernelVersion:	3.18
-> > +Contact:	Alan Tull <atull@opensource.altera.com>
-> > +Description:	Enable bridge.  Write 1 to bring bridge out of reset.
-> 
-> Specify, what happens when 0 is written there?
-> 									Pavel
+Well, I don't think there is anything else you can set.  Even with 
+TCP_NODELAY set, segment size with TCP will still be controlled by 
+factors such as congestion window.
 
-Yes, I will add:  'Write 0 has no effect.'
+I am ass-u-me-ing your packet trace is at the sender.  I suppose if your 
+sender were fast enough compared to the path that might combine with 
+congestion window to result in the very large segments.
 
-Alan
+Not to say there cannot be a bug somewhere with TSO overriding 
+TCP_NODELAY, but in broad terms, even TCP_NODELAY does not guarantee 
+small TCP segments.  That has been something of a bane on my attempts to 
+use TCP for aggregate small-packet performance measurements via netperf 
+for quite some time.
 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> 
+And since you seem to have included a virtualization mailing list I 
+would also ass-u-me that virtualization is involved somehow.  Knuth only 
+knows how that will affect the timing of events, which will be very much 
+involved in matters of congestion window and such.  I suppose it is even 
+possible that if the packet trace is on a VM receiver that some delays 
+in getting the VM running could mean that GRO would end-up making large 
+segments being pushed up the stack.
+
+happy benchmarking,
+
+rick jones
