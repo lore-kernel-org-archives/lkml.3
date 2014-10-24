@@ -1,92 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755100AbaJXG5b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 02:57:31 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:59474 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751907AbaJXG53 (ORCPT
+	id S1751777AbaJXHB0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 03:01:26 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36782 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbaJXHBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 02:57:29 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Fri, 24 Oct 2014 07:56:52 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Robert Bragg <robert@sixbynine.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Rob Clark <robdclark@gmail.com>,
-        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: Re: [RFC PATCH 3/3] i915: Expose PMU for Observation Architecture
-Message-ID: <20141024065652.GV13512@nuc-i3427.alporthouse.com>
-References: <1413991731-20628-1-git-send-email-robert@sixbynine.org>
- <1413991731-20628-4-git-send-email-robert@sixbynine.org>
- <20141023074739.GH13512@nuc-i3427.alporthouse.com>
- <CAMou1-3n5pC4C_7x_5oxz0WG3sOifKvG-wCER_5g6VeniEJ=6A@mail.gmail.com>
+	Fri, 24 Oct 2014 03:01:24 -0400
+Date: Fri, 24 Oct 2014 09:00:42 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: atull@opensource.altera.com
+Cc: jgunthorpe@obsidianresearch.com, hpa@zytor.com, monstr@monstr.eu,
+        michal.simek@xilinx.com, rdunlap@infradead.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
+        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
+        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, mgerlach@opensource.altera.com,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
+Message-ID: <20141024070042.GL10262@pengutronix.de>
+References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com>
+ <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMou1-3n5pC4C_7x_5oxz0WG3sOifKvG-wCER_5g6VeniEJ=6A@mail.gmail.com>
+In-Reply-To: <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:50:33 up 8 days, 18:04, 68 users,  load average: 0,01, 0,04, 0,05
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 03:33:14AM +0100, Robert Bragg wrote:
-> On Thu, Oct 23, 2014 at 8:47 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> > On Wed, Oct 22, 2014 at 04:28:51PM +0100, Robert Bragg wrote:
-> >> +     /* XXX: Not sure that this is really acceptable...
-> >> +      *
-> >> +      * i915_gem_context.c currently owns pinning/unpinning legacy
-> >> +      * context buffers and although that code has a
-> >> +      * get_context_alignment() func to handle a different
-> >> +      * constraint for gen6 we are assuming it's fixed for gen7
-> >> +      * here. Another option besides pinning here would be to
-> >> +      * instead hook into context switching and update the
-> >> +      * OACONTROL configuration on the fly.
-> >> +      */
-> >> +     if (dev_priv->oa_pmu.specific_ctx) {
-> >> +             struct intel_context *ctx = dev_priv->oa_pmu.specific_ctx;
-> >> +             int ret;
-> >> +
-> >> +             ret = i915_gem_obj_ggtt_pin(ctx->legacy_hw_ctx.rcs_state,
-> >> +                                         4096, 0);
-> >
-> > Right if you pin it here with a different alignment, when we try to  pin
-> > it with the required hw ctx alignment it will fail. Easiest way is to
-> > record the ctx->legacy_hw_ctx.alignment and reuse that here.
-> 
-> Ok I can look into that a bit more. I'm not currently sure I can assume the
-> ctx will have been pinned before, to be able to record the alignment.
-> Skimming i915_gem_context.c, it looks like we only pin the default context
-> on creation and a user could open a perf even before we first switch to that
-> context.
-> 
-> I wonder if it would be ok to expose an i915_get_context_alignment() api to
-> deal with this?
+Hi!
 
-I would either add intel_context_pin_state()/unpin_state() or expose
-ctx->...state_alignment. Leaning towards the former so that we don't have
-too many places mucking around inside ctx.
+On Thu, Oct 23, 2014 at 06:51:06PM -0500, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
 
-> >
-> >> +             if (ret) {
-> >> +                     DRM_DEBUG_DRIVER("Couldn't pin %d\n", ret);
-> >> +                     ret = -EBUSY;
-> >
-> > As an exercise, think of all the possible error values from pin() and
-> > tell me why overriding that here is a bad, bad idea.
-> 
-> Hmm, I'm not quite sure why I decided to squash the error code there, it
-> looks pretty arbitrary. My take on your comment a.t.m is essentially that
-> some of the pin() errors don't really represent a busy state where it would
-> make sense for userspace to try again later; such as -ENODEV. Sorry if you
-> saw a very specific case that offended you :-) I have removed the override
-> locally.
+(...)
 
-Or EINTR/EAGAIN and try again immediately. ;)
--Chris
+> diff --git a/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
+> new file mode 100644
+> index 0000000..bc24a2e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
+> @@ -0,0 +1,53 @@
+> +Altera FPGA/HPS Bridge Driver
+> +
+> +This driver manages a bridge between a FPGA and a host processor system (HPS).
+> +User space can enable or disable the bridge by writing a "1" or a "0",
+> +respectively, to its enable file under bridge's entry in
+> +/sys/class/fpga-bridge.  Typically, one disables the bridges before
+> +reprogramming the FPGA.  Once the FPGA is reprogrammed, the bridges are
+> +reenabled.
+> +
+
+NAK.
+
+This is all linux specific and doesn't belong here.
+
+> +Required properties:
+> +
+> + - compatible     : should contain one of:
+> +                     "altr,socfpga-hps2fpga-bridge"
+> +                     "altr,socfpga-lwhps2fpga-bridge"
+> +                     "altr,socfpga-fpga2hps-bridge"
+> +
+> + - clocks         : clocks used by this module
+> +
+> + - altr,l3-syscon : phandle of the l3 interconnect module
+> +
+
+L3 shouldn't be a syscon. Have you tried dumping the regmap in the debugfs if L3
+is a syscon? Doesn't work.
+
+> +Optional properties:
+> + - label          : name that you want this bridge to show up as under
+> +                    /sys/class/fpga-bridge.  Default is br<device#> if this is
+> +                    not specified.
+> +
+
+Why? Linux-specific.
+
+> + - init-val       : 0 if driver should disable bridge at startup
+> +                    1 if driver should enable bridge at startup
+> +                    driver leaves bridge in current state if property not
+> +                    specified.
+> +
+
+Configuration in the DT? Really?
+
+> +Example:
+> +	hps_fpgabridge0: fpgabridge@0 {
+> +		compatible = "altr,socfpga-hps2fpga-bridge";
+> +		label = "hps2fpga";
+> +		altr,l3-syscon = <&l3regs>;
+> +		clocks = <&l4_main_clk>;
+> +		init-val = <1>;
+> +	};
+> +
+> +	hps_fpgabridge1: fpgabridge@1 {
+> +		compatible = "altr,socfpga-lwhps2fpga-bridge";
+> +		label = "lwhps2fpga";
+> +		altr,l3-syscon = <&l3regs>;
+> +		clocks = <&l4_main_clk>;
+> +		init-val = <0>;
+> +	};
+> +
+> +	hps_fpgabridge2: fpgabridge@2 {
+> +		compatible = "altr,socfpga-fpga2hps-bridge";
+> +		label = "fpga2hps";
+> +		altr,l3-syscon = <&l3regs>;
+> +		clocks = <&l4_main_clk>;
+> +	};
+
+The bridges are the buses into the FPGA. This has to be accomodated.
+The bridges have two specified memory ranges: one the address space
+of the bus, the second the register space for configuration.
+
+This binding does NOT correctly describe the hardware. Sorry.
+
+Regards,
+Steffen
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
