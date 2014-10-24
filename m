@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaJXTNG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 15:13:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57971 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604AbaJXTND (ORCPT
+	id S1752862AbaJXTPl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 15:15:41 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34815 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaJXTPj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 15:13:03 -0400
-Message-ID: <544AA4BA.2040106@infradead.org>
-Date: Fri, 24 Oct 2014 12:12:58 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Fri, 24 Oct 2014 15:15:39 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: <broonie@kernel.org>, <lgirdwood@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <airlied@linux.ie>, <robdclark@gmail.com>, <davidb@codeaurora.org>,
+        <dri-devel@lists.freedesktop.org>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] regulator: stub out devm_regulator_get_exclusive
+Date: Fri, 24 Oct 2014 14:15:11 -0500
+Message-ID: <1414178111-19525-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 2.1.0.GIT
 MIME-Version: 1.0
-To: Jeff Mahoney <jeffm@suse.com>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        Peter Foley <pefoley2@pefoley.com>, Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH] vdso: don't require 64-bit math in standalone test
-References: <544A9F1A.4050303@suse.com>
-In-Reply-To: <544A9F1A.4050303@suse.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/14 11:48, Jeff Mahoney wrote:
-> The use of 64-bit math on i386 causes build failures:
-> vdso_standalone_test_x86.c:(.text+0x101): undefined reference to `__umoddi3'
-> vdso_standalone_test_x86.c:(.text+0x12d): undefined reference to `__udivdi3'
-> 
-> Commit adb19fb66ee (Documentation: add makefiles for more targets) is
-> now building this by default, so it's failing the kernel build entirely.
-> 
-> Switching the declaration from uint64_t to time_t does the right thing
-> and handles the x32 case automatically.
-> 
-> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+If we don't stup that call out, we will have
+build failures for any drivers using that function
+when .config happens to have CONFIG_REGULATOR=n.
 
-Jon, please pick this up.  It was
-Acked-by: Peter Foley <pefoley2@pefoley.com>
+One such case below, found with randconfig
 
-> ---
->  Documentation/vDSO/vdso_standalone_test_x86.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- a/Documentation/vDSO/vdso_standalone_test_x86.c
-> +++ b/Documentation/vDSO/vdso_standalone_test_x86.c
-> @@ -63,7 +63,7 @@ static inline void linux_exit(int code)
->  	x86_syscall3(__NR_exit, code, 0, 0);
->  }
->  
-> -void to_base10(char *lastdig, uint64_t n)
-> +void to_base10(char *lastdig, time_t n)
->  {
->  	while (n) {
->  		*lastdig = (n % 10) + '0';
-> 
+drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c: In function ‘mdp4_kms_init’:
+drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c:384:2: error: implicit declaration \
+	of function ‘devm_regulator_get_exclusive’ [-Werror=implicit-function-declaration]
+  mdp4_kms->vdd = devm_regulator_get_exclusive(&pdev->dev, "vdd");
+  ^
+drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c:384:16: error: assignment makes \
+	pointer from integer without a cast [-Werror]
+  mdp4_kms->vdd = devm_regulator_get_exclusive(&pdev->dev, "vdd");
+                ^
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ include/linux/regulator/consumer.h | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index d347c80..ff61f3b 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -291,6 +291,11 @@ regulator_get_optional(struct device *dev, const char *id)
+ 	return ERR_PTR(-ENODEV);
+ }
+ 
++static inline struct regulator *__must_check
++devm_regulator_get_exclusive(struct device *dev, const char *id)
++{
++	return ERR_PTR(-ENODEV);
++}
+ 
+ static inline struct regulator *__must_check
+ devm_regulator_get_optional(struct device *dev, const char *id)
 -- 
-~Randy
+2.1.0.GIT
+
