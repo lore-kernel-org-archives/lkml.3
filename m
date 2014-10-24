@@ -1,80 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661AbaJXNey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:34:54 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:45854 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756582AbaJXNex (ORCPT
+	id S1756692AbaJXNfK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:35:10 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56797 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756656AbaJXNfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:34:53 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-79-544a5579f097
-Message-id: <544A5578.7030009@samsung.com>
-Date: Fri, 24 Oct 2014 15:34:48 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
- Thunderbird/31.2.0
-MIME-version: 1.0
-To: Daniel Drake <drake@endlessm.com>, Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, ben-linux@fluff.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>, thomas.abraham@linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        InKi Dae <inki.dae@samsung.com>, geunsik.lim@samsung.com,
-        jh80.chung@samsung.com, jaewon02.kim@samsung.com,
-        ideal.song@samsung.com, yj44.cho@samsung.com
-Subject: Re: [PATCH 5/5] ARM: dts: Add dts files for Exynos4415 SoC
-References: <1413775749-17539-1-git-send-email-cw00.choi@samsung.com>
- <1413775935-17743-5-git-send-email-cw00.choi@samsung.com>
- <CAD8Lp46Y1WBF2Bq5SKtQDZ4kUb2fDCsbBs1THFWcV=8-OXh_SQ@mail.gmail.com>
-In-reply-to: <CAD8Lp46Y1WBF2Bq5SKtQDZ4kUb2fDCsbBs1THFWcV=8-OXh_SQ@mail.gmail.com>
-Content-type: text/plain; charset=utf-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBIsWRmVeSWpSXmKPExsVy+t/xy7pVoV4hBvM3MFn8nXSM3WLSugNM
-	Fte/PGe1eDT/MbPFnwmtbBa7/t5ntJh0fwKLxY6GI6wWN361sVr0LrjKZnG26Q27xZQ/y5ks
-	Nj2+xmpxedccNosZ5/cxWdy+zGux9PpFJounEy6yWZy6/hkoPvklm8WxGUsYLVbt+sNosXfn
-	ZEYHcY8189YwerQ097B5/P41idFj0fcsj7+rXjB77Jx1l93jzrU9bB6bl9R7XDnRxOrRt2UV
-	o8fnTXIB3FFcNimpOZllqUX6dglcGcd+r2craGCvWLyoh7GB8QprFyMnh4SAicSas//ZIGwx
-	iQv31gPZXBxCAksZJX5928YK4XxilFj24SRYB6+AlsTq9weAbA4OFgFViZ/XjEDCbAKGEl1v
-	u8AGiQrESNzfuZoNolxQ4sfkeywg5SIC3hInvxeDjGQW6GeT+Hn2PxNIjbCAs0Tf0fksELtO
-	MErc2XOUDaSBUyBYYvZlIZAaZgEziS8vD7NC2PISm9e8ZZ7AKDALyYpZSMpmISlbwMi8ilE0
-	tTS5oDgpPddIrzgxt7g0L10vOT93EyMkdr/uYFx6zOoQowAHoxIP748tniFCrIllxZW5hxgl
-	OJiVRHj9/b1ChHhTEiurUovy44tKc1KLDzEycXBKNTCuaDAxLJ+Q3MO8b+Fav1f3vtytbT9+
-	72mvd/qHOUrVih/kj36fPE/yz9kM0wxB7TUl6g9eyhdOPDrx+Ou2JytcXQV2lyx8fK9IyDHp
-	6pc7FU80Cpp8lN/1qiaEv0vnnfwjcROT7tfLTWL8IrYsL2Tk/L2SfsxrvL6AXb9etNOTsYwt
-	JNbJxUmJpTgj0VCLuag4EQA6O1weuwIAAA==
+	Fri, 24 Oct 2014 09:35:05 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Darren Hart <dvhart@linux.intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: Use ACPI companion to match only the first physical device
+Date: Fri, 24 Oct 2014 15:55:34 +0200
+Message-ID: <2356721.6lgfg38MC8@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414141950-228930-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1414141950-228930-1-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Friday, October 24, 2014 12:12:30 PM Mika Westerberg wrote:
+> Commit 6ab3430129e2 ("mfd: Add ACPI support") made the MFD subdevices to
+> share the parent MFD ACPI companion device if no _HID/_CID is specified for
+> the subdevice in mfd_cell description. However, since all the subdevices
+> share the ACPI companion, the match and modalias generation logic started
+> to use the ACPI companion as well resulting this:
+> 
+>   # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
+>   acpi:INT33D1:PNP0C50:
+> 
+> instead of the expected one
+> 
+>   # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
+>   platform:HID-SENSOR-200041
+> 
+> In other words the subdevice modalias is overwritten by the one taken from
+> ACPI companion. This causes udev not to load the driver anymore.
+> 
+> It is useful to be able to share the ACPI companion so that MFD subdevices
+> (and possibly other devices as well) can access the ACPI resources even if
+> they do not have ACPI representation in the namespace themselves.
+> 
+> An example where this is used is Minnowboard LPC driver that creates GPIO
+> as a subdevice among other things. Without the ACPI companion gpiolib is
+> not is not able to lookup the corresponding GPIO controller from ACPI
+> GpioIo resource.
+> 
+> To fix this we restrict the match and modalias logic to be limited to the
+> first physical device. The secondary devices will still be able to access
+> the ACPI companion but they will be matched using traditional way.
+> 
+> Reported-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-On 2014-10-24 15:23, Daniel Drake wrote:
-> On Sun, Oct 19, 2014 at 9:32 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> This patch adds new exynos4415.dtsi to support Exynos4415 SoC
->> based on Cortex-A9 quad cores and includes following dt nodes:
-> There's a lot in common between your new exynos4415.dtsi and the
-> existing exynos4.dtsi.
-> Would it make more sense for the 4415 code to extend the existing
-> exynos4.dtsi like the other Exynos4 variants do?
+So I've applied it, although it didn't make it to the mailing lists for an
+unknown reason, but I modified it slightly.  My version is below for
+completness (it's in bleeding-edge for now).
 
-Well, I also thought about such approach, but there are some fundamental 
-differences:
-interrupt and clock controllers are completely different. Using a common 
-exynos4.dtsi
-and overriding them in every node will result in a code, which is a bit 
-hard to follow.
-IMHO with such differences justifies using separate base dtsi file.
+I'm a bit concerned that it will break something obscure I can't recall
+ATM, but since I can't recall it may not be that important (or even non-existent
+at all).  In any case, we may need to go back all the way to reverting the
+MFD commit if that happens.
 
-Best regards
--- 
-Marek Szyprowski, PhD
-Samsung R&D Institute Poland
+Rafael
+
+
+---
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] ACPI: Use ACPI companion to match only the first physical device
+
+Commit 6ab3430129e2 ("mfd: Add ACPI support") made the MFD subdevices
+share the parent MFD ACPI companion if no _HID/_CID is specified for
+the subdevice in mfd_cell description. However, since all the subdevices
+share the ACPI companion, the match and modalias generation logic started
+to use the ACPI companion as well resulting this:
+
+  # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
+  acpi:INT33D1:PNP0C50:
+
+instead of the expected one
+
+  # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
+  platform:HID-SENSOR-200041
+
+In other words the subdevice modalias is overwritten by the one taken from
+ACPI companion. This causes udev not to load the driver anymore.
+
+It is useful to be able to share the ACPI companion so that MFD subdevices
+(and possibly other devices as well) can access the ACPI resources even if
+they do not have ACPI representation in the namespace themselves.
+
+An example where this is used is Minnowboard LPC driver that creates GPIO
+as a subdevice among other things. Without the ACPI companion gpiolib is
+not able to lookup the corresponding GPIO controller from ACPI GpioIo
+resource.
+
+To fix this, restrict the match and modalias logic to be limited to the
+first (primary) physical device associated with the given ACPI comapnion.
+The secondary devices will still be able to access the ACPI companion,
+but they will be matched in a different way.
+
+Fixes: 6ab3430129e2 (mfd: Add ACPI support)
+Reported-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+[ rjw: Change the name of the new function to acpi_companion_match()
+  and modify the kerneldoc comment for it, changelog fixups. ]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -181,6 +181,53 @@ static int create_modalias(struct acpi_d
+ }
+ 
+ /*
++ * acpi_companion_match() - Can we match via ACPI companion device
++ * @dev: Device in question
++ *
++ * Check if the given device has an ACPI companion and if that companion has
++ * a valid list of PNP IDs, and if the device is the first (primary) physical
++ * device associated with it.
++ *
++ * If multiple physical devices are attached to a single ACPI companion, we need
++ * to be careful.  The usage scenario for this kind of relationship is that all
++ * of the physical devices in question use resources provided by the ACPI
++ * companion.  A typical case is an MFD device where all the sub-devices share
++ * the parent's ACPI companion.  In such cases we can only allow the primary
++ * (first) physical device to be matched with the help of the companion's PNP
++ * IDs.
++ *
++ * Additional physical devices sharing the ACPI companion can still use
++ * resources available from it but they will be matched normally using functions
++ * provided by their bus types (and analogously for their modalias).
++ */
++static bool acpi_companion_match(const struct device *dev)
++{
++	struct acpi_device *adev;
++	bool ret;
++
++	adev = ACPI_COMPANION(dev);
++	if (!adev)
++		return false;
++
++	if (list_empty(&adev->pnp.ids))
++		return false;
++
++	ret = true;
++	mutex_lock(&adev->physical_node_lock);
++	if (!list_empty(&adev->physical_node_list)) {
++		const struct acpi_device_physical_node *node;
++
++		node = list_first_entry(&adev->physical_node_list,
++					struct acpi_device_physical_node, node);
++		if (node->dev != dev)
++			ret = false;
++	}
++	mutex_unlock(&adev->physical_node_lock);
++
++	return ret;
++}
++
++/*
+  * Creates uevent modalias field for ACPI enumerated devices.
+  * Because the other buses does not support ACPI HIDs & CIDs.
+  * e.g. for a device with hid:IBM0001 and cid:ACPI0001 you get:
+@@ -188,20 +235,14 @@ static int create_modalias(struct acpi_d
+  */
+ int acpi_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
+ {
+-	struct acpi_device *acpi_dev;
+ 	int len;
+ 
+-	acpi_dev = ACPI_COMPANION(dev);
+-	if (!acpi_dev)
+-		return -ENODEV;
+-
+-	/* Fall back to bus specific way of modalias exporting */
+-	if (list_empty(&acpi_dev->pnp.ids))
++	if (!acpi_companion_match(dev))
+ 		return -ENODEV;
+ 
+ 	if (add_uevent_var(env, "MODALIAS="))
+ 		return -ENOMEM;
+-	len = create_modalias(acpi_dev, &env->buf[env->buflen - 1],
++	len = create_modalias(ACPI_COMPANION(dev), &env->buf[env->buflen - 1],
+ 				sizeof(env->buf) - env->buflen);
+ 	if (len <= 0)
+ 		return len;
+@@ -218,18 +259,12 @@ EXPORT_SYMBOL_GPL(acpi_device_uevent_mod
+  */
+ int acpi_device_modalias(struct device *dev, char *buf, int size)
+ {
+-	struct acpi_device *acpi_dev;
+ 	int len;
+ 
+-	acpi_dev = ACPI_COMPANION(dev);
+-	if (!acpi_dev)
+-		return -ENODEV;
+-
+-	/* Fall back to bus specific way of modalias exporting */
+-	if (list_empty(&acpi_dev->pnp.ids))
++	if (!acpi_companion_match(dev))
+ 		return -ENODEV;
+ 
+-	len = create_modalias(acpi_dev, buf, size -1);
++	len = create_modalias(ACPI_COMPANION(dev), buf, size -1);
+ 	if (len <= 0)
+ 		return len;
+ 	buf[len++] = '\n';
+@@ -892,6 +927,9 @@ const struct acpi_device_id *acpi_match_
+ 	if (!ids || !handle || acpi_bus_get_device(handle, &adev))
+ 		return NULL;
+ 
++	if (!acpi_companion_match(dev))
++		return NULL;
++
+ 	return __acpi_match_device(adev, ids);
+ }
+ EXPORT_SYMBOL_GPL(acpi_match_device);
 
