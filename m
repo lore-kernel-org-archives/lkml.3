@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612AbaJXGQD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 02:16:03 -0400
+	id S1755675AbaJXGQH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 02:16:07 -0400
 Received: from mga11.intel.com ([192.55.52.93]:14197 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755438AbaJXGP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 02:15:59 -0400
+	id S1755438AbaJXGQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 02:16:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,778,1406617200"; 
-   d="scan'208";a="619636762"
+   d="scan'208";a="619636788"
 From: Kweh Hock Leong <hock.leong.kweh@intel.com>
 To: Matt Fleming <matt.fleming@intel.com>, Ming Lei <ming.lei@canonical.com>,
         Sam Protsenko <semen.protsenko@linaro.org>
@@ -16,9 +16,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
         Ong Boon Leong <boon.leong.ong@intel.com>,
         Kweh Hock Leong <hock.leong.kweh@intel.com>
-Subject: [PATCH v1 2/3] firmware loader: fix hung task warning dump
-Date: Fri, 24 Oct 2014 14:18:21 +0800
-Message-Id: <1414131502-13886-3-git-send-email-hock.leong.kweh@intel.com>
+Subject: [PATCH v1 3/3] efi: Capsule update with user helper interface
+Date: Fri, 24 Oct 2014 14:18:22 +0800
+Message-Id: <1414131502-13886-4-git-send-email-hock.leong.kweh@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414131502-13886-1-git-send-email-hock.leong.kweh@intel.com>
 References: <1414131502-13886-1-git-send-email-hock.leong.kweh@intel.com>
@@ -28,70 +28,319 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
 
-When using request_firmware_nowait() with FW_ACTION_NOHOTPLUG param to
-expose user helper interface, if the user do not react immediately, after
-120 seconds there will be a hung task warning message dumped as below:
+Introducing a kernel module to expose user helper interface for
+user to upload capsule binaries. This module leverage the
+request_firmware_nowait() to expose an interface to user.
 
-[ 3000.784235] INFO: task kworker/0:0:8259 blocked for more than 120 seconds.
-[ 3000.791281]       Tainted: G            E 3.16.0-rc1-yocto-standard #41
-[ 3000.798082] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3000.806072] kworker/0:0     D cd0075c8     0  8259      2 0x00000000
-[ 3000.812765] Workqueue: events request_firmware_work_func
-[ 3000.818253]  cd375e18 00000046 0000000e cd0075c8 000000f0 cd40ea00 cd375fec 1b883e89
-[ 3000.826374]  0000026b cd40ea00 80000000 00000001 cd0075c8 00000000 cd375de4 c119917f
-[ 3000.834492]  cd563360 cd375df4 c119a0ab cd563360 00000000 cd375e24 c119a1d6 00000000
-[ 3000.842616] Call Trace:
-[ 3000.845252]  [<c119917f>] ? kernfs_next_descendant_post+0x3f/0x50
-[ 3000.851543]  [<c119a0ab>] ? kernfs_activate+0x6b/0xc0
-[ 3000.856790]  [<c119a1d6>] ? kernfs_add_one+0xd6/0x130
-[ 3000.862047]  [<c15fdb02>] schedule+0x22/0x60
-[ 3000.866548]  [<c15fd195>] schedule_timeout+0x175/0x1d0
-[ 3000.871887]  [<c119b391>] ? __kernfs_create_file+0x71/0xa0
-[ 3000.877574]  [<c119bb9a>] ? sysfs_add_file_mode_ns+0xaa/0x180
-[ 3000.883533]  [<c15fe84f>] wait_for_completion+0x6f/0xb0
-[ 3000.888961]  [<c1065200>] ? wake_up_process+0x40/0x40
-[ 3000.894219]  [<c13cb600>] _request_firmware+0x750/0x9f0
-[ 3000.899666]  [<c1382a7f>] ? n_tty_receive_buf2+0x1f/0x30
-[ 3000.905200]  [<c13cba02>] request_firmware_work_func+0x22/0x50
-[ 3000.911235]  [<c10550d2>] process_one_work+0x122/0x380
-[ 3000.916571]  [<c1055859>] worker_thread+0xf9/0x470
-[ 3000.921555]  [<c1055760>] ? create_and_start_worker+0x50/0x50
-[ 3000.927497]  [<c1055760>] ? create_and_start_worker+0x50/0x50
-[ 3000.933448]  [<c105a5ff>] kthread+0x9f/0xc0
-[ 3000.937850]  [<c15ffd40>] ret_from_kernel_thread+0x20/0x30
-[ 3000.943548]  [<c105a560>] ? kthread_worker_fn+0x100/0x100
+Example steps to load the capsule binary:
+1.) echo 1 > /sys/class/firmware/efi-capsule-file/loading
+2.) cat capsule.bin > /sys/class/firmware/efi-capsule-file/data
+3.) echo 0 > /sys/class/firmware/efi-capsule-file/loading
 
-This patch change the wait_for_completion() function call to
-wait_for_completion_interruptible() function call for solving the issue.
+Whereas, this module does not allow the capsule binaries to be
+obtained from the request_firmware library search path. If any
+capsule binary loaded from firmware seach path, the module will
+stop functioning.
+
+Besides the request_firmware user helper interface, this module
+also expose a 'capsule_loaded' file note for user to verify
+the number of successfully uploaded capsule binaries. This
+file note has the read only attribute.
 
 Cc: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
 ---
- drivers/base/firmware_class.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/firmware/efi/Kconfig                   |   13 ++
+ drivers/firmware/efi/Makefile                  |    1 +
+ drivers/firmware/efi/efi-capsule-user-helper.c |  246 ++++++++++++++++++++++++
+ 3 files changed, 260 insertions(+)
+ create mode 100644 drivers/firmware/efi/efi-capsule-user-helper.c
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index b2fe40b..c241454b 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -908,7 +908,7 @@ static int _request_firmware_load(struct firmware_priv *fw_priv,
- 		kobject_uevent(&fw_priv->dev.kobj, KOBJ_ADD);
- 	}
+diff --git a/drivers/firmware/efi/Kconfig b/drivers/firmware/efi/Kconfig
+index f712d47..7dc814e 100644
+--- a/drivers/firmware/efi/Kconfig
++++ b/drivers/firmware/efi/Kconfig
+@@ -60,6 +60,19 @@ config EFI_RUNTIME_WRAPPERS
+ config EFI_ARMSTUB
+ 	bool
  
--	wait_for_completion(&buf->completion);
-+	retval = wait_for_completion_interruptible(&buf->completion);
++config EFI_CAPSULE_USER_HELPER
++	tristate "EFI capsule user mode helper"
++	depends on EFI
++	select FW_LOADER
++	select FW_LOADER_USER_HELPER
++	help
++	  This option exposes the user mode helper interface for user to load
++	  EFI capsule binary and update the EFI firmware after system reboot.
++	  This feature does not support auto locating capsule binaries at the
++	  firmware lib search path.
++
++	  If unsure, say N.
++
+ endmenu
  
- 	cancel_delayed_work_sync(&fw_priv->timeout_work);
- 	if (!buf->data)
-@@ -985,7 +985,7 @@ static int sync_cached_firmware_buf(struct firmware_buf *buf)
- 			break;
- 		}
- 		mutex_unlock(&fw_lock);
--		wait_for_completion(&buf->completion);
-+		ret = wait_for_completion_interruptible(&buf->completion);
- 		mutex_lock(&fw_lock);
- 	}
- 	mutex_unlock(&fw_lock);
+ config UEFI_CPER
+diff --git a/drivers/firmware/efi/Makefile b/drivers/firmware/efi/Makefile
+index 698846e..63f6910 100644
+--- a/drivers/firmware/efi/Makefile
++++ b/drivers/firmware/efi/Makefile
+@@ -8,3 +8,4 @@ obj-$(CONFIG_UEFI_CPER)			+= cper.o
+ obj-$(CONFIG_EFI_RUNTIME_MAP)		+= runtime-map.o
+ obj-$(CONFIG_EFI_RUNTIME_WRAPPERS)	+= runtime-wrappers.o
+ obj-$(CONFIG_EFI_STUB)			+= libstub/
++obj-$(CONFIG_EFI_CAPSULE_USER_HELPER)	+= efi-capsule-user-helper.o
+diff --git a/drivers/firmware/efi/efi-capsule-user-helper.c b/drivers/firmware/efi/efi-capsule-user-helper.c
+new file mode 100644
+index 0000000..84a1628
+--- /dev/null
++++ b/drivers/firmware/efi/efi-capsule-user-helper.c
+@@ -0,0 +1,246 @@
++/*
++ * EFI capsule user mode helper interface driver.
++ *
++ * Copyright 2014 Intel Corporation
++ *
++ * This file is part of the Linux kernel, and is made available under
++ * the terms of the GNU General Public License version 2.
++ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++#include <linux/highmem.h>
++#include <linux/slab.h>
++#include <linux/mutex.h>
++#include <linux/reboot.h>
++#include <linux/efi.h>
++#include <linux/firmware.h>
++
++#define CAPSULE_NAME "efi-capsule-file"
++#define DEV_NAME "efi_capsule_user_helper"
++#define STRING_INTEGER_MAX_LENGTH 13
++
++static DEFINE_MUTEX(user_helper_lock);
++static int capsule_count;
++static int stop_request;
++static struct platform_device *efi_capsule_pdev;
++
++/*
++ * This function will store the capsule binary and pass it to
++ * efi_capsule_update() API in capsule.c
++ */
++static int efi_capsule_store(const struct firmware *fw)
++{
++	int i;
++	int ret;
++	int count = fw->size;
++	int copy_size = (fw->size > PAGE_SIZE) ? PAGE_SIZE : fw->size;
++	int pages_needed = ALIGN(fw->size, PAGE_SIZE) >> PAGE_SHIFT;
++	struct page **pages;
++	void *page_data;
++	efi_capsule_header_t *capsule = NULL;
++
++	pages = kmalloc_array(pages_needed, sizeof(void *), GFP_KERNEL);
++	if (!pages) {
++		pr_err("%s: kmalloc_array() failed\n", __func__);
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < pages_needed; i++) {
++		pages[i] = alloc_page(GFP_KERNEL);
++		if (!pages[i]) {
++			pr_err("%s: alloc_page() failed\n", __func__);
++			--i;
++			ret = -ENOMEM;
++			goto failed;
++		}
++	}
++
++	for (i = 0; i < pages_needed; i++) {
++		page_data = kmap(pages[i]);
++		memcpy(page_data, fw->data + (i * PAGE_SIZE), copy_size);
++
++		if (i == 0)
++			capsule = (efi_capsule_header_t *)page_data;
++		else
++			kunmap(pages[i]);
++
++		count -= copy_size;
++		if (count < PAGE_SIZE)
++			copy_size = count;
++	}
++
++	ret = efi_capsule_update(capsule, pages);
++	if (ret) {
++		pr_err("%s: efi_capsule_update() failed\n", __func__);
++		--i;
++		goto failed;
++	}
++	++capsule_count;
++	kunmap(pages[0]);
++
++	/*
++	 * we cannot free the pages here due to reboot need that data
++	 * maintained.
++	 */
++	return 0;
++
++failed:
++	while (i >= 0)
++		__free_page(pages[i--]);
++	kfree(pages);
++	return ret;
++}
++
++/*
++ * This callback function will be called by request_firmware_nowait() when
++ * user has loaded the capsule binary or aborted user helper interface
++ */
++static void callbackfn_efi_capsule(const struct firmware *fw, void *context)
++{
++	int ret = 0;
++
++	if (fw) {
++		/*
++		 * Binary not getting from user helper interface, fw->pages
++		 * is equal to NULL
++		 */
++		if (!fw->pages) {
++			pr_err("%s: ERROR: Capsule binary '%s' at %s\n",
++			       __func__, CAPSULE_NAME,
++			       "firmware lib search path are not supported");
++			pr_err("user helper interface disabled\n");
++			stop_request = 1;
++		} else {
++			efi_capsule_store(fw);
++		}
++		release_firmware(fw);
++	}
++
++	mutex_lock(&user_helper_lock);
++	if (!stop_request) {
++		ret = request_firmware_nowait(THIS_MODULE,
++					      FW_ACTION_NOHOTPLUG,
++					      CAPSULE_NAME,
++					      &efi_capsule_pdev->dev,
++					      GFP_KERNEL, NULL,
++					      callbackfn_efi_capsule);
++		if (ret) {
++			pr_err("%s: request_firmware_nowait() failed\n",
++			       __func__);
++		}
++	}
++	mutex_unlock(&user_helper_lock);
++}
++
++static ssize_t capsule_loaded_show(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	return snprintf(buf, STRING_INTEGER_MAX_LENGTH, "%d\n", capsule_count);
++}
++
++static DEVICE_ATTR_RO(capsule_loaded);
++
++/* stop user helper interface for reboot or module unload */
++static void capsule_stop_user_helper(void)
++{
++	mutex_lock(&user_helper_lock);
++	stop_request = 1;
++	mutex_unlock(&user_helper_lock);
++	request_firmware_abort(CAPSULE_NAME);
++}
++
++/* reboot notifier for avoid deadlock with usermode_lock */
++static int capsule_shutdown_notify(struct notifier_block *nb,
++				   unsigned long sys_state,
++				   void *reboot_cmd)
++{
++	capsule_stop_user_helper();
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block capsule_shutdown_nb = {
++	.notifier_call = capsule_shutdown_notify,
++	/*
++	 * In order to reboot properly, it is required to ensure the priority
++	 * here is higher than firmware_class fw_shutdown_nb priority
++	 */
++	.priority = 1,
++};
++
++/*
++ * Use request_firmware_nowait() exposing an user helper interface to obtain
++ * capsule binary from user space
++ */
++static int __init efi_capsule_user_helper_init(void)
++{
++	int ret;
++
++	register_reboot_notifier(&capsule_shutdown_nb);
++
++	efi_capsule_pdev = platform_device_register_simple(DEV_NAME,
++							   PLATFORM_DEVID_NONE,
++							   NULL, 0);
++	if (IS_ERR(efi_capsule_pdev)) {
++		pr_err("%s: platform_device_register_simple() failed\n",
++		       __func__);
++		return PTR_ERR(efi_capsule_pdev);
++	}
++
++	/*
++	 * create this file node for user to check the number of binaries that
++	 * are successfully loaded
++	 */
++	ret = device_create_file(&efi_capsule_pdev->dev,
++				 &dev_attr_capsule_loaded);
++	if (ret) {
++		pr_err("%s: device_create_file() failed\n", __func__);
++		return ret;
++	}
++
++	ret = request_firmware_nowait(THIS_MODULE, FW_ACTION_NOHOTPLUG,
++				      CAPSULE_NAME, &efi_capsule_pdev->dev,
++				      GFP_KERNEL, NULL, callbackfn_efi_capsule);
++	if (ret) {
++		pr_err("%s: request_firmware_nowait() failed\n", __func__);
++		goto out;
++	}
++
++	return 0;
++
++out:
++	device_remove_file(&efi_capsule_pdev->dev, &dev_attr_capsule_loaded);
++	unregister_reboot_notifier(&capsule_shutdown_nb);
++	return ret;
++}
++module_init(efi_capsule_user_helper_init);
++
++/*
++ * rmmod app itself will stop you to remove the module if the user
++ * helper interface is still exposing. In order to remove this driver,
++ * you are require to do the command as below:
++ * rmmod -f efi_capsule_user_helper.ko
++ */
++static void __exit efi_capsule_user_helper_exit(void)
++{
++	unregister_reboot_notifier(&capsule_shutdown_nb);
++
++	capsule_stop_user_helper();
++	/*
++	 * synchronization is needed to make sure request_firmware is fully
++	 * aborted
++	 */
++	while (efi_capsule_pdev->dev.kobj.kref.refcount.counter > 3)
++		msleep(20); /* avoid busy waiting for cooperative kernel */
++
++	device_remove_file(&efi_capsule_pdev->dev, &dev_attr_capsule_loaded);
++	platform_device_unregister(efi_capsule_pdev);
++}
++module_exit(efi_capsule_user_helper_exit);
++
++MODULE_DESCRIPTION("EFI Capsule user helper binary load utility");
++MODULE_LICENSE("GPL v2");
 -- 
 1.7.9.5
 
