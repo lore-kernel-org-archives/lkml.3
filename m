@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537AbaJXVYc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 17:24:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18317 "EHLO mga01.intel.com"
+	id S1755823AbaJXVVQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 17:21:16 -0400
+Received: from mga14.intel.com ([192.55.52.115]:13125 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755830AbaJXVVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 17:21:17 -0400
+	id S1752490AbaJXVVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 17:21:09 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="405580411"
+X-IronPort-AV: E=Sophos;i="5.04,782,1406617200"; 
+   d="scan'208";a="610845475"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>
-Subject: [PATCH v12 18/20] dax: Add dax_zero_page_range
-Date: Fri, 24 Oct 2014 17:20:50 -0400
-Message-Id: <1414185652-28663-19-git-send-email-matthew.r.wilcox@intel.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v12 02/20] block: Change direct_access calling convention
+Date: Fri, 24 Oct 2014 17:20:34 -0400
+Message-Id: <1414185652-28663-3-git-send-email-matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
 References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
@@ -25,116 +24,313 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new function allows us to support hole-punch for DAX files by zeroing
-a partial page, as opposed to the dax_truncate_page() function which can
-only truncate to the end of the page.  Reimplement dax_truncate_page() to
-call dax_zero_page_range().
+In order to support accesses to larger chunks of memory, pass in a
+'size' parameter (counted in bytes), and return the amount available at
+that address.
+
+Add a new helper function, bdev_direct_access(), to handle common
+functionality including partition handling, checking the length requested
+is positive, checking for the sector being page-aligned, and checking
+the length of the request does not pass the end of the partition.
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-[ported to 3.13-rc2]
-Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Boaz Harrosh <boaz@plexistor.com>
 ---
- Documentation/filesystems/dax.txt |  1 +
- fs/dax.c                          | 36 +++++++++++++++++++++++++++++++-----
- include/linux/fs.h                |  1 +
- 3 files changed, 33 insertions(+), 5 deletions(-)
+ Documentation/filesystems/xip.txt | 15 +++++++++------
+ arch/powerpc/sysdev/axonram.c     | 17 ++++-------------
+ drivers/block/brd.c               | 14 +++++++-------
+ drivers/s390/block/dcssblk.c      | 21 +++++++++-----------
+ fs/block_dev.c                    | 40 +++++++++++++++++++++++++++++++++++++++
+ fs/ext2/xip.c                     | 31 +++++++++++++-----------------
+ include/linux/blkdev.h            |  6 ++++--
+ 7 files changed, 86 insertions(+), 58 deletions(-)
 
-diff --git a/Documentation/filesystems/dax.txt b/Documentation/filesystems/dax.txt
-index 635adaa..ebcd97f 100644
---- a/Documentation/filesystems/dax.txt
-+++ b/Documentation/filesystems/dax.txt
-@@ -62,6 +62,7 @@ Filesystem support consists of
-   for fault and page_mkwrite (which should probably call dax_fault() and
-   dax_mkwrite(), passing the appropriate get_block() callback)
- - calling dax_truncate_page() instead of block_truncate_page() for DAX files
-+- calling dax_zero_page_range() instead of zero_user() for DAX files
- - ensuring that there is sufficient locking between reads, writes,
-   truncates and page faults
+diff --git a/Documentation/filesystems/xip.txt b/Documentation/filesystems/xip.txt
+index 0466ee5..b774729 100644
+--- a/Documentation/filesystems/xip.txt
++++ b/Documentation/filesystems/xip.txt
+@@ -28,12 +28,15 @@ Implementation
+ Execute-in-place is implemented in three steps: block device operation,
+ address space operation, and file operations.
  
-diff --git a/fs/dax.c b/fs/dax.c
-index e838ec8..24f6e14 100644
---- a/fs/dax.c
-+++ b/fs/dax.c
-@@ -460,13 +460,16 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
- EXPORT_SYMBOL_GPL(dax_fault);
- 
- /**
-- * dax_truncate_page - handle a partial page being truncated in a DAX file
-+ * dax_zero_page_range - zero a range within a page of a DAX file
-  * @inode: The file being truncated
-  * @from: The file offset that is being truncated to
-+ * @length: The number of bytes to zero
-  * @get_block: The filesystem method used to translate file offsets to blocks
-  *
-- * Similar to block_truncate_page(), this function can be called by a
-- * filesystem when it is truncating an DAX file to handle the partial page.
-+ * This function can be called by a filesystem when it is zeroing part of a
-+ * page in a DAX file.  This is intended for hole-punch operations.  If
-+ * you are truncating a file, the helper function dax_truncate_page() may be
-+ * more convenient.
-  *
-  * We work in terms of PAGE_CACHE_SIZE here for commonality with
-  * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
-@@ -474,17 +477,18 @@ EXPORT_SYMBOL_GPL(dax_fault);
-  * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
-  * since the file might be mmaped.
-  */
--int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
-+int dax_zero_page_range(struct inode *inode, loff_t from, unsigned length,
-+							get_block_t get_block)
- {
- 	struct buffer_head bh;
- 	pgoff_t index = from >> PAGE_CACHE_SHIFT;
- 	unsigned offset = from & (PAGE_CACHE_SIZE-1);
--	unsigned length = PAGE_CACHE_ALIGN(from) - from;
- 	int err;
- 
- 	/* Block boundary? Nothing to do */
- 	if (!length)
- 		return 0;
-+	BUG_ON((offset + length) > PAGE_CACHE_SIZE);
- 
- 	memset(&bh, 0, sizeof(bh));
- 	bh.b_size = PAGE_CACHE_SIZE;
-@@ -501,4 +505,26 @@ int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(dax_zero_page_range);
+-A block device operation named direct_access is used to retrieve a
+-reference (pointer) to a block on-disk. The reference is supposed to be
+-cpu-addressable, physical address and remain valid until the release operation
+-is performed. A struct block_device reference is used to address the device,
+-and a sector_t argument is used to identify the individual block. As an
+-alternative, memory technology devices can be used for this.
++A block device operation named direct_access is used to translate the
++block device sector number to a page frame number (pfn) that identifies
++the physical page for the memory.  It also returns a kernel virtual
++address that can be used to access the memory.
 +
++The direct_access method takes a 'size' parameter that indicates the
++number of bytes being requested.  The function should return the number
++of bytes that can be contiguously accessed at that offset.  It may also
++return a negative errno if an error occurs.
+ 
+ The block device operation is optional, these block devices support it as of
+ today:
+diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+index e8bb33b..4afff8d 100644
+--- a/arch/powerpc/sysdev/axonram.c
++++ b/arch/powerpc/sysdev/axonram.c
+@@ -139,26 +139,17 @@ axon_ram_make_request(struct request_queue *queue, struct bio *bio)
+  * axon_ram_direct_access - direct_access() method for block device
+  * @device, @sector, @data: see block_device_operations method
+  */
+-static int
++static long
+ axon_ram_direct_access(struct block_device *device, sector_t sector,
+-		       void **kaddr, unsigned long *pfn)
++		       void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct axon_ram_bank *bank = device->bd_disk->private_data;
+-	loff_t offset;
+-
+-	offset = sector;
+-	if (device->bd_part != NULL)
+-		offset += device->bd_part->start_sect;
+-	offset <<= AXON_RAM_SECTOR_SHIFT;
+-	if (offset >= bank->size) {
+-		dev_err(&bank->device->dev, "Access outside of address space\n");
+-		return -ERANGE;
+-	}
++	loff_t offset = (loff_t)sector << AXON_RAM_SECTOR_SHIFT;
+ 
+ 	*kaddr = (void *)(bank->ph_addr + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+-	return 0;
++	return bank->size - offset;
+ }
+ 
+ static const struct block_device_operations axon_ram_devops = {
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 3598110..89e90ec 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -370,25 +370,25 @@ static int brd_rw_page(struct block_device *bdev, sector_t sector,
+ }
+ 
+ #ifdef CONFIG_BLK_DEV_XIP
+-static int brd_direct_access(struct block_device *bdev, sector_t sector,
+-			void **kaddr, unsigned long *pfn)
++static long brd_direct_access(struct block_device *bdev, sector_t sector,
++			void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct brd_device *brd = bdev->bd_disk->private_data;
+ 	struct page *page;
+ 
+ 	if (!brd)
+ 		return -ENODEV;
+-	if (sector & (PAGE_SECTORS-1))
+-		return -EINVAL;
+-	if (sector + PAGE_SECTORS > get_capacity(bdev->bd_disk))
+-		return -ERANGE;
+ 	page = brd_insert_page(brd, sector);
+ 	if (!page)
+ 		return -ENOSPC;
+ 	*kaddr = page_address(page);
+ 	*pfn = page_to_pfn(page);
+ 
+-	return 0;
++	/*
++	 * TODO: If size > PAGE_SIZE, we could look to see if the next page in
++	 * the file happens to be mapped to the next page of physical RAM.
++	 */
++	return PAGE_SIZE;
+ }
+ #endif
+ 
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index 0f47175..96bc411 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -28,8 +28,8 @@
+ static int dcssblk_open(struct block_device *bdev, fmode_t mode);
+ static void dcssblk_release(struct gendisk *disk, fmode_t mode);
+ static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
+-static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+-				 void **kaddr, unsigned long *pfn);
++static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
++				 void **kaddr, unsigned long *pfn, long size);
+ 
+ static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
+ 
+@@ -866,25 +866,22 @@ fail:
+ 	bio_io_error(bio);
+ }
+ 
+-static int
++static long
+ dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+-			void **kaddr, unsigned long *pfn)
++			void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct dcssblk_dev_info *dev_info;
+-	unsigned long pgoff;
++	unsigned long offset, dev_sz;
+ 
+ 	dev_info = bdev->bd_disk->private_data;
+ 	if (!dev_info)
+ 		return -ENODEV;
+-	if (secnum % (PAGE_SIZE/512))
+-		return -EINVAL;
+-	pgoff = secnum / (PAGE_SIZE / 512);
+-	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
+-		return -ERANGE;
+-	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
++	dev_sz = dev_info->end - dev_info->start;
++	offset = secnum * 512;
++	*kaddr = (void *) (dev_info->start + offset);
+ 	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+ 
+-	return 0;
++	return dev_sz - offset;
+ }
+ 
+ static void
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index cc9d411..2d2668b 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -423,6 +423,46 @@ int bdev_write_page(struct block_device *bdev, sector_t sector,
+ }
+ EXPORT_SYMBOL_GPL(bdev_write_page);
+ 
 +/**
-+ * dax_truncate_page - handle a partial page being truncated in a DAX file
-+ * @inode: The file being truncated
-+ * @from: The file offset that is being truncated to
-+ * @get_block: The filesystem method used to translate file offsets to blocks
++ * bdev_direct_access() - Get the address for directly-accessibly memory
++ * @bdev: The device containing the memory
++ * @sector: The offset within the device
++ * @addr: Where to put the address of the memory
++ * @pfn: The Page Frame Number for the memory
++ * @size: The number of bytes requested
 + *
-+ * Similar to block_truncate_page(), this function can be called by a
-+ * filesystem when it is truncating an DAX file to handle the partial page.
++ * If a block device is made up of directly addressable memory, this function
++ * will tell the caller the PFN and the address of the memory.  The address
++ * may be directly dereferenced within the kernel without the need to call
++ * ioremap(), kmap() or similar.  The PFN is suitable for inserting into
++ * page tables.
 + *
-+ * We work in terms of PAGE_CACHE_SIZE here for commonality with
-+ * block_truncate_page(), but we could go down to PAGE_SIZE if the filesystem
-+ * took care of disposing of the unnecessary blocks.  Even if the filesystem
-+ * block size is smaller than PAGE_SIZE, we have to zero the rest of the page
-+ * since the file might be mmaped.
++ * Return: negative errno if an error occurs, otherwise the number of bytes
++ * accessible at this address.
 + */
-+int dax_truncate_page(struct inode *inode, loff_t from, get_block_t get_block)
++long bdev_direct_access(struct block_device *bdev, sector_t sector,
++			void **addr, unsigned long *pfn, long size)
 +{
-+	unsigned length = PAGE_CACHE_ALIGN(from) - from;
-+	return dax_zero_page_range(inode, from, length, get_block);
++	long avail;
++	const struct block_device_operations *ops = bdev->bd_disk->fops;
++
++	if (size < 0)
++		return size;
++	if (!ops->direct_access)
++		return -EOPNOTSUPP;
++	if ((sector + DIV_ROUND_UP(size, 512)) >
++					part_nr_sects_read(bdev->bd_part))
++		return -ERANGE;
++	sector += get_start_sect(bdev);
++	if (sector % (PAGE_SIZE / 512))
++		return -EINVAL;
++	avail = ops->direct_access(bdev, sector, addr, pfn, size);
++	if (!avail)
++		return -ERANGE;
++	return min(avail, size);
 +}
- EXPORT_SYMBOL_GPL(dax_truncate_page);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index dad6628..563a6ca 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2474,6 +2474,7 @@ extern int nonseekable_open(struct inode * inode, struct file * filp);
- ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, struct iov_iter *,
- 		loff_t, get_block_t, dio_iodone_t, int flags);
- int dax_clear_blocks(struct inode *, sector_t block, long size);
-+int dax_zero_page_range(struct inode *, loff_t from, unsigned len, get_block_t);
- int dax_truncate_page(struct inode *, loff_t from, get_block_t);
- int dax_fault(struct vm_area_struct *, struct vm_fault *, get_block_t);
- #define dax_mkwrite(vma, vmf, gb)	dax_fault(vma, vmf, gb)
++EXPORT_SYMBOL_GPL(bdev_direct_access);
++
+ /*
+  * pseudo-fs
+  */
+diff --git a/fs/ext2/xip.c b/fs/ext2/xip.c
+index e98171a..bbc5fec 100644
+--- a/fs/ext2/xip.c
++++ b/fs/ext2/xip.c
+@@ -13,18 +13,12 @@
+ #include "ext2.h"
+ #include "xip.h"
+ 
+-static inline int
+-__inode_direct_access(struct inode *inode, sector_t block,
+-		      void **kaddr, unsigned long *pfn)
++static inline long __inode_direct_access(struct inode *inode, sector_t block,
++				void **kaddr, unsigned long *pfn, long size)
+ {
+ 	struct block_device *bdev = inode->i_sb->s_bdev;
+-	const struct block_device_operations *ops = bdev->bd_disk->fops;
+-	sector_t sector;
+-
+-	sector = block * (PAGE_SIZE / 512); /* ext2 block to bdev sector */
+-
+-	BUG_ON(!ops->direct_access);
+-	return ops->direct_access(bdev, sector, kaddr, pfn);
++	sector_t sector = block * (PAGE_SIZE / 512);
++	return bdev_direct_access(bdev, sector, kaddr, pfn, size);
+ }
+ 
+ static inline int
+@@ -53,12 +47,13 @@ ext2_clear_xip_target(struct inode *inode, sector_t block)
+ {
+ 	void *kaddr;
+ 	unsigned long pfn;
+-	int rc;
++	long size;
+ 
+-	rc = __inode_direct_access(inode, block, &kaddr, &pfn);
+-	if (!rc)
+-		clear_page(kaddr);
+-	return rc;
++	size = __inode_direct_access(inode, block, &kaddr, &pfn, PAGE_SIZE);
++	if (size < 0)
++		return size;
++	clear_page(kaddr);
++	return 0;
+ }
+ 
+ void ext2_xip_verify_sb(struct super_block *sb)
+@@ -77,7 +72,7 @@ void ext2_xip_verify_sb(struct super_block *sb)
+ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 				void **kmem, unsigned long *pfn)
+ {
+-	int rc;
++	long rc;
+ 	sector_t block;
+ 
+ 	/* first, retrieve the sector number */
+@@ -86,6 +81,6 @@ int ext2_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
+ 		return rc;
+ 
+ 	/* retrieve address of the target data */
+-	rc = __inode_direct_access(mapping->host, block, kmem, pfn);
+-	return rc;
++	rc = __inode_direct_access(mapping->host, block, kmem, pfn, PAGE_SIZE);
++	return (rc < 0) ? rc : 0;
+ }
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 0207a78..3b93ec7 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1604,8 +1604,8 @@ struct block_device_operations {
+ 	int (*rw_page)(struct block_device *, sector_t, struct page *, int rw);
+ 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+ 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+-	int (*direct_access) (struct block_device *, sector_t,
+-						void **, unsigned long *);
++	long (*direct_access)(struct block_device *, sector_t,
++					void **, unsigned long *pfn, long size);
+ 	unsigned int (*check_events) (struct gendisk *disk,
+ 				      unsigned int clearing);
+ 	/* ->media_changed() is DEPRECATED, use ->check_events() instead */
+@@ -1623,6 +1623,8 @@ extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
+ extern int bdev_read_page(struct block_device *, sector_t, struct page *);
+ extern int bdev_write_page(struct block_device *, sector_t, struct page *,
+ 						struct writeback_control *);
++extern long bdev_direct_access(struct block_device *, sector_t, void **addr,
++						unsigned long *pfn, long size);
+ #else /* CONFIG_BLOCK */
+ 
+ struct block_device;
 -- 
 2.1.1
 
