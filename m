@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932925AbaJXRJe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:09:34 -0400
-Received: from mail.declera.com ([87.118.141.5]:34758 "HELO mail.declera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932421AbaJXRJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:09:33 -0400
-Date: Fri, 24 Oct 2014 20:09:31 +0300
-From: Yanko Kaneti <yaneti@declera.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        jay.vosburgh@canonical.com, mroos@linux.ee
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141024170931.GA21849@declera.com>
-References: <20141023122750.GP4977@linux.vnet.ibm.com>
- <20141023153333.GA19278@linux.vnet.ibm.com>
- <20141023195159.GA2331@declera.com>
- <20141023200507.GC4977@linux.vnet.ibm.com>
- <1414100740.2065.2.camel@declera.com>
- <20141023220406.GJ4977@linux.vnet.ibm.com>
- <20141024090857.GA4083@declera.com>
- <20141024154006.GP4977@linux.vnet.ibm.com>
- <20141024162943.GA16621@declera.com>
- <20141024165454.GS4977@linux.vnet.ibm.com>
+	id S1756696AbaJXRQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:16:09 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:65184 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390AbaJXRQG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 13:16:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141024165454.GS4977@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <x49k33po42c.fsf@segfault.boston.devel.redhat.com>
+References: <cover.1413923420.git.milosz@adfin.com>
+	<ba8d704a12c7ceffce610fc438a0af11a3422002.1413923420.git.milosz@adfin.com>
+	<x49k33po42c.fsf@segfault.boston.devel.redhat.com>
+Date: Fri, 24 Oct 2014 13:16:04 -0400
+Message-ID: <CANP1eJE-gRPNc9xDpAYKHVzcwS+v3AwDb=Dm1CBa=sevSczqjg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] vfs: RWF_NONBLOCK flag for preadv2
+From: Milosz Tanski <milosz@adfin.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri-10/24/14-2014 09:54, Paul E. McKenney wrote:
-> On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
-> > On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
-> > > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
-> > > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
-> > > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
-> > > > > > 
-> > > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
-> > > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
-> 
-> [ . . . ]
-> 
-> > > > Ok, unless I've messsed up something major, bisecting points to:
-> > > > 
-> > > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
-> > > > 
-> > > > Makes any sense ?
-> > > 
-> > > Good question.  ;-)
-> > > 
-> > > Are any of your online CPUs missing rcuo kthreads?  There should be
-> > > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
-> > 
-> > Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
-> > and the modprobe ppp_generic testcase reliably works, libvirt also manages
-> > to setup its bridge.
-> > 
-> > Just with linux-tip , the rcuos are 6 but the failure is as reliable as
-> > before.
-
- 
-> Thank you, very interesting.  Which 6 of the rcuos are present?
-
-Well, the rcuos are 0 to 5. Which sounds right for a 6 core CPU like this   
-Phenom II.
-
- 
-> > Awating instructions: :)
-> 
-> Well, I thought I understood the problem until you found that only 6 of
-> the expected 8 rcuos are present with linux-tip without the revert.  ;-)
-> 
-> I am putting together a patch for the part of the problem that I think
-> I understand, of course, but it would help a lot to know which two of
-> the rcuos are missing.  ;-)
+On Fri, Oct 24, 2014 at 11:55 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
+> Milosz Tanski <milosz@adfin.com> writes:
 >
+>> Filesystems that generic_file_read_iter will not be allowed to perform
+>> non-blocking reads. This only will read data if it's in the page cache and if
+>> there is no page error (causing a re-read).
+>>
+>> Christoph Hellwig wrote the filesystem specify code (cifs, ofs, shm, xfs).
+>>
+>> Signed-off-by: Milosz Tanski <milosz@adfin.com>
+>
+> Add in the 2 hunks from the other patches, as suggested by Christoph,
+> and you can add my:
+>
+> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
 
-Ready to test
+I'm aware of the 3 patch series that Christoph sent out shortly after
+the previous version of the patchset. Wasn't sure what to do about it.
 
---Yanko
+Christoph, should I apply your last 3 patches to the end of this tree
+and send it along with the next submission? Or should I take the first
+two combine them with this change and then apply RWF_DSYNC ontop of
+it?
+
+- M
+
+-- 
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
+
+p: 646-253-9055
+e: milosz@adfin.com
