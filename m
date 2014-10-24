@@ -1,111 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147AbaJXKrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:47:55 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:48057 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889AbaJXKrx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:47:53 -0400
-Date: Fri, 24 Oct 2014 11:47:46 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 3/7] [RFC] arm/arm64: introduce is_dma_coherent
-Message-ID: <20141024104746.GC1955@localhost>
-References: <alpine.DEB.2.02.1410101244090.17038@kaball.uk.xensource.com>
- <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com>
- <20141010120702.GI7755@arm.com>
- <alpine.DEB.2.02.1410101401250.17038@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1410131215400.17038@kaball.uk.xensource.com>
- <20141013125725.GA19156@arm.com>
- <alpine.DEB.2.02.1410131358490.17038@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1410221703560.876@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1410231516450.876@kaball.uk.xensource.com>
+	id S1756188AbaJXKtc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:49:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:43914 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755889AbaJXKtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 06:49:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,779,1406617200"; 
+   d="scan'208";a="595165934"
+Message-ID: <544A2E5F.80508@intel.com>
+Date: Fri, 24 Oct 2014 13:47:59 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1410231516450.876@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 05/16] perf tools: Add facility to export data in database-friendly
+ way
+References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>	<1414061124-26830-6-git-send-email-adrian.hunter@intel.com> <87lho6c8ec.fsf@sejong.aot.lge.com> <544A099C.50104@intel.com>
+In-Reply-To: <544A099C.50104@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 03:22:27PM +0100, Stefano Stabellini wrote:
-> On Wed, 22 Oct 2014, Stefano Stabellini wrote:
-> > On Mon, 13 Oct 2014, Stefano Stabellini wrote:
-> > > On Mon, 13 Oct 2014, Will Deacon wrote:
-> > > > On Mon, Oct 13, 2014 at 12:16:14PM +0100, Stefano Stabellini wrote:
-> > > > > On Fri, 10 Oct 2014, Stefano Stabellini wrote:
-> > > > > > On Fri, 10 Oct 2014, Will Deacon wrote:
-> > > > > > > On Fri, Oct 10, 2014 at 12:51:44PM +0100, Stefano Stabellini wrote:
-> > > > > > > > Introduce a function to check whether a device is dma coherent.
-> > > > > > > > 
-> > > > > > > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > > > > > > CC: linux@arm.linux.org.uk
-> > > > > > > > CC: catalin.marinas@arm.com
-> > > > > > > > CC: will.deacon@arm.com
-> > > > > > > > CC: linux-arm-kernel@lists.infradead.org
-> > > > > > > > ---
-> > > > > > > >  arch/arm/include/asm/dma-mapping.h   |    6 ++++++
-> > > > > > > >  arch/arm64/include/asm/dma-mapping.h |    5 +++++
-> > > > > > > >  2 files changed, 11 insertions(+)
-> > > > > > > > 
-> > > > > > > > diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-> > > > > > > > index c45b61a..bededbb 100644
-> > > > > > > > --- a/arch/arm/include/asm/dma-mapping.h
-> > > > > > > > +++ b/arch/arm/include/asm/dma-mapping.h
-> > > > > > > > @@ -126,6 +126,12 @@ static inline int set_arch_dma_coherent_ops(struct device *dev)
-> > > > > > > >  	set_dma_ops(dev, &arm_coherent_dma_ops);
-> > > > > > > >  	return 0;
-> > > > > > > >  }
-> > > > > > > > +
-> > > > > > > > +static inline bool is_dma_coherent(struct device *dev)
-> > > > > > > > +{
-> > > > > > > > +    return (__generic_dma_ops(dev) == &arm_coherent_dma_ops);
-> > > > > > > > +}
-> > > > > > > 
-> > > > > > > Hmm, what about the IOMMU ops?
-> > > > > > 
-> > > > > > Maybe I should check __generic_dma_ops(dev) != &arm_dma_ops?
-> > > > > > Do you have any better suggestions?
-> > > > > 
-> > > > > ping?
-> > > > 
-> > > > Without any clear idea about why this is needed or how it's used, I don't
-> > > > have any better ideas.
-> > > 
-> > > Thanks for the quick reply.
-> > > 
-> > > It is used in dom0 to figure out whether the device is not coherent: in
-> > > that case Dom0 is going to issue an hypercall and Xen is going to
-> > > execute the required cache maintenance operations on Dom0's behalf.
-> > > 
-> > > In practice for this use case iommu_dma_ops is not a problem, as the
-> > > device is never going to appear as being behind an SMMU in dom0.
-> > 
-> > re-ping?
+On 24/10/14 11:11, Adrian Hunter wrote:
+> On 24/10/14 09:02, Namhyung Kim wrote:
+>> On Thu, 23 Oct 2014 13:45:13 +0300, Adrian Hunter wrote:
+>>> This patch introduces an abstraction for exporting sample
+>>> data in a database-friendly way.  The abstraction does not
+>>> implement the actual output.  A subsequent patch takes this
+>>> facility into use for extending the script interface.
+>>>
+>>> The abstraction is needed because static data like symbols,
+>>> dsos, comms etc need to be exported only once.  That means
+>>> allocating them a unique identifier and recording it on each
+>>> structure.  The member 'db_id' is used for that.  'db_id'
+>>> is just a 64-bit sequence number.
+>>
+>> Can we do it somewhere in a script not in the core code?  I don't feel
+>> comfortable to add those bits into the core code.  What if we export
 > 
-> I don't mean to be pushy but this series is required to fix a regression
-> that causes dom0 to crash when running as dom0 on Xen on ARM if
-> non-coherent devices are present on the platform.
+> Please explain what you mean by "comfortable".
 
-Sorry for ignoring it but I don't fully understand how Xen works,
-especially this DMA stuff. I recall some blogs you wrote but I don't
-have time to re-read them (and I'm on holiday next week).
+Or rather: What about it is wrong for core code?
 
-I think a better way would be some Xen hook around
-set_arch_dma_coherent_ops(). Does Xen have its own device tracking
-structures? If not, you may be able to add another bitfield to the
-kernel one.
+> 
+>> meta events like task, mmap or some user events to the script optionally
+>> and let it process the data?
+> 
+> Intel PT decoding can generate a lot of data.  Many millions of samples at
+> least.
+> 
+> Each sample contains a lot of duplicated information like symbol names, dso
+> names, comms, etc.  So it is not optimal to export that for every sample.
+> Even then, each piece of supporting information must be looked up - was it
+> the same as the last sample, no then look it up, was it found, no then add a
+> record.  That is very very inefficient.
+> 
+> Exporting each piece of information once, instead of over and over again, is
+> a reasonable thing to do.
+> 
+>>
+>> Thanks,
+>> Namhyung
+>>
+>>
+>>>
+>>> Exporting centres around the db_export__sample() function
+>>> which exports the associated data structures if they have
+>>> not yet been allocated a db_id.
+>>
+>>
+> 
+> 
+> 
 
--- 
-Catalin
