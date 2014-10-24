@@ -1,64 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423AbaJXKjf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:39:35 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:42831 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756405AbaJXKjd (ORCPT
+	id S1756247AbaJXKiN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:38:13 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:40154 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756225AbaJXKiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:39:33 -0400
-Date: Fri, 24 Oct 2014 11:39:39 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jani Nikula <jani.nikula@intel.com>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: fix use via symlink, make missing spelling
- file non-fatal
-Message-ID: <20141024103939.GD2910@bark>
-References: <874muwv0ym.fsf@intel.com>
- <1413980418.18654.8.camel@perches.com>
- <87ppdktewn.fsf@intel.com>
- <1414085351.15751.10.camel@perches.com>
- <20141024090252.GC2910@bark>
- <1414143110.15751.13.camel@perches.com>
+	Fri, 24 Oct 2014 06:38:07 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm v2 5/9] memcg: add rwsem to sync against memcg_caches arrays relocation
+Date: Fri, 24 Oct 2014 14:37:36 +0400
+Message-ID: <aa1d5e1a2453738487eafc66bcef3cc566455aeb.1414145863.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1414145862.git.vdavydov@parallels.com>
+References: <cover.1414145862.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414143110.15751.13.camel@perches.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 02:31:50AM -0700, Joe Perches wrote:
-> On Fri, 2014-10-24 at 10:02 +0100, Andy Whitcroft wrote:
-> > On Thu, Oct 23, 2014 at 10:29:11AM -0700, Joe Perches wrote:
-> > 
-> > [...]
-> > >  my $P = $0;
-> > > -$P =~ s@(.*)/@@g;
-> > > -my $D = $1;
-> > > +my $D = dirname(abs_path($P));
-> > 
-> > That changes the value of $P, I don't know if that is intended:
-> > 
-> >   my $D = dirname(abs_path($0));
-> > 
-> > or
-> > 
-> >   my $D = abs_path($1);
-> > 
-> > perhaps to keep $P as it was.
-> 
-> I did it to show the executable passed on the cmdline better.
-> 
-> It changes --help and some warn/die messages.
-> 
-> It's not particularly important either way.
+We need a stable value of memcg_max_cache_ids in kmem_cache_create()
+(memcg_alloc_cache_params() wants it for root caches), where we only
+hold the slab_mutex and no memcg-related locks. As a result, we have to
+update memcg_cache_ids under the slab_mutex, which we can only take from
+the slab's side. This looks awkward and will become even worse when
+per-memcg list_lru is introduced, which also wants stable access to
+memcg_max_cache_ids.
 
-If it was intended then great.  Either way is fine with me.
+To get rid of this dependency between the memcg_max_cache_ids and the
+slab_mutex, this patch introduces a special rwsem. The rwsem is held for
+writing during memcg_caches arrays relocation and memcg_max_cache_ids
+updates. Therefore one can take it for reading to get a stable access to
+memcg_caches arrays and/or memcg_max_cache_ids.
 
-Acked-by: Andy Whitcroft <apw@canonical.com>
+Currently the semaphore is taken for reading only from
+kmem_cache_create, right before taking the slab_mutex, so right now
+there's no point in using rwsem instead of mutex. However, once list_lru
+is made per-memcg it will allow list_lru initializations to proceed
+concurrently.
 
--apw
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ include/linux/memcontrol.h |   15 +++++++++++++--
+ mm/memcontrol.c            |   28 ++++++++++++++++++----------
+ mm/slab_common.c           |   10 +++++-----
+ 3 files changed, 36 insertions(+), 17 deletions(-)
+
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index e1a894c1018f..eebb56b94d23 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -395,8 +395,13 @@ extern struct static_key memcg_kmem_enabled_key;
+  * The maximal number of kmem-active memory cgroups that can exist on the
+  * system. May grow, but never shrinks. The value returned by memcg_cache_id()
+  * is always less.
++ *
++ * To prevent memcg_max_cache_ids from growing, memcg_lock_cache_id_space() can
++ * be used. It's backed by rw semaphore.
+  */
+ extern int memcg_max_cache_ids;
++extern void memcg_lock_cache_id_space(void);
++extern void memcg_unlock_cache_id_space(void);
+ 
+ /*
+  * Helper macro to loop through all memcg-specific caches. Callers must still
+@@ -433,8 +438,6 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order);
+ 
+ int memcg_cache_id(struct mem_cgroup *memcg);
+ 
+-void memcg_update_array_size(int num_groups);
+-
+ struct kmem_cache *
+ __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+ 
+@@ -571,6 +574,14 @@ static inline int memcg_cache_id(struct mem_cgroup *memcg)
+ 	return -1;
+ }
+ 
++static inline void memcg_lock_cache_id_space(void)
++{
++}
++
++static inline void memcg_unlock_cache_id_space(void)
++{
++}
++
+ static inline struct kmem_cache *
+ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+ {
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index fc1e2067a4c4..444bf8fe5f1d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -595,6 +595,19 @@ static void disarm_sock_keys(struct mem_cgroup *memcg)
+ static DEFINE_IDA(memcg_cache_ida);
+ int memcg_max_cache_ids;
+ 
++/* Protects memcg_max_cache_ids */
++static DECLARE_RWSEM(memcg_cache_id_space_sem);
++
++void memcg_lock_cache_id_space(void)
++{
++	down_read(&memcg_cache_id_space_sem);
++}
++
++void memcg_unlock_cache_id_space(void)
++{
++	up_read(&memcg_cache_id_space_sem);
++}
++
+ /*
+  * MIN_SIZE is different than 1, because we would like to avoid going through
+  * the alloc/free process all the time. In a small machine, 4 kmem-limited
+@@ -2599,6 +2612,7 @@ static int memcg_alloc_cache_id(void)
+ 	 * There's no space for the new id in memcg_caches arrays,
+ 	 * so we have to grow them.
+ 	 */
++	down_write(&memcg_cache_id_space_sem);
+ 
+ 	size = 2 * (id + 1);
+ 	if (size < MEMCG_CACHES_MIN_SIZE)
+@@ -2610,6 +2624,10 @@ static int memcg_alloc_cache_id(void)
+ 	err = memcg_update_all_caches(size);
+ 	mutex_unlock(&memcg_slab_mutex);
+ 
++	if (!err)
++		memcg_max_cache_ids = size;
++	up_write(&memcg_cache_id_space_sem);
++
+ 	if (err) {
+ 		ida_simple_remove(&memcg_cache_ida, id);
+ 		return err;
+@@ -2622,16 +2640,6 @@ static void memcg_free_cache_id(int id)
+ 	ida_simple_remove(&memcg_cache_ida, id);
+ }
+ 
+-/*
+- * We should update the current array size iff all caches updates succeed. This
+- * can only be done from the slab side. The slab mutex needs to be held when
+- * calling this.
+- */
+-void memcg_update_array_size(int num)
+-{
+-	memcg_max_cache_ids = num;
+-}
+-
+ static void memcg_register_cache(struct mem_cgroup *memcg,
+ 				 struct kmem_cache *root_cache)
+ {
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 41fe0ad199f2..879c1a8c54ba 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -169,8 +169,8 @@ int memcg_update_all_caches(int num_memcgs)
+ {
+ 	struct kmem_cache *s;
+ 	int ret = 0;
+-	mutex_lock(&slab_mutex);
+ 
++	mutex_lock(&slab_mutex);
+ 	list_for_each_entry(s, &slab_caches, list) {
+ 		if (!is_root_cache(s))
+ 			continue;
+@@ -181,11 +181,8 @@ int memcg_update_all_caches(int num_memcgs)
+ 		 * up to this point in an updated state.
+ 		 */
+ 		if (ret)
+-			goto out;
++			break;
+ 	}
+-
+-	memcg_update_array_size(num_memcgs);
+-out:
+ 	mutex_unlock(&slab_mutex);
+ 	return ret;
+ }
+@@ -365,6 +362,8 @@ kmem_cache_create(const char *name, size_t size, size_t align,
+ 
+ 	get_online_cpus();
+ 	get_online_mems();
++	memcg_lock_cache_id_space(); /* memcg_alloc_cache_params() needs a
++					stable value of memcg_max_cache_ids */
+ 
+ 	mutex_lock(&slab_mutex);
+ 
+@@ -403,6 +402,7 @@ kmem_cache_create(const char *name, size_t size, size_t align,
+ out_unlock:
+ 	mutex_unlock(&slab_mutex);
+ 
++	memcg_unlock_cache_id_space();
+ 	put_online_mems();
+ 	put_online_cpus();
+ 
+-- 
+1.7.10.4
+
