@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345AbaJXHr2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 03:47:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11245 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432AbaJXHr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 03:47:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,778,1406617200"; 
-   d="scan'208";a="610477671"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
-Subject: Re: [PATCH v5 11/20] x86: perf: Intel PT and LBR/BTS are mutually exclusive
-In-Reply-To: <20141022141547.GO12706@worktop.programming.kicks-ass.net>
-References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com> <1413207948-28202-12-git-send-email-alexander.shishkin@linux.intel.com> <20141022141547.GO12706@worktop.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Fri, 24 Oct 2014 10:47:16 +0300
-Message-ID: <87bnp13o57.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1755463AbaJXHrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 03:47:39 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49536 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833AbaJXHrh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 03:47:37 -0400
+Date: Fri, 24 Oct 2014 09:47:32 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/1] perf/urgent fix
+Message-ID: <20141024074732.GA22517@gmail.com>
+References: <1414012017-26261-1-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414012017-26261-1-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
 
-> On Mon, Oct 13, 2014 at 04:45:39PM +0300, Alexander Shishkin wrote:
->> Intel PT cannot be used at the same time as LBR or BTS and will cause a
->> general protection fault if they are used together. In order to avoid
->> fixing up GPs in the fast path, instead we use flags to indicate that
->> that one of these is in use so that the other avoids MSR access altogether.
->> 
->
-> Yeah, don't like this. Like I've said many times before we should simply
-> disallow creating PT events when there are LBR events and vice versa.
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-Ok, I must have misunderstood you before. This makes things a bit
-easier.
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 3b10ea7f922b538ba5dcb3d979a6b6b4d07daae2:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2014-10-18 09:04:02 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to 9ab1f50876dbb8b962db058259be7aae920d4c25:
+> 
+>   perf diff: Add missing hists__init() call at tool start (2014-10-22 16:31:06 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fix:
+> 
+> * Fix 'perf diff' initialization, calling the recently added hists__init()
+>   function so that extra space is allocated per perf_evsel for the hists storage
+>   that it also uses, just like report and top.  (Kan Liang)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Kan Liang (1):
+>       perf diff: Add missing hists__init() call at tool start
+> 
+>  tools/perf/builtin-diff.c | 5 +++++
+>  1 file changed, 5 insertions(+)
 
-Regards,
---
-Alex
+Pulled, thanks a lot Arnaldo!
+
+	Ingo
