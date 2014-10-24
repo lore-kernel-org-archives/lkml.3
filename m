@@ -1,216 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755975AbaJXKKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:10:22 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33772 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751011AbaJXKKU (ORCPT
+	id S1755660AbaJXKQM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:16:12 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:26686 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751391AbaJXKQK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:10:20 -0400
-X-Original-SENDERIP: 10.186.123.76
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <544A2588.40802@lge.com>
-Date: Fri, 24 Oct 2014 19:10:16 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Fri, 24 Oct 2014 06:16:10 -0400
+X-IronPort-AV: E=Sophos;i="5.04,779,1406563200"; 
+   d="scan'208";a="38811025"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+CC: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Howells <dhowells@redhat.com>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Vasiliy Kulikov <segooon@gmail.com>, Mateusz Guzik <mguzik@redhat.com>
+Subject: [RESEND][PATCH 0/2v5] ns, procfs: pid conversion between ns and showing pidns hierarchy
+Date: Fri, 24 Oct 2014 18:15:43 +0800
+Message-ID: <1414145745-30293-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
-To: PINTU KUMAR <pintu.k@samsung.com>, akpm@linux-foundation.org,
-        riel@redhat.com, aquini@redhat.com, paul.gortmaker@windriver.com,
-        jmarchan@redhat.com, lcapitulino@redhat.com,
-        kirill.shutemov@linux.intel.com, m.szyprowski@samsung.com,
-        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
-        mina86@mina86.com, lauraa@codeaurora.org, mgorman@suse.de,
-        rientjes@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
-        sasha.levin@oracle.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-CC: pintu_agarwal@yahoo.com, cpgs@samsung.com, vishnu.ps@samsung.com,
-        rohit.kr@samsung.com, ed.savinay@samsung.com
-Subject: Re: [PATCH v2 2/2] fs: proc: Include cma info in proc/meminfo
-References: <1413790391-31686-1-git-send-email-pintu.k@samsung.com> <1413986796-19732-1-git-send-email-pintu.k@samsung.com> <1413986796-19732-2-git-send-email-pintu.k@samsung.com> <54484993.1090803@lge.com> <018a01cfef68$88d0b450$9a721cf0$@samsung.com>
-In-Reply-To: <018a01cfef68$88d0b450$9a721cf0$@samsung.com>
-Content-Type: text/plain; charset=EUC-KR
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series will expose pid inside containers
+via procfs.
+Also show the hierarchy of pid namespcae.
+Then we could know how pid looks inside a container
+and their ns relationships.
 
+1. helpful for nested container check/restore
+>From /proc/PID/ns/pid, we could know whether two pid lived
+in the same ns.
+>From this patch, we could know whether two pid had relationship
+between each other.
 
-2014-10-24 오후 5:57, PINTU KUMAR 쓴 글:
-> Hi,
-> 
-> ----- Original Message -----
->> From: Gioh Kim <gioh.kim@lge.com>
->> To: Pintu Kumar <pintu.k@samsung.com>; akpm@linux-foundation.org;
-> riel@redhat.com; aquini@redhat.com; paul.gortmaker@windriver.com;
-> jmarchan@redhat.com; lcapitulino@redhat.com;
-> kirill.shutemov@linux.intel.com; m.szyprowski@samsung.com;
-> aneesh.kumar@linux.vnet.ibm.com; iamjoonsoo.kim@lge.com; mina86@mina86.com;
-> lauraa@codeaurora.org; mgorman@suse.de; rientjes@google.com; hannes@cmpxchg.
-> org; vbabka@suse.cz; sasha.levin@oracle.com; linux-kernel@vger.kernel.org;
-> linux-mm@kvack.org
->> Cc: pintu_agarwal@yahoo.com; cpgs@samsung.com; vishnu.ps@samsung.com;
-> rohit.kr@samsung.com; ed.savinay@samsung.com
->> Sent: Thursday, 23 October 2014 5:49 AM
->> Subject: Re: [PATCH v2 2/2] fs: proc: Include cma info in proc/meminfo
->>
->>
->>
->> 2014-10-22 오후 11:06, Pintu Kumar 쓴 글:
->>> This patch include CMA info (CMATotal, CMAFree) in /proc/meminfo.
->>> Currently, in a CMA enabled system, if somebody wants to know the
->>> total CMA size declared, there is no way to tell, other than the dmesg
->>> or /var/log/messages logs.
->>> With this patch we are showing the CMA info as part of meminfo, so that
->>> it can be determined at any point of time.
->>> This will be populated only when CMA is enabled.
->>>
->>> Below is the sample output from a ARM based device with RAM:512MB and
->> CMA:16MB.
->>>
->>> MemTotal:        471172 kB
->>> MemFree:          111712 kB
->>> MemAvailable:    271172 kB
->>> .
->>> .
->>> .
->>> CmaTotal:          16384 kB
->>> CmaFree:            6144 kB
->>>
->>> This patch also fix below checkpatch errors that were found during these
->> changes.
->>
->> Why don't you split patch for it?
->> I think there's a rule not to mix separate patchs.
->>
-> 
-> Last time when we submitted separate patches for checkpatch errors, it was
-> suggested to
-> Include these kinds of fixes along with some meaningful patches together.
-> So, we included it in same patch.
-> 
->>>
->>> ERROR: space required after that ',' (ctx:ExV)
->>> 199: FILE: fs/proc/meminfo.c:199:
->>> +      ,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT -
->> 10)
->>>            ^
->>>
->>> ERROR: space required after that ',' (ctx:ExV)
->>> 202: FILE: fs/proc/meminfo.c:202:
->>> +      ,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
->>>            ^
->>>
->>> ERROR: space required after that ',' (ctx:ExV)
->>> 206: FILE: fs/proc/meminfo.c:206:
->>> +      ,K(totalcma_pages)
->>>            ^
->>>
->>> total: 3 errors, 0 warnings, 2 checks, 236 lines checked
->>>
->>> Signed-off-by: Pintu Kumar <pintu.k@samsung.com>
->>> Signed-off-by: Vishnu Pratap Singh <vishnu.ps@samsung.com>
->>> ---
->>>    fs/proc/meminfo.c |  15 +++++++++++++--
->>>    1 file changed, 13 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
->>> index aa1eee0..d3ebf2e 100644
->>> --- a/fs/proc/meminfo.c
->>> +++ b/fs/proc/meminfo.c
->>> @@ -12,6 +12,9 @@
->>>    #include <linux/vmstat.h>
->>>    #include <linux/atomic.h>
->>>    #include <linux/vmalloc.h>
->>> +#ifdef CONFIG_CMA
->>> +#include <linux/cma.h>
->>> +#endif
->>>    #include <asm/page.h>
->>>    #include <asm/pgtable.h>
->>>    #include "internal.h"
->>> @@ -138,6 +141,10 @@ static int meminfo_proc_show(struct seq_file *m,
-> void
->> *v)
->>>    #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->>>            "AnonHugePages:  %8lu kB\n"
->>>    #endif
->>> +#ifdef CONFIG_CMA
->>> +        "CmaTotal:      %8lu kB\n"
->>> +        "CmaFree:        %8lu kB\n"
->>> +#endif
->>>            ,
->>>            K(i.totalram),
->>>            K(i.freeram),
->>> @@ -187,12 +194,16 @@ static int meminfo_proc_show(struct seq_file *m,
-> void
->> *v)
->>>            vmi.used >> 10,
->>>            vmi.largest_chunk >> 10
->>>    #ifdef CONFIG_MEMORY_FAILURE
->>> -        ,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT -
->> 10)
->>> +        , atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT -
->> 10)
->>>    #endif
->>>    #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->>> -        ,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
->>> +        , K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
->>>              HPAGE_PMD_NR)
->>>    #endif
->>> +#ifdef CONFIG_CMA
->>> +        , K(totalcma_pages)
->>> +        , K(global_page_state(NR_FREE_CMA_PAGES))
->>> +#endif
->>>            );
->>
->> Just for sure, are zoneinfo and pagetypeinfo not suitable?
->>
-> 
-> I think zoneinfo shows only current free cma pages.
-> Same is the case with vmstat.
-> # cat /proc/zoneinfo | grep cma
->      nr_free_cma  2560
-> # cat /proc/vmstat | grep cma
-> nr_free_cma 2560
+2. used for pid translation from container
+Ex:
+     init_pid_ns    ns1         ns2
+ t1  2
+ t2   `- 3          1
+ t3   `- 4          3
+ t4       `- 5      `- 5        1
+ t5       `- 6      `- 8        3
 
-We could add a line to show total cma pages like following and add it all.
-# cat /proc/zoneinfo | grep cma
-      nr_total_cma XXXX
-      nr_free_cma  2560
+It could solve problems like: we see a pid 3 goes wrong
+in container's log, what is its pid on hosts:
+a) inside container:
+# readlink /proc/3/ns/pid
+pid:[4026532388]
 
-Yes. each zone can have cma area and it is annoying to add it all.
-But IMO it is rare and not difficult.
-And I think it'd better that zoneinfo has nr_total_cma line.
+b) on host:
+# cat /proc/pidns_hierarchy
+14918 16263
+16581
+Then we could easily find /proc/16263/ns/pid->4026532388.
+On host, we knew that reported pid 3 is in level 2,
+   and its parental pid ns is from pid 14918.
 
-I think you already considered my thoughts and choosed /proc/meminfo for a certain reason.
-Why is /proc/meminfo better?
+c) on host, check child of 16263, grep it from status:
+NSpid:  16268   8       3
 
-Andrew already accepted it. I'm not against your idea. Just curious.
+We knew that pid 16268 is pid 3 reported by container.
 
-> 
->> I don't know HOTPLUG feature so I'm just asking for sure.
->> Does HOTPLUG not need printing message like this?
->>
-> 
-> Sorry, I am also not sure what hotplug feature you are referring to.
+v5: collect pid by find_ge_pid;
+    use local list inside nslist_proc_show;
+    use get_pid, remove mutex lock.
+v4: simplify pid collection and some performance optimizamtion
+    fix another race issue.
+v3: fix a race issue and memory leak issue in pidns_hierarchy;
+    add another two fielsd: NSpgid and NSsid.
+v2: use a procfs text file instead of dirs under /proc for
+    showing pidns hierarchy;
+    add two new fields: NStgid and NSpid
+    keep fields of Tgid and Pid unchanged for back compatibility.
 
-I mean "memory hotplug" feature.
-Forget it ;-)
+Chen Hanxiao (2):
+   procfs: show hierarchy of pid namespace
+  /proc/PID/status: show all sets of pid according to ns
 
-> 
->> Thanks a lot.
->>
->>
->>>    
->>>        hugetlb_report_meminfo(m);
->>>
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org">
->> email@kvack.org </a>
->>
-> 
-> 
+ fs/proc/Kconfig           |   6 ++
+ fs/proc/Makefile          |   1 +
+ fs/proc/array.c           |  17 ++++
+ fs/proc/pidns_hierarchy.c | 226 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 250 insertions(+)
+ create mode 100644 fs/proc/pidns_hierarchy.c
+
+-- 
+1.9.3
+
