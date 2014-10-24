@@ -1,128 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaJXCco (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 22:32:44 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:35372 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbaJXCcl (ORCPT
+	id S1754954AbaJXCdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 22:33:37 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:44586 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585AbaJXCdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 22:32:41 -0400
-Date: Thu, 23 Oct 2014 19:32:36 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Caesar Wang <caesar.wang@rock-chips.com>
-Cc: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
-        zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
-        cjf@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH v13 4/5] ARM: dts: add main Thermal info to rk3288
-Message-ID: <20141024023236.GA19910@dtor-ws>
-References: <1414057207-1576-1-git-send-email-caesar.wang@rock-chips.com>
- <1414057207-1576-5-git-send-email-caesar.wang@rock-chips.com>
- <20141024004625.GD9463@dtor-ws>
- <5449A6A4.3070608@rock-chips.com>
- <E4EEE800-5701-45E5-9E97-D3B036DC2F17@gmail.com>
- <5449B433.5040003@rock-chips.com>
+	Thu, 23 Oct 2014 22:33:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5449B433.5040003@rock-chips.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141023074739.GH13512@nuc-i3427.alporthouse.com>
+References: <1413991731-20628-1-git-send-email-robert@sixbynine.org>
+ <1413991731-20628-4-git-send-email-robert@sixbynine.org> <20141023074739.GH13512@nuc-i3427.alporthouse.com>
+From: Robert Bragg <robert@sixbynine.org>
+Date: Fri, 24 Oct 2014 03:33:14 +0100
+X-Google-Sender-Auth: I8RaR_En1VzQ7rFOezKUAXV0I0A
+Message-ID: <CAMou1-3n5pC4C_7x_5oxz0WG3sOifKvG-wCER_5g6VeniEJ=6A@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/3] i915: Expose PMU for Observation Architecture
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Rob Clark <robdclark@gmail.com>,
+        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 10:06:43AM +0800, Caesar Wang wrote:
-> 
-> 在 2014/10/24 9:37, Dmitry Torokhov 写道:
-> >On October 23, 2014 6:08:52 PM PDT, Caesar Wang <caesar.wang@rock-chips.com> wrote:
-> >>Dmitry,
-> >>
-> >>在 2014/10/24 8:46, Dmitry Torokhov 写道:
-> >>>Hi Caesar,
-> >>>
-> >>>On Thu, Oct 23, 2014 at 05:40:06PM +0800, Caesar Wang wrote:
-> >>>>This patch is depend on rk3288-thermal.dtsi,or
-> >>>>it will compile error.
-> >>>>
-> >>>>If the temperature over a period of time High,over 120C
-> >>>>the resulting TSHUT gave CRU module,let it reset
-> >>>>the entire chip,or via GPIO give PMIC.
-> >>>>
-> >>>>Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
-> >>>>---
-> >>>>   arch/arm/boot/dts/rk3288.dtsi | 21 +++++++++++++++++++++
-> >>>>   1 file changed, 21 insertions(+)
-> >>>>
-> >>>>diff --git a/arch/arm/boot/dts/rk3288.dtsi
-> >>b/arch/arm/boot/dts/rk3288.dtsi
-> >>>>index cb18bb4..85fc17a 100644
-> >>>>--- a/arch/arm/boot/dts/rk3288.dtsi
-> >>>>+++ b/arch/arm/boot/dts/rk3288.dtsi
-> >>>>@@ -15,6 +15,7 @@
-> >>>>   #include <dt-bindings/interrupt-controller/arm-gic.h>
-> >>>>   #include <dt-bindings/pinctrl/rockchip.h>
-> >>>>   #include <dt-bindings/clock/rk3288-cru.h>
-> >>>>+#include <dt-bindings/thermal/thermal.h>
-> >>>>   #include "skeleton.dtsi"
-> >>>>   / {
-> >>>>@@ -66,6 +67,7 @@
-> >>>>   				 216000  900000
-> >>>>   				 126000  900000
-> >>>>   			>;
-> >>>>+			#cooling-cells = <2>; /* min followed by max */
-> >>>>   			clock-latency = <40000>;
-> >>>>   			clocks = <&cru ARMCLK>;
-> >>>>   		};
-> >>>>@@ -346,6 +348,19 @@
-> >>>>   		status = "disabled";
-> >>>>   	};
-> >>>>+	tsadc: tsadc@ff280000 {
-> >>>>+		compatible = "rockchip,rk3288-tsadc";
-> >>>>+		reg = <0xff280000 0x100>;
-> >>>>+		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-> >>>>+		clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-> >>>>+		clock-names = "tsadc", "apb_pclk";
-> >>>>+		pinctrl-names = "default";
-> >>>>+		pinctrl-0 = <&otp_out>;
-> >>>>+		#thermal-sensor-cells = <1>;
-> >>>>+		hw-shut-temp = <120000>;
-> >>>I do not think this is a good value. You have (in the other DTS file)
-> >>>passive trip point at 80 and critical (which should result in orderly
-> >>>shutdown) at 125. But here you define hardware-controlled shutdown at
-> >>>120C, which is backwards. You should have:
-> >>>
-> >>>passive <= critical <= hardware
-> >>Hmmm....
-> >>but, the system will shutdown when temperature over critial value,
-> >>there is no chance of triggering the TSHUT.
-> >>
-> >>If the temperature over a period of time High,as we know,
-> >>the resulting TSHUT gave CRU module,let it hot-reset the entire chip,
-> >>or via GPIO give PMIC cold-reset the entire chip.
-> >Having tshut trigger is not the goal, tshut is the measure of last resort. If we can handle thermal conditions without triggering tshut, we achieved our goal.
-> >
-> >Tshut triggering is " oh, crap, nothing we tried works" scenario.
-> 
-> I don't think so.
-> 
-> In general,We should have:
-> passive <= hardware(reset entire chip) <= critical(shutdown)
-> 
-> The temperature be rising qulckly if have some other conditions,
-> the "critical" will play a role.
+On Thu, Oct 23, 2014 at 8:47 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Wed, Oct 22, 2014 at 04:28:51PM +0100, Robert Bragg wrote:
+>> +     /* XXX: Not sure that this is really acceptable...
+>> +      *
+>> +      * i915_gem_context.c currently owns pinning/unpinning legacy
+>> +      * context buffers and although that code has a
+>> +      * get_context_alignment() func to handle a different
+>> +      * constraint for gen6 we are assuming it's fixed for gen7
+>> +      * here. Another option besides pinning here would be to
+>> +      * instead hook into context switching and update the
+>> +      * OACONTROL configuration on the fly.
+>> +      */
+>> +     if (dev_priv->oa_pmu.specific_ctx) {
+>> +             struct intel_context *ctx = dev_priv->oa_pmu.specific_ctx;
+>> +             int ret;
+>> +
+>> +             ret = i915_gem_obj_ggtt_pin(ctx->legacy_hw_ctx.rcs_state,
+>> +                                         4096, 0);
+>
+> Right if you pin it here with a different alignment, when we try to  pin
+> it with the required hw ctx alignment it will fail. Easiest way is to
+> record the ctx->legacy_hw_ctx.alignment and reuse that here.
 
-No, I think it should be the other way around: if we are unable to cool
-down the laptop under load we need to shut it down and let it cool. If
-for some reason we are unable to shut it down in orderly fashion (kernel
-is stuck holding a lock or similar) then hardware will reset it.
+Ok I can look into that a bit more. I'm not currently sure I can assume the
+ctx will have been pinned before, to be able to record the alignment.
+Skimming i915_gem_context.c, it looks like we only pin the default context
+on creation and a user could open a perf even before we first switch to that
+context.
 
-At least that's how I understand it.
+I wonder if it would be ok to expose an i915_get_context_alignment() api to
+deal with this?
 
-Thanks.
+>
+>> +             if (ret) {
+>> +                     DRM_DEBUG_DRIVER("Couldn't pin %d\n", ret);
+>> +                     ret = -EBUSY;
+>
+> As an exercise, think of all the possible error values from pin() and
+> tell me why overriding that here is a bad, bad idea.
 
--- 
-Dmitry
+Hmm, I'm not quite sure why I decided to squash the error code there, it
+looks pretty arbitrary. My take on your comment a.t.m is essentially that
+some of the pin() errors don't really represent a busy state where it would
+make sense for userspace to try again later; such as -ENODEV. Sorry if you
+saw a very specific case that offended you :-) I have removed the override
+locally.
+
+Thanks for taking a look.
+
+- Robert
+
+> -Chris
+>
+> --
+> Chris Wilson, Intel Open Source Technology Centre
