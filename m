@@ -1,109 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaJXBiI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 21:38:08 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:34457 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaJXBiG (ORCPT
+	id S1754471AbaJXBlT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 21:41:19 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:39854 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaJXBlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 21:38:06 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <5449A6A4.3070608@rock-chips.com>
-References: <1414057207-1576-1-git-send-email-caesar.wang@rock-chips.com> <1414057207-1576-5-git-send-email-caesar.wang@rock-chips.com> <20141024004625.GD9463@dtor-ws> <5449A6A4.3070608@rock-chips.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH v13 4/5] ARM: dts: add main Thermal info to rk3288
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Date: Thu, 23 Oct 2014 18:37:55 -0700
-To: Caesar Wang <caesar.wang@rock-chips.com>
-CC: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
-        zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
-        cjf@rock-chips.com, zhengsq@rock-chips.com
-Message-ID: <E4EEE800-5701-45E5-9E97-D3B036DC2F17@gmail.com>
+	Thu, 23 Oct 2014 21:41:17 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Josh Triplett <josh@joshtriplett.org>, Ingo Molnar <mingo@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net] bpf: split eBPF out of NET
+Date: Thu, 23 Oct 2014 18:41:08 -0700
+Message-Id: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On October 23, 2014 6:08:52 PM PDT, Caesar Wang <caesar.wang@rock-chips.com> wrote:
->Dmitry,
->
->在 2014/10/24 8:46, Dmitry Torokhov 写道:
->> Hi Caesar,
->>
->> On Thu, Oct 23, 2014 at 05:40:06PM +0800, Caesar Wang wrote:
->>> This patch is depend on rk3288-thermal.dtsi,or
->>> it will compile error.
->>>
->>> If the temperature over a period of time High,over 120C
->>> the resulting TSHUT gave CRU module,let it reset
->>> the entire chip,or via GPIO give PMIC.
->>>
->>> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
->>> ---
->>>   arch/arm/boot/dts/rk3288.dtsi | 21 +++++++++++++++++++++
->>>   1 file changed, 21 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/rk3288.dtsi
->b/arch/arm/boot/dts/rk3288.dtsi
->>> index cb18bb4..85fc17a 100644
->>> --- a/arch/arm/boot/dts/rk3288.dtsi
->>> +++ b/arch/arm/boot/dts/rk3288.dtsi
->>> @@ -15,6 +15,7 @@
->>>   #include <dt-bindings/interrupt-controller/arm-gic.h>
->>>   #include <dt-bindings/pinctrl/rockchip.h>
->>>   #include <dt-bindings/clock/rk3288-cru.h>
->>> +#include <dt-bindings/thermal/thermal.h>
->>>   #include "skeleton.dtsi"
->>>   
->>>   / {
->>> @@ -66,6 +67,7 @@
->>>   				 216000  900000
->>>   				 126000  900000
->>>   			>;
->>> +			#cooling-cells = <2>; /* min followed by max */
->>>   			clock-latency = <40000>;
->>>   			clocks = <&cru ARMCLK>;
->>>   		};
->>> @@ -346,6 +348,19 @@
->>>   		status = "disabled";
->>>   	};
->>>   
->>> +	tsadc: tsadc@ff280000 {
->>> +		compatible = "rockchip,rk3288-tsadc";
->>> +		reg = <0xff280000 0x100>;
->>> +		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
->>> +		clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
->>> +		clock-names = "tsadc", "apb_pclk";
->>> +		pinctrl-names = "default";
->>> +		pinctrl-0 = <&otp_out>;
->>> +		#thermal-sensor-cells = <1>;
->>> +		hw-shut-temp = <120000>;
->> I do not think this is a good value. You have (in the other DTS file)
->> passive trip point at 80 and critical (which should result in orderly
->> shutdown) at 125. But here you define hardware-controlled shutdown at
->> 120C, which is backwards. You should have:
->>
->> passive <= critical <= hardware
->Hmmm....
->but, the system will shutdown when temperature over critial value,
->there is no chance of triggering the TSHUT.
->
->If the temperature over a period of time High,as we know,
->the resulting TSHUT gave CRU module,let it hot-reset the entire chip,
->or via GPIO give PMIC cold-reset the entire chip.
+introduce two configs:
+- hidden CONFIG_BPF to select eBPF interpreter that classic socket filters
+  depend on
+- visible CONFIG_BPF_SYSCALL (default off) that tracing and sockets can use
 
-Having tshut trigger is not the goal, tshut is the measure of last resort. If we can handle thermal conditions without triggering tshut, we achieved our goal.
+that solves several problems:
+- tracing and others that wish to use eBPF don't need to depend on NET.
+  They can use BPF_SYSCALL to allow loading from userspace or select BPF
+  to use it directly from kernel in NET-less configs.
+- in 3.18 programs cannot be attached to events yet, so don't force it on
+- when the rest of eBPF infra is there in 3.19+, it's still useful to
+  switch it off to minimize kernel size
 
-Tshut triggering is " oh, crap, nothing we tried works" scenario.
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+---
 
+bloat-o-meter on x64 shows:
+add/remove: 0/60 grow/shrink: 0/2 up/down: 0/-15601 (-15601)
 
-Thanks.
+tested with many different config combinations. Hopefully didn't miss anything.
 
+ init/Kconfig        |   14 ++++++++++++++
+ kernel/Makefile     |    2 +-
+ kernel/bpf/Makefile |    6 +++---
+ kernel/bpf/core.c   |    9 +++++++++
+ net/Kconfig         |    2 +-
+ 5 files changed, 28 insertions(+), 5 deletions(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+index 3ee28ae..340fd92 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1341,6 +1341,10 @@ config SYSCTL_ARCH_UNALIGN_ALLOW
+ config HAVE_PCSPKR_PLATFORM
+ 	bool
+ 
++# interpreter that classic socket filters depend on
++config BPF
++	boolean
++
+ menuconfig EXPERT
+ 	bool "Configure standard kernel features (expert users)"
+ 	# Unhide debug options, to make the on-by-default options visible
+@@ -1521,6 +1525,16 @@ config EVENTFD
+ 
+ 	  If unsure, say Y.
+ 
++# syscall, maps, verifier
++config BPF_SYSCALL
++	bool "Enable bpf() system call" if EXPERT
++	select ANON_INODES
++	select BPF
++	default n
++	help
++	  Enable the bpf() system call that allows to manipulate eBPF
++	  programs and maps via file descriptors.
++
+ config SHMEM
+ 	bool "Use full shmem filesystem" if EXPERT
+ 	default y
+diff --git a/kernel/Makefile b/kernel/Makefile
+index dc5c775..17ea6d4 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -86,7 +86,7 @@ obj-$(CONFIG_RING_BUFFER) += trace/
+ obj-$(CONFIG_TRACEPOINTS) += trace/
+ obj-$(CONFIG_IRQ_WORK) += irq_work.o
+ obj-$(CONFIG_CPU_PM) += cpu_pm.o
+-obj-$(CONFIG_NET) += bpf/
++obj-$(CONFIG_BPF) += bpf/
+ 
+ obj-$(CONFIG_PERF_EVENTS) += events/
+ 
+diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
+index 4542723..0daf7f6 100644
+--- a/kernel/bpf/Makefile
++++ b/kernel/bpf/Makefile
+@@ -1,5 +1,5 @@
+-obj-y := core.o syscall.o verifier.o
+-
++obj-y := core.o
++obj-$(CONFIG_BPF_SYSCALL) += syscall.o verifier.o
+ ifdef CONFIG_TEST_BPF
+-obj-y += test_stub.o
++obj-$(CONFIG_BPF_SYSCALL) += test_stub.o
+ endif
+diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
+index f0c30c5..d6594e4 100644
+--- a/kernel/bpf/core.c
++++ b/kernel/bpf/core.c
+@@ -655,3 +655,12 @@ void bpf_prog_free(struct bpf_prog *fp)
+ 	schedule_work(&aux->work);
+ }
+ EXPORT_SYMBOL_GPL(bpf_prog_free);
++
++/* To execute LD_ABS/LD_IND instructions __bpf_prog_run() may call
++ * skb_copy_bits(), so provide a weak definition of it for NET-less config.
++ */
++int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
++			 int len)
++{
++	return -EFAULT;
++}
+diff --git a/net/Kconfig b/net/Kconfig
+index 6272420..99815b5 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -6,7 +6,7 @@ menuconfig NET
+ 	bool "Networking support"
+ 	select NLATTR
+ 	select GENERIC_NET_UTILS
+-	select ANON_INODES
++	select BPF
+ 	---help---
+ 	  Unless you really know what you are doing, you should say Y here.
+ 	  The reason is that some programs need kernel networking support even
 -- 
-Dmitry
+1.7.9.5
+
