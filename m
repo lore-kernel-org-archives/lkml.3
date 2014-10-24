@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611AbaJXPxE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:53:04 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50191 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaJXPxB (ORCPT
+	id S1756360AbaJXPxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:53:52 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:45440 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653AbaJXPxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:53:01 -0400
-Date: Fri, 24 Oct 2014 23:52:47 +0800
-From: Liu Bo <bo.li.liu@oracle.com>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        clm@fb.com, jbacik@fb.com, linux-btrfs@vger.kernel.org
-Subject: Re: btrfs: WARN_ON(data_sinfo->bytes_may_use < bytes);
-Message-ID: <20141024155245.GA14709@localhost.localdomain>
-Reply-To: bo.li.liu@oracle.com
-References: <20141023010731.GA27796@redhat.com>
- <20141023012236.GA28429@redhat.com>
+	Fri, 24 Oct 2014 11:53:50 -0400
+Date: Fri, 24 Oct 2014 08:53:40 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        adi-buildroot-devel@lists.sourceforge.net, linux390@de.ibm.com,
+        linux-alpha@vger.kernel.org, linux-am33-list@redhat.com,
+        linux-arm-kernel@lists.infradead.org, linux-c6x-dev@linux-c6x.org,
+        linux-cris-kernel@axis.com, linux-hexagon@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux@openrisc.net,
+        linux-m68k@vger.kernel.org, linux-metag@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-parisc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-xtensa@linux-xtensa.org,
+        sparclinux@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net, x86@kernel.org,
+        xen-devel@lists.xenproject.org
+Subject: Re: [PATCH v2 08/47] kernel: Move pm_power_off to common code
+Message-ID: <20141024155340.GA22426@roeck-us.net>
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
+ <1413864783-3271-9-git-send-email-linux@roeck-us.net>
+ <544A2017.7020804@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141023012236.GA28429@redhat.com>
+In-Reply-To: <544A2017.7020804@imgtec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=0.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.544A760D.02FA,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-
-On Wed, Oct 22, 2014 at 09:22:36PM -0400, Dave Jones wrote:
-> On Wed, Oct 22, 2014 at 09:07:31PM -0400, Dave Jones wrote:
->  > Just hit this while running trinity.
->  > 
->  > WARNING: CPU: 3 PID: 9612 at fs/btrfs/extent-tree.c:3799 btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]()
->  > Modules linked in: rfcomm hidp bnep af_key llc2 scsi_transport_iscsi nfnetlink sctp libcrc32c can_raw can_bcm nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill btrfs xor coretemp hwmon x86_pkg_temp_thermal kvm_intel snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_codec_generic kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel raid6_pq snd_hda_intel microcode snd_hda_controller pcspkr snd_hda_codec serio_raw snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp shpchp pps_core snd_timer snd soundcore
->  > CPU: 3 PID: 9612 Comm: trinity-c85 Not tainted 3.18.0-rc1+ #74
->  >  0000000000000009 000000009989d5b8 ffff88018a337ba8 ffffffffaf86cc97
->  >  0000000000000000 0000000000000000 ffff88018a337be8 ffffffffaf07f301
->  >  ffff88022ddf8d40 ffff88023f799148 000000007fbbf000 ffff88009c2b59c8
->  > Call Trace:
->  >  [<ffffffffaf86cc97>] dump_stack+0x4f/0x7c
->  >  [<ffffffffaf07f301>] warn_slowpath_common+0x81/0xa0
->  >  [<ffffffffaf07f41a>] warn_slowpath_null+0x1a/0x20
->  >  [<ffffffffc045b831>] btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]
->  >  [<ffffffffc045d0b2>] btrfs_delalloc_release_space+0x22/0x30 [btrfs]
->  >  [<ffffffffc047994b>] btrfs_direct_IO+0x33b/0x350 [btrfs]
->  >  [<ffffffffc0487400>] ? btrfs_page_exists_in_range+0x2c0/0x2c0 [btrfs]
->  >  [<ffffffffc047b2b0>] ? btrfs_real_readdir+0x5e0/0x5e0 [btrfs]
->  >  [<ffffffffaf1adbb4>] generic_file_direct_write+0xc4/0x1a0
->  >  [<ffffffffc048b246>] btrfs_file_write_iter+0x186/0x560 [btrfs]
->  >  [<ffffffffaf22abde>] new_sync_write+0x8e/0xd0
->  >  [<ffffffffaf22b5ca>] vfs_write+0xba/0x1f0
->  >  [<ffffffffaf24fbce>] ? __fget_light+0xbe/0xe0
->  >  [<ffffffffaf22c2d2>] SyS_pwrite64+0x92/0xc0
->  >  [<ffffffffaf877d49>] tracesys_phase2+0xd4/0xd9
+On Fri, Oct 24, 2014 at 10:47:03AM +0100, James Hogan wrote:
+> Hi Guenter,
 > 
-> I also see this WARN_ON being hit from the sync path..
+> On 21/10/14 05:12, Guenter Roeck wrote:
+> > pm_power_off is defined for all architectures. Move it to common code.
+> > 
+> > Have all architectures call do_kernel_power_off instead of pm_power_off.
+> > Some architectures point pm_power_off to machine_power_off. For those,
+> > call do_kernel_power_off from machine_power_off instead.
+> > 
+> > Acked-by: David Vrabel <david.vrabel@citrix.com>
+> > Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> > Acked-by: Hirokazu Takata <takata@linux-m32r.org>
+> > Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+> > Acked-by: Max Filippov <jcmvbkbc@gmail.com>
+> > Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
+> > Acked-by: Richard Weinberger <richard@nod.at>
+> > Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
 > 
-> WARNING: CPU: 2 PID: 11166 at fs/btrfs/extent-tree.c:3799 btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]()
-> CPU: 2 PID: 11166 Comm: trinity-c61 Tainted: G        W      3.18.0-rc1+ #74
->  0000000000000009 00000000aee2e4e2 ffff8801b0dfbcc8 ffffffff8d86cc97
->  0000000000000000 0000000000000000 ffff8801b0dfbd08 ffffffff8d07f301
->  ffff88023f328000 ffff88023953d668 0000000000040000 ffff880239358548
-> Call Trace:
->  [<ffffffff8d86cc97>] dump_stack+0x4f/0x7c
->  [<ffffffff8d07f301>] warn_slowpath_common+0x81/0xa0
->  [<ffffffff8d07f41a>] warn_slowpath_null+0x1a/0x20
->  [<ffffffffc0253831>] btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]
->  [<ffffffffc025ca63>] btrfs_write_dirty_block_groups+0x6f3/0x740 [btrfs]
->  [<ffffffffc02f7a41>] commit_cowonly_roots+0x17a/0x234 [btrfs]
->  [<ffffffffc026e60b>] btrfs_commit_transaction+0x45b/0xc10 [btrfs]
->  [<ffffffffc023a09b>] btrfs_sync_fs+0x8b/0x270 [btrfs]
->  [<ffffffff8d266ad0>] ? do_fsync+0x80/0x80
->  [<ffffffff8d266af0>] sync_fs_one_sb+0x20/0x30
->  [<ffffffff8d22f2f2>] iterate_supers+0xb2/0x110
->  [<ffffffff8d266c24>] sys_sync+0x64/0xb0
->  [<ffffffff8d877d49>] tracesys_phase2+0xd4/0xd9
+> For metag:
+> Acked-by: James Hogan <james.hogan@imgtec.com>
 > 
-> After rebooting, and restarting the fuzzer, it happened again very quickly.
+Thanks!
 
-Could you please show us the trinity options you're using?
-
-I also see this WARNing from other reports, but still try to reproduce..
-
-thanks,
--liubo
+Guenter
