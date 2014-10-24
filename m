@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933392AbaJXMAB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 08:00:01 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:38860 "EHLO
+	id S933278AbaJXL7w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 07:59:52 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:38817 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933325AbaJXL7z (ORCPT
+	with ESMTP id S933184AbaJXL7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 07:59:55 -0400
+	Fri, 24 Oct 2014 07:59:47 -0400
 From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
@@ -16,10 +16,11 @@ Cc: linux-arm-kernel@lists.infradead.org, Tawfik Bayouk <tawfik@marvell.com>,
         Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
         devicetree@vger.kernel.org,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 09/17] clk: mvebu: add suspend/resume for gatable clocks
-Date: Fri, 24 Oct 2014 13:59:22 +0200
-Message-Id: <1414151970-6626-10-git-send-email-thomas.petazzoni@free-electrons.com>
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 05/17] clocksource: time-armada-370-xp: add suspend/resume support
+Date: Fri, 24 Oct 2014 13:59:18 +0200
+Message-Id: <1414151970-6626-6-git-send-email-thomas.petazzoni@free-electrons.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1414151970-6626-1-git-send-email-thomas.petazzoni@free-electrons.com>
 References: <1414151970-6626-1-git-send-email-thomas.petazzoni@free-electrons.com>
@@ -27,115 +28,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds suspend/resume support for the gatable clock driver
-used on Marvell EBU platforms. When getting out of suspend, the
-Marvell EBU platforms go through the bootloader, which re-enables all
-gatable clocks. However, upon resume, the clock framework will not
-disable again all gatable clocks that are not used.
-
-Therefore, if the clock driver does not save/restore the state of the
-gatable clocks, all gatable clocks that are not claimed by any device
-driver will remain enabled after a resume. This is why this driver
-saves and restores the state of those clocks.
-
-Since clocks aren't real devices, we don't have the normal ->suspend()
-and ->resume() of the device model, and have to use the ->suspend()
-and ->resume() hooks of the syscore_ops mechanism. This mechanism has
-the unfortunate idea of not providing a way of passing private data,
-which requires us to change the driver to make the assumption that
-there is only once instance of the gatable clock control structure.
+This commit adds a set of suspend/resume syscore_ops to respectively
+save and restore a number of timer registers, in order to make sure
+the clockevent and clocksource devices continue to work properly
+accross a suspend/resume cycle.
 
 Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/clk/mvebu/common.c | 30 ++++++++++++++++++++++++++++--
- 1 file changed, 28 insertions(+), 2 deletions(-)
+ drivers/clocksource/time-armada-370-xp.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/drivers/clk/mvebu/common.c b/drivers/clk/mvebu/common.c
-index b7fcb46..8799fb8 100644
---- a/drivers/clk/mvebu/common.c
-+++ b/drivers/clk/mvebu/common.c
-@@ -19,6 +19,7 @@
- #include <linux/io.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
+diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
+index 0451e62..1a32dcb 100644
+--- a/drivers/clocksource/time-armada-370-xp.c
++++ b/drivers/clocksource/time-armada-370-xp.c
+@@ -43,6 +43,7 @@
+ #include <linux/module.h>
+ #include <linux/sched_clock.h>
+ #include <linux/percpu.h>
 +#include <linux/syscore_ops.h>
  
- #include "common.h"
- 
-@@ -177,14 +178,18 @@ struct clk_gating_ctrl {
- 	spinlock_t *lock;
- 	struct clk **gates;
- 	int num_gates;
-+	struct syscore_ops syscore_ops;
-+	void __iomem *base;
-+	u32 saved_reg;
+ /*
+  * Timer block registers.
+@@ -223,6 +224,28 @@ static struct notifier_block armada_370_xp_timer_cpu_nb = {
+ 	.notifier_call = armada_370_xp_timer_cpu_notify,
  };
  
- #define to_clk_gate(_hw) container_of(_hw, struct clk_gate, hw)
- 
-+static struct clk_gating_ctrl *ctrl;
++static u32 timer_ctrl_reg, timer_local_ctrl_reg;
 +
- static struct clk *clk_gating_get_src(
- 	struct of_phandle_args *clkspec, void *data)
- {
--	struct clk_gating_ctrl *ctrl = (struct clk_gating_ctrl *)data;
- 	int n;
- 
- 	if (clkspec->args_count < 1)
-@@ -199,15 +204,30 @@ static struct clk *clk_gating_get_src(
- 	return ERR_PTR(-ENODEV);
- }
- 
-+static int mvebu_clk_gating_suspend(void)
++static int armada_370_xp_timer_suspend(void)
 +{
-+	ctrl->saved_reg = readl(ctrl->base);
++	timer_ctrl_reg = readl(timer_base + TIMER_CTRL_OFF);
++	timer_local_ctrl_reg = readl(local_base + TIMER_CTRL_OFF);
 +	return 0;
 +}
 +
-+static void mvebu_clk_gating_resume(void)
++static void armada_370_xp_timer_resume(void)
 +{
-+	writel(ctrl->saved_reg, ctrl->base);
++	writel(0xffffffff, timer_base + TIMER0_VAL_OFF);
++	writel(0xffffffff, timer_base + TIMER0_RELOAD_OFF);
++	writel(timer_ctrl_reg, timer_base + TIMER_CTRL_OFF);
++	writel(timer_local_ctrl_reg, local_base + TIMER_CTRL_OFF);
 +}
 +
- void __init mvebu_clk_gating_setup(struct device_node *np,
- 				   const struct clk_gating_soc_desc *desc)
++struct syscore_ops armada_370_xp_timer_syscore_ops = {
++	.suspend	= armada_370_xp_timer_suspend,
++	.resume		= armada_370_xp_timer_resume,
++};
++
+ static void __init armada_370_xp_timer_common_init(struct device_node *np)
  {
--	struct clk_gating_ctrl *ctrl;
- 	struct clk *clk;
- 	void __iomem *base;
- 	const char *default_parent = NULL;
- 	int n;
- 
-+	if (ctrl) {
-+		pr_err("mvebu-clk-gating: cannot instantiate more than one gatable clock device\n");
-+		return;
-+	}
+ 	u32 clr = 0, set = 0;
+@@ -285,6 +308,8 @@ static void __init armada_370_xp_timer_common_init(struct device_node *np)
+ 	/* Immediately configure the timer on the boot CPU */
+ 	if (!res)
+ 		armada_370_xp_timer_setup(this_cpu_ptr(armada_370_xp_evt));
 +
- 	base = of_iomap(np, 0);
- 	if (WARN_ON(!base))
- 		return;
-@@ -225,6 +245,10 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
- 	/* lock must already be initialized */
- 	ctrl->lock = &ctrl_gating_lock;
++	register_syscore_ops(&armada_370_xp_timer_syscore_ops);
+ }
  
-+	ctrl->base = base;
-+	ctrl->syscore_ops.suspend = mvebu_clk_gating_suspend;
-+	ctrl->syscore_ops.resume = mvebu_clk_gating_resume;
-+
- 	/* Count, allocate, and register clock gates */
- 	for (n = 0; desc[n].name;)
- 		n++;
-@@ -246,6 +270,8 @@ void __init mvebu_clk_gating_setup(struct device_node *np,
- 
- 	of_clk_add_provider(np, clk_gating_get_src, ctrl);
- 
-+	register_syscore_ops(&ctrl->syscore_ops);
-+
- 	return;
- gates_out:
- 	kfree(ctrl);
+ static void __init armada_xp_timer_init(struct device_node *np)
 -- 
 2.0.0
 
