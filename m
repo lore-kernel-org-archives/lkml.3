@@ -1,106 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670AbaJXB5g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 21:57:36 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:45258 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867AbaJXB5d (ORCPT
+	id S1753575AbaJXCCw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 22:02:52 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:35636 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaJXCCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 21:57:33 -0400
-Message-ID: <5449B1D5.8010700@huawei.com>
-Date: Fri, 24 Oct 2014 09:56:37 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Thu, 23 Oct 2014 22:02:50 -0400
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: Namhyung Kim <namhyung@kernel.org>, <a.p.zijlstra@chello.nl>,
-        <paulus@samba.org>, <mingo@redhat.com>, <jolsa@redhat.com>,
-        <adrian.hunter@intel.com>, <Waiman.Long@hp.com>,
-        <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
-Subject: Re: [PATCH v2 RESEND] perf tools: makes CPUINFO_PROC to array for
- different kernel version
-References: <1413963614-7251-1-git-send-email-wangnan0@huawei.com> <87k33qe5be.fsf@sejong.aot.lge.com> <20141023235302.GU14687@kernel.org>
-In-Reply-To: <20141023235302.GU14687@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.90]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.5449B207.017A,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 83aecc5f7a974db2aaa795196eb876ac
+In-Reply-To: <1463193.4qGZjcvNod@avalon>
+References: <1414074828-4488-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<1414074828-4488-2-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
+	<xa1tmw8mlobz.fsf@mina86.com>
+	<1463193.4qGZjcvNod@avalon>
+Date: Fri, 24 Oct 2014 10:02:49 +0800
+Message-ID: <CAL1ERfPiv6KG5Lim6F0w72z=j47D1KCWhukLc5T6jJPOHTP_mQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] mm: cma: Don't crash on allocation if CMA area can't
+ be activated
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On Fri, Oct 24, 2014 at 7:42 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Michal,
+>
+> On Thursday 23 October 2014 18:53:36 Michal Nazarewicz wrote:
+>> On Thu, Oct 23 2014, Laurent Pinchart wrote:
+>> > If activation of the CMA area fails its mutex won't be initialized,
+>> > leading to an oops at allocation time when trying to lock the mutex. Fix
+>> > this by failing allocation if the area hasn't been successfully actived,
+>> > and detect that condition by moving the CMA bitmap allocation after page
+>> > block reservation completion.
+>> >
+>> > Signed-off-by: Laurent Pinchart
+>> > <laurent.pinchart+renesas@ideasonboard.com>
+>>
+>> Cc: <stable@vger.kernel.org>  # v3.17
+>> Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-A have posted a v3 patch based on your git repository. Please refer to:
-
-https://lkml.org/lkml/2014/10/23/711 .
-
-Thanks.
-
-
-On 2014/10/24 7:53, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Oct 24, 2014 at 08:26:13AM +0900, Namhyung Kim escreveu:
->> On Wed, 22 Oct 2014 15:40:14 +0800, Wang Nan wrote:
->>> After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
->>> /proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
->>> CPUINFO_PROC to an array and provides two choices for ARM, makes it
->>> compatible for different kernel version.
-> 
->>> v1 -> v2: minor changes as suggested by Namhyung Kim:
-> 
->>>  - Doesn't pass @h and @evlist to __write_cpudesc;
->>>  - Coding style fix.
-> 
->>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->  
->> Acked-by: Namhyung Kim <namhyung@kernel.org>
-> 
-> So now this will work with older kernels and new ones? Cool, thanks for
-> working on it, but:
-> 
-> [acme@ssdandy linux]$ patch -p1 < /wb/1.patch 
-> patching file tools/perf/perf.h
-> Hunk #1 FAILED at 6.
-> Hunk #2 FAILED at 15.
-> Hunk #3 FAILED at 25.
-> Hunk #4 FAILED at 40.
-> Hunk #5 FAILED at 74.
-> Hunk #6 FAILED at 91.
-> 6 out of 6 hunks FAILED -- saving rejects to file tools/perf/perf.h.rej
-> patching file tools/perf/util/header.c
-> Hunk #1 succeeded at 579 (offset 29 lines).
-> Hunk #2 succeeded at 636 (offset 29 lines).
-> [acme@ssdandy linux]$
-> 
-> [acme@ssdandy linux]$ git log --oneline tools/perf/perf.h | head -10
-> 87c43ee perf tools: Export usage string and option table of perf record
-> 72a128a perf tools: Move callchain config from record_opts to callchain_param
-> 73a31b7 perf tools: Move ACCESS_ONCE from perf.h header
-> 82baa0e perf tools: Move sys_perf_event_open function from perf.h
-> 43599d1 perf tools: Move syscall and arch specific defines from perf.h
-> 2c83bc0 perf tools: Move perf_call_graph_mode enum from perf.h
-> 0776eb5 perf tools: Move sample data structures from perf.h
-> 36446f4 perf tools: Remove PR_TASK_PERF_EVENTS_* from perf.h
-> 273a0a7 perf tools: Remove asmlinkage define from perf.h
-> 1b7ae1c perf tools: Remove min define from perf.h
-> [acme@ssdandy linux]$
-> 
-> This is:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
-> 
-> If you don't have time to fix this up, I'll try to find time tomorrow
-> and do it.
-> 
-> - Arnaldo
-> 
+This patch is good, but how about add a active field in cma struct?
+use cma->active to check whether cma is actived successfully.
+I think it will make code more clear and readable.
+Just my little opinion.
 
 
-
-
+>> As a matter of fact, this is present in kernels earlier than 3.17 but in
+>> the 3.17 the code has been moved from drivers/base/dma-contiguous.c to
+>> mm/cma.c so this might require separate stable patch.  I can track this
+>> and prepare a patch if you want.
+>
+> That could be done, but I'm not sure if it's really worth it. The bug only
+> occurs when the CMA zone activation fails. I've ran into that case due to a
+> bug introduced in v3.18-rc1, but this shouldn't be the case for older kernel
+> versions.
+>
+> If you think the fix should be backported to stable kernels older than v3.17
+> please feel free to cook up a patch.
+>
+>> > ---
+>> >
+>> >  mm/cma.c | 17 ++++++-----------
+>> >  1 file changed, 6 insertions(+), 11 deletions(-)
+>> >
+>> > diff --git a/mm/cma.c b/mm/cma.c
+>> > index 963bc4a..16c6650 100644
+>> > --- a/mm/cma.c
+>> > +++ b/mm/cma.c
+>> > @@ -93,11 +93,6 @@ static int __init cma_activate_area(struct cma *cma)
+>> >     unsigned i = cma->count >> pageblock_order;
+>> >     struct zone *zone;
+>> >
+>> > -   cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+>> > -
+>> > -   if (!cma->bitmap)
+>> > -           return -ENOMEM;
+>> > -
+>> >     WARN_ON_ONCE(!pfn_valid(pfn));
+>> >     zone = page_zone(pfn_to_page(pfn));
+>> >
+>> > @@ -114,17 +109,17 @@ static int __init cma_activate_area(struct cma *cma)
+>> >                      * to be in the same zone.
+>> >                      */
+>> >                     if (page_zone(pfn_to_page(pfn)) != zone)
+>> > -                           goto err;
+>> > +                           return -EINVAL;
+>> >             }
+>> >             init_cma_reserved_pageblock(pfn_to_page(base_pfn));
+>> >     } while (--i);
+>> >
+>> > +   cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+>> > +   if (!cma->bitmap)
+>> > +           return -ENOMEM;
+>> > +
+>> >     mutex_init(&cma->lock);
+>> >     return 0;
+>> > -
+>> > -err:
+>> > -   kfree(cma->bitmap);
+>> > -   return -EINVAL;
+>> >  }
+>> >
+>> >  static int __init cma_init_reserved_areas(void)
+>> > @@ -313,7 +308,7 @@ struct page *cma_alloc(struct cma *cma, int count,
+>> > unsigned int align)
+>> >     struct page *page = NULL;
+>> >     int ret;
+>> >
+>> > -   if (!cma || !cma->count)
+>> > +   if (!cma || !cma->count || !cma->bitmap)
+>> >             return NULL;
+>> >
+>> >     pr_debug("%s(cma %p, count %d, align %d)\n", __func__, (void *)cma,
+>
+> --
+> Regards,
+>
+> Laurent Pinchart
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
