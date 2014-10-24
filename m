@@ -1,162 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032AbaJXPOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:14:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:60610 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757012AbaJXPOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:14:31 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [GIT PULL] USB fixes for v3.18-rc2
-Date: Fri, 24 Oct 2014 10:14:12 -0500
-Message-ID: <1414163652-27364-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 2.1.0.GIT
+	id S1757014AbaJXPOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:14:30 -0400
+Received: from mail-bn1on0118.outbound.protection.outlook.com ([157.56.110.118]:16932
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756592AbaJXPO3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 11:14:29 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Wang <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] Drivers: hv: util: make struct hv_do_fcopy match Hyper-V
+ host messages
+Thread-Topic: [PATCH] Drivers: hv: util: make struct hv_do_fcopy match Hyper-V
+ host messages
+Thread-Index: AQHP73QnbfRGLD8u20u7RcA+zQmUR5w/Ws4w
+Date: Fri, 24 Oct 2014 15:14:25 +0000
+Message-ID: <c05e07e89fff4419b8c6a545507067ec@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1414146027-1915-1-git-send-email-vkuznets@redhat.com>
+In-Reply-To: <1414146027-1915-1-git-send-email-vkuznets@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [131.107.147.105]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0712;
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 0374433C81
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(13464003)(377454003)(51704005)(107046002)(20776003)(33646002)(92566001)(46102003)(80022003)(86362001)(106116001)(86612001)(105586002)(106356001)(4396001)(31966008)(64706001)(76176999)(66066001)(76482002)(120916001)(50986999)(54356999)(97736003)(76576001)(95666004)(85306004)(19580405001)(101416001)(85852003)(77096002)(87936001)(2656002)(19580395003)(99396003)(21056001)(40100003)(122556002)(108616004)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0712;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-Here's our first set of fixes for v3.18-rc cycle.
-
-Quite a few goodies here but the most important is that most gadget drivers
-(except for g_hid, g_midi and g_webcam) pass USB[23]0CV with MUSB and DWC3.
-
-All patches have been tested for weeks (since v3.18 merge window opened) and
-they have also been tested for a few days on top of v3.18-rc1.
-
-Let me know if you want anything to be changed.
-
-cheers
 
 
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+> -----Original Message-----
+> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+> Sent: Friday, October 24, 2014 3:20 AM
+> To: linux-api@vger.kernel.org; KY Srinivasan
+> Cc: Greg Kroah-Hartman; Jason Wang; linux-kernel@vger.kernel.org
+> Subject: [PATCH] Drivers: hv: util: make struct hv_do_fcopy match Hyper-V
+> host messages
+> 
+> An attempt to fix fcopy on i586 (bc5a5b0 Drivers: hv: util: Properly pack the
+> data for file copy functionality) led to a regression on x86_64 (and actually
+> didn't fix
+> i586 breakage). Fcopy messages from Hyper-V host come in the following
+> format:
+> 
+> struct do_fcopy_hdr   |   36 bytes
+> 0000                  |    4 bytes
+> offset                |    8 bytes
+> size                  |    4 bytes
+> data                  | 6144 bytes
+> 
+> On x86_64 struct hv_do_fcopy matched this format without '
+> __attribute__((packed))'
+> and on i586 adding ' __attribute__((packed))' to it doesn't change anything.
+> Keep the structure packed and add padding to match re reality. Tested both
+> i586 and x86_64 on Hyper-V Server 2012 R2.
 
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+Thanks Vitaly.
+> 
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: <stable@vger.kernel.org>
+> ---
+>  include/uapi/linux/hyperv.h | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/include/uapi/linux/hyperv.h b/include/uapi/linux/hyperv.h index
+> 0a8e6ba..bb1cb73 100644
+> --- a/include/uapi/linux/hyperv.h
+> +++ b/include/uapi/linux/hyperv.h
+> @@ -134,6 +134,7 @@ struct hv_start_fcopy {
+> 
+>  struct hv_do_fcopy {
+>  	struct hv_fcopy_hdr hdr;
+> +	__u32   pad;
+>  	__u64	offset;
+>  	__u32	size;
+>  	__u8	data[DATA_FRAGMENT];
+> --
+> 1.9.3
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.18-rc2
-
-for you to fetch changes up to 9b1763553a89b2a84881119eeabfccdb803bb468:
-
-  usb: gadget: function: Fixed the return value on error path (2014-10-23 14:49:35 -0500)
-
-----------------------------------------------------------------
-usb: fixes for v3.18-rc2
-
-Here's the first set of fixes for v3.18-rc cycle. It includes
-a whole bunch of bug fixes related to USB20CV and USB30CV when
-running on DWC3 and MUSB. After this series, we have clean chapter 9
-and MSC tests for all gadget drivers.
-
-We also have a new PCI ID for Intel Braswell platform so they can use
-DWC3 out-of-the-box.
-
-A regression on functionfs wrt quirk_ep_out_aligned_size flag has also
-been fixed.
-
-DWC2 got a couple of fixes for the gadget role. The first of which fixes
-rmmod followed by modprobe while the second makes sure to disable PHYs
-before killing the regulators powering them.
-
-These are the most important fixes worth mentioning, there are a few
-other minor fixes as well.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-
-----------------------------------------------------------------
-Alan Cox (1):
-      usb: dwc3: pci: Add PCI ID for Intel Braswell
-
-Charles Manning (1):
-      usb: dwc2: Bits in bitfield should add up to 32
-
-David Cohen (1):
-      usb: ffs: fix regression when quirk_ep_out_aligned_size flag is set
-
-Felipe Balbi (20):
-      usb: dwc3: trace: don't dereference pointers
-      usb: dwc3: ep0: hold our lock in dwc3_gadget_ep0_set_halt
-      usb: dwc3: gadget: move isoc endpoint check to unlocked set_halt
-      usb: dwc3: gadget: hold the lock through set_wedge()'s life
-      usb: dwc3: gadget: fix set_halt() bug with pending transfers
-      usb: gadget: function: uvc: conditionally dequeue
-      usb: gadget: function: uvc: make sure to balance ep enable/disable
-      usb: gadget: function: uvc: return correct alt-setting
-      usb: gadget: function: acm: make f_acm pass USB20CV Chapter9
-      usb: gadget: function: uvc: manage our video control endpoint
-      usb: gadget: function: uvc: disable endpoints on ->disable()
-      usb: gadget: function: uac2: add wMaxPacketSize to ep desc
-      usb: gadget: function: uac2: prevent double ep disable
-      usb: gadget: function: uac2: add a release method
-      usb: gadget: function: f_obex: fix Interface Descriptor Test
-      usb: dwc3: ep0: return early on NULL requests
-      usb: dwc3: ep0: fix Data Phase for transfer sizes aligned to wMaxPacketSize
-      usb: gadget: composite: enable BESL support
-      usb: gadget: loopback: don't queue requests to bogus endpoints
-      usb: gadget: udc: core: fix kernel oops with soft-connect
-
-Geert Uytterhoeven (1):
-      usb: gadget: udc: USB_GADGET_XILINX should depend on HAS_DMA
-
-Jack Pham (1):
-      usb: dwc3: gadget: Properly initialize LINK TRB
-
-Marek Szyprowski (2):
-      usb: dwc2: gadget: fix gadget unregistration in udc_stop() function
-      usb: dwc2: gadget: disable phy before turning off power regulators
-
-Pavitrakumar Managutte (2):
-      usb: gadget: function: Remove redundant usb_free_all_descriptors
-      usb: gadget: function: Fixed the return value on error path
-
-Robert Baldyga (1):
-      usb: gadget: f_fs: remove redundant ffs_data_get()
-
-Roger Quadros (1):
-      Revert "usb: dwc3: dwc3-omap: Disable/Enable only wrapper interrupts in prepare/complete"
-
-Sebastian Andrzej Siewior (2):
-      usb: musb: dsps: start OTG timer on resume again
-      usb: musb: musb_dsps: fix NULL pointer in suspend
-
-Sudip Mukherjee (1):
-      usb: dwc2: gadget: sparse warning of context imbalance
-
-Thomas Gleixner (1):
-      usb: musb: cppi41: restart hrtimer only if not yet done
-
- drivers/usb/dwc2/core.h                  |  2 +-
- drivers/usb/dwc2/gadget.c                | 14 ++---
- drivers/usb/dwc3/dwc3-omap.c             | 15 +-----
- drivers/usb/dwc3/dwc3-pci.c              |  2 +
- drivers/usb/dwc3/ep0.c                   | 48 +++++++++++++-----
- drivers/usb/dwc3/gadget.c                | 39 ++++++++------
- drivers/usb/dwc3/gadget.h                |  3 +-
- drivers/usb/dwc3/trace.h                 | 53 +++++++++++++------
- drivers/usb/gadget/composite.c           |  2 +-
- drivers/usb/gadget/function/f_acm.c      |  8 +--
- drivers/usb/gadget/function/f_eem.c      |  1 -
- drivers/usb/gadget/function/f_fs.c       | 42 ++++++++++++---
- drivers/usb/gadget/function/f_hid.c      |  5 +-
- drivers/usb/gadget/function/f_loopback.c | 87 +++++++++++++++-----------------
- drivers/usb/gadget/function/f_ncm.c      |  1 -
- drivers/usb/gadget/function/f_obex.c     |  9 ++--
- drivers/usb/gadget/function/f_phonet.c   |  2 +-
- drivers/usb/gadget/function/f_rndis.c    |  9 ++--
- drivers/usb/gadget/function/f_subset.c   |  1 -
- drivers/usb/gadget/function/f_uac2.c     | 23 +++++++--
- drivers/usb/gadget/function/f_uvc.c      | 54 ++++++++++++++++----
- drivers/usb/gadget/function/uvc_video.c  |  3 +-
- drivers/usb/gadget/udc/Kconfig           |  1 +
- drivers/usb/gadget/udc/udc-core.c        |  5 ++
- drivers/usb/musb/musb_cppi41.c           |  3 +-
- drivers/usb/musb/musb_dsps.c             | 18 +++++--
- 26 files changed, 294 insertions(+), 156 deletions(-)
