@@ -1,402 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108AbaJXWGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 18:06:54 -0400
-Received: from homie.mail.dreamhost.com ([208.97.132.208]:39225 "EHLO
-	homiemail-a38.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752109AbaJXWGr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 18:06:47 -0400
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: akpm@linux-foundation.org
-Cc: hughd@google.com, riel@redhat.com, mgorman@suse.de, peterz@infradead.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, dbueso@suse.de,
-        linux-mm@kvack.org, Davidlohr Bueso <dave@stgolabs.net>
-Subject: [PATCH 02/10] mm: use new helper functions around the i_mmap_mutex
-Date: Fri, 24 Oct 2014 15:06:12 -0700
-Message-Id: <1414188380-17376-3-git-send-email-dave@stgolabs.net>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414188380-17376-1-git-send-email-dave@stgolabs.net>
-References: <1414188380-17376-1-git-send-email-dave@stgolabs.net>
+	id S932787AbaJXWHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 18:07:44 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:56239 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754558AbaJXWHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 18:07:37 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Addy Ke <addy.ke@rock-chips.com>, linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Alexandru M Stan <amstan@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: Add SPI DMA into rk3288.dtsi
+Date: Sat, 25 Oct 2014 00:10:16 +0200
+Message-ID: <1433094.iLN0prRLzJ@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1414186926-25986-1-git-send-email-dianders@chromium.org>
+References: <1414186926-25986-1-git-send-email-dianders@chromium.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert all open coded mutex_lock/unlock calls to the
-i_mmap_[lock/unlock]_write() helpers.
+Am Freitag, 24. Oktober 2014, 14:42:06 schrieb Doug Anderson:
+> Now that SPI DMA has been fixed on rk3288 we can enable it.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Alexandru M Stan <amstan@chromium.org>
 
-Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- fs/hugetlbfs/inode.c    |  4 ++--
- kernel/events/uprobes.c |  4 ++--
- kernel/fork.c           |  4 ++--
- mm/filemap_xip.c        |  4 ++--
- mm/hugetlb.c            | 12 ++++++------
- mm/memory-failure.c     |  4 ++--
- mm/memory.c             |  8 ++++----
- mm/mmap.c               | 14 +++++++-------
- mm/mremap.c             |  4 ++--
- mm/nommu.c              | 14 +++++++-------
- mm/rmap.c               |  4 ++--
- 11 files changed, 38 insertions(+), 38 deletions(-)
+applied into my v3.19-armsoc/dts branch
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index 1e2872b..a082709 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -412,10 +412,10 @@ static int hugetlb_vmtruncate(struct inode *inode, loff_t offset)
- 	pgoff = offset >> PAGE_SHIFT;
- 
- 	i_size_write(inode, offset);
--	mutex_lock(&mapping->i_mmap_mutex);
-+	i_mmap_lock_write(mapping);
- 	if (!RB_EMPTY_ROOT(&mapping->i_mmap))
- 		hugetlb_vmtruncate_list(&mapping->i_mmap, pgoff);
--	mutex_unlock(&mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(mapping);
- 	truncate_hugepages(inode, offset);
- 	return 0;
- }
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 1d0af8a..d246a0a 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -724,7 +724,7 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
- 	int more = 0;
- 
-  again:
--	mutex_lock(&mapping->i_mmap_mutex);
-+	i_mmap_lock_write(mapping);
- 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
- 		if (!valid_vma(vma, is_register))
- 			continue;
-@@ -755,7 +755,7 @@ build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
- 		info->mm = vma->vm_mm;
- 		info->vaddr = offset_to_vaddr(vma, offset);
- 	}
--	mutex_unlock(&mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(mapping);
- 
- 	if (!more)
- 		goto out;
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 9b7d746..915e8da 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -433,7 +433,7 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 			get_file(file);
- 			if (tmp->vm_flags & VM_DENYWRITE)
- 				atomic_dec(&inode->i_writecount);
--			mutex_lock(&mapping->i_mmap_mutex);
-+			i_mmap_lock_write(mapping);
- 			if (tmp->vm_flags & VM_SHARED)
- 				atomic_inc(&mapping->i_mmap_writable);
- 			flush_dcache_mmap_lock(mapping);
-@@ -445,7 +445,7 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
- 				vma_interval_tree_insert_after(tmp, mpnt,
- 							&mapping->i_mmap);
- 			flush_dcache_mmap_unlock(mapping);
--			mutex_unlock(&mapping->i_mmap_mutex);
-+			i_mmap_unlock_write(mapping);
- 		}
- 
- 		/*
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index d8d9fe3..bad746b 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -182,7 +182,7 @@ __xip_unmap (struct address_space * mapping,
- 		return;
- 
- retry:
--	mutex_lock(&mapping->i_mmap_mutex);
-+	i_mmap_lock_write(mapping);
- 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
- 		mm = vma->vm_mm;
- 		address = vma->vm_start +
-@@ -202,7 +202,7 @@ retry:
- 			page_cache_release(page);
- 		}
- 	}
--	mutex_unlock(&mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(mapping);
- 
- 	if (locked) {
- 		mutex_unlock(&xip_sparse_mutex);
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 9fd7227..fa86464 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2772,7 +2772,7 @@ static void unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * this mapping should be shared between all the VMAs,
- 	 * __unmap_hugepage_range() is called as the lock is already held
- 	 */
--	mutex_lock(&mapping->i_mmap_mutex);
-+	i_mmap_lock_write(mapping);
- 	vma_interval_tree_foreach(iter_vma, &mapping->i_mmap, pgoff, pgoff) {
- 		/* Do not unmap the current VMA */
- 		if (iter_vma == vma)
-@@ -2789,7 +2789,7 @@ static void unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unmap_hugepage_range(iter_vma, address,
- 					     address + huge_page_size(h), page);
- 	}
--	mutex_unlock(&mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(mapping);
- }
- 
- /*
-@@ -3346,7 +3346,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 	flush_cache_range(vma, address, end);
- 
- 	mmu_notifier_invalidate_range_start(mm, start, end);
--	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+	i_mmap_lock_write(vma->vm_file->f_mapping);
- 	for (; address < end; address += huge_page_size(h)) {
- 		spinlock_t *ptl;
- 		ptep = huge_pte_offset(mm, address);
-@@ -3374,7 +3374,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
- 	 * and that page table be reused and filled with junk.
- 	 */
- 	flush_tlb_range(vma, start, end);
--	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(vma->vm_file->f_mapping);
- 	mmu_notifier_invalidate_range_end(mm, start, end);
- 
- 	return pages << h->order;
-@@ -3542,7 +3542,7 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
- 	if (!vma_shareable(vma, addr))
- 		return (pte_t *)pmd_alloc(mm, pud, addr);
- 
--	mutex_lock(&mapping->i_mmap_mutex);
-+	i_mmap_lock_write(mapping);
- 	vma_interval_tree_foreach(svma, &mapping->i_mmap, idx, idx) {
- 		if (svma == vma)
- 			continue;
-@@ -3570,7 +3570,7 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
- 	spin_unlock(ptl);
- out:
- 	pte = (pte_t *)pmd_alloc(mm, pud, addr);
--	mutex_unlock(&mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(mapping);
- 	return pte;
- }
- 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 8639f6b..13708cf 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -466,7 +466,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 	struct task_struct *tsk;
- 	struct address_space *mapping = page->mapping;
- 
--	mutex_lock(&mapping->i_mmap_mutex);
-+	i_mmap_lock_write(mapping);
- 	read_lock(&tasklist_lock);
- 	for_each_process(tsk) {
- 		pgoff_t pgoff = page_to_pgoff(page);
-@@ -488,7 +488,7 @@ static void collect_procs_file(struct page *page, struct list_head *to_kill,
- 		}
- 	}
- 	read_unlock(&tasklist_lock);
--	mutex_unlock(&mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(mapping);
- }
- 
- /*
-diff --git a/mm/memory.c b/mm/memory.c
-index 1cc6bfb..d16c662 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1339,9 +1339,9 @@ static void unmap_single_vma(struct mmu_gather *tlb,
- 			 * safe to do nothing in this case.
- 			 */
- 			if (vma->vm_file) {
--				mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+				i_mmap_lock_write(vma->vm_file->f_mapping);
- 				__unmap_hugepage_range_final(tlb, vma, start, end, NULL);
--				mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+				i_mmap_unlock_write(vma->vm_file->f_mapping);
- 			}
- 		} else
- 			unmap_page_range(tlb, vma, start, end, details);
-@@ -2390,12 +2390,12 @@ void unmap_mapping_range(struct address_space *mapping,
- 		details.last_index = ULONG_MAX;
- 
- 
--	mutex_lock(&mapping->i_mmap_mutex);
-+	i_mmap_lock_write(mapping);
- 	if (unlikely(!RB_EMPTY_ROOT(&mapping->i_mmap)))
- 		unmap_mapping_range_tree(&mapping->i_mmap, &details);
- 	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
- 		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
--	mutex_unlock(&mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(mapping);
- }
- EXPORT_SYMBOL(unmap_mapping_range);
- 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 7f85520..ac4d05a 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -260,9 +260,9 @@ void unlink_file_vma(struct vm_area_struct *vma)
- 
- 	if (file) {
- 		struct address_space *mapping = file->f_mapping;
--		mutex_lock(&mapping->i_mmap_mutex);
-+		i_mmap_lock_write(mapping);
- 		__remove_shared_vm_struct(vma, file, mapping);
--		mutex_unlock(&mapping->i_mmap_mutex);
-+		i_mmap_unlock_write(mapping);
- 	}
- }
- 
-@@ -674,14 +674,14 @@ static void vma_link(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	if (vma->vm_file) {
- 		mapping = vma->vm_file->f_mapping;
--		mutex_lock(&mapping->i_mmap_mutex);
-+		i_mmap_lock_write(mapping);
- 	}
- 
- 	__vma_link(mm, vma, prev, rb_link, rb_parent);
- 	__vma_link_file(vma);
- 
- 	if (mapping)
--		mutex_unlock(&mapping->i_mmap_mutex);
-+		i_mmap_unlock_write(mapping);
- 
- 	mm->map_count++;
- 	validate_mm(mm);
-@@ -793,7 +793,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 							next->vm_end);
- 		}
- 
--		mutex_lock(&mapping->i_mmap_mutex);
-+		i_mmap_lock_write(mapping);
- 		if (insert) {
- 			/*
- 			 * Put into interval tree now, so instantiated pages
-@@ -880,7 +880,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		anon_vma_unlock_write(anon_vma);
- 	}
- 	if (mapping)
--		mutex_unlock(&mapping->i_mmap_mutex);
-+		i_mmap_unlock_write(mapping);
- 
- 	if (root) {
- 		uprobe_mmap(vma);
-@@ -3176,7 +3176,7 @@ static void vm_unlock_mapping(struct address_space *mapping)
- 		 * AS_MM_ALL_LOCKS can't change to 0 from under us
- 		 * because we hold the mm_all_locks_mutex.
- 		 */
--		mutex_unlock(&mapping->i_mmap_mutex);
-+		i_mmap_unlock_write(mapping);
- 		if (!test_and_clear_bit(AS_MM_ALL_LOCKS,
- 					&mapping->flags))
- 			BUG();
-diff --git a/mm/mremap.c b/mm/mremap.c
-index b147f66..426b448 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -119,7 +119,7 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
- 	if (need_rmap_locks) {
- 		if (vma->vm_file) {
- 			mapping = vma->vm_file->f_mapping;
--			mutex_lock(&mapping->i_mmap_mutex);
-+			i_mmap_lock_write(mapping);
- 		}
- 		if (vma->anon_vma) {
- 			anon_vma = vma->anon_vma;
-@@ -156,7 +156,7 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
- 	if (anon_vma)
- 		anon_vma_unlock_write(anon_vma);
- 	if (mapping)
--		mutex_unlock(&mapping->i_mmap_mutex);
-+		i_mmap_unlock_write(mapping);
- }
- 
- #define LATENCY_LIMIT	(64 * PAGE_SIZE)
-diff --git a/mm/nommu.c b/mm/nommu.c
-index bd1808e..52a5765 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -722,11 +722,11 @@ static void add_vma_to_mm(struct mm_struct *mm, struct vm_area_struct *vma)
- 	if (vma->vm_file) {
- 		mapping = vma->vm_file->f_mapping;
- 
--		mutex_lock(&mapping->i_mmap_mutex);
-+		i_mmap_lock_write(mapping);
- 		flush_dcache_mmap_lock(mapping);
- 		vma_interval_tree_insert(vma, &mapping->i_mmap);
- 		flush_dcache_mmap_unlock(mapping);
--		mutex_unlock(&mapping->i_mmap_mutex);
-+		i_mmap_unlock_write(mapping);
- 	}
- 
- 	/* add the VMA to the tree */
-@@ -795,11 +795,11 @@ static void delete_vma_from_mm(struct vm_area_struct *vma)
- 	if (vma->vm_file) {
- 		mapping = vma->vm_file->f_mapping;
- 
--		mutex_lock(&mapping->i_mmap_mutex);
-+		i_mmap_lock_write(mapping);
- 		flush_dcache_mmap_lock(mapping);
- 		vma_interval_tree_remove(vma, &mapping->i_mmap);
- 		flush_dcache_mmap_unlock(mapping);
--		mutex_unlock(&mapping->i_mmap_mutex);
-+		i_mmap_unlock_write(mapping);
- 	}
- 
- 	/* remove from the MM's tree and list */
-@@ -2094,14 +2094,14 @@ int nommu_shrink_inode_mappings(struct inode *inode, size_t size,
- 	high = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 
- 	down_write(&nommu_region_sem);
--	mutex_lock(&inode->i_mapping->i_mmap_mutex);
-+	i_mmap_lock_write(inode->i_mapping);
- 
- 	/* search for VMAs that fall within the dead zone */
- 	vma_interval_tree_foreach(vma, &inode->i_mapping->i_mmap, low, high) {
- 		/* found one - only interested if it's shared out of the page
- 		 * cache */
- 		if (vma->vm_flags & VM_SHARED) {
--			mutex_unlock(&inode->i_mapping->i_mmap_mutex);
-+			i_mmap_unlock_write(inode->i_mapping);
- 			up_write(&nommu_region_sem);
- 			return -ETXTBSY; /* not quite true, but near enough */
- 		}
-@@ -2129,7 +2129,7 @@ int nommu_shrink_inode_mappings(struct inode *inode, size_t size,
- 		}
- 	}
- 
--	mutex_unlock(&inode->i_mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(inode->i_mapping);
- 	up_write(&nommu_region_sem);
- 	return 0;
- }
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 116a505..46fe32a 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -1674,7 +1674,7 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
- 
- 	if (!mapping)
- 		return ret;
--	mutex_lock(&mapping->i_mmap_mutex);
-+	i_mmap_lock_write(mapping);
- 	vma_interval_tree_foreach(vma, &mapping->i_mmap, pgoff, pgoff) {
- 		unsigned long address = vma_address(page, vma);
- 
-@@ -1697,7 +1697,7 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
- 	ret = rwc->file_nonlinear(page, mapping, rwc->arg);
- 
- done:
--	mutex_unlock(&mapping->i_mmap_mutex);
-+	i_mmap_unlock_write(mapping);
- 	return ret;
- }
- 
--- 
-1.8.4.5
+I've taken the liberty of changing the subject to
+	ARM: dts: rockchip: Add SPI DMA into rk3288.dtsi
+
+
+Heiko
+
+> ---
+>  arch/arm/boot/dts/rk3288.dtsi | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+> index 874e66d..e0b99f7 100644
+> --- a/arch/arm/boot/dts/rk3288.dtsi
+> +++ b/arch/arm/boot/dts/rk3288.dtsi
+> @@ -177,6 +177,8 @@
+>  		compatible = "rockchip,rk3288-spi", "rockchip,rk3066-spi";
+>  		clocks = <&cru SCLK_SPI0>, <&cru PCLK_SPI0>;
+>  		clock-names = "spiclk", "apb_pclk";
+> +		dmas = <&dmac_peri 11>, <&dmac_peri 12>;
+> +		dma-names = "tx", "rx";
+>  		interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_HIGH>;
+>  		pinctrl-names = "default";
+>  		pinctrl-0 = <&spi0_clk &spi0_tx &spi0_rx &spi0_cs0>;
+> @@ -190,6 +192,8 @@
+>  		compatible = "rockchip,rk3288-spi", "rockchip,rk3066-spi";
+>  		clocks = <&cru SCLK_SPI1>, <&cru PCLK_SPI1>;
+>  		clock-names = "spiclk", "apb_pclk";
+> +		dmas = <&dmac_peri 13>, <&dmac_peri 14>;
+> +		dma-names = "tx", "rx";
+>  		interrupts = <GIC_SPI 45 IRQ_TYPE_LEVEL_HIGH>;
+>  		pinctrl-names = "default";
+>  		pinctrl-0 = <&spi1_clk &spi1_tx &spi1_rx &spi1_cs0>;
+> @@ -203,6 +207,8 @@
+>  		compatible = "rockchip,rk3288-spi", "rockchip,rk3066-spi";
+>  		clocks = <&cru SCLK_SPI2>, <&cru PCLK_SPI2>;
+>  		clock-names = "spiclk", "apb_pclk";
+> +		dmas = <&dmac_peri 15>, <&dmac_peri 16>;
+> +		dma-names = "tx", "rx";
+>  		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+>  		pinctrl-names = "default";
+>  		pinctrl-0 = <&spi2_clk &spi2_tx &spi2_rx &spi2_cs0>;
 
