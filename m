@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946AbaJXJku (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 05:40:50 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:37090 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907AbaJXJks (ORCPT
+	id S1756070AbaJXJlS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 05:41:18 -0400
+Received: from queue01c.mail.zen.net.uk ([212.23.3.237]:43148 "EHLO
+	queue01c.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465AbaJXJlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 05:40:48 -0400
-Date: Fri, 24 Oct 2014 02:40:47 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-api@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 4/4] vfs: RWF_NONBLOCK flag for preadv2
-Message-ID: <20141024094047.GD29178@infradead.org>
-References: <cover.1413923420.git.milosz@adfin.com>
- <ba8d704a12c7ceffce610fc438a0af11a3422002.1413923420.git.milosz@adfin.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ba8d704a12c7ceffce610fc438a0af11a3422002.1413923420.git.milosz@adfin.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 24 Oct 2014 05:41:16 -0400
+X-Greylist: delayed 2308 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Oct 2014 05:41:16 EDT
+Message-ID: <1414141323.1441.1.camel@linaro.org>
+Subject: Re: [PATCH v6 0/7] ARM: kprobes: enable OPTPROBES for ARM 32.
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Wang Nan <wangnan0@huawei.com>, linux@arm.linux.org.uk,
+        will.deacon@arm.com, dave.long@linaro.org, taras.kondratiuk@linaro.org,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Christoph Lameter <cl@linux.com>, Rabin Vincent <rabin@rab.in>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Li Zefan <lizefan@huawei.com>
+Date: Fri, 24 Oct 2014 10:02:03 +0100
+In-Reply-To: <5449A2BB.1020207@hitachi.com>
+References: <1413977525-51480-1-git-send-email-wangnan0@huawei.com>
+	 <5449A2BB.1020207@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01d-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 04:46:59PM -0400, Milosz Tanski wrote:
-> Filesystems that generic_file_read_iter will not be allowed to perform
-> non-blocking reads. This only will read data if it's in the page cache and if
-> there is no page error (causing a re-read).
+On Fri, 2014-10-24 at 09:52 +0900, Masami Hiramatsu wrote:
+> (2014/10/22 20:31), Wang Nan wrote:
+> > Previous 5 version of ARM OPTPROBES patches are unable to deal with
+> > stack storing instructions correctly. V5 patches disallow optimizing
+> > every protential stack store instructions based on pessimistic
+> > assumption. Which, as Tixy comments, 'excludes the main use of
+> > kprobes'. (https://lkml.org/lkml/2014/8/29/117 )
+> > 
+> > The main obstacle which prevents us from computing stack requirement is
+> > the missing of per-instruction decoder in probes_decode_insn() and its
+> > friends. Only part of instructions have their decoders (and not in
+> > each case).
+> > 
+> > In this patch series, I propose 'checker', which allows us define
+> > functions for each type of instruction, extract more information.  Stack
+> > consumption computing is an example. Checker can be further employed to
+> > determine whether one instruction is possible to execute directy in
+> > optimized kprobe. I'd like to expand current checker framework by
+> > chaining checkers together. After that, I believe most of ARM
+> > instructions can be executed directly like x86, kprobe performace can be
+> > improved.
+> > 
+> > The first 3 patches introduces checker. After that, patch 4/7 checks
+> > stack requirement for probed instructions. Patches 5/7 - 7/7 are similar
+> > to patch v5, except:
+> > 
+> >  1. As Tixy proposed, unoptimized probes are also suffer from stack
+> >     problem (https://lkml.org/lkml/2014/9/1/548 ). Commit d30a0c8b saves
+> >     64 bytes for them, but for instruction use register addressing (like
+> >     'str r0, [sp, r1]'), 64 bytes are unsafe. Patch 5/7 prohibit such
+> >     probing according to stack information collected by checker.
+> 
+> By the way, this sounds like a bugfix rather than an improvement.
+> Is it possible to separate 1/7-5/7 as a bugfix series? I think those
+> should go to 3.18.
 
-I can't quite parse the first sentence, can you try to reword it?
+I believe that problem has existed since kprobes was first implemented
+on ARM 7 years ago, and the problematic instruction type doesn't appear
+to get generated by GCC so, in my opinion, I don't think there is any
+particular urgency to fix this as a bug in the current and, by
+implication, stable kernels.
 
-> Christoph Hellwig wrote the filesystem specify code (cifs, ofs, shm, xfs).
-
-s/specify/specific/.  It's so trivial that I don't think it matters.
+-- 
+Tixy
 
