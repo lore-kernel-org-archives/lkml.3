@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485AbaJXJCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 05:02:45 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:50847 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755296AbaJXJCm (ORCPT
+	id S1755680AbaJXJEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 05:04:04 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:53376 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaJXJEA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 05:02:42 -0400
-Date: Fri, 24 Oct 2014 10:02:52 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jani Nikula <jani.nikula@intel.com>, Kees Cook <keescook@chromium.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] checkpatch: fix use via symlink, make missing spelling
- file non-fatal
-Message-ID: <20141024090252.GC2910@bark>
-References: <874muwv0ym.fsf@intel.com>
- <1413980418.18654.8.camel@perches.com>
- <87ppdktewn.fsf@intel.com>
- <1414085351.15751.10.camel@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414085351.15751.10.camel@perches.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 24 Oct 2014 05:04:00 -0400
+References: <20141024081646.GB11140@mwanda>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20141024081646.GB11140@mwanda>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <71442C69-B48C-46B8-93A1-068AC26E01C2@collabora.co.uk>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+X-Mailer: iPhone Mail (11D257)
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [patch] regulator: max77802: precedence error in max77802_set_suspend_mode()
+Date: Fri, 24 Oct 2014 11:04:28 +0200
+To: Dan Carpenter <dan.carpenter@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 10:29:11AM -0700, Joe Perches wrote:
+Hello Dan,
 
-[...]
->  my $P = $0;
-> -$P =~ s@(.*)/@@g;
-> -my $D = $1;
-> +my $D = dirname(abs_path($P));
+> On 24/10/2014, at 10:16, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> 
+> The "!" operation has higher precedence that the comparison.
+> 
+> Fixes: 2e0eaa1aa008 ('regulator: max77802: Add set suspend mode for BUCKs and simplify code')
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+> index 5839c45..57e37fd 100644
+> --- a/drivers/regulator/max77802.c
+> +++ b/drivers/regulator/max77802.c
+> @@ -179,7 +179,7 @@ static int max77802_set_suspend_mode(struct regulator_dev *rdev,
+>     * If the regulator has been disabled for suspend
+>     * then is invalid to try setting a suspend mode.
+>     */
+> -    if (!max77802->opmode[id] == MAX77802_OFF_PWRREQ) {
+> +    if (max77802->opmode[id] != MAX77802_OFF_PWRREQ) {
+>        dev_warn(&rdev->dev, "%s: is disabled, mode: 0x%x not set\n",
+>             rdev->desc->name, mode);
+>        return 0;
 
-That changes the value of $P, I don't know if that is intended:
+Thanks for the patch, there is indeed a typo error but $subject is not the correct fix.
 
-  my $D = dirname(abs_path($0));
+The problem is that the "!" operator should not be in the expression so it has be removed and only compare if opmode is equal to MAX72802_OFF_PWRREQ.
 
-or
+With that change feel free to add my Reviewed-by.
 
-  my $D = abs_path($1);
-
-perhaps to keep $P as it was.
-
--apw
+Best regards,
+Javier
