@@ -1,91 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757AbaJXPXf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:23:35 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10868 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756618AbaJXPXc (ORCPT
+	id S932849AbaJXPYd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:24:33 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:40659 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756733AbaJXPY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:23:32 -0400
-Date: Fri, 24 Oct 2014 08:23:51 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+	Fri, 24 Oct 2014 11:24:29 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: "Kishon Vijay Abraham I" <kishon@ti.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
         Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Qualcomm PM8941 power key driver
-Message-ID: <20141024152350.GD28611@sonymobile.com>
-References: <1412644321-27683-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1412672510.1027.57.camel@iivanov-dev>
- <20141007184640.GB31125@sonymobile.com>
- <1412761807.13569.12.camel@iivanov-dev>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1412761807.13569.12.camel@iivanov-dev>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 2/6] Phy: DT binding documentation for Marvell MVEBU SATA phy.
+Date: Fri, 24 Oct 2014 17:24:10 +0200
+Message-Id: <1414164254-13053-3-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414164254-13053-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1414164254-13053-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 08 Oct 02:50 PDT 2014, Ivan T. Ivanov wrote:
+From: Andrew Lunn <andrew@lunn.ch>
 
-> On Tue, 2014-10-07 at 11:46 -0700, Bjorn Andersson wrote:
-> > On Tue 07 Oct 02:01 PDT 2014, Ivan T. Ivanov wrote:
-> > 
-> > > 
-> > > Hi Bjorn,
-> > > 
-> > > On Mon, 2014-10-06 at 18:11 -0700, Bjorn Andersson wrote:
-[..]
-> > > >  create mode 100644 drivers/input/misc/pm8941-pwrkey.c
-> > > 
-> > > Any reason why we cannot reuse pm8xxx-pwrkey driver? It have been
-> > > converted to regmap already. 
-> > > 
-> > 
-> > The boilerplate code is the same,
-> 
-> The boilerplate code is almost 100% :-)
-> 
-> >  but configuration registers have different
-> > layout and values written in them are different. 
-> 
-> We talk about 3 registers and 2 bit defines. struct regmap_field
-> should be able to help here.
-> 
+Describe the binding for the Marvell MVEBU SATA phy. This driver
+can be used at least with Kirkwood, Dove and maybe others.
+Additionally, update the SATA binding with the properties to link
+to the phy nodes.
 
-You're totally right, we could rewrite the driver to use regmap_field and make
-the rest of the differences conditional. In my eyes we end up with two drivers
-in one file - but it can be done.
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+---
+ Documentation/devicetree/bindings/ata/marvell.txt  |  6 ++++++
+ .../devicetree/bindings/phy/phy-mvebu.txt          | 22 ++++++++++++++++++++++
+ 2 files changed, 28 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-mvebu.txt
 
-A difference however is that in pm8941 the ps hold behavious (reboot vs power
-off) is controlled by this same block. So I have an additional patch that adds
-a restart handler here that sets the pmic in the right state before we pull
-pshold (but I haven't been able to test it properly).
+diff --git a/Documentation/devicetree/bindings/ata/marvell.txt b/Documentation/devicetree/bindings/ata/marvell.txt
+index 1c8351604d38..b460edd12766 100644
+--- a/Documentation/devicetree/bindings/ata/marvell.txt
++++ b/Documentation/devicetree/bindings/ata/marvell.txt
+@@ -6,11 +6,17 @@ Required Properties:
+ - interrupts    : Interrupt controller is using
+ - nr-ports      : Number of SATA ports in use.
+ 
++Optional Properties:
++- phys		: List of phandles to sata phys
++- phy-names	: Should be "0", "1", etc, one number per phandle
++
+ Example:
+ 
+ 	sata@80000 {
+ 		compatible = "marvell,orion-sata";
+ 		reg = <0x80000 0x5000>;
+ 		interrupts = <21>;
++		phys = <&sata_phy0>, <&sata_phy1>;
++		phy-names = "0", "1";
+ 		nr-ports = <2>;
+ 	}
+diff --git a/Documentation/devicetree/bindings/phy/phy-mvebu.txt b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
+new file mode 100644
+index 000000000000..6cb3364aeafb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/phy/phy-mvebu.txt
+@@ -0,0 +1,22 @@
++* Marvell MVEBU SATA PHY
++
++Power control for the SATA phy found on Marvell MVEBU SoCs.
++
++This document extends the binding described in phy-bindings.txt
++
++Required properties :
++
++ - reg		   : Offset and length of the register set for the SATA device
++ - compatible	   : Should be "marvell,mvebu-sata-phy"
++ - clocks	   : phandle of clock and specifier that supplies the device
++ - clock-names	   : Should be "sata"
++
++Example:
++		sata-phy@84000 {
++			compatible = "marvell,mvebu-sata-phy";
++			reg = <0x84000 0x0334>;
++			clocks = <&gate_clk 15>;
++			clock-names = "sata";
++			#phy-cells = <0>;
++			status = "ok";
++		};
+-- 
+1.9.1
 
-In pm8xxx this is handled in the pmic misc block and does not belong in this
-driver.
-
-[..]
-> > 
-> > Maybe if we introduce some vagueness related to interrupts in the dt binding
-> > documentation for pm8xxx we could simply reuse that binding.
-> > 
-> 
-> I would not say vagueness, we just can say that pm8941 did not have
-> second interrupt?
-> 
-
-I don't like having conditional documentation - it's not only that the second
-interrupt is missing, the first one have different meaning. But you're right
-that it's a minor thing and can be done.
-
-Regards,
-Bjorn
