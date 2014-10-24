@@ -1,173 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaJXC1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 22:27:21 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:41059 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaJXC1T (ORCPT
+	id S1754554AbaJXCco (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 22:32:44 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35372 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964AbaJXCcl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 22:27:19 -0400
-X-Original-SENDERIP: 10.177.220.156
-X-Original-MAILFROM: minchan@kernel.org
-Date: Fri, 24 Oct 2014 11:27:49 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/4] fix freepage count problems in memory isolation
-Message-ID: <20141024022749.GA32456@bbox>
-References: <1414051821-12769-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Thu, 23 Oct 2014 22:32:41 -0400
+Date: Thu, 23 Oct 2014 19:32:36 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
+        zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
+        cjf@rock-chips.com, zhengsq@rock-chips.com
+Subject: Re: [PATCH v13 4/5] ARM: dts: add main Thermal info to rk3288
+Message-ID: <20141024023236.GA19910@dtor-ws>
+References: <1414057207-1576-1-git-send-email-caesar.wang@rock-chips.com>
+ <1414057207-1576-5-git-send-email-caesar.wang@rock-chips.com>
+ <20141024004625.GD9463@dtor-ws>
+ <5449A6A4.3070608@rock-chips.com>
+ <E4EEE800-5701-45E5-9E97-D3B036DC2F17@gmail.com>
+ <5449B433.5040003@rock-chips.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1414051821-12769-1-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5449B433.5040003@rock-chips.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joonsoo,
+On Fri, Oct 24, 2014 at 10:06:43AM +0800, Caesar Wang wrote:
+> 
+> 在 2014/10/24 9:37, Dmitry Torokhov 写道:
+> >On October 23, 2014 6:08:52 PM PDT, Caesar Wang <caesar.wang@rock-chips.com> wrote:
+> >>Dmitry,
+> >>
+> >>在 2014/10/24 8:46, Dmitry Torokhov 写道:
+> >>>Hi Caesar,
+> >>>
+> >>>On Thu, Oct 23, 2014 at 05:40:06PM +0800, Caesar Wang wrote:
+> >>>>This patch is depend on rk3288-thermal.dtsi,or
+> >>>>it will compile error.
+> >>>>
+> >>>>If the temperature over a period of time High,over 120C
+> >>>>the resulting TSHUT gave CRU module,let it reset
+> >>>>the entire chip,or via GPIO give PMIC.
+> >>>>
+> >>>>Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> >>>>---
+> >>>>   arch/arm/boot/dts/rk3288.dtsi | 21 +++++++++++++++++++++
+> >>>>   1 file changed, 21 insertions(+)
+> >>>>
+> >>>>diff --git a/arch/arm/boot/dts/rk3288.dtsi
+> >>b/arch/arm/boot/dts/rk3288.dtsi
+> >>>>index cb18bb4..85fc17a 100644
+> >>>>--- a/arch/arm/boot/dts/rk3288.dtsi
+> >>>>+++ b/arch/arm/boot/dts/rk3288.dtsi
+> >>>>@@ -15,6 +15,7 @@
+> >>>>   #include <dt-bindings/interrupt-controller/arm-gic.h>
+> >>>>   #include <dt-bindings/pinctrl/rockchip.h>
+> >>>>   #include <dt-bindings/clock/rk3288-cru.h>
+> >>>>+#include <dt-bindings/thermal/thermal.h>
+> >>>>   #include "skeleton.dtsi"
+> >>>>   / {
+> >>>>@@ -66,6 +67,7 @@
+> >>>>   				 216000  900000
+> >>>>   				 126000  900000
+> >>>>   			>;
+> >>>>+			#cooling-cells = <2>; /* min followed by max */
+> >>>>   			clock-latency = <40000>;
+> >>>>   			clocks = <&cru ARMCLK>;
+> >>>>   		};
+> >>>>@@ -346,6 +348,19 @@
+> >>>>   		status = "disabled";
+> >>>>   	};
+> >>>>+	tsadc: tsadc@ff280000 {
+> >>>>+		compatible = "rockchip,rk3288-tsadc";
+> >>>>+		reg = <0xff280000 0x100>;
+> >>>>+		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
+> >>>>+		clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
+> >>>>+		clock-names = "tsadc", "apb_pclk";
+> >>>>+		pinctrl-names = "default";
+> >>>>+		pinctrl-0 = <&otp_out>;
+> >>>>+		#thermal-sensor-cells = <1>;
+> >>>>+		hw-shut-temp = <120000>;
+> >>>I do not think this is a good value. You have (in the other DTS file)
+> >>>passive trip point at 80 and critical (which should result in orderly
+> >>>shutdown) at 125. But here you define hardware-controlled shutdown at
+> >>>120C, which is backwards. You should have:
+> >>>
+> >>>passive <= critical <= hardware
+> >>Hmmm....
+> >>but, the system will shutdown when temperature over critial value,
+> >>there is no chance of triggering the TSHUT.
+> >>
+> >>If the temperature over a period of time High,as we know,
+> >>the resulting TSHUT gave CRU module,let it hot-reset the entire chip,
+> >>or via GPIO give PMIC cold-reset the entire chip.
+> >Having tshut trigger is not the goal, tshut is the measure of last resort. If we can handle thermal conditions without triggering tshut, we achieved our goal.
+> >
+> >Tshut triggering is " oh, crap, nothing we tried works" scenario.
+> 
+> I don't think so.
+> 
+> In general,We should have:
+> passive <= hardware(reset entire chip) <= critical(shutdown)
+> 
+> The temperature be rising qulckly if have some other conditions,
+> the "critical" will play a role.
 
-I know you spend much effort for investigate/fix this subtle problem.
-So, you should be hero.
+No, I think it should be the other way around: if we are unable to cool
+down the laptop under load we need to shut it down and let it cool. If
+for some reason we are unable to shut it down in orderly fashion (kernel
+is stuck holding a lock or similar) then hardware will reset it.
 
-Thanks for really nice work!
+At least that's how I understand it.
 
-On Thu, Oct 23, 2014 at 05:10:17PM +0900, Joonsoo Kim wrote:
-> Changes from v3 to v4
-> * Patch 1: Add code comment on nr_isolate_pageblock on struct zone (Naoya)
-> 	Add one more check in free_one_page() that checks whether
-> 	migratetype is MIGRATE_ISOLATE or not.
-> * Patch 4: Use min() to prevent overflow of buddy merge order (Naoya)
-> * Remove RFC tag
-> * Add stable tag on all patches
-> 
-> Changes from v1, v2 to v3
-> * A lot of comments that lead this patchset to right direction
-> (Vlastimil and Minchan)
-> 
-> This is version 4 patchset which is improved and minimized version of
-> version 1 to fix freepage accounting problem during memory isolation.
-> I tried different approach in version 2, but, it looks really complicated
-> so I change my mind to improve version 1. You can see version 1, 2 in
-> following links [1] [2], respectively.
-> 
-> IMO, this v3 is better than v2, because this is simpler than v2 so
-> better for maintainance and this doesn't change pageblock isolation
-> logic so it is much easier to backport.
-> 
-> This problems are found by testing my patchset [3]. There are some race
-> conditions on pageblock isolation and these race cause incorrect
-> freepage count.
-> 
-> Before describing bugs itself, I first explain definition of freepage.
-> 
-> 1. pages on buddy list are counted as freepage.
-> 2. pages on isolate migratetype buddy list are *not* counted as freepage.
-> 3. pages on cma buddy list are counted as CMA freepage, too.
-> 
-> Now, I describe problems and related patch.
-> 
-> Patch 1: There is race conditions on getting pageblock migratetype that
-> it results in misplacement of freepages on buddy list, incorrect
-> freepage count and un-availability of freepage.
-> 
-> Patch 2: Freepages on pcp list could have stale cached information to
-> determine migratetype of buddy list to go. This causes misplacement
-> of freepages on buddy list and incorrect freepage count.
-> 
-> Patch 4: Merging between freepages on different migratetype of
-> pageblocks will cause freepages accouting problem. This patch fixes it.
-> 
-> Without patchset [3], above problem doesn't happens on my CMA allocation
-> test, because CMA reserved pages aren't used at all. So there is no
-> chance for above race.
-> 
-> With patchset [3], I did simple CMA allocation test and get below result.
-> 
-> - Virtual machine, 4 cpus, 1024 MB memory, 256 MB CMA reservation
-> - run kernel build (make -j16) on background
-> - 30 times CMA allocation(8MB * 30 = 240MB) attempts in 5 sec interval
-> - Result: more than 5000 freepage count are missed
-> 
-> With patchset [3] and this patchset, I found that no freepage count are
-> missed so that I conclude that problems are solved.
-> 
-> On my simple memory offlining test, these problems also occur on that
-> environment.
-> 
-> This patchset is based on v3.18-rc1.
-> Please see individual patches for more information.
-> 
-> Thanks.
-> 
-> [1]: https://lkml.org/lkml/2014/7/4/79
-> [2]: lkml.org/lkml/2014/8/6/52
-> [3]: Aggressively allocate the pages on cma reserved memory
->      https://lkml.org/lkml/2014/5/30/291
-> 
-> Joonsoo Kim (4):
->   mm/page_alloc: fix incorrect isolation behavior by rechecking
->     migratetype
->   mm/page_alloc: add freepage on isolate pageblock to correct buddy
->     list
->   mm/page_alloc: move migratetype recheck logic to __free_one_page()
-
-So, [1-3],
-Acked-by: Minchan Kim <minchan@kernel.org>
-
-
->   mm/page_alloc: restrict max order of merging on isolated pageblock
-
-As you noted in description, this patch has a side effect which doesn't
-merge buddies. Most of all, I agree your assumptions but it's not true always.
-
-Who knows there is a driver which want a higher page above pageblock?
-Who knows there is no allocation/free of the isolated range right before
-highest allocation request?
-Even, your patch introduces new exception rule for page allocator.
-
-        "Hey, allocator, from now on, you could have unmerged buddies
-         in your list so please advertise it to your customer"
-
-So, all of users of the allocator should consider that exception so
-it might hit us sometime.
-
-I want to fix that in isolation undo time.
-Thanks, again!
-
-> 
->  include/linux/mmzone.h         |    9 +++++++++
->  include/linux/page-isolation.h |    8 ++++++++
->  mm/page_alloc.c                |   29 ++++++++++++++++++++---------
->  mm/page_isolation.c            |    2 ++
->  4 files changed, 39 insertions(+), 9 deletions(-)
-> 
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Thanks.
 
 -- 
-Kind regards,
-Minchan Kim
+Dmitry
