@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973AbaJXSDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 14:03:37 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:42746 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756750AbaJXSDg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 14:03:36 -0400
-From: Kevin Hilman <khilman@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        Tero Kristo <t-kristo@ti.com>
-Subject: Re: [PATCH] ARM: OMAP4+: PM: Program CPU logic power state
-References: <1413923076-26063-1-git-send-email-nm@ti.com>
-Date: Fri, 24 Oct 2014 11:03:31 -0700
-In-Reply-To: <1413923076-26063-1-git-send-email-nm@ti.com> (Nishanth Menon's
-	message of "Tue, 21 Oct 2014 15:24:36 -0500")
-Message-ID: <7h61f98hvw.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756977AbaJXSRG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 14:17:06 -0400
+Received: from mga03.intel.com ([134.134.136.65]:36836 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756248AbaJXSRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 14:17:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,781,1406617200"; 
+   d="scan'208";a="624820858"
+Date: Fri, 24 Oct 2014 21:16:56 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Lee Jones <lee.jones@linaro.org>, Darren Hart <dvhart@linux.intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: Use ACPI companion to match only the first
+ physical device
+Message-ID: <20141024181656.GU1484@lahna.fi.intel.com>
+References: <1414141950-228930-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1442328.iYt6Cj5IOV@vostro.rjw.lan>
+ <20141024141051.GT1484@lahna.fi.intel.com>
+ <6871118.LYO2moLKYB@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6871118.LYO2moLKYB@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth Menon <nm@ti.com> writes:
+On Fri, Oct 24, 2014 at 04:57:17PM +0200, Rafael J. Wysocki wrote:
+> > I didn't consider that it is even possible but yes, in that case we
+> > should not return true here.
+> 
+> Well, that why did you check if the list is not empty at all? :-)
+> 
+> It is possible if someone sets the ACPI companion before calling acpi_bind_one()
+> (some pieces of code do that).  It may not be relevant here, but it won't hurt
+> to be on the safe side.
 
-> CPU logic power state is never programmed in either the initialization
-> or the suspend/resume logic, instead, we depend on mpuss to program this
-> properly. However, this leaves CPU logic power state indeterminate and
-> most probably in reset configuration (If bootloader or other similar
-> software have'nt monkeyed with the register). This can make powerstate=
-> RET be either programmed for CSWR (logic=ret) or OSWR(logic = OFF) and
-> in OSWR, there can be context loss when the code does not expect it.
->
-> To prevent all these confusions, just support clearly ON, INA, CSWR,
-> OFF which is the intent of the existing code by explicitly programming
-> logic state.
->
-> NOTE: since this is a hot path (using in cpuidle), the exit path just
-> programs powerstate (logic state is immaterial when powerstate is ON).
->
-> Without doing this, we end up with lockups when CPUs enter OSWR and
-> multiple blocks loose context, when we expect them to hit CSWR.
->
-> Signed-off-by: Nishanth Menon <nm@ti.com>
+Agreed.
 
-Acked-by: Kevin Hilman <khilman@linaro.org>
+> > > 
+> > > > +	mutex_lock(&adev->physical_node_lock);
+> > > > +	if (!list_empty(&adev->physical_node_list)) {
+> > > > +		const struct acpi_device_physical_node *node;
+> > > > +
+> > > > +		node = list_first_entry(&adev->physical_node_list,
+> > > > +					struct acpi_device_physical_node, node);
+> > > > +		if (node->dev != dev)
+> > > > +			ret = false;
+> > > 
+> > > And that may be simply
+> > > 
+> > > 		ret = node->dev == dev;
+> > 
+> > OK.
+> 
+> So what about the following modified version?
+
+Looks good to me, thanks :-)
