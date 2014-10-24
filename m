@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbaJXKat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:30:49 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:47613 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195AbaJXKaq (ORCPT
+	id S1756129AbaJXKcI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:32:08 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:48033 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195AbaJXKcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:30:46 -0400
-Date: Fri, 24 Oct 2014 12:30:30 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrey Ryabinin <a.ryabinin@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Michal Marek <mmarek@suse.cz>,
-        Sasha Levin <sasha.levin@oracle.com>, x86@kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: [RFC PATCH] UBSan: run-time undefined behavior sanity checker
-Message-ID: <20141024103030.GH12706@worktop.programming.kicks-ass.net>
-References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
- <1413802499-17928-2-git-send-email-a.ryabinin@samsung.com>
- <20141021094714.GR23531@worktop.programming.kicks-ass.net>
- <544630CA.2000502@samsung.com>
+	Fri, 24 Oct 2014 06:32:07 -0400
+Date: Fri, 24 Oct 2014 11:31:58 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Z Lim <zlim.lnx@gmail.com>
+Cc: Andre Przywara <Andre.Przywara@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: BPF crash with 3.18-rc1 on arm64 Juno hardware
+Message-ID: <20141024103158.GB1955@localhost>
+References: <54493433.4090703@arm.com>
+ <CABg9mcu0-AFNNOn+C4kbS7_rWqc-6WXZTyKUJYz6rA7-8OBqZA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <544630CA.2000502@samsung.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <CABg9mcu0-AFNNOn+C4kbS7_rWqc-6WXZTyKUJYz6rA7-8OBqZA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 02:09:14PM +0400, Andrey Ryabinin wrote:
-> On 10/21/2014 01:47 PM, Peter Zijlstra wrote:
-> > On Mon, Oct 20, 2014 at 02:54:59PM +0400, Andrey Ryabinin wrote:
-> >>
-> >> UBSan uses compile-time instrumentation to catch undefined behavior (UB).
-> >> Compiler inserts code that perform certain kinds of
-> >> checks before operations that could cause UB.
-> >> If check fails (i.e. UB detected) __ubsan_handle_* function called.
-> >> to print error message.
-> >>
-> >> So the most of the work is done by compiler.
-> >> This patch just implements ubsan handlers printing errors.
-> >>
-> >> GCC supports this since 4.9, however upcoming GCC 5.0 has
-> >> more checkers implemented.
-> > 
-> > It might be useful if you've got a link to the relevant GCC
-> > documentation of this new shiny stuf.
-> > 
+On Thu, Oct 23, 2014 at 06:23:49PM +0100, Z Lim wrote:
+> On Thu, Oct 23, 2014 at 10:00 AM, Andre Przywara <andre.przywara@arm.com> wrote:
+> > I see a crash with 3.18-rc1 on a Juno board related to bpf_jit (see dump
+> > below). Userland tries to carry on afterwards, but eventually hangs in
+> > RCU stalls.
+> > The kernel has just CONFIG_BPF_JIT enabled, I guess Ubuntu enables this
+> > automatically if detected.
 > 
-> Documentation is very brief (look for fsanitize=undefined): https://gcc.gnu.org/onlinedocs/gcc/Debugging-Options.html
-> GCC 4.9.1 doc: https://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Debugging-Options.html
-> 
-> And there is an article which might be interesting: http://developerblog.redhat.com/2014/10/16/gcc-undefined-behavior-sanitizer-ubsan/
+> When net-next and arm64-next merged in mainline, a silent failure is
+> introduced due to new enhancements in net/bpf.
+> This was actually uncovered before 3.18 merge window, and Daniel's
+> patch to fix this was discussed here [1].
+> I see that Catalin has queued up this patch in fixes/core [2].
 
-Thanks, please consider including these in the changelog of future
-postings of this patch set.
+Indeed. Pull request to Linus will go out later today.
+
+-- 
+Catalin
