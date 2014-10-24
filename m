@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114AbaJXSpF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 14:45:05 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50162 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932867AbaJXSpD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 14:45:03 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] i8k: Add support for Dell Latitude E6440
-Date: Fri, 24 Oct 2014 20:44:59 +0200
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>, Guenter Roeck <linux@roeck-us.net>,
-        linux-kernel@vger.kernel.org,
-        Steven Honeyman <stevenhoneyman@gmail.com>
-References: <1412932368-24082-1-git-send-email-pali.rohar@gmail.com> <201410180023.39473@pali> <20141018104056.GA8607@kroah.com>
-In-Reply-To: <20141018104056.GA8607@kroah.com>
+	id S933065AbaJXStE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 14:49:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58948 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756793AbaJXStC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 14:49:02 -0400
+Message-ID: <544A9F1A.4050303@suse.com>
+Date: Fri, 24 Oct 2014 14:48:58 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart5995658.gZJSgB19e0";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201410242044.59305@pali>
+To: Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Peter Foley <pefoley2@pefoley.com>
+Subject: [PATCH] vdso: don't require 64-bit math in standalone test
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart5995658.gZJSgB19e0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+The use of 64-bit math on i386 causes build failures:
+vdso_standalone_test_x86.c:(.text+0x101): undefined reference to `__umoddi3'
+vdso_standalone_test_x86.c:(.text+0x12d): undefined reference to `__udivdi3'
 
-On Saturday 18 October 2014 12:40:56 Greg Kroah-Hartman wrote:
-> On Sat, Oct 18, 2014 at 12:23:39AM +0200, Pali Roh=C3=A1r wrote:
-> > On Friday 10 October 2014 22:56:55 Guenter Roeck wrote:
-> > > On 10/10/2014 02:12 AM, Pali Roh=C3=A1r wrote:
-> > > > Dell Latitude E6440 needs same settings as E6540.
-> > > >=20
-> > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > >=20
-> > > Acked-by: Guenter Roeck <linux@roeck-us.net>
-> >=20
-> > Greg, Arnd: PING
-> >=20
-> > Can you apply also this patch for E6440? Support for E6540
-> > is already in linus tree:
-> > 06c88b0d7ad87540405aea7f91d98ef43be04c95
->=20
-> I can't apply anything to my trees until 3.18-rc1 is out, but
-> will do this after that happens.
->=20
-> thanks,
->=20
-> greg k-h
+Commit adb19fb66ee (Documentation: add makefiles for more targets) is
+now building this by default, so it's failing the kernel build entirely.
 
-Hi Greg!
-I want to remind you patches, because v3.18-rc1 was released.
+Switching the declaration from uint64_t to time_t does the right thing
+and handles the x32 case automatically.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+---
+ Documentation/vDSO/vdso_standalone_test_x86.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---nextPart5995658.gZJSgB19e0
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+--- a/Documentation/vDSO/vdso_standalone_test_x86.c
++++ b/Documentation/vDSO/vdso_standalone_test_x86.c
+@@ -63,7 +63,7 @@ static inline void linux_exit(int code)
+ 	x86_syscall3(__NR_exit, code, 0, 0);
+ }
+ 
+-void to_base10(char *lastdig, uint64_t n)
++void to_base10(char *lastdig, time_t n)
+ {
+ 	while (n) {
+ 		*lastdig = (n % 10) + '0';
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlRKnisACgkQi/DJPQPkQ1Lh9wCcCOMDU4oe4kRzI507Ciw7ahkR
-OEwAoL3s1EVUR2H1JfWBFgo/eCs0pBDX
-=oD+D
------END PGP SIGNATURE-----
-
---nextPart5995658.gZJSgB19e0--
+-- 
+Jeff Mahoney
+SUSE Labs
