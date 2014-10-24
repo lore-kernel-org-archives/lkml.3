@@ -1,77 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733AbaJXFwf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 01:52:35 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:36118 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaJXFwd (ORCPT
+	id S1752109AbaJXGCD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 02:02:03 -0400
+Received: from forward3l.mail.yandex.net ([84.201.143.136]:35806 "EHLO
+	forward3l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaJXGCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 01:52:33 -0400
-Message-ID: <544A4B8C.5040002@gmail.com>
-Date: Fri, 24 Oct 2014 05:52:28 -0700
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>, David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, andrew@lunn.ch, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
-References: <1414037002-25528-7-git-send-email-linux@roeck-us.net>	<CAGVrzcYjPJWai9bxkh+WRrEEAzBKBd-LQm7zDeeouxngr_v9SQ@mail.gmail.com>	<54488CE1.2000106@roeck-us.net> <20141024.010306.1939269479587208896.davem@davemloft.net> <5449E66B.6090902@roeck-us.net>
-In-Reply-To: <5449E66B.6090902@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+	Fri, 24 Oct 2014 02:02:01 -0400
+X-Yandex-Uniq: b40c082e-434c-4b33-a641-7286c726d13d
+Authentication-Results: smtp2m.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <1414130514.21462.2.camel@yandex.ru>
+Subject: Re: [PATCH v4 1/6] sched/fair: Fix reschedule which is generated on
+ throttled cfs_rq
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+To: Wanpeng Li <kernellwp@gmail.com>
+Cc: Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, pjt@google.com, oleg@redhat.com,
+        rostedt@goodmis.org, umgwanakikbuti@gmail.com,
+        tim.c.chen@linux.intel.com, mingo@kernel.org, nicolas.pitre@linaro.org
+Date: Fri, 24 Oct 2014 10:01:54 +0400
+In-Reply-To: <54498ED2.1070308@gmail.com>
+References: <20140806075138.24858.23816.stgit@tkhai>
+	 <1407312361.8424.35.camel@tkhai> <54498ED2.1070308@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 23/10/2014 22:40, Guenter Roeck a �crit :
-> On 10/23/2014 10:03 PM, David Miller wrote:
->> From: Guenter Roeck <linux@roeck-us.net>
->> Date: Wed, 22 Oct 2014 22:06:41 -0700
->>
->>> On 10/22/2014 09:37 PM, Florian Fainelli wrote:
->>>> 2014-10-22 21:03 GMT-07:00 Guenter Roeck <linux@roeck-us.net>:
->>>>> Some Marvell switches provide chip temperature data.
->>>>> Add support for reporting it to the dsa infrastructure.
->>>>>
->>>>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
->>>>> ---
->>>> [snip]
->>>>
->>>>> +/* hwmon support
->>>>> ************************************************************/
->>>>> +
->>>>> +#if defined(CONFIG_HWMON) || (defined(MODULE) &&
->>>>> defined(CONFIG_HWMON_MODULE))
->>>>
->>>> IS_ENABLED(CONFIG_HWMON)?
->>>>
->>>
->>> Hi Florian,
->>>
->>> unfortunately, that won't work; I had it initially and got a nice
->>> error message
->>> from Fengguang's build test bot.
->>
->> Then the Kconfig dependencies are broken.
->>
->> Fix Kconfig to only allow legal combinations.
->>
->
-> I see two options for that:
->
-> - Add
->      select HWMON
->    to the NET_DSA Kconfig entry.
->    Example is Broadcom TIGON3 driver.
->
-> - Add a DSA_HWMON Kconfig entry to define the dependencies and
->    to let the user select if the functionality should be enabled.
->    Example is Intel IGB driver.
->
-> Any preference from your side ? If no, I'll go with the latter.
+Hi, Wanpeng,
 
-I would prefer DSA_HWMON personaly, though no strong feelings. Since 
-this is the most debated patch in this patch set, how about you drop it 
-from your v2 and we sort this one out separately?
---
-Florian
+the commit commentary confuses, I'm agree. Really it's just a cleanup.
+
+On Пт, 2014-10-24 at 07:27 +0800, Wanpeng Li wrote:
+> Hi Kirill,
+> 8/6/14, 4:06 PM, Kirill Tkhai:
+> > (sched_entity::on_rq == 1) does not guarantee the task is pickable;
+> > changes on throttled cfs_rq must not lead to reschedule.
+> 
+> Why (sched_entity::on_rq == 1) doesn't guarantee the task is pickable 
+> since entity will be dequeued during throttling cfs_rq?
+
+Because one of task's (grand)parents in hierarhy may be throtthed and
+dequeued.
+
+But task_struct::on_rq check doesn't guarantee this too. So, just ignore
+commit commentary; the commentary is wrong.
+
+> > Check for task_struct::on_rq instead.
+> 
+> Do you mean task_struct::on_rq will be cleared during throttling cfs_rq? 
+> I can't find codes do this.
+
+No, it not cleared. The commit commentary should be:
+"sched: Cleanup. Check task_struct::on_rq instead of sched_entity::on_rq,
+because it is the same for a task"
+
+
+> Regards,
+> Wanpeng Li
+> 
+> >
+> > Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+> > ---
+> >   kernel/sched/fair.c |    6 +++---
+> >   1 file changed, 3 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index bfa3c86..6f0ce2b 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -7465,7 +7465,7 @@ static void task_fork_fair(struct task_struct *p)
+> >   static void
+> >   prio_changed_fair(struct rq *rq, struct task_struct *p, int oldprio)
+> >   {
+> > -	if (!p->se.on_rq)
+> > +	if (!p->on_rq)
+> >   		return;
+> >   
+> >   	/*
+> > @@ -7521,15 +7521,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
+> >    */
+> >   static void switched_to_fair(struct rq *rq, struct task_struct *p)
+> >   {
+> > -	struct sched_entity *se = &p->se;
+> >   #ifdef CONFIG_FAIR_GROUP_SCHED
+> > +	struct sched_entity *se = &p->se;
+> >   	/*
+> >   	 * Since the real-depth could have been changed (only FAIR
+> >   	 * class maintain depth value), reset depth properly.
+> >   	 */
+> >   	se->depth = se->parent ? se->parent->depth + 1 : 0;
+> >   #endif
+> > -	if (!se->on_rq)
+> > +	if (!p->on_rq)
+> >   		return;
+> >   
+> >   	/*
+> >
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
