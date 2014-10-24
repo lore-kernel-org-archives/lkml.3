@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305AbaJXOtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 10:49:14 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:46924 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499AbaJXOtM (ORCPT
+	id S932164AbaJXOu1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:50:27 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21223 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755768AbaJXOuZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 10:49:12 -0400
-Date: Fri, 24 Oct 2014 18:49:03 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 2/3] mm: memcontrol: pull the NULL check from
- __mem_cgroup_same_or_subtree()
-Message-ID: <20141024144903.GB28055@esperanza>
-References: <1414158589-26094-1-git-send-email-hannes@cmpxchg.org>
- <1414158589-26094-2-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
+	Fri, 24 Oct 2014 10:50:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,780,1406617200"; 
+   d="scan'208";a="595297521"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: Jiri Olsa <jolsa@redhat.com>
+CC: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "eranian@google.com" <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "acme@kernel.org" <acme@kernel.org>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: RE: [PATCH V6 13/17] perf, x86: enable LBR callstack when recording
+ callchain
+Thread-Topic: [PATCH V6 13/17] perf, x86: enable LBR callstack when
+ recording callchain
+Thread-Index: AQHP6+jUbbj6arIphUytjgnH1ldUtZw+wfgAgACMtIA=
+Date: Fri, 24 Oct 2014 14:49:52 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F0770164929D@SHSMSX103.ccr.corp.intel.com>
+References: <1413755712-8259-1-git-send-email-kan.liang@intel.com>
+ <1413755712-8259-14-git-send-email-kan.liang@intel.com>
+ <20141024133936.GD1036@krava.brq.redhat.com>
+In-Reply-To: <20141024133936.GD1036@krava.brq.redhat.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1414158589-26094-2-git-send-email-hannes@cmpxchg.org>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 09:49:48AM -0400, Johannes Weiner wrote:
-> The NULL in mm_match_cgroup() comes from a possibly exiting mm->owner.
-> It makes a lot more sense to check where it's looked up, rather than
-> check for it in __mem_cgroup_same_or_subtree() where it's unexpected.
-> 
-> No other callsite passes NULL to __mem_cgroup_same_or_subtree().
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Reviewed-by: Vladimir Davydov <vdavydov@parallels.com>
 
-> ---
->  include/linux/memcontrol.h | 5 +++--
->  mm/memcontrol.c            | 2 +-
->  2 files changed, 4 insertions(+), 3 deletions(-)
 > 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index ea007615e8f9..e32ab948f589 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -83,11 +83,12 @@ static inline
->  bool mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *memcg)
->  {
->  	struct mem_cgroup *task_memcg;
-> -	bool match;
-> +	bool match = false;
->  
->  	rcu_read_lock();
->  	task_memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
-> -	match = __mem_cgroup_same_or_subtree(memcg, task_memcg);
-> +	if (task_memcg)
-> +		match = __mem_cgroup_same_or_subtree(memcg, task_memcg);
->  	rcu_read_unlock();
->  	return match;
->  }
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index bdf8520979cf..15b1c5110a8f 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1316,7 +1316,7 @@ bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
->  {
->  	if (root_memcg == memcg)
->  		return true;
-> -	if (!root_memcg->use_hierarchy || !memcg)
-> +	if (!root_memcg->use_hierarchy)
->  		return false;
->  	return cgroup_is_descendant(memcg->css.cgroup, root_memcg->css.cgroup);
->  }
-> -- 
-> 2.1.2
+> On Sun, Oct 19, 2014 at 05:55:08PM -0400, Kan Liang wrote:
+> > Only enable LBR callstack when user requires fp callgraph. The feature
+> > is not available when PERF_SAMPLE_BRANCH_STACK or
+> > PERF_SAMPLE_STACK_USER is required.
+> > Also, this feature only affects how to get user callchain. The kernel
+> > callchain is always got by frame pointers.
+> >
+> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> > Signed-off-by: Kan Liang <kan.liang@intel.com>
+> > ---
+> >  arch/x86/kernel/cpu/perf_event.c | 18 ++++++++++++++++--
+> >  1 file changed, 16 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/arch/x86/kernel/cpu/perf_event.c
+> > b/arch/x86/kernel/cpu/perf_event.c
+> > index 9656b9e..b3256a3 100644
+> > --- a/arch/x86/kernel/cpu/perf_event.c
+> > +++ b/arch/x86/kernel/cpu/perf_event.c
+> > @@ -424,10 +424,24 @@ int x86_pmu_hw_config(struct perf_event
+> *event)
+> >  			if (!event->attr.exclude_kernel)
+> >  				*br_type |=
+> PERF_SAMPLE_BRANCH_KERNEL;
+> >  		}
+> > -	}
+> > +	} else if (x86_pmu_has_lbr_callstack() &&
+> > +		   (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN)
+> &&
+> > +		   !(event->attr.sample_type & PERF_SAMPLE_STACK_USER)
+> &&
+> > +		   !has_branch_stack(event) &&
+> > +		   !event->attr.exclude_user &&
+> > +		   (event->attach_state & PERF_ATTACH_TASK)) {
+> > +		/*
+> > +		 * user did not specify branch_sample_type,
+> > +		 * try using the LBR call stack facility to
+> > +		 * record call chains of user program.
+> > +		 */
+> > +		event->attr.branch_sample_type =
+> > +			PERF_SAMPLE_BRANCH_USER |
+> > +			PERF_SAMPLE_BRANCH_CALL_STACK;
+> >
 > 
+> I dont see PERF_SAMPLE_BRANCH_CALL_STACK being defind in uapi.. any
+> reason why I cant enable this feature explicitly?
+
+
+The LBR call stack has some limitations. E.g. the feature is only for HSW+.
+It is only available for user callchain. We cannot collect branch information
+and call chain by LBR at the same time.. So the feature is designed as
+an alternative way to get callgraph, and it isn't exposed to enable.
+Otherwise, it may confuse the user. He enables the BRANCH_CALL_STACK, 
+but the data is only partly or even not at all from hardware.
+
+We have an option for perf report, the user can choose the preferred data
+source. User can set it to LBR. So it tries LBR data first. If not available, it
+tries FP then. The user cannot lose any callchain data. 
+
+Thanks,
+Kan
+
+> 
+> thanks,
+> jirka
