@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaJXIJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 04:09:29 -0400
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:44474 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907AbaJXIJZ convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:1:1>);
-	Fri, 24 Oct 2014 04:09:25 -0400
-Message-Id: <544A2550020000A100017826@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Fri, 24 Oct 2014 10:09:20 +0200
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Subject: RFE: kernel message "rport-2:0-10: blocked FC remote port time
- out: removing rport"
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753889AbaJXIL0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 04:11:26 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:62256 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751445AbaJXILP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 04:11:15 -0400
+Date: Fri, 24 Oct 2014 09:11:10 +0100
+From: Peter Griffin <peter.griffin@linaro.org>
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>, kernel@stlinux.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org
+Subject: Re: [STLinux Kernel] [PATCH 1/3] media: st-rc: move to using
+ reset_control_get_optional
+Message-ID: <20141024081110.GA22250@griffinp-ThinkPad-X1-Carbon-2nd>
+References: <1411424501-12673-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <1411424546-12718-1-git-send-email-srinivas.kandagatla@linaro.org>
+ <20140923180255.GA3430@griffinp-ThinkPad-X1-Carbon-2nd>
+ <54227CD2.5020705@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <54227CD2.5020705@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Srini,
 
-I'd like to point out that the following Fibre CHannel error message is of little practical use, because it lacks essential information:
+Sorry seems I never replied to this.
 
-kernel: [   68.406963]  rport-2:0-10: blocked FC remote port time out: removing rport
-(Seen in the current SLES11 SP3 kernel 3.0.101-0.40-default)
+> >>drivers/media/rc/st_rc.c:281:15: warning: assignment makes pointer
+> >>from integer without a cast [enabled by default]
+> >>   rc_dev->rstc = reset_control_get(dev, NULL);
+> >
+> >Is managing the reset line actually optional though? I can't test atm as I don't have
+> >access to my board, but quite often if the IP's aren't taken out of reset reads / writes
+> >to the perhpiheral will hang the SoC.
+> >
+> Yes and No.
+> AFAIK reset line is optional on SOCs like 7108, 7141.
+> I think having the driver function without reset might is a value
+> add in case we plan to reuse the mainline driver for these SOCs.
 
-As the logical port is removed (as the message says), you cannot find out what device (i.e. WWN) the problem message refers to.
+Yes that is a good point, for the series: -
 
-For existing ports in /sys/class/fc_remote_ports/ you can query port_id, port_name, port_state, etc. But once the port is removed, you cannot get any information about it.
+Acked-by: Peter Griffin <peter.griffin@linaro.org>
 
-In a real environment, you cannot easily guess where the problem might be, especially as there is no other message about "rport-2:0-10" before it's being removed.
+regards,
 
-I suggest to include the port ID (you can get the HBA WWN from that) and port WWN (the target device port) in the erro message if possible.
-
-Regards,
-Ulrich Windl
-
-
+Peter.
