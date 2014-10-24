@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296AbaJXUNv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 16:13:51 -0400
-Received: from mail-oi0-f74.google.com ([209.85.218.74]:44219 "EHLO
-	mail-oi0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782AbaJXUNs (ORCPT
+	id S1755759AbaJXUPF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 16:15:05 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:33554 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753906AbaJXUPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 16:13:48 -0400
-Date: Fri, 24 Oct 2014 13:13:46 -0700
-From: Yu Zhao <yuzhao@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Hugh Dickins <hughd@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Bob Liu <lliubbo@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] mm: free compound page with correct order
-Message-ID: <20141024201346.GA27746@google.com>
-References: <1413400805-15547-1-git-send-email-yuzhao@google.com>
- <20141015123044.03f38a520b01c5d332e3d9a5@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141015123044.03f38a520b01c5d332e3d9a5@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 24 Oct 2014 16:15:03 -0400
+Message-ID: <544AB33F.9030701@gmail.com>
+Date: Fri, 24 Oct 2014 22:14:55 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] phy: berlin-sata: Move PHY_BASE into private data
+ struct
+References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com> <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com> <54462865.6000205@ti.com> <544629F0.3090505@gmail.com>
+In-Reply-To: <544629F0.3090505@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 12:30:44PM -0700, Andrew Morton wrote:
-> On Wed, 15 Oct 2014 12:20:04 -0700 Yu Zhao <yuzhao@google.com> wrote:
-> 
-> > Compound page should be freed by put_page() or free_pages() with
-> > correct order. Not doing so will cause tail pages leaked.
-> > 
-> > The compound order can be obtained by compound_order() or use
-> > HPAGE_PMD_ORDER in our case. Some people would argue the latter
-> > is faster but I prefer the former which is more general.
-> > 
-> > Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > Fixes: 97ae17497e99 ("thp: implement refcounting for huge zero page")
-> > Cc: stable@vger.kernel.org (v3.8+)
-> 
-> It's two years old and nobody noticed the memory leak, so presumably it
-> happens rarely.
-> 
-> > Signed-off-by: Yu Zhao <yuzhao@google.com>
-> > ---
-> >  mm/huge_memory.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> > index 74c78aa..780d12c 100644
-> > --- a/mm/huge_memory.c
-> > +++ b/mm/huge_memory.c
-> > @@ -200,7 +200,7 @@ retry:
-> >  	preempt_disable();
-> >  	if (cmpxchg(&huge_zero_page, NULL, zero_page)) {
-> >  		preempt_enable();
-> > -		__free_page(zero_page);
-> > +		__free_pages(zero_page, compound_order(zero_page));
-> 
-> This is rare.
-> 
-> >  		goto retry;
-> >  	}
-> >  
-> > @@ -232,7 +232,7 @@ static unsigned long shrink_huge_zero_page_scan(struct shrinker *shrink,
-> >  	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
-> >  		struct page *zero_page = xchg(&huge_zero_page, NULL);
-> >  		BUG_ON(zero_page == NULL);
-> > -		__free_page(zero_page);
-> > +		__free_pages(zero_page, compound_order(zero_page));
-> 
-> But I'm surprised that this is also rare.  It makes me wonder if this
-> code is working correctly.
-> 
-> >  		return HPAGE_PMD_NR;
-> >  	}
-> 
-> Were you able to observe the leakage in practice?  If so, under what
-> circumstances?
+On 21.10.2014 11:40, Sebastian Hesselbarth wrote:
+> On 10/21/2014 11:33 AM, Kishon Vijay Abraham I wrote:
+>> On Tuesday 21 October 2014 02:37 PM, Sebastian Hesselbarth wrote:
+>>> Currently, Berlin SATA PHY driver assumes PHY_BASE address being
+>>> constant. While this PHY_BASE is correct for BG2Q, older BG2 PHY_BASE
+>>> is different. Prepare the driver for BG2 support by moving the phy_base
+>>> into private driver data.
+>>>
+>>> Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ...
+>>> ---
+>>>   drivers/phy/phy-berlin-sata.c | 42
+>>> ++++++++++++++++++++++++++++--------------
+>>>   1 file changed, 28 insertions(+), 14 deletions(-)
+>>>
+>>> diff --git a/drivers/phy/phy-berlin-sata.c
+>>> b/drivers/phy/phy-berlin-sata.c
+>>> index 69ced52d72aa..9682b0f66177 100644
+>>> --- a/drivers/phy/phy-berlin-sata.c
+>>> +++ b/drivers/phy/phy-berlin-sata.c
+>>> @@ -30,7 +30,7 @@
+>>>   #define MBUS_WRITE_REQUEST_SIZE_128    (BIT(2) << 16)
+>>>   #define MBUS_READ_REQUEST_SIZE_128    (BIT(2) << 19)
+>>>
+>>> -#define PHY_BASE        0x200
+>>> +#define BG2Q_PHY_BASE        0x200
+> [...]
+>>> +static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
+>>> +
+>>> +static const struct of_device_id phy_berlin_sata_of_match[] = {
+>>> +    {
+>>> +        .compatible = "marvell,berlin2q-sata-phy",
+>>> +        .data = &bg2q_sata_phy_base,
+>>
+>> Can't the base directly come from dt?
+>
+> You are suggesting a "marvell,phy-base-address" property, right?
+> I have no strong opinion about it, I accept your call (or DT maintainer
+> ones).
 
-Yes, not just on our servers (the worst case we saw is 11G leaked on
-a 48G machine) but also on our workstations running Ubuntu based distro.
+Kishon,
 
-$ cat /proc/vmstat  | grep thp_zero_page_alloc
-thp_zero_page_alloc 55
-thp_zero_page_alloc_failed 0
+I still have the DT patches for BG2Q queued up for v3.19 (I missed the
+arm-soc merge window for v3.18). That means, there has been no release
+with the phy binding used and I can rework a little more.
 
-This means there is (thp_zero_page_alloc - 1) * (2M - 4K) memory leaked.
+Can you please confirm that you want a DT property for the phy base 
+address, e.g. marvell,phy-base-address = <{0x200,0x80}> ?
+
+If so, I'd also rename the compatible from berlin2q-sata-phy to more
+generic berlin-sata-phy.
+
+Sebastian
