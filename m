@@ -1,62 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909AbaJXPZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:25:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48392 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755416AbaJXPZV (ORCPT
+	id S1756805AbaJXPYa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:24:30 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:40635 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755416AbaJXPY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:25:21 -0400
-Date: Fri, 24 Oct 2014 17:25:16 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Steinar H. Gunderson" <sgunderson@bigfoot.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: bisected: futex regression >= 3.14 - was - Slowdown due to
- threads bouncing between HT cores
-In-Reply-To: <1412791184.5173.11.camel@marge.simpson.net>
-Message-ID: <alpine.DEB.2.11.1410241724370.5308@nanos>
-References: <20141003194428.GA27084@sesse.net>  <1412782664.5179.75.camel@marge.simpson.net>  <CA+55aFyuH07zzD6dD4k0pdyvJ7fUhFdFrmPYJi9W=FtHihgndA@mail.gmail.com> <1412791184.5173.11.camel@marge.simpson.net>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 24 Oct 2014 11:24:27 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: "Kishon Vijay Abraham I" <kishon@ti.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/6] Add support for USB cluster(PHY muxer) on the Armada 375
+Date: Fri, 24 Oct 2014 17:24:08 +0200
+Message-Id: <1414164254-13053-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 8 Oct 2014, Mike Galbraith wrote:
-> On Wed, 2014-10-08 at 13:04 -0400, Linus Torvalds wrote: 
-> > On Wed, Oct 8, 2014 at 11:37 AM, Mike Galbraith
-> > <umgwanakikbuti@gmail.com> wrote:
-> > >
-> > > 11d4616bd07f38d496bd489ed8fad1dc4d928823 is the first bad commit
-> > > commit 11d4616bd07f38d496bd489ed8fad1dc4d928823
-> > > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > > Date:   Thu Mar 20 22:11:17 2014 -0700
-> > >
-> > >     futex: revert back to the explicit waiter counting code
-> > 
-> > While that revert might make things a tiny bit slower (I hated doing
-> > it, but the clever approach sadly didn't work on powerpc and depended
-> > on x86 locking semantics), I seriously doubt it's really relevant.
-> > It's more likely that the *real* problem itself is very
-> > timing-dependent, and the subtle synchronization changes here then
-> > expose it or hide it, rather than really fixing anything.
-> > 
-> > So like Thomas, I would suspect a race condition in the futex use, and
-> > then the exact futex implementation details are just exposing it
-> > incidentally.
-> 
-> Whew, good, futex.c is hard.  Heads up chess guys <punt>. 
+Hello,
 
-I wonder whether the barrier fix which got into 3.17 late fixes that
-issue as well.
+this is the second version of a series I initially submitted in May:
+https://lkml.org/lkml/2014/5/16/743
+
+This series adds support for the USB cluster which is on the Armada
+375 SoC. We can mainly see this device as a PHY muxer.
+
+I more or less forgotten this series until the talk of Kishon Vijay
+Abraham I about the phy framework.
+
+Since this time, things have changed in the USB framework and I no
+longer have to add the generic phy support in the xhci driver since it
+was done at the usb core level.
+
+While I ran coccicheck on my code I also found some possible
+improvement in the phy driver: it was done in the 1st patch.
+
+The second patch was a patch initially submitted by Andrew. This patch
+added the mvebu-phy.txt but fell through a crack when adding the
+driver. I join this patch on my series in order to be able to add the
+new binding for the USB cluster of the Armada 375.
+
+This was done in the third patch.
+
+The forth patch was the addition of the phys driver itself.
+
+The fifth and sixth patches are updating the device tree files related
+to the Armada 375 using the new biding.
 
 Thanks,
 
-	tglx
+Gregory
+
+Changelog:
+
+v1 -> v2:
+
+- Add a patch fixing the use of PTR_ERR_OR_ZERO.
+
+- Add the patch adding the DT binding documentation for Marvell MVEBU
+SATA phy from Andrew Lunn
+
+- Move the DT binding documentation of the Armada 375 USB cluster into
+  the phy-mvebu.txt file.
+
+- Made the armada375_usb_phy_xlate more robust" if there is a phy_put
+  and then a phy_get".
+
+Andrew Lunn (1):
+  Phy: DT binding documentation for Marvell MVEBU SATA phy.
+
+Gregory CLEMENT (5):
+  phy: Use PTR_ERR_OR_ZERO to fix warning raised by coccinelle
+  Phy: DT binding documentation for the Armada 375 USB cluster binding
+  phy: add support for USB cluster on the Armada 375 SoC
+  ARM: mvebu: add Device Tree description of USB cluster controller on
+    Armada 375
+  ARM: mvebu: add PHY support to the dts for the USB controllers on
+    Armada 375
+
+ Documentation/devicetree/bindings/ata/marvell.txt  |   6 +
+ .../devicetree/bindings/phy/phy-mvebu.txt          |  43 ++++++
+ arch/arm/boot/dts/armada-375.dtsi                  |  11 ++
+ drivers/phy/Kconfig                                |   6 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-armada375-usb2.c                   | 145 +++++++++++++++++++++
+ drivers/phy/phy-berlin-sata.c                      |   5 +-
+ drivers/phy/phy-hix5hd2-sata.c                     |   5 +-
+ drivers/phy/phy-miphy365x.c                        |   5 +-
+ drivers/phy/phy-stih41x-usb.c                      |   5 +-
+ include/dt-bindings/phy/armada-375-usb-cluster.h   |  19 +++
+ 11 files changed, 235 insertions(+), 16 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/phy-mvebu.txt
+ create mode 100644 drivers/phy/phy-armada375-usb2.c
+ create mode 100644 include/dt-bindings/phy/armada-375-usb-cluster.h
+
+-- 
+1.9.1
+
