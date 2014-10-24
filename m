@@ -1,97 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236AbaJXUSv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 16:18:51 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60049 "EHLO arroyo.ext.ti.com"
+	id S1755838AbaJXUTC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 16:19:02 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39824 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752292AbaJXUSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 16:18:50 -0400
-Date: Fri, 24 Oct 2014 15:18:27 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <airlied@linux.ie>, <robdclark@gmail.com>, <davidb@codeaurora.org>,
-        <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH] regulator: stub out devm_regulator_get_exclusive
-Message-ID: <20141024201827.GJ11455@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414178111-19525-1-git-send-email-balbi@ti.com>
- <20141024201138.GL3729@sirena.org.uk>
+	id S1755315AbaJXUS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 16:18:59 -0400
+Date: Fri, 24 Oct 2014 13:15:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jay Vosburgh <jay.vosburgh@canonical.com>
+Cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        mroos@linux.ee
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141024201504.GA18134@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141024090857.GA4083@declera.com>
+ <20141024154006.GP4977@linux.vnet.ibm.com>
+ <20141024162943.GA16621@declera.com>
+ <20141024165454.GS4977@linux.vnet.ibm.com>
+ <20141024170931.GA21849@declera.com>
+ <20141024172009.GV4977@linux.vnet.ibm.com>
+ <20141024173526.GA26058@declera.com>
+ <20141024183226.GW4977@linux.vnet.ibm.com>
+ <6050.1414176588@famine>
+ <20141024185753.GY4977@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7ArrI7P/b+va1vZ8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141024201138.GL3729@sirena.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141024185753.GY4977@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102420-0029-0000-0000-000000E2CA01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---7ArrI7P/b+va1vZ8
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Oct 24, 2014 at 11:57:53AM -0700, Paul E. McKenney wrote:
+> On Fri, Oct 24, 2014 at 11:49:48AM -0700, Jay Vosburgh wrote:
+> > Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > >On Fri, Oct 24, 2014 at 08:35:26PM +0300, Yanko Kaneti wrote:
+> > >> On Fri-10/24/14-2014 10:20, Paul E. McKenney wrote:
+> > >> > On Fri, Oct 24, 2014 at 08:09:31PM +0300, Yanko Kaneti wrote:
+> > >> > > On Fri-10/24/14-2014 09:54, Paul E. McKenney wrote:
+> > >> > > > On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
+> > >> > > > > On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
+> > >> > > > > > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
+> > >> > > > > > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
+> > >> > > > > > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
+> > >> > > > > > > > > 
+> > >> > > > > > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
+> > >> > > > > > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
+> > >> > > > 
+> > >> > > > [ . . . ]
+> > >> > > > 
+> > >> > > > > > > Ok, unless I've messsed up something major, bisecting points to:
+> > >> > > > > > > 
+> > >> > > > > > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
+> > >> > > > > > > 
+> > >> > > > > > > Makes any sense ?
+> > >> > > > > > 
+> > >> > > > > > Good question.  ;-)
+> > >> > > > > > 
+> > >> > > > > > Are any of your online CPUs missing rcuo kthreads?  There should be
+> > >> > > > > > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
+> > >> > > > > 
+> > >> > > > > Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
+> > >> > > > > and the modprobe ppp_generic testcase reliably works, libvirt also manages
+> > >> > > > > to setup its bridge.
+> > >> > > > > 
+> > >> > > > > Just with linux-tip , the rcuos are 6 but the failure is as reliable as
+> > >> > > > > before.
+> > >> > > 
+> > >> > > > Thank you, very interesting.  Which 6 of the rcuos are present?
+> > >> > > 
+> > >> > > Well, the rcuos are 0 to 5. Which sounds right for a 6 core CPU like this   
+> > >> > > Phenom II.
+> > >> > 
+> > >> > Ah, you get 8 without the patch because it creates them for potential
+> > >> > CPUs as well as real ones.  OK, got it.
+> > >> > 
+> > >> > > > > Awating instructions: :)
+> > >> > > > 
+> > >> > > > Well, I thought I understood the problem until you found that only 6 of
+> > >> > > > the expected 8 rcuos are present with linux-tip without the revert.  ;-)
+> > >> > > > 
+> > >> > > > I am putting together a patch for the part of the problem that I think
+> > >> > > > I understand, of course, but it would help a lot to know which two of
+> > >> > > > the rcuos are missing.  ;-)
+> > >> > > 
+> > >> > > Ready to test
+> > >> > 
+> > >> > Well, if you are feeling aggressive, give the following patch a spin.
+> > >> > I am doing sanity tests on it in the meantime.
+> > >> 
+> > >> Doesn't seem to make a difference here
+> > >
+> > >OK, inspection isn't cutting it, so time for tracing.  Does the system
+> > >respond to user input?  If so, please enable rcu:rcu_barrier ftrace before
+> > >the problem occurs, then dump the trace buffer after the problem occurs.
+> > 
+> > 	My system is up and responsive when the problem occurs, so this
+> > shouldn't be a problem.
+> 
+> Nice!  ;-)
+> 
+> > 	Do you want the ftrace with your patch below, or unmodified tip
+> > of tree?
+> 
+> Let's please start with the patch.
 
-Hi,
+And I should hasten to add that you need to set CONFIG_RCU_TRACE=y
+for these tracepoints to be enabled.
 
-On Fri, Oct 24, 2014 at 09:11:38PM +0100, Mark Brown wrote:
-> On Fri, Oct 24, 2014 at 02:15:11PM -0500, Felipe Balbi wrote:
-> > If we don't stup that call out, we will have
-> > build failures for any drivers using that function
-> > when .config happens to have CONFIG_REGULATOR=3Dn.
-> >=20
-> > One such case below, found with randconfig
-> >=20
-> > drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c: In function =E2=80=98mdp4_kms_=
-init=E2=80=99:
-> > drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c:384:2: error: implicit declarat=
-ion \
->=20
-> As previously and repeatedly reported the regulator usage in this driver
-> appears extremely problematic, among these problems is that it almost
-> certainly has no sensible reason to be using regulator_get_exclusive()
-> or any variant of it.  Sadly every time it's been raised with the video
-> people they've completely ignored the mail so here we are.
->=20
-> Right now not having the stub seems to only be affecting buggy users
-> (which given the use cases for _exclusive() isn't *that* surprising) so
-> I'm more inclined to leave this there in the hope that the users get
-> fixed or we can at least get some sort of dialogue with the relevant
-> maintainers.
+							Thanx, Paul
 
-quite frankly, flawed or not, I still think it's wrong of regulator
-framework to cause a build break during randconfig. Pretty much every
-other call is stubbed out, why wouldn't this be ? Moreover, if nobody
-cared to this day, why would this randconfig build break change their
-minds ?
+> > 	-J
+> > 
+> > 
+> > >							Thanx, Paul
+> > >
+> > >> > ------------------------------------------------------------------------
+> > >> > 
+> > >> > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > >> > index 29fb23f33c18..927c17b081c7 100644
+> > >> > --- a/kernel/rcu/tree_plugin.h
+> > >> > +++ b/kernel/rcu/tree_plugin.h
+> > >> > @@ -2546,9 +2546,13 @@ static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
+> > >> >  			rdp->nocb_leader = rdp_spawn;
+> > >> >  			if (rdp_last && rdp != rdp_spawn)
+> > >> >  				rdp_last->nocb_next_follower = rdp;
+> > >> > -			rdp_last = rdp;
+> > >> > -			rdp = rdp->nocb_next_follower;
+> > >> > -			rdp_last->nocb_next_follower = NULL;
+> > >> > +			if (rdp == rdp_spawn) {
+> > >> > +				rdp = rdp->nocb_next_follower;
+> > >> > +			} else {
+> > >> > +				rdp_last = rdp;
+> > >> > +				rdp = rdp->nocb_next_follower;
+> > >> > +				rdp_last->nocb_next_follower = NULL;
+> > >> > +			}
+> > >> >  		} while (rdp);
+> > >> >  		rdp_spawn->nocb_next_follower = rdp_old_leader;
+> > >> >  	}
+> > >> > 
+> > 
+> > ---
+> > 	-Jay Vosburgh, jay.vosburgh@canonical.com
+> > 
 
-Not that I really care, it's just yet another build break I need to
-ignore when build-testing. Whatever.
-
---=20
-balbi
-
---7ArrI7P/b+va1vZ8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUSrQTAAoJEIaOsuA1yqREgBsQAJ/4+NhfNlLHLFtoTQBzYnRa
-xee/2+fHUCp8xsqrU/U2oALQm19LPf806+w4uYNRnrCP+OzRwL/y/0behnKzdEo6
-f/aleLyjatm2qB0QrzW7YVINqAPfHNeeUZQd8bsqVMKN0OMsQYgKzNlyz636YEML
-2E+7J/uMgTio3+qxLFHguteg3Ss8F4jU8G7Y72X+Lj5czdwBKBbCOw1833DHneyG
-adKLiiuvD+GECo2fBElIjlTUKJsJmCoN1B2Ez7NMyzLLjxJ06h5+oIDNQxjYFRD1
-OoRnVzTD9de6eYZCiS1zZkNY3ULFAiyIj5npIfZIrHk74Wvrv6MVOe9jb/U9fZjm
-KMgHu8vGx94NGLMT7VWcrEl6dPzpi8kTwSTuJHGnncYzsBqBRpOh0Cpp2X0BZ7g7
-Q5JMpq0rWZuwLrIecpltoZANqbUKXydN5e7TkKhVaETB1bgImKyrCBPMQ/wsEAYz
-Fl8PTe4uHZNPHMwuXa7E+CvCCw8oZC+LL8XqbkDSkyMVvoj+k4tbBbDHlKH8Onsv
-t1V1bx036v/Quu7I1A+LwNIXMCJPn4p/3GTai2LjWIK8C4T4Y9crNtK6VgcaMUFF
-LDgMR33Jt/yRysaM9cbVaXJQJDl0t69eYmBuSlI8aha0I5Q5mYC9BmLOjrQ9toZm
-sVmmELkWsZlGYgbPiRI7
-=8lal
------END PGP SIGNATURE-----
-
---7ArrI7P/b+va1vZ8--
