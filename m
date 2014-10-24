@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756315AbaJXVWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 17:22:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33863 "EHLO mga11.intel.com"
+	id S1756525AbaJXVXa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 17:23:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24774 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756197AbaJXVVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 17:21:49 -0400
+	id S1756180AbaJXVVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 17:21:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,782,1406617200"; 
-   d="scan'208";a="620068414"
+   d="scan'208";a="620068387"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v12 04/20] mm: Allow page fault handlers to perform the COW
-Date: Fri, 24 Oct 2014 17:20:36 -0400
-Message-Id: <1414185652-28663-5-git-send-email-matthew.r.wilcox@intel.com>
+Subject: [PATCH v12 15/20] vfs,ext2: Remove CONFIG_EXT2_FS_XIP and rename CONFIG_FS_XIP to CONFIG_FS_DAX
+Date: Fri, 24 Oct 2014 17:20:47 -0400
+Message-Id: <1414185652-28663-16-git-send-email-matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
 References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
@@ -24,140 +24,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently COW of an XIP file is done by first bringing in a read-only
-mapping, then retrying the fault and copying the page.  It is much more
-efficient to tell the fault handler that a COW is being attempted (by
-passing in the pre-allocated page in the vm_fault structure), and allow
-the handler to perform the COW operation itself.
-
-The handler cannot insert the page itself if there is already a read-only
-mapping at that address, so allow the handler to return VM_FAULT_LOCKED
-and set the fault_page to be NULL.  This indicates to the MM code that
-the i_mmap_mutex is held instead of the page lock.
+The fewer Kconfig options we have the better.  Use the generic
+CONFIG_FS_DAX to enable XIP support in ext2 as well as in the core.
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 ---
- include/linux/mm.h |  1 +
- mm/memory.c        | 33 ++++++++++++++++++++++++---------
- 2 files changed, 25 insertions(+), 9 deletions(-)
+ fs/Kconfig         | 21 ++++++++++++++-------
+ fs/Makefile        |  2 +-
+ fs/ext2/Kconfig    | 11 -----------
+ fs/ext2/ext2.h     |  2 +-
+ fs/ext2/file.c     |  4 ++--
+ fs/ext2/super.c    |  4 ++--
+ include/linux/fs.h |  2 +-
+ scripts/diffconfig |  1 -
+ 8 files changed, 21 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 02d11ee..88d1ef4 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -209,6 +209,7 @@ struct vm_fault {
- 	pgoff_t pgoff;			/* Logical page offset based on vma */
- 	void __user *virtual_address;	/* Faulting virtual address */
+diff --git a/fs/Kconfig b/fs/Kconfig
+index db5dc15..731e702 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -13,13 +13,6 @@ if BLOCK
+ source "fs/ext2/Kconfig"
+ source "fs/ext3/Kconfig"
+ source "fs/ext4/Kconfig"
+-
+-config FS_XIP
+-# execute in place
+-	bool
+-	depends on EXT2_FS_XIP
+-	default y
+-
+ source "fs/jbd/Kconfig"
+ source "fs/jbd2/Kconfig"
  
-+	struct page *cow_page;		/* Handler may choose to COW */
- 	struct page *page;		/* ->fault handlers should return a
- 					 * page here, unless VM_FAULT_NOPAGE
- 					 * is set (which is also implied by
-diff --git a/mm/memory.c b/mm/memory.c
-index 1cc6bfb..6dee424 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2002,6 +2002,7 @@ static int do_page_mkwrite(struct vm_area_struct *vma, struct page *page,
- 	vmf.pgoff = page->index;
- 	vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
- 	vmf.page = page;
-+	vmf.cow_page = NULL;
+@@ -40,6 +33,20 @@ source "fs/ocfs2/Kconfig"
+ source "fs/btrfs/Kconfig"
+ source "fs/nilfs2/Kconfig"
  
- 	ret = vma->vm_ops->page_mkwrite(vma, &vmf);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE)))
-@@ -2701,7 +2702,8 @@ oom:
-  * See filemap_fault() and __lock_page_retry().
-  */
- static int __do_fault(struct vm_area_struct *vma, unsigned long address,
--		pgoff_t pgoff, unsigned int flags, struct page **page)
-+			pgoff_t pgoff, unsigned int flags,
-+			struct page *cow_page, struct page **page)
++config FS_DAX
++	bool "Direct Access (DAX) support"
++	depends on MMU
++	help
++	  Direct Access (DAX) can be used on memory-backed block devices.
++	  If the block device supports DAX and the filesystem supports DAX,
++	  then you can avoid using the pagecache to buffer I/Os.  Turning
++	  on this option will compile in support for DAX; you will need to
++	  mount the filesystem using the -o dax option.
++
++	  If you do not have a block device that is capable of using this,
++	  or if unsure, say N.  Saying Y will increase the size of the kernel
++	  by about 5kB.
++
+ endif # BLOCK
+ 
+ # Posix ACL utility routines
+diff --git a/fs/Makefile b/fs/Makefile
+index 0325ec3..df4a4cf 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -28,7 +28,7 @@ obj-$(CONFIG_SIGNALFD)		+= signalfd.o
+ obj-$(CONFIG_TIMERFD)		+= timerfd.o
+ obj-$(CONFIG_EVENTFD)		+= eventfd.o
+ obj-$(CONFIG_AIO)               += aio.o
+-obj-$(CONFIG_FS_XIP)		+= dax.o
++obj-$(CONFIG_FS_DAX)		+= dax.o
+ obj-$(CONFIG_FILE_LOCKING)      += locks.o
+ obj-$(CONFIG_COMPAT)		+= compat.o compat_ioctl.o
+ obj-$(CONFIG_BINFMT_AOUT)	+= binfmt_aout.o
+diff --git a/fs/ext2/Kconfig b/fs/ext2/Kconfig
+index 14a6780..c634874e 100644
+--- a/fs/ext2/Kconfig
++++ b/fs/ext2/Kconfig
+@@ -42,14 +42,3 @@ config EXT2_FS_SECURITY
+ 
+ 	  If you are not using a security module that requires using
+ 	  extended attributes for file security labels, say N.
+-
+-config EXT2_FS_XIP
+-	bool "Ext2 execute in place support"
+-	depends on EXT2_FS && MMU
+-	help
+-	  Execute in place can be used on memory-backed block devices. If you
+-	  enable this option, you can select to mount block devices which are
+-	  capable of this feature without using the page cache.
+-
+-	  If you do not use a block device that is capable of using this,
+-	  or if unsure, say N.
+diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+index 5ecf570..b30c3bd 100644
+--- a/fs/ext2/ext2.h
++++ b/fs/ext2/ext2.h
+@@ -380,7 +380,7 @@ struct ext2_inode {
+ #define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
+ #define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
+ #define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
+-#ifdef CONFIG_FS_XIP
++#ifdef CONFIG_FS_DAX
+ #define EXT2_MOUNT_XIP			0x010000  /* Execute in place */
+ #else
+ #define EXT2_MOUNT_XIP			0
+diff --git a/fs/ext2/file.c b/fs/ext2/file.c
+index da8dc64..46b333d 100644
+--- a/fs/ext2/file.c
++++ b/fs/ext2/file.c
+@@ -25,7 +25,7 @@
+ #include "xattr.h"
+ #include "acl.h"
+ 
+-#ifdef CONFIG_EXT2_FS_XIP
++#ifdef CONFIG_FS_DAX
+ static int ext2_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
  {
- 	struct vm_fault vmf;
- 	int ret;
-@@ -2710,10 +2712,13 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
- 	vmf.pgoff = pgoff;
- 	vmf.flags = flags;
- 	vmf.page = NULL;
-+	vmf.cow_page = cow_page;
+ 	return dax_fault(vma, vmf, ext2_get_block);
+@@ -109,7 +109,7 @@ const struct file_operations ext2_file_operations = {
+ 	.splice_write	= iter_file_splice_write,
+ };
  
- 	ret = vma->vm_ops->fault(vma, &vmf);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
-+	if (!vmf.page)
-+		goto out;
+-#ifdef CONFIG_EXT2_FS_XIP
++#ifdef CONFIG_FS_DAX
+ const struct file_operations ext2_xip_file_operations = {
+ 	.llseek		= generic_file_llseek,
+ 	.read		= new_sync_read,
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index b1f25f8..60f7b53 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -287,7 +287,7 @@ static int ext2_show_options(struct seq_file *seq, struct dentry *root)
+ 		seq_puts(seq, ",grpquota");
+ #endif
  
- 	if (unlikely(PageHWPoison(vmf.page))) {
- 		if (ret & VM_FAULT_LOCKED)
-@@ -2727,6 +2732,7 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
- 	else
- 		VM_BUG_ON_PAGE(!PageLocked(vmf.page), vmf.page);
- 
-+ out:
- 	*page = vmf.page;
- 	return ret;
- }
-@@ -2900,7 +2906,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		pte_unmap_unlock(pte, ptl);
- 	}
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
- 
-@@ -2940,26 +2946,35 @@ static int do_cow_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return VM_FAULT_OOM;
- 	}
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, new_page, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		goto uncharge_out;
- 
--	copy_user_highpage(new_page, fault_page, address, vma);
-+	if (fault_page)
-+		copy_user_highpage(new_page, fault_page, address, vma);
- 	__SetPageUptodate(new_page);
- 
- 	pte = pte_offset_map_lock(mm, pmd, address, &ptl);
- 	if (unlikely(!pte_same(*pte, orig_pte))) {
- 		pte_unmap_unlock(pte, ptl);
--		unlock_page(fault_page);
--		page_cache_release(fault_page);
-+		if (fault_page) {
-+			unlock_page(fault_page);
-+			page_cache_release(fault_page);
-+		} else {
-+			mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+		}
- 		goto uncharge_out;
- 	}
- 	do_set_pte(vma, address, new_page, pte, true, true);
- 	mem_cgroup_commit_charge(new_page, memcg, false);
- 	lru_cache_add_active_or_unevictable(new_page, vma);
- 	pte_unmap_unlock(pte, ptl);
--	unlock_page(fault_page);
--	page_cache_release(fault_page);
-+	if (fault_page) {
-+		unlock_page(fault_page);
-+		page_cache_release(fault_page);
-+	} else {
-+		mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+	}
- 	return ret;
- uncharge_out:
- 	mem_cgroup_cancel_charge(new_page, memcg);
-@@ -2978,7 +2993,7 @@ static int do_shared_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	int dirtied = 0;
- 	int ret, tmp;
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
- 
+-#if defined(CONFIG_EXT2_FS_XIP)
++#ifdef CONFIG_FS_DAX
+ 	if (sbi->s_mount_opt & EXT2_MOUNT_XIP)
+ 		seq_puts(seq, ",xip");
+ #endif
+@@ -549,7 +549,7 @@ static int parse_options(char *options, struct super_block *sb)
+ 			break;
+ #endif
+ 		case Opt_xip:
+-#ifdef CONFIG_EXT2_FS_XIP
++#ifdef CONFIG_FS_DAX
+ 			set_opt (sbi->s_mount_opt, XIP);
+ #else
+ 			ext2_msg(sb, KERN_INFO, "xip option not supported");
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 527684e..dad6628 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1586,7 +1586,7 @@ struct super_operations {
+ #define S_IMA		1024	/* Inode has an associated IMA struct */
+ #define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
+ #define S_NOSEC		4096	/* no suid or xattr security attributes */
+-#ifdef CONFIG_FS_XIP
++#ifdef CONFIG_FS_DAX
+ #define S_DAX		8192	/* Direct Access, avoiding the page cache */
+ #else
+ #define S_DAX		0	/* Make all the DAX code disappear */
+diff --git a/scripts/diffconfig b/scripts/diffconfig
+index 6d67283..0db267d 100755
+--- a/scripts/diffconfig
++++ b/scripts/diffconfig
+@@ -28,7 +28,6 @@ If no config files are specified, .config and .config.old are used.
+ Example usage:
+  $ diffconfig .config config-with-some-changes
+ -EXT2_FS_XATTR  n
+--EXT2_FS_XIP  n
+  CRAMFS  n -> y
+  EXT2_FS  y -> n
+  LOG_BUF_SHIFT  14 -> 16
 -- 
 2.1.1
 
