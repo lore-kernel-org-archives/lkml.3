@@ -1,196 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996AbaJXC4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 22:56:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39990 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753393AbaJXC4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 22:56:23 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALCETrUNcLV1=QR_LmJhy-0Y8a6BtjYzdXH9cS1QQD5yyhnA9A@mail.gmail.com>
-References: <1414037043-30647-1-git-send-email-eparis@redhat.com> <54494B74.2080504@amacapital.net> <1414091732.2363.11.camel@redhat.com> <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com> <1414092624.2363.13.camel@redhat.com> <CALCETrUNcLV1=QR_LmJhy-0Y8a6BtjYzdXH9cS1QQD5yyhnA9A@mail.gmail.com>
+	id S1755065AbaJXC7G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 22:59:06 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55965 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaJXC7D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Oct 2014 22:59:03 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Fri, 24 Oct 2014 12:00:07 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, cl@linux.com,
+        mgorman@suse.de, mina86@mina86.com, minchan@kernel.org,
+        n-horiguchi@ah.jp.nec.com, riel@redhat.com, rientjes@google.com,
+        zhangyanfei@cn.fujitsu.com, mm-commits@vger.kernel.org
+Subject: Re: +
+ mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
+ added to -mm tree
+Message-ID: <20141024030006.GC15243@js1304-P5Q-DELUXE>
+References: <543d8d58.g9K7YpzF5ZOXeQqj%akpm@linux-foundation.org>
+ <20141023081543.GB7598@js1304-P5Q-DELUXE>
+ <5448BED1.40909@suse.cz>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 23 Oct 2014 19:55:52 -0700
-To: Andy Lutomirski <luto@amacapital.net>, Eric Paris <eparis@redhat.com>
-CC: Richard Guy Briggs <rgb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-audit@redhat.com
-Message-ID: <6D130EEC-6D8B-4FFC-BFF3-03F426FD2CF6@zytor.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5448BED1.40909@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, I will look at this tomorrow.
+On Thu, Oct 23, 2014 at 10:39:45AM +0200, Vlastimil Babka wrote:
+> On 10/23/2014 10:15 AM, Joonsoo Kim wrote:
+> > On Tue, Oct 14, 2014 at 01:53:44PM -0700, akpm@linux-foundation.org wrote:
+> >>
+> >> The patch titled
+> >>      Subject: mm/compaction.c: avoid premature range skip in isolate_migratepages_range
+> >> has been added to the -mm tree.  Its filename is
+> >>      mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
+> >>
+> >> This patch should soon appear at
+> >>     http://ozlabs.org/~akpm/mmots/broken-out/mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
+> >> and later at
+> >>     http://ozlabs.org/~akpm/mmotm/broken-out/mm-compaction-avoid-premature-range-skip-in-isolate_migratepages_range.patch
+> >>
+> >> Before you just go and hit "reply", please:
+> >>    a) Consider who else should be cc'ed
+> >>    b) Prefer to cc a suitable mailing list as well
+> >>    c) Ideally: find the original patch on the mailing list and do a
+> >>       reply-to-all to that, adding suitable additional cc's
+> >>
+> >> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> >>
+> >> The -mm tree is included into linux-next and is updated
+> >> there every 3-4 working days
+> >>
+> >> ------------------------------------------------------
+> >> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >> Subject: mm/compaction.c: avoid premature range skip in isolate_migratepages_range
+> >>
+> >> commit edc2ca612496 ("mm, compaction: move pageblock checks up from
+> >> isolate_migratepages_range()") commonizes isolate_migratepages variants
+> >> and make them use isolate_migratepages_block().
+> >>
+> >> isolate_migratepages_block() could stop the execution when enough pages
+> >> are isolated, but, there is no code in isolate_migratepages_range() to
+> >> handle this case.  In the result, even if isolate_migratepages_block()
+> >> returns prematurely without checking all pages in the range,
+> >>
+> >> isolate_migratepages_block() is called repeately on the following
+> >> pageblock and some pages in the previous range are skipped to check.
+> >> Then, CMA is failed frequently due to this fact.
+> >>
+> >> To fix this problem, this patch let isolate_migratepages_range() know the
+> >> situation that enough pages are isolated and stop the isolation in that
+> >> case.
+> >>
+> >> Note that isolate_migratepages() has no such problem, because, it always
+> >> stops the isolation after just one call of isolate_migratepages_block().
+> >>
+> >> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> >> Cc: Vlastimil Babka <vbabka@suse.cz>
+> >> Cc: David Rientjes <rientjes@google.com>
+> >> Cc: Minchan Kim <minchan@kernel.org>
+> >> Cc: Michal Nazarewicz <mina86@mina86.com>
+> >> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> >> Cc: Christoph Lameter <cl@linux.com>
+> >> Cc: Rik van Riel <riel@redhat.com>
+> >> Cc: Mel Gorman <mgorman@suse.de>
+> >> Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+> >> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> 
+> Acked-by: Vlastimil Babka <vbabka@suse.cz>
+> 
+> Sorry for the trouble. But I think a more robust and future-proof fix
+> would be a check such as: if (pfn < block_end_pfn) break;
+> This should catch any reason where isolate_migratepages_block() did not
+> finish whole pageblock, and which was not fatal enough to return pfn==0.
+> However currently this seems to happen only due to isolating too much,
+> so your patch should work.
+> So it's up to you if you want to make the check more generic now, or
+> later after this bug is fixed for 3.18.
 
-For the record, the calling convention is that eax, edx, ecx are clobbered, and used for the three first arguments in that order. eax, edx are used for the return value(s).
+'if (pfn < block_end_pfn) break;' has one problem.
+If we have enough isolated pages and reach at block_end_pfn,
+we can't stop with above check.
 
-The exception is for __asmlinkage functions where all arguments are passed on the stack; something I would like to get rid of but would require changing a lot of assembly code.
+More proper check may be as following.
+'if (pfn < block_end_pfn ||
+cc->nr_migratepages == COMPACT_CLUSTER_MAX) break;'
+But, as you mentioned, there is no case where 'pfn < block_end_pfn'
+now, so I'd like to remain the patch as is.
 
-The same registers are still clobbered, though.
-
-On October 23, 2014 1:30:40 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
->On Thu, Oct 23, 2014 at 12:30 PM, Eric Paris <eparis@redhat.com> wrote:
->> On Thu, 2014-10-23 at 12:20 -0700, Andy Lutomirski wrote:
->>> On Thu, Oct 23, 2014 at 12:15 PM, Eric Paris <eparis@redhat.com>
->wrote:
->>> > On Thu, 2014-10-23 at 11:39 -0700, Andy Lutomirski wrote:
->>> >> On 10/22/2014 09:04 PM, Eric Paris wrote:
->>> >> > git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very
->very dumb.
->>> >> > It was writing over %esp/pt_regs semi-randomly on i686  with
->the expected
->>> >> > "system can't boot" results.  As noted in:
->>> >> >
->>> >> > https://bugs.freedesktop.org/show_bug.cgi?id=85277
->>> >> >
->>> >> > This patch stops fscking with pt_regs.  Instead it sets up the
->registers
->>> >> > for the call to __audit_syscall_entry in the most obvious
->conceivable
->>> >> > way.  It then does just a tiny tiny touch of magic.  We need to
->get what
->>> >> > started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This
->is as easy
->>> >> > as a pair of pushes.
->>> >> >
->>> >> > After the call to __audit_syscall_entry all we need to do is
->get that
->>> >> > now useless junk off the stack (pair of pops) and reload %eax
->with the
->>> >> > original syscall so other stuff can keep going about it's
->business.
->>> >> >
->>> >> > Signed-off-by: Eric Paris <eparis@redhat.com>
->>> >> > Cc: Thomas Gleixner <tglx@linutronix.de>
->>> >> > Cc: Ingo Molnar <mingo@redhat.com>
->>> >> > Cc: "H. Peter Anvin" <hpa@zytor.com>
->>> >> > Cc: x86@kernel.org
->>> >> > Cc: linux-kernel@vger.kernel.org
->>> >> > Cc: linux-audit@redhat.com
->>> >> > ---
->>> >> >  arch/x86/kernel/entry_32.S | 15 +++++++--------
->>> >> >  1 file changed, 7 insertions(+), 8 deletions(-)
->>> >> >
->>> >> > diff --git a/arch/x86/kernel/entry_32.S
->b/arch/x86/kernel/entry_32.S
->>> >> > index f9e3fab..fb01d22 100644
->>> >> > --- a/arch/x86/kernel/entry_32.S
->>> >> > +++ b/arch/x86/kernel/entry_32.S
->>> >> > @@ -447,15 +447,14 @@ sysenter_exit:
->>> >> >  sysenter_audit:
->>> >> >     testl $(_TIF_WORK_SYSCALL_ENTRY &
->~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
->>> >> >     jnz syscall_trace_entry
->>> >> > -   addl $4,%esp
->>> >> > -   CFI_ADJUST_CFA_OFFSET -4
->>> >> > -   movl %esi,4(%esp)               /* 5th arg: 4th syscall arg
->*/
->>> >> > -   movl %edx,(%esp)                /* 4th arg: 3rd syscall arg
->*/
->>> >> > -   /* %ecx already in %ecx            3rd arg: 2nd syscall arg
->*/
->>> >> > -   movl %ebx,%edx                  /* 2nd arg: 1st syscall arg
->*/
->>> >> > -   /* %eax already in %eax            1st arg: syscall number
->*/
->>> >> > +   /* movl PT_EAX(%esp), %eax      already set, syscall
->number: 1st arg to audit */
->>> >> > +   movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit
->*/
->>> >> > +   /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to
->audit */
->>> >> > +   pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
->>> >> > +   pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
->>> >> >     call __audit_syscall_entry
->>> >> > -   pushl_cfi %ebx
->>> >> > +   popl_cfi %ecx /* get that remapped edx off the stack */
->>> >> > +   popl_cfi %ecx /* get that remapped esi off the stack */
->>> >> >     movl PT_EAX(%esp),%eax          /* reload syscall number */
->>> >> >     jmp sysenter_do_call
->>> >> >
->>> >> >
->>> >>
->>> >> This looks reasonably likely to be correct, but this code is
->complicated
->>> >> and now ever slower.
->>> >
->>> > I guess I could just use push/pop and do the CFI_ADJUST_CFA_OFFSET
->by
->>> > hand.  But I figured this was reasonable enough...
->>> >
->>>
->>> I'm not complaining about your new assembly in particular.  There's
->>> just too much assembly in there in general.
->>>
->>> But I feel like I'm missing something in the new code.  Aren't you
->>> corrupting ecx with those popl_cfi insns?
->>
->> After the call __audit_syscall_entry aren't they already polluted?
->> Isn't that the reason we need to reload EAX?  You can verify this
->leaves
->> things in a similar state (although slightly differently polluted)
->than
->> before it got screwed up.  Here is diff between before the breakage
->and
->> what I propose we do now.
->>
->> (I admit I don't understand how the pushl_cfi %ebx wasn't messing up
->> PT_EBX)
->>
->> /me anxiously awaits x86 guy to tell me how dumb I am....
->>
->
->hpa, do you have time to figure this out?  I don't know the 32-bit ABI
->well enough, nor will I have time to disassemble things or find and
->read the spec to figure this out in the next few days.
->
->--Andy
->
->> $ git diff a17c8b54dc738c4fda31e8be0302cd131a04c19f --
->arch/x86/kernel/entry_32.S
->> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
->> index 0d0c9d4..fb01d22 100644
->> --- a/arch/x86/kernel/entry_32.S
->> +++ b/arch/x86/kernel/entry_32.S
->> @@ -447,16 +447,14 @@ sysenter_exit:
->>  sysenter_audit:
->>         testl $(_TIF_WORK_SYSCALL_ENTRY &
->~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
->>         jnz syscall_trace_entry
->> -       addl $4,%esp
->> -       CFI_ADJUST_CFA_OFFSET -4
->> -       /* %esi already in 8(%esp)         6th arg: 4th syscall arg
->*/
->> -       /* %edx already in 4(%esp)         5th arg: 3rd syscall arg
->*/
->> -       /* %ecx already in 0(%esp)         4th arg: 2nd syscall arg
->*/
->> -       movl %ebx,%ecx                  /* 3rd arg: 1st syscall arg
->*/
->> -       movl %eax,%edx                  /* 2nd arg: syscall number */
->> -       movl $AUDIT_ARCH_I386,%eax      /* 1st arg: audit arch */
->> +       /* movl PT_EAX(%esp), %eax      already set, syscall number:
->1st arg to audit */
->> +       movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit
->*/
->> +       /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to
->audit */
->> +       pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
->> +       pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
->>         call __audit_syscall_entry
->> -       pushl_cfi %ebx
->> +       popl_cfi %ecx /* get that remapped edx off the stack */
->> +       popl_cfi %ecx /* get that remapped esi off the stack */
->>         movl PT_EAX(%esp),%eax          /* reload syscall number */
->>         jmp sysenter_do_call
->>
->>
-
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Thanks.
