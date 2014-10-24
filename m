@@ -1,94 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971AbaJXBHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 21:07:48 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:54717 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014AbaJXBHr (ORCPT
+	id S1754288AbaJXBIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 21:08:45 -0400
+Received: from regular1.263xmail.com ([211.150.99.137]:34866 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764AbaJXBIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 21:07:47 -0400
-X-Original-SENDERIP: 10.177.222.33
-X-Original-MAILFROM: byungchul.park@lge.com
-Date: Fri, 24 Oct 2014 10:07:42 +0900
-From: Byungchul Park <byungchul.park@lge.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: rostedt@goodmis.org, mingo@redhat.com, jolsa@redhat.com,
-        vanilla@blackduck.lge.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] tracing, function_graph: fix micro seconds notation
- in comment
-Message-ID: <20141024010742.GB18008@byungchulpark-X58A-UD3R>
-References: <1414052242-9828-1-git-send-email-byungchul.park@lge.com>
- <1414052242-9828-2-git-send-email-byungchul.park@lge.com>
- <87fveee2tg.fsf@sejong.aot.lge.com>
+	Thu, 23 Oct 2014 21:08:42 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: caesar.wang@rock-chips.com
+X-FST-TO: zhengsq@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: caesar.wang@rock-chips.com
+X-UNIQUE-TAG: <0b48b1f4b422e62b8164c8004d2358a3>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <5449A6A4.3070608@rock-chips.com>
+Date: Fri, 24 Oct 2014 09:08:52 +0800
+From: Caesar Wang <caesar.wang@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87fveee2tg.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
+        zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
+        cjf@rock-chips.com, zhengsq@rock-chips.com
+Subject: Re: [PATCH v13 4/5] ARM: dts: add main Thermal info to rk3288
+References: <1414057207-1576-1-git-send-email-caesar.wang@rock-chips.com> <1414057207-1576-5-git-send-email-caesar.wang@rock-chips.com> <20141024004625.GD9463@dtor-ws>
+In-Reply-To: <20141024004625.GD9463@dtor-ws>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 09:20:11AM +0900, Namhyung Kim wrote:
-> Hi Byungchul,
-> 
-> On Thu, 23 Oct 2014 17:17:21 +0900, byungchul park wrote:
-> > From: Byungchul Park <byungchul.park@lge.com>
-> >
-> > Usually, "msecs" notation means milli-seconds, and "usecs" notation
-> > means micro-seconds. Since the unit used in the code is
-> > micro-seconds, the notation should be replaced from msecs to usecs.
-> > This confusing notation prevents us from understanding the code
-> > correctly.
-> >
-> > Signed-off-by: Byungchul Park <byungchul.park@lge.com>
-> > ---
-> >  kernel/trace/trace_functions_graph.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-> > index f0a0c98..c18a1e3 100644
-> > --- a/kernel/trace/trace_functions_graph.c
-> > +++ b/kernel/trace/trace_functions_graph.c
-> > @@ -822,10 +822,10 @@ print_graph_duration(unsigned long long duration, struct trace_seq *s,
-> >  
-> >  	/* Signal a overhead of time execution to the output */
-> >  	if (flags & TRACE_GRAPH_PRINT_OVERHEAD) {
-> > -		/* Duration exceeded 100 msecs */
-> > +		/* Duration exceeded 100 usecs */
-> >  		if (duration > 100000ULL)
-> >  			ret = trace_seq_puts(s, "! ");
-> > -		/* Duration exceeded 10 msecs */
-> > +		/* Duration exceeded 10 usecs */
-> >  		else if (duration > 10000ULL)
-> 
-> I thought the duration was in usec, but it seems not, it's in nsec, hmm.
-> Then this exceeding 10/100 usec is not meaningful - what about increaing
-> numbers in the conditional so that it can match to the comment?  That
-> will eliminate the need of the patch 2.
+Dmitry,
 
-The approach you suggested also looks good to me. But I just wonder if it
-would be ok even if it changes meaning of the marks, "!", "+", because the
-marks have used with the meaning of exceeding 10/100 usec until now.
+在 2014/10/24 8:46, Dmitry Torokhov 写道:
+> Hi Caesar,
+>
+> On Thu, Oct 23, 2014 at 05:40:06PM +0800, Caesar Wang wrote:
+>> This patch is depend on rk3288-thermal.dtsi,or
+>> it will compile error.
+>>
+>> If the temperature over a period of time High,over 120C
+>> the resulting TSHUT gave CRU module,let it reset
+>> the entire chip,or via GPIO give PMIC.
+>>
+>> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+>> ---
+>>   arch/arm/boot/dts/rk3288.dtsi | 21 +++++++++++++++++++++
+>>   1 file changed, 21 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+>> index cb18bb4..85fc17a 100644
+>> --- a/arch/arm/boot/dts/rk3288.dtsi
+>> +++ b/arch/arm/boot/dts/rk3288.dtsi
+>> @@ -15,6 +15,7 @@
+>>   #include <dt-bindings/interrupt-controller/arm-gic.h>
+>>   #include <dt-bindings/pinctrl/rockchip.h>
+>>   #include <dt-bindings/clock/rk3288-cru.h>
+>> +#include <dt-bindings/thermal/thermal.h>
+>>   #include "skeleton.dtsi"
+>>   
+>>   / {
+>> @@ -66,6 +67,7 @@
+>>   				 216000  900000
+>>   				 126000  900000
+>>   			>;
+>> +			#cooling-cells = <2>; /* min followed by max */
+>>   			clock-latency = <40000>;
+>>   			clocks = <&cru ARMCLK>;
+>>   		};
+>> @@ -346,6 +348,19 @@
+>>   		status = "disabled";
+>>   	};
+>>   
+>> +	tsadc: tsadc@ff280000 {
+>> +		compatible = "rockchip,rk3288-tsadc";
+>> +		reg = <0xff280000 0x100>;
+>> +		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
+>> +		clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
+>> +		clock-names = "tsadc", "apb_pclk";
+>> +		pinctrl-names = "default";
+>> +		pinctrl-0 = <&otp_out>;
+>> +		#thermal-sensor-cells = <1>;
+>> +		hw-shut-temp = <120000>;
+> I do not think this is a good value. You have (in the other DTS file)
+> passive trip point at 80 and critical (which should result in orderly
+> shutdown) at 125. But here you define hardware-controlled shutdown at
+> 120C, which is backwards. You should have:
+>
+> passive <= critical <= hardware
+Hmmm....
+but, the system will shutdown when temperature over critial value,
+there is no chance of triggering the TSHUT.
 
-Isn't there anything wrong with increasing numbers in the conditions? :)
+If the temperature over a period of time High,as we know,
+the resulting TSHUT gave CRU module,let it hot-reset the entire chip,
+or via GPIO give PMIC cold-reset the entire chip.
 
-> 
-> Also I think msecs_str in trace_print_graph_duration() should be renamed
-> to usecs_str.
 
-I agree. It should be also renamed. Such words made me hard to understand
-the code correctly. :(
 
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> >  			ret = trace_seq_puts(s, "+ ");
-> >  	}
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Thanks.
+>
+
+-- 
+Best regards,
+Caesar
+
+
