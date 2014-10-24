@@ -1,41 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730AbaJXNiQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:38:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:53350 "EHLO
+	id S1756742AbaJXNja (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:39:30 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55418 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756504AbaJXNiN (ORCPT
+	with ESMTP id S1756504AbaJXNj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:38:13 -0400
-Date: Fri, 24 Oct 2014 15:38:10 +0200
+	Fri, 24 Oct 2014 09:39:29 -0400
+Date: Fri, 24 Oct 2014 15:39:19 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: rjw@rjwysocki.net, nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 3/5] cpuidle: idle: menu: Don't reflect when a state
- selection failed
-Message-ID: <20141024133810.GK12706@worktop.programming.kicks-ass.net>
-References: <1413822343-1972-1-git-send-email-daniel.lezcano@linaro.org>
- <1413822343-1972-3-git-send-email-daniel.lezcano@linaro.org>
+To: Juri Lelli <juri.lelli@arm.com>
+Cc: Daniel Wagner <daniel.wagner@bmw-carit.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "vincent@legout.info" <vincent@legout.info>
+Subject: Re: [PATCH 0/4] Fix various bits of AC and PI for SCHED_DEADLINE
+Message-ID: <20141024133919.GA21513@worktop.programming.kicks-ass.net>
+References: <1414142198-18552-1-git-send-email-juri.lelli@arm.com>
+ <544A3949.30305@bmw-carit.de>
+ <544A524A.3090305@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413822343-1972-3-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <544A524A.3090305@arm.com>
 User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 06:25:41PM +0200, Daniel Lezcano wrote:
-> +++ b/kernel/sched/idle.c
-> @@ -162,7 +162,8 @@ use_default:
->  	/*
->  	 * Give the governor an opportunity to reflect on the outcome
->  	 */
-> -	cpuidle_reflect(dev, entered_state);
-> +	if (entered_state >= 0)
-> +		cpuidle_reflect(dev, entered_state);
->  
+On Fri, Oct 24, 2014 at 02:21:14PM +0100, Juri Lelli wrote:
+> > 
+> 
+> Peter, maybe you can add it while applying them?
 
-Given we'll do use_default: when next_state < 0, we actually never get
-here unless this is true.
+Already done, thanks!
