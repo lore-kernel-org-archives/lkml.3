@@ -1,247 +1,656 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970AbaJXVp5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 17:45:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39699 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755126AbaJXVo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 17:44:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,782,1406617200"; 
-   d="scan'208";a="620077194"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v12 17/20] ext2: Get rid of most mentions of XIP in ext2
-Date: Fri, 24 Oct 2014 17:20:49 -0400
-Message-Id: <1414185652-28663-18-git-send-email-matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+	id S1756004AbaJXVrM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 17:47:12 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:45999 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308AbaJXVrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 17:47:09 -0400
+From: Kevin Hilman <khilman@kernel.org>
+To: zyw@rock-chips.com
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>, dianders@chromium.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Tony Xie <xxx@rock-chips.com>
+Subject: Re: [PATCH v3 4/6] ARM: rockchip: add suspend and resume for RK3288
+References: <1413862894-2623-1-git-send-email-zyw@rock-chips.com>
+	<1413863063-2815-1-git-send-email-zyw@rock-chips.com>
+Date: Fri, 24 Oct 2014 14:47:05 -0700
+In-Reply-To: <1413863063-2815-1-git-send-email-zyw@rock-chips.com>
+	(zyw@rock-chips.com's message of "Mon, 20 Oct 2014 20:44:23 -0700")
+Message-ID: <7ha94l6syu.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To help people transition, accept the 'xip' mount option (and report it
-in /proc/mounts), but print a message encouraging people to switch over
-to the 'dax' option.
+zyw@rock-chips.com writes:
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
----
- Documentation/filesystems/ext2.txt |  5 +++--
- fs/ext2/ext2.h                     | 13 +++++++------
- fs/ext2/file.c                     |  2 +-
- fs/ext2/inode.c                    |  6 +++---
- fs/ext2/namei.c                    |  8 ++++----
- fs/ext2/super.c                    | 25 ++++++++++++++++---------
- 6 files changed, 34 insertions(+), 25 deletions(-)
+> From: Chris Zhong <zyw@rock-chips.com>
+>
+> It's a basic version of suspend and resume for rockchip, it only support RK3288
+> now.
+>
+> Signed-off-by: Tony Xie <xxx@rock-chips.com>
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>
+> ---
+>
+> Changes in v3:
+> - move the pinmux of gpio6_c6 save and restore to pinctrl-rockchip
+>
+> Changes in v2:
+> - add the regulator calls in prepare and finish.
+> - add the pinmux of gpio6_c6 save and restore
+>
+>  arch/arm/mach-rockchip/Makefile   |    1 +
+>  arch/arm/mach-rockchip/pm.c       |  316 +++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-rockchip/pm.h       |  102 ++++++++++++
+>  arch/arm/mach-rockchip/rockchip.c |   11 +-
+>  arch/arm/mach-rockchip/sleep.S    |   87 ++++++++++
+>  5 files changed, 515 insertions(+), 2 deletions(-)
+>  create mode 100644 arch/arm/mach-rockchip/pm.c
+>  create mode 100644 arch/arm/mach-rockchip/pm.h
+>  create mode 100644 arch/arm/mach-rockchip/sleep.S
+>
+> diff --git a/arch/arm/mach-rockchip/Makefile b/arch/arm/mach-rockchip/Makefile
+> index b29d8ea..5c3a9b2 100644
+> --- a/arch/arm/mach-rockchip/Makefile
+> +++ b/arch/arm/mach-rockchip/Makefile
+> @@ -1,4 +1,5 @@
+>  CFLAGS_platsmp.o := -march=armv7-a
+>  
+>  obj-$(CONFIG_ARCH_ROCKCHIP) += rockchip.o
+> +obj-$(CONFIG_PM_SLEEP) += pm.o sleep.o
+>  obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+> diff --git a/arch/arm/mach-rockchip/pm.c b/arch/arm/mach-rockchip/pm.c
+> new file mode 100644
+> index 0000000..e0d6594
+> --- /dev/null
+> +++ b/arch/arm/mach-rockchip/pm.c
+> @@ -0,0 +1,316 @@
+> +/*
+> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+> + * Author: Tony Xie <tony.xie@rock-chips.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/regmap.h>
+> +#include <linux/suspend.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/regulator/machine.h>
+> +
+> +#include <asm/cacheflush.h>
+> +#include <asm/tlbflush.h>
+> +#include <asm/suspend.h>
+> +
+> +#include "pm.h"
+> +
+> +struct rockchip_pm_device_id {
+> +	const char *compatible;
+> +	const struct platform_suspend_ops *ops;
+> +	int (*init)(void);
+> +};
+> +
+> +static char bootram_save_data[SZ_4K];
+> +
+> +static void __iomem *rk3288_bootram_base;
+> +static phys_addr_t rk3288_bootram_phy;
+> +
+> +static struct regmap *pmu_regmap;
+> +static struct regmap *grf_regmap;
+> +static struct regmap *sgrf_regmap;
+> +
+> +static inline void rk3288_copy_data_to_sram(void)
+> +{
+> +	u32 resume_code_size = (u32)&rkpm_bootdata_cpu_code -
+> +			       (u32)rockchip_slp_cpu_resume + 4;
+> +
+> +	/* save root sram data in ddr mem */
+> +	memcpy(rk3288_bootram_base, bootram_save_data, SZ_4K);
 
-diff --git a/Documentation/filesystems/ext2.txt b/Documentation/filesystems/ext2.txt
-index 67639f9..b971456 100644
---- a/Documentation/filesystems/ext2.txt
-+++ b/Documentation/filesystems/ext2.txt
-@@ -20,6 +20,9 @@ minixdf				Makes `df' act like Minix.
- check=none, nocheck	(*)	Don't do extra checking of bitmaps on mount
- 				(check=normal and check=strict options removed)
- 
-+dax				Use direct access (no page cache).  See
-+				Documentation/filesystems/dax.txt.
-+
- debug				Extra debugging information is sent to the
- 				kernel syslog.  Useful for developers.
- 
-@@ -56,8 +59,6 @@ noacl				Don't support POSIX ACLs.
- 
- nobh				Do not attach buffer_heads to file pagecache.
- 
--xip				Use execute in place (no caching) if possible
--
- grpquota,noquota,quota,usrquota	Quota options are silently ignored by ext2.
- 
- 
-diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
-index b8b1c11..46133a0 100644
---- a/fs/ext2/ext2.h
-+++ b/fs/ext2/ext2.h
-@@ -380,14 +380,15 @@ struct ext2_inode {
- #define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
- #define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
- #define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
--#ifdef CONFIG_FS_DAX
--#define EXT2_MOUNT_XIP			0x010000  /* Execute in place */
--#else
--#define EXT2_MOUNT_XIP			0
--#endif
-+#define EXT2_MOUNT_XIP			0x010000  /* Obsolete, use DAX */
- #define EXT2_MOUNT_USRQUOTA		0x020000  /* user quota */
- #define EXT2_MOUNT_GRPQUOTA		0x040000  /* group quota */
- #define EXT2_MOUNT_RESERVATION		0x080000  /* Preallocation */
-+#ifdef CONFIG_FS_DAX
-+#define EXT2_MOUNT_DAX			0x100000  /* Direct Access */
-+#else
-+#define EXT2_MOUNT_DAX			0
-+#endif
- 
- 
- #define clear_opt(o, opt)		o &= ~EXT2_MOUNT_##opt
-@@ -789,7 +790,7 @@ extern int ext2_fsync(struct file *file, loff_t start, loff_t end,
- 		      int datasync);
- extern const struct inode_operations ext2_file_inode_operations;
- extern const struct file_operations ext2_file_operations;
--extern const struct file_operations ext2_xip_file_operations;
-+extern const struct file_operations ext2_dax_file_operations;
- 
- /* inode.c */
- extern const struct address_space_operations ext2_aops;
-diff --git a/fs/ext2/file.c b/fs/ext2/file.c
-index 46b333d..5b8cab5 100644
---- a/fs/ext2/file.c
-+++ b/fs/ext2/file.c
-@@ -110,7 +110,7 @@ const struct file_operations ext2_file_operations = {
- };
- 
- #ifdef CONFIG_FS_DAX
--const struct file_operations ext2_xip_file_operations = {
-+const struct file_operations ext2_dax_file_operations = {
- 	.llseek		= generic_file_llseek,
- 	.read		= new_sync_read,
- 	.write		= new_sync_write,
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 034fd42..6434bc0 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -1286,7 +1286,7 @@ void ext2_set_inode_flags(struct inode *inode)
- 		inode->i_flags |= S_NOATIME;
- 	if (flags & EXT2_DIRSYNC_FL)
- 		inode->i_flags |= S_DIRSYNC;
--	if (test_opt(inode->i_sb, XIP))
-+	if (test_opt(inode->i_sb, DAX))
- 		inode->i_flags |= S_DAX;
- }
- 
-@@ -1388,9 +1388,9 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
- 
- 	if (S_ISREG(inode->i_mode)) {
- 		inode->i_op = &ext2_file_inode_operations;
--		if (test_opt(inode->i_sb, XIP)) {
-+		if (test_opt(inode->i_sb, DAX)) {
- 			inode->i_mapping->a_ops = &ext2_aops;
--			inode->i_fop = &ext2_xip_file_operations;
-+			inode->i_fop = &ext2_dax_file_operations;
- 		} else if (test_opt(inode->i_sb, NOBH)) {
- 			inode->i_mapping->a_ops = &ext2_nobh_aops;
- 			inode->i_fop = &ext2_file_operations;
-diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
-index 0db888c..148f6e3 100644
---- a/fs/ext2/namei.c
-+++ b/fs/ext2/namei.c
-@@ -104,9 +104,9 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
- 		return PTR_ERR(inode);
- 
- 	inode->i_op = &ext2_file_inode_operations;
--	if (test_opt(inode->i_sb, XIP)) {
-+	if (test_opt(inode->i_sb, DAX)) {
- 		inode->i_mapping->a_ops = &ext2_aops;
--		inode->i_fop = &ext2_xip_file_operations;
-+		inode->i_fop = &ext2_dax_file_operations;
- 	} else if (test_opt(inode->i_sb, NOBH)) {
- 		inode->i_mapping->a_ops = &ext2_nobh_aops;
- 		inode->i_fop = &ext2_file_operations;
-@@ -125,9 +125,9 @@ static int ext2_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
- 		return PTR_ERR(inode);
- 
- 	inode->i_op = &ext2_file_inode_operations;
--	if (test_opt(inode->i_sb, XIP)) {
-+	if (test_opt(inode->i_sb, DAX)) {
- 		inode->i_mapping->a_ops = &ext2_aops;
--		inode->i_fop = &ext2_xip_file_operations;
-+		inode->i_fop = &ext2_dax_file_operations;
- 	} else if (test_opt(inode->i_sb, NOBH)) {
- 		inode->i_mapping->a_ops = &ext2_nobh_aops;
- 		inode->i_fop = &ext2_file_operations;
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 60f7b53..2e82bf2 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -290,6 +290,8 @@ static int ext2_show_options(struct seq_file *seq, struct dentry *root)
- #ifdef CONFIG_FS_DAX
- 	if (sbi->s_mount_opt & EXT2_MOUNT_XIP)
- 		seq_puts(seq, ",xip");
-+	if (sbi->s_mount_opt & EXT2_MOUNT_DAX)
-+		seq_puts(seq, ",dax");
- #endif
- 
- 	if (!test_opt(sb, RESERVATION))
-@@ -393,7 +395,7 @@ enum {
- 	Opt_resgid, Opt_resuid, Opt_sb, Opt_err_cont, Opt_err_panic,
- 	Opt_err_ro, Opt_nouid32, Opt_nocheck, Opt_debug,
- 	Opt_oldalloc, Opt_orlov, Opt_nobh, Opt_user_xattr, Opt_nouser_xattr,
--	Opt_acl, Opt_noacl, Opt_xip, Opt_ignore, Opt_err, Opt_quota,
-+	Opt_acl, Opt_noacl, Opt_xip, Opt_dax, Opt_ignore, Opt_err, Opt_quota,
- 	Opt_usrquota, Opt_grpquota, Opt_reservation, Opt_noreservation
- };
- 
-@@ -422,6 +424,7 @@ static const match_table_t tokens = {
- 	{Opt_acl, "acl"},
- 	{Opt_noacl, "noacl"},
- 	{Opt_xip, "xip"},
-+	{Opt_dax, "dax"},
- 	{Opt_grpquota, "grpquota"},
- 	{Opt_ignore, "noquota"},
- 	{Opt_quota, "quota"},
-@@ -549,10 +552,14 @@ static int parse_options(char *options, struct super_block *sb)
- 			break;
- #endif
- 		case Opt_xip:
-+			ext2_msg(sb, KERN_INFO, "use dax instead of xip");
-+			set_opt(sbi->s_mount_opt, XIP);
-+			/* Fall through */
-+		case Opt_dax:
- #ifdef CONFIG_FS_DAX
--			set_opt (sbi->s_mount_opt, XIP);
-+			set_opt(sbi->s_mount_opt, DAX);
- #else
--			ext2_msg(sb, KERN_INFO, "xip option not supported");
-+			ext2_msg(sb, KERN_INFO, "dax option not supported");
- #endif
- 			break;
- 
-@@ -896,15 +903,15 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	blocksize = BLOCK_SIZE << le32_to_cpu(sbi->s_es->s_log_block_size);
- 
--	if (sbi->s_mount_opt & EXT2_MOUNT_XIP) {
-+	if (sbi->s_mount_opt & EXT2_MOUNT_DAX) {
- 		if (blocksize != PAGE_SIZE) {
- 			ext2_msg(sb, KERN_ERR,
--					"error: unsupported blocksize for xip");
-+					"error: unsupported blocksize for dax");
- 			goto failed_mount;
- 		}
- 		if (!sb->s_bdev->bd_disk->fops->direct_access) {
- 			ext2_msg(sb, KERN_ERR,
--					"error: device does not support xip");
-+					"error: device does not support dax");
- 			goto failed_mount;
- 		}
- 	}
-@@ -1276,10 +1283,10 @@ static int ext2_remount (struct super_block * sb, int * flags, char * data)
- 		((sbi->s_mount_opt & EXT2_MOUNT_POSIX_ACL) ? MS_POSIXACL : 0);
- 
- 	es = sbi->s_es;
--	if ((sbi->s_mount_opt ^ old_opts.s_mount_opt) & EXT2_MOUNT_XIP) {
-+	if ((sbi->s_mount_opt ^ old_opts.s_mount_opt) & EXT2_MOUNT_DAX) {
- 		ext2_msg(sb, KERN_WARNING, "warning: refusing change of "
--			 "xip flag with busy inodes while remounting");
--		sbi->s_mount_opt ^= EXT2_MOUNT_XIP;
-+			 "dax flag with busy inodes while remounting");
-+		sbi->s_mount_opt ^= EXT2_MOUNT_DAX;
- 	}
- 	if ((*flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY)) {
- 		spin_unlock(&sbi->s_lock);
--- 
-2.1.1
+This seems wasteful only a small amount of this page is actually used...
 
+> +	/* move resume code and data to bootsram */
+> +	memcpy(rk3288_bootram_base, rockchip_slp_cpu_resume,
+> +	       resume_code_size);
+
+And part of what you wrote above is being overwritten here.
+
+Why not add something like this at the end of your .S file
+
+ENTRY(rk3288_bootram_sz)
+        .word   . - rockchip_slp_cpu_resume
+
+And then you can just do a single memcpy of 'rk3288_booram_sz' bytes,
+and only restore that much as well.
+
+> +static inline void rk3288_restore_original_sram(void)
+> +{
+> +	memcpy(bootram_save_data, rk3288_bootram_base, SZ_4K);
+> +}
+> +
+> +static inline u32 rk3288_l2_config(void)
+> +{
+> +	u32 l2ctlr;
+> +
+> +	asm("mrc p15, 1, %0, c9, c0, 2" : "=r" (l2ctlr));
+> +	return l2ctlr;
+> +}
+> +
+> +static void rk3288_fill_in_bootram(u32 level)
+> +{
+> +	rkpm_bootdata_cpusp = rk3288_bootram_phy + (SZ_4K - 8);
+> +	rkpm_bootdata_cpu_code = virt_to_phys(cpu_resume);
+> +
+> +	rkpm_bootdata_l2ctlr_f  = 1;
+> +	rkpm_bootdata_l2ctlr = rk3288_l2_config();
+
+You're storing this to an offset in your assembly code, which is then
+copied to SRAM.  Why not just read/store it from your assembly code?
+
+> +	if (level == ROCKCHIP_ARM_OFF_LOGIC_DEEP) {
+> +		/*
+> +		* In this mode the SDRAM power domain will be off,
+> +		* so it need to be resumed,
+> +		* but now the sdram resume code is not ready.
+> +		* i have to set "rkpm_bootdata_ddr_code" 0.
+
+Then just remove this 'if' for now since it's doesn't make any sense.
+
+> +		*/
+> +		rkpm_bootdata_ddr_code = 0;
+> +	} else {
+> +		rkpm_bootdata_ddr_code = 0;
+> +	}
+> +	rk3288_copy_data_to_sram();
+> +}
+>
+> +static u32 rk3288_pmu_pwr_mode_con;
+> +static u32 rk3288_sgrf_soc_con0;
+> +
+> +static void rk3288_slp_mode_set(int level)
+> +{
+> +	u32 mode_set, mode_set1;
+> +
+> +	regmap_read(sgrf_regmap, RK3288_SGRF_SOC_CON0, &rk3288_sgrf_soc_con0);
+> +
+> +	regmap_read(pmu_regmap, RK3288_PMU_PWRMODE_CON,
+> +		    &rk3288_pmu_pwr_mode_con);
+> +
+> +	/* set bit 8 so that system will resume to FAST_BOOT_ADDR */
+> +	regmap_write(sgrf_regmap, RK3288_SGRF_SOC_CON0,
+> +		     BIT(SGRF_FAST_BOOT_EN) | BIT(SGRF_FAST_BOOT_EN + 16));
+> +
+> +	/* booting address of resuming system is from this register value */
+> +	regmap_write(sgrf_regmap, RK3288_SGRF_FAST_BOOT_ADDR,
+> +		     rk3288_bootram_phy);
+> +
+> +	regmap_write(pmu_regmap, RK3288_PMU_WAKEUP_CFG1,
+> +		     PMU_ARMINT_WAKEUP_EN);
+> +
+> +	mode_set = BIT(PMU_GLOBAL_INT_DISABLE) | BIT(PMU_L2FLUSH_EN) |
+> +		   BIT(PMU_SREF0_ENTER_EN) | BIT(PMU_SREF1_ENTER_EN) |
+> +		   BIT(PMU_DDR0_GATING_EN) | BIT(PMU_DDR1_GATING_EN) |
+> +		   BIT(PMU_PWR_MODE_EN) | BIT(PMU_CHIP_PD_EN) |
+> +		   BIT(PMU_SCU_EN);
+> +
+> +	mode_set1 = BIT(PMU_CLR_CORE) | BIT(PMU_CLR_CPUP);
+> +
+> +	if (level == ROCKCHIP_ARM_OFF_LOGIC_DEEP) {
+> +		/* arm off, logic deep sleep */
+> +		mode_set |= BIT(PMU_BUS_PD_EN) |
+> +			    BIT(PMU_DDR1IO_RET_EN) | BIT(PMU_DDR0IO_RET_EN) |
+> +			    BIT(PMU_OSC_24M_DIS) | BIT(PMU_PMU_USE_LF) |
+> +			    BIT(PMU_ALIVE_USE_LF) | BIT(PMU_PLL_PD_EN);
+> +
+> +		mode_set1 |= BIT(PMU_CLR_ALIVE) | BIT(PMU_CLR_BUS) |
+> +			     BIT(PMU_CLR_PERI) | BIT(PMU_CLR_DMA);
+> +
+> +	} else {
+> +		/*
+> +		 * arm off, logic normal
+> +		 * if pmu_clk_core_src_gate_en is not set,
+> +		 * wakeup will be error
+> +		 */
+> +		mode_set |= BIT(PMU_CLK_CORE_SRC_GATE_EN);
+> +	}
+> +
+> +	regmap_write(pmu_regmap, RK3288_PMU_PWRMODE_CON, mode_set);
+> +
+> +	regmap_write(pmu_regmap, RK3288_PMU_PWRMODE_CON1, mode_set1);
+> +}
+> +
+> +static void rk3288_slp_mode_set_resume(void)
+> +{
+> +	regmap_write(pmu_regmap, RK3288_PMU_PWRMODE_CON,
+> +		     rk3288_pmu_pwr_mode_con);
+> +
+> +	regmap_write(sgrf_regmap, RK3288_SGRF_SOC_CON0,
+> +		     rk3288_sgrf_soc_con0 | BIT(SGRF_FAST_BOOT_EN + 16));
+> +}
+> +
+> +/*
+> + * level: used to control the level of sleep mode.
+> + * ROCKCHIP_ARM_OFF_LOGIC_NORMAL : arm is off and logic is in normal
+> + * sleep mode.
+> + * ROCKCHIP_ARM_OFF_LOGIC_DEEP : arm is off and logic is in deep sleep mode
+> + */
+> +static void rk3288_save_settings(u32 level)
+> +{
+> +	rk3288_fill_in_bootram(level);
+> +
+> +	rk3288_slp_mode_set(level);
+> +}
+> +
+> +static void rk3288_restore_settings(void)
+> +{
+> +	rk3288_slp_mode_set_resume();
+> +
+> +	rk3288_restore_original_sram();
+> +}
+> +
+> +static int rockchip_lpmode_enter(unsigned long arg)
+> +{
+> +	flush_cache_all();
+> +
+> +	cpu_do_idle();
+> +
+> +	pr_info("Failed to suspend the system\n");
+> +
+> +	return 1;
+> +}
+> +
+> +static int rk3288_suspend_enter(suspend_state_t state)
+> +{
+> +	local_fiq_disable();
+> +
+> +	rk3288_save_settings(ROCKCHIP_ARM_OFF_LOGIC_NORMAL);
+
+You (re)write your assembly code into SRAM every time you suspend.  Does
+your SRAM lose context? ...
+
+> +	cpu_suspend(0, rockchip_lpmode_enter);
+> +
+> +	rk3288_restore_settings();
+
+... or is it just because you overwrite it here?  
+
+Why are you reading/writing 4K of SRAM every suspend/resume?  Is it
+because the SRAM is actually shared with some other devices/drivers?
+
+If so, maybe you should be using an SRAM allocator so the SRAM can be
+shared, and you don't have to read/write a full page of SRAM for every
+suspend/resume.
+
+Kevin
+
+> +	local_fiq_enable();
+> +
+> +	return 0;
+> +}
+> +
+> +static int rk3288_suspend_prepare(void)
+> +{
+> +	return regulator_suspend_prepare(PM_SUSPEND_MEM);
+> +}
+> +
+> +static void rk3288_suspend_finish(void)
+> +{
+> +	if (regulator_suspend_finish())
+> +		pr_warn("suspend finish failed\n");
+> +}
+> +
+> +static int rk3288_suspend_iomap(void)
+> +{
+> +	struct device_node *node;
+> +	struct resource res;
+> +
+> +	node = of_find_compatible_node(NULL, NULL, "rockchip,rk3288-pmu-sram");
+> +	if (!node) {
+> +		pr_err("%s: could not find bootram dt node\n", __func__);
+> +		return -1;
+> +	}
+> +
+> +	rk3288_bootram_base = of_iomap(node, 0);
+> +	if (!rk3288_bootram_base) {
+> +		pr_err("%s: could not map bootram base\n", __func__);
+> +		return -1;
+> +	}
+> +
+> +	if (of_address_to_resource(node, 0, &res)) {
+> +		pr_err("%s: could not get bootram phy addr\n", __func__);
+> +		return -1;
+> +	}
+> +
+> +	rk3288_bootram_phy = res.start;
+> +
+> +	return 0;
+> +}
+> +
+> +static int rk3288_suspend_init(void)
+> +{
+> +	int ret;
+> +
+> +	pmu_regmap = syscon_regmap_lookup_by_compatible(
+> +				"rockchip,rk3288-pmu");
+> +
+> +	if (IS_ERR(pmu_regmap)) {
+> +		pr_err("%s: could not find pmu regmap\n", __func__);
+> +		return -1;
+> +	}
+> +
+> +	grf_regmap = syscon_regmap_lookup_by_compatible(
+> +				"rockchip,rk3288-grf");
+> +
+> +	if (IS_ERR(grf_regmap)) {
+> +		pr_err("%s: could not find grf regmap\n", __func__);
+> +		return -1;
+> +	}
+> +
+> +	sgrf_regmap = syscon_regmap_lookup_by_compatible(
+> +				"rockchip,rk3288-sgrf");
+> +
+> +	if (IS_ERR(sgrf_regmap)) {
+> +		pr_err("%s: could not find sgrf regmap\n", __func__);
+> +		return -1;
+> +	}
+> +
+> +	ret = rk3288_suspend_iomap();
+> +
+> +	return ret;
+> +}
+> +
+> +static const struct platform_suspend_ops rk3288_suspend_ops = {
+> +	.enter   = rk3288_suspend_enter,
+> +	.valid   = suspend_valid_only_mem,
+> +	.prepare = rk3288_suspend_prepare,
+> +	.finish  = rk3288_suspend_finish,
+> +};
+> +
+> +static const struct rockchip_pm_device_id rockchip_pm_dt_match[] __initconst = {
+> +	{
+> +		.compatible = "rockchip,rk3288",
+> +		.ops = &rk3288_suspend_ops,
+> +		.init = rk3288_suspend_init,
+> +	},
+> +	{ /* sentinel */ },
+> +};
+> +
+> +void __init rockchip_suspend_init(void)
+> +{
+> +	const struct rockchip_pm_device_id *matches =
+> +		rockchip_pm_dt_match;
+> +
+> +	while (matches->compatible && matches->ops) {
+> +		if (of_machine_is_compatible(matches->compatible))
+> +			break;
+> +		matches++;
+> +	}
+> +
+> +	if (!matches->compatible || !matches->ops) {
+> +		pr_err("%s:there is not a machine matched\n", __func__);
+> +		return;
+> +	}
+> +
+> +	if (matches->init) {
+> +		if (matches->init()) {
+> +			pr_err("%s: matches init error\n", __func__);
+> +			return;
+> +		}
+> +	}
+> +
+> +	suspend_set_ops(matches->ops);
+> +}
+> diff --git a/arch/arm/mach-rockchip/pm.h b/arch/arm/mach-rockchip/pm.h
+> new file mode 100644
+> index 0000000..8e4c359
+> --- /dev/null
+> +++ b/arch/arm/mach-rockchip/pm.h
+> @@ -0,0 +1,102 @@
+> +/*
+> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+> + * Author: Tony Xie <tony.xie@rock-chips.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#ifndef __MACH_ROCKCHIP_PM_H
+> +#define __MACH_ROCKCHIP_PM_H
+> +
+> +extern unsigned long rkpm_bootdata_cpusp;
+> +extern unsigned long rkpm_bootdata_cpu_code;
+> +extern unsigned long rkpm_bootdata_l2ctlr_f;
+> +extern unsigned long rkpm_bootdata_l2ctlr;
+> +extern unsigned long rkpm_bootdata_ddr_code;
+> +extern unsigned long rkpm_bootdata_ddr_data;
+> +/* The function selction of low power mode */
+> +/* arm is off and logic is in normal sleep mode */
+> +#define ROCKCHIP_ARM_OFF_LOGIC_NORMAL (0)
+> +/* arm is off and logic is in deep sleep mode */
+> +#define ROCKCHIP_ARM_OFF_LOGIC_DEEP (1)
+> +
+> +void rockchip_slp_cpu_resume(void);
+> +void __init rockchip_suspend_init(void);
+> +
+> +/****** following is rk3288 defined **********/
+> +#define RK3288_PMU_WAKEUP_CFG0          0x00
+> +#define RK3288_PMU_WAKEUP_CFG1          0x04
+> +#define RK3288_PMU_PWRMODE_CON          0x18
+> +#define RK3288_PMU_OSC_CNT              0x20
+> +#define RK3288_PMU_PLL_CNT              0x24
+> +#define RK3288_PMU_STABL_CNT            0x28
+> +#define RK3288_PMU_DDR0IO_PWRON_CNT     0x2c
+> +#define RK3288_PMU_DDR1IO_PWRON_CNT     0x30
+> +#define RK3288_PMU_CORE_PWRDWN_CNT      0x34
+> +#define RK3288_PMU_CORE_PWRUP_CNT       0x38
+> +#define RK3288_PMU_GPU_PWRDWN_CNT       0x3c
+> +#define RK3288_PMU_GPU_PWRUP_CNT        0x40
+> +#define RK3288_PMU_WAKEUP_RST_CLR_CNT   0x44
+> +#define RK3288_PMU_PWRMODE_CON1         0x90
+> +
+> +#define RK3288_SGRF_SOC_CON0            (0x0000)
+> +#define RK3288_SGRF_FAST_BOOT_ADDR      (0x0120)
+> +#define SGRF_FAST_BOOT_EN (8)
+> +
+> +#define RK3288_CRU_MODE_CON (0x50)
+> +#define RK3288_CRU_SEL0_CON (0x60)
+> +#define RK3288_CRU_SEL1_CON (0x64)
+> +#define RK3288_CRU_SEL10_CON (0x88)
+> +#define RK3288_CRU_SEL33_CON (0xe4)
+> +#define RK3288_CRU_SEL37_CON (0xf4)
+> +
+> +/* PMU_WAKEUP_CFG1 bits */
+> +#define PMU_ARMINT_WAKEUP_EN BIT(0)
+> +
+> +enum rk3288_pwr_mode_con {
+> +	PMU_PWR_MODE_EN = 0,
+> +	PMU_CLK_CORE_SRC_GATE_EN,
+> +	PMU_GLOBAL_INT_DISABLE,
+> +	PMU_L2FLUSH_EN,
+> +	PMU_BUS_PD_EN,
+> +	PMU_A12_0_PD_EN,
+> +	PMU_SCU_EN,
+> +	PMU_PLL_PD_EN,
+> +	PMU_CHIP_PD_EN, /* POWER OFF PIN ENABLE */
+> +	PMU_PWROFF_COMB,
+> +	PMU_ALIVE_USE_LF,
+> +	PMU_PMU_USE_LF,
+> +	PMU_OSC_24M_DIS,
+> +	PMU_INPUT_CLAMP_EN,
+> +	PMU_WAKEUP_RESET_EN,
+> +	PMU_SREF0_ENTER_EN,
+> +	PMU_SREF1_ENTER_EN,
+> +	PMU_DDR0IO_RET_EN,
+> +	PMU_DDR1IO_RET_EN,
+> +	PMU_DDR0_GATING_EN,
+> +	PMU_DDR1_GATING_EN,
+> +	PMU_DDR0IO_RET_DE_REQ,
+> +	PMU_DDR1IO_RET_DE_REQ
+> +};
+> +
+> +enum rk3288_pwr_mode_con1 {
+> +	PMU_CLR_BUS = 0,
+> +	PMU_CLR_CORE,
+> +	PMU_CLR_CPUP,
+> +	PMU_CLR_ALIVE,
+> +	PMU_CLR_DMA,
+> +	PMU_CLR_PERI,
+> +	PMU_CLR_GPU,
+> +	PMU_CLR_VIDEO,
+> +	PMU_CLR_HEVC,
+> +	PMU_CLR_VIO,
+> +};
+> +
+> +#endif /* __MACH_ROCKCHIP_PM_H */
+> diff --git a/arch/arm/mach-rockchip/rockchip.c b/arch/arm/mach-rockchip/rockchip.c
+> index 8ab9e0e..db1e40d 100644
+> --- a/arch/arm/mach-rockchip/rockchip.c
+> +++ b/arch/arm/mach-rockchip/rockchip.c
+> @@ -23,6 +23,12 @@
+>  #include <asm/mach/map.h>
+>  #include <asm/hardware/cache-l2x0.h>
+>  #include "core.h"
+> +#include "pm.h"
+> +
+> +static void __init rockchip_dt_init(void)
+> +{
+> +	rockchip_suspend_init();
+> +}
+>  
+>  static const char * const rockchip_board_dt_compat[] = {
+>  	"rockchip,rk2928",
+> @@ -34,7 +40,8 @@ static const char * const rockchip_board_dt_compat[] = {
+>  };
+>  
+>  DT_MACHINE_START(ROCKCHIP_DT, "Rockchip Cortex-A9 (Device Tree)")
+> -	.l2c_aux_val	= 0,
+> -	.l2c_aux_mask	= ~0,
+> +	.l2c_aux_val    = 0,
+> +	.l2c_aux_mask   = ~0,
+> +	.init_machine	= rockchip_dt_init,
+>  	.dt_compat	= rockchip_board_dt_compat,
+>  MACHINE_END
+> diff --git a/arch/arm/mach-rockchip/sleep.S b/arch/arm/mach-rockchip/sleep.S
+> new file mode 100644
+> index 0000000..f6c2ae2
+> --- /dev/null
+> +++ b/arch/arm/mach-rockchip/sleep.S
+> @@ -0,0 +1,87 @@
+> +/*
+> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+> + * Author: Tony Xie <tony.xie@rock-chips.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + */
+> +
+> +#include <linux/linkage.h>
+> +#include <asm/assembler.h>
+> +#include <asm/memory.h>
+> +
+> +.data
+> +/*
+> + * this code will be copied from
+> + * ddr to sram for system resumeing.
+> + * so it is ".data section".
+> + */
+> +.align
+> +
+> +ENTRY(rockchip_slp_cpu_resume)
+> +	setmode	PSR_I_BIT | PSR_F_BIT | SVC_MODE, r1  @ set svc, irqs off
+> +	mrc	p15, 0, r1, c0, c0, 5
+> +	and	r1, r1, #0xf
+> +	cmp	r1, #0
+> +	/* olny cpu0 can continue to run, the others is halt here */
+> +	beq	cpu0run
+> +secondary_loop:
+> +	wfe
+> +	b	secondary_loop
+> +cpu0run:
+> +	ldr	r3, rkpm_bootdata_l2ctlr_f
+> +	cmp	r3, #0
+> +	beq	sp_set
+> +	ldr	r3, rkpm_bootdata_l2ctlr
+> +	mcr	p15, 1, r3, c9, c0, 2
+> +sp_set:
+> +	ldr	sp, rkpm_bootdata_cpusp
+> +
+> +	ldr	r1, rkpm_bootdata_ddr_code
+> +	cmp	r1, #0
+> +	beq	res
+> +	ldr	r0, rkpm_bootdata_ddr_data
+> +	blx	r1
+> +res:
+> +	ldr	r1, rkpm_bootdata_cpu_code
+> +	bx	r1
+> +ENDPROC(rockchip_slp_cpu_resume)
+> +
+> +/* Parameters filled in by the kernel */
+> +
+> +/* Code to jump to for DDR resume code, or NULL */
+> +	.global rkpm_bootdata_ddr_code
+> +rkpm_bootdata_ddr_code:
+> +	.long 0
+> +
+> +/* Data to pass to DDR resume data */
+> +	.global rkpm_bootdata_ddr_data
+> +rkpm_bootdata_ddr_data:
+> +	.long 0
+> +
+> +/* Flag for whether to restore L2CTLR on resume */
+> +	.global rkpm_bootdata_l2ctlr_f
+> +rkpm_bootdata_l2ctlr_f:
+> +	.long 0
+> +
+> +/* Saved L2CTLR to restore on resume */
+> +	.global rkpm_bootdata_l2ctlr
+> +rkpm_bootdata_l2ctlr:
+> +	.long 0
+> +
+> +/* CPU resume SP addr */
+> +	.globl rkpm_bootdata_cpusp
+> +rkpm_bootdata_cpusp:
+> +	.long 0
+> +
+> +/* CPU resume function (physical address) */
+> +	.globl rkpm_bootdata_cpu_code
+> +rkpm_bootdata_cpu_code:
+> +	.long 0
