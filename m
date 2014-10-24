@@ -1,94 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698AbaJXQQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 12:16:52 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:48353 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755937AbaJXQQu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 12:16:50 -0400
-Date: Fri, 24 Oct 2014 17:16:34 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Mathieu Poirier <mathieu.poirier@linaro.org>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: supplementing IO accessors with 64 bit capability
-Message-ID: <20141024161634.GG20534@e104818-lin.cambridge.arm.com>
-References: <1413993983-17310-1-git-send-email-mathieu.poirier@linaro.org>
- <20141022164454.GI15370@e104818-lin.cambridge.arm.com>
- <CANLsYkx08dw=YYBoRJ47QC+iL578HxPoMFcRDw6aKsvyqaqtkw@mail.gmail.com>
- <20141024092832.GD20534@e104818-lin.cambridge.arm.com>
- <CANLsYkz+UZv+vd9hbQOTNvsdyR7MyMrb0DxCOpMcgCr+1NQR5Q@mail.gmail.com>
+	id S932187AbaJXQRc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 12:17:32 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56107 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756141AbaJXQRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 12:17:31 -0400
+Date: Fri, 24 Oct 2014 09:13:37 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        htejun@gmail.com
+Subject: Re: rcu_preempt detected stalls.
+Message-ID: <20141024161337.GQ4977@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141013173504.GA27955@redhat.com>
+ <543DDD5E.9080602@oracle.com>
+ <20141023183917.GX4977@linux.vnet.ibm.com>
+ <54494F2F.6020005@oracle.com>
+ <20141023195808.GB4977@linux.vnet.ibm.com>
+ <544A45F8.2030207@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANLsYkz+UZv+vd9hbQOTNvsdyR7MyMrb0DxCOpMcgCr+1NQR5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <544A45F8.2030207@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102416-0033-0000-0000-000000D507F6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 04:05:13PM +0100, Mathieu Poirier wrote:
-> On 24 October 2014 03:28, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> > On Wed, Oct 22, 2014 at 08:10:27PM +0100, Mathieu Poirier wrote:
-> >> On 22 October 2014 18:44, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> >> > On Wed, Oct 22, 2014 at 05:06:23PM +0100, mathieu.poirier@linaro.org wrote:
-> >> >> +static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
-> >> >> +{
-> >> >> +     asm volatile("strd %1, %0"
-> >> >> +                  : "+Qo" (*(volatile u64 __force *)addr)
-> >> >> +                  : "r" (val));
-> >> >> +}
-> >> >> +
-> >> >> +static inline u64 __raw_readq(const volatile void __iomem *addr)
-> >> >> +{
-> >> >> +     u64 val;
-> >> >> +     asm volatile("ldrd %1, %0"
-> >> >> +                  : "+Qo" (*(volatile u64 __force *)addr),
-> >> >> +                    "=r" (val));
-> >> >> +     return val;
-> >> >> +}
-> >> >> +#endif
-> >> >
-> >> > I'm curious why you need these. Do you have a device that needs a 64-bit
-> >> > single access or you are trying to read two consecutive registers?
-> >>
-> >> The fundamental data size of Coresight STM32 for ARMv7 is
-> >> implementation defined and can be 32 or 64bit.  As such stimulus ports
-> >> can support transaction sizes of up to 64 bit.
-> >
-> > The STM programmer's model spec recommends something else (though I find
-> > the "3.6 Data sizes" chapter a bit confusing):
-> >
-> >   To ensure that code is portable between processor micro-architectures
-> >   and system implementations, ARM recommends that only the native data
-> >   size of the machine is used, and smaller sizes. For the 32-bit ARMv7
-> >   architecture, only 8, 16, and 32-bit transfers are recommended. For an
-> >   ARMv8 processor that supports the AArch64 Execution state, it is
-> >   recommended that the fundamental data size of 64-bits is implemented.
-> >
-> > Which means that you should not use readq/writeq on a 32-bit system.
+On Fri, Oct 24, 2014 at 08:28:40AM -0400, Sasha Levin wrote:
+> On 10/23/2014 03:58 PM, Paul E. McKenney wrote:
+> > On Thu, Oct 23, 2014 at 02:55:43PM -0400, Sasha Levin wrote:
+> >> > On 10/23/2014 02:39 PM, Paul E. McKenney wrote:
+> >>> > > On Tue, Oct 14, 2014 at 10:35:10PM -0400, Sasha Levin wrote:
+> >>>> > >> On 10/13/2014 01:35 PM, Dave Jones wrote:
+> >>>>> > >>> oday in "rcu stall while fuzzing" news:
+> >>>>> > >>>
+> >>>>> > >>> INFO: rcu_preempt detected stalls on CPUs/tasks:
+> >>>>> > >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+> >>>>> > >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+> >>>>> > >>> 	(detected by 0, t=6502 jiffies, g=75434, c=75433, q=0)
+> >>>> > >>
+> >>>> > >> I've complained about RCU stalls couple days ago (in a different context)
+> >>>> > >> on -next. I guess whatever causing them made it into Linus's tree?
+> >>>> > >>
+> >>>> > >> https://lkml.org/lkml/2014/10/11/64
+> >>> > > 
+> >>> > > And on that one, I must confess that I don't see where the RCU read-side
+> >>> > > critical section might be.
+> >>> > > 
+> >>> > > Hmmm...  Maybe someone forgot to put an rcu_read_unlock() somewhere.
+> >>> > > Can you reproduce this with CONFIG_PROVE_RCU=y?
+> >> > 
+> >> > Paul, if that was directed to me - Yes, I see stalls with CONFIG_PROVE_RCU
+> >> > set and nothing else is showing up before/after that.
+> > Indeed it was directed to you.  ;-)
+> > 
+> > Does the following crude diagnostic patch turn up anything?
 > 
-> Not quite.  ARM documentation IHI0054B (ARM System Trace Macrocell:
-> Programmers' Model Architecture Specification) stipulate that "For
-> systems with an ARMv7 processor, ARM recommends configuration 1 or
-> configuration 2.", where configuration 2 has a fundamental size of 64
-> bit.
+> Nope, seeing stalls but not seeing that pr_err() you added.
 
-As I said, it's confusing. Anyway, you can go ahead and add the
-readq/writeq for ARMv6 and later, though it won't be guaranteed to have
-a 64-bit access, it depends on the bus.
+OK, color me confused.  Could you please send me the full dmesg or a
+pointer to it?
 
-BTW, do you need to define the non-relaxed accessors as well? That would
-be readq/writeq.
+							Thanx, Paul
 
--- 
-Catalin
+> [ 5107.395916] INFO: rcu_preempt detected stalls on CPUs/tasks:
+> [ 5107.395916]  0: (776 ticks this GP) idle=a8d/140000000000002/0 softirq=16356/16356 last_accelerate: f5b7/55e5, nonlazy_posted: 24252, ..
+> [ 5107.395916]  (detected by 1, t=20502 jiffies, g=13949, c=13948, q=0)
+> [ 5107.395916] Task dump for CPU 0:
+> [ 5107.395916] trinity-c0      R  running task    12848 20357   9041 0x0008000e
+> [ 5107.395916]  0000000000000000 ffff88006bfd76c0 ffff88065722b988 ffffffffa10af964
+> [ 5107.395916]  ffff88065722b998 ffffffffa106ad23 ffff88065722b9c8 ffffffffa119dce5
+> [ 5107.395916]  00000000001d76c0 ffff88006bfd76c0 00000000001d76c0 ffff8806473cbd10
+> [ 5107.395916] Call Trace:
+> [ 5107.395916]  [<ffffffffa10af964>] ? kvm_clock_read+0x24/0x40
+> [ 5107.395916]  [<ffffffffa106ad23>] ? sched_clock+0x13/0x30
+> [ 5107.395916]  [<ffffffffa119dce5>] ? sched_clock_local+0x25/0x90
+> [ 5107.395916]  [<ffffffffa1303dfb>] ? __slab_free+0xbb/0x3a0
+> [ 5107.395916]  [<ffffffffa1b71167>] ? debug_smp_processor_id+0x17/0x20
+> [ 5107.395916]  [<ffffffffa451cb64>] ? _raw_spin_unlock_irqrestore+0x64/0xa0
+> [ 5107.395916]  [<ffffffffa1303dfb>] ? __slab_free+0xbb/0x3a0
+> [ 5107.395916]  [<ffffffffa1b71bce>] ? __debug_check_no_obj_freed+0x10e/0x210
+> [ 5107.395916]  [<ffffffffa1305871>] ? kmem_cache_free+0xb1/0x4f0
+> [ 5107.395916]  [<ffffffffa1305883>] ? kmem_cache_free+0xc3/0x4f0
+> [ 5107.395916]  [<ffffffffa1305bb2>] ? kmem_cache_free+0x3f2/0x4f0
+> [ 5107.395916]  [<ffffffffa12e0cbe>] ? unlink_anon_vmas+0x10e/0x180
+> [ 5107.395916]  [<ffffffffa12e0cbe>] ? unlink_anon_vmas+0x10e/0x180
+> [ 5107.395916]  [<ffffffffa12cfbdf>] ? free_pgtables+0x3f/0x130
+> [ 5107.395916]  [<ffffffffa12dc1a4>] ? exit_mmap+0xc4/0x180
+> [ 5107.395916]  [<ffffffffa13143fe>] ? __khugepaged_exit+0xbe/0x120
+> [ 5107.395916]  [<ffffffffa115bbb3>] ? mmput+0x73/0x110
+> [ 5107.395916]  [<ffffffffa1162eb7>] ? do_exit+0x2c7/0xd30
+> [ 5107.395916]  [<ffffffffa1173fb9>] ? get_signal+0x3c9/0xaf0
+> [ 5107.395916]  [<ffffffffa1b71167>] ? debug_smp_processor_id+0x17/0x20
+> [ 5107.395916]  [<ffffffffa11bccbe>] ? put_lock_stats.isra.13+0xe/0x30
+> [ 5107.395916]  [<ffffffffa451c810>] ? _raw_spin_unlock_irq+0x30/0x70
+> [ 5107.395916]  [<ffffffffa11639c2>] ? do_group_exit+0x52/0xe0
+> [ 5107.395916]  [<ffffffffa1173ef6>] ? get_signal+0x306/0xaf0
+> [ 5107.395916]  [<ffffffffa119dce5>] ? sched_clock_local+0x25/0x90
+> [ 5107.395916]  [<ffffffffa105f2f0>] ? do_signal+0x20/0x130
+> [ 5107.395916]  [<ffffffffa1298558>] ? context_tracking_user_exit+0x78/0x2d0
+> [ 5107.395916]  [<ffffffffa1b71183>] ? __this_cpu_preempt_check+0x13/0x20
+> [ 5107.395916]  [<ffffffffa11c04cb>] ? trace_hardirqs_on_caller+0xfb/0x280
+> [ 5107.395916]  [<ffffffffa11c065d>] ? trace_hardirqs_on+0xd/0x10
+> [ 5107.395916]  [<ffffffffa105f469>] ? do_notify_resume+0x69/0xb0
+> [ 5107.395916]  [<ffffffffa451d74f>] ? int_signal+0x12/0x17
+> 
+> 
+> Thanks,
+> Sasha
+> 
+
