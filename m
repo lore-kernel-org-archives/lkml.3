@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932734AbaJXSUY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 14:20:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34945 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756592AbaJXSUW (ORCPT
+	id S1756961AbaJXSZm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 14:25:42 -0400
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:63935 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140AbaJXSZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 14:20:22 -0400
-From: Jay Vosburgh <jay.vosburgh@canonical.com>
-To: paulmck@linux.vnet.ibm.com
-cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-In-reply-to: <20141024145028.GN4977@linux.vnet.ibm.com>
-References: <20141022224032.GA1240@declera.com> <20141022232421.GN4977@linux.vnet.ibm.com> <1414044566.2031.1.camel@declera.com> <20141023122750.GP4977@linux.vnet.ibm.com> <20141023153333.GA19278@linux.vnet.ibm.com> <20141023195159.GA2331@declera.com> <20141023200507.GC4977@linux.vnet.ibm.com> <1414100740.2065.2.camel@declera.com> <20141023220406.GJ4977@linux.vnet.ibm.com> <31920.1414126114@famine> <20141024145028.GN4977@linux.vnet.ibm.com>
-Comments: In-reply-to "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-   message dated "Fri, 24 Oct 2014 07:50:28 -0700."
-X-Mailer: MH-E 8.5+bzr; nmh 1.5; GNU Emacs 24.4.50
-Date: Fri, 24 Oct 2014 11:20:11 -0700
-Message-ID: <5677.1414174811@famine>
+	Fri, 24 Oct 2014 14:25:40 -0400
+Message-ID: <544A99B2.8080507@gmail.com>
+Date: Fri, 24 Oct 2014 11:25:54 -0700
+From: Santosh Shilimkar <santosh.shilimkar@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Grygorii Strashko <grygorii.strashko@ti.com>, ssantosh@kernel.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, khilman@linaro.org
+CC: linux-pm@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        grant.likely@secretlab.ca, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH v3 0/5] ARM: keystone: pm: switch to use generic pm domains
+References: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
+In-Reply-To: <1414074182-25980-1-git-send-email-grygorii.strashko@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Grygorii,
 
->On Thu, Oct 23, 2014 at 09:48:34PM -0700, Jay Vosburgh wrote:
->> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-[...]
->> >Either way, my patch assumed that 39953dfd4007 (rcu: Avoid misordering in
->> >__call_rcu_nocb_enqueue()) would work and that 1772947bd012 (rcu: Handle
->> >NOCB callbacks from irq-disabled idle code) would fail.  Is that the case?
->> >If not, could you please bisect the commits between 11ed7f934cb8 (rcu:
->> >Make nocb leader kthreads process pending callbacks after spawning)
->> >and c847f14217d5 (rcu: Avoid misordering in nocb_leader_wait())?
->> 
->> 	Just a note to add that I am also reliably inducing what appears
->> to be this issue on a current -net tree, when configuring openvswitch
->> via script.  I am available to test patches or bisect tomorrow (Friday)
->> US time if needed.
+On 10/23/2014 07:22 AM, Grygorii Strashko wrote:
+> Hi Santosh, Kevin,
 >
->Thank you, Jay!  Could you please check to see if reverting this commit
->fixes things for you?
+> This series switches Keystone 2 PM code to use Generic PM domains
+> instead of PM clock domains because of the lack of DT support
+> for the last.
+> It will finally allow to enable Runtime PM for Keystone 2.
 >
->35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
+> Patch 1 was reused from [1].
 >
->Reverting is not a long-term fix, as this commit is itself a bug fix,
->but would be good to check to see if you are seeing the same thing that
->Yanko is.  ;-)
+> RFC version of patches can be found at [2].
+>
+> Changes in v3:
+>   - handling of the case when !CONFIG_PM_RUNTIME has been
+>     moved in PM clock framework.
+>
+> Changes in v2:
+> - minor comments applied and rebased on top of Linux 3.18-rc1.
+>
+> Links on previous versions:
+> v2:  https://lkml.org/lkml/2014/10/20/248
+> v1:  https://lkml.org/lkml/2014/9/29/382
+>
+> [1] "[PATCH/RFC 0/4] of: Register clocks for Runtime PM with PM core"
+>    https://lkml.org/lkml/2014/4/24/1118
+>
+> [2] "[RFC PATCH 0/4] ARM: keystone: pm: switch to use generic pm domains"
+>    https://lkml.org/lkml/2014/9/25/364
+>
+> CC: Santosh Shilimkar <ssantosh@kernel.org>
+> CC: Kevin Hilman <khilman@linaro.org>
+> CC: Ulf Hansson <ulf.hansson@linaro.org>
+> CC: Geert Uytterhoeven <geert@linux-m68k.org>
+> CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+> Geert Uytterhoeven (1):
+>    PM / clock_ops: Add pm_clk_add_clk()
+>
+> Grygorii Strashko (4):
+>    PM / clock_ops: make __pm_clk_enable more generic
+>    PM / clock_ops: add and enable clocks always if !CONFIG_PM_RUNTIME
+>    ARM: keystone: pm: switch to use generic pm domains
+>    ARM: dts: keystone: add generic pm controller node
+>
+You can split this series. Lets get first 3 patches sorted out as
+there have been active discussion on those. Once they get direction
+and merged then you can post the keystone ones which I will be
+happy to merge.
 
-	Just to confirm what Yanko found, reverting this commit makes
-the problem go away for me.
-
-	-J
-
----
-	-Jay Vosburgh, jay.vosburgh@canonical.com
+Regards,
+Santosh
