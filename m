@@ -1,93 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914AbaJXRS4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:18:56 -0400
-Received: from forward20.mail.yandex.net ([95.108.253.145]:52541 "EHLO
-	forward20.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756653AbaJXRSz (ORCPT
+	id S1756975AbaJXRTU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:19:20 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:38051 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756653AbaJXRTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:18:55 -0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Burke Libbey <burke.libbey@shopify.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>
-In-Reply-To: <20141024155805.GF21513@worktop.programming.kicks-ass.net>
-References: <20141024150746.GB25260@burke.local> <20141024155805.GF21513@worktop.programming.kicks-ass.net>
-Subject: Re: [PATCH] sched: reset sched_entity depth on changing parent
+	Fri, 24 Oct 2014 13:19:19 -0400
+Date: Fri, 24 Oct 2014 19:19:13 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Weijie Yang <weijie.yang@samsung.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>
+Cc: tglx@linutronix.de, hpa@zytor.com, fengguang.wu@intel.com,
+        m.szyprowski@samsung.com, mina86@mina86.com, iamjoonsoo.kim@lge.com,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux-MM'" <linux-mm@kvack.org>,
+        "'Weijie Yang'" <weijie.yang.kh@gmail.com>
+Subject: Re: [PATCH] x86, cma: reserve dma contiguous area after
+ initmem_init()
+Message-ID: <20141024171913.GA31052@gmail.com>
+References: <000101cfef69$31e528a0$95af79e0$%yang@samsung.com>
 MIME-Version: 1.0
-Message-Id: <164441414171122@web11g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Fri, 24 Oct 2014 21:18:42 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000101cfef69$31e528a0$95af79e0$%yang@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+* Weijie Yang <weijie.yang@samsung.com> wrote:
 
-24.10.2014, 19:58, "Peter Zijlstra" <peterz@infradead.org>:
-> On Fri, Oct 24, 2014 at 11:07:46AM -0400, Burke Libbey wrote:
->> šFrom 2014-02-15: https://lkml.org/lkml/2014/2/15/217
->>
->> šThis issue was reported and patched, but it still occurs in some situations on
->> šnewer kernel versions.
->>
->> š[2249353.328452] BUG: unable to handle kernel NULL pointer dereference at 0000000000000150
->> š[2249353.336528] IP: [<ffffffff810b1cf7>] check_preempt_wakeup+0xe7/0x210
->>
->> šse.parent gets out of sync with se.depth, causing a panic when the algorithm in
->> šfind_matching_se assumes they are correct. This patch forces se.depth to be
->> šupdated every time se.parent is, so they can no longer become desync'd.
->>
->> šCC: Ingo Molnar <mingo@kernel.org>
->> šCC: Peter Zijlstra <peterz@infradead.org>
->> šSigned-off-by: Burke Libbey <burke.libbey@shopify.com>
->> š---
->>
->> šI haven't been able to isolate the problem. Though I'm pretty confident this
->> šfixes the issue I've been having, I have not been able to prove it.
->
-> So this isn't correct, switching rq should not change depth. I suspect
-> you're just papering over the issue by frequently resetting the value,
-> which simply narrows the race window.
+> Fengguang Wu reported a BUG: Int 6: CR2 (null) on x86 platform in
+> 0-day Linux Kernel Performance Test:
+> 
+> [    0.000000] BRK [0x025ee000, 0x025eefff] PGTABLE
+> [    0.000000] cma: dma_contiguous_reserve(limit 13ffe000)
+> [    0.000000] cma: dma_contiguous_reserve: reserving 31 MiB for global area
+> [    0.000000] BUG: Int 6: CR2   (null)
+> [    0.000000]      EDI c0000000  ESI   (null)  EBP 41c11ea4  EBX 425cc101
+> [    0.000000]      ESP 41c11e98   ES 0000007b   DS 0000007b
+> [    0.000000]      EDX 00000001  ECX   (null)  EAX 41cd8150
+> [    0.000000]      vec 00000006  err   (null)  EIP 41072227   CS 00000060  flg 00210002
+> [    0.000000] Stack: 425cc150   (null)   (null) 41c11ef4 41d4ee4d   (null) 13ffe000 41c11ec4
+> [    0.000000]        41c2d900   (null) 13ffe000   (null) 4185793e 0000002e 410c2982 41c11f00
+> [    0.000000]        410c2df5   (null)   (null)   (null) 425cc150 00013efe   (null) 41c11f28
+> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-next-20141008 #815
+> [    0.000000]  00000000 425cc101 41c11e48 41850786 41c11ea4 41d2b1db 41d95f71 00000006
+> [    0.000000]  00000000 c0000000 00000000 41c11ea4 425cc101 41c11e98 0000007b 0000007b
+> [    0.000000]  00000001 00000000 41cd8150 00000006 00000000 41072227 00000060 00210002
+> [    0.000000] Call Trace:
+> [    0.000000]  [<41850786>] dump_stack+0x16/0x18
+> [    0.000000]  [<41d2b1db>] early_idt_handler+0x6b/0x6b
+> [    0.000000]  [<41072227>] ? __phys_addr+0x2e/0xca
+> [    0.000000]  [<41d4ee4d>] cma_declare_contiguous+0x3c/0x2d7
+> [    0.000000]  [<4185793e>] ? _raw_spin_unlock_irqrestore+0x59/0x91
+> [    0.000000]  [<410c2982>] ? wake_up_klogd+0x8/0x33
+> [    0.000000]  [<410c2df5>] ? console_unlock+0x448/0x461
+> [    0.000000]  [<41d6d359>] dma_contiguous_reserve_area+0x27/0x47
+> [    0.000000]  [<41d6d4d1>] dma_contiguous_reserve+0x158/0x163
+> [    0.000000]  [<41d33e0f>] setup_arch+0x79b/0xc68
+> [    0.000000]  [<4184c0b4>] ? printk+0x1c/0x1e
+> [    0.000000]  [<41d2b7cf>] start_kernel+0x9c/0x456
+> [    0.000000]  [<41d2b2ca>] i386_start_kernel+0x79/0x7d
+> 
+> see detail: https://lkml.org/lkml/2014/10/8/708
+> 
+> It is because dma_contiguous_reserve() is called before initmem_init() in x86,
+> the variable high_memory is not initialized but accessed by __pa(high_memory)
+> in dma_contiguous_reserve().
+> 
+> This patch moves dma_contiguous_reserve() after initmem_init() so that
+> high_memory is initialized before accessed.
+> 
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> ---
+>  arch/x86/kernel/setup.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 235cfd3..ab08aa2 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -1128,7 +1128,6 @@ void __init setup_arch(char **cmdline_p)
+>  	setup_real_mode();
+>  
+>  	memblock_set_current_limit(get_max_mapped());
+> -	dma_contiguous_reserve(max_pfn_mapped << PAGE_SHIFT);
+>  
+>  	/*
+>  	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
+> @@ -1159,6 +1158,7 @@ void __init setup_arch(char **cmdline_p)
+>  	early_acpi_boot_init();
+>  
+>  	initmem_init();
+> +	dma_contiguous_reserve(max_pfn_mapped << PAGE_SHIFT);
+>  
+>  	/*
+>  	 * Reserve memory for crash kernel after SRAT is parsed so that it
 
-Just a hypothesis.
+I think this might be a boot regression that went upstream via 
+akpm's tree, via the recent 'cma' change:
 
-I was seeking a places where task_group of a task may change. I can't understand
-how changing of parent's cgroup during fork() applies to a child.
+5ea3b1b2f8ad cma: add placement specifier for "cma=" kernel parameter
 
-Child's cgroup is the same as parent's after dup_task_struct(). The only function
-changing task_group is sched_move_task(), but we do not call it between
-dup_task_struct() and wake_up_new_task(). Shouldn't we do something like this?
+Next time around please put 'x86' into patches that 
+enable features on x86 and which change its early init 
+behavior. The 'cma: ...' prefix was rather misleading.
 
-(compile tested only)
----
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index cc18694..0ccbbdb 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7833,6 +7833,11 @@ static void cpu_cgroup_css_offline(struct cgroup_subsys_state *css)
- 	sched_offline_group(tg);
- }
- 
-+static void cpu_cgroup_fork(struct task_struct *task)
-+{
-+	sched_move_task(task);
-+}
-+
- static int cpu_cgroup_can_attach(struct cgroup_subsys_state *css,
- 				 struct cgroup_taskset *tset)
- {
-@@ -8205,6 +8210,7 @@ struct cgroup_subsys cpu_cgrp_subsys = {
- 	.css_free	= cpu_cgroup_css_free,
- 	.css_online	= cpu_cgroup_css_online,
- 	.css_offline	= cpu_cgroup_css_offline,
-+	.fork		= cpu_cgroup_fork,
- 	.can_attach	= cpu_cgroup_can_attach,
- 	.attach		= cpu_cgroup_attach,
- 	.exit		= cpu_cgroup_exit,
+Thanks,
 
-
-Or we just should set tsk->sched_task_group?
+	Ingo
