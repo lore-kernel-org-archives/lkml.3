@@ -1,92 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263AbaJXFWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 01:22:08 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:50953 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaJXFWE (ORCPT
+	id S1755509AbaJXFYw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 01:24:52 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46156 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230AbaJXFYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 01:22:04 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 03/16] perf session: Add perf_session__deliver_synth_event()
-References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>
-	<1414061124-26830-4-git-send-email-adrian.hunter@intel.com>
-Date: Fri, 24 Oct 2014 14:22:03 +0900
-In-Reply-To: <1414061124-26830-4-git-send-email-adrian.hunter@intel.com>
-	(Adrian Hunter's message of "Thu, 23 Oct 2014 13:45:11 +0300")
-Message-ID: <87tx2uca9w.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 24 Oct 2014 01:24:50 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Fri, 24 Oct 2014 14:25:53 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Hui Zhu <zhuhui@xiaomi.com>
+Cc: rjw@rjwysocki.net, len.brown@intel.com, pavel@ucw.cz,
+        m.szyprowski@samsung.com, akpm@linux-foundation.org, mina86@mina86.com,
+        aneesh.kumar@linux.vnet.ibm.com, hannes@cmpxchg.org, riel@redhat.com,
+        mgorman@suse.de, minchan@kernel.org, nasa4836@gmail.com,
+        ddstreet@ieee.org, hughd@google.com, mingo@kernel.org,
+        rientjes@google.com, peterz@infradead.org, keescook@chromium.org,
+        atomlin@redhat.com, raistlin@linux.it, axboe@fb.com,
+        paulmck@linux.vnet.ibm.com, kirill.shutemov@linux.intel.com,
+        n-horiguchi@ah.jp.nec.com, k.khlebnikov@samsung.com,
+        msalter@redhat.com, deller@gmx.de, tangchen@cn.fujitsu.com,
+        ben@decadent.org.uk, akinobu.mita@gmail.com, lauraa@codeaurora.org,
+        vbabka@suse.cz, sasha.levin@oracle.com, vdavydov@parallels.com,
+        suleiman@google.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 0/4] (CMA_AGGRESSIVE) Make CMA memory be more aggressive
+ about allocation
+Message-ID: <20141024052553.GE15243@js1304-P5Q-DELUXE>
+References: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413430551-22392-1-git-send-email-zhuhui@xiaomi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Oct 2014 13:45:11 +0300, Adrian Hunter wrote:
-> Add a function to deliver synthesized events from
-> within a session.
->
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  tools/perf/util/session.c | 14 ++++++++++++++
->  tools/perf/util/session.h |  5 +++++
->  2 files changed, 19 insertions(+)
->
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index d70e37d..09635d1 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -907,6 +907,20 @@ static s64 perf_session__process_user_event(struct perf_session *session,
->  	}
->  }
->  
-> +int perf_session__deliver_synth_event(struct perf_session *session,
-> +				      union perf_event *event,
-> +				      struct perf_sample *sample,
-> +				      struct perf_tool *tool)
-> +{
-> +	events_stats__inc(&session->stats, event->header.type);
-> +
-> +	if (event->header.type >= PERF_RECORD_USER_TYPE_START)
-> +		return perf_session__process_user_event(session, event, tool,
-> +							0);
-> +
-> +	return perf_session__deliver_event(session, event, sample, tool, 0);
-> +}
+On Thu, Oct 16, 2014 at 11:35:47AM +0800, Hui Zhu wrote:
+> In fallbacks of page_alloc.c, MIGRATE_CMA is the fallback of
+> MIGRATE_MOVABLE.
+> MIGRATE_MOVABLE will use MIGRATE_CMA when it doesn't have a page in
+> order that Linux kernel want.
+> 
+> If a system that has a lot of user space program is running, for
+> instance, an Android board, most of memory is in MIGRATE_MOVABLE and
+> allocated.  Before function __rmqueue_fallback get memory from
+> MIGRATE_CMA, the oom_killer will kill a task to release memory when
+> kernel want get MIGRATE_UNMOVABLE memory because fallbacks of
+> MIGRATE_UNMOVABLE are MIGRATE_RECLAIMABLE and MIGRATE_MOVABLE.
+> This status is odd.  The MIGRATE_CMA has a lot free memory but Linux
+> kernel kill some tasks to release memory.
+> 
+> This patch series adds a new function CMA_AGGRESSIVE to make CMA memory
+> be more aggressive about allocation.
+> If function CMA_AGGRESSIVE is available, when Linux kernel call function
+> __rmqueue try to get pages from MIGRATE_MOVABLE and conditions allow,
+> MIGRATE_CMA will be allocated as MIGRATE_MOVABLE first.  If MIGRATE_CMA
+> doesn't have enough pages for allocation, go back to allocate memory from
+> MIGRATE_MOVABLE.
+> Then the memory of MIGRATE_MOVABLE can be kept for MIGRATE_UNMOVABLE and
+> MIGRATE_RECLAIMABLE which doesn't have fallback MIGRATE_CMA.
 
-It seems that it's basically same as what perf_session__process_event()
-does.  So it might deserve a comment or better changelog why it's needed.
+Hello,
 
-Thanks,
-Namhyung
+I did some work similar to this.
+Please reference following links.
 
+https://lkml.org/lkml/2014/5/28/64
+https://lkml.org/lkml/2014/5/28/57
 
-> +
->  static void event_swap(union perf_event *event, bool sample_id_all)
->  {
->  	perf_event__swap_op swap;
-> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-> index d8521ac..dc26ebf 100644
-> --- a/tools/perf/util/session.h
-> +++ b/tools/perf/util/session.h
-> @@ -127,6 +127,11 @@ extern volatile int session_done;
->  
->  #define session_done()	ACCESS_ONCE(session_done)
->  
-> +int perf_session__deliver_synth_event(struct perf_session *session,
-> +				      union perf_event *event,
-> +				      struct perf_sample *sample,
-> +				      struct perf_tool *tool);
-> +
->  int perf_event__process_id_index(struct perf_tool *tool,
->  				 union perf_event *event,
->  				 struct perf_session *session);
+And, aggressive allocation should be postponed until freepage counting
+bug is fixed, because aggressive allocation enlarge the possiblity
+of problem occurence. I tried to fix that bug, too. See following link.
+
+https://lkml.org/lkml/2014/10/23/90
+
+Thanks.
