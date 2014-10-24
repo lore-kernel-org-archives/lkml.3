@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823AbaJXQ7O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 12:59:14 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:51762 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756103AbaJXQ7L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 12:59:11 -0400
+	id S1756869AbaJXRAr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:00:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64312 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756103AbaJXRAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 13:00:45 -0400
+Date: Fri, 24 Oct 2014 13:00:29 -0400
+From: Dave Jones <davej@redhat.com>
+To: Liu Bo <bo.li.liu@oracle.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com, jbacik@fb.com,
+        linux-btrfs@vger.kernel.org
+Subject: Re: btrfs: WARN_ON(data_sinfo->bytes_may_use < bytes);
+Message-ID: <20141024170029.GA15926@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Liu Bo <bo.li.liu@oracle.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, clm@fb.com,
+	jbacik@fb.com, linux-btrfs@vger.kernel.org
+References: <20141023010731.GA27796@redhat.com>
+ <20141023012236.GA28429@redhat.com>
+ <20141024155245.GA14709@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <x49a94lpkma.fsf@segfault.boston.devel.redhat.com>
-References: <cover.1413923420.git.milosz@adfin.com>
-	<9306856a3ea74bcc41523430d74ef4be93d8f436.1413923420.git.milosz@adfin.com>
-	<x49a94lpkma.fsf@segfault.boston.devel.redhat.com>
-Date: Fri, 24 Oct 2014 12:59:09 -0400
-Message-ID: <CANP1eJHqtpYttwmzhW2K7rN91fc_sxiLOGn56VrWyjEEc8HVtQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] vfs: Prepare for adding a new preadv/pwritev with
- user flags.
-From: Milosz Tanski <milosz@adfin.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141024155245.GA14709@localhost.localdomain>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 11:12 AM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Milosz Tanski <milosz@adfin.com> writes:
->
->> Plumbing the flags argument through the vfs code so they can be passed down to
->> __generic_file_(read/write)_iter function that do the acctual work.
->                                                         ^^^^^^^
-> actual
->
->> Signed-off-by: Milosz Tanski <milosz@adfin.com>
->
->> diff --git a/fs/read_write.c b/fs/read_write.c
->> index 7d9318c..9858c06 100644
->> --- a/fs/read_write.c
->> +++ b/fs/read_write.c
-> [...]
->> @@ -1113,6 +1116,7 @@ COMPAT_SYSCALL_DEFINE5(preadv, compat_ulong_t, fd,
->>       return __compat_sys_preadv64(fd, vec, vlen, pos);
->>  }
->>
->> +
->>  static size_t compat_writev(struct file *file,
->>                           const struct compat_iovec __user *vec,
->>                           unsigned long vlen, loff_t *pos)
->
-> Lose this hunk.
->
->
->> diff --git a/mm/filemap.c b/mm/filemap.c
->> index 14b4642..cb7f530 100644
->> --- a/mm/filemap.c
->> +++ b/mm/filemap.c
->> @@ -1465,7 +1465,7 @@ static void shrink_readahead_size_eio(struct file *filp,
->>   * of the logic when it comes to error handling etc.
->>   */
->>  static ssize_t do_generic_file_read(struct file *filp, loff_t *ppos,
->> -             struct iov_iter *iter, ssize_t written)
->> +             struct iov_iter *iter, ssize_t written, int flags)
->>  {
->>       struct address_space *mapping = filp->f_mapping;
->>       struct inode *inode = mapping->host;
->
-> As Christoph mentioned, this belongs elsewhere.
->
-> Fix that up and you an add my:
->
-> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+On Fri, Oct 24, 2014 at 11:52:47PM +0800, Liu Bo wrote:
+ 
+ > > I also see this WARN_ON being hit from the sync path..
+ > > 
+ > > WARNING: CPU: 2 PID: 11166 at fs/btrfs/extent-tree.c:3799 btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]()
+ > > CPU: 2 PID: 11166 Comm: trinity-c61 Tainted: G        W      3.18.0-rc1+ #74
+ > >  0000000000000009 00000000aee2e4e2 ffff8801b0dfbcc8 ffffffff8d86cc97
+ > >  0000000000000000 0000000000000000 ffff8801b0dfbd08 ffffffff8d07f301
+ > >  ffff88023f328000 ffff88023953d668 0000000000040000 ffff880239358548
+ > > Call Trace:
+ > >  [<ffffffff8d86cc97>] dump_stack+0x4f/0x7c
+ > >  [<ffffffff8d07f301>] warn_slowpath_common+0x81/0xa0
+ > >  [<ffffffff8d07f41a>] warn_slowpath_null+0x1a/0x20
+ > >  [<ffffffffc0253831>] btrfs_free_reserved_data_space+0x1d1/0x280 [btrfs]
+ > >  [<ffffffffc025ca63>] btrfs_write_dirty_block_groups+0x6f3/0x740 [btrfs]
+ > >  [<ffffffffc02f7a41>] commit_cowonly_roots+0x17a/0x234 [btrfs]
+ > >  [<ffffffffc026e60b>] btrfs_commit_transaction+0x45b/0xc10 [btrfs]
+ > >  [<ffffffffc023a09b>] btrfs_sync_fs+0x8b/0x270 [btrfs]
+ > >  [<ffffffff8d266ad0>] ? do_fsync+0x80/0x80
+ > >  [<ffffffff8d266af0>] sync_fs_one_sb+0x20/0x30
+ > >  [<ffffffff8d22f2f2>] iterate_supers+0xb2/0x110
+ > >  [<ffffffff8d266c24>] sys_sync+0x64/0xb0
+ > >  [<ffffffff8d877d49>] tracesys_phase2+0xd4/0xd9
+ > > 
+ > > After rebooting, and restarting the fuzzer, it happened again very quickly.
+ > 
+ > Could you please show us the trinity options you're using?
+ > 
+ > I also see this WARNing from other reports, but still try to reproduce..
 
-I have addresses both these issues and they'll be in the next submission.
+That one was nothing special, just -q -l off.
+I've not been able to reproduce it in the last two days though.
 
--- 
-Milosz Tanski
-CTO
-16 East 34th Street, 15th floor
-New York, NY 10016
+	Dave
 
-p: 646-253-9055
-e: milosz@adfin.com
