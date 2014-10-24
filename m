@@ -1,112 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaJXHaG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 03:30:06 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:55693 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaJXHaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 03:30:03 -0400
-From: "jinkun.hong" <jinkun.hong@rock-chips.com>
-To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        linux-doc@vger.kernel.org, dianders@chromium.org,
-        Heiko Stuebner <heiko@sntech.de>, linux-rockchip@lists.infradead.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "jinkun.hong" <jinkun.hong@rock-chips.com>
-Subject: [PATCH v7 0/3] ARM: rk3288 : Add PM Domain support
-Date: Fri, 24 Oct 2014 00:29:18 -0700
-Message-Id: <1414135761-3406-1-git-send-email-jinkun.hong@rock-chips.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755403AbaJXHaQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 03:30:16 -0400
+Received: from mga14.intel.com ([192.55.52.115]:24524 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750909AbaJXHaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 03:30:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="405255944"
+Message-ID: <1414135811.16559.4.camel@rzhang1-toshiba>
+Subject: [GIT PULL] Thermal management updates for 3.18-rc2
+From: Zhang Rui <rui.zhang@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Oct 2014 15:30:11 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "jinkun.hong" <jinkun.hong@rock-chips.com>
+Hi, Linus,
 
-Add power domain drivers based on generic power domain for Rockchip platform,
-and support RK3288.
+Sorry that I missed the merge window as there is a bug found in the last
+minute, and I have to fix it and wait for the code to be tested in
+linux-next tree for a few days. Now the buggy patch has been dropped
+entirely from my next branch. Thus I hope those changes can still be
+merged in 3.18-rc2 as most of them are platform thermal driver changes.
 
-https://chromium-review.googlesource.com/#/c/220253/9
-This is the GPU driver, add the following information in DT,
-and it can support the PMDOMAIN.
+Please pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git next
+to receive Thermal Management updates for 3.18-rc2 with top-most commit
 
-gpu: gpu@ffa30000 {
-	compatible = "arm,malit764",
-		     "arm,malit76x",
-		     "arm,malit7xx",
-		     "arm,mali-midgard";
-	reg = <0xffa30000 0x10000>;
-	interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>,
-		     <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>,
-		     <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>;
-	interrupt-names = "JOB", "MMU", "GPU";
-	clocks = <&cru ACLK_GPU>;
-	clock-names = "aclk_gpu";
-	operating-points = <
-		/* KHz uV */
-		100000 800000
-		200000 850000
-		300000 950000
-		400000 1000000
-		600000 1150000
-	>;
-	power-domains = <&gpu_power>;
-	status = "disabled";
-};
+6ceaf58abe25e86292152005c51169796bad3407:
 
-Based on:
-- [PATCH v1 1/4] PM / clock_ops: Add pm_clk_add_clk()
-  http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg735599.html
+  Merge branch 'int340x-thermal' of .git into next (2014-10-17 14:30:58
++0800)
 
-Changes in v7:
-- Delete unused variables
+on top of commit 52addcf9d6669fa439387610bc65c92fa0980cef:
 
-Changes in v6:
-- delete pmu_lock
-- modify dev_lock using mutex
-- pm_clk_resume(pd->dev) change to pm_clk_resume(ed->dev)
-- pm_clk_suspend(pd->dev) change to pm_clk_suspend(ed->dev)
-- add devm_kfree(pd->dev, de) in rockchip_pm_domain_detach_dev
+  Linux 3.17-rc2 (2014-08-25 15:36:20 -0700)
 
-Changes in v5:
-- delete idle_lock
-- add timeout in rockchip_pmu_set_idle_request()
 
-Changes in v4:
-- use list storage dev
+Specifics:
 
-Changes in v3:
-- change use pm_clk_resume() and pm_clk_suspend()
-- DT structure has changed
-- Decomposition power-controller, changed to multiple controller
-   (gpu-power-controller, hevc-power-controller)
+- introduce ACPI INT340X thermal drivers. Newer laptops and tablets may
+have thermal sensors and other devices with thermal control capabilities
+that are exposed for the OS to use via the ACPI INT340x device objects.
+Several drivers are introduced to expose the temperature information and
+cooling ability from these objects to user-space via the normal thermal
+framework. From: Lu Aaron, Lan Tianyu, Jacob Pan and Zhang Rui.
 
-Changes in v2:
-- remove the "pd->pd.of_node = np"
-- move clocks to "optional"
-- make pd_vio clocks all one entry per line and alphabetize.
-- power: power-controller move back to pinctrl: pinctrl.
+- introduce a new thermal governor, which just uses a hysteresis to
+switch abruptly on/off a cooling device. This governor can be used to
+control certain fan devices that can not be throttled but just switched on or
+off. From: Peter Feuerer.
 
-jinkun.hong (3):
-  power-domain: add power domain drivers for Rockchip platform
-  dt-bindings: add document of Rockchip power domain
-  ARM: dts: add rk3288 power-domain node
+- introduce support for some new thermal interrupt functions on i.MX6SX,
+in IMX thermal driver. From: Anson, Huang.
 
- .../bindings/arm/rockchip/power_domain.txt         |   46 +++
- arch/arm/boot/dts/rk3288.dtsi                      |   24 ++
- arch/arm/mach-rockchip/Kconfig                     |    1 +
- arch/arm/mach-rockchip/Makefile                    |    1 +
- arch/arm/mach-rockchip/pm_domains.c                |  355 ++++++++++++++++++++
- 5 files changed, 427 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/rockchip/power_domain.txt
- create mode 100644 arch/arm/mach-rockchip/pm_domains.c
+- introduce tracing support on thermal framework. From: Punit Agrawal.
 
--- 
-1.7.9.5
+- small fixes in OF thermal and thermal step_wise governor.
+
+thanks,
+rui
+
+----------------------------------------------------------------
+
+Aaron Lu (8):
+      ACPI / fan: remove unused macro
+      ACPI / fan: remove no need check for device pointer
+      ACPI / fan: use acpi_device_xxx_power instead of acpi_bus
+equivelant
+      ACPI / fan: convert to platform driver
+      ACPI / Fan: add ACPI 4.0 style fan support
+      ACPI / Fan: support INT3404 thermal device
+      Thermal: move the KELVIN_TO_MILLICELSIUS macro to thermal.h
+      Thermal: introduce INT3402 thermal driver
+
+Anson Huang (1):
+      Thermal: imx: add i.mx6sx thermal support
+
+Jacob Pan (2):
+      Thermal: int340x_thermal: expose acpi thermal relationship tables
+      Thermal: int3400_thermal: use acpi_thermal_rel parsing APIs
+
+Lan Tianyu (1):
+      Thermal: introduce int3403 thermal driver
+
+Laxman Dewangan (1):
+      thermal: add support to disable thermal zone from DTS
+
+Lukasz Majewski (1):
+      thermal: step_wise: fix: Prevent from binary overflow when trend
+is dropping
+
+Peter Feuerer (1):
+      thermal: Added Bang-bang thermal governor
+
+Punit Agrawal (3):
+      thermal: trace: Trace temperature changes
+      thermal: trace: Trace when a cooling device's state is updated
+      thermal: trace: Trace when temperature is above a trip point
+
+Zhang Rui (11):
+      Merge branch 'next' of
+git://git.kernel.org/.../evalenti/linux-soc-thermal into eduardo-soc
+      ACPI: introduce ACPI int340x thermal scan handler
+      Merge branches 'eduardo-soc' and 'bang-bang-governor' of .git into
+next
+      ACPI: make acpi_create_platform_device() an external API
+      ACPI: add ACPI_TYPE_LOCAL_REFERENCE support to
+acpi_extract_package()
+      Thermal: introduce int3400 thermal driver
+      Thermal: int3400 thermal: add capability to detect supporting
+UUIDs
+      Thermal: int3400 thermal: register to thermal framework
+      Merge branch 'thermal-core-fix' of .git into next
+      Thermal: int340x thermal: select ACPI fan driver
+      Merge branch 'int340x-thermal' of .git into next
+
+ Documentation/devicetree/bindings/thermal/imx-thermal.txt |   5 +-
+ drivers/acpi/Kconfig                                      |   2 +-
+ drivers/acpi/Makefile                                     |   1 +
+ drivers/acpi/acpi_platform.c                              |   1 +
+ drivers/acpi/device_pm.c                                  |   1 +
+ drivers/acpi/fan.c                                        | 341
+++++++++++++++++++++++++++++++++++++++++++-------------
+ drivers/acpi/int340x_thermal.c                            |  51
++++++++++
+ drivers/acpi/internal.h                                   |  10 +-
+ drivers/acpi/scan.c                                       |   1 +
+ drivers/acpi/thermal.c                                    |  18 +--
+ drivers/acpi/utils.c                                      |  28 ++++-
+ drivers/thermal/Kconfig                                   |  49
++++++---
+ drivers/thermal/Makefile                                  |   3 +-
+ drivers/thermal/fair_share.c                              |  12 ++
+ drivers/thermal/gov_bang_bang.c                           | 131
++++++++++++++++++++++
+ drivers/thermal/imx_thermal.c                             |  91
+++++++++++++---
+ drivers/thermal/int3403_thermal.c                         | 296
+------------------------------------------------
+ drivers/thermal/int340x_thermal/Makefile                  |   4 +
+ drivers/thermal/int340x_thermal/acpi_thermal_rel.c        | 400
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/int340x_thermal/acpi_thermal_rel.h        |  84
+++++++++++++++
+ drivers/thermal/int340x_thermal/int3400_thermal.c         | 271
+++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/int340x_thermal/int3402_thermal.c         | 242
++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/int340x_thermal/int3403_thermal.c         | 477
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thermal/of-thermal.c                              |  12 ++
+ drivers/thermal/step_wise.c                               |   7 +-
+ drivers/thermal/thermal_core.c                            |  12 ++
+ drivers/thermal/thermal_core.h                            |   8 ++
+ include/acpi/acpi_bus.h                                   |   1 +
+ include/linux/acpi.h                                      |   1 +
+ include/linux/thermal.h                                   |   4 +
+ include/trace/events/thermal.h                            |  83
+++++++++++++++
+ 31 files changed, 2223 insertions(+), 424 deletions(-)
+ create mode 100644 drivers/acpi/int340x_thermal.c
+ create mode 100644 drivers/thermal/gov_bang_bang.c
+ delete mode 100644 drivers/thermal/int3403_thermal.c
+ create mode 100644 drivers/thermal/int340x_thermal/Makefile
+ create mode 100644 drivers/thermal/int340x_thermal/acpi_thermal_rel.c
+ create mode 100644 drivers/thermal/int340x_thermal/acpi_thermal_rel.h
+ create mode 100644 drivers/thermal/int340x_thermal/int3400_thermal.c
+ create mode 100644 drivers/thermal/int340x_thermal/int3402_thermal.c
+ create mode 100644 drivers/thermal/int340x_thermal/int3403_thermal.c
+ create mode 100644 include/trace/events/thermal.h
+
+
 
