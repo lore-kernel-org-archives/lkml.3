@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387AbaJXPsO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 11:48:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18154 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751482AbaJXPsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 11:48:12 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Milosz Tanski <milosz@adfin.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org,
-        Mel Gorman <mgorman@suse.de>,
-        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-api@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 2/4] vfs: Define new syscalls preadv2,pwritev2
-References: <cover.1413923420.git.milosz@adfin.com>
-	<cover.1413923420.git.milosz@adfin.com>
-	<1613303dfaa91e6ff09cdd7860e0316765663ba6.1413923420.git.milosz@adfin.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 24 Oct 2014 11:46:56 -0400
-In-Reply-To: <1613303dfaa91e6ff09cdd7860e0316765663ba6.1413923420.git.milosz@adfin.com>
-	(Milosz Tanski's message of "Tue, 21 Oct 2014 16:46:57 -0400")
-Message-ID: <x49oat1o4gf.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1756525AbaJXPvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 11:51:13 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:55353 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197AbaJXPvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 11:51:11 -0400
+Date: Fri, 24 Oct 2014 17:51:01 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Davidlohr Bueso <dave@stgolabs.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC][PATCH 4/6] SRCU free VMAs
+Message-ID: <20141024155101.GE21513@worktop.programming.kicks-ass.net>
+References: <20141020215633.717315139@infradead.org>
+ <20141020222841.419869904@infradead.org>
+ <CA+55aFwd04q+O5ejbmDL-H7_GB6DEBMiiHkn+2R1u4uWxfDO9w@mail.gmail.com>
+ <20141021080740.GJ23531@worktop.programming.kicks-ass.net>
+ <alpine.DEB.2.11.1410241003430.29419@gentwo.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1410241003430.29419@gentwo.org>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Milosz Tanski <milosz@adfin.com> writes:
+On Fri, Oct 24, 2014 at 10:16:24AM -0500, Christoph Lameter wrote:
 
-> diff --git a/include/uapi/asm-generic/unistd.h b/include/uapi/asm-generic/unistd.h
-> index 22749c1..10f8883 100644
-> --- a/include/uapi/asm-generic/unistd.h
-> +++ b/include/uapi/asm-generic/unistd.h
-> @@ -213,6 +213,10 @@ __SC_COMP(__NR_pwrite64, sys_pwrite64, compat_sys_pwrite64)
->  __SC_COMP(__NR_preadv, sys_preadv, compat_sys_preadv)
->  #define __NR_pwritev 70
->  __SC_COMP(__NR_pwritev, sys_pwritev, compat_sys_pwritev)
-> +#define __NR_preadv2 281
-> +__SC_COMP(__NR_preadv2, sys_preadv2)
-> +#define __NR_pwritev2 282
-> +__SC_COMP(__NR_pwritev2, sys_pwritev2)
+> Hmmm... One optimization to do before we get into these changes is to work
+> on allowing the dropping of mmap_sem before we get to sleeping and I/O and
+> then reevaluate when I/O etc is complete? This is probably the longest
+> hold on mmap_sem that is also frequent. Then it may be easier to use
+> standard RCU later.
 
-This looks odd.  First, __SC_COMP takes 3 arguments.  Second, you are
-going to need to implement compat wrappers for the new system calls.
+The hold time isn't relevant, in fact breaking up the mmap_sem such that
+we require multiple acquisitions will just increase the cacheline
+bouncing.
 
-Cheers,
-Jeff
+Also I think it makes more sense to continue an entire fault operation,
+including blocking, if at all possible. Every retry will just waste more
+time.
+
+Also, there is a lot of possible blocking, there's lock_page,
+page_mkwrite() -- which ends up calling into the dirty throttle etc. We
+could not possibly retry on all that, the error paths involved would be
+horrible for one.
+
+That said, there's a fair bit of code that does allow the retry, and I
+think most fault paths actually do the retry on IO.
