@@ -1,94 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212AbaJXUxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 16:53:36 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:18205 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682AbaJXUxe (ORCPT
+	id S1754822AbaJXUxp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 16:53:45 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38701 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308AbaJXUxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 16:53:34 -0400
-Message-ID: <544ABC47.2000700@hp.com>
-Date: Fri, 24 Oct 2014 16:53:27 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Fri, 24 Oct 2014 16:53:42 -0400
+Message-ID: <544ABC53.5030300@codeaurora.org>
+Date: Fri, 24 Oct 2014 13:53:39 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>
-Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization support
-References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com> <1413483040-58399-10-git-send-email-Waiman.Long@hp.com> <20141024084738.GU21513@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141024084738.GU21513@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Gioh Kim <gioh.kim@lge.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>
+CC: devel@driverdev.osuosl.org, gunho.lee@lge.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFCv2 3/3] staging: ion: limit pool size
+References: <1414133248-639-1-git-send-email-gioh.kim@lge.com> <1414133248-639-4-git-send-email-gioh.kim@lge.com>
+In-Reply-To: <1414133248-639-4-git-send-email-gioh.kim@lge.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2014 04:47 AM, Peter Zijlstra wrote:
-> On Thu, Oct 16, 2014 at 02:10:38PM -0400, Waiman Long wrote:
->> +static inline void pv_init_node(struct mcs_spinlock *node)
->> +{
->> +	struct pv_qnode *pn = (struct pv_qnode *)node;
->> +
->> +	BUILD_BUG_ON(sizeof(struct pv_qnode)>  5*sizeof(struct mcs_spinlock));
->> +
->> +	if (!pv_enabled())
->> +		return;
->> +
->> +	pn->cpustate = PV_CPU_ACTIVE;
->> +	pn->mayhalt  = false;
->> +	pn->mycpu    = smp_processor_id();
->> +	pn->head     = PV_INVALID_HEAD;
->> +}
+Hi,
+
+On 10/23/2014 11:47 PM, Gioh Kim wrote:
+> This patch limits pool size by page unit.
 >
->> @@ -333,6 +393,7 @@ queue:
->>   	node += idx;
->>   	node->locked = 0;
->>   	node->next = NULL;
->> +	pv_init_node(node);
->>
->>   	/*
->>   	 * We touched a (possibly) cold cacheline in the per-cpu queue node;
+
+This looks useful. Might be nice to add a debugfs option
+to change this at runtime as well.
+
+> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+> ---
+>   drivers/staging/android/ion/Kconfig         |    4 ++++
+>   drivers/staging/android/ion/ion_page_pool.c |   26 ++++++++++++++++----------
+>   2 files changed, 20 insertions(+), 10 deletions(-)
 >
-> So even if !pv_enabled() the compiler will still have to emit the code
-> for that inline, which will generate additional register pressure,
-> icache pressure and lovely stuff like that.
+> diff --git a/drivers/staging/android/ion/Kconfig b/drivers/staging/android/ion/Kconfig
+> index 3452346..e6b1a54 100644
+> --- a/drivers/staging/android/ion/Kconfig
+> +++ b/drivers/staging/android/ion/Kconfig
+> @@ -33,3 +33,7 @@ config ION_TEGRA
+>   	help
+>   	  Choose this option if you wish to use ion on an nVidia Tegra.
 >
-> The patch I had used pv-ops for these things that would turn into NOPs
-> in the regular case and callee-saved function calls for the PV case.
+> +config ION_POOL_LIMIT
+> +	int "Limit count of pages in pool"
+> +	depends on ION
+> +	default "0"
+
+Can you add help text here? It would be useful to clarify that the
+units are in pages and that 0 will allow unlimited growth of the
+pool. This should also clarify that this is a limit per
+individual pool and not a limit for all page pools in the system.
+
+> diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
+> index 165152f..d63e93f 100644
+> --- a/drivers/staging/android/ion/ion_page_pool.c
+> +++ b/drivers/staging/android/ion/ion_page_pool.c
+> @@ -22,8 +22,11 @@
+>   #include <linux/module.h>
+>   #include <linux/slab.h>
+>   #include <linux/swap.h>
+> +#include <linux/kconfig.h>
+>   #include "ion_priv.h"
 >
-> That still does not entirely eliminate cost, but does reduce it
-> significant. Please consider using that.
+> +#define POOL_LIMIT CONFIG_ION_POOL_LIMIT
+> +
 
-The additional register pressure may just cause a few more register 
-moves which should be negligible in the overall performance . The 
-additional icache pressure, however, may have some impact on 
-performance. I was trying to balance the performance of the pv and 
-non-pv versions so that we won't penalize the pv code too much for a bit 
-more performance in the non-pv code. Doing it your way will add a lot of 
-function call and register saving/restoring to the pv code.
+I don't think the extra #define helps anything here, was
+there something else intended here?
 
-Another alternative that I can think of is to generate 2 versions of the 
-slowpath code - one pv and one non-pv out of the same source code. The 
-non-pv code will call into the pv code once if pv is enabled. In this 
-way, it won't increase the icache and register pressure of the non-pv 
-code. However, this may make the source code a bit harder to read.
+>   static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
+>   {
+>   	struct page *page = alloc_pages(pool->gfp_mask, pool->order);
+> @@ -41,8 +44,21 @@ static void ion_page_pool_free_pages(struct ion_page_pool *pool,
+>   	__free_pages(page, pool->order);
+>   }
+>
+> +static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
+> +{
+> +	int count = pool->low_count;
+> +
+> +	if (high)
+> +		count += pool->high_count;
+> +
+> +	return count << pool->order;
+> +}
+> +
+>   static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
+>   {
+> +	if (POOL_LIMIT && ion_page_pool_total(pool, 1) > POOL_LIMIT)
+> +		return 1;
+> +
+>   	mutex_lock(&pool->mutex);
+>   	if (PageHighMem(page)) {
+>   		list_add_tail(&page->lru, &pool->high_items);
+> @@ -103,16 +119,6 @@ void ion_page_pool_free(struct ion_page_pool *pool, struct page *page)
+>   		ion_page_pool_free_pages(pool, page);
+>   }
+>
+> -static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
+> -{
+> -	int count = pool->low_count;
+> -
+> -	if (high)
+> -		count += pool->high_count;
+> -
+> -	return count << pool->order;
+> -}
+> -
+>   int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
+>   				int nr_to_scan)
+>   {
+>
 
-Please let me know your thought on this alternate approach.
+Thanks,
+Laura
 
--Longman
-
-
+-- 
+Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
