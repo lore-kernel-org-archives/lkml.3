@@ -1,90 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638AbaJXVZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 17:25:51 -0400
-Received: from mga03.intel.com ([134.134.136.65]:44375 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755461AbaJXVVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 17:21:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,782,1406617200"; 
-   d="scan'208";a="595527330"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v12 13/20] ext2: Remove ext2_use_xip
-Date: Fri, 24 Oct 2014 17:20:45 -0400
-Message-Id: <1414185652-28663-14-git-send-email-matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
+	id S1756666AbaJXV0D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 17:26:03 -0400
+Received: from mail.declera.com ([87.118.141.5]:50447 "HELO mail.declera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754212AbaJXVZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 17:25:59 -0400
+Date: Sat, 25 Oct 2014 00:25:57 +0300
+From: Yanko Kaneti <yaneti@declera.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        jay.vosburgh@canonical.com, mroos@linux.ee
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141024212557.GA15537@declera.com>
+References: <1414100740.2065.2.camel@declera.com>
+ <20141023220406.GJ4977@linux.vnet.ibm.com>
+ <20141024090857.GA4083@declera.com>
+ <20141024154006.GP4977@linux.vnet.ibm.com>
+ <20141024162943.GA16621@declera.com>
+ <20141024165454.GS4977@linux.vnet.ibm.com>
+ <20141024170931.GA21849@declera.com>
+ <20141024172009.GV4977@linux.vnet.ibm.com>
+ <20141024173526.GA26058@declera.com>
+ <20141024183226.GW4977@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141024183226.GW4977@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace ext2_use_xip() with test_opt(XIP) which expands to the same code
+On Fri-10/24/14-2014 11:32, Paul E. McKenney wrote:
+> On Fri, Oct 24, 2014 at 08:35:26PM +0300, Yanko Kaneti wrote:
+> > On Fri-10/24/14-2014 10:20, Paul E. McKenney wrote:
+> > > On Fri, Oct 24, 2014 at 08:09:31PM +0300, Yanko Kaneti wrote:
+> > > > On Fri-10/24/14-2014 09:54, Paul E. McKenney wrote:
+> > > > > On Fri, Oct 24, 2014 at 07:29:43PM +0300, Yanko Kaneti wrote:
+> > > > > > On Fri-10/24/14-2014 08:40, Paul E. McKenney wrote:
+> > > > > > > On Fri, Oct 24, 2014 at 12:08:57PM +0300, Yanko Kaneti wrote:
+> > > > > > > > On Thu-10/23/14-2014 15:04, Paul E. McKenney wrote:
+> > > > > > > > > On Fri, Oct 24, 2014 at 12:45:40AM +0300, Yanko Kaneti wrote:
+> > > > > > > > > > 
+> > > > > > > > > > On Thu, 2014-10-23 at 13:05 -0700, Paul E. McKenney wrote:
+> > > > > > > > > > > On Thu, Oct 23, 2014 at 10:51:59PM +0300, Yanko Kaneti wrote:
+> > > > > 
+> > > > > [ . . . ]
+> > > > > 
+> > > > > > > > Ok, unless I've messsed up something major, bisecting points to:
+> > > > > > > > 
+> > > > > > > > 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
+> > > > > > > > 
+> > > > > > > > Makes any sense ?
+> > > > > > > 
+> > > > > > > Good question.  ;-)
+> > > > > > > 
+> > > > > > > Are any of your online CPUs missing rcuo kthreads?  There should be
+> > > > > > > kthreads named rcuos/0, rcuos/1, rcuos/2, and so on for each online CPU.
+> > > > > > 
+> > > > > > Its a Phenom II X6. With 3.17 and linux-tip with 35ce7f29a44a reverted, the rcuos are 8
+> > > > > > and the modprobe ppp_generic testcase reliably works, libvirt also manages
+> > > > > > to setup its bridge.
+> > > > > > 
+> > > > > > Just with linux-tip , the rcuos are 6 but the failure is as reliable as
+> > > > > > before.
+> > > > 
+> > > > > Thank you, very interesting.  Which 6 of the rcuos are present?
+> > > > 
+> > > > Well, the rcuos are 0 to 5. Which sounds right for a 6 core CPU like this   
+> > > > Phenom II.
+> > > 
+> > > Ah, you get 8 without the patch because it creates them for potential
+> > > CPUs as well as real ones.  OK, got it.
+> > > 
+> > > > > > Awating instructions: :)
+> > > > > 
+> > > > > Well, I thought I understood the problem until you found that only 6 of
+> > > > > the expected 8 rcuos are present with linux-tip without the revert.  ;-)
+> > > > > 
+> > > > > I am putting together a patch for the part of the problem that I think
+> > > > > I understand, of course, but it would help a lot to know which two of
+> > > > > the rcuos are missing.  ;-)
+> > > > 
+> > > > Ready to test
+> > > 
+> > > Well, if you are feeling aggressive, give the following patch a spin.
+> > > I am doing sanity tests on it in the meantime.
+> > 
+> > Doesn't seem to make a difference here
+> 
+> OK, inspection isn't cutting it, so time for tracing.  Does the system
+> respond to user input?  If so, please enable rcu:rcu_barrier ftrace before
+> the problem occurs, then dump the trace buffer after the problem occurs.
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
-Reviewed-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
----
- fs/ext2/ext2.h  | 4 ++++
- fs/ext2/inode.c | 2 +-
- fs/ext2/namei.c | 4 ++--
- 3 files changed, 7 insertions(+), 3 deletions(-)
+Sorry for being unresposive here, but I know next to nothing about tracing
+or most things about the kernel, so I have some cathing up to do.
 
-diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
-index d9a17d0..5ecf570 100644
---- a/fs/ext2/ext2.h
-+++ b/fs/ext2/ext2.h
-@@ -380,7 +380,11 @@ struct ext2_inode {
- #define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
- #define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
- #define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
-+#ifdef CONFIG_FS_XIP
- #define EXT2_MOUNT_XIP			0x010000  /* Execute in place */
-+#else
-+#define EXT2_MOUNT_XIP			0
-+#endif
- #define EXT2_MOUNT_USRQUOTA		0x020000  /* user quota */
- #define EXT2_MOUNT_GRPQUOTA		0x040000  /* group quota */
- #define EXT2_MOUNT_RESERVATION		0x080000  /* Preallocation */
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 59d6c7d..cba3833 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -1394,7 +1394,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
- 
- 	if (S_ISREG(inode->i_mode)) {
- 		inode->i_op = &ext2_file_inode_operations;
--		if (ext2_use_xip(inode->i_sb)) {
-+		if (test_opt(inode->i_sb, XIP)) {
- 			inode->i_mapping->a_ops = &ext2_aops_xip;
- 			inode->i_fop = &ext2_xip_file_operations;
- 		} else if (test_opt(inode->i_sb, NOBH)) {
-diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
-index c268d0a..846c356 100644
---- a/fs/ext2/namei.c
-+++ b/fs/ext2/namei.c
-@@ -105,7 +105,7 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
- 		return PTR_ERR(inode);
- 
- 	inode->i_op = &ext2_file_inode_operations;
--	if (ext2_use_xip(inode->i_sb)) {
-+	if (test_opt(inode->i_sb, XIP)) {
- 		inode->i_mapping->a_ops = &ext2_aops_xip;
- 		inode->i_fop = &ext2_xip_file_operations;
- 	} else if (test_opt(inode->i_sb, NOBH)) {
-@@ -126,7 +126,7 @@ static int ext2_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
- 		return PTR_ERR(inode);
- 
- 	inode->i_op = &ext2_file_inode_operations;
--	if (ext2_use_xip(inode->i_sb)) {
-+	if (test_opt(inode->i_sb, XIP)) {
- 		inode->i_mapping->a_ops = &ext2_aops_xip;
- 		inode->i_fop = &ext2_xip_file_operations;
- 	} else if (test_opt(inode->i_sb, NOBH)) {
--- 
-2.1.1
+In the meantime some layman observations while I tried to find what exactly
+triggers the problem.
+- Even in runlevel 1 I can reliably trigger the problem by starting libvirtd
+- libvirtd seems to be very active in using all sorts of kernel facilities
+  that are modules on fedora so it seems to cause many simultaneous kworker 
+  calls to modprobe
+- there are 8 kworker/u16 from 0 to 7
+- one of these kworkers always deadlocks, while there appear to be two
+  kworker/u16:6 - the seventh
 
+  6 vs 8 as in 6 rcuos where before they were always 8
+
+Just observations from someone who still doesn't know what the u16
+kworkers are..
+
+-- Yanko
+
+
+
+ 
+> 							Thanx, Paul
+> 
+> > > ------------------------------------------------------------------------
+> > > 
+> > > diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> > > index 29fb23f33c18..927c17b081c7 100644
+> > > --- a/kernel/rcu/tree_plugin.h
+> > > +++ b/kernel/rcu/tree_plugin.h
+> > > @@ -2546,9 +2546,13 @@ static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
+> > >  			rdp->nocb_leader = rdp_spawn;
+> > >  			if (rdp_last && rdp != rdp_spawn)
+> > >  				rdp_last->nocb_next_follower = rdp;
+> > > -			rdp_last = rdp;
+> > > -			rdp = rdp->nocb_next_follower;
+> > > -			rdp_last->nocb_next_follower = NULL;
+> > > +			if (rdp == rdp_spawn) {
+> > > +				rdp = rdp->nocb_next_follower;
+> > > +			} else {
+> > > +				rdp_last = rdp;
+> > > +				rdp = rdp->nocb_next_follower;
+> > > +				rdp_last->nocb_next_follower = NULL;
+> > > +			}
+> > >  		} while (rdp);
+> > >  		rdp_spawn->nocb_next_follower = rdp_old_leader;
+> > >  	}
+> > > 
+> > 
+> 
