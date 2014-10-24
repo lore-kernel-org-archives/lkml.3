@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933079AbaJXQWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 12:22:45 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58498 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751510AbaJXQWn (ORCPT
+	id S1756638AbaJXQZL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 12:25:11 -0400
+Received: from smtp-3.concepts.nl ([213.197.30.127]:38186 "EHLO
+	smtp-3.concepts.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaJXQZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 12:22:43 -0400
-Message-ID: <1414167761.19984.17.camel@jarvis.lan>
-Subject: Re: [PATCH V2 1/2] mm: Update generic gup implementation to handle
- hugepage directory
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        aneesh.kumar@linux.vnet.ibm.com, steve.capper@linaro.org,
-        aarcange@redhat.com, mpe@ellerman.id.au, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-arch@vger.kernel.org, hannes@cmpxchg.org
-Date: Fri, 24 Oct 2014 09:22:41 -0700
-In-Reply-To: <1414107635.364.91.camel@pasglop>
-References: <1413520687-31729-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	 <20141022160224.9c2268795e55d5a2eff5b94d@linux-foundation.org>
-	 <20141023.184035.388557314666522484.davem@davemloft.net>
-	 <1414107635.364.91.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
+	Fri, 24 Oct 2014 12:25:08 -0400
+Message-ID: <544A7D5C.5060804@xmsnet.nl>
+Date: Fri, 24 Oct 2014 18:25:00 +0200
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.8.1
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, ebiederm@xmission.com
+Subject: Re: 3.17.0+ files disappearing after playing old dos game on nfsroot
+ laptop
+References: <543ED24D.4070905@xmsnet.nl> <5443F5A1.1050004@xmsnet.nl> <544A7933.3010702@xmsnet.nl>
+In-Reply-To: <544A7933.3010702@xmsnet.nl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Concepts-MailScanner-Information: Please contact abuse@concepts.nl for more information
+X-Concepts-MailScanner-ID: 1Xhhfh-000Avk-Fq
+X-Concepts-MailScanner: Found to be clean
+X-Concepts-MailScanner-SpamCheck: 
+X-Concepts-MailScanner-From: jmdebruin@xmsnet.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-10-24 at 10:40 +1100, Benjamin Herrenschmidt wrote:
-> On Thu, 2014-10-23 at 18:40 -0400, David Miller wrote:
-> > Hey guys, was looking over the generic GUP while working on a sparc64
-> > issue and I noticed that you guys do speculative page gets, and after
-> > talking with Johannes Weiner (CC:'d) about this we don't see how it
-> > could be necessary.
-> > 
-> > If interrupts are disabled during the page table scan (which they
-> > are), no IPI tlb flushes can arrive.  Therefore any removal from the
-> > page tables is guarded by interrupts being re-enabled.  And as a
-> > result, page counts of pages we see in the page tables must always
-> > have a count > 0.
-> > 
-> > x86 does direct atomic_add() on &page->_count because of this
-> > invariant and I would rather see the generic version do this too.
-> 
-> This is of course only true of archs who use IPIs for TLB flushes, so if
-> we are going down the path of not being speculative, powerpc would have
-> to go back to doing its own since our broadcast TLB flush means we
-> aren't protected (we are only protected vs. the page tables themselves
-> being freed since we do that via sched RCU).
-> 
-> AFAIK, ARM also broadcasts TLB flushes...
-
-Parisc does this.  As soon as one CPU issues a TLB purge, it's broadcast
-to all the CPUs on the inter-CPU bus.  The next instruction isn't
-executed until they respond.
-
-But this is only for our CPU TLB.  There's no other external
-consequence, so removal from the page tables isn't effected by this TLB
-flush, therefore the theory on which Dave bases the change to
-atomic_add() should work for us (of course, atomic_add is lock add
-unlock on our CPU, so it's not going to be of much benefit).
-
-James
-
-> Another option would be to make the generic code use something defined
-> by the arch to decide whether to use speculative get or
-> not. I like the idea of keeping the bulk of that code generic...
-> 
-> Cheers,
-> Ben.
-> 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+On 10/19/2014 07:32 PM, Hans de Bruin wrote:
+> On 10/15/2014 10:00 PM, Hans de Bruin wrote:
+>> After playing an old dos game i am missing files on my nfsroot installed
+>> laptop. Which one, wel /bin/ls is at least one of them. After a reboot
+>> there all back again.  But not al is well. Some icons on my kde panel
+>> where gone. I have seen this twice in the last day's
+>>
+>
+> The problem appears immediately after starting dosemu so this bisectable
+>
 
 
+My bisect ended here:
+
+commit 8ed936b5671bfb33d89bc60bdcc7cf0470ba52fe
+Author: Eric W. Biederman <ebiederman@twitter.com>
+Date:   Tue Oct 1 18:33:48 2013 -0700
+
+
+      vfs: Lazily remove mounts on unlinked files and directories.
+
+
+I haven reverted it yet.
+
+
+
+Eric,
+
+Immediately after starting dosemu all files under mount point /usr are
+gone. When I play a old dos game for a while (binaries are under /home)
+even /bin/ls disappears. Al mounts are nfs, even /.
+
+Could you look in to this and cc this to the relevant kernel mailinglist?
+
+-- 
+Hans
