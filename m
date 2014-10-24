@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347AbaJYDau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 23:30:50 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:59553 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827AbaJYDas (ORCPT
+	id S1752602AbaJYDxJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 23:53:09 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:34143 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaJYDxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 23:30:48 -0400
-Message-ID: <544B194B.1090409@gmail.com>
-Date: Sat, 25 Oct 2014 11:30:19 +0800
-From: Zhou Wang <wangzhou.bry@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 24 Oct 2014 23:53:08 -0400
+Message-ID: <544A59F5.4070705@roeck-us.net>
+Date: Fri, 24 Oct 2014 06:53:57 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        linux-mtd@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        Rob Herring <robh+dt@kernel.org>, galak@codeaurora.org,
-        caizhiyong@huawei.com, "xuwei (O)" <xuwei5@hisilicon.com>,
-        wangzhou1@hisilicon.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] mtd: hisilicon: add a new NAND controller driver
- for hisilicon hip04 Soc
-References: <1414073085-19296-1-git-send-email-wangzhou.bry@gmail.com> <1414073085-19296-2-git-send-email-wangzhou.bry@gmail.com> <CAN1soZz8NYxppaY4cXadqynERZ=6ZRAynDtptGAps+yUJZ0Qsw@mail.gmail.com>
-In-Reply-To: <CAN1soZz8NYxppaY4cXadqynERZ=6ZRAynDtptGAps+yUJZ0Qsw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Andrew Lunn <andrew@lunn.ch>
+CC: Florian Fainelli <f.fainelli@gmail.com>, netdev <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
+References: <1414037002-25528-1-git-send-email-linux@roeck-us.net> <1414037002-25528-7-git-send-email-linux@roeck-us.net> <CAGVrzcYjPJWai9bxkh+WRrEEAzBKBd-LQm7zDeeouxngr_v9SQ@mail.gmail.com> <54488CE1.2000106@roeck-us.net> <20141023134706.GB25190@lunn.ch> <20141023162754.GA21343@roeck-us.net> <20141023165459.GE25190@lunn.ch> <20141023173847.GA22988@roeck-us.net> <20141023180357.GG25190@lunn.ch> <20141023184322.GA24281@roeck-us.net> <20141023195526.GH25190@lunn.ch>
+In-Reply-To: <20141023195526.GH25190@lunn.ch>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020207.544B1EA3.0011,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014å¹´10æœˆ24æ—¥ 19:46, Haojian Zhuang wrote:
-> On Thu, Oct 23, 2014 at 10:04 PM, Zhou Wang <wangzhou.bry@gmail.com> wrote:
->> Signed-off-by: Zhou Wang <wangzhou.bry@gmail.com>
->> ---
->>   drivers/mtd/nand/Kconfig        |    5 +
->>   drivers/mtd/nand/Makefile       |    1 +
->>   drivers/mtd/nand/hisi504_nand.c |  836 +++++++++++++++++++++++++++++++++++++++
->>   3 files changed, 842 insertions(+)
->>   create mode 100644 drivers/mtd/nand/hisi504_nand.c
->>
+On 10/23/2014 12:55 PM, Andrew Lunn wrote:
+[ ... ]
 >
-> I think that you need to run scripts/checkpatch.pl. There're some
-> warnings reported on this patch.
+> Does hwmon offer a function to sanitise a string?
 >
-Hi Haojian,
+No, that wasn't necessary so far. The 'name' string is a constant string
+provided by the driver.
 
-I will run the checkpatch.pl again and fix the warnings.
-But for lines like this:
-+	if (host->command == NAND_CMD_ERASE1)
-+		host->addr_value[0] |= ((page_addr >>16) & 0xff) << 16;
-+	else
-+		host->addr_value[1] |= ((page_addr >> 16) & 0xff);
-Only over 80 for some characters in one line, it will report a warning.
-Can I just leave the warning there for the tidy of the code?
+> The switch index definitely should be used and i would probably
+> combine that with a sanitised version of the ethernet device name and
+> "dsa".
+>
 
->> +
->> +       case NAND_CMD_SEQIN:
->> +               host->offset = column;
->> +
->
-> It's better not using waterfall style. Maybe you can write it clearly.
->              case NAND_CMD_SEQIN:
->                      host->offset = column;
->                      set_addr(mtd, column, page_addr);
->                      break;
-Thanks, I will modify the code like this above.
->
->> +       chip->ecc.mode = of_get_nand_ecc_mode(np);
->> +       /* read ecc-bits from dts */
->> +       of_property_read_u32(np, "hisi,nand-ecc-bits", &host->ecc_bits);
->
-> Do you need to check the ecc_bits at here? Maybe user inputed the
-> wrong ecc_bits in DTS.
-Yes, it is better to check the ecc_bits here, thanks for your reminding.
+How is this ?
 
-Best regards,
-Zhou Wang
->
-> Best Regards
-> Haojian
->
+em1dsa0-isa-0000
+Adapter: ISA adapter
+temp1:        +38.0°C  (high = +100.0°C)
+
+This is the sanitized network device name + 'dsa' + index.
+
+Guenter
 
