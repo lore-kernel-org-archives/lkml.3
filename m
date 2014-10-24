@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419AbaJXLxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 07:53:43 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:52336 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756091AbaJXLx3 (ORCPT
+	id S932367AbaJXL47 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 07:56:59 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:48867 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756091AbaJXL46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 07:53:29 -0400
+	Fri, 24 Oct 2014 07:56:58 -0400
+Date: Fri, 24 Oct 2014 06:54:46 -0500
+From: Eric Rost <eric.rost@mybabylon.net>
+To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
+        antonysaraev@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 0/7] staging: skein: CryptoAPI and Module Support
+Message-ID: <cover.1414151639.git.eric.rost@mybabylon.net>
 MIME-Version: 1.0
-In-Reply-To: <1412717576-19737-3-git-send-email-b.galvani@gmail.com>
-References: <1412717576-19737-1-git-send-email-b.galvani@gmail.com>
-	<1412717576-19737-3-git-send-email-b.galvani@gmail.com>
-Date: Fri, 24 Oct 2014 13:53:28 +0200
-Message-ID: <CACRpkdb4WLX+FeEAuh=YZteaNPzq0WMN0PTTpHnMWmwTts6=Bg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] pinctrl: meson: add device tree bindings documentation
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
-        Carlo Caione <carlo@caione.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
-        Victor Wan <victor.wan@amlogic.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 7, 2014 at 11:32 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
+Adds CryptoAPI and Module support to Skein Hash Algorithm. Also inlines
+rotl_64 macro, and removes nonexistent header references.
 
-> Add device tree bindings documentation for Amlogic Meson pinmux and
-> GPIO controller.
->
-> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-(...)
-> +Required properties for gpio sub-nodes:
-> + - reg: should contain address and size for mux, pull-enable, pull and
-> +   gpio register sets
-> + - reg-names: an array of strings describing the "reg" entries. Must
-> +   contain "mux", "pull" and "gpio". "pull-enable" is optional and
-> +   when it is missing the "pull" registers are used instead
+Eric Rost (7):
+  staging: skein: Collapses threefish module
+  staging: skein: Renames skein to skein_base
+  staging: skein: Adds CryptoAPI Support
+  staging: skein: Adds Loadable Module Support
+  staging: skein: Inlines rotl_64
+  staging: skein: Removes unneeded #define
+  staging: skein: Removes skein_debug include
 
-So it seems segmenting the registers is done to sort of control the
-hardware versioning.
+ drivers/staging/skein/Kconfig         |  24 +-
+ drivers/staging/skein/Makefile        |  13 +-
+ drivers/staging/skein/skein.c         | 883 ----------------------------------
+ drivers/staging/skein/skein.h         | 346 -------------
+ drivers/staging/skein/skein_api.h     |   2 +-
+ drivers/staging/skein/skein_base.c    | 882 +++++++++++++++++++++++++++++++++
+ drivers/staging/skein/skein_base.h    | 345 +++++++++++++
+ drivers/staging/skein/skein_block.c   |   2 +-
+ drivers/staging/skein/skein_block.h   |   2 +-
+ drivers/staging/skein/skein_generic.c | 208 ++++++++
+ drivers/staging/skein/skein_iv.h      |   2 +-
+ drivers/staging/skein/threefish_api.h |   2 +-
+ 12 files changed, 1451 insertions(+), 1260 deletions(-)
+ delete mode 100644 drivers/staging/skein/skein.c
+ delete mode 100644 drivers/staging/skein/skein.h
+ create mode 100644 drivers/staging/skein/skein_base.c
+ create mode 100644 drivers/staging/skein/skein_base.h
+ create mode 100644 drivers/staging/skein/skein_generic.c
 
-I think it's better to use the compatible string to indicate different
-versions of the hardware and then have just have one big
-regs to cover all registers.
+-- 
+2.1.1
 
-> +Valid gpio sub-nodes name are:
-> + - "banks" for the standard banks
-> + - "ao-bank" for the AO bank which belong to the special always-on
-> +   power domain
-
-I think it's unnecessary to split up banks, the compatible property
-should be enough to know how many banks this controller has
-and where they are located in relation to the base offset.
-
-> +Required properties for configuration nodes:
-> + - pins: the name of a pin group. The list of all available groups can
-> +   be found in driver sources.
-> + - function: the name of a function to activate for the specified set
-> +   of groups. The list of all available functions can be found in
-> +   driver sources.
-
-This is interesting. I have established that for controllers mapping
-functions to groups we use
-"function" and "groups".
-
-So for per-pin configuration, "function" and "pins" would be
-apropriate.
-
-Yours,
-Linus Walleij
