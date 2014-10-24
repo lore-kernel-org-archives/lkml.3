@@ -1,66 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793AbaJXUgZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 16:36:25 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:50085 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755674AbaJXUgY convert rfc822-to-8bit (ORCPT
+	id S1755980AbaJXUiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 16:38:24 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:37962 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480AbaJXUiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 16:36:24 -0400
+	Fri, 24 Oct 2014 16:38:23 -0400
+Message-ID: <544AB8BD.70201@codeaurora.org>
+Date: Fri, 24 Oct 2014 13:38:21 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20141024201138.GL3729@sirena.org.uk>
-References: <1414178111-19525-1-git-send-email-balbi@ti.com>
-	<20141024201138.GL3729@sirena.org.uk>
-Date: Fri, 24 Oct 2014 16:36:24 -0400
-Message-ID: <CAF6AEGssn23wSaSCY-MH+CUk1YD2g7Ld+rejQq0BSHUAcXgZEQ@mail.gmail.com>
-Subject: Re: [PATCH] regulator: stub out devm_regulator_get_exclusive
-From: Rob Clark <robdclark@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Felipe Balbi <balbi@ti.com>, lgirdwood@gmail.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, David Brown <davidb@codeaurora.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Gioh Kim <gioh.kim@lge.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>
+CC: devel@driverdev.osuosl.org, gunho.lee@lge.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFCv2 2/3] staging: ion: debugfs to shrink pool
+References: <1414133248-639-1-git-send-email-gioh.kim@lge.com> <1414133248-639-3-git-send-email-gioh.kim@lge.com>
+In-Reply-To: <1414133248-639-3-git-send-email-gioh.kim@lge.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 4:11 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Fri, Oct 24, 2014 at 02:15:11PM -0500, Felipe Balbi wrote:
->> If we don't stup that call out, we will have
->> build failures for any drivers using that function
->> when .config happens to have CONFIG_REGULATOR=n.
->>
->> One such case below, found with randconfig
->>
->> drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c: In function ‘mdp4_kms_init’:
->> drivers/gpu/drm/msm/mdp/mdp4/mdp4_kms.c:384:2: error: implicit declaration \
+Hi,
+
+On 10/23/2014 11:47 PM, Gioh Kim wrote:
+> This patch creates debugfs files, /sys/kernel/debug/ion/heaps/system_shrink,
+> to shrink pool or get pool size.
+> Reading the file returns pool size and writing occurs to shrink pool.
 >
-> As previously and repeatedly reported the regulator usage in this driver
-> appears extremely problematic, among these problems is that it almost
-> certainly has no sensible reason to be using regulator_get_exclusive()
-> or any variant of it.  Sadly every time it's been raised with the video
-> people they've completely ignored the mail so here we are.
 
-oh, looks like a case of overambitious mailing list filter rules.. I
-did not see the earlier threads on the topic.
+Can you clarify here that you are updating the existing debugfs
+infrastructure? Since the shrinker debugfs was commented out before
+it missed the API update so it would be good to note that as well.
 
-iirc, I was using _get_exclusive() in a few places where I wanted to
-be sure not to get dummy-regulator in cases where I should
--EPROBE_DEFER instead (since probe order with DT is slightly
-hilarious, and since I depend on a few other drivers I end up
-deferring at least a couple times at boot)... I don't quite remember
-the details.  But afaict regulator_get() still allows dummy-regulator,
-which is what I specifically don't want.
+> Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+> ---
+>   drivers/staging/android/ion/ion.c |   31 ++++++++-----------------------
+>   1 file changed, 8 insertions(+), 23 deletions(-)
+>
+> diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+> index 290d4d2..ecc1121 100644
+> --- a/drivers/staging/android/ion/ion.c
+> +++ b/drivers/staging/android/ion/ion.c
+> @@ -1463,43 +1463,29 @@ static const struct file_operations debug_heap_fops = {
+>   	.release = single_release,
+>   };
+>
+> -#ifdef DEBUG_HEAP_SHRINKER
 
-If you have a recommendation for a better way, I am all ears.
+We're now unconditionally adding the shrinker debugfs. I'm not sure if
+this is something we want in production code. Could you turn this
+into a proper Kconfig?
 
-BR,
--R
+>   static int debug_shrink_set(void *data, u64 val)
+>   {
+>   	struct ion_heap *heap = data;
+> -	struct shrink_control sc;
+>   	int objs;
+>
+> -	sc.gfp_mask = -1;
+> -	sc.nr_to_scan = 0;
+> -
+> -	if (!val)
+> -		return 0;
+> -
+> -	objs = heap->shrinker.shrink(&heap->shrinker, &sc);
+> -	sc.nr_to_scan = objs;
+> +	if (val)
+> +		objs = val;
+> +	else
+> +		objs = heap->ops->shrink(heap, __GFP_HIGHMEM, 0);
+>
+> -	heap->shrinker.shrink(&heap->shrinker, &sc);
+> +	(void)heap->ops->shrink(heap, __GFP_HIGHMEM, objs);
 
-> Right now not having the stub seems to only be affecting buggy users
-> (which given the use cases for _exclusive() isn't *that* surprising) so
-> I'm more inclined to leave this there in the hope that the users get
-> fixed or we can at least get some sort of dialogue with the relevant
-> maintainers.
+The shrinker API now has separate functions for counting and scanning
+and ion wraps the calls to those as well to account for the deferred
+freelist. I realize the existing behavior may have been broken but the
+debugfs seems incomplete if it's not taking that into account as well.
+
+>   	return 0;
+>   }
+>
+>   static int debug_shrink_get(void *data, u64 *val)
+>   {
+>   	struct ion_heap *heap = data;
+> -	struct shrink_control sc;
+> -	int objs;
+> -
+> -	sc.gfp_mask = -1;
+> -	sc.nr_to_scan = 0;
+> -
+> -	objs = heap->shrinker.shrink(&heap->shrinker, &sc);
+> -	*val = objs;
+> +	*val = heap->ops->shrink(heap, __GFP_HIGHMEM, 0);
+>   	return 0;
+>   }
+>
+>   DEFINE_SIMPLE_ATTRIBUTE(debug_shrink_fops, debug_shrink_get,
+>   			debug_shrink_set, "%llu\n");
+> -#endif
+>
+>   void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
+>   {
+> @@ -1534,8 +1520,7 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
+>   			path, heap->name);
+>   	}
+>
+> -#ifdef DEBUG_HEAP_SHRINKER
+> -	if (heap->shrinker.shrink) {
+> +	if (heap->ops->shrink) {
+
+Technically a heap doesn't need to set ops->shrink to have a shrinker
+set up (not that it really matters for the current setup). Checking
+for scan_objects would be better.
+
+>   		char debug_name[64];
+>
+>   		snprintf(debug_name, 64, "%s_shrink", heap->name);
+> @@ -1550,7 +1535,7 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
+>   				path, debug_name);
+>   		}
+>   	}
+> -#endif
+> +
+>   	up_write(&dev->lock);
+>   }
+>
+>
+
+Thanks,
+Laura
+
+-- 
+Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
