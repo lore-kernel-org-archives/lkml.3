@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188AbaJXKtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:49:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:43914 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755889AbaJXKtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:49:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,779,1406617200"; 
-   d="scan'208";a="595165934"
-Message-ID: <544A2E5F.80508@intel.com>
-Date: Fri, 24 Oct 2014 13:47:59 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1756119AbaJXKwI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:52:08 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50485 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755404AbaJXKwF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 06:52:05 -0400
+Date: Fri, 24 Oct 2014 12:52:00 +0200
+From: Pavel Machek <pavel@denx.de>
+To: atull@opensource.altera.com
+Cc: gregkh@linuxfoundation.org, jgunthorpe@obsidianresearch.com, hpa@zytor.com,
+        monstr@monstr.eu, michal.simek@xilinx.com, rdunlap@infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
+        grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
+        rubini@gnudd.com, s.trumtrar@pengutronix.de, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH v2 2/3] fpga manager: framework core
+Message-ID: <20141024105200.GA20775@amd>
+References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com>
+ <1414007405-32186-3-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 05/16] perf tools: Add facility to export data in database-friendly
- way
-References: <1414061124-26830-1-git-send-email-adrian.hunter@intel.com>	<1414061124-26830-6-git-send-email-adrian.hunter@intel.com> <87lho6c8ec.fsf@sejong.aot.lge.com> <544A099C.50104@intel.com>
-In-Reply-To: <544A099C.50104@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414007405-32186-3-git-send-email-atull@opensource.altera.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/10/14 11:11, Adrian Hunter wrote:
-> On 24/10/14 09:02, Namhyung Kim wrote:
->> On Thu, 23 Oct 2014 13:45:13 +0300, Adrian Hunter wrote:
->>> This patch introduces an abstraction for exporting sample
->>> data in a database-friendly way.  The abstraction does not
->>> implement the actual output.  A subsequent patch takes this
->>> facility into use for extending the script interface.
->>>
->>> The abstraction is needed because static data like symbols,
->>> dsos, comms etc need to be exported only once.  That means
->>> allocating them a unique identifier and recording it on each
->>> structure.  The member 'db_id' is used for that.  'db_id'
->>> is just a 64-bit sequence number.
->>
->> Can we do it somewhere in a script not in the core code?  I don't feel
->> comfortable to add those bits into the core code.  What if we export
-> 
-> Please explain what you mean by "comfortable".
+Hi!
 
-Or rather: What about it is wrong for core code?
+> * /sys/class/fpga_manager/<fpga>/firmware
+>   Name of FPGA image file to load using firmware class.
+>   $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
 
-> 
->> meta events like task, mmap or some user events to the script optionally
->> and let it process the data?
-> 
-> Intel PT decoding can generate a lot of data.  Many millions of samples at
-> least.
-> 
-> Each sample contains a lot of duplicated information like symbol names, dso
-> names, comms, etc.  So it is not optimal to export that for every sample.
-> Even then, each piece of supporting information must be looked up - was it
-> the same as the last sample, no then look it up, was it found, no then add a
-> record.  That is very very inefficient.
-> 
-> Exporting each piece of information once, instead of over and over again, is
-> a reasonable thing to do.
-> 
->>
->> Thanks,
->> Namhyung
->>
->>
->>>
->>> Exporting centres around the db_export__sample() function
->>> which exports the associated data structures if they have
->>> not yet been allocated a db_id.
->>
->>
-> 
-> 
-> 
+I .. still don't think this is good idea. What about namespaces?
+The path corresponds to path in which namespace?
 
+> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
+> +{
+> +	int ret;
+> +
+> +	if (test_and_set_bit_lock(FPGA_MGR_BUSY, &mgr->flags))
+> +		return -EBUSY;
+> +
+> +	dev_info(mgr->dev, "writing buffer to %s\n", mgr->name);
+> +
+> +	ret = __fpga_mgr_write(mgr, buf, count);
+> +	clear_bit_unlock(FPGA_MGR_BUSY, &mgr->flags);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(fpga_mgr_write);
+
+Is the EBUSY -- userspace please try again, but you don't know when to
+try again -- right interface? I mean, normally kernel would wait, so
+that userland does not have to poll?
+
+> +static ssize_t fpga_mgr_firmware_store(struct device *dev,
+> +				       struct device_attribute *attr,
+> +				       const char *buf, size_t count)
+> +{
+> +	struct fpga_manager *mgr = dev_get_drvdata(dev);
+> +	unsigned int len;
+> +	char image_name[NAME_MAX];
+> +	int ret;
+> +
+> +	/* lose terminating \n */
+> +	strcpy(image_name, buf);
+> +	len = strlen(image_name);
+> +	if (image_name[len - 1] == '\n')
+> +		image_name[len - 1] = 0;
+> +
+> +	ret = fpga_mgr_firmware_write(mgr, image_name);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return count;
+> +}
+
+This shows why the interface is not right... Valid filename may
+contain \n, right? It may even end with \n.
+
+Best regards,
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
