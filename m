@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774AbaJXNjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:39:53 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:33767 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749AbaJXNju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:39:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141023055825.GA4559@gmail.com>
-References: <1413991731-20628-1-git-send-email-robert@sixbynine.org> <20141023055825.GA4559@gmail.com>
-From: Robert Bragg <robert@sixbynine.org>
-Date: Fri, 24 Oct 2014 14:39:28 +0100
-X-Google-Sender-Auth: r1DwslK0WxKDqOlb0X2zB4sVwmI
-Message-ID: <CAMou1-2LwVjP-42E92nM_xif2EhyhhhzNxOiPoKfVJo5jmgmTw@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] Expose gpu counters via perf pmu driver
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Rob Clark <robdclark@gmail.com>,
-        Samuel Pitoiset <samuel.pitoiset@gmail.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756784AbaJXNk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:40:28 -0400
+Received: from gum.cmpxchg.org ([85.214.110.215]:42853 "EHLO gum.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756167AbaJXNk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 09:40:26 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Vladimir Davydov <vdavydov@parallels.com>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] mm: memcontrol: shorten the page statistics update slowpath
+Date: Fri, 24 Oct 2014 09:40:20 -0400
+Message-Id: <1414158020-25347-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 6:58 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Robert Bragg <robert@sixbynine.org> wrote:
->
->> [...]
->>
->> I'd be interested to hear whether is sounds reasonable to
->> others for us to expose gpu device metrics via a perf pmu and
->> whether adding the PERF_PMU_CAP_IS_DEVICE flag as in my
->> following patch could be acceptable.
->
-> I think it's perfectly reasonable, it's one of the interesting
-> kernel features I hoped for years would be implemented for perf.
+While moving charges from one memcg to another, page stat updates must
+acquire the old memcg's move_lock to prevent double accounting.  That
+situation is denoted by an increased memcg->move_accounting.  However,
+the charge moving code declares this way too early for now, even
+before summing up the RSS and pre-allocating destination charges.
 
-Ok, that's good to hear, thanks.
+Shorten this slowpath mode by increasing memcg->move_accounting only
+right before walking the task's address space with the intention of
+actually moving the pages.
 
->
->> [...]
->>
->> In addition I also explicitly black list numerous attributes
->> and PERF_SAMPLE_ flags that I don't think make sense for a
->> device pmu. This could be handled in the pmu driver but it
->> seemed better to do in events/core, avoiding duplication in
->> case we later have multiple device pmus.
->
-> Btw., if the GPU is able to dump (part of) its current execution
-> status, you could in theory even do instruction profiling and
-> in-GPU profiling (symbol resolution, maybe even annotation, etc.)
-> with close to standard perf tooling - which I think is currently
-> mostly the domain of proprietary tools.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 21 ++++++++-------------
+ 1 file changed, 8 insertions(+), 13 deletions(-)
 
-I'm not entirely sure; but there are certainly quite a few hw debug features
-I haven't really explored yet that might lend themselves to supporting
-something like this. At least there's a breakpoint mechanism that looks like
-it might help for something like this, including providing a way to focus on
-specific threads of interest which would be pretty important here to reduce
-how much state would have to be periodically captured. I could be
-interested to experiment with this later for sure.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c50176429fa3..23cf27cca370 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5263,8 +5263,6 @@ static void __mem_cgroup_clear_mc(void)
+ 
+ static void mem_cgroup_clear_mc(void)
+ {
+-	struct mem_cgroup *from = mc.from;
+-
+ 	/*
+ 	 * we must clear moving_task before waking up waiters at the end of
+ 	 * task migration.
+@@ -5275,8 +5273,6 @@ static void mem_cgroup_clear_mc(void)
+ 	mc.from = NULL;
+ 	mc.to = NULL;
+ 	spin_unlock(&mc.lock);
+-
+-	atomic_dec(&from->moving_account);
+ }
+ 
+ static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
+@@ -5310,15 +5306,6 @@ static int mem_cgroup_can_attach(struct cgroup_subsys_state *css,
+ 			VM_BUG_ON(mc.moved_charge);
+ 			VM_BUG_ON(mc.moved_swap);
+ 
+-			/*
+-			 * Signal mem_cgroup_begin_page_stat() to take
+-			 * the memcg's move_lock while we're moving
+-			 * its pages to another memcg.  Then wait for
+-			 * already started RCU-only updates to finish.
+-			 */
+-			atomic_inc(&from->moving_account);
+-			synchronize_rcu();
+-
+ 			spin_lock(&mc.lock);
+ 			mc.from = from;
+ 			mc.to = memcg;
+@@ -5450,6 +5437,13 @@ static void mem_cgroup_move_charge(struct mm_struct *mm)
+ 	struct vm_area_struct *vma;
+ 
+ 	lru_add_drain_all();
++	/*
++	 * Signal mem_cgroup_begin_page_stat() to take the memcg's
++	 * move_lock while we're moving its pages to another memcg.
++	 * Then wait for already started RCU-only updates to finish.
++	 */
++	atomic_inc(&mc.from->moving_account);
++	synchronize_rcu();
+ retry:
+ 	if (unlikely(!down_read_trylock(&mm->mmap_sem))) {
+ 		/*
+@@ -5482,6 +5476,7 @@ retry:
+ 			break;
+ 	}
+ 	up_read(&mm->mmap_sem);
++	atomic_dec(&mc.from->moving_account);
+ }
+ 
+ static void mem_cgroup_move_task(struct cgroup_subsys_state *css,
+-- 
+2.1.2
 
-With respect to the OA counters I'm looking to expose first, I would note
-that the counter snapshots being written periodically are written by a fixed
-function unit where we only have a limited set of layouts that we can
-choose.
-
-Beyond the OA counters I can certainly see us wanting further pmus for other
-metrics though. For reference Chris Wilson experimented with some related
-ideas last year, here:
-
- http://cgit.freedesktop.org/~ickle/linux-2.6/commit/?
- h=perf&id=f32c19f4fb3a3bda92ab7bd0b9f95da14e81ca0a
-
-Regards,
-- Robert
-
->
-> Thanks,
->
->         Ingo
