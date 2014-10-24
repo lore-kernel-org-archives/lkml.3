@@ -1,74 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849AbaJXKIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:08:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:57810 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391AbaJXKIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:08:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,779,1406617200"; 
-   d="scan'208";a="624550347"
-Message-ID: <544A2521.3080308@linux.intel.com>
-Date: Fri, 24 Oct 2014 13:08:33 +0300
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.1.2
+	id S1755975AbaJXKKW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:10:22 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:33772 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011AbaJXKKU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 06:10:20 -0400
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <544A2588.40802@lge.com>
+Date: Fri, 24 Oct 2014 19:10:16 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Lee Jones <lee.jones@linaro.org>, Darren Hart <dvhart@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: Use ACPI companion to match only the first physical
- device
-References: <1414141950-228930-1-git-send-email-mika.westerberg@linux.intel.com>
-In-Reply-To: <1414141950-228930-1-git-send-email-mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: PINTU KUMAR <pintu.k@samsung.com>, akpm@linux-foundation.org,
+        riel@redhat.com, aquini@redhat.com, paul.gortmaker@windriver.com,
+        jmarchan@redhat.com, lcapitulino@redhat.com,
+        kirill.shutemov@linux.intel.com, m.szyprowski@samsung.com,
+        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
+        mina86@mina86.com, lauraa@codeaurora.org, mgorman@suse.de,
+        rientjes@google.com, hannes@cmpxchg.org, vbabka@suse.cz,
+        sasha.levin@oracle.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+CC: pintu_agarwal@yahoo.com, cpgs@samsung.com, vishnu.ps@samsung.com,
+        rohit.kr@samsung.com, ed.savinay@samsung.com
+Subject: Re: [PATCH v2 2/2] fs: proc: Include cma info in proc/meminfo
+References: <1413790391-31686-1-git-send-email-pintu.k@samsung.com> <1413986796-19732-1-git-send-email-pintu.k@samsung.com> <1413986796-19732-2-git-send-email-pintu.k@samsung.com> <54484993.1090803@lge.com> <018a01cfef68$88d0b450$9a721cf0$@samsung.com>
+In-Reply-To: <018a01cfef68$88d0b450$9a721cf0$@samsung.com>
+Content-Type: text/plain; charset=EUC-KR
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2014 12:12 PM, Mika Westerberg wrote:
-> Commit 6ab3430129e2 ("mfd: Add ACPI support") made the MFD subdevices to
-> share the parent MFD ACPI companion device if no _HID/_CID is specified for
-> the subdevice in mfd_cell description. However, since all the subdevices
-> share the ACPI companion, the match and modalias generation logic started
-> to use the ACPI companion as well resulting this:
->
->    # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
->    acpi:INT33D1:PNP0C50:
->
-> instead of the expected one
->
->    # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
->    platform:HID-SENSOR-200041
->
-> In other words the subdevice modalias is overwritten by the one taken from
-> ACPI companion. This causes udev not to load the driver anymore.
->
-> It is useful to be able to share the ACPI companion so that MFD subdevices
-> (and possibly other devices as well) can access the ACPI resources even if
-> they do not have ACPI representation in the namespace themselves.
->
-> An example where this is used is Minnowboard LPC driver that creates GPIO
-> as a subdevice among other things. Without the ACPI companion gpiolib is
-> not is not able to lookup the corresponding GPIO controller from ACPI
-> GpioIo resource.
->
-> To fix this we restrict the match and modalias logic to be limited to the
-> first physical device. The secondary devices will still be able to access
-> the ACPI companion but they will be matched using traditional way.
->
-> Reported-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
+
+
+2014-10-24 오후 5:57, PINTU KUMAR 쓴 글:
 > Hi,
->
-> This is a regression in v3.18-rc1+ and prevents udev from loading the
-> modules in question. Alternative to this we can revert 6ab3430129e2 but
-> then Minnowboard GPIOs do not work anymore.
->
->   drivers/acpi/scan.c | 71 +++++++++++++++++++++++++++++++++++++++++------------
->   1 file changed, 55 insertions(+), 16 deletions(-)
->
-Tested-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+> 
+> ----- Original Message -----
+>> From: Gioh Kim <gioh.kim@lge.com>
+>> To: Pintu Kumar <pintu.k@samsung.com>; akpm@linux-foundation.org;
+> riel@redhat.com; aquini@redhat.com; paul.gortmaker@windriver.com;
+> jmarchan@redhat.com; lcapitulino@redhat.com;
+> kirill.shutemov@linux.intel.com; m.szyprowski@samsung.com;
+> aneesh.kumar@linux.vnet.ibm.com; iamjoonsoo.kim@lge.com; mina86@mina86.com;
+> lauraa@codeaurora.org; mgorman@suse.de; rientjes@google.com; hannes@cmpxchg.
+> org; vbabka@suse.cz; sasha.levin@oracle.com; linux-kernel@vger.kernel.org;
+> linux-mm@kvack.org
+>> Cc: pintu_agarwal@yahoo.com; cpgs@samsung.com; vishnu.ps@samsung.com;
+> rohit.kr@samsung.com; ed.savinay@samsung.com
+>> Sent: Thursday, 23 October 2014 5:49 AM
+>> Subject: Re: [PATCH v2 2/2] fs: proc: Include cma info in proc/meminfo
+>>
+>>
+>>
+>> 2014-10-22 오후 11:06, Pintu Kumar 쓴 글:
+>>> This patch include CMA info (CMATotal, CMAFree) in /proc/meminfo.
+>>> Currently, in a CMA enabled system, if somebody wants to know the
+>>> total CMA size declared, there is no way to tell, other than the dmesg
+>>> or /var/log/messages logs.
+>>> With this patch we are showing the CMA info as part of meminfo, so that
+>>> it can be determined at any point of time.
+>>> This will be populated only when CMA is enabled.
+>>>
+>>> Below is the sample output from a ARM based device with RAM:512MB and
+>> CMA:16MB.
+>>>
+>>> MemTotal:        471172 kB
+>>> MemFree:          111712 kB
+>>> MemAvailable:    271172 kB
+>>> .
+>>> .
+>>> .
+>>> CmaTotal:          16384 kB
+>>> CmaFree:            6144 kB
+>>>
+>>> This patch also fix below checkpatch errors that were found during these
+>> changes.
+>>
+>> Why don't you split patch for it?
+>> I think there's a rule not to mix separate patchs.
+>>
+> 
+> Last time when we submitted separate patches for checkpatch errors, it was
+> suggested to
+> Include these kinds of fixes along with some meaningful patches together.
+> So, we included it in same patch.
+> 
+>>>
+>>> ERROR: space required after that ',' (ctx:ExV)
+>>> 199: FILE: fs/proc/meminfo.c:199:
+>>> +      ,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT -
+>> 10)
+>>>            ^
+>>>
+>>> ERROR: space required after that ',' (ctx:ExV)
+>>> 202: FILE: fs/proc/meminfo.c:202:
+>>> +      ,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+>>>            ^
+>>>
+>>> ERROR: space required after that ',' (ctx:ExV)
+>>> 206: FILE: fs/proc/meminfo.c:206:
+>>> +      ,K(totalcma_pages)
+>>>            ^
+>>>
+>>> total: 3 errors, 0 warnings, 2 checks, 236 lines checked
+>>>
+>>> Signed-off-by: Pintu Kumar <pintu.k@samsung.com>
+>>> Signed-off-by: Vishnu Pratap Singh <vishnu.ps@samsung.com>
+>>> ---
+>>>    fs/proc/meminfo.c |  15 +++++++++++++--
+>>>    1 file changed, 13 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+>>> index aa1eee0..d3ebf2e 100644
+>>> --- a/fs/proc/meminfo.c
+>>> +++ b/fs/proc/meminfo.c
+>>> @@ -12,6 +12,9 @@
+>>>    #include <linux/vmstat.h>
+>>>    #include <linux/atomic.h>
+>>>    #include <linux/vmalloc.h>
+>>> +#ifdef CONFIG_CMA
+>>> +#include <linux/cma.h>
+>>> +#endif
+>>>    #include <asm/page.h>
+>>>    #include <asm/pgtable.h>
+>>>    #include "internal.h"
+>>> @@ -138,6 +141,10 @@ static int meminfo_proc_show(struct seq_file *m,
+> void
+>> *v)
+>>>    #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>>>            "AnonHugePages:  %8lu kB\n"
+>>>    #endif
+>>> +#ifdef CONFIG_CMA
+>>> +        "CmaTotal:      %8lu kB\n"
+>>> +        "CmaFree:        %8lu kB\n"
+>>> +#endif
+>>>            ,
+>>>            K(i.totalram),
+>>>            K(i.freeram),
+>>> @@ -187,12 +194,16 @@ static int meminfo_proc_show(struct seq_file *m,
+> void
+>> *v)
+>>>            vmi.used >> 10,
+>>>            vmi.largest_chunk >> 10
+>>>    #ifdef CONFIG_MEMORY_FAILURE
+>>> -        ,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT -
+>> 10)
+>>> +        , atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT -
+>> 10)
+>>>    #endif
+>>>    #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>>> -        ,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+>>> +        , K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+>>>              HPAGE_PMD_NR)
+>>>    #endif
+>>> +#ifdef CONFIG_CMA
+>>> +        , K(totalcma_pages)
+>>> +        , K(global_page_state(NR_FREE_CMA_PAGES))
+>>> +#endif
+>>>            );
+>>
+>> Just for sure, are zoneinfo and pagetypeinfo not suitable?
+>>
+> 
+> I think zoneinfo shows only current free cma pages.
+> Same is the case with vmstat.
+> # cat /proc/zoneinfo | grep cma
+>      nr_free_cma  2560
+> # cat /proc/vmstat | grep cma
+> nr_free_cma 2560
+
+We could add a line to show total cma pages like following and add it all.
+# cat /proc/zoneinfo | grep cma
+      nr_total_cma XXXX
+      nr_free_cma  2560
+
+Yes. each zone can have cma area and it is annoying to add it all.
+But IMO it is rare and not difficult.
+And I think it'd better that zoneinfo has nr_total_cma line.
+
+I think you already considered my thoughts and choosed /proc/meminfo for a certain reason.
+Why is /proc/meminfo better?
+
+Andrew already accepted it. I'm not against your idea. Just curious.
+
+> 
+>> I don't know HOTPLUG feature so I'm just asking for sure.
+>> Does HOTPLUG not need printing message like this?
+>>
+> 
+> Sorry, I am also not sure what hotplug feature you are referring to.
+
+I mean "memory hotplug" feature.
+Forget it ;-)
+
+> 
+>> Thanks a lot.
+>>
+>>
+>>>    
+>>>        hugetlb_report_meminfo(m);
+>>>
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org">
+>> email@kvack.org </a>
+>>
+> 
+> 
