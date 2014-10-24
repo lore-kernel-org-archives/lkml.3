@@ -1,154 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723AbaJXRDo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 13:03:44 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:42651 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755894AbaJXRDn (ORCPT
+	id S1756785AbaJXRFw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 13:05:52 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:51403 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751510AbaJXRFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 13:03:43 -0400
-X-IronPort-AV: E=Sophos;i="5.04,781,1406592000"; 
-   d="scan'208";a="185970812"
-Date: Fri, 24 Oct 2014 18:01:12 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v4 3/7] [RFC] arm/arm64: introduce is_dma_coherent
-In-Reply-To: <20141024154353.GE20534@e104818-lin.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1410241751160.22875@kaball.uk.xensource.com>
-References: <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com> <20141010120702.GI7755@arm.com> <alpine.DEB.2.02.1410101401250.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410131215400.17038@kaball.uk.xensource.com> <20141013125725.GA19156@arm.com>
- <alpine.DEB.2.02.1410131358490.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410221703560.876@kaball.uk.xensource.com> <alpine.DEB.2.02.1410231516450.876@kaball.uk.xensource.com> <20141024104746.GC1955@localhost> <alpine.DEB.2.02.1410241233080.22875@kaball.uk.xensource.com>
- <20141024154353.GE20534@e104818-lin.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	Fri, 24 Oct 2014 13:05:50 -0400
+Message-ID: <1414169518.12798.31.camel@misato.fc.hp.com>
+Subject: Re: [RESEND PATCH V3 0/3] x86: Full support of PAT
+From: Toshi Kani <toshi.kani@hp.com>
+To: Juergen Gross <jgross@suse.com>
+Cc: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com
+Date: Fri, 24 Oct 2014 10:51:58 -0600
+In-Reply-To: <5449D0D0.7070305@suse.com>
+References: <1413188011-12655-1-git-send-email-jgross@suse.com>
+	 <54448896.9040908@suse.com> <5449D0D0.7070305@suse.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014, Catalin Marinas wrote:
-> On Fri, Oct 24, 2014 at 12:39:59PM +0100, Stefano Stabellini wrote:
-> > On Fri, 24 Oct 2014, Catalin Marinas wrote:
-> > > I think a better way would be some Xen hook around
-> > > set_arch_dma_coherent_ops(). Does Xen have its own device tracking
-> > > structures? If not, you may be able to add another bitfield to the
-> > > kernel one.
-> > 
-> > We don't have an additional device tracking struct on Xen.
-> > I agree that a new bit somewhere would be the best solution, but I am
-> > not sure where. Maybe in dev_archdata under arm and arm64? After all it
-> > is already used to keep pointers to dma and coherency related
-> > structures.
-> 
-> I was thinking about something like below (maybe with some additional
-> ARCH_HAS_NONCOHERENT_DMA config for architectures that are always
-> coherent):
-> 
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 3b64d0bf5bba..ae399ccbd569 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -183,6 +183,7 @@ static void of_dma_configure(struct device *dev)
->  	 * dma coherent operations.
->  	 */
->  	if (of_dma_is_coherent(dev->of_node)) {
-> +		dev->dma_coherent = 1;
->  		set_arch_dma_coherent_ops(dev);
->  		dev_dbg(dev, "device is dma coherent\n");
->  	}
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index ce1f21608b16..e00ca876db01 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -796,6 +796,7 @@ struct device {
->  
->  	bool			offline_disabled:1;
->  	bool			offline:1;
-> +	bool			dma_coherent:1;
->  };
->  
->  static inline struct device *kobj_to_dev(struct kobject *kobj)
-> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> index d5d388160f42..9c9ba5a5428e 100644
-> --- a/include/linux/dma-mapping.h
-> +++ b/include/linux/dma-mapping.h
-> @@ -78,6 +78,11 @@ static inline int is_device_dma_capable(struct device *dev)
->  	return dev->dma_mask != NULL && *dev->dma_mask != DMA_MASK_NONE;
->  }
->  
-> +static inline int is_device_dma_coherent(struct device *dev)
-> +{
-> +	return dev->dma_coherent;
-> +}
-> +
->  #ifdef CONFIG_HAS_DMA
->  #include <asm/dma-mapping.h>
->  #else
+Hi Juergen,
 
-This is probably the cleanest option. I am going to send it out and see
-what the comments are.
+Can you rebase the patchset to 3.18.0-rc1? There are some minor merge
+conflicts.
 
-I might still be able to request a backport if it doesn't make 3.18.
+Thanks,
+-Toshi
 
 
-> > However given the timing constraints I hope you would be OK with the
-> > suboptimal solution for now and create a common is_dma_coherent function
-> > in 3.19?
+On Fri, 2014-10-24 at 06:08 +0200, Juergen Gross wrote:
+> Ping?
 > 
-> If you want to push something for 3.18, you could have a temporary
-> solution but I would prefer a bool or something in the dev_archdata
-> structure. Another untested patch:
+> On 10/20/2014 05:59 AM, Juergen Gross wrote:
+> > Hi x86 maintainers,
+> >
+> > any reason you seem to ignore this patch series? I think I've replied
+> > to all open issues and sent the patches more than one month ago. Each
+> > patch has a "Reviewed-by". Is there something else missing?
+> >
+> >
+> > Juergen
+> >
+> > On 10/13/2014 10:13 AM, Juergen Gross wrote:
+> >> The x86 architecture offers via the PAT (Page Attribute Table) a way to
+> >> specify different caching modes in page table entries. The PAT MSR
+> >> contains
+> >> 8 entries each specifying one of 6 possible cache modes. A pte
+> >> references one
+> >> of those entries via 3 bits: _PAGE_PAT, _PAGE_PWT and _PAGE_PCD.
+> >>
+> >> The Linux kernel currently supports only 4 different cache modes. The
+> >> PAT MSR
+> >> is set up in a way that the setting of _PAGE_PAT in a pte doesn't
+> >> matter: the
+> >> top 4 entries in the PAT MSR are the same as the 4 lower entries.
+> >>
+> >> This results in the kernel not supporting e.g. write-through mode.
+> >> Especially
+> >> this cache mode would speed up drivers of video cards which now have
+> >> to use
+> >> uncached accesses.
+> >>
+> >> OTOH some old processors (Pentium) don't support PAT correctly and the
+> >> Xen
+> >> hypervisor has been using a different PAT MSR configuration for some
+> >> time now
+> >> and can't change that as this setting is part of the ABI.
+> >>
+> >> This patch set abstracts the cache mode from the pte and introduces
+> >> tables to
+> >> translate between cache mode and pte bits (the default cache mode
+> >> "write back"
+> >> is hard-wired to PAT entry 0). The tables are statically initialized with
+> >> values being compatible to old processors and current usage. As soon
+> >> as the
+> >> PAT MSR is changed (or - in case of Xen - is read at boot time) the
+> >> tables are
+> >> changed accordingly. Requests of mappings with special cache modes are
+> >> always
+> >> possible now, in case they are not supported there will be a fallback
+> >> to a
+> >> compatible but slower mode.
+> >>
+> >> Summing it up, this patch set adds the following features:
+> >> - capability to support WT and WP cache modes on processors with full PAT
+> >>    support
+> >> - processors with no or uncorrect PAT support are still working as
+> >> today, even
+> >>    if WT or WP cache mode are selected by drivers for some pages
+> >> - reduction of Xen special handling regarding cache mode
+> >>
+> >> Changes in V3:
+> >> - corrected two minor nits (UC_MINUS, again) detected by Toshi Kani
+> >>
+> >> Changes in V2:
+> >> - simplified handling of PAT MSR write under Xen as suggested by David
+> >> Vrabel
+> >> - removed resetting of pat_enabled under Xen
+> >> - two small corrections requested by Toshi Kani (UC_MINUS cache mode in
+> >>    vermilion driver, fix 32 bit kernel build failure)
+> >> - correct build error on non-x86 arch by moving definition of
+> >>    update_cache_mode_entry() to x86 specific header
+> >>
+> >> Changes since RFC:
+> >> - renamed functions and variables as suggested by Toshi Kani
+> >> - corrected cache mode bits for WT and WP
+> >> - modified handling of PAT MSR write under Xen as suggested by Jan
+> >> Beulich
+> >>
+> >>
+> >> Juergen Gross (3):
+> >>    x86: Make page cache mode a real type
+> >>    x86: Enable PAT to use cache mode translation tables
+> >>    Support Xen pv-domains using PAT
+> >>
+> >>   arch/x86/include/asm/cacheflush.h         |  38 ++++---
+> >>   arch/x86/include/asm/fb.h                 |   6 +-
+> >>   arch/x86/include/asm/io.h                 |   2 +-
+> >>   arch/x86/include/asm/pat.h                |   7 +-
+> >>   arch/x86/include/asm/pgtable.h            |  19 ++--
+> >>   arch/x86/include/asm/pgtable_types.h      |  96 ++++++++++++----
+> >>   arch/x86/mm/dump_pagetables.c             |  24 ++--
+> >>   arch/x86/mm/init.c                        |  37 ++++++
+> >>   arch/x86/mm/init_64.c                     |   9 +-
+> >>   arch/x86/mm/iomap_32.c                    |  15 ++-
+> >>   arch/x86/mm/ioremap.c                     |  63 ++++++-----
+> >>   arch/x86/mm/mm_internal.h                 |   2 +
+> >>   arch/x86/mm/pageattr.c                    |  84 ++++++++------
+> >>   arch/x86/mm/pat.c                         | 181
+> >> +++++++++++++++++++-----------
+> >>   arch/x86/mm/pat_internal.h                |  22 ++--
+> >>   arch/x86/mm/pat_rbtree.c                  |   8 +-
+> >>   arch/x86/pci/i386.c                       |   4 +-
+> >>   arch/x86/xen/enlighten.c                  |  25 ++---
+> >>   arch/x86/xen/mmu.c                        |  48 +-------
+> >>   arch/x86/xen/xen-ops.h                    |   1 -
+> >>   drivers/video/fbdev/gbefb.c               |   3 +-
+> >>   drivers/video/fbdev/vermilion/vermilion.c |   6 +-
+> >>   22 files changed, 421 insertions(+), 279 deletions(-)
+> >>
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> diff --git a/arch/arm64/include/asm/device.h b/arch/arm64/include/asm/device.h
-> index cf98b362094b..243ef256b8c9 100644
-> --- a/arch/arm64/include/asm/device.h
-> +++ b/arch/arm64/include/asm/device.h
-> @@ -21,6 +21,7 @@ struct dev_archdata {
->  #ifdef CONFIG_IOMMU_API
->  	void *iommu;			/* private IOMMU data */
->  #endif
-> +	bool dma_coherent;
->  };
->  
->  struct pdev_archdata {
-> diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
-> index adeae3f6f0fc..b6bc4c268878 100644
-> --- a/arch/arm64/include/asm/dma-mapping.h
-> +++ b/arch/arm64/include/asm/dma-mapping.h
-> @@ -54,11 +54,17 @@ static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
->  
->  static inline int set_arch_dma_coherent_ops(struct device *dev)
->  {
-> +	dev->dev_archdata.dma_coherent = true;
->  	set_dma_ops(dev, &coherent_swiotlb_dma_ops);
->  	return 0;
->  }
->  #define set_arch_dma_coherent_ops	set_arch_dma_coherent_ops
->  
-> +static inline int is_device_dma_coherent(struct device *dev)
-> +{
-> +	return dev->dev_archdata.dma_coherent;
-> +}
-> +
->  #include <asm-generic/dma-mapping-common.h>
->  
->  static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
-> 
-> 
-> This way you don't have to test for swiotlb vs iommu ops (we don't have
-> the latter yet on arm64 but they are coming).
-> 
-> -- 
-> Catalin
-> 
+
+
