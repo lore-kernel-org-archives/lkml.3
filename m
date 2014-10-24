@@ -1,60 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674AbaJXNsK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:48:10 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:45791 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756580AbaJXNsI (ORCPT
+	id S1756707AbaJXNsq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 09:48:46 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:45907 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756525AbaJXNsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:48:08 -0400
-Date: Fri, 24 Oct 2014 15:48:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com, acme@infradead.org
-Subject: Re: [PATCH v5 12/20] x86: perf: intel_pt: Intel PT PMU driver
-Message-ID: <20141024134800.GC21513@worktop.programming.kicks-ass.net>
-References: <1413207948-28202-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1413207948-28202-13-git-send-email-alexander.shishkin@linux.intel.com>
- <20141022144543.GV12706@worktop.programming.kicks-ass.net>
- <87tx2t27yb.fsf@ashishki-desk.ger.corp.intel.com>
- <20141024115131.GY21513@worktop.programming.kicks-ass.net>
- <87wq7pd5sw.fsf@ashishki-desk.ger.corp.intel.com>
- <20141024130228.GM3219@twins.programming.kicks-ass.net>
- <87tx2td2rt.fsf@ashishki-desk.ger.corp.intel.com>
+	Fri, 24 Oct 2014 09:48:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87tx2td2rt.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <1413775401-4501-1-git-send-email-ibanezchen@gmail.com>
+References: <1413775401-4501-1-git-send-email-ibanezchen@gmail.com>
+Date: Fri, 24 Oct 2014 15:48:41 +0200
+Message-ID: <CABuKBeL3i+tjx_AQg5N+e=2GWgLuBWbt-dY0-Rif6duKsM-X5Q@mail.gmail.com>
+Subject: Re: [PATCH v4 1/3] ARM: mediatek: Add basic support for mt6592
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Howard Chen <ibanezchen@gmail.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM/Mediatek SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 04:18:46PM +0300, Alexander Shishkin wrote:
-> Peter Zijlstra <peterz@infradead.org> writes:
+2014-10-20 5:23 GMT+02:00 Howard Chen <ibanezchen@gmail.com>:
+> * A dtsi for boards based on Mediatek MT6592 SoCs
+> * Compatible string in arch/arm/mach-mediatek/mediatek.c
+>
+> Signed-off-by: Howard Chen <ibanezchen@gmail.com>
+> ---
+>  arch/arm/boot/dts/mt6592.dtsi     | 138 ++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-mediatek/mediatek.c |   1 +
+>  2 files changed, 139 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/mt6592.dtsi
+>
+> diff --git a/arch/arm/boot/dts/mt6592.dtsi b/arch/arm/boot/dts/mt6592.dtsi
+> new file mode 100644
+> index 0000000..367ba8f
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/mt6592.dtsi
+> @@ -0,0 +1,138 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Howard Chen <ibanezchen@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <dt-bindings/interrupt-controller/irq.h>
+> +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> +#include "skeleton.dtsi"
+> +
+> +/ {
+> +       compatible = "mediatek,mt6592";
+> +       interrupt-parent = <&gic>;
+> +
+> +       cpus {
+> +               #address-cells = <1>;
+> +               #size-cells = <0>;
+> +
+> +               cpu@0 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x0>;
+> +               };
+> +               cpu@1 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x1>;
+> +               };
+> +               cpu@2 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x2>;
+> +               };
+> +               cpu@3 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x3>;
+> +               };
+> +               cpu@4 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x4>;
+> +               };
+> +               cpu@5 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x5>;
+> +               };
+> +               cpu@6 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x6>;
+> +               };
+> +               cpu@7 {
+> +                       device_type = "cpu";
+> +                       compatible = "arm,cortex-a7";
+> +                       reg = <0x7>;
+> +               };
+> +       };
+> +
+> +       system_clk: dummy13m {
+> +               compatible = "fixed-clock";
+> +               clock-frequency = <13000000>;
+> +               #clock-cells = <0>;
+> +       };
+> +
+> +       rtc_clk: dummy32k {
+> +               compatible = "fixed-clock";
+> +               clock-frequency = <32000>;
+> +               #clock-cells = <0>;
+> +       };
+> +
+> +       uart_clk: uart_clk {
+> +               compatible = "fixed-clock";
+> +               clock-frequency = <26000000>;
+> +               #clock-cells = <0>;
+> +       };
+> +
+> +       timer: timer@10008000 {
+> +               compatible = "mediatek,mt6577-timer";
+> +               reg = <0x10008000 0x80>;
+> +               interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
+> +               clocks = <&system_clk>, <&rtc_clk>;
+> +               clock-names = "system-clk", "rtc-clk";
+> +       };
+> +
+> +       gic: interrupt-controller@10211000 {
+> +               compatible = "arm,cortex-a9-gic";
 
-> Ah, I see what you mean. The main point of this whole reserved region
-> proposal is that one shouldn't have to update one's kernel to enable new
-> PT packets by doing -e intel_pt/config=0xf00d/, if one is CAP_SYS_ADMIN.
-> 
-> > No need to probe in that case. That is the same thing we do for all
-> > unenumerated model specific things.
-> 
-> They are, actually, enumerated, we just want to be able to enable them
-> before they are. If the driver is aware of feature X, it can test for it
-> in CPUID and allow/disallow it based on that.
+Should be arm,cortex-a7-gic, right?
 
-If you've got hardware that 'exposes' functionality not enumerated in
-CPUID you have the capability of modifying the kernel.
+> +               interrupt-controller;
+> +               #interrupt-cells = <3>;
+> +               reg = <0x10211000 0x1000>,
+> +                         <0x10212000 0x1000>;
+> +       };
+> +
+> +       uart0: serial@11002000 {
+> +               compatible = "mediatek,mt6592-uart", "mediatek,mt6577-uart";
+> +               reg = <0x11002000 0x400>;
+> +               reg-shift = <2>;
+> +               interrupts = <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
 
-And while it might seem like a cute feature when you have early
-hardware, that is no reason to make the code horrible. Either just patch
-your firmware such that CPUID reports the right bits for your hardware
-or frob the kernel.
+I tried this on v3.18-rc1 but it does not boot for me. I think this
+depends on different bootloader on the different platforms.
+This is critical for me. Can you send me your intpol register values,
+so that I can check with my values when booting the kernel?
+
+> +               clocks = <&uart_clk>;
+> +               status = "disabled";
+> +       };
+> +
+> +       uart1: serial@11003000 {
+> +               compatible = "mediatek,mt6592-uart", "mediatek,mt6577-uart";
+> +               reg = <0x11003000 0x400>;
+> +               reg-shift = <2>;
+> +               interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>;
+> +               clocks = <&uart_clk>;
+> +               status = "disabled";
+> +       };
+> +
+> +       uart2: serial@11004000 {
+> +               compatible = "mediatek,mt6592-uart", "mediatek,mt6577-uart";
+> +               reg = <0x11004000 0x400>;
+> +               reg-shift = <2>;
+> +               interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>;
+> +               clocks = <&uart_clk>;
+> +               status = "disabled";
+> +       };
+> +
+> +       uart3: serial@11005000 {
+> +               compatible = "mediatek,mt6592-uart", "mediatek,mt6577-uart";
+> +               reg = <0x11005000 0x400>;
+> +               reg-shift = <2>;
+> +               interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>;
+> +               clocks = <&uart_clk>;
+> +               status = "disabled";
+> +       };
+> +};
+> diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
+> index f2acf07..88e4626 100644
+> --- a/arch/arm/mach-mediatek/mediatek.c
+> +++ b/arch/arm/mach-mediatek/mediatek.c
+> @@ -19,6 +19,7 @@
+>
+>  static const char * const mediatek_board_dt_compat[] = {
+>         "mediatek,mt6589",
+> +       "mediatek,mt6592",
+>         NULL,
+>  };
+>
+> --
+> 1.9.1
+>
 
 
+
+-- 
+motzblog.wordpress.com
