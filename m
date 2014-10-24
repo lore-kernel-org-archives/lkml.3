@@ -1,528 +1,574 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133AbaJXIfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 04:35:13 -0400
-Received: from regular1.263xmail.com ([211.150.99.133]:53106 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755934AbaJXIfD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 04:35:03 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-FST-TO: zhengsq@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <33a9d634e045d8a7081354c43c4d6de4>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <544A0F3C.8020609@rock-chips.com>
-Date: Fri, 24 Oct 2014 16:35:08 +0800
-From: Caesar Wang <caesar.wang@rock-chips.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1756049AbaJXIgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 04:36:25 -0400
+Received: from mail-bn1bon0080.outbound.protection.outlook.com ([157.56.111.80]:60889
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755743AbaJXIZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 04:25:21 -0400
+From: Ley Foon Tan <lftan@altera.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>,
+        <lftan.linux@gmail.com>, <cltang@codesourcery.com>
+Subject: [PATCH v5 09/29] nios2: Page table management
+Date: Fri, 24 Oct 2014 16:24:11 +0800
+Message-ID: <1414139071-3818-10-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1414139071-3818-1-git-send-email-lftan@altera.com>
+References: <1414139071-3818-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
-        zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
-        cjf@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH v13 1/5] thermal: rockchip: add driver for thermal
-References: <1414057207-1576-1-git-send-email-caesar.wang@rock-chips.com> <1414057207-1576-2-git-send-email-caesar.wang@rock-chips.com> <20141024005546.GF9463@dtor-ws> <20141024082108.GB39338@dtor-ws>
-In-Reply-To: <20141024082108.GB39338@dtor-ws>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(22564002)(50466002)(48376002)(76176999)(50986999)(92726001)(86362001)(93916002)(2201001)(92566001)(97736003)(120916001)(99396003)(106466001)(102836001)(62966002)(77156001)(36756003)(50226001)(42186005)(85306004)(21056001)(4396001)(77096002)(104166001)(31966008)(87936001)(87286001)(88136002)(85852003)(89996001)(107046002)(64706001)(20776003)(46102003)(95666004)(229853001)(105596002)(47776003)(19580395003)(84676001)(44976005)(6806004)(68736004)(33646002)(19580405001)(76482002)(80022003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB222;H:sj-itexedge03.altera.priv.altera.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB222;
+X-Forefront-PRVS: 0374433C81
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=lftan@altera.com; 
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds support for page table management.
 
-在 2014/10/24 16:21, Dmitry Torokhov 写道:
-> On Thu, Oct 23, 2014 at 05:55:46PM -0700, Dmitry Torokhov wrote:
->> Hi Caesar,
->>
->> On Thu, Oct 23, 2014 at 05:40:03PM +0800, Caesar Wang wrote:
->>> Thermal is TS-ADC Controller module supports
->>> user-defined mode and automatic mode.
->>>
->>> User-defined mode refers,TSADC all the control signals entirely by
->>> software writing to register for direct control.
->>>
->>> Automaic mode refers to the module automatically poll TSADC output,
->>> and the results were checked.If you find that the temperature High
->>> in a period of time,an interrupt is generated to the processor
->>> down-measures taken;If the temperature over a period of time High,
->>> the resulting TSHUT gave CRU module,let it reset the entire chip,
->>> or via GPIO give PMIC.
->>>
->>> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
->>> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
->>> ---
->>>   drivers/thermal/Kconfig            |   9 +
->>>   drivers/thermal/Makefile           |   1 +
->>>   drivers/thermal/rockchip_thermal.c | 693 +++++++++++++++++++++++++++++++++++++
->>>   3 files changed, 703 insertions(+)
->>>   create mode 100644 drivers/thermal/rockchip_thermal.c
->>>
->>> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
->>> index ef5587f..5efcf73 100644
->>> --- a/drivers/thermal/Kconfig
->>> +++ b/drivers/thermal/Kconfig
->>> @@ -133,6 +133,15 @@ config SPEAR_THERMAL
->>>   	  Enable this to plug the SPEAr thermal sensor driver into the Linux
->>>   	  thermal framework.
->>>   
->>> +config ROCKCHIP_THERMAL
->>> +	tristate "Rockchip thermal driver"
->>> +	depends on ARCH_ROCKCHIP
->>> +	help
->>> +	  Rockchip thermal driver provides support for Temperature sensor
->>> +	  ADC (TS-ADC) found on Rockchip SoCs. It supports one critical
->>> +	  trip point. Cpufreq is used as the cooling device and will throttle
->>> +	  CPUs when the Temperature crosses the passive trip point.
->>> +
->>>   config RCAR_THERMAL
->>>   	tristate "Renesas R-Car thermal driver"
->>>   	depends on ARCH_SHMOBILE || COMPILE_TEST
->>> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
->>> index 31e232f..21da0a8 100644
->>> --- a/drivers/thermal/Makefile
->>> +++ b/drivers/thermal/Makefile
->>> @@ -19,6 +19,7 @@ thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
->>>   
->>>   # platform thermal drivers
->>>   obj-$(CONFIG_SPEAR_THERMAL)	+= spear_thermal.o
->>> +obj-$(CONFIG_ROCKCHIP_THERMAL)	+= rockchip_thermal.o
->>>   obj-$(CONFIG_RCAR_THERMAL)	+= rcar_thermal.o
->>>   obj-$(CONFIG_KIRKWOOD_THERMAL)  += kirkwood_thermal.o
->>>   obj-y				+= samsung/
->>> diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
->>> new file mode 100644
->>> index 0000000..6705981
->>> --- /dev/null
->>> +++ b/drivers/thermal/rockchip_thermal.c
->>> @@ -0,0 +1,693 @@
->>> +/*
->>> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
->>> + *
->>> + * This program is free software; you can redistribute it and/or modify it
->>> + * under the terms and conditions of the GNU General Public License,
->>> + * version 2, as published by the Free Software Foundation.
->>> + *
->>> + * This program is distributed in the hope it will be useful, but WITHOUT
->>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
->>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
->>> + * more details.
->>> + */
->>> +
->>> +#include <linux/clk.h>
->>> +#include <linux/cpu_cooling.h>
->>> +#include <linux/interrupt.h>
->>> +#include <linux/io.h>
->>> +#include <linux/module.h>
->>> +#include <linux/of.h>
->>> +#include <linux/of_address.h>
->>> +#include <linux/of_irq.h>
->>> +#include <linux/platform_device.h>
->>> +#include <linux/thermal.h>
->>> +
->>> +/**
->>> + * If the temperature over a period of time High,
->>> + * the resulting TSHUT gave CRU module,let it reset the entire chip,
->>> + * or via GPIO give PMIC.
->>> + */
->>> +enum tshut_mode {
->>> +	TSHUT_MODE_CRU = 0,
->>> +	TSHUT_MODE_GPIO,
->>> +};
->>> +
->>> +/**
->>> + * the system Temperature Sensors tshut(tshut) polarity
->>> + * the bit 8 is tshut polarity.
->>> + * 0: low active, 1: high active
->>> + */
->>> +enum tshut_polarity {
->>> +	TSHUT_LOW_ACTIVE = 0,
->>> +	TSHUT_HIGH_ACTIVE,
->>> +};
->>> +
->>> +/**
->>> + * The system has three Temperature Sensors.  channel 0 is reserved,
->>> + * channel 1 is for CPU, and channel 2 is for GPU.
->>> + */
->>> +enum sensor_id {
->>> +	SENSOR_CPU = 1,
->>> +	SENSOR_GPU,
->>> +};
->>> +
->>> +
->>> +struct rockchip_tsadc_chip {
->>> +	long hw_shut_temp;
->>> +	enum tshut_mode tshut_mode;
->>> +	enum tshut_polarity tshut_polarity;
->>> +
->>> +	/* Chip-wide methods */
->>> +	void (*initialize)(void __iomem *reg, enum tshut_polarity p);
->>> +	void (*irq_ack)(void __iomem *reg);
->>> +
->>> +	/* Per-sensor methods */
->>> +	int (*get_temp)(int chn, void __iomem *reg, long *temp);
->>> +	void (*set_alarm_temp)(int chn, void __iomem *reg, long temp);
->>> +	void (*set_tshut_temp)(int chn, void __iomem *reg, long temp);
->>> +	void (*set_tshut_mode)(int chn, void __iomem *reg, enum tshut_mode m);
->>> +	void (*control)(int chn, void __iomem *reg, bool on);
->>> +};
->>> +
->>> +struct rockchip_thermal_sensor {
->>> +	struct rockchip_thermal_data *thermal;
->>> +	struct thermal_zone_device *tzd;
->>> +	enum sensor_id id;
->>> +};
->>> +
->>> +#define NUM_SENSORS	2 /* Ignore unused sensor 0 */
->>> +
->>> +struct rockchip_thermal_data {
->>> +	const struct rockchip_tsadc_chip *chip;
->>> +	struct platform_device *pdev;
->>> +
->>> +	struct rockchip_thermal_sensor sensors[NUM_SENSORS];
->>> +
->>> +	struct thermal_cooling_device *cdev;
->>> +
->>> +	struct clk *clk;
->>> +	struct clk *pclk;
->>> +
->>> +	void __iomem *regs;
->>> +
->>> +	long hw_shut_temp;
->>> +	enum tshut_mode tshut_mode;
->>> +	enum tshut_polarity tshut_polarity;
->>> +};
->>> +
->>> +/* TSADC V2 Sensor info define: */
->>> +#define TSADCV2_AUTO_CON			0x04
->>> +#define TSADCV2_INT_EN				0x08
->>> +#define TSADCV2_INT_PD				0x0c
->>> +#define TSADCV2_DATA(chn)			(0x20 + (chn) * 0x04)
->>> +#define TSADCV2_COMP_INT(chn)		        (0x30 + (chn) * 0x04)
->>> +#define TSADCV2_COMP_SHUT(chn)		        (0x40 + (chn) * 0x04)
->>> +#define TSADCV2_HIGHT_INT_DEBOUNCE		0x60
->>> +#define TSADCV2_HIGHT_TSHUT_DEBOUNCE		0x64
->>> +#define TSADCV2_AUTO_PERIOD			0x68
->>> +#define TSADCV2_AUTO_PERIOD_HT			0x6c
->>> +
->>> +#define TSADCV2_AUTO_EN				BIT(0)
->>> +#define TSADCV2_AUTO_DISABLE			~BIT(0)
->>> +#define TSADCV2_AUTO_SRC_EN(chn)		BIT(4 + (chn))
->>> +#define TSADCV2_AUTO_TSHUT_POLARITY_HIGH	BIT(8)
->>> +#define TSADCV2_AUTO_TSHUT_POLARITY_LOW		~BIT(8)
->>> +
->>> +#define TSADCV2_INT_SRC_EN(chn)			BIT(chn)
->>> +#define TSADCV2_SHUT_2GPIO_SRC_EN(chn)		BIT(4 + (chn))
->>> +#define TSADCV2_SHUT_2CRU_SRC_EN(chn)		BIT(8 + (chn))
->>> +
->>> +#define TSADCV2_INT_PD_CLEAR			~BIT(8)
->>> +
->>> +#define TSADCV2_DATA_MASK			0xfff
->>> +#define TSADCV2_HIGHT_INT_DEBOUNCE_TIME		0x0a
->>> +#define TSADCV2_HIGHT_TSHUT_DEBOUNCE_TIME	0x0a
->>> +#define TSADCV2_AUTO_PERIOD_TIME		0x03e8
->>> +#define TSADCV2_AUTO_PERIOD_HT_TIME		0x64
->>> +
->>> +struct tsadc_table {
->>> +	unsigned long code;
->>> +	long temp;
->>> +};
->>> +
->>> +static const struct tsadc_table v2_code_table[] = {
->>> +	{TSADCV2_DATA_MASK, -40000},
->>> +	{3800, -40000},
->>> +	{3792, -35000},
->>> +	{3783, -30000},
->>> +	{3774, -25000},
->>> +	{3765, -20000},
->>> +	{3756, -15000},
->>> +	{3747, -10000},
->>> +	{3737, -5000},
->>> +	{3728, 0},
->>> +	{3718, 5000},
->>> +	{3708, 10000},
->>> +	{3698, 15000},
->>> +	{3688, 20000},
->>> +	{3678, 25000},
->>> +	{3667, 30000},
->>> +	{3656, 35000},
->>> +	{3645, 40000},
->>> +	{3634, 45000},
->>> +	{3623, 50000},
->>> +	{3611, 55000},
->>> +	{3600, 60000},
->>> +	{3588, 65000},
->>> +	{3575, 70000},
->>> +	{3563, 75000},
->>> +	{3550, 80000},
->>> +	{3537, 85000},
->>> +	{3524, 90000},
->>> +	{3510, 95000},
->>> +	{3496, 100000},
->>> +	{3482, 105000},
->>> +	{3467, 110000},
->>> +	{3452, 115000},
->>> +	{3437, 120000},
->>> +	{3421, 125000},
->>> +	{0, 125000},
->>> +};
->>> +
->>> +static u32 rk_tsadcv2_temp_to_code(long temp)
->>> +{
->>> +	int high, low, mid;
->>> +
->>> +	low = 0;
->>> +	high = ARRAY_SIZE(v2_code_table) - 1;
->>> +	mid = (high + low) / 2;
->>> +
->>> +	if (temp < v2_code_table[low].temp || temp > v2_code_table[high].temp)
->>> +		return 0;
->>> +
->>> +	while (low <= high) {
->>> +		if (temp == v2_code_table[mid].temp)
->>> +			return v2_code_table[mid].code;
->>> +		else if (temp < v2_code_table[mid].temp)
->>> +			high = mid - 1;
->>> +		else
->>> +			low = mid + 1;
->>> +		mid = (low + high) / 2;
->>> +	}
->>> +
->>> +	return 0;
->>> +}
->>> +
->>> +static long rk_tsadcv2_code_to_temp(u32 code)
->>> +{
->>> +	int high, low, mid;
->>> +
->>> +	low = 0;
->>> +	high = ARRAY_SIZE(v2_code_table) - 1;
->>> +	mid = (high + low) / 2;
->>> +
->>> +	if (code > v2_code_table[low].code || code < v2_code_table[high].code)
->>> +		return 125000; /* No code available, return max temperature */
->>> +
->>> +	while (low <= high) {
->>> +		if (code >= v2_code_table[mid].code && code <
->>> +		    v2_code_table[mid - 1].code)
->>> +			return v2_code_table[mid].temp;
->>> +		else if (code < v2_code_table[mid].code)
->>> +			low = mid + 1;
->>> +		else
->>> +			high = mid - 1;
->>> +		mid = (low + high) / 2;
->>> +	}
->>> +
->>> +	return 125000;
->>> +}
->>> +
->>> +/**
->>> + * rk_tsadcv2_initialize - initialize TASDC Controller
->>> + * (1) Set TSADCV2_AUTO_PERIOD, configure the interleave between
->>> + * every two accessing of TSADC in normal operation.
->>> + * (2) Set TSADCV2_AUTO_PERIOD_HT, configure the interleave between
->>> + * every two accessing of TSADC after the temperature is higher
->>> + * than COM_SHUT or COM_INT.
->>> + * (3) Set TSADCV2_HIGH_INT_DEBOUNCE and TSADC_HIGHT_TSHUT_DEBOUNCE,
->>> + * if the temperature is higher than COMP_INT or COMP_SHUT for
->>> + * "debounce" times, TSADC controller will generate interrupt or TSHUT.
->>> + */
->>> +static void rk_tsadcv2_initialize(void __iomem *regs,
->>> +				  enum tshut_polarity tshut_polarity)
->>> +{
->>> +	if (tshut_polarity == TSHUT_HIGH_ACTIVE)
->>> +		writel_relaxed(0 | (TSADCV2_AUTO_TSHUT_POLARITY_HIGH),
->>> +			       regs + TSADCV2_AUTO_CON);
->>> +	else
->>> +		writel_relaxed(0 | (TSADCV2_AUTO_TSHUT_POLARITY_LOW),
->>> +			       regs + TSADCV2_AUTO_CON);
->>> +
->>> +	writel_relaxed(TSADCV2_AUTO_PERIOD_TIME,
->>> +		       regs + TSADCV2_AUTO_PERIOD);
->>> +	writel_relaxed(TSADCV2_AUTO_PERIOD_HT_TIME,
->>> +		       regs + TSADCV2_AUTO_PERIOD_HT);
->>> +
->>> +	writel_relaxed(TSADCV2_HIGHT_INT_DEBOUNCE_TIME,
->>> +		       regs + TSADCV2_HIGHT_INT_DEBOUNCE);
->>> +	writel_relaxed(TSADCV2_HIGHT_TSHUT_DEBOUNCE_TIME,
->>> +		       regs + TSADCV2_HIGHT_TSHUT_DEBOUNCE);
->> SO I do not think we can keep these static, since polling frequency
->> depends on base clock. On my system given values result in thermal alarm
->> triggering after as long as 10 seconds after temperature crosses the
->> alarm setting. We need to adjust values like:
->>
->>
->> #define TSADCV2_AUTO_PERIOD_TIME 250  /* msec */
->> #define TSADCV2_AUTO_PERIOD_HT_TIME 50  /* msec */
->> #define TSADCV2_HIGHT_INT_DEBOUNCE_COUNT 4
->> #define TSADCV2_HIGHT_TSHUT_DEBOUNCE_COUNT 4
->>
->> whih will give us 1 sec and 200 msec reaction times and we shoudl set
->> them as this:
->>
->> 	val = TSADCV2_AUTO_PERIOD_TIME * clk_rate / 1000;
->> 	writel_relaxed(val, regs + TSADCV2_AUTO_PERIOD);
->>
->> etc.
->>
->>> +}
->>> +
->>> +static void rk_tsadcv2_irq_ack(void __iomem *regs)
->>> +{
->>> +	u32 val;
->>> +
->>> +	val = readl_relaxed(regs + TSADCV2_INT_PD);
->>> +	writel_relaxed(val & TSADCV2_INT_PD_CLEAR, regs + TSADCV2_INT_PD);
->>> +}
->>> +
->>> +static int rk_tsadcv2_get_temp(int chn, void __iomem *regs, long *temp)
->>> +{
->>> +	u32 val;
->>> +
->>> +	/* the A/D value of the channel last conversion need some time */
->>> +	val = readl_relaxed(regs + TSADCV2_DATA(chn));
->>> +	if (val == 0)
->>> +		return -EAGAIN;
->>> +
->>> +	*temp = rk_tsadcv2_code_to_temp(val);
->>> +
->>> +	return 0;
->>> +}
->>> +
->>> +static void rk_tsadcv2_alarm_temp(int chn, void __iomem *regs, long temp)
->>> +{
->>> +	u32 alarm_value, int_en;
->>> +
->>> +	alarm_value = rk_tsadcv2_temp_to_code(temp);
->>> +	writel_relaxed(alarm_value & TSADCV2_DATA_MASK,
->>> +		       regs + TSADCV2_COMP_INT(chn));
->>> +
->>> +	int_en = readl_relaxed(regs + TSADCV2_INT_EN);
->>> +	int_en |= TSADCV2_INT_SRC_EN(chn);
->>> +	writel_relaxed(int_en, regs + TSADCV2_INT_EN);
->>> +}
->>> +
->>> +static void rk_tsadcv2_tshut_temp(int chn, void __iomem *regs, long temp)
->>> +{
->>> +	u32 tshut_value;
->>> +
->>> +	tshut_value = rk_tsadcv2_temp_to_code(temp);
->>> +	writel_relaxed(tshut_value, regs + TSADCV2_COMP_SHUT(chn));
->>> +}
->>> +
->>> +static void rk_tsadcv2_tshut_mode(int chn, void __iomem *regs,
->>> +				  enum tshut_mode mode)
->>> +{
->>> +	u32 val;
->>> +
->>> +	val = readl_relaxed(regs + TSADCV2_INT_EN);
->>> +	if (mode == TSHUT_MODE_GPIO) {
->>> +		val &= ~TSADCV2_SHUT_2CRU_SRC_EN(chn);
->>> +		val |= TSADCV2_SHUT_2GPIO_SRC_EN(chn);
->>> +	} else {
->>> +		val &= ~TSADCV2_SHUT_2GPIO_SRC_EN(chn);
->>> +		val |= TSADCV2_SHUT_2CRU_SRC_EN(chn);
->>> +	}
->>> +
->>> +	writel_relaxed(val, regs + TSADCV2_INT_EN);
->>> +}
->>> +
->>> +static void rk_tsadcv2_control(int chn, void __iomem *regs, bool enable)
->>> +{
->>> +	u32 val;
->>> +
->>> +	val = readl_relaxed(regs + TSADCV2_AUTO_CON);
->>> +	if (enable)
->>> +		val |= TSADCV2_AUTO_EN | TSADCV2_AUTO_SRC_EN(chn);
->> If I read the spec correctly this TSADCV2_AUTO_SRC_EN controls TSHUT
->> functionality, not measurements, right? If so you need to toggle these
->> bits in rk_tsadcv2_tshut_temp, and set TSADCV2_AUTO_EN separately.
->>
->>> +	else
->>> +		val &= ~TSADCV2_AUTO_EN;
->>> +
->>> +	writel_relaxed(val, regs + TSADCV2_AUTO_CON);
->>> +}
->>> +
->>> +static const struct rockchip_tsadc_chip rk3288_tsadc_data = {
->>> +	.tshut_mode = TSHUT_MODE_GPIO, /* default TSHUT via GPIO give PMIC */
->>> +	.tshut_polarity = TSHUT_LOW_ACTIVE, /* default TSHUT LOW ACTIVE */
->>> +	.hw_shut_temp = 120000,
->>> +
->>> +	.initialize = rk_tsadcv2_initialize,
->>> +	.irq_ack = rk_tsadcv2_irq_ack,
->>> +	.get_temp = rk_tsadcv2_get_temp,
->>> +	.set_alarm_temp = rk_tsadcv2_alarm_temp,
->>> +	.set_tshut_temp = rk_tsadcv2_tshut_temp,
->>> +	.set_tshut_mode = rk_tsadcv2_tshut_mode,
->>> +	.control = rk_tsadcv2_control,
->>> +};
->>> +
->>> +static const struct of_device_id of_rockchip_thermal_match[] = {
->>> +	{
->>> +		.compatible = "rockchip,rk3288-tsadc",
->>> +		.data = (void *)&rk3288_tsadc_data,
->>> +	},
->>> +	{ /* end */ },
->>> +};
->>> +MODULE_DEVICE_TABLE(of, of_rockchip_thermal_match);
->>> +
->>> +static void
->>> +rockchip_thermal_toggle_sensor(struct rockchip_thermal_sensor *sensor, bool on)
->>> +{
->>> +	struct thermal_zone_device *tzd = sensor->tzd;
->>> +
->>> +	tzd->ops->set_mode(tzd,
->>> +		on ? THERMAL_DEVICE_ENABLED : THERMAL_DEVICE_DISABLED);
->>> +}
->>> +
->>> +static irqreturn_t rockchip_thermal_alarm_irq_thread(int irq, void *dev)
->>> +{
->>> +	struct rockchip_thermal_data *thermal = dev;
->>> +	int i;
->>> +
->>> +	dev_dbg(&thermal->pdev->dev, "thermal alarm\n");
->>> +
->>> +	thermal->chip->irq_ack(thermal->regs);
->>> +
->>> +	for (i = 0; i < ARRAY_SIZE(thermal->sensors); i++)
->>> +		thermal_zone_device_update(thermal->sensors[i].tzd);
->>> +
->>> +	return IRQ_HANDLED;
->>> +}
->>> +
->>> +static int rockchip_thermal_set_trips(void *_sensor, long low, long high)
->>> +{
->>> +	struct rockchip_thermal_sensor *sensor = _sensor;
->>> +	struct rockchip_thermal_data *thermal = sensor->thermal;
->>> +	const struct rockchip_tsadc_chip *tsadc = thermal->chip;
->>> +
->>> +	dev_dbg(&thermal->pdev->dev, "%s: sensor %d: low: %ld, high %ld\n",
->>> +		__func__, sensor->id, low, high);
->>> +
->>> +	tsadc->set_alarm_temp(sensor->id, thermal->regs, high-5000);
-> Forgot to mention - why do we reduce alarm temperature down 5 C from the
-> trip point? I think we sample often enough to set the trigger exactly at
-> trip point.
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ arch/nios2/include/asm/pgalloc.h      |  86 ++++++++++
+ arch/nios2/include/asm/pgtable-bits.h |  35 ++++
+ arch/nios2/include/asm/pgtable.h      | 305 ++++++++++++++++++++++++++++++++++
+ arch/nios2/mm/pgtable.c               |  73 ++++++++
+ 4 files changed, 499 insertions(+)
+ create mode 100644 arch/nios2/include/asm/pgalloc.h
+ create mode 100644 arch/nios2/include/asm/pgtable-bits.h
+ create mode 100644 arch/nios2/include/asm/pgtable.h
+ create mode 100644 arch/nios2/mm/pgtable.c
 
-Fixed.
-
-> Thanks.
->
-
+diff --git a/arch/nios2/include/asm/pgalloc.h b/arch/nios2/include/asm/pgalloc.h
+new file mode 100644
+index 0000000..6e2985e
+--- /dev/null
++++ b/arch/nios2/include/asm/pgalloc.h
+@@ -0,0 +1,86 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 1994 - 2001, 2003 by Ralf Baechle
++ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
++ */
++
++#ifndef _ASM_NIOS2_PGALLOC_H
++#define _ASM_NIOS2_PGALLOC_H
++
++#include <linux/mm.h>
++
++static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
++	pte_t *pte)
++{
++	set_pmd(pmd, __pmd((unsigned long)pte));
++}
++
++static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
++	pgtable_t pte)
++{
++	set_pmd(pmd, __pmd((unsigned long)page_address(pte)));
++}
++#define pmd_pgtable(pmd) pmd_page(pmd)
++
++/*
++ * Initialize a new pmd table with invalid pointers.
++ */
++extern void pmd_init(unsigned long page, unsigned long pagetable);
++
++extern pgd_t *pgd_alloc(struct mm_struct *mm);
++
++static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
++{
++	free_pages((unsigned long)pgd, PGD_ORDER);
++}
++
++static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
++	unsigned long address)
++{
++	pte_t *pte;
++
++	pte = (pte_t *) __get_free_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO,
++					PTE_ORDER);
++
++	return pte;
++}
++
++static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
++	unsigned long address)
++{
++	struct page *pte;
++
++	pte = alloc_pages(GFP_KERNEL | __GFP_REPEAT, PTE_ORDER);
++	if (pte) {
++		if (!pgtable_page_ctor(pte)) {
++			__free_page(pte);
++			return NULL;
++		}
++		clear_highpage(pte);
++	}
++	return pte;
++}
++
++static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
++{
++	free_pages((unsigned long)pte, PTE_ORDER);
++}
++
++static inline void pte_free(struct mm_struct *mm, struct page *pte)
++{
++	pgtable_page_dtor(pte);
++	__free_pages(pte, PTE_ORDER);
++}
++
++#define __pte_free_tlb(tlb, pte, addr)				\
++	do {							\
++		pgtable_page_dtor(pte);				\
++		tlb_remove_page((tlb), (pte));			\
++	} while (0)
++
++#define check_pgt_cache()	do { } while (0)
++
++#endif /* _ASM_NIOS2_PGALLOC_H */
+diff --git a/arch/nios2/include/asm/pgtable-bits.h b/arch/nios2/include/asm/pgtable-bits.h
+new file mode 100644
+index 0000000..ce9e706
+--- /dev/null
++++ b/arch/nios2/include/asm/pgtable-bits.h
+@@ -0,0 +1,35 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_PGTABLE_BITS_H
++#define _ASM_NIOS2_PGTABLE_BITS_H
++
++/*
++ * These are actual hardware defined protection bits in the tlbacc register
++ * which looks like this:
++ *
++ * 31 30 ... 26 25 24 23 22 21 20 19 18 ...  1  0
++ * ignored........  C  R  W  X  G PFN............
++ */
++#define _PAGE_GLOBAL	(1<<20)
++#define _PAGE_EXEC	(1<<21)
++#define _PAGE_WRITE	(1<<22)
++#define _PAGE_READ	(1<<23)
++#define _PAGE_CACHED	(1<<24)	/* C: data access cacheable */
++
++/*
++ * Software defined bits. They are ignored by the hardware and always read back
++ * as zero, but can be written as non-zero.
++ */
++#define _PAGE_PRESENT	(1<<25)	/* PTE contains a translation */
++#define _PAGE_ACCESSED	(1<<26)	/* page referenced */
++#define _PAGE_DIRTY	(1<<27)	/* dirty page */
++#define _PAGE_FILE	(1<<28)	/* PTE used for file mapping or swap */
++
++#endif /* _ASM_NIOS2_PGTABLE_BITS_H */
+diff --git a/arch/nios2/include/asm/pgtable.h b/arch/nios2/include/asm/pgtable.h
+new file mode 100644
+index 0000000..ec85481
+--- /dev/null
++++ b/arch/nios2/include/asm/pgtable.h
+@@ -0,0 +1,305 @@
++/*
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *
++ * Based on asm/pgtable-32.h from mips which is:
++ *
++ * Copyright (C) 1994, 95, 96, 97, 98, 99, 2000, 2003 Ralf Baechle
++ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_PGTABLE_H
++#define _ASM_NIOS2_PGTABLE_H
++
++#include <linux/io.h>
++#include <linux/bug.h>
++#include <asm/page.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
++
++#include <asm/pgtable-bits.h>
++#include <asm-generic/pgtable-nopmd.h>
++
++#define FIRST_USER_ADDRESS	0
++
++#define VMALLOC_START		CONFIG_NIOS2_KERNEL_MMU_REGION_BASE
++#define VMALLOC_END		(CONFIG_NIOS2_KERNEL_REGION_BASE - 1)
++
++struct mm_struct;
++
++/* Helper macro */
++#define MKP(x, w, r) __pgprot(_PAGE_PRESENT | _PAGE_CACHED |		\
++				((x) ? _PAGE_EXEC : 0) |		\
++				((r) ? _PAGE_READ : 0) |		\
++				((w) ? _PAGE_WRITE : 0))
++/*
++ * These are the macros that generic kernel code needs
++ * (to populate protection_map[])
++ */
++
++/* Remove W bit on private pages for COW support */
++#define __P000	MKP(0, 0, 0)
++#define __P001	MKP(0, 0, 1)
++#define __P010	MKP(0, 0, 0)	/* COW */
++#define __P011	MKP(0, 0, 1)	/* COW */
++#define __P100	MKP(1, 0, 0)
++#define __P101	MKP(1, 0, 1)
++#define __P110	MKP(1, 0, 0)	/* COW */
++#define __P111	MKP(1, 0, 1)	/* COW */
++
++/* Shared pages can have exact HW mapping */
++#define __S000	MKP(0, 0, 0)
++#define __S001	MKP(0, 0, 1)
++#define __S010	MKP(0, 1, 0)
++#define __S011	MKP(0, 1, 1)
++#define __S100	MKP(1, 0, 0)
++#define __S101	MKP(1, 0, 1)
++#define __S110	MKP(1, 1, 0)
++#define __S111	MKP(1, 1, 1)
++
++/* Used all over the kernel */
++#define PAGE_KERNEL __pgprot(_PAGE_PRESENT | _PAGE_CACHED | _PAGE_READ | \
++			     _PAGE_WRITE | _PAGE_EXEC | _PAGE_GLOBAL)
++
++#define PAGE_COPY MKP(0, 0, 1)
++
++#define PGD_ORDER	0
++#define PTE_ORDER	0
++
++#define PTRS_PER_PGD	((PAGE_SIZE << PGD_ORDER) / sizeof(pgd_t))
++#define PTRS_PER_PTE	((PAGE_SIZE << PTE_ORDER) / sizeof(pte_t))
++
++#define USER_PTRS_PER_PGD	\
++	(CONFIG_NIOS2_KERNEL_MMU_REGION_BASE / PGDIR_SIZE)
++
++#define PGDIR_SHIFT	22
++#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
++#define PGDIR_MASK	(~(PGDIR_SIZE-1))
++
++/*
++ * ZERO_PAGE is a global shared page that is always zero: used
++ * for zero-mapped memory areas etc..
++ */
++extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
++#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
++
++extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
++extern pte_t invalid_pte_table[PAGE_SIZE/sizeof(pte_t)];
++
++/*
++ * (pmds are folded into puds so this doesn't get actually called,
++ * but the define is needed for a generic inline function.)
++ */
++static inline void set_pmd(pmd_t *pmdptr, pmd_t pmdval)
++{
++	pmdptr->pud.pgd.pgd = pmdval.pud.pgd.pgd;
++}
++
++/* to find an entry in a page-table-directory */
++#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
++#define pgd_offset(mm, addr)	((mm)->pgd + pgd_index(addr))
++
++static inline int pte_write(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_WRITE; }
++static inline int pte_dirty(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_DIRTY; }
++static inline int pte_young(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_ACCESSED; }
++static inline int pte_file(pte_t pte)		\
++	{ return pte_val(pte) & _PAGE_FILE; }
++static inline int pte_special(pte_t pte)	{ return 0; }
++
++#define pgprot_noncached pgprot_noncached
++
++static inline pgprot_t pgprot_noncached(pgprot_t _prot)
++{
++	unsigned long prot = pgprot_val(_prot);
++
++	prot &= ~_PAGE_CACHED;
++
++	return __pgprot(prot);
++}
++
++static inline int pte_none(pte_t pte)
++{
++	return !(pte_val(pte) & ~(_PAGE_GLOBAL|0xf));
++}
++
++static inline int pte_present(pte_t pte)	\
++	{ return pte_val(pte) & _PAGE_PRESENT; }
++
++/*
++ * The following only work if pte_present() is true.
++ * Undefined behaviour if not..
++ */
++static inline pte_t pte_wrprotect(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_WRITE;
++	return pte;
++}
++
++static inline pte_t pte_mkclean(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_DIRTY;
++	return pte;
++}
++
++static inline pte_t pte_mkold(pte_t pte)
++{
++	pte_val(pte) &= ~_PAGE_ACCESSED;
++	return pte;
++}
++
++static inline pte_t pte_mkwrite(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_WRITE;
++	return pte;
++}
++
++static inline pte_t pte_mkdirty(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_DIRTY;
++	return pte;
++}
++
++static inline pte_t pte_mkspecial(pte_t pte)	{ return pte; }
++
++static inline pte_t pte_mkyoung(pte_t pte)
++{
++	pte_val(pte) |= _PAGE_ACCESSED;
++	return pte;
++}
++
++static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
++{
++	const unsigned long mask = _PAGE_READ | _PAGE_WRITE | _PAGE_EXEC;
++	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
++	return pte;
++}
++
++static inline int pmd_present(pmd_t pmd)
++{
++	return (pmd_val(pmd) != (unsigned long) invalid_pte_table)
++			&& (pmd_val(pmd) != 0UL);
++}
++
++static inline void pmd_clear(pmd_t *pmdp)
++{
++	pmd_val(*pmdp) = (unsigned long) invalid_pte_table;
++}
++
++#define pte_pfn(pte)		(pte_val(pte) & 0xfffff)
++#define pfn_pte(pfn, prot)	(__pte(pfn | pgprot_val(prot)))
++#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
++
++/*
++ * Store a linux PTE into the linux page table.
++ */
++static inline void set_pte(pte_t *ptep, pte_t pteval)
++{
++	*ptep = pteval;
++}
++
++static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
++			      pte_t *ptep, pte_t pteval)
++{
++	unsigned long paddr = page_to_virt(pte_page(pteval));
++	flush_dcache_range(paddr, paddr + PAGE_SIZE);
++	set_pte(ptep, pteval);
++}
++
++static inline int pmd_none(pmd_t pmd)
++{
++	return (pmd_val(pmd) ==
++		(unsigned long) invalid_pte_table) || (pmd_val(pmd) == 0UL);
++}
++
++#define pmd_bad(pmd)	(pmd_val(pmd) & ~PAGE_MASK)
++
++static inline void pte_clear(struct mm_struct *mm,
++				unsigned long addr, pte_t *ptep)
++{
++	pte_t null;
++
++	pte_val(null) = (addr >> PAGE_SHIFT) & 0xf;
++
++	set_pte_at(mm, addr, ptep, null);
++	flush_tlb_one(addr);
++}
++
++/*
++ * Conversion functions: convert a page and protection to a page entry,
++ * and a page entry and page directory to the page they refer to.
++ */
++#define mk_pte(page, prot)	(pfn_pte(page_to_pfn(page), prot))
++
++#define pte_unmap(pte)	do { } while (0)
++
++/*
++ * Conversion functions: convert a page and protection to a page entry,
++ * and a page entry and page directory to the page they refer to.
++ */
++#define pmd_phys(pmd)		virt_to_phys((void *)pmd_val(pmd))
++#define pmd_page(pmd)		(pfn_to_page(pmd_phys(pmd) >> PAGE_SHIFT))
++#define pmd_page_vaddr(pmd)	pmd_val(pmd)
++
++#define pte_offset_map(dir, addr)			\
++	((pte_t *) page_address(pmd_page(*dir)) +	\
++	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
++
++/* to find an entry in a kernel page-table-directory */
++#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
++
++/* Get the address to the PTE for a vaddr in specfic directory */
++#define pte_offset_kernel(dir, addr)			\
++	((pte_t *) pmd_page_vaddr(*(dir)) +		\
++	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
++
++#define pte_ERROR(e) \
++	pr_err("%s:%d: bad pte %08lx.\n", \
++		__FILE__, __LINE__, pte_val(e))
++#define pgd_ERROR(e) \
++	pr_err("%s:%d: bad pgd %08lx.\n", \
++		__FILE__, __LINE__, pgd_val(e))
++
++/*
++ * Encode and decode a swap entry (must be !pte_none(pte) && !pte_present(pte)
++ * && !pte_file(pte)):
++ *
++ * 31 30 29 28 27 26 25 24 23 22 21 20 19 18 ...  1  0
++ *  0  0  0  0 type.  0  0  0  0  0  0 offset.........
++ *
++ * This gives us up to 2**2 = 4 swap files and 2**20 * 4K = 4G per swap file.
++ *
++ * Note that the offset field is always non-zero, thus !pte_none(pte) is always
++ * true.
++ */
++#define __swp_type(swp)		(((swp).val >> 26) & 0x3)
++#define __swp_offset(swp)	((swp).val & 0xfffff)
++#define __swp_entry(type, off)	((swp_entry_t) { (((type) & 0x3) << 26) \
++						 | ((off) & 0xfffff) })
++#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
++#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
++
++/* Encode and decode a nonlinear file mapping entry */
++#define PTE_FILE_MAX_BITS	25
++#define pte_to_pgoff(pte)	(pte_val(pte) & 0x1ffffff)
++#define pgoff_to_pte(off)	__pte(((off) & 0x1ffffff) | _PAGE_FILE)
++
++#define kern_addr_valid(addr)		(1)
++
++#include <asm-generic/pgtable.h>
++
++#define pgtable_cache_init()		do { } while (0)
++
++extern void __init paging_init(void);
++extern void __init mmu_init(void);
++
++extern void update_mmu_cache(struct vm_area_struct *vma,
++			     unsigned long address, pte_t *pte);
++
++#endif /* _ASM_NIOS2_PGTABLE_H */
+diff --git a/arch/nios2/mm/pgtable.c b/arch/nios2/mm/pgtable.c
+new file mode 100644
+index 0000000..21e865f
+--- /dev/null
++++ b/arch/nios2/mm/pgtable.c
+@@ -0,0 +1,73 @@
++/*
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/mm.h>
++#include <linux/sched.h>
++
++#include <asm/pgtable.h>
++#include <asm/cpuinfo.h>
++
++/* pteaddr:
++ *   ptbase | vpn* | zero
++ *   31-22  | 21-2 | 1-0
++ *
++ *   *vpn is preserved on double fault
++ *
++ * tlbacc:
++ *   IG   |*flags| pfn
++ *   31-25|24-20 | 19-0
++ *
++ *   *crwxg
++ *
++ * tlbmisc:
++ *   resv  |way   |rd | we|pid |dbl|bad|perm|d
++ *   31-24 |23-20 |19 | 20|17-4|3  |2  |1   |0
++ *
++ */
++
++/*
++ * Initialize a new pgd / pmd table with invalid pointers.
++ */
++static void pgd_init(pgd_t *pgd)
++{
++	unsigned long *p = (unsigned long *) pgd;
++	int i;
++
++	for (i = 0; i < USER_PTRS_PER_PGD; i += 8) {
++		p[i + 0] = (unsigned long) invalid_pte_table;
++		p[i + 1] = (unsigned long) invalid_pte_table;
++		p[i + 2] = (unsigned long) invalid_pte_table;
++		p[i + 3] = (unsigned long) invalid_pte_table;
++		p[i + 4] = (unsigned long) invalid_pte_table;
++		p[i + 5] = (unsigned long) invalid_pte_table;
++		p[i + 6] = (unsigned long) invalid_pte_table;
++		p[i + 7] = (unsigned long) invalid_pte_table;
++	}
++}
++
++pgd_t *pgd_alloc(struct mm_struct *mm)
++{
++	pgd_t *ret, *init;
++	ret = (pgd_t *) __get_free_pages(GFP_KERNEL, PGD_ORDER);
++	if (ret) {
++		init = pgd_offset(&init_mm, 0UL);
++		pgd_init(ret);
++		memcpy(ret + USER_PTRS_PER_PGD, init + USER_PTRS_PER_PGD,
++		       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
++	}
++
++	return ret;
++}
++
++void __init pagetable_init(void)
++{
++	/* Initialize the entire pgd.  */
++	pgd_init(swapper_pg_dir);
++	pgd_init(swapper_pg_dir + USER_PTRS_PER_PGD);
++}
 -- 
-Best regards,
-Caesar
-
+1.8.2.1
 
