@@ -1,145 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471AbaJXBlT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 21:41:19 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39854 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbaJXBlR (ORCPT
+	id S1752490AbaJXBrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 21:47:14 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:10918 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaJXBrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 21:41:17 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Josh Triplett <josh@joshtriplett.org>, Ingo Molnar <mingo@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net] bpf: split eBPF out of NET
-Date: Thu, 23 Oct 2014 18:41:08 -0700
-Message-Id: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 23 Oct 2014 21:47:13 -0400
+From: Wang Nan <wangnan0@huawei.com>
+To: <acme@kernel.org>, <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>
+Subject: [PATCH v3] perf tools: makes CPUINFO_PROC to array for different kernel version
+Date: Fri, 24 Oct 2014 09:45:26 +0800
+Message-ID: <1414115126-7479-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-introduce two configs:
-- hidden CONFIG_BPF to select eBPF interpreter that classic socket filters
-  depend on
-- visible CONFIG_BPF_SYSCALL (default off) that tracing and sockets can use
+After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
+/proc/cpuinfo replaces 'Processor' to 'model name'. This patch makes
+CPUINFO_PROC to an array and provides two choices for ARM, makes it
+compatible for different kernel version.
 
-that solves several problems:
-- tracing and others that wish to use eBPF don't need to depend on NET.
-  They can use BPF_SYSCALL to allow loading from userspace or select BPF
-  to use it directly from kernel in NET-less configs.
-- in 3.18 programs cannot be attached to events yet, so don't force it on
-- when the rest of eBPF infra is there in 3.19+, it's still useful to
-  switch it off to minimize kernel size
+v1 -> v2: minor changes as suggested by Namhyung Kim:
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+ - Doesn't pass @h and @evlist to __write_cpudesc;
+ - Coding style fix.
+
+v2 -> v3:
+  - Rebase:
+    git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
+ tools/perf/perf-sys.h    | 30 +++++++++++++++---------------
+ tools/perf/util/header.c | 27 +++++++++++++++++++++------
+ 2 files changed, 36 insertions(+), 21 deletions(-)
 
-bloat-o-meter on x64 shows:
-add/remove: 0/60 grow/shrink: 0/2 up/down: 0/-15601 (-15601)
-
-tested with many different config combinations. Hopefully didn't miss anything.
-
- init/Kconfig        |   14 ++++++++++++++
- kernel/Makefile     |    2 +-
- kernel/bpf/Makefile |    6 +++---
- kernel/bpf/core.c   |    9 +++++++++
- net/Kconfig         |    2 +-
- 5 files changed, 28 insertions(+), 5 deletions(-)
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 3ee28ae..340fd92 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1341,6 +1341,10 @@ config SYSCTL_ARCH_UNALIGN_ALLOW
- config HAVE_PCSPKR_PLATFORM
- 	bool
+diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
+index 937e432..a3b13d7 100644
+--- a/tools/perf/perf-sys.h
++++ b/tools/perf/perf-sys.h
+@@ -13,7 +13,7 @@
+ #define wmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
+ #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
+ #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+-#define CPUINFO_PROC	"model name"
++#define CPUINFO_PROC	{"model name"}
+ #ifndef __NR_perf_event_open
+ # define __NR_perf_event_open 336
+ #endif
+@@ -30,7 +30,7 @@
+ #define wmb()		asm volatile("sfence" ::: "memory")
+ #define rmb()		asm volatile("lfence" ::: "memory")
+ #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
+-#define CPUINFO_PROC	"model name"
++#define CPUINFO_PROC	{"model name"}
+ #ifndef __NR_perf_event_open
+ # define __NR_perf_event_open 298
+ #endif
+@@ -47,14 +47,14 @@
+ #define mb()		asm volatile ("sync" ::: "memory")
+ #define wmb()		asm volatile ("sync" ::: "memory")
+ #define rmb()		asm volatile ("sync" ::: "memory")
+-#define CPUINFO_PROC	"cpu"
++#define CPUINFO_PROC	{"cpu"}
+ #endif
  
-+# interpreter that classic socket filters depend on
-+config BPF
-+	boolean
-+
- menuconfig EXPERT
- 	bool "Configure standard kernel features (expert users)"
- 	# Unhide debug options, to make the on-by-default options visible
-@@ -1521,6 +1525,16 @@ config EVENTFD
+ #ifdef __s390__
+ #define mb()		asm volatile("bcr 15,0" ::: "memory")
+ #define wmb()		asm volatile("bcr 15,0" ::: "memory")
+ #define rmb()		asm volatile("bcr 15,0" ::: "memory")
+-#define CPUINFO_PROC	"vendor_id"
++#define CPUINFO_PROC	{"vendor_id"}
+ #endif
  
- 	  If unsure, say Y.
+ #ifdef __sh__
+@@ -67,14 +67,14 @@
+ # define wmb()		asm volatile("" ::: "memory")
+ # define rmb()		asm volatile("" ::: "memory")
+ #endif
+-#define CPUINFO_PROC	"cpu type"
++#define CPUINFO_PROC	{"cpu type"}
+ #endif
  
-+# syscall, maps, verifier
-+config BPF_SYSCALL
-+	bool "Enable bpf() system call" if EXPERT
-+	select ANON_INODES
-+	select BPF
-+	default n
-+	help
-+	  Enable the bpf() system call that allows to manipulate eBPF
-+	  programs and maps via file descriptors.
-+
- config SHMEM
- 	bool "Use full shmem filesystem" if EXPERT
- 	default y
-diff --git a/kernel/Makefile b/kernel/Makefile
-index dc5c775..17ea6d4 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -86,7 +86,7 @@ obj-$(CONFIG_RING_BUFFER) += trace/
- obj-$(CONFIG_TRACEPOINTS) += trace/
- obj-$(CONFIG_IRQ_WORK) += irq_work.o
- obj-$(CONFIG_CPU_PM) += cpu_pm.o
--obj-$(CONFIG_NET) += bpf/
-+obj-$(CONFIG_BPF) += bpf/
+ #ifdef __hppa__
+ #define mb()		asm volatile("" ::: "memory")
+ #define wmb()		asm volatile("" ::: "memory")
+ #define rmb()		asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"cpu"
++#define CPUINFO_PROC	{"cpu"}
+ #endif
  
- obj-$(CONFIG_PERF_EVENTS) += events/
+ #ifdef __sparc__
+@@ -87,14 +87,14 @@
+ #endif
+ #define wmb()		asm volatile("":::"memory")
+ #define rmb()		asm volatile("":::"memory")
+-#define CPUINFO_PROC	"cpu"
++#define CPUINFO_PROC	{"cpu"}
+ #endif
  
-diff --git a/kernel/bpf/Makefile b/kernel/bpf/Makefile
-index 4542723..0daf7f6 100644
---- a/kernel/bpf/Makefile
-+++ b/kernel/bpf/Makefile
-@@ -1,5 +1,5 @@
--obj-y := core.o syscall.o verifier.o
--
-+obj-y := core.o
-+obj-$(CONFIG_BPF_SYSCALL) += syscall.o verifier.o
- ifdef CONFIG_TEST_BPF
--obj-y += test_stub.o
-+obj-$(CONFIG_BPF_SYSCALL) += test_stub.o
- endif
-diff --git a/kernel/bpf/core.c b/kernel/bpf/core.c
-index f0c30c5..d6594e4 100644
---- a/kernel/bpf/core.c
-+++ b/kernel/bpf/core.c
-@@ -655,3 +655,12 @@ void bpf_prog_free(struct bpf_prog *fp)
- 	schedule_work(&aux->work);
+ #ifdef __alpha__
+ #define mb()		asm volatile("mb" ::: "memory")
+ #define wmb()		asm volatile("wmb" ::: "memory")
+ #define rmb()		asm volatile("mb" ::: "memory")
+-#define CPUINFO_PROC	"cpu model"
++#define CPUINFO_PROC	{"cpu model"}
+ #endif
+ 
+ #ifdef __ia64__
+@@ -102,7 +102,7 @@
+ #define wmb()		asm volatile ("mf" ::: "memory")
+ #define rmb()		asm volatile ("mf" ::: "memory")
+ #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
+-#define CPUINFO_PROC	"model name"
++#define CPUINFO_PROC	{"model name"}
+ #endif
+ 
+ #ifdef __arm__
+@@ -113,7 +113,7 @@
+ #define mb()		((void(*)(void))0xffff0fa0)()
+ #define wmb()		((void(*)(void))0xffff0fa0)()
+ #define rmb()		((void(*)(void))0xffff0fa0)()
+-#define CPUINFO_PROC	"Processor"
++#define CPUINFO_PROC	{"model name", "Processor"}
+ #endif
+ 
+ #ifdef __aarch64__
+@@ -133,28 +133,28 @@
+ 				: "memory")
+ #define wmb()	mb()
+ #define rmb()	mb()
+-#define CPUINFO_PROC	"cpu model"
++#define CPUINFO_PROC	{"cpu model"}
+ #endif
+ 
+ #ifdef __arc__
+ #define mb()		asm volatile("" ::: "memory")
+ #define wmb()		asm volatile("" ::: "memory")
+ #define rmb()		asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"Processor"
++#define CPUINFO_PROC	{"Processor"}
+ #endif
+ 
+ #ifdef __metag__
+ #define mb()		asm volatile("" ::: "memory")
+ #define wmb()		asm volatile("" ::: "memory")
+ #define rmb()		asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"CPU"
++#define CPUINFO_PROC	{"CPU"}
+ #endif
+ 
+ #ifdef __xtensa__
+ #define mb()		asm volatile("memw" ::: "memory")
+ #define wmb()		asm volatile("memw" ::: "memory")
+ #define rmb()		asm volatile("" ::: "memory")
+-#define CPUINFO_PROC	"core ID"
++#define CPUINFO_PROC	{"core ID"}
+ #endif
+ 
+ #ifdef __tile__
+@@ -162,7 +162,7 @@
+ #define wmb()		asm volatile ("mf" ::: "memory")
+ #define rmb()		asm volatile ("mf" ::: "memory")
+ #define cpu_relax()	asm volatile ("mfspr zero, PASS" ::: "memory")
+-#define CPUINFO_PROC    "model name"
++#define CPUINFO_PROC    {"model name"}
+ #endif
+ 
+ #define barrier() asm volatile ("" ::: "memory")
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 39b80ac..0ecf4a3 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -579,16 +579,12 @@ static int write_version(int fd, struct perf_header *h __maybe_unused,
+ 	return do_write_string(fd, perf_version_string);
  }
- EXPORT_SYMBOL_GPL(bpf_prog_free);
-+
-+/* To execute LD_ABS/LD_IND instructions __bpf_prog_run() may call
-+ * skb_copy_bits(), so provide a weak definition of it for NET-less config.
-+ */
-+int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
-+			 int len)
+ 
+-static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
+-		       struct perf_evlist *evlist __maybe_unused)
++static int __write_cpudesc(int fd, const char *cpuinfo_proc)
+ {
+-#ifndef CPUINFO_PROC
+-#define CPUINFO_PROC NULL
+-#endif
+ 	FILE *file;
+ 	char *buf = NULL;
+ 	char *s, *p;
+-	const char *search = CPUINFO_PROC;
++	const char *search = cpuinfo_proc;
+ 	size_t len = 0;
+ 	int ret = -1;
+ 
+@@ -640,6 +636,25 @@ done:
+ 	return ret;
+ }
+ 
++static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
++		       struct perf_evlist *evlist __maybe_unused)
 +{
-+	return -EFAULT;
++#ifndef CPUINFO_PROC
++#define CPUINFO_PROC {"model name", }
++#endif
++	const char *cpuinfo_procs[] = CPUINFO_PROC;
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(cpuinfo_procs); i++) {
++		int ret;
++		ret = __write_cpudesc(fd, cpuinfo_procs[i]);
++		if (ret >= 0)
++			return ret;
++	}
++	return -1;
 +}
-diff --git a/net/Kconfig b/net/Kconfig
-index 6272420..99815b5 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -6,7 +6,7 @@ menuconfig NET
- 	bool "Networking support"
- 	select NLATTR
- 	select GENERIC_NET_UTILS
--	select ANON_INODES
-+	select BPF
- 	---help---
- 	  Unless you really know what you are doing, you should say Y here.
- 	  The reason is that some programs need kernel networking support even
++
++
+ static int write_nrcpus(int fd, struct perf_header *h __maybe_unused,
+ 			struct perf_evlist *evlist __maybe_unused)
+ {
 -- 
-1.7.9.5
+1.8.4
 
