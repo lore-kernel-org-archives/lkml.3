@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205AbaJXKh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 06:37:59 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:39893 "EHLO
+	id S1756269AbaJXKiP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 06:38:15 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:40252 "EHLO
 	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855AbaJXKh5 (ORCPT
+	with ESMTP id S1756062AbaJXKiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 06:37:57 -0400
+	Fri, 24 Oct 2014 06:38:10 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Dave Chinner <david@fromorbit.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michal Hocko <mhocko@suse.cz>, Greg Thelen <gthelen@google.com>,
-        Glauber Costa <glommer@gmail.com>,
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Greg Thelen <gthelen@google.com>, Glauber Costa <glommer@gmail.com>,
+        Dave Chinner <david@fromorbit.com>,
         Alexander Viro <viro@zeniv.linux.org.uk>, <linux-mm@kvack.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm v2 2/9] fs: consolidate {nr,free}_cached_objects args in shrink_control
-Date: Fri, 24 Oct 2014 14:37:33 +0400
-Message-ID: <32e887fe3c251bcb451c622b5a1649f7ca376410.1414145863.git.vdavydov@parallels.com>
+Subject: [PATCH -mm v2 6/9] list_lru: get rid of ->active_nodes
+Date: Fri, 24 Oct 2014 14:37:37 +0400
+Message-ID: <3a4dd483ceeb26225af7181083ea695c54f0f895.1414145863.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1414145862.git.vdavydov@parallels.com>
 References: <cover.1414145862.git.vdavydov@parallels.com>
@@ -26,102 +26,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to make FS shrinkers memcg-aware. To achieve that, we will
-have to pass the memcg to scan to the nr_cached_objects and
-free_cached_objects VFS methods, which currently take only the NUMA node
-to scan. Since the shrink_control structure already holds the node, and
-the memcg to scan will be added to it when we introduce memcg-aware
-vmscan, let us consolidate the methods' arguments in this structure to
-keep things clean.
+The active_nodes mask allows us to skip empty nodes when walking over
+list_lru items from all nodes in list_lru_count/walk. However, these
+functions are never called from hot paths, so it doesn't seem we need
+such kind of optimization there. OTOH, removing the mask will make it
+easier to make list_lru per-memcg.
 
-Suggested-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- fs/super.c         |   12 ++++++------
- fs/xfs/xfs_super.c |    7 +++----
- include/linux/fs.h |    6 ++++--
- 3 files changed, 13 insertions(+), 12 deletions(-)
+ include/linux/list_lru.h |    5 ++---
+ mm/list_lru.c            |   10 +++-------
+ 2 files changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index 4554ac257647..a2b735a42e74 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -75,7 +75,7 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 		return SHRINK_STOP;
+diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
+index f500a2e39b13..53c1d6b78270 100644
+--- a/include/linux/list_lru.h
++++ b/include/linux/list_lru.h
+@@ -31,7 +31,6 @@ struct list_lru_node {
  
- 	if (sb->s_op->nr_cached_objects)
--		fs_objects = sb->s_op->nr_cached_objects(sb, sc->nid);
-+		fs_objects = sb->s_op->nr_cached_objects(sb, sc);
- 
- 	inodes = list_lru_shrink_count(&sb->s_inode_lru, sc);
- 	dentries = list_lru_shrink_count(&sb->s_dentry_lru, sc);
-@@ -97,9 +97,10 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 	sc->nr_to_scan = inodes;
- 	freed += prune_icache_sb(sb, sc);
- 
--	if (fs_objects)
--		freed += sb->s_op->free_cached_objects(sb, fs_objects,
--						       sc->nid);
-+	if (fs_objects) {
-+		sc->nr_to_scan = fs_objects;
-+		freed += sb->s_op->free_cached_objects(sb, sc);
-+	}
- 
- 	drop_super(sb);
- 	return freed;
-@@ -122,8 +123,7 @@ static unsigned long super_cache_count(struct shrinker *shrink,
- 	 * s_op->nr_cached_objects().
- 	 */
- 	if (sb->s_op && sb->s_op->nr_cached_objects)
--		total_objects = sb->s_op->nr_cached_objects(sb,
--						 sc->nid);
-+		total_objects = sb->s_op->nr_cached_objects(sb, sc);
- 
- 	total_objects += list_lru_shrink_count(&sb->s_dentry_lru, sc);
- 	total_objects += list_lru_shrink_count(&sb->s_inode_lru, sc);
-diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
-index 9f622feda6a4..222d8c53bb72 100644
---- a/fs/xfs/xfs_super.c
-+++ b/fs/xfs/xfs_super.c
-@@ -1527,7 +1527,7 @@ xfs_fs_mount(
- static long
- xfs_fs_nr_cached_objects(
- 	struct super_block	*sb,
--	int			nid)
-+	struct shrink_control	*sc)
- {
- 	return xfs_reclaim_inodes_count(XFS_M(sb));
- }
-@@ -1535,10 +1535,9 @@ xfs_fs_nr_cached_objects(
- static long
- xfs_fs_free_cached_objects(
- 	struct super_block	*sb,
--	long			nr_to_scan,
--	int			nid)
-+	struct shrink_control	*sc)
- {
--	return xfs_reclaim_inodes_nr(XFS_M(sb), nr_to_scan);
-+	return xfs_reclaim_inodes_nr(XFS_M(sb), sc->nr_to_scan);
- }
- 
- static const struct super_operations xfs_super_operations = {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 4111ee0afeea..d5624f5a463d 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1568,8 +1568,10 @@ struct super_operations {
- 	ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
- #endif
- 	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
--	long (*nr_cached_objects)(struct super_block *, int);
--	long (*free_cached_objects)(struct super_block *, long, int);
-+	long (*nr_cached_objects)(struct super_block *,
-+				  struct shrink_control *);
-+	long (*free_cached_objects)(struct super_block *,
-+				    struct shrink_control *);
+ struct list_lru {
+ 	struct list_lru_node	*node;
+-	nodemask_t		active_nodes;
  };
  
- /*
+ void list_lru_destroy(struct list_lru *lru);
+@@ -94,7 +93,7 @@ static inline unsigned long list_lru_count(struct list_lru *lru)
+ 	long count = 0;
+ 	int nid;
+ 
+-	for_each_node_mask(nid, lru->active_nodes)
++	for_each_node_state(nid, N_NORMAL_MEMORY)
+ 		count += list_lru_count_node(lru, nid);
+ 
+ 	return count;
+@@ -142,7 +141,7 @@ list_lru_walk(struct list_lru *lru, list_lru_walk_cb isolate,
+ 	long isolated = 0;
+ 	int nid;
+ 
+-	for_each_node_mask(nid, lru->active_nodes) {
++	for_each_node_state(nid, N_NORMAL_MEMORY) {
+ 		isolated += list_lru_walk_node(lru, nid, isolate,
+ 					       cb_arg, &nr_to_walk);
+ 		if (nr_to_walk <= 0)
+diff --git a/mm/list_lru.c b/mm/list_lru.c
+index f1a0db194173..07e198c77888 100644
+--- a/mm/list_lru.c
++++ b/mm/list_lru.c
+@@ -19,8 +19,7 @@ bool list_lru_add(struct list_lru *lru, struct list_head *item)
+ 	WARN_ON_ONCE(nlru->nr_items < 0);
+ 	if (list_empty(item)) {
+ 		list_add_tail(item, &nlru->list);
+-		if (nlru->nr_items++ == 0)
+-			node_set(nid, lru->active_nodes);
++		nlru->nr_items++;
+ 		spin_unlock(&nlru->lock);
+ 		return true;
+ 	}
+@@ -37,8 +36,7 @@ bool list_lru_del(struct list_lru *lru, struct list_head *item)
+ 	spin_lock(&nlru->lock);
+ 	if (!list_empty(item)) {
+ 		list_del_init(item);
+-		if (--nlru->nr_items == 0)
+-			node_clear(nid, lru->active_nodes);
++		nlru->nr_items--;
+ 		WARN_ON_ONCE(nlru->nr_items < 0);
+ 		spin_unlock(&nlru->lock);
+ 		return true;
+@@ -90,8 +88,7 @@ restart:
+ 		case LRU_REMOVED_RETRY:
+ 			assert_spin_locked(&nlru->lock);
+ 		case LRU_REMOVED:
+-			if (--nlru->nr_items == 0)
+-				node_clear(nid, lru->active_nodes);
++			nlru->nr_items--;
+ 			WARN_ON_ONCE(nlru->nr_items < 0);
+ 			isolated++;
+ 			/*
+@@ -133,7 +130,6 @@ int list_lru_init_key(struct list_lru *lru, struct lock_class_key *key)
+ 	if (!lru->node)
+ 		return -ENOMEM;
+ 
+-	nodes_clear(lru->active_nodes);
+ 	for (i = 0; i < nr_node_ids; i++) {
+ 		spin_lock_init(&lru->node[i].lock);
+ 		if (key)
 -- 
 1.7.10.4
 
