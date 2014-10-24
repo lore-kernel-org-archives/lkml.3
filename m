@@ -1,144 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280AbaJXDYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Oct 2014 23:24:38 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:40262 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195AbaJXDYg (ORCPT
+	id S1755089AbaJXD1R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Oct 2014 23:27:17 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:53130 "EHLO
+	homiemail-a61.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751507AbaJXD1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Oct 2014 23:24:36 -0400
-X-Originating-IP: 50.43.41.112
-Date: Thu, 23 Oct 2014 20:23:55 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net] bpf: split eBPF out of NET
-Message-ID: <20141024032355.GB7879@thin>
-References: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 23 Oct 2014 23:27:15 -0400
+Message-ID: <1414121220.817.0.camel@linux-t7sj.site>
+Subject: [PATCH] futex: Mention key referencing differences between shared
+ and private futexes
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org, Matteo Franchin <Matteo.Franchin@arm.com>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 23 Oct 2014 20:27:00 -0700
+In-Reply-To: <1413563929-2664-1-git-send-email-catalin.marinas@arm.com>
+References: <1413563929-2664-1-git-send-email-catalin.marinas@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 06:41:08PM -0700, Alexei Starovoitov wrote:
-> introduce two configs:
-> - hidden CONFIG_BPF to select eBPF interpreter that classic socket filters
->   depend on
-> - visible CONFIG_BPF_SYSCALL (default off) that tracing and sockets can use
-> 
-> that solves several problems:
-> - tracing and others that wish to use eBPF don't need to depend on NET.
->   They can use BPF_SYSCALL to allow loading from userspace or select BPF
->   to use it directly from kernel in NET-less configs.
-> - in 3.18 programs cannot be attached to events yet, so don't force it on
-> - when the rest of eBPF infra is there in 3.19+, it's still useful to
->   switch it off to minimize kernel size
-> 
-> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+From: Davidlohr Bueso <dave@stgolabs.net>
 
-Thanks for working on this!  A few nits below, but otherwise this looks
-good to me.  Once this gets appropriate reviews from net and bpf folks,
-please let me know if you want this to go through the net tree, the tiny
-tree, or some other tree.
+Update our documentation as of fix 76835b0ebf8 (futex: Ensure
+get_futex_key_refs() always implies a barrier). Explicitly
+state that we don't do key referencing for private futexes.
 
-> 
-> bloat-o-meter on x64 shows:
-> add/remove: 0/60 grow/shrink: 0/2 up/down: 0/-15601 (-15601)
+Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
+---
+ kernel/futex.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-Very nice!  Please do include the bloat-o-meter stats in the commit
-message.
+diff --git a/kernel/futex.c b/kernel/futex.c
+index f3a3a07..bbf071f 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -143,9 +143,8 @@
+  *
+  * Where (A) orders the waiters increment and the futex value read through
+  * atomic operations (see hb_waiters_inc) and where (B) orders the write
+- * to futex and the waiters read -- this is done by the barriers in
+- * get_futex_key_refs(), through either ihold or atomic_inc, depending on the
+- * futex type.
++ * to futex and the waiters read -- this is done by the barriers for both
++ * shared and private futexes in get_futex_key_refs().
+  *
+  * This yields the following case (where X:=waiters, Y:=futex):
+  *
+@@ -344,13 +343,20 @@ static void get_futex_key_refs(union futex_key *key)
+ 		futex_get_mm(key); /* implies MB (B) */
+ 		break;
+ 	default:
++		/*
++		 * Private futexes do not hold reference on an inode or
++		 * mm, therefore the only purpose of calling get_futex_key_refs
++		 * is because we need the barrier for the lockless waiter check.
++		 */
+ 		smp_mb(); /* explicit MB (B) */
+ 	}
+ }
+ 
+ /*
+  * Drop a reference to the resource addressed by a key.
+- * The hash bucket spinlock must not be held.
++ * The hash bucket spinlock must not be held. This is
++ * a no-op for private futexes, see comment in the get
++ * counterpart.
+  */
+ static void drop_futex_key_refs(union futex_key *key)
+ {
+-- 
+1.8.4.5
 
-> tested with many different config combinations. Hopefully didn't miss anything.
-> 
->  init/Kconfig        |   14 ++++++++++++++
->  kernel/Makefile     |    2 +-
->  kernel/bpf/Makefile |    6 +++---
->  kernel/bpf/core.c   |    9 +++++++++
->  net/Kconfig         |    2 +-
->  5 files changed, 28 insertions(+), 5 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 3ee28ae..340fd92 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -1341,6 +1341,10 @@ config SYSCTL_ARCH_UNALIGN_ALLOW
->  config HAVE_PCSPKR_PLATFORM
->  	bool
->  
-> +# interpreter that classic socket filters depend on
-> +config BPF
-> +	boolean
 
-s/boolean/bool/
 
-> +
->  menuconfig EXPERT
->  	bool "Configure standard kernel features (expert users)"
->  	# Unhide debug options, to make the on-by-default options visible
-> @@ -1521,6 +1525,16 @@ config EVENTFD
->  
->  	  If unsure, say Y.
->  
-> +# syscall, maps, verifier
-> +config BPF_SYSCALL
-> +	bool "Enable bpf() system call" if EXPERT
-> +	select ANON_INODES
-> +	select BPF
-> +	default n
-> +	help
-> +	  Enable the bpf() system call that allows to manipulate eBPF
-> +	  programs and maps via file descriptors.
-
-Not sure this one goes under EXPERT, especially since it currently has
-"default n".
-
-> --- a/kernel/bpf/core.c
-> +++ b/kernel/bpf/core.c
-> @@ -655,3 +655,12 @@ void bpf_prog_free(struct bpf_prog *fp)
->  	schedule_work(&aux->work);
->  }
->  EXPORT_SYMBOL_GPL(bpf_prog_free);
-> +
-> +/* To execute LD_ABS/LD_IND instructions __bpf_prog_run() may call
-> + * skb_copy_bits(), so provide a weak definition of it for NET-less config.
-> + */
-> +int __weak skb_copy_bits(const struct sk_buff *skb, int offset, void *to,
-> +			 int len)
-> +{
-> +	return -EFAULT;
-> +}
-
-Please discuss this in the commit message.  What are the implications of
-ending up with this implementation that always returns -EFAULT?
-
-> diff --git a/net/Kconfig b/net/Kconfig
-> index 6272420..99815b5 100644
-> --- a/net/Kconfig
-> +++ b/net/Kconfig
-> @@ -6,7 +6,7 @@ menuconfig NET
->  	bool "Networking support"
->  	select NLATTR
->  	select GENERIC_NET_UTILS
-> -	select ANON_INODES
-> +	select BPF
-
-Why does this not need to select ANON_INODES anymore?  Did *only* BPF
-use that, so it only needs to occur via BPF_SYSCALL?  If so, can you
-document that in the commit message?
-
->  	---help---
->  	  Unless you really know what you are doing, you should say Y here.
->  	  The reason is that some programs need kernel networking support even
-> -- 
-> 1.7.9.5
-> 
