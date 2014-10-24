@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867AbaJXJET (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 05:04:19 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46752 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755762AbaJXJEP convert rfc822-to-8bit (ORCPT
+	id S1755924AbaJXJEY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 05:04:24 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:59473 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832AbaJXJET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 05:04:15 -0400
-Date: Fri, 24 Oct 2014 10:04:09 +0100
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH RFC 1/2] drivers: pci: fix window allocation order wrt
- bus_range filtering
-Message-ID: <20141024090409.GR25302@e106497-lin.cambridge.arm.com>
-References: <1414077787-20633-1-git-send-email-lorenzo.pieralisi@arm.com>
- <20141023222707.GB11115@google.com>
+	Fri, 24 Oct 2014 05:04:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20141023222707.GB11115@google.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 24 Oct 2014 09:04:10.0263 (UTC) FILETIME=[794B8270:01CFEF69]
-X-MC-Unique: 114102410041200701
+In-Reply-To: <20141024080240.GN32045@tbergstrom-lnx.Nvidia.com>
+References: <1413991587-11110-1-git-send-email-romain.perier@gmail.com>
+	<20141023081230.GK32045@tbergstrom-lnx.Nvidia.com>
+	<CABgxDoKm5kKKCTD1njAerUrM24iVcGRDuhJ7b4qBVPqKBC4ftQ@mail.gmail.com>
+	<20141024080240.GN32045@tbergstrom-lnx.Nvidia.com>
+Date: Fri, 24 Oct 2014 11:04:18 +0200
+Message-ID: <CABgxDoLT7puSr11Xw3D7diGRXj15oktfd7=ATTvjmf2MKKYp0A@mail.gmail.com>
+Subject: Re: [PATCH v1 1/5] mfd: tps65910: Convert ti,system-power-controller
+ DT property to poweroff-source
+From: Romain Perier <romain.perier@gmail.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, robh+dt@kernel.org,
+        "pawel.moll" <pawel.moll@arm.com>, mark.rutland@arm.com,
+        "ijc+devicetree" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 11:27:07PM +0100, Bjorn Helgaas wrote:
-> On Thu, Oct 23, 2014 at 04:23:06PM +0100, Lorenzo Pieralisi wrote:
-> > The number of windows allocated for the host bridge depends on the
-> > bus resource. Instead of first allocating the windows and then
-> > limit the bus resource, this patch reshuffles the code so that if any
-> > limitation is applied to the bus resource it is taken into account in
-> > the windows allocation.
-> > 
-> > Cc: Will Deacon <will.deacon@arm.com>
-> > Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> 
-> Hi Lorenzo,
-> 
-> I can *read* your patches just fine, but when I save them using mutt to
-> apply them, they look like this:
-> 
->   --- a/drivers/pci/host/pci-host-generic.c
->   +++ b/drivers/pci/host/pci-host-generic.c
->   @@ -276,17 +276,17 @@ static int gen_pci_parse_map_cfg_windows(struct gen_p=
->   ci *pci)
->    =09=09return err;
->     =09}
->     =20
->     -=09pci->cfg.win =3D devm_kcalloc(dev,
->     resource_size(&pci->cfg.bus_range),
-> 
-> I can work around this by downloading them another way, but it is a
-> bit of a hassle.  I *think* this is because your email has
-> 
->   Content-Type: text/plain; charset=WINDOWS-1252
-> 
-> which apparently confuses mutt.  Any idea why this is?  Anybody know how I
-> can fix mutt to deal with this?
+Okay, will do these changes.
 
-I use decode-save (<Esc>s on my setup) to save the attachment(s). Sometimes
-it works well enough, although more often than not tabs get lost.
-
-Best regards,
-Liviu
-
-> 
-> Bjorn
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+2014-10-24 10:02 GMT+02:00 Peter De Schrijver <pdeschrijver@nvidia.com>:
+> On Thu, Oct 23, 2014 at 11:39:34AM +0200, PERIER Romain wrote:
+>> Hi Peter,
+>>
+>> 2014-10-23 10:12 GMT+02:00 Peter De Schrijver <pdeschrijver@nvidia.com>:
+>> > This breaks DT ABI stability right? An existing device tree using ti,system-power-controller won't work anymore after this patch right? I don't think that's acceptable.
+>> >
+>>
+>> This is why I converted all dts which use "ti,system-power-controller"
+>> and tps65910/tps65911 to the new property (everything is in the
+>> patches serie). However, with an existing dtb it will no longer work,
+>> yes.
+>> What do you suggest ? keep these two properties in the driver ? :/
+>>
+>
+> Yes. Existing DTs should work with new kernels. So there's no other choice
+> than leaving support for the existing property in place. Obviously DTs for new
+> boards can use the new standardized property.
+>
+> Cheers,
+>
+> Peter.
