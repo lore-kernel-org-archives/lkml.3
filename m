@@ -1,139 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbaJXTi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 15:38:29 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:33428 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259AbaJXTi1 (ORCPT
+	id S1754901AbaJXTkA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 15:40:00 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:51825 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825AbaJXTj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 15:38:27 -0400
-Date: Fri, 24 Oct 2014 15:38:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jan Kara <jack@suse.cz>, Mikulas Patocka <mpatocka@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH block/for-linus] writeback: fix a subtle race condition in
- I_DIRTY clearing
-Message-ID: <20141024193821.GA7453@mtj.dyndns.org>
+	Fri, 24 Oct 2014 15:39:58 -0400
+Date: Fri, 24 Oct 2014 21:36:55 +0200
+From: Johan Hovold <johan@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Johan Hovold <johan@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
+Message-ID: <20141024193655.GD19377@localhost>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+ <1413913086-12730-1-git-send-email-johan@kernel.org>
+ <20141024160845.GM26941@saruman>
+ <20141024190251.GB19377@localhost>
+ <20141024192540.GD11455@saruman>
+ <20141024192948.GE11455@saruman>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141024192948.GE11455@saruman>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After invoking ->dirty_inode(), __mark_inode_dirty() does smp_mb() and
-tests inode->i_state locklessly to see whether it already has all the
-necessary I_DIRTY bits set.  The comment above the barrier doesn't
-contain any useful information - memory barriers can't ensure "changes
-are seen by all cpus" by itself.
+On Fri, Oct 24, 2014 at 02:29:48PM -0500, Felipe Balbi wrote:
+> Hi,
+> 
+> On Fri, Oct 24, 2014 at 02:25:40PM -0500, Felipe Balbi wrote:
+> > On Fri, Oct 24, 2014 at 09:02:51PM +0200, Johan Hovold wrote:
+> > > [ +CC: Russell ]
+> > > 
+> > > On Fri, Oct 24, 2014 at 11:08:45AM -0500, Felipe Balbi wrote:
+> > > 
+> > > > I tested this entire series with my BBB and it still works fine. However
+> > > > I still get below panic. This time without any DRM errors:
+> > > > 
+> > > > [   63.087832] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000000
+> > > > [   63.087832] 
+> > > > [   63.097399] CPU: 0 PID: 1 Comm: systemd-shutdow Not tainted 3.18.0-rc1-00095-g8524e69 #556
+> > > > [   63.106060] [<c00175a4>] (unwind_backtrace) from [<c00132f0>] (show_stack+0x20/0x24)
+> > > > [   63.114160] [<c00132f0>] (show_stack) from [<c0657404>] (dump_stack+0x8c/0xa4)
+> > > > [   63.121706] [<c0657404>] (dump_stack) from [<c0654f70>] (panic+0xa0/0x220)
+> > > > [   63.128895] [<c0654f70>] (panic) from [<c0049e64>] (do_exit+0x974/0x9d0)
+> > > > [   63.135900] [<c0049e64>] (do_exit) from [<c006775c>] (SyS_reboot+0x14c/0x1e8)
+> > > > [   63.143361] [<c006775c>] (SyS_reboot) from [<c000f080>] (ret_fast_syscall+0x0/0x48)
+> > > > [   63.151596] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000000
+> > > > 
+> > > > Then again, this also happens by simply calling poweroff without
+> > > > enabling wakealarm.
+> > > 
+> > > Bah, I forgot to look into that. I haven't seen this myself as I don't
+> > > use systemd (which does the syscall from process 0).
+> > > 
+> > > Some driver power-off implementations and some arch machine_power_off
+> > > spin indefinitely (or use an mdelay and WARN) after trying to power off.
+> > > 
+> > > I think this is really a bug in arch/arm that should be fixed
+> > > analogously to how failed reboot is handled in machine_restart().
+> > > 
+> > > Care to try the patch below?
+> > > 
+> > > I should still add a two-second delay to rtc-omap to avoid the arch
+> > > error message.
+> > > 
+> > > Andrew, can you update one patch in the series or should I just resend
+> > > them all (with proper Tested-by tags)?
+> > > 
+> > > > In any case, for the whole series:
+> > > > 
+> > > > Tested-by: Felipe Balbi <balbi@ti.com>
+> > > 
+> > > Thanks for testing!
+> > > 
+> > > Johan
+> > > 
+> > > 
+> > > >From aaa1d1d6171c895b6966ba5b738ac7946ada97c7 Mon Sep 17 00:00:00 2001
+> > > From: Johan Hovold <johan@kernel.org>
+> > > Date: Fri, 24 Oct 2014 18:53:09 +0200
+> > > Subject: [PATCH] ARM: fix failed power-off handling
+> > > 
+> > > Make sure to handle failed power off by printing an error message and
+> > > halting (analogously to how failed reboot is handled).
+> > > 
+> > > Power off can fail for example if the hardware has not been wired up
+> > > correctly.
+> > > 
+> > > This avoids a kernel panic when called from process 0:
+> > > 
+> > > [   63.087832] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000000
+> > > [   63.087832]
+> > > [   63.097399] CPU: 0 PID: 1 Comm: systemd-shutdow Not tainted 3.18.0-rc1-00095-g8524e69 #556
+> > > [   63.106060] [<c00175a4>] (unwind_backtrace) from [<c00132f0>] (show_stack+0x20/0x24)
+> > > [   63.114160] [<c00132f0>] (show_stack) from [<c0657404>] (dump_stack+0x8c/0xa4)
+> > > [   63.121706] [<c0657404>] (dump_stack) from [<c0654f70>] (panic+0xa0/0x220)
+> > > [   63.128895] [<c0654f70>] (panic) from [<c0049e64>] (do_exit+0x974/0x9d0)
+> > > [   63.135900] [<c0049e64>] (do_exit) from [<c006775c>] (SyS_reboot+0x14c/0x1e8)
+> > > [   63.143361] [<c006775c>] (SyS_reboot) from [<c000f080>] (ret_fast_syscall+0x0/0x48)
+> > > [   63.151596] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000000
+> > > 
+> > > Signed-off-by: Johan Hovold <johan@kernel.org>
+> > > ---
+> > >  arch/arm/kernel/process.c | 6 ++++++
+> > >  1 file changed, 6 insertions(+)
+> > > 
+> > > diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> > > index a35f6ebbd2c2..68c38af5687c 100644
+> > > --- a/arch/arm/kernel/process.c
+> > > +++ b/arch/arm/kernel/process.c
+> > > @@ -212,6 +212,12 @@ void machine_power_off(void)
+> > >  
+> > >  	if (pm_power_off)
+> > >  		pm_power_off();
+> > > +
+> > > +	/* Give a grace period for failure to power off */
+> > > +	mdelay(1000);
+> > > +
+> > > +	pr_err("Power off failed -- system halted\n");
+> > > +	while (1);
+> > >  }
+> > 
+> > with this I always get to "Power off failed -- system halted". If I
+> > switch to v3.18-rc1 vanilla, then it works. So it's definitely caused by
+> > your rtc-only patches.
 
-And it sure enough was broken.  Please consider the following
-scenario.
+That's expected (see below). It works with v3.18-rc1 vanilla because
+machine_halt is called instead of machine_power_off as there is no
+registered power-off handler.
 
- CPU 0					CPU 1
- -------------------------------------------------------------------------------
+> ok, so it seems like it takes more than 1 second for things to
+> propagate. If I increase that mdelay() to 3000, then everything works
+> fine on my end. I think we should get RMK's input on this 3000ms delay
+> to machine_power_off(). Should it be generic, or should we add it to our
+> rtc pm_power_off implementation ?
 
-					enters __writeback_single_inode()
-					grabs inode->i_lock
-					tests PAGECACHE_TAG_DIRTY which is clear
- enters __set_page_dirty()
- grabs mapping->tree_lock
- sets PAGECACHE_TAG_DIRTY
- releases mapping->tree_lock
- leaves __set_page_dirty()
+As I wrote above, we still need a 2-second mdelay in rtc-omap, which I
+intend to add to the pmic_power_en patch.
 
- enters __mark_inode_dirty()
- smp_mb()
- sees I_DIRTY_PAGES set
- leaves __mark_inode_dirty()
-					clears I_DIRTY_PAGES
-					releases inode->i_lock
+The one-second delay is there in machine_power_off to catch most cases
+which wouldn't take nearly as long as rtc-omap and hence wouldn't be
+adding an explicit delay in the driver power-off handler.
 
-Now @inode has dirty pages w/ I_DIRTY_PAGES clear.  This doesn't seem
-to lead to an immediately critical problem because requeue_inode()
-later checks PAGECACHE_TAG_DIRTY instead of I_DIRTY_PAGES when
-deciding whether the inode needs to be requeued for IO and there are
-enough unintentional memory barriers inbetween, so while the inode
-ends up with inconsistent I_DIRTY_PAGES flag, it doesn't fall off the
-IO list.
-
-The lack of explicit barrier may also theoretically affect the other
-I_DIRTY bits which deal with metadata dirtiness.  There is no
-guarantee that a strong enough barrier exists between
-I_DIRTY_[DATA]SYNC clearing and write_inode() writing out the dirtied
-inode.  Filesystem inode writeout path likely has enough stuff which
-can behave as full barrier but it's theoretically possible that the
-writeout may not see all the updates from ->dirty_inode().
-
-Fix it by adding an explicit smp_mb() after I_DIRTY clearing.  Note
-that I_DIRTY_PAGES needs a special treatment as it always needs to be
-cleared to be interlocked with the lockless test on
-__mark_inode_dirty() side.  It's cleared unconditionally and
-reinstated after smp_mb() if the mapping still has dirty pages.
-
-Also add comments explaining how and why the barriers are paired.
-
-Lightly tested.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: stable@vger.kernel.org
----
- fs/fs-writeback.c |   29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
-
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -479,12 +479,28 @@ __writeback_single_inode(struct inode *i
- 	 * write_inode()
- 	 */
- 	spin_lock(&inode->i_lock);
--	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
--	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
--		inode->i_state &= ~I_DIRTY_PAGES;
-+
- 	dirty = inode->i_state & I_DIRTY;
--	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
-+	inode->i_state &= ~I_DIRTY;
-+
-+	/*
-+	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
-+	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
-+	 * either they see the I_DIRTY bits cleared or we see the dirtied
-+	 * inode.
-+	 *
-+	 * I_DIRTY_PAGES is always cleared together above even if @mapping
-+	 * still has dirty pages.  The flag is reinstated after smp_mb() if
-+	 * necessary.  This guarantees that either __mark_inode_dirty()
-+	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
-+	 */
-+	smp_mb();
-+
-+	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-+		inode->i_state |= I_DIRTY_PAGES;
-+
- 	spin_unlock(&inode->i_lock);
-+
- 	/* Don't write the inode if only I_DIRTY_PAGES was set */
- 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
- 		int err = write_inode(inode, wbc);
-@@ -1148,12 +1164,11 @@ void __mark_inode_dirty(struct inode *in
- 	}
- 
- 	/*
--	 * make sure that changes are seen by all cpus before we test i_state
--	 * -- mikulas
-+	 * Paired with smp_mb() in __writeback_single_inode() for the
-+	 * following lockless i_state test.  See there for details.
- 	 */
- 	smp_mb();
- 
--	/* avoid the locking if we can */
- 	if ((inode->i_state & flags) == flags)
- 		return;
- 
+Johan
