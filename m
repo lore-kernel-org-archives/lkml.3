@@ -1,78 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848AbaJXN7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 09:59:05 -0400
-Received: from mout.kundenserver.de ([212.227.126.187]:58208 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756565AbaJXN7C (ORCPT
+	id S932623AbaJXOAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 10:00:15 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49575 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756565AbaJXOAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 09:59:02 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        Srikanth Vemula <svemula@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Srikanth Thokala <sthokal@xilinx.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Michal Simek <michals@xilinx.com>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>
-Subject: Re: [PATCH v4] dma: Add Xilinx AXI Direct Memory Access Engine driver support
-Date: Fri, 24 Oct 2014 15:58:51 +0200
-Message-ID: <1967130.oYyZRWCcEF@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <7dc11ef7ccec49bcb052c30b9aa916c3@BL2FFO11FD044.protection.gbl>
-References: <1413374436-14410-1-git-send-email-sthokal@xilinx.com> <3236720.MHeqOodrCV@wuerfel> <7dc11ef7ccec49bcb052c30b9aa916c3@BL2FFO11FD044.protection.gbl>
+	Fri, 24 Oct 2014 10:00:13 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>, Darren Hart <dvhart@linux.intel.com>,
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: Use ACPI companion to match only the first physical device
+Date: Fri, 24 Oct 2014 16:20:41 +0200
+Message-ID: <1442328.iYt6Cj5IOV@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <2356721.6lgfg38MC8@vostro.rjw.lan>
+References: <1414141950-228930-1-git-send-email-mika.westerberg@linux.intel.com> <2356721.6lgfg38MC8@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:cIXADOZAnH+N+yn6gJUM3U/DqqZ6R7EXNHCAFVEd57B
- IgNe5rNbQ9Q2/Q0UQeyAd6X2Kl0PzxoDlXnX9Utxb11k1N4wgd
- 5oWLswdnV6CfChZAFtBweyGtY9YM0ADntDk3T3hiqCsbBP9RmY
- 3rpwe4Gc0uL0OGngT9SDEP7VQLjguBUcAcHFvx9xfD8niX5trT
- FLSDtGzK6zeiWItsxsszgbH09NYXQAKoFjU+MwGneE424WbBW+
- o2SdqAwweeoE90OEh/afNL1x0ZlsygDhbewr3VM9aggXazqGd5
- RzH0jbSVYmiAC+7xxcldyJGqV5IPGWTFow4UBfzc33Q1/QxEMC
- egvaKjHRspqtze3MGfVI=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 October 2014 12:08:26 Appana Durga Kedareswara Rao wrote:
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> > On Tuesday 21 October 2014 09:06:13 Appana Durga Kedareswara Rao wrote:
-> > > The above mentioned API's  and structures will be used by the dma test
-> > > client driver's to set hardware configuration information. The dma
-> > > client drivers are not mainlined  yet and it is Internally used by
-> > > our git-tree  to test the DMA functionality in loopback .
+On Friday, October 24, 2014 03:55:34 PM Rafael J. Wysocki wrote:
+> On Friday, October 24, 2014 12:12:30 PM Mika Westerberg wrote:
+> > Commit 6ab3430129e2 ("mfd: Add ACPI support") made the MFD subdevices to
+> > share the parent MFD ACPI companion device if no _HID/_CID is specified for
+> > the subdevice in mfd_cell description. However, since all the subdevices
+> > share the ACPI companion, the match and modalias generation logic started
+> > to use the ACPI companion as well resulting this:
 > > 
-> > I would suggest you add the test driver into the main dmaengine driver
-> > file directly then, so you don't need to export the symbols. If there are
-> > important reasons to keep that as separate files, just move the header to
-> > the drivers/dma/ directory and add the test driver there.
+> >   # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
+> >   acpi:INT33D1:PNP0C50:
+> > 
+> > instead of the expected one
+> > 
+> >   # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
+> >   platform:HID-SENSOR-200041
+> > 
+> > In other words the subdevice modalias is overwritten by the one taken from
+> > ACPI companion. This causes udev not to load the driver anymore.
+> > 
+> > It is useful to be able to share the ACPI companion so that MFD subdevices
+> > (and possibly other devices as well) can access the ACPI resources even if
+> > they do not have ACPI representation in the namespace themselves.
+> > 
+> > An example where this is used is Minnowboard LPC driver that creates GPIO
+> > as a subdevice among other things. Without the ACPI companion gpiolib is
+> > not is not able to lookup the corresponding GPIO controller from ACPI
+> > GpioIo resource.
+> > 
+> > To fix this we restrict the match and modalias logic to be limited to the
+> > first physical device. The secondary devices will still be able to access
+> > the ACPI companion but they will be matched using traditional way.
+> > 
+> > Reported-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 > 
-> Sorry I forgot to mention the below things in the mail .The Config API's and
-> structures not only used by the dmaengine driver's but also used by
-> the  various IP's  (Ex: Ethernet driver and SRIO driver these drivers are
-> under development).For example the Ethernet driver is resides under
-> drivers/net/ethernet but it needs to set some specific configuration
-> parameters of the dma that's why created a separate header file for the h/w
-> configurable parameters.
+> So I've applied it, although it didn't make it to the mailing lists for an
+> unknown reason, but I modified it slightly.  My version is below for
+> completness (it's in bleeding-edge for now).
+> 
+> I'm a bit concerned that it will break something obscure I can't recall
+> ATM, but since I can't recall it may not be that important (or even non-existent
+> at all).  In any case, we may need to go back all the way to reverting the
+> MFD commit if that happens.
+> 
+> Rafael
+> 
+> 
+> ---
+> From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Subject: [PATCH] ACPI: Use ACPI companion to match only the first physical device
+> 
+> Commit 6ab3430129e2 ("mfd: Add ACPI support") made the MFD subdevices
+> share the parent MFD ACPI companion if no _HID/_CID is specified for
+> the subdevice in mfd_cell description. However, since all the subdevices
+> share the ACPI companion, the match and modalias generation logic started
+> to use the ACPI companion as well resulting this:
+> 
+>   # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
+>   acpi:INT33D1:PNP0C50:
+> 
+> instead of the expected one
+> 
+>   # cat /sys/bus/platform/devices/HID-SENSOR-200041.6.auto/modalias
+>   platform:HID-SENSOR-200041
+> 
+> In other words the subdevice modalias is overwritten by the one taken from
+> ACPI companion. This causes udev not to load the driver anymore.
+> 
+> It is useful to be able to share the ACPI companion so that MFD subdevices
+> (and possibly other devices as well) can access the ACPI resources even if
+> they do not have ACPI representation in the namespace themselves.
+> 
+> An example where this is used is Minnowboard LPC driver that creates GPIO
+> as a subdevice among other things. Without the ACPI companion gpiolib is
+> not able to lookup the corresponding GPIO controller from ACPI GpioIo
+> resource.
+> 
+> To fix this, restrict the match and modalias logic to be limited to the
+> first (primary) physical device associated with the given ACPI comapnion.
+> The secondary devices will still be able to access the ACPI companion,
+> but they will be matched in a different way.
+> 
+> Fixes: 6ab3430129e2 (mfd: Add ACPI support)
+> Reported-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> [ rjw: Change the name of the new function to acpi_companion_match()
+>   and modify the kerneldoc comment for it, changelog fixups. ]
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+> Index: linux-pm/drivers/acpi/scan.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/scan.c
+> +++ linux-pm/drivers/acpi/scan.c
+> @@ -181,6 +181,53 @@ static int create_modalias(struct acpi_d
+>  }
+>  
+>  /*
+> + * acpi_companion_match() - Can we match via ACPI companion device
+> + * @dev: Device in question
+> + *
+> + * Check if the given device has an ACPI companion and if that companion has
+> + * a valid list of PNP IDs, and if the device is the first (primary) physical
+> + * device associated with it.
+> + *
+> + * If multiple physical devices are attached to a single ACPI companion, we need
+> + * to be careful.  The usage scenario for this kind of relationship is that all
+> + * of the physical devices in question use resources provided by the ACPI
+> + * companion.  A typical case is an MFD device where all the sub-devices share
+> + * the parent's ACPI companion.  In such cases we can only allow the primary
+> + * (first) physical device to be matched with the help of the companion's PNP
+> + * IDs.
+> + *
+> + * Additional physical devices sharing the ACPI companion can still use
+> + * resources available from it but they will be matched normally using functions
+> + * provided by their bus types (and analogously for their modalias).
+> + */
+> +static bool acpi_companion_match(const struct device *dev)
+> +{
+> +	struct acpi_device *adev;
+> +	bool ret;
+> +
+> +	adev = ACPI_COMPANION(dev);
+> +	if (!adev)
+> +		return false;
+> +
+> +	if (list_empty(&adev->pnp.ids))
+> +		return false;
+> +
+> +	ret = true;
 
-That is a bug in the ethernet driver, and we should not merge such code.
+On a second thought, should we return true if the list of physical devices is
+empty?  That surely means ACPI_COMPANION(dev) lied to us?
 
-Please fix those drivers before submitting them, so they don't rely on
-additional interfaces beyond what the DMA engine API provides.
+> +	mutex_lock(&adev->physical_node_lock);
+> +	if (!list_empty(&adev->physical_node_list)) {
+> +		const struct acpi_device_physical_node *node;
+> +
+> +		node = list_first_entry(&adev->physical_node_list,
+> +					struct acpi_device_physical_node, node);
+> +		if (node->dev != dev)
+> +			ret = false;
 
-If you need something that the common interface is missing, you can
-send a patch to extend the dmaengine core driver, but more likely it
-already does what you need and you are just not using it right.
+And that may be simply
 
-	Arnd
+		ret = node->dev == dev;
+
+> +	}
+> +	mutex_unlock(&adev->physical_node_lock);
+> +
+> +	return ret;
+> +}
+> +
+
+Rafael
 
