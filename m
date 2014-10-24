@@ -1,152 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184AbaJXSkd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 14:40:33 -0400
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:47572 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757091AbaJXSkb (ORCPT
+	id S932858AbaJXSlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 14:41:35 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:58501 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756793AbaJXSld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 14:40:31 -0400
-Date: Fri, 24 Oct 2014 14:40:28 -0400
-From: Eric B Munson <emunson@akamai.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Commit 35ce7f29a breaks hibernation for XPS 13
-Message-ID: <20141024184028.GA2220@akamai.com>
-References: <20141024160815.GA2968@akamai.com>
- <20141024161634.GR4977@linux.vnet.ibm.com>
- <20141024163612.GA2256@akamai.com>
- <20141024171818.GU4977@linux.vnet.ibm.com>
+	Fri, 24 Oct 2014 14:41:33 -0400
+Date: Fri, 24 Oct 2014 20:41:30 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 3/3] mm: memcontrol: drop bogus RCU locking from
+ mem_cgroup_same_or_subtree()
+Message-ID: <20141024184130.GC18956@dhcp22.suse.cz>
+References: <1414158589-26094-1-git-send-email-hannes@cmpxchg.org>
+ <1414158589-26094-3-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141024171818.GU4977@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1414158589-26094-3-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014, Paul E. McKenney wrote:
-
-> On Fri, Oct 24, 2014 at 12:36:12PM -0400, Eric B Munson wrote:
-> > On Fri, 24 Oct 2014, Paul E. McKenney wrote:
-> > 
-> > > On Fri, Oct 24, 2014 at 12:08:15PM -0400, Eric B Munson wrote:
-> > > > Paul,
-> > > > 
-> > > > As of 3.18-rc1 I can no longer hibernate my Dell XPS-13.  Bisect points
-> > > > the finger at 35ce7f29a.  A revert of that commit confirms, I can once
-> > > > again hibernate my machine without it.
-> > > > 
-> > > > When the hibernation fails I see this in dmesg:
-> > > > [   37.953313] PM: Syncing filesystems ... done.
-> > > > [   37.963694] Freezing user space processes ... (elapsed 0.001 seconds) done.
-> > > > [   37.965297] PM: Marking nosave pages: [mem 0x00000000-0x00000fff]
-> > > > [   37.965299] PM: Marking nosave pages: [mem 0x00058000-0x00058fff]
-> > > > [   37.965301] PM: Marking nosave pages: [mem 0x0009d000-0x000fffff]
-> > > > [   37.965304] PM: Marking nosave pages: [mem 0xc496a000-0xc4b6bfff]
-> > > > [   37.965315] PM: Marking nosave pages: [mem 0xdadb7000-0xdcffefff]
-> > > > [   37.965479] PM: Marking nosave pages: [mem 0xdd000000-0xffffffff]
-> > > > [   37.966000] PM: Basic memory bitmaps created
-> > > > [   37.966046] PM: Preallocating image memory... done (allocated 181989 pages)
-> > > > [   38.141524] PM: Allocated 727956 kbytes in 0.17 seconds (4282.09 MB/s)
-> > > > [   38.141525] Freezing remaining freezable tasks ... 
-> > > > [   58.151863] Freezing of tasks failed after 20.004 seconds (0 tasks refusing to freeze, wq_busy=1):
-> > > > [   58.151894] 
-> > > > [   58.151896] Restarting kernel threads ... done.
-> > > > [   58.181915] PM: Basic memory bitmaps freed
-> > > > [   58.181917] Restarting tasks ... done.
-> > > > 
-> > > > 
-> > > > I am not sure what else I can provide that might be useful, but I did
-> > > > see the thread on net-dev about this same commit.  Please CC me on any
-> > > > fixes and I will be happy to test.
-> > > 
-> > > Thank you for the bug report!
-> > > 
-> > > Does the following patch help?
-> > > 
-> > > 							Thanx, Paul
-> > 
-> > Paul,
-> > 
-> > This patch does not help.  I see the same dmesg output and failure to
-> > hibernate.
+On Fri 24-10-14 09:49:49, Johannes Weiner wrote:
+> None of the mem_cgroup_same_or_subtree() callers actually require it
+> to take the RCU lock, either because they hold it themselves or they
+> have css references.  Remove it.
 > 
-> Thank you for testing it.  Does the following (untested, might not even
-> build) patch help?  (Or feel free to wait until I have done some testing
-> on it.)
+> To make the API change clear, rename the leftover helper to
+> mem_cgroup_is_descendant() to match cgroup_is_descendant().
+
+Looks good.
+
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+> ---
+>  include/linux/memcontrol.h | 13 +++++-----
+>  mm/memcontrol.c            | 59 +++++++++++++---------------------------------
+>  mm/oom_kill.c              |  4 ++--
+>  3 files changed, 24 insertions(+), 52 deletions(-)
 > 
-> 							Thanx, Paul
-
-Still didn't help.  If it helps, when I attempt to reboot after trying
-to hibernate I see a kworker thread hung and get the stack trace below
-from that thread.  I assume this is the same thread that is holding up
-the hibernate.
-
-Oct 24 14:26:46 lappy-486 kernel: [  240.479810] INFO: task kworker/1:0:16 blocked for more than 120 seconds.
-Oct 24 14:26:46 lappy-486 kernel: [  240.479815]       Tainted: G E  3.18.0-rc1+ #78
-Oct 24 14:26:46 lappy-486 kernel: [  240.479816] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-Oct 24 14:26:46 lappy-486 kernel: [  240.479818] kworker/1:0     D ffff88021f254600     0    16      2 0x00000000
-Oct 24 14:26:46 lappy-486 kernel: [  240.479827] Workqueue: usb_hub_wq hub_event
-Oct 24 14:26:46 lappy-486 kernel: [  240.479829]  ffff880213a93908 0000000000000046 ffff880213a83200 ffff880213a93fd8
-Oct 24 14:26:46 lappy-486 kernel: [  240.479831]  0000000000014600 0000000000014600 ffff88021357e400 ffff880213a83200
-Oct 24 14:26:46 lappy-486 kernel: [  240.479834]  0000000000014600 ffffffff81c58a10 ffffffff81c58a18 7fffffffffffffff
-Oct 24 14:26:46 lappy-486 kernel: [  240.479836] Call Trace:
-Oct 24 14:26:46 lappy-486 kernel: [  240.479843]  [<ffffffff8174d919>] schedule+0x29/0x70
-Oct 24 14:26:46 lappy-486 kernel: [  240.479846]  [<ffffffff8175091c>] schedule_timeout+0x20c/0x280
-Oct 24 14:26:46 lappy-486 kernel: [  240.479851]  [<ffffffff81097bbd>] ?  check_preempt_curr+0x8d/0xa0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479854]  [<ffffffff81097bed>] ?  ttwu_do_wakeup+0x1d/0xd0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479857]  [<ffffffff8174e616>] wait_for_completion+0xa6/0x160
-Oct 24 14:26:46 lappy-486 kernel: [  240.479860]  [<ffffffff8109abb0>] ?  wake_up_state+0x20/0x20
-Oct 24 14:26:46 lappy-486 kernel: [  240.479863]  [<ffffffff810ce267>] _rcu_barrier+0x157/0x200
-Oct 24 14:26:46 lappy-486 kernel: [  240.479865]  [<ffffffff810ce365>] rcu_barrier+0x15/0x20
-Oct 24 14:26:46 lappy-486 kernel: [  240.479870]  [<ffffffff816632f0>] netdev_run_todo+0x60/0x300
-Oct 24 14:26:46 lappy-486 kernel: [  240.479874]  [<ffffffff8166ddee>] rtnl_unlock+0xe/0x10
-Oct 24 14:26:46 lappy-486 kernel: [  240.479877]  [<ffffffff8165d3c5>] unregister_netdev+0x25/0x30
-Oct 24 14:26:46 lappy-486 kernel: [  240.479883]  [<ffffffffa05b9768>] usbnet_disconnect+0x48/0xf0 [usbnet]
-Oct 24 14:26:46 lappy-486 kernel: [  240.479888]  [<ffffffff81577a28>] usb_unbind_interface+0x1f8/0x2c0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479893]  [<ffffffff814c90e6>] ?  rpm_idle+0xd6/0x2b0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479898]  [<ffffffff814bf3cf>] __device_release_driver+0x7f/0xf0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479901]  [<ffffffff814bf463>] device_release_driver+0x23/0x30
-Oct 24 14:26:46 lappy-486 kernel: [  240.479904]  [<ffffffff814bed58>] bus_remove_device+0x108/0x180
-Oct 24 14:26:46 lappy-486 kernel: [  240.479907]  [<ffffffff814bb4d9>] device_del+0x129/0x1e0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479910]  [<ffffffff81575140>] usb_disable_device+0xb0/0x290
-Oct 24 14:26:46 lappy-486 kernel: [  240.479913]  [<ffffffff8156a554>] usb_disconnect+0x94/0x2c0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479915]  [<ffffffff8156cbe4>] hub_event+0x994/0x1500
-Oct 24 14:26:46 lappy-486 kernel: [  240.479919]  [<ffffffff810a4c5e>] ?  dequeue_task_fair+0x44e/0x660
-Oct 24 14:26:46 lappy-486 kernel: [  240.479924]  [<ffffffff81088280>] process_one_work+0x150/0x3f0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479927]  [<ffffffff81088971>] worker_thread+0x121/0x520
-Oct 24 14:26:46 lappy-486 kernel: [  240.479930]  [<ffffffff81088850>] ?  rescuer_thread+0x330/0x330
-Oct 24 14:26:46 lappy-486 kernel: [  240.479932]  [<ffffffff8108d942>] kthread+0xd2/0xf0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479935]  [<ffffffff8108d870>] ?  kthread_create_on_node+0x180/0x180
-Oct 24 14:26:46 lappy-486 kernel: [  240.479939]  [<ffffffff81751ffc>] ret_from_fork+0x7c/0xb0
-Oct 24 14:26:46 lappy-486 kernel: [  240.479941]  [<ffffffff8108d870>] ?  kthread_create_on_node+0x180/0x180
-
-Eric
-
-> 
-> ------------------------------------------------------------------------
-> 
-> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-> index 29fb23f33c18..927c17b081c7 100644
-> --- a/kernel/rcu/tree_plugin.h
-> +++ b/kernel/rcu/tree_plugin.h
-> @@ -2546,9 +2546,13 @@ static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
->  			rdp->nocb_leader = rdp_spawn;
->  			if (rdp_last && rdp != rdp_spawn)
->  				rdp_last->nocb_next_follower = rdp;
-> -			rdp_last = rdp;
-> -			rdp = rdp->nocb_next_follower;
-> -			rdp_last->nocb_next_follower = NULL;
-> +			if (rdp == rdp_spawn) {
-> +				rdp = rdp->nocb_next_follower;
-> +			} else {
-> +				rdp_last = rdp;
-> +				rdp = rdp->nocb_next_follower;
-> +				rdp_last->nocb_next_follower = NULL;
-> +			}
->  		} while (rdp);
->  		rdp_spawn->nocb_next_follower = rdp_old_leader;
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index e32ab948f589..d4575a1d6e99 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -68,10 +68,9 @@ void mem_cgroup_migrate(struct page *oldpage, struct page *newpage,
+>  struct lruvec *mem_cgroup_zone_lruvec(struct zone *, struct mem_cgroup *);
+>  struct lruvec *mem_cgroup_page_lruvec(struct page *, struct zone *);
+>  
+> -bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> -				  struct mem_cgroup *memcg);
+> -bool task_in_mem_cgroup(struct task_struct *task,
+> -			const struct mem_cgroup *memcg);
+> +bool mem_cgroup_is_descendant(struct mem_cgroup *memcg,
+> +			      struct mem_cgroup *root);
+> +bool task_in_mem_cgroup(struct task_struct *task, struct mem_cgroup *memcg);
+>  
+>  extern struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page);
+>  extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+> @@ -79,8 +78,8 @@ extern struct mem_cgroup *mem_cgroup_from_task(struct task_struct *p);
+>  extern struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg);
+>  extern struct mem_cgroup *mem_cgroup_from_css(struct cgroup_subsys_state *css);
+>  
+> -static inline
+> -bool mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *memcg)
+> +static inline bool mm_match_cgroup(struct mm_struct *mm,
+> +				   struct mem_cgroup *memcg)
+>  {
+>  	struct mem_cgroup *task_memcg;
+>  	bool match = false;
+> @@ -88,7 +87,7 @@ bool mm_match_cgroup(const struct mm_struct *mm, const struct mem_cgroup *memcg)
+>  	rcu_read_lock();
+>  	task_memcg = mem_cgroup_from_task(rcu_dereference(mm->owner));
+>  	if (task_memcg)
+> -		match = __mem_cgroup_same_or_subtree(memcg, task_memcg);
+> +		match = mem_cgroup_is_descendant(task_memcg, memcg);
+>  	rcu_read_unlock();
+>  	return match;
+>  }
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 15b1c5110a8f..f75b92a44ac6 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1307,41 +1307,24 @@ void mem_cgroup_update_lru_size(struct lruvec *lruvec, enum lru_list lru,
+>  	VM_BUG_ON((long)(*lru_size) < 0);
+>  }
+>  
+> -/*
+> - * Checks whether given mem is same or in the root_mem_cgroup's
+> - * hierarchy subtree
+> - */
+> -bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> -				  struct mem_cgroup *memcg)
+> +bool mem_cgroup_is_descendant(struct mem_cgroup *memcg, struct mem_cgroup *root)
+>  {
+> -	if (root_memcg == memcg)
+> +	if (root == memcg)
+>  		return true;
+> -	if (!root_memcg->use_hierarchy)
+> +	if (!root->use_hierarchy)
+>  		return false;
+> -	return cgroup_is_descendant(memcg->css.cgroup, root_memcg->css.cgroup);
+> -}
+> -
+> -static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+> -				       struct mem_cgroup *memcg)
+> -{
+> -	bool ret;
+> -
+> -	rcu_read_lock();
+> -	ret = __mem_cgroup_same_or_subtree(root_memcg, memcg);
+> -	rcu_read_unlock();
+> -	return ret;
+> +	return cgroup_is_descendant(memcg->css.cgroup, root->css.cgroup);
+>  }
+>  
+> -bool task_in_mem_cgroup(struct task_struct *task,
+> -			const struct mem_cgroup *memcg)
+> +bool task_in_mem_cgroup(struct task_struct *task, struct mem_cgroup *memcg)
+>  {
+> -	struct mem_cgroup *curr;
+> +	struct mem_cgroup *task_memcg;
+>  	struct task_struct *p;
+>  	bool ret;
+>  
+>  	p = find_lock_task_mm(task);
+>  	if (p) {
+> -		curr = get_mem_cgroup_from_mm(p->mm);
+> +		task_memcg = get_mem_cgroup_from_mm(p->mm);
+>  		task_unlock(p);
+>  	} else {
+>  		/*
+> @@ -1350,18 +1333,12 @@ bool task_in_mem_cgroup(struct task_struct *task,
+>  		 * killed to prevent needlessly killing additional tasks.
+>  		 */
+>  		rcu_read_lock();
+> -		curr = mem_cgroup_from_task(task);
+> -		css_get(&curr->css);
+> +		task_memcg = mem_cgroup_from_task(task);
+> +		css_get(&task_memcg->css);
+>  		rcu_read_unlock();
 >  	}
+> -	/*
+> -	 * We should check use_hierarchy of "memcg" not "curr". Because checking
+> -	 * use_hierarchy of "curr" here make this function true if hierarchy is
+> -	 * enabled in "curr" and "curr" is a child of "memcg" in *cgroup*
+> -	 * hierarchy(even if use_hierarchy is disabled in "memcg").
+> -	 */
+> -	ret = mem_cgroup_same_or_subtree(memcg, curr);
+> -	css_put(&curr->css);
+> +	ret = mem_cgroup_is_descendant(task_memcg, memcg);
+> +	css_put(&task_memcg->css);
+>  	return ret;
+>  }
+>  
+> @@ -1446,8 +1423,8 @@ static bool mem_cgroup_under_move(struct mem_cgroup *memcg)
+>  	if (!from)
+>  		goto unlock;
+>  
+> -	ret = mem_cgroup_same_or_subtree(memcg, from)
+> -		|| mem_cgroup_same_or_subtree(memcg, to);
+> +	ret = mem_cgroup_is_descendant(from, memcg) ||
+> +		mem_cgroup_is_descendant(to, memcg);
+>  unlock:
+>  	spin_unlock(&mc.lock);
+>  	return ret;
+> @@ -1813,12 +1790,8 @@ static int memcg_oom_wake_function(wait_queue_t *wait,
+>  	oom_wait_info = container_of(wait, struct oom_wait_info, wait);
+>  	oom_wait_memcg = oom_wait_info->memcg;
+>  
+> -	/*
+> -	 * Both of oom_wait_info->memcg and wake_memcg are stable under us.
+> -	 * Then we can use css_is_ancestor without taking care of RCU.
+> -	 */
+> -	if (!mem_cgroup_same_or_subtree(oom_wait_memcg, wake_memcg)
+> -		&& !mem_cgroup_same_or_subtree(wake_memcg, oom_wait_memcg))
+> +	if (!mem_cgroup_is_descendant(wake_memcg, oom_wait_memcg) &&
+> +	    !mem_cgroup_is_descendant(oom_wait_memcg, wake_memcg))
+>  		return 0;
+>  	return autoremove_wake_function(wait, mode, sync, arg);
+>  }
+> @@ -2138,7 +2111,7 @@ static void drain_all_stock(struct mem_cgroup *root_memcg)
+>  		memcg = stock->cached;
+>  		if (!memcg || !stock->nr_pages)
+>  			continue;
+> -		if (!mem_cgroup_same_or_subtree(root_memcg, memcg))
+> +		if (!mem_cgroup_is_descendant(memcg, root_memcg))
+>  			continue;
+>  		if (!test_and_set_bit(FLUSHING_CACHED_CHARGE, &stock->flags)) {
+>  			if (cpu == curcpu)
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 3348280eef89..864bba992735 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -119,7 +119,7 @@ found:
+>  
+>  /* return true if the task is not adequate as candidate victim task. */
+>  static bool oom_unkillable_task(struct task_struct *p,
+> -		const struct mem_cgroup *memcg, const nodemask_t *nodemask)
+> +		struct mem_cgroup *memcg, const nodemask_t *nodemask)
+>  {
+>  	if (is_global_init(p))
+>  		return true;
+> @@ -353,7 +353,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
+>   * State information includes task's pid, uid, tgid, vm size, rss, nr_ptes,
+>   * swapents, oom_score_adj value, and name.
+>   */
+> -static void dump_tasks(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
+> +static void dump_tasks(struct mem_cgroup *memcg, const nodemask_t *nodemask)
+>  {
+>  	struct task_struct *p;
+>  	struct task_struct *task;
+> -- 
+> 2.1.2
 > 
+
+-- 
+Michal Hocko
+SUSE Labs
