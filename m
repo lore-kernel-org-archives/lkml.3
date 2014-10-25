@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335AbaJYTaE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 15:30:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51009 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510AbaJYTaD (ORCPT
+	id S1752461AbaJYTdg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 15:33:36 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62879 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140AbaJYTdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 15:30:03 -0400
-Date: Sat, 25 Oct 2014 21:29:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Brian Silverman <bsilver16384@gmail.com>
-cc: austin.linux@gmail.com, LKML <linux-kernel@vger.kernel.org>,
-        Darren Hart <darren@dvhart.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] futex: fix a race condition between REQUEUE_PI and task
- death
-In-Reply-To: <1414092159-17697-1-git-send-email-bsilver16384@gmail.com>
-Message-ID: <alpine.DEB.2.11.1410252047570.5308@nanos>
-References: <1414092159-17697-1-git-send-email-bsilver16384@gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sat, 25 Oct 2014 15:33:35 -0400
+Message-ID: <544B7F20.40301@gmail.com>
+Date: Sat, 25 Oct 2014 12:44:48 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+To: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        linus.walleij@linaro.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] pinctrl: add helpers for group based drivers
+References: <1413792260-4265-1-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1413792260-4265-1-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Oct 2014, Brian Silverman wrote:
+On 20.10.2014 10:04, Antoine Tenart wrote:
+> Linus, Sebastian,
+>
+> As discussed earlier this year[1], this series introduce helpers for group based
+> pinctrl drivers:
+> - of_pinctrl_utils_read_function(): reads the function name of a
+>    specified node, and gets the number of groups it should be
+>    applied to.
+> - of_pinctrl_for_each_function_group(): navigates through the groups of
+>    a specified node, reading at each iteration the name of the current
+>    group.
+>
+> A generic function to parse nodes for group based drivers is also added, and
+> then used in the Berlin pinctrl driver:
+> - pinconf_generic_function_groups_dt_node_to_map()
+>
+> [1] https://lkml.org/lkml/2014/5/17/38
 
-First of all. Nice catch!
+Antoine,
 
-> pi_state_free and exit_pi_state_list both clean up futex_pi_state's.
-> exit_pi_state_list takes the hb lock first, and most callers of
-> pi_state_free do too. requeue_pi didn't, which causes lots of problems.
+thanks for looking into this!
 
-"causes lots of problems" is not really a good explanation of the root
-cause. That wants a proper description of the race, i.e.
+ From Berlin POV,
 
-CPU 0  		   CPU 1
-... 		   ....
+Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-I'm surely someone who is familiar with that code, but it took me
-quite some time to understand whats going on. The casual reader will
-just go into brain spiral mode and give up.
+> Antoine Tenart (4):
+>    Documentation: bindings: pinctrl: document the generic groups property
+>    pinctrl: add helpers for group based drivers
+>    pinctrl: add a generic way to map node to map for group based drivers
+>    pinctrl: berlin: use the generic node to map function
+>
+>   .../bindings/pinctrl/pinctrl-bindings.txt          |  1 +
+>   drivers/pinctrl/berlin/Kconfig                     |  1 +
+>   drivers/pinctrl/berlin/berlin.c                    | 53 +---------------------
+>   drivers/pinctrl/pinconf-generic.c                  | 36 +++++++++++++++
+>   drivers/pinctrl/pinctrl-utils.c                    | 26 +++++++++++
+>   drivers/pinctrl/pinctrl-utils.h                    |  9 ++++
+>   include/linux/pinctrl/pinconf-generic.h            |  3 ++
+>   7 files changed, 78 insertions(+), 51 deletions(-)
+>
 
-> +/**
-> + * Must be called with the hb lock held.
-> + */
-
-Having that comment is nice, but there is nothing which enforces
-it. So we really should add another argument to that function,
-i.e. struct futex_hash_bucket *hb and verify that the lock is held at
-least when lockdep is enabled.
-
->  static void free_pi_state(struct futex_pi_state *pi_state)
-
-> @@ -1558,6 +1552,14 @@ retry_private:
->  		ret = get_futex_value_locked(&curval, uaddr1);
->  
->  		if (unlikely(ret)) {
-> +			if (flags & FLAGS_SHARED && pi_state != NULL) {
-
-Why is this dependend on "flags & FLAGS_SHARED"? The shared/private
-property has nothing to do with that at all, but I might be missing
-something.
-
-> +				/*
-> +				 * We will have to lookup the pi_state again, so
-> +				 * free this one to keep the accounting correct.
-> +				 */
-> +				free_pi_state(pi_state);
-> +				pi_state = NULL;
-
-Instead of copying the same code over and over, we should change
-free_pi_state() to handle being called with a NULL pointer.
-
-Thanks,
-
-	tglx
