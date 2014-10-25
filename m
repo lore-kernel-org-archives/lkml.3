@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892AbaJYVWZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 17:22:25 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56846 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204AbaJYVWX (ORCPT
+	id S1752855AbaJYVb3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 17:31:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51238 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176AbaJYVb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 17:22:23 -0400
-Date: Sat, 25 Oct 2014 23:22:21 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, David Drysdale <drysdale@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
-Message-ID: <20141025212220.GA24664@amd>
-References: <1401975635-6162-1-git-send-email-drysdale@google.com>
- <CALCETrVraoD+r4zxBoGd+BV5P275AXcRV_R00SSr8fjQzRHnUg@mail.gmail.com>
- <20141019202034.GH7996@ZenIV.linux.org.uk>
- <CALCETrVZUW2iPtfFJtGnWd2RsYLwjGRGYuujrVqcOsO5oBB8Cg@mail.gmail.com>
- <20141019212921.GI7996@ZenIV.linux.org.uk>
- <CALCETrVTiO6YKRYAAe-eBgQvpUqrtE0=KrKJj2T_XJ9iSRDtmA@mail.gmail.com>
- <20141019224251.GJ7996@ZenIV.linux.org.uk>
- <CALCETrW1bWcRZxJcKS0tdCxy++Y=ndoxeh5HuZrLMLHnk+i5NA@mail.gmail.com>
+	Sat, 25 Oct 2014 17:31:28 -0400
+Date: Sat, 25 Oct 2014 23:31:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@alien8.de>
+cc: Andy Lutomirski <luto@amacapital.net>, Ben Harris <bjh21@bjh21.me.uk>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Don't allow stackprotector without TSC
+In-Reply-To: <20141024120323.GA30459@pd.tnic>
+Message-ID: <alpine.DEB.2.11.1410252327310.5308@nanos>
+References: <alpine.DEB.2.10.1410232227580.28125@snap.ds.cam.ac.uk> <54499287.5070803@amacapital.net> <20141024120323.GA30459@pd.tnic>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrW1bWcRZxJcKS0tdCxy++Y=ndoxeh5HuZrLMLHnk+i5NA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, 24 Oct 2014, Borislav Petkov wrote:
+> On Thu, Oct 23, 2014 at 04:43:03PM -0700, Andy Lutomirski wrote:
+> > Presumably the actual failure is a #GP when trying to do the rdtsc. If
+> > so, wouldn't a better fix be to make that rdtsc check cpuid first? Can
+> > we easily check cpuid that early?
+> 
+> I don't see why not.
+> 
+> The real question, though is, can we have a fallback for RDTSC on those
+> machines so that they don't have to disable stack protector in order to
+> boot.
 
-> >> Oh, you mean that #!/usr/bin/make -f would turn into /usr/bin/make
-> >> /dev/fd/3?  That could be interesting, although I can imagine it
-> >> breaking things, especially if /dev/fd/3 isn't set up like that, e.g.
-> >> early in boot.
-> >
-> > Sigh...  What I mean is that fexecve(fd, ...) would have to put _something_
-> > into argv when it execs the interpreter of #! file.  Simply because the
-> > interpreter (which can be anything whatsoever) has no fscking idea what
-> > to do with some descriptor it has before execve().  Hell, it doesn't have
-> > any idea *which* descriptor had it been.
-> >
-> > You need to put some pathname that would yield your script upon open(2).
-> > If you bothered to read those patches, you'd see that they do supply
-> > one, generating it with d_path().  Which isn't particulary reliable.
-> >
-> > I'm not sure there's any point putting any of that in the kernel - if
-> > you *do* have that pathname, you can just pass it.
-> 
-> Hmm.
-> 
-> This issue certainly makes fexecve or execveat less attractive, at
-> least in cases where d_path won't work.
-> 
-> On the other hand, if you want to run a static binary on a cloexec fd
-> (or, for that matter, a dynamic binary if you trust the interpreter to
-> close the extra copy of the fd it gets) in a namespace or chroot where
-> the binary is invisible, then you need kernel help.
-> 
-> It's too bad that script interpreters don't have a mechanism to open
-> their scripts by fd.
+The simple solution is to make the rdtsc conditional on the
+availability of the feature flag, which is going to be not set on
+these kind of machines.
 
-Every interpretter depends on /dev/zero... so what about having
-/dev/script_im_running? Standard character device, contains whatever
-script it should contain...
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+So for the non TSC case we can either leave the extra randomness alone
+or readout PIT, which is available and better than nothing.
+
+Thanks,
+
+	tglx
