@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaJYToo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 15:44:44 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50072 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaJYTok (ORCPT
+	id S1752690AbaJYTqd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 15:46:33 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:45158 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaJYTqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 15:44:40 -0400
-Message-ID: <544BFDA5.2010404@roeck-us.net>
-Date: Sat, 25 Oct 2014 12:44:37 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 25 Oct 2014 15:46:32 -0400
+Message-ID: <544B4534.4030204@gmail.com>
+Date: Sat, 25 Oct 2014 02:37:40 -0400
+From: "Michael L. Semon" <mlsemon35@gmail.com>
+User-Agent: Mozilla/5.0 (X11; FreeBSD amd64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Andrew Lunn <andrew@lunn.ch>
-CC: Florian Fainelli <f.fainelli@gmail.com>, netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
-References: <CAGVrzcYjPJWai9bxkh+WRrEEAzBKBd-LQm7zDeeouxngr_v9SQ@mail.gmail.com> <54488CE1.2000106@roeck-us.net> <20141023134706.GB25190@lunn.ch> <20141023162754.GA21343@roeck-us.net> <20141023165459.GE25190@lunn.ch> <20141023173847.GA22988@roeck-us.net> <20141023180357.GG25190@lunn.ch> <20141023184322.GA24281@roeck-us.net> <20141023195526.GH25190@lunn.ch> <20141024161919.GA29600@roeck-us.net> <20141025140116.GA12051@lunn.ch>
-In-Reply-To: <20141025140116.GA12051@lunn.ch>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: linux-kernel@vger.kernel.org, axboe@fb.com
+Subject: Re: Slow dc3dd in 3.18 on x86
+References: <544AA317.8070609@gmail.com> <yq1r3xxtfa7.fsf@sermon.lab.mkp.net>	<544AEEF1.30506@gmail.com> <yq1wq7osyr3.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1wq7osyr3.fsf@sermon.lab.mkp.net>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.544BFDA8.0095,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2014 07:01 AM, Andrew Lunn wrote:
->> Here is another naming option:
->>
->> em1dsa0-virtual-0
+On 10/24/14 21:51, Martin K. Petersen wrote:
+>>>>>> "Michael" == Michael L Semon <mlsemon35@gmail.com> writes:
 >
-> I prefer this over isa.
+> Michael> There was nothing regarding integrity in /sys/block/sda.  I was
+> Michael> under the impression that both bio integrity and T10 checksums
+> Michael> require hardware support from good hardware, so the config
+> Michael> items have always been shut off.
 >
-> However, i think there should be some sort of separator between the
-> network device name and dsa.
+> That's correct. But I see what's going on.
+>
+> Please try this:
+>
+> commit 8d331952d2cd341d5c0e64eee961f78f6eb4b968
+> Author: Martin K. Petersen <martin.petersen@oracle.com>
+> Date:   Fri Oct 24 21:39:12 2014 -0400
+>
+>      block: Fix merge logic when CONFIG_BLK_DEV_INTEGRITY is not defined
+>
+>      Commit 4eaf99beadce switched to returning bool and as a result
+>      reversed the logic of the integrity merge checks.  However, the
+>      empty stubs used when the block integrity code is compiled out were
+>      still returning 0. Make these stubs return "true".
+>
+>      Reported-by: Michael L. Semon <mlsemon35@gmail.com>
+>      Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+>
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 9fbf4d3196ed..7442c6b9187e 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -1590,13 +1590,13 @@ static inline bool blk_integrity_merge_rq(struct request_queue *rq,
+>   					  struct request *r1,
+>   					  struct request *r2)
+>   {
+> -	return 0;
+> +	return true;
+>   }
+>   static inline bool blk_integrity_merge_bio(struct request_queue *rq,
+>   					   struct request *r,
+>   					   struct bio *b)
+>   {
+> -	return 0;
+> +	return true;
+>   }
+>   static inline bool blk_integrity_is_initialized(struct gendisk *g)
+>   {
 >
 
-Fine with me. Any preference ? Note that '-' is not permitted.
+Excellent!  All is well with the problem kernel.  All is well with the
+night's git master + xfs-oss/for-next as well.  The saved E-mail patched
+cleanly against both kernels using `git am`.  About 40 GB of data was
+written, some using fio, most using dc3dd.  No problems.
 
-Guenter
+I'll keep this patch and stand behind its good results so far.
+
+Thanks again!
+
+Michael
 
