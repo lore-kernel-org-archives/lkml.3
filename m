@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751756AbaJYSlV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:41:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40442 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaJYSk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:40:57 -0400
-From: Jay Vosburgh <jay.vosburgh@canonical.com>
-To: paulmck@linux.vnet.ibm.com
-cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        mroos@linux.ee, tj@kernel.org
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-In-reply-to: <20141025020324.GA28247@linux.vnet.ibm.com>
-References: <20141024170931.GA21849@declera.com> <20141024172009.GV4977@linux.vnet.ibm.com> <20141024173526.GA26058@declera.com> <20141024183226.GW4977@linux.vnet.ibm.com> <20141024212557.GA15537@declera.com> <20141024214927.GA4977@linux.vnet.ibm.com> <8915.1414190047@famine> <20141024225931.GC4977@linux.vnet.ibm.com> <20141024230524.GA16023@linux.vnet.ibm.com> <10136.1414196448@famine> <20141025020324.GA28247@linux.vnet.ibm.com>
-Comments: In-reply-to "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-   message dated "Fri, 24 Oct 2014 19:03:24 -0700."
-X-Mailer: MH-E 8.5+bzr; nmh 1.5; GNU Emacs 24.4.50
-Date: Fri, 24 Oct 2014 21:33:33 -0700
-Message-ID: <11813.1414211613@famine>
+	id S1751850AbaJYSl3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:41:29 -0400
+Received: from mailsec102.isp.belgacom.be ([195.238.20.98]:23487 "EHLO
+	mailsec102.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750978AbaJYSl0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Oct 2014 14:41:26 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=qsbIbJLQU8sGrbuCvKIQzsqFhob9I/ci1U+ADm/ASCc= c=1 sm=2
+ a=IkcTkHD0fZMA:10 a=DswfTcTIAAAA:8 a=yVeKuNOh8FJU2uiRIXoA:9 a=QEXdDO2ut3YA:10
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvgKALdoS1TD7hTS/2dsb2JhbABcgw6BLIMGtk0GmzMCgQgWAX2EAgEBAQMBIwRSBQsFBAIYAgIYDgICVwYTEYgnDZgMnF+HAI1pAQEBBwIBH4EshHmKADMHgneBVAWqRYlEgX4ggVw7L4JLAQEB
+Date: Sat, 25 Oct 2014 11:12:16 +0200 (CEST)
+From: Fabian Frederick <fabf@skynet.be>
+Reply-To: Fabian Frederick <fabf@skynet.be>
+To: Ilya Dryomov <ilya.dryomov@inktank.com>
+Cc: netdev@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ceph Development <ceph-devel@vger.kernel.org>,
+        Sage Weil <sage@inktank.com>, "David S. Miller" <davem@davemloft.net>
+Message-ID: <1805780944.182558.1414228336940.open-xchange@webmail.nmp.skynet.be>
+In-Reply-To: <CALFYKtD222g32njwF8nHz0Fbjj4p2512ka9bkADmB6S2QibgYA@mail.gmail.com>
+References: <1414080959-6053-1-git-send-email-fabf@skynet.be> <CALFYKtD222g32njwF8nHz0Fbjj4p2512ka9bkADmB6S2QibgYA@mail.gmail.com>
+Subject: Re: [PATCH 1/1 net-next] libceph: remove unused variable in
+ handle_reply()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.2.2-Rev27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
->On Fri, Oct 24, 2014 at 05:20:48PM -0700, Jay Vosburgh wrote:
->> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
->> 
->> >On Fri, Oct 24, 2014 at 03:59:31PM -0700, Paul E. McKenney wrote:
->> [...]
->> >> Hmmm...  It sure looks like we have some callbacks stuck here.  I clearly
->> >> need to take a hard look at the sleep/wakeup code.
->> >> 
->> >> Thank you for running this!!!
->> >
->> >Could you please try the following patch?  If no joy, could you please
->> >add rcu:rcu_nocb_wake to the list of ftrace events?
->> 
->> 	I tried the patch, it did not change the behavior.
->> 
->> 	I enabled the rcu:rcu_barrier and rcu:rcu_nocb_wake tracepoints
->> and ran it again (with this patch and the first patch from earlier
->> today); the trace output is a bit on the large side so I put it and the
->> dmesg log at:
->> 
->> http://people.canonical.com/~jvosburgh/nocb-wake-dmesg.txt
->> 
->> http://people.canonical.com/~jvosburgh/nocb-wake-trace.txt
+
+> On 23 October 2014 at 18:25 Ilya Dryomov <ilya.dryomov@inktank.com> wrote:
 >
->Thank you again!
 >
->Very strange part of the trace.  The only sign of CPU 2 and 3 are:
+> On Thu, Oct 23, 2014 at 8:15 PM, Fabian Frederick <fabf@skynet.be> wrote:
+> > osdmap_epoch is redundant with reassert_epoch and unused.
+> >
+> > Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> > ---
+> >  net/ceph/osd_client.c | 2 --
+> >  1 file changed, 2 deletions(-)
+> >
+> > diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+> > index f3fc54e..432bd75 100644
+> > --- a/net/ceph/osd_client.c
+> > +++ b/net/ceph/osd_client.c
+> > @@ -1700,7 +1700,6 @@ static void handle_reply(struct ceph_osd_client *osdc,
+> > struct ceph_msg *msg,
+> >         int err;
+> >         u32 reassert_epoch;
+> >         u64 reassert_version;
+> > -       u32 osdmap_epoch;
+> >         int already_completed;
+> >         u32 bytes;
+> >         unsigned int i;
+> > @@ -1725,7 +1724,6 @@ static void handle_reply(struct ceph_osd_client *osdc,
+> > struct ceph_msg *msg,
+> >         result = ceph_decode_32(&p);
+> >         reassert_epoch = ceph_decode_32(&p);
+> >         reassert_version = ceph_decode_64(&p);
+> > -       osdmap_epoch = ceph_decode_32(&p);
+> >
+> >         /* lookup */
+> >         down_read(&osdc->map_sem);
 >
->    ovs-vswitchd-902   [000] ....   109.896840: rcu_barrier: rcu_sched Begin cpu -1 remaining 0 # 0
->    ovs-vswitchd-902   [000] ....   109.896840: rcu_barrier: rcu_sched Check cpu -1 remaining 0 # 0
->    ovs-vswitchd-902   [000] ....   109.896841: rcu_barrier: rcu_sched Inc1 cpu -1 remaining 0 # 1
->    ovs-vswitchd-902   [000] ....   109.896841: rcu_barrier: rcu_sched OnlineNoCB cpu 0 remaining 1 # 1
->    ovs-vswitchd-902   [000] d...   109.896841: rcu_nocb_wake: rcu_sched 0 WakeNot
->    ovs-vswitchd-902   [000] ....   109.896841: rcu_barrier: rcu_sched OnlineNoCB cpu 1 remaining 2 # 1
->    ovs-vswitchd-902   [000] d...   109.896841: rcu_nocb_wake: rcu_sched 1 WakeNot
->    ovs-vswitchd-902   [000] ....   109.896842: rcu_barrier: rcu_sched OnlineNoCB cpu 2 remaining 3 # 1
->    ovs-vswitchd-902   [000] d...   109.896842: rcu_nocb_wake: rcu_sched 2 WakeNotPoll
->    ovs-vswitchd-902   [000] ....   109.896842: rcu_barrier: rcu_sched OnlineNoCB cpu 3 remaining 4 # 1
->    ovs-vswitchd-902   [000] d...   109.896842: rcu_nocb_wake: rcu_sched 3 WakeNotPoll
->    ovs-vswitchd-902   [000] ....   109.896843: rcu_barrier: rcu_sched Inc2 cpu -1 remaining 4 # 2
+> Hi Fabian,
 >
->The pair of WakeNotPoll trace entries says that at that point, RCU believed
->that the CPU 2's and CPU 3's rcuo kthreads did not exist.  :-/
+> osdmap_epoch is useful for debugging, but this is wrong anyway -
+> ceph_decode_32() has side effects.  Removing it and not adjusting *p
+> would make the whole thing blow up pretty fast..
+>
+> Thanks,
+>
+>                 Ilya
 
-	On the test system I'm using, CPUs 2 and 3 really do not exist;
-it is a 2 CPU system (Intel Core 2 Duo E8400). I mentioned this in an
-earlier message, but perhaps you missed it in the flurry.
+Hi Ilya,
 
-	Looking at the dmesg, the early boot messages seem to be
-confused as to how many CPUs there are, e.g.,
+        osdmap_epoch generates a warning with -Wunused-but-set-variable.
+Maybe we could just do ceph_decode_32(&p) and remove it
+(it doesn't seem to add a warning) and/or add some comment ?
 
-[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
-[    0.000000] Hierarchical RCU implementation.
-[    0.000000]  RCU debugfs-based tracing is enabled.
-[    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
-[    0.000000]  RCU restricting CPUs from NR_CPUS=256 to nr_cpu_ids=4.
-[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
-[    0.000000] NR_IRQS:16640 nr_irqs:456 0
-[    0.000000]  Offload RCU callbacks from all CPUs
-[    0.000000]  Offload RCU callbacks from CPUs: 0-3.
-
-	but later shows 2:
-
-[    0.233703] x86: Booting SMP configuration:
-[    0.236003] .... node  #0, CPUs:      #1
-[    0.255528] x86: Booted up 1 node, 2 CPUs
-
-	In any event, the E8400 is a 2 core CPU with no hyperthreading.
-
-	-J
-
----
-	-Jay Vosburgh, jay.vosburgh@canonical.com
+Regards,
+Fabian
