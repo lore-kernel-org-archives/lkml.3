@@ -1,166 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027AbaJYVvU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 17:51:20 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:53815 "EHLO
+	id S1753137AbaJYVwM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 17:52:12 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:48459 "EHLO
 	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752934AbaJYVvR (ORCPT
+	by vger.kernel.org with ESMTP id S1752939AbaJYVvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 17:51:17 -0400
+	Sat, 25 Oct 2014 17:51:11 -0400
 From: Marc Zyngier <marc.zyngier@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3/3] irqchip: GICv3: Convert to EOImode == 1
-Date: Sat, 25 Oct 2014 12:06:55 +0100
-Message-Id: <1414235215-10468-4-git-send-email-marc.zyngier@arm.com>
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, Phong Vo <pvo@apm.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
+        Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Toan Le <toanle@apm.com>, Bjorn Andersson <bjorn@kryo.se>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/3] genirq: Allow the irqchip state of an IRQ to be save/restored
+Date: Sat, 25 Oct 2014 11:14:55 +0100
+Message-Id: <1414232097-4328-2-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414235215-10468-1-git-send-email-marc.zyngier@arm.com>
-References: <1414235215-10468-1-git-send-email-marc.zyngier@arm.com>
+In-Reply-To: <1414232097-4328-1-git-send-email-marc.zyngier@arm.com>
+References: <1414232097-4328-1-git-send-email-marc.zyngier@arm.com>
 X-SA-Exim-Connect-IP: 90.219.10.17
-X-SA-Exim-Rcpt-To: tglx@linutronix.de, jason@lakedaemon.net, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-SA-Exim-Rcpt-To: adharmap@codeaurora.org, pvo@apm.com, linus.walleij@linaro.org, tnhuynh@apm.com, yvo@apm.com, tglx@linutronix.de, toanle@apm.com, bjorn@kryo.se, arnd@arndb.de, linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 X-SA-Exim-Mail-From: marc.zyngier@arm.com
 X-SA-Exim-Scanned: No (on cheepnis.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So far, GICv3 has been used in with EOImode == 0. The effect of this
-mode is to perform the priority drop and the deactivation of the
-interrupt at the same time.
+There is a number of cases where a kernel subsystem may want to
+introspect the state of an interrupt at the irqchip level:
 
-While this works perfectly for Linux (we only have a single priority),
-it causes issues when an interrupt is forwarded to a guest, and when
-we want the guest to perform the EOI itself. This is also rather
-inefficient for threaded interrupts, as it forces us to hit the
-distributor (which is slower, specially when using virtualization).
+- When a peripheral is shared between virtual machines, its interrupt
+  state becomes part of the guest's state, and must be switched accordingly.
+  KVM on arm/arm64 requires this for its guest-visible timer
+- Some GPIO controllers seem to require peeking into the interrupt controller
+  they are connected to to report their internal state
 
-For this case, the GIC architecture provides EOImode == 1, where:
-- A write to ICC_EOIR1_EL1 drops the priority of the interrupt and leaves
-it active. Other interrupts at the same priority level can now be taken,
-but the active interrupt cannot be taken again
-- A write to ICC_DIR_EL1 marks the interrupt as inactive, meaning it can
-now be taken again.
+This seem to be a pattern that is common enough for the core code to try and
+support this without too many horrible hacks. Introduce a pair of accessors
+(irq_get_irqchip_state/irq_set_irqchip_state) to retrieve the bits that can
+be of interest to another subsystem: pending, active, and masked.
 
-This patch converts the driver to this new mode when virtualization is
-enabled.
+- irq_get_irqchip_state returns the state of the interrupt according to a
+  state parameter set to IRQCHIP_STATE_PENDING, IRQCHIP_STATE_ACTIVE
+  or IRQCHIP_STATE_MASKED.
+- irq_set_irqchip_state sets the state of the interrupt according to
+  a similar state.
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- drivers/irqchip/irq-gic-v3.c       | 30 ++++++++++++++++++++++++++++--
- include/linux/irqchip/arm-gic-v3.h | 10 ++++++++++
- 2 files changed, 38 insertions(+), 2 deletions(-)
+ include/linux/interrupt.h |  2 ++
+ include/linux/irq.h       | 18 ++++++++++++
+ kernel/irq/manage.c       | 71 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 91 insertions(+)
 
-diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
-index 666c14e..c7f8a25 100644
---- a/drivers/irqchip/irq-gic-v3.c
-+++ b/drivers/irqchip/irq-gic-v3.c
-@@ -30,6 +30,7 @@
- #include <asm/cputype.h>
- #include <asm/exception.h>
- #include <asm/smp_plat.h>
-+#include <asm/virt.h>
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 69517a2..80818b4 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -356,6 +356,8 @@ static inline int disable_irq_wake(unsigned int irq)
+ 	return irq_set_irq_wake(irq, 0);
+ }
  
- #include "irq-gic-common.h"
- #include "irqchip.h"
-@@ -45,6 +46,7 @@ struct gic_chip_data {
++extern int irq_get_irqchip_state(unsigned int irq, int state);
++extern int irq_set_irqchip_state(unsigned int irq, int state, int val);
+ 
+ #ifdef CONFIG_IRQ_FORCED_THREADING
+ extern bool force_irqthreads;
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 03f48d9..257d59a 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -315,6 +315,8 @@ static inline irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
+  *				any other callback related to this irq
+  * @irq_release_resources:	optional to release resources acquired with
+  *				irq_request_resources
++ * @irq_get_irqchip_state:	return the internal state of an interrupt
++ * @irq_set_irqchip_state:	set the internal state of a interrupt
+  * @flags:		chip specific flags
+  */
+ struct irq_chip {
+@@ -351,6 +353,9 @@ struct irq_chip {
+ 	int		(*irq_request_resources)(struct irq_data *data);
+ 	void		(*irq_release_resources)(struct irq_data *data);
+ 
++	int		(*irq_get_irqchip_state)(struct irq_data *data, int state);
++	void		(*irq_set_irqchip_state)(struct irq_data *data, int state, int val);
++
+ 	unsigned long	flags;
  };
  
- static struct gic_chip_data gic_data __read_mostly;
-+static bool supports_deactivate = false;
+@@ -376,6 +381,19 @@ enum {
+ 	IRQCHIP_EOI_THREADED		= (1 <<  6),
+ };
  
- #define gic_data_rdist()		(this_cpu_ptr(gic_data.rdist))
- #define gic_data_rdist_rd_base()	(*gic_data_rdist())
-@@ -289,6 +291,16 @@ static void gic_eoi_irq(struct irq_data *d)
- 	gic_write_eoir(gic_irq(d));
++/*
++ * irq_get_irqchip_state/irq_set_irqchip_state specific flags:
++ *
++ * IRQCHIP_STATE_PENDING:	Interrupt asserted at the pin level
++ * IRQCHIP_STATE_ACTIVE:	Interrupt in progress (ACKed, but not EOIed)
++ * IRQCHIP_STATE_MASKED:	Interrupt is masked
++ */
++enum {
++	IRQCHIP_STATE_PENDING,
++	IRQCHIP_STATE_ACTIVE,
++	IRQCHIP_STATE_MASKED,
++};
++
+ /* This include will go away once we isolated irq_desc usage to core code */
+ #include <linux/irqdesc.h>
+ 
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0a9104b..6a4c03f 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1756,3 +1756,74 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
+ 
+ 	return retval;
  }
- 
-+static void gic_priority_drop_irq(struct irq_data *d)
++
++/**
++ *	irq_get_irqchip_state - returns the irqchip state of a interrupt.
++ *	@irq: Interrupt line that is forwarded to a VM
++ *	@state: One of IRQCHIP_STATE_* the caller wants to know about
++ *
++ *	This call snapshots the internal irqchip state of an
++ *	interrupt, returning the bit corresponding to the requested
++ *	@state.
++ *
++ *	This function should be called with preemption disabled if the
++ *	interrupt controller has per-cpu registers.
++ */
++int irq_get_irqchip_state(unsigned int irq, int state)
 +{
-+	gic_write_eoir(gic_irq(d));
++	struct irq_desc *desc;
++	struct irq_data *data;
++	struct irq_chip *chip;
++	int val;
++
++	desc = irq_to_desc(irq);
++	if (!desc)
++		return -EINVAL;
++
++	data = irq_desc_get_irq_data(desc);
++
++	chip = irq_desc_get_chip(desc);
++	if (!chip->irq_get_irqchip_state)
++		return -EINVAL;
++
++	chip_bus_lock(desc);
++	val = chip->irq_get_irqchip_state(data, state);
++	chip_bus_sync_unlock(desc);
++
++	return val;
 +}
 +
-+static void gic_deactivate_irq(struct irq_data *d)
++/**
++ *	irq_set_irqchip_state - set the state of a forwarded interrupt.
++ *	@irq: Interrupt line that is forwarded to a VM
++ *	@state: State to be restored (one of IRQCHIP_STATE_*)
++ *	@val: value corresponding to @state
++ *
++ *	This call sets the internal irqchip state of an interrupt,
++ *	depending on the value of @state.
++ *
++ *	This function should be called with preemption disabled if the
++ *	interrupt controller has per-cpu registers.
++ */
++int irq_set_irqchip_state(unsigned int irq, int state, int val)
 +{
-+	gic_write_dir(gic_irq(d));
++	struct irq_desc *desc;
++	struct irq_data *data;
++	struct irq_chip *chip;
++
++	desc = irq_to_desc(irq);
++	if (!desc)
++		return -EINVAL;
++
++	data = irq_desc_get_irq_data(desc);
++
++	chip = irq_desc_get_chip(desc);
++	if (!chip->irq_set_irqchip_state)
++		return -EINVAL;
++
++	chip_bus_lock(desc);
++	chip->irq_set_irqchip_state(data, state, val);
++	chip_bus_sync_unlock(desc);
++
++	return 0;
 +}
-+
- static int gic_set_type(struct irq_data *d, unsigned int type)
- {
- 	unsigned int irq = gic_irq(d);
-@@ -345,6 +357,8 @@ static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs
- 		}
- 		if (irqnr < 16) {
- 			gic_write_eoir(irqnr);
-+			if (supports_deactivate)
-+				gic_write_dir(irqnr);
- #ifdef CONFIG_SMP
- 			handle_IPI(irqnr, regs);
- #else
-@@ -441,8 +455,13 @@ static void gic_cpu_sys_reg_init(void)
- 	/* Set priority mask register */
- 	gic_write_pmr(DEFAULT_PMR_VALUE);
- 
--	/* EOI deactivates interrupt too (mode 0) */
--	gic_write_ctlr(ICC_CTLR_EL1_EOImode_drop_dir);
-+	if (supports_deactivate) {
-+		/* EOI drops priority only (mode 1) */
-+		gic_write_ctlr(ICC_CTLR_EL1_EOImode_drop);
-+	} else {
-+		/* EOI deactivates interrupt too (mode 0) */
-+		gic_write_ctlr(ICC_CTLR_EL1_EOImode_drop_dir);
-+	}
- 
- 	/* ... and let's hit the road... */
- 	gic_write_grpen1(1);
-@@ -738,6 +757,13 @@ static int __init gic_of_init(struct device_node *node, struct device_node *pare
- 	if (of_property_read_u64(node, "redistributor-stride", &redist_stride))
- 		redist_stride = 0;
- 
-+	if (is_hyp_mode_available()) {
-+		supports_deactivate = true;
-+		gic_chip.flags			= IRQCHIP_EOI_THREADED,
-+		gic_chip.irq_priority_drop	= gic_priority_drop_irq;
-+		gic_chip.irq_eoi		= gic_deactivate_irq;
-+	}
-+
- 	gic_data.dist_base = dist_base;
- 	gic_data.redist_base = redist_base;
- 	gic_data.redist_regions = redist_regions;
-diff --git a/include/linux/irqchip/arm-gic-v3.h b/include/linux/irqchip/arm-gic-v3.h
-index 03a4ea3..9875502 100644
---- a/include/linux/irqchip/arm-gic-v3.h
-+++ b/include/linux/irqchip/arm-gic-v3.h
-@@ -74,6 +74,9 @@
- #define GICR_SYNCR			0x00C0
- #define GICR_MOVLPIR			0x0100
- #define GICR_MOVALLR			0x0110
-+#define GICR_ISACTIVER			GICD_ISACTIVER
-+#define GICR_ICACTIVER			GICD_ICACTIVER
-+#define GICR_IDREGS			GICD_IDREGS
- #define GICR_PIDR2			GICD_PIDR2
- 
- #define GICR_WAKER_ProcessorSleep	(1U << 1)
-@@ -128,6 +131,7 @@
- #define ICH_VMCR_PMR_MASK		(0xffUL << ICH_VMCR_PMR_SHIFT)
- 
- #define ICC_EOIR1_EL1			sys_reg(3, 0, 12, 12, 1)
-+#define ICC_DIR_EL1			sys_reg(3, 0, 12, 11, 1)
- #define ICC_IAR1_EL1			sys_reg(3, 0, 12, 12, 0)
- #define ICC_SGI1R_EL1			sys_reg(3, 0, 12, 11, 5)
- #define ICC_PMR_EL1			sys_reg(3, 0, 4, 6, 0)
-@@ -195,6 +199,12 @@ static inline void gic_write_eoir(u64 irq)
- 	isb();
- }
- 
-+static inline void gic_write_dir(u64 irq)
-+{
-+	asm volatile("msr_s " __stringify(ICC_DIR_EL1) ", %0" : : "r" (irq));
-+	isb();
-+}
-+
- #endif
- 
- #endif
 -- 
 2.1.0
 
