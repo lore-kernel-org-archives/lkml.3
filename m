@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaJYSx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:53:28 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:47852 "EHLO
+	id S1752253AbaJYSx3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:53:29 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:47851 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947AbaJYSx0 (ORCPT
+	with ESMTP id S1750884AbaJYSx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 25 Oct 2014 14:53:26 -0400
 From: Wang Nan <wangnan0@huawei.com>
@@ -14,113 +14,71 @@ CC: <linux@arm.linux.org.uk>, <will.deacon@arm.com>, <dave.long@linaro.org>,
         <cl@linux.com>, <rabin@rab.in>, <davem@davemloft.net>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <lizefan@huawei.com>
-Subject: [PATCH 4/4] ARM: kprobes: disallow probing stack consuming instructions
-Date: Sat, 25 Oct 2014 14:42:53 +0800
-Message-ID: <1414219373-20070-5-git-send-email-wangnan0@huawei.com>
+Subject: [PATCH 0/4] ARM: kprobes: introduces instruction checker.
+Date: Sat, 25 Oct 2014 14:42:49 +0800
+Message-ID: <1414219373-20070-1-git-send-email-wangnan0@huawei.com>
 X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1414219373-20070-1-git-send-email-wangnan0@huawei.com>
-References: <1414219373-20070-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.107.197.247]
 X-CFilter-Loop: Reflected
 X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.544B46E0.0121,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	refid=str=0001.0A020206.544B46E0.0150,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
 	ip=0.0.0.0,
 	so=2013-05-26 15:14:31,
 	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 76036ec598f800814f8cc8e2b69bbf95
+X-Mirapoint-Loop-Id: bcf26beb3465c2268c296f8062cf8692
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prohibit probing instructions for which the stack
-requirement are unable to be determined statically. Some test cases
-are found not work again after the modification, this patch also
-removes them.
+This patch series is part of the version 7 of patch 'ARM: kprobes:
+enable OPTPROBES for ARM 32.'. Its main goal is introducing checker
+mechanism to give a chance to detail check each probed instructions.
+Based on Masami Hiramatsu's suggestion, I make it a dedicated series.
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- arch/arm/kernel/kprobes-test-arm.c | 16 ++++++++++------
- arch/arm/kernel/kprobes.c          |  8 ++++++++
- 2 files changed, 18 insertions(+), 6 deletions(-)
+Previous discussions can be found in following threads:
 
-diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
-index 264c064..59f9b25 100644
---- a/arch/arm/kernel/kprobes-test-arm.c
-+++ b/arch/arm/kernel/kprobes-test-arm.c
-@@ -476,7 +476,8 @@ void kprobe_arm_test_cases(void)
- 	TEST_GROUP("Extra load/store instructions")
- 
- 	TEST_RPR(  "strh	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")
--	TEST_RPR(  "streqh	r",14,VAL2,", [r",13,0, ", r",12, 48,"]")
-+	TEST_RPR(  "streqh	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")
-+	TEST_UNSUPPORTED(  "streqh	r14, [r13, r12]")
- 	TEST_RPR(  "strh	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")
- 	TEST_RPR(  "strneh	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strh	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")
-@@ -565,7 +566,8 @@ void kprobe_arm_test_cases(void)
- 
- #if __LINUX_ARM_ARCH__ >= 5
- 	TEST_RPR(  "strd	r",0, VAL1,", [r",1, 48,", -r",2,24,"]")
--	TEST_RPR(  "strccd	r",8, VAL2,", [r",13,0, ", r",12,48,"]")
-+	TEST_RPR(  "strccd	r",8, VAL2,", [r",11,0, ", r",12,48,"]")
-+	TEST_UNSUPPORTED(  "strccd r8, [r13, r12]")
- 	TEST_RPR(  "strd	r",4, VAL1,", [r",2, 24,", r",3, 48,"]!")
- 	TEST_RPR(  "strcsd	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
- 	TEST_RPR(  "strd	r",2, VAL1,", [r",5, 24,"], r",4,48,"")
-@@ -639,13 +641,15 @@ void kprobe_arm_test_cases(void)
- 	TEST_RP( "str"byte"	r",2, VAL1,", [r",3, 24,"], #48")		\
- 	TEST_RP( "str"byte"	r",10,VAL2,", [r",9, 64,"], #-48")		\
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")	\
--	TEST_RPR("str"byte"	r",14,VAL2,", [r",13,0, ", r",12, 48,"]")	\
-+	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")	\
-+	TEST_UNSUPPORTED("str"byte" r14, [r13, r12]")	\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")	\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")	\
- 	TEST_RPR("str"byte"	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")	\
- 	TEST_RPR("str"byte"	r",10,VAL2,", [r",9, 48,"], -r",11,24,"")	\
- 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 24,", r",2,  32,", asl #1]")\
--	TEST_RPR("str"byte"	r",14,VAL2,", [r",13,0, ", r",12, 32,", lsr #2]")\
-+	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 32,", lsr #2]")\
-+	TEST_UNSUPPORTED("str"byte"	r14, [r13, r12, lsr #2]")\
- 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  32,", asr #3]!")\
- 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,24,", r",10, 4,", ror #31]!")\
- 	TEST_P(  "ldr"byte"	r0, [r",0,  24,", #-2]")			\
-@@ -669,12 +673,12 @@ void kprobe_arm_test_cases(void)
- 
- 	LOAD_STORE("")
- 	TEST_P(   "str	pc, [r",0,0,", #15*4]")
--	TEST_R(   "str	pc, [sp, r",2,15*4,"]")
-+	TEST_UNSUPPORTED(   "str	pc, [sp, r2]")
- 	TEST_BF(  "ldr	pc, [sp, #15*4]")
- 	TEST_BF_R("ldr	pc, [sp, r",2,15*4,"]")
- 
- 	TEST_P(   "str	sp, [r",0,0,", #13*4]")
--	TEST_R(   "str	sp, [sp, r",2,13*4,"]")
-+	TEST_UNSUPPORTED(   "str	sp, [sp, r2]")
- 	TEST_BF(  "ldr	sp, [sp, #13*4]")
- 	TEST_BF_R("ldr	sp, [sp, r",2,13*4,"]")
- 
-diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
-index 618531d..59f5e64 100644
---- a/arch/arm/kernel/kprobes.c
-+++ b/arch/arm/kernel/kprobes.c
-@@ -124,6 +124,14 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
- 		break;
- 	}
- 
-+	/*
-+	 * Unable to instrument insn like 'str r0, [sp, +/-r1]'.
-+	 * __und_svc protects 64 bytes stack, so instrumenting insn
-+	 * likes 'str r0, [sp, #-68]' should be prohibited.
-+	 */
-+	if ((p->ainsn.stack_space < 0) || (p->ainsn.stack_space > 64))
-+		return -EINVAL;
-+
- 	return 0;
- }
- 
+https://lkml.org/lkml/2014/10/22/254
+https://lkml.org/lkml/2014/8/27/255
+https://lkml.org/lkml/2014/8/12/12
+https://lkml.org/lkml/2014/8/8/992
+https://lkml.org/lkml/2014/8/8/5
+https://lkml.org/lkml/2014/8/5/63
+
+Different from v6, this version redesign checker to make it use seprate
+tables other than K/Uprobe action tables, because checkers are not
+K/Uprobt specific.
+
+Patch 4/4 in this series also fix a minor bug in kprobe: original ARM
+kprobe allows probing on instructions like 'str r0, [sp, r1]', which is
+unsafe because we are unable to determine the stack space required to be
+protected.  However, this bug exists since 2007, and gcc for ARM
+actually doesn't generate code like it.
+
+Wang Nan (4):
+  ARM: kprobes: seprates load and store actions
+  ARM: kprobes: introduces checker
+  ARM: kprobes: collects stack consumption for store instructions
+  ARM: kprobes: disallow probing stack consuming instructions
+
+ arch/arm/include/asm/probes.h        |   1 +
+ arch/arm/kernel/kprobes-arm.c        |   6 +-
+ arch/arm/kernel/kprobes-test-arm.c   |  17 ++--
+ arch/arm/kernel/kprobes-test-thumb.c |  13 +++
+ arch/arm/kernel/kprobes-thumb.c      |  18 ++--
+ arch/arm/kernel/kprobes.c            |  23 ++++-
+ arch/arm/kernel/kprobes.h            |   3 +-
+ arch/arm/kernel/probes-arm.c         |  41 +++++++--
+ arch/arm/kernel/probes-arm.h         |  10 ++-
+ arch/arm/kernel/probes-thumb.c       | 168 ++++++++++++++++++++++++++++++-----
+ arch/arm/kernel/probes-thumb.h       |  26 ++++--
+ arch/arm/kernel/probes.c             | 115 +++++++++++++++++++++++-
+ arch/arm/kernel/probes.h             |  24 ++++-
+ arch/arm/kernel/uprobes-arm.c        |   6 +-
+ arch/arm/kernel/uprobes.c            |   2 +-
+ 15 files changed, 412 insertions(+), 61 deletions(-)
+
 -- 
 1.8.4
 
