@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761AbaJYSZT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:25:19 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58187 "EHLO SMTP.CITRIX.COM"
+	id S1751817AbaJYS3Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:29:16 -0400
+Received: from vader.hardeman.nu ([95.142.160.32]:36729 "EHLO hardeman.nu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888AbaJYSZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:25:16 -0400
-X-IronPort-AV: E=Sophos;i="5.04,786,1406592000"; 
-   d="scan'208";a="184886129"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <catalin.marinas@arm.com>, <Will.Deacon@arm.com>
-Subject: [PATCH v6 3/7] xen/arm: introduce is_dma_coherent
-Date: Sat, 25 Oct 2014 14:57:18 +0100
-Message-ID: <1414245442-4306-3-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1410251450180.22875@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410251450180.22875@kaball.uk.xensource.com>
+	id S1750935AbaJYS3O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Oct 2014 14:29:14 -0400
+Date: Sat, 25 Oct 2014 11:03:07 +0200
+From: David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>
+To: Tomas Melin <tomas.melin@iki.fi>
+Cc: m.chehab@samsung.com, james.hogan@imgtec.com, a.seppala@gmail.com,
+        bay@hackerdom.ru, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] [media] rc-core: fix protocol_change regression
+ in ir_raw_event_register
+Message-ID: <20141025090307.GA31078@hardeman.nu>
+Mail-Followup-To: Tomas Melin <tomas.melin@iki.fi>, m.chehab@samsung.com,
+	james.hogan@imgtec.com, a.seppala@gmail.com, bay@hackerdom.ru,
+	linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1413916218-7481-1-git-send-email-tomas.melin@iki.fi>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413916218-7481-1-git-send-email-tomas.melin@iki.fi>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a simple utility function that returns whether a device is dma
-coherent based on device tree information.
+On Tue, Oct 21, 2014 at 09:30:17PM +0300, Tomas Melin wrote:
+>IR reciever using nuvoton-cir and lirc required additional configuration
+>steps after upgrade from kernel 3.16 to 3.17-rcX.
+>Bisected regression to commit da6e162d6a4607362f8478c715c797d84d449f8b
+>("[media] rc-core: simplify sysfs code").
+>
+>The regression comes from adding empty function change_protocol in
+>ir-raw.c. It changes behaviour so that only the protocol enabled by driver's
+>map_name will be active after registration. This breaks user space behaviour,
+>lirc does not get key press signals anymore.
+>
+>Changed back to original behaviour by removing empty function
+>change_protocol in ir-raw.c. Instead only calling change_protocol for
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: catalin.marinas@arm.com
-CC: Will.Deacon@arm.com
----
- arch/arm/xen/mm32.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+Wouldn't something like this be a simpler way of achieving the same
+result? (untested):
 
-diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
-index 6153d61..2b259f1 100644
---- a/arch/arm/xen/mm32.c
-+++ b/arch/arm/xen/mm32.c
-@@ -2,10 +2,16 @@
- #include <linux/dma-mapping.h>
- #include <linux/gfp.h>
- #include <linux/highmem.h>
-+#include <linux/of_address.h>
+
+diff --git a/drivers/media/rc/rc-main.c b/drivers/media/rc/rc-main.c
+index a7991c7..d521f20 100644
+--- a/drivers/media/rc/rc-main.c
++++ b/drivers/media/rc/rc-main.c
+@@ -1421,6 +1421,9 @@ int rc_register_device(struct rc_dev *dev)
  
- #include <xen/features.h>
- 
- 
-+static inline bool is_dma_coherent(struct device *dev)
-+{
-+	return of_dma_is_coherent(dev->of_node);
-+}
+ 	if (dev->change_protocol) {
+ 		u64 rc_type = (1 << rc_map->rc_type);
++		if (dev->driver_type == RC_DRIVER_IR_RAW)
++			rc_type |= RC_BIT_LIRC;
 +
- /* functions called by SWIOTLB */
- 
- static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
--- 
-1.7.10.4
+ 		rc = dev->change_protocol(dev, &rc_type);
+ 		if (rc < 0)
+ 			goto out_raw;
 
