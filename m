@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360AbaJYSj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:39:26 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaJYSjZ (ORCPT
+	id S1751618AbaJYSk6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:40:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40441 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213AbaJYSk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:39:25 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] UBI: vtbl: Use ubi_eba_atomic_leb_change()
-Date: Sat, 25 Oct 2014 19:43:41 +0200
-Message-Id: <1414259021-5691-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.5
+	Sat, 25 Oct 2014 14:40:56 -0400
+From: Jay Vosburgh <jay.vosburgh@canonical.com>
+To: paulmck@linux.vnet.ibm.com
+cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        mroos@linux.ee, tj@kernel.org
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+In-reply-to: <20141025051602.GB28247@linux.vnet.ibm.com>
+References: <20141024173526.GA26058@declera.com> <20141024183226.GW4977@linux.vnet.ibm.com> <20141024212557.GA15537@declera.com> <20141024214927.GA4977@linux.vnet.ibm.com> <8915.1414190047@famine> <20141024225931.GC4977@linux.vnet.ibm.com> <20141024230524.GA16023@linux.vnet.ibm.com> <10136.1414196448@famine> <20141025020324.GA28247@linux.vnet.ibm.com> <11813.1414211613@famine> <20141025051602.GB28247@linux.vnet.ibm.com>
+Comments: In-reply-to "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+   message dated "Fri, 24 Oct 2014 22:16:02 -0700."
+X-Mailer: MH-E 8.5+bzr; nmh 1.5; GNU Emacs 24.4.50
+Date: Sat, 25 Oct 2014 09:38:16 -0700
+Message-ID: <15891.1414255096@famine>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is more a cosmetic change than a fix.
-By using ubi_eba_atomic_leb_change()
-we can guarantee that the first VTBL record is always
-correct and we don't really need the second one anymore.
-But we have to keep the second one to not break anything.
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
+>On Fri, Oct 24, 2014 at 09:33:33PM -0700, Jay Vosburgh wrote:
+>> 	Looking at the dmesg, the early boot messages seem to be
+>> confused as to how many CPUs there are, e.g.,
+>> 
+>> [    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+>> [    0.000000] Hierarchical RCU implementation.
+>> [    0.000000]  RCU debugfs-based tracing is enabled.
+>> [    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+>> [    0.000000]  RCU restricting CPUs from NR_CPUS=256 to nr_cpu_ids=4.
+>> [    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+>> [    0.000000] NR_IRQS:16640 nr_irqs:456 0
+>> [    0.000000]  Offload RCU callbacks from all CPUs
+>> [    0.000000]  Offload RCU callbacks from CPUs: 0-3.
+>> 
+>> 	but later shows 2:
+>> 
+>> [    0.233703] x86: Booting SMP configuration:
+>> [    0.236003] .... node  #0, CPUs:      #1
+>> [    0.255528] x86: Booted up 1 node, 2 CPUs
+>> 
+>> 	In any event, the E8400 is a 2 core CPU with no hyperthreading.
+>
+>Well, this might explain some of the difficulties.  If RCU decides to wait
+>on CPUs that don't exist, we will of course get a hang.  And rcu_barrier()
+>was definitely expecting four CPUs.
+>
+>So what happens if you boot with maxcpus=2?  (Or build with
+>CONFIG_NR_CPUS=2.) I suspect that this might avoid the hang.  If so,
+>I might have some ideas for a real fix.
+
+	Booting with maxcpus=2 makes no difference (the dmesg output is
+the same).
+
+	Rebuilding with CONFIG_NR_CPUS=2 makes the problem go away, and
+dmesg has different CPU information at boot:
+
+[    0.000000] smpboot: 4 Processors exceeds NR_CPUS limit of 2
+[    0.000000] smpboot: Allowing 2 CPUs, 0 hotplug CPUs
+ [...]
+[    0.000000] setup_percpu: NR_CPUS:2 nr_cpumask_bits:2 nr_cpu_ids:2 nr_node_ids:1
+ [...]
+[    0.000000] Hierarchical RCU implementation.
+[    0.000000] 	RCU debugfs-based tracing is enabled.
+[    0.000000] 	RCU dyntick-idle grace-period acceleration is enabled.
+[    0.000000] NR_IRQS:4352 nr_irqs:440 0
+[    0.000000] 	Offload RCU callbacks from all CPUs
+[    0.000000] 	Offload RCU callbacks from CPUs: 0-1.
+
+	-J
+
 ---
- drivers/mtd/ubi/vtbl.c | 16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/mtd/ubi/vtbl.c b/drivers/mtd/ubi/vtbl.c
-index 07cac5f..0d26051 100644
---- a/drivers/mtd/ubi/vtbl.c
-+++ b/drivers/mtd/ubi/vtbl.c
-@@ -96,12 +96,8 @@ int ubi_change_vtbl_record(struct ubi_device *ubi, int idx,
- 
- 	memcpy(&ubi->vtbl[idx], vtbl_rec, sizeof(struct ubi_vtbl_record));
- 	for (i = 0; i < UBI_LAYOUT_VOLUME_EBS; i++) {
--		err = ubi_eba_unmap_leb(ubi, layout_vol, i);
--		if (err)
--			return err;
--
--		err = ubi_eba_write_leb(ubi, layout_vol, i, ubi->vtbl, 0,
--					ubi->vtbl_size);
-+		err = ubi_eba_atomic_leb_change(ubi, layout_vol, i, ubi->vtbl,
-+						ubi->vtbl_size);
- 		if (err)
- 			return err;
- 	}
-@@ -148,12 +144,8 @@ int ubi_vtbl_rename_volumes(struct ubi_device *ubi,
- 
- 	layout_vol = ubi->volumes[vol_id2idx(ubi, UBI_LAYOUT_VOLUME_ID)];
- 	for (i = 0; i < UBI_LAYOUT_VOLUME_EBS; i++) {
--		err = ubi_eba_unmap_leb(ubi, layout_vol, i);
--		if (err)
--			return err;
--
--		err = ubi_eba_write_leb(ubi, layout_vol, i, ubi->vtbl, 0,
--					ubi->vtbl_size);
-+		err = ubi_eba_atomic_leb_change(ubi, layout_vol, i, ubi->vtbl,
-+						ubi->vtbl_size);
- 		if (err)
- 			return err;
- 	}
--- 
-1.8.4.5
-
+	-Jay Vosburgh, jay.vosburgh@canonical.com
