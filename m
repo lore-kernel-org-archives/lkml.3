@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751619AbaJYXcF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 19:32:05 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490AbaJYXcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 19:32:04 -0400
-Message-ID: <544C32EF.60901@nod.at>
-Date: Sun, 26 Oct 2014 01:31:59 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751547AbaJYXvb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 19:51:31 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:53251 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaJYXva convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Oct 2014 19:51:30 -0400
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: vmalloced stacks on x86_64?
-References: <CALCETrUmA+5499fEqp7S-nfSBVxTEo76mA9r32zYQ41E3c+YhQ@mail.gmail.com> <CAFLxGvyLewqhMoHhyBmLdeN5GxOG_-THWBc5bVoG6jY+Pi07VQ@mail.gmail.com> <CALCETrU7NBCcAF6zYjY06SGQt=StNk5kUzUfexKF1CNVaD_o5Q@mail.gmail.com>
-In-Reply-To: <CALCETrU7NBCcAF6zYjY06SGQt=StNk5kUzUfexKF1CNVaD_o5Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C1F2620-8DFD-4F62-B9D3-4B241459AEE0@gmail.com>
+References: <1414163245-18555-1-git-send-email-pbonzini@redhat.com>
+ <1414163245-18555-6-git-send-email-pbonzini@redhat.com> <544A922B.5070505@amacapital.net>
+ <4C1F2620-8DFD-4F62-B9D3-4B241459AEE0@gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 25 Oct 2014 16:51:08 -0700
+Message-ID: <CALCETrV-NxDbL3KrhJTzvjjeT0d2j+CWaqZJDffAs7Vzwv8etQ@mail.gmail.com>
+Subject: Re: [PATCH 05/14] KVM: x86: Emulator fixes for eip canonical checks
+ on near branches
+To: Nadav Amit <nadav.amit@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        Nadav Amit <namit@cs.technion.ac.il>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.10.2014 um 01:16 schrieb Andy Lutomirski:
-> On Sat, Oct 25, 2014 at 3:26 PM, Richard Weinberger
-> <richard.weinberger@gmail.com> wrote:
->> On Sat, Oct 25, 2014 at 2:22 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> Is there any good reason not to use vmalloc for x86_64 stacks?
->>>
->>> The tricky bits I've thought of are:
->>>
->>>  - On any context switch, we probably need to probe the new stack
->>> before switching to it.  That way, if it's going to fault due to an
->>> out-of-sync pgd, we still have a stack available to handle the fault.
->>>
->>>  - Any time we change cr3, we may need to check that the pgd
->>> corresponding to rsp is there.  If now, we need to sync it over.
->>>
->>>  - For simplicity, we probably want all stack ptes to be present all
->>> the time.  This is fine; vmalloc already works that way.
->>>
->>>  - If we overrun the stack, we double-fault.  This should be easy to
->>> detect: any double-fault where rsp is less than 20 bytes from the
->>> bottom of the stack is a failure to deliver a non-IST exception due to
->>>  a stack overflow.  The question is: what do we do if this happens?
->>> We could just panic (guaranteed to work).  We could also try to
->>> recover by killing the offending task, but that might be a bit
->>> challenging, since we're in IST context.  We could do something truly
->>> awful: increment RSP by a few hundred bytes, point RIP at do_exit, and
->>> return from the double fault.
->>>
->>> Thoughts?  This shouldn't be all that much code.
->>
->> FWIW, grsecurity has this already.
->> Maybe we can reuse their GRKERNSEC_KSTACKOVERFLOW feature.
->> It allocates the kernel stack using vmalloc() and installs guard pages.
->>
-> 
-> On brief inspection, grsecurity isn't actually vmallocing the stack.
-> It seems to be allocating it the normal way and then vmapping it.
-> That allows it to modify sg_set_buf to work on stack addresses (sigh).
+On Oct 25, 2014 12:57 PM, "Nadav Amit" <nadav.amit@gmail.com> wrote:
+>
+>
+> > On Oct 24, 2014, at 20:53, Andy Lutomirski <luto@amacapital.net> wrote:
+> >
+> > On 10/24/2014 08:07 AM, Paolo Bonzini wrote:
+> >> From: Nadav Amit <namit@cs.technion.ac.il>
+> >>
+> >> Before changing rip (during jmp, call, ret, etc.) the target should be asserted
+> >> to be canonical one, as real CPUs do.  During sysret, both target rsp and rip
+> >> should be canonical. If any of these values is noncanonical, a #GP exception
+> >> should occur.  The exception to this rule are syscall and sysenter instructions
+> >> in which the assigned rip is checked during the assignment to the relevant
+> >> MSRs.
+> >
+> > Careful here.  AMD CPUs (IIUC) send #PF (or maybe #GP) from CPL3 instead
+> > of #GP from CPL0 on sysret to a non-canonical address.  That behavior is
+> > *far* better than the Intel behavior, and it may be important.
+> I wasn’t aware of this discrepancy, and it is really not written clearly in AMD manual (I have to take your word). It is possible AMD decided to inject #GP from CPL3 (#PF makes no sense).
+>
+> Anyhow, I think it is much harder to emulate AMD’s behaviour on Intel. Theoretically, the easy way would be for the host to set a non-canonical guest RIP/RSP and inject #GP, but Intel CPUs don’t allow the host to do so. Instead, the host needs to emulate the entire exception injection. This is very hard and error-prone process due to the variety of scenarios (interrupt/task-gate on the IDT, #DF, nested-exceptions, etc.)
+>
 
-Oh, you're right. They have changed it. (But not the Kconfig help of course)
-Last time I looked they did a vmalloc().
-I'm not sure which version of the patch was but I think it was code like that one:
-http://www.grsecurity.net/~spender/kstackovf32.diff
+Hmm.  Fair enough.  I guess emulating AMD's behavior just on AMD is complicated.
 
-Thanks,
-//richard
+>
+> >
+> > If an OS relies on that behavior on AMD CPUs, and guest ring 3 can force
+> > guest ring 0 to do an emulated sysret to a non-canonical address, than
+> > the guest ring3 code can own the guest ring0 code.
+> >
+> > —Andy
+>
+> Sysexit (I mistakenly wrote sysret on the description), out of all the control transfer instructions, seems the hardest to exploit, since it must be executed in CPL0.
+> Remember that this bug does not result in host crashing, but in guest crashing: If guest userspace is able to cause KVM to emulate a jump instruction to a non-canonical address, it can crash the entire guest (by preventing VM-entry from succeeding). To use sysexit for such exploit, the guest userspace needs also to somehow fool the guest kernel into returning into non-canonical RIP.
+
+True.
+
+I don't know about sysexit, but there's a long and storied history of
+sysret vulnerabilities based on this Intel erratum^Wclever design
+decision.
+
+As a practical matter, is sysexit ever emulated on Intel CPUs?  If
+not, this may be irrelevant.
+
+--Andy
+
+>
+> Nadav
