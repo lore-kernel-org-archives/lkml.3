@@ -1,453 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752286AbaJYSxw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:53:52 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:47859 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbaJYSx0 (ORCPT
+	id S1752269AbaJYSzI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:55:08 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:45857 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaJYSzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:53:26 -0400
-From: Wang Nan <wangnan0@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>
-CC: <linux@arm.linux.org.uk>, <will.deacon@arm.com>, <dave.long@linaro.org>,
-        <taras.kondratiuk@linaro.org>, <ben.dooks@codethink.co.uk>,
-        <cl@linux.com>, <rabin@rab.in>, <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <lizefan@huawei.com>
-Subject: [PATCH 1/4] ARM: kprobes: seprates load and store actions
-Date: Sat, 25 Oct 2014 14:42:50 +0800
-Message-ID: <1414219373-20070-2-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1414219373-20070-1-git-send-email-wangnan0@huawei.com>
-References: <1414219373-20070-1-git-send-email-wangnan0@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020209.544B46E1.007F,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 5f27338056d37fb6df9f5ea1908f3fdd
+	Sat, 25 Oct 2014 14:55:05 -0400
+X-AuditID: cbfec373-b7f236d000000948-0a-544b9b4882c6
+Date: Sat, 25 Oct 2014 10:44:48 -0200
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Cc: Devin Heitmueller <dheitmueller@kernellabs.com>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "ramakrmu@cisco.com" <ramakrmu@cisco.com>,
+        Shuah Khan <shuahkh@osg.samsung.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Sander Eikelenboom <linux@eikelenboom.it>, prabhakar.csengg@gmail.com,
+        Antti Palosaari <crope@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        "sakari.ailus@linux.intel.com" <sakari.ailus@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        "olebowle@gmx.com" <olebowle@gmx.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH v2 5/6] sound/usb: pcm changes to use media
+ token api
+Message-id: <20141025104448.41d9b1f0.m.chehab@samsung.com>
+In-reply-to: <544804F1.7090606@linux.intel.com>
+References: <cover.1413246370.git.shuahkh@osg.samsung.com>
+ <cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com>
+ <543FB374.8020604@metafoo.de> <543FC3CD.8050805@osg.samsung.com>
+ <s5h38aow1ub.wl-tiwai@suse.de> <543FD1EC.5010206@osg.samsung.com>
+ <s5hy4sgumjo.wl-tiwai@suse.de> <543FD892.6010209@osg.samsung.com>
+ <s5htx34ul3w.wl-tiwai@suse.de> <54467EFB.7050800@xs4all.nl>
+ <s5hbnp5z9uy.wl-tiwai@suse.de>
+ <CAGoCfixD-zv1MMHUXLnjGV5KVB-DGdp2ZqZ0hUTR14UvLh-Gvw@mail.gmail.com>
+ <544804F1.7090606@linux.intel.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t/hYF2P2d4hBs9/G1rMWb+GzeLKxUNM
+	Ft+b37NZ3Nq9msWiefF6NotTk58xWSyZPJ/VonPiEnaLy7vmsFn0bNjKavFnwgx2i4l36y1+
+	/QeqeHl/BbPFz/nnWS0+bfnGZDH1ywcWIGsWo8XLzW+YHIQ9NnxuYvOY1dDL5jHl90ZWj58T
+	17J57Jx1l93j7v2FTB6zO2ayehz+upDFY+6xXkaPEzN+s3jMOxnosX/uGnaPJW8OsXps6Qeq
+	3Xy62uPzJrkAwSgum5TUnMyy1CJ9uwSujHcHnrMUfDCveNb2lq2B8a5GFyMnh4SAicSBNROY
+	IGwxiQv31rOB2EICSxglJq9J7GLkArIbmCT2HD3ODJJgEVCV+PC5BcxmEzCSeNXYwgpiiwjY
+	SzyZtR0sziwwkU3i46dqEFtYIELi+epVYAt4BawkTsx/yQ5icwroS5zsPMcKsWAJi0TLtEVA
+	CQ6gK5wl5n/OhqgXlPgx+R4LxEwtic3bmlghbHmJzWveMk9gFJiFpGwWkrJZSMoWMDKvYhQt
+	LU4uKE5KzzXSK07MLS7NS9dLzs/dxAiJ4uIdjC82WB1iFOBgVOLhVWDxDhFiTSwrrsw9xCjB
+	wawkwjs/DCjEm5JYWZValB9fVJqTWnyIkYmDU6qBMdXw3oRnd3g7HdOkHuj58eh7KSxYLZYW
+	JHN50vUUsw0xMS0mXkX94ccnPCo/pnKyZnOFyw9evxlLbnDL2pUVashF+AmbRgde5Nkelnjv
+	gOK7T4knzfI/RvFcWGTY8rUqOGj7VL+nip3rb/1iWr7ldsvDXVEyErenFEY96zh0+nnovfep
+	N5gmKbEUZyQaajEXFScCABPLycvAAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch seprates actions for load and store. Following patches will
-check store instructions for more informations.
+Em Wed, 22 Oct 2014 14:26:41 -0500
+Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com> escreveu:
 
-Coverage test complains register test coverage missing after this
-sepration. This patch introduces one testcase for it.
+> On 10/21/14, 11:08 AM, Devin Heitmueller wrote:
+> >> Sorry, I'm not convinced by that.  If the device has to be controlled
+> >> exclusively, the right position is the open/close.  Otherwise, the
+> >> program cannot know when it becomes inaccessible out of sudden during
+> >> its operation.
+> >
+> > I can say that I've definitely seen cases where if you configure a
+> > device as the "default" capture device in PulseAudio, then pulse will
+> > continue to capture from it even if you're not actively capturing the
+> > audio from pulse.  I only spotted this because I had a USB analyzer on
+> > the device and was dumbfounded when the ISOC packets kept arriving
+> > even after I had closed VLC.
+> 
+> this seems like a feature, not a bug. PulseAudio starts streaming before 
+> clients push any data and likewise keeps sources active even after for 
+> some time after clients stop recording. Closing VLC in your example 
+> doesn't immediately close the ALSA device. look for 
+> module-suspend-on-idle in your default.pa config file.
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- arch/arm/kernel/kprobes-arm.c        |  6 ++-
- arch/arm/kernel/kprobes-test-arm.c   |  1 +
- arch/arm/kernel/kprobes-test-thumb.c | 13 ++++++
- arch/arm/kernel/kprobes-thumb.c      | 18 ++++++---
- arch/arm/kernel/probes-arm.c         | 11 +++--
- arch/arm/kernel/probes-arm.h         |  6 ++-
- arch/arm/kernel/probes-thumb.c       | 78 +++++++++++++++++++++++++++---------
- arch/arm/kernel/probes-thumb.h       | 18 ++++++---
- arch/arm/kernel/uprobes-arm.c        |  6 ++-
- 9 files changed, 116 insertions(+), 41 deletions(-)
+This could be a feature for an audio capture device that is standalone,
+but for sure it isn't a feature for an audio capture device where the
+audio is only available if video is also being streamed.
 
-diff --git a/arch/arm/kernel/kprobes-arm.c b/arch/arm/kernel/kprobes-arm.c
-index ac300c6..d5a0ad5 100644
---- a/arch/arm/kernel/kprobes-arm.c
-+++ b/arch/arm/kernel/kprobes-arm.c
-@@ -315,7 +315,8 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
- 	[PROBES_MUL1] = {.handler = emulate_rdlo12rdhi16rn0rm8_rwflags_nopc},
- 	[PROBES_MUL2] = {.handler = emulate_rd16rn12rm0rs8_rwflags_nopc},
- 	[PROBES_SWP] = {.handler = emulate_rd12rn16rm0_rwflags_nopc},
--	[PROBES_LDRSTRD] = {.handler = emulate_ldrdstrd},
-+	[PROBES_LDRD] = {.handler = emulate_ldrdstrd},
-+	[PROBES_STRD] = {.handler = emulate_ldrdstrd},
- 	[PROBES_LOAD_EXTRA] = {.handler = emulate_ldr},
- 	[PROBES_LOAD] = {.handler = emulate_ldr},
- 	[PROBES_STORE_EXTRA] = {.handler = emulate_str},
-@@ -339,5 +340,6 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
- 	[PROBES_MUL_ADD] = {.handler = emulate_rd16rn12rm0rs8_rwflags_nopc},
- 	[PROBES_BITFIELD] = {.handler = emulate_rd12rm0_noflags_nopc},
- 	[PROBES_BRANCH] = {.handler = simulate_bbl},
--	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
-+	[PROBES_LDM] = {.decoder = kprobe_decode_ldmstm},
-+	[PROBES_STM] = {.decoder = kprobe_decode_ldmstm},
- };
-diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
-index cb14242..264c064 100644
---- a/arch/arm/kernel/kprobes-test-arm.c
-+++ b/arch/arm/kernel/kprobes-test-arm.c
-@@ -571,6 +571,7 @@ void kprobe_arm_test_cases(void)
- 	TEST_RPR(  "strd	r",2, VAL1,", [r",5, 24,"], r",4,48,"")
- 	TEST_RPR(  "strd	r",10,VAL2,", [r",9, 48,"], -r",7,24,"")
- 	TEST_UNSUPPORTED(__inst_arm(0xe1afc0fa) "	@ strd r12, [pc, r10]!")
-+	TEST_UNSUPPORTED(__inst_arm(0xe1aac0ff) "	@ strd r12, [r10, pc]!")
- 
- 	TEST_PR(   "ldrd	r0, [r",0, 48,", -r",2,24,"]")
- 	TEST_PR(   "ldrmid	r8, [r",13,0, ", r",12,48,"]")
-diff --git a/arch/arm/kernel/kprobes-test-thumb.c b/arch/arm/kernel/kprobes-test-thumb.c
-index 844dd10..ed863c4 100644
---- a/arch/arm/kernel/kprobes-test-thumb.c
-+++ b/arch/arm/kernel/kprobes-test-thumb.c
-@@ -410,6 +410,13 @@ void kprobe_thumb32_test_cases(void)
- 	TEST_UNSUPPORTED(__inst_thumb32(0xe9d47d00) "	@ ldrd	r7, sp, [r4]")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xe9d47f00) "	@ ldrd	r7, pc, [r4]")
- 
-+	TEST_UNSUPPORTED(__inst_thumb32(0xe9efec04) "	@ strd	r14, r12, [pc, #16]!")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xe8efec04) "	@ strd	r14, r12, [pc], #16")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xe9c4d800) "	@ strd	sp, r8, [r4]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xe9c4f800) "	@ strd	pc, r8, [r4]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xe9c47d00) "	@ strd	r7, sp, [r4]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xe9c47f00) "	@ strd	r7, pc, [r4]")
-+
- 	TEST_RRP("strd	r",0, VAL1,", r",1, VAL2,", [r",1, 24,", #-16]")
- 	TEST_RR( "strd	r",12,VAL2,", r",14,VAL1,", [sp, #16]")
- 	TEST_RRP("strd	r",1, VAL1,", r",0, VAL2,", [r",7, 24,", #-16]!")
-@@ -832,6 +839,12 @@ CONDITION_INSTRUCTIONS(22,
- 	TEST("str	sp, [sp]")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xf8cfe000) "	@ str	r14, [pc]")
- 	TEST_UNSUPPORTED(__inst_thumb32(0xf8cef000) "	@ str	pc, [r14]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf841100f) "	@ str	r1, [r1, pc]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf841100d) "	@ str	r1, [r1, sp]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf8a1d000) "	@ strh	sp, [r1]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf821d002) "	@ strh	sp, [r1, r2]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf822100f) "	@ strh	r1, [r2, pc]")
-+	TEST_UNSUPPORTED(__inst_thumb32(0xf822100d) "	@ strh	r1, [r2, sp]")
- 
- 	TEST_GROUP("Advanced SIMD element or structure load/store instructions")
- 
-diff --git a/arch/arm/kernel/kprobes-thumb.c b/arch/arm/kernel/kprobes-thumb.c
-index 9495d7f..e0ade52 100644
---- a/arch/arm/kernel/kprobes-thumb.c
-+++ b/arch/arm/kernel/kprobes-thumb.c
-@@ -626,17 +626,22 @@ const union decode_action kprobes_t16_actions[NUM_PROBES_T16_ACTIONS] = {
- 	[PROBES_T16_LDR_LIT] = {.handler = t16_simulate_ldr_literal},
- 	[PROBES_T16_BLX] = {.handler = t16_simulate_bxblx},
- 	[PROBES_T16_HIREGOPS] = {.decoder = t16_decode_hiregs},
--	[PROBES_T16_LDRHSTRH] = {.handler = t16_emulate_loregs_rwflags},
--	[PROBES_T16_LDRSTR] = {.handler = t16_simulate_ldrstr_sp_relative},
-+	[PROBES_T16_LDRH] = {.handler = t16_emulate_loregs_rwflags},
-+	[PROBES_T16_STRH] = {.handler = t16_emulate_loregs_rwflags},
-+	[PROBES_T16_LDR] = {.handler = t16_simulate_ldrstr_sp_relative},
-+	[PROBES_T16_STR] = {.handler = t16_simulate_ldrstr_sp_relative},
- 	[PROBES_T16_ADR] = {.handler = t16_simulate_reladr},
--	[PROBES_T16_LDMSTM] = {.handler = t16_emulate_loregs_rwflags},
-+	[PROBES_T16_LDM] = {.handler = t16_emulate_loregs_rwflags},
-+	[PROBES_T16_STM] = {.handler = t16_emulate_loregs_rwflags},
- 	[PROBES_T16_BRANCH_COND] = {.decoder = t16_decode_cond_branch},
- 	[PROBES_T16_BRANCH] = {.handler = t16_simulate_branch},
- };
- 
- const union decode_action kprobes_t32_actions[NUM_PROBES_T32_ACTIONS] = {
--	[PROBES_T32_LDMSTM] = {.decoder = t32_decode_ldmstm},
--	[PROBES_T32_LDRDSTRD] = {.handler = t32_emulate_ldrdstrd},
-+	[PROBES_T32_LDM] = {.decoder = t32_decode_ldmstm},
-+	[PROBES_T32_STM] = {.decoder = t32_decode_ldmstm},
-+	[PROBES_T32_LDRD] = {.handler = t32_emulate_ldrdstrd},
-+	[PROBES_T32_STRD] = {.handler = t32_emulate_ldrdstrd},
- 	[PROBES_T32_TABLE_BRANCH] = {.handler = t32_simulate_table_branch},
- 	[PROBES_T32_TST] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
- 	[PROBES_T32_MOV] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
-@@ -655,7 +660,8 @@ const union decode_action kprobes_t32_actions[NUM_PROBES_T32_ACTIONS] = {
- 	[PROBES_T32_BRANCH] = {.handler = t32_simulate_branch},
- 	[PROBES_T32_PLDI] = {.handler = probes_simulate_nop},
- 	[PROBES_T32_LDR_LIT] = {.handler = t32_simulate_ldr_literal},
--	[PROBES_T32_LDRSTR] = {.handler = t32_emulate_ldrstr},
-+	[PROBES_T32_LDR] = {.handler = t32_emulate_ldrstr},
-+	[PROBES_T32_STR] = {.handler = t32_emulate_ldrstr},
- 	[PROBES_T32_SIGN_EXTEND] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
- 	[PROBES_T32_MEDIA] = {.handler = t32_emulate_rd8rn16rm0_rwflags},
- 	[PROBES_T32_REVERSE] = {.handler = t32_emulate_rd8rn16_noflags},
-diff --git a/arch/arm/kernel/probes-arm.c b/arch/arm/kernel/probes-arm.c
-index 8eaef81..a17899f 100644
---- a/arch/arm/kernel/probes-arm.c
-+++ b/arch/arm/kernel/probes-arm.c
-@@ -270,13 +270,17 @@ static const union decode_item arm_cccc_000x_____1xx1_table[] = {
- 	DECODE_REJECT	(0x0e10e0d0, 0x0000e0d0),
- 
- 	/* LDRD (register)	cccc 000x x0x0 xxxx xxxx xxxx 1101 xxxx */
-+	DECODE_EMULATEX	(0x0e5000f0, 0x000000d0, PROBES_LDRD,
-+						 REGS(NOPCWB, NOPCX, 0, 0, NOPC)),
- 	/* STRD (register)	cccc 000x x0x0 xxxx xxxx xxxx 1111 xxxx */
--	DECODE_EMULATEX	(0x0e5000d0, 0x000000d0, PROBES_LDRSTRD,
-+	DECODE_EMULATEX	(0x0e5000f0, 0x000000f0, PROBES_STRD,
- 						 REGS(NOPCWB, NOPCX, 0, 0, NOPC)),
- 
- 	/* LDRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx */
-+	DECODE_EMULATEX	(0x0e5000f0, 0x004000d0, PROBES_LDRD,
-+						 REGS(NOPCWB, NOPCX, 0, 0, 0)),
- 	/* STRD (immediate)	cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx */
--	DECODE_EMULATEX	(0x0e5000d0, 0x004000d0, PROBES_LDRSTRD,
-+	DECODE_EMULATEX	(0x0e5000f0, 0x004000f0, PROBES_STRD,
- 						 REGS(NOPCWB, NOPCX, 0, 0, 0)),
- 
- 	/* STRH (register)	cccc 000x x0x0 xxxx xxxx xxxx 1011 xxxx */
-@@ -601,8 +605,9 @@ static const union decode_item arm_cccc_100x_table[] = {
- 	/* Block data transfer instructions				*/
- 
- 	/* LDM			cccc 100x x0x1 xxxx xxxx xxxx xxxx xxxx */
-+	DECODE_CUSTOM	(0x0e500000, 0x08100000, PROBES_LDM),
- 	/* STM			cccc 100x x0x0 xxxx xxxx xxxx xxxx xxxx */
--	DECODE_CUSTOM	(0x0e400000, 0x08000000, PROBES_LDMSTM),
-+	DECODE_CUSTOM	(0x0e500000, 0x08000000, PROBES_STM),
- 
- 	/* STM (user registers)	cccc 100x x1x0 xxxx xxxx xxxx xxxx xxxx */
- 	/* LDM (user registers)	cccc 100x x1x1 xxxx 0xxx xxxx xxxx xxxx */
-diff --git a/arch/arm/kernel/probes-arm.h b/arch/arm/kernel/probes-arm.h
-index ace6572..74c7f97 100644
---- a/arch/arm/kernel/probes-arm.h
-+++ b/arch/arm/kernel/probes-arm.h
-@@ -28,7 +28,8 @@ enum probes_arm_action {
- 	PROBES_MUL1,
- 	PROBES_MUL2,
- 	PROBES_SWP,
--	PROBES_LDRSTRD,
-+	PROBES_LDRD,
-+	PROBES_STRD,
- 	PROBES_LOAD,
- 	PROBES_STORE,
- 	PROBES_LOAD_EXTRA,
-@@ -49,7 +50,8 @@ enum probes_arm_action {
- 	PROBES_MUL_ADD,
- 	PROBES_BITFIELD,
- 	PROBES_BRANCH,
--	PROBES_LDMSTM,
-+	PROBES_LDM,
-+	PROBES_STM,
- 	NUM_PROBES_ARM_ACTIONS
- };
- 
-diff --git a/arch/arm/kernel/probes-thumb.c b/arch/arm/kernel/probes-thumb.c
-index 4131351..ac27d63 100644
---- a/arch/arm/kernel/probes-thumb.c
-+++ b/arch/arm/kernel/probes-thumb.c
-@@ -37,10 +37,11 @@ static const union decode_item t32_table_1110_100x_x0xx[] = {
- 	DECODE_REJECT	(0xfe402000, 0xe8002000),
- 
- 	/* STMIA		1110 1000 10x0 xxxx xxxx xxxx xxxx xxxx */
--	/* LDMIA		1110 1000 10x1 xxxx xxxx xxxx xxxx xxxx */
- 	/* STMDB		1110 1001 00x0 xxxx xxxx xxxx xxxx xxxx */
-+	DECODE_CUSTOM	(0xfe500000, 0xe8000000, PROBES_T32_STM),
-+	/* LDMIA		1110 1000 10x1 xxxx xxxx xxxx xxxx xxxx */
- 	/* LDMDB		1110 1001 00x1 xxxx xxxx xxxx xxxx xxxx */
--	DECODE_CUSTOM	(0xfe400000, 0xe8000000, PROBES_T32_LDMSTM),
-+	DECODE_CUSTOM	(0xfe500000, 0xe8100000, PROBES_T32_LDM),
- 
- 	DECODE_END
- };
-@@ -49,11 +50,15 @@ static const union decode_item t32_table_1110_100x_x1xx[] = {
- 	/* Load/store dual, load/store exclusive, table branch */
- 
- 	/* STRD (immediate)	1110 1000 x110 xxxx xxxx xxxx xxxx xxxx */
--	/* LDRD (immediate)	1110 1000 x111 xxxx xxxx xxxx xxxx xxxx */
--	DECODE_OR	(0xff600000, 0xe8600000),
-+	DECODE_OR	(0xff700000, 0xe8600000),
- 	/* STRD (immediate)	1110 1001 x1x0 xxxx xxxx xxxx xxxx xxxx */
-+	DECODE_EMULATEX	(0xff500000, 0xe9400000, PROBES_T32_STRD,
-+						 REGS(NOPCWB, NOSPPC, NOSPPC, 0, 0)),
-+
-+	/* LDRD (immediate)	1110 1000 x111 xxxx xxxx xxxx xxxx xxxx */
-+	DECODE_OR	(0xff700000, 0xe8700000),
- 	/* LDRD (immediate)	1110 1001 x1x1 xxxx xxxx xxxx xxxx xxxx */
--	DECODE_EMULATEX	(0xff400000, 0xe9400000, PROBES_T32_LDRDSTRD,
-+	DECODE_EMULATEX	(0xff500000, 0xe9500000, PROBES_T32_LDRD,
- 						 REGS(NOPCWB, NOSPPC, NOSPPC, 0, 0)),
- 
- 	/* TBB			1110 1000 1101 xxxx xxxx xxxx 0000 xxxx */
-@@ -340,16 +345,29 @@ static const union decode_item t32_table_1111_100x[] = {
- 						 REGS(PC, ANY, 0, 0, 0)),
- 
- 	/* STR (immediate)	1111 1000 0100 xxxx xxxx 1xxx xxxx xxxx */
--	/* LDR (immediate)	1111 1000 0101 xxxx xxxx 1xxx xxxx xxxx */
--	DECODE_OR	(0xffe00800, 0xf8400800),
-+	DECODE_OR	(0xfff00800, 0xf8400800),
- 	/* STR (immediate)	1111 1000 1100 xxxx xxxx xxxx xxxx xxxx */
-+	/*
-+	 * Reject PC for Rt. PC has already rejected by
-+	 * 0xff1f0000, 0xf80f0000 and 0xff10f000, 0xf800f000.
-+	 * Suppress complain on coverage in test code.
-+	 */
-+	DECODE_EMULATEX	(0xfff00000, 0xf8c00000, PROBES_T32_STR,
-+						 REGS(NOPCX, NOPCX, 0, 0, 0)),
-+	/* LDR (immediate)	1111 1000 0101 xxxx xxxx 1xxx xxxx xxxx */
-+	DECODE_OR	(0xfff00800, 0xf8500800),
- 	/* LDR (immediate)	1111 1000 1101 xxxx xxxx xxxx xxxx xxxx */
--	DECODE_EMULATEX	(0xffe00000, 0xf8c00000, PROBES_T32_LDRSTR,
-+	DECODE_EMULATEX	(0xfff00000, 0xf8d00000, PROBES_T32_LDR,
- 						 REGS(NOPCX, ANY, 0, 0, 0)),
+A V4L device with ALSA capture is a different beast than a standalone
+capture port. In a simplified way, it will basically follow the following
+state machine:
+
+     +---------------+
+     |     start     |
+     +---------------+
+       |
+       |
+       v
+     +--------------------------------+
+     |              idle              | <+
+     +--------------------------------+  |
+       |                ^           |    |
+       |                |           |    |
+       v                |           |    |
+     +---------------+  |           |    |
+     | configuration |  |           |    |
+     +---------------+  |           |    |
+       |                |           |    |
+       |                |           |    |
+       v                |           |    |
+     +---------------+  |           |    |
+  +> |   streaming   | -+           |    |
+  |  +---------------+              |    |
+  |    |                            |    |
+  |    |                            |    |
+  |    v                            v    |
+  |  +---------------+-----------+----+  |
+  +- |       1       | suspended |  2 | -+
+     +---------------+-----------+----+
+
+
+1) start state
+
+This is when the V4L2 device gots probed. It checks if the hardware is
+present and initializes some vars/registers, turning off everything
+that can be powered down.
+
+The tuner on put in sleep mode, analog audio/video decoders and the
+dvb frontend and demux are also turned off.
+
+2) idle state
+
+As the device is powered off, audio won't produce anything. 
+
+Depending on the device, reading for audio may return a sequence of 
+zeros, or may even fail, as the DMA engine is not ready yet for
+streaming.
+
+Also, the audio mixer is muted, but the audio input switch is on a
+random state.
+
+2) configuration state
+
+When V4L2 node device is opened and configured, the audio mixer will
+be switched to input audio from the same source of the video stream.
+The corresponding audio input is also unmuted. Almost all devices have 
+at least two audio/video inputs: TV TUNER and COMPOSITE. Other devices
+may also have S-VIDEO, COMPOSITE 2, RADIO TUNER, etc.
+
+If the device is set on TUNER mode, on modern devices, a tuner firmware
+will be loaded. That may require a long time. Typically, most devices
+take 1/2 seconds to load a firmware, but some devices may take up to 30
+seconds. The firmware may depend on the TV standard that will be used,
+so this can't be loaded at driver warm up state. 
+
+Also, the power consumption of the tuners is high (it can be ~100-200 mW
+or more when powered, and ~16mW when just I2C is powered). We don't want
+to keep it powered when the device is not used, as this spends battery.
+Also, the life of the device reduces a lot if we keep it always powered.
+
+During this stage, if an ALSA call is issued, it may interfere at the
+device settings and/or firmware load, with can cause the audio to fail. 
+On such cases, applications might need to close the V4L2 node and re-open
+again.
+
+3) streaming state
+
+The change to this staging requires a V4L2 ioctl.
+
+Please notice, however, that some apps will open the audio device before
+the V4L2 node, while others will open it after that.
+
+In any case, audio will only start to produce data after the V4L2 ioctl
+at V4L2 that starts the DMA engine there.
+
+After that ioctl:
+ - Audio PCM capture will work;
+ - The mixers will be in a good state: unmuted, and switched to the
+   corresponding input as the video stream.
+
+If the user wants to do something unusual, like mixing the composite audio
+input with the tuner audio input, it can use the ALSA mixer for doing
+that. Otherwise, the only part of the ALSA device that will be used is
+the PCM engine.
+
+4) streaming->stop transition
+
+When the V4L2 device is closed (or an ioctl for stream stop is issued),
+the driver will release the resources. What will be released vary from
+driver to driver.
+
+Some drivers will stop both audio and video DMA engine (as they actually
+have just one DMA engine for both). Other devices will still be streaming
+audio until the alsa trigger stops it.
+
+In any case, the driver will put the tuner into sleep mode. Some drivers
+do it immediately. Others will wait for a few seconds before doing that.
+
+Ether way, from the PCM capture audio PoV, the device is now useless: it
+will either not return anything, or it will just return a stream with
+all zeros.
+
+5) suspend/resume transitions
+
+When the machine suspends to disk or memory, the DMA engine will stop, and
+the devices will be powered off.
+
+The logic of returning from suspend will depend on the previous state.
+
+If the device were in stop pode, at resume time, it should return to 
+idle state.
+
+If the device is streaming, it should return to streaming state.
+In such case, no ALSA ioctls should happen while V4L2 is suspending 
+or resuming, otherwise the device will be on an unknown state, and
+will only return to work after replugging the device.
+
+
+> I also agree that the open/close of the alsa device is the only way to 
+> control exclusion.
+
+This will break apps, as they can open the alsa device before configuring
+the stream with V4L2. They can also close alsa either before or after
+stopping the V4L2 stream.
+
+> -Pierre
+
 -
- 	/* STR (register)	1111 1000 0100 xxxx xxxx 0000 00xx xxxx */
-+	/*
-+	 * Rt == PC and Rn == PC have already been rejected by
-+	 * 0xff1f0000, 0xf80f0000 and 0xff10f000, 0xf800f000
-+	 */
-+	DECODE_EMULATEX	(0xfff00fc0, 0xf8400000, PROBES_T32_STR,
-+						 REGS(NOPCX, NOPCX, 0, 0, NOSPPC)),
- 	/* LDR (register)	1111 1000 0101 xxxx xxxx 0000 00xx xxxx */
--	DECODE_EMULATEX	(0xffe00fc0, 0xf8400000, PROBES_T32_LDRSTR,
-+	DECODE_EMULATEX	(0xfff00fc0, 0xf8500000, PROBES_T32_LDR,
- 						 REGS(NOPCX, ANY, 0, 0, NOSPPC)),
- 
- 	/* LDRB (literal)	1111 1000 x001 1111 xxxx xxxx xxxx xxxx */
-@@ -361,27 +379,35 @@ static const union decode_item t32_table_1111_100x[] = {
- 
- 	/* STRB (immediate)	1111 1000 0000 xxxx xxxx 1xxx xxxx xxxx */
- 	/* STRH (immediate)	1111 1000 0010 xxxx xxxx 1xxx xxxx xxxx */
-+	DECODE_OR	(0xffd00800, 0xf8000800),
-+	/* STRB (immediate)	1111 1000 1000 xxxx xxxx xxxx xxxx xxxx */
-+	/* STRH (immediate)	1111 1000 1010 xxxx xxxx xxxx xxxx xxxx */
-+	DECODE_EMULATEX	(0xffd00000, 0xf8800000, PROBES_T32_STR,
-+						 REGS(NOPCX, NOSPPCX, 0, 0, 0)),
-+
- 	/* LDRB (immediate)	1111 1000 0001 xxxx xxxx 1xxx xxxx xxxx */
- 	/* LDRSB (immediate)	1111 1001 0001 xxxx xxxx 1xxx xxxx xxxx */
- 	/* LDRH (immediate)	1111 1000 0011 xxxx xxxx 1xxx xxxx xxxx */
- 	/* LDRSH (immediate)	1111 1001 0011 xxxx xxxx 1xxx xxxx xxxx */
--	DECODE_OR	(0xfec00800, 0xf8000800),
--	/* STRB (immediate)	1111 1000 1000 xxxx xxxx xxxx xxxx xxxx */
--	/* STRH (immediate)	1111 1000 1010 xxxx xxxx xxxx xxxx xxxx */
-+	DECODE_OR	(0xfed00800, 0xf8100800),
-+
- 	/* LDRB (immediate)	1111 1000 1001 xxxx xxxx xxxx xxxx xxxx */
- 	/* LDRSB (immediate)	1111 1001 1001 xxxx xxxx xxxx xxxx xxxx */
- 	/* LDRH (immediate)	1111 1000 1011 xxxx xxxx xxxx xxxx xxxx */
- 	/* LDRSH (immediate)	1111 1001 1011 xxxx xxxx xxxx xxxx xxxx */
--	DECODE_EMULATEX	(0xfec00000, 0xf8800000, PROBES_T32_LDRSTR,
-+	DECODE_EMULATEX	(0xfed00000, 0xf8900000, PROBES_T32_LDR,
- 						 REGS(NOPCX, NOSPPCX, 0, 0, 0)),
- 
- 	/* STRB (register)	1111 1000 0000 xxxx xxxx 0000 00xx xxxx */
- 	/* STRH (register)	1111 1000 0010 xxxx xxxx 0000 00xx xxxx */
-+	DECODE_EMULATEX	(0xffd00fc0, 0xf8000000, PROBES_T32_STR,
-+						 REGS(NOPCX, NOSPPCX, 0, 0, NOSPPC)),
-+
- 	/* LDRB (register)	1111 1000 0001 xxxx xxxx 0000 00xx xxxx */
- 	/* LDRSB (register)	1111 1001 0001 xxxx xxxx 0000 00xx xxxx */
- 	/* LDRH (register)	1111 1000 0011 xxxx xxxx 0000 00xx xxxx */
- 	/* LDRSH (register)	1111 1001 0011 xxxx xxxx 0000 00xx xxxx */
--	DECODE_EMULATEX	(0xfe800fc0, 0xf8000000, PROBES_T32_LDRSTR,
-+	DECODE_EMULATEX	(0xfed00fc0, 0xf8100000, PROBES_T32_LDR,
- 						 REGS(NOPCX, NOSPPCX, 0, 0, NOSPPC)),
- 
- 	/* Other unallocated instructions...				*/
-@@ -778,23 +804,34 @@ const union decode_item probes_decode_thumb16_table[] = {
- 
- 	/* STR (register)		0101 000x xxxx xxxx */
- 	/* STRH (register)		0101 001x xxxx xxxx */
-+	DECODE_EMULATE	(0xfc00, 0x5000, PROBES_T16_STRH),
- 	/* STRB (register)		0101 010x xxxx xxxx */
-+	DECODE_EMULATE	(0xfe00, 0x5400, PROBES_T16_STRH),
- 	/* LDRSB (register)		0101 011x xxxx xxxx */
-+	DECODE_EMULATE	(0xfe00, 0x5600, PROBES_T16_LDRH),
-+
- 	/* LDR (register)		0101 100x xxxx xxxx */
- 	/* LDRH (register)		0101 101x xxxx xxxx */
- 	/* LDRB (register)		0101 110x xxxx xxxx */
- 	/* LDRSH (register)		0101 111x xxxx xxxx */
-+	DECODE_EMULATE	(0xf800, 0x5800, PROBES_T16_LDRH),
-+
- 	/* STR (immediate, Thumb)	0110 0xxx xxxx xxxx */
--	/* LDR (immediate, Thumb)	0110 1xxx xxxx xxxx */
- 	/* STRB (immediate, Thumb)	0111 0xxx xxxx xxxx */
-+	DECODE_EMULATE	(0xe800, 0x6000, PROBES_T16_STRH),
-+
-+	/* LDR (immediate, Thumb)	0110 1xxx xxxx xxxx */
- 	/* LDRB (immediate, Thumb)	0111 1xxx xxxx xxxx */
--	DECODE_EMULATE	(0xc000, 0x4000, PROBES_T16_LDRHSTRH),
-+	DECODE_EMULATE	(0xe800, 0x6800, PROBES_T16_LDRH),
-+
- 	/* STRH (immediate, Thumb)	1000 0xxx xxxx xxxx */
-+	DECODE_EMULATE	(0xf800, 0x8000, PROBES_T16_STRH),
- 	/* LDRH (immediate, Thumb)	1000 1xxx xxxx xxxx */
--	DECODE_EMULATE	(0xf000, 0x8000, PROBES_T16_LDRHSTRH),
-+	DECODE_EMULATE	(0xf800, 0x8800, PROBES_T16_LDRH),
- 	/* STR (immediate, Thumb)	1001 0xxx xxxx xxxx */
-+	DECODE_SIMULATE	(0xf800, 0x9000, PROBES_T16_STR),
- 	/* LDR (immediate, Thumb)	1001 1xxx xxxx xxxx */
--	DECODE_SIMULATE	(0xf000, 0x9000, PROBES_T16_LDRSTR),
-+	DECODE_SIMULATE	(0xf800, 0x9800, PROBES_T16_LDR),
- 
- 	/*
- 	 * Generate PC-/SP-relative address
-@@ -810,8 +847,9 @@ const union decode_item probes_decode_thumb16_table[] = {
- 	DECODE_TABLE	(0xf000, 0xb000, t16_table_1011),
- 
- 	/* STM				1100 0xxx xxxx xxxx */
-+	DECODE_EMULATE	(0xf800, 0xc000, PROBES_T16_STM),
- 	/* LDM				1100 1xxx xxxx xxxx */
--	DECODE_EMULATE	(0xf000, 0xc000, PROBES_T16_LDMSTM),
-+	DECODE_EMULATE	(0xf800, 0xc800, PROBES_T16_LDM),
- 
- 	/*
- 	 * Conditional branch, and Supervisor Call
-diff --git a/arch/arm/kernel/probes-thumb.h b/arch/arm/kernel/probes-thumb.h
-index 7c6f6eb..f36aa21 100644
---- a/arch/arm/kernel/probes-thumb.h
-+++ b/arch/arm/kernel/probes-thumb.h
-@@ -30,8 +30,10 @@
- enum probes_t32_action {
- 	PROBES_T32_EMULATE_NONE,
- 	PROBES_T32_SIMULATE_NOP,
--	PROBES_T32_LDMSTM,
--	PROBES_T32_LDRDSTRD,
-+	PROBES_T32_LDM,
-+	PROBES_T32_STM,
-+	PROBES_T32_LDRD,
-+	PROBES_T32_STRD,
- 	PROBES_T32_TABLE_BRANCH,
- 	PROBES_T32_TST,
- 	PROBES_T32_CMP,
-@@ -50,7 +52,8 @@ enum probes_t32_action {
- 	PROBES_T32_BRANCH,
- 	PROBES_T32_PLDI,
- 	PROBES_T32_LDR_LIT,
--	PROBES_T32_LDRSTR,
-+	PROBES_T32_LDR,
-+	PROBES_T32_STR,
- 	PROBES_T32_SIGN_EXTEND,
- 	PROBES_T32_MEDIA,
- 	PROBES_T32_REVERSE,
-@@ -75,10 +78,13 @@ enum probes_t16_action {
- 	PROBES_T16_BLX,
- 	PROBES_T16_HIREGOPS,
- 	PROBES_T16_LDR_LIT,
--	PROBES_T16_LDRHSTRH,
--	PROBES_T16_LDRSTR,
-+	PROBES_T16_LDRH,
-+	PROBES_T16_STRH,
-+	PROBES_T16_LDR,
-+	PROBES_T16_STR,
- 	PROBES_T16_ADR,
--	PROBES_T16_LDMSTM,
-+	PROBES_T16_LDM,
-+	PROBES_T16_STM,
- 	PROBES_T16_BRANCH_COND,
- 	PROBES_T16_BRANCH,
- 	NUM_PROBES_T16_ACTIONS
-diff --git a/arch/arm/kernel/uprobes-arm.c b/arch/arm/kernel/uprobes-arm.c
-index d3b655f..929f9ab 100644
---- a/arch/arm/kernel/uprobes-arm.c
-+++ b/arch/arm/kernel/uprobes-arm.c
-@@ -207,7 +207,8 @@ const union decode_action uprobes_probes_actions[] = {
- 	[PROBES_MUL1] = {.handler = probes_simulate_nop},
- 	[PROBES_MUL2] = {.handler = probes_simulate_nop},
- 	[PROBES_SWP] = {.handler = probes_simulate_nop},
--	[PROBES_LDRSTRD] = {.decoder = decode_pc_ro},
-+	[PROBES_LDRD] = {.decoder = decode_pc_ro},
-+	[PROBES_STRD] = {.decoder = decode_pc_ro},
- 	[PROBES_LOAD_EXTRA] = {.decoder = decode_pc_ro},
- 	[PROBES_LOAD] = {.decoder = decode_ldr},
- 	[PROBES_STORE_EXTRA] = {.decoder = decode_pc_ro},
-@@ -230,5 +231,6 @@ const union decode_action uprobes_probes_actions[] = {
- 	[PROBES_MUL_ADD] = {.handler = probes_simulate_nop},
- 	[PROBES_BITFIELD] = {.handler = probes_simulate_nop},
- 	[PROBES_BRANCH] = {.handler = simulate_bbl},
--	[PROBES_LDMSTM] = {.decoder = uprobe_decode_ldmstm}
-+	[PROBES_LDM] = {.decoder = uprobe_decode_ldmstm},
-+	[PROBES_STM] = {.decoder = uprobe_decode_ldmstm}
- };
--- 
-1.8.4
 
+As a reference, the state machine above came from this dot config, using
+graph-easy to produce an ascii output:
+
+digraph media {
+  node [shape=record]
+  suspended[label = "<streaming> 1 | <suspended> suspended | <idle> 2"]
+  start -> idle
+  idle -> configuration
+  configuration -> streaming
+  streaming -> idle
+  idle -> "suspended":idle
+  "suspended":idle -> idle
+  streaming -> "suspended":streaming
+  "suspended":streaming -> streaming
+}
