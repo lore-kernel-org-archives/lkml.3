@@ -1,61 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932850AbaJYABD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 20:01:03 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:53754 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932187AbaJYABB (ORCPT
+	id S1755954AbaJYAFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 20:05:22 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:41628 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755237AbaJYAFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 20:01:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <544AB462.9070708@zytor.com>
-References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
- <54494B74.2080504@amacapital.net> <1414091732.2363.11.camel@redhat.com>
- <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com>
- <1414092624.2363.13.camel@redhat.com> <1414093104.2363.14.camel@redhat.com> <544AB462.9070708@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 24 Oct 2014 17:00:38 -0700
-Message-ID: <CALCETrVhqzurg=DF4PV+zv3d4z7nNxgsWgyXJm5kUG1bB75MjQ@mail.gmail.com>
-Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-audit@redhat.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 24 Oct 2014 20:05:20 -0400
+From: Paul McQuade <paulmcquad@gmail.com>
+To: paulmcquad@gmail.com
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
+        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
+Subject: [PATCH] Staging:rtl8723au: open/closed brace issue
+Date: Sat, 25 Oct 2014 01:05:13 +0100
+Message-Id: <1414195513-12670-1-git-send-email-paulmcquad@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 1:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 10/23/2014 12:38 PM, Eric Paris wrote:
->>>
->>> After the call __audit_syscall_entry aren't they already polluted?
->>> Isn't that the reason we need to reload EAX?
->>
->> Well, I guess EAX is special...
->>
->
-> Because system calls are "asmlinkage", all the parameters are on the
-> stack, but %eax is used as the index into the system call table.  This
-> should thus be fine until we get rid of regparm(0) entirely, if that
-> ever happens.
->
+ERROR: that open brace { should be on the previous line
 
-...and because __audit_syscall_entry *isn't* asmlinkage, it uses the
-other convention, which is where the confusion comes from.  And, by
-the time you get to sysenter_do_call, nothing cares about ecx, so you
-can freely clobber it while popping from the stack.  I get it now.
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ drivers/staging/rtl8723au/core/rtw_ap.c | 130 ++++++++++----------------------
+ 1 file changed, 40 insertions(+), 90 deletions(-)
 
---Andy
-
->         -hpa
->
->
-
-
-
+diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
+index 6b4092f..6b69bfe 100644
+--- a/drivers/staging/rtl8723au/core/rtw_ap.c
++++ b/drivers/staging/rtl8723au/core/rtw_ap.c
+@@ -231,12 +231,10 @@ void	expire_timeout_chk23a(struct rtw_adapter *padapter)
+ 			psta->expire_to--;
+ 		}
+ 
+-		if (psta->expire_to <= 0)
+-		{
++		if (psta->expire_to <= 0) {
+ 			struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
+ 
+-			if (padapter->registrypriv.wifi_spec == 1)
+-			{
++			if (padapter->registrypriv.wifi_spec == 1) {
+ 				psta->expire_to = pstapriv->expire_to;
+ 				continue;
+ 			}
+@@ -308,15 +306,13 @@ void	expire_timeout_chk23a(struct rtw_adapter *padapter)
+ 			ret = issue_nulldata23a(padapter, psta->hwaddr, 0, 3, 50);
+ 
+ 		psta->keep_alive_trycnt++;
+-		if (ret == _SUCCESS)
+-		{
++		if (ret == _SUCCESS) {
+ 			DBG_8723A("asoc check, sta(" MAC_FMT ") is alive\n", MAC_ARG(psta->hwaddr));
+ 			psta->expire_to = pstapriv->expire_to;
+ 			psta->keep_alive_trycnt = 0;
+ 			continue;
+-		}
+-		else if (psta->keep_alive_trycnt <= 3)
+-		{
++
++		} else if (psta->keep_alive_trycnt <= 3) {
+ 			DBG_8723A("ack check for asoc expire, keep_alive_trycnt =%d\n", psta->keep_alive_trycnt);
+ 			psta->expire_to = 1;
+ 			continue;
+@@ -363,8 +359,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
+ 		return;
+ 
+ 	/* b/g mode ra_bitmap */
+-	for (i = 0; i < sizeof(psta->bssrateset); i++)
+-	{
++	for (i = 0; i < sizeof(psta->bssrateset); i++) {
+ 		if (psta->bssrateset[i])
+ 			tx_ra_bitmap |= rtw_get_bit_value_from_ieee_value23a(psta->bssrateset[i]&0x7f);
+ 	}
+@@ -406,8 +401,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
+ 	raid = networktype_to_raid23a(sta_band);
+ 	init_rate = get_highest_rate_idx23a(tx_ra_bitmap&0x0fffffff)&0x3f;
+ 
+-	if (psta->aid < NUM_STA)
+-	{
++	if (psta->aid < NUM_STA) {
+ 		u8 arg = 0;
+ 
+ 		arg = psta->mac_id&0x1f;
+@@ -436,9 +430,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
+ 		psta->raid = raid;
+ 		psta->init_rate = init_rate;
+ 
+-	}
+-	else
+-	{
++	} else {
+ 		DBG_8723A("station aid %d exceed the max number\n", psta->aid);
+ 	}
+ }
+@@ -474,8 +466,7 @@ static void update_bmc_sta(struct rtw_adapter *padapter)
+ 		psta->bssratelen = supportRateNum;
+ 
+ 		/* b/g mode ra_bitmap */
+-		for (i = 0; i < supportRateNum; i++)
+-		{
++		for (i = 0; i < supportRateNum; i++) {
+ 			if (psta->bssrateset[i])
+ 				tx_ra_bitmap |= rtw_get_bit_value_from_ieee_value23a(psta->bssrateset[i]&0x7f);
+ 		}
+@@ -522,9 +513,7 @@ static void update_bmc_sta(struct rtw_adapter *padapter)
+ 		psta->state = _FW_LINKED;
+ 		spin_unlock_bh(&psta->lock);
+ 
+-	}
+-	else
+-	{
++	} else {
+ 		DBG_8723A("add_RATid23a_bmc_sta error!\n");
+ 	}
+ }
+@@ -561,8 +550,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
+ 	/* ERP */
+ 	VCS_update23a(padapter, psta);
+ 	/* HT related cap */
+-	if (phtpriv_sta->ht_option)
+-	{
++	if (phtpriv_sta->ht_option) {
+ 		/* check if sta supports rx ampdu */
+ 		phtpriv_sta->ampdu_enable = phtpriv_ap->ampdu_enable;
+ 
+@@ -580,9 +568,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
+ 
+ 		psta->qos_option = true;
+ 
+-	}
+-	else
+-	{
++	} else {
+ 		phtpriv_sta->ampdu_enable = false;
+ 
+ 		phtpriv_sta->sgi = false;
+@@ -1261,8 +1247,7 @@ void update_beacon23a(struct rtw_adapter *padapter, u8 ie_id, u8 *oui, u8 tx)
+ 
+ 	spin_lock_bh(&pmlmepriv->bcn_update_lock);
+ 
+-	switch (ie_id)
+-	{
++	switch (ie_id) {
+ 	case 0xFF:
+ 		/* 8: TimeStamp, 2: Beacon Interval 2:Capability */
+ 		update_bcn_fixed_ie(padapter);
+@@ -1416,110 +1401,85 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
+ 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
+ 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
+ 
+-	if (!(psta->flags & WLAN_STA_SHORT_PREAMBLE))
+-	{
+-		if (!psta->no_short_preamble_set)
+-		{
++	if (!(psta->flags & WLAN_STA_SHORT_PREAMBLE)) {
++		if (!psta->no_short_preamble_set) {
+ 			psta->no_short_preamble_set = 1;
+ 
+ 			pmlmepriv->num_sta_no_short_preamble++;
+ 
+ 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
+-				(pmlmepriv->num_sta_no_short_preamble == 1))
+-			{
++				(pmlmepriv->num_sta_no_short_preamble == 1)) {
+ 				beacon_updated = true;
+ 				update_beacon23a(padapter, 0xFF, NULL, true);
+ 			}
+ 
+ 		}
+-	}
+-	else
+-	{
+-		if (psta->no_short_preamble_set)
+-		{
++	} else {
++		if (psta->no_short_preamble_set) {
+ 			psta->no_short_preamble_set = 0;
+ 
+ 			pmlmepriv->num_sta_no_short_preamble--;
+ 
+ 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
+-				(pmlmepriv->num_sta_no_short_preamble == 0))
+-			{
++				(pmlmepriv->num_sta_no_short_preamble == 0)) {
+ 				beacon_updated = true;
+ 				update_beacon23a(padapter, 0xFF, NULL, true);
+ 			}
+-
+ 		}
+ 	}
+ 
+-	if (psta->flags & WLAN_STA_NONERP)
+-	{
+-		if (!psta->nonerp_set)
+-		{
++	if (psta->flags & WLAN_STA_NONERP) {
++		if (!psta->nonerp_set) {
+ 			psta->nonerp_set = 1;
+ 
+ 			pmlmepriv->num_sta_non_erp++;
+ 
+-			if (pmlmepriv->num_sta_non_erp == 1)
+-			{
++			if (pmlmepriv->num_sta_non_erp == 1) {
+ 				beacon_updated = true;
+ 				update_beacon23a(padapter, WLAN_EID_ERP_INFO, NULL, true);
+ 			}
+ 		}
+ 
+-	}
+-	else
+-	{
+-		if (psta->nonerp_set)
+-		{
++	} else {
++		if (psta->nonerp_set) {
+ 			psta->nonerp_set = 0;
+ 
+ 			pmlmepriv->num_sta_non_erp--;
+ 
+-			if (pmlmepriv->num_sta_non_erp == 0)
+-			{
++			if (pmlmepriv->num_sta_non_erp == 0) {
+ 				beacon_updated = true;
+ 				update_beacon23a(padapter, WLAN_EID_ERP_INFO, NULL, true);
+ 			}
+ 		}
+-
+ 	}
+ 
+-	if (!(psta->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME))
+-	{
+-		if (!psta->no_short_slot_time_set)
+-		{
++	if (!(psta->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME)) {
++		if (!psta->no_short_slot_time_set) {
+ 			psta->no_short_slot_time_set = 1;
+ 
+ 			pmlmepriv->num_sta_no_short_slot_time++;
+ 
+ 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
+-				 (pmlmepriv->num_sta_no_short_slot_time == 1))
+-			{
++			(pmlmepriv->num_sta_no_short_slot_time == 1)) {
+ 				beacon_updated = true;
+ 				update_beacon23a(padapter, 0xFF, NULL, true);
+ 			}
+-
+ 		}
+-	}
+-	else
+-	{
+-		if (psta->no_short_slot_time_set)
+-		{
++	} else {
++		if (psta->no_short_slot_time_set) {
+ 			psta->no_short_slot_time_set = 0;
+ 
+ 			pmlmepriv->num_sta_no_short_slot_time--;
+ 
+ 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
+-				 (pmlmepriv->num_sta_no_short_slot_time == 0))
+-			{
++			(pmlmepriv->num_sta_no_short_slot_time == 0)) {
+ 				beacon_updated = true;
+ 				update_beacon23a(padapter, 0xFF, NULL, true);
+ 			}
+ 		}
+ 	}
+ 
+-	if (psta->flags & WLAN_STA_HT)
+-	{
++	if (psta->flags & WLAN_STA_HT) {
+ 		u16 ht_capab = le16_to_cpu(psta->htpriv.ht_cap.cap_info);
+ 
+ 		DBG_8723A("HT: STA " MAC_FMT " HT Capabilities "
+@@ -1552,9 +1512,7 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
+ 				   pmlmepriv->num_sta_ht_20mhz);
+ 		}
+ 
+-	}
+-	else
+-	{
++	} else {
+ 		if (!psta->no_ht_set) {
+ 			psta->no_ht_set = 1;
+ 			pmlmepriv->num_sta_no_ht++;
+@@ -1567,8 +1525,7 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
+ 		}
+ 	}
+ 
+-	if (rtw_ht_operation_update(padapter) > 0)
+-	{
++	if (rtw_ht_operation_update(padapter) > 0) {
+ 		update_beacon23a(padapter, WLAN_EID_HT_CAPABILITY, NULL, false);
+ 		update_beacon23a(padapter, WLAN_EID_HT_OPERATION, NULL, true);
+ 	}
+@@ -1592,8 +1549,7 @@ u8 bss_cap_update_on_sta_leave23a(struct rtw_adapter *padapter, struct sta_info
+ 		psta->no_short_preamble_set = 0;
+ 		pmlmepriv->num_sta_no_short_preamble--;
+ 		if (pmlmeext->cur_wireless_mode > WIRELESS_11B
+-		    && pmlmepriv->num_sta_no_short_preamble == 0)
+-		{
++		    && pmlmepriv->num_sta_no_short_preamble == 0) {
+ 			beacon_updated = true;
+ 			update_beacon23a(padapter, 0xFF, NULL, true);
+ 		}
+@@ -1602,8 +1558,7 @@ u8 bss_cap_update_on_sta_leave23a(struct rtw_adapter *padapter, struct sta_info
+ 	if (psta->nonerp_set) {
+ 		psta->nonerp_set = 0;
+ 		pmlmepriv->num_sta_non_erp--;
+-		if (pmlmepriv->num_sta_non_erp == 0)
+-		{
++		if (pmlmepriv->num_sta_non_erp == 0) {
+ 			beacon_updated = true;
+ 			update_beacon23a(padapter, WLAN_EID_ERP_INFO,
+ 					 NULL, true);
+@@ -1657,8 +1612,7 @@ u8 ap_free_sta23a(struct rtw_adapter *padapter, struct sta_info *psta, bool acti
+ 	if (!psta)
+ 		return beacon_updated;
+ 
+-	if (active == true)
+-	{
++	if (active == true) {
+ 		/* tear down Rx AMPDU */
+ 		send_delba23a(padapter, 0, psta->hwaddr);/*  recipient */
+ 
+@@ -1788,13 +1742,10 @@ void sta_info_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
+ 		psta->qos_option = 0;
+ 
+ 	/* update 802.11n ht cap. */
+-	if (WLAN_STA_HT&flags)
+-	{
++	if (WLAN_STA_HT&flags) {
+ 		psta->htpriv.ht_option = true;
+ 		psta->qos_option = 1;
+-	}
+-	else
+-	{
++	} else {
+ 		psta->htpriv.ht_option = false;
+ 	}
+ 
+@@ -1807,8 +1758,7 @@ void sta_info_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
+ /* called >= TSR LEVEL for USB or SDIO Interface*/
+ void ap_sta_info_defer_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
+ {
+-	if (psta->state & _FW_LINKED)
+-	{
++	if (psta->state & _FW_LINKED) {
+ 		/* add ratid */
+ 		add_RATid23a(padapter, psta, 0);/* DM_RATR_STA_INIT */
+ 	}
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.9.1
+
