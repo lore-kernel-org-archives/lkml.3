@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609AbaJYTgk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 15:36:40 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:54636 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792AbaJYTgi (ORCPT
+	id S1752454AbaJYThV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 15:37:21 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:48783 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146AbaJYThT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 15:36:38 -0400
-X-AuditID: cbfee61a-f79c06d000004e71-0c-544b6cc3d38a
+	Sat, 25 Oct 2014 15:37:19 -0400
+X-AuditID: cbfee61a-f79c06d000004e71-29-544b6ced7cfd
 From: Weijie Yang <weijie.yang@samsung.com>
 To: "'Minchan Kim'" <minchan@kernel.org>
 Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
@@ -16,64 +16,68 @@ Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'Nitin Gupta'" <ngupta@vflare.org>, "'Linux-MM'" <linux-mm@kvack.org>,
         "'linux-kernel'" <linux-kernel@vger.kernel.org>,
         "'Weijie Yang'" <weijie.yang.kh@gmail.com>
-Subject: [PATCH 1/2] zram: make max_used_pages reset work correctly
-Date: Sat, 25 Oct 2014 17:25:11 +0800
-Message-id: <000001cff035$c060dc60$41229520$%yang@samsung.com>
+Subject: [PATCH 2/2] zram: avoid NULL pointer access when reading mem_used_total
+Date: Sat, 25 Oct 2014 17:26:31 +0800
+Message-id: <000101cff035$d9f50480$8ddf0d80$%yang@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac/wNZMUsP+XGtD6TjOTXCDsoEKUzw==
+Thread-index: Ac/wNaMNZ2xp93u/SEKREQj2F1Ypzg==
 Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t9jAd3DOd4hBvsf81jMWb+GzeJC224W
-	i8u75rBZ3Fvzn9Vi2df37BYbWmaxW6z9/Jjd4smJ/ywOHB47Z91l93g64SCTx6ZVnWwemz5N
-	Yvc4MeM3i8fOT5tZPT5vkgtgj+KySUnNySxLLdK3S+DKeL/7J0vBIs6KrS+3szQwXmPvYuTk
-	kBAwkfjy/wsjhC0mceHeerYuRi4OIYFFjBL7v+4FKxIS+MMoMWVKIojNJqAtcbd/IyuILSKg
-	JrHu4AsWkAZmgQ1MEs8fHmACSQgLOEu03DgI1swioCpx7PQWZhCbV8BOYve5VkYIW1Dix+R7
-	QM0cQM3qQPNzQcLMAvISm9e8ZQYJSwCFH/3VhVilJzGj9SUbRIm4xMYjt1gmMArMQjJoFsKg
-	WUgGzULSsYCRZRWjaGpBckFxUnquoV5xYm5xaV66XnJ+7iZGcFw8k9rBuLLB4hCjAAejEg+v
-	Aot3iBBrYllxZe4hRgkOZiUR3vlhQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1qtA4UE0hNL
-	UrNTUwtSi2CyTBycUg2MyyWV94k22u1aXnuJ+Un3oTvzewIPRLHteFd1ctvqs0VB7/bPz83h
-	ZS0rv+LtukG6luPlz73mu5Idi6bzCm4K5vx6vat+eayWer/O0vCOwGLlyWsaytlStzCExsk/
-	E1usLtxVcrogPO+52fWsZf9seW7fbq2YEbvwXMf8kAhRIZuU5uutwdeVWIozEg21mIuKEwHV
-	yMxYhwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsVy+t9jAd13Od4hBi2z2C3mrF/DZnGhbTeL
+	xeVdc9gs7q35z2qx7Ot7dosNINm1nx+zWzw58Z/FgcNj56y77B5PJxxk8ti0qpPNY9OnSewe
+	J2b8ZvHY+Wkzq8fnTXIB7FFcNimpOZllqUX6dglcGUvmnGMt2MNZsfDNAcYGxpvsXYycHBIC
+	JhI3J99mhbDFJC7cW8/WxcjFISSwiFHi5b/1TBDOH0aJlvOP2UCq2AS0Je72bwTrEBFQk1h3
+	8AULSBGzwAYmiecPDzCBJIQFAiS+rJrKAmKzCKhK3P62C8zmFbCT2P77NZQtKPFj8j0gmwOo
+	WV1iypRckDCzgLzE5jVvmUHCEkDhR391IVbpSVy9dJsFokRcYuORWywTGAVmIRk0C2HQLCSD
+	ZiHpWMDIsopRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjODKeSe1gXNlgcYhRgINRiYdXgcU7
+	RIg1say4MvcQowQHs5II7/wwoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6Yklqdmp
+	qQWpRTBZJg5OqQZG2/a4vnSe0A/L13/y85rFk3+t46p7UtDTZZtfr3tV9baZpfnT67k92xzP
+	rBe4cplF7/q2XXVxlz31hL5d6zS70t/zTN7c0WnCvsrSE3rLeH8oTfx5/db30DeKk6Juil3N
+	sHZ6pHpp8u1pgv8kZh9grfu09+P/d/vM8raJz9Jf+sDm8ZTaQ0+PXFBiKc5INNRiLipOBAA8
+	sKsOiAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 461a8eee6a ("zram: report maximum used memory") introduces a new
-knob "mem_used_max" in zram.stats sysfs, and wants to reset it via write 0
-to the sysfs interface.
+There is a rare NULL pointer bug in mem_used_total_show() in concurrent
+situation, like this:
+zram is not initialized, process A is a mem_used_total reader which runs
+periodicity, while process B try to init zram.
 
-However, the current code cann't reset it correctly, so let's fix it.
+	process A 				process B
+access meta, get a NULL value
+						init zram, done
+init_done() is true
+access meta->mem_pool, get a NULL pointer BUG
 
+This patch fixes this issue.
+	
 Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
 ---
- drivers/block/zram/zram_drv.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/block/zram/zram_drv.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 0e63e8a..64dd79a 100644
+index 64dd79a..2ffd7d8 100644
 --- a/drivers/block/zram/zram_drv.c
 +++ b/drivers/block/zram/zram_drv.c
-@@ -173,7 +173,6 @@ static ssize_t mem_used_max_store(struct device *dev,
- 	int err;
- 	unsigned long val;
+@@ -99,11 +99,12 @@ static ssize_t mem_used_total_show(struct device *dev,
+ {
+ 	u64 val = 0;
  	struct zram *zram = dev_to_zram(dev);
 -	struct zram_meta *meta = zram->meta;
  
- 	err = kstrtoul(buf, 10, &val);
- 	if (err || val != 0)
-@@ -181,8 +180,7 @@ static ssize_t mem_used_max_store(struct device *dev,
- 
  	down_read(&zram->init_lock);
- 	if (init_done(zram))
--		atomic_long_set(&zram->stats.max_used_pages,
--				zs_get_total_pages(meta->mem_pool));
-+		atomic_long_set(&zram->stats.max_used_pages, 0);
+-	if (init_done(zram))
++	if (init_done(zram)) {
++		struct zram_meta *meta = zram->meta;
+ 		val = zs_get_total_pages(meta->mem_pool);
++	}
  	up_read(&zram->init_lock);
  
- 	return len;
+ 	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
 -- 
 1.7.0.4
 
