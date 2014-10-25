@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932971AbaJYAVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 20:21:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36411 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111AbaJYAVF (ORCPT
+	id S933118AbaJYAW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 20:22:56 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:55948 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111AbaJYAWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 20:21:05 -0400
-From: Jay Vosburgh <jay.vosburgh@canonical.com>
-To: paulmck@linux.vnet.ibm.com
-cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        mroos@linux.ee, tj@kernel.org
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-In-reply-to: <20141024230524.GA16023@linux.vnet.ibm.com>
-References: <20141024162943.GA16621@declera.com> <20141024165454.GS4977@linux.vnet.ibm.com> <20141024170931.GA21849@declera.com> <20141024172009.GV4977@linux.vnet.ibm.com> <20141024173526.GA26058@declera.com> <20141024183226.GW4977@linux.vnet.ibm.com> <20141024212557.GA15537@declera.com> <20141024214927.GA4977@linux.vnet.ibm.com> <8915.1414190047@famine> <20141024225931.GC4977@linux.vnet.ibm.com> <20141024230524.GA16023@linux.vnet.ibm.com>
-Comments: In-reply-to "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-   message dated "Fri, 24 Oct 2014 16:05:24 -0700."
-X-Mailer: MH-E 8.5+bzr; nmh 1.5; GNU Emacs 24.4.50
-Date: Fri, 24 Oct 2014 17:20:48 -0700
-Message-ID: <10136.1414196448@famine>
+	Fri, 24 Oct 2014 20:22:55 -0400
+MIME-Version: 1.0
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 24 Oct 2014 17:22:31 -0700
+Message-ID: <CALCETrUmA+5499fEqp7S-nfSBVxTEo76mA9r32zYQ41E3c+YhQ@mail.gmail.com>
+Subject: vmalloced stacks on x86_64?
+To: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Is there any good reason not to use vmalloc for x86_64 stacks?
 
->On Fri, Oct 24, 2014 at 03:59:31PM -0700, Paul E. McKenney wrote:
-[...]
->> Hmmm...  It sure looks like we have some callbacks stuck here.  I clearly
->> need to take a hard look at the sleep/wakeup code.
->> 
->> Thank you for running this!!!
->
->Could you please try the following patch?  If no joy, could you please
->add rcu:rcu_nocb_wake to the list of ftrace events?
+The tricky bits I've thought of are:
 
-	I tried the patch, it did not change the behavior.
+ - On any context switch, we probably need to probe the new stack
+before switching to it.  That way, if it's going to fault due to an
+out-of-sync pgd, we still have a stack available to handle the fault.
 
-	I enabled the rcu:rcu_barrier and rcu:rcu_nocb_wake tracepoints
-and ran it again (with this patch and the first patch from earlier
-today); the trace output is a bit on the large side so I put it and the
-dmesg log at:
+ - Any time we change cr3, we may need to check that the pgd
+corresponding to rsp is there.  If now, we need to sync it over.
 
-http://people.canonical.com/~jvosburgh/nocb-wake-dmesg.txt
+ - For simplicity, we probably want all stack ptes to be present all
+the time.  This is fine; vmalloc already works that way.
 
-http://people.canonical.com/~jvosburgh/nocb-wake-trace.txt
+ - If we overrun the stack, we double-fault.  This should be easy to
+detect: any double-fault where rsp is less than 20 bytes from the
+bottom of the stack is a failure to deliver a non-IST exception due to
+ a stack overflow.  The question is: what do we do if this happens?
+We could just panic (guaranteed to work).  We could also try to
+recover by killing the offending task, but that might be a bit
+challenging, since we're in IST context.  We could do something truly
+awful: increment RSP by a few hundred bytes, point RIP at do_exit, and
+return from the double fault.
 
-	-J
+Thoughts?  This shouldn't be all that much code.
 
-
->							Thanx, Paul
->
->------------------------------------------------------------------------
->
->rcu: Kick rcuo kthreads after their CPU goes offline
->
->If a no-CBs CPU were to post an RCU callback with interrupts disabled
->after it entered the idle loop for the last time, there might be no
->deferred wakeup for the corresponding rcuo kthreads.  This commit
->therefore adds a set of calls to do_nocb_deferred_wakeup() after the
->CPU has gone completely offline.
->
->Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
->diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
->index 84b41b3c6ebd..f6880052b917 100644
->--- a/kernel/rcu/tree.c
->+++ b/kernel/rcu/tree.c
->@@ -3493,8 +3493,10 @@ static int rcu_cpu_notify(struct notifier_block *self,
-> 	case CPU_DEAD_FROZEN:
-> 	case CPU_UP_CANCELED:
-> 	case CPU_UP_CANCELED_FROZEN:
->-		for_each_rcu_flavor(rsp)
->+		for_each_rcu_flavor(rsp) {
-> 			rcu_cleanup_dead_cpu(cpu, rsp);
->+			do_nocb_deferred_wakeup(per_cpu_ptr(rsp->rda, cpu));
->+		}
-> 		break;
-> 	default:
-> 		break;
->
-
----
-	-Jay Vosburgh, jay.vosburgh@canonical.com
+--Andy
