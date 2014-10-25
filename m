@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaJYWXf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 18:23:35 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:47715 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751762AbaJYWXb (ORCPT
+	id S1752058AbaJYWXm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 18:23:42 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:45781 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaJYWXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 18:23:31 -0400
+	Sat, 25 Oct 2014 18:23:40 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
         dsahern@gmail.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
         paulus@samba.org, acme@kernel.org, namhyung@kernel.org, mmarek@suse.cz
-Subject: [PATCH v4 07/14] perf kbuild: remove legacy demangle-related build variables
-Date: Sun, 26 Oct 2014 00:20:32 +0200
-Message-Id: <1414275639-1053-8-git-send-email-alexis.berlemont@gmail.com>
+Subject: [PATCH v4 09/14] perf kbuild: remove legacy misc build variables
+Date: Sun, 26 Oct 2014 00:20:34 +0200
+Message-Id: <1414275639-1053-10-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
 References: <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
@@ -24,250 +24,456 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove NO_DEMANGLE (replaced by CONFIG_DEMANGLE)
-Remove HAVE_LIBBFD_SUPPORT (replaced by CONFIG_LIBBFD)
-Remove HAVE_CPLUS_DEMANGLE_SUPPORT (replaced by CONFIG_LIBIBERTY_ONLY)
+Remove NO_LIBAUDIT (replaced by CONFIG_LIBAUDIT)
+Remove HAVE_LIBAUDIT_SUPPORT from CFLAGS (replaced by CONFIG_LIBAUDIT)
+Remove HAVE_TIMERFD_SUPPORT (replaced by CONFIG_TIMERFD)
+Remove HAVE_ON_EXIT_SUPPORT (replaced by CONFIG_ON_EXIT)
+Remove HAVE_BACKTRACE_SUPPORT (replaced by CONFIG_BACKTRACE)
+Remove HAVE_LIBNUMA_SUPPORT (replaced by CONFIG_LIBNUMA)
+Remove NO_BIONIC (replaced by CONFIG_BIONIC)
+Remove NO_PERF_REGS (replaced by CONFIG_PERF_REGS)
 
 Signed-off-by: Alexis Berlemont <alexis.berlemont@gmail.com>
 ---
- tools/perf/Kconfig                    | 36 +++++++++++++++++++++------
- tools/perf/config/Makefile            | 46 ++++++++++++++++++-----------------
- tools/perf/config/Makefile.fix-legacy |  4 ---
- tools/perf/util/srcline.c             |  8 +++---
- tools/perf/util/symbol.h              | 25 +++++++++++++------
- 5 files changed, 75 insertions(+), 44 deletions(-)
+ tools/perf/Kconfig                    | 12 ++++++++--
+ tools/perf/arch/arm/tests/Kbuild      |  2 +-
+ tools/perf/arch/x86/tests/Kbuild      |  2 +-
+ tools/perf/bench/Kbuild               |  2 +-
+ tools/perf/builtin-bench.c            |  5 ++--
+ tools/perf/builtin-kvm.c              | 13 ++++++-----
+ tools/perf/builtin-record.c           |  2 ++
+ tools/perf/config/Makefile            | 43 +++++++++++++----------------------
+ tools/perf/config/Makefile.fix-config | 32 --------------------------
+ tools/perf/config/Makefile.fix-legacy | 16 -------------
+ tools/perf/util/perf_regs.c           |  3 +++
+ tools/perf/util/perf_regs.h           |  6 +++--
+ tools/perf/util/util.c                |  5 ++--
+ 13 files changed, 51 insertions(+), 92 deletions(-)
 
 diff --git a/tools/perf/Kconfig b/tools/perf/Kconfig
-index eb59567..026ef67 100644
+index 5f85923..29853a6 100644
 --- a/tools/perf/Kconfig
 +++ b/tools/perf/Kconfig
-@@ -225,6 +225,35 @@ config LIBPYTHON
+@@ -312,8 +312,8 @@ config LIBUNWIND_DIR
+ 	  Directory holding the libuwind dependency (headers +
+ 	  libraries).
+ 
+-config NUMA
+-	bool "Numa support (bench)"
++config LIBNUMA
++	bool "Libnuma support"
+ 	default y
          ---help---
- 	  Libpython dependency needed by the perf script feature.
- 
-+config TIMERFD
-+	bool "Timer via file descriptor"
-+	default y
-+        ---help---
-+	  Timer via file descriptor
-+
-+config DEMANGLE
-+	bool "Demangle symbols"
-+	default y
-+        ---help---
-+	  Enable demangling so as to display human-readable
-+	  symbols. This option is convenient with C++ programs.
-+
-+choice DEMANGLE_DEPS
-+       prompt "Demangle dependency(ies)"
-+       depends on DEMANGLE
-+       default LIBBFD
-+
-+config LIBBFD
-+	bool "BFD + libiberty libraries"
-+        ---help---
-+	  Binary File Descriptor and libiberty libraries
-+
-+config LIBIBERTY_ONLY
-+	bool "Libiberty only"
-+        ---help---
-+	  Libiberty
-+endchoice
-+
- choice
- 	prompt "Elf library"
- 	default LIBELF
-@@ -266,13 +295,6 @@ config NUMA
  	  The library libnuma offers facilities to configure NUMA
- 	  policies supported by the linux kernel.
+@@ -327,6 +327,14 @@ config BIONIC
+ 	  library code developed by Google for their Android operating
+ 	  system.
  
--config DEMANGLE
--	bool "Demangle symbols"
--	default y
--        ---help---
--	  Enable demangling so as to display human-readable
--	  symbols. This option is convenient with C++ programs.
--
- config BIONIC
- 	bool "Bionic support"
- 	default n
++config PERF_REGS
++	bool "Cache register accesses"
++	depends on (ARCH = "x86" || ARCH = "arm" || ARCH = "arm64")
++	default y
++        ---help---
++	  Cache register accesses for unwind processing to speed-up
++	  performances.
++
+ endmenu
+ 
+ menu "Build"
+diff --git a/tools/perf/arch/arm/tests/Kbuild b/tools/perf/arch/arm/tests/Kbuild
+index 5d63e9d..1318ed0 100644
+--- a/tools/perf/arch/arm/tests/Kbuild
++++ b/tools/perf/arch/arm/tests/Kbuild
+@@ -1,2 +1,2 @@
+-obj-y += regs_load.o
++obj-$(CONFIG_PERF_REGS) += regs_load.o
+ obj-y += dwarf-unwind.o
+diff --git a/tools/perf/arch/x86/tests/Kbuild b/tools/perf/arch/x86/tests/Kbuild
+index 3b5aa14..8287dae 100644
+--- a/tools/perf/arch/x86/tests/Kbuild
++++ b/tools/perf/arch/x86/tests/Kbuild
+@@ -1,3 +1,3 @@
+ obj-y += perf-time-to-tsc.o
+-obj-y += regs_load.o
++obj-$(CONFIG_PERF_REGS) += regs_load.o
+ obj-y += dwarf-unwind.o
+diff --git a/tools/perf/bench/Kbuild b/tools/perf/bench/Kbuild
+index e604fe2..863646a 100644
+--- a/tools/perf/bench/Kbuild
++++ b/tools/perf/bench/Kbuild
+@@ -6,7 +6,7 @@ obj-y += futex-hash.o
+ obj-y += futex-requeue.o
+ obj-y += futex-wake.o
+ 
+-obj-$(CONFIG_NUMA) += numa.o
++obj-$(CONFIG_LIBNUMA) += numa.o
+ 
+ obj-$(CONFIG_X86_64) += mem-memcpy-x86-64-asm.o
+ obj-$(CONFIG_X86_64) += mem-memset-x86-64-asm.o
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index b9a56fa..5116d25 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -14,6 +14,7 @@
+  *  numa  ... NUMA scheduling and MM performance
+  *  futex ... Futex performance
+  */
++#include "generated/autoconf.h"
+ #include "perf.h"
+ #include "util/util.h"
+ #include "util/parse-options.h"
+@@ -33,7 +34,7 @@ struct bench {
+ 	bench_fn_t	fn;
+ };
+ 
+-#ifdef HAVE_LIBNUMA_SUPPORT
++#ifdef CONFIG_LIBNUMA
+ static struct bench numa_benchmarks[] = {
+ 	{ "mem",	"Benchmark for NUMA workloads",			bench_numa		},
+ 	{ "all",	"Test all NUMA benchmarks",			NULL			},
+@@ -72,7 +73,7 @@ struct collection {
+ static struct collection collections[] = {
+ 	{ "sched",	"Scheduler and IPC benchmarks",			sched_benchmarks	},
+ 	{ "mem",	"Memory access benchmarks",			mem_benchmarks		},
+-#ifdef HAVE_LIBNUMA_SUPPORT
++#ifdef CONFIG_LIBNUMA
+ 	{ "numa",	"NUMA scheduling and MM benchmarks",		numa_benchmarks		},
+ #endif
+ 	{"futex",       "Futex stressing benchmarks",                   futex_benchmarks        },
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index e042728..19a1d17 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1,3 +1,4 @@
++#include "generated/autoconf.h"
+ #include "builtin.h"
+ #include "perf.h"
+ 
+@@ -20,7 +21,7 @@
+ #include "util/data.h"
+ 
+ #include <sys/prctl.h>
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ #include <sys/timerfd.h>
+ #endif
+ 
+@@ -123,7 +124,7 @@ static void init_kvm_event_record(struct perf_kvm_stat *kvm)
+ 		INIT_LIST_HEAD(&kvm->kvm_events_cache[i]);
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ static void clear_events_cache_stats(struct list_head *kvm_events_cache)
+ {
+ 	struct list_head *head;
+@@ -622,7 +623,7 @@ static void print_result(struct perf_kvm_stat *kvm)
+ 		pr_info("\nLost events: %" PRIu64 "\n\n", kvm->lost_events);
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ static int process_lost_event(struct perf_tool *tool,
+ 			      union perf_event *event __maybe_unused,
+ 			      struct perf_sample *sample __maybe_unused,
+@@ -707,7 +708,7 @@ static bool verify_vcpu(int vcpu)
+ 	return true;
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ /* keeping the max events to a modest level to keep
+  * the processing of samples per mmap smooth.
+  */
+@@ -1224,7 +1225,7 @@ kvm_events_report(struct perf_kvm_stat *kvm, int argc, const char **argv)
+ 	return kvm_events_report_vcpu(kvm);
+ }
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ static struct perf_evlist *kvm_live_event_list(void)
+ {
+ 	struct perf_evlist *evlist;
+@@ -1439,7 +1440,7 @@ static int kvm_cmd_stat(const char *file_name, int argc, const char **argv)
+ 	if (!strncmp(argv[1], "rep", 3))
+ 		return kvm_events_report(&kvm, argc - 1 , argv + 1);
+ 
+-#ifdef HAVE_TIMERFD_SUPPORT
++#ifdef CONFIG_TIMERFD
+ 	if (!strncmp(argv[1], "live", 4))
+ 		return kvm_events_live(&kvm, argc - 1 , argv + 1);
+ #endif
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 5091a27..2b531ad 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -5,6 +5,8 @@
+  * (or a CPU, or a PID) into the perf.data output file - for
+  * later analysis via perf report.
+  */
++
++#include "generated/autoconf.h"
+ #include "builtin.h"
+ 
+ #include "perf.h"
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index e41c9de..0e36bbe 100644
+index 1e7e369..15bd90b 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -575,33 +575,36 @@ ifeq ($(feature-libbfd), 1)
+@@ -16,8 +16,6 @@ CFLAGS := $(EXTRA_CFLAGS) $(EXTRA_WARNINGS)
+ 
+ include $(src-perf)/config/Makefile.arch
+ 
+-NO_PERF_REGS := 1
+-
+ # Additional ARCH settings for x86
+ ifeq ($(ARCH),x86)
+   ifeq ($(IS_X86_64),1)
+@@ -26,16 +24,13 @@ ifeq ($(ARCH),x86)
+   else
+     LIBUNWIND_LIBS = -lunwind -lunwind-x86
    endif
+-  NO_PERF_REGS := 0
  endif
  
--ifdef NO_DEMANGLE
--  CFLAGS += -DNO_DEMANGLE
--else
--  ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
--    EXTLIBS += -liberty
--    CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
--  else
--    ifneq ($(feature-libbfd), 1)
--      ifneq ($(feature-liberty), 1)
--        ifneq ($(feature-liberty-z), 1)
--          # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
--          # or any of 'bfd iberty z' trinity
--          ifeq ($(feature-cplus-demangle), 1)
--            EXTLIBS += -liberty
--            CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
--          else
--            msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
--            CFLAGS += -DNO_DEMANGLE
--          endif
-+ifdef CONFIG_LIBBFD
-+  ifneq ($(feature-libbfd), 1)
-+    # TODO: there might be an issue here: feature-liberty and
-+    # feature-liberty-z cannot be set; they can be set only if
-+    # feature-libbfd is set
-+    ifneq ($(feature-liberty), 1)
-+      ifneq ($(feature-liberty-z), 1)
-+        # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
-+        # or any of 'bfd iberty z' trinity
-+        ifeq ($(feature-cplus-demangle), 1)
-+          EXTLIBS += -liberty
-+          $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBBFD)
-+          $(shell $(KCONFIG_SCRIPT) -e CONFIG_LIBIBERTY_ONLY)
-+        else
-+          msg := $(warning No bfd.h/libbfd found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+          $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
-         endif
-       endif
-     endif
-   endif
+ ifeq ($(ARCH),arm)
+-  NO_PERF_REGS := 0
+   LIBUNWIND_LIBS = -lunwind -lunwind-arm
  endif
  
--ifneq ($(filter -lbfd,$(EXTLIBS)),)
--  CFLAGS += -DHAVE_LIBBFD_SUPPORT
-+ifdef CONFIG_LIBIBERTY_ONLY
-+  $(call feature_check,cplus-demangle)
-+  ifeq ($(feature-cplus-demangle), 1)
-+    EXTLIBS += -liberty
+ ifeq ($(ARCH),arm64)
+-  NO_PERF_REGS := 0
+   LIBUNWIND_LIBS = -lunwind -lunwind-aarch64
+ endif
+ 
+@@ -68,10 +63,6 @@ else
+   FEATURE_CHECK_LDFLAGS-libunwind-debug-frame = $(LIBUNWIND_LDFLAGS)
+ endif
+ 
+-ifeq ($(NO_PERF_REGS),0)
+-  CFLAGS += -DHAVE_PERF_REGS_SUPPORT
+-endif
+-
+ ifndef NO_LIBELF
+   # for linking with debug library, run like:
+   # make DEBUG=1 LIBDW_DIR=/opt/libdw/
+@@ -303,12 +294,14 @@ ifeq ($(feature-sync-compare-and-swap), 1)
+   CFLAGS += -DHAVE_SYNC_COMPARE_AND_SWAP_SUPPORT
+ endif
+ 
+-ifndef NO_BIONIC
++ifdef CONFIG_BIONIC
+   $(call feature_check,bionic)
+   ifeq ($(feature-bionic), 1)
+     BIONIC := 1
+     EXTLIBS := $(filter-out -lrt,$(EXTLIBS))
+     EXTLIBS := $(filter-out -lpthread,$(EXTLIBS))
 +  else
-+    msg := $(warning No libiberty found, install binutils-dev[el]/zlib-static to gain symbol demangling)
-+    $(shell $(KCONFIG_SCRIPT) -d CONFIG_DEMANGLE)
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_BIONIC)
+   endif
+ endif
+ 
+@@ -435,12 +428,11 @@ ifndef NO_LIBUNWIND
+   LDFLAGS += $(LIBUNWIND_LDFLAGS)
+ endif
+ 
+-ifndef NO_LIBAUDIT
++ifdef CONFIG_LIBAUDIT
+   ifneq ($(feature-libaudit), 1)
+-    msg := $(warning No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev);
+-    NO_LIBAUDIT := 1
++    msg := $(warning No libaudit.h found, disables LIBAUDIT support and 'trace' tool, please install audit-libs-devel or libaudit-dev);
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBAUDIT)
+   else
+-    CFLAGS += -DHAVE_LIBAUDIT_SUPPORT
+     EXTLIBS += -laudit
+   endif
+ endif
+@@ -493,10 +485,11 @@ else
+   endif
+ endif
+ 
+-ifeq ($(feature-timerfd), 1)
+-  CFLAGS += -DHAVE_TIMERFD_SUPPORT
+-else
+-  msg := $(warning No timerfd support. Disables 'perf kvm stat live');
++ifdef CONFIG_TIMERFD
++  ifneq ($(feature-timerfd), 1)
++    msg := $(warning No timerfd support. Disables 'perf kvm stat live');
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_TIMERFD)
 +  endif
  endif
  
- ifndef NO_BACKTRACE
-@@ -822,7 +825,6 @@ all:
- 	$(call store,NO_LIBUNWIND)
- 	$(call store,NO_LIBPERL)
+ disable-python = $(eval $(disable-python_code))
+@@ -605,18 +598,17 @@ ifdef CONFIG_LIBIBERTY_ONLY
+   endif
+ endif
+ 
+-ifndef NO_BACKTRACE
+-  ifeq ($(feature-backtrace), 1)
+-    CFLAGS += -DHAVE_BACKTRACE_SUPPORT
++ifdef CONFIG_BACKTRACE
++  ifneq ($(feature-backtrace), 1)
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_BACKTRACE)
+   endif
+ endif
+ 
+-ifndef NO_LIBNUMA
++ifdef CONFIG_LIBNUMA
+   ifeq ($(feature-libnuma), 0)
+     msg := $(warning No numa.h found, disables 'perf bench numa mem' benchmark, please install numactl-devel/libnuma-devel/libnuma-dev);
+-    NO_LIBNUMA := 1
++    $(shell $(KCONFIG_SCRIPT) -d CONFIG_LIBNUMA)
+   else
+-    CFLAGS += -DHAVE_LIBNUMA_SUPPORT
+     EXTLIBS += -lnuma
+   endif
+ endif
+@@ -824,9 +816,6 @@ all:
  	$(call store,NO_LIBPYTHON)
--	$(call store,NO_DEMANGLE)
  	$(call store,NO_LIBELF)
  	$(call store,NO_LIBUNWIND)
- 	$(call store,NO_BACKTRACE)
-diff --git a/tools/perf/config/Makefile.fix-legacy b/tools/perf/config/Makefile.fix-legacy
-index ca219e7..64dbb1a 100644
---- a/tools/perf/config/Makefile.fix-legacy
-+++ b/tools/perf/config/Makefile.fix-legacy
-@@ -9,10 +9,6 @@ ifndef CONFIG_LIBPYTHON
- NO_LIBPYTHON := 1
+-	$(call store,NO_BACKTRACE)
+-	$(call store,NO_LIBNUMA)
+-	$(call store,NO_LIBAUDIT)
+ 	$(call store,NO_LIBBIONIC)
+ 	$(call store,ETC_PERFCONFIG_SQ)
+ 	$(call store,DESTDIR_SQ)
+diff --git a/tools/perf/config/Makefile.fix-config b/tools/perf/config/Makefile.fix-config
+index 3d84008..2ba684b 100644
+--- a/tools/perf/config/Makefile.fix-config
++++ b/tools/perf/config/Makefile.fix-config
+@@ -45,36 +45,4 @@ dummy := $(shell $(CONFIG) -d CONFIG_LIBUNWIND)
+ endif
  endif
  
--ifndef CONFIG_DEMANGLE
--NO_DEMANGLE := 1
+-# NO_BACKTRACE
+-ifdef CONFIG_BACKTRACE
+-ifdef NO_BACKTRACE
+-dummy := $(info Disabling CONFIG_BACKTRACE)
+-dummy := $(shell $(CONFIG) -d CONFIG_BACKTRACE)
+-endif
 -endif
 -
- ifndef CONFIG_LIBELF
- NO_LIBELF := 1
+-# NO_LIBNUMA
+-ifdef CONFIG_NUMA
+-ifdef NO_LIBNUMA
+-dummy := $(info Disabling CONFIG_NUMA)
+-dummy := $(shell $(CONFIG) -d CONFIG_NUMA)
+-endif
+-endif
+-
+-# NO_LIBAUDIT
+-ifdef CONFIG_LIBAUDIT
+-ifdef NO_LIBAUDIT
+-dummy := $(info Disabling CONFIG_LIBAUDIT)
+-dummy := $(shell $(CONFIG) -d CONFIG_LIBAUDIT)
+-endif
+-endif
+-
+-# NO_LIBBIONIC
+-ifdef CONFIG_BIONIC
+-ifdef NO_LIBBIONIC
+-dummy := $(info Disabling CONFIG_BIONIC)
+-dummy := $(shell $(CONFIG) -d CONFIG_BIONIC)
+-endif
+-endif
+-
+ all:
+diff --git a/tools/perf/config/Makefile.fix-legacy b/tools/perf/config/Makefile.fix-legacy
+index 64dbb1a..8e32b74 100644
+--- a/tools/perf/config/Makefile.fix-legacy
++++ b/tools/perf/config/Makefile.fix-legacy
+@@ -16,19 +16,3 @@ endif
+ ifndef CONFIG_LIBUNWIND
+ NO_LIBUNWIND := 1
  endif
-diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-index f3e4bc5..38df8f4 100644
---- a/tools/perf/util/srcline.c
-+++ b/tools/perf/util/srcline.c
-@@ -4,11 +4,13 @@
- 
- #include <linux/kernel.h>
- 
+-
+-ifndef CONFIG_BACKTRACE
+-NO_BACKTRACE := 1
+-endif
+-
+-ifndef CONFIG_NUMA
+-export NO_LIBNUMA := 1
+-endif
+-
+-ifndef CONFIG_LIBAUDIT
+-NO_LIBAUDIT := 1
+-endif
+-
+-ifdef CONFIG_BIONIC
+-NO_LIBBIONIC := 1
+-endif
+diff --git a/tools/perf/util/perf_regs.c b/tools/perf/util/perf_regs.c
+index 43168fb..01720b5 100644
+--- a/tools/perf/util/perf_regs.c
++++ b/tools/perf/util/perf_regs.c
+@@ -1,7 +1,9 @@
+ #include <errno.h>
 +#include "generated/autoconf.h"
-+
- #include "util/dso.h"
- #include "util/util.h"
- #include "util/debug.h"
+ #include "perf_regs.h"
+ #include "event.h"
  
--#ifdef HAVE_LIBBFD_SUPPORT
-+#ifdef CONFIG_LIBBFD
- 
- /*
-  * Implement addr2line using libbfd.
-@@ -189,7 +191,7 @@ void dso__free_a2l(struct dso *dso)
- 	dso->a2l = NULL;
- }
- 
--#else /* HAVE_LIBBFD_SUPPORT */
-+#else /* !CONFIG_LIBBFD */
- 
- static int addr2line(const char *dso_name, unsigned long addr,
- 		     char **file, unsigned int *line_nr,
-@@ -242,7 +244,7 @@ void dso__free_a2l(struct dso *dso __maybe_unused)
++#ifdef CONFIG_PERF_REGS
+ int perf_reg_value(u64 *valp, struct regs_dump *regs, int id)
  {
+ 	int i, idx = 0;
+@@ -25,3 +27,4 @@ out:
+ 	*valp = regs->cache_regs[id];
+ 	return 0;
  }
++#endif /* CONFIG_PERF_REGS */
+diff --git a/tools/perf/util/perf_regs.h b/tools/perf/util/perf_regs.h
+index 980dbf7..44d9b08 100644
+--- a/tools/perf/util/perf_regs.h
++++ b/tools/perf/util/perf_regs.h
+@@ -1,11 +1,13 @@
+ #ifndef __PERF_REGS_H
+ #define __PERF_REGS_H
  
--#endif /* HAVE_LIBBFD_SUPPORT */
-+#endif /* CONFIG_LIBBFD */
- 
- /*
-  * Number of addr2line failures (without success) before disabling it for that
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index eb2c19b..7e3a003 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -1,6 +1,8 @@
- #ifndef __PERF_SYMBOL
- #define __PERF_SYMBOL 1
- 
-+#include "generated/autoconf.h"
-+
++#include <linux/compiler.h>
  #include <linux/types.h>
- #include <stdbool.h>
- #include <stdint.h>
-@@ -23,26 +25,33 @@
++#include "generated/autoconf.h"
  
- #include "dso.h"
+ struct regs_dump;
  
--#ifdef HAVE_CPLUS_DEMANGLE_SUPPORT
-+#ifdef CONFIG_DEMANGLE
-+
-+#ifdef CONFIG_LIBBFD
-+
-+#define PACKAGE 'perf'
-+#include <bfd.h>
-+
-+#elif defined(CONFIG_LIBIBERTY_ONLY)
- extern char *cplus_demangle(const char *, int);
+-#ifdef HAVE_PERF_REGS_SUPPORT
++#ifdef CONFIG_PERF_REGS
+ #include <perf_regs.h>
  
- static inline char *bfd_demangle(void __maybe_unused *v, const char *c, int i)
+ int perf_reg_value(u64 *valp, struct regs_dump *regs, int id);
+@@ -25,5 +27,5 @@ static inline int perf_reg_value(u64 *valp __maybe_unused,
  {
- 	return cplus_demangle(c, i);
+ 	return 0;
  }
--#else
--#ifdef NO_DEMANGLE
-+
-+#else /* Unknown dependency */
-+#error "Inconsistent demangling configuration"
-+#endif
-+
-+#else /* !CONFIG_DEMANGLE */
- static inline char *bfd_demangle(void __maybe_unused *v,
- 				 const char __maybe_unused *c,
- 				 int __maybe_unused i)
- {
- 	return NULL;
+-#endif /* HAVE_PERF_REGS_SUPPORT */
++#endif /* CONFIG_PERF_REGS */
+ #endif /* __PERF_REGS_H */
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index d5eab3f..17667d8 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -1,9 +1,10 @@
++#include "generated/autoconf.h"
+ #include "../perf.h"
+ #include "util.h"
+ #include "debug.h"
+ #include <api/fs/fs.h>
+ #include <sys/mman.h>
+-#ifdef HAVE_BACKTRACE_SUPPORT
++#ifdef CONFIG_BACKTRACE
+ #include <execinfo.h>
+ #endif
+ #include <stdio.h>
+@@ -250,7 +251,7 @@ int hex2u64(const char *ptr, u64 *long_val)
  }
--#else
--#define PACKAGE 'perf'
--#include <bfd.h>
--#endif
--#endif
-+#endif /* CONFIG_DEMANGLE */
  
- /*
-  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
+ /* Obtain a backtrace and print it to stdout. */
+-#ifdef HAVE_BACKTRACE_SUPPORT
++#ifdef CONFIG_BACKTRACE
+ void dump_stack(void)
+ {
+ 	void *array[16];
 -- 
 2.1.1
 
