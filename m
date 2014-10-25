@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaJYUd6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 16:33:58 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:41870 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaJYUd5 (ORCPT
+	id S1752220AbaJYUhT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 16:37:19 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:55426 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaJYUhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 16:33:57 -0400
-Date: Sat, 25 Oct 2014 21:30:17 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andreas Dilger <adilger@dilger.ca>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Michal Marek <mmarek@suse.cz>, "x86@kernel.org" <x86@kernel.org>,
-        linux-kbuild@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: drivers: random: Shift out-of-bounds in _mix_pool_bytes
-Message-ID: <20141025213017.2da2f819@alan.etchedpixels.co.uk>
-In-Reply-To: <544AF3E6.7090003@oracle.com>
-References: <1413802499-17928-1-git-send-email-a.ryabinin@samsung.com>
-	<5444EBFA.5030103@samsung.com>
-	<20141020124929.GA23177@thunk.org>
-	<54451501.2070700@samsung.com>
-	<5445179A.4080804@redhat.com>
-	<20141020141635.GA4499@thunk.org>
-	<20141024100108.GF12706@worktop.programming.kicks-ass.net>
-	<544A52D7.6000202@oracle.com>
-	<20141024134205.GB21513@worktop.programming.kicks-ass.net>
-	<544A6A6B.3040602@oracle.com>
-	<CACT4Y+boMTKpTovCWYQa6baSAWjagCN=mwXBZGAjbobzG80oWA@mail.gmail.com>
-	<2E512EF7-577C-43C2-AB95-30DC25AD059D@dilger.ca>
-	<544AD123.1010304@zytor.com>
-	<544AF3E6.7090003@oracle.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Sat, 25 Oct 2014 16:37:17 -0400
+Date: Sat, 25 Oct 2014 13:36:53 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Hauke Mehrtens <hauke@hauke-m.de>
+Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org, zajec5@gmail.com,
+        arend@broadcom.com, arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bcma: fix build when CONFIG_OF_ADDRESS is not set
+Message-ID: <20141025203653.GA10716@roeck-us.net>
+References: <5436D3CF.2030506@hauke-m.de>
+ <1412890781-24160-1-git-send-email-hauke@hauke-m.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412890781-24160-1-git-send-email-hauke@hauke-m.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.544C09FC.0191,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 9
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Oct 2014 20:50:46 -0400
-Sasha Levin <sasha.levin@oracle.com> wrote:
-
-> On 10/24/2014 06:22 PM, H. Peter Anvin wrote:
-> >> By the principle of least surprise, I would expect "__u32 >> N", where
-> >> > N >= 32 to return zero instead of random garbage.  For N < 32 it will
-> >> > return progressively smaller numbers, until it has shifted away all of
-> >> > the set bits, at which turn it will return 0.  For it suddenly to jump
-> >> > up once N = 32 is used, is counter-intuitive.
-> >> > 
-> > That's why it is undefined.
+On Thu, Oct 09, 2014 at 11:39:41PM +0200, Hauke Mehrtens wrote:
+> Commit 2101e533f41a ("bcma: register bcma as device tree driver")
+> introduces a hard dependency on OF_ADDRESS into the bcma driver.
+> OF_ADDRESS is specifically disabled for the sparc architecture.
+> This results in the following error when building sparc64:allmodconfig.
 > 
-> Now I'm curious about things like "memcpy(ptr, NULL, 0)". According to the
-> standard they're undefined, and since we're using gcc's implementation for
-> memcpy() we are doing "undefined memcpy" in quite a few places in the kernel.
+> drivers/bcma/main.c: In function 'bcma_of_find_child_device':
+> drivers/bcma/main.c:150:3: error: implicit declaration of function 'of_translate_address'
 > 
-> Is it an issue, or would you expect memcpy() to not deref the "from" ptr
-> since length is 0?
+> Fixes: 2101e533f41a ("bcma: register bcma as device tree driver")
+> Reported-by: Guenter Roeck <linux@roeck-us.net>
+> Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
 
-No. Furthermore gcc 4.9 actually has optimiser magic around this. See the
-"Porting to gcc 4.9" notes.
+The upstream kernel still does not include this patch, and the sparc64 build
+is still broken.
 
---------
+Is this patch on its way upstream ?
 
- GCC might now optimize away the null pointer check in code like:
+Guenter
 
-
-  int copy (int* dest, int* src, size_t nbytes) {
-    memmove (dest, src, nbytes);
-    if (src != NULL)
-      return *src;
-    return 0;
-  }
-
-The pointers passed to memmove (and similar functions in <string.h>) must
-be non-null even when nbytes==0, so GCC can use that information to
-remove the check after the memmove call. Calling copy(p, NULL, 0) can
-therefore deference a null pointer and crash.
-
--------------
-
-Which is unfortunate because an operating system has a lot of legitimate
-reasons to copy data to address 0 (on many processors its the exception
-vectors for example)
-
-Alan
+> ---
+>  drivers/bcma/main.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/bcma/main.c b/drivers/bcma/main.c
+> index d1656c2..1000955 100644
+> --- a/drivers/bcma/main.c
+> +++ b/drivers/bcma/main.c
+> @@ -132,7 +132,7 @@ static bool bcma_is_core_needed_early(u16 core_id)
+>  	return false;
+>  }
+>  
+> -#ifdef CONFIG_OF
+> +#if defined(CONFIG_OF) && defined(CONFIG_OF_ADDRESS)
+>  static struct device_node *bcma_of_find_child_device(struct platform_device *parent,
+>  						     struct bcma_device *core)
+>  {
+> -- 
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
