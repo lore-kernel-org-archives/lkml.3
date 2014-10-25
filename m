@@ -1,196 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbaJYVwM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 17:52:12 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:48459 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752939AbaJYVvL (ORCPT
+	id S1751490AbaJYWDw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 18:03:52 -0400
+Received: from smtp-1.concepts.nl ([213.197.30.124]:37098 "EHLO
+	smtp-1.concepts.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaJYWDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 17:51:11 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, Phong Vo <pvo@apm.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
-        Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Toan Le <toanle@apm.com>, Bjorn Andersson <bjorn@kryo.se>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/3] genirq: Allow the irqchip state of an IRQ to be save/restored
-Date: Sat, 25 Oct 2014 11:14:55 +0100
-Message-Id: <1414232097-4328-2-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414232097-4328-1-git-send-email-marc.zyngier@arm.com>
-References: <1414232097-4328-1-git-send-email-marc.zyngier@arm.com>
-X-SA-Exim-Connect-IP: 90.219.10.17
-X-SA-Exim-Rcpt-To: adharmap@codeaurora.org, pvo@apm.com, linus.walleij@linaro.org, tnhuynh@apm.com, yvo@apm.com, tglx@linutronix.de, toanle@apm.com, bjorn@kryo.se, arnd@arndb.de, linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-SA-Exim-Mail-From: marc.zyngier@arm.com
-X-SA-Exim-Scanned: No (on cheepnis.misterjones.org); SAEximRunCond expanded to false
+	Sat, 25 Oct 2014 18:03:51 -0400
+Message-ID: <544C1E40.6070901@xmsnet.nl>
+Date: Sun, 26 Oct 2014 00:03:44 +0200
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.8.1
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org
+Subject: Re: 3.17.0+ files disappearing after playing old dos game on nfsroot
+ laptop
+References: <543ED24D.4070905@xmsnet.nl> <5443F5A1.1050004@xmsnet.nl>	<544A7933.3010702@xmsnet.nl> <544A7D5C.5060804@xmsnet.nl>	<871tpx1gcx.fsf@x220.int.ebiederm.org> <544B7D9F.1070403@xmsnet.nl> <87k33ow65k.fsf@x220.int.ebiederm.org>
+In-Reply-To: <87k33ow65k.fsf@x220.int.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Concepts-MailScanner-Information: Please contact abuse@concepts.nl for more information
+X-Concepts-MailScanner-ID: 1Xi9R2-0001Tf-QT
+X-Concepts-MailScanner: Found to be clean
+X-Concepts-MailScanner-SpamCheck: 
+X-Concepts-MailScanner-From: jmdebruin@xmsnet.nl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a number of cases where a kernel subsystem may want to
-introspect the state of an interrupt at the irqchip level:
+On 10/25/2014 04:55 PM, Eric W. Biederman wrote:
+> Hans de Bruin <jmdebruin@xmsnet.nl> writes:
+>
+>> On 10/24/2014 08:18 PM, Eric W. Biederman wrote:
+>
+> [...]
+>
+>>> At this point I don't know enough to reproduce this.
+>>> What does /proc/mounts look like before you start dosemu?
+>>
+>> bash-4.2$ cat /proc/mounts
+>> rootfs / rootfs rw 0 0
+>> 10.10.0.1:/nfs/root/psion_14.1 / nfs
+>> rw,relatime,vers=3,rsize=4096,wsize=4096,namlen=255,hard,nolock,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.10.0.1,mountvers=3,mountproto=tcp,local_lock=all,addr=10.10.0.1
+>> 0 0
+>> devtmpfs /dev devtmpfs rw,relatime,size=1031016k,nr_inodes=220978,mode=755 0 0
+>> proc /proc proc rw,relatime 0 0
+>> sysfs /sys sysfs rw,relatime 0 0
+>> tmpfs /run tmpfs rw,relatime,mode=755 0 0
+>> devpts /dev/pts devpts rw,relatime,gid=5,mode=620 0 0
+>> cgroup /sys/fs/cgroup cgroup rw,relatime,cpu 0 0
+>> /dev/shm /tmp tmpfs rw,relatime,size=524288k 0 0
+>> /dev/shm /dev/shm tmpfs rw,relatime,size=524288k 0 0
+>> nfs:/nfs/usr/slackware-14.1/usr /usr nfs
+>> ro,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.10.0.1,mountvers=3,mountport=38337,mountproto=udp,local_lock=none,addr=10.10.0.1
+>> 0 0
+>> nfs:/nfs/home /home nfs
+>> rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.10.0.1,mountvers=3,mountport=38337,mountproto=udp,local_lock=none,addr=10.10.0.1
+>> 0 0
+>> nfs:/nfs/mp3 /mp3 nfs
+>> rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.10.0.1,mountvers=3,mountport=38337,mountproto=udp,local_lock=none,addr=10.10.0.1
+>> 0 0
+>> nfs:/nfs/src /usr/src nfs
+>> rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.10.0.1,mountvers=3,mountport=38337,mountproto=udp,local_lock=none,addr=10.10.0.1
+>> 0 0
+>> nfs:/nfs/video /video nfs
+>> rw,relatime,vers=3,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=10.10.0.1,mountvers=3,mountport=38337,mountproto=udp,local_lock=none,addr=10.10.0.1
+>> 0 0
+>>
+>> I now know why I do not see any file in /usr after running dosemu. The whole
+>> /usr mount disappears in /proc/mounts. When I remount it I have a usable laptop
+>> again. Running dosemu a second time does not remove the mount again. In the mean
+>> time I have seen /usr disappear after running other programs like xterm and
+>> firefox. But until now never after remouting it.
+>
+> That is interesting.
 
-- When a peripheral is shared between virtual machines, its interrupt
-  state becomes part of the guest's state, and must be switched accordingly.
-  KVM on arm/arm64 requires this for its guest-visible timer
-- Some GPIO controllers seem to require peeking into the interrupt controller
-  they are connected to to report their internal state
+boot
+run dosemu -> /usr unmounted
+mount /usr
+run dosemu -> /usr still mounted
+sync; echo 3 > /proc/sys/vm/drop_caches
+run dosemu -> /usr unmounted
 
-This seem to be a pattern that is common enough for the core code to try and
-support this without too many horrible hacks. Introduce a pair of accessors
-(irq_get_irqchip_state/irq_set_irqchip_state) to retrieve the bits that can
-be of interest to another subsystem: pending, active, and masked.
+>
+> It sounds like occassionally your /home mount disappears as well.
+>
 
-- irq_get_irqchip_state returns the state of the interrupt according to a
-  state parameter set to IRQCHIP_STATE_PENDING, IRQCHIP_STATE_ACTIVE
-  or IRQCHIP_STATE_MASKED.
-- irq_set_irqchip_state sets the state of the interrupt according to
-  a similar state.
+I have not seen that happening
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- include/linux/interrupt.h |  2 ++
- include/linux/irq.h       | 18 ++++++++++++
- kernel/irq/manage.c       | 71 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 91 insertions(+)
+...
 
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 69517a2..80818b4 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -356,6 +356,8 @@ static inline int disable_irq_wake(unsigned int irq)
- 	return irq_set_irq_wake(irq, 0);
- }
- 
-+extern int irq_get_irqchip_state(unsigned int irq, int state);
-+extern int irq_set_irqchip_state(unsigned int irq, int state, int val);
- 
- #ifdef CONFIG_IRQ_FORCED_THREADING
- extern bool force_irqthreads;
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 03f48d9..257d59a 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -315,6 +315,8 @@ static inline irq_hw_number_t irqd_to_hwirq(struct irq_data *d)
-  *				any other callback related to this irq
-  * @irq_release_resources:	optional to release resources acquired with
-  *				irq_request_resources
-+ * @irq_get_irqchip_state:	return the internal state of an interrupt
-+ * @irq_set_irqchip_state:	set the internal state of a interrupt
-  * @flags:		chip specific flags
-  */
- struct irq_chip {
-@@ -351,6 +353,9 @@ struct irq_chip {
- 	int		(*irq_request_resources)(struct irq_data *data);
- 	void		(*irq_release_resources)(struct irq_data *data);
- 
-+	int		(*irq_get_irqchip_state)(struct irq_data *data, int state);
-+	void		(*irq_set_irqchip_state)(struct irq_data *data, int state, int val);
-+
- 	unsigned long	flags;
- };
- 
-@@ -376,6 +381,19 @@ enum {
- 	IRQCHIP_EOI_THREADED		= (1 <<  6),
- };
- 
-+/*
-+ * irq_get_irqchip_state/irq_set_irqchip_state specific flags:
-+ *
-+ * IRQCHIP_STATE_PENDING:	Interrupt asserted at the pin level
-+ * IRQCHIP_STATE_ACTIVE:	Interrupt in progress (ACKed, but not EOIed)
-+ * IRQCHIP_STATE_MASKED:	Interrupt is masked
-+ */
-+enum {
-+	IRQCHIP_STATE_PENDING,
-+	IRQCHIP_STATE_ACTIVE,
-+	IRQCHIP_STATE_MASKED,
-+};
-+
- /* This include will go away once we isolated irq_desc usage to core code */
- #include <linux/irqdesc.h>
- 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 0a9104b..6a4c03f 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1756,3 +1756,74 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
- 
- 	return retval;
- }
-+
-+/**
-+ *	irq_get_irqchip_state - returns the irqchip state of a interrupt.
-+ *	@irq: Interrupt line that is forwarded to a VM
-+ *	@state: One of IRQCHIP_STATE_* the caller wants to know about
-+ *
-+ *	This call snapshots the internal irqchip state of an
-+ *	interrupt, returning the bit corresponding to the requested
-+ *	@state.
-+ *
-+ *	This function should be called with preemption disabled if the
-+ *	interrupt controller has per-cpu registers.
-+ */
-+int irq_get_irqchip_state(unsigned int irq, int state)
-+{
-+	struct irq_desc *desc;
-+	struct irq_data *data;
-+	struct irq_chip *chip;
-+	int val;
-+
-+	desc = irq_to_desc(irq);
-+	if (!desc)
-+		return -EINVAL;
-+
-+	data = irq_desc_get_irq_data(desc);
-+
-+	chip = irq_desc_get_chip(desc);
-+	if (!chip->irq_get_irqchip_state)
-+		return -EINVAL;
-+
-+	chip_bus_lock(desc);
-+	val = chip->irq_get_irqchip_state(data, state);
-+	chip_bus_sync_unlock(desc);
-+
-+	return val;
-+}
-+
-+/**
-+ *	irq_set_irqchip_state - set the state of a forwarded interrupt.
-+ *	@irq: Interrupt line that is forwarded to a VM
-+ *	@state: State to be restored (one of IRQCHIP_STATE_*)
-+ *	@val: value corresponding to @state
-+ *
-+ *	This call sets the internal irqchip state of an interrupt,
-+ *	depending on the value of @state.
-+ *
-+ *	This function should be called with preemption disabled if the
-+ *	interrupt controller has per-cpu registers.
-+ */
-+int irq_set_irqchip_state(unsigned int irq, int state, int val)
-+{
-+	struct irq_desc *desc;
-+	struct irq_data *data;
-+	struct irq_chip *chip;
-+
-+	desc = irq_to_desc(irq);
-+	if (!desc)
-+		return -EINVAL;
-+
-+	data = irq_desc_get_irq_data(desc);
-+
-+	chip = irq_desc_get_chip(desc);
-+	if (!chip->irq_set_irqchip_state)
-+		return -EINVAL;
-+
-+	chip_bus_lock(desc);
-+	chip->irq_set_irqchip_state(data, state, val);
-+	chip_bus_sync_unlock(desc);
-+
-+	return 0;
-+}
+>
+> I expect what needs to happen is to confirm that nfs directory entry
+> revalidation is buggy, and at least for the short term re-add the nfs
+> logic that will avoid dropping a dentry if it is a mount point, or
+> path to a mount point, to avoid the nfs bugs.
+>
+
+ok, I will go in waiting mode.
+
 -- 
-2.1.0
+Hans
+
 
