@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaJYVAw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 17:00:52 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:41115 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852AbaJYVAt (ORCPT
+	id S1752797AbaJYU6J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 16:58:09 -0400
+Received: from forward15.mail.yandex.net ([95.108.130.119]:36021 "EHLO
+	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717AbaJYU5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 17:00:49 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>, akpm@linux-foundation.org
-Cc: steve.capper@linaro.org, aarcange@redhat.com, benh@kernel.crashing.org,
-        mpe@ellerman.id.au, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        hannes@cmpxchg.org
-Subject: Re: [PATCH V2 1/2] mm: Update generic gup implementation to handle hugepage directory
-In-Reply-To: <20141023.184035.388557314666522484.davem@davemloft.net>
-References: <1413520687-31729-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20141022160224.9c2268795e55d5a2eff5b94d@linux-foundation.org> <20141023.184035.388557314666522484.davem@davemloft.net>
-User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
-Date: Sat, 25 Oct 2014 16:00:05 +0530
-Message-ID: <87ppdg30ia.fsf@linux.vnet.ibm.com>
+	Sat, 25 Oct 2014 16:57:55 -0400
+X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Oct 2014 16:57:55 EDT
+From: =?koi8-r?B?5dfHxc7JyiDwz8zRy8/X?= <zbr@ioremap.net>
+Envelope-From: drustafa@yandex.ru
+To: Alexander Stein <alexanders83@web.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Fries <david@fries.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In-Reply-To: <1414239973-4819-1-git-send-email-alexanders83@web.de>
+References: <1414239973-4819-1-git-send-email-alexanders83@web.de>
+Subject: Re: [PATCH 1/1] W1: ds2490: Increase timeout when waiting for status
 MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102510-0025-0000-0000-00000061D6E9
+Message-Id: <1795801414270117@web29j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Sun, 26 Oct 2014 00:48:37 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
+Hi everyone
 
-> Hey guys, was looking over the generic GUP while working on a sparc64
-> issue and I noticed that you guys do speculative page gets, and after
-> talking with Johannes Weiner (CC:'d) about this we don't see how it
-> could be necessary.
+This looks good to me
+Greg, please pull it into your tree
+
+Thank you
+
+25.10.2014, 16:27, "Alexander Stein" <alexanders83@web.de>:
+> Adjust the bulk message timeout to the other ones (1000ms). Otherwise the
+> following dmesg errors can be seen on a Raspberry Pi:
+> [ šš31.492386] Failed to read 1-wire data from 0x81: err=-110.
+> [ šš31.504168] 0x81: count=-110, status:
+> [ šš31.613404] Failed to read 1-wire data from 0x81: err=-110.
+> [ šš31.621915] 0x81: count=-110, status:
+> [ šš43.260968] Failed to read 1-wire data from 0x81: err=-110.
+> [ šš43.270998] 0x81: count=-110, status:
+> [ šš43.379959] Failed to read 1-wire data from 0x81: err=-110.
+> [ šš43.388854] 0x81: count=-110, status:
 >
-> If interrupts are disabled during the page table scan (which they
-> are), no IPI tlb flushes can arrive.  Therefore any removal from the
-> page tables is guarded by interrupts being re-enabled.  And as a
-> result, page counts of pages we see in the page tables must always
-> have a count > 0.
->
-> x86 does direct atomic_add() on &page->_count because of this
-> invariant and I would rather see the generic version do this too.
+> Signed-off-by: Alexander Stein <alexanders83@web.de>
 
-
-But that won't work with RCU GUP. For example on powerpc the tlb flush
-doesn't involve an IPI and we can essentially find page count 0.
-
--aneesh
-
+Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
