@@ -1,58 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbaJYSw3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:52:29 -0400
-Received: from mout.web.de ([212.227.15.3]:62550 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068AbaJYSw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:52:28 -0400
-From: Alexander Stein <alexanders83@web.de>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Alexander Stein <alexanders83@web.de>, linux-kernel@vger.kernel.org,
-        David Fries <David@Fries.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/1] W1: ds2490: Increase timeout when waiting for status
-Date: Sat, 25 Oct 2014 14:26:13 +0200
-Message-Id: <1414239973-4819-1-git-send-email-alexanders83@web.de>
-X-Mailer: git-send-email 2.1.2
-X-Provags-ID: V03:K0:Gxo+kr4L79In3OsQ6Ckv/3O5yP2vWzrTr5ESLBfQmYph+J6VEKr
- 6He34FCO8otUF/tF1+fqXy/JMBJZgkyz9egAbGqu/3YI983Af+Oq2pevteVxoUzEltLrdn7
- 9a3Yz2YDhU6nqkFxNBkKERZV61aLQG5bZDo/HL9l53NSDYyn3XS+bAobIXrVSlFCLqRDsOY
- dQi0IMvYmGZRE+gbZk0JQ==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752183AbaJYSx2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:53:28 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:47852 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaJYSx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Oct 2014 14:53:26 -0400
+From: Wang Nan <wangnan0@huawei.com>
+To: <masami.hiramatsu.pt@hitachi.com>, <tixy@linaro.org>
+CC: <linux@arm.linux.org.uk>, <will.deacon@arm.com>, <dave.long@linaro.org>,
+        <taras.kondratiuk@linaro.org>, <ben.dooks@codethink.co.uk>,
+        <cl@linux.com>, <rabin@rab.in>, <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <lizefan@huawei.com>
+Subject: [PATCH 4/4] ARM: kprobes: disallow probing stack consuming instructions
+Date: Sat, 25 Oct 2014 14:42:53 +0800
+Message-ID: <1414219373-20070-5-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <1414219373-20070-1-git-send-email-wangnan0@huawei.com>
+References: <1414219373-20070-1-git-send-email-wangnan0@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.544B46E0.0121,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 76036ec598f800814f8cc8e2b69bbf95
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adjust the bulk message timeout to the other ones (1000ms). Otherwise the
-following dmesg errors can be seen on a Raspberry Pi:
-[   31.492386] Failed to read 1-wire data from 0x81: err=-110.
-[   31.504168] 0x81: count=-110, status:
-[   31.613404] Failed to read 1-wire data from 0x81: err=-110.
-[   31.621915] 0x81: count=-110, status:
-[   43.260968] Failed to read 1-wire data from 0x81: err=-110.
-[   43.270998] 0x81: count=-110, status:
-[   43.379959] Failed to read 1-wire data from 0x81: err=-110.
-[   43.388854] 0x81: count=-110, status:
+This patch prohibit probing instructions for which the stack
+requirement are unable to be determined statically. Some test cases
+are found not work again after the modification, this patch also
+removes them.
 
-Signed-off-by: Alexander Stein <alexanders83@web.de>
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
 ---
- drivers/w1/masters/ds2490.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/kernel/kprobes-test-arm.c | 16 ++++++++++------
+ arch/arm/kernel/kprobes.c          |  8 ++++++++
+ 2 files changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/w1/masters/ds2490.c b/drivers/w1/masters/ds2490.c
-index 1de6df8..049a884 100644
---- a/drivers/w1/masters/ds2490.c
-+++ b/drivers/w1/masters/ds2490.c
-@@ -253,7 +253,7 @@ static int ds_recv_status_nodump(struct ds_device *dev, struct ds_status *st,
+diff --git a/arch/arm/kernel/kprobes-test-arm.c b/arch/arm/kernel/kprobes-test-arm.c
+index 264c064..59f9b25 100644
+--- a/arch/arm/kernel/kprobes-test-arm.c
++++ b/arch/arm/kernel/kprobes-test-arm.c
+@@ -476,7 +476,8 @@ void kprobe_arm_test_cases(void)
+ 	TEST_GROUP("Extra load/store instructions")
  
- 	count = 0;
- 	err = usb_interrupt_msg(dev->udev, usb_rcvintpipe(dev->udev,
--		dev->ep[EP_STATUS]), buf, size, &count, 100);
-+		dev->ep[EP_STATUS]), buf, size, &count, 1000);
- 	if (err < 0) {
- 		pr_err("Failed to read 1-wire data from 0x%x: err=%d.\n",
- 		       dev->ep[EP_STATUS], err);
+ 	TEST_RPR(  "strh	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")
+-	TEST_RPR(  "streqh	r",14,VAL2,", [r",13,0, ", r",12, 48,"]")
++	TEST_RPR(  "streqh	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")
++	TEST_UNSUPPORTED(  "streqh	r14, [r13, r12]")
+ 	TEST_RPR(  "strh	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")
+ 	TEST_RPR(  "strneh	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
+ 	TEST_RPR(  "strh	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")
+@@ -565,7 +566,8 @@ void kprobe_arm_test_cases(void)
+ 
+ #if __LINUX_ARM_ARCH__ >= 5
+ 	TEST_RPR(  "strd	r",0, VAL1,", [r",1, 48,", -r",2,24,"]")
+-	TEST_RPR(  "strccd	r",8, VAL2,", [r",13,0, ", r",12,48,"]")
++	TEST_RPR(  "strccd	r",8, VAL2,", [r",11,0, ", r",12,48,"]")
++	TEST_UNSUPPORTED(  "strccd r8, [r13, r12]")
+ 	TEST_RPR(  "strd	r",4, VAL1,", [r",2, 24,", r",3, 48,"]!")
+ 	TEST_RPR(  "strcsd	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")
+ 	TEST_RPR(  "strd	r",2, VAL1,", [r",5, 24,"], r",4,48,"")
+@@ -639,13 +641,15 @@ void kprobe_arm_test_cases(void)
+ 	TEST_RP( "str"byte"	r",2, VAL1,", [r",3, 24,"], #48")		\
+ 	TEST_RP( "str"byte"	r",10,VAL2,", [r",9, 64,"], #-48")		\
+ 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 48,", -r",2, 24,"]")	\
+-	TEST_RPR("str"byte"	r",14,VAL2,", [r",13,0, ", r",12, 48,"]")	\
++	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 48,"]")	\
++	TEST_UNSUPPORTED("str"byte" r14, [r13, r12]")	\
+ 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  48,"]!")	\
+ 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,48,", -r",10,24,"]!")	\
+ 	TEST_RPR("str"byte"	r",2, VAL1,", [r",3, 24,"], r",4, 48,"")	\
+ 	TEST_RPR("str"byte"	r",10,VAL2,", [r",9, 48,"], -r",11,24,"")	\
+ 	TEST_RPR("str"byte"	r",0, VAL1,", [r",1, 24,", r",2,  32,", asl #1]")\
+-	TEST_RPR("str"byte"	r",14,VAL2,", [r",13,0, ", r",12, 32,", lsr #2]")\
++	TEST_RPR("str"byte"	r",14,VAL2,", [r",11,0, ", r",12, 32,", lsr #2]")\
++	TEST_UNSUPPORTED("str"byte"	r14, [r13, r12, lsr #2]")\
+ 	TEST_RPR("str"byte"	r",1, VAL1,", [r",2, 24,", r",3,  32,", asr #3]!")\
+ 	TEST_RPR("str"byte"	r",12,VAL2,", [r",11,24,", r",10, 4,", ror #31]!")\
+ 	TEST_P(  "ldr"byte"	r0, [r",0,  24,", #-2]")			\
+@@ -669,12 +673,12 @@ void kprobe_arm_test_cases(void)
+ 
+ 	LOAD_STORE("")
+ 	TEST_P(   "str	pc, [r",0,0,", #15*4]")
+-	TEST_R(   "str	pc, [sp, r",2,15*4,"]")
++	TEST_UNSUPPORTED(   "str	pc, [sp, r2]")
+ 	TEST_BF(  "ldr	pc, [sp, #15*4]")
+ 	TEST_BF_R("ldr	pc, [sp, r",2,15*4,"]")
+ 
+ 	TEST_P(   "str	sp, [r",0,0,", #13*4]")
+-	TEST_R(   "str	sp, [sp, r",2,13*4,"]")
++	TEST_UNSUPPORTED(   "str	sp, [sp, r2]")
+ 	TEST_BF(  "ldr	sp, [sp, #13*4]")
+ 	TEST_BF_R("ldr	sp, [sp, r",2,13*4,"]")
+ 
+diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
+index 618531d..59f5e64 100644
+--- a/arch/arm/kernel/kprobes.c
++++ b/arch/arm/kernel/kprobes.c
+@@ -124,6 +124,14 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 		break;
+ 	}
+ 
++	/*
++	 * Unable to instrument insn like 'str r0, [sp, +/-r1]'.
++	 * __und_svc protects 64 bytes stack, so instrumenting insn
++	 * likes 'str r0, [sp, #-68]' should be prohibited.
++	 */
++	if ((p->ainsn.stack_space < 0) || (p->ainsn.stack_space > 64))
++		return -EINVAL;
++
+ 	return 0;
+ }
+ 
 -- 
-2.1.2
+1.8.4
 
