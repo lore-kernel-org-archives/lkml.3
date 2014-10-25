@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaJYStW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:49:22 -0400
-Received: from mail.efficios.com ([78.47.125.74]:36418 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378AbaJYStS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:49:18 -0400
-Date: Sat, 25 Oct 2014 12:51:25 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Matthew Wilcox <willy@linux.intel.com>,
-        Ross Zwisler <ross.zwisler@linux.intel.com>
-Cc: lttng-dev <lttng-dev@lists.lttng.org>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Message-ID: <465653369.1985.1414241485934.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1254279794.1957.1414240389301.JavaMail.zimbra@efficios.com>
-Subject: Progress on system crash traces with LTTng using DAX and pmem
+	id S1752158AbaJYStv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:49:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50858 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaJYSst (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Oct 2014 14:48:49 -0400
+Date: Sat, 25 Oct 2014 11:55:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 1/2] clocksource: enable pxa_timer for SA-1100 platform
+In-Reply-To: <10546062.ah0Qvxpsuh@wuerfel>
+Message-ID: <alpine.DEB.2.11.1410251154280.5308@nanos>
+References: <1413377405-7503-1-git-send-email-dbaryshkov@gmail.com> <10546062.ah0Qvxpsuh@wuerfel>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
-Thread-Topic: Progress on system crash traces with LTTng using DAX and pmem
-Thread-Index: IcW4w43a7FMs0w2LdwfVPXVz5te3yg==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthew, Hi Ross,
+On Mon, 20 Oct 2014, Arnd Bergmann wrote:
 
-A quick follow up on my progress on using DAX and pmem with
-LTTng. I've been able to successfully gather a user-space
-trace into buffers mmap'd into an ext4 filesystem within
-a pmem block device mounted with -o dax to bypass the page
-cache. After a soft reboot, I'm able to mount the partition
-again, and gather the very last data collected in the buffers
-by the applications. I created a "lttng-crash" program that
-extracts data from those buffers and converts the content
-into a readable Common Trace Format trace. So I guess
-you have a use-case for your patchsets on commodity hardware
-right there. :)
+> On Wednesday 15 October 2014 16:50:04 Dmitry Eremin-Solenikov wrote:
+> > SA-11x0 platform used the same IP block as was used on PXA. Consequently
+> > it makes sense to have only one driver. Enable pxa_timer clocksource for
+> > StrongARM platform.
+> > 
+> > Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> 
+> Both patches look good to me.
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> Should we merge them through arm-soc or through the clocksource tree?
 
-I've been asked by my customers if DAX would work well with
-mtd-ram, which they are using. To you foresee any roadblock
-with this approach ?
-
-FYI, the main reason why my customer wants to go with a
-"trace into memory that survives soft reboot" approach
-rather than to use things like kexec/kdump is that they
-care about the amount of time it takes to reboot their
-machines. They want a solution where they can extract the
-detailed crash data after reboot, after the machine is
-back online, rather than requiring a few minutes of offline
-time to extract the crash details.
-
-So I guess next year I'll probably be looking into
-allocating the LTTng kernel tracer buffers into an mmap'd file
-within a ext2/4-DAX-over-pmem/mtd-ram filesystem. It's going
-to be exciting! :)
-
-Please keep me in CC on your next patch versions. I'm willing
-to spend some more time reviewing them if needed. By the way,
-do you guys have a target time-frame/kernel version you aim
-at for getting this work upstream ?
+It touches arm, so please take it through arm-soc with my acked-by.
 
 Thanks,
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+	tglx
