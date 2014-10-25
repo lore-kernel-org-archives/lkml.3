@@ -1,143 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483AbaJYWNd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 18:13:33 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:46038 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaJYWNb (ORCPT
+	id S1751505AbaJYWTX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 18:19:23 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51284 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038AbaJYWTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 18:13:31 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-gpio@vger.kernel.org
-Subject: I2C OF IRQ parsing issue due to probe ordering
-Date: Sun, 26 Oct 2014 01:13:31 +0300
-Message-ID: <2287003.09eTeKUr1V@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+	Sat, 25 Oct 2014 18:19:22 -0400
+Date: Sun, 26 Oct 2014 00:19:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chris Friesen <chris.friesen@windriver.com>
+cc: rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: semantics of reader/writer semaphores in rt patch
+In-Reply-To: <544956B8.2000406@windriver.com>
+Message-ID: <alpine.DEB.2.11.1410252354030.5308@nanos>
+References: <544956B8.2000406@windriver.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 23 Oct 2014, Chris Friesen wrote:
 
-I recently ran into an issue with the OF IRQ parsing code in the I2C core
-(of_i2c_register_devices in drivers/i2c/i2c-core.c).
+> I recently noticed that when CONFIG_PREEMPT_RT_FULL is enabled we the
+> semantics change.  From "include/linux/rwsem_rt.h":
+> 
+>  * Note that the semantics are different from the usual
+>  * Linux rw-sems, in PREEMPT_RT mode we do not allow
+>  * multiple readers to hold the lock at once, we only allow
+>  * a read-lock owner to read-lock recursively. This is
+>  * better for latency, makes the implementation inherently
+>  * fair and makes it simpler as well.
+> 
+> How is this valid?  It seems to me that there are any number of code paths
+> that could depend on having multiple threads of execution be able to hold the
+> reader lock simultaneously.  Something as simple as:
+> 
+> thread A:
+> take rw_semaphore X for reading
+> take lock Y, modify data, release lock Y
+> wake up thread B
+> wait on conditional protected by lock Y
+> free rw_semaphore X
+> 
+> thread B:
+> take rw_semaphore X for reading
+> wait on conditional protected by lock Y
+> send message to wake up thread A
+> free rw_semaphore X
 
-My DT contains the following nodes.
+I don't see why B should wake A without changing the conditional. A
+won't make progress by being woken by B as the conditional does not
+magically change just because B wakes A.
 
-        gpio1: gpio@e6051000 {
-                ...
-                #interrupt-cells = <2>;
-                interrupt-controller;
-                clocks = <&mstp9_clks R8A7790_CLK_GPIO1>;
-        };
+So what you wanted to say is:
 
-        iic2: i2c@e6520000 {
-                #address-cells = <1>;
-                #size-cells = <0>;
-                ...
-                hdmi@39 {
-                        compatible = "adi,adv7511w";
-                        reg = <0x39>;
-                        interrupt-parent = <&gpio1>;
-                        interrupts = <15 IRQ_TYPE_EDGE_FALLING>;
-                        ...
-                };
-        };
+  thread B:
+  take rw_semaphore X for reading
+  wait on conditional protected by lock Y
++ take lock Y, modify data, release lock Y
+  send message to wake up thread A
+  free rw_semaphore X
 
-        mstp9_clks: mstp9_clks@e6150994 {
-                ...
-        };
+Otherwise your example does not make any sense at all. And that has
+some serious non RT related implications.
 
-The i2c@e6520000 node is probed before the gpio@e6051000 node. The
-of_i2c_register_devices() function tries to register all children, including
-hdmi@39. It tries to parse and map the I2C client IRQ by calling
-irq_of_parse_and_map(), which returns 0 as the interrupt controller isn't
-probed yet. The adv7511 driver later probes the hdmi@39 device and gets
-client->irq set to 0.
+> In the regular kernel this would work, in the RT kernel it would deadlock.
 
-We can't control the probe order. One option to solve the problem would be to
-defer probing of the I2C client until the interrupt control is available. The
-following patch is a naive implementation. Before turning it into a real
-upstream candidate (changing the return type of irq_create_of_mapping without
-checking the callers is a no-go) I'd like to get feedback on the approach.
-
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 2f90ac6a7f79..73ff1e7d2382 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -631,6 +631,14 @@ static int i2c_device_probe(struct device *dev)
- 	if (!client)
- 		return 0;
+Works by some definition of 'works'
  
-+	if (!client->irq && dev->of_node) {
-+		int irq = irq_of_parse_and_map(dev->of_node, 0);
-+		if (irq < 0)
-+			return irq;
-+
-+		client->irq = irq;
-+	}
-+
- 	driver = to_i2c_driver(dev->driver);
- 	if (!driver->probe || !driver->id_table)
- 		return -ENODEV;
-@@ -1409,7 +1417,6 @@ static void of_i2c_register_devices(struct i2c_adapter *adap)
- 			continue;
- 		}
- 
--		info.irq = irq_of_parse_and_map(node, 0);
- 		info.of_node = of_node_get(node);
- 		info.archdata = &dev_ad;
- 
-@@ -1423,7 +1430,6 @@ static void of_i2c_register_devices(struct i2c_adapter *adap)
- 			dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
- 				node->full_name);
- 			of_node_put(node);
--			irq_dispose_mapping(info.irq);
- 			continue;
- 		}
- 	}
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index bfec136a6d1e..81a14d89a5bd 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -34,7 +34,7 @@ static inline int of_irq_parse_oldworld(struct device_node *device, int index,
- extern int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq);
- extern int of_irq_parse_one(struct device_node *device, int index,
- 			  struct of_phandle_args *out_irq);
--extern unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data);
-+extern int irq_create_of_mapping(struct of_phandle_args *irq_data);
- extern int of_irq_to_resource(struct device_node *dev, int index,
- 			      struct resource *r);
- extern int of_irq_to_resource_table(struct device_node *dev,
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index 6534ff6ce02e..386fd09f4c85 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -466,7 +466,7 @@ int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
- }
- EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
- 
--unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
-+int irq_create_of_mapping(struct of_phandle_args *irq_data)
- {
- 	struct irq_domain *domain;
- 	irq_hw_number_t hwirq;
-@@ -477,7 +477,7 @@ unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data)
- 	if (!domain) {
- 		pr_warn("no irq domain found for %s !\n",
- 			of_node_full_name(irq_data->np));
--		return 0;
-+		return -EPROBE_DEFER;
- 	}
- 
- 	/* If domain has no translation, then we assume interrupt line */
+> Does the RT kernel just disallow this sort of algorithm?
 
--- 
-Regards,
+Yes. For a good reason. Let's add thread C
 
-Laurent Pinchart
+A    	   	B		C
+down_read(X)
+				down_write(X)
+lock(Y)
+modify data
+unlock(Y)
+wake(B)
+		down_read(X)
+
+Due to the mainline rwsem fairness semantics:
+
+A holds X, C is blocked on A and B is blocked on A.
+
+Deadlock, without RT and the single reader restriction being involved.
+
+So RT does not violate ANY of the existing mainline semantics, it just
+imposes a performance impact of not allowing multiple readers.
+
+Aside of that it provides as usual the free of charge service to
+expose mainline bugs faster.
+
+Yes, it's valid and not that simple as you might think.
+
+Thanks,
+
+	tglx
+
 
