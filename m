@@ -1,126 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaJYVM6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 17:12:58 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:47328 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553AbaJYVM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 17:12:57 -0400
-Date: Fri, 24 Oct 2014 22:16:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jay Vosburgh <jay.vosburgh@canonical.com>
-Cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        mroos@linux.ee, tj@kernel.org
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141025051602.GB28247@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141024173526.GA26058@declera.com>
- <20141024183226.GW4977@linux.vnet.ibm.com>
- <20141024212557.GA15537@declera.com>
- <20141024214927.GA4977@linux.vnet.ibm.com>
- <8915.1414190047@famine>
- <20141024225931.GC4977@linux.vnet.ibm.com>
- <20141024230524.GA16023@linux.vnet.ibm.com>
- <10136.1414196448@famine>
- <20141025020324.GA28247@linux.vnet.ibm.com>
- <11813.1414211613@famine>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <11813.1414211613@famine>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752961AbaJYVPM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 17:15:12 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:42684 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaJYVPJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Oct 2014 17:15:09 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: akpm@linux-foundation.org, Steve Capper <steve.capper@linaro.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, benh@kernel.crashing.org,
+        mpe@ellerman.id.au
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH V3 1/2] mm: Update generic gup implementation to handle hugepage directory
+Date: Sat, 25 Oct 2014 16:14:19 +0530
+Message-Id: <1414233860-7683-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 2.1.0
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102505-0025-0000-0000-000000DE0EA5
+x-cbid: 14102510-0013-0000-0000-0000006ACEE3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 09:33:33PM -0700, Jay Vosburgh wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> >On Fri, Oct 24, 2014 at 05:20:48PM -0700, Jay Vosburgh wrote:
-> >> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> >> 
-> >> >On Fri, Oct 24, 2014 at 03:59:31PM -0700, Paul E. McKenney wrote:
-> >> [...]
-> >> >> Hmmm...  It sure looks like we have some callbacks stuck here.  I clearly
-> >> >> need to take a hard look at the sleep/wakeup code.
-> >> >> 
-> >> >> Thank you for running this!!!
-> >> >
-> >> >Could you please try the following patch?  If no joy, could you please
-> >> >add rcu:rcu_nocb_wake to the list of ftrace events?
-> >> 
-> >> 	I tried the patch, it did not change the behavior.
-> >> 
-> >> 	I enabled the rcu:rcu_barrier and rcu:rcu_nocb_wake tracepoints
-> >> and ran it again (with this patch and the first patch from earlier
-> >> today); the trace output is a bit on the large side so I put it and the
-> >> dmesg log at:
-> >> 
-> >> http://people.canonical.com/~jvosburgh/nocb-wake-dmesg.txt
-> >> 
-> >> http://people.canonical.com/~jvosburgh/nocb-wake-trace.txt
-> >
-> >Thank you again!
-> >
-> >Very strange part of the trace.  The only sign of CPU 2 and 3 are:
-> >
-> >    ovs-vswitchd-902   [000] ....   109.896840: rcu_barrier: rcu_sched Begin cpu -1 remaining 0 # 0
-> >    ovs-vswitchd-902   [000] ....   109.896840: rcu_barrier: rcu_sched Check cpu -1 remaining 0 # 0
-> >    ovs-vswitchd-902   [000] ....   109.896841: rcu_barrier: rcu_sched Inc1 cpu -1 remaining 0 # 1
-> >    ovs-vswitchd-902   [000] ....   109.896841: rcu_barrier: rcu_sched OnlineNoCB cpu 0 remaining 1 # 1
-> >    ovs-vswitchd-902   [000] d...   109.896841: rcu_nocb_wake: rcu_sched 0 WakeNot
-> >    ovs-vswitchd-902   [000] ....   109.896841: rcu_barrier: rcu_sched OnlineNoCB cpu 1 remaining 2 # 1
-> >    ovs-vswitchd-902   [000] d...   109.896841: rcu_nocb_wake: rcu_sched 1 WakeNot
-> >    ovs-vswitchd-902   [000] ....   109.896842: rcu_barrier: rcu_sched OnlineNoCB cpu 2 remaining 3 # 1
-> >    ovs-vswitchd-902   [000] d...   109.896842: rcu_nocb_wake: rcu_sched 2 WakeNotPoll
-> >    ovs-vswitchd-902   [000] ....   109.896842: rcu_barrier: rcu_sched OnlineNoCB cpu 3 remaining 4 # 1
-> >    ovs-vswitchd-902   [000] d...   109.896842: rcu_nocb_wake: rcu_sched 3 WakeNotPoll
-> >    ovs-vswitchd-902   [000] ....   109.896843: rcu_barrier: rcu_sched Inc2 cpu -1 remaining 4 # 2
-> >
-> >The pair of WakeNotPoll trace entries says that at that point, RCU believed
-> >that the CPU 2's and CPU 3's rcuo kthreads did not exist.  :-/
-> 
-> 	On the test system I'm using, CPUs 2 and 3 really do not exist;
-> it is a 2 CPU system (Intel Core 2 Duo E8400). I mentioned this in an
-> earlier message, but perhaps you missed it in the flurry.
+Update generic gup implementation with powerpc specific details.
+On powerpc at pmd level we can have hugepte, normal pmd pointer
+or a pointer to the hugepage directory.
 
-Or forgot it.  Either way, thank you for reminding me.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+Changes from V3:
+* Explain pgd_huge, also move the definition to linux/hugetlb.h.
+  Both pgd_huge and is_hugepd are related to hugepages and hugetlb.h
+  is the right header
 
-> 	Looking at the dmesg, the early boot messages seem to be
-> confused as to how many CPUs there are, e.g.,
-> 
-> [    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
-> [    0.000000] Hierarchical RCU implementation.
-> [    0.000000]  RCU debugfs-based tracing is enabled.
-> [    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
-> [    0.000000]  RCU restricting CPUs from NR_CPUS=256 to nr_cpu_ids=4.
-> [    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
-> [    0.000000] NR_IRQS:16640 nr_irqs:456 0
-> [    0.000000]  Offload RCU callbacks from all CPUs
-> [    0.000000]  Offload RCU callbacks from CPUs: 0-3.
-> 
-> 	but later shows 2:
-> 
-> [    0.233703] x86: Booting SMP configuration:
-> [    0.236003] .... node  #0, CPUs:      #1
-> [    0.255528] x86: Booted up 1 node, 2 CPUs
-> 
-> 	In any event, the E8400 is a 2 core CPU with no hyperthreading.
+ arch/arm/include/asm/pgtable.h   |   2 +
+ arch/arm64/include/asm/pgtable.h |   2 +
+ arch/powerpc/include/asm/page.h  |   1 +
+ include/linux/hugetlb.h          |  30 +++++++++++
+ include/linux/mm.h               |   7 +++
+ mm/gup.c                         | 113 +++++++++++++++++++--------------------
+ 6 files changed, 96 insertions(+), 59 deletions(-)
 
-Well, this might explain some of the difficulties.  If RCU decides to wait
-on CPUs that don't exist, we will of course get a hang.  And rcu_barrier()
-was definitely expecting four CPUs.
-
-So what happens if you boot with maxcpus=2?  (Or build with
-CONFIG_NR_CPUS=2.) I suspect that this might avoid the hang.  If so,
-I might have some ideas for a real fix.
-
-							Thanx, Paul
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 3b30062..c52d261 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -181,6 +181,8 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ /* to find an entry in a kernel page-table-directory */
+ #define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
+ 
++#define pgd_huge(pgd)		(0)
++
+ #define pmd_none(pmd)		(!pmd_val(pmd))
+ #define pmd_present(pmd)	(pmd_val(pmd))
+ 
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+index 41a43bf..f532a14 100644
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -464,6 +464,8 @@ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
+ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ extern pgd_t idmap_pg_dir[PTRS_PER_PGD];
+ 
++#define pgd_huge(pgd)		(0)
++
+ /*
+  * Encode and decode a swap entry:
+  *	bits 0-1:	present (must be zero)
+diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
+index 26fe1ae..f973fce 100644
+--- a/arch/powerpc/include/asm/page.h
++++ b/arch/powerpc/include/asm/page.h
+@@ -380,6 +380,7 @@ static inline int hugepd_ok(hugepd_t hpd)
+ #endif
+ 
+ #define is_hugepd(pdep)               (hugepd_ok(*((hugepd_t *)(pdep))))
++#define pgd_huge pgd_huge
+ int pgd_huge(pgd_t pgd);
+ #else /* CONFIG_HUGETLB_PAGE */
+ #define is_hugepd(pdep)			0
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 6e6d338..de63dbc 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -175,6 +175,36 @@ static inline void __unmap_hugepage_range(struct mmu_gather *tlb,
+ }
+ 
+ #endif /* !CONFIG_HUGETLB_PAGE */
++/*
++ * hugepages at page global directory. If arch support
++ * hugepages at pgd level, they need to define this.
++ */
++#ifndef pgd_huge
++#define pgd_huge(x)	0
++#endif
++
++#ifndef is_hugepd
++/*
++ * Some architectures requires a hugepage directory format that is
++ * required to support multiple hugepage sizes. For example
++ * a4fe3ce7699bfe1bd88f816b55d42d8fe1dac655 introduced the same
++ * on powerpc. This allows for a more flexible hugepage pagetable
++ * layout.
++ */
++typedef struct { unsigned long pd; } hugepd_t;
++#define is_hugepd(hugepd) (0)
++#define __hugepd(x) ((hugepd_t) { (x) })
++static inline int gup_huge_pd(hugepd_t hugepd, unsigned long addr,
++			      unsigned pdshift, unsigned long end,
++			      int write, struct page **pages, int *nr)
++{
++	return 0;
++}
++#else
++extern int gup_huge_pd(hugepd_t hugepd, unsigned long addr,
++		       unsigned pdshift, unsigned long end,
++		       int write, struct page **pages, int *nr);
++#endif
+ 
+ #define HUGETLB_ANON_FILE "anon_hugepage"
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 02d11ee..31d7fac 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1219,6 +1219,13 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 		    struct vm_area_struct **vmas);
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
++
++#ifdef CONFIG_HAVE_GENERIC_RCU_GUP
++extern int gup_huge_pte(pte_t orig, pte_t *ptep, unsigned long addr,
++			unsigned long sz, unsigned long end, int write,
++			struct page **pages, int *nr);
++#endif
++
+ struct kvec;
+ int get_kernel_pages(const struct kvec *iov, int nr_pages, int write,
+ 			struct page **pages);
+diff --git a/mm/gup.c b/mm/gup.c
+index cd62c8c..30773f3 100644
+--- a/mm/gup.c
++++ b/mm/gup.c
+@@ -786,65 +786,31 @@ static int gup_pte_range(pmd_t pmd, unsigned long addr, unsigned long end,
+ }
+ #endif /* __HAVE_ARCH_PTE_SPECIAL */
+ 
+-static int gup_huge_pmd(pmd_t orig, pmd_t *pmdp, unsigned long addr,
+-		unsigned long end, int write, struct page **pages, int *nr)
++int gup_huge_pte(pte_t orig, pte_t *ptep, unsigned long addr,
++		 unsigned long sz, unsigned long end, int write,
++		 struct page **pages, int *nr)
+ {
+-	struct page *head, *page, *tail;
+ 	int refs;
++	unsigned long pte_end;
++	struct page *head, *page, *tail;
+ 
+-	if (write && !pmd_write(orig))
+-		return 0;
+-
+-	refs = 0;
+-	head = pmd_page(orig);
+-	page = head + ((addr & ~PMD_MASK) >> PAGE_SHIFT);
+-	tail = page;
+-	do {
+-		VM_BUG_ON_PAGE(compound_head(page) != head, page);
+-		pages[*nr] = page;
+-		(*nr)++;
+-		page++;
+-		refs++;
+-	} while (addr += PAGE_SIZE, addr != end);
+ 
+-	if (!page_cache_add_speculative(head, refs)) {
+-		*nr -= refs;
++	if (write && !pte_write(orig))
+ 		return 0;
+-	}
+ 
+-	if (unlikely(pmd_val(orig) != pmd_val(*pmdp))) {
+-		*nr -= refs;
+-		while (refs--)
+-			put_page(head);
++	if (!pte_present(orig))
+ 		return 0;
+-	}
+ 
+-	/*
+-	 * Any tail pages need their mapcount reference taken before we
+-	 * return. (This allows the THP code to bump their ref count when
+-	 * they are split into base pages).
+-	 */
+-	while (refs--) {
+-		if (PageTail(tail))
+-			get_huge_page_tail(tail);
+-		tail++;
+-	}
+-
+-	return 1;
+-}
+-
+-static int gup_huge_pud(pud_t orig, pud_t *pudp, unsigned long addr,
+-		unsigned long end, int write, struct page **pages, int *nr)
+-{
+-	struct page *head, *page, *tail;
+-	int refs;
++	pte_end = (addr + sz) & ~(sz-1);
++	if (pte_end < end)
++		end = pte_end;
+ 
+-	if (write && !pud_write(orig))
+-		return 0;
++	/* hugepages are never "special" */
++	VM_BUG_ON(!pfn_valid(pte_pfn(orig)));
+ 
+ 	refs = 0;
+-	head = pud_page(orig);
+-	page = head + ((addr & ~PUD_MASK) >> PAGE_SHIFT);
++	head = pte_page(orig);
++	page = head + ((addr & (sz-1)) >> PAGE_SHIFT);
+ 	tail = page;
+ 	do {
+ 		VM_BUG_ON_PAGE(compound_head(page) != head, page);
+@@ -859,13 +825,18 @@ static int gup_huge_pud(pud_t orig, pud_t *pudp, unsigned long addr,
+ 		return 0;
+ 	}
+ 
+-	if (unlikely(pud_val(orig) != pud_val(*pudp))) {
++	if (unlikely(pte_val(orig) != pte_val(*ptep))) {
+ 		*nr -= refs;
+ 		while (refs--)
+ 			put_page(head);
+ 		return 0;
+ 	}
+ 
++	/*
++	 * Any tail pages need their mapcount reference taken before we
++	 * return. (This allows the THP code to bump their ref count when
++	 * they are split into base pages).
++	 */
+ 	while (refs--) {
+ 		if (PageTail(tail))
+ 			get_huge_page_tail(tail);
+@@ -898,10 +869,19 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+ 			if (pmd_numa(pmd))
+ 				return 0;
+ 
+-			if (!gup_huge_pmd(pmd, pmdp, addr, next, write,
+-				pages, nr))
++			if (!gup_huge_pte(__pte(pmd_val(pmd)), (pte_t *)pmdp,
++					  addr, PMD_SIZE, next,
++					  write, pages, nr))
+ 				return 0;
+ 
++		} else if (unlikely(is_hugepd(__hugepd(pmd_val(pmd))))) {
++			/*
++			 * architecture have different format for hugetlbfs
++			 * pmd format and THP pmd format
++			 */
++			if (!gup_huge_pd(__hugepd(pmd_val(pmd)), addr,
++					 PMD_SHIFT, next, write, pages, nr))
++				return 0;
+ 		} else if (!gup_pte_range(pmd, addr, next, write, pages, nr))
+ 				return 0;
+ 	} while (pmdp++, addr = next, addr != end);
+@@ -909,22 +889,27 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
+ 	return 1;
+ }
+ 
+-static int gup_pud_range(pgd_t *pgdp, unsigned long addr, unsigned long end,
++static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
+ 		int write, struct page **pages, int *nr)
+ {
+ 	unsigned long next;
+ 	pud_t *pudp;
+ 
+-	pudp = pud_offset(pgdp, addr);
++	pudp = pud_offset(&pgd, addr);
+ 	do {
+ 		pud_t pud = ACCESS_ONCE(*pudp);
+ 
+ 		next = pud_addr_end(addr, end);
+ 		if (pud_none(pud))
+ 			return 0;
+-		if (pud_huge(pud)) {
+-			if (!gup_huge_pud(pud, pudp, addr, next, write,
+-					pages, nr))
++		if (unlikely(pud_huge(pud))) {
++			if (!gup_huge_pte(__pte(pud_val(pud)), (pte_t *)pudp,
++					  addr, PUD_SIZE, next,
++					  write, pages, nr))
++				return 0;
++		} else if (unlikely(is_hugepd(__hugepd(pud_val(pud))))) {
++			if (!gup_huge_pd(__hugepd(pud_val(pud)), addr,
++					 PUD_SHIFT, next, write, pages, nr))
+ 				return 0;
+ 		} else if (!gup_pmd_range(pud, addr, next, write, pages, nr))
+ 			return 0;
+@@ -970,10 +955,21 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	local_irq_save(flags);
+ 	pgdp = pgd_offset(mm, addr);
+ 	do {
++		pgd_t pgd = ACCESS_ONCE(*pgdp);
++
+ 		next = pgd_addr_end(addr, end);
+-		if (pgd_none(*pgdp))
++		if (pgd_none(pgd))
+ 			break;
+-		else if (!gup_pud_range(pgdp, addr, next, write, pages, &nr))
++		if (unlikely(pgd_huge(pgd))) {
++			if (!gup_huge_pte(__pte(pgd_val(pgd)), (pte_t *)pgdp,
++					  addr, PGDIR_SIZE, next,
++					  write, pages, &nr))
++				break;
++		} else if (unlikely(is_hugepd(__hugepd(pgd_val(pgd))))) {
++			if (!gup_huge_pd(__hugepd(pgd_val(pgd)), addr,
++					 PGDIR_SHIFT, next, write, pages, &nr))
++				break;
++		} else if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
+ 			break;
+ 	} while (pgdp++, addr = next, addr != end);
+ 	local_irq_restore(flags);
+@@ -1028,5 +1024,4 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 
+ 	return ret;
+ }
+-
+ #endif /* CONFIG_HAVE_GENERIC_RCU_GUP */
+-- 
+2.1.0
 
