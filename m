@@ -1,194 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969AbaJYVvM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 17:51:12 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:36433 "EHLO
+	id S1753005AbaJYVvQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 17:51:16 -0400
+Received: from inca-roads.misterjones.org ([213.251.177.50]:46060 "EHLO
 	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752934AbaJYVvJ (ORCPT
+	by vger.kernel.org with ESMTP id S1752975AbaJYVvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 17:51:09 -0400
+	Sat, 25 Oct 2014 17:51:13 -0400
 From: Marc Zyngier <marc.zyngier@arm.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 1/3] genirq: Add support for priority-drop/deactivate interrupt controllers
-Date: Sat, 25 Oct 2014 12:06:53 +0100
-Message-Id: <1414235215-10468-2-git-send-email-marc.zyngier@arm.com>
+To: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, Phong Vo <pvo@apm.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
+        Y Vo <yvo@apm.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Toan Le <toanle@apm.com>, Bjorn Andersson <bjorn@kryo.se>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 3/3] irqchip: GICv3: Add support for irq_{get,set}_irqchip_state
+Date: Sat, 25 Oct 2014 11:14:57 +0100
+Message-Id: <1414232097-4328-4-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414235215-10468-1-git-send-email-marc.zyngier@arm.com>
-References: <1414235215-10468-1-git-send-email-marc.zyngier@arm.com>
+In-Reply-To: <1414232097-4328-1-git-send-email-marc.zyngier@arm.com>
+References: <1414232097-4328-1-git-send-email-marc.zyngier@arm.com>
 X-SA-Exim-Connect-IP: 90.219.10.17
-X-SA-Exim-Rcpt-To: tglx@linutronix.de, jason@lakedaemon.net, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+X-SA-Exim-Rcpt-To: adharmap@codeaurora.org, pvo@apm.com, linus.walleij@linaro.org, tnhuynh@apm.com, yvo@apm.com, tglx@linutronix.de, toanle@apm.com, bjorn@kryo.se, arnd@arndb.de, linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 X-SA-Exim-Mail-From: marc.zyngier@arm.com
 X-SA-Exim-Scanned: No (on cheepnis.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moderately recent ARM interrupt controllers can use a "split mode" EOI,
-where instead of just using a single write to notify the controller of
-the end of interrupt, uses the following:
-- priority-drop: the interrupt is still active, but other interrupts can
-  now be taken
-- deactivate: the interrupt is not active anymore, and can be taken again.
-
-This makes it very useful for threaded interrupts, as it avoids the usual
-mask/unmask dance (and has the potential of being more efficient on ARM,
-as it is using the CPU interface instead of the global distributor).
-
-To implement this, a new optional irqchip method is added (irq_priority_drop).
-The usual irq_eoi is expected to implement the deactivate method.
-
-Non threaded interrupts are using these two callbacks back to back, but threaded
-ones only perform the irq_priority_drop call in the interrupt context, leaving
-the irq_eoi call to the thread context (which are expected to use the
-IRQCHIP_EOI_THREADED flag).
+Add the required hooks for the internal state of an interrupt
+to be exposed to other subsystems.
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- include/linux/irq.h |  1 +
- kernel/irq/chip.c   | 53 +++++++++++++++++++++++++++++++++++++----------------
- 2 files changed, 38 insertions(+), 16 deletions(-)
+ drivers/irqchip/irq-gic-v3.c | 78 ++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 65 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 257d59a..64d3756 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -330,6 +330,7 @@ struct irq_chip {
- 	void		(*irq_mask)(struct irq_data *data);
- 	void		(*irq_mask_ack)(struct irq_data *data);
- 	void		(*irq_unmask)(struct irq_data *data);
-+	void		(*irq_priority_drop)(struct irq_data *data);
- 	void		(*irq_eoi)(struct irq_data *data);
- 
- 	int		(*irq_set_affinity)(struct irq_data *data, const struct cpumask *dest, bool force);
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index e5202f0..cf9d001 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -272,12 +272,25 @@ void mask_irq(struct irq_desc *desc)
- 	}
- }
- 
-+static void mask_threaded_irq(struct irq_desc *desc)
-+{
-+	struct irq_chip *chip = desc->irq_data.chip;
-+
-+	/* If we can do priority drop, then masking comes for free */
-+	if (chip->irq_priority_drop)
-+		irq_state_set_masked(desc);
-+	else
-+		mask_irq(desc);
-+}
-+
- void unmask_irq(struct irq_desc *desc)
- {
--	if (desc->irq_data.chip->irq_unmask) {
--		desc->irq_data.chip->irq_unmask(&desc->irq_data);
-+	struct irq_chip *chip = desc->irq_data.chip;
-+
-+	if (chip->irq_unmask && !chip->irq_priority_drop)
-+		chip->irq_unmask(&desc->irq_data);
-+	if (chip->irq_unmask || chip->irq_priority_drop)
- 		irq_state_clr_masked(desc);
--	}
- }
- 
- void unmask_threaded_irq(struct irq_desc *desc)
-@@ -287,10 +300,7 @@ void unmask_threaded_irq(struct irq_desc *desc)
- 	if (chip->flags & IRQCHIP_EOI_THREADED)
- 		chip->irq_eoi(&desc->irq_data);
- 
--	if (chip->irq_unmask) {
--		chip->irq_unmask(&desc->irq_data);
--		irq_state_clr_masked(desc);
--	}
-+	unmask_irq(desc);
- }
- 
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index aa17ae8..666c14e 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -193,6 +193,19 @@ static void gic_enable_redist(bool enable)
  /*
-@@ -470,12 +480,24 @@ static inline void preflow_handler(struct irq_desc *desc)
- static inline void preflow_handler(struct irq_desc *desc) { }
- #endif
- 
-+static void eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
+  * Routines to disable, enable, EOI and route interrupts
+  */
++static int gic_peek_irq(struct irq_data *d, u32 offset)
 +{
-+	if (chip->irq_priority_drop)
-+		chip->irq_priority_drop(&desc->irq_data);
-+	if (chip->irq_eoi)
-+		chip->irq_eoi(&desc->irq_data);
++	u32 mask = 1 << (gic_irq(d) % 32);
++	void __iomem *base;
++
++	if (gic_irq_in_rdist(d))
++		base = gic_data_rdist_sgi_base();
++	else
++		base = gic_data.dist_base;
++
++	return !!(readl_relaxed(base + offset + (gic_irq(d) / 32) * 4) & mask);
 +}
 +
- static void cond_unmask_eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
+ static void gic_poke_irq(struct irq_data *d, u32 offset)
  {
- 	if (!(desc->istate & IRQS_ONESHOT)) {
--		chip->irq_eoi(&desc->irq_data);
-+		eoi_irq(desc, chip);
- 		return;
- 	}
+ 	u32 mask = 1 << (gic_irq(d) % 32);
+@@ -221,6 +234,56 @@ static void gic_unmask_irq(struct irq_data *d)
+ 	gic_poke_irq(d, GICD_ISENABLER);
+ }
+ 
++static void gic_irq_set_irqchip_state(struct irq_data *d, int state, int val)
++{
++	u32 reg;
 +
-+	if (chip->irq_priority_drop)
-+		chip->irq_priority_drop(&desc->irq_data);
++	switch (state) {
++	case IRQCHIP_STATE_PENDING:
++		reg = val ? GICD_ISPENDR : GICD_ICPENDR;
++		break;
 +
- 	/*
- 	 * We need to unmask in the following cases:
- 	 * - Oneshot irq which did not wake the thread (caused by a
-@@ -485,7 +507,8 @@ static void cond_unmask_eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
- 	if (!irqd_irq_disabled(&desc->irq_data) &&
- 	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot) {
- 		chip->irq_eoi(&desc->irq_data);
--		unmask_irq(desc);
-+		if (!chip->irq_priority_drop)
-+			unmask_irq(desc);
- 	} else if (!(chip->flags & IRQCHIP_EOI_THREADED)) {
- 		chip->irq_eoi(&desc->irq_data);
- 	}
-@@ -525,7 +548,7 @@ handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc)
- 	}
- 
- 	if (desc->istate & IRQS_ONESHOT)
--		mask_irq(desc);
-+		mask_threaded_irq(desc);
- 
- 	preflow_handler(desc);
- 	handle_irq_event(desc);
-@@ -536,7 +559,7 @@ handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc)
- 	return;
- out:
- 	if (!(chip->flags & IRQCHIP_EOI_IF_HANDLED))
--		chip->irq_eoi(&desc->irq_data);
-+		eoi_irq(desc, chip);
- 	raw_spin_unlock(&desc->lock);
- }
- EXPORT_SYMBOL_GPL(handle_fasteoi_irq);
-@@ -655,7 +678,7 @@ void handle_edge_eoi_irq(unsigned int irq, struct irq_desc *desc)
- 		 !irqd_irq_disabled(&desc->irq_data));
- 
- out_eoi:
--	chip->irq_eoi(&desc->irq_data);
-+	eoi_irq(desc, chip);
- 	raw_spin_unlock(&desc->lock);
- }
- #endif
-@@ -679,8 +702,7 @@ handle_percpu_irq(unsigned int irq, struct irq_desc *desc)
- 
- 	handle_irq_event_percpu(desc, desc->action);
- 
--	if (chip->irq_eoi)
--		chip->irq_eoi(&desc->irq_data);
-+	eoi_irq(desc, chip);
++	case IRQCHIP_STATE_ACTIVE:
++		reg = val ? GICD_ISACTIVER : GICD_ICACTIVER;
++		break;
++
++	case IRQCHIP_STATE_MASKED:
++		reg = val ? GICD_ICENABLER : GICD_ISENABLER;
++		break;
++
++	default:
++		WARN_ON(1);
++		return;
++	}
++
++	gic_poke_irq(d, reg);
++}
++
++static int gic_irq_get_irqchip_state(struct irq_data *d, int state)
++{
++	int val;
++
++	switch (state) {
++	case IRQCHIP_STATE_PENDING:
++		val = gic_peek_irq(d, GICD_ISPENDR);
++		break;
++
++	case IRQCHIP_STATE_ACTIVE:
++		val = gic_peek_irq(d, GICD_ISACTIVER);
++		break;
++
++	case IRQCHIP_STATE_MASKED:
++		val = !gic_peek_irq(d, GICD_ISENABLER);
++		break;
++
++	default:
++		WARN_ON(1);
++		val = 0;
++	}
++
++	return val;
++}
++
+ static void gic_eoi_irq(struct irq_data *d)
+ {
+ 	gic_write_eoir(gic_irq(d));
+@@ -404,19 +467,6 @@ static void gic_cpu_init(void)
  }
  
- /**
-@@ -711,8 +733,7 @@ void handle_percpu_devid_irq(unsigned int irq, struct irq_desc *desc)
- 	res = action->handler(irq, dev_id);
- 	trace_irq_handler_exit(irq, action, res);
+ #ifdef CONFIG_SMP
+-static int gic_peek_irq(struct irq_data *d, u32 offset)
+-{
+-	u32 mask = 1 << (gic_irq(d) % 32);
+-	void __iomem *base;
+-
+-	if (gic_irq_in_rdist(d))
+-		base = gic_data_rdist_sgi_base();
+-	else
+-		base = gic_data.dist_base;
+-
+-	return !!(readl_relaxed(base + offset + (gic_irq(d) / 32) * 4) & mask);
+-}
+-
+ static int gic_secondary_init(struct notifier_block *nfb,
+ 			      unsigned long action, void *hcpu)
+ {
+@@ -583,6 +633,8 @@ static struct irq_chip gic_chip = {
+ 	.irq_eoi		= gic_eoi_irq,
+ 	.irq_set_type		= gic_set_type,
+ 	.irq_set_affinity	= gic_set_affinity,
++	.irq_get_irqchip_state	= gic_irq_get_irqchip_state,
++	.irq_set_irqchip_state	= gic_irq_set_irqchip_state,
+ };
  
--	if (chip->irq_eoi)
--		chip->irq_eoi(&desc->irq_data);
-+	eoi_irq(desc, chip);
- }
- 
- void
+ static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
 -- 
 2.1.0
 
