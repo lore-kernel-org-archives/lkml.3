@@ -1,360 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaJYAFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 20:05:22 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:41628 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755237AbaJYAFU (ORCPT
+	id S932971AbaJYAVG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 20:21:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36411 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111AbaJYAVF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 20:05:20 -0400
-From: Paul McQuade <paulmcquad@gmail.com>
-To: paulmcquad@gmail.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
-Subject: [PATCH] Staging:rtl8723au: open/closed brace issue
-Date: Sat, 25 Oct 2014 01:05:13 +0100
-Message-Id: <1414195513-12670-1-git-send-email-paulmcquad@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Fri, 24 Oct 2014 20:21:05 -0400
+From: Jay Vosburgh <jay.vosburgh@canonical.com>
+To: paulmck@linux.vnet.ibm.com
+cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        mroos@linux.ee, tj@kernel.org
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+In-reply-to: <20141024230524.GA16023@linux.vnet.ibm.com>
+References: <20141024162943.GA16621@declera.com> <20141024165454.GS4977@linux.vnet.ibm.com> <20141024170931.GA21849@declera.com> <20141024172009.GV4977@linux.vnet.ibm.com> <20141024173526.GA26058@declera.com> <20141024183226.GW4977@linux.vnet.ibm.com> <20141024212557.GA15537@declera.com> <20141024214927.GA4977@linux.vnet.ibm.com> <8915.1414190047@famine> <20141024225931.GC4977@linux.vnet.ibm.com> <20141024230524.GA16023@linux.vnet.ibm.com>
+Comments: In-reply-to "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+   message dated "Fri, 24 Oct 2014 16:05:24 -0700."
+X-Mailer: MH-E 8.5+bzr; nmh 1.5; GNU Emacs 24.4.50
+Date: Fri, 24 Oct 2014 17:20:48 -0700
+Message-ID: <10136.1414196448@famine>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ERROR: that open brace { should be on the previous line
+Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+>On Fri, Oct 24, 2014 at 03:59:31PM -0700, Paul E. McKenney wrote:
+[...]
+>> Hmmm...  It sure looks like we have some callbacks stuck here.  I clearly
+>> need to take a hard look at the sleep/wakeup code.
+>> 
+>> Thank you for running this!!!
+>
+>Could you please try the following patch?  If no joy, could you please
+>add rcu:rcu_nocb_wake to the list of ftrace events?
+
+	I tried the patch, it did not change the behavior.
+
+	I enabled the rcu:rcu_barrier and rcu:rcu_nocb_wake tracepoints
+and ran it again (with this patch and the first patch from earlier
+today); the trace output is a bit on the large side so I put it and the
+dmesg log at:
+
+http://people.canonical.com/~jvosburgh/nocb-wake-dmesg.txt
+
+http://people.canonical.com/~jvosburgh/nocb-wake-trace.txt
+
+	-J
+
+
+>							Thanx, Paul
+>
+>------------------------------------------------------------------------
+>
+>rcu: Kick rcuo kthreads after their CPU goes offline
+>
+>If a no-CBs CPU were to post an RCU callback with interrupts disabled
+>after it entered the idle loop for the last time, there might be no
+>deferred wakeup for the corresponding rcuo kthreads.  This commit
+>therefore adds a set of calls to do_nocb_deferred_wakeup() after the
+>CPU has gone completely offline.
+>
+>Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>
+>diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+>index 84b41b3c6ebd..f6880052b917 100644
+>--- a/kernel/rcu/tree.c
+>+++ b/kernel/rcu/tree.c
+>@@ -3493,8 +3493,10 @@ static int rcu_cpu_notify(struct notifier_block *self,
+> 	case CPU_DEAD_FROZEN:
+> 	case CPU_UP_CANCELED:
+> 	case CPU_UP_CANCELED_FROZEN:
+>-		for_each_rcu_flavor(rsp)
+>+		for_each_rcu_flavor(rsp) {
+> 			rcu_cleanup_dead_cpu(cpu, rsp);
+>+			do_nocb_deferred_wakeup(per_cpu_ptr(rsp->rda, cpu));
+>+		}
+> 		break;
+> 	default:
+> 		break;
+>
+
 ---
- drivers/staging/rtl8723au/core/rtw_ap.c | 130 ++++++++++----------------------
- 1 file changed, 40 insertions(+), 90 deletions(-)
-
-diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
-index 6b4092f..6b69bfe 100644
---- a/drivers/staging/rtl8723au/core/rtw_ap.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ap.c
-@@ -231,12 +231,10 @@ void	expire_timeout_chk23a(struct rtw_adapter *padapter)
- 			psta->expire_to--;
- 		}
- 
--		if (psta->expire_to <= 0)
--		{
-+		if (psta->expire_to <= 0) {
- 			struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 
--			if (padapter->registrypriv.wifi_spec == 1)
--			{
-+			if (padapter->registrypriv.wifi_spec == 1) {
- 				psta->expire_to = pstapriv->expire_to;
- 				continue;
- 			}
-@@ -308,15 +306,13 @@ void	expire_timeout_chk23a(struct rtw_adapter *padapter)
- 			ret = issue_nulldata23a(padapter, psta->hwaddr, 0, 3, 50);
- 
- 		psta->keep_alive_trycnt++;
--		if (ret == _SUCCESS)
--		{
-+		if (ret == _SUCCESS) {
- 			DBG_8723A("asoc check, sta(" MAC_FMT ") is alive\n", MAC_ARG(psta->hwaddr));
- 			psta->expire_to = pstapriv->expire_to;
- 			psta->keep_alive_trycnt = 0;
- 			continue;
--		}
--		else if (psta->keep_alive_trycnt <= 3)
--		{
-+
-+		} else if (psta->keep_alive_trycnt <= 3) {
- 			DBG_8723A("ack check for asoc expire, keep_alive_trycnt =%d\n", psta->keep_alive_trycnt);
- 			psta->expire_to = 1;
- 			continue;
-@@ -363,8 +359,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
- 		return;
- 
- 	/* b/g mode ra_bitmap */
--	for (i = 0; i < sizeof(psta->bssrateset); i++)
--	{
-+	for (i = 0; i < sizeof(psta->bssrateset); i++) {
- 		if (psta->bssrateset[i])
- 			tx_ra_bitmap |= rtw_get_bit_value_from_ieee_value23a(psta->bssrateset[i]&0x7f);
- 	}
-@@ -406,8 +401,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
- 	raid = networktype_to_raid23a(sta_band);
- 	init_rate = get_highest_rate_idx23a(tx_ra_bitmap&0x0fffffff)&0x3f;
- 
--	if (psta->aid < NUM_STA)
--	{
-+	if (psta->aid < NUM_STA) {
- 		u8 arg = 0;
- 
- 		arg = psta->mac_id&0x1f;
-@@ -436,9 +430,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
- 		psta->raid = raid;
- 		psta->init_rate = init_rate;
- 
--	}
--	else
--	{
-+	} else {
- 		DBG_8723A("station aid %d exceed the max number\n", psta->aid);
- 	}
- }
-@@ -474,8 +466,7 @@ static void update_bmc_sta(struct rtw_adapter *padapter)
- 		psta->bssratelen = supportRateNum;
- 
- 		/* b/g mode ra_bitmap */
--		for (i = 0; i < supportRateNum; i++)
--		{
-+		for (i = 0; i < supportRateNum; i++) {
- 			if (psta->bssrateset[i])
- 				tx_ra_bitmap |= rtw_get_bit_value_from_ieee_value23a(psta->bssrateset[i]&0x7f);
- 		}
-@@ -522,9 +513,7 @@ static void update_bmc_sta(struct rtw_adapter *padapter)
- 		psta->state = _FW_LINKED;
- 		spin_unlock_bh(&psta->lock);
- 
--	}
--	else
--	{
-+	} else {
- 		DBG_8723A("add_RATid23a_bmc_sta error!\n");
- 	}
- }
-@@ -561,8 +550,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
- 	/* ERP */
- 	VCS_update23a(padapter, psta);
- 	/* HT related cap */
--	if (phtpriv_sta->ht_option)
--	{
-+	if (phtpriv_sta->ht_option) {
- 		/* check if sta supports rx ampdu */
- 		phtpriv_sta->ampdu_enable = phtpriv_ap->ampdu_enable;
- 
-@@ -580,9 +568,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
- 
- 		psta->qos_option = true;
- 
--	}
--	else
--	{
-+	} else {
- 		phtpriv_sta->ampdu_enable = false;
- 
- 		phtpriv_sta->sgi = false;
-@@ -1261,8 +1247,7 @@ void update_beacon23a(struct rtw_adapter *padapter, u8 ie_id, u8 *oui, u8 tx)
- 
- 	spin_lock_bh(&pmlmepriv->bcn_update_lock);
- 
--	switch (ie_id)
--	{
-+	switch (ie_id) {
- 	case 0xFF:
- 		/* 8: TimeStamp, 2: Beacon Interval 2:Capability */
- 		update_bcn_fixed_ie(padapter);
-@@ -1416,110 +1401,85 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 
--	if (!(psta->flags & WLAN_STA_SHORT_PREAMBLE))
--	{
--		if (!psta->no_short_preamble_set)
--		{
-+	if (!(psta->flags & WLAN_STA_SHORT_PREAMBLE)) {
-+		if (!psta->no_short_preamble_set) {
- 			psta->no_short_preamble_set = 1;
- 
- 			pmlmepriv->num_sta_no_short_preamble++;
- 
- 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
--				(pmlmepriv->num_sta_no_short_preamble == 1))
--			{
-+				(pmlmepriv->num_sta_no_short_preamble == 1)) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, 0xFF, NULL, true);
- 			}
- 
- 		}
--	}
--	else
--	{
--		if (psta->no_short_preamble_set)
--		{
-+	} else {
-+		if (psta->no_short_preamble_set) {
- 			psta->no_short_preamble_set = 0;
- 
- 			pmlmepriv->num_sta_no_short_preamble--;
- 
- 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
--				(pmlmepriv->num_sta_no_short_preamble == 0))
--			{
-+				(pmlmepriv->num_sta_no_short_preamble == 0)) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, 0xFF, NULL, true);
- 			}
--
- 		}
- 	}
- 
--	if (psta->flags & WLAN_STA_NONERP)
--	{
--		if (!psta->nonerp_set)
--		{
-+	if (psta->flags & WLAN_STA_NONERP) {
-+		if (!psta->nonerp_set) {
- 			psta->nonerp_set = 1;
- 
- 			pmlmepriv->num_sta_non_erp++;
- 
--			if (pmlmepriv->num_sta_non_erp == 1)
--			{
-+			if (pmlmepriv->num_sta_non_erp == 1) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, WLAN_EID_ERP_INFO, NULL, true);
- 			}
- 		}
- 
--	}
--	else
--	{
--		if (psta->nonerp_set)
--		{
-+	} else {
-+		if (psta->nonerp_set) {
- 			psta->nonerp_set = 0;
- 
- 			pmlmepriv->num_sta_non_erp--;
- 
--			if (pmlmepriv->num_sta_non_erp == 0)
--			{
-+			if (pmlmepriv->num_sta_non_erp == 0) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, WLAN_EID_ERP_INFO, NULL, true);
- 			}
- 		}
--
- 	}
- 
--	if (!(psta->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME))
--	{
--		if (!psta->no_short_slot_time_set)
--		{
-+	if (!(psta->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME)) {
-+		if (!psta->no_short_slot_time_set) {
- 			psta->no_short_slot_time_set = 1;
- 
- 			pmlmepriv->num_sta_no_short_slot_time++;
- 
- 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
--				 (pmlmepriv->num_sta_no_short_slot_time == 1))
--			{
-+			(pmlmepriv->num_sta_no_short_slot_time == 1)) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, 0xFF, NULL, true);
- 			}
--
- 		}
--	}
--	else
--	{
--		if (psta->no_short_slot_time_set)
--		{
-+	} else {
-+		if (psta->no_short_slot_time_set) {
- 			psta->no_short_slot_time_set = 0;
- 
- 			pmlmepriv->num_sta_no_short_slot_time--;
- 
- 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
--				 (pmlmepriv->num_sta_no_short_slot_time == 0))
--			{
-+			(pmlmepriv->num_sta_no_short_slot_time == 0)) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, 0xFF, NULL, true);
- 			}
- 		}
- 	}
- 
--	if (psta->flags & WLAN_STA_HT)
--	{
-+	if (psta->flags & WLAN_STA_HT) {
- 		u16 ht_capab = le16_to_cpu(psta->htpriv.ht_cap.cap_info);
- 
- 		DBG_8723A("HT: STA " MAC_FMT " HT Capabilities "
-@@ -1552,9 +1512,7 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
- 				   pmlmepriv->num_sta_ht_20mhz);
- 		}
- 
--	}
--	else
--	{
-+	} else {
- 		if (!psta->no_ht_set) {
- 			psta->no_ht_set = 1;
- 			pmlmepriv->num_sta_no_ht++;
-@@ -1567,8 +1525,7 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
- 		}
- 	}
- 
--	if (rtw_ht_operation_update(padapter) > 0)
--	{
-+	if (rtw_ht_operation_update(padapter) > 0) {
- 		update_beacon23a(padapter, WLAN_EID_HT_CAPABILITY, NULL, false);
- 		update_beacon23a(padapter, WLAN_EID_HT_OPERATION, NULL, true);
- 	}
-@@ -1592,8 +1549,7 @@ u8 bss_cap_update_on_sta_leave23a(struct rtw_adapter *padapter, struct sta_info
- 		psta->no_short_preamble_set = 0;
- 		pmlmepriv->num_sta_no_short_preamble--;
- 		if (pmlmeext->cur_wireless_mode > WIRELESS_11B
--		    && pmlmepriv->num_sta_no_short_preamble == 0)
--		{
-+		    && pmlmepriv->num_sta_no_short_preamble == 0) {
- 			beacon_updated = true;
- 			update_beacon23a(padapter, 0xFF, NULL, true);
- 		}
-@@ -1602,8 +1558,7 @@ u8 bss_cap_update_on_sta_leave23a(struct rtw_adapter *padapter, struct sta_info
- 	if (psta->nonerp_set) {
- 		psta->nonerp_set = 0;
- 		pmlmepriv->num_sta_non_erp--;
--		if (pmlmepriv->num_sta_non_erp == 0)
--		{
-+		if (pmlmepriv->num_sta_non_erp == 0) {
- 			beacon_updated = true;
- 			update_beacon23a(padapter, WLAN_EID_ERP_INFO,
- 					 NULL, true);
-@@ -1657,8 +1612,7 @@ u8 ap_free_sta23a(struct rtw_adapter *padapter, struct sta_info *psta, bool acti
- 	if (!psta)
- 		return beacon_updated;
- 
--	if (active == true)
--	{
-+	if (active == true) {
- 		/* tear down Rx AMPDU */
- 		send_delba23a(padapter, 0, psta->hwaddr);/*  recipient */
- 
-@@ -1788,13 +1742,10 @@ void sta_info_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
- 		psta->qos_option = 0;
- 
- 	/* update 802.11n ht cap. */
--	if (WLAN_STA_HT&flags)
--	{
-+	if (WLAN_STA_HT&flags) {
- 		psta->htpriv.ht_option = true;
- 		psta->qos_option = 1;
--	}
--	else
--	{
-+	} else {
- 		psta->htpriv.ht_option = false;
- 	}
- 
-@@ -1807,8 +1758,7 @@ void sta_info_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
- /* called >= TSR LEVEL for USB or SDIO Interface*/
- void ap_sta_info_defer_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
- {
--	if (psta->state & _FW_LINKED)
--	{
-+	if (psta->state & _FW_LINKED) {
- 		/* add ratid */
- 		add_RATid23a(padapter, psta, 0);/* DM_RATR_STA_INIT */
- 	}
--- 
-1.9.1
-
+	-Jay Vosburgh, jay.vosburgh@canonical.com
