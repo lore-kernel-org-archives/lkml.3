@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbaJYSst (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:48:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50857 "EHLO
+	id S1752113AbaJYStH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:49:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50861 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286AbaJYSsr (ORCPT
+	with ESMTP id S1751784AbaJYSsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:48:47 -0400
-Date: Sat, 25 Oct 2014 19:32:09 +0200 (CEST)
+	Sat, 25 Oct 2014 14:48:52 -0400
+Date: Sat, 25 Oct 2014 10:36:01 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Heena Sirwani <heenasirwani@gmail.com>, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org
-Subject: Re: [PATCH v5] timekeeping: Added a function to return tv_sec portion
- of ktime_get_ts64()
-In-Reply-To: <12462229.Mz3a4d4AP9@wuerfel>
-Message-ID: <alpine.DEB.2.11.1410251903000.5308@nanos>
-References: <20141025123406.GA13128@heena.com> <alpine.DEB.2.11.1410251705550.5308@nanos> <alpine.DEB.2.11.1410251714460.5308@nanos> <12462229.Mz3a4d4AP9@wuerfel>
+To: linux-kernel@vger.kernel.org, eparis@redhat.com, przanoni@gmail.com,
+        mingo@kernel.org, hpa@linux.intel.com, rgb@redhat.com, hpa@zytor.com
+cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] i386/audit: stop scribbling on the stack
+ frame
+In-Reply-To: <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
+Message-ID: <alpine.DEB.2.11.1410251034320.5308@nanos>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com> <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
 User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,47 +27,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Oct 2014, Arnd Bergmann wrote:
-> On Saturday 25 October 2014 17:22:23 Thomas Gleixner wrote:
-> > Hmm. Thinking more about it. That's actually overkill. For ktime_sec a
-> > 32bit value is plenty enough unless we care about systems with more
-> > than 136 years uptime. So if we calculate the seconds value of ktime,
-> > i.e. CLOCK_MONOTONIC, in the update function, we can read it on both
-> > 32 and 64bit w/o the seqcount loop.
-> 
-> Ah, very good point. That opens the question which type that function
-> should return. I really want to remove all uses of time_t from the
-> kernel, mostly so we know when we're done with this. However as you
-> say we know that we only need a 32-bit value here. Some possible
-> ideas:
-> 
-> - use time64_t here anyway and accept the slight inefficiency in return
->   for clarity
+On Fri, 24 Oct 2014, tip-bot for Eric Paris wrote:
+>  sysenter_audit:
+>  	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+>  	jnz syscall_trace_entry
+> -	addl $4,%esp
+> -	CFI_ADJUST_CFA_OFFSET -4
+> -	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
+> -	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
+> -	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
+> -	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
+> -	/* %eax already in %eax		   1st arg: syscall number */
+> +	/* movl PT_EAX(%esp), %eax	already set, syscall number: 1st arg to audit */
+> +	movl PT_EBX(%esp), %edx		/* ebx/a0: 2nd arg to audit */
+> +	/* movl PT_ECX(%esp), %ecx	already set, a1: 3nd arg to audit */
+> +	pushl_cfi PT_ESI(%esp)		/* a3: 5th arg */
+> +	pushl_cfi PT_EDX+4(%esp)	/* a2: 4th arg */
 
-Probably the simplest option.
-
-> - introduce a monotonic_time_t (we probably also want a struct
->   monotonic_timespec if we do that) which is basically the old time_t
->   but is known to be y2038 safe because we only ever use it to store
->   monotonic times.
-
-Not sure whether its worth the trouble.
-
-> - return u32 and use the same type in the callers instead of
->   time_t/time64_t/monotonic_time_t.
-
-Works as well. I have no immediate preference.
- 
-> > Where we really need the above readout mechanism is get_seconds() as
-> > that will break in 2038 on 32bit. So there you need to change the
-> > return value from unsigned long to time64_t and change the
-> > implementation as above just xtime_sec instead of ktime_sec.
-> 
-> Heena already posted a first draft of that patch to the opw internal
-> mailing list, I found a small issue that needs to be resolved and
-> then she can post the new version to you for review.
-
-Great!
+Why are we grabbing that from the stack? AFAICT all arguments are in
+the registers still.
 
 Thanks,
 
