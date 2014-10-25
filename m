@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829AbaJYSZY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:25:24 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:35697 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722AbaJYSZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:25:15 -0400
-X-IronPort-AV: E=Sophos;i="5.04,786,1406592000"; 
-   d="scan'208";a="184886127"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v6 2/7] xen/arm: remove outer_*_range call
-Date: Sat, 25 Oct 2014 14:57:17 +0100
-Message-ID: <1414245442-4306-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1410251450180.22875@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410251450180.22875@kaball.uk.xensource.com>
+	id S1751948AbaJYS0f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:26:35 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:41276 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748AbaJYS0d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Oct 2014 14:26:33 -0400
+Message-ID: <544BDD2E.6010604@gmail.com>
+Date: Sat, 25 Oct 2014 10:26:06 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+To: Andrew Lunn <andrew@lunn.ch>, Guenter Roeck <linux@roeck-us.net>
+CC: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
+References: <CAGVrzcYjPJWai9bxkh+WRrEEAzBKBd-LQm7zDeeouxngr_v9SQ@mail.gmail.com> <54488CE1.2000106@roeck-us.net> <20141023134706.GB25190@lunn.ch> <20141023162754.GA21343@roeck-us.net> <20141023165459.GE25190@lunn.ch> <20141023173847.GA22988@roeck-us.net> <20141023180357.GG25190@lunn.ch> <20141023184322.GA24281@roeck-us.net> <20141023195526.GH25190@lunn.ch> <20141024161919.GA29600@roeck-us.net> <20141025140116.GA12051@lunn.ch>
+In-Reply-To: <20141025140116.GA12051@lunn.ch>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dom0 is not actually capable of issuing outer_inv_range or
-outer_clean_range calls.
+On 10/25/14 07:01, Andrew Lunn wrote:
+>> Here is another naming option:
+>>
+>> em1dsa0-virtual-0
+> 
+> I prefer this over isa.
+> 
+> However, i think there should be some sort of separator between the
+> network device name and dsa.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
----
- arch/arm/xen/mm32.c |    9 ---------
- 1 file changed, 9 deletions(-)
-
-diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
-index a5a93fc..6153d61 100644
---- a/arch/arm/xen/mm32.c
-+++ b/arch/arm/xen/mm32.c
-@@ -61,9 +61,6 @@ static void __xen_dma_page_dev_to_cpu(struct device *hwdev, dma_addr_t handle,
- 	/* Cannot use __dma_page_dev_to_cpu because we don't have a
- 	 * struct page for handle */
- 
--	if (dir != DMA_TO_DEVICE)
--		outer_inv_range(handle, handle + size);
--
- 	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_unmap_area);
- }
- 
-@@ -72,12 +69,6 @@ static void __xen_dma_page_cpu_to_dev(struct device *hwdev, dma_addr_t handle,
- {
- 
- 	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_map_area);
--
--	if (dir == DMA_FROM_DEVICE) {
--		outer_inv_range(handle, handle + size);
--	} else {
--		outer_clean_range(handle, handle + size);
--	}
- }
- 
- void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
--- 
-1.7.10.4
-
+Considering that network devices can be renamed, do we want it to be
+included in the sensor name at all?
+--
+Florian
