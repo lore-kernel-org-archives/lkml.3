@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaJYSsx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:48:53 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50859 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286AbaJYSsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:48:50 -0400
-Date: Sat, 25 Oct 2014 17:12:48 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Heena Sirwani <heenasirwani@gmail.com>
-cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, arnd@arndb.de
-Subject: Re: [PATCH v5] timekeeping: Added a function to return tv_sec portion
- of ktime_get_ts64()
-In-Reply-To: <20141025123406.GA13128@heena.com>
-Message-ID: <alpine.DEB.2.11.1410251705550.5308@nanos>
-References: <20141025123406.GA13128@heena.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1752132AbaJYStW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:49:22 -0400
+Received: from mail.efficios.com ([78.47.125.74]:36418 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751378AbaJYStS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Oct 2014 14:49:18 -0400
+Date: Sat, 25 Oct 2014 12:51:25 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Matthew Wilcox <willy@linux.intel.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Cc: lttng-dev <lttng-dev@lists.lttng.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Message-ID: <465653369.1985.1414241485934.JavaMail.zimbra@efficios.com>
+In-Reply-To: <1254279794.1957.1414240389301.JavaMail.zimbra@efficios.com>
+Subject: Progress on system crash traces with LTTng using DAX and pmem
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF32 (Linux)/8.0.7_GA_6021)
+Thread-Topic: Progress on system crash traces with LTTng using DAX and pmem
+Thread-Index: IcW4w43a7FMs0w2LdwfVPXVz5te3yg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Oct 2014, Heena Sirwani wrote:
-> +time64_t ktime_get_seconds(void)
-> +{
-> +	time64_t ts;
-> +	struct timekeeper *tk = &tk_core.timekeeper;
-> +	struct timespec64 tomono;
-> +	s32 nsec;
-> +	unsigned int seq;
-> +
-> +	WARN_ON(timekeeping_suspended);
-> +
-> +	do {
-> +		seq = read_seqcount_begin(&tk_core.seq);
-> +		ts = tk->xtime_sec;
-> +		nsec = (long)(tk->tkr.xtime_nsec >> tk->tkr.shift);
-> +		tomono = tk->wall_to_monotonic;
-> +
-> +	} while (read_seqcount_retry(&tk_core.seq, seq));
-> +
-> +	ts += tomono.tv_sec;
-> +	if (nsec + tomono.tv_nsec >= NSEC_PER_SEC)
-> +		ts += 1;
-> +	return ts;
+Hi Matthew, Hi Ross,
 
-I'd rather have an extra field in the timekeeper
+A quick follow up on my progress on using DAX and pmem with
+LTTng. I've been able to successfully gather a user-space
+trace into buffers mmap'd into an ext4 filesystem within
+a pmem block device mounted with -o dax to bypass the page
+cache. After a soft reboot, I'm able to mount the partition
+again, and gather the very last data collected in the buffers
+by the applications. I created a "lttng-crash" program that
+extracts data from those buffers and converts the content
+into a readable Common Trace Format trace. So I guess
+you have a use-case for your patchsets on commodity hardware
+right there. :)
 
-    u64 xtime_sec;
-+   u64 ktime_sec;
+I've been asked by my customers if DAX would work well with
+mtd-ram, which they are using. To you foresee any roadblock
+with this approach ?
 
-and update this in tk_update_ktime_data() so the readout function
-boils down to
+FYI, the main reason why my customer wants to go with a
+"trace into memory that survives soft reboot" approach
+rather than to use things like kexec/kdump is that they
+care about the amount of time it takes to reboot their
+machines. They want a solution where they can extract the
+detailed crash data after reboot, after the machine is
+back online, rather than requiring a few minutes of offline
+time to extract the crash details.
 
-time64_t ktime_get_seconds(void)
-{
-#if BITS_PER_LONG < 64
-	u64 sec;
-	int seq;
+So I guess next year I'll probably be looking into
+allocating the LTTng kernel tracer buffers into an mmap'd file
+within a ext2/4-DAX-over-pmem/mtd-ram filesystem. It's going
+to be exciting! :)
 
-	do {
-		seq = read_seqcount_begin(&tk_core.seq);
-		sec = tk->ktime_sec;
-	} while (read_seqcount_retry(&tk_core.seq, seq));
-
-	return sec;
-#else
-	return tk->ktime_sec;
-#endif
-}
-
-So 64bit can do w/o the seqcount and 32bit avoids all extra math, right?
+Please keep me in CC on your next patch versions. I'm willing
+to spend some more time reviewing them if needed. By the way,
+do you guys have a target time-frame/kernel version you aim
+at for getting this work upstream ?
 
 Thanks,
 
-	tglx
+Mathieu
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
