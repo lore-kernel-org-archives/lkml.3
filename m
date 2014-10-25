@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946AbaJXXs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 19:48:29 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:46754 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675AbaJXXs1 (ORCPT
+	id S932850AbaJYABD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 20:01:03 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:53754 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932187AbaJYABB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 19:48:27 -0400
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: broonie@kernel.org, b02247@freescale.com
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        alsa-devel@alsa-project.org, timur@tabi.org, Li.Xiubo@freescale.com,
-        lgirdwood@gmail.com
-Subject: [PATCH 2/2] ASoC: fsl-asoc-card: Add slot_width setting for cpu-dai
-Date: Fri, 24 Oct 2014 16:48:13 -0700
-Message-Id: <3c45318a95056000736874fe7cc0a26922b742e1.1414193668.git.nicoleotsuka@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1414193668.git.nicoleotsuka@gmail.com>
-References: <cover.1414193668.git.nicoleotsuka@gmail.com>
-In-Reply-To: <cover.1414193668.git.nicoleotsuka@gmail.com>
-References: <cover.1414193668.git.nicoleotsuka@gmail.com>
+	Fri, 24 Oct 2014 20:01:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <544AB462.9070708@zytor.com>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+ <54494B74.2080504@amacapital.net> <1414091732.2363.11.camel@redhat.com>
+ <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com>
+ <1414092624.2363.13.camel@redhat.com> <1414093104.2363.14.camel@redhat.com> <544AB462.9070708@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 24 Oct 2014 17:00:38 -0700
+Message-ID: <CALCETrVhqzurg=DF4PV+zv3d4z7nNxgsWgyXJm5kUG1bB75MjQ@mail.gmail.com>
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-audit@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ESAI may need to use fixed slot width to comply with external
-CODEC. So this set_tdm_slot() call will allow the ESAI driver
-to override its default dynamic slot width policy.
+On Fri, Oct 24, 2014 at 1:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 10/23/2014 12:38 PM, Eric Paris wrote:
+>>>
+>>> After the call __audit_syscall_entry aren't they already polluted?
+>>> Isn't that the reason we need to reload EAX?
+>>
+>> Well, I guess EAX is special...
+>>
+>
+> Because system calls are "asmlinkage", all the parameters are on the
+> stack, but %eax is used as the index into the system call table.  This
+> should thus be fine until we get rid of regparm(0) entirely, if that
+> ever happens.
+>
 
-Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
----
- sound/soc/fsl/fsl-asoc-card.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+...and because __audit_syscall_entry *isn't* asmlinkage, it uses the
+other convention, which is where the confusion comes from.  And, by
+the time you get to sysenter_do_call, nothing cares about ecx, so you
+can freely clobber it while popping from the stack.  I get it now.
 
-diff --git a/sound/soc/fsl/fsl-asoc-card.c b/sound/soc/fsl/fsl-asoc-card.c
-index 14572e6..3f6959c 100644
---- a/sound/soc/fsl/fsl-asoc-card.c
-+++ b/sound/soc/fsl/fsl-asoc-card.c
-@@ -51,6 +51,7 @@ struct codec_priv {
-  * @sysclk_freq[2]: SYSCLK rates for set_sysclk()
-  * @sysclk_dir[2]: SYSCLK directions for set_sysclk()
-  * @sysclk_id[2]: SYSCLK ids for set_sysclk()
-+ * @slot_width: Slot width of each frame
-  *
-  * Note: [1] for tx and [0] for rx
-  */
-@@ -58,6 +59,7 @@ struct cpu_priv {
- 	unsigned long sysclk_freq[2];
- 	u32 sysclk_dir[2];
- 	u32 sysclk_id[2];
-+	u32 slot_width;
- };
- 
- /**
-@@ -142,6 +144,15 @@ static int fsl_asoc_card_hw_params(struct snd_pcm_substream *substream,
- 		return ret;
- 	}
- 
-+	if (cpu_priv->slot_width) {
-+		ret = snd_soc_dai_set_tdm_slot(rtd->cpu_dai, 0x3, 0x3, 2,
-+					       cpu_priv->slot_width);
-+		if (ret) {
-+			dev_err(dev, "failed to set TDM slot for cpu dai\n");
-+			return ret;
-+		}
-+	}
-+
- 	return 0;
- }
- 
-@@ -453,6 +464,7 @@ static int fsl_asoc_card_probe(struct platform_device *pdev)
- 		priv->cpu_priv.sysclk_freq[RX] = priv->codec_priv.mclk_freq;
- 		priv->cpu_priv.sysclk_dir[TX] = SND_SOC_CLOCK_OUT;
- 		priv->cpu_priv.sysclk_dir[RX] = SND_SOC_CLOCK_OUT;
-+		priv->cpu_priv.slot_width = 32;
- 		priv->dai_fmt |= SND_SOC_DAIFMT_CBS_CFS;
- 	} else if (of_device_is_compatible(np, "fsl,imx-audio-sgtl5000")) {
- 		priv->codec_priv.mclk_id = SGTL5000_SYSCLK;
+--Andy
+
+>         -hpa
+>
+>
+
+
+
 -- 
-1.9.1
-
+Andy Lutomirski
+AMA Capital Management, LLC
