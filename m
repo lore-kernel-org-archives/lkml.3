@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751285AbaJYSWA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:22:00 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:46217 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaJYSV5 (ORCPT
+	id S1751410AbaJYSWX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:22:23 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:49861 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321AbaJYSWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:21:57 -0400
-Message-ID: <1414211424.5196.29.camel@marge.simpson.net>
-Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization
- support
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Waiman Long <waiman.long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>
-Date: Sat, 25 Oct 2014 06:30:24 +0200
-In-Reply-To: <20141024220423.GB10501@worktop.programming.kicks-ass.net>
-References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
-	 <1413483040-58399-10-git-send-email-Waiman.Long@hp.com>
-	 <20141024084738.GU21513@worktop.programming.kicks-ass.net>
-	 <544ABC47.2000700@hp.com>
-	 <20141024220423.GB10501@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 25 Oct 2014 14:22:20 -0400
+Date: Sat, 25 Oct 2014 11:18:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jay Vosburgh <jay.vosburgh@canonical.com>
+Cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        mroos@linux.ee, tj@kernel.org
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141025181827.GE28247@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141024212557.GA15537@declera.com>
+ <20141024214927.GA4977@linux.vnet.ibm.com>
+ <8915.1414190047@famine>
+ <20141024225931.GC4977@linux.vnet.ibm.com>
+ <20141024230524.GA16023@linux.vnet.ibm.com>
+ <10136.1414196448@famine>
+ <20141025020324.GA28247@linux.vnet.ibm.com>
+ <11813.1414211613@famine>
+ <20141025051602.GB28247@linux.vnet.ibm.com>
+ <15891.1414255096@famine>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <15891.1414255096@famine>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102518-0033-0000-0000-00000276EDD5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-10-25 at 00:04 +0200, Peter Zijlstra wrote: 
-> On Fri, Oct 24, 2014 at 04:53:27PM -0400, Waiman Long wrote:
-> > The additional register pressure may just cause a few more register moves
-> > which should be negligible in the overall performance . The additional
-> > icache pressure, however, may have some impact on performance. I was trying
-> > to balance the performance of the pv and non-pv versions so that we won't
-> > penalize the pv code too much for a bit more performance in the non-pv code.
-> > Doing it your way will add a lot of function call and register
-> > saving/restoring to the pv code.
+On Sat, Oct 25, 2014 at 09:38:16AM -0700, Jay Vosburgh wrote:
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> If people care about performance they should not be using virt crap :-)
+> >On Fri, Oct 24, 2014 at 09:33:33PM -0700, Jay Vosburgh wrote:
+> >> 	Looking at the dmesg, the early boot messages seem to be
+> >> confused as to how many CPUs there are, e.g.,
+> >> 
+> >> [    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+> >> [    0.000000] Hierarchical RCU implementation.
+> >> [    0.000000]  RCU debugfs-based tracing is enabled.
+> >> [    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+> >> [    0.000000]  RCU restricting CPUs from NR_CPUS=256 to nr_cpu_ids=4.
+> >> [    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+> >> [    0.000000] NR_IRQS:16640 nr_irqs:456 0
+> >> [    0.000000]  Offload RCU callbacks from all CPUs
+> >> [    0.000000]  Offload RCU callbacks from CPUs: 0-3.
+> >> 
+> >> 	but later shows 2:
+> >> 
+> >> [    0.233703] x86: Booting SMP configuration:
+> >> [    0.236003] .... node  #0, CPUs:      #1
+> >> [    0.255528] x86: Booted up 1 node, 2 CPUs
+> >> 
+> >> 	In any event, the E8400 is a 2 core CPU with no hyperthreading.
+> >
+> >Well, this might explain some of the difficulties.  If RCU decides to wait
+> >on CPUs that don't exist, we will of course get a hang.  And rcu_barrier()
+> >was definitely expecting four CPUs.
+> >
+> >So what happens if you boot with maxcpus=2?  (Or build with
+> >CONFIG_NR_CPUS=2.) I suspect that this might avoid the hang.  If so,
+> >I might have some ideas for a real fix.
+> 
+> 	Booting with maxcpus=2 makes no difference (the dmesg output is
+> the same).
+> 
+> 	Rebuilding with CONFIG_NR_CPUS=2 makes the problem go away, and
+> dmesg has different CPU information at boot:
+> 
+> [    0.000000] smpboot: 4 Processors exceeds NR_CPUS limit of 2
+> [    0.000000] smpboot: Allowing 2 CPUs, 0 hotplug CPUs
+>  [...]
+> [    0.000000] setup_percpu: NR_CPUS:2 nr_cpumask_bits:2 nr_cpu_ids:2 nr_node_ids:1
+>  [...]
+> [    0.000000] Hierarchical RCU implementation.
+> [    0.000000] 	RCU debugfs-based tracing is enabled.
+> [    0.000000] 	RCU dyntick-idle grace-period acceleration is enabled.
+> [    0.000000] NR_IRQS:4352 nr_irqs:440 0
+> [    0.000000] 	Offload RCU callbacks from all CPUs
+> [    0.000000] 	Offload RCU callbacks from CPUs: 0-1.
 
-I tried some benching recently.. where did they hide the fastpaths? :)
+Thank you -- this confirms my suspicions on the fix, though I must admit
+to being surprised that maxcpus made no difference.
 
--Mike
+							Thanx, Paul
 
