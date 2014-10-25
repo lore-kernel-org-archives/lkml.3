@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbaJYTdg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 15:33:36 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:62879 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140AbaJYTdf (ORCPT
+	id S1752572AbaJYTf7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 15:35:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51028 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaJYTf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 15:33:35 -0400
-Message-ID: <544B7F20.40301@gmail.com>
-Date: Sat, 25 Oct 2014 12:44:48 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-To: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        linus.walleij@linaro.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] pinctrl: add helpers for group based drivers
-References: <1413792260-4265-1-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1413792260-4265-1-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 25 Oct 2014 15:35:57 -0400
+Date: Sat, 25 Oct 2014 21:35:48 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Marc Zyngier <marc.zyngier@arm.com>
+cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>, Phong Vo <pvo@apm.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Tin Huynh <tnhuynh@apm.com>,
+        Y Vo <yvo@apm.com>, Toan Le <toanle@apm.com>,
+        Bjorn Andersson <bjorn@kryo.se>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] genirq: Allow the irqchip state of an IRQ to be
+ save/restored
+In-Reply-To: <1414232097-4328-2-git-send-email-marc.zyngier@arm.com>
+Message-ID: <alpine.DEB.2.11.1410252131110.5308@nanos>
+References: <1414232097-4328-1-git-send-email-marc.zyngier@arm.com> <1414232097-4328-2-git-send-email-marc.zyngier@arm.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.10.2014 10:04, Antoine Tenart wrote:
-> Linus, Sebastian,
->
-> As discussed earlier this year[1], this series introduce helpers for group based
-> pinctrl drivers:
-> - of_pinctrl_utils_read_function(): reads the function name of a
->    specified node, and gets the number of groups it should be
->    applied to.
-> - of_pinctrl_for_each_function_group(): navigates through the groups of
->    a specified node, reading at each iteration the name of the current
->    group.
->
-> A generic function to parse nodes for group based drivers is also added, and
-> then used in the Berlin pinctrl driver:
-> - pinconf_generic_function_groups_dt_node_to_map()
->
-> [1] https://lkml.org/lkml/2014/5/17/38
+On Sat, 25 Oct 2014, Marc Zyngier wrote:
+> +int irq_get_irqchip_state(unsigned int irq, int state)
+> +{
+> +	struct irq_desc *desc;
+> +	struct irq_data *data;
+> +	struct irq_chip *chip;
+> +	int val;
+> +
+> +	desc = irq_to_desc(irq);
+> +	if (!desc)
+> +		return -EINVAL;
+> +
+> +	data = irq_desc_get_irq_data(desc);
+> +
+> +	chip = irq_desc_get_chip(desc);
+> +	if (!chip->irq_get_irqchip_state)
+> +		return -EINVAL;
+> +
+> +	chip_bus_lock(desc);
+> +	val = chip->irq_get_irqchip_state(data, state);
 
-Antoine,
+Hmm. What's the irq_get_irqchip_state() callback supposed to return?
 
-thanks for looking into this!
+Thanks,
 
- From Berlin POV,
-
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-
-> Antoine Tenart (4):
->    Documentation: bindings: pinctrl: document the generic groups property
->    pinctrl: add helpers for group based drivers
->    pinctrl: add a generic way to map node to map for group based drivers
->    pinctrl: berlin: use the generic node to map function
->
->   .../bindings/pinctrl/pinctrl-bindings.txt          |  1 +
->   drivers/pinctrl/berlin/Kconfig                     |  1 +
->   drivers/pinctrl/berlin/berlin.c                    | 53 +---------------------
->   drivers/pinctrl/pinconf-generic.c                  | 36 +++++++++++++++
->   drivers/pinctrl/pinctrl-utils.c                    | 26 +++++++++++
->   drivers/pinctrl/pinctrl-utils.h                    |  9 ++++
->   include/linux/pinctrl/pinconf-generic.h            |  3 ++
->   7 files changed, 78 insertions(+), 51 deletions(-)
->
-
+	tglx
