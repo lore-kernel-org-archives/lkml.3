@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaJYSbG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:31:06 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:33066 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaJYSbD (ORCPT
+	id S1751852AbaJYSc4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:32:56 -0400
+Received: from eddie.linux-mips.org ([148.251.95.138]:44491 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaJYScx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:31:03 -0400
-From: HuKeping <hukeping@huawei.com>
-To: <linux@arm.linux.org.uk>
-CC: <will.deacon@arm.com>, <dave.martin@linaro.org>, <sdu.liu@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <peifeiyue@huawei.com>, <wangnan0@huawei.com>
-Subject: [PATCH] ARM: kexec: Fix validating CPU hotplug support
-Date: Sat, 25 Oct 2014 17:20:55 +0800
-Message-ID: <1414228855-40739-1-git-send-email-hukeping@huawei.com>
-X-Mailer: git-send-email 1.8.5.5
+	Sat, 25 Oct 2014 14:32:53 -0400
+Date: Sat, 25 Oct 2014 17:03:52 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org
+cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] doc: kernel-parameters.txt: Add ide-generic.probe-mask
+Message-ID: <alpine.LFD.2.11.1410251638230.21390@eddie.linux-mips.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Due to commit:2103f6cba61a8b8bea3fc1b63661d830a2125e76, there is
-a hotplug checking in machine_kexec_prepare(), but it will lead
-a failure when loading the crash-kernel in some cases.
-
-Kexec utility can load the crash kernel by two ways:
-1. kexec -l kernel-image --append=command-line-options --initrd=initrd-image
-2. kexec -p kernel-image --append=command-line-options --initrd=initrd-image
-
-In case #1, it's ok to do the hotplug checking things, for it will cut off
-cpus in _cpu_down() later when command "kexec -e" be sended, function _cpu_down()
-needs the support of cpu hotplug.
-
-In case #2, it is no need to do the checking, because we actually do not
-shut the cpus down, but just keep them invoking cpu_relax(), the whole routing
-has no business with cpu cutting off. That means, even if the CONFIG_HOTPLUG_CPU
-was not selected, it can also load and reboot the crash-kernel successfully if
-we use "kexec -p ..."  and then a crash came to trigger the kexec.
-
-Prior to this patch, if the first kernel is not support the CPU hotplug, we can not
-use kexec utility.
-
-Signed-off-by: Hu Keping <hukeping@huawei.com>
+Signed-off-by: Maciej W. Rozycki <macro@linux-mips.org>
 ---
- arch/arm/kernel/machine_kexec.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ Not much to say beyond the subject.  Noticed while fiddling with a plain 
+ISA multi-I/O card (remember those?) having a single IDE channel only, as 
+usually with them, to avoid errors like:
 
-diff --git a/arch/arm/kernel/machine_kexec.c b/arch/arm/kernel/machine_kexec.c
-index 8cf0996..1e5620f 100644
---- a/arch/arm/kernel/machine_kexec.c
-+++ b/arch/arm/kernel/machine_kexec.c
-@@ -41,12 +41,20 @@ int machine_kexec_prepare(struct kimage *image)
- 	int i, err;
- 
- 	/*
--	 * Validate that if the current HW supports SMP, then the SW supports
--	 * and implements CPU hotplug for the current HW. If not, we won't be
--	 * able to kexec reliably, so fail the prepare operation.
-+	 * When it is a * crash * triggered the kexec, we do not really shut the
-+	 * cpus down but just let them keep invoking cpu_relax(), so there is no need
-+	 * to do the hotplug checking things.
- 	 */
--	if (num_possible_cpus() > 1 && !platform_can_cpu_hotplug())
--		return -EINVAL;
-+	if (image->type != KEXEC_TYPE_CRASH)
-+	{
-+		/*
-+		 * Validate that if the current HW supports SMP, then the SW supports
-+		 * and implements CPU hotplug for the current HW. If not, we won't be
-+		 * able to kexec reliably, so fail the prepare operation.
-+		 */
-+		if (num_possible_cpus() > 1 && !platform_can_cpu_hotplug())
-+			return -EINVAL;
-+	}
- 
- 	/*
- 	 * No segment at default ATAGs address. try to locate
--- 
-1.8.5.5
+ide1: unexpected interrupt, status=0xff, count=11
 
+popping up in the kernel log -- presumably coming from noise on the 
+floating IRQ15 line or maybe spurious interrupts triggered by another 
+device (the slave 8259A delivers them like IRQ15 and they can be told 
+apart by internal PIC status, but we don't check it if the line is 
+enabled, for performance reasons).
+
+ Please apply.
+
+  Maciej
+
+linux-doc-ide-generic.patch
+Index: linux-3.16-dolch/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-3.16-dolch.orig/Documentation/kernel-parameters.txt
++++ linux-3.16-dolch/Documentation/kernel-parameters.txt
+@@ -1263,6 +1263,17 @@ bytes respectively. Such letter suffixes
+ 			.cdrom .chs .ignore_cable are additional options
+ 			See Documentation/ide/ide.txt.
+ 
++	ide-generic.probe-mask= [HW] (E)IDE subsystem
++			Format: <int>
++			Probe mask for legacy ISA IDE ports.  Depending on
++			platform up to 6 ports are supported, enabled by
++			setting corresponding bits in the mask to 1.  The
++			default value is 0x0, that is special and on systems
++			that have PCI triggers scanning the PCI bus for the
++			first and the second port, which are then probed.
++			On systems without PCI the value of 0x0 enables
++			probing the two first ports as if it was 0x3.
++
+ 	ide-pci-generic.all-generic-ide [HW] (E)IDE subsystem
+ 			Claim all unknown PCI IDE storage controllers.
+ 
