@@ -1,162 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaJYTmi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 15:42:38 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:42262 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246AbaJYTmg (ORCPT
+	id S1752696AbaJYToo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 15:44:44 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50072 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462AbaJYTok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 15:42:36 -0400
-Date: Sat, 25 Oct 2014 10:37:33 +0200
-From: Johan Hovold <johan@kernel.org>
-To: Romain Perier <romain.perier@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>, devicetree <devicetree@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Grant Likely <grant.likely@linaro.org>, robh <robh@kernel.org>,
-        mark.rutland@arm.com, linux-pm@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [RFC v3 PATCH 1/5] of: Add standard property for poweroff
- capability
-Message-ID: <20141025083733.GG19377@localhost>
-References: <1413268273-15151-1-git-send-email-romain.perier@gmail.com>
- <20141023095339.GC6641@localhost>
- <CABgxDoLcnzaAYuDMB3x=EdNrY=8mwjceVVCpfXUYBURVm44ZVQ@mail.gmail.com>
+	Sat, 25 Oct 2014 15:44:40 -0400
+Message-ID: <544BFDA5.2010404@roeck-us.net>
+Date: Sat, 25 Oct 2014 12:44:37 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABgxDoLcnzaAYuDMB3x=EdNrY=8mwjceVVCpfXUYBURVm44ZVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Andrew Lunn <andrew@lunn.ch>
+CC: Florian Fainelli <f.fainelli@gmail.com>, netdev <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
+References: <CAGVrzcYjPJWai9bxkh+WRrEEAzBKBd-LQm7zDeeouxngr_v9SQ@mail.gmail.com> <54488CE1.2000106@roeck-us.net> <20141023134706.GB25190@lunn.ch> <20141023162754.GA21343@roeck-us.net> <20141023165459.GE25190@lunn.ch> <20141023173847.GA22988@roeck-us.net> <20141023180357.GG25190@lunn.ch> <20141023184322.GA24281@roeck-us.net> <20141023195526.GH25190@lunn.ch> <20141024161919.GA29600@roeck-us.net> <20141025140116.GA12051@lunn.ch>
+In-Reply-To: <20141025140116.GA12051@lunn.ch>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.544BFDA8.0095,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+CC: Felipe ]
+On 10/25/2014 07:01 AM, Andrew Lunn wrote:
+>> Here is another naming option:
+>>
+>> em1dsa0-virtual-0
+>
+> I prefer this over isa.
+>
+> However, i think there should be some sort of separator between the
+> network device name and dsa.
+>
 
-On Sat, Oct 25, 2014 at 09:28:36AM +0200, Romain Perier wrote:
-> Hi Johan,
-> 
-> If that's still possible to do these changes, I am opened to suggestions.
+Fine with me. Any preference ? Note that '-' is not permitted.
 
-Before v3.18 comes out, we can always change it with a follow-up patch.
+Guenter
 
-> 2014-10-23 11:53 GMT+02:00 Johan Hovold <johan@kernel.org>:
-> > [ +CC: Guenter, Lee, linux-pm ]
-> >
-> > On Tue, Oct 14, 2014 at 06:31:09AM +0000, Romain Perier wrote:
-> >> Several drivers create their own devicetree property when they register
-> >> poweroff capabilities. This is for example the case for mfd, regulator
-> >> or power drivers which define "vendor,system-power-controller" property.
-> >> This patch adds support for a standard property "poweroff-source"
-> >
-> > Shouldn't this property really be called "power-off-source" or even
-> > "power-off-controller"?
-> >
-> > The power-off handler call-chain infrastructure is about to be merged
-> > and will be using power[-_ ]off (i.e. not "poweroff") consistently (at
-> > least in its interface).
-> 
-> "poweroff" or "power-off", I don't care. If people prefer "power-off",
-> choose this name :)
-
-Let's try to stick to power off (and power_off) then.
-
-> > Furthermore, isn't "controller" as in "power-off-controller" more
-> > appropriate than "source" in this case? We have wake-up sources, which
-> > might appear analogous, but that really isn't the same thing.
-> 
-> As I said, the idea with "power-off-source" (or "poweroff-source",
-> that's not the point here) is to mark the device as able to poweroff
-> the system, like "wakeup-source" which marks the device as able to
-> wakeup the system.
-> This is why I chose this name, because it is quite similar to wakeup
-> property except that it is for handling power, so it did make sense to
-> me.
-> 
-> The question is: what is the advantage of the suffix "controller"
-> compared to "source" ?
-
-Yeah, I figured you had been inspired by the "wakeup-source" property.
-
-The problem is that "source" tends to be used for inputs, for example,
-wake-up source, interrupt source, entropy source, etc. Something that is
-outside of the control of the OS. Contrary to for instance an output
-which turns the system-power off.
-
-> > I now this has already been merged to the regulator tree, but there's
-> > still still time to fix this.
-> >
-> >> which marks the device as able to shutdown the system.
-> >>
-> >> Signed-off-by: Romain Perier <romain.perier@gmail.com>
-> >> ---
-> >>  include/linux/of.h | 11 +++++++++++
-> >>  1 file changed, 11 insertions(+)
-> >>
-> >> diff --git a/include/linux/of.h b/include/linux/of.h
-> >> index 6545e7a..27b3ba1 100644
-> >> --- a/include/linux/of.h
-> >> +++ b/include/linux/of.h
-> >> @@ -866,4 +866,15 @@ static inline int of_changeset_update_property(struct of_changeset *ocs,
-> >>  /* CONFIG_OF_RESOLVE api */
-> >>  extern int of_resolve_phandles(struct device_node *tree);
-> >>
-> >> +/**
-> >> + * of_system_has_poweroff_source - Tells if poweroff-source is found for device_node
-> >> + * @np: Pointer to the given device_node
-> >> + *
-> >> + * return true if present false otherwise
-> >> + */
-> >> +static inline bool of_system_has_poweroff_source(const struct device_node *np)
-> >
-> > Why "system_has"? Shouldn't this be of_is_power_off_source (controller)?
-> 
-> Note that the current custom vendor properties contain "system-" as prefix ;)
-
-Yes, but you dropped it. ;)
-
-And it's not the system that has the property (e.g. "poweroff-source"),
-it's the node (or the device it describes).
- 
-> we have several possibilities:
-> - of_system_has_power_off_source()
-> - of_has_power_off_source()
-> 
-> We should either to use "has" or "is" as prefix because that's a
-> predicate function.
-> I would prefer "has" since it refers to a property inside a node :
-> this node "has" the corresponding property, so "is" is not a good
-> candidate.
-
-The boolean property in question describes a feature of the node
-(device). Say the feature would be redness and call the property "red".
-You would then generally ask whether the node *is red*, rather than
-whether it has (the property) red (or has redness).
-
-I'm actually inclined to just sticking to the current name
-"system-power-controller" and just drop the vendor prefixes. Perhaps
-your helper function can be used to parse both versions (i.e. with or
-without a vendor prefix) as we will still need to support both.
-
-I suggest you call that helper function
-
-	of_is_system_power_controller(node)
-
-or alternatively
-
-	of_is_power_off_controller(node)
-
-if that property name is preferred.
-
-Note also that in at least one case (rtc-omap, patches in mm, see [1])
-the property describes that the RTC is used to control an external PMIC,
-which both allows us to power off the system *and* power back on again
-on subsequent RTC alarms. This seems to suggest that the more generic
-"system-power-controller" property name should be preferred.
-
-Thanks,
-Johan
-
-[1] https://lkml.org/lkml/2014/10/21/631
