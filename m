@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751252AbaJYSVG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:21:06 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:49646 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaJYSVC (ORCPT
+	id S1751285AbaJYSWA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:22:00 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46217 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaJYSV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:21:02 -0400
-Message-ID: <544B75B8.1010505@kernel.org>
-Date: Sat, 25 Oct 2014 11:04:40 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Hartmut Knaack <knaack.h@gmx.de>, Peter Meerwald <pmeerw@pmeerw.net>
-CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2] iio: inkern: Add of_xlate function to struct iio_info
-References: <1413991783-24562-1-git-send-email-iivanov@mm-sol.com> <5447CDFA.5030407@metafoo.de>
-In-Reply-To: <5447CDFA.5030407@metafoo.de>
-Content-Type: text/plain; charset=windows-1252
+	Sat, 25 Oct 2014 14:21:57 -0400
+Message-ID: <1414211424.5196.29.camel@marge.simpson.net>
+Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization
+ support
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Waiman Long <waiman.long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>
+Date: Sat, 25 Oct 2014 06:30:24 +0200
+In-Reply-To: <20141024220423.GB10501@worktop.programming.kicks-ass.net>
+References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
+	 <1413483040-58399-10-git-send-email-Waiman.Long@hp.com>
+	 <20141024084738.GU21513@worktop.programming.kicks-ass.net>
+	 <544ABC47.2000700@hp.com>
+	 <20141024220423.GB10501@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/10/14 16:32, Lars-Peter Clausen wrote:
-> On 10/22/2014 05:29 PM, Ivan T. Ivanov wrote:
->> When #iio-cells is greater than '0', the driver could provide
->> a custom of_xlate function that reads the *args* and returns
->> the appropriate index in registered IIO channels array.
->>
->> Add simple translation function, suitable for the most 1:1
->> mapped channels in IIO chips, and use it when driver did not
->> provide custom implementation.
->>
->> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+On Sat, 2014-10-25 at 00:04 +0200, Peter Zijlstra wrote: 
+> On Fri, Oct 24, 2014 at 04:53:27PM -0400, Waiman Long wrote:
+> > The additional register pressure may just cause a few more register moves
+> > which should be negligible in the overall performance . The additional
+> > icache pressure, however, may have some impact on performance. I was trying
+> > to balance the performance of the pv and non-pv versions so that we won't
+> > penalize the pv code too much for a bit more performance in the non-pv code.
+> > Doing it your way will add a lot of function call and register
+> > saving/restoring to the pv code.
 > 
-> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
-> 
-Applied to the togreg branch of iio.git - initially pushed out as testing
-for the autobuilders to play with it.
+> If people care about performance they should not be using virt crap :-)
 
-Thanks,
+I tried some benching recently.. where did they hide the fastpaths? :)
 
-Jonathan
+-Mike
+
