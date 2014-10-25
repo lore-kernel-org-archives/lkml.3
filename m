@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611AbaJYWVf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 18:21:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51301 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751100AbaJYWVd (ORCPT
+	id S1751795AbaJYWXR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 18:23:17 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:65062 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaJYWXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 18:21:33 -0400
-Date: Sun, 26 Oct 2014 00:21:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chris Friesen <chris.friesen@windriver.com>
-cc: rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: semantics of reader/writer semaphores in rt patch
-In-Reply-To: <alpine.DEB.2.11.1410252354030.5308@nanos>
-Message-ID: <alpine.DEB.2.11.1410260019280.5308@nanos>
-References: <544956B8.2000406@windriver.com> <alpine.DEB.2.11.1410252354030.5308@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sat, 25 Oct 2014 18:23:15 -0400
+From: Alexis Berlemont <alexis.berlemont@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
+        dsahern@gmail.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        paulus@samba.org, acme@kernel.org, namhyung@kernel.org, mmarek@suse.cz
+Subject: [PATCH v4 01/14] kbuild: add support of custom paths for "auto.conf*" files
+Date: Sun, 26 Oct 2014 00:20:26 +0200
+Message-Id: <1414275639-1053-2-git-send-email-alexis.berlemont@gmail.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
+References: <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
+In-Reply-To: <20141024124601.GX14687@kernel.org>
+References: <20141024124601.GX14687@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 Oct 2014, Thomas Gleixner wrote:
-> On Thu, 23 Oct 2014, Chris Friesen wrote:
-> > Does the RT kernel just disallow this sort of algorithm?
-> 
-> Yes. For a good reason. Let's add thread C
-> 
-> A    	   	B		C
-> down_read(X)
-> 				down_write(X)
-> lock(Y)
-> modify data
-> unlock(Y)
-> wake(B)
-> 		down_read(X)
-> 
-> Due to the mainline rwsem fairness semantics:
-> 
-> A holds X, C is blocked on A and B is blocked on A.
-> 
-> Deadlock, without RT and the single reader restriction being involved.
-> 
-> So RT does not violate ANY of the existing mainline semantics, it just
-> imposes a performance impact of not allowing multiple readers.
+In the scripts/Makefile.build, use KCONFIG_AUTOCONFIG to include a
+custom path for the "auto.conf" file.
 
-@peterz: It might be worthwhile to have a CONFIG_LOCKDEP=y dependent
-mode which restricts concurrent readers to 1 in mainline to catch this
-kind of stuff. Hmm?
+The "*conf" programs were modified so as to work with the environment
+variable KCONFIG_AUTOCONFIG.
 
-Thanks,
+Signed-off-by: Alexis Berlemont <alexis.berlemont@gmail.com>
+---
+ scripts/Makefile.build     |  3 ++-
+ scripts/kconfig/confdata.c | 23 ++++++++++++++++++++++-
+ scripts/kconfig/lkc.h      |  1 +
+ 3 files changed, 25 insertions(+), 2 deletions(-)
 
-	tglx
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index 649ce68..2abb82f 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -31,7 +31,8 @@ subdir-asflags-y :=
+ subdir-ccflags-y :=
+ 
+ # Read auto.conf if it exists, otherwise ignore
+--include include/config/auto.conf
++kconfig-autoconfig := $(if $(KCONFIG_AUTOCONFIG),$(KCONFIG_AUTOCONFIG),include/config/auto.conf)
++-include $(kconfig-autoconfig)
+ 
+ include scripts/Kbuild.include
+ 
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index f88d90f..75cf6bf 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -75,6 +75,23 @@ const char *conf_get_autoconfig_name(void)
+ 	return name ? name : "include/config/auto.conf";
+ }
+ 
++const char *conf_get_autoconfigdep_name(void)
++{
++	static char res_value[PATH_MAX+1];
++
++	const char *name = conf_get_autoconfig_name();
++
++	if (strlen(name) > PATH_MAX - 4)
++		name = NULL;
++	else {
++		strcpy(res_value, name);
++		strcat(res_value, ".cmd");
++		name = res_value;
++	}
++
++	return name;
++}
++
+ static char *conf_expand_value(const char *in)
+ {
+ 	struct symbol *sym;
+@@ -953,7 +970,11 @@ int conf_write_autoconf(void)
+ 
+ 	sym_clear_all_valid();
+ 
+-	file_write_dep("include/config/auto.conf.cmd");
++	name = conf_get_autoconfigdep_name();
++	if (name == NULL)
++		return 1;
++
++	file_write_dep(name);
+ 
+ 	if (conf_split_config())
+ 		return 1;
+diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
+index d5daa7a..ac99004 100644
+--- a/scripts/kconfig/lkc.h
++++ b/scripts/kconfig/lkc.h
+@@ -84,6 +84,7 @@ const char *zconf_curname(void);
+ /* confdata.c */
+ const char *conf_get_configname(void);
+ const char *conf_get_autoconfig_name(void);
++const char *conf_get_autoconfigdep_name(void);
+ char *conf_get_default_confname(void);
+ void sym_set_change_count(int count);
+ void sym_add_change_count(int count);
+-- 
+2.1.1
+
