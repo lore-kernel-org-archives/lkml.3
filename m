@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690AbaJYTqd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 15:46:33 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:45158 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573AbaJYTqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 15:46:32 -0400
-Message-ID: <544B4534.4030204@gmail.com>
-Date: Sat, 25 Oct 2014 02:37:40 -0400
-From: "Michael L. Semon" <mlsemon35@gmail.com>
-User-Agent: Mozilla/5.0 (X11; FreeBSD amd64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752717AbaJYTrc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 15:47:32 -0400
+Received: from lug-owl.de ([195.71.106.12]:33589 "EHLO lug-owl.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752321AbaJYTra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Oct 2014 15:47:30 -0400
+X-Greylist: delayed 4199 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Oct 2014 15:47:29 EDT
+Date: Sat, 25 Oct 2014 14:39:40 +0200
+From: Jan-Benedict Glaw <jbglaw@lug-owl.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: vsxxxaa - fix code dropping bytes from queue
+Message-ID: <20141025123939.GW28215@lug-owl.de>
+Mail-Followup-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20141024223846.GA1914@dtor-ws>
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: linux-kernel@vger.kernel.org, axboe@fb.com
-Subject: Re: Slow dc3dd in 3.18 on x86
-References: <544AA317.8070609@gmail.com> <yq1r3xxtfa7.fsf@sermon.lab.mkp.net>	<544AEEF1.30506@gmail.com> <yq1wq7osyr3.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1wq7osyr3.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="V2AZ19bMCakBLong"
+Content-Disposition: inline
+In-Reply-To: <20141024223846.GA1914@dtor-ws>
+X-Operating-System: Linux mail 3.2.0-4-686-pae 
+X-gpg-fingerprint: 250D 3BCF 7127 0D8C A444  A961 1DBD 5E75 8399 E1BB
+X-gpg-key: wwwkeys.de.pgp.net
+X-Echelon-Enable: howto poison arsenous mail psychological biological nuclear
+ warfare test the bombastical terror of flooding the spy listeners explosion
+ sex drugs and rock'n'roll
+X-TKUeV: howto poison arsenous mail psychological biological nuclear warfare
+ test the bombastical terror of flooding the spy listeners explosion sex
+ drugs and rock'n'roll
+X-message-flag: Please send plain text messages only. Do not send HTML
+ emails. Thank you. 
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/14 21:51, Martin K. Petersen wrote:
->>>>>> "Michael" == Michael L Semon <mlsemon35@gmail.com> writes:
->
-> Michael> There was nothing regarding integrity in /sys/block/sda.  I was
-> Michael> under the impression that both bio integrity and T10 checksums
-> Michael> require hardware support from good hardware, so the config
-> Michael> items have always been shut off.
->
-> That's correct. But I see what's going on.
->
-> Please try this:
->
-> commit 8d331952d2cd341d5c0e64eee961f78f6eb4b968
-> Author: Martin K. Petersen <martin.petersen@oracle.com>
-> Date:   Fri Oct 24 21:39:12 2014 -0400
->
->      block: Fix merge logic when CONFIG_BLK_DEV_INTEGRITY is not defined
->
->      Commit 4eaf99beadce switched to returning bool and as a result
->      reversed the logic of the integrity merge checks.  However, the
->      empty stubs used when the block integrity code is compiled out were
->      still returning 0. Make these stubs return "true".
->
->      Reported-by: Michael L. Semon <mlsemon35@gmail.com>
->      Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
->
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 9fbf4d3196ed..7442c6b9187e 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -1590,13 +1590,13 @@ static inline bool blk_integrity_merge_rq(struct request_queue *rq,
->   					  struct request *r1,
->   					  struct request *r2)
->   {
-> -	return 0;
-> +	return true;
->   }
->   static inline bool blk_integrity_merge_bio(struct request_queue *rq,
->   					   struct request *r,
->   					   struct bio *b)
->   {
-> -	return 0;
-> +	return true;
->   }
->   static inline bool blk_integrity_is_initialized(struct gendisk *g)
->   {
->
 
-Excellent!  All is well with the problem kernel.  All is well with the
-night's git master + xfs-oss/for-next as well.  The saved E-mail patched
-cleanly against both kernels using `git am`.  About 40 GB of data was
-written, some using fio, most using dc3dd.  No problems.
+--V2AZ19bMCakBLong
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'll keep this patch and stand behind its good results so far.
+On Fri, 2014-10-24 15:38:46 -0700, Dmitry Torokhov <dmitry.torokhov@gmail.c=
+om> wrote:
+> I believe the intent of the code was to drop oldest bytes from the queue,
+> not the latest if we drop one byte and both latest and some oldest of we
+> are dropping more than one.
+>=20
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> ---
+>  drivers/input/mouse/vsxxxaa.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/input/mouse/vsxxxaa.c b/drivers/input/mouse/vsxxxaa.c
+> index 3829823..abd4944 100644
+> --- a/drivers/input/mouse/vsxxxaa.c
+> +++ b/drivers/input/mouse/vsxxxaa.c
+> @@ -128,7 +128,7 @@ static void vsxxxaa_drop_bytes(struct vsxxxaa *mouse,=
+ int num)
+>  	if (num >=3D mouse->count) {
+>  		mouse->count =3D 0;
+>  	} else {
+> -		memmove(mouse->buf, mouse->buf + num - 1, BUFLEN - num);
+> +		memmove(mouse->buf, mouse->buf + num, BUFLEN - num);
+>  		mouse->count -=3D num;
+>  	}
+>  }
 
-Thanks again!
+Good catch!  I fucked up the error recovery path.
 
-Michael
+Acked-by: Jan-Benedict Glaw <jbglaw@lug-owl.de>
 
+MfG, JBG
+
+--=20
+      Jan-Benedict Glaw      jbglaw@lug-owl.de              +49-172-7608481
+Signature of:                     Eine Freie Meinung in einem Freien Kopf
+the second  :                   f=C3=BCr einen Freien Staat voll Freier B=
+=C3=BCrger.
+
+--V2AZ19bMCakBLong
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iEYEARECAAYFAlRLmgsACgkQHb1edYOZ4bsKmgCfaJNOVJd9WnpoPOBiuUPMy3Sa
+yOcAnRMTgtDyrKFicBixYs0oyDOKPpC8
+=sd+8
+-----END PGP SIGNATURE-----
+
+--V2AZ19bMCakBLong--
