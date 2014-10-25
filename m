@@ -1,123 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaJYSeI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:34:08 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:18864 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750AbaJYSeE (ORCPT
+	id S1751799AbaJYScz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:32:55 -0400
+Received: from eddie.linux-mips.org ([148.251.95.138]:44491 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935AbaJYScv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:34:04 -0400
-From: "john.liuli" <john.liuli@huawei.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <qemu-devel@nongnu.org>, <peter.huangpeng@huawei.com>,
-        <rusty@rustcorp.com.au>, <mst@redhat.com>,
-        <virtualization@lists.linux-foundation.org>,
-        <n.nikolaev@virtualopensystems.com>, <yingshiuan.pan@gmail.com>,
-        <remy.gauguey@cea.fr>, <joel.schopp@amd.com>,
-        Li Liu <john.liuli@huawei.com>
-Subject: [RFC PATCH 1/2] Add a new register offset let interrupt reason available
-Date: Sat, 25 Oct 2014 16:24:53 +0800
-Message-ID: <1414225494-2208-2-git-send-email-john.liuli@huawei.com>
-X-Mailer: git-send-email 1.9.0.msysgit.0
-In-Reply-To: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
-References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
+	Sat, 25 Oct 2014 14:32:51 -0400
+Date: Sat, 25 Oct 2014 15:11:15 +0200
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Xinwei Hu <huxinwei@huawei.com>,
+        Wuyun <wuyun.wu@huawei.com>, linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-arch@vger.kernel.org,
+        arnab.basu@freescale.com, Bharat.Bhushan@freescale.com, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xenproject.org, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Liviu Dudau <liviu@dudau.co.uk>
+Subject: Re: [PATCH v3 18/27] MIPS/Xlp: Remove the dead function
+ destroy_irq() to fix build error
+Message-ID: <20141025131115.GE16738@linux-mips.org>
+References: <1413342435-7876-1-git-send-email-wangyijing@huawei.com>
+ <1413342435-7876-19-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.142.143.9]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413342435-7876-19-git-send-email-wangyijing@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Liu <john.liuli@huawei.com>
+Applied, thanks.
 
-Add a new register offset VIRTIO_MMIO_ISRMEM which help to
-estblish a shared memory region between virtio-mmio driver
-and qemu with two purposes:
-
-1.Guest virtio-mmio driver can get the interrupt reason.
-2.Check irqfd enabled or not to register different irq handler.
-
-Signed-off-by: Li Liu <john.liuli@huawei.com>
----
- drivers/virtio/virtio_mmio.c |   21 ++++++++++++++++++++-
- include/linux/virtio_mmio.h  |    3 +++
- 2 files changed, 23 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-index ef9a165..28ddb55 100644
---- a/drivers/virtio/virtio_mmio.c
-+++ b/drivers/virtio/virtio_mmio.c
-@@ -122,6 +122,8 @@ struct virtio_mmio_device {
- 	/* a list of queues so we can dispatch IRQs */
- 	spinlock_t lock;
- 	struct list_head virtqueues;
-+
-+	uint8_t *isr_mem;
- };
- 
- struct virtio_mmio_vq_info {
-@@ -443,6 +445,7 @@ static int virtio_mmio_probe(struct platform_device *pdev)
- 	struct virtio_mmio_device *vm_dev;
- 	struct resource *mem;
- 	unsigned long magic;
-+	int err;
- 
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!mem)
-@@ -481,6 +484,15 @@ static int virtio_mmio_probe(struct platform_device *pdev)
- 		return -ENXIO;
- 	}
- 
-+	vm_dev->isr_mem = alloc_pages_exact(PAGE_SIZE, GFP_KERNEL|__GFP_ZERO);
-+	if (vm_dev->isr_mem == NULL) {
-+		dev_err(&pdev->dev, "Allocate isr memory failed!\n");
-+		return -ENOMEM;
-+	}
-+
-+	writel(virt_to_phys(vm_dev->isr_mem),
-+	       vm_dev->base + VIRTIO_MMIO_ISRMEM);
-+
- 	vm_dev->vdev.id.device = readl(vm_dev->base + VIRTIO_MMIO_DEVICE_ID);
- 	vm_dev->vdev.id.vendor = readl(vm_dev->base + VIRTIO_MMIO_VENDOR_ID);
- 
-@@ -488,13 +500,20 @@ static int virtio_mmio_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, vm_dev);
- 
--	return register_virtio_device(&vm_dev->vdev);
-+	err = register_virtio_device(&vm_dev->vdev);
-+	if (err) {
-+		free_pages_exact(vm_dev->isr_mem, PAGE_SIZE);
-+		vm_dev->isr_mem = NULL;
-+	}
-+
-+	return err;
- }
- 
- static int virtio_mmio_remove(struct platform_device *pdev)
- {
- 	struct virtio_mmio_device *vm_dev = platform_get_drvdata(pdev);
- 
-+	free_pages_exact(vm_dev->isr_mem, PAGE_SIZE);
- 	unregister_virtio_device(&vm_dev->vdev);
- 
- 	return 0;
-diff --git a/include/linux/virtio_mmio.h b/include/linux/virtio_mmio.h
-index 5c7b6f0..b1e3ec7 100644
---- a/include/linux/virtio_mmio.h
-+++ b/include/linux/virtio_mmio.h
-@@ -95,6 +95,9 @@
- /* Device status register - Read Write */
- #define VIRTIO_MMIO_STATUS		0x070
- 
-+/* Allocate ISRMEM for interrupt reason - Write Only */
-+#define VIRTIO_MMIO_ISRMEM		0x080
-+
- /* The config space is defined by each driver as
-  * the per-driver configuration space - Read Write */
- #define VIRTIO_MMIO_CONFIG		0x100
--- 
-1.7.9.5
-
-
+  Ralf
