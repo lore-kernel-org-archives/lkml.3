@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaJYSdp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:33:45 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:33930 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563AbaJYSdn (ORCPT
+	id S1751736AbaJYSeI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:34:08 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:18864 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750AbaJYSeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:33:43 -0400
+	Sat, 25 Oct 2014 14:34:04 -0400
 From: "john.liuli" <john.liuli@huawei.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <qemu-devel@nongnu.org>, <peter.huangpeng@huawei.com>,
@@ -15,10 +15,12 @@ CC: <qemu-devel@nongnu.org>, <peter.huangpeng@huawei.com>,
         <n.nikolaev@virtualopensystems.com>, <yingshiuan.pan@gmail.com>,
         <remy.gauguey@cea.fr>, <joel.schopp@amd.com>,
         Li Liu <john.liuli@huawei.com>
-Subject: [RFC PATCH 0/2] virtio-mmio: add irqfd support for vhost-net based on virtio-mmio
-Date: Sat, 25 Oct 2014 16:24:52 +0800
-Message-ID: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
+Subject: [RFC PATCH 1/2] Add a new register offset let interrupt reason available
+Date: Sat, 25 Oct 2014 16:24:53 +0800
+Message-ID: <1414225494-2208-2-git-send-email-john.liuli@huawei.com>
 X-Mailer: git-send-email 1.9.0.msysgit.0
+In-Reply-To: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
+References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.142.143.9]
@@ -29,46 +31,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Li Liu <john.liuli@huawei.com>
 
-This set of patches try to implemet irqfd support of vhost-net 
-based on virtio-mmio.
+Add a new register offset VIRTIO_MMIO_ISRMEM which help to
+estblish a shared memory region between virtio-mmio driver
+and qemu with two purposes:
 
-I had posted a mail to talking about the status of vhost-net 
-on kvm-arm refer to http://www.spinics.net/lists/kvm-arm/msg10804.html.
-Some dependent patches are listed in the mail too. Basically the 
-vhost-net brings great performance improvements, almost 50%+.
+1.Guest virtio-mmio driver can get the interrupt reason.
+2.Check irqfd enabled or not to register different irq handler.
 
-It's easy to implement irqfd support with PCI MSI-X. But till 
-now arm32 do not provide equivalent mechanism to let a device 
-allocate multiple interrupts. And even the aarch64 provid LPI
-but also not available in a short time.
-
-As Gauguey Remy said "Vhost does not emulate a complete virtio 
-adapter but only manage virtqueue operations". Vhost module
-don't update the ISR register, so if with only one irq then it's 
-no way to get the interrupt reason even we can inject the 
-irq correctly.  
-
-To get the interrupt reason to support such VIRTIO_NET_F_STATUS 
-features I add a new register offset VIRTIO_MMIO_ISRMEM which 
-will help to establish a shared memory region between qemu and 
-virtio-mmio device. Then the interrupt reason can be accessed by
-guest driver through this region. At the same time, the virtio-mmio 
-dirver check this region to see irqfd is supported or not during 
-the irq handler registration, and different handler will be assigned.
-
-I want to know it's the right direction? Does it comply with the 
-virtio-mmio spec.? Or anyone have more good ideas to emulate mis-x 
-based on virtio-mmio? I hope to get feedback and guidance.
-Thx for any help.
-
-Li Liu (2):
-  Add a new register offset let interrupt reason available
-  Assign a new irq handler while irqfd enabled
-
- drivers/virtio/virtio_mmio.c |   55 +++++++++++++++++++++++++++++++++++++++---
+Signed-off-by: Li Liu <john.liuli@huawei.com>
+---
+ drivers/virtio/virtio_mmio.c |   21 ++++++++++++++++++++-
  include/linux/virtio_mmio.h  |    3 +++
- 2 files changed, 55 insertions(+), 3 deletions(-)
+ 2 files changed, 23 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+index ef9a165..28ddb55 100644
+--- a/drivers/virtio/virtio_mmio.c
++++ b/drivers/virtio/virtio_mmio.c
+@@ -122,6 +122,8 @@ struct virtio_mmio_device {
+ 	/* a list of queues so we can dispatch IRQs */
+ 	spinlock_t lock;
+ 	struct list_head virtqueues;
++
++	uint8_t *isr_mem;
+ };
+ 
+ struct virtio_mmio_vq_info {
+@@ -443,6 +445,7 @@ static int virtio_mmio_probe(struct platform_device *pdev)
+ 	struct virtio_mmio_device *vm_dev;
+ 	struct resource *mem;
+ 	unsigned long magic;
++	int err;
+ 
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!mem)
+@@ -481,6 +484,15 @@ static int virtio_mmio_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 	}
+ 
++	vm_dev->isr_mem = alloc_pages_exact(PAGE_SIZE, GFP_KERNEL|__GFP_ZERO);
++	if (vm_dev->isr_mem == NULL) {
++		dev_err(&pdev->dev, "Allocate isr memory failed!\n");
++		return -ENOMEM;
++	}
++
++	writel(virt_to_phys(vm_dev->isr_mem),
++	       vm_dev->base + VIRTIO_MMIO_ISRMEM);
++
+ 	vm_dev->vdev.id.device = readl(vm_dev->base + VIRTIO_MMIO_DEVICE_ID);
+ 	vm_dev->vdev.id.vendor = readl(vm_dev->base + VIRTIO_MMIO_VENDOR_ID);
+ 
+@@ -488,13 +500,20 @@ static int virtio_mmio_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, vm_dev);
+ 
+-	return register_virtio_device(&vm_dev->vdev);
++	err = register_virtio_device(&vm_dev->vdev);
++	if (err) {
++		free_pages_exact(vm_dev->isr_mem, PAGE_SIZE);
++		vm_dev->isr_mem = NULL;
++	}
++
++	return err;
+ }
+ 
+ static int virtio_mmio_remove(struct platform_device *pdev)
+ {
+ 	struct virtio_mmio_device *vm_dev = platform_get_drvdata(pdev);
+ 
++	free_pages_exact(vm_dev->isr_mem, PAGE_SIZE);
+ 	unregister_virtio_device(&vm_dev->vdev);
+ 
+ 	return 0;
+diff --git a/include/linux/virtio_mmio.h b/include/linux/virtio_mmio.h
+index 5c7b6f0..b1e3ec7 100644
+--- a/include/linux/virtio_mmio.h
++++ b/include/linux/virtio_mmio.h
+@@ -95,6 +95,9 @@
+ /* Device status register - Read Write */
+ #define VIRTIO_MMIO_STATUS		0x070
+ 
++/* Allocate ISRMEM for interrupt reason - Write Only */
++#define VIRTIO_MMIO_ISRMEM		0x080
++
+ /* The config space is defined by each driver as
+  * the per-driver configuration space - Read Write */
+ #define VIRTIO_MMIO_CONFIG		0x100
 -- 
 1.7.9.5
 
