@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797AbaJYU6J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 16:58:09 -0400
-Received: from forward15.mail.yandex.net ([95.108.130.119]:36021 "EHLO
-	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717AbaJYU5z (ORCPT
+	id S1752785AbaJYVFz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 17:05:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33786 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366AbaJYVFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 16:57:55 -0400
-X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Oct 2014 16:57:55 EDT
-From: =?koi8-r?B?5dfHxc7JyiDwz8zRy8/X?= <zbr@ioremap.net>
-Envelope-From: drustafa@yandex.ru
-To: Alexander Stein <alexanders83@web.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Fries <david@fries.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-In-Reply-To: <1414239973-4819-1-git-send-email-alexanders83@web.de>
-References: <1414239973-4819-1-git-send-email-alexanders83@web.de>
-Subject: Re: [PATCH 1/1] W1: ds2490: Increase timeout when waiting for status
-MIME-Version: 1.0
-Message-Id: <1795801414270117@web29j.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Sun, 26 Oct 2014 00:48:37 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+	Sat, 25 Oct 2014 17:05:54 -0400
+Date: Sat, 25 Oct 2014 17:05:51 -0400 (EDT)
+Message-Id: <20141025.170551.1379400739319408704.davem@davemloft.net>
+To: geert@linux-m68k.org
+Cc: isubramanian@apm.com, kchudgar@apm.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] drivers: net: xgene: Rewrite buggy loop in
+ xgene_enet_ecc_init()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1414052753-10183-1-git-send-email-geert@linux-m68k.org>
+References: <1414052753-10183-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 25 Oct 2014 14:05:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9PL61sh030072
 
-Hi everyone
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Thu, 23 Oct 2014 10:25:53 +0200
 
-This looks good to me
-Greg, please pull it into your tree
+> drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c: In function ¡xgene_enet_ecc_init¢:
+> drivers/net/ethernet/apm/xgene/xgene_enet_sgmac.c:126: warning: ¡data¢ may be used uninitialized in this function
+> 
+> Depending on the arbitrary value on the stack, the loop may terminate
+> too early, and cause a bogus -ENODEV failure.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+> v3:
+>   - Use "do { ... } while (...);" instead of "for (...) { ... }",
+> v2:
+>   - Rewrite the loop instead of pre-initializing data.
 
-Thank you
-
-25.10.2014, 16:27, "Alexander Stein" <alexanders83@web.de>:
-> Adjust the bulk message timeout to the other ones (1000ms). Otherwise the
-> following dmesg errors can be seen on a Raspberry Pi:
-> [ šš31.492386] Failed to read 1-wire data from 0x81: err=-110.
-> [ šš31.504168] 0x81: count=-110, status:
-> [ šš31.613404] Failed to read 1-wire data from 0x81: err=-110.
-> [ šš31.621915] 0x81: count=-110, status:
-> [ šš43.260968] Failed to read 1-wire data from 0x81: err=-110.
-> [ šš43.270998] 0x81: count=-110, status:
-> [ šš43.379959] Failed to read 1-wire data from 0x81: err=-110.
-> [ šš43.388854] 0x81: count=-110, status:
->
-> Signed-off-by: Alexander Stein <alexanders83@web.de>
-
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Applied, thank you.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
