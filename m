@@ -1,90 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160AbaJYCHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Oct 2014 22:07:20 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:57274 "EHLO e9.ny.us.ibm.com"
+	id S1752602AbaJYCil (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Oct 2014 22:38:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50874 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102AbaJYCHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Oct 2014 22:07:17 -0400
-Date: Fri, 24 Oct 2014 19:03:24 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jay Vosburgh <jay.vosburgh@canonical.com>
-Cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        mroos@linux.ee, tj@kernel.org
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141025020324.GA28247@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141024170931.GA21849@declera.com>
- <20141024172009.GV4977@linux.vnet.ibm.com>
- <20141024173526.GA26058@declera.com>
- <20141024183226.GW4977@linux.vnet.ibm.com>
- <20141024212557.GA15537@declera.com>
- <20141024214927.GA4977@linux.vnet.ibm.com>
- <8915.1414190047@famine>
- <20141024225931.GC4977@linux.vnet.ibm.com>
- <20141024230524.GA16023@linux.vnet.ibm.com>
- <10136.1414196448@famine>
+	id S1751747AbaJYCik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Oct 2014 22:38:40 -0400
+Message-ID: <544B0D22.2070509@zytor.com>
+Date: Fri, 24 Oct 2014 19:38:26 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <10136.1414196448@famine>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102502-0033-0000-0000-000000D6F359
+To: Andy Lutomirski <luto@amacapital.net>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: vmalloced stacks on x86_64?
+References: <CALCETrUmA+5499fEqp7S-nfSBVxTEo76mA9r32zYQ41E3c+YhQ@mail.gmail.com>
+In-Reply-To: <CALCETrUmA+5499fEqp7S-nfSBVxTEo76mA9r32zYQ41E3c+YhQ@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 05:20:48PM -0700, Jay Vosburgh wrote:
-> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> >On Fri, Oct 24, 2014 at 03:59:31PM -0700, Paul E. McKenney wrote:
-> [...]
-> >> Hmmm...  It sure looks like we have some callbacks stuck here.  I clearly
-> >> need to take a hard look at the sleep/wakeup code.
-> >> 
-> >> Thank you for running this!!!
-> >
-> >Could you please try the following patch?  If no joy, could you please
-> >add rcu:rcu_nocb_wake to the list of ftrace events?
-> 
-> 	I tried the patch, it did not change the behavior.
-> 
-> 	I enabled the rcu:rcu_barrier and rcu:rcu_nocb_wake tracepoints
-> and ran it again (with this patch and the first patch from earlier
-> today); the trace output is a bit on the large side so I put it and the
-> dmesg log at:
-> 
-> http://people.canonical.com/~jvosburgh/nocb-wake-dmesg.txt
-> 
-> http://people.canonical.com/~jvosburgh/nocb-wake-trace.txt
+On 10/24/2014 05:22 PM, Andy Lutomirski wrote:
+> Is there any good reason not to use vmalloc for x86_64 stacks?
 
-Thank you again!
+Additional TLB pressure if anything else.
 
-Very strange part of the trace.  The only sign of CPU 2 and 3 are:
+Now, on the flipside: what is the *benefit*?
 
-    ovs-vswitchd-902   [000] ....   109.896840: rcu_barrier: rcu_sched Begin cpu -1 remaining 0 # 0
-    ovs-vswitchd-902   [000] ....   109.896840: rcu_barrier: rcu_sched Check cpu -1 remaining 0 # 0
-    ovs-vswitchd-902   [000] ....   109.896841: rcu_barrier: rcu_sched Inc1 cpu -1 remaining 0 # 1
-    ovs-vswitchd-902   [000] ....   109.896841: rcu_barrier: rcu_sched OnlineNoCB cpu 0 remaining 1 # 1
-    ovs-vswitchd-902   [000] d...   109.896841: rcu_nocb_wake: rcu_sched 0 WakeNot
-    ovs-vswitchd-902   [000] ....   109.896841: rcu_barrier: rcu_sched OnlineNoCB cpu 1 remaining 2 # 1
-    ovs-vswitchd-902   [000] d...   109.896841: rcu_nocb_wake: rcu_sched 1 WakeNot
-    ovs-vswitchd-902   [000] ....   109.896842: rcu_barrier: rcu_sched OnlineNoCB cpu 2 remaining 3 # 1
-    ovs-vswitchd-902   [000] d...   109.896842: rcu_nocb_wake: rcu_sched 2 WakeNotPoll
-    ovs-vswitchd-902   [000] ....   109.896842: rcu_barrier: rcu_sched OnlineNoCB cpu 3 remaining 4 # 1
-    ovs-vswitchd-902   [000] d...   109.896842: rcu_nocb_wake: rcu_sched 3 WakeNotPoll
-    ovs-vswitchd-902   [000] ....   109.896843: rcu_barrier: rcu_sched Inc2 cpu -1 remaining 4 # 2
-
-The pair of WakeNotPoll trace entries says that at that point, RCU believed
-that the CPU 2's and CPU 3's rcuo kthreads did not exist.  :-/
-
-More diagnostics in order...
-
-							Thanx, Paul
+	-hpa
 
