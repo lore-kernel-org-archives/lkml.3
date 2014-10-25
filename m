@@ -1,374 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaJYSlu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:41:50 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44540 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaJYSlr (ORCPT
+	id S1752019AbaJYSn0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:43:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56374 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaJYSnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:41:47 -0400
-Date: Sat, 25 Oct 2014 10:15:30 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Paul McQuade <paulmcquad@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
-Subject: Re: [PATCH] Staging:rtl8723au: open/closed brace issue
-Message-ID: <20141025044530.GA2981@sudip-PC>
-References: <1414195513-12670-1-git-send-email-paulmcquad@gmail.com>
+	Sat, 25 Oct 2014 14:43:25 -0400
+Date: Sat, 25 Oct 2014 01:45:50 -0700
+From: tip-bot for Mathias Krause <tipbot@zytor.com>
+Message-ID: <tip-6891c4509c792209c44ced55a60f13954cb50ef4@git.kernel.org>
+Cc: hpa@zytor.com, tglx@linutronix.de, mingo@kernel.org, oleg@redhat.com,
+        minipli@googlemail.com, pageexec@freemail.hu, spender@grsecurity.net,
+        linux-kernel@vger.kernel.org
+Reply-To: tglx@linutronix.de, hpa@zytor.com, minipli@googlemail.com,
+        mingo@kernel.org, oleg@redhat.com, pageexec@freemail.hu,
+        linux-kernel@vger.kernel.org, spender@grsecurity.net
+In-Reply-To: <1412456799-32339-1-git-send-email-minipli@googlemail.com>
+References: <1412456799-32339-1-git-send-email-minipli@googlemail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] posix-timers:
+  Fix stack info leak in timer_create()
+Git-Commit-ID: 6891c4509c792209c44ced55a60f13954cb50ef4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1414195513-12670-1-git-send-email-paulmcquad@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 25, 2014 at 01:05:13AM +0100, Paul McQuade wrote:
-> ERROR: that open brace { should be on the previous line
-> 
-> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
-> ---
->  drivers/staging/rtl8723au/core/rtw_ap.c | 130 ++++++++++----------------------
->  1 file changed, 40 insertions(+), 90 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
-> index 6b4092f..6b69bfe 100644
-> --- a/drivers/staging/rtl8723au/core/rtw_ap.c
-> +++ b/drivers/staging/rtl8723au/core/rtw_ap.c
-> @@ -231,12 +231,10 @@ void	expire_timeout_chk23a(struct rtw_adapter *padapter)
->  			psta->expire_to--;
->  		}
->  
-> -		if (psta->expire_to <= 0)
-> -		{
-> +		if (psta->expire_to <= 0) {
->  			struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
->  
-> -			if (padapter->registrypriv.wifi_spec == 1)
-> -			{
-> +			if (padapter->registrypriv.wifi_spec == 1) {
->  				psta->expire_to = pstapriv->expire_to;
->  				continue;
->  			}
-> @@ -308,15 +306,13 @@ void	expire_timeout_chk23a(struct rtw_adapter *padapter)
->  			ret = issue_nulldata23a(padapter, psta->hwaddr, 0, 3, 50);
->  
->  		psta->keep_alive_trycnt++;
-> -		if (ret == _SUCCESS)
-> -		{
-> +		if (ret == _SUCCESS) {
->  			DBG_8723A("asoc check, sta(" MAC_FMT ") is alive\n", MAC_ARG(psta->hwaddr));
->  			psta->expire_to = pstapriv->expire_to;
->  			psta->keep_alive_trycnt = 0;
->  			continue;
-> -		}
-> -		else if (psta->keep_alive_trycnt <= 3)
-> -		{
-> +
-> +		} else if (psta->keep_alive_trycnt <= 3) {
->  			DBG_8723A("ack check for asoc expire, keep_alive_trycnt =%d\n", psta->keep_alive_trycnt);
->  			psta->expire_to = 1;
->  			continue;
-> @@ -363,8 +359,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
->  		return;
->  
->  	/* b/g mode ra_bitmap */
-> -	for (i = 0; i < sizeof(psta->bssrateset); i++)
-> -	{
-> +	for (i = 0; i < sizeof(psta->bssrateset); i++) {
->  		if (psta->bssrateset[i])
->  			tx_ra_bitmap |= rtw_get_bit_value_from_ieee_value23a(psta->bssrateset[i]&0x7f);
->  	}
-> @@ -406,8 +401,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
->  	raid = networktype_to_raid23a(sta_band);
->  	init_rate = get_highest_rate_idx23a(tx_ra_bitmap&0x0fffffff)&0x3f;
->  
-> -	if (psta->aid < NUM_STA)
-> -	{
-> +	if (psta->aid < NUM_STA) {
->  		u8 arg = 0;
->  
->  		arg = psta->mac_id&0x1f;
-> @@ -436,9 +430,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
->  		psta->raid = raid;
->  		psta->init_rate = init_rate;
->  
-> -	}
-> -	else
-> -	{
-> +	} else {
->  		DBG_8723A("station aid %d exceed the max number\n", psta->aid);
->  	}
->  }
-> @@ -474,8 +466,7 @@ static void update_bmc_sta(struct rtw_adapter *padapter)
->  		psta->bssratelen = supportRateNum;
->  
->  		/* b/g mode ra_bitmap */
-> -		for (i = 0; i < supportRateNum; i++)
-> -		{
-> +		for (i = 0; i < supportRateNum; i++) {
->  			if (psta->bssrateset[i])
->  				tx_ra_bitmap |= rtw_get_bit_value_from_ieee_value23a(psta->bssrateset[i]&0x7f);
->  		}
-> @@ -522,9 +513,7 @@ static void update_bmc_sta(struct rtw_adapter *padapter)
->  		psta->state = _FW_LINKED;
->  		spin_unlock_bh(&psta->lock);
->  
-> -	}
-> -	else
-> -	{
-> +	} else {
->  		DBG_8723A("add_RATid23a_bmc_sta error!\n");
->  	}
->  }
-> @@ -561,8 +550,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
->  	/* ERP */
->  	VCS_update23a(padapter, psta);
->  	/* HT related cap */
-> -	if (phtpriv_sta->ht_option)
-> -	{
-> +	if (phtpriv_sta->ht_option) {
->  		/* check if sta supports rx ampdu */
->  		phtpriv_sta->ampdu_enable = phtpriv_ap->ampdu_enable;
->  
-> @@ -580,9 +568,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
->  
->  		psta->qos_option = true;
->  
-> -	}
-> -	else
-> -	{
-> +	} else {
->  		phtpriv_sta->ampdu_enable = false;
->  
->  		phtpriv_sta->sgi = false;
-> @@ -1261,8 +1247,7 @@ void update_beacon23a(struct rtw_adapter *padapter, u8 ie_id, u8 *oui, u8 tx)
->  
->  	spin_lock_bh(&pmlmepriv->bcn_update_lock);
->  
-> -	switch (ie_id)
-> -	{
-> +	switch (ie_id) {
->  	case 0xFF:
->  		/* 8: TimeStamp, 2: Beacon Interval 2:Capability */
->  		update_bcn_fixed_ie(padapter);
-> @@ -1416,110 +1401,85 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
->  	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
->  	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
->  
-> -	if (!(psta->flags & WLAN_STA_SHORT_PREAMBLE))
-> -	{
-> -		if (!psta->no_short_preamble_set)
-> -		{
-> +	if (!(psta->flags & WLAN_STA_SHORT_PREAMBLE)) {
-> +		if (!psta->no_short_preamble_set) {
->  			psta->no_short_preamble_set = 1;
->  
->  			pmlmepriv->num_sta_no_short_preamble++;
->  
->  			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
-> -				(pmlmepriv->num_sta_no_short_preamble == 1))
-> -			{
-> +				(pmlmepriv->num_sta_no_short_preamble == 1)) {
->  				beacon_updated = true;
->  				update_beacon23a(padapter, 0xFF, NULL, true);
->  			}
->  
->  		}
-> -	}
-> -	else
-> -	{
-> -		if (psta->no_short_preamble_set)
-> -		{
-> +	} else {
-> +		if (psta->no_short_preamble_set) {
->  			psta->no_short_preamble_set = 0;
->  
->  			pmlmepriv->num_sta_no_short_preamble--;
->  
->  			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
-> -				(pmlmepriv->num_sta_no_short_preamble == 0))
-> -			{
-> +				(pmlmepriv->num_sta_no_short_preamble == 0)) {
->  				beacon_updated = true;
->  				update_beacon23a(padapter, 0xFF, NULL, true);
->  			}
-> -
->  		}
->  	}
->  
-> -	if (psta->flags & WLAN_STA_NONERP)
-> -	{
-> -		if (!psta->nonerp_set)
-> -		{
-> +	if (psta->flags & WLAN_STA_NONERP) {
-> +		if (!psta->nonerp_set) {
->  			psta->nonerp_set = 1;
->  
->  			pmlmepriv->num_sta_non_erp++;
->  
-> -			if (pmlmepriv->num_sta_non_erp == 1)
-> -			{
-> +			if (pmlmepriv->num_sta_non_erp == 1) {
->  				beacon_updated = true;
->  				update_beacon23a(padapter, WLAN_EID_ERP_INFO, NULL, true);
->  			}
->  		}
->  
-> -	}
-> -	else
-> -	{
-> -		if (psta->nonerp_set)
-> -		{
-> +	} else {
-> +		if (psta->nonerp_set) {
->  			psta->nonerp_set = 0;
->  
->  			pmlmepriv->num_sta_non_erp--;
->  
-> -			if (pmlmepriv->num_sta_non_erp == 0)
-> -			{
-> +			if (pmlmepriv->num_sta_non_erp == 0) {
->  				beacon_updated = true;
->  				update_beacon23a(padapter, WLAN_EID_ERP_INFO, NULL, true);
->  			}
->  		}
-> -
->  	}
->  
-> -	if (!(psta->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME))
-> -	{
-> -		if (!psta->no_short_slot_time_set)
-> -		{
-> +	if (!(psta->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME)) {
-> +		if (!psta->no_short_slot_time_set) {
->  			psta->no_short_slot_time_set = 1;
->  
->  			pmlmepriv->num_sta_no_short_slot_time++;
->  
->  			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
-> -				 (pmlmepriv->num_sta_no_short_slot_time == 1))
-> -			{
-> +			(pmlmepriv->num_sta_no_short_slot_time == 1)) {
->  				beacon_updated = true;
->  				update_beacon23a(padapter, 0xFF, NULL, true);
->  			}
-> -
->  		}
-> -	}
-> -	else
-> -	{
-> -		if (psta->no_short_slot_time_set)
-> -		{
-> +	} else {
-> +		if (psta->no_short_slot_time_set) {
->  			psta->no_short_slot_time_set = 0;
->  
->  			pmlmepriv->num_sta_no_short_slot_time--;
->  
->  			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
-> -				 (pmlmepriv->num_sta_no_short_slot_time == 0))
-> -			{
-> +			(pmlmepriv->num_sta_no_short_slot_time == 0)) {
->  				beacon_updated = true;
->  				update_beacon23a(padapter, 0xFF, NULL, true);
->  			}
->  		}
->  	}
->  
-> -	if (psta->flags & WLAN_STA_HT)
-> -	{
-> +	if (psta->flags & WLAN_STA_HT) {
->  		u16 ht_capab = le16_to_cpu(psta->htpriv.ht_cap.cap_info);
->  
->  		DBG_8723A("HT: STA " MAC_FMT " HT Capabilities "
-> @@ -1552,9 +1512,7 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
->  				   pmlmepriv->num_sta_ht_20mhz);
->  		}
->  
-> -	}
-> -	else
-> -	{
-> +	} else {
->  		if (!psta->no_ht_set) {
->  			psta->no_ht_set = 1;
->  			pmlmepriv->num_sta_no_ht++;
-> @@ -1567,8 +1525,7 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
->  		}
->  	}
->  
-> -	if (rtw_ht_operation_update(padapter) > 0)
-> -	{
-> +	if (rtw_ht_operation_update(padapter) > 0) {
->  		update_beacon23a(padapter, WLAN_EID_HT_CAPABILITY, NULL, false);
->  		update_beacon23a(padapter, WLAN_EID_HT_OPERATION, NULL, true);
->  	}
-> @@ -1592,8 +1549,7 @@ u8 bss_cap_update_on_sta_leave23a(struct rtw_adapter *padapter, struct sta_info
->  		psta->no_short_preamble_set = 0;
->  		pmlmepriv->num_sta_no_short_preamble--;
->  		if (pmlmeext->cur_wireless_mode > WIRELESS_11B
-> -		    && pmlmepriv->num_sta_no_short_preamble == 0)
-> -		{
-> +		    && pmlmepriv->num_sta_no_short_preamble == 0) {
+Commit-ID:  6891c4509c792209c44ced55a60f13954cb50ef4
+Gitweb:     http://git.kernel.org/tip/6891c4509c792209c44ced55a60f13954cb50ef4
+Author:     Mathias Krause <minipli@googlemail.com>
+AuthorDate: Sat, 4 Oct 2014 23:06:39 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 25 Oct 2014 10:43:15 +0200
 
-Logical continuations should be on the previous line (from checkpatch with --strict option)
+posix-timers: Fix stack info leak in timer_create()
 
->  			beacon_updated = true;
->  			update_beacon23a(padapter, 0xFF, NULL, true);
->  		}
-> @@ -1602,8 +1558,7 @@ u8 bss_cap_update_on_sta_leave23a(struct rtw_adapter *padapter, struct sta_info
->  	if (psta->nonerp_set) {
->  		psta->nonerp_set = 0;
->  		pmlmepriv->num_sta_non_erp--;
-> -		if (pmlmepriv->num_sta_non_erp == 0)
-> -		{
-> +		if (pmlmepriv->num_sta_non_erp == 0) {
->  			beacon_updated = true;
->  			update_beacon23a(padapter, WLAN_EID_ERP_INFO,
->  					 NULL, true);
-> @@ -1657,8 +1612,7 @@ u8 ap_free_sta23a(struct rtw_adapter *padapter, struct sta_info *psta, bool acti
->  	if (!psta)
->  		return beacon_updated;
->  
-> -	if (active == true)
-> -	{
-> +	if (active == true) {
->  		/* tear down Rx AMPDU */
->  		send_delba23a(padapter, 0, psta->hwaddr);/*  recipient */
->  
-> @@ -1788,13 +1742,10 @@ void sta_info_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
->  		psta->qos_option = 0;
->  
->  	/* update 802.11n ht cap. */
-> -	if (WLAN_STA_HT&flags)
-> -	{
-> +	if (WLAN_STA_HT&flags) {
->  		psta->htpriv.ht_option = true;
->  		psta->qos_option = 1;
-> -	}
-> -	else
-> -	{
-> +	} else {
->  		psta->htpriv.ht_option = false;
->  	}
->  
-> @@ -1807,8 +1758,7 @@ void sta_info_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
->  /* called >= TSR LEVEL for USB or SDIO Interface*/
->  void ap_sta_info_defer_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
->  {
-> -	if (psta->state & _FW_LINKED)
-> -	{
-> +	if (psta->state & _FW_LINKED) {
->  		/* add ratid */
->  		add_RATid23a(padapter, psta, 0);/* DM_RATR_STA_INIT */
->  	}
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+If userland creates a timer without specifying a sigevent info, we'll
+create one ourself, using a stack local variable. Particularly will we
+use the timer ID as sival_int. But as sigev_value is a union containing
+a pointer and an int, that assignment will only partially initialize
+sigev_value on systems where the size of a pointer is bigger than the
+size of an int. On such systems we'll copy the uninitialized stack bytes
+from the timer_create() call to userland when the timer actually fires
+and we're going to deliver the signal.
+
+Initialize sigev_value with 0 to plug the stack info leak.
+
+Found in the PaX patch, written by the PaX Team.
+
+Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Cc: <stable@vger.kernel.org>	# v2.6.28+
+Link: http://lkml.kernel.org/r/1412456799-32339-1-git-send-email-minipli@googlemail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/posix-timers.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/time/posix-timers.c b/kernel/time/posix-timers.c
+index 42b463a..31ea01f 100644
+--- a/kernel/time/posix-timers.c
++++ b/kernel/time/posix-timers.c
+@@ -636,6 +636,7 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+ 			goto out;
+ 		}
+ 	} else {
++		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
+ 		event.sigev_notify = SIGEV_SIGNAL;
+ 		event.sigev_signo = SIGALRM;
+ 		event.sigev_value.sival_int = new_timer->it_id;
