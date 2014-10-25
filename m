@@ -1,300 +1,463 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaJYWXO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 18:23:14 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:44444 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751044AbaJYWXM (ORCPT
+	id S1751893AbaJYWXW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 18:23:22 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:33477 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762AbaJYWXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 18:23:12 -0400
+	Sat, 25 Oct 2014 18:23:18 -0400
 From: Alexis Berlemont <alexis.berlemont@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Alexis Berlemont <alexis.berlemont@gmail.com>, jolsa@redhat.com,
-        dsahern@gmail.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        paulus@samba.org, acme@kernel.org, namhyung@kernel.org, mmarek@suse.cz
-Subject: [PATCH v4 00/14] Kbuild for perf
-Date: Sun, 26 Oct 2014 00:20:25 +0200
-Message-Id: <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, dsahern@gmail.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
+        namhyung@kernel.org, mmarek@suse.cz,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@elte.hu>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Borislav Petkov <bp@alien8.de>, linux-kbuild@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>,
+        Alexis Berlemont <alexis.berlemont@gmail.com>
+Subject: [PATCH v4 02/14] perf tools: Kbuild builtin source related fixies
+Date: Sun, 26 Oct 2014 00:20:27 +0200
+Message-Id: <1414275639-1053-3-git-send-email-alexis.berlemont@gmail.com>
 X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
+References: <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
 In-Reply-To: <20141024124601.GX14687@kernel.org>
 References: <20141024124601.GX14687@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Jiri Olsa <jolsa@redhat.com>
 
-Here is a proposal of perf's build process managed by Kbuild:
-* The file Makefile.perf is replaced by Makefile.kbuild
-* Makefile.kbuild generates a default .config file if none exists
-  (allyesconfig)
-* Makefile.kbuild adapts the .config file according to the
-  features-check tests results
-* Makefile.kbuild builds external dependencies (linux/tools/lib/*)
-* Makefile.kbuild leaves the rest to Kbuild 
+Adding CONFIG_BUILTIN_* defines to govern builtin commands.
+This will be useful for kbuild process switch.
 
-Changes since v3:
- * Patchs were generated starting from the following branch:
- git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
- * Add Kconfig options for 32-bit compatibility VDSOs
- * Target build-test: for each .config-based test case, call "make
-   olddefconfig" so as to prevent failure because of new Kconfig
-   symbol(s)
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Alexis Berlemont <alexis.berlemont@gmail.com>
+---
+ tools/perf/builtin-annotate.c       |  8 ++++++-
+ tools/perf/builtin-cmds.h           | 27 ++++++++++++++++++++++
+ tools/perf/builtin-help.c           |  1 +
+ tools/perf/builtin-kvm.c            | 19 ++++++++++------
+ tools/perf/builtin-report.c         |  3 +++
+ tools/perf/builtin-top.c            | 19 ++++++++++++----
+ tools/perf/perf.c                   | 45 +++++++++++++++++++++++++++++++++++--
+ tools/perf/ui/setup.c               |  6 +++--
+ tools/perf/util/generate-cmdlist.sh | 10 +++++++++
+ 9 files changed, 122 insertions(+), 16 deletions(-)
+ create mode 100644 tools/perf/builtin-cmds.h
 
-Regards,
-
-Alexis.
-
-Alexis Berlemont (11):
-  kbuild: add support of custom paths for "auto.conf*" files
-  perf kbuild: remove Makefile.perf
-  perf kbuild: remove legacy tui/gui-related build variables
-  perf kbuild: remove legacy demangle-related build variables
-  perf kbuild: cross-compilation variables are now handled in Kconfig
-  perf kbuild: remove legacy misc build variables
-  perf kbuild: remove legacy libelf-related build variables
-  perf kbuild: remove legacy libdwarf-related build variables
-  perf kbuild: remove legacy script-related build variables
-  perf kbuild: final cosmetic changes
-  perf kbuild: add generated Kconfig build-test cases
-
-Jiri Olsa (3):
-  perf tools: Kbuild builtin source related fixies
-  perf tools: Kbuild source related fixies
-  perf tools: Add kbuild support into Makefile.kbuild
-
- scripts/Makefile.build                             |   3 +-
- scripts/kconfig/confdata.c                         |  23 +-
- scripts/kconfig/lkc.h                              |   1 +
- tools/perf/Kbuild                                  |  47 +
- tools/perf/Kconfig                                 | 452 ++++++++++
- tools/perf/MANIFEST                                |   1 +
- tools/perf/Makefile                                |   2 +-
- tools/perf/Makefile.kbuild                         | 443 ++++++++++
- tools/perf/Makefile.perf                           | 981 ---------------------
- tools/perf/arch/Kbuild                             |   3 +
- tools/perf/arch/arm/Kbuild                         |   2 +
- tools/perf/arch/arm/Makefile                       |  14 -
- tools/perf/arch/arm/tests/Kbuild                   |   2 +
- tools/perf/arch/arm/util/Kbuild                    |   3 +
- tools/perf/arch/arm64/Kbuild                       |   1 +
- tools/perf/arch/arm64/Makefile                     |   7 -
- tools/perf/arch/arm64/util/Kbuild                  |   2 +
- tools/perf/arch/powerpc/Kbuild                     |   1 +
- tools/perf/arch/powerpc/Makefile                   |   6 -
- tools/perf/arch/powerpc/util/Kbuild                |   3 +
- tools/perf/arch/s390/Kbuild                        |   1 +
- tools/perf/arch/s390/Makefile                      |   7 -
- tools/perf/arch/s390/util/Kbuild                   |   2 +
- tools/perf/arch/sh/Kbuild                          |   1 +
- tools/perf/arch/sh/Makefile                        |   4 -
- tools/perf/arch/sh/util/Kbuild                     |   1 +
- tools/perf/arch/sparc/Kbuild                       |   1 +
- tools/perf/arch/sparc/Makefile                     |   4 -
- tools/perf/arch/sparc/util/Kbuild                  |   1 +
- tools/perf/arch/x86/Kbuild                         |   2 +
- tools/perf/arch/x86/Makefile                       |  19 -
- tools/perf/arch/x86/include/perf_regs.h            |   8 +-
- tools/perf/arch/x86/tests/Kbuild                   |   3 +
- tools/perf/{ => arch/x86}/tests/perf-time-to-tsc.c |   2 +-
- tools/perf/arch/x86/tests/regs_load.S              |   3 +-
- tools/perf/arch/x86/util/Kbuild                    |   6 +
- tools/perf/arch/x86/util/unwind-libunwind.c        |   5 +-
- tools/perf/bench/Kbuild                            |  12 +
- tools/perf/bench/mem-memcpy-arch.h                 |   4 +-
- tools/perf/bench/mem-memcpy.c                      |   4 +-
- tools/perf/bench/mem-memset-arch.h                 |   4 +-
- tools/perf/bench/mem-memset.c                      |   4 +-
- tools/perf/builtin-annotate.c                      |   8 +-
- tools/perf/builtin-bench.c                         |   5 +-
- tools/perf/builtin-help.c                          |   1 +
- tools/perf/builtin-inject.c                        |   2 +-
- tools/perf/builtin-kvm.c                           |  38 +-
- tools/perf/builtin-lock.c                          |   5 +-
- tools/perf/builtin-probe.c                         |  15 +-
- tools/perf/builtin-record.c                        |   4 +-
- tools/perf/builtin-report.c                        |   3 +
- tools/perf/builtin-sched.c                         |   3 +
- tools/perf/builtin-script.c                        |   6 +-
- tools/perf/builtin-top.c                           |  19 +-
- tools/perf/config/Makefile                         | 459 +++++-----
- tools/perf/config/defconfig                        |  54 ++
- tools/perf/perf-sys.h                              |   4 +-
- tools/perf/perf.c                                  |  53 +-
- tools/perf/scripts/perl/Perf-Trace-Util/Kbuild     |   6 +
- tools/perf/scripts/python/Perf-Trace-Util/Kbuild   |   5 +
- tools/perf/tests/Kbuild                            |  40 +
- tools/perf/tests/builtin-test.c                    |   3 +-
- tools/perf/tests/configs/MINIMAL_config            |  60 ++
- tools/perf/tests/configs/NO_BACKTRACE_config       |  73 ++
- .../perf/tests/configs/NO_BUILTIN_ANNOTATE_config  |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_BENCH_config   |  73 ++
- .../tests/configs/NO_BUILTIN_BUILDID_CACHE_config  |  73 ++
- .../tests/configs/NO_BUILTIN_BUILDID_LIST_config   |  71 ++
- tools/perf/tests/configs/NO_BUILTIN_DIFF_config    |  71 ++
- tools/perf/tests/configs/NO_BUILTIN_EVLIST_config  |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_HELP_config    |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_INJECT_config  |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_KMEM_config    |  73 ++
- .../perf/tests/configs/NO_BUILTIN_KVM_STAT_config  |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_KVM_config     |  72 ++
- tools/perf/tests/configs/NO_BUILTIN_LIST_config    |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_LOCK_config    |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_MEM_config     |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_PROBE_config   |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_RECORD_config  |  63 ++
- tools/perf/tests/configs/NO_BUILTIN_REPORT_config  |  68 ++
- tools/perf/tests/configs/NO_BUILTIN_SCHED_config   |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_SCRIPT_config  |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_STAT_config    |  71 ++
- tools/perf/tests/configs/NO_BUILTIN_TEST_config    |  73 ++
- .../perf/tests/configs/NO_BUILTIN_TIMECHART_config |  73 ++
- tools/perf/tests/configs/NO_BUILTIN_TOP_config     |  71 ++
- tools/perf/tests/configs/NO_BUILTIN_TRACE_config   |  73 ++
- tools/perf/tests/configs/NO_DEMANGLE_config        |  71 ++
- tools/perf/tests/configs/NO_GTK2_config            |  73 ++
- tools/perf/tests/configs/NO_LIBAUDIT_config        |  72 ++
- tools/perf/tests/configs/NO_LIBDWARF_config        |  71 ++
- tools/perf/tests/configs/NO_LIBELF_MMAP_config     |  73 ++
- tools/perf/tests/configs/NO_LIBGTK2_INFOBAR_config |  73 ++
- tools/perf/tests/configs/NO_LIBGTK2_config         |  71 ++
- tools/perf/tests/configs/NO_LIBNUMA_config         |  73 ++
- tools/perf/tests/configs/NO_LIBPERL_config         |  73 ++
- tools/perf/tests/configs/NO_LIBPYTHON_config       |  73 ++
- tools/perf/tests/configs/NO_LIBSLANG_config        |  72 ++
- .../tests/configs/NO_LIBUNWIND_DEBUG_FRAME_config  |  73 ++
- tools/perf/tests/configs/NO_PERF_REGS_config       |  73 ++
- tools/perf/tests/configs/NO_STDIO_config           |  73 ++
- tools/perf/tests/configs/NO_TIMERFD_config         |  73 ++
- tools/perf/tests/configs/NO_TUI_config             |  73 ++
- tools/perf/tests/configs/NO_UNWIND_config          |  69 ++
- tools/perf/tests/configs/REF_config                |  73 ++
- tools/perf/tests/generate_configs.py               |  43 +
- tools/perf/tests/make                              |  70 +-
- tools/perf/tests/tests.h                           |   6 +-
- tools/perf/ui/Kbuild                               |  15 +
- tools/perf/ui/browsers/Kbuild                      |   9 +
- tools/perf/ui/browsers/scripts.c                   |   4 +
- tools/perf/ui/gtk/Kbuild                           |   9 +
- tools/perf/ui/gtk/browser.c                        |   4 +-
- tools/perf/ui/gtk/gtk.h                            |   5 +-
- tools/perf/ui/gtk/util.c                           |   6 +-
- tools/perf/ui/setup.c                              |  12 +-
- tools/perf/ui/stdio/Kbuild                         |   1 +
- tools/perf/ui/tui/Kbuild                           |   4 +
- tools/perf/ui/ui.h                                 |   4 +-
- tools/perf/util/Kbuild                             | 129 +++
- tools/perf/util/PERF-VERSION-GEN                   |   4 +
- tools/perf/util/annotate.h                         |   4 +-
- tools/perf/util/callchain.c                        |  11 +-
- tools/perf/util/callchain.h                        |   3 +-
- tools/perf/util/generate-cmdlist.sh                |  22 +-
- tools/perf/util/hist.h                             |   3 +-
- tools/perf/util/include/dwarf-regs.h               |   4 +-
- tools/perf/util/machine.c                          |   3 +-
- tools/perf/util/map.c                              |   3 +-
- tools/perf/util/perf_regs.c                        |   1 +
- tools/perf/util/perf_regs.h                        |   6 +-
- tools/perf/util/probe-event.c                      |   6 +-
- tools/perf/util/probe-finder.h                     |   5 +-
- tools/perf/util/scripting-engines/Kbuild           |  11 +
- tools/perf/util/setup.py                           |   8 +-
- tools/perf/util/srcline.c                          |   8 +-
- tools/perf/util/symbol-elf.c                       |   3 +-
- tools/perf/util/symbol.h                           |  33 +-
- tools/perf/util/trace-event-scripting.c            |  13 +-
- tools/perf/util/unwind-libunwind.c                 |   5 +-
- tools/perf/util/unwind.h                           |   7 +-
- tools/perf/util/util.c                             |   5 +-
- tools/perf/util/vdso.c                             |   5 +-
- 144 files changed, 5021 insertions(+), 1464 deletions(-)
- create mode 100644 tools/perf/Kbuild
- create mode 100644 tools/perf/Kconfig
- create mode 100644 tools/perf/Makefile.kbuild
- delete mode 100644 tools/perf/Makefile.perf
- create mode 100644 tools/perf/arch/Kbuild
- create mode 100644 tools/perf/arch/arm/Kbuild
- delete mode 100644 tools/perf/arch/arm/Makefile
- create mode 100644 tools/perf/arch/arm/tests/Kbuild
- create mode 100644 tools/perf/arch/arm/util/Kbuild
- create mode 100644 tools/perf/arch/arm64/Kbuild
- delete mode 100644 tools/perf/arch/arm64/Makefile
- create mode 100644 tools/perf/arch/arm64/util/Kbuild
- create mode 100644 tools/perf/arch/powerpc/Kbuild
- delete mode 100644 tools/perf/arch/powerpc/Makefile
- create mode 100644 tools/perf/arch/powerpc/util/Kbuild
- create mode 100644 tools/perf/arch/s390/Kbuild
- delete mode 100644 tools/perf/arch/s390/Makefile
- create mode 100644 tools/perf/arch/s390/util/Kbuild
- create mode 100644 tools/perf/arch/sh/Kbuild
- delete mode 100644 tools/perf/arch/sh/Makefile
- create mode 100644 tools/perf/arch/sh/util/Kbuild
- create mode 100644 tools/perf/arch/sparc/Kbuild
- delete mode 100644 tools/perf/arch/sparc/Makefile
- create mode 100644 tools/perf/arch/sparc/util/Kbuild
- create mode 100644 tools/perf/arch/x86/Kbuild
- delete mode 100644 tools/perf/arch/x86/Makefile
- create mode 100644 tools/perf/arch/x86/tests/Kbuild
- rename tools/perf/{ => arch/x86}/tests/perf-time-to-tsc.c (99%)
- create mode 100644 tools/perf/arch/x86/util/Kbuild
- create mode 100644 tools/perf/bench/Kbuild
- create mode 100644 tools/perf/config/defconfig
- create mode 100644 tools/perf/scripts/perl/Perf-Trace-Util/Kbuild
- create mode 100644 tools/perf/scripts/python/Perf-Trace-Util/Kbuild
- create mode 100644 tools/perf/tests/Kbuild
- create mode 100644 tools/perf/tests/configs/MINIMAL_config
- create mode 100644 tools/perf/tests/configs/NO_BACKTRACE_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_ANNOTATE_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_BENCH_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_BUILDID_CACHE_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_BUILDID_LIST_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_DIFF_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_EVLIST_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_HELP_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_INJECT_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_KMEM_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_KVM_STAT_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_KVM_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_LIST_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_LOCK_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_MEM_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_PROBE_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_RECORD_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_REPORT_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_SCHED_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_SCRIPT_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_STAT_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TEST_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TIMECHART_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TOP_config
- create mode 100644 tools/perf/tests/configs/NO_BUILTIN_TRACE_config
- create mode 100644 tools/perf/tests/configs/NO_DEMANGLE_config
- create mode 100644 tools/perf/tests/configs/NO_GTK2_config
- create mode 100644 tools/perf/tests/configs/NO_LIBAUDIT_config
- create mode 100644 tools/perf/tests/configs/NO_LIBDWARF_config
- create mode 100644 tools/perf/tests/configs/NO_LIBELF_MMAP_config
- create mode 100644 tools/perf/tests/configs/NO_LIBGTK2_INFOBAR_config
- create mode 100644 tools/perf/tests/configs/NO_LIBGTK2_config
- create mode 100644 tools/perf/tests/configs/NO_LIBNUMA_config
- create mode 100644 tools/perf/tests/configs/NO_LIBPERL_config
- create mode 100644 tools/perf/tests/configs/NO_LIBPYTHON_config
- create mode 100644 tools/perf/tests/configs/NO_LIBSLANG_config
- create mode 100644 tools/perf/tests/configs/NO_LIBUNWIND_DEBUG_FRAME_config
- create mode 100644 tools/perf/tests/configs/NO_PERF_REGS_config
- create mode 100644 tools/perf/tests/configs/NO_STDIO_config
- create mode 100644 tools/perf/tests/configs/NO_TIMERFD_config
- create mode 100644 tools/perf/tests/configs/NO_TUI_config
- create mode 100644 tools/perf/tests/configs/NO_UNWIND_config
- create mode 100644 tools/perf/tests/configs/REF_config
- create mode 100644 tools/perf/tests/generate_configs.py
- create mode 100644 tools/perf/ui/Kbuild
- create mode 100644 tools/perf/ui/browsers/Kbuild
- create mode 100644 tools/perf/ui/gtk/Kbuild
- create mode 100644 tools/perf/ui/stdio/Kbuild
- create mode 100644 tools/perf/ui/tui/Kbuild
- create mode 100644 tools/perf/util/Kbuild
- create mode 100644 tools/perf/util/scripting-engines/Kbuild
-
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index e7417fe..19cb967 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -5,6 +5,7 @@
+  * look up and read DSOs and symbol information and display
+  * a histogram of results, along various sorting keys.
+  */
++#include "generated/autoconf.h"
+ #include "builtin.h"
+ 
+ #include "util/util.h"
+@@ -115,7 +116,7 @@ static void hists__find_annotations(struct hists *hists,
+ 				    struct perf_evsel *evsel,
+ 				    struct perf_annotate *ann)
+ {
+-	struct rb_node *nd = rb_first(&hists->entries), *next;
++	struct rb_node *nd = rb_first(&hists->entries);
+ 	int key = K_RIGHT;
+ 
+ 	while (nd) {
+@@ -154,7 +155,9 @@ find_next:
+ 
+ 			/* skip missing symbols */
+ 			nd = rb_next(nd);
++#ifdef CONFIG_TUI
+ 		} else if (use_browser == 1) {
++			struct rb_node *next = NULL;
+ 			key = hist_entry__tui_annotate(he, evsel, NULL);
+ 			switch (key) {
+ 			case -1:
+@@ -173,6 +176,7 @@ find_next:
+ 
+ 			if (next != NULL)
+ 				nd = next;
++#endif /* CONFIG_TUI */
+ 		} else {
+ 			hist_entry__tty_annotate(he, evsel, ann);
+ 			nd = rb_next(nd);
+@@ -299,7 +303,9 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+ 		    "dump raw trace in ASCII"),
+ 	OPT_BOOLEAN(0, "gtk", &annotate.use_gtk, "Use the GTK interface"),
++#ifdef CONFIG_TUI
+ 	OPT_BOOLEAN(0, "tui", &annotate.use_tui, "Use the TUI interface"),
++#endif /* CONFIG_TUI */
+ 	OPT_BOOLEAN(0, "stdio", &annotate.use_stdio, "Use the stdio interface"),
+ 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
+ 		   "file", "vmlinux pathname"),
+diff --git a/tools/perf/builtin-cmds.h b/tools/perf/builtin-cmds.h
+new file mode 100644
+index 0000000..fec342a
+--- /dev/null
++++ b/tools/perf/builtin-cmds.h
+@@ -0,0 +1,27 @@
++#ifndef BUILTIN_CMDS_H
++#define BUILTIN_CMDS_H
++
++#define CONFIG_BUILTIN_REPORT 1
++#define CONFIG_BUILTIN_SCRIPT 1
++#define CONFIG_BUILTIN_BENCH 1
++#define CONFIG_BUILTIN_SCHED 1
++#define CONFIG_BUILTIN_TRACE 1
++#define CONFIG_BUILTIN_TOP 1
++#define CONFIG_BUILTIN_RECORD 1
++#define CONFIG_BUILTIN_BUILDID_LIST 1
++#define CONFIG_BUILTIN_INJECT 1
++#define CONFIG_BUILTIN_LOCK 1
++#define CONFIG_BUILTIN_KVM 1
++#define CONFIG_BUILTIN_BUILDID_CACHE 1
++#define CONFIG_BUILTIN_EVLIST 1
++#define CONFIG_BUILTIN_KMEM 1
++#define CONFIG_BUILTIN_STAT 1
++#define CONFIG_BUILTIN_DIFF 1
++#define CONFIG_BUILTIN_ANNOTATE 1
++#define CONFIG_BUILTIN_TIMECHART 1
++#define CONFIG_BUILTIN_LIST 1
++#define CONFIG_BUILTIN_HELP 1
++#define CONFIG_BUILTIN_PROBE 1
++#define CONFIG_BUILTIN_MEM 1
++
++#endif /* BUILTIN_CMDS_H */
+diff --git a/tools/perf/builtin-help.c b/tools/perf/builtin-help.c
+index 25d2062..fbbbaa4 100644
+--- a/tools/perf/builtin-help.c
++++ b/tools/perf/builtin-help.c
+@@ -7,6 +7,7 @@
+ #include "util/cache.h"
+ #include "builtin.h"
+ #include "util/exec_cmd.h"
++#include "builtin-cmds.h"
+ #include "common-cmds.h"
+ #include "util/parse-options.h"
+ #include "util/run-command.h"
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 3c0f3d4..e042728 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -1556,20 +1556,25 @@ int cmd_kvm(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	if (!strncmp(argv[0], "rec", 3))
+ 		return __cmd_record(file_name, argc, argv);
+-	else if (!strncmp(argv[0], "rep", 3))
++
++	if (!strncmp(argv[0], "rep", 3))
+ 		return __cmd_report(file_name, argc, argv);
+-	else if (!strncmp(argv[0], "diff", 4))
++
++	if (!strncmp(argv[0], "diff", 4))
+ 		return cmd_diff(argc, argv, NULL);
+-	else if (!strncmp(argv[0], "top", 3))
++
++	if (!strncmp(argv[0], "top", 3))
+ 		return cmd_top(argc, argv, NULL);
+-	else if (!strncmp(argv[0], "buildid-list", 12))
++
++	if (!strncmp(argv[0], "buildid-list", 12))
+ 		return __cmd_buildid_list(file_name, argc, argv);
++
+ #ifdef HAVE_KVM_STAT_SUPPORT
+-	else if (!strncmp(argv[0], "stat", 4))
++	if (!strncmp(argv[0], "stat", 4))
+ 		return kvm_cmd_stat(file_name, argc, argv);
+ #endif
+-	else
+-		usage_with_options(kvm_usage, kvm_options);
++
++	usage_with_options(kvm_usage, kvm_options);
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 140a6cd..00d93ff 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -5,6 +5,7 @@
+  * look up and read DSOs and symbol information and display
+  * a histogram of results, along various sorting keys.
+  */
++#include "generated/autoconf.h"
+ #include "builtin.h"
+ 
+ #include "util/util.h"
+@@ -406,6 +407,7 @@ static int report__browse_hists(struct report *rep)
+ 	const char *help = "For a higher level overview, try: perf report --sort comm,dso";
+ 
+ 	switch (use_browser) {
++#ifdef CONFIG_TUI
+ 	case 1:
+ 		ret = perf_evlist__tui_browse_hists(evlist, help, NULL,
+ 						    rep->min_percent,
+@@ -417,6 +419,7 @@ static int report__browse_hists(struct report *rep)
+ 		if (ret != K_SWITCH_INPUT_DATA)
+ 			ret = 0;
+ 		break;
++#endif /* CONFIG_TUI */
+ 	case 2:
+ 		ret = report__gtk_browse_hists(rep, help);
+ 		break;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 0aa7747..a2ff8b7 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -17,6 +17,7 @@
+  *
+  * Released under the GPL v2. (and only v2, not any later version)
+  */
++#include "generated/autoconf.h"
+ #include "builtin.h"
+ 
+ #include "perf.h"
+@@ -534,6 +535,7 @@ static bool perf_top__handle_keypress(struct perf_top *top, int c)
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_TUI
+ static void perf_top__sort_new_samples(void *arg)
+ {
+ 	struct perf_top *t = arg;
+@@ -586,6 +588,7 @@ static void *display_thread_tui(void *arg)
+ 	done = 1;
+ 	return NULL;
+ }
++#endif /* CONFIG_TUI */
+ 
+ static void display_sig(int sig __maybe_unused)
+ {
+@@ -926,9 +929,12 @@ static int perf_top__setup_sample_type(struct perf_top *top __maybe_unused)
+ 	return 0;
+ }
+ 
++typedef void* (*display_fn_t)(void *);
++
+ static int __cmd_top(struct perf_top *top)
+ {
+ 	struct record_opts *opts = &top->record_opts;
++	display_fn_t display_fn = display_thread;
+ 	pthread_t thread;
+ 	int ret;
+ 
+@@ -965,8 +971,8 @@ static int __cmd_top(struct perf_top *top)
+ 	 * XXX 'top' still doesn't start workloads like record, trace, but should,
+ 	 * so leave the check here.
+ 	 */
+-        if (!target__none(&opts->target))
+-                perf_evlist__enable(top->evlist);
++	if (!target__none(&opts->target))
++		perf_evlist__enable(top->evlist);
+ 
+ 	/* Wait for a minimal set of events before starting the snapshot */
+ 	perf_evlist__poll(top->evlist, 100);
+@@ -974,8 +980,13 @@ static int __cmd_top(struct perf_top *top)
+ 	perf_top__mmap_read(top);
+ 
+ 	ret = -1;
+-	if (pthread_create(&thread, NULL, (use_browser > 0 ? display_thread_tui :
+-							    display_thread), top)) {
++
++#ifdef CONFIG_TUI
++	if (use_browser > 0)
++		display_fn = display_thread_tui;
++#endif
++
++	if (pthread_create(&thread, NULL, display_fn, top)) {
+ 		ui__error("Could not create display thread.\n");
+ 		goto out_delete;
+ 	}
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 452a847..ab363b5 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -7,6 +7,7 @@
+  * perf top, perf record, perf report, etc.) are started.
+  */
+ #include "builtin.h"
++#include "builtin-cmds.h"
+ 
+ #include "util/exec_cmd.h"
+ #include "util/cache.h"
+@@ -34,34 +35,74 @@ struct cmd_struct {
+ };
+ 
+ static struct cmd_struct commands[] = {
++#ifdef CONFIG_BUILTIN_BUILDID_CACHE
+ 	{ "buildid-cache", cmd_buildid_cache, 0 },
++#endif
++#ifdef CONFIG_BUILTIN_BUILDID_LIST
+ 	{ "buildid-list", cmd_buildid_list, 0 },
++#endif
++#ifdef CONFIG_BUILTIN_DIFF
+ 	{ "diff",	cmd_diff,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_EVLIST
+ 	{ "evlist",	cmd_evlist,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_HELP
+ 	{ "help",	cmd_help,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_LIST
+ 	{ "list",	cmd_list,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_RECORD
+ 	{ "record",	cmd_record,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_REPORT
+ 	{ "report",	cmd_report,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_BENCH
+ 	{ "bench",	cmd_bench,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_STAT
+ 	{ "stat",	cmd_stat,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_TIMECHART
+ 	{ "timechart",	cmd_timechart,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_TOP
+ 	{ "top",	cmd_top,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_ANNOTATE
+ 	{ "annotate",	cmd_annotate,	0 },
++#endif
+ 	{ "version",	cmd_version,	0 },
++#ifdef CONFIG_BUILTIN_SCRIPT
+ 	{ "script",	cmd_script,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_SCHED
+ 	{ "sched",	cmd_sched,	0 },
+-#ifdef HAVE_LIBELF_SUPPORT
++#endif
++#if defined HAVE_LIBELF_SUPPORT && defined CONFIG_BUILTIN_PROBE
+ 	{ "probe",	cmd_probe,	0 },
+ #endif
++#ifdef CONFIG_BUILTIN_KMEM
+ 	{ "kmem",	cmd_kmem,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_LOCK
+ 	{ "lock",	cmd_lock,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_KVM
+ 	{ "kvm",	cmd_kvm,	0 },
++#endif
+ 	{ "test",	cmd_test,	0 },
+-#ifdef HAVE_LIBAUDIT_SUPPORT
++#if defined HAVE_LIBAUDIT_SUPPORT && defined CONFIG_BUILTIN_TRACE
+ 	{ "trace",	cmd_trace,	0 },
+ #endif
++#ifdef CONFIG_BUILTIN_INJECT
+ 	{ "inject",	cmd_inject,	0 },
++#endif
++#ifdef CONFIG_BUILTIN_MEM
+ 	{ "mem",	cmd_mem,	0 },
++#endif
+ };
+ 
+ struct pager_config {
+diff --git a/tools/perf/ui/setup.c b/tools/perf/ui/setup.c
+index ba51fa8..ec7fd36 100644
+--- a/tools/perf/ui/setup.c
++++ b/tools/perf/ui/setup.c
+@@ -77,11 +77,13 @@ void setup_browser(bool fallback_to_pager)
+ 		       PERF_GTK_DSO);
+ 		sleep(1);
+ 		/* fall through */
++#ifdef CONFIG_TUI
+ 	case 1:
+ 		use_browser = 1;
+ 		if (ui__init() == 0)
+ 			break;
+ 		/* fall through */
++#endif
+ 	default:
+ 		use_browser = 0;
+ 		if (fallback_to_pager)
+@@ -96,11 +98,11 @@ void exit_browser(bool wait_for_ok)
+ 	case 2:
+ 		exit_gtk_browser(wait_for_ok);
+ 		break;
+-
++#ifdef CONFIG_TUI
+ 	case 1:
+ 		ui__exit(wait_for_ok);
+ 		break;
+-
++#endif
+ 	default:
+ 		break;
+ 	}
+diff --git a/tools/perf/util/generate-cmdlist.sh b/tools/perf/util/generate-cmdlist.sh
+index 36a885d..05ee30f 100755
+--- a/tools/perf/util/generate-cmdlist.sh
++++ b/tools/perf/util/generate-cmdlist.sh
+@@ -1,5 +1,11 @@
+ #!/bin/sh
+ 
++function cfg()
++{
++     cfg=`echo $1 | tr '[:lower:]' '[:upper:]' | sed 's/-/_/g'`
++     echo "$cfg"
++}
++
+ echo "/* Automatically generated by $0 */
+ struct cmdname_help
+ {
+@@ -13,6 +19,7 @@ sed -n -e 's/^perf-\([^ 	]*\)[ 	].* common.*/\1/p' command-list.txt |
+ sort |
+ while read cmd
+ do
++     echo "#ifdef CONFIG_BUILTIN_$(cfg $cmd)"
+      sed -n '
+      /^NAME/,/perf-'"$cmd"'/H
+      ${
+@@ -20,6 +27,7 @@ do
+             s/.*perf-'"$cmd"' - \(.*\)/  {"'"$cmd"'", "\1"},/
+ 	    p
+      }' "Documentation/perf-$cmd.txt"
++     echo "#endif"
+ done
+ 
+ echo "#ifdef HAVE_LIBELF_SUPPORT"
+@@ -27,6 +35,7 @@ sed -n -e 's/^perf-\([^ 	]*\)[ 	].* full.*/\1/p' command-list.txt |
+ sort |
+ while read cmd
+ do
++     echo "#ifdef CONFIG_BUILTIN_$(cfg $cmd)"
+      sed -n '
+      /^NAME/,/perf-'"$cmd"'/H
+      ${
+@@ -34,6 +43,7 @@ do
+             s/.*perf-'"$cmd"' - \(.*\)/  {"'"$cmd"'", "\1"},/
+ 	    p
+      }' "Documentation/perf-$cmd.txt"
++     echo "#endif"
+ done
+ echo "#endif /* HAVE_LIBELF_SUPPORT */"
+ echo "};"
 -- 
 2.1.1
 
