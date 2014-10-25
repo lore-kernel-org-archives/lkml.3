@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351AbaJYS64 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 14:58:56 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:48129 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378AbaJYS6w (ORCPT
+	id S1752110AbaJYS6t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 14:58:49 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:37318 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378AbaJYS6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 14:58:52 -0400
-Message-ID: <544B5663.1000102@gmail.com>
-Date: Sat, 25 Oct 2014 09:50:59 +0200
-From: =?UTF-8?B?UHLDqWRob21tZSBQaGlsaXBwZQ==?= <predhomme.p@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+	Sat, 25 Oct 2014 14:58:48 -0400
+X-IronPort-AV: E=Sophos;i="5.04,786,1406592000"; 
+   d="scan'208";a="186159032"
+Date: Sat, 25 Oct 2014 14:29:07 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        "david.vrabel@citrix.com" <david.vrabel@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v4 3/7] [RFC] arm/arm64: introduce is_dma_coherent
+In-Reply-To: <alpine.DEB.2.02.1410241828110.22875@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1410251424350.22875@kaball.uk.xensource.com>
+References: <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com> <20141010120702.GI7755@arm.com> <alpine.DEB.2.02.1410101401250.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410131215400.17038@kaball.uk.xensource.com> <20141013125725.GA19156@arm.com>
+ <alpine.DEB.2.02.1410131358490.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410221703560.876@kaball.uk.xensource.com> <alpine.DEB.2.02.1410231516450.876@kaball.uk.xensource.com> <20141024104746.GC1955@localhost> <alpine.DEB.2.02.1410241233080.22875@kaball.uk.xensource.com>
+ <20141024154353.GE20534@e104818-lin.cambridge.arm.com> <alpine.DEB.2.02.1410241751160.22875@kaball.uk.xensource.com> <alpine.DEB.2.02.1410241828110.22875@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: jkosina@suse.cz
-Subject: PATCH : add support for HuiJia USB Gamepad connector (0e8f:1006 and
- 0e8f:3010)
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create each gamepad as a separate joystick
-Both device (1006 is for Sega Saturn controllers, 3010 is for Sony
-Playstation 1/2 controllers) work the same as 0e8f:3013 (which is for
-Nintendo 64 controllers), so i used this device as reference to make my
-patch.
-Work with kernel 3.14, 3.15, 3.16, 3.17.
-
-Signed-off-by: Philippe Prédhomme <predhomme.p@gmail.com>
-
-diff -git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -362,6 +362,8 @@
+On Fri, 24 Oct 2014, Stefano Stabellini wrote:
+> On Fri, 24 Oct 2014, Stefano Stabellini wrote:
+> > On Fri, 24 Oct 2014, Catalin Marinas wrote:
+> > > > However given the timing constraints I hope you would be OK with the
+> > > > suboptimal solution for now and create a common is_dma_coherent function
+> > > > in 3.19?
+> > > 
+> > > If you want to push something for 3.18, you could have a temporary
+> > > solution but I would prefer a bool or something in the dev_archdata
+> > > structure. Another untested patch:
+> > > 
+> > > diff --git a/arch/arm64/include/asm/device.h b/arch/arm64/include/asm/device.h
+> > > index cf98b362094b..243ef256b8c9 100644
+> > > --- a/arch/arm64/include/asm/device.h
+> > > +++ b/arch/arm64/include/asm/device.h
+> > > @@ -21,6 +21,7 @@ struct dev_archdata {
+> > >  #ifdef CONFIG_IOMMU_API
+> > >  	void *iommu;			/* private IOMMU data */
+> > >  #endif
+> > > +	bool dma_coherent;
+> > >  };
+> > >  
+> > >  struct pdev_archdata {
+> > > diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
+> > > index adeae3f6f0fc..b6bc4c268878 100644
+> > > --- a/arch/arm64/include/asm/dma-mapping.h
+> > > +++ b/arch/arm64/include/asm/dma-mapping.h
+> > > @@ -54,11 +54,17 @@ static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
+> > >  
+> > >  static inline int set_arch_dma_coherent_ops(struct device *dev)
+> > >  {
+> > > +	dev->dev_archdata.dma_coherent = true;
+> > >  	set_dma_ops(dev, &coherent_swiotlb_dma_ops);
+> > >  	return 0;
+> > >  }
+> > >  #define set_arch_dma_coherent_ops	set_arch_dma_coherent_ops
+> > >  
+> > > +static inline int is_device_dma_coherent(struct device *dev)
+> > > +{
+> > > +	return dev->dev_archdata.dma_coherent;
+> > > +}
+> > > +
+> > >  #include <asm-generic/dma-mapping-common.h>
+> > >  
+> > >  static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+> > > 
+> > > 
+> > > This way you don't have to test for swiotlb vs iommu ops (we don't have
+> > > the latter yet on arm64 but they are coming).
  
- #define USB_VENDOR_ID_GREENASIA        0x0e8f
- #define USB_DEVICE_ID_GREENASIA_DUAL_USB_JOYPAD    0x3013
-+#define USB_DEVICE_ID_GREENASIA_DUAL_SS_JOYPAD 0x1006
-+#define USB_DEVICE_ID_GREENASIA_DUAL_PS_JOYPAD 0x3010
- 
- #define USB_VENDOR_ID_GRETAGMACBETH    0x0971
- #define USB_DEVICE_ID_GRETAGMACBETH_HUEY    0x2005
-diff -git a/drivers/hid/usbhid/hid-quirks.c
-b/drivers/hid/usbhid/hid-quirks.c
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -50,6 +50,8 @@ static const struct hid_blacklist {
-     { USB_VENDOR_ID_EMS, USB_DEVICE_ID_EMS_TRIO_LINKER_PLUS_II,
-HID_QUIRK_MULTI_INPUT },
-     { USB_VENDOR_ID_ETURBOTOUCH, USB_DEVICE_ID_ETURBOTOUCH,
-HID_QUIRK_MULTI_INPUT },
-     { USB_VENDOR_ID_GREENASIA, USB_DEVICE_ID_GREENASIA_DUAL_USB_JOYPAD,
-HID_QUIRK_MULTI_INPUT },
-+    { USB_VENDOR_ID_GREENASIA, USB_DEVICE_ID_GREENASIA_DUAL_SS_JOYPAD,
-HID_QUIRK_MULTI_INPUT },
-+    { USB_VENDOR_ID_GREENASIA, USB_DEVICE_ID_GREENASIA_DUAL_PS_JOYPAD,
-HID_QUIRK_MULTI_INPUT },
-     { USB_VENDOR_ID_PANTHERLORD,
-USB_DEVICE_ID_PANTHERLORD_TWIN_USB_JOYSTICK, HID_QUIRK_MULTI_INPUT |
-HID_QUIRK_SKIP_OUTPUT_REPORTS },
-     { USB_VENDOR_ID_PLAYDOTCOM, USB_DEVICE_ID_PLAYDOTCOM_EMS_USBII,
-HID_QUIRK_MULTI_INPUT },
-     { USB_VENDOR_ID_TOUCHPACK, USB_DEVICE_ID_TOUCHPACK_RTS,
-HID_QUIRK_MULTI_INPUT },
+Your suggestions and looking more at the code gave me another idea, that
+I think is clean and at the same time suitable for 3.18.
+What do you think of the following? It is simple, self-contained and
+doesn't need a new flag in struct device.
 
+
+diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
+index 6153d61..2b259f1 100644
+--- a/arch/arm/xen/mm32.c
++++ b/arch/arm/xen/mm32.c
+@@ -2,10 +2,16 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/gfp.h>
+ #include <linux/highmem.h>
++#include <linux/of_address.h>
+ 
+ #include <xen/features.h>
+ 
+ 
++static inline bool is_dma_coherent(struct device *dev)
++{
++	return of_dma_is_coherent(dev->of_node);
++}
++
+ /* functions called by SWIOTLB */
+ 
+ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
