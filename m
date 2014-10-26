@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaJZTEQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 15:04:16 -0400
-Received: from smtprelay0146.hostedemail.com ([216.40.44.146]:52851 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751504AbaJZTEP (ORCPT
+	id S1751813AbaJZTNj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 15:13:39 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42859 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504AbaJZTNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 15:04:15 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3354:3622:3868:3874:4321:5007:6261:6996:7514:7875:8957:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12517:12519:12555:12740:13019:13141:13230:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bird16_24c16a6a25948
-X-Filterd-Recvd-Size: 3990
-Message-ID: <1414350250.15751.22.camel@perches.com>
-Subject: Re: [PATCH 2/2] staging: rtl8723au:core
-From: Joe Perches <joe@perches.com>
-To: Paul McQuade <paulmcquad@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
-Date: Sun, 26 Oct 2014 12:04:10 -0700
-In-Reply-To: <1414340332-4556-1-git-send-email-paulmcquad@gmail.com>
-References: <1414340332-4556-1-git-send-email-paulmcquad@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 26 Oct 2014 15:13:38 -0400
+Date: Sun, 26 Oct 2014 19:13:32 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: fs: lockup on rename_mutex in fs/dcache.c:1035
+Message-ID: <20141026191332.GS7996@ZenIV.linux.org.uk>
+References: <544C50CB.4090408@oracle.com>
+ <87siibttyi.fsf@x220.int.ebiederm.org>
+ <20141026030608.GN7996@ZenIV.linux.org.uk>
+ <20141026035100.GO7996@ZenIV.linux.org.uk>
+ <20141026035705.GP7996@ZenIV.linux.org.uk>
+ <CA+55aFzcRyA0kcXN28OHjPQfR-BP442+tz6Rti7Fbc0VXuawww@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzcRyA0kcXN28OHjPQfR-BP442+tz6Rti7Fbc0VXuawww@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-10-26 at 16:18 +0000, Paul McQuade wrote:
-> ERROR: spaces required around that ':' (ctx:VxE)
-> 
-> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
-> ---
->  drivers/staging/rtl8723au/core/rtw_ieee80211.c | 16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-> index 6274cb3..41006cf 100644
-> --- a/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-> +++ b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-> @@ -794,28 +794,28 @@ u16 rtw_mcs_rate23a(u8 rf_type, u8 bw_40MHz, u8 short_GI_20, u8 short_GI_40,
->  
->  	if (rf_type == RF_1T1R) {
->  		if (mcs->rx_mask[0] & BIT(7))
-> -			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):
-> +			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350) :
->  				((short_GI_20)?722:650);
->  		else if (mcs->rx_mask[0] & BIT(6))
-> -			max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215):
-> +			max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215) :
->  				((short_GI_20)?650:585);
->  		else if (mcs->rx_mask[0] & BIT(5))
-> -			max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):
-> +			max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080) :
->  				((short_GI_20)?578:520);
->  		else if (mcs->rx_mask[0] & BIT(4))
-> -			max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):
-> +			max_rate = (bw_40MHz) ? ((short_GI_40)?900:810) :
->  				((short_GI_20)?433:390);
->  		else if (mcs->rx_mask[0] & BIT(3))
-> -			max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):
-> +			max_rate = (bw_40MHz) ? ((short_GI_40)?600:540) :
->  				((short_GI_20)?289:260);
->  		else if (mcs->rx_mask[0] & BIT(2))
-> -			max_rate = (bw_40MHz) ? ((short_GI_40)?450:405):
-> +			max_rate = (bw_40MHz) ? ((short_GI_40)?450:405) :
->  				((short_GI_20)?217:195);
->  		else if (mcs->rx_mask[0] & BIT(1))
-> -			max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):
-> +			max_rate = (bw_40MHz) ? ((short_GI_40)?300:270) :
->  				((short_GI_20)?144:130);
->  		else if (mcs->rx_mask[0] & BIT(0))
-> -			max_rate = (bw_40MHz) ? ((short_GI_40)?150:135):
-> +			max_rate = (bw_40MHz) ? ((short_GI_40)?150:135) :
->  				((short_GI_20)?72:65);
+On Sun, Oct 26, 2014 at 11:56:08AM -0700, Linus Torvalds wrote:
+> On Sat, Oct 25, 2014 at 8:57 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> Your patch looks fine, and I don't think we can livelock - because we
+> always set 'seq' to 1 if we retry, and that causes us to get the
+> exclusive lock, so we'd better not then enter the retry loop again.
+> Although I guess not only renames cause it - looks like we get to that
+> mis-named "rename_retry" for a deletion too according to the comment.
+> Although I'm not sure that comment is correct - I don't think we
+> change d_parent for deletes, do we?
 
-A macro could help intelligibility here - maybe something like:
+The comment is not correct.  dentry_kill() won't screw the pointer to
+parent; it will, however, screw the pointer to next sibling.
 
-#define get_max_rate(r1, r2, r3, r4)					\
-	(bw_40MHz ? (short_GI_40 ? r1 : r2) : (short_GI_20 ? r3 : r4))
-and:
- 		if (mcs->rx_mask[0] & BIT(7))
-			max_rate = get_max_rate(1500, 1350, 722, 650);
-		else if (mcs->rx_mask[0] & BIT(6))
-			max_rate = get_max_rate(1350, 1215, 650, 585);
-		else if (mcs->rx_mask[0] & BIT(5))
-			max_rate = get_max_rate(1200, 1080, 578, 520);
-		else if (mcs->rx_mask[0] & BIT(4))
-			max_rate = get_max_rate(900, 810, 433, 390);
-		else if (mcs->rx_mask[0] & BIT(3))
-			max_rate = get_max_rate(600, 540, 289, 260);
-		else if (mcs->rx_mask[0] & BIT(2))
-			max_rate = get_max_rate(450, 405, 217, 195);
-		else if (mcs->rx_mask[0] & BIT(1))
-			max_rate = get_max_rate(300, 270, 144, 130);
-		else if (mcs->rx_mask[0] & BIT(0))
-			max_rate = get_max_rate(150, 135, 72, 65);
+It used to screw the pointer to parent (which is what the first part of
+condition was about).  After Nick's series back in January 2011 that
+has stopped being true.  However, dentry_kill() does
+list_del(&dentry->d_u.d_child).  Which means that we can't continue
+past that point if it has happened.  Trond has noticed the breakage
+a bit later and added explicit check for ->d_flags, but the damage
+was more extensive - Nick had missed the restarts-on-killed logics
+hidden in the check for changed ->d_parent and assumed that it's
+all about renames, meaning that once rename_lock has been taken exclusive
+we won't have restarts at all.  With restart-on-killed restored that
+wasn't true anymore, invalidating the assumption that we only get to
+rename_retry without rename_lock held exclusive.  With deadlocks happening
+if we ever get there on such pass.
 
+We used to have several copies of that logics, before it all got consolidated
+into d_walk(), which probably contributed to the mess...
 
-
+BTW, the first part of condition (->d_parent hasn't changed since before the
+"unlock child, lock parent" sequence) is really pointless these days - check
+for rename_lock will fail if ->d_parent has changed...
