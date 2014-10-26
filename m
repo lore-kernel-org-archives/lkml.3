@@ -1,330 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751627AbaJZPKa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 11:10:30 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:43008 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaJZPK2 (ORCPT
+	id S1751615AbaJZPWh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 11:22:37 -0400
+Received: from eddie.linux-mips.org ([148.251.95.138]:46646 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049AbaJZPWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 11:10:28 -0400
-From: Paul McQuade <paulmcquad@gmail.com>
-To: paulmcquad@gmail.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
-Subject: [PATCH][V2] Staging:rtl8723au: open/closed brace issue
-Date: Sun, 26 Oct 2014 15:10:22 +0000
-Message-Id: <1414336222-2885-1-git-send-email-paulmcquad@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 26 Oct 2014 11:22:35 -0400
+Date: Sun, 26 Oct 2014 15:22:33 +0000 (GMT)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Ralf Baechle <ralf@linux-mips.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND] tc: Error handling clean-ups
+In-Reply-To: <alpine.LFD.2.11.1404062030280.15266@eddie.linux-mips.org>
+Message-ID: <alpine.LFD.2.11.1410222234050.21390@eddie.linux-mips.org>
+References: <alpine.LFD.2.11.1404062030280.15266@eddie.linux-mips.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ERROR: that open brace { should be on the previous line
+Rewrite TURBOchannel error handling to use a common failure path, making 
+sure put_device is called for devices that failed initialization.  While 
+at it update printk calls to use pr_err rather than KERN_ERR.  Finally 
+avoid printk format warnings on resource_size_t type variables.
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+Signed-off-by: Maciej W. Rozycki <macro@linux-mips.org>
 ---
- drivers/staging/rtl8723au/core/rtw_ap.c | 130 ++++++++++----------------------
- 1 file changed, 40 insertions(+), 90 deletions(-)
+The checkpatch.pl warning deliberately ignored, I'm not going to go past 
+79 columns.
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_ap.c b/drivers/staging/rtl8723au/core/rtw_ap.c
-index 6b4092f..6b69bfe 100644
---- a/drivers/staging/rtl8723au/core/rtw_ap.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ap.c
-@@ -231,12 +231,10 @@ void	expire_timeout_chk23a(struct rtw_adapter *padapter)
- 			psta->expire_to--;
+Stephen,
+
+ I posted this fix originally to linux-mips@linux-mips.org back in April, 
+but it got lost and I don't want to give Ralf more stuff to handle than 
+absolutely necessary, he is really busy these days.  Can you please take 
+it directly to linux-next then?  There's nothing specific to MIPS in this 
+code really.
+
+ Thanks,
+
+  Maciej
+
+linux-tc-init-fix.patch
+Index: linux-20140329-4maxp64/drivers/tc/tc.c
+===================================================================
+--- linux-20140329-4maxp64.orig/drivers/tc/tc.c
++++ linux-20140329-4maxp64/drivers/tc/tc.c
+@@ -83,8 +83,7 @@ static void __init tc_bus_add_devices(st
+ 		/* Found a board, allocate it an entry in the list */
+ 		tdev = kzalloc(sizeof(*tdev), GFP_KERNEL);
+ 		if (!tdev) {
+-			printk(KERN_ERR "tc%x: unable to allocate tc_dev\n",
+-			       slot);
++			pr_err("tc%x: unable to allocate tc_dev\n", slot);
+ 			goto out_err;
  		}
- 
--		if (psta->expire_to <= 0)
--		{
-+		if (psta->expire_to <= 0) {
- 			struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 
--			if (padapter->registrypriv.wifi_spec == 1)
--			{
-+			if (padapter->registrypriv.wifi_spec == 1) {
- 				psta->expire_to = pstapriv->expire_to;
- 				continue;
- 			}
-@@ -308,15 +306,13 @@ void	expire_timeout_chk23a(struct rtw_adapter *padapter)
- 			ret = issue_nulldata23a(padapter, psta->hwaddr, 0, 3, 50);
- 
- 		psta->keep_alive_trycnt++;
--		if (ret == _SUCCESS)
--		{
-+		if (ret == _SUCCESS) {
- 			DBG_8723A("asoc check, sta(" MAC_FMT ") is alive\n", MAC_ARG(psta->hwaddr));
- 			psta->expire_to = pstapriv->expire_to;
- 			psta->keep_alive_trycnt = 0;
- 			continue;
--		}
--		else if (psta->keep_alive_trycnt <= 3)
--		{
-+
-+		} else if (psta->keep_alive_trycnt <= 3) {
- 			DBG_8723A("ack check for asoc expire, keep_alive_trycnt =%d\n", psta->keep_alive_trycnt);
- 			psta->expire_to = 1;
- 			continue;
-@@ -363,8 +359,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
- 		return;
- 
- 	/* b/g mode ra_bitmap */
--	for (i = 0; i < sizeof(psta->bssrateset); i++)
--	{
-+	for (i = 0; i < sizeof(psta->bssrateset); i++) {
- 		if (psta->bssrateset[i])
- 			tx_ra_bitmap |= rtw_get_bit_value_from_ieee_value23a(psta->bssrateset[i]&0x7f);
- 	}
-@@ -406,8 +401,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
- 	raid = networktype_to_raid23a(sta_band);
- 	init_rate = get_highest_rate_idx23a(tx_ra_bitmap&0x0fffffff)&0x3f;
- 
--	if (psta->aid < NUM_STA)
--	{
-+	if (psta->aid < NUM_STA) {
- 		u8 arg = 0;
- 
- 		arg = psta->mac_id&0x1f;
-@@ -436,9 +430,7 @@ void add_RATid23a(struct rtw_adapter *padapter, struct sta_info *psta, u8 rssi_l
- 		psta->raid = raid;
- 		psta->init_rate = init_rate;
- 
--	}
--	else
--	{
-+	} else {
- 		DBG_8723A("station aid %d exceed the max number\n", psta->aid);
- 	}
- }
-@@ -522,9 +513,7 @@ static void update_bmc_sta(struct rtw_adapter *padapter)
- 		psta->state = _FW_LINKED;
- 		spin_unlock_bh(&psta->lock);
- 
--	}
--	else
--	{
-+	} else {
- 		DBG_8723A("add_RATid23a_bmc_sta error!\n");
- 	}
- }
-@@ -561,8 +550,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
- 	/* ERP */
- 	VCS_update23a(padapter, psta);
- 	/* HT related cap */
--	if (phtpriv_sta->ht_option)
--	{
-+	if (phtpriv_sta->ht_option) {
- 		/* check if sta supports rx ampdu */
- 		phtpriv_sta->ampdu_enable = phtpriv_ap->ampdu_enable;
- 
-@@ -580,9 +568,7 @@ void update_sta_info23a_apmode23a(struct rtw_adapter *padapter, struct sta_info
- 
- 		psta->qos_option = true;
- 
--	}
--	else
--	{
-+	} else {
- 		phtpriv_sta->ampdu_enable = false;
- 
- 		phtpriv_sta->sgi = false;
-@@ -1261,8 +1247,7 @@ void update_beacon23a(struct rtw_adapter *padapter, u8 ie_id, u8 *oui, u8 tx)
- 
- 	spin_lock_bh(&pmlmepriv->bcn_update_lock);
- 
--	switch (ie_id)
--	{
-+	switch (ie_id) {
- 	case 0xFF:
- 		/* 8: TimeStamp, 2: Beacon Interval 2:Capability */
- 		update_bcn_fixed_ie(padapter);
-@@ -1416,110 +1401,85 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
- 	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
- 	struct mlme_ext_priv *pmlmeext = &padapter->mlmeextpriv;
- 
--	if (!(psta->flags & WLAN_STA_SHORT_PREAMBLE))
--	{
--		if (!psta->no_short_preamble_set)
--		{
-+	if (!(psta->flags & WLAN_STA_SHORT_PREAMBLE)) {
-+		if (!psta->no_short_preamble_set) {
- 			psta->no_short_preamble_set = 1;
- 
- 			pmlmepriv->num_sta_no_short_preamble++;
- 
- 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
--				(pmlmepriv->num_sta_no_short_preamble == 1))
--			{
-+				(pmlmepriv->num_sta_no_short_preamble == 1)) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, 0xFF, NULL, true);
- 			}
- 
+ 		dev_set_name(&tdev->dev, "tc%x", slot);
+@@ -117,10 +116,10 @@ static void __init tc_bus_add_devices(st
+ 			tdev->resource.start = extslotaddr;
+ 			tdev->resource.end = extslotaddr + devsize - 1;
+ 		} else {
+-			printk(KERN_ERR "%s: Cannot provide slot space "
+-			       "(%dMiB required, up to %dMiB supported)\n",
+-			       dev_name(&tdev->dev), devsize >> 20,
+-			       max(slotsize, extslotsize) >> 20);
++			pr_err("%s: Cannot provide slot space "
++			       "(%ldMiB required, up to %ldMiB supported)\n",
++			       dev_name(&tdev->dev), (long)(devsize >> 20),
++			       (long)(max(slotsize, extslotsize) >> 20));
+ 			kfree(tdev);
+ 			goto out_err;
  		}
--	}
--	else
--	{
--		if (psta->no_short_preamble_set)
--		{
-+	} else {
-+		if (psta->no_short_preamble_set) {
- 			psta->no_short_preamble_set = 0;
- 
- 			pmlmepriv->num_sta_no_short_preamble--;
- 
- 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
--				(pmlmepriv->num_sta_no_short_preamble == 0))
--			{
-+				(pmlmepriv->num_sta_no_short_preamble == 0)) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, 0xFF, NULL, true);
- 			}
--
- 		}
- 	}
- 
--	if (psta->flags & WLAN_STA_NONERP)
--	{
--		if (!psta->nonerp_set)
--		{
-+	if (psta->flags & WLAN_STA_NONERP) {
-+		if (!psta->nonerp_set) {
- 			psta->nonerp_set = 1;
- 
- 			pmlmepriv->num_sta_non_erp++;
- 
--			if (pmlmepriv->num_sta_non_erp == 1)
--			{
-+			if (pmlmepriv->num_sta_non_erp == 1) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, WLAN_EID_ERP_INFO, NULL, true);
- 			}
- 		}
- 
--	}
--	else
--	{
--		if (psta->nonerp_set)
--		{
-+	} else {
-+		if (psta->nonerp_set) {
- 			psta->nonerp_set = 0;
- 
- 			pmlmepriv->num_sta_non_erp--;
- 
--			if (pmlmepriv->num_sta_non_erp == 0)
--			{
-+			if (pmlmepriv->num_sta_non_erp == 0) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, WLAN_EID_ERP_INFO, NULL, true);
- 			}
- 		}
--
- 	}
- 
--	if (!(psta->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME))
--	{
--		if (!psta->no_short_slot_time_set)
--		{
-+	if (!(psta->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME)) {
-+		if (!psta->no_short_slot_time_set) {
- 			psta->no_short_slot_time_set = 1;
- 
- 			pmlmepriv->num_sta_no_short_slot_time++;
- 
- 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
--				 (pmlmepriv->num_sta_no_short_slot_time == 1))
--			{
-+			(pmlmepriv->num_sta_no_short_slot_time == 1)) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, 0xFF, NULL, true);
- 			}
--
- 		}
--	}
--	else
--	{
--		if (psta->no_short_slot_time_set)
--		{
-+	} else {
-+		if (psta->no_short_slot_time_set) {
- 			psta->no_short_slot_time_set = 0;
- 
- 			pmlmepriv->num_sta_no_short_slot_time--;
- 
- 			if ((pmlmeext->cur_wireless_mode > WIRELESS_11B) &&
--				 (pmlmepriv->num_sta_no_short_slot_time == 0))
--			{
-+			(pmlmepriv->num_sta_no_short_slot_time == 0)) {
- 				beacon_updated = true;
- 				update_beacon23a(padapter, 0xFF, NULL, true);
- 			}
- 		}
- 	}
- 
--	if (psta->flags & WLAN_STA_HT)
--	{
-+	if (psta->flags & WLAN_STA_HT) {
- 		u16 ht_capab = le16_to_cpu(psta->htpriv.ht_cap.cap_info);
- 
- 		DBG_8723A("HT: STA " MAC_FMT " HT Capabilities "
-@@ -1552,9 +1512,7 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
- 				   pmlmepriv->num_sta_ht_20mhz);
- 		}
- 
--	}
--	else
--	{
-+	} else {
- 		if (!psta->no_ht_set) {
- 			psta->no_ht_set = 1;
- 			pmlmepriv->num_sta_no_ht++;
-@@ -1567,8 +1525,7 @@ void bss_cap_update_on_sta_join23a(struct rtw_adapter *padapter, struct sta_info
- 		}
- 	}
- 
--	if (rtw_ht_operation_update(padapter) > 0)
--	{
-+	if (rtw_ht_operation_update(padapter) > 0) {
- 		update_beacon23a(padapter, WLAN_EID_HT_CAPABILITY, NULL, false);
- 		update_beacon23a(padapter, WLAN_EID_HT_OPERATION, NULL, true);
- 	}
-@@ -1602,8 +1558,7 @@ u8 bss_cap_update_on_sta_leave23a(struct rtw_adapter *padapter, struct sta_info
- 	if (psta->nonerp_set) {
- 		psta->nonerp_set = 0;
- 		pmlmepriv->num_sta_non_erp--;
--		if (pmlmepriv->num_sta_non_erp == 0)
--		{
-+		if (pmlmepriv->num_sta_non_erp == 0) {
- 			beacon_updated = true;
- 			update_beacon23a(padapter, WLAN_EID_ERP_INFO,
- 					 NULL, true);
-@@ -1788,13 +1742,10 @@ void sta_info_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
- 		psta->qos_option = 0;
- 
- 	/* update 802.11n ht cap. */
--	if (WLAN_STA_HT&flags)
--	{
-+	if (WLAN_STA_HT&flags) {
- 		psta->htpriv.ht_option = true;
- 		psta->qos_option = 1;
--	}
--	else
--	{
-+	} else {
- 		psta->htpriv.ht_option = false;
- 	}
- 
-@@ -1807,8 +1758,7 @@ void sta_info_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
- /* called >= TSR LEVEL for USB or SDIO Interface*/
- void ap_sta_info_defer_update23a(struct rtw_adapter *padapter, struct sta_info *psta)
+@@ -147,14 +146,12 @@ static int __init tc_init(void)
  {
--	if (psta->state & _FW_LINKED)
--	{
-+	if (psta->state & _FW_LINKED) {
- 		/* add ratid */
- 		add_RATid23a(padapter, psta, 0);/* DM_RATR_STA_INIT */
+ 	/* Initialize the TURBOchannel bus */
+ 	if (tc_bus_get_info(&tc_bus))
+-		return 0;
++		goto out_err;
+ 
+ 	INIT_LIST_HEAD(&tc_bus.devices);
+ 	dev_set_name(&tc_bus.dev, "tc");
+-	if (device_register(&tc_bus.dev)) {
+-		put_device(&tc_bus.dev);
+-		return 0;
+-	}
++	if (device_register(&tc_bus.dev))
++		goto out_err_device;
+ 
+ 	if (tc_bus.info.slot_size) {
+ 		unsigned int tc_clock = tc_get_speed(&tc_bus) / 100000;
+@@ -172,8 +169,8 @@ static int __init tc_init(void)
+ 		tc_bus.resource[0].flags = IORESOURCE_MEM;
+ 		if (request_resource(&iomem_resource,
+ 				     &tc_bus.resource[0]) < 0) {
+-			printk(KERN_ERR "tc: Cannot reserve resource\n");
+-			return 0;
++			pr_err("tc: Cannot reserve resource\n");
++			goto out_err_device;
+ 		}
+ 		if (tc_bus.ext_slot_size) {
+ 			tc_bus.resource[1].start = tc_bus.ext_slot_base;
+@@ -184,10 +181,8 @@ static int __init tc_init(void)
+ 			tc_bus.resource[1].flags = IORESOURCE_MEM;
+ 			if (request_resource(&iomem_resource,
+ 					     &tc_bus.resource[1]) < 0) {
+-				printk(KERN_ERR
+-				       "tc: Cannot reserve resource\n");
+-				release_resource(&tc_bus.resource[0]);
+-				return 0;
++				pr_err("tc: Cannot reserve resource\n");
++				goto out_err_resource;
+ 			}
+ 		}
+ 
+@@ -195,6 +190,13 @@ static int __init tc_init(void)
  	}
--- 
-1.9.1
-
+ 
+ 	return 0;
++
++out_err_resource:
++	release_resource(&tc_bus.resource[0]);
++out_err_device:
++	put_device(&tc_bus.dev);
++out_err:
++	return 0;
+ }
+ 
+ subsys_initcall(tc_init);
