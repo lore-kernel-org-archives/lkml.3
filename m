@@ -1,181 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672AbaJZVJR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 17:09:17 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:46928 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaJZVJQ (ORCPT
+	id S1751632AbaJZVRZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 17:17:25 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59484 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428AbaJZVRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 17:09:16 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Minchan Kim <minchan@kernel.org>
-Subject: CMA: test_pages_isolated failures in alloc_contig_range
-Date: Sun, 26 Oct 2014 23:09:16 +0200
-Message-ID: <2457604.k03RC2Mv4q@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+	Sun, 26 Oct 2014 17:17:23 -0400
+Date: Sun, 26 Oct 2014 22:17:21 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
+        sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: USB Ethernet gadget on Nokia n900
+Message-ID: <20141026211721.GA7351@amd>
+References: <20141019090107.GA19132@amd>
+ <20141020213518.GB28144@drone.musicnaut.iki.fi>
+ <20141026110825.GA2263@amd>
+ <201410261212.46582@pali>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201410261212.46582@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun 2014-10-26 12:12:46, Pali Rohár wrote:
+> On Sunday 26 October 2014 12:08:25 Pavel Machek wrote:
+> > Hi!
+> > 
+> > > On Sun, Oct 19, 2014 at 09:19:37PM +0200, Pavel Machek wrote:
+> > > > I am trying to use nfsroot, so I can't use modules.
+> > > 
+> > > Why not?
+> > > 
+> > > > (I am attaching full config, in case I missed something
+> > > > important).
+> > > 
+> > > I'm using the below config with 3.17 and g_ether works OK.
+> > > 
+> > > (My initramfs modprobes g_ether, runs busybox ifconfig for
+> > > usb0 and launches sshd.)
+> > 
+> > I am trying to get 3.14 kernel to work, first. There, usb
+> > gadget works when compiled into kernel. But with modules, I
+> > get
+> > 
+> > # root@(none):/tmp# insmod libcomposite.ko
+> > # root@(none):/tmp# insmod u_ether.ko
+> > # root@(none):/tmp# insmod usb_f_rndis.ko
+> > # root@(none):/tmp# insmod g_ether.ko
+> > 
+> > [  169.061218] udc musb-hdrc.0.auto: registering UDC driver
+> > [g_ether] [  169.078918] g_ether musb-hdrc.0.auto: failed to
+> > start g_ether: -2
+> > 
+> > -2 is ENOENT...
+> 
+> Can you try g_nokia.ko? I used this module for usb networking.
 
-I've run into a CMA-related issue while testing a DMA engine driver with 
-dmatest on a Renesas R-Car ARM platform. 
+I have root prepared on /dev/mmcblk0p6. I tried 3.17 with
+rx51_defconfig, but no, it refuses to mount it.
 
-When allocating contiguous memory through CMA the kernel prints the following 
-messages to the kernel log.
+VFS: Cannot open root device "mmcblk0p6" or ....: error -19.
 
-[   99.770000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
-[  124.220000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
-[  127.550000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
-[  132.850000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
-[  151.390000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
-[  166.490000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
-[  181.450000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
+And then it proceeds to list mmcblk0p6 as one of available options
+:-(.
 
-I've stripped the dmatest module down as much as possible to remove any 
-hardware dependencies and came up with the following implementation.
-
------------------------------------------------------------------------------
-/*
- * CMA test module
- *
- * Copyright (C) 2014 Laurent Pinchart
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- */
-
-#include <linux/delay.h>
-#include <linux/dma-mapping.h>
-#include <linux/freezer.h>
-#include <linux/kthread.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
-#include <linux/slab.h>
-#include <linux/wait.h>
-
-static unsigned int num_threads = 4;
-module_param(num_threads, uint, S_IRUGO | S_IWUSR);
-
-static unsigned int iterations = 100000;
-module_param(iterations, uint, S_IRUGO | S_IWUSR);
-
-struct cma_test_thread {
-	struct list_head node;
-	struct task_struct *task;
-	bool done;
-};
-
-static DECLARE_WAIT_QUEUE_HEAD(thread_wait);
-static LIST_HEAD(threads);
-
-static int cma_test_thread(void *data)
-{
-	struct cma_test_thread *thread = data;
-	unsigned int i = 0;
-
-	set_freezable();
-
-	while (!kthread_should_stop() && i < iterations) {
-		dma_addr_t dma;
-		void *mem;
-
-		mem = dma_alloc_coherent(NULL, 32, &dma, GFP_KERNEL);
-		usleep_range(1000, 2000);
-		if (mem)
-			dma_free_coherent(NULL, 32, mem, dma);
-		else
-			printk(KERN_INFO "allocation error @%u\n", i);
-		++i;
-	}
-
-	thread->done = true;
-	wake_up(&thread_wait);
-
-	return 0;
-}
-
-static bool cma_test_threads_done(void)
-{
-	struct cma_test_thread *thread;
-
-	list_for_each_entry(thread, &threads, node) {
-		if (!thread->done)
-			return false;
-	}
-
-	return true;
-}
-
-static int cma_test_init(void)
-{
-	struct cma_test_thread *thread, *_thread;
-	unsigned int i;
-
-	for (i = 0; i < num_threads; ++i) {
-		thread = kzalloc(sizeof(*thread), GFP_KERNEL);
-		if (!thread) {
-			pr_warn("No memory for thread %u\n", i);
-			break;
-		}
-
-		thread->task = kthread_create(cma_test_thread, thread,
-					      "cmatest-%u", i);
-		if (IS_ERR(thread->task)) {
-			pr_warn("Failed to create thread %u\n", i);
-			kfree(thread);
-			break;
-		}
-
-		get_task_struct(thread->task);
-		list_add_tail(&thread->node, &threads);
-		wake_up_process(thread->task);
-	}
-
-	wait_event(thread_wait, cma_test_threads_done());
-
-	list_for_each_entry_safe(thread, _thread, &threads, node) {
-		kthread_stop(thread->task);
-		put_task_struct(thread->task);
-		list_del(&thread->node);
-		kfree(thread);
-	}
-
-	return 0;
-}
-module_init(cma_test_init);
-
-static void cma_test_exit(void)
-{
-}
-module_exit(cma_test_exit);
-
-MODULE_AUTHOR("Laurent Pinchart");
-MODULE_LICENSE("GPL v2");
------------------------------------------------------------------------------
-
-Loading the module will start 4 threads that will allocate and free DMA 
-coherent memory in a tight loop and eventually produce the error. It seems 
-like the probability of occurrence grows with the number of threads, which 
-could indicate a race condition.
-
-The tests have been run on 3.18-rc1, but previous tests on 3.16 did exhibit 
-the same behaviour.
-
-I'm not that familiar with the CMA internals, help would be appreciated to 
-debug the problem.
+Ideas welcome.
+									Pavel
 
 -- 
-Regards,
-
-Laurent Pinchart
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
