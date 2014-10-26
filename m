@@ -1,36 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaJZAT6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Oct 2014 20:19:58 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:49758 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400AbaJZAT4 (ORCPT
+	id S1751738AbaJZAUV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Oct 2014 20:20:21 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:45865 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaJZAUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Oct 2014 20:19:56 -0400
-Date: Sun, 26 Oct 2014 08:19:45 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Nicolin Chen <nicoleotsuka@gmail.com>
-Cc: vinod.koul@intel.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, dan.j.williams@intel.com, s.hauer@pengutronix.de,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmaengine@vger.kernel.org, b38343@freescale.com
-Subject: Re: [PATCH] dma: imx-sdma: Add a new DMATYPE for SAI
-Message-ID: <20141026001944.GB6973@tiger>
-References: <1414179461-3522-1-git-send-email-nicoleotsuka@gmail.com>
+	Sat, 25 Oct 2014 20:20:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414179461-3522-1-git-send-email-nicoleotsuka@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.11.1410252047570.5308@nanos>
+References: <1414092159-17697-1-git-send-email-bsilver16384@gmail.com> <alpine.DEB.2.11.1410252047570.5308@nanos>
+From: Brian Silverman <bsilver16384@gmail.com>
+Date: Sat, 25 Oct 2014 20:19:48 -0400
+Message-ID: <CAP01z6LmQfacDzrHmbW=hBGjn35qhMcNTTp8XhdM3DDnhoX9Xw@mail.gmail.com>
+Subject: Re: [PATCH] futex: fix a race condition between REQUEUE_PI and task death
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Austin Schuh <austin.linux@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Darren Hart <darren@dvhart.com>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 12:37:41PM -0700, Nicolin Chen wrote:
-> This patch simply adds a new DMATYPE for SAI which's included
-> in i.MX6 Solo X.
-> 
-> Signed-off-by: Nicolin Chen <nicoleotsuka@gmail.com>
+On Sat, 25 Oct 2014, Thomas Gleixner wrote:
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+> > pi_state_free and exit_pi_state_list both clean up futex_pi_state's.
+> > exit_pi_state_list takes the hb lock first, and most callers of
+> > pi_state_free do too. requeue_pi didn't, which causes lots of problems.
+>
+> "causes lots of problems" is not really a good explanation of the root
+> cause. That wants a proper description of the race, i.e.
+>
+> CPU 0              CPU 1
+> ...                ....
+>
+> I'm surely someone who is familiar with that code, but it took me
+> quite some time to understand whats going on. The casual reader will
+> just go into brain spiral mode and give up.
+
+Thinking about it again, I'm no longer so sure that exit_pi_state_list is the
+only place that it can race against. However, I did catch that one with a
+particularly lucky crashdump, so I know it _can_ happen there. Is just
+giving an example for that good?
+
+> >  static void free_pi_state(struct futex_pi_state *pi_state)
+>
+> > @@ -1558,6 +1552,14 @@ retry_private:
+> >               ret = get_futex_value_locked(&curval, uaddr1);
+> >
+> >               if (unlikely(ret)) {
+> > +                     if (flags & FLAGS_SHARED && pi_state != NULL) {
+>
+> Why is this dependend on "flags & FLAGS_SHARED"? The shared/private
+> property has nothing to do with that at all, but I might be missing
+> something.
+
+Nothing... Good catch. It was a bad rebase.
+
+Thanks,
+
+Brian
