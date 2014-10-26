@@ -1,266 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751664AbaJZUWE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 16:22:04 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:43919 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaJZUWC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 16:22:02 -0400
-From: Greg Donald <gdonald@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ana Rey <anarey@gmail.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Chaitanya Hazarey <c@24.io>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Roxana Blaj <roxanagabriela10@gmail.com>,
-        Antoine Schweitzer-Chaput <antoine@schweitzer-chaput.fr>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Greg Donald <gdonald@gmail.com>
-Subject: [PATCH] drivers: staging: rtl8192u: Fix "space prohibited after that open parenthesis '('" errors
-Date: Sun, 26 Oct 2014 15:19:22 -0500
-Message-Id: <1414354762-12715-1-git-send-email-gdonald@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751728AbaJZU3i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 16:29:38 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:43909 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751601AbaJZU3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 16:29:36 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: Joerg Roedel <joro@8bytes.org>, Simon Xue <xxm@rock-chips.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:IOMMU DRIVERS" <iommu@lists.linux-foundation.org>,
+        "moderated list:ARM/Rockchip SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 1/3] iommu/rockchip: rk3288 iommu driver
+Date: Sun, 26 Oct 2014 21:32:31 +0100
+Message-ID: <9308178.MnIriKUXEi@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1414136029-22695-2-git-send-email-djkurtz@chromium.org>
+References: <1414136029-22695-1-git-send-email-djkurtz@chromium.org> <1414136029-22695-2-git-send-email-djkurtz@chromium.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkpatch.pl "space prohibited after that open parenthesis '('" errors
+Hi Daniel,
 
-Signed-off-by: Greg Donald <gdonald@gmail.com>
----
- drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c  | 22 +++++++++-------------
- .../staging/rtl8192u/ieee80211/ieee80211_softmac.c | 11 ++++-------
- .../rtl8192u/ieee80211/ieee80211_softmac_wx.c      |  2 +-
- drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |  3 +--
- .../staging/rtl8192u/ieee80211/rtl819x_BAProc.c    | 16 ++++++----------
- .../staging/rtl8192u/ieee80211/rtl819x_HTProc.c    | 11 ++++-------
- 6 files changed, 25 insertions(+), 40 deletions(-)
+Am Freitag, 24. Oktober 2014, 15:33:47 schrieb Daniel Kurtz:
 
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
-index 73de9e9..d401dbf 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
-@@ -713,8 +713,8 @@ static void RxReorderIndicatePacket(struct ieee80211_device *ieee,
- 	while(!list_empty(&pTS->RxPendingPktList)) {
- 		IEEE80211_DEBUG(IEEE80211_DL_REORDER,"%s(): start RREORDER indicate\n",__func__);
- 		pReorderEntry = (PRX_REORDER_ENTRY)list_entry(pTS->RxPendingPktList.prev,RX_REORDER_ENTRY,List);
--		if( SN_LESS(pReorderEntry->SeqNum, pTS->RxIndicateSeq) ||
--				SN_EQUAL(pReorderEntry->SeqNum, pTS->RxIndicateSeq))
-+		if (SN_LESS(pReorderEntry->SeqNum, pTS->RxIndicateSeq) ||
-+		    SN_EQUAL(pReorderEntry->SeqNum, pTS->RxIndicateSeq))
- 		{
- 			/* This protect buffer from overflow. */
- 			if(index >= REORDER_WIN_SIZE) {
-@@ -800,9 +800,8 @@ static u8 parse_subframe(struct sk_buff *skb,
- 	// Null packet, don't indicate it to upper layer
- 	ChkLength = LLCOffset;/* + (Frame_WEP(frame)!=0 ?Adapter->MgntInfo.SecurityInfo.EncryptionHeadOverhead:0);*/
+[...]
+
+> +static int rk_iommu_attach_device(struct iommu_domain *domain,
+> +				  struct device *dev)
+> +{
+> +	struct rk_iommu *iommu = dev_get_drvdata(dev->archdata.iommu);
+
+Here I get a null-ptr dereference [0] when using the iommu driver with the
+pending drm changes.
+
+> +	struct rk_iommu_domain *rk_domain = domain->priv;
+> +	unsigned long flags;
+> +	int ret;
+> +	phys_addr_t dte_addr;
+> +
+> +	/*
+> +	 * Allow 'virtual devices' (e.g., drm) to attach to domain.
+> +	 * Such a device has a NULL archdata.iommu.
+> +	 */
+> +	if (!iommu)
+
+When the comment is correct, the code should probably do something like
+the following?
+
+if (!dev->archdata.iommu)
+	return 0;
  
--	if( skb->len <= ChkLength ) {
-+	if (skb->len <= ChkLength)
- 		return 0;
--	}
- 
- 	skb_pull(skb, LLCOffset);
- 
-@@ -1035,10 +1034,9 @@ int ieee80211_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
- 		{
- 
- 		//	IEEE80211_DEBUG(IEEE80211_DL_REORDER,"%s(): pRxTS->RxLastFragNum is %d,frag is %d,pRxTS->RxLastSeqNum is %d,seq is %d\n",__func__,pRxTS->RxLastFragNum,frag,pRxTS->RxLastSeqNum,WLAN_GET_SEQ_SEQ(sc));
--			if(	(fc & (1<<11))  &&
--					(frag == pRxTS->RxLastFragNum) &&
--					(WLAN_GET_SEQ_SEQ(sc) == pRxTS->RxLastSeqNum)	)
--			{
-+			if ((fc & (1<<11)) &&
-+			    (frag == pRxTS->RxLastFragNum) &&
-+			    (WLAN_GET_SEQ_SEQ(sc) == pRxTS->RxLastSeqNum)) {
- 				goto rx_dropped;
- 			}
- 			else
-@@ -2456,7 +2454,7 @@ static inline void ieee80211_process_probe_response(
- 	//       then wireless adapter should do active scan from ch1~11 and
- 	//       passive scan from ch12~14
- 
--	if( !IsLegalChannel(ieee, network.channel) )
-+	if (!IsLegalChannel(ieee, network.channel))
- 		return;
- 	if(ieee->bGlobalDomain)
- 	{
-@@ -2465,8 +2463,7 @@ static inline void ieee80211_process_probe_response(
- 			// Case 1: Country code
- 			if(IS_COUNTRY_IE_VALID(ieee) )
- 			{
--				if( !IsLegalChannel(ieee, network.channel) )
--				{
-+				if (!IsLegalChannel(ieee, network.channel)) {
- 					printk("GetScanInfo(): For Country code, filter probe response at channel(%d).\n", network.channel);
- 					return;
- 				}
-@@ -2487,8 +2484,7 @@ static inline void ieee80211_process_probe_response(
- 			// Case 1: Country code
- 			if(IS_COUNTRY_IE_VALID(ieee) )
- 			{
--				if( !IsLegalChannel(ieee, network.channel) )
--				{
-+				if (!IsLegalChannel(ieee, network.channel)) {
- 					printk("GetScanInfo(): For Country code, filter beacon at channel(%d).\n",network.channel);
- 					return;
- 				}
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
-index a1c745b..9b87408 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
-@@ -1043,10 +1043,9 @@ inline struct sk_buff *ieee80211_association_req(struct ieee80211_network *beaco
- 	{
- 		ccxrm_ie_len = 6+2;
- 	}
--	if( beacon->BssCcxVerNumber >= 2 )
--	{
-+	if (beacon->BssCcxVerNumber >= 2)
- 		cxvernum_ie_len = 5+2;
--	}
-+
- #ifdef THOMAS_TURBO
- 	len = sizeof(struct ieee80211_assoc_request_frame)+ 2
- 		+ beacon->ssid_len//essid tagged val
-@@ -1118,8 +1117,7 @@ inline struct sk_buff *ieee80211_association_req(struct ieee80211_network *beaco
- 	ieee80211_MFIE_Brate(ieee, &tag);
- 	ieee80211_MFIE_Grate(ieee, &tag);
- 	// For CCX 1 S13, CKIP. Added by Annie, 2006-08-14.
--	if( beacon->bCkipSupported )
--	{
-+	if (beacon->bCkipSupported) {
- 		static u8	AironetIeOui[] = {0x00, 0x01, 0x66}; // "4500-client"
- 		u8	CcxAironetBuf[30];
- 		OCTET_STRING	osCcxAironetIE;
-@@ -1158,8 +1156,7 @@ inline struct sk_buff *ieee80211_association_req(struct ieee80211_network *beaco
- 		tag += osCcxRmCap.Length;
- 	}
- 
--	if( beacon->BssCcxVerNumber >= 2 )
--	{
-+	if (beacon->BssCcxVerNumber >= 2) {
- 		u8			CcxVerNumBuf[] = {0x00, 0x40, 0x96, 0x03, 0x00};
- 		OCTET_STRING	osCcxVerNum;
- 		CcxVerNumBuf[4] = beacon->BssCcxVerNumber;
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c
-index 82ea533..644368d 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c
-@@ -374,7 +374,7 @@ int ieee80211_wx_set_scan(struct ieee80211_device *ieee, struct iw_request_info
- 		goto out;
- 	}
- 
--	if ( ieee->state == IEEE80211_LINKED){
-+	if (ieee->state == IEEE80211_LINKED) {
- 		queue_work(ieee->wq, &ieee->wx_sync_scan_wq);
- 		/* intentionally forget to up sem */
- 		return 0;
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
-index 57bef21..fca73c7 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
-@@ -529,8 +529,7 @@ static void ieee80211_query_protectionmode(struct ieee80211_device *ieee,
- 		}
- 		}
- 	// For test , CTS replace with RTS
--	if( 0 )
--	{
-+	if (0) {
- 		tcb_desc->bCTSEnable	= true;
- 		tcb_desc->rts_rate = MGN_24M;
- 		tcb_desc->bRTSEnable	= true;
-diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c b/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c
-index 51552d4..278eb54 100644
---- a/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c
-+++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c
-@@ -342,8 +342,7 @@ int ieee80211_rx_ADDBAReq(struct ieee80211_device *ieee, struct sk_buff *skb)
- 	PSEQUENCE_CONTROL pBaStartSeqCtrl = NULL;
- 	PRX_TS_RECORD	pTS = NULL;
- 
--	if (skb->len < sizeof( struct ieee80211_hdr_3addr) + 9)
--	{
-+	if (skb->len < sizeof(struct ieee80211_hdr_3addr) + 9) {
- 		IEEE80211_DEBUG(IEEE80211_DL_ERR,
- 				" Invalid skb len in BAREQ(%d / %zu)\n",
- 				skb->len,
-@@ -444,8 +443,7 @@ int ieee80211_rx_ADDBARsp(struct ieee80211_device *ieee, struct sk_buff *skb)
- 	PBA_PARAM_SET		pBaParamSet = NULL;
- 	u16			ReasonCode;
- 
--	if (skb->len < sizeof( struct ieee80211_hdr_3addr) + 9)
--	{
-+	if (skb->len < sizeof(struct ieee80211_hdr_3addr) + 9) {
- 		IEEE80211_DEBUG(IEEE80211_DL_ERR,
- 				" Invalid skb len in BARSP(%d / %zu)\n",
- 				skb->len,
-@@ -463,10 +461,9 @@ int ieee80211_rx_ADDBARsp(struct ieee80211_device *ieee, struct sk_buff *skb)
- 
- 	// Check the capability
- 	// Since we can always receive A-MPDU, we just check if it is under HT mode.
--	if(     ieee->current_network.qos_data.active == 0  ||
--		ieee->pHTInfo->bCurrentHTSupport == false ||
--		ieee->pHTInfo->bCurrentAMPDUEnable == false )
--	{
-+	if (ieee->current_network.qos_data.active == 0  ||
-+	    ieee->pHTInfo->bCurrentHTSupport == false ||
-+	    ieee->pHTInfo->bCurrentAMPDUEnable == false) {
- 		IEEE80211_DEBUG(IEEE80211_DL_ERR, "reject to ADDBA_RSP as some capability is not ready(%d, %d, %d)\n",ieee->current_network.qos_data.active, ieee->pHTInfo->bCurrentHTSupport, ieee->pHTInfo->bCurrentAMPDUEnable);
- 		ReasonCode = DELBA_REASON_UNKNOWN_BA;
- 		goto OnADDBARsp_Reject;
-@@ -577,8 +574,7 @@ int ieee80211_rx_DELBA(struct ieee80211_device *ieee, struct sk_buff *skb)
- 	u16			*pReasonCode = NULL;
- 	u8			*dst = NULL;
- 
--	if (skb->len < sizeof( struct ieee80211_hdr_3addr) + 6)
--	{
-+	if (skb->len < sizeof(struct ieee80211_hdr_3addr) + 6) {
- 		IEEE80211_DEBUG(IEEE80211_DL_ERR,
- 				" Invalid skb len in DELBA(%d / %zu)\n",
- 				skb->len,
-diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c b/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c
-index 1ea2cd3..e60d926 100644
---- a/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c
-+++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c
-@@ -602,8 +602,7 @@ void HTConstructCapabilityElement(struct ieee80211_device *ieee, u8 *posHTCap, u
- 	// TODO: Nedd to take care of this part
- 	IEEE80211_DEBUG(IEEE80211_DL_HT, "TX HT cap/info ele BW=%d MaxAMSDUSize:%d DssCCk:%d\n", pCapELE->ChlWidth, pCapELE->MaxAMSDUSize, pCapELE->DssCCk);
- 
--	if( IsEncrypt)
--	{
-+	if (IsEncrypt) {
- 		pCapELE->MPDUDensity	= 7; // 8us
- 		pCapELE->MaxRxAMPDUFactor	= 2; // 2 is for 32 K and 3 is 64K
- 	}
-@@ -951,8 +950,7 @@ void HTOnAssocRsp(struct ieee80211_device *ieee)
- 	static u8				EWC11NHTCap[] = {0x00, 0x90, 0x4c, 0x33};		// For 11n EWC definition, 2007.07.17, by Emily
- 	static u8				EWC11NHTInfo[] = {0x00, 0x90, 0x4c, 0x34};	// For 11n EWC definition, 2007.07.17, by Emily
- 
--	if( pHTInfo->bCurrentHTSupport == false )
--	{
-+	if (pHTInfo->bCurrentHTSupport == false) {
- 		IEEE80211_DEBUG(IEEE80211_DL_ERR, "<=== HTOnAssocRsp(): HT_DISABLE\n");
- 		return;
- 	}
-@@ -1043,7 +1041,7 @@ void HTOnAssocRsp(struct ieee80211_device *ieee)
- 		// Replace MPDU factor declared in original association response frame format. 2007.08.20 by Emily
- 		if (ieee->current_network.bssht.bdRT2RTAggregation)
- 		{
--			if( ieee->pairwise_key_type != KEY_TYPE_NA)
-+			if (ieee->pairwise_key_type != KEY_TYPE_NA)
- 				// Realtek may set 32k in security mode and 64k for others
- 				pHTInfo->CurrentAMPDUFactor = pPeerHTCap->MaxRxAMPDUFactor;
- 			else
-@@ -1332,8 +1330,7 @@ u8 HTCCheck(struct ieee80211_device *ieee, u8 *pFrame)
+iommu = dev_get_drvdata(dev->archdata.iommu);
+
+
+> +		return 0;
+> +
+> +	ret = rk_iommu_enable_stall(iommu);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = rk_iommu_force_reset(iommu);
+> +	if (ret)
+> +		return ret;
+> +
+> +	iommu->domain = domain;
+> +
+> +	ret = devm_request_irq(dev, iommu->irq, rk_iommu_irq,
+> +			       IRQF_SHARED, dev_name(dev), iommu);
+> +	if (ret)
+> +		return ret;
+> +
+> +	dte_addr = virt_to_phys(rk_domain->dt);
+> +	rk_iommu_write(iommu, RK_MMU_DTE_ADDR, dte_addr);
+> +	rk_iommu_command(iommu, RK_MMU_CMD_ZAP_CACHE);
+> +	rk_iommu_write(iommu, RK_MMU_INT_MASK, RK_MMU_IRQ_MASK);
+> +
+> +	ret = rk_iommu_enable_paging(iommu);
+> +	if (ret)
+> +		return ret;
+> +
+> +	spin_lock_irqsave(&rk_domain->iommus_lock, flags);
+> +	list_add_tail(&iommu->node, &rk_domain->iommus);
+> +	spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
+> +
+> +	dev_info(dev, "Attached to iommu domain\n");
+> +
+> +	rk_iommu_disable_stall(iommu);
+> +
+> +	return 0;
+> +}
+
+[...]
+
+> +
+> +static struct platform_driver rk_iommu_driver = {
+> +	.probe = rk_iommu_probe,
+> +	.remove = rk_iommu_remove,
+> +	.driver = {
+> +		   .name = "rk_iommu",
+> +		   .owner = THIS_MODULE,
+> +		   .of_match_table = of_match_ptr(rk_iommu_dt_ids),
+> +	},
+> +};
+> +
+> +static int __init rk_iommu_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = bus_set_iommu(&platform_bus_type, &rk_iommu_ops);
+
+on 3.18-rc1 this fails with -ENODEV, as add_iommu_group() is missing the
+add_device callback in rk_iommu_ops, so the iommu driver actually never
+gets registered.
+
+I've stolen the generic add_device and remove_device callbacks from the
+exynos iommu driver which makes the rk one at least probe.
+
+Can't say how far it goes, as I'm still struggling with the floating display
+subsystem parts. My current diff against this version can be found in [1].
+
+Maybe the issue I had in attach_device also simply resulted from this one,
+not sure right now.
+
+
+Heiko
+
+> +	if (ret)
+> +		return ret;
+> +
+> +	return platform_driver_register(&rk_iommu_driver);
+> +}
+> +static void __exit rk_iommu_exit(void)
+> +{
+> +	platform_driver_unregister(&rk_iommu_driver);
+> +}
+> +
+> +subsys_initcall(rk_iommu_init);
+> +module_exit(rk_iommu_exit);
+> +
+> +MODULE_DESCRIPTION("IOMMU API for Rockchip");
+> +MODULE_AUTHOR("Simon Xue <xxm@rock-chips.com> and Daniel Kurtz
+> <djkurtz@chromium.org>"); +MODULE_ALIAS("platform:rockchip-iommu");
+> +MODULE_LICENSE("GPL v2");
+
+
+
+[0]
+
+[drm] Initialized drm 1.1.0 20060810
+Unable to handle kernel NULL pointer dereference at virtual address 00000058
+pgd = c0004000
+[00000058] *pgd=00000000
+Internal error: Oops: 5 [#1] SMP ARM
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-rc1+ #1274
+task: ee067b40 ti: ee068000 task.ti: ee068000
+PC is at rk_iommu_attach_device+0x3c/0x29c
+LR is at rk_iommu_attach_device+0x30/0x29c
+pc : [<c03686d4>]    lr : [<c03686c8>]    psr: 60000153
+sp : ee069db8  ip : 00000000  fp : 00000000
+r10: ee276f00  r9 : 00000000  r8 : ee27cc00
+r7 : ee27cf80  r6 : ee11b610  r5 : ee11b610  r4 : ee27cf80
+r3 : 00000000  r2 : c07bb588  r1 : c045b6d0  r0 : c054a27f
+Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c5387d  Table: 0000406a  DAC: 00000015
+Process swapper/0 (pid: 1, stack limit = 0xee068240)
+Stack: (0xee069db8 to 0xee06a000)
+9da0:                                                       c07c75a8 c0367fec
+9dc0: c0367fc4 ee276f00 c07c75a8 ee27cf80 ee11b610 00000000 ee27cf80 ee27cc00
+9de0: 00000000 c0366c48 ee27c250 c001a470 ee27c250 ee11b610 ee2cf400 00000000
+9e00: ee27cf80 c0225388 c0225298 ee2cf400 00000000 00000000 00000000 c0213cb0
+9e20: ee11ca40 ee11b610 ee2cf400 00000000 ee2db130 c022522c ee2dbf80 00000004
+9e40: ee2db110 c022a9e4 ee27cc00 c07c73f8 ee2dbf80 c07da7c0 c082633c c022abe4
+9e60: c0446710 ee127010 ffffffed c07c7354 c07da7c0 c0230174 ee127010 c07c7354
+9e80: 00000000 c022ebc0 c07c7354 ee127010 ee069ea8 ee127010 ee127044 c07c7354
+9ea0: 00000000 c05be4a0 ee068000 c022ee38 00000000 c07c7354 c022edd0 c022d28c
+9ec0: ee04675c ee1226b4 c07c7354 ee2d6a80 c07c75a8 c022e2b4 c0512e6d c0512e6d
+9ee0: 00000072 c07c7354 c07b6e18 c07dfac0 c05dd274 c022f4b0 00000000 ee27cd00
+9f00: c07b6e18 c00089d0 ee0e9300 c0100018 ee0e9300 ee0e9080 ee0e9000 c0420e38
+9f20: c0802444 00000000 c057d980 c01001a4 c05a7594 ef7fcc05 00000000 c0036b68
+9f40: 00000000 00000000 c057d980 c057cd90 000000bf 00000006 c07ba5f0 00000006
+9f60: c05d1568 c07dfac0 c05dd274 000000bf 00000000 00000000 00000000 c05a7d20
+9f80: 00000006 00000006 c05a7594 ee068000 00000000 c04171ac 00000000 00000000
+9fa0: 00000000 c04171b4 00000000 c000e878 00000000 00000000 00000000 00000000
+9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 00000000
+[<c03686d4>] (rk_iommu_attach_device) from [<c0366c48>] (iommu_attach_device+0x18/0x24)
+[<c0366c48>] (iommu_attach_device) from [<c001a470>] (arm_iommu_attach_device+0x18/0xd0)
+[<c001a470>] (arm_iommu_attach_device) from [<c0225388>] (rockchip_drm_load+0xf0/0x198)
+[<c0225388>] (rockchip_drm_load) from [<c0213cb0>] (drm_dev_register+0x80/0x100)
+[<c0213cb0>] (drm_dev_register) from [<c022522c>] (rockchip_drm_bind+0x48/0x74)
+[<c022522c>] (rockchip_drm_bind) from [<c022a9e4>] (try_to_bring_up_master.part.2+0xa4/0xf4)
+[<c022a9e4>] (try_to_bring_up_master.part.2) from [<c022abe4>] (component_add+0x9c/0x104)
+[<c022abe4>] (component_add) from [<c0230174>] (platform_drv_probe+0x48/0x90)
+[<c0230174>] (platform_drv_probe) from [<c022ebc0>] (driver_probe_device+0x130/0x340)
+[<c022ebc0>] (driver_probe_device) from [<c022ee38>] (__driver_attach+0x68/0x8c)
+[<c022ee38>] (__driver_attach) from [<c022d28c>] (bus_for_each_dev+0x6c/0x80)
+[<c022d28c>] (bus_for_each_dev) from [<c022e2b4>] (bus_add_driver+0xfc/0x1f0)
+[<c022e2b4>] (bus_add_driver) from [<c022f4b0>] (driver_register+0x9c/0xe0)
+[<c022f4b0>] (driver_register) from [<c00089d0>] (do_one_initcall+0x110/0x1bc)
+[<c00089d0>] (do_one_initcall) from [<c05a7d20>] (kernel_init_freeable+0xfc/0x1c8)
+[<c05a7d20>] (kernel_init_freeable) from [<c04171b4>] (kernel_init+0x8/0xe4)
+[<c04171b4>] (kernel_init) from [<c000e878>] (ret_from_fork+0x14/0x3c)
+Code: eb02c07d e5963140 e59f1234 e59f0234 (e5934058) 
+---[ end trace 41e4f8e55e7119af ]---
+Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+
+---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+
+
+
+[1]
+
+diff --git a/drivers/iommu/rockchip-iommu.c b/drivers/iommu/rockchip-iommu.c
+index 56ffb76..959348f 100644
+--- a/drivers/iommu/rockchip-iommu.c
++++ b/drivers/iommu/rockchip-iommu.c
+@@ -708,8 +708,8 @@ static size_t rk_iommu_unmap(struct iommu_domain *domain, unsigned long _iova,
+ static int rk_iommu_attach_device(struct iommu_domain *domain,
+ 				  struct device *dev)
  {
- 	if(ieee->pHTInfo->bCurrentHTSupport)
- 	{
--		if( (IsQoSDataFrame(pFrame) && Frame_Order(pFrame)) == 1)
--		{
-+		if ((IsQoSDataFrame(pFrame) && Frame_Order(pFrame)) == 1) {
- 			IEEE80211_DEBUG(IEEE80211_DL_HT, "HT CONTROL FILED EXIST!!\n");
- 			return true;
- 		}
--- 
-1.9.1
+-	struct rk_iommu *iommu = dev_get_drvdata(dev->archdata.iommu);
+ 	struct rk_iommu_domain *rk_domain = domain->priv;
++	struct rk_iommu *iommu;
+ 	unsigned long flags;
+ 	int ret;
+ 	phys_addr_t dte_addr;
+@@ -718,9 +718,11 @@ static int rk_iommu_attach_device(struct iommu_domain *domain,
+ 	 * Allow 'virtual devices' (e.g., drm) to attach to domain.
+ 	 * Such a device has a NULL archdata.iommu.
+ 	 */
+-	if (!iommu)
++	if (!dev->archdata.iommu)
+ 		return 0;
+ 
++	iommu = dev_get_drvdata(dev->archdata.iommu);
++
+ 	ret = rk_iommu_enable_stall(iommu);
+ 	if (ret)
+ 		return ret;
+@@ -837,6 +839,32 @@ static void rk_iommu_domain_destroy(struct iommu_domain *domain)
+ 	domain->priv = NULL;
+ }
+ 
++static int rk_iommu_add_device(struct device *dev)
++{
++	struct iommu_group *group;
++	int ret;
++
++	group = iommu_group_get(dev);
++
++	if (!group) {
++		group = iommu_group_alloc();
++		if (IS_ERR(group)) {
++			dev_err(dev, "Failed to allocate IOMMU group\n");
++			return PTR_ERR(group);
++		}
++	}
++
++	ret = iommu_group_add_device(group, dev);
++	iommu_group_put(group);
++
++	return ret;
++}
++
++static void rk_iommu_remove_device(struct device *dev)
++{
++	iommu_group_remove_device(dev);
++}
++
+ static const struct iommu_ops rk_iommu_ops = {
+ 	.domain_init = rk_iommu_domain_init,
+ 	.domain_destroy = rk_iommu_domain_destroy,
+@@ -845,6 +873,8 @@ static const struct iommu_ops rk_iommu_ops = {
+ 	.map = rk_iommu_map,
+ 	.unmap = rk_iommu_unmap,
+ 	.iova_to_phys = rk_iommu_iova_to_phys,
++	.add_device = rk_iommu_add_device,
++	.remove_device = rk_iommu_remove_device,
+ 	.pgsize_bitmap = RK_IOMMU_PGSIZE_BITMAP,
+ };
+ 
 
