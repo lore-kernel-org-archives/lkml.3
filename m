@@ -1,209 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751003AbaJZGWi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 02:22:38 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:39244 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaJZGWh (ORCPT
+	id S1751140AbaJZHnI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 03:43:08 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:48004 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947AbaJZHnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 02:22:37 -0400
-Message-ID: <1414304552.4589.13.camel@marge.simpson.net>
-Subject: Re: [PATCH v2] futex: fix a race condition between REQUEUE_PI and
- task death
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Brian Silverman <bsilver16384@gmail.com>
-Cc: tglx@linutronix.de, austin.linux@gmail.com, linux-kernel@vger.kernel.org,
-        darren@dvhart.com, peterz@infradead.org
-Date: Sun, 26 Oct 2014 07:22:32 +0100
-In-Reply-To: <1414282837-23092-1-git-send-email-bsilver16384@gmail.com>
-References: <1414092159-17697-1-git-send-email-bsilver16384@gmail.com>
-	 <1414282837-23092-1-git-send-email-bsilver16384@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 26 Oct 2014 03:43:06 -0400
+Date: Sun, 26 Oct 2014 08:42:57 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Chris Friesen <chris.friesen@windriver.com>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: semantics of reader/writer semaphores in rt patch
+Message-ID: <20141026074257.GC10501@worktop.programming.kicks-ass.net>
+References: <544956B8.2000406@windriver.com>
+ <alpine.DEB.2.11.1410252354030.5308@nanos>
+ <alpine.DEB.2.11.1410260019280.5308@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1410260019280.5308@nanos>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.12.30-rt40 + patch has been running your testcase, futextests and
-stockfish concurrently (on a 28 core +ht box) for over an hour now.
+On Sun, Oct 26, 2014 at 12:21:31AM +0200, Thomas Gleixner wrote:
+> On Sun, 26 Oct 2014, Thomas Gleixner wrote:
+> > On Thu, 23 Oct 2014, Chris Friesen wrote:
+> > > Does the RT kernel just disallow this sort of algorithm?
+> > 
+> > Yes. For a good reason. Let's add thread C
+> > 
+> > A    	   	B		C
+> > down_read(X)
+> > 				down_write(X)
+> > lock(Y)
+> > modify data
+> > unlock(Y)
+> > wake(B)
+> > 		down_read(X)
+> > 
+> > Due to the mainline rwsem fairness semantics:
+> > 
+> > A holds X, C is blocked on A and B is blocked on A.
+> > 
+> > Deadlock, without RT and the single reader restriction being involved.
+> > 
+> > So RT does not violate ANY of the existing mainline semantics, it just
+> > imposes a performance impact of not allowing multiple readers.
+> 
+> @peterz: It might be worthwhile to have a CONFIG_LOCKDEP=y dependent
+> mode which restricts concurrent readers to 1 in mainline to catch this
+> kind of stuff. Hmm?
 
-On Sat, 2014-10-25 at 20:20 -0400, Brian Silverman wrote: 
-> free_pi_state and exit_pi_state_list both clean up futex_pi_state's.
-> exit_pi_state_list takes the hb lock first, and most callers of
-> free_pi_state do too. requeue_pi didn't, which means free_pi_state can
-> free the pi_state out from under exit_pi_state_list. For example:
-> task A                            |  task B
-> exit_pi_state_list                |
->   pi_state =                      |
->       curr->pi_state_list->next   |
->                                   |  futex_requeue(requeue_pi=1)
->                                   |    // pi_state is the same as
->                                   |    // the one in task A
->                                   |    free_pi_state(pi_state)
->                                   |      list_del_init(&pi_state->list)
->                                   |      kfree(pi_state)
->   list_del_init(&pi_state->list)  |
-> 
-> Move the free_pi_state calls in requeue_pi to before it drops the hb
-> locks which it's already holding.
-> 
-> I have test code that forks a bunch of processes, which all fork more
-> processes that do futex(FUTEX_WAIT_REQUEUE_PI), then do
-> futex(FUTEX_CMP_REQUEUE_PI) before killing the waiting processes. That
-> test consistently breaks QEMU VMs without this patch.
-> 
-> Although they both make it faster to crash, CONFIG_PREEMPT_RT and lots
-> of CPUs are not necessary to reproduce this problem. The symptoms range
-> from random reboots to corrupting the test program to corrupting whole
-> filesystems to strange BIOS errors. Crashdumps (when they get created at
-> all) are usually a mess, to the point of crashing tools used to examine
-> them.
-> 
-> Signed-off-by: Brian Silverman <bsilver16384@gmail.com>
-> ---
->  kernel/futex.c |   44 +++++++++++++++++++++++++++-----------------
->  1 file changed, 27 insertions(+), 17 deletions(-)
-> 
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 815d7af..c2c35a5 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -64,6 +64,7 @@
->  #include <linux/hugetlb.h>
->  #include <linux/freezer.h>
->  #include <linux/bootmem.h>
-> +#include <linux/lockdep.h>
->  
->  #include <asm/futex.h>
->  
-> @@ -639,8 +640,16 @@ static struct futex_pi_state * alloc_pi_state(void)
->  	return pi_state;
->  }
->  
-> -static void free_pi_state(struct futex_pi_state *pi_state)
-> +/**
-> + * Must be called with the hb lock held.
-> + */
-> +static void free_pi_state(struct futex_pi_state *pi_state,
-> +					struct futex_hash_bucket *hb)
->  {
-> +	if (!pi_state) return;
-> +
-> +	lockdep_assert_held(&hb->lock);
-> +
->  	if (!atomic_dec_and_test(&pi_state->refcount))
->  		return;
->  
-> @@ -1519,15 +1528,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
->  	}
->  
->  retry:
-> -	if (pi_state != NULL) {
-> -		/*
-> -		 * We will have to lookup the pi_state again, so free this one
-> -		 * to keep the accounting correct.
-> -		 */
-> -		free_pi_state(pi_state);
-> -		pi_state = NULL;
-> -	}
-> -
->  	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
->  	if (unlikely(ret != 0))
->  		goto out;
-> @@ -1558,6 +1558,12 @@ retry_private:
->  		ret = get_futex_value_locked(&curval, uaddr1);
->  
->  		if (unlikely(ret)) {
-> +			/*
-> +			 * We will have to lookup the pi_state again, so
-> +			 * free this one to keep the accounting correct.
-> +			 */
-> +			free_pi_state(pi_state, hb2);
-> +			pi_state = NULL;
->  			double_unlock_hb(hb1, hb2);
->  			hb_waiters_dec(hb2);
->  
-> @@ -1617,6 +1623,8 @@ retry_private:
->  		case 0:
->  			break;
->  		case -EFAULT:
-> +			free_pi_state(pi_state, hb2);
-> +			pi_state = NULL;
->  			double_unlock_hb(hb1, hb2);
->  			hb_waiters_dec(hb2);
->  			put_futex_key(&key2);
-> @@ -1632,6 +1640,8 @@ retry_private:
->  			 *   exit to complete.
->  			 * - The user space value changed.
->  			 */
-> +			free_pi_state(pi_state, hb2);
-> +			pi_state = NULL;
->  			double_unlock_hb(hb1, hb2);
->  			hb_waiters_dec(hb2);
->  			put_futex_key(&key2);
-> @@ -1699,7 +1709,7 @@ retry_private:
->  			} else if (ret) {
->  				/* -EDEADLK */
->  				this->pi_state = NULL;
-> -				free_pi_state(pi_state);
-> +				free_pi_state(pi_state, hb2);
->  				goto out_unlock;
->  			}
->  		}
-> @@ -1708,6 +1718,7 @@ retry_private:
->  	}
->  
->  out_unlock:
-> +	free_pi_state(pi_state, hb2);
->  	double_unlock_hb(hb1, hb2);
->  	hb_waiters_dec(hb2);
->  
-> @@ -1725,8 +1736,6 @@ out_put_keys:
->  out_put_key1:
->  	put_futex_key(&key1);
->  out:
-> -	if (pi_state != NULL)
-> -		free_pi_state(pi_state);
->  	return ret ? ret : task_count;
->  }
->  
-> @@ -1850,14 +1859,15 @@ retry:
->   * PI futexes can not be requeued and must remove themself from the
->   * hash bucket. The hash bucket lock (i.e. lock_ptr) is held on entry
->   * and dropped here.
-> + * Must be called with the hb lock held.
->   */
-> -static void unqueue_me_pi(struct futex_q *q)
-> +static void unqueue_me_pi(struct futex_q *q, struct futex_hash_bucket *hb)
->  	__releases(q->lock_ptr)
->  {
->  	__unqueue_futex(q);
->  
->  	BUG_ON(!q->pi_state);
-> -	free_pi_state(q->pi_state);
-> +	free_pi_state(q->pi_state, hb);
->  	q->pi_state = NULL;
->  
->  	spin_unlock(q->lock_ptr);
-> @@ -2340,7 +2350,7 @@ retry_private:
->  		rt_mutex_unlock(&q.pi_state->pi_mutex);
->  
->  	/* Unqueue and drop the lock */
-> -	unqueue_me_pi(&q);
-> +	unqueue_me_pi(&q, hb);
->  
->  	goto out_put_key;
->  
-> @@ -2651,7 +2661,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
->  			ret = (res < 0) ? res : 0;
->  
->  		/* Unqueue and drop the lock. */
-> -		unqueue_me_pi(&q);
-> +		unqueue_me_pi(&q, hb);
->  	}
->  
->  	/*
-
-
+There were patches by ego that fix lockdep's read side tracking. I need
+to find a few spare days to look at those :/
