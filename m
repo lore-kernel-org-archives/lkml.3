@@ -1,98 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaJZUeZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 16:34:25 -0400
-Received: from mout.kundenserver.de ([212.227.17.24]:60509 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaJZUeY (ORCPT
+	id S1751791AbaJZU7H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 16:59:07 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:44746 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635AbaJZU7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 16:34:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Heena Sirwani <heenasirwani@gmail.com>, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org
-Subject: Re: [PATCH v5] timekeeping: Added a function to return tv_sec portion of ktime_get_ts64()
-Date: Sun, 26 Oct 2014 21:34:19 +0100
-Message-ID: <12673353.5lG2WgRb0V@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <alpine.DEB.2.11.1410251903000.5308@nanos>
-References: <20141025123406.GA13128@heena.com> <12462229.Mz3a4d4AP9@wuerfel> <alpine.DEB.2.11.1410251903000.5308@nanos>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:x9DRUoQllodViM4bWn8KYXwhiWU6zy3NFUP/+bsfNr0
- V3ykceV74BlArb0kOQbJ8zmtfTJONDg0PAo6j851wF0UKnQHvE
- /aM2XBUE3vjINP1718FvUWyNg1kzyZLaM65RhFB14MtbX9dzcB
- q8MHXJk3s4Ay2xcCvm33ceCWsqAZsi07SSNFkTOGzBinj6I/Aq
- O7HjxA9NG4UvWymkltqVzLMzvxqX2cldIA0PQbuk9GMTAGsvVY
- EcZpn8btvzo3aUT8JhnSPbp4RT/hDHyEQFjp7fEnx2HX4tB69v
- vX0MMnscX/hOXM10F5lJwVpTv/bKOO2GVbbqid0Q5C9/lNIWgZ
- sRvO+vW8RouR+AjekcYE=
-X-UI-Out-Filterresults: notjunk:1;
+	Sun, 26 Oct 2014 16:59:05 -0400
+From: Paul McQuade <paulmcquad@gmail.com>
+To: paulmcquad@gmail.com
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
+        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
+Subject: [PATCH][V2] staging: rtl8723au: create macro get_max_rate
+Date: Sun, 26 Oct 2014 20:58:55 +0000
+Message-Id: <1414357135-7141-1-git-send-email-paulmcquad@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 25 October 2014 19:32:09 Thomas Gleixner wrote:
-> From:	Thomas Gleixner <tglx@linutronix.de>
-> To:	Arnd Bergmann <arnd@arndb.de>
-> CC:	Heena Sirwani <heenasirwani@gmail.com>, linux-kernel@vger.kernel.org, john.stultz@linaro.org
-> Date:	Yesterday 19:32:09
-> On Sat, 25 Oct 2014, Arnd Bergmann wrote:
-> > On Saturday 25 October 2014 17:22:23 Thomas Gleixner wrote:
-> > > Hmm. Thinking more about it. That's actually overkill. For ktime_sec a
-> > > 32bit value is plenty enough unless we care about systems with more
-> > > than 136 years uptime. So if we calculate the seconds value of ktime,
-> > > i.e. CLOCK_MONOTONIC, in the update function, we can read it on both
-> > > 32 and 64bit w/o the seqcount loop.
-> > 
-> > Ah, very good point. That opens the question which type that function
-> > should return. I really want to remove all uses of time_t from the
-> > kernel, mostly so we know when we're done with this. However as you
-> > say we know that we only need a 32-bit value here. Some possible
-> > ideas:
-> > 
-> > - use time64_t here anyway and accept the slight inefficiency in return
-> >   for clarity
-> 
-> Probably the simplest option.
-> 
-> > - introduce a monotonic_time_t (we probably also want a struct
-> >   monotonic_timespec if we do that) which is basically the old time_t
-> >   but is known to be y2038 safe because we only ever use it to store
-> >   monotonic times.
-> 
-> Not sure whether its worth the trouble.
+create marco for max_rate values
 
-We have around 20 drivers using ktime_get_ts() or getrawmonotonic().
-If we had a 'struct monotonic_timespec', we could trivially convert
-them, otherwise we have to look at each one individually to figure
-out what they should use, in particular if they would have noticeably
-worse performance by moving to ktime_get_ts64 or getrawmonotonic64.
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ drivers/staging/rtl8723au/core/rtw_ieee80211.c | 58 ++++++++++++--------------
+ 1 file changed, 26 insertions(+), 32 deletions(-)
 
-The way to do that would be to add 
+diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
+index 6274cb3..4c0414d 100644
+--- a/drivers/staging/rtl8723au/core/rtw_ieee80211.c
++++ b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
+@@ -13,6 +13,8 @@
+  *
+  ******************************************************************************/
+ #define _IEEE80211_C
++#define get_max_rate(r1, r2, r3, r4)					\
++	(bw_40MHz ? (short_GI_40 ? r1 : r2) : (short_GI_20 ? r3 : r4))
+ 
+ #include <drv_types.h>
+ #include <linux/ieee80211.h>
+@@ -794,64 +796,56 @@ u16 rtw_mcs_rate23a(u8 rf_type, u8 bw_40MHz, u8 short_GI_20, u8 short_GI_40,
+ 
+ 	if (rf_type == RF_1T1R) {
+ 		if (mcs->rx_mask[0] & BIT(7))
+-			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):
+-				((short_GI_20)?722:650);
++			max_rate = get_max_rate(1500, 1350, 722, 650);
+ 		else if (mcs->rx_mask[0] & BIT(6))
+-			max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215):
+-				((short_GI_20)?650:585);
++			max_rate = get_max_rate(1350, 1215, 650, 585);
+ 		else if (mcs->rx_mask[0] & BIT(5))
+-			max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):
+-				((short_GI_20)?578:520);
++			max_rate = get_max_rate(1200, 1080, 578, 520);
+ 		else if (mcs->rx_mask[0] & BIT(4))
+-			max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):
+-				((short_GI_20)?433:390);
++			max_rate = get_max_rate(900, 810, 433, 390);
+ 		else if (mcs->rx_mask[0] & BIT(3))
+-			max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):
+-				((short_GI_20)?289:260);
++			max_rate = get_max_rate(600, 540, 289, 260);
+ 		else if (mcs->rx_mask[0] & BIT(2))
+-			max_rate = (bw_40MHz) ? ((short_GI_40)?450:405):
+-				((short_GI_20)?217:195);
++			max_rate = get_max_rate(450, 405, 217, 195);
+ 		else if (mcs->rx_mask[0] & BIT(1))
+-			max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):
+-				((short_GI_20)?144:130);
++			max_rate = get_max_rate(300, 270, 144, 130);
+ 		else if (mcs->rx_mask[0] & BIT(0))
+-			max_rate = (bw_40MHz) ? ((short_GI_40)?150:135):
+-				((short_GI_20)?72:65);
++			max_rate = get_max_rate(150, 135, 72, 65);
+ 	} else {
+ 		if (mcs->rx_mask[1]) {
+ 			if (mcs->rx_mask[1] & BIT(7))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?3000:2700):((short_GI_20)?1444:1300);
++				max_rate = get_max_rate(3000, 2700, 1444, 1300);
+ 			else if (mcs->rx_mask[1] & BIT(6))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?2700:2430):((short_GI_20)?1300:1170);
++				max_rate = get_max_rate(2700, 2430, 1300, 1170);
+ 			else if (mcs->rx_mask[1] & BIT(5))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?2400:2160):((short_GI_20)?1156:1040);
++				max_rate = get_max_rate(2400, 2160, 1156, 1040);
+ 			else if (mcs->rx_mask[1] & BIT(4))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?1800:1620):((short_GI_20)?867:780);
++				max_rate = get_max_rate(1800, 1620, 867, 780);
+ 			else if (mcs->rx_mask[1] & BIT(3))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):((short_GI_20)?578:520);
++				max_rate = get_max_rate(1200, 1080, 578, 520);
+ 			else if (mcs->rx_mask[1] & BIT(2))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):((short_GI_20)?433:390);
++				max_rate = get_max_rate(900, 810, 433, 390);
+ 			else if (mcs->rx_mask[1] & BIT(1))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):((short_GI_20)?289:260);
++				max_rate = get_max_rate(600, 540, 289, 260);
+ 			else if (mcs->rx_mask[1] & BIT(0))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):((short_GI_20)?144:130);
++				max_rate = get_max_rate(300, 270, 144, 130);
+ 		} else {
+ 			if (mcs->rx_mask[0] & BIT(7))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):((short_GI_20)?722:650);
++				max_rate = get_max_rate(1500, 1350, 722, 650);
+ 			else if (mcs->rx_mask[0] & BIT(6))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215):((short_GI_20)?650:585);
++				max_rate = get_max_rate(1350, 1215, 650, 585);
+ 			else if (mcs->rx_mask[0] & BIT(5))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):((short_GI_20)?578:520);
++				max_rate = get_max_rate(1200, 1080, 578, 520);
+ 			else if (mcs->rx_mask[0] & BIT(4))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):((short_GI_20)?433:390);
++				max_rate = get_max_rate(900, 810, 433, 390);
+ 			else if (mcs->rx_mask[0] & BIT(3))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):((short_GI_20)?289:260);
++				max_rate = get_max_rate(600, 540, 289, 260);
+ 			else if (mcs->rx_mask[0] & BIT(2))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?450:405):((short_GI_20)?217:195);
++				max_rate = get_max_rate(450, 405, 217, 195);
+ 			else if (mcs->rx_mask[0] & BIT(1))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):((short_GI_20)?144:130);
++				max_rate = get_max_rate(300, 270, 144, 130);
+ 			else if (mcs->rx_mask[0] & BIT(0))
+-				max_rate = (bw_40MHz) ? ((short_GI_40)?150:135):((short_GI_20)?72:65);
++				max_rate = get_max_rate(150, 135, 72, 65);
+ 		}
+ 	}
+ 	return max_rate;
+-- 
+1.9.1
 
-#define monotonic_timespec timespec
-
-now, and rename timespec to monotonic_timespec after we are done
-converting all other in-kernel users of timespec. There are probably
-a few drivers that today use do_gettimeofday or getnstimeofday that
-could be converted to use ktime_get_ts using a 32-bit
-monotonic_timespec.
-
-The alternative to that would be to make them all use ktime_t, which
-might be more efficient but also more work to do.
-
-> > - return u32 and use the same type in the callers instead of
-> >   time_t/time64_t/monotonic_time_t.
-> 
-> Works as well. I have no immediate preference.
-
-I think I like the u32 approach better than ktime_t, but it's a
-very mild preference. I'll wait for your reply on the monotonic_time_t/
-monotonic_timespec comments above. Maybe John has an opinion as well.
-
-Heena, could you prepare a new patch using u32 once we have worked out
-the ktime_sec implementation?
-
-	Arnd
