@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaJZMMI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 08:12:08 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:35720 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766AbaJZMMG (ORCPT
+	id S1751469AbaJZMRE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 08:17:04 -0400
+Received: from fep31.mx.upcmail.net ([62.179.121.49]:34996 "EHLO
+	fep31.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751014AbaJZMRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 08:12:06 -0400
-From: Peng Fan <van.freenix@gmail.com>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz
-Cc: daniel.vetter@ffwll.ch, kilobyte@angband.pl, dh.herrmann@gmail.com,
-        petr.pisar@atlas.cz, tiwai@suse.de, van.freenix@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] tty:vt remove obsolete struct initializer
-Date: Sun, 26 Oct 2014 20:08:02 +0800
-Message-Id: <1414325282-32177-1-git-send-email-van.freenix@gmail.com>
-X-Mailer: git-send-email 1.8.4
+	Sun, 26 Oct 2014 08:17:01 -0400
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <544CE637.7000406@odi.ch>
+Date: Sun, 26 Oct 2014 13:16:55 +0100
+From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Lv Zheng <lv.zheng@intel.com>, linux-acpi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: ACPI regression: New Acer workarounds break Samsung NP900X
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes sparse warning:
-"obsolete struct initializer, use C99 syntax"
+Lv,
 
-Signed-off-by: Peng Fan <van.freenix@gmail.com>
----
- drivers/tty/vt/vt.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+These two patches introduce a regression for Samsung notebooks and they no 
+longer get ACPI interrupts for plugging the power adapter or LID switches.
 
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index b33b00b..cf18bd4 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -1367,9 +1367,11 @@ static void csi_m(struct vc_data *vc)
- 						rgb_from_256(vc->vc_par[i]));
- 				} else if (vc->vc_par[i] == 2 &&  /* 24 bit */
- 				           i <= vc->vc_npar + 3) {/* extremely rare */
--					struct rgb c = {r:vc->vc_par[i+1],
--							g:vc->vc_par[i+2],
--							b:vc->vc_par[i+3]};
-+					struct rgb c = {
-+						.r = vc->vc_par[i + 1],
-+						.g = vc->vc_par[i + 2],
-+						.b = vc->vc_par[i + 3],
-+					};
- 					rgb_foreground(vc, c);
- 					i += 3;
- 				}
-@@ -1388,9 +1390,11 @@ static void csi_m(struct vc_data *vc)
- 						rgb_from_256(vc->vc_par[i]));
- 				} else if (vc->vc_par[i] == 2 && /* 24 bit */
- 				           i <= vc->vc_npar + 3) {
--					struct rgb c = {r:vc->vc_par[i+1],
--							g:vc->vc_par[i+2],
--							b:vc->vc_par[i+3]};
-+					struct rgb c = {
-+						.r = vc->vc_par[i + 1],
-+						.g = vc->vc_par[i + 2],
-+						.b = vc->vc_par[i + 3],
-+					};
- 					rgb_background(vc, c);
- 					i += 3;
- 				}
--- 
-1.8.4
+Multiple people have verified that reverting these patches makes the regression 
+go away.
+
+Please see new comments in:
+https://bugzilla.kernel.org/show_bug.cgi?id=44161#c184
+
+ From 3afcf2ece453e1a8c2c6de19cdf06da3772a1b08 Mon Sep 17 00:00:00 2001
+From: Lv Zheng <lv.zheng@intel.com>
+Date: Thu, 21 Aug 2014 14:41:13 +0800
+Subject: [PATCH] ACPI / EC: Add support to disallow QR_EC to be issued when
+  SCI_EVT isn't set
+
+ From 558e4736f2e1b0e6323adf7a5e4df77ed6cfc1a4 Mon Sep 17 00:00:00 2001
+From: Lv Zheng <lv.zheng@intel.com>
+Date: Thu, 21 Aug 2014 14:41:26 +0800
+Subject: [PATCH] ACPI / EC: Add support to disallow QR_EC to be issued before
+  completing previous QR_EC
+
+
+Thanks,
+
+Ortwin
+
 
