@@ -1,125 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841AbaJZMB1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 08:01:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60047 "EHLO mx1.redhat.com"
+	id S1751865AbaJZMDV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 08:03:21 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:40930 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517AbaJZMB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 08:01:26 -0400
-Date: Sun, 26 Oct 2014 14:01:03 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "john.liuli" <john.liuli@huawei.com>
-Cc: linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        peter.huangpeng@huawei.com, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        n.nikolaev@virtualopensystems.com, yingshiuan.pan@gmail.com,
-        remy.gauguey@cea.fr, joel.schopp@amd.com
-Subject: Re: [RFC PATCH 1/2] Add a new register offset let interrupt reason
- available
-Message-ID: <20141026120103.GC5497@redhat.com>
-References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
- <1414225494-2208-2-git-send-email-john.liuli@huawei.com>
+	id S1751500AbaJZMDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 08:03:19 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: sre@kernel.org
+Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        robh+dt@kernel.org, mark.rutland@arm.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        dianders@chromium.org
+Subject: Re: [PATCH v4 0/3] gpio-charger: add devicetree support
+Date: Sun, 26 Oct 2014 13:06:28 +0100
+Message-ID: <2175750.C5jxjiuVyT@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1411504936-21026-1-git-send-email-heiko@sntech.de>
+References: <1411504936-21026-1-git-send-email-heiko@sntech.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414225494-2208-2-git-send-email-john.liuli@huawei.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 25, 2014 at 04:24:53PM +0800, john.liuli wrote:
-> From: Li Liu <john.liuli@huawei.com>
-> 
-> Add a new register offset VIRTIO_MMIO_ISRMEM which help to
-> estblish a shared memory region between virtio-mmio driver
-> and qemu with two purposes:
-> 
-> 1.Guest virtio-mmio driver can get the interrupt reason.
-> 2.Check irqfd enabled or not to register different irq handler.
-> 
-> Signed-off-by: Li Liu <john.liuli@huawei.com>
-> ---
->  drivers/virtio/virtio_mmio.c |   21 ++++++++++++++++++++-
->  include/linux/virtio_mmio.h  |    3 +++
->  2 files changed, 23 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-> index ef9a165..28ddb55 100644
-> --- a/drivers/virtio/virtio_mmio.c
-> +++ b/drivers/virtio/virtio_mmio.c
-> @@ -122,6 +122,8 @@ struct virtio_mmio_device {
->  	/* a list of queues so we can dispatch IRQs */
->  	spinlock_t lock;
->  	struct list_head virtqueues;
-> +
-> +	uint8_t *isr_mem;
->  };
->  
->  struct virtio_mmio_vq_info {
-> @@ -443,6 +445,7 @@ static int virtio_mmio_probe(struct platform_device *pdev)
->  	struct virtio_mmio_device *vm_dev;
->  	struct resource *mem;
->  	unsigned long magic;
-> +	int err;
->  
->  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!mem)
-> @@ -481,6 +484,15 @@ static int virtio_mmio_probe(struct platform_device *pdev)
->  		return -ENXIO;
->  	}
->  
-> +	vm_dev->isr_mem = alloc_pages_exact(PAGE_SIZE, GFP_KERNEL|__GFP_ZERO);
-> +	if (vm_dev->isr_mem == NULL) {
-> +		dev_err(&pdev->dev, "Allocate isr memory failed!\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	writel(virt_to_phys(vm_dev->isr_mem),
-> +	       vm_dev->base + VIRTIO_MMIO_ISRMEM);
-> +
+Hi Sebastian,
 
-What happens to existing devices?
-then might not expect writes at this address.
-
->  	vm_dev->vdev.id.device = readl(vm_dev->base + VIRTIO_MMIO_DEVICE_ID);
->  	vm_dev->vdev.id.vendor = readl(vm_dev->base + VIRTIO_MMIO_VENDOR_ID);
->  
-> @@ -488,13 +500,20 @@ static int virtio_mmio_probe(struct platform_device *pdev)
->  
->  	platform_set_drvdata(pdev, vm_dev);
->  
-> -	return register_virtio_device(&vm_dev->vdev);
-> +	err = register_virtio_device(&vm_dev->vdev);
-> +	if (err) {
-> +		free_pages_exact(vm_dev->isr_mem, PAGE_SIZE);
-> +		vm_dev->isr_mem = NULL;
-> +	}
-> +
-> +	return err;
->  }
->  
->  static int virtio_mmio_remove(struct platform_device *pdev)
->  {
->  	struct virtio_mmio_device *vm_dev = platform_get_drvdata(pdev);
->  
-> +	free_pages_exact(vm_dev->isr_mem, PAGE_SIZE);
->  	unregister_virtio_device(&vm_dev->vdev);
->  
->  	return 0;
-> diff --git a/include/linux/virtio_mmio.h b/include/linux/virtio_mmio.h
-> index 5c7b6f0..b1e3ec7 100644
-> --- a/include/linux/virtio_mmio.h
-> +++ b/include/linux/virtio_mmio.h
-> @@ -95,6 +95,9 @@
->  /* Device status register - Read Write */
->  #define VIRTIO_MMIO_STATUS		0x070
->  
-> +/* Allocate ISRMEM for interrupt reason - Write Only */
-> +#define VIRTIO_MMIO_ISRMEM		0x080
-> +
->  /* The config space is defined by each driver as
->   * the per-driver configuration space - Read Write */
->  #define VIRTIO_MMIO_CONFIG		0x100
-> -- 
-> 1.7.9.5
+Am Dienstag, 23. September 2014, 22:42:13 schrieb Heiko Stuebner:
+> This series adds devicetree support to the gpio-charger and fixes a small
+> issue with the return value of gpio_get_value.
 > 
+> changes since v3:
+> - remove of_match_ptr. All used of_xx function have stubs for !OF
+>   and of_device_id also is always defined, so no need for of_match_ptr
+> changes since v2:
+> - fix (hopefully all) issues pointed out by Doug Anderson
+> - add missing of_node assignment to charger
+> changes since v1:
+> - adapt binding example to show how the charger fits into the
+>   power-supplies structure
+> 
+> 
+> Heiko Stuebner (3):
+>   dt-bindings: document gpio-charger bindings
+>   power: gpio-charger: add device tree support
+>   power: gpio-charger: do not use gpio value directly
+
+I can see patch3 in your tree (and 3.18-rc). Will you take patches 1 and 2 for 
+3.19?
+
+The generally used 3 week period for devicetree-binding related complaints 
+also should be over by now.
+
+
+Heiko
