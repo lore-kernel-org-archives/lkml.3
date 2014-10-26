@@ -1,96 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751720AbaJZP5U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 11:57:20 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:37649 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaJZP5T (ORCPT
+	id S1751856AbaJZP77 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 11:59:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45038 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbaJZP75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 11:57:19 -0400
-Message-ID: <544D19DC.9050807@roeck-us.net>
-Date: Sun, 26 Oct 2014 08:57:16 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sun, 26 Oct 2014 11:59:57 -0400
 MIME-Version: 1.0
-To: Andrew Lunn <andrew@lunn.ch>, Florian Fainelli <f.fainelli@gmail.com>
-CC: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
-References: <20141023134706.GB25190@lunn.ch> <20141023162754.GA21343@roeck-us.net> <20141023165459.GE25190@lunn.ch> <20141023173847.GA22988@roeck-us.net> <20141023180357.GG25190@lunn.ch> <20141023184322.GA24281@roeck-us.net> <20141023195526.GH25190@lunn.ch> <20141024161919.GA29600@roeck-us.net> <20141025140116.GA12051@lunn.ch> <544BDC8F.2030308@gmail.com> <20141025180016.GA13191@lunn.ch>
-In-Reply-To: <20141025180016.GA13191@lunn.ch>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.544D19DE.00EB,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <1414131502-13886-2-git-send-email-hock.leong.kweh@intel.com>
+References: <1414131502-13886-1-git-send-email-hock.leong.kweh@intel.com>
+	<1414131502-13886-2-git-send-email-hock.leong.kweh@intel.com>
+Date: Sun, 26 Oct 2014 23:59:55 +0800
+Message-ID: <CACVXFVOu2MyeRyyQybdAUEmp02mGHP6-kmHZ8EBx4=uJiF51LQ@mail.gmail.com>
+Subject: Re: [PATCH v1 1/3] firmware loader: Introduce new API - request_firmware_abort()
+From: Ming Lei <ming.lei@canonical.com>
+To: Kweh Hock Leong <hock.leong.kweh@intel.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
+        Ong Boon Leong <boon.leong.ong@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2014 11:00 AM, Andrew Lunn wrote:
-> On Sat, Oct 25, 2014 at 10:23:27AM -0700, Florian Fainelli wrote:
->> On 10/25/14 07:01, Andrew Lunn wrote:
->>>> Here is another naming option:
->>>>
->>>> em1dsa0-virtual-0
->>>
->>> I prefer this over isa.
->>>
->>> However, i think there should be some sort of separator between the
->>> network device name and dsa.
->>
->> Considering that network devices can be renamed, do we want it to be
->> included in the sensor name at all?
+On Fri, Oct 24, 2014 at 2:18 PM, Kweh Hock Leong
+<hock.leong.kweh@intel.com> wrote:
+> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
 >
-> Well, we need something which identifies the "DSA collection". In
-> that, you could have two or more collections, connected to different
-> network devices.
+> Besides aborting through user helper interface, a new API
+> request_firmware_abort() allows kernel driver module to abort the
+> request_firmware() / request_firmware_nowait() when they are no
+> longer needed. It is useful for cancelling an outstanding firmware
+> load if initiated from inside a module where that module is in the
+> process of being unloaded, since the unload function may not have
+> a handle to the struct firmware_buf.
 >
-> I once came across a PCI board with two Intel ethernet chipsets and
-> two 10 port Marvell switches. Each switch had one host cpu port, 3
-> ports interconnected to the other switch, and 6 going to the back
-> panel.  You would want to describe that as two separate DSA entities,
-> not one DSA with two switches. So the name needs something to indicate
-> the DSA collection.
+> Note for people who use request_firmware_nowait():
+> You are required to do your own synchronization after you call
+> request_firmware_abort() in order to continue unloading the
+> module. The example synchronization code shows below:
 >
+> while (THIS_MODULE && module_refcount(THIS_MODULE))
+>         msleep(20);
+>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
+> ---
+>  drivers/base/firmware_class.c |   30 ++++++++++++++++++++++++++++++
+>  include/linux/firmware.h      |    4 ++++
+>  2 files changed, 34 insertions(+)
+>
+> diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+> index d276e33..b2fe40b 100644
+> --- a/drivers/base/firmware_class.c
+> +++ b/drivers/base/firmware_class.c
+> @@ -1291,6 +1291,36 @@ request_firmware_nowait(
+>  }
+>  EXPORT_SYMBOL(request_firmware_nowait);
+>
+> +/**
+> + * request_firmware_abort - abort the waiting of firmware request
+> + * @fw_name: name of firmware file
+> + *
+> + *     @fw_name is the same name string while calling to request_firmware()
+> + *             or request_firmware_nowait().
+> + **/
+> +int request_firmware_abort(const char *fw_name)
+> +{
+> +       struct firmware_buf *buf;
+> +       struct firmware_buf *entry;
+> +
+> +       spin_lock(&fw_cache.lock);
+> +       buf = __fw_lookup_buf(fw_name);
+> +       spin_unlock(&fw_cache.lock);
 
-I agree. I could use the dsa instance index, so we would have
-names such as dsa0-isa-0000, dsa1-isa-0000, dsa0-isa-0001, dsa1-isa-0001,
-and so on, but that looks awkward (I can't do the index with virtual
-names because they don't have a parent and thus no index).
+You can call fw_lookup_buf() directly, otherwise feel free to add:
 
-Using the ethernet interface name seems like a good idea to me.
-Sure it can change, but the name is typically chosen before the
-dsa device is instantiated, and if it is changed manually later
-we just can not help it.
+Acked-by: Ming Lei <ming.lei@canonical.com>
 
-So, if people want a delimiter between network device name and dsa,
-what should it be ? Unless I hear otherwise, I'll choose '_'.
-
-Guenter
-
+> +       if (!buf)
+> +               return -ENOENT;
+> +
+> +       mutex_lock(&fw_lock);
+> +       list_for_each_entry(entry, &pending_fw_head, pending_list) {
+> +               if (entry == buf) {
+> +                       __fw_load_abort(buf);
+> +                       break;
+> +               }
+> +       }
+> +       mutex_unlock(&fw_lock);
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL(request_firmware_abort);
+> +
+>  #ifdef CONFIG_PM_SLEEP
+>  static ASYNC_DOMAIN_EXCLUSIVE(fw_cache_domain);
+>
+> diff --git a/include/linux/firmware.h b/include/linux/firmware.h
+> index 5952933..ed90c8b 100644
+> --- a/include/linux/firmware.h
+> +++ b/include/linux/firmware.h
+> @@ -47,6 +47,7 @@ int request_firmware_nowait(
+>         void (*cont)(const struct firmware *fw, void *context));
+>
+>  void release_firmware(const struct firmware *fw);
+> +int request_firmware_abort(const char *fw_name);
+>  #else
+>  static inline int request_firmware(const struct firmware **fw,
+>                                    const char *name,
+> @@ -66,6 +67,9 @@ static inline void release_firmware(const struct firmware *fw)
+>  {
+>  }
+>
+> +static inline int request_firmware_abort(const char *fw_name)
+> +{
+> +}
+>  #endif
+>
+>  #ifdef CONFIG_FW_LOADER_USER_HELPER
+> --
+> 1.7.9.5
+>
