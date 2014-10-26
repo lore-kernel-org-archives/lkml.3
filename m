@@ -1,87 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaJZLMx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 07:12:53 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:51011 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049AbaJZLMv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 07:12:51 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: USB Ethernet gadget on Nokia n900
-Date: Sun, 26 Oct 2014 12:12:46 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
-        sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-References: <20141019090107.GA19132@amd> <20141020213518.GB28144@drone.musicnaut.iki.fi> <20141026110825.GA2263@amd>
-In-Reply-To: <20141026110825.GA2263@amd>
+	id S1751672AbaJZLuU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 07:50:20 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:40814 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751510AbaJZLuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 07:50:18 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Johan Hovold <johan@kernel.org>
+Cc: Romain Perier <romain.perier@gmail.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, robh <robh@kernel.org>,
+        mark.rutland@arm.com, linux-pm@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
+        Felipe Balbi <balbi@ti.com>
+Subject: Re: [RFC v3 PATCH 1/5] of: Add standard property for poweroff capability
+Date: Sun, 26 Oct 2014 12:53:23 +0100
+Message-ID: <1788971.BnbvZ8bisu@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <20141025083733.GG19377@localhost>
+References: <1413268273-15151-1-git-send-email-romain.perier@gmail.com> <CABgxDoLcnzaAYuDMB3x=EdNrY=8mwjceVVCpfXUYBURVm44ZVQ@mail.gmail.com> <20141025083733.GG19377@localhost>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1583655.La57me4Sod";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201410261212.46582@pali>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1583655.La57me4Sod
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Am Samstag, 25. Oktober 2014, 10:37:33 schrieb Johan Hovold:
+> [+CC: Felipe ]
+> 
+> On Sat, Oct 25, 2014 at 09:28:36AM +0200, Romain Perier wrote:
+> > Hi Johan,
+> > 
+> > If that's still possible to do these changes, I am opened to suggestions.
+> 
+> Before v3.18 comes out, we can always change it with a follow-up patch.
+> 
+> > 2014-10-23 11:53 GMT+02:00 Johan Hovold <johan@kernel.org>:
+> > > [ +CC: Guenter, Lee, linux-pm ]
+> > > 
+> > > On Tue, Oct 14, 2014 at 06:31:09AM +0000, Romain Perier wrote:
+> > >> Several drivers create their own devicetree property when they register
+> > >> poweroff capabilities. This is for example the case for mfd, regulator
+> > >> or power drivers which define "vendor,system-power-controller"
+> > >> property.
+> > >> This patch adds support for a standard property "poweroff-source"
+> > > 
+> > > Shouldn't this property really be called "power-off-source" or even
+> > > "power-off-controller"?
+> > > 
+> > > The power-off handler call-chain infrastructure is about to be merged
+> > > and will be using power[-_ ]off (i.e. not "poweroff") consistently (at
+> > > least in its interface).
+> > 
+> > "poweroff" or "power-off", I don't care. If people prefer "power-off",
+> > choose this name :)
+> 
+> Let's try to stick to power off (and power_off) then.
+> 
+> > > Furthermore, isn't "controller" as in "power-off-controller" more
+> > > appropriate than "source" in this case? We have wake-up sources, which
+> > > might appear analogous, but that really isn't the same thing.
+> > 
+> > As I said, the idea with "power-off-source" (or "poweroff-source",
+> > that's not the point here) is to mark the device as able to poweroff
+> > the system, like "wakeup-source" which marks the device as able to
+> > wakeup the system.
+> > This is why I chose this name, because it is quite similar to wakeup
+> > property except that it is for handling power, so it did make sense to
+> > me.
+> > 
+> > The question is: what is the advantage of the suffix "controller"
+> > compared to "source" ?
+> 
+> Yeah, I figured you had been inspired by the "wakeup-source" property.
+> 
+> The problem is that "source" tends to be used for inputs, for example,
+> wake-up source, interrupt source, entropy source, etc. Something that is
+> outside of the control of the OS. Contrary to for instance an output
+> which turns the system-power off.
+> 
+> > > I now this has already been merged to the regulator tree, but there's
+> > > still still time to fix this.
+> > > 
+> > >> which marks the device as able to shutdown the system.
+> > >> 
+> > >> Signed-off-by: Romain Perier <romain.perier@gmail.com>
+> > >> ---
+> > >> 
+> > >>  include/linux/of.h | 11 +++++++++++
+> > >>  1 file changed, 11 insertions(+)
+> > >> 
+> > >> diff --git a/include/linux/of.h b/include/linux/of.h
+> > >> index 6545e7a..27b3ba1 100644
+> > >> --- a/include/linux/of.h
+> > >> +++ b/include/linux/of.h
+> > >> @@ -866,4 +866,15 @@ static inline int
+> > >> of_changeset_update_property(struct of_changeset *ocs,> >> 
+> > >>  /* CONFIG_OF_RESOLVE api */
+> > >>  extern int of_resolve_phandles(struct device_node *tree);
+> > >> 
+> > >> +/**
+> > >> + * of_system_has_poweroff_source - Tells if poweroff-source is found
+> > >> for device_node + * @np: Pointer to the given device_node
+> > >> + *
+> > >> + * return true if present false otherwise
+> > >> + */
+> > >> +static inline bool of_system_has_poweroff_source(const struct
+> > >> device_node *np)> > 
+> > > Why "system_has"? Shouldn't this be of_is_power_off_source (controller)?
+> > 
+> > Note that the current custom vendor properties contain "system-" as prefix
+> > ;)
+> Yes, but you dropped it. ;)
+> 
+> And it's not the system that has the property (e.g. "poweroff-source"),
+> it's the node (or the device it describes).
+> 
+> > we have several possibilities:
+> > - of_system_has_power_off_source()
+> > - of_has_power_off_source()
+> > 
+> > We should either to use "has" or "is" as prefix because that's a
+> > predicate function.
+> > I would prefer "has" since it refers to a property inside a node :
+> > this node "has" the corresponding property, so "is" is not a good
+> > candidate.
+> 
+> The boolean property in question describes a feature of the node
+> (device). Say the feature would be redness and call the property "red".
+> You would then generally ask whether the node *is red*, rather than
+> whether it has (the property) red (or has redness).
+> 
+> I'm actually inclined to just sticking to the current name
+> "system-power-controller" and just drop the vendor prefixes. Perhaps
+> your helper function can be used to parse both versions (i.e. with or
+> without a vendor prefix) as we will still need to support both.
+> 
+> I suggest you call that helper function
+> 
+> 	of_is_system_power_controller(node)
+> 
+> or alternatively
+> 
+> 	of_is_power_off_controller(node)
+> 
+> if that property name is preferred.
+> 
+> Note also that in at least one case (rtc-omap, patches in mm, see [1])
+> the property describes that the RTC is used to control an external PMIC,
+> which both allows us to power off the system *and* power back on again
+> on subsequent RTC alarms. This seems to suggest that the more generic
+> "system-power-controller" property name should be preferred.
 
-On Sunday 26 October 2014 12:08:25 Pavel Machek wrote:
-> Hi!
->=20
-> > On Sun, Oct 19, 2014 at 09:19:37PM +0200, Pavel Machek wrote:
-> > > I am trying to use nfsroot, so I can't use modules.
-> >=20
-> > Why not?
-> >=20
-> > > (I am attaching full config, in case I missed something
-> > > important).
-> >=20
-> > I'm using the below config with 3.17 and g_ether works OK.
-> >=20
-> > (My initramfs modprobes g_ether, runs busybox ifconfig for
-> > usb0 and launches sshd.)
->=20
-> I am trying to get 3.14 kernel to work, first. There, usb
-> gadget works when compiled into kernel. But with modules, I
-> get
->=20
-> # root@(none):/tmp# insmod libcomposite.ko
-> # root@(none):/tmp# insmod u_ether.ko
-> # root@(none):/tmp# insmod usb_f_rndis.ko
-> # root@(none):/tmp# insmod g_ether.ko
->=20
-> [  169.061218] udc musb-hdrc.0.auto: registering UDC driver
-> [g_ether] [  169.078918] g_ether musb-hdrc.0.auto: failed to
-> start g_ether: -2
->=20
-> -2 is ENOENT...
-> 								Pavel
+just as sidenote, I'll hold off on applying patch3 (the dts change) then.
 
-Can you try g_nokia.ko? I used this module for usb networking.
+Romain, after you two (and maybe Mark) agree on the final naming of the 
+property and function you'd need to
+- send a followup patch against Marks tree, implementing the changes
+- a new patch adding the property to the Radxa board
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
 
---nextPart1583655.La57me4Sod
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlRM1y4ACgkQi/DJPQPkQ1LipwCgnJJAQeh4HC2UJuExaNhGU3al
-65UAnRqeZxBmbimYbScwrcPVcskntcWY
-=jvWG
------END PGP SIGNATURE-----
-
---nextPart1583655.La57me4Sod--
+Heiko
