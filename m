@@ -1,143 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaJZUAz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 16:00:55 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:50739 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513AbaJZUAx (ORCPT
+	id S1751664AbaJZUWE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 16:22:04 -0400
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:43919 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaJZUWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 16:00:53 -0400
-From: Paul McQuade <paulmcquad@gmail.com>
-To: paulmcquad@gmail.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
-Subject: [PATCH] staging: rtl8723au: create macro get_max_rate
-Date: Sun, 26 Oct 2014 20:00:48 +0000
-Message-Id: <1414353648-6651-1-git-send-email-paulmcquad@gmail.com>
+	Sun, 26 Oct 2014 16:22:02 -0400
+From: Greg Donald <gdonald@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ana Rey <anarey@gmail.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Chaitanya Hazarey <c@24.io>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Roxana Blaj <roxanagabriela10@gmail.com>,
+        Antoine Schweitzer-Chaput <antoine@schweitzer-chaput.fr>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Greg Donald <gdonald@gmail.com>
+Subject: [PATCH] drivers: staging: rtl8192u: Fix "space prohibited after that open parenthesis '('" errors
+Date: Sun, 26 Oct 2014 15:19:22 -0500
+Message-Id: <1414354762-12715-1-git-send-email-gdonald@gmail.com>
 X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-create marco for max_rate values
+Fix checkpatch.pl "space prohibited after that open parenthesis '('" errors
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+Signed-off-by: Greg Donald <gdonald@gmail.com>
 ---
- drivers/staging/rtl8723au/core/rtw_ieee80211.c | 75 ++++++++++++--------------
- 1 file changed, 34 insertions(+), 41 deletions(-)
+ drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c  | 22 +++++++++-------------
+ .../staging/rtl8192u/ieee80211/ieee80211_softmac.c | 11 ++++-------
+ .../rtl8192u/ieee80211/ieee80211_softmac_wx.c      |  2 +-
+ drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |  3 +--
+ .../staging/rtl8192u/ieee80211/rtl819x_BAProc.c    | 16 ++++++----------
+ .../staging/rtl8192u/ieee80211/rtl819x_HTProc.c    | 11 ++++-------
+ 6 files changed, 25 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-index 6274cb3..1592eaf 100644
---- a/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-@@ -13,6 +13,8 @@
-  *
-  ******************************************************************************/
- #define _IEEE80211_C
-+#define get_max_rate(r1, r2, r3, r4)					\
-+	(bw_40MHz ? (short_GI_40 ? r1 : r2) : (short_GI_20 ? r3 : r4))
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
+index 73de9e9..d401dbf 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c
+@@ -713,8 +713,8 @@ static void RxReorderIndicatePacket(struct ieee80211_device *ieee,
+ 	while(!list_empty(&pTS->RxPendingPktList)) {
+ 		IEEE80211_DEBUG(IEEE80211_DL_REORDER,"%s(): start RREORDER indicate\n",__func__);
+ 		pReorderEntry = (PRX_REORDER_ENTRY)list_entry(pTS->RxPendingPktList.prev,RX_REORDER_ENTRY,List);
+-		if( SN_LESS(pReorderEntry->SeqNum, pTS->RxIndicateSeq) ||
+-				SN_EQUAL(pReorderEntry->SeqNum, pTS->RxIndicateSeq))
++		if (SN_LESS(pReorderEntry->SeqNum, pTS->RxIndicateSeq) ||
++		    SN_EQUAL(pReorderEntry->SeqNum, pTS->RxIndicateSeq))
+ 		{
+ 			/* This protect buffer from overflow. */
+ 			if(index >= REORDER_WIN_SIZE) {
+@@ -800,9 +800,8 @@ static u8 parse_subframe(struct sk_buff *skb,
+ 	// Null packet, don't indicate it to upper layer
+ 	ChkLength = LLCOffset;/* + (Frame_WEP(frame)!=0 ?Adapter->MgntInfo.SecurityInfo.EncryptionHeadOverhead:0);*/
  
- #include <drv_types.h>
- #include <linux/ieee80211.h>
-@@ -794,65 +796,56 @@ u16 rtw_mcs_rate23a(u8 rf_type, u8 bw_40MHz, u8 short_GI_20, u8 short_GI_40,
+-	if( skb->len <= ChkLength ) {
++	if (skb->len <= ChkLength)
+ 		return 0;
+-	}
  
- 	if (rf_type == RF_1T1R) {
- 		if (mcs->rx_mask[0] & BIT(7))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):
--				((short_GI_20)?722:650);
-+			max_rate = get_max_rate(1500, 1350, 722, 650);
- 		else if (mcs->rx_mask[0] & BIT(6))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215):
--				((short_GI_20)?650:585);
-+			max_rate = get_max_rate(1350, 1215, 650, 585);
- 		else if (mcs->rx_mask[0] & BIT(5))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):
--				((short_GI_20)?578:520);
-+			max_rate = get_max_rate(1200, 1080, 578, 520);
- 		else if (mcs->rx_mask[0] & BIT(4))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):
--				((short_GI_20)?433:390);
-+			max_rate = get_max_rate(900, 810, 433, 390);
- 		else if (mcs->rx_mask[0] & BIT(3))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):
--				((short_GI_20)?289:260);
-+			max_rate = get_max_rate(600, 540, 289, 260);
- 		else if (mcs->rx_mask[0] & BIT(2))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?450:405):
--				((short_GI_20)?217:195);
-+			max_rate = get_max_rate(450, 405, 217, 195);
- 		else if (mcs->rx_mask[0] & BIT(1))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):
--				((short_GI_20)?144:130);
-+			max_rate = get_max_rate(300, 270, 144, 130);
- 		else if (mcs->rx_mask[0] & BIT(0))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?150:135):
--				((short_GI_20)?72:65);
-+			max_rate = get_max_rate(150, 135, 72, 65);
- 	} else {
- 		if (mcs->rx_mask[1]) {
- 			if (mcs->rx_mask[1] & BIT(7))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?3000:2700):((short_GI_20)?1444:1300);
-+				max_rate = get_max_rate(3000, 2700, 1444, 1300);
- 			else if (mcs->rx_mask[1] & BIT(6))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?2700:2430):((short_GI_20)?1300:1170);
-+				max_rate = get_max_rate(2700, 2430, 1300, 1170);
- 			else if (mcs->rx_mask[1] & BIT(5))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?2400:2160):((short_GI_20)?1156:1040);
-+				max_rate = get_max_rate(2400, 2160, 1156, 1040);
- 			else if (mcs->rx_mask[1] & BIT(4))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1800:1620):((short_GI_20)?867:780);
-+				max_rate = get_max_rate(1800, 1620, 867, 780);
- 			else if (mcs->rx_mask[1] & BIT(3))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):((short_GI_20)?578:520);
-+				max_rate = get_max_rate(1200, 1080, 578, 520);
- 			else if (mcs->rx_mask[1] & BIT(2))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):((short_GI_20)?433:390);
-+				max_rate = get_max_rate(900, 810, 433, 390);
- 			else if (mcs->rx_mask[1] & BIT(1))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):((short_GI_20)?289:260);
-+				max_rate = get_max_rate(600, 540, 289, 260);
- 			else if (mcs->rx_mask[1] & BIT(0))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):((short_GI_20)?144:130);
-+				max_rate = get_max_rate(300, 270, 144, 130);
- 		} else {
--			if (mcs->rx_mask[0] & BIT(7))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):((short_GI_20)?722:650);
--			else if (mcs->rx_mask[0] & BIT(6))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215):((short_GI_20)?650:585);
--			else if (mcs->rx_mask[0] & BIT(5))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):((short_GI_20)?578:520);
--			else if (mcs->rx_mask[0] & BIT(4))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):((short_GI_20)?433:390);
--			else if (mcs->rx_mask[0] & BIT(3))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):((short_GI_20)?289:260);
--			else if (mcs->rx_mask[0] & BIT(2))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?450:405):((short_GI_20)?217:195);
--			else if (mcs->rx_mask[0] & BIT(1))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):((short_GI_20)?144:130);
--			else if (mcs->rx_mask[0] & BIT(0))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?150:135):((short_GI_20)?72:65);
--		}
-+		if (mcs->rx_mask[0] & BIT(7))
-+			max_rate = get_max_rate(1500, 1350, 722, 650);
-+		else if (mcs->rx_mask[0] & BIT(6))
-+			max_rate = get_max_rate(1350, 1215, 650, 585);
-+		else if (mcs->rx_mask[0] & BIT(5))
-+			max_rate = get_max_rate(1200, 1080, 578, 520);
-+		else if (mcs->rx_mask[0] & BIT(4))
-+			max_rate = get_max_rate(900, 810, 433, 390);
-+		else if (mcs->rx_mask[0] & BIT(3))
-+			max_rate = get_max_rate(600, 540, 289, 260);
-+		else if (mcs->rx_mask[0] & BIT(2))
-+			max_rate = get_max_rate(450, 405, 217, 195);
-+		else if (mcs->rx_mask[0] & BIT(1))
-+			max_rate = get_max_rate(300, 270, 144, 130);
-+		else if (mcs->rx_mask[0] & BIT(0))
-+			max_rate = get_max_rate(150, 135, 72, 65);
+ 	skb_pull(skb, LLCOffset);
+ 
+@@ -1035,10 +1034,9 @@ int ieee80211_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
+ 		{
+ 
+ 		//	IEEE80211_DEBUG(IEEE80211_DL_REORDER,"%s(): pRxTS->RxLastFragNum is %d,frag is %d,pRxTS->RxLastSeqNum is %d,seq is %d\n",__func__,pRxTS->RxLastFragNum,frag,pRxTS->RxLastSeqNum,WLAN_GET_SEQ_SEQ(sc));
+-			if(	(fc & (1<<11))  &&
+-					(frag == pRxTS->RxLastFragNum) &&
+-					(WLAN_GET_SEQ_SEQ(sc) == pRxTS->RxLastSeqNum)	)
+-			{
++			if ((fc & (1<<11)) &&
++			    (frag == pRxTS->RxLastFragNum) &&
++			    (WLAN_GET_SEQ_SEQ(sc) == pRxTS->RxLastSeqNum)) {
+ 				goto rx_dropped;
+ 			}
+ 			else
+@@ -2456,7 +2454,7 @@ static inline void ieee80211_process_probe_response(
+ 	//       then wireless adapter should do active scan from ch1~11 and
+ 	//       passive scan from ch12~14
+ 
+-	if( !IsLegalChannel(ieee, network.channel) )
++	if (!IsLegalChannel(ieee, network.channel))
+ 		return;
+ 	if(ieee->bGlobalDomain)
+ 	{
+@@ -2465,8 +2463,7 @@ static inline void ieee80211_process_probe_response(
+ 			// Case 1: Country code
+ 			if(IS_COUNTRY_IE_VALID(ieee) )
+ 			{
+-				if( !IsLegalChannel(ieee, network.channel) )
+-				{
++				if (!IsLegalChannel(ieee, network.channel)) {
+ 					printk("GetScanInfo(): For Country code, filter probe response at channel(%d).\n", network.channel);
+ 					return;
+ 				}
+@@ -2487,8 +2484,7 @@ static inline void ieee80211_process_probe_response(
+ 			// Case 1: Country code
+ 			if(IS_COUNTRY_IE_VALID(ieee) )
+ 			{
+-				if( !IsLegalChannel(ieee, network.channel) )
+-				{
++				if (!IsLegalChannel(ieee, network.channel)) {
+ 					printk("GetScanInfo(): For Country code, filter beacon at channel(%d).\n",network.channel);
+ 					return;
+ 				}
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
+index a1c745b..9b87408 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
+@@ -1043,10 +1043,9 @@ inline struct sk_buff *ieee80211_association_req(struct ieee80211_network *beaco
+ 	{
+ 		ccxrm_ie_len = 6+2;
  	}
- 	return max_rate;
- }
+-	if( beacon->BssCcxVerNumber >= 2 )
+-	{
++	if (beacon->BssCcxVerNumber >= 2)
+ 		cxvernum_ie_len = 5+2;
+-	}
++
+ #ifdef THOMAS_TURBO
+ 	len = sizeof(struct ieee80211_assoc_request_frame)+ 2
+ 		+ beacon->ssid_len//essid tagged val
+@@ -1118,8 +1117,7 @@ inline struct sk_buff *ieee80211_association_req(struct ieee80211_network *beaco
+ 	ieee80211_MFIE_Brate(ieee, &tag);
+ 	ieee80211_MFIE_Grate(ieee, &tag);
+ 	// For CCX 1 S13, CKIP. Added by Annie, 2006-08-14.
+-	if( beacon->bCkipSupported )
+-	{
++	if (beacon->bCkipSupported) {
+ 		static u8	AironetIeOui[] = {0x00, 0x01, 0x66}; // "4500-client"
+ 		u8	CcxAironetBuf[30];
+ 		OCTET_STRING	osCcxAironetIE;
+@@ -1158,8 +1156,7 @@ inline struct sk_buff *ieee80211_association_req(struct ieee80211_network *beaco
+ 		tag += osCcxRmCap.Length;
+ 	}
+ 
+-	if( beacon->BssCcxVerNumber >= 2 )
+-	{
++	if (beacon->BssCcxVerNumber >= 2) {
+ 		u8			CcxVerNumBuf[] = {0x00, 0x40, 0x96, 0x03, 0x00};
+ 		OCTET_STRING	osCcxVerNum;
+ 		CcxVerNumBuf[4] = beacon->BssCcxVerNumber;
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c
+index 82ea533..644368d 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac_wx.c
+@@ -374,7 +374,7 @@ int ieee80211_wx_set_scan(struct ieee80211_device *ieee, struct iw_request_info
+ 		goto out;
+ 	}
+ 
+-	if ( ieee->state == IEEE80211_LINKED){
++	if (ieee->state == IEEE80211_LINKED) {
+ 		queue_work(ieee->wq, &ieee->wx_sync_scan_wq);
+ 		/* intentionally forget to up sem */
+ 		return 0;
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
+index 57bef21..fca73c7 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
+@@ -529,8 +529,7 @@ static void ieee80211_query_protectionmode(struct ieee80211_device *ieee,
+ 		}
+ 		}
+ 	// For test , CTS replace with RTS
+-	if( 0 )
+-	{
++	if (0) {
+ 		tcb_desc->bCTSEnable	= true;
+ 		tcb_desc->rts_rate = MGN_24M;
+ 		tcb_desc->bRTSEnable	= true;
+diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c b/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c
+index 51552d4..278eb54 100644
+--- a/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c
++++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_BAProc.c
+@@ -342,8 +342,7 @@ int ieee80211_rx_ADDBAReq(struct ieee80211_device *ieee, struct sk_buff *skb)
+ 	PSEQUENCE_CONTROL pBaStartSeqCtrl = NULL;
+ 	PRX_TS_RECORD	pTS = NULL;
+ 
+-	if (skb->len < sizeof( struct ieee80211_hdr_3addr) + 9)
+-	{
++	if (skb->len < sizeof(struct ieee80211_hdr_3addr) + 9) {
+ 		IEEE80211_DEBUG(IEEE80211_DL_ERR,
+ 				" Invalid skb len in BAREQ(%d / %zu)\n",
+ 				skb->len,
+@@ -444,8 +443,7 @@ int ieee80211_rx_ADDBARsp(struct ieee80211_device *ieee, struct sk_buff *skb)
+ 	PBA_PARAM_SET		pBaParamSet = NULL;
+ 	u16			ReasonCode;
+ 
+-	if (skb->len < sizeof( struct ieee80211_hdr_3addr) + 9)
+-	{
++	if (skb->len < sizeof(struct ieee80211_hdr_3addr) + 9) {
+ 		IEEE80211_DEBUG(IEEE80211_DL_ERR,
+ 				" Invalid skb len in BARSP(%d / %zu)\n",
+ 				skb->len,
+@@ -463,10 +461,9 @@ int ieee80211_rx_ADDBARsp(struct ieee80211_device *ieee, struct sk_buff *skb)
+ 
+ 	// Check the capability
+ 	// Since we can always receive A-MPDU, we just check if it is under HT mode.
+-	if(     ieee->current_network.qos_data.active == 0  ||
+-		ieee->pHTInfo->bCurrentHTSupport == false ||
+-		ieee->pHTInfo->bCurrentAMPDUEnable == false )
+-	{
++	if (ieee->current_network.qos_data.active == 0  ||
++	    ieee->pHTInfo->bCurrentHTSupport == false ||
++	    ieee->pHTInfo->bCurrentAMPDUEnable == false) {
+ 		IEEE80211_DEBUG(IEEE80211_DL_ERR, "reject to ADDBA_RSP as some capability is not ready(%d, %d, %d)\n",ieee->current_network.qos_data.active, ieee->pHTInfo->bCurrentHTSupport, ieee->pHTInfo->bCurrentAMPDUEnable);
+ 		ReasonCode = DELBA_REASON_UNKNOWN_BA;
+ 		goto OnADDBARsp_Reject;
+@@ -577,8 +574,7 @@ int ieee80211_rx_DELBA(struct ieee80211_device *ieee, struct sk_buff *skb)
+ 	u16			*pReasonCode = NULL;
+ 	u8			*dst = NULL;
+ 
+-	if (skb->len < sizeof( struct ieee80211_hdr_3addr) + 6)
+-	{
++	if (skb->len < sizeof(struct ieee80211_hdr_3addr) + 6) {
+ 		IEEE80211_DEBUG(IEEE80211_DL_ERR,
+ 				" Invalid skb len in DELBA(%d / %zu)\n",
+ 				skb->len,
+diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c b/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c
+index 1ea2cd3..e60d926 100644
+--- a/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c
++++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_HTProc.c
+@@ -602,8 +602,7 @@ void HTConstructCapabilityElement(struct ieee80211_device *ieee, u8 *posHTCap, u
+ 	// TODO: Nedd to take care of this part
+ 	IEEE80211_DEBUG(IEEE80211_DL_HT, "TX HT cap/info ele BW=%d MaxAMSDUSize:%d DssCCk:%d\n", pCapELE->ChlWidth, pCapELE->MaxAMSDUSize, pCapELE->DssCCk);
+ 
+-	if( IsEncrypt)
+-	{
++	if (IsEncrypt) {
+ 		pCapELE->MPDUDensity	= 7; // 8us
+ 		pCapELE->MaxRxAMPDUFactor	= 2; // 2 is for 32 K and 3 is 64K
+ 	}
+@@ -951,8 +950,7 @@ void HTOnAssocRsp(struct ieee80211_device *ieee)
+ 	static u8				EWC11NHTCap[] = {0x00, 0x90, 0x4c, 0x33};		// For 11n EWC definition, 2007.07.17, by Emily
+ 	static u8				EWC11NHTInfo[] = {0x00, 0x90, 0x4c, 0x34};	// For 11n EWC definition, 2007.07.17, by Emily
+ 
+-	if( pHTInfo->bCurrentHTSupport == false )
+-	{
++	if (pHTInfo->bCurrentHTSupport == false) {
+ 		IEEE80211_DEBUG(IEEE80211_DL_ERR, "<=== HTOnAssocRsp(): HT_DISABLE\n");
+ 		return;
+ 	}
+@@ -1043,7 +1041,7 @@ void HTOnAssocRsp(struct ieee80211_device *ieee)
+ 		// Replace MPDU factor declared in original association response frame format. 2007.08.20 by Emily
+ 		if (ieee->current_network.bssht.bdRT2RTAggregation)
+ 		{
+-			if( ieee->pairwise_key_type != KEY_TYPE_NA)
++			if (ieee->pairwise_key_type != KEY_TYPE_NA)
+ 				// Realtek may set 32k in security mode and 64k for others
+ 				pHTInfo->CurrentAMPDUFactor = pPeerHTCap->MaxRxAMPDUFactor;
+ 			else
+@@ -1332,8 +1330,7 @@ u8 HTCCheck(struct ieee80211_device *ieee, u8 *pFrame)
+ {
+ 	if(ieee->pHTInfo->bCurrentHTSupport)
+ 	{
+-		if( (IsQoSDataFrame(pFrame) && Frame_Order(pFrame)) == 1)
+-		{
++		if ((IsQoSDataFrame(pFrame) && Frame_Order(pFrame)) == 1) {
+ 			IEEE80211_DEBUG(IEEE80211_DL_HT, "HT CONTROL FILED EXIST!!\n");
+ 			return true;
+ 		}
 -- 
 1.9.1
 
