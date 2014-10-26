@@ -1,103 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaJZOMY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 10:12:24 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:64733 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaJZOMX (ORCPT
+	id S1751611AbaJZOXv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 10:23:51 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:36441 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaJZOXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 10:12:23 -0400
-From: linyongting@gmail.com
-To: linux@arm.linux.org.uk, stefano.stabellini@eu.citrix.com,
-        haojian.zhuang@gmail.com, christoffer.dall@linaro.org, nsekhar@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: linyongting@huawei.com, linyongting@gmail.com
-Subject: [PATCH] ARM: Add unwinding support for memset function
-Date: Sun, 26 Oct 2014 22:11:25 +0800
-Message-Id: <1414332685-22774-1-git-send-email-linyongting@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 26 Oct 2014 10:23:48 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] memcg: use generic slab iterators for showing slabinfo
+Date: Sun, 26 Oct 2014 17:23:30 +0300
+Message-ID: <b76ef4efe6ad0a01c5bc16f6ccea3ba8743cfb86.1414332926.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <21c195b795ce734d413042d3974e4d26ae2dafdf.1414332926.git.vdavydov@parallels.com>
+References: <21c195b795ce734d413042d3974e4d26ae2dafdf.1414332926.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [81.5.99.36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Yongting <linyongting@gmail.com>
+Let's use generic slab_start/next/stop for showing memcg caches info.
+In contrast to the current implementation, this will work even if all
+memcg caches' info doesn't fit into a seq buffer (a page), plus it
+simply looks neater.
 
-The memset function never had unwinding annotations added.
-Currently, when accessing NULL pointer by memset occurs the
-backtrace shown will stop at memset or some completely unrelated
-function. Add unwinding annotations in hopes of getting a more
-useful backtrace when accessing NULL pointer by memset, kprobe
-or interrupt.
+Actually, the main reason I do this isn't mere cleanup. I'm going to zap
+the memcg_slab_caches list, because I find it useless provided we have
+the slab_caches list, and this patch is a step in this direction.
 
-Signed-off-by: Lin Yongting <linyongting@gmail.com>
+It should be noted that before this patch an attempt to read
+memory.kmem.slabinfo of a cgroup that doesn't have kmem limit set
+resulted in -EIO, while after this patch it will silently show nothing
+except the header, but I don't think it will frustrate anyone.
+
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- arch/arm/lib/memset.S |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ include/linux/slab.h |    4 ----
+ mm/memcontrol.c      |   25 ++++---------------------
+ mm/slab.h            |    1 +
+ mm/slab_common.c     |   25 +++++++++++++++++++------
+ 4 files changed, 24 insertions(+), 31 deletions(-)
 
-diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
-index 671455c..a4ee97b 100644
---- a/arch/arm/lib/memset.S
-+++ b/arch/arm/lib/memset.S
-@@ -11,11 +11,13 @@
-  */
- #include <linux/linkage.h>
- #include <asm/assembler.h>
-+#include <asm/unwind.h>
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index c265bec6a57d..8a2457d42fc8 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -513,10 +513,6 @@ struct memcg_cache_params {
  
- 	.text
- 	.align	5
+ int memcg_update_all_caches(int num_memcgs);
  
- ENTRY(memset)
-+UNWIND( .fnstart         )
- 	ands	r3, r0, #3		@ 1 unaligned?
- 	mov	ip, r0			@ preserve r0 as return value
- 	bne	6f			@ 1
-@@ -34,6 +36,9 @@ ENTRY(memset)
-  * We need 2 extra registers for this loop - use r8 and the LR
-  */
- 	stmfd	sp!, {r8, lr}
-+UNWIND( .fnend              )
-+UNWIND( .fnstart            )
-+UNWIND( .save {r8, lr}      )
- 	mov	r8, r1
- 	mov	lr, r1
+-struct seq_file;
+-int cache_show(struct kmem_cache *s, struct seq_file *m);
+-void print_slabinfo_header(struct seq_file *m);
+-
+ /**
+  * kmalloc_array - allocate memory for an array.
+  * @n: number of elements.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c50176429fa3..54d4305ba1dd 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2460,26 +2460,6 @@ static struct kmem_cache *memcg_params_to_cache(struct memcg_cache_params *p)
+ 	return cache_from_memcg_idx(cachep, memcg_cache_id(p->memcg));
+ }
  
-@@ -53,6 +58,7 @@ ENTRY(memset)
- 	tst	r2, #16
- 	stmneia	ip!, {r1, r3, r8, lr}
- 	ldmfd	sp!, {r8, lr}
-+UNWIND( .fnend              )
+-#ifdef CONFIG_SLABINFO
+-static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
+-{
+-	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
+-	struct memcg_cache_params *params;
+-
+-	if (!memcg_kmem_is_active(memcg))
+-		return -EIO;
+-
+-	print_slabinfo_header(m);
+-
+-	mutex_lock(&memcg_slab_mutex);
+-	list_for_each_entry(params, &memcg->memcg_slab_caches, list)
+-		cache_show(memcg_params_to_cache(params), m);
+-	mutex_unlock(&memcg_slab_mutex);
+-
+-	return 0;
+-}
+-#endif
+-
+ static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp,
+ 			     unsigned long nr_pages)
+ {
+@@ -4621,7 +4601,10 @@ static struct cftype mem_cgroup_files[] = {
+ #ifdef CONFIG_SLABINFO
+ 	{
+ 		.name = "kmem.slabinfo",
+-		.seq_show = mem_cgroup_slabinfo_read,
++		.seq_start = slab_start,
++		.seq_next = slab_next,
++		.seq_stop = slab_stop,
++		.seq_show = memcg_slab_show,
+ 	},
+ #endif
+ #endif
+diff --git a/mm/slab.h b/mm/slab.h
+index 53a55c70c409..3347fd77f7be 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -360,5 +360,6 @@ static inline struct kmem_cache_node *get_node(struct kmem_cache *s, int node)
+ void *slab_start(struct seq_file *m, loff_t *pos);
+ void *slab_next(struct seq_file *m, void *p, loff_t *pos);
+ void slab_stop(struct seq_file *m, void *p);
++int memcg_slab_show(struct seq_file *m, void *p);
  
- #else
- 
-@@ -62,6 +68,9 @@ ENTRY(memset)
-  */
- 
- 	stmfd	sp!, {r4-r8, lr}
-+UNWIND( .fnend                 )
-+UNWIND( .fnstart               )
-+UNWIND( .save {r4-r8, lr}      )
- 	mov	r4, r1
- 	mov	r5, r1
- 	mov	r6, r1
-@@ -94,9 +103,11 @@ ENTRY(memset)
- 	tst	r2, #16
- 	stmneia	ip!, {r4-r7}
- 	ldmfd	sp!, {r4-r8, lr}
-+UNWIND( .fnend                 )
- 
+ #endif /* MM_SLAB_H */
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index d8b266750985..d5e9e050a3ec 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -807,7 +807,7 @@ EXPORT_SYMBOL(kmalloc_order_trace);
+ #define SLABINFO_RIGHTS S_IRUSR
  #endif
  
-+UNWIND( .fnstart            )
- 4:	tst	r2, #8
- 	stmneia	ip!, {r1, r3}
- 	tst	r2, #4
-@@ -120,4 +131,5 @@ ENTRY(memset)
- 	strb	r1, [ip], #1		@ 1
- 	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
- 	b	1b
-+UNWIND( .fnend   )
- ENDPROC(memset)
+-void print_slabinfo_header(struct seq_file *m)
++static void print_slabinfo_header(struct seq_file *m)
+ {
+ 	/*
+ 	 * Output format version, so at least we can change it
+@@ -872,7 +872,7 @@ memcg_accumulate_slabinfo(struct kmem_cache *s, struct slabinfo *info)
+ 	}
+ }
+ 
+-int cache_show(struct kmem_cache *s, struct seq_file *m)
++static void cache_show(struct kmem_cache *s, struct seq_file *m)
+ {
+ 	struct slabinfo sinfo;
+ 
+@@ -891,7 +891,6 @@ int cache_show(struct kmem_cache *s, struct seq_file *m)
+ 		   sinfo.active_slabs, sinfo.num_slabs, sinfo.shared_avail);
+ 	slabinfo_show_stats(m, s);
+ 	seq_putc(m, '\n');
+-	return 0;
+ }
+ 
+ static int slab_show(struct seq_file *m, void *p)
+@@ -900,10 +899,24 @@ static int slab_show(struct seq_file *m, void *p)
+ 
+ 	if (p == slab_caches.next)
+ 		print_slabinfo_header(m);
+-	if (!is_root_cache(s))
+-		return 0;
+-	return cache_show(s, m);
++	if (is_root_cache(s))
++		cache_show(s, m);
++	return 0;
++}
++
++#ifdef CONFIG_MEMCG_KMEM
++int memcg_slab_show(struct seq_file *m, void *p)
++{
++	struct kmem_cache *s = list_entry(p, struct kmem_cache, list);
++	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
++
++	if (p == slab_caches.next)
++		print_slabinfo_header(m);
++	if (!is_root_cache(s) && s->memcg_params->memcg == memcg)
++		cache_show(s, m);
++	return 0;
+ }
++#endif
+ 
+ /*
+  * slabinfo_op - iterator that generates /proc/slabinfo
 -- 
-1.7.9.5
+1.7.10.4
 
