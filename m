@@ -1,72 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751108AbaJZFts (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 01:49:48 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:51447 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837AbaJZFtr (ORCPT
+	id S1751003AbaJZGWi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 02:22:38 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:39244 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837AbaJZGWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 01:49:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFTL4hz87W1G2atf3mt+aG72Q-z8MwxFpguQgtT9kvHYE7pKEw@mail.gmail.com>
-References: <CALCETrUmA+5499fEqp7S-nfSBVxTEo76mA9r32zYQ41E3c+YhQ@mail.gmail.com>
- <CAFTL4hz87W1G2atf3mt+aG72Q-z8MwxFpguQgtT9kvHYE7pKEw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 25 Oct 2014 22:49:25 -0700
-Message-ID: <CALCETrWyvXZCocPgcbatFvphgBuGbKhsMvYJNuy9EFc4kM-TGw@mail.gmail.com>
-Subject: Re: vmalloced stacks on x86_64?
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 26 Oct 2014 02:22:37 -0400
+Message-ID: <1414304552.4589.13.camel@marge.simpson.net>
+Subject: Re: [PATCH v2] futex: fix a race condition between REQUEUE_PI and
+ task death
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Brian Silverman <bsilver16384@gmail.com>
+Cc: tglx@linutronix.de, austin.linux@gmail.com, linux-kernel@vger.kernel.org,
+        darren@dvhart.com, peterz@infradead.org
+Date: Sun, 26 Oct 2014 07:22:32 +0100
+In-Reply-To: <1414282837-23092-1-git-send-email-bsilver16384@gmail.com>
+References: <1414092159-17697-1-git-send-email-bsilver16384@gmail.com>
+	 <1414282837-23092-1-git-send-email-bsilver16384@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Oct 25, 2014 9:11 PM, "Frederic Weisbecker" <fweisbec@gmail.com> wrote:
->
-> 2014-10-25 2:22 GMT+02:00 Andy Lutomirski <luto@amacapital.net>:
-> > Is there any good reason not to use vmalloc for x86_64 stacks?
-> >
-> > The tricky bits I've thought of are:
-> >
-> >  - On any context switch, we probably need to probe the new stack
-> > before switching to it.  That way, if it's going to fault due to an
-> > out-of-sync pgd, we still have a stack available to handle the fault.
->
-> Would that prevent from any further fault on a vmalloc'ed kernel
-> stack? We would need to ensure that pre-faulting, say the first byte,
-> is enough to sync the whole new stack entirely otherwise we risk
-> another future fault and some places really aren't safely faulted.
->
+3.12.30-rt40 + patch has been running your testcase, futextests and
+stockfish concurrently (on a 28 core +ht box) for over an hour now.
 
-I think so.  The vmalloc faults only happen when the entire top-level
-page table entry is missing, and those cover giant swaths of address
-space.
+On Sat, 2014-10-25 at 20:20 -0400, Brian Silverman wrote: 
+> free_pi_state and exit_pi_state_list both clean up futex_pi_state's.
+> exit_pi_state_list takes the hb lock first, and most callers of
+> free_pi_state do too. requeue_pi didn't, which means free_pi_state can
+> free the pi_state out from under exit_pi_state_list. For example:
+> task A                            |  task B
+> exit_pi_state_list                |
+>   pi_state =                      |
+>       curr->pi_state_list->next   |
+>                                   |  futex_requeue(requeue_pi=1)
+>                                   |    // pi_state is the same as
+>                                   |    // the one in task A
+>                                   |    free_pi_state(pi_state)
+>                                   |      list_del_init(&pi_state->list)
+>                                   |      kfree(pi_state)
+>   list_del_init(&pi_state->list)  |
+> 
+> Move the free_pi_state calls in requeue_pi to before it drops the hb
+> locks which it's already holding.
+> 
+> I have test code that forks a bunch of processes, which all fork more
+> processes that do futex(FUTEX_WAIT_REQUEUE_PI), then do
+> futex(FUTEX_CMP_REQUEUE_PI) before killing the waiting processes. That
+> test consistently breaks QEMU VMs without this patch.
+> 
+> Although they both make it faster to crash, CONFIG_PREEMPT_RT and lots
+> of CPUs are not necessary to reproduce this problem. The symptoms range
+> from random reboots to corrupting the test program to corrupting whole
+> filesystems to strange BIOS errors. Crashdumps (when they get created at
+> all) are usually a mess, to the point of crashing tools used to examine
+> them.
+> 
+> Signed-off-by: Brian Silverman <bsilver16384@gmail.com>
+> ---
+>  kernel/futex.c |   44 +++++++++++++++++++++++++++-----------------
+>  1 file changed, 27 insertions(+), 17 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index 815d7af..c2c35a5 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -64,6 +64,7 @@
+>  #include <linux/hugetlb.h>
+>  #include <linux/freezer.h>
+>  #include <linux/bootmem.h>
+> +#include <linux/lockdep.h>
+>  
+>  #include <asm/futex.h>
+>  
+> @@ -639,8 +640,16 @@ static struct futex_pi_state * alloc_pi_state(void)
+>  	return pi_state;
+>  }
+>  
+> -static void free_pi_state(struct futex_pi_state *pi_state)
+> +/**
+> + * Must be called with the hb lock held.
+> + */
+> +static void free_pi_state(struct futex_pi_state *pi_state,
+> +					struct futex_hash_bucket *hb)
+>  {
+> +	if (!pi_state) return;
+> +
+> +	lockdep_assert_held(&hb->lock);
+> +
+>  	if (!atomic_dec_and_test(&pi_state->refcount))
+>  		return;
+>  
+> @@ -1519,15 +1528,6 @@ static int futex_requeue(u32 __user *uaddr1, unsigned int flags,
+>  	}
+>  
+>  retry:
+> -	if (pi_state != NULL) {
+> -		/*
+> -		 * We will have to lookup the pi_state again, so free this one
+> -		 * to keep the accounting correct.
+> -		 */
+> -		free_pi_state(pi_state);
+> -		pi_state = NULL;
+> -	}
+> -
+>  	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+> @@ -1558,6 +1558,12 @@ retry_private:
+>  		ret = get_futex_value_locked(&curval, uaddr1);
+>  
+>  		if (unlikely(ret)) {
+> +			/*
+> +			 * We will have to lookup the pi_state again, so
+> +			 * free this one to keep the accounting correct.
+> +			 */
+> +			free_pi_state(pi_state, hb2);
+> +			pi_state = NULL;
+>  			double_unlock_hb(hb1, hb2);
+>  			hb_waiters_dec(hb2);
+>  
+> @@ -1617,6 +1623,8 @@ retry_private:
+>  		case 0:
+>  			break;
+>  		case -EFAULT:
+> +			free_pi_state(pi_state, hb2);
+> +			pi_state = NULL;
+>  			double_unlock_hb(hb1, hb2);
+>  			hb_waiters_dec(hb2);
+>  			put_futex_key(&key2);
+> @@ -1632,6 +1640,8 @@ retry_private:
+>  			 *   exit to complete.
+>  			 * - The user space value changed.
+>  			 */
+> +			free_pi_state(pi_state, hb2);
+> +			pi_state = NULL;
+>  			double_unlock_hb(hb1, hb2);
+>  			hb_waiters_dec(hb2);
+>  			put_futex_key(&key2);
+> @@ -1699,7 +1709,7 @@ retry_private:
+>  			} else if (ret) {
+>  				/* -EDEADLK */
+>  				this->pi_state = NULL;
+> -				free_pi_state(pi_state);
+> +				free_pi_state(pi_state, hb2);
+>  				goto out_unlock;
+>  			}
+>  		}
+> @@ -1708,6 +1718,7 @@ retry_private:
+>  	}
+>  
+>  out_unlock:
+> +	free_pi_state(pi_state, hb2);
+>  	double_unlock_hb(hb1, hb2);
+>  	hb_waiters_dec(hb2);
+>  
+> @@ -1725,8 +1736,6 @@ out_put_keys:
+>  out_put_key1:
+>  	put_futex_key(&key1);
+>  out:
+> -	if (pi_state != NULL)
+> -		free_pi_state(pi_state);
+>  	return ret ? ret : task_count;
+>  }
+>  
+> @@ -1850,14 +1859,15 @@ retry:
+>   * PI futexes can not be requeued and must remove themself from the
+>   * hash bucket. The hash bucket lock (i.e. lock_ptr) is held on entry
+>   * and dropped here.
+> + * Must be called with the hb lock held.
+>   */
+> -static void unqueue_me_pi(struct futex_q *q)
+> +static void unqueue_me_pi(struct futex_q *q, struct futex_hash_bucket *hb)
+>  	__releases(q->lock_ptr)
+>  {
+>  	__unqueue_futex(q);
+>  
+>  	BUG_ON(!q->pi_state);
+> -	free_pi_state(q->pi_state);
+> +	free_pi_state(q->pi_state, hb);
+>  	q->pi_state = NULL;
+>  
+>  	spin_unlock(q->lock_ptr);
+> @@ -2340,7 +2350,7 @@ retry_private:
+>  		rt_mutex_unlock(&q.pi_state->pi_mutex);
+>  
+>  	/* Unqueue and drop the lock */
+> -	unqueue_me_pi(&q);
+> +	unqueue_me_pi(&q, hb);
+>  
+>  	goto out_put_key;
+>  
+> @@ -2651,7 +2661,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+>  			ret = (res < 0) ? res : 0;
+>  
+>  		/* Unqueue and drop the lock. */
+> -		unqueue_me_pi(&q);
+> +		unqueue_me_pi(&q, hb);
+>  	}
+>  
+>  	/*
 
-I don't know whether the vmalloc code guarantees not to span a pmd
-(pud? why couldn't these be called pte0, pte1, pte2, etc.?) boundary.
 
---Andy
-
-> >
-> >  - Any time we change cr3, we may need to check that the pgd
-> > corresponding to rsp is there.  If now, we need to sync it over.
-> >
-> >  - For simplicity, we probably want all stack ptes to be present all
-> > the time.  This is fine; vmalloc already works that way.
-> >
-> >  - If we overrun the stack, we double-fault.  This should be easy to
-> > detect: any double-fault where rsp is less than 20 bytes from the
-> > bottom of the stack is a failure to deliver a non-IST exception due to
-> >  a stack overflow.  The question is: what do we do if this happens?
-> > We could just panic (guaranteed to work).  We could also try to
-> > recover by killing the offending task, but that might be a bit
-> > challenging, since we're in IST context.  We could do something truly
-> > awful: increment RSP by a few hundred bytes, point RIP at do_exit, and
-> > return from the double fault.
-> >
-> > Thoughts?  This shouldn't be all that much code.
