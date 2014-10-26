@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504AbaJZLF6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 07:05:58 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43020 "EHLO
+	id S1751562AbaJZLI2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 07:08:28 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43100 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaJZLF5 (ORCPT
+	with ESMTP id S1751157AbaJZLI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 07:05:57 -0400
-Date: Sun, 26 Oct 2014 12:05:54 +0100
+	Sun, 26 Oct 2014 07:08:27 -0400
+Date: Sun, 26 Oct 2014 12:08:25 +0100
 From: Pavel Machek <pavel@ucw.cz>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>
-Subject: Re: 3.18-rc0: iwlegacy failed after a while
-Message-ID: <20141026110554.GA1634@amd>
-References: <0BA3FCBA62E2DC44AF3030971E174FB31B552E3F@hasmsx107.ger.corp.intel.com>
- <20141024121240.GA3177@redhat.com>
- <20141025114246.GA16230@amd>
- <20141026103314.GB2588@redhat.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Felipe Balbi <balbi@ti.com>, pali.rohar@gmail.com, sre@debian.org,
+        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: USB Ethernet gadget on Nokia n900
+Message-ID: <20141026110825.GA2263@amd>
+References: <20141019090107.GA19132@amd>
+ <20141019100739.GA2547@amd>
+ <20141019152414.GB5189@saruman>
+ <20141019191937.GA6438@amd>
+ <20141020213518.GB28144@drone.musicnaut.iki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141026103314.GB2588@redhat.com>
+In-Reply-To: <20141020213518.GB28144@drone.musicnaut.iki.fi>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2014-10-26 11:33:15, Stanislaw Gruszka wrote:
-> On Sat, Oct 25, 2014 at 01:42:46PM +0200, Pavel Machek wrote:
-> > > Since 3.17 we have only 2 minor iwlegacy changes on current linus tree.
-> > > If this is a regression it's probably caused by different subsystem
-> > > changes, most likely by PCI changes. If this is not regression, such
-> > > errors could be caused by enabling PS, but that has to be done
-> > > explicitly, Pavel did you enable power_save ? 
-> > 
-> > This is running pretty standart MATE desktop, and no, I don't think I
-> > enabled that.
-> 
-> It can be checked by "iw dev wlan0 get power_save" .
-> 
-> More important quiestions: Is this regression, did you see this error
-> before? How reproducible is this problem?
+Hi!
 
-I've never seen it before, and it only happened once after update to
-3.18-rc.
-
-> There is this message in the dmesg:
+> On Sun, Oct 19, 2014 at 09:19:37PM +0200, Pavel Machek wrote:
+> > I am trying to use nfsroot, so I can't use modules.
 > 
-> iwl3945 0000:03:00.0: BSM uCode verification failed at addr 0x00003800+0 (of 900), is 0xa5a5a5a2, s/b 0xf802020
+> Why not?
 > 
-> 0xa5a5a5a2 value suggest that we disconnect from the PCI bus, hence
-> this could be also a H/W problem.
+> > (I am attaching full config, in case I missed something important).
+> 
+> I'm using the below config with 3.17 and g_ether works OK.
+> 
+> (My initramfs modprobes g_ether, runs busybox ifconfig for usb0
+> and launches sshd.)
 
-That machine is 10 years old and will work for another 10. It does not
-have h/w problems ;-).
+I am trying to get 3.14 kernel to work, first. There, usb gadget works
+when compiled into kernel. But with modules, I get
 
-									Pavel
+# root@(none):/tmp# insmod libcomposite.ko                                      
+# root@(none):/tmp# insmod u_ether.ko                                           
+# root@(none):/tmp# insmod usb_f_rndis.ko                                       
+# root@(none):/tmp# insmod g_ether.ko                                           
+
+[  169.061218] udc musb-hdrc.0.auto: registering UDC driver [g_ether]
+[  169.078918] g_ether musb-hdrc.0.auto: failed to start g_ether: -2
+
+-2 is ENOENT...
+								Pavel
+
 -- 
 (english) http://www.livejournal.com/~pavelmachek
 (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
