@@ -1,92 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750978AbaJZFlS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 01:41:18 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:32901 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787AbaJZFlR convert rfc822-to-8bit (ORCPT
+	id S1751108AbaJZFts (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 01:49:48 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:51447 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837AbaJZFtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 01:41:17 -0400
-Date: Sun, 26 Oct 2014 14:41:39 +0900
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Weijie Yang <weijie.yang@samsung.com>
-Cc: "'Minchan Kim'" <minchan@kernel.org>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Dan Streetman'" <ddstreet@ieee.org>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Nitin Gupta'" <ngupta@vflare.org>, "'Linux-MM'" <linux-mm@kvack.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'Weijie Yang'" <weijie.yang.kh@gmail.com>
-Subject: Re: [PATCH 2/2] zram: avoid NULL pointer access when reading
- mem_used_total
-Message-ID: <20141026054139.GA952@swordfish>
-References: <000101cff035$d9f50480$8ddf0d80$%yang@samsung.com>
+	Sun, 26 Oct 2014 01:49:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <000101cff035$d9f50480$8ddf0d80$%yang@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAFTL4hz87W1G2atf3mt+aG72Q-z8MwxFpguQgtT9kvHYE7pKEw@mail.gmail.com>
+References: <CALCETrUmA+5499fEqp7S-nfSBVxTEo76mA9r32zYQ41E3c+YhQ@mail.gmail.com>
+ <CAFTL4hz87W1G2atf3mt+aG72Q-z8MwxFpguQgtT9kvHYE7pKEw@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 25 Oct 2014 22:49:25 -0700
+Message-ID: <CALCETrWyvXZCocPgcbatFvphgBuGbKhsMvYJNuy9EFc4kM-TGw@mail.gmail.com>
+Subject: Re: vmalloced stacks on x86_64?
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (10/25/14 17:26), Weijie Yang wrote:
-> Date: Sat, 25 Oct 2014 17:26:31 +0800
-> From: Weijie Yang <weijie.yang@samsung.com>
-> To: 'Minchan Kim' <minchan@kernel.org>
-> Cc: 'Andrew Morton' <akpm@linux-foundation.org>, 'Dan Streetman'
->  <ddstreet@ieee.org>, 'Sergey Senozhatsky' <sergey.senozhatsky@gmail.com>,
->  'Nitin Gupta' <ngupta@vflare.org>, 'Linux-MM' <linux-mm@kvack.org>,
->  'linux-kernel' <linux-kernel@vger.kernel.org>, 'Weijie Yang'
->  <weijie.yang.kh@gmail.com>
-> Subject: [PATCH 2/2] zram: avoid NULL pointer access when reading
->  mem_used_total
-> X-Mailer: Microsoft Office Outlook 12.0
-> 
-> There is a rare NULL pointer bug in mem_used_total_show() in concurrent
-> situation, like this:
-> zram is not initialized, process A is a mem_used_total reader which runs
-> periodicity, while process B try to init zram.
-> 
-> 	process A 				process B
-> access meta, get a NULL value
-> 						init zram, done
-> init_done() is true
-> access meta->mem_pool, get a NULL pointer BUG
-> 
-> This patch fixes this issue.
-> 	
-> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+On Oct 25, 2014 9:11 PM, "Frederic Weisbecker" <fweisbec@gmail.com> wrote:
+>
+> 2014-10-25 2:22 GMT+02:00 Andy Lutomirski <luto@amacapital.net>:
+> > Is there any good reason not to use vmalloc for x86_64 stacks?
+> >
+> > The tricky bits I've thought of are:
+> >
+> >  - On any context switch, we probably need to probe the new stack
+> > before switching to it.  That way, if it's going to fault due to an
+> > out-of-sync pgd, we still have a stack available to handle the fault.
+>
+> Would that prevent from any further fault on a vmalloc'ed kernel
+> stack? We would need to ensure that pre-faulting, say the first byte,
+> is enough to sync the whole new stack entirely otherwise we risk
+> another future fault and some places really aren't safely faulted.
+>
 
-Acked-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+I think so.  The vmalloc faults only happen when the entire top-level
+page table entry is missing, and those cover giant swaths of address
+space.
 
-	-ss
+I don't know whether the vmalloc code guarantees not to span a pmd
+(pud? why couldn't these be called pte0, pte1, pte2, etc.?) boundary.
 
-> ---
->  drivers/block/zram/zram_drv.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> index 64dd79a..2ffd7d8 100644
-> --- a/drivers/block/zram/zram_drv.c
-> +++ b/drivers/block/zram/zram_drv.c
-> @@ -99,11 +99,12 @@ static ssize_t mem_used_total_show(struct device *dev,
->  {
->  	u64 val = 0;
->  	struct zram *zram = dev_to_zram(dev);
-> -	struct zram_meta *meta = zram->meta;
->  
->  	down_read(&zram->init_lock);
-> -	if (init_done(zram))
-> +	if (init_done(zram)) {
-> +		struct zram_meta *meta = zram->meta;
->  		val = zs_get_total_pages(meta->mem_pool);
-> +	}
->  	up_read(&zram->init_lock);
->  
->  	return scnprintf(buf, PAGE_SIZE, "%llu\n", val << PAGE_SHIFT);
-> -- 
-> 1.7.0.4
-> 
-> 
+--Andy
+
+> >
+> >  - Any time we change cr3, we may need to check that the pgd
+> > corresponding to rsp is there.  If now, we need to sync it over.
+> >
+> >  - For simplicity, we probably want all stack ptes to be present all
+> > the time.  This is fine; vmalloc already works that way.
+> >
+> >  - If we overrun the stack, we double-fault.  This should be easy to
+> > detect: any double-fault where rsp is less than 20 bytes from the
+> > bottom of the stack is a failure to deliver a non-IST exception due to
+> >  a stack overflow.  The question is: what do we do if this happens?
+> > We could just panic (guaranteed to work).  We could also try to
+> > recover by killing the offending task, but that might be a bit
+> > challenging, since we're in IST context.  We could do something truly
+> > awful: increment RSP by a few hundred bytes, point RIP at do_exit, and
+> > return from the double fault.
+> >
+> > Thoughts?  This shouldn't be all that much code.
