@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437AbaJZKwL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 06:52:11 -0400
-Received: from andre.telenet-ops.be ([195.130.132.53]:35520 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaJZKwJ (ORCPT
+	id S1751504AbaJZLF6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 07:05:58 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43020 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaJZLF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 06:52:09 -0400
-Message-ID: <544CD24B.2020505@acm.org>
-Date: Sun, 26 Oct 2014 11:51:55 +0100
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Sun, 26 Oct 2014 07:05:57 -0400
+Date: Sun, 26 Oct 2014 12:05:54 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>
+Subject: Re: 3.18-rc0: iwlegacy failed after a while
+Message-ID: <20141026110554.GA1634@amd>
+References: <0BA3FCBA62E2DC44AF3030971E174FB31B552E3F@hasmsx107.ger.corp.intel.com>
+ <20141024121240.GA3177@redhat.com>
+ <20141025114246.GA16230@amd>
+ <20141026103314.GB2588@redhat.com>
 MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>,
-        "Alasdair G. Kergon" <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Edward Thornber <thornber@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: Re: [dm-devel] [PATCH 0/18] SCSI XCOPY support for the kernel and
- device mapper
-References: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
-In-Reply-To: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141026103314.GB2588@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/14 15:24, Mikulas Patocka wrote:
-> I uploaded the new version of SCSI/device-mapper XCOPY patches here:
-> http://people.redhat.com/~mpatocka/patches/kernel/xcopy/series.html
->
-> I am also sending the patches in the following emails.
+On Sun 2014-10-26 11:33:15, Stanislaw Gruszka wrote:
+> On Sat, Oct 25, 2014 at 01:42:46PM +0200, Pavel Machek wrote:
+> > > Since 3.17 we have only 2 minor iwlegacy changes on current linus tree.
+> > > If this is a regression it's probably caused by different subsystem
+> > > changes, most likely by PCI changes. If this is not regression, such
+> > > errors could be caused by enabling PS, but that has to be done
+> > > explicitly, Pavel did you enable power_save ? 
+> > 
+> > This is running pretty standart MATE desktop, and no, I don't think I
+> > enabled that.
+> 
+> It can be checked by "iw dev wlan0 get power_save" .
+> 
+> More important quiestions: Is this regression, did you see this error
+> before? How reproducible is this problem?
 
-Hello Mikulas,
+I've never seen it before, and it only happened once after update to
+3.18-rc.
 
-Which is the base commit of this patch series ? Patch 5/18 fails to 
-apply on top of kernel v3.18-rc1 + patches 1..4.
+> There is this message in the dmesg:
+> 
+> iwl3945 0000:03:00.0: BSM uCode verification failed at addr 0x00003800+0 (of 900), is 0xa5a5a5a2, s/b 0xf802020
+> 
+> 0xa5a5a5a2 value suggest that we disconnect from the PCI bus, hence
+> this could be also a H/W problem.
 
-Thanks,
+That machine is 10 years old and will work for another 10. It does not
+have h/w problems ;-).
 
-Bart.
-
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
