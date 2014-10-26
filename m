@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751513AbaJZMnP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 08:43:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38436 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013AbaJZMnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 08:43:13 -0400
-Message-ID: <544CEC5B.4020104@suse.de>
-Date: Sun, 26 Oct 2014 13:43:07 +0100
-From: =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751609AbaJZMnx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 08:43:53 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:46452 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbaJZMnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 08:43:52 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Weijie Yang <weijie.yang.kh@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 3/4] mm: cma: Ensure that reservations never cross the low/high mem boundary
+Date: Sun, 26 Oct 2014 14:43:52 +0200
+Message-ID: <1436531.s0VJY8ZaKv@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <xa1toat13031.fsf@mina86.com>
+References: <1414145922-26042-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <1414145922-26042-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com> <xa1toat13031.fsf@mina86.com>
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: suravee.suthikulpanit@amd.com, mark.rutland@arm.com,
-        Thomas Lendacky <Thomas.Lendacky@amd.com>,
-        Joel Schopp <Joel.Schopp@amd.com>, marc.zyngier@arm.com,
-        catalin.marinas@arm.com, liviu.dudau@arm.com,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        will.deacon@arm.com, Rob Herring <robh+dt@kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm64: amd-seattle: Adding device tree for AMD Seattle
- platform
-References: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com> <544C2D67.8000405@suse.de>
-In-Reply-To: <544C2D67.8000405@suse.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.10.2014 um 01:08 schrieb Alexander Graf:
-> On 24.10.14 14:20, suravee.suthikulpanit@amd.com wrote:
->> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
->> index 48b7437..e4c052f 100644
->> --- a/arch/arm64/Kconfig
->> +++ b/arch/arm64/Kconfig
->> @@ -137,6 +137,11 @@ source "kernel/Kconfig.freezer"
->>  
->>  menu "Platform selection"
->>  
->> +config ARCH_SEATTLE
->> +	bool "AMD Seattle SoC Family"
->> +	help
->> +	  This enables support for AMD Seattle SOC Family
->> +
->>  config ARCH_THUNDER
->>  	bool "Cavium Inc. Thunder SoC Family"
->>  	help
->> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
->> index f8001a6..6c27047 100644
->> --- a/arch/arm64/boot/dts/Makefile
->> +++ b/arch/arm64/boot/dts/Makefile
->> @@ -1,6 +1,7 @@
->>  dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
->>  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
->>  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
->> +dtb-$(CONFIG_ARCH_SEATTLE) += amd-seattle.dtb
+On Friday 24 October 2014 18:26:58 Michal Nazarewicz wrote:
+> On Fri, Oct 24 2014, Laurent Pinchart wrote:
+> > Commit 95b0e655f914 ("ARM: mm: don't limit default CMA region only to
+> > low memory") extended CMA memory reservation to allow usage of high
+> > memory. It relied on commit f7426b983a6a ("mm: cma: adjust address limit
+> > to avoid hitting low/high memory boundary") to ensure that the reserved
+> > block never crossed the low/high memory boundary. While the
+> > implementation correctly lowered the limit, it failed to consider the
+> > case where the base..limit range crossed the low/high memory boundary
+> > with enough space on each side to reserve the requested size on either
+> > low or high memory.
+> > 
+> > Rework the base and limit adjustment to fix the problem. The function
+> > now starts by rejecting the reservation altogether for fixed
+> > reservations that cross the boundary, tries to reserve from high memory
+> > first and then falls back to low memory.
+> > 
+> > Signed-off-by: Laurent Pinchart
+> > <laurent.pinchart+renesas@ideasonboard.com>
 > 
-> This option doesn't exist in upstream kernels, does it? Why not just
-> make it dtb-y?
+> Acked-by: Michal Nazarewicz <mina86@mina86.com>
 
-CONFIG_ARCH_SEATTLE is being added one hunk above. :)
-
-Cheers,
-Andreas
+Thank you. Can we get this series merged in v3.18-rc ?
 
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Regards,
+
+Laurent Pinchart
+
