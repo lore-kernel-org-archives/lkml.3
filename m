@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841AbaJZXab (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 19:30:31 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:47006 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbaJZXa3 (ORCPT
+	id S1751888AbaJZXdF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 19:33:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:24131 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629AbaJZXdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 19:30:29 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
-Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        wsa@the-dreams.de, Lars-Peter Clausen <lars@metafoo.de>,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH] adv7604: Add DT parsing support
-Date: Mon, 27 Oct 2014 01:30:33 +0200
-Message-ID: <19115179.EGFbFL174J@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <CAL8zT=gUaBDiq=KC5YqCD5dqx2WO1PSXGckvchX_9XxDbJJEpw@mail.gmail.com>
-References: <1413992061-28678-1-git-send-email-jean-michel.hautbois@vodalys.com> <1645583.LAOF2HV7Iq@avalon> <CAL8zT=gUaBDiq=KC5YqCD5dqx2WO1PSXGckvchX_9XxDbJJEpw@mail.gmail.com>
+	Sun, 26 Oct 2014 19:33:03 -0400
+Message-ID: <544D849A.4040304@oracle.com>
+Date: Sun, 26 Oct 2014 19:32:42 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: David Miller <davem@davemloft.net>
+CC: a.ryabinin@samsung.com, pablo@netfilter.org, mschmidt@redhat.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] netlink: don't copy over empty attribute data
+References: <1413924669-26732-1-git-send-email-sasha.levin@oracle.com>	<20141021.213908.1088381802543942481.davem@davemloft.net>	<54471438.1040907@oracle.com> <20141022.021508.2011745433893496421.davem@davemloft.net>
+In-Reply-To: <20141022.021508.2011745433893496421.davem@davemloft.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean-Michel,
-
-On Thursday 23 October 2014 07:51:50 Jean-Michel Hautbois wrote:
-> 2014-10-23 1:53 GMT+02:00 Laurent Pinchart:
-> > On Wednesday 22 October 2014 17:34:21 Jean-Michel Hautbois wrote:
-> >> This patch adds support for DT parsing of ADV7604 as well as ADV7611.
-> >> It needs to be improved in order to get ports parsing too.
-> > 
-> > Let's improve it then :-) The DT bindings as proposed by this patch are
-> > incomplete, that's just asking for trouble.
-> > 
-> > How would you model the adv7604 ports ?
+On 10/22/2014 02:15 AM, David Miller wrote:
+> From: Sasha Levin <sasha.levin@oracle.com>
+> Date: Tue, 21 Oct 2014 22:19:36 -0400
 > 
-> I am opened to suggestions :).
-> But it has to remain as simple as possible, ideally allowing for giving
-> names to the ports.
-> As done today, it works, ports are parsed but are all the same...
+>> On 10/21/2014 09:39 PM, David Miller wrote:
+>>> From: Sasha Levin <sasha.levin@oracle.com>
+>>> Date: Tue, 21 Oct 2014 16:51:09 -0400
+>>>
+>>>>> netlink uses empty data to seperate different levels. However, we still
+>>>>> try to copy that data from a NULL ptr using memcpy, which is an undefined
+>>>>> behaviour.
+>>>>>
+>>>>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>>> This isn't a POSIX C library, this it the Linux kernel, and as such
+>>> we can make sure none of our memcpy() implementations try to access
+>>> any bytes if the given length is NULL.
+>>
+>> We can make *our* implementations work around that undefined behaviour if we
+>> want, but right now our implementations is to call GCC's builtin memcpy(),
+>> which follows the standards and doesn't allow you to call it with NULL 'from'
+>> ptr.
+>>
+>> The fact that it doesn't die and behaves properly is just "luck".
+> 
+> If GCC's internal memcpy() starts accessing past 'len', I'm going
+> to report the bug rather than code around it.
 
-The ADV7611 was easy, it had a single HDMI input only. The ADV7612 is easy as 
-well as it just has two separate HDMI inputs.
+How so? GCC states clearly that you should *never* pass a NULL pointer there:
 
-The ADV7604 is a more complex beast. The HDMI inputs shouldn't be much of an 
-issue as they're independent and multiplexed internally. You can just create 
-one pad per HDMI input.
+"The pointers passed to memmove (and similar functions in <string.h>) must
+be non-null even when nbytes==0" (https://gcc.gnu.org/gcc-4.9/porting_to.html).
 
-The analog inputs, however, can't be modeled as easily. A naive approach would 
-be to create one pad for each of the 12 analog inputs, but the chip has three 
-separate ADCs and can combine 3 inputs in a single digital video stream. I 
-don't know how we should model support for that. Lars-Peter, Hans, would you 
-have a revolutionary idea to same the world today ?
+Even if it doesn't dereference it, it can break somehow in a subtle way. Leaving
+the kernel code assuming that gcc (or any other compiler) would always behave
+the same in a situation that shouldn't occur.
 
-> >> Signed-off-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
 
-[...]
-
--- 
-Regards,
-
-Laurent Pinchart
-
+Thanks,
+Sasha
