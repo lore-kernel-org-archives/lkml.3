@@ -1,106 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745AbaJZVWp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 17:22:45 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:35336 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaJZVWo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 17:22:44 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: USB Ethernet gadget on Nokia n900
-Date: Sun, 26 Oct 2014 22:22:39 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
-        sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-References: <20141019090107.GA19132@amd> <201410261212.46582@pali> <20141026211721.GA7351@amd>
-In-Reply-To: <20141026211721.GA7351@amd>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1981530.ZjnzfcZRCA";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1751718AbaJZVsN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 17:48:13 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48373 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539AbaJZVsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 17:48:11 -0400
+Message-ID: <1414356641.364.142.camel@pasglop>
+Subject: Re: [PATCH V2 1/2] mm: Update generic gup implementation to handle
+ hugepage directory
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        aneesh.kumar@linux.vnet.ibm.com, steve.capper@linaro.org,
+        aarcange@redhat.com, mpe@ellerman.id.au, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-arch@vger.kernel.org, hannes@cmpxchg.org
+Date: Mon, 27 Oct 2014 07:50:41 +1100
+In-Reply-To: <1414167761.19984.17.camel@jarvis.lan>
+References: <1413520687-31729-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	 <20141022160224.9c2268795e55d5a2eff5b94d@linux-foundation.org>
+	 <20141023.184035.388557314666522484.davem@davemloft.net>
+	 <1414107635.364.91.camel@pasglop> <1414167761.19984.17.camel@jarvis.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201410262222.39892@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1981530.ZjnzfcZRCA
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2014-10-24 at 09:22 -0700, James Bottomley wrote:
 
-On Sunday 26 October 2014 22:17:21 Pavel Machek wrote:
-> On Sun 2014-10-26 12:12:46, Pali Roh=C3=A1r wrote:
-> > On Sunday 26 October 2014 12:08:25 Pavel Machek wrote:
-> > > Hi!
-> > >=20
-> > > > On Sun, Oct 19, 2014 at 09:19:37PM +0200, Pavel Machek=20
-wrote:
-> > > > > I am trying to use nfsroot, so I can't use modules.
-> > > >=20
-> > > > Why not?
-> > > >=20
-> > > > > (I am attaching full config, in case I missed
-> > > > > something important).
-> > > >=20
-> > > > I'm using the below config with 3.17 and g_ether works
-> > > > OK.
-> > > >=20
-> > > > (My initramfs modprobes g_ether, runs busybox ifconfig
-> > > > for usb0 and launches sshd.)
-> > >=20
-> > > I am trying to get 3.14 kernel to work, first. There, usb
-> > > gadget works when compiled into kernel. But with modules,
-> > > I get
-> > >=20
-> > > # root@(none):/tmp# insmod libcomposite.ko
-> > > # root@(none):/tmp# insmod u_ether.ko
-> > > # root@(none):/tmp# insmod usb_f_rndis.ko
-> > > # root@(none):/tmp# insmod g_ether.ko
-> > >=20
-> > > [  169.061218] udc musb-hdrc.0.auto: registering UDC
-> > > driver [g_ether] [  169.078918] g_ether musb-hdrc.0.auto:
-> > > failed to start g_ether: -2
-> > >=20
-> > > -2 is ENOENT...
-> >=20
-> > Can you try g_nokia.ko? I used this module for usb
-> > networking.
->=20
-> I have root prepared on /dev/mmcblk0p6. I tried 3.17 with
-> rx51_defconfig, but no, it refuses to mount it.
->=20
-> VFS: Cannot open root device "mmcblk0p6" or ....: error -19.
->=20
-> And then it proceeds to list mmcblk0p6 as one of available
-> options
->=20
-> :-(.
->=20
-> Ideas welcome.
-> 									Pavel
+> Parisc does this.  As soon as one CPU issues a TLB purge, it's broadcast
+> to all the CPUs on the inter-CPU bus.  The next instruction isn't
+> executed until they respond.
+> 
+> But this is only for our CPU TLB.  There's no other external
+> consequence, so removal from the page tables isn't effected by this TLB
+> flush, therefore the theory on which Dave bases the change to
+> atomic_add() should work for us (of course, atomic_add is lock add
+> unlock on our CPU, so it's not going to be of much benefit).
 
-Try to add rootdelay=3D30 or rootwait to kernel cmdline.
+I'm not sure I follow you here.
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+Do you or do you now perform an IPI to do TLB flushes ? If you don't
+(for example because you have HW broadcast), then you need the
+speculative get_page(). If you do (and can read a PTE atomically), you
+can get away with atomic_add().
 
---nextPart1981530.ZjnzfcZRCA
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+The reason is that if you remember how zap_pte_range works, we perform
+the flush before we get rid of the page.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+So if your using IPIs for the flush, the fact that gup_fast has
+interrupts disabled will delay the IPI response and thus effectively
+prevent the pages from being actually freed, allowing us to simply do
+the atomic_add() on x86.
 
-iEYEABECAAYFAlRNZh8ACgkQi/DJPQPkQ1KNDQCfTuOmuZsGbRLu40u1jCvDKXs/
-IlgAn0Rl80fnZKjcBCMaIwTj7RBqAFhf
-=1d8T
------END PGP SIGNATURE-----
+But if we don't use IPIs because we have HW broadcast of TLB
+invalidations, then we don't have that synchronization. atomic_add won't
+work, we need get_page_speculative() because the page could be
+concurrently being freed.
 
---nextPart1981530.ZjnzfcZRCA--
+Cheers,
+Ben.
+
+> James
+> 
+> > Another option would be to make the generic code use something defined
+> > by the arch to decide whether to use speculative get or
+> > not. I like the idea of keeping the bulk of that code generic...
+> > 
+> > Cheers,
+> > Ben.
+> > 
+> > > --
+> > > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > > see: http://www.linux-mm.org/ .
+> > > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
