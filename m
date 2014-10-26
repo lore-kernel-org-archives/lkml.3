@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaJZMLE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 08:11:04 -0400
-Received: from mout.web.de ([212.227.15.3]:64097 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397AbaJZMLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 08:11:03 -0400
-Message-ID: <544CE4B7.6040700@users.sourceforge.net>
-Date: Sun, 26 Oct 2014 13:10:31 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Matt Roper <matthew.d.roper@intel.com>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Thomas Wood <thomas.wood@intel.com>, Rob Clark <robdclark@gmail.com>,
-        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
-        Arthur Borsboom <arthurborsboom@gmail.com>,
-        Thierry Reding <treding@nvidia.com>,
-        Benoit Taine <benoit.taine@lip6.fr>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, trivial@kernel.org,
-        Coccinelle <cocci@systeme.lip6.fr>
-Subject: Re: [PATCH 1/1] GPU-DRM-GMA500: Deletion of unnecessary checks before
- two function calls
-References: <5307CAA2.8060406@users.sourceforge.net>	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>	<530A086E.8010901@users.sourceforge.net>	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>	<530A72AA.3000601@users.sourceforge.net>	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>	<530B5FB6.6010207@users.sourceforge.net>	<alpine.DEB.2.10.1402241710370.2074@hadrien>	<530C5E18.1020800@users.sourceforge.net>	<alpine.DEB.2.10.1402251014170.2080@hadrien>	<530CD2C4.4050903@users.sourceforge.net>	<alpine.DEB.2.10.1402251840450.7035@hadrien>	<530CF8FF.8080600@users.sourceforge.net>	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>	<530DD06F.4090703@users.sourceforge.net>	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	<5317A59D.4@users.sourceforge.net>	<5447DFD5.5020905@users.sourceforge.net> <20141023122616.4f66d31a@alan.etchedpixels.co.uk>
-In-Reply-To: <20141023122616.4f66d31a@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:iIXHRCYMsNWo6DRhsrRrBRIXtqnCXr4AKnzwurt0PzI7TgTuSGv
- 6NL70dfXcBQgu3OmEzxukXpEDe9jznH3wQus+s+mvkQjn3FzpTF5RwINjhKG5u+suzCqnuR
- +ZxSQFOBcAHq+E7CO+7Mc2pJv/Bcq/Zwxwt7lYspuXFaXF1jaV9EpvDwL8DpKd9cnWGuTy7
- 3bdldwHpiQGH/B4H0E6dw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1751813AbaJZMMI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 08:12:08 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35720 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaJZMMG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 08:12:06 -0400
+From: Peng Fan <van.freenix@gmail.com>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz
+Cc: daniel.vetter@ffwll.ch, kilobyte@angband.pl, dh.herrmann@gmail.com,
+        petr.pisar@atlas.cz, tiwai@suse.de, van.freenix@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] tty:vt remove obsolete struct initializer
+Date: Sun, 26 Oct 2014 20:08:02 +0800
+Message-Id: <1414325282-32177-1-git-send-email-van.freenix@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What platforms have you tested the code on at this point ?
+This patch fixes sparse warning:
+"obsolete struct initializer, use C99 syntax"
 
-None. - My "test computer" does not provide the corresponding hardware for the
-affected driver source files.
+Signed-off-by: Peng Fan <van.freenix@gmail.com>
+---
+ drivers/tty/vt/vt.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-Regards,
-Markus
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index b33b00b..cf18bd4 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -1367,9 +1367,11 @@ static void csi_m(struct vc_data *vc)
+ 						rgb_from_256(vc->vc_par[i]));
+ 				} else if (vc->vc_par[i] == 2 &&  /* 24 bit */
+ 				           i <= vc->vc_npar + 3) {/* extremely rare */
+-					struct rgb c = {r:vc->vc_par[i+1],
+-							g:vc->vc_par[i+2],
+-							b:vc->vc_par[i+3]};
++					struct rgb c = {
++						.r = vc->vc_par[i + 1],
++						.g = vc->vc_par[i + 2],
++						.b = vc->vc_par[i + 3],
++					};
+ 					rgb_foreground(vc, c);
+ 					i += 3;
+ 				}
+@@ -1388,9 +1390,11 @@ static void csi_m(struct vc_data *vc)
+ 						rgb_from_256(vc->vc_par[i]));
+ 				} else if (vc->vc_par[i] == 2 && /* 24 bit */
+ 				           i <= vc->vc_npar + 3) {
+-					struct rgb c = {r:vc->vc_par[i+1],
+-							g:vc->vc_par[i+2],
+-							b:vc->vc_par[i+3]};
++					struct rgb c = {
++						.r = vc->vc_par[i + 1],
++						.g = vc->vc_par[i + 2],
++						.b = vc->vc_par[i + 3],
++					};
+ 					rgb_background(vc, c);
+ 					i += 3;
+ 				}
+-- 
+1.8.4
+
