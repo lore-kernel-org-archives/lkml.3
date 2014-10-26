@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaJZXdF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 19:33:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:24131 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629AbaJZXdD (ORCPT
+	id S1751930AbaJZXdQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 19:33:16 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:63925 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892AbaJZXdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 19:33:03 -0400
-Message-ID: <544D849A.4040304@oracle.com>
-Date: Sun, 26 Oct 2014 19:32:42 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Sun, 26 Oct 2014 19:33:12 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: a.ryabinin@samsung.com, pablo@netfilter.org, mschmidt@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] netlink: don't copy over empty attribute data
-References: <1413924669-26732-1-git-send-email-sasha.levin@oracle.com>	<20141021.213908.1088381802543942481.davem@davemloft.net>	<54471438.1040907@oracle.com> <20141022.021508.2011745433893496421.davem@davemloft.net>
-In-Reply-To: <20141022.021508.2011745433893496421.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20141026215742.GT7996@ZenIV.linux.org.uk>
+References: <544C50CB.4090408@oracle.com>
+	<87siibttyi.fsf@x220.int.ebiederm.org>
+	<20141026030608.GN7996@ZenIV.linux.org.uk>
+	<20141026035100.GO7996@ZenIV.linux.org.uk>
+	<20141026035705.GP7996@ZenIV.linux.org.uk>
+	<CA+55aFzcRyA0kcXN28OHjPQfR-BP442+tz6Rti7Fbc0VXuawww@mail.gmail.com>
+	<20141026191332.GS7996@ZenIV.linux.org.uk>
+	<20141026215742.GT7996@ZenIV.linux.org.uk>
+Date: Sun, 26 Oct 2014 16:33:11 -0700
+X-Google-Sender-Auth: OKBqB6_PQdZ8QY5TD-bZauVeqc8
+Message-ID: <CA+55aFxfDgYsp9SAxWTy2sS0KLrErPUd06bEYJf=siCmaBu52w@mail.gmail.com>
+Subject: Re: fs: lockup on rename_mutex in fs/dcache.c:1035
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/22/2014 02:15 AM, David Miller wrote:
-> From: Sasha Levin <sasha.levin@oracle.com>
-> Date: Tue, 21 Oct 2014 22:19:36 -0400
-> 
->> On 10/21/2014 09:39 PM, David Miller wrote:
->>> From: Sasha Levin <sasha.levin@oracle.com>
->>> Date: Tue, 21 Oct 2014 16:51:09 -0400
->>>
->>>>> netlink uses empty data to seperate different levels. However, we still
->>>>> try to copy that data from a NULL ptr using memcpy, which is an undefined
->>>>> behaviour.
->>>>>
->>>>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->>> This isn't a POSIX C library, this it the Linux kernel, and as such
->>> we can make sure none of our memcpy() implementations try to access
->>> any bytes if the given length is NULL.
->>
->> We can make *our* implementations work around that undefined behaviour if we
->> want, but right now our implementations is to call GCC's builtin memcpy(),
->> which follows the standards and doesn't allow you to call it with NULL 'from'
->> ptr.
->>
->> The fact that it doesn't die and behaves properly is just "luck".
-> 
-> If GCC's internal memcpy() starts accessing past 'len', I'm going
-> to report the bug rather than code around it.
+On Sun, Oct 26, 2014 at 2:57 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>  .. snip ..
+> in d_walk(), __list_del() instead of list_del() in __dentry_kill(), d_u.d_child
+> turning into d_child everywhere, while d_alias turns into d_u.d_alias...
+>
+> It looks like that way we would get no retries on the second pass.  Comments?
 
-How so? GCC states clearly that you should *never* pass a NULL pointer there:
+Since I missed the whole issue with d_child.next, I'm not sure any
+comments from me would be helpful.
 
-"The pointers passed to memmove (and similar functions in <string.h>) must
-be non-null even when nbytes==0" (https://gcc.gnu.org/gcc-4.9/porting_to.html).
+It does sound like trying to be more careful with d_child and using
+d_alias instead is a good idea. d_alias is only used under the dentry
+lock, and not in any horribly subtle situations, right? So that sounds
+like a good change regardless of this particular fix - making the
+union happen in a less nasty place..
 
-Even if it doesn't dereference it, it can break somehow in a subtle way. Leaving
-the kernel code assuming that gcc (or any other compiler) would always behave
-the same in a situation that shouldn't occur.
-
-
-Thanks,
-Sasha
+                     Linus
