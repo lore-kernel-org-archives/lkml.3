@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844AbaJZPYJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 11:24:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34880 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700AbaJZPYG (ORCPT
+	id S1751632AbaJZPwQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 11:52:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45009 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360AbaJZPwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 11:24:06 -0400
-Date: Sun, 26 Oct 2014 08:22:28 -0700
-From: tip-bot for Davidlohr Bueso <tipbot@zytor.com>
-Message-ID: <tip-993b2ff221999066fcff231590593d0b98f45d32@git.kernel.org>
-Cc: dbueso@suse.de, peterz@infradead.org, hpa@zytor.com,
-        Matteo.Franchin@arm.com, linux-kernel@vger.kernel.org,
-        dave@stgolabs.net, catalin.marinas@arm.com,
-        torvalds@linux-foundation.org, dvhart@linux.intel.com,
-        paulmck@linux.vnet.ibm.com, davidlohr@hp.com, mingo@kernel.org,
-        tglx@linutronix.de
-Reply-To: tglx@linutronix.de, mingo@kernel.org, paulmck@linux.vnet.ibm.com,
-        davidlohr@hp.com, dave@stgolabs.net, catalin.marinas@arm.com,
-        torvalds@linux-foundation.org, dvhart@linux.intel.com, dbueso@suse.de,
-        peterz@infradead.org, hpa@zytor.com, Matteo.Franchin@arm.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1414121220.817.0.camel@linux-t7sj.site>
-References: <1414121220.817.0.camel@linux-t7sj.site>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/urgent] futex:
-  Mention key referencing differences between shared and private futexes
-Git-Commit-ID: 993b2ff221999066fcff231590593d0b98f45d32
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 26 Oct 2014 11:52:14 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1414131502-13886-3-git-send-email-hock.leong.kweh@intel.com>
+References: <1414131502-13886-1-git-send-email-hock.leong.kweh@intel.com>
+	<1414131502-13886-3-git-send-email-hock.leong.kweh@intel.com>
+Date: Sun, 26 Oct 2014 23:52:11 +0800
+Message-ID: <CACVXFVM6naH5cSeyvqyfg+Hwz09DuWTb=P0joBeKUPy9843gAA@mail.gmail.com>
+Subject: Re: [PATCH v1 2/3] firmware loader: fix hung task warning dump
+From: Ming Lei <ming.lei@canonical.com>
+To: Kweh Hock Leong <hock.leong.kweh@intel.com>
+Cc: Matt Fleming <matt.fleming@intel.com>,
+        Sam Protsenko <semen.protsenko@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
+        Ong Boon Leong <boon.leong.ong@intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  993b2ff221999066fcff231590593d0b98f45d32
-Gitweb:     http://git.kernel.org/tip/993b2ff221999066fcff231590593d0b98f45d32
-Author:     Davidlohr Bueso <dave@stgolabs.net>
-AuthorDate: Thu, 23 Oct 2014 20:27:00 -0700
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Sun, 26 Oct 2014 16:16:18 +0100
+On Fri, Oct 24, 2014 at 2:18 PM, Kweh Hock Leong
+<hock.leong.kweh@intel.com> wrote:
+> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+>
+> When using request_firmware_nowait() with FW_ACTION_NOHOTPLUG param to
+> expose user helper interface, if the user do not react immediately, after
+> 120 seconds there will be a hung task warning message dumped as below:
+>
+> [ 3000.784235] INFO: task kworker/0:0:8259 blocked for more than 120 seconds.
+> [ 3000.791281]       Tainted: G            E 3.16.0-rc1-yocto-standard #41
+> [ 3000.798082] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [ 3000.806072] kworker/0:0     D cd0075c8     0  8259      2 0x00000000
+> [ 3000.812765] Workqueue: events request_firmware_work_func
+> [ 3000.818253]  cd375e18 00000046 0000000e cd0075c8 000000f0 cd40ea00 cd375fec 1b883e89
+> [ 3000.826374]  0000026b cd40ea00 80000000 00000001 cd0075c8 00000000 cd375de4 c119917f
+> [ 3000.834492]  cd563360 cd375df4 c119a0ab cd563360 00000000 cd375e24 c119a1d6 00000000
+> [ 3000.842616] Call Trace:
+> [ 3000.845252]  [<c119917f>] ? kernfs_next_descendant_post+0x3f/0x50
+> [ 3000.851543]  [<c119a0ab>] ? kernfs_activate+0x6b/0xc0
+> [ 3000.856790]  [<c119a1d6>] ? kernfs_add_one+0xd6/0x130
+> [ 3000.862047]  [<c15fdb02>] schedule+0x22/0x60
+> [ 3000.866548]  [<c15fd195>] schedule_timeout+0x175/0x1d0
+> [ 3000.871887]  [<c119b391>] ? __kernfs_create_file+0x71/0xa0
+> [ 3000.877574]  [<c119bb9a>] ? sysfs_add_file_mode_ns+0xaa/0x180
+> [ 3000.883533]  [<c15fe84f>] wait_for_completion+0x6f/0xb0
+> [ 3000.888961]  [<c1065200>] ? wake_up_process+0x40/0x40
+> [ 3000.894219]  [<c13cb600>] _request_firmware+0x750/0x9f0
+> [ 3000.899666]  [<c1382a7f>] ? n_tty_receive_buf2+0x1f/0x30
+> [ 3000.905200]  [<c13cba02>] request_firmware_work_func+0x22/0x50
+> [ 3000.911235]  [<c10550d2>] process_one_work+0x122/0x380
+> [ 3000.916571]  [<c1055859>] worker_thread+0xf9/0x470
+> [ 3000.921555]  [<c1055760>] ? create_and_start_worker+0x50/0x50
+> [ 3000.927497]  [<c1055760>] ? create_and_start_worker+0x50/0x50
+> [ 3000.933448]  [<c105a5ff>] kthread+0x9f/0xc0
+> [ 3000.937850]  [<c15ffd40>] ret_from_kernel_thread+0x20/0x30
+> [ 3000.943548]  [<c105a560>] ? kthread_worker_fn+0x100/0x100
+>
+> This patch change the wait_for_completion() function call to
+> wait_for_completion_interruptible() function call for solving the issue.
+>
+> Cc: Matt Fleming <matt.fleming@intel.com>
+> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
 
-futex: Mention key referencing differences between shared and private futexes
+Acked-by: Ming Lei <ming.lei@canonical.com>
 
-Update our documentation as of fix 76835b0ebf8 (futex: Ensure
-get_futex_key_refs() always implies a barrier). Explicitly
-state that we don't do key referencing for private futexes.
-
-Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-Cc: Matteo Franchin <Matteo.Franchin@arm.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Link: http://lkml.kernel.org/r/1414121220.817.0.camel@linux-t7sj.site
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/futex.c | 14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index f3a3a07..bbf071f 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -143,9 +143,8 @@
-  *
-  * Where (A) orders the waiters increment and the futex value read through
-  * atomic operations (see hb_waiters_inc) and where (B) orders the write
-- * to futex and the waiters read -- this is done by the barriers in
-- * get_futex_key_refs(), through either ihold or atomic_inc, depending on the
-- * futex type.
-+ * to futex and the waiters read -- this is done by the barriers for both
-+ * shared and private futexes in get_futex_key_refs().
-  *
-  * This yields the following case (where X:=waiters, Y:=futex):
-  *
-@@ -344,13 +343,20 @@ static void get_futex_key_refs(union futex_key *key)
- 		futex_get_mm(key); /* implies MB (B) */
- 		break;
- 	default:
-+		/*
-+		 * Private futexes do not hold reference on an inode or
-+		 * mm, therefore the only purpose of calling get_futex_key_refs
-+		 * is because we need the barrier for the lockless waiter check.
-+		 */
- 		smp_mb(); /* explicit MB (B) */
- 	}
- }
- 
- /*
-  * Drop a reference to the resource addressed by a key.
-- * The hash bucket spinlock must not be held.
-+ * The hash bucket spinlock must not be held. This is
-+ * a no-op for private futexes, see comment in the get
-+ * counterpart.
-  */
- static void drop_futex_key_refs(union futex_key *key)
- {
+Thanks,
