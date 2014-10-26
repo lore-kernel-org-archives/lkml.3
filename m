@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbaJZPwQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 11:52:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:45009 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360AbaJZPwO (ORCPT
+	id S1751720AbaJZP5U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 11:57:20 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:37649 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751363AbaJZP5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 11:52:14 -0400
+	Sun, 26 Oct 2014 11:57:19 -0400
+Message-ID: <544D19DC.9050807@roeck-us.net>
+Date: Sun, 26 Oct 2014 08:57:16 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1414131502-13886-3-git-send-email-hock.leong.kweh@intel.com>
-References: <1414131502-13886-1-git-send-email-hock.leong.kweh@intel.com>
-	<1414131502-13886-3-git-send-email-hock.leong.kweh@intel.com>
-Date: Sun, 26 Oct 2014 23:52:11 +0800
-Message-ID: <CACVXFVM6naH5cSeyvqyfg+Hwz09DuWTb=P0joBeKUPy9843gAA@mail.gmail.com>
-Subject: Re: [PATCH v1 2/3] firmware loader: fix hung task warning dump
-From: Ming Lei <ming.lei@canonical.com>
-To: Kweh Hock Leong <hock.leong.kweh@intel.com>
-Cc: Matt Fleming <matt.fleming@intel.com>,
-        Sam Protsenko <semen.protsenko@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-efi@vger.kernel.org,
-        Ong Boon Leong <boon.leong.ong@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Lunn <andrew@lunn.ch>, Florian Fainelli <f.fainelli@gmail.com>
+CC: netdev <netdev@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/14] net: dsa: Add support for hardware monitoring
+References: <20141023134706.GB25190@lunn.ch> <20141023162754.GA21343@roeck-us.net> <20141023165459.GE25190@lunn.ch> <20141023173847.GA22988@roeck-us.net> <20141023180357.GG25190@lunn.ch> <20141023184322.GA24281@roeck-us.net> <20141023195526.GH25190@lunn.ch> <20141024161919.GA29600@roeck-us.net> <20141025140116.GA12051@lunn.ch> <544BDC8F.2030308@gmail.com> <20141025180016.GA13191@lunn.ch>
+In-Reply-To: <20141025180016.GA13191@lunn.ch>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.544D19DE.00EB,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 2:18 PM, Kweh Hock Leong
-<hock.leong.kweh@intel.com> wrote:
-> From: "Kweh, Hock Leong" <hock.leong.kweh@intel.com>
+On 10/25/2014 11:00 AM, Andrew Lunn wrote:
+> On Sat, Oct 25, 2014 at 10:23:27AM -0700, Florian Fainelli wrote:
+>> On 10/25/14 07:01, Andrew Lunn wrote:
+>>>> Here is another naming option:
+>>>>
+>>>> em1dsa0-virtual-0
+>>>
+>>> I prefer this over isa.
+>>>
+>>> However, i think there should be some sort of separator between the
+>>> network device name and dsa.
+>>
+>> Considering that network devices can be renamed, do we want it to be
+>> included in the sensor name at all?
 >
-> When using request_firmware_nowait() with FW_ACTION_NOHOTPLUG param to
-> expose user helper interface, if the user do not react immediately, after
-> 120 seconds there will be a hung task warning message dumped as below:
+> Well, we need something which identifies the "DSA collection". In
+> that, you could have two or more collections, connected to different
+> network devices.
 >
-> [ 3000.784235] INFO: task kworker/0:0:8259 blocked for more than 120 seconds.
-> [ 3000.791281]       Tainted: G            E 3.16.0-rc1-yocto-standard #41
-> [ 3000.798082] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [ 3000.806072] kworker/0:0     D cd0075c8     0  8259      2 0x00000000
-> [ 3000.812765] Workqueue: events request_firmware_work_func
-> [ 3000.818253]  cd375e18 00000046 0000000e cd0075c8 000000f0 cd40ea00 cd375fec 1b883e89
-> [ 3000.826374]  0000026b cd40ea00 80000000 00000001 cd0075c8 00000000 cd375de4 c119917f
-> [ 3000.834492]  cd563360 cd375df4 c119a0ab cd563360 00000000 cd375e24 c119a1d6 00000000
-> [ 3000.842616] Call Trace:
-> [ 3000.845252]  [<c119917f>] ? kernfs_next_descendant_post+0x3f/0x50
-> [ 3000.851543]  [<c119a0ab>] ? kernfs_activate+0x6b/0xc0
-> [ 3000.856790]  [<c119a1d6>] ? kernfs_add_one+0xd6/0x130
-> [ 3000.862047]  [<c15fdb02>] schedule+0x22/0x60
-> [ 3000.866548]  [<c15fd195>] schedule_timeout+0x175/0x1d0
-> [ 3000.871887]  [<c119b391>] ? __kernfs_create_file+0x71/0xa0
-> [ 3000.877574]  [<c119bb9a>] ? sysfs_add_file_mode_ns+0xaa/0x180
-> [ 3000.883533]  [<c15fe84f>] wait_for_completion+0x6f/0xb0
-> [ 3000.888961]  [<c1065200>] ? wake_up_process+0x40/0x40
-> [ 3000.894219]  [<c13cb600>] _request_firmware+0x750/0x9f0
-> [ 3000.899666]  [<c1382a7f>] ? n_tty_receive_buf2+0x1f/0x30
-> [ 3000.905200]  [<c13cba02>] request_firmware_work_func+0x22/0x50
-> [ 3000.911235]  [<c10550d2>] process_one_work+0x122/0x380
-> [ 3000.916571]  [<c1055859>] worker_thread+0xf9/0x470
-> [ 3000.921555]  [<c1055760>] ? create_and_start_worker+0x50/0x50
-> [ 3000.927497]  [<c1055760>] ? create_and_start_worker+0x50/0x50
-> [ 3000.933448]  [<c105a5ff>] kthread+0x9f/0xc0
-> [ 3000.937850]  [<c15ffd40>] ret_from_kernel_thread+0x20/0x30
-> [ 3000.943548]  [<c105a560>] ? kthread_worker_fn+0x100/0x100
+> I once came across a PCI board with two Intel ethernet chipsets and
+> two 10 port Marvell switches. Each switch had one host cpu port, 3
+> ports interconnected to the other switch, and 6 going to the back
+> panel.  You would want to describe that as two separate DSA entities,
+> not one DSA with two switches. So the name needs something to indicate
+> the DSA collection.
 >
-> This patch change the wait_for_completion() function call to
-> wait_for_completion_interruptible() function call for solving the issue.
->
-> Cc: Matt Fleming <matt.fleming@intel.com>
-> Signed-off-by: Kweh, Hock Leong <hock.leong.kweh@intel.com>
 
-Acked-by: Ming Lei <ming.lei@canonical.com>
+I agree. I could use the dsa instance index, so we would have
+names such as dsa0-isa-0000, dsa1-isa-0000, dsa0-isa-0001, dsa1-isa-0001,
+and so on, but that looks awkward (I can't do the index with virtual
+names because they don't have a parent and thus no index).
 
-Thanks,
+Using the ethernet interface name seems like a good idea to me.
+Sure it can change, but the name is typically chosen before the
+dsa device is instantiated, and if it is changed manually later
+we just can not help it.
+
+So, if people want a delimiter between network device name and dsa,
+what should it be ? Unless I hear otherwise, I'll choose '_'.
+
+Guenter
+
