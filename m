@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504AbaJZN6m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 09:58:42 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:56502 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013AbaJZN6l (ORCPT
+	id S1751518AbaJZOIv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 10:08:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38865 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751013AbaJZOIu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 09:58:41 -0400
-Message-ID: <1414331916.5304.23.camel@marge.simpson.net>
-Subject: Re: bisected: futex regression >= 3.14 - was - Slowdown due to
- threads bouncing between HT cores
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Date: Sun, 26 Oct 2014 14:58:36 +0100
-In-Reply-To: <1414329375.5304.20.camel@marge.simpson.net>
-References: <20141003194428.GA27084@sesse.net>
-	 <1412782664.5179.75.camel@marge.simpson.net>
-	 <CA+55aFyuH07zzD6dD4k0pdyvJ7fUhFdFrmPYJi9W=FtHihgndA@mail.gmail.com>
-	 <1412791184.5173.11.camel@marge.simpson.net>
-	 <alpine.DEB.2.11.1410241724370.5308@nanos>
-	 <1414168721.5308.3.camel@marge.simpson.net>
-	 <20141026103918.GA5259@sesse.net>
-	 <1414329375.5304.20.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 26 Oct 2014 10:08:50 -0400
+Content-Type: text/plain;
+	charset=utf-8
+Mime-Version: 1.0 (1.0)
+Subject: Re: [PATCH] arm64: amd-seattle: Adding device tree for AMD Seattle platform
+From: Alexander Graf <agraf@suse.de>
+X-Mailer: iPhone Mail (12A405)
+In-Reply-To: <544CEC5B.4020104@suse.de>
+Date: Sun, 26 Oct 2014 15:08:45 +0100
+Cc: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        Thomas Lendacky <Thomas.Lendacky@amd.com>,
+        Joel Schopp <Joel.Schopp@amd.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "liviu.dudau@arm.com" <liviu.dudau@arm.com>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A1BC53C1-A78E-4B0C-879B-F6A462E58C72@suse.de>
+References: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com> <544C2D67.8000405@suse.de> <544CEC5B.4020104@suse.de>
+To: =?utf-8?Q?Andreas_F=C3=A4rber?= <afaerber@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-10-26 at 14:16 +0100, Mike Galbraith wrote: 
-> On Sun, 2014-10-26 at 11:39 +0100, Steinar H. Gunderson wrote: 
-> > On Fri, Oct 24, 2014 at 06:38:41PM +0200, Mike Galbraith wrote:
-> > >>> Whew, good, futex.c is hard.  Heads up chess guys <punt>. 
-> > >> I wonder whether the barrier fix which got into 3.17 late fixes that
-> > >> issue as well.
-> > > Yes, it did.
-> > 
-> > This is only about the lockup, right, not that the threads bounce around a
-> > lot and make things slower?
+
+
+
+> Am 26.10.2014 um 13:43 schrieb Andreas Färber <afaerber@suse.de>:
 > 
-> Yes.  I couldn't reproduce your results, on my 28 core+ht box, there was
-> little difference between pinned/unpinned.  Maybe the box was too quite,
-> not enough random activity to motivate select_idle_sibling().
+>> Am 26.10.2014 um 01:08 schrieb Alexander Graf:
+>>> On 24.10.14 14:20, suravee.suthikulpanit@amd.com wrote:
+>>> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+>>> index 48b7437..e4c052f 100644
+>>> --- a/arch/arm64/Kconfig
+>>> +++ b/arch/arm64/Kconfig
+>>> @@ -137,6 +137,11 @@ source "kernel/Kconfig.freezer"
+>>> 
+>>> menu "Platform selection"
+>>> 
+>>> +config ARCH_SEATTLE
+>>> +    bool "AMD Seattle SoC Family"
+>>> +    help
+>>> +      This enables support for AMD Seattle SOC Family
+>>> +
+>>> config ARCH_THUNDER
+>>>    bool "Cavium Inc. Thunder SoC Family"
+>>>    help
+>>> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+>>> index f8001a6..6c27047 100644
+>>> --- a/arch/arm64/boot/dts/Makefile
+>>> +++ b/arch/arm64/boot/dts/Makefile
+>>> @@ -1,6 +1,7 @@
+>>> dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
+>>> dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
+>>> dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
+>>> +dtb-$(CONFIG_ARCH_SEATTLE) += amd-seattle.dtb
+>> 
+>> This option doesn't exist in upstream kernels, does it? Why not just
+>> make it dtb-y?
+> 
+> CONFIG_ARCH_SEATTLE is being added one hunk above. :)
 
-Can you try the below?
+Oops :).
 
----
- kernel/sched/fair.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+I'm not convinced we need a config option just for the sake of compiling a device tree though.
 
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4477,6 +4477,12 @@ static int select_idle_sibling(struct ta
- 		return i;
- 
- 	/*
-+	 * Don't bounce hefty tasks about, they may be hitting contention.
-+	 */
-+	if (p->se.load.weight - (p->se.load.weight/4) < p->se.avg.load_avg_contrib)
-+		return target;
-+
-+	/*
- 	 * Otherwise, iterate the domains and find an elegible idle cpu.
- 	 */
- 	sd = rcu_dereference(per_cpu(sd_llc, target));
 
+Alex
 
