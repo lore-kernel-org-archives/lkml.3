@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751596AbaJZOJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 10:09:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38877 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363AbaJZOJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 10:09:56 -0400
-Message-ID: <544D00B1.7070703@suse.de>
-Date: Sun, 26 Oct 2014 15:09:53 +0100
-From: =?windows-1252?Q?Andreas_F=E4rber?= <afaerber@suse.de>
-Organization: SUSE LINUX Products GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751765AbaJZOLy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 10:11:54 -0400
+Received: from cassarossa.samfundet.no ([193.35.52.29]:44027 "EHLO
+	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513AbaJZOLx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 10:11:53 -0400
+Date: Sun, 26 Oct 2014 15:11:45 +0100
+From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: bisected: futex regression >= 3.14 - was - Slowdown due to
+ threads bouncing between HT cores
+Message-ID: <20141026141144.GA22911@sesse.net>
+References: <20141003194428.GA27084@sesse.net>
+ <1412782664.5179.75.camel@marge.simpson.net>
+ <CA+55aFyuH07zzD6dD4k0pdyvJ7fUhFdFrmPYJi9W=FtHihgndA@mail.gmail.com>
+ <1412791184.5173.11.camel@marge.simpson.net>
+ <alpine.DEB.2.11.1410241724370.5308@nanos>
+ <1414168721.5308.3.camel@marge.simpson.net>
+ <20141026103918.GA5259@sesse.net>
+ <1414329375.5304.20.camel@marge.simpson.net>
+ <1414331916.5304.23.camel@marge.simpson.net>
 MIME-Version: 1.0
-To: suravee.suthikulpanit@amd.com
-CC: mark.rutland@arm.com, will.deacon@arm.com, catalin.marinas@arm.com,
-        Thomas Lendacky <Thomas.Lendacky@amd.com>,
-        Joel Schopp <Joel.Schopp@amd.com>, marc.zyngier@arm.com,
-        liviu.dudau@arm.com, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm64: amd-seattle: Adding device tree for AMD Seattle
- platform
-References: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com>
-In-Reply-To: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1414331916.5304.23.camel@marge.simpson.net>
+X-Operating-System: Linux 3.16.3 on a x86_64
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Oct 26, 2014 at 02:58:36PM +0100, Mike Galbraith wrote:
+> Can you try the below?
 
-Am 24.10.2014 um 14:20 schrieb suravee.suthikulpanit@amd.com:
-> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-> index f8001a6..6c27047 100644
-> --- a/arch/arm64/boot/dts/Makefile
-> +++ b/arch/arm64/boot/dts/Makefile
-> @@ -1,6 +1,7 @@
->  dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
->  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
->  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
-> +dtb-$(CONFIG_ARCH_SEATTLE) += amd-seattle.dtb
+I can bake it into the kernel the next time I boot, but that is unlikely to
+be anytime soon, I'm afraid. I'm maybe a bit surprised nobody else can
+reproduce my issue; I assume it won't help if I give out shell access
+somehow.
 
-It seems these lines are sorted alphabetically, so Seattle should go
-somewhere before Thunder.
-
->  
->  targets += dtbs
->  targets += $(dtb-y)
-
-Regards,
-Andreas
-
+/* Steinar */
 -- 
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer; HRB 16746 AG Nürnberg
+Homepage: http://www.sesse.net/
