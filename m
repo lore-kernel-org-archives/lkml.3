@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaJZKj3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 06:39:29 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:35810 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbaJZKj2 (ORCPT
+	id S1751437AbaJZKwL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 06:52:11 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:35520 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaJZKwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 06:39:28 -0400
-Date: Sun, 26 Oct 2014 11:39:18 +0100
-From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: bisected: futex regression >= 3.14 - was - Slowdown due to
- threads bouncing between HT cores
-Message-ID: <20141026103918.GA5259@sesse.net>
-References: <20141003194428.GA27084@sesse.net>
- <1412782664.5179.75.camel@marge.simpson.net>
- <CA+55aFyuH07zzD6dD4k0pdyvJ7fUhFdFrmPYJi9W=FtHihgndA@mail.gmail.com>
- <1412791184.5173.11.camel@marge.simpson.net>
- <alpine.DEB.2.11.1410241724370.5308@nanos>
- <1414168721.5308.3.camel@marge.simpson.net>
+	Sun, 26 Oct 2014 06:52:09 -0400
+Message-ID: <544CD24B.2020505@acm.org>
+Date: Sun, 26 Oct 2014 11:51:55 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1414168721.5308.3.camel@marge.simpson.net>
-X-Operating-System: Linux 3.16.3 on a x86_64
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: device-mapper development <dm-devel@redhat.com>,
+        "Alasdair G. Kergon" <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Edward Thornber <thornber@redhat.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: [dm-devel] [PATCH 0/18] SCSI XCOPY support for the kernel and
+ device mapper
+References: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
+In-Reply-To: <alpine.LRH.2.02.1410220913280.31351@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 06:38:41PM +0200, Mike Galbraith wrote:
->>> Whew, good, futex.c is hard.  Heads up chess guys <punt>. 
->> I wonder whether the barrier fix which got into 3.17 late fixes that
->> issue as well.
-> Yes, it did.
+On 10/22/14 15:24, Mikulas Patocka wrote:
+> I uploaded the new version of SCSI/device-mapper XCOPY patches here:
+> http://people.redhat.com/~mpatocka/patches/kernel/xcopy/series.html
+>
+> I am also sending the patches in the following emails.
 
-This is only about the lockup, right, not that the threads bounce around a
-lot and make things slower?
+Hello Mikulas,
 
-/* Steinar */
--- 
-Homepage: http://www.sesse.net/
+Which is the base commit of this patch series ? Patch 5/18 fails to 
+apply on top of kernel v3.18-rc1 + patches 1..4.
+
+Thanks,
+
+Bart.
+
