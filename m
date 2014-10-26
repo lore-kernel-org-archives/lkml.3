@@ -1,113 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaJZMAL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 08:00:11 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:44517 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbaJZMAJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 08:00:09 -0400
-Date: Sun, 26 Oct 2014 13:00:07 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
-        sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-Subject: Re: USB Ethernet gadget on Nokia n900
-Message-ID: <20141026120007.GA25140@amd>
-References: <20141019090107.GA19132@amd>
- <20141020213518.GB28144@drone.musicnaut.iki.fi>
- <20141026110825.GA2263@amd>
- <201410261212.46582@pali>
+	id S1751841AbaJZMB1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 08:01:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60047 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751517AbaJZMB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 08:01:26 -0400
+Date: Sun, 26 Oct 2014 14:01:03 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "john.liuli" <john.liuli@huawei.com>
+Cc: linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
+        peter.huangpeng@huawei.com, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        n.nikolaev@virtualopensystems.com, yingshiuan.pan@gmail.com,
+        remy.gauguey@cea.fr, joel.schopp@amd.com
+Subject: Re: [RFC PATCH 1/2] Add a new register offset let interrupt reason
+ available
+Message-ID: <20141026120103.GC5497@redhat.com>
+References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
+ <1414225494-2208-2-git-send-email-john.liuli@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201410261212.46582@pali>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1414225494-2208-2-git-send-email-john.liuli@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2014-10-26 12:12:46, Pali Rohár wrote:
-> On Sunday 26 October 2014 12:08:25 Pavel Machek wrote:
-> > Hi!
-> > 
-> > > On Sun, Oct 19, 2014 at 09:19:37PM +0200, Pavel Machek wrote:
-> > > > I am trying to use nfsroot, so I can't use modules.
-> > > 
-> > > Why not?
-> > > 
-> > > > (I am attaching full config, in case I missed something
-> > > > important).
-> > > 
-> > > I'm using the below config with 3.17 and g_ether works OK.
-> > > 
-> > > (My initramfs modprobes g_ether, runs busybox ifconfig for
-> > > usb0 and launches sshd.)
-> > 
-> > I am trying to get 3.14 kernel to work, first. There, usb
-> > gadget works when compiled into kernel. But with modules, I
-> > get
-> > 
-> > # root@(none):/tmp# insmod libcomposite.ko
-> > # root@(none):/tmp# insmod u_ether.ko
-> > # root@(none):/tmp# insmod usb_f_rndis.ko
-> > # root@(none):/tmp# insmod g_ether.ko
-> > 
-> > [  169.061218] udc musb-hdrc.0.auto: registering UDC driver
-> > [g_ether] [  169.078918] g_ether musb-hdrc.0.auto: failed to
-> > start g_ether: -2
-> > 
-> > -2 is ENOENT...
+On Sat, Oct 25, 2014 at 04:24:53PM +0800, john.liuli wrote:
+> From: Li Liu <john.liuli@huawei.com>
 > 
-> Can you try g_nokia.ko? I used this module for usb networking.
+> Add a new register offset VIRTIO_MMIO_ISRMEM which help to
+> estblish a shared memory region between virtio-mmio driver
+> and qemu with two purposes:
+> 
+> 1.Guest virtio-mmio driver can get the interrupt reason.
+> 2.Check irqfd enabled or not to register different irq handler.
+> 
+> Signed-off-by: Li Liu <john.liuli@huawei.com>
+> ---
+>  drivers/virtio/virtio_mmio.c |   21 ++++++++++++++++++++-
+>  include/linux/virtio_mmio.h  |    3 +++
+>  2 files changed, 23 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+> index ef9a165..28ddb55 100644
+> --- a/drivers/virtio/virtio_mmio.c
+> +++ b/drivers/virtio/virtio_mmio.c
+> @@ -122,6 +122,8 @@ struct virtio_mmio_device {
+>  	/* a list of queues so we can dispatch IRQs */
+>  	spinlock_t lock;
+>  	struct list_head virtqueues;
+> +
+> +	uint8_t *isr_mem;
+>  };
+>  
+>  struct virtio_mmio_vq_info {
+> @@ -443,6 +445,7 @@ static int virtio_mmio_probe(struct platform_device *pdev)
+>  	struct virtio_mmio_device *vm_dev;
+>  	struct resource *mem;
+>  	unsigned long magic;
+> +	int err;
+>  
+>  	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (!mem)
+> @@ -481,6 +484,15 @@ static int virtio_mmio_probe(struct platform_device *pdev)
+>  		return -ENXIO;
+>  	}
+>  
+> +	vm_dev->isr_mem = alloc_pages_exact(PAGE_SIZE, GFP_KERNEL|__GFP_ZERO);
+> +	if (vm_dev->isr_mem == NULL) {
+> +		dev_err(&pdev->dev, "Allocate isr memory failed!\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	writel(virt_to_phys(vm_dev->isr_mem),
+> +	       vm_dev->base + VIRTIO_MMIO_ISRMEM);
+> +
 
-Ok, so lets go to 3.17, and try with compiled-in modules?
+What happens to existing devices?
+then might not expect writes at this address.
 
-[13220.555232] usb 5-1: USB disconnect, device number 41
-[13225.972033] usb 5-1: new high-speed USB device number 42 using
-ehci-pci
-[13241.084037] usb 5-1: device descriptor read/64, error -110
-pavel@amd:/data/l/maemo$ 
-
-CONFIG_USB_LIBCOMPOSITE=y
-CONFIG_USB_U_ETHER=y
-CONFIG_USB_F_ECM=y
-CONFIG_USB_F_SUBSET=y
-# CONFIG_USB_CONFIGFS is not set                                                                   
-# CONFIG_USB_ZERO is not set                                                                       
-CONFIG_USB_ETH=y
-
-I had musb_dual_role set, trying to make it gadget-only:
-
-      1. Host only mode (USB_MUSB_HOST) (NEW)
-      2. Gadget only mode (USB_MUSB_GADGET) (NEW)
-    > 3. Dual Role mode (USB_MUSB_DUAL_ROLE) (NEW)
-    choice[1-3]: 2
-
-Same result:
-[13621.776030] usb 5-1: new high-speed USB device number 57 using
-ehci-pci
-[13636.888036] usb 5-1: device descriptor read/64, error -110
-
-Wait a moment. It seems I'm using drivers from legacy/ directory. Is
-that good idea?
-
-Lets try:
-
-    10. CDC Composite Device (Ethernet and ACM) (USB_CDC_COMPOSITE)
-
-No, same result.
-
-[13844.456032] usb 5-1: new high-speed USB device number 63 using
-ehci-pci
-[13859.568028] usb 5-1: device descriptor read/64, error -110
-
-I don't think I can actually select nokia support in 3.17 :-(.
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>  	vm_dev->vdev.id.device = readl(vm_dev->base + VIRTIO_MMIO_DEVICE_ID);
+>  	vm_dev->vdev.id.vendor = readl(vm_dev->base + VIRTIO_MMIO_VENDOR_ID);
+>  
+> @@ -488,13 +500,20 @@ static int virtio_mmio_probe(struct platform_device *pdev)
+>  
+>  	platform_set_drvdata(pdev, vm_dev);
+>  
+> -	return register_virtio_device(&vm_dev->vdev);
+> +	err = register_virtio_device(&vm_dev->vdev);
+> +	if (err) {
+> +		free_pages_exact(vm_dev->isr_mem, PAGE_SIZE);
+> +		vm_dev->isr_mem = NULL;
+> +	}
+> +
+> +	return err;
+>  }
+>  
+>  static int virtio_mmio_remove(struct platform_device *pdev)
+>  {
+>  	struct virtio_mmio_device *vm_dev = platform_get_drvdata(pdev);
+>  
+> +	free_pages_exact(vm_dev->isr_mem, PAGE_SIZE);
+>  	unregister_virtio_device(&vm_dev->vdev);
+>  
+>  	return 0;
+> diff --git a/include/linux/virtio_mmio.h b/include/linux/virtio_mmio.h
+> index 5c7b6f0..b1e3ec7 100644
+> --- a/include/linux/virtio_mmio.h
+> +++ b/include/linux/virtio_mmio.h
+> @@ -95,6 +95,9 @@
+>  /* Device status register - Read Write */
+>  #define VIRTIO_MMIO_STATUS		0x070
+>  
+> +/* Allocate ISRMEM for interrupt reason - Write Only */
+> +#define VIRTIO_MMIO_ISRMEM		0x080
+> +
+>  /* The config space is defined by each driver as
+>   * the per-driver configuration space - Read Write */
+>  #define VIRTIO_MMIO_CONFIG		0x100
+> -- 
+> 1.7.9.5
+> 
