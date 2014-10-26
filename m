@@ -1,130 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaJZOXt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 10:23:49 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:36444 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaJZOXs (ORCPT
+	id S1751691AbaJZO3L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 10:29:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52271 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013AbaJZO3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 10:23:48 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        "David Rientjes" <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] slab: print slabinfo header in seq show
-Date: Sun, 26 Oct 2014 17:23:29 +0300
-Message-ID: <21c195b795ce734d413042d3974e4d26ae2dafdf.1414332926.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 26 Oct 2014 10:29:09 -0400
+Date: Sun, 26 Oct 2014 15:29:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Brian Silverman <bsilver16384@gmail.com>
+cc: Austin Schuh <austin.linux@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Darren Hart <darren@dvhart.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] futex: fix a race condition between REQUEUE_PI and task
+ death
+In-Reply-To: <CAP01z6LmQfacDzrHmbW=hBGjn35qhMcNTTp8XhdM3DDnhoX9Xw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1410261528270.5308@nanos>
+References: <1414092159-17697-1-git-send-email-bsilver16384@gmail.com> <alpine.DEB.2.11.1410252047570.5308@nanos> <CAP01z6LmQfacDzrHmbW=hBGjn35qhMcNTTp8XhdM3DDnhoX9Xw@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [81.5.99.36]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we print the slabinfo header in the seq start method, which
-makes it unusable for showing leaks, so we have leaks_show, which does
-practically the same as s_show except it doesn't show the header.
-However, we can print the header in the seq show method - we only need
-to check if the current element is the first on the list. This will
-allow us to use the same set of seq iterators for both leaks and
-slabinfo reporting, which is nice.
+On Sat, 25 Oct 2014, Brian Silverman wrote:
+> On Sat, 25 Oct 2014, Thomas Gleixner wrote:
+> 
+> > > pi_state_free and exit_pi_state_list both clean up futex_pi_state's.
+> > > exit_pi_state_list takes the hb lock first, and most callers of
+> > > pi_state_free do too. requeue_pi didn't, which causes lots of problems.
+> >
+> > "causes lots of problems" is not really a good explanation of the root
+> > cause. That wants a proper description of the race, i.e.
+> >
+> > CPU 0              CPU 1
+> > ...                ....
+> >
+> > I'm surely someone who is familiar with that code, but it took me
+> > quite some time to understand whats going on. The casual reader will
+> > just go into brain spiral mode and give up.
+> 
+> Thinking about it again, I'm no longer so sure that exit_pi_state_list is the
+> only place that it can race against. However, I did catch that one with a
+> particularly lucky crashdump, so I know it _can_ happen there. Is just
+> giving an example for that good?
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- mm/slab.c        |    8 +-------
- mm/slab.h        |    1 +
- mm/slab_common.c |   15 ++++++---------
- 3 files changed, 8 insertions(+), 16 deletions(-)
+Sure. That immediately makes clear whats going on.
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 06182bede8ac..458613d75533 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -4043,12 +4043,6 @@ ssize_t slabinfo_write(struct file *file, const char __user *buffer,
- 
- #ifdef CONFIG_DEBUG_SLAB_LEAK
- 
--static void *leaks_start(struct seq_file *m, loff_t *pos)
--{
--	mutex_lock(&slab_mutex);
--	return seq_list_start(&slab_caches, *pos);
--}
--
- static inline int add_caller(unsigned long *n, unsigned long v)
- {
- 	unsigned long *p;
-@@ -4170,7 +4164,7 @@ static int leaks_show(struct seq_file *m, void *p)
- }
- 
- static const struct seq_operations slabstats_op = {
--	.start = leaks_start,
-+	.start = slab_start,
- 	.next = slab_next,
- 	.stop = slab_stop,
- 	.show = leaks_show,
-diff --git a/mm/slab.h b/mm/slab.h
-index ab019e63e3c2..53a55c70c409 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -357,6 +357,7 @@ static inline struct kmem_cache_node *get_node(struct kmem_cache *s, int node)
- 
- #endif
- 
-+void *slab_start(struct seq_file *m, loff_t *pos);
- void *slab_next(struct seq_file *m, void *p, loff_t *pos);
- void slab_stop(struct seq_file *m, void *p);
- 
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 406944207b61..d8b266750985 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -830,14 +830,9 @@ void print_slabinfo_header(struct seq_file *m)
- 	seq_putc(m, '\n');
- }
- 
--static void *s_start(struct seq_file *m, loff_t *pos)
-+void *slab_start(struct seq_file *m, loff_t *pos)
- {
--	loff_t n = *pos;
--
- 	mutex_lock(&slab_mutex);
--	if (!n)
--		print_slabinfo_header(m);
--
- 	return seq_list_start(&slab_caches, *pos);
- }
- 
-@@ -899,10 +894,12 @@ int cache_show(struct kmem_cache *s, struct seq_file *m)
- 	return 0;
- }
- 
--static int s_show(struct seq_file *m, void *p)
-+static int slab_show(struct seq_file *m, void *p)
- {
- 	struct kmem_cache *s = list_entry(p, struct kmem_cache, list);
- 
-+	if (p == slab_caches.next)
-+		print_slabinfo_header(m);
- 	if (!is_root_cache(s))
- 		return 0;
- 	return cache_show(s, m);
-@@ -922,10 +919,10 @@ static int s_show(struct seq_file *m, void *p)
-  * + further values on SMP and with statistics enabled
-  */
- static const struct seq_operations slabinfo_op = {
--	.start = s_start,
-+	.start = slab_start,
- 	.next = slab_next,
- 	.stop = slab_stop,
--	.show = s_show,
-+	.show = slab_show,
- };
- 
- static int slabinfo_open(struct inode *inode, struct file *file)
--- 
-1.7.10.4
+Thanks,
 
+	tglx
