@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750965AbaJZELy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 00:11:54 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:53543 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735AbaJZELx (ORCPT
+	id S1750986AbaJZEbs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 00:31:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45182 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbaJZEbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 00:11:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrUmA+5499fEqp7S-nfSBVxTEo76mA9r32zYQ41E3c+YhQ@mail.gmail.com>
-References: <CALCETrUmA+5499fEqp7S-nfSBVxTEo76mA9r32zYQ41E3c+YhQ@mail.gmail.com>
-Date: Sun, 26 Oct 2014 05:11:51 +0100
-Message-ID: <CAFTL4hz87W1G2atf3mt+aG72Q-z8MwxFpguQgtT9kvHYE7pKEw@mail.gmail.com>
-Subject: Re: vmalloced stacks on x86_64?
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Richard Weinberger <richard.weinberger@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 26 Oct 2014 00:31:47 -0400
+Date: Sat, 25 Oct 2014 21:32:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Timofey Titovets <nefelim4ag@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: UKSM: What's maintainers think about it?
+Message-Id: <20141025213201.005762f9.akpm@linux-foundation.org>
+In-Reply-To: <CAGqmi77uR2Nems6fE_XM1t3a06OwuqJP-0yOMOQh7KH13vzdzw@mail.gmail.com>
+References: <CAGqmi77uR2Nems6fE_XM1t3a06OwuqJP-0yOMOQh7KH13vzdzw@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-25 2:22 GMT+02:00 Andy Lutomirski <luto@amacapital.net>:
-> Is there any good reason not to use vmalloc for x86_64 stacks?
->
-> The tricky bits I've thought of are:
->
->  - On any context switch, we probably need to probe the new stack
-> before switching to it.  That way, if it's going to fault due to an
-> out-of-sync pgd, we still have a stack available to handle the fault.
+On Sat, 25 Oct 2014 22:25:56 +0300 Timofey Titovets <nefelim4ag@gmail.com> wrote:
 
-Would that prevent from any further fault on a vmalloc'ed kernel
-stack? We would need to ensure that pre-faulting, say the first byte,
-is enough to sync the whole new stack entirely otherwise we risk
-another future fault and some places really aren't safely faulted.
+> Good time of day, people.
+> I try to find 'mm' subsystem specific people and lists, but list
+> linux-mm looks dead and mail archive look like deprecated.
+> If i must to sent this message to another list or add CC people, let me know.
 
->
->  - Any time we change cr3, we may need to check that the pgd
-> corresponding to rsp is there.  If now, we need to sync it over.
->
->  - For simplicity, we probably want all stack ptes to be present all
-> the time.  This is fine; vmalloc already works that way.
->
->  - If we overrun the stack, we double-fault.  This should be easy to
-> detect: any double-fault where rsp is less than 20 bytes from the
-> bottom of the stack is a failure to deliver a non-IST exception due to
->  a stack overflow.  The question is: what do we do if this happens?
-> We could just panic (guaranteed to work).  We could also try to
-> recover by killing the offending task, but that might be a bit
-> challenging, since we're in IST context.  We could do something truly
-> awful: increment RSP by a few hundred bytes, point RIP at do_exit, and
-> return from the double fault.
->
-> Thoughts?  This shouldn't be all that much code.
+linux-mm@kvack.org is alive and well.
+
+> If questions are already asked (i can't find activity before), feel
+> free to kick me.
+> 
+> The main questions:
+> 1. Somebody test it? I see many reviews about it.
+> I already port it to latest linux-next-git kernel and its work without issues.
+> http://pastebin.com/6FMuKagS
+> (if it matter, i can describe use cases and results, if somebody ask it)
+> 
+> 2. Developers of UKSM already tried to merge it? Somebody talked with uksm devs?
+> offtop: now i try to communicate with dev's on kerneldedup.org forum,
+> but i have problems with email verification and wait admin
+> registration approval.
+> (i already sent questions to
+> http://kerneldedup.org/forum/home.php?mod=space&username=xianai ,
+> because him looks like team leader)
+> 
+> 3. I just want collect feedbacks from linux maintainers team, if you
+> decide what UKSM not needed in kernel, all other comments (as i
+> understand) not matter.
+> 
+> Like KSM, but better.
+> UKSM - Ultra Kernel Samepage Merging
+> http://kerneldedup.org/en/projects/uksm/introduction/
+
+It's the first I've heard of it.  No, as far as I know there has been
+no attempt to upstream UKSM.
+
