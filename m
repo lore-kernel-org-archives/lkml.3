@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaJZWXX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 18:23:23 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:37976 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbaJZWXV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 18:23:21 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: USB Ethernet gadget on Nokia n900
-Date: Sun, 26 Oct 2014 23:23:17 +0100
-User-Agent: KMail/1.13.7 (Linux/3.17.0-031700rc6-generic; KDE/4.14.1; x86_64; ; )
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
-        sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-References: <20141019090107.GA19132@amd> <201410262222.39892@pali> <20141026215548.GA9004@amd>
-In-Reply-To: <20141026215548.GA9004@amd>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart6643605.or8oNfp26G";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+	id S1751672AbaJZWfY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 18:35:24 -0400
+Received: from shell.v3.sk ([195.168.3.45]:44750 "EHLO shell.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751461AbaJZWfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 18:35:22 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Oct 2014 18:35:22 EDT
+Message-ID: <1414362511.29980.4.camel@belphegor.lan>
+Subject: Re: [PATCH] ipv6: notify userspace when we added or changed an ipv6
+ token
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>
+Date: Sun, 26 Oct 2014 23:28:31 +0100
+In-Reply-To: <543B9F5A.8070909@redhat.com>
+References: <1412950112-15593-1-git-send-email-lkundrak@v3.sk>
+	 <543B9F5A.8070909@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201410262323.17891@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart6643605.or8oNfp26G
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2014-10-13 at 11:46 +0200, Daniel Borkmann wrote:
+> On 10/10/2014 04:08 PM, Lubomir Rintel wrote:
+> > NetworkManager might want to know that it changed when the router advertisement
+> > arrives.
+> >
+> > Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+> > Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+> > Cc: Daniel Borkmann <dborkman@redhat.com>
+> > ---
+> >   net/ipv6/addrconf.c | 1 +
+> >   1 file changed, 1 insertion(+)
+> >
+> > diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+> > index 3e118df..3d11390 100644
+> > --- a/net/ipv6/addrconf.c
+> > +++ b/net/ipv6/addrconf.c
+> > @@ -4528,6 +4528,7 @@ static int inet6_set_iftoken(struct inet6_dev *idev, struct in6_addr *token)
+> >   	}
+> >
+> >   	write_unlock_bh(&idev->lock);
+> > +	netdev_state_change(dev);
+> 
+> I'm wondering why netdev_state_change()? You are probably
+> only after the netlink notification that is being invoked,
+> i.e. rtmsg_ifinfo(RTM_NEWLINK, ...), and don't strictly want
+> to call the device notifier chain.
 
-On Sunday 26 October 2014 22:55:48 Pavel Machek wrote:
-> > > I have root prepared on /dev/mmcblk0p6. I tried 3.17 with
-> > > rx51_defconfig, but no, it refuses to mount it.
-> > >=20
-> > > VFS: Cannot open root device "mmcblk0p6" or ....: error
-> > > -19.
-> > >=20
-> > > And then it proceeds to list mmcblk0p6 as one of available
-> > > options
-> > >=20
-> > > :-(.
-> > >=20
-> > > Ideas welcome.
-> >=20
-> > Try to add rootdelay=3D30 or rootwait to kernel cmdline.
->=20
-> I had rootdelay=3D3. Will try rootwait... no change. This is
-> v3.17 with rx51_defconfig. CONFIG_MACH_NOKIA_RX51=3Dy =3D> device
-> tree will not be used AFAICT.
->=20
-> Now I'm back at 3.14 without device tree; same setup works
-> there. I tried disabling RX51 support in 3.14 (to make it
-> boot using device tree) but that did not work.
-> 								Pavel
+Correct. I'll change it to just rtmsg_ifinfo().
 
-I remember that there was some problem with initializing mmc=20
-device. Sometimes something failed and reading from eMMC was not=20
-possible. Try to boot kernel from uboot. Maybe it can help.
+> Perhaps it might be better to define a new RTM_SETTOKEN, and
+> just call inet6_ifinfo_notify(RTM_SETTOKEN, idev) as this is
+> only idev specific anyway?
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+I'm not really sure as that would require more userspace changes than
+necessary.
 
---nextPart6643605.or8oNfp26G
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> >   	addrconf_verify_rtnl();
+> >   	return 0;
+> >   }
+> >
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iEYEABECAAYFAlRNdFUACgkQi/DJPQPkQ1LJRQCeNfNlGny+NRrpOKwAfTsaWICH
-5hYAoLXVxgyDDcxPmfo1IMnioS52JGeG
-=acwd
------END PGP SIGNATURE-----
-
---nextPart6643605.or8oNfp26G--
