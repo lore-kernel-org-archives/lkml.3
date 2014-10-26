@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaJZMDV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 08:03:21 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:40930 "EHLO gloria.sntech.de"
+	id S1751710AbaJZMLE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 08:11:04 -0400
+Received: from mout.web.de ([212.227.15.3]:64097 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500AbaJZMDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 08:03:19 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: sre@kernel.org
-Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        robh+dt@kernel.org, mark.rutland@arm.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        dianders@chromium.org
-Subject: Re: [PATCH v4 0/3] gpio-charger: add devicetree support
-Date: Sun, 26 Oct 2014 13:06:28 +0100
-Message-ID: <2175750.C5jxjiuVyT@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1411504936-21026-1-git-send-email-heiko@sntech.de>
-References: <1411504936-21026-1-git-send-email-heiko@sntech.de>
+	id S1751397AbaJZMLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 08:11:03 -0400
+Message-ID: <544CE4B7.6040700@users.sourceforge.net>
+Date: Sun, 26 Oct 2014 13:10:31 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Matt Roper <matthew.d.roper@intel.com>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Thomas Wood <thomas.wood@intel.com>, Rob Clark <robdclark@gmail.com>,
+        Patrik Jakobsson <patrik.r.jakobsson@gmail.com>,
+        Arthur Borsboom <arthurborsboom@gmail.com>,
+        Thierry Reding <treding@nvidia.com>,
+        Benoit Taine <benoit.taine@lip6.fr>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, trivial@kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH 1/1] GPU-DRM-GMA500: Deletion of unnecessary checks before
+ two function calls
+References: <5307CAA2.8060406@users.sourceforge.net>	<alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>	<530A086E.8010901@users.sourceforge.net>	<alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>	<530A72AA.3000601@users.sourceforge.net>	<alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>	<530B5FB6.6010207@users.sourceforge.net>	<alpine.DEB.2.10.1402241710370.2074@hadrien>	<530C5E18.1020800@users.sourceforge.net>	<alpine.DEB.2.10.1402251014170.2080@hadrien>	<530CD2C4.4050903@users.sourceforge.net>	<alpine.DEB.2.10.1402251840450.7035@hadrien>	<530CF8FF.8080600@users.sourceforge.net>	<alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>	<530DD06F.4090703@users.sourceforge.net>	<alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>	<5317A59D.4@users.sourceforge.net>	<5447DFD5.5020905@users.sourceforge.net> <20141023122616.4f66d31a@alan.etchedpixels.co.uk>
+In-Reply-To: <20141023122616.4f66d31a@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:iIXHRCYMsNWo6DRhsrRrBRIXtqnCXr4AKnzwurt0PzI7TgTuSGv
+ 6NL70dfXcBQgu3OmEzxukXpEDe9jznH3wQus+s+mvkQjn3FzpTF5RwINjhKG5u+suzCqnuR
+ +ZxSQFOBcAHq+E7CO+7Mc2pJv/Bcq/Zwxwt7lYspuXFaXF1jaV9EpvDwL8DpKd9cnWGuTy7
+ 3bdldwHpiQGH/B4H0E6dw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+> What platforms have you tested the code on at this point ?
 
-Am Dienstag, 23. September 2014, 22:42:13 schrieb Heiko Stuebner:
-> This series adds devicetree support to the gpio-charger and fixes a small
-> issue with the return value of gpio_get_value.
-> 
-> changes since v3:
-> - remove of_match_ptr. All used of_xx function have stubs for !OF
->   and of_device_id also is always defined, so no need for of_match_ptr
-> changes since v2:
-> - fix (hopefully all) issues pointed out by Doug Anderson
-> - add missing of_node assignment to charger
-> changes since v1:
-> - adapt binding example to show how the charger fits into the
->   power-supplies structure
-> 
-> 
-> Heiko Stuebner (3):
->   dt-bindings: document gpio-charger bindings
->   power: gpio-charger: add device tree support
->   power: gpio-charger: do not use gpio value directly
+None. - My "test computer" does not provide the corresponding hardware for the
+affected driver source files.
 
-I can see patch3 in your tree (and 3.18-rc). Will you take patches 1 and 2 for 
-3.19?
-
-The generally used 3 week period for devicetree-binding related complaints 
-also should be over by now.
-
-
-Heiko
+Regards,
+Markus
