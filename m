@@ -1,134 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbaJZU7H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 16:59:07 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:44746 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635AbaJZU7F (ORCPT
+	id S1751769AbaJZVBj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 17:01:39 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:61750 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaJZVBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 16:59:05 -0400
-From: Paul McQuade <paulmcquad@gmail.com>
-To: paulmcquad@gmail.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
-Subject: [PATCH][V2] staging: rtl8723au: create macro get_max_rate
-Date: Sun, 26 Oct 2014 20:58:55 +0000
-Message-Id: <1414357135-7141-1-git-send-email-paulmcquad@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 26 Oct 2014 17:01:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Heena Sirwani <heenasirwani@gmail.com>, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org
+Subject: Re: [PATCH v5] timekeeping: Added a function to return tv_sec portion of ktime_get_ts64()
+Date: Sun, 26 Oct 2014 22:01:28 +0100
+Message-ID: <6577930.2pEqZJjtqW@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.11.1410251705550.5308@nanos>
+References: <20141025123406.GA13128@heena.com> <alpine.DEB.2.11.1410251705550.5308@nanos>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Nz1k8Xe3ALrgpAwuoUb4kS02o7HHYWgT0GCKKGgeFxH
+ lfDFCcbMTQ9plCzgkoHmAfNx4x6tSqiU3lkZX6E3ukuHge8byv
+ BAH9dfcDBri+bAzQ9DvRk3n/9otA7aNm+Rb487oWJd1DCpt11w
+ sZ1hsf4B+4fAWZtOFW39OtxbAEmLGh8GwEHMNVpK+k7KIxV4XI
+ PeaTPglISo1DRWIVGenxWbF4q2adTGmCBSng01Bsg27P+2Plee
+ zCJabO49Z2idFvLky/U4GY4mPV9BFDHMNCupTjeon+ImIekvkx
+ UbKo4I0mgIEqOEk7oEUtSRUWeudxAnktyAub5LcYU34f84J+wQ
+ jjVFjjHCP+jLy1bCl/lA=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-create marco for max_rate values
+On Saturday 25 October 2014 17:12:48 Thomas Gleixner wrote:
+> I'd rather have an extra field in the timekeeper
+> 
+>     u64 xtime_sec;
+> +   u64 ktime_sec;
+> 
+> and update this in tk_update_ktime_data() so the readout function
+> boils down to
+> 
+> time64_t ktime_get_seconds(void)
+> {
+> #if BITS_PER_LONG < 64
+>         u64 sec;
+>         int seq;
+> 
+>         do {
+>                 seq = read_seqcount_begin(&tk_core.seq);
+>                 sec = tk->ktime_sec;
+>         } while (read_seqcount_retry(&tk_core.seq, seq));
+> 
+>         return sec;
+> #else
+>         return tk->ktime_sec;
+> #endif
+> }
+> 
+> So 64bit can do w/o the seqcount and 32bit avoids all extra math, right?
+> 
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
----
- drivers/staging/rtl8723au/core/rtw_ieee80211.c | 58 ++++++++++++--------------
- 1 file changed, 26 insertions(+), 32 deletions(-)
+But where would you set ktime_sec? My first thought was tk_update_ktime_data(),
+but would then either be slightly wrong because it doesn't take the current
+xtime_nsec + tk->wall_to_monotonic.tv_nsec into account, if we do
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-index 6274cb3..4c0414d 100644
---- a/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-@@ -13,6 +13,8 @@
-  *
-  ******************************************************************************/
- #define _IEEE80211_C
-+#define get_max_rate(r1, r2, r3, r4)					\
-+	(bw_40MHz ? (short_GI_40 ? r1 : r2) : (short_GI_20 ? r3 : r4))
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index ec1791fae965..d72a456c6bd3 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -426,8 +426,8 @@ static inline void tk_update_ktime_data(struct timekeeper *tk)
+ 	 *	nsec = base_mono + now();
+ 	 * ==> base_mono = (xtime_sec + wtm_sec) * 1e9 + wtm_nsec
+ 	 */
+-	nsec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
+-	nsec *= NSEC_PER_SEC;
++	tk->ktime_sec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
++	nsec = tk->ktime_sec * NSEC_PER_SEC;
+ 	nsec += tk->wall_to_monotonic.tv_nsec;
+ 	tk->tkr.base_mono = ns_to_ktime(nsec);
  
- #include <drv_types.h>
- #include <linux/ieee80211.h>
-@@ -794,64 +796,56 @@ u16 rtw_mcs_rate23a(u8 rf_type, u8 bw_40MHz, u8 short_GI_20, u8 short_GI_40,
- 
- 	if (rf_type == RF_1T1R) {
- 		if (mcs->rx_mask[0] & BIT(7))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):
--				((short_GI_20)?722:650);
-+			max_rate = get_max_rate(1500, 1350, 722, 650);
- 		else if (mcs->rx_mask[0] & BIT(6))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215):
--				((short_GI_20)?650:585);
-+			max_rate = get_max_rate(1350, 1215, 650, 585);
- 		else if (mcs->rx_mask[0] & BIT(5))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):
--				((short_GI_20)?578:520);
-+			max_rate = get_max_rate(1200, 1080, 578, 520);
- 		else if (mcs->rx_mask[0] & BIT(4))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):
--				((short_GI_20)?433:390);
-+			max_rate = get_max_rate(900, 810, 433, 390);
- 		else if (mcs->rx_mask[0] & BIT(3))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):
--				((short_GI_20)?289:260);
-+			max_rate = get_max_rate(600, 540, 289, 260);
- 		else if (mcs->rx_mask[0] & BIT(2))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?450:405):
--				((short_GI_20)?217:195);
-+			max_rate = get_max_rate(450, 405, 217, 195);
- 		else if (mcs->rx_mask[0] & BIT(1))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):
--				((short_GI_20)?144:130);
-+			max_rate = get_max_rate(300, 270, 144, 130);
- 		else if (mcs->rx_mask[0] & BIT(0))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?150:135):
--				((short_GI_20)?72:65);
-+			max_rate = get_max_rate(150, 135, 72, 65);
- 	} else {
- 		if (mcs->rx_mask[1]) {
- 			if (mcs->rx_mask[1] & BIT(7))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?3000:2700):((short_GI_20)?1444:1300);
-+				max_rate = get_max_rate(3000, 2700, 1444, 1300);
- 			else if (mcs->rx_mask[1] & BIT(6))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?2700:2430):((short_GI_20)?1300:1170);
-+				max_rate = get_max_rate(2700, 2430, 1300, 1170);
- 			else if (mcs->rx_mask[1] & BIT(5))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?2400:2160):((short_GI_20)?1156:1040);
-+				max_rate = get_max_rate(2400, 2160, 1156, 1040);
- 			else if (mcs->rx_mask[1] & BIT(4))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1800:1620):((short_GI_20)?867:780);
-+				max_rate = get_max_rate(1800, 1620, 867, 780);
- 			else if (mcs->rx_mask[1] & BIT(3))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):((short_GI_20)?578:520);
-+				max_rate = get_max_rate(1200, 1080, 578, 520);
- 			else if (mcs->rx_mask[1] & BIT(2))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):((short_GI_20)?433:390);
-+				max_rate = get_max_rate(900, 810, 433, 390);
- 			else if (mcs->rx_mask[1] & BIT(1))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):((short_GI_20)?289:260);
-+				max_rate = get_max_rate(600, 540, 289, 260);
- 			else if (mcs->rx_mask[1] & BIT(0))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):((short_GI_20)?144:130);
-+				max_rate = get_max_rate(300, 270, 144, 130);
- 		} else {
- 			if (mcs->rx_mask[0] & BIT(7))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):((short_GI_20)?722:650);
-+				max_rate = get_max_rate(1500, 1350, 722, 650);
- 			else if (mcs->rx_mask[0] & BIT(6))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215):((short_GI_20)?650:585);
-+				max_rate = get_max_rate(1350, 1215, 650, 585);
- 			else if (mcs->rx_mask[0] & BIT(5))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):((short_GI_20)?578:520);
-+				max_rate = get_max_rate(1200, 1080, 578, 520);
- 			else if (mcs->rx_mask[0] & BIT(4))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):((short_GI_20)?433:390);
-+				max_rate = get_max_rate(900, 810, 433, 390);
- 			else if (mcs->rx_mask[0] & BIT(3))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):((short_GI_20)?289:260);
-+				max_rate = get_max_rate(600, 540, 289, 260);
- 			else if (mcs->rx_mask[0] & BIT(2))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?450:405):((short_GI_20)?217:195);
-+				max_rate = get_max_rate(450, 405, 217, 195);
- 			else if (mcs->rx_mask[0] & BIT(1))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):((short_GI_20)?144:130);
-+				max_rate = get_max_rate(300, 270, 144, 130);
- 			else if (mcs->rx_mask[0] & BIT(0))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?150:135):((short_GI_20)?72:65);
-+				max_rate = get_max_rate(150, 135, 72, 65);
- 		}
- 	}
- 	return max_rate;
--- 
-1.9.1
 
+or we'd have to add an expensive timekeeping_get_ns() call:
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index ec1791fae965..d4c95b815de6 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -426,9 +426,11 @@ static inline void tk_update_ktime_data(struct timekeeper *tk)
+ 	 *	nsec = base_mono + now();
+ 	 * ==> base_mono = (xtime_sec + wtm_sec) * 1e9 + wtm_nsec
+ 	 */
+-	nsec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
+-	nsec *= NSEC_PER_SEC;
+-	nsec += tk->wall_to_monotonic.tv_nsec;
++	tk->ktime_sec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
++	nsec = tk->wall_to_monotonic.tv_nsec;
++	if ((nsec + timekeeping_get_ns()) > NSEC_PER_SEC)
++		tk->ktime_sec += 1;
++	nsec += tk->ktime_sec * NSEC_PER_SEC;
+ 	tk->tkr.base_mono = ns_to_ktime(nsec);
+ 
+ 	/* Update the monotonic raw base */
+
+	Arnd
