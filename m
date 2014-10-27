@@ -1,171 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaJ0Gpj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 02:45:39 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:33523 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750965AbaJ0Gpi (ORCPT
+	id S1751962AbaJ0GqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 02:46:15 -0400
+Received: from smtprelay0004.hostedemail.com ([216.40.44.4]:49397 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751605AbaJ0GqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 02:45:38 -0400
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 27 Oct 2014 15:46:51 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 1/5] mm, compaction: pass classzone_idx and alloc_flags
- to watermark checking
-Message-ID: <20141027064651.GA23379@js1304-P5Q-DELUXE>
-References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
- <1412696019-21761-2-git-send-email-vbabka@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412696019-21761-2-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 27 Oct 2014 02:46:14 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:1801:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3874:4321:4605:5007:6119:6120:6261:7903:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12114:12291:12296:12438:12517:12519:12555:12740:13255:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: leg38_362f2ebf9f505
+X-Filterd-Recvd-Size: 4914
+Message-ID: <1414392371.8884.2.camel@perches.com>
+Subject: Re: [RFC V2] arm/arm64:add CONFIG_HAVE_ARCH_BITREVERSE to support
+ rbit instruction
+From: Joe Perches <joe@perches.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'Will Deacon'" <Will.Deacon@arm.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>
+Date: Sun, 26 Oct 2014 23:46:11 -0700
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
+	 <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 07, 2014 at 05:33:35PM +0200, Vlastimil Babka wrote:
-> Compaction relies on zone watermark checks for decisions such as if it's worth
-> to start compacting in compaction_suitable() or whether compaction should stop
-> in compact_finished(). The watermark checks take classzone_idx and alloc_flags
-> parameters, which are related to the memory allocation request. But from the
-> context of compaction they are currently passed as 0, including the direct
-> compaction which is invoked to satisfy the allocation request, and could
-> therefore know the proper values.
+On Mon, 2014-10-27 at 14:37 +0800, Wang, Yalin wrote:
+> this change add CONFIG_HAVE_ARCH_BITREVERSE config option,
+> so that we can use arm/arm64 rbit instruction to do bitrev operation
+> by hardware.
 > 
-> The lack of proper values can lead to mismatch between decisions taken during
-> compaction and decisions related to the allocation request. Lack of proper
-> classzone_idx value means that lowmem_reserve is not taken into account.
-> This has manifested (during recent changes to deferred compaction) when DMA
-> zone was used as fallback for preferred Normal zone. compaction_suitable()
-> without proper classzone_idx would think that the watermarks are already
-> satisfied, but watermark check in get_page_from_freelist() would fail. Because
-> of this problem, deferring compaction has extra complexity that can be removed
-> in the following patch.
-> 
-> The issue (not confirmed in practice) with missing alloc_flags is opposite in
-> nature. For allocations that include ALLOC_HIGH, ALLOC_HIGHER or ALLOC_CMA in
-> alloc_flags (the last includes all MOVABLE allocations on CMA-enabled systems)
-> the watermark checking in compaction with 0 passed will be stricter than in
-> get_page_from_freelist(). In these cases compaction might be running for a
-> longer time than is really needed.
-> 
-> This patch fixes these problems by adding alloc_flags and classzone_idx to
-> struct compact_control and related functions involved in direct compaction and
-> watermark checking. Where possible, all other callers of compaction_suitable()
-> pass proper values where those are known. This is currently limited to
-> classzone_idx, which is sometimes known in kswapd context. However, the direct
-> reclaim callers should_continue_reclaim() and compaction_ready() do not
-> currently know the proper values, so the coordination between reclaim and
-> compaction may still not be as accurate as it could. This can be fixed later,
-> if it's shown to be an issue.
-> 
-> The effect of this patch should be slightly better high-order allocation
-> success rates and/or less compaction overhead, depending on the type of
-> allocations and presence of CMA. It allows simplifying deferred compaction
-> code in a followup patch.
-> 
-> When testing with stress-highalloc, there was some slight improvement (which
-> might be just due to variance) in success rates of non-THP-like allocations.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
+> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
 > ---
->  include/linux/compaction.h |  8 ++++++--
->  mm/compaction.c            | 29 +++++++++++++++--------------
->  mm/internal.h              |  2 ++
->  mm/page_alloc.c            |  1 +
->  mm/vmscan.c                | 12 ++++++------
->  5 files changed, 30 insertions(+), 22 deletions(-)
+>  arch/arm/Kconfig                |  1 +
+>  arch/arm/include/asm/bitrev.h   | 21 +++++++++++++++++++++
+>  arch/arm64/Kconfig              |  1 +
+>  arch/arm64/include/asm/bitrev.h | 21 +++++++++++++++++++++
+>  include/linux/bitrev.h          |  9 +++++++++
+>  lib/Kconfig                     |  9 +++++++++
+>  lib/bitrev.c                    |  2 ++
+>  7 files changed, 64 insertions(+)
+>  create mode 100644 arch/arm/include/asm/bitrev.h
+>  create mode 100644 arch/arm64/include/asm/bitrev.h
 > 
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> index 60bdf8d..d896765 100644
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -33,10 +33,12 @@ extern int fragmentation_index(struct zone *zone, unsigned int order);
->  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *mask,
->  			enum migrate_mode mode, int *contended,
-> +			int alloc_flags, int classzone_idx,
->  			struct zone **candidate_zone);
->  extern void compact_pgdat(pg_data_t *pgdat, int order);
->  extern void reset_isolation_suitable(pg_data_t *pgdat);
-> -extern unsigned long compaction_suitable(struct zone *zone, int order);
-> +extern unsigned long compaction_suitable(struct zone *zone, int order,
-> +					int alloc_flags, int classzone_idx);
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 89c4b5c..426cbcc 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -16,6 +16,7 @@ config ARM
+>  	select DCACHE_WORD_ACCESS if HAVE_EFFICIENT_UNALIGNED_ACCESS
+>  	select GENERIC_ALLOCATOR
+>  	select GENERIC_ATOMIC64 if (CPU_V7M || CPU_V6 || !CPU_32v6K || !AEABI)
+> +	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
+>  	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
+>  	select GENERIC_IDLE_POLL_SETUP
+>  	select GENERIC_IRQ_PROBE
+> diff --git a/arch/arm/include/asm/bitrev.h b/arch/arm/include/asm/bitrev.h
+> new file mode 100644
+> index 0000000..0df5866
+> --- /dev/null
+> +++ b/arch/arm/include/asm/bitrev.h
+> @@ -0,0 +1,21 @@
+> +#ifndef __ASM_ARM_BITREV_H
+> +#define __ASM_ARM_BITREV_H
+> +
+> +static inline __attribute_const__ u32 __arch_bitrev32(u32 x)
+> +{
+> +	__asm__ ("rbit %0, %1" : "=r" (x) : "r" (x));
+> +	return x;
+> +}
+> +
+> +static inline __attribute_const__ u16 __arch_bitrev16(u16 x)
+> +{
+> +	return __arch_bitrev32((u32)x) >> 16;
+> +}
+> +
+> +static inline __attribute_const__ u8 __arch_bitrev8(u8 x)
+> +{
+> +	return __arch_bitrev32((u32)x) >> 24;
+> +}
+> +
+> +#endif
+> +
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 9532f8d..263c28c 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -36,6 +36,7 @@ config ARM64
+>  	select HARDIRQS_SW_RESEND
+>  	select HAVE_ARCH_AUDITSYSCALL
+>  	select HAVE_ARCH_JUMP_LABEL
+> +	select HAVE_ARCH_BITREVERSE
+>  	select HAVE_ARCH_KGDB
+>  	select HAVE_ARCH_TRACEHOOK
+>  	select HAVE_BPF_JIT
+> diff --git a/arch/arm64/include/asm/bitrev.h b/arch/arm64/include/asm/bitrev.h
+> new file mode 100644
+> index 0000000..5d24c11
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/bitrev.h
+> @@ -0,0 +1,21 @@
+> +#ifndef __ASM_ARM_BITREV_H
+> +#define __ASM_ARM_BITREV_H
+> +
+> +static inline __attribute_const__ u32 __arch_bitrev32(u32 x)
+> +{
+> +	__asm__ ("rbit %w0, %w1" : "=r" (x) : "r" (x));
+> +	return x;
+> +}
+> +
+> +static inline __attribute_const__ u16 __arch_bitrev16(u16 x)
+> +{
+> +	return __arch_bitrev32((u32)x) >> 16;
+> +}
+> +
+> +static inline __attribute_const__ u8 __arch_bitrev8(u8 x)
+> +{
+> +	return __arch_bitrev32((u32)x) >> 24;
+> +}
+> +
+> +#endif
+> +
+> diff --git a/include/linux/bitrev.h b/include/linux/bitrev.h
+> index 7ffe03f..ef5b2bb 100644
+> --- a/include/linux/bitrev.h
+> +++ b/include/linux/bitrev.h
+> @@ -3,6 +3,14 @@
 >  
->  /* Do not skip compaction more than 64 times */
->  #define COMPACT_MAX_DEFER_SHIFT 6
-> @@ -103,6 +105,7 @@ static inline bool compaction_restarting(struct zone *zone, int order)
->  static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
->  			enum migrate_mode mode, int *contended,
-> +			int alloc_flags, int classzone_idx,
->  			struct zone **candidate_zone)
->  {
->  	return COMPACT_CONTINUE;
-> @@ -116,7 +119,8 @@ static inline void reset_isolation_suitable(pg_data_t *pgdat)
->  {
->  }
+>  #include <linux/types.h>
 >  
-> -static inline unsigned long compaction_suitable(struct zone *zone, int order)
-> +static inline unsigned long compaction_suitable(struct zone *zone, int order,
-> +					int alloc_flags, int classzone_idx)
->  {
->  	return COMPACT_SKIPPED;
->  }
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index edba18a..dba8891 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -1069,9 +1069,9 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
->  
->  	/* Compaction run is not finished if the watermark is not met */
->  	watermark = low_wmark_pages(zone);
-> -	watermark += (1 << cc->order);
->  
-> -	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
-> +	if (!zone_watermark_ok(zone, cc->order, watermark, cc->classzone_idx,
-> +							cc->alloc_flags))
->  		return COMPACT_CONTINUE;
->  
->  	/* Direct compactor: Is a suitable page free? */
-> @@ -1097,7 +1097,8 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
->   *   COMPACT_PARTIAL  - If the allocation would succeed without compaction
->   *   COMPACT_CONTINUE - If compaction should run now
->   */
-> -unsigned long compaction_suitable(struct zone *zone, int order)
-> +unsigned long compaction_suitable(struct zone *zone, int order,
-> +					int alloc_flags, int classzone_idx)
->  {
->  	int fragindex;
->  	unsigned long watermark;
-> @@ -1134,7 +1135,7 @@ unsigned long compaction_suitable(struct zone *zone, int order)
->  		return COMPACT_SKIPPED;
->  
->  	if (fragindex == -1000 && zone_watermark_ok(zone, order, watermark,
-> -	    0, 0))
-> +	    classzone_idx, alloc_flags))
->  		return COMPACT_PARTIAL;
+> +#ifdef CONFIG_HAVE_ARCH_BITREVERSE
+> +#include <asm/bitrev.h>
+> +
+> +#define bitrev32 __arch_bitrev32
+> +#define bitrev16 __arch_bitrev16
+> +#define bitrev8 __arch_bitrev8
+> +
+> +#else
+>  extern u8 const byte_rev_table[256];
 
-Hello,
+If this is done, the direct uses of byte_rev_table in
+drivers/net/wireless/ath/carl9170/phy.c and
+sound/usb/6fire/firmware.c should be converted too?
 
-compaction_suitable() has one more zone_watermark_ok(). Why is it
-unchanged?
 
-Thanks.
