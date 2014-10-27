@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479AbaJ0LY3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:24:29 -0400
-Received: from s3.sipsolutions.net ([5.9.151.49]:51176 "EHLO sipsolutions.net"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752347AbaJ0LY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:24:27 -0400
-Message-ID: <1414409035.3836.4.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] net: rfkill: gpio: Add default GPIO driver mappings for
- ACPI
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 27 Oct 2014 12:23:55 +0100
-In-Reply-To: <1414404914-163837-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1414404914-163837-1-git-send-email-mika.westerberg@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.2-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752019AbaJ0LbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:31:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6987 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751632AbaJ0LbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 07:31:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,795,1406617200"; 
+   d="scan'208";a="612019566"
+From: Andi Kleen <andi@firstfloor.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 8/8 only] x86,vdso: Use LSL unconditionally for vgetcpu
+References: <d2466423e1d88f24a52e746d4f5c6a7abce982ae.1413844952.git.luto@amacapital.net>
+Date: Mon, 27 Oct 2014 04:31:02 -0700
+In-Reply-To: <d2466423e1d88f24a52e746d4f5c6a7abce982ae.1413844952.git.luto@amacapital.net>
+	(Andy Lutomirski's message of "Mon, 20 Oct 2014 15:44:46 -0700")
+Message-ID: <87wq7lpx55.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 12:15 +0200, Mika Westerberg wrote:
-> The driver uses devm_gpiod_get_index(..., index) so that the index refers
-> directly to the GpioIo resource under the ACPI device. The problem with
-> this is that if the ordering changes we get wrong GPIOs.
-> 
-> With ACPI 5.1 _DSD we can now use names instead to reference GPIOs
-> analogous to Device Tree. However, we still have systems out there that do
-> not provide _DSD at all. These systems must be supported as well.
-> 
-> Luckily we now have acpi_dev_add_driver_gpios() that can be used to provide
-> mappings for systems where _DSD is not provided and still take advantage of
-> _DSD if it exists.
-> 
-> This patch changes the driver to create default GPIO mappings if we are
-> running on ACPI system.
-> 
-> While there we can drop the indices completely and use devm_gpiod_get()
-> with name instead.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
-> Hi,
-> 
-> This patch is based on top of linux-pm/device-properties [1] and following
-> patch from Rafael [2].
-> 
-> Johannes, John,
-> 
-> If you are happy with the patch, can you ACK it so that we can merge it
-> with the rest of the device-properties patches. Thanks.
+Andy Lutomirski <luto@amacapital.net> writes:
 
-Acked-by: Johannes Berg <johannes@sipsolutions.net>
-Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+> LSL is faster than RDTSCP and works everywhere; there's no need to
+> switch between them depending on CPU.
 
-johannes
+Yes it should have been done like this from day 1.
 
+> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> index 9793322751e0..d14bb8faad16 100644
+> --- a/arch/x86/vdso/vclock_gettime.c
+> +++ b/arch/x86/vdso/vclock_gettime.c
+> @@ -11,6 +11,9 @@
+>   * Check with readelf after changing.
+>   */
+>  
+> +/* Disable static_cpu_has debugging; it doesn't work in the vDSO */
+> +#undef CONFIG_X86_DEBUG_STATIC_CPU_HAS
+> +
+>  #include <uapi/linux/time.h>
+>  #include <asm/vgtod.h>
+>  #include <asm/hpet.h>
+> diff --git a/arch/x86/vdso/vgetcpu.c b/arch/x86/vdso/vgetcpu.c
+> index add1d98d2477..fd8470c98ab5 100644
+> --- a/arch/x86/vdso/vgetcpu.c
+> +++ b/arch/x86/vdso/vgetcpu.c
+> @@ -5,10 +5,12 @@
+>   * Fast user context implementation of getcpu()
+>   */
+>  
+> +/* Disable static_cpu_has debugging; it doesn't work in the vDSO */
+> +#undef CONFIG_X86_DEBUG_STATIC_CPU_HAS
+
+
+These two hunks are unrelated?
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
