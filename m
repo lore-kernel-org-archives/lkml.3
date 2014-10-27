@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaJ0Jzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 05:55:36 -0400
-Received: from mga03.intel.com ([134.134.136.65]:20755 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518AbaJ0Jzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 05:55:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,794,1406617200"; 
-   d="scan'208";a="596803528"
-Date: Mon, 27 Oct 2014 11:55:29 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh.triplett@intel.com, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com
-Subject: Re: [PATCH v3 0/3] prepare for TPM 2.0
-Message-ID: <20141027095529.GA2922@intel.com>
-References: <1414314837-19722-1-git-send-email-jarkko.sakkinen@linux.intel.com>
+	id S1752134AbaJ0J4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 05:56:36 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48854 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586AbaJ0J4f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 05:56:35 -0400
+Date: Mon, 27 Oct 2014 10:56:26 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
+        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jens Axboe <axboe@fb.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Wise <pabs3@bonedaddy.net>
+Subject: Re: [PATCH] sysctl: terminate strings also on \r
+Message-ID: <20141027095626.GD9807@amd>
+References: <20141021202137.GA20114@www.outflux.net>
+ <20141022162638.875681da6bbb9e027d2d3bee@linux-foundation.org>
+ <CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414314837-19722-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Wed 2014-10-22 16:43:10, Kees Cook wrote:
+> On Wed, Oct 22, 2014 at 4:26 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Tue, 21 Oct 2014 13:21:37 -0700 Kees Cook <keescook@chromium.org> wrote:
+> >
+> >> From: Paul Wise <pabs3@bonedaddy.net>
+> >>
+> >> This partially mitigates a common strategy used by attackers for hiding
+> >> the full contents of strings in procfs from naive sysadmins who use cat,
+> >> more or sysctl to inspect the contents of strings in procfs.
+> >>
+> >> ...
+> >>
+> >> --- a/kernel/sysctl.c
+> >> +++ b/kernel/sysctl.c
+> >> @@ -1739,7 +1739,7 @@ static int _proc_do_string(char *data, int maxlen, int write,
+> >>               while ((p - buffer) < *lenp && len < maxlen - 1) {
+> >>                       if (get_user(c, p++))
+> >>                               return -EFAULT;
+> >> -                     if (c == 0 || c == '\n')
+> >> +                     if (c == 0 || c == '\n' || c == '\r')
+> >>                               break;
+> >>                       data[len++] = c;
+> >>               }
+> >
+> > There are no valid uses of \r in a procfs write?
+> 
+> I struggle to imagine one; everything I found that uses proc_dostring
+> seems to be names, paths, and commands.
 
-Any comments about this? In v2 I fixed issues reported by Jason
-and in v3 fixed rather embarrasing one regression. Changes have
-been now also tested to work just fine with the TIS driver.
-
-/Jarkko
-
-On Sun, Oct 26, 2014 at 11:13:54AM +0200, Jarkko Sakkinen wrote:
-> This patch set fixes two race conditions in the TPM subsystem:
-> 
-> * Two-phase initialization for struct tpm_chip so that device can
->   initialize fully initialize before exposing itself to the user
->   space. Also, in future TPM2 devices must be flagged before they
->   can be registered.
-> * Machines where there are two TPM devices exposed by ACPI have
->   a racy lookup for the PPI interface. This patch set fixes this
->   issues
-> 
-> In addition, transmit_cmd() is renamed as tpm_transmit_cmd() and
-> made opaque so that separate command structure can be introduced
-> for TPM2.
-> 
-> Comments about v1:
-> * I think this could be pulled to 3.18 because this clearly fixes
->   bugs in the current implementation.
-> 
-> Changes since v1:
-> * Removed dev_dbgs from tpm-chip.c
-> * Use driver_lock for dev_mask (the problem was existing also in
->   tpm-interface.c when the code was moved).
-> * Check for bios_dir nullity when removed (the problem was existing
->   also in tpm-interface.c when the code was moved).
-> * Cleaned up the control flow in tpm_i2c_stm_st33.c and tpm_atmel.c.
-> * Cleaned up the control flow in tpm_ppi.c.
-> 
-> Comments about v2:
-> * Thanks to Jason Gunthorpe for reviewing v1.
-> * I'm at T2 infosec conference right now so I wasn't able to test the
->   force paths in tpm_atmel.c and tpm_tis.c.
-> 
-> Changes since v2:
-> * Regression in tpm-dev.c, must use tpm_transmit() instead of
->   tpm_transmit_cmd().
-> 
-> Jarkko Sakkinen (3):
->   tpm: merge duplicate transmit_cmd() functions
->   tpm: two-phase chip management functions
->   tpm: fix multiple race conditions in tpm_ppi.c
-> 
->  drivers/char/tpm/Makefile           |   2 +-
->  drivers/char/tpm/tpm-chip.c         | 196 +++++++++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm-interface.c    | 197 +++++-------------------------------
->  drivers/char/tpm/tpm-sysfs.c        |  23 +----
->  drivers/char/tpm/tpm.h              |  30 ++++--
->  drivers/char/tpm/tpm_atmel.c        |  12 ++-
->  drivers/char/tpm/tpm_i2c_atmel.c    |  33 ++----
->  drivers/char/tpm/tpm_i2c_infineon.c |  37 ++-----
->  drivers/char/tpm/tpm_i2c_nuvoton.c  |  44 +++-----
->  drivers/char/tpm/tpm_i2c_stm_st33.c |  38 +++----
->  drivers/char/tpm/tpm_ibmvtpm.c      |  17 ++--
->  drivers/char/tpm/tpm_infineon.c     |  29 +++---
->  drivers/char/tpm/tpm_nsc.c          |  14 ++-
->  drivers/char/tpm/tpm_ppi.c          | 136 +++++++++++++++----------
->  drivers/char/tpm/tpm_tis.c          |  94 ++++++++---------
->  drivers/char/tpm/xen-tpmfront.c     |  14 +--
->  16 files changed, 467 insertions(+), 449 deletions(-)
->  create mode 100644 drivers/char/tpm/tpm-chip.c
-> 
-> -- 
-> 2.1.0
-> 
+Well, filename can contain \r, right?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
