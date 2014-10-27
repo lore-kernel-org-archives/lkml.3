@@ -1,135 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296AbaJ0XO1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 19:14:27 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:18758 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531AbaJ0XJt (ORCPT
+	id S1753045AbaJ0XPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 19:15:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41197 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132AbaJ0XPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 19:09:49 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
-        akpm@linux-foundation.org, arnd@arndb.de
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
-        stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
-        yigal@plexistor.com, konrad.wilk@oracle.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v4 1/7] x86, mm, pat: Set WT to PA7 slot of PAT MSR
-Date: Mon, 27 Oct 2014 16:55:39 -0600
-Message-Id: <1414450545-14028-2-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
-References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
+	Mon, 27 Oct 2014 19:15:44 -0400
+Date: Mon, 27 Oct 2014 16:15:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Pintu Kumar <pintu.k@samsung.com>, riel@redhat.com, aquini@redhat.com,
+        paul.gortmaker@windriver.com, jmarchan@redhat.com,
+        lcapitulino@redhat.com, kirill.shutemov@linux.intel.com,
+        m.szyprowski@samsung.com, aneesh.kumar@linux.vnet.ibm.com,
+        iamjoonsoo.kim@lge.com, lauraa@codeaurora.org, gioh.kim@lge.com,
+        mgorman@suse.de, rientjes@google.com, hannes@cmpxchg.org,
+        vbabka@suse.cz, sasha.levin@oracle.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, pintu_agarwal@yahoo.com, cpgs@samsung.com,
+        vishnu.ps@samsung.com, rohit.kr@samsung.com, ed.savinay@samsung.com
+Subject: Re: [PATCH v2 2/2] fs: proc: Include cma info in proc/meminfo
+Message-Id: <20141027161544.8955c1df4c01c48e22283692@linux-foundation.org>
+In-Reply-To: <xa1tk33p2zvq.fsf@mina86.com>
+References: <1413790391-31686-1-git-send-email-pintu.k@samsung.com>
+	<1413986796-19732-1-git-send-email-pintu.k@samsung.com>
+	<1413986796-19732-2-git-send-email-pintu.k@samsung.com>
+	<xa1tk33p2zvq.fsf@mina86.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch sets WT to the PA7 slot in the PAT MSR when the processor
-is not affected by the PAT errata.  The PA7 slot is chosen to further
-minimize the risk of using the PAT bit as the PA3 slot is UC and is
-not currently used.
+On Fri, 24 Oct 2014 18:31:21 +0200 Michal Nazarewicz <mina86@mina86.com> wrote:
 
-The following Intel processors are affected by the PAT errata.
+> On Wed, Oct 22 2014, Pintu Kumar <pintu.k@samsung.com> wrote:
+> > This patch include CMA info (CMATotal, CMAFree) in /proc/meminfo.
+> > Currently, in a CMA enabled system, if somebody wants to know the
+> > total CMA size declared, there is no way to tell, other than the dmesg
+> > or /var/log/messages logs.
+> > With this patch we are showing the CMA info as part of meminfo, so that
+> > it can be determined at any point of time.
+> > This will be populated only when CMA is enabled.
+> >
+> > Below is the sample output from a ARM based device with RAM:512MB and CMA:16MB.
+> >
+> > MemTotal:         471172 kB
+> > MemFree:          111712 kB
+> > MemAvailable:     271172 kB
+> > .
+> > .
+> > .
+> > CmaTotal:          16384 kB
+> > CmaFree:            6144 kB
+> >
+> > This patch also fix below checkpatch errors that were found during these changes.
+> 
+> As already mentioned, this should be in separate patch.
 
-   errata               cpuid
-   ----------------------------------------------------
-   Pentium 2, A52       family 0x6, model 0x5
-   Pentium 3, E27       family 0x6, model 0x7, 0x8
-   Pentium 3 Xenon, G26 family 0x6, model 0x7, 0x8, 0xa
-   Pentium M, Y26       family 0x6, model 0x9
-   Pentium M 90nm, X9   family 0x6, model 0xd
-   Pentium 4, N46       family 0xf, model 0x0
-
-Instead of making sharp boundary checks, this patch makes conservative
-checks to exclude all Pentium 2, 3, M and 4 family processors.  For
-such processors, _PAGE_CACHE_MODE_WT is redirected to UC- per the
-default setup in __cachemode2pte_tbl[].
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/mm/pat.c |   64 +++++++++++++++++++++++++++++++++++++++++------------
- 1 file changed, 49 insertions(+), 15 deletions(-)
-
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index ff31851..db687c3 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -133,6 +133,7 @@ void pat_init(void)
- {
- 	u64 pat;
- 	bool boot_cpu = !boot_pat_state;
-+	struct cpuinfo_x86 *c = &boot_cpu_data;
- 
- 	if (!pat_enabled)
- 		return;
-@@ -153,21 +154,54 @@ void pat_init(void)
- 		}
- 	}
- 
--	/* Set PWT to Write-Combining. All other bits stay the same */
--	/*
--	 * PTE encoding used in Linux:
--	 *      PAT
--	 *      |PCD
--	 *      ||PWT
--	 *      |||
--	 *      000 WB		_PAGE_CACHE_WB
--	 *      001 WC		_PAGE_CACHE_WC
--	 *      010 UC-		_PAGE_CACHE_UC_MINUS
--	 *      011 UC		_PAGE_CACHE_UC
--	 * PAT bit unused
--	 */
--	pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
--	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
-+	if ((c->x86_vendor == X86_VENDOR_INTEL) &&
-+	    (((c->x86 == 0x6) && (c->x86_model <= 0xd)) ||
-+	     ((c->x86 == 0xf) && (c->x86_model <= 0x6)))) {
-+		/*
-+		 * PAT support with the lower four entries. Intel Pentium 2,
-+		 * 3, M, and 4 are affected by PAT errata, which makes the
-+		 * upper four entries unusable.  We do not use the upper four
-+		 * entries for all the affected processor families for safe.
-+		 *
-+		 *  PTE encoding used in Linux:
-+		 *      PAT
-+		 *      |PCD
-+		 *      ||PWT  PAT
-+		 *      |||    slot
-+		 *      000    0    WB : _PAGE_CACHE_MODE_WB
-+		 *      001    1    WC : _PAGE_CACHE_MODE_WC
-+		 *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
-+		 *      011    3    UC : _PAGE_CACHE_MODE_UC
-+		 * PAT bit unused
-+		 *
-+		 * NOTE: When WT or WP is used, it is redirected to UC- per
-+		 * the default setup in __cachemode2pte_tbl[].
-+		 */
-+		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
-+		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
-+	} else {
-+		/*
-+		 * PAT full support. WT is set to slot 7, which minimizes
-+		 * the risk of using the PAT bit as slot 3 is UC and is
-+		 * currently unused. Slot 4 should remain as reserved.
-+		 *
-+		 *  PTE encoding used in Linux:
-+		 *      PAT
-+		 *      |PCD
-+		 *      ||PWT  PAT
-+		 *      |||    slot
-+		 *      000    0    WB : _PAGE_CACHE_MODE_WB
-+		 *      001    1    WC : _PAGE_CACHE_MODE_WC
-+		 *      010    2    UC-: _PAGE_CACHE_MODE_UC_MINUS
-+		 *      011    3    UC : _PAGE_CACHE_MODE_UC
-+		 *      100    4    <reserved>
-+		 *      101    5    <reserved>
-+		 *      110    6    <reserved>
-+		 *      111    7    WT : _PAGE_CACHE_MODE_WT
-+		 */
-+		pat = PAT(0, WB) | PAT(1, WC) | PAT(2, UC_MINUS) | PAT(3, UC) |
-+		      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, WT);
-+	}
- 
- 	/* Boot CPU check */
- 	if (!boot_pat_state)
+Yes, in theory.  But a couple of little whitespace fixes aren't really
+worth a resend.  As long as they don't make the patch harder to read
+and to backport I usually just let them through.
