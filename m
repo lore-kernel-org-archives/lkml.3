@@ -1,123 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157AbaJ0Qtb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:49:31 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:56725 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951AbaJ0Qrv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 12:47:51 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-f1-544e773528cc
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Konstantin Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <adech.fo@gmail.com>,
-        Yuri Gribov <tetra2005@gmail.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Vegard Nossum <vegard.nossum@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH v5 08/12] mm: slub: introduce
- metadata_access_enable()/metadata_access_disable()
-Date: Mon, 27 Oct 2014 19:46:55 +0300
-Message-id: <1414428419-17860-9-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.1.2
-In-reply-to: <1414428419-17860-1-git-send-email-a.ryabinin@samsung.com>
-References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
- <1414428419-17860-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xa7qm5X4hBo9vslts+/WIzeL33pms
-	FnPWr2GzOHLtO7vF9W9vGC0+vXzAaLHlehOTxfOHD9ktJjxsY7eYtlHcYmV3M5vF9mdvmSxW
-	dj5gtbi8aw6bxb01/1kt2j7/AxJLNjJZLD5ym9ni3bPJzBZXVx1kt/ix4TGrg6jH/J0fGT12
-	zrrL7rFgU6nH4j0vmTw2repk89j0aRK7R9fbK0weJ2b8ZvF4cmU6k8fHp7dYPN7vu8rm0bdl
-	FaPH501yHidavrAG8EVx2aSk5mSWpRbp2yVwZRxY8Iip4DR/xdnLx1gaGC/zdDFyckgImEis
-	OXWFDcIWk7hwbz2YLSSwlFHizKyCLkYuILuPSWLBpT4mkASbgJ7Ev1nbwYpEBHQlVj3fxQxS
-	xCxwgVWir2sOO0hCWCBJ4uLZZ4wgNouAqsSsNU1gDbwCbhJb/i9gh9gmJzF9710WEJtTwF2i
-	59I0FohtTYwSfVOWM09g5F3AyLCKUTS1NLmgOCk910ivODG3uDQvXS85P3cTIyR2vu5gXHrM
-	6hCjAAejEg/vhGLfECHWxLLiytxDjBIczEoivAfS/EKEeFMSK6tSi/Lji0pzUosPMTJxcEo1
-	MEZo9oSuUfimZq8mwsGiVvbEgfXQ5lN3ZFn+dnrm3v0RsrxF4z/vY5NrBYG1BkLOAv+fS83M
-	ElXOvmGsVTR7tzW74cQ1m2+2nFjq5LLecabX+tgVr36sfVgirCs36Ztd4t7qs72fn3VHLHs5
-	g7mjd76n8iNvmT9KCq1Vf9X38WzMzZ9ltSD+qxJLcUaioRZzUXEiAEMtFfZ7AgAA
+	id S1752959AbaJ0Qru (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:47:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45958 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752927AbaJ0Qrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 12:47:46 -0400
+Date: Mon, 27 Oct 2014 11:45:44 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Johan Hovold <johan@kernel.org>
+CC: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Felipe Balbi <balbi@ti.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        <nsekhar@ti.com>, <t-kristo@ti.com>, <j-keerthy@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] rtc: omap: add support for pmic_power_en
+Message-ID: <20141027164544.GI14253@saruman>
+Reply-To: <balbi@ti.com>
+References: <1413913086-12730-1-git-send-email-johan@kernel.org>
+ <1414397368-26480-1-git-send-email-johan@kernel.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="o7gdRJTuwFmWapyH"
+Content-Disposition: inline
+In-Reply-To: <1414397368-26480-1-git-send-email-johan@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wrap access to object's metadata in external functions with
-metadata_access_enable()/metadata_access_disable() function calls.
+--o7gdRJTuwFmWapyH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This hooks separates payload accesses from metadata accesses
-which might be useful for different checkers (e.g. KASan).
+On Mon, Oct 27, 2014 at 09:09:28AM +0100, Johan Hovold wrote:
+> Add new property "ti,system-power-controller" to register the RTC as a
+> power-off handler.
+>=20
+> Some RTC IP revisions can control an external PMIC via the pmic_power_en
+> pin, which can be configured to transition to OFF on ALARM2 events and
+> back to ON on subsequent ALARM (wakealarm) events.
+>=20
+> This is based on earlier work by Colin Foe-Parker and AnilKumar Ch. [1]
+>=20
+> [1] https://www.mail-archive.com/linux-omap@vger.kernel.org/msg82127.html
+>=20
+> Tested-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Johan Hovold <johan@kernel.org>
+> ---
+>=20
+> Changes since v2:
+>  - add two-second delay to allow alarm to trigger before returning
+>=20
+> Andrew, can you replace just this patch in the series that you already
+> have in your tree, or do you prefer I resend the whole series (with
+> Felipe's Tested-by tags)?
+>=20
+> Thanks,
+> Johan
+>=20
+>=20
+>  Documentation/devicetree/bindings/rtc/rtc-omap.txt |  9 +-
+>  drivers/rtc/rtc-omap.c                             | 95 ++++++++++++++++=
+++++++
+>  2 files changed, 103 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documen=
+tation/devicetree/bindings/rtc/rtc-omap.txt
+> index 5a0f02d34d95..750efd40c72e 100644
+> --- a/Documentation/devicetree/bindings/rtc/rtc-omap.txt
+> +++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
+> @@ -5,11 +5,17 @@ Required properties:
+>  	- "ti,da830-rtc"  - for RTC IP used similar to that on DA8xx SoC family.
+>  	- "ti,am3352-rtc" - for RTC IP used similar to that on AM335x SoC famil=
+y.
+>  			    This RTC IP has special WAKE-EN Register to enable
+> -			    Wakeup generation for event Alarm.
+> +			    Wakeup generation for event Alarm. It can also be
+> +			    used to control an external PMIC via the
+> +			    pmic_power_en pin.
+>  - reg: Address range of rtc register set
+>  - interrupts: rtc timer, alarm interrupts in order
+>  - interrupt-parent: phandle for the interrupt controller
+> =20
+> +Optional properties:
+> +- ti,system-power-controller: whether the rtc is controlling the system =
+power
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- mm/slub.c | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+isn't there a discussion going on to drop the vendor prefix ? I wonder
+if we should just use the final binding to avoid supporting this for
+rtc-omap too. OTOH, all of that can be hidden under
+of_is_system_power_controller() itself.
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 1458629..2116ccd 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -467,13 +467,23 @@ static int slub_debug;
- static char *slub_debug_slabs;
- static int disable_higher_order_debug;
- 
-+static inline void metadata_access_enable(void)
-+{
-+}
-+
-+static inline void metadata_access_disable(void)
-+{
-+}
-+
- /*
-  * Object debugging
-  */
- static void print_section(char *text, u8 *addr, unsigned int length)
- {
-+	metadata_access_enable();
- 	print_hex_dump(KERN_ERR, text, DUMP_PREFIX_ADDRESS, 16, 1, addr,
- 			length, 1);
-+	metadata_access_disable();
- }
- 
- static struct track *get_track(struct kmem_cache *s, void *object,
-@@ -503,7 +513,9 @@ static void set_track(struct kmem_cache *s, void *object,
- 		trace.max_entries = TRACK_ADDRS_COUNT;
- 		trace.entries = p->addrs;
- 		trace.skip = 3;
-+		metadata_access_enable();
- 		save_stack_trace(&trace);
-+		metadata_access_disable();
- 
- 		/* See rant in lockdep.c */
- 		if (trace.nr_entries != 0 &&
-@@ -677,7 +689,9 @@ static int check_bytes_and_report(struct kmem_cache *s, struct page *page,
- 	u8 *fault;
- 	u8 *end;
- 
-+	metadata_access_enable();
- 	fault = memchr_inv(start, value, bytes);
-+	metadata_access_disable();
- 	if (!fault)
- 		return 1;
- 
-@@ -770,7 +784,9 @@ static int slab_pad_check(struct kmem_cache *s, struct page *page)
- 	if (!remainder)
- 		return 1;
- 
-+	metadata_access_enable();
- 	fault = memchr_inv(end - remainder, POISON_INUSE, remainder);
-+	metadata_access_disable();
- 	if (!fault)
- 		return 1;
- 	while (end > fault && end[-1] == POISON_INUSE)
--- 
-2.1.2
+--=20
+balbi
 
+--o7gdRJTuwFmWapyH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUTna4AAoJEIaOsuA1yqREgwEP/1K5u2SMMrSwStmF5zXsQFcU
+hCY7y0v3LxtgZYeBJpIQH4cZcxi3VPlO/9+pRL49JQ1eYZoBcDgKVNwYJHpKHP3v
+EZM9QzfBLhXjyCi/vAIRj/A9MPGsa/YQFViLiLJrfI98SqOvJSk5/4C0MC0N0Tbj
+AEFMCVxZw+98xJseQhNrsgDg6VGoOsnuIyeiX4erei6jn9mHvMSS+9O3EaBta7Aw
+dvZSRxqSKqXeceP7uv4kCl1uECJIXb+NYlb+999QhPgJxKEsYMf/kVfqkTA4+4PQ
+XG2ue0ZcKck9CQIRrbE+RHCnlA+0RqGNmu2L7HINu7+QNLdbg5LuPynkW/lIVh4Q
+5v7ER1Q6jrBk2jMaALnvvu5XVJbcBd55VejeaxM7CO4aLZJLCLvX0hVw7yUXRo9s
+UwsAeB2y8KhhjDwRbWaMNadi84VLqgFhigq5rxS7pcxGG6voQP4eu08o9olwGRYB
+iXl8AlLj7TsfLS/sGboglrTeXXQmfmyW/mHqk1/cwvOnUEFmv3v5TKh4VBLt4Tos
+kYMU62NxoDHN5jd2mqViXmy0IIs42RXbGdfalclsTPBTGWL355M1i4zks5SqJAR6
+BVx+IEX3dVrCroqImctdS6RKGYqCglhoRZdIcfMp411wQJpbDpmhxEsVK5RVsuFP
+C83DS/Cf3678jPDKawiy
+=+xdL
+-----END PGP SIGNATURE-----
+
+--o7gdRJTuwFmWapyH--
