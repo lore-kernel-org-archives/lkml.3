@@ -1,64 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646AbaJ0TVA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:21:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52637 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517AbaJ0TCw (ORCPT
+	id S1753809AbaJ0TVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:21:35 -0400
+Received: from resqmta-ch2-01v.sys.comcast.net ([69.252.207.33]:44339 "EHLO
+	resqmta-ch2-01v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752619AbaJ0TVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:02:52 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ilya Dryomov <idryomov@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 095/105] libceph: ceph-msgr workqueue needs a resque worker
-Date: Mon, 27 Oct 2014 11:57:10 -0700
-Message-Id: <1414436240-13879-96-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
-References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 27 Oct 2014 15:21:34 -0400
+Date: Mon, 27 Oct 2014 14:21:14 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Kirill Tkhai <ktkhai@parallels.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH 2/3] introduce probe_slab_address()
+In-Reply-To: <20141027195425.GC11736@redhat.com>
+Message-ID: <alpine.DEB.2.11.1410271420580.19427@gentwo.org>
+References: <1413962231.19914.130.camel@tkhai> <20141027195339.GA11736@redhat.com> <20141027195425.GC11736@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 27 Oct 2014, Oleg Nesterov wrote:
 
-------------------
+> Extract the ifdef(CONFIG_DEBUG_PAGEALLOC) code from get_freepointer_safe()
+> into the new generic helper, probe_slab_address(). The next patch will add
+> another user.
 
-From: Ilya Dryomov <idryomov@redhat.com>
-
-commit f9865f06f7f18c6661c88d0511f05c48612319cc upstream.
-
-Commit f363e45fd118 ("net/ceph: make ceph_msgr_wq non-reentrant")
-effectively removed WQ_MEM_RECLAIM flag from ceph_msgr_wq.  This is
-wrong - libceph is very much a memory reclaim path, so restore it.
-
-Signed-off-by: Ilya Dryomov <idryomov@redhat.com>
-Tested-by: Micha Krause <micha@krausam.de>
-Reviewed-by: Sage Weil <sage@redhat.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/ceph/messenger.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
-index 94e21b9..057017b 100644
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -290,7 +290,11 @@ int ceph_msgr_init(void)
- 	if (ceph_msgr_slab_init())
- 		return -ENOMEM;
- 
--	ceph_msgr_wq = alloc_workqueue("ceph-msgr", 0, 0);
-+	/*
-+	 * The number of active work items is limited by the number of
-+	 * connections, so leave @max_active at default.
-+	 */
-+	ceph_msgr_wq = alloc_workqueue("ceph-msgr", WQ_MEM_RECLAIM, 0);
- 	if (ceph_msgr_wq)
- 		return 0;
- 
--- 
-1.9.1
-
+Acked-by: Christoph Lameter <cl@linux.com>
