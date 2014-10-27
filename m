@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076AbaJ0Oca (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:32:30 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:53958 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117AbaJ0Oc0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:32:26 -0400
-X-Originating-IP: 83.155.44.161
-Message-ID: <1414420292.30379.55.camel@hadess.net>
-Subject: Re: A desktop environment[1] kernel wishlist
-From: Bastien Nocera <hadess@hadess.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Oct 2014 15:31:32 +0100
-In-Reply-To: <20141027092804.GB9807@amd>
-References: <1413881397.30379.7.camel@hadess.net>
-	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	 <1413911644.30379.12.camel@hadess.net>
-	 <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	 <1413914978.30379.14.camel@hadess.net> <20141027092804.GB9807@amd>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753512AbaJ0Oco (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:32:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53448 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752998AbaJ0Ocm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 10:32:42 -0400
+Date: Mon, 27 Oct 2014 15:32:37 +0100
+From: Borislav Petkov <bp@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jason Baron <jbaron@akamai.com>, linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] EDAC fixes for 3.18
+Message-ID: <20141027143236.GA4741@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 10:28 +0100, Pavel Machek wrote:
-> Hi!
-> 
-> > > I suspect wakeup type reporting is maybe not the best way to go about
-> > > this, since there may be a number of causes for wakeups and they can
-> > > arrive closely together in different orders, which can result in
-> > > races.
-> > > 
-> > > For instance, if the machine suspends, and sets an alarm to be woken
-> > > up at midnight to do a backup, if the user resumes their laptop at
-> > > 11:59:59, should the backup still proceed at midnight?
-> > 
-> > No. And I would expect that we would get a wake up type of "power
-> > button" or "lid open" in this case.
-> 
-> I believe you should really use "is lid opened or AC or dock
-> connected" to determine if it was automatic resume or not. It should
-> work better and you can actually do it today.
+Hi Linus,
 
-There's no LID or docks on a tablet.
+please pull a bunch of fixes from Jason.
 
-> > >   For mobile
-> > > devices this is an expected design point, but for off-the-shelf
-> > > laptops with big fans and exhaust vents, I'm not sure how safe this
-> > > would be, so you may need to constrain this functionality somehow (or
-> > > look to see if a enforced low-power resume is possible).
-> > 
-> > I think that we won't know whether it's a problem until the point that
-> > somebody actually implements it.
-> 
-> Kernel does not stop you at this point, right?
-> 
-> Suspend-to-partition is also doable today (see suspend.sf.net),
+Thanks.
 
-Is it perfect? Because no releases in 3 years kind of scares me.
+---
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
 
->  or you
-> can just swapon before starting. You can take it off the list, I
-> believe.
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
 
-Or we could create a new filesystem type that isn't swap, that isn't
-used by swap at all, but could be created by distributions' installers.
-Then I wouldn't need to hope that the swap didn't start being used in
-between me enabling it, and the suspend actually occurring (making it
-impossible to disable afterwards).
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/edac_fixes_for_3.18
+
+for you to fetch changes up to 8030122a9ccf939186f8db96c318dbb99b5463f6:
+
+  e7xxx_edac: Report CE events properly (2014-10-22 22:59:00 +0200)
+
+----------------------------------------------------------------
+Correct severity of reported errors in several EDAC drivers. From Jason
+Baron.
+
+----------------------------------------------------------------
+Jason Baron (4):
+      i3200_edac: Report CE events properly
+      i82860_edac: Report CE events properly
+      cpc925_edac: Report UE events properly
+      e7xxx_edac: Report CE events properly
+
+ drivers/edac/cpc925_edac.c | 2 +-
+ drivers/edac/e7xxx_edac.c  | 2 +-
+ drivers/edac/i3200_edac.c  | 4 ++--
+ drivers/edac/i82860_edac.c | 2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
