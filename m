@@ -1,49 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbaJ0NlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:41:25 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:58085 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016AbaJ0NlY (ORCPT
+	id S1753266AbaJ0Nlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:41:46 -0400
+Received: from eddie.linux-mips.org ([148.251.95.138]:52600 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244AbaJ0Nlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:41:24 -0400
-Date: Mon, 27 Oct 2014 09:41:20 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] workqueue: remove get_online_cpus() from
- apply_workqueue_attrs()
-Message-ID: <20141027134120.GF4436@htj.dyndns.org>
-References: <1412740423-20782-1-git-send-email-laijs@cn.fujitsu.com>
- <1412740423-20782-4-git-send-email-laijs@cn.fujitsu.com>
+	Mon, 27 Oct 2014 09:41:44 -0400
+Date: Mon, 27 Oct 2014 13:41:42 +0000 (GMT)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] tc: Error handling clean-ups
+In-Reply-To: <20141027013857.GO16320@linux-mips.org>
+Message-ID: <alpine.LFD.2.11.1410271340580.3413@eddie.linux-mips.org>
+References: <alpine.LFD.2.11.1404062030280.15266@eddie.linux-mips.org> <alpine.LFD.2.11.1410222234050.21390@eddie.linux-mips.org> <20141027101017.6af4e810@canb.auug.org.au> <alpine.LFD.2.11.1410270102540.21390@eddie.linux-mips.org>
+ <20141027013857.GO16320@linux-mips.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412740423-20782-4-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 11:53:33AM +0800, Lai Jiangshan wrote:
-> There are two aims for get_online_cpus():
->   1) Protects cpumask_of_node(node). (CPUs should stay stable)
->   2) Protects the pwq-allocation and installation
+On Mon, 27 Oct 2014, Ralf Baechle wrote:
+
+> >  Andrew, can you please take the change from the LKML message heading 
+> > this thread, or shall I resend it somehow for you to pick it up?  This 
+> > doesn't really fit anywhere.
 > 
-> But both aims are settled by other methods in previous patches:
-> cpumask_of_node(node) is replaced by wq_unbound_online_cpumask, and
-> the pwq-allocation and installation are changed to be protected by
-> wq_pool_mutex.  Now the get_online_cpus() is no reason to exist,
-> remove it!
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> The original patch is marked as rejected in patchwork - but I don't recall
+> why and the patch does look good and applies, so I just applied it.  Sorry,
+> probably fat fingered patchwork ...
 
-Well, this is very marginal and we want to add comments explaining why
-this is safe, but yeah I guess it's an improvement.  Can you please
-add comments explaining what states are depended upon and that they
-are all protected by pool mutex?
+ Great, thanks very much indeed, Ralf!
 
-Thanks.
-
--- 
-tejun
+  Maciej
