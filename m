@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081AbaJ0MmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:42:09 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28075 "EHLO
+	id S1753062AbaJ0MmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:42:07 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:28071 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446AbaJ0Mlm (ORCPT
+	with ESMTP id S1752570AbaJ0Mlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 08:41:42 -0400
 From: Yijing Wang <wangyijing@huawei.com>
@@ -31,9 +31,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 09/16] MIPS/Xlr/MSI: Use MSI controller framework to configure MSI/MSI-X irq
-Date: Mon, 27 Oct 2014 21:22:15 +0800
-Message-ID: <1414416142-31239-10-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 01/16] PCI/MSI: Refactor MSI controller to make it become more common
+Date: Mon, 27 Oct 2014 21:22:07 +0800
+Message-ID: <1414416142-31239-2-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
 References: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
@@ -45,66 +45,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use MSI controller framework instead of arch MSI functions to configure
-MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
+Now there are a lot of weak arch MSI functions in MSI code.
+These functions make MSI driver complex. Because people need
+to know much which arch MSI function should be overrode and
+which is not. Thierry introduced MSI chip framework to configure
+MSI/MSI-X irq in arm. MSI chip framework is better than raw arch
+MSI functions, people can clearly know they should implement which
+MSI ops in specific platform. Use MSI chip framework to refactor all
+other platform MSI code to eliminate weak arch MSI functions.
+This patch add .restore_irqs(), .teardown_irqs() and .setup_irqs()
+to make it become more common.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Reviewed-by: Lucas Stach <l.stach@pengutronix.de>
 ---
- arch/mips/pci/pci-xlr.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
+ drivers/pci/msi.c   |   15 +++++++++++++++
+ include/linux/msi.h |    8 ++++++--
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/pci/pci-xlr.c b/arch/mips/pci/pci-xlr.c
-index 0dde803..1e43c70 100644
---- a/arch/mips/pci/pci-xlr.c
-+++ b/arch/mips/pci/pci-xlr.c
-@@ -149,6 +149,8 @@ static struct resource nlm_pci_io_resource = {
- 	.flags		= IORESOURCE_IO,
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 27b6a54..0e1da3e 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -70,6 +70,11 @@ int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ {
+ 	struct msi_desc *entry;
+ 	int ret;
++	struct msi_controller *ctrl;
++
++	ctrl = pci_msi_controller(dev->bus);
++	if (ctrl && ctrl->setup_irqs)
++		return ctrl->setup_irqs(ctrl, dev, nvec, type);
+ 
+ 	/*
+ 	 * If an architecture wants to support multiple MSI, it needs to
+@@ -112,6 +117,11 @@ void default_teardown_msi_irqs(struct pci_dev *dev)
+ 
+ void __weak arch_teardown_msi_irqs(struct pci_dev *dev)
+ {
++	struct msi_controller *ctrl = pci_msi_controller(dev->bus);
++
++	if (ctrl && ctrl->teardown_irqs)
++		return ctrl->teardown_irqs(ctrl, dev);
++
+ 	return default_teardown_msi_irqs(dev);
+ }
+ 
+@@ -135,6 +145,11 @@ static void default_restore_msi_irq(struct pci_dev *dev, int irq)
+ 
+ void __weak arch_restore_msi_irqs(struct pci_dev *dev)
+ {
++	struct msi_controller *ctrl = pci_msi_controller(dev->bus);
++
++	if (ctrl && ctrl->restore_irqs)
++             return ctrl->restore_irqs(ctrl, dev);
++
+ 	return default_restore_msi_irqs(dev);
+ }
+ 
+diff --git a/include/linux/msi.h b/include/linux/msi.h
+index 6704991..4426cb4 100644
+--- a/include/linux/msi.h
++++ b/include/linux/msi.h
+@@ -71,9 +71,13 @@ struct msi_controller {
+ 	struct device_node *of_node;
+ 	struct list_head list;
+ 
+-	int (*setup_irq)(struct msi_controller *chip, struct pci_dev *dev,
++	int (*setup_irq)(struct msi_controller *ctrl, struct pci_dev *dev,
+ 			 struct msi_desc *desc);
+-	void (*teardown_irq)(struct msi_controller *chip, unsigned int irq);
++	int (*setup_irqs)(struct msi_controller *ctrl, struct pci_dev *dev,
++			int nvec, int type);
++	void (*teardown_irq)(struct msi_controller *ctrl, unsigned int irq);
++	void (*teardown_irqs)(struct msi_controller *ctrl, struct pci_dev *dev);
++	void (*restore_irqs)(struct msi_controller *ctrl, struct pci_dev *dev);
  };
  
-+static struct msi_controller xlr_msi_ctrl;
-+
- struct pci_controller nlm_pci_controller = {
- 	.index		= 0,
- 	.pci_ops	= &nlm_pci_ops,
-@@ -156,6 +158,9 @@ struct pci_controller nlm_pci_controller = {
- 	.mem_offset	= 0x00000000UL,
- 	.io_resource	= &nlm_pci_io_resource,
- 	.io_offset	= 0x00000000UL,
-+#ifdef CONFIG_PCI_MSI
-+	.msi_ctrl = &xlr_msi_ctrl,
-+#endif
- };
- 
- /*
-@@ -214,11 +219,13 @@ static int get_irq_vector(const struct pci_dev *dev)
- }
- 
- #ifdef CONFIG_PCI_MSI
--void arch_teardown_msi_irq(unsigned int irq)
-+static void xlr_teardown_msi_irq(struct msi_controller *ctrl,
-+		unsigned int irq)
- {
- }
- 
--int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
-+static int xlr_setup_msi_irq(struct msi_controller *ctrl,
-+		struct pci_dev *dev, struct msi_desc *desc)
- {
- 	struct msi_msg msg;
- 	struct pci_dev *lnk;
-@@ -263,6 +270,12 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
- 	write_msi_msg(irq, &msg);
- 	return 0;
- }
-+
-+static struct msi_controller xlr_msi_ctrl = {
-+	.setup_irq = xlr_setup_msi_irq,
-+	.teardown_irq = xlr_teardown_msi_irq,
-+};
-+
- #endif
- 
- /* Extra ACK needed for XLR on chip PCI controller */
+ #endif /* LINUX_MSI_H */
 -- 
 1.7.1
 
