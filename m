@@ -1,193 +1,721 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310AbaJ0UQV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 16:16:21 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40333 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605AbaJ0UQT (ORCPT
+	id S1752425AbaJ0UQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 16:16:33 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:60383 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbaJ0UQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 16:16:19 -0400
-Message-ID: <544EA810.6090502@codeaurora.org>
-Date: Mon, 27 Oct 2014 13:16:16 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 27 Oct 2014 16:16:20 -0400
+Date: Mon, 27 Oct 2014 16:16:08 -0400
+From: Eduardo Valentin <edubezval@gmail.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, David Collins <collinsd@codeaurora.org>
+Subject: Re: [PATCH v3] thermal: Add QPNP PMIC temperature alarm driver
+Message-ID: <20141027201602.GC6088@developer>
+References: <1412178817-20371-1-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
-To: Marcin Jabrzyk <m.jabrzyk@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Kukjin Kim <kgene.kim@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        linux-samsung-soc@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Chander Kashyap <chander.kashyap@linaro.org>
-Subject: Re: =?windows-1252?Q?PROBLEM=3A=A0BUG__appearing_when_tr?=
- =?windows-1252?Q?ying_to_allocate_interrupt_on_Exynos_MCT_?=
- =?windows-1252?Q?after_CPU_hotplug?=
-References: <544907D4.1020409@samsung.com> <20141023140644.GI27405@n2100.arm.linux.org.uk> <54494BEE.9020702@codeaurora.org> <544A52B0.9050901@samsung.com>
-In-Reply-To: <544A52B0.9050901@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UFHRwCdBEJvubb2X"
+Content-Disposition: inline
+In-Reply-To: <1412178817-20371-1-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2014 06:22 AM, Marcin Jabrzyk wrote:
->
->
-> On 23/10/14 20:41, Stephen Boyd wrote:
->> On 10/23/2014 07:06 AM, Russell King - ARM Linux wrote:
->>> The CPU notifier is called via notify_cpu_starting(), which is called
->>> with interrupts disabled, and a reason code of CPU_STARTING. 
->>> Interrupts
->>> at this point /must/ remain disabled.
->>>
->>> The Exynos code then goes on to call exynos4_local_timer_setup() which
->>> tries to reverse the free_irq() in exynos4_local_timer_stop() by
->>> calling
->>> request_irq().  Calling request_irq() with interrupts off has never
->>> been
->>> permissible.
->>>
->>> So, this code is wrong today, and it was also wrong when it was
->>> written.
->>> It /couldn't/ have been tested.  It looks like this commit added this
->>> buggy code:
->>>
->>> commit ee98d27df6827b5ba4bd99cb7d5cb1239b6a1a31
->>> Author: Stephen Boyd <sboyd@codeaurora.org>
->>> Date:   Fri Feb 15 16:40:51 2013 -0800
->>>
->>>      ARM: EXYNOS4: Divorce mct from local timer API
->>>
->>>      Separate the mct local timers from the local timer API. This will
->>>      allow us to remove ARM local timer support in the near future and
->>>      gets us closer to moving this driver to drivers/clocksource.
->>>
->>>      Acked-by: Kukjin Kim <kgene.kim@samsung.com>
->>>      Acked-by: Marc Zyngier <marc.zyngier@arm.com>
->>>      Cc: Thomas Abraham <thomas.abraham@linaro.org>
->>>      Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->>
->> I'm not so sure. It looks like in that patch I didn't change anything
->> with respect to when things are called. In fact, it looks like we were
->> calling setup_irq() there, but another patch around the same time
->> changed that to request_irq()
->>
->> commit 7114cd749a12ff9fd64a2f6f04919760f45ab183
->> Author: Chander Kashyap <chander.kashyap@linaro.org>
->> Date:   Wed Jun 19 00:29:35 2013 +0900
->>
->>      clocksource: exynos_mct: use (request/free)_irq calls for local
->> timer registration
->>
->>      Replace the (setup/remove)_irq calls for local timer
->> registration with
->>      (request/free)_irq calls. This generalizes the local timer
->> registration API.
->>      Suggested by Mark Rutland.
->>
->>      Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
->>      Acked-by: Mark Rutland <mark.rutland@arm.com>
->>      Reviewed-by: Tomasz Figa <t.figa@samsung.com>
->>      Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
->>
->> I don't believe setup_irq() allocates anything so we should probably go
->> back to using that over request_irq() or explore requesting the irqs
->> once and then enabling/disabling instead.
->>
->
-> So what would be a better way to handle this? Going back to setup_irq
-> or trying to enable/disable irqs on CPU hotplug? As this touched low
-> level things and it's rare case for setting/enabling irqs just after
-> CPU is coming back to life again.
->
 
-The safest thing is setup_irq(), but do you care to try this patch?
-Doing the enable/disable is not as robust because request_irq() returns
-with the irq enabled and then we have to disable the irq to make things
-symmetric. This whole driver doesn't look like it's prepared for such a
-situation where the interrupt triggers before the clockevent is
-registered so this doesn't look like a problem in practice. Doing the
-disable right after request is typically bad though, and may not pass
-review.
+--UFHRwCdBEJvubb2X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-----8<-----
+Hello Ivan
 
-From: Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH] clocksource: exynos_mct: Avoid scheduling while atomic
+On Wed, Oct 01, 2014 at 06:53:37PM +0300, Ivan T. Ivanov wrote:
+> Add support for the temperature alarm peripheral found inside
+> Qualcomm plug-and-play (QPNP) PMIC chips.  The temperature alarm
+> peripheral outputs a pulse on an interrupt line whenever the
+> thermal over temperature stage value changes.  Implement an ISR
+> to manage this interrupt.
+>=20
+> Register a thermal zone device in sysfs with multiple trip points
+> corresponding to the physical threshold temperatures between over
+> temperature stages.  The temperature reported by this thermal
+> zone device should reflect the actual PMIC die temperature if an
+> ADC is present on the given PMIC.  If no ADC is present, then the
+> reported temperature should be estimated from the over
+> temperature stage value.
+>=20
+> Send a notification to userspace via sysfs_notify() whenever the
+> over temperature stage value changes.
+>=20
 
-If we call request_irq() during the CPU_STARTING notifier we'll
-try to allocate an irq descriptor with GFP_KERNEL while we're
-running with irqs disabled. Just request the irqs at boot time
-and enable/disable them when a CPU comes up or goes down to avoid
-such problems.
+Thanks for sending your driver.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clocksource/exynos_mct.c | 23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
+> Cc: David Collins <collinsd@codeaurora.org>
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>=20
+> Changes since v2:
+>=20
+> - Fixed review comments from Kiran Padwal
+> - Files renamed from qpnp-* to qcom-spmi-* to be inline with
+>   other PMIC sub-function drivers like qcom-spmi-iadc and
+>   qcom-spmi-vadc.
+>=20
+> v2: http://www.gossamer-threads.com/lists/linux/kernel/2017366
+>=20
+>  .../bindings/thermal/qcom-spmi-temp-alarm.txt      |  26 ++
+>  drivers/thermal/Kconfig                            |  13 +
+>  drivers/thermal/Makefile                           |   1 +
+>  drivers/thermal/qcom-spmi-temp-alarm.c             | 517 +++++++++++++++=
+++++++
+>  4 files changed, 557 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/thermal/qcom-spmi-t=
+emp-alarm.txt
+>  create mode 100644 drivers/thermal/qcom-spmi-temp-alarm.c
+>=20
+> diff --git a/Documentation/devicetree/bindings/thermal/qcom-spmi-temp-ala=
+rm.txt b/Documentation/devicetree/bindings/thermal/qcom-spmi-temp-alarm.txt
+> new file mode 100644
+> index 0000000..afa908c
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/thermal/qcom-spmi-temp-alarm.txt
+> @@ -0,0 +1,26 @@
+> +Qualcomm QPNP PMIC Temperature Alarm
+> +
+> +QPNP temperature alarm peripherals are found inside of Qualcomm PMIC chi=
+ps
+> +that utilize the Qualcomm SPMI implementation. These peripherals provide=
+ an
+> +interrupt signal and status register to identify high PMIC die temperatu=
+re.
+> +
+> +Required properties:
+> +- compatible:      Should contain "qcom,spmi-temp-alarm".
+> +- reg:             Specifies the SPMI address and length of the controll=
+er's
+> +                   registers.
+> +- interrupts:      PMIC temperature alarm interrupt
+> +
+> +Optional properties:
+> +- io-channels:     Should contain IIO channel specifier for the ADC chan=
+nel,
+> +                   which report chip die temperature.
+> +- io-channel-names: Should contain "thermal".
+> +
+> +Example:
+> +
+> +	thermal-alarm@2400 {
+> +		compatible =3D "qcom,spmi-temp-alarm";
+> +		reg =3D <0x2400 0x100>;
+> +		interrupts =3D <0 0x24 0 IRQ_TYPE_EDGE_RISING>;
+> +		io-channels =3D <&pm8941_vadc VADC_DIE_TEMP>;
+> +		io-channel-names =3D "thermal";
+> +	};
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index 693208e..6adb661 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -248,4 +248,17 @@ depends on ARCH_STI && OF
+>  source "drivers/thermal/st/Kconfig"
+>  endmenu
+> =20
+> +config QCOM_SPMI_TEMP_ALARM
+> +	tristate "Qualcomm SPMI PMIC Temperature Alarm"
+> +	depends on OF && SPMI && IIO
+> +	select REGMAP_SPMI
+> +	help
+> +	  This enables a thermal sysfs driver for Qualcomm plug-and-play (QPNP)
+> +	  PMIC devices. It shows up in sysfs as a thermal zone with multiple
+> +	  trip points. The temperature reported by the thermal zone reflects the
+> +	  real time die temperature if an ADC is present or an estimate of the
+> +	  temperature based upon the over temperature stage value. Enabling the
+> +	  thermal zone device via the mode file results in shifting PMIC over
+> +	  temperature shutdown control from hardware to software.
+> +
+>  endif
+> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+> index 31e232f..55f6c23 100644
+> --- a/drivers/thermal/Makefile
+> +++ b/drivers/thermal/Makefile
+> @@ -33,3 +33,4 @@ obj-$(CONFIG_INTEL_SOC_DTS_THERMAL)	+=3D intel_soc_dts_=
+thermal.o
+>  obj-$(CONFIG_TI_SOC_THERMAL)	+=3D ti-soc-thermal/
+>  obj-$(CONFIG_ACPI_INT3403_THERMAL)	+=3D int3403_thermal.o
+>  obj-$(CONFIG_ST_THERMAL)	+=3D st/
+> +obj-$(CONFIG_QCOM_SPMI_TEMP_ALARM)	+=3D qcom-spmi-temp-alarm.o
+> diff --git a/drivers/thermal/qcom-spmi-temp-alarm.c b/drivers/thermal/qco=
+m-spmi-temp-alarm.c
+> new file mode 100644
+> index 0000000..5ce0fef
+> --- /dev/null
+> +++ b/drivers/thermal/qcom-spmi-temp-alarm.c
+> @@ -0,0 +1,517 @@
+> +/*
+> + * Copyright (c) 2011-2014, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/delay.h>
+> +#include <linux/err.h>
+> +#include <linux/iio/consumer.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+> +#include <linux/thermal.h>
+> +
+> +#define QPNP_TM_REG_TYPE		0x04
+> +#define QPNP_TM_REG_SUBTYPE		0x05
+> +#define QPNP_TM_REG_STATUS		0x08
+> +#define QPNP_TM_REG_SHUTDOWN_CTRL1	0x40
+> +#define QPNP_TM_REG_SHUTDOWN_CTRL2	0x42
+> +#define QPNP_TM_REG_ALARM_CTRL		0x46
+> +
+> +#define QPNP_TM_TYPE			0x09
+> +#define QPNP_TM_SUBTYPE			0x08
+> +
+> +#define STATUS_STAGE_MASK		0x03
+> +
+> +#define SHUTDOWN_CTRL1_OVERRIDE_STAGE3	0x80
+> +#define SHUTDOWN_CTRL1_OVERRIDE_STAGE2	0x40
+> +#define SHUTDOWN_CTRL1_THRESHOLD_MASK	0x03
+> +
+> +#define SHUTDOWN_CTRL2_CLEAR_STAGE3	0x80
+> +#define SHUTDOWN_CTRL2_CLEAR_STAGE2	0x40
+> +
+> +#define ALARM_CTRL_FORCE_ENABLE		0x80
+> +#define ALARM_CTRL_FOLLOW_HW_ENABLE	0x01
+> +
+> +/*
+> + * Trip point values based on threshold control
+> + * 0 =3D {105 C, 125 C, 145 C}
+> + * 1 =3D {110 C, 130 C, 150 C}
+> + * 2 =3D {115 C, 135 C, 155 C}
+> + * 3 =3D {120 C, 140 C, 160 C}
+> +*/
+> +#define TEMP_STAGE_STEP			20000	/* Stage step: 20.000 C */
+> +#define TEMP_STAGE_HYSTERESIS		2000
+> +
+> +#define TEMP_THRESH_MIN			105000	/* Threshold Min: 105 C */
+> +#define TEMP_THRESH_STEP		5000	/* Threshold step: 5 C */
+> +
+> +#define THRESH_MIN			0
+> +#define THRESH_MAX			3
+> +
+> +/* Trip points from most critical to least critical */
+> +#define TRIP_STAGE3			0
+> +#define TRIP_STAGE2			1
+> +#define TRIP_STAGE1			2
+> +#define TRIP_NUM			3
+> +
+> +/* Delay between TEMP_STAT IRQ going high and status value changing in m=
+s */
+> +#define READ_DELAY_MS			40
+> +
+> +/* Temperature in Milli Celsius reported during stage 0 if no ADC is pre=
+sent */
+> +#define DEFAULT_TEMP			37000
+> +
+> +struct qpnp_tm_chip {
+> +	struct delayed_work		work;
+> +	struct regmap			*map;
+> +	struct device			*dev;
+> +	struct thermal_zone_device	*tz_dev;
+> +	enum thermal_device_mode	mode;
+> +	long				temp;
+> +	unsigned int			thresh;
+> +	unsigned int			stage;
+> +	unsigned int			prev_stage;
+> +	unsigned int			base;
+> +	struct iio_channel		*adc;
+> +};
+> +
+> +static int qpnp_tm_read(struct qpnp_tm_chip *chip, u16 addr, u8 *data)
+> +{
+> +	unsigned int val;
+> +	int ret;
+> +
+> +	ret =3D regmap_read(chip->map, chip->base + addr, &val);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	*data =3D val;
+> +	return 0;
+> +}
+> +
+> +static int qpnp_tm_write(struct qpnp_tm_chip *chip, u16 addr, u8 data)
+> +{
+> +	return regmap_write(chip->map, chip->base + addr, data);
+> +}
+> +
+> +static int qpnp_tm_shutdown_override(struct qpnp_tm_chip *chip, bool ena=
+ble)
+> +{
+> +	u8 reg;
+> +
+> +	reg =3D chip->thresh & SHUTDOWN_CTRL1_THRESHOLD_MASK;
+> +
+> +	if (enable) {
+> +		reg |=3D SHUTDOWN_CTRL1_OVERRIDE_STAGE2;
+> +		reg |=3D SHUTDOWN_CTRL1_OVERRIDE_STAGE3;
+> +	}
+> +
+> +	return qpnp_tm_write(chip, QPNP_TM_REG_SHUTDOWN_CTRL1, reg);
+> +}
+> +
+> +/*
+> + * This function updates the internal temp value based on the
+> + * current thermal stage and threshold as well as the previous stage
+> + */
+> +static int qpnp_tm_update_temp_no_adc(struct qpnp_tm_chip *chip)
+> +{
+> +	unsigned int stage;
+> +	int ret;
+> +	u8 reg =3D 0;
+> +
+> +	ret =3D qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	stage =3D reg & STATUS_STAGE_MASK;
+> +
+> +	if (stage > chip->stage) {
+> +		/* increasing stage, use lower bound */
+> +		chip->temp =3D (stage - 1) * TEMP_STAGE_STEP +
+> +			     chip->thresh * TEMP_THRESH_STEP +
+> +			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
+> +	} else if (stage < chip->stage) {
+> +		/* decreasing stage, use upper bound */
+> +		chip->temp =3D stage * TEMP_STAGE_STEP +
+> +			     chip->thresh * TEMP_THRESH_STEP -
+> +			     TEMP_STAGE_HYSTERESIS + TEMP_THRESH_MIN;
+> +	}
+> +
+> +	chip->stage =3D stage;
+> +
+> +	return 0;
+> +}
+> +
+> +static int qpnp_tz_get_temp(struct thermal_zone_device *thermal,
+> +			   unsigned long *temp)
+> +{
+> +	struct qpnp_tm_chip *chip =3D thermal->devdata;
+> +	int ret, mili_celsius;
+> +
+> +	if (!temp)
+> +		return -EINVAL;
+> +
+> +	if (IS_ERR(chip->adc)) {
+> +		ret =3D qpnp_tm_update_temp_no_adc(chip);
+> +		if (ret < 0)
+> +			return ret;
+> +	} else {
+> +		ret =3D iio_read_channel_processed(chip->adc, &mili_celsius);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		chip->temp =3D mili_celsius;
+> +	}
+> +
+> +	*temp =3D chip->temp < 0 ? 0 : chip->temp;
+> +
+> +	return 0;
+> +}
+> +
+> +static int qpnp_tz_get_mode(struct thermal_zone_device *thermal,
+> +			    enum thermal_device_mode *mode)
+> +{
+> +	struct qpnp_tm_chip *chip =3D thermal->devdata;
+> +
+> +	if (!mode)
+> +		return -EINVAL;
+> +
+> +	*mode =3D chip->mode;
+> +
+> +	return 0;
+> +}
+> +
+> +static int qpnp_tz_set_mode(struct thermal_zone_device *thermal,
+> +			    enum thermal_device_mode mode)
+> +{
+> +	struct qpnp_tm_chip *chip =3D thermal->devdata;
+> +	int ret;
+> +
+> +	if (mode =3D=3D chip->mode)
+> +		return 0;
+> +
+> +	if (mode =3D=3D THERMAL_DEVICE_ENABLED)
+> +		ret =3D qpnp_tm_shutdown_override(chip, true);
+> +	else
+> +		ret =3D qpnp_tm_shutdown_override(chip, false);
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index 9403061a2acc..1800053b4644 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -467,13 +467,7 @@ static int exynos4_local_timer_setup(struct clock_event_device *evt)
- 
- 	if (mct_int_type == MCT_INT_SPI) {
- 		evt->irq = mct_irqs[MCT_L0_IRQ + cpu];
--		if (request_irq(evt->irq, exynos4_mct_tick_isr,
--				IRQF_TIMER | IRQF_NOBALANCING,
--				evt->name, mevt)) {
--			pr_err("exynos-mct: cannot register IRQ %d\n",
--				evt->irq);
--			return -EIO;
--		}
-+		enable_irq(evt->irq);
- 		irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
- 	} else {
- 		enable_percpu_irq(mct_irqs[MCT_L0_IRQ], 0);
-@@ -488,7 +482,7 @@ static void exynos4_local_timer_stop(struct clock_event_device *evt)
- {
- 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
- 	if (mct_int_type == MCT_INT_SPI)
--		free_irq(evt->irq, this_cpu_ptr(&percpu_mct_tick));
-+		disable_irq(evt->irq);
- 	else
- 		disable_percpu_irq(mct_irqs[MCT_L0_IRQ]);
- }
-@@ -522,8 +516,9 @@ static struct notifier_block exynos4_mct_cpu_nb = {
- 
- static void __init exynos4_timer_resources(struct device_node *np, void __iomem *base)
- {
--	int err;
-+	int err, cpu;
- 	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
-+	struct mct_clock_event_device *evt;
- 	struct clk *mct_clk, *tick_clk;
- 
- 	tick_clk = np ? of_clk_get_by_name(np, "fin_pll") :
-@@ -549,7 +544,15 @@ static void __init exynos4_timer_resources(struct device_node *np, void __iomem
- 		WARN(err, "MCT: can't request IRQ %d (%d)\n",
- 		     mct_irqs[MCT_L0_IRQ], err);
- 	} else {
--		irq_set_affinity(mct_irqs[MCT_L0_IRQ], cpumask_of(0));
-+		for_each_present_cpu(cpu) {
-+			evt = per_cpu_ptr(&percpu_mct_tick, cpu);
-+			if (request_irq(mct_irqs[MCT_L0_IRQ + cpu],
-+					exynos4_mct_tick_isr,
-+					IRQF_TIMER | IRQF_NOBALANCING,
-+					"MCT", evt))
-+				pr_err("exynos-mct: cannot register IRQ\n");
-+			disable_irq(mct_irqs[MCT_L0_IRQ + cpu]);
-+		}
- 	}
- 
- 	err = register_cpu_notifier(&exynos4_mct_cpu_nb);
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+Can you please elaborate a little more why you need to switch these when
+mode changes?
 
+> +
+> +	chip->mode =3D mode;
+> +
+> +	return ret;
+> +}
+> +
+> +static int qpnp_tz_get_trip_type(struct thermal_zone_device *thermal, in=
+t trip,
+> +			       enum thermal_trip_type *type)
+> +{
+> +	if (trip < 0 || !type)
+> +		return -EINVAL;
+> +
+> +	switch (trip) {
+> +	case TRIP_STAGE3:
+> +		*type =3D THERMAL_TRIP_CRITICAL;
+> +		break;
+> +	case TRIP_STAGE2:
+> +		*type =3D THERMAL_TRIP_HOT;
+> +		break;
+> +	case TRIP_STAGE1:
+> +		*type =3D THERMAL_TRIP_HOT;
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int qpnp_tz_get_trip_temp(struct thermal_zone_device *thermal, in=
+t trip,
+> +				unsigned long *temp)
+> +{
+> +	struct qpnp_tm_chip *chip =3D thermal->devdata;
+> +	int thresh_temp;
+> +
+> +	if (trip < 0 || !temp)
+> +		return -EINVAL;
+> +
+> +	thresh_temp =3D chip->thresh * TEMP_THRESH_STEP + TEMP_THRESH_MIN;
+> +
+> +	switch (trip) {
+> +	case TRIP_STAGE3:
+> +		thresh_temp +=3D 2 * TEMP_STAGE_STEP;
+> +		break;
+> +	case TRIP_STAGE2:
+> +		thresh_temp +=3D TEMP_STAGE_STEP;
+> +		break;
+> +	case TRIP_STAGE1:
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	*temp =3D thresh_temp;
+> +
+> +	return 0;
+> +}
+> +
+> +static int qpnp_tz_get_crit_temp(struct thermal_zone_device *thermal,
+> +				 unsigned long *temp)
+> +{
+> +	struct qpnp_tm_chip *chip =3D thermal->devdata;
+> +
+> +	if (!temp)
+> +		return -EINVAL;
+> +
+> +	*temp =3D chip->thresh * TEMP_THRESH_STEP + TEMP_THRESH_MIN +
+> +		2 * TEMP_STAGE_STEP;
+> +
+> +	return 0;
+> +}
+> +
+> +static irqreturn_t qpnp_tm_isr(int irq, void *data)
+> +{
+> +	struct qpnp_tm_chip *chip =3D data;
+> +
+> +	schedule_delayed_work(&chip->work, msecs_to_jiffies(READ_DELAY_MS) + 1);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static void qpnp_tm_work(struct work_struct *work)
+> +{
+> +	struct delayed_work *dwork;
+> +	struct qpnp_tm_chip *chip;
+> +	int ret, mili_celsius;
+> +	u8 reg;
+> +
+> +	dwork =3D container_of(work, struct delayed_work, work);
+> +	chip =3D container_of(dwork, struct qpnp_tm_chip, work);
+> +
+> +	if (IS_ERR(chip->adc)) {
+> +		ret =3D qpnp_tm_update_temp_no_adc(chip);
+> +		if (ret < 0)
+> +			return;
+> +	} else {
+> +		ret =3D qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
+> +		if (ret < 0)
+> +			return;
+> +
+> +		chip->stage =3D reg & STATUS_STAGE_MASK;
+> +
+> +		ret =3D iio_read_channel_processed(chip->adc, &mili_celsius);
+> +		if (ret < 0)
+> +			return;
+> +
+> +		chip->temp =3D mili_celsius;
+> +	}
+> +
+> +	if (chip->stage !=3D chip->prev_stage) {
+> +		chip->prev_stage =3D chip->stage;
+> +
+> +		dev_warn(chip->dev, "Thermal alarm stage %u, threshold %u, temp %ld mC=
+\n",
+> +			 chip->stage, chip->thresh, chip->temp);
+> +
+> +		thermal_zone_device_update(chip->tz_dev);
+> +
+> +		/* Notify user space */
+> +		sysfs_notify(&chip->tz_dev->device.kobj, NULL, "type");
+> +	}
+> +}
+> +
+> +/*
+> + * This function initializes the internal temp value based on only the
+> + * current thermal stage and threshold. Setup threshold control and
+> + * disable shutdown override.
+> + */
+> +static int qpnp_tm_init(struct qpnp_tm_chip *chip)
+> +{
+> +	int ret;
+> +	u8 reg;
+> +
+> +	chip->thresh =3D THRESH_MIN;
+> +	chip->temp =3D DEFAULT_TEMP;
+> +
+> +	ret =3D qpnp_tm_read(chip, QPNP_TM_REG_STATUS, &reg);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	chip->stage =3D reg & STATUS_STAGE_MASK;
+> +
+> +	if (chip->stage)
+> +		chip->temp =3D chip->thresh * TEMP_THRESH_STEP +
+> +			     (chip->stage - 1) * TEMP_STAGE_STEP +
+> +			     TEMP_THRESH_MIN;
+> +
+> +	/*
+> +	 * Set threshold and disable software override of stage 2 and 3
+> +	 * shutdowns.
+> +	 */
+> +	reg =3D chip->thresh & SHUTDOWN_CTRL1_THRESHOLD_MASK;
+> +	ret =3D qpnp_tm_write(chip, QPNP_TM_REG_SHUTDOWN_CTRL1, reg);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	/* Enable the thermal alarm PMIC module in always-on mode. */
+> +	reg =3D ALARM_CTRL_FORCE_ENABLE;
+> +	ret =3D qpnp_tm_write(chip, QPNP_TM_REG_ALARM_CTRL, reg);
+> +
+> +	return ret;
+> +}
+> +
+> +static struct thermal_zone_device_ops qpnp_tz_ops =3D {
+> +	.get_temp	=3D qpnp_tz_get_temp,
+> +	.get_mode	=3D qpnp_tz_get_mode,
+> +	.set_mode	=3D qpnp_tz_set_mode,
+> +	.get_trip_type	=3D qpnp_tz_get_trip_type,
+> +	.get_trip_temp	=3D qpnp_tz_get_trip_temp,
+> +	.get_crit_temp	=3D qpnp_tz_get_crit_temp,
+> +};
+> +
+> +static int qpnp_tm_probe(struct platform_device *pdev)
+> +{
+> +	struct qpnp_tm_chip *chip;
+> +	struct device_node *node;
+> +	u8 type, subtype;
+> +	int ret, irq, res[2];
+> +
+> +	node =3D pdev->dev.of_node;
+> +
+> +	chip =3D devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
+> +	if (!chip)
+> +		return -ENOMEM;
+> +
+> +	dev_set_drvdata(&pdev->dev, chip);
+> +
+> +	chip->dev =3D &pdev->dev;
+> +	INIT_DELAYED_WORK(&chip->work, qpnp_tm_work);
+> +
+> +	chip->map =3D dev_get_regmap(chip->dev->parent, NULL);
+> +	if (!chip->map)
+> +		return -ENXIO;
+> +
+> +	ret =3D of_property_read_u32_array(node, "reg", res, 2);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	chip->base =3D res[0];
+> +
+> +	ret =3D qpnp_tm_read(chip, QPNP_TM_REG_TYPE, &type);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "could not read type\n");
+> +		return ret;
+> +	}
+> +
+> +	ret =3D qpnp_tm_read(chip, QPNP_TM_REG_SUBTYPE, &subtype);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "could not read subtype\n");
+> +		return ret;
+> +	}
+> +
+> +	if (type !=3D QPNP_TM_TYPE || subtype !=3D QPNP_TM_SUBTYPE) {
+> +		dev_err(&pdev->dev, "invalid type 0x%02x or subtype 0x%02x\n",
+> +			type, subtype);
+> +		return -ENODEV;
+> +	}
+> +
+> +	irq =3D platform_get_irq(pdev, 0);
+> +	if (irq < 0)
+> +		return irq;
+> +
+> +	chip->adc =3D iio_channel_get(chip->dev, "thermal");
+> +	if (PTR_ERR(chip->adc) =3D=3D -EPROBE_DEFER)
+> +		return PTR_ERR(chip->adc);
+> +
+> +	ret =3D qpnp_tm_init(chip);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev, "init failed\n");
+> +		return ret;
+> +	}
+> +
+> +	/* Start in HW control. Switch to SW control when user changes mode. */
+> +	chip->mode =3D THERMAL_DEVICE_DISABLED;
+> +
+> +	chip->tz_dev =3D thermal_zone_device_register(node->name, TRIP_NUM, 0,
+> +						    chip, &qpnp_tz_ops, NULL,
+
+Have you considered using of-thermal instead of doing your own specific the=
+rmal
+zone registration? Having a glance look in this driver, most of the
+operation are covered by of-thermal. Ahy concerns using of-thermal in
+your case?
+
+> +						    0, 0);
+> +	if (IS_ERR(chip->tz_dev)) {
+> +		dev_err(&pdev->dev, "TZ registration failed\n");
+> +		return PTR_ERR(chip->tz_dev);
+> +	}
+> +
+> +	ret =3D devm_request_irq(chip->dev, irq, qpnp_tm_isr, 0, node->name,
+> +			      chip);
+
+The IRQ handling would probably be kept in your driver.
+
+> +	if (ret < 0)
+> +		thermal_zone_device_unregister(chip->tz_dev);
+> +
+> +	return ret;
+> +}
+> +
+> +static int qpnp_tm_remove(struct platform_device *pdev)
+> +{
+> +	struct qpnp_tm_chip *chip =3D dev_get_drvdata(&pdev->dev);
+> +
+> +	cancel_delayed_work_sync(&chip->work);
+> +	thermal_zone_device_unregister(chip->tz_dev);
+> +	qpnp_tm_shutdown_override(chip, false);
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int qpnp_tm_suspend(struct device *dev)
+> +{
+> +	struct qpnp_tm_chip *chip =3D dev_get_drvdata(dev);
+> +
+> +	/* Clear override bits in suspend to allow hardware control */
+> +	qpnp_tm_shutdown_override(chip, false);
+> +
+> +	return 0;
+> +}
+> +
+> +static int qpnp_tm_resume(struct device *dev)
+> +{
+> +	struct qpnp_tm_chip *chip =3D dev_get_drvdata(dev);
+> +
+> +	/* Override hardware actions so software can control */
+> +	if (chip->mode =3D=3D THERMAL_DEVICE_ENABLED)
+> +		qpnp_tm_shutdown_override(chip, true);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct dev_pm_ops qpnp_tm_pm_ops =3D {
+> +	SET_SYSTEM_SLEEP_PM_OPS(qpnp_tm_suspend, qpnp_tm_resume)
+> +};
+> +
+> +#define QPNP_TM_PM_OPS	(&qpnp_tm_pm_ops)
+> +#else
+> +#define QPNP_TM_PM_OPS	NULL
+> +#endif
+> +
+> +static const struct of_device_id qpnp_tm_match_table[] =3D {
+> +	{ .compatible =3D "qcom,spmi-temp-alarm" },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, qpnp_tm_match_table);
+> +
+> +static struct platform_driver qpnp_tm_driver =3D {
+> +	.driver =3D {
+> +		.name =3D "spmi-temp-alarm",
+> +		.of_match_table =3D qpnp_tm_match_table,
+> +		.pm =3D QPNP_TM_PM_OPS,
+> +	},
+> +	.probe  =3D qpnp_tm_probe,
+> +	.remove =3D qpnp_tm_remove,
+> +};
+> +module_platform_driver(qpnp_tm_driver);
+> +
+> +MODULE_ALIAS("platform:spmi-temp-alarm");
+> +MODULE_DESCRIPTION("QPNP PMIC Temperature Alarm driver");
+> +MODULE_LICENSE("GPL v2");
+> --=20
+> 1.9.1
+>=20
+
+--UFHRwCdBEJvubb2X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUTqf5AAoJEMLUO4d9pOJWns0H/RJE1PCe7CvrXKzuv3WJr7cg
+MuDtjRJV+g4/NGGT8ik6Ws5B/huzVcw3IZhjkkmQKAq/GF0AixBZwc+So5tTes8e
+dUiQv4SvpKvdgNCqr7z0U0RlGEK5Lgtv9YBKnhktIksm9dRTzYk+Yd9DVmeWzyCc
+11GbP66konrp1IcdLmXZ2NEbbWEWvIcahVJov6JWUSqoIwqTGQn3X38qCIdkmksY
+scQ5R7HQ9RqG4W2aJkjFlIb6E83jhUBKyIuJSkYuLIQ6zQZbR96/Qog/9fGp7T5s
+Bbmom8nlmujBdlxayKgJCRV5GoH3wgLHbAdTyFdzHBya9LUY/4wooNb5Gn6+2+M=
+=IsEd
+-----END PGP SIGNATURE-----
+
+--UFHRwCdBEJvubb2X--
