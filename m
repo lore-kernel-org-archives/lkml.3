@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896AbaJ0TFP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:05:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52924 "EHLO
+	id S1752800AbaJ0TFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:05:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52932 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029AbaJ0TFH (ORCPT
+	with ESMTP id S1753895AbaJ0TFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:05:07 -0400
+	Mon, 27 Oct 2014 15:05:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+Cc: Daniel Mack <daniel@zonque.org>, Mark Brown <broonie@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 078/105] x86_64, entry: Filter RFLAGS.NT on entry from userspace
-Date: Mon, 27 Oct 2014 11:56:53 -0700
-Message-Id: <1414436240-13879-79-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 079/105] ASoC: soc-dapm: fix use after free
+Date: Mon, 27 Oct 2014 11:56:54 -0700
+Message-Id: <1414436240-13879-80-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,120 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Daniel Mack <daniel@zonque.org>
 
-commit 8c7aa698baca5e8f1ba9edb68081f1e7a1abf455 upstream.
+commit e5092c96c9c28f4d12811edcd02ca8eec16e748e upstream.
 
-The NT flag doesn't do anything in long mode other than causing IRET
-to #GP.  Oddly, CPL3 code can still set NT using popf.
+Coverity spotted the following possible use-after-free condition in
+dapm_create_or_share_mixmux_kcontrol():
 
-Entry via hardware or software interrupt clears NT automatically, so
-the only relevant entries are fast syscalls.
+If kcontrol is NULL, and (wname_in_long_name && kcname_in_long_name)
+validates to true, 'name' will be set to an allocated string, and be
+freed a few lines later via the 'long_name' alias. 'name', however,
+is used by dev_err() in case snd_ctl_add() fails.
 
-If user code causes kernel code to run with NT set, then there's at
-least some (small) chance that it could cause trouble.  For example,
-user code could cause a call to EFI code with NT set, and who knows
-what would happen?  Apparently some games on Wine sometimes do
-this (!), and, if an IRET return happens, they will segfault.  That
-segfault cannot be handled, because signal delivery fails, too.
+Fix this by adding a jump label that frees 'long_name' at the end of
+the function.
 
-This patch programs the CPU to clear NT on entry via SYSCALL (both
-32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
-in software on entry via SYSENTER.
-
-To save a few cycles, this borrows a trick from Jan Beulich in Xen:
-it checks whether NT is set before trying to clear it.  As a result,
-it seems to have very little effect on SYSENTER performance on my
-machine.
-
-There's another minor bug fix in here: it looks like the CFI
-annotations were wrong if CONFIG_AUDITSYSCALL=n.
-
-Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
-
-I haven't touched anything on 32-bit kernels.
-
-The syscall mask change comes from a variant of this patch by Anish
-Bhatt.
-
-Note to stable maintainers: there is no known security issue here.
-A misguided program can set NT and cause the kernel to try and fail
-to deliver SIGSEGV, crashing the program.  This patch fixes Far Cry
-on Wine: https://bugs.winehq.org/show_bug.cgi?id=33275
-
-Reported-by: Anish Bhatt <anish@chelsio.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/395749a5d39a29bd3e4b35899cf3a3c1340e5595.1412189265.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Daniel Mack <daniel@zonque.org>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/ia32/ia32entry.S    | 18 +++++++++++++++++-
- arch/x86/kernel/cpu/common.c |  2 +-
- 2 files changed, 18 insertions(+), 2 deletions(-)
+ sound/soc/soc-dapm.c | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 4299eb0..711de08 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -151,6 +151,16 @@ ENTRY(ia32_sysenter_target)
- 1:	movl	(%rbp),%ebp
- 	_ASM_EXTABLE(1b,ia32_badarg)
- 	ASM_CLAC
-+
-+	/*
-+	 * Sysenter doesn't filter flags, so we need to clear NT
-+	 * ourselves.  To save a few cycles, we can check whether
-+	 * NT was set instead of doing an unconditional popfq.
-+	 */
-+	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
-+	jnz sysenter_fix_flags
-+sysenter_flags_fixed:
-+
- 	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
- 	CFI_REMEMBER_STATE
-@@ -184,6 +194,8 @@ sysexit_from_sys_call:
- 	TRACE_IRQS_ON
- 	ENABLE_INTERRUPTS_SYSEXIT32
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index 2e6f4ec..2a9b542 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -686,9 +686,9 @@ static int dapm_create_or_share_mixmux_kcontrol(struct snd_soc_dapm_widget *w,
+ 	int shared;
+ 	struct snd_kcontrol *kcontrol;
+ 	bool wname_in_long_name, kcname_in_long_name;
+-	char *long_name;
++	char *long_name = NULL;
+ 	const char *name;
+-	int ret;
++	int ret = 0;
  
-+	CFI_RESTORE_STATE
-+
- #ifdef CONFIG_AUDITSYSCALL
- 	.macro auditsys_entry_common
- 	movl %esi,%r9d			/* 6th arg: 4th syscall arg */
-@@ -226,7 +238,6 @@ sysexit_from_sys_call:
- 	.endm
+ 	if (dapm->codec)
+ 		prefix = dapm->codec->name_prefix;
+@@ -753,15 +753,17 @@ static int dapm_create_or_share_mixmux_kcontrol(struct snd_soc_dapm_widget *w,
  
- sysenter_auditsys:
--	CFI_RESTORE_STATE
- 	auditsys_entry_common
- 	movl %ebp,%r9d			/* reload 6th syscall arg */
- 	jmp sysenter_dispatch
-@@ -235,6 +246,11 @@ sysexit_audit:
- 	auditsys_exit sysexit_from_sys_call
- #endif
- 
-+sysenter_fix_flags:
-+	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
-+	popfq_cfi
-+	jmp sysenter_flags_fixed
+ 		kcontrol = snd_soc_cnew(&w->kcontrol_news[kci], NULL, name,
+ 					prefix);
+-		kfree(long_name);
+-		if (!kcontrol)
+-			return -ENOMEM;
++		if (!kcontrol) {
++			ret = -ENOMEM;
++			goto exit_free;
++		}
 +
- sysenter_tracesys:
- #ifdef CONFIG_AUDITSYSCALL
- 	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index fe2bdd0..78ecb5e 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1140,7 +1140,7 @@ void syscall_init(void)
- 	/* Flags to clear on syscall */
- 	wrmsrl(MSR_SYSCALL_MASK,
- 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
--	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
-+	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
+ 		kcontrol->private_free = dapm_kcontrol_free;
+ 
+ 		ret = dapm_kcontrol_data_alloc(w, kcontrol);
+ 		if (ret) {
+ 			snd_ctl_free_one(kcontrol);
+-			return ret;
++			goto exit_free;
+ 		}
+ 
+ 		ret = snd_ctl_add(card, kcontrol);
+@@ -769,17 +771,18 @@ static int dapm_create_or_share_mixmux_kcontrol(struct snd_soc_dapm_widget *w,
+ 			dev_err(dapm->dev,
+ 				"ASoC: failed to add widget %s dapm kcontrol %s: %d\n",
+ 				w->name, name, ret);
+-			return ret;
++			goto exit_free;
+ 		}
+ 	}
+ 
+ 	ret = dapm_kcontrol_add_widget(kcontrol, w);
+-	if (ret)
+-		return ret;
++	if (ret == 0)
++		w->kcontrols[kci] = kcontrol;
+ 
+-	w->kcontrols[kci] = kcontrol;
++exit_free:
++	kfree(long_name);
+ 
+-	return 0;
++	return ret;
  }
  
- /*
+ /* create new dapm mixer control */
 -- 
 1.9.1
 
