@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbaJ0S7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:59:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52458 "EHLO
+	id S1752766AbaJ0S7e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:59:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52464 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682AbaJ0S7F (ORCPT
+	with ESMTP id S1752682AbaJ0S70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:59:05 -0400
+	Mon, 27 Oct 2014 14:59:26 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>, Mark Brown <broonie@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 055/105] Revert "lzo: properly check for overruns"
-Date: Mon, 27 Oct 2014 11:56:30 -0700
-Message-Id: <1414436240-13879-56-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 053/105] regmap: fix NULL pointer dereference in _regmap_write/read
+Date: Mon, 27 Oct 2014 11:56:28 -0700
+Message-Id: <1414436240-13879-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,184 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Willy Tarreau <w@1wt.eu>
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
 
-commit af958a38a60c7ca3d8a39c918c1baa2ff7b6b233 upstream.
+commit 5336be8416a71b5568d2cf54a2f2066abe9f2a53 upstream.
 
-This reverts commit 206a81c ("lzo: properly check for overruns").
+If LOG_DEVICE is defined and map->dev is NULL it will lead to NULL
+pointer dereference. This patch fixes this issue by adding check for
+dev->NULL in all such places in regmap.c
 
-As analysed by Willem Pinckaers, this fix is still incomplete on
-certain rare corner cases, and it is easier to restart from the
-original code.
-
-Reported-by: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- lib/lzo/lzo1x_decompress_safe.c | 62 ++++++++++++++---------------------------
- 1 file changed, 21 insertions(+), 41 deletions(-)
+ drivers/base/regmap/regmap.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
-index 8563081..569985d 100644
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -19,31 +19,11 @@
- #include <linux/lzo.h>
- #include "lzodefs.h"
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index f8214ec..1ac3c9a 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1308,7 +1308,7 @@ int _regmap_write(struct regmap *map, unsigned int reg,
+ 	}
  
--#define HAVE_IP(t, x)					\
--	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
--	 (((t + x) >= t) && ((t + x) >= x)))
--
--#define HAVE_OP(t, x)					\
--	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
--	 (((t + x) >= t) && ((t + x) >= x)))
--
--#define NEED_IP(t, x)					\
--	do {						\
--		if (!HAVE_IP(t, x))			\
--			goto input_overrun;		\
--	} while (0)
--
--#define NEED_OP(t, x)					\
--	do {						\
--		if (!HAVE_OP(t, x))			\
--			goto output_overrun;		\
--	} while (0)
--
--#define TEST_LB(m_pos)					\
--	do {						\
--		if ((m_pos) < out)			\
--			goto lookbehind_overrun;	\
--	} while (0)
-+#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
-+#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
-+#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
-+#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
-+#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+ #ifdef LOG_DEVICE
+-	if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
++	if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
+ 		dev_info(map->dev, "%x <= %x\n", reg, val);
+ #endif
  
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
-@@ -78,14 +58,14 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 					while (unlikely(*ip == 0)) {
- 						t += 255;
- 						ip++;
--						NEED_IP(1, 0);
-+						NEED_IP(1);
- 					}
- 					t += 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
-+				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
- 					const unsigned char *ie = ip + t;
- 					unsigned char *oe = op + t;
- 					do {
-@@ -101,8 +81,8 @@ copy_literal_run:
- 				} else
+@@ -1727,7 +1727,7 @@ static int _regmap_read(struct regmap *map, unsigned int reg,
+ 	ret = map->reg_read(context, reg, val);
+ 	if (ret == 0) {
+ #ifdef LOG_DEVICE
+-		if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
++		if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
+ 			dev_info(map->dev, "%x => %x\n", reg, *val);
  #endif
- 				{
--					NEED_OP(t, 0);
--					NEED_IP(t, 3);
-+					NEED_OP(t);
-+					NEED_IP(t + 3);
- 					do {
- 						*op++ = *ip++;
- 					} while (--t > 0);
-@@ -115,7 +95,7 @@ copy_literal_run:
- 				m_pos -= t >> 2;
- 				m_pos -= *ip++ << 2;
- 				TEST_LB(m_pos);
--				NEED_OP(2, 0);
-+				NEED_OP(2);
- 				op[0] = m_pos[0];
- 				op[1] = m_pos[1];
- 				op += 2;
-@@ -139,10 +119,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1, 0);
-+					NEED_IP(1);
- 				}
- 				t += 31 + *ip++;
--				NEED_IP(2, 0);
-+				NEED_IP(2);
- 			}
- 			m_pos = op - 1;
- 			next = get_unaligned_le16(ip);
-@@ -157,10 +137,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1, 0);
-+					NEED_IP(1);
- 				}
- 				t += 7 + *ip++;
--				NEED_IP(2, 0);
-+				NEED_IP(2);
- 			}
- 			next = get_unaligned_le16(ip);
- 			ip += 2;
-@@ -174,7 +154,7 @@ copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (op - m_pos >= 8) {
- 			unsigned char *oe = op + t;
--			if (likely(HAVE_OP(t, 15))) {
-+			if (likely(HAVE_OP(t + 15))) {
- 				do {
- 					COPY8(op, m_pos);
- 					op += 8;
-@@ -184,7 +164,7 @@ copy_literal_run:
- 					m_pos += 8;
- 				} while (op < oe);
- 				op = oe;
--				if (HAVE_IP(6, 0)) {
-+				if (HAVE_IP(6)) {
- 					state = next;
- 					COPY4(op, ip);
- 					op += next;
-@@ -192,7 +172,7 @@ copy_literal_run:
- 					continue;
- 				}
- 			} else {
--				NEED_OP(t, 0);
-+				NEED_OP(t);
- 				do {
- 					*op++ = *m_pos++;
- 				} while (op < oe);
-@@ -201,7 +181,7 @@ copy_literal_run:
- #endif
- 		{
- 			unsigned char *oe = op + t;
--			NEED_OP(t, 0);
-+			NEED_OP(t);
- 			op[0] = m_pos[0];
- 			op[1] = m_pos[1];
- 			op += 2;
-@@ -214,15 +194,15 @@ match_next:
- 		state = next;
- 		t = next;
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
-+		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
- 			COPY4(op, ip);
- 			op += t;
- 			ip += t;
- 		} else
- #endif
- 		{
--			NEED_IP(t, 3);
--			NEED_OP(t, 0);
-+			NEED_IP(t + 3);
-+			NEED_OP(t);
- 			while (t > 0) {
- 				*op++ = *ip++;
- 				t--;
+ 
 -- 
 1.9.1
 
