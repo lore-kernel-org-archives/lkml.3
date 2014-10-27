@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaJ0RqR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:46:17 -0400
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:47806 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaJ0RqP (ORCPT
+	id S1752243AbaJ0Rqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:46:32 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:47584 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213AbaJ0Rqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:46:15 -0400
+	Mon, 27 Oct 2014 13:46:31 -0400
+Date: Mon, 27 Oct 2014 18:43:20 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
+        Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: Re: [PATCH v3 00/47] kernel: Add support for power-off handler call
+ chain
+Message-ID: <20141027174320.GI2006@localhost>
+References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+ <20141027160324.GD10814@saruman>
+ <20141027171617.GA19379@roeck-us.net>
+ <20141027173310.GB16005@saruman>
 MIME-Version: 1.0
-In-Reply-To: <1413933960-25839-1-git-send-email-zyw@rock-chips.com>
-References: <1413933461-25602-1-git-send-email-zyw@rock-chips.com>
-	<1413933960-25839-1-git-send-email-zyw@rock-chips.com>
-Date: Mon, 27 Oct 2014 10:46:14 -0700
-X-Google-Sender-Auth: 62ziWHYO3A6aEa6OApq_ZosPU9M
-Message-ID: <CAD=FV=VNuMc+J_3vhpD6Op4Qz8YW8NVyYrcmHnuehrFx7X2Fow@mail.gmail.com>
-Subject: Re: [PATCH v4 5/6] ARM: rockchip: Add pmu-sram binding
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tony Xie <xxx@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027173310.GB16005@saruman>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+On Mon, Oct 27, 2014 at 12:33:10PM -0500, Felipe Balbi wrote:
+> On Mon, Oct 27, 2014 at 10:16:17AM -0700, Guenter Roeck wrote:
+> > On Mon, Oct 27, 2014 at 11:03:24AM -0500, Felipe Balbi wrote:
+> > > Adding Johan, who's working on RTC power off for AM335x devices
+> > > 
+> > Hi Felipe,
+> > 
+> > is that the rtc-omap driver ?
+> 
+> yes it is.
+> 
+> > I am tracking linux-next for related changes. As new power-off handlers are
+> > introduced, I prepare patches for those as well. I currently have patches for
+> > the following two drivers in the queue:
+> > 	drivers/regulator/act8865-regulator.c
+> > 	drivers/rtc/rtc-omap.c
+> > 
+> > I plan to send review requests for those patches in a week or so (I think
+> > there is still some change pending to the power-off function in the rtc-omap
+> > driver, and I want to wait for it).
+> 
+> yeah, Johan's working on that.
 
-On Tue, Oct 21, 2014 at 4:26 PM, Chris Zhong <zyw@rock-chips.com> wrote:
-> The pmu-sram is used to store resume code, suspend/resume need get the
-> address of it. Therefore add a binding and documentation for it.
->
-> Signed-off-by: Tony Xie <xxx@rock-chips.com>
-> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
-> ---
->
-> Changes in v4: None
-> Changes in v3: None
-> Changes in v2: None
->
->  .../devicetree/bindings/arm/rockchip/pmu-sram.txt  |   15 +++++++++++++++
->  1 file changed, 15 insertions(+)
+It's finished. I just sent the final version to akpm this morning
+(adding a single mdelay), so you should be fine basing any conversion on
+either v2 (in mmotm) or v3.
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+Johan
