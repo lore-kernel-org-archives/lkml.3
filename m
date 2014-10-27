@@ -1,129 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaJ0P65 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:58:57 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50336 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326AbaJ0P5v (ORCPT
+	id S1752629AbaJ0P7G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:59:06 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:35338 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713AbaJ0P7B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:57:51 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH v3 45/47] x86: pmc_atom: Register power-off handler with kernel power-off handler
-Date: Mon, 27 Oct 2014 08:55:52 -0700
-Message-Id: <1414425354-10359-46-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
-References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.544E6B7E.0329,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 259
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 27 Oct 2014 11:59:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413864783-3271-13-git-send-email-linux@roeck-us.net>
+References: <1413864783-3271-1-git-send-email-linux@roeck-us.net>
+	<1413864783-3271-13-git-send-email-linux@roeck-us.net>
+Date: Mon, 27 Oct 2014 16:59:00 +0100
+Message-ID: <CACRpkdY8C3rCZsUGgoM+47bwepvPZwdwCv1NPsb0zk9WbHAKOA@mail.gmail.com>
+Subject: Re: [PATCH v2 12/47] mfd: ab8500-sysctrl: Register with kernel
+ poweroff handler
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with low priority to reflect that the original code
-only sets pm_power_off if it was not already set.
+On Tue, Oct 21, 2014 at 6:12 AM, Guenter Roeck <linux@roeck-us.net> wrote:
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v3:
-- Replace poweroff in all newly introduced variables and in text
-  with power_off or power-off as appropriate
-- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-v2:
-- Use define to specify poweroff handler priority
-- Use dev_warn instead of dev_err
+> Register with kernel poweroff handler instead of setting pm_power_off
+> directly. Register with low priority to reflect that the original code
+> only sets pm_power_off if it was not already set.
+>
+> sysctrl_dev is set prior to poweroff handler registration, and the
+> poweroff handler is unregistered prior to clearing sysrctrl_dev.
+> It is therefore not necessary to check if sysctrl_dev is NULL in the
+> poweroff handler, and the check was removed. Setting sysctrl_dev to NULL
+> in the remove function was also removed as unnecessary. With those changes,
+> devm_register_power_off_handler can be used to register the poeroff handler.
+> The now empty remove function was retained since the ab8500_restart function,
+> which is currently unused, would likely need some cleanup if it was ever used.
+>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> v2:
+> - Use define to specify poweroff handler priority
+> - Use devm_register_power_off_handler
+> - Use dev_warn instead of dev_err
+> - Since we use devm_register_power_off_handler,
+>   we need to check if sysctrl_dev in the poweroff handler to avoid
+>   a race condition on unload, so this check is no longer removed
 
- arch/x86/kernel/pmc_atom.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+I can't compile this, I guess because of a dependency on some
+other patch?
 
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index 0ee5025e..973cd5b 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -20,6 +20,8 @@
- #include <linux/pci.h>
- #include <linux/device.h>
- #include <linux/debugfs.h>
-+#include <linux/notifier.h>
-+#include <linux/pm.h>
- #include <linux/seq_file.h>
- #include <linux/io.h>
- 
-@@ -92,7 +94,8 @@ static inline void pmc_reg_write(struct pmc_dev *pmc, int reg_offset, u32 val)
- 	writel(val, pmc->regmap + reg_offset);
- }
- 
--static void pmc_power_off(void)
-+static int pmc_power_off(struct notifier_block *this, unsigned long unused1,
-+			 void *unused2)
- {
- 	u16	pm1_cnt_port;
- 	u32	pm1_cnt_value;
-@@ -107,8 +110,15 @@ static void pmc_power_off(void)
- 	pm1_cnt_value |= SLEEP_ENABLE;
- 
- 	outl(pm1_cnt_value, pm1_cnt_port);
-+
-+	return NOTIFY_DONE;
- }
- 
-+static struct notifier_block pmc_power_off_nb = {
-+	.notifier_call = pmc_power_off,
-+	.priority = POWER_OFF_PRIORITY_LOW,
-+};
-+
- static void pmc_hw_reg_setup(struct pmc_dev *pmc)
- {
- 	/*
-@@ -252,8 +262,12 @@ static int pmc_setup_dev(struct pci_dev *pdev)
- 	acpi_base_addr &= ACPI_BASE_ADDR_MASK;
- 
- 	/* Install power off function */
--	if (acpi_base_addr != 0 && pm_power_off == NULL)
--		pm_power_off = pmc_power_off;
-+	if (acpi_base_addr != 0) {
-+		ret = register_power_off_handler(&pmc_power_off_nb);
-+		if (ret)
-+			dev_warn(&pdev->dev,
-+				 "Failed to install power-off handler\n");
-+	}
- 
- 	pci_read_config_dword(pdev, PMC_BASE_ADDR_OFFSET, &pmc->base_addr);
- 	pmc->base_addr &= PMC_BASE_ADDR_MASK;
--- 
-1.9.1
+  CC      drivers/mfd/ab8500-sysctrl.o
+../drivers/mfd/ab8500-sysctrl.c:94:14: error: ‘POWEROFF_PRIORITY_LOW’
+undeclared here (not in a function)
+  .priority = POWEROFF_PRIORITY_LOW,
+              ^
+../drivers/mfd/ab8500-sysctrl.c: In function ‘ab8500_sysctrl_probe’:
+../drivers/mfd/ab8500-sysctrl.c:206:2: error: implicit declaration of
+function ‘devm_register_power_off_handler’
+[-Werror=implicit-function-declaration]
+  err = devm_register_power_off_handler(sysctrl_dev, &ab8500_poweroff_nb);
 
+I wanted to provide a Tested-by but I guess I can only give this:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
