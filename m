@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaJ0PiZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:38:25 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:51258 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053AbaJ0PiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:38:23 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Jan Kardell <jan.kardell@telliq.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, Vincent Donnefort <vdonnefort@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: rtc: NXP pcf8563 vs Haoyu hym8563
-Date: Mon, 27 Oct 2014 16:41:34 +0100
-Message-ID: <2860269.ao8SIdITjk@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <544E59C3.7010309@telliq.com>
-References: <544E59C3.7010309@telliq.com>
+	id S1752165AbaJ0PjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:39:11 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:61557 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaJ0PjJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:39:09 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CACRpkdYtiRyJK32M2z5EVxW1wXEfv-YDqJ=JPK3TeThV2=7sHA@mail.gmail.com>
+References: <CACxGe6vCrkHPL6UNy1p8AO4+z5VFRY6w4_2grQEZQwp_3jJ7Yw@mail.gmail.com>
+	<CACRpkdZoo=P7uTO1rNDD_HUPjfAk26C0=mNYPoZmTV0wcO3V-w@mail.gmail.com>
+	<20140926141943.GC23926@titan.lakedaemon.net>
+	<CACRpkdYtiRyJK32M2z5EVxW1wXEfv-YDqJ=JPK3TeThV2=7sHA@mail.gmail.com>
+Date: Mon, 27 Oct 2014 16:39:08 +0100
+Message-ID: <CACRpkdYmJWy1_vs0tWRA7SvkQnvbXXKqf7pHpH5b5tZ6vR+KJg@mail.gmail.com>
+Subject: Re: [git pull] Devicetree changes for v3.15
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+On Mon, Sep 29, 2014 at 10:52 AM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Fri, Sep 26, 2014 at 4:19 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+>> On Fri, Sep 26, 2014 at 02:30:53PM +0200, Linus Walleij wrote:
+>
+>> Exact patch is:
+>>
+>>   f4d4ffc03efc kbuild: dtbs_install: new make target
+>>
+>>> After this patch a while back I have observed the following behaviour
+>>> of the kernel build:
+>>>
+>>> make zImage
+>>> make zImage
+>>> -> incremental build, just relink
+>>>
+>>> make zImage
+>>> make dtbs
+>>> make zImage
+>>> -> The whole kernel gets rebuilt
+>>>
+>>> So now if I happen to recompile my device trees, I suddenly want
+>>> the entire zImage to be rebuilt to? It's by definition not changes that
+>>> affect the kernel build :-(
+>>>
+>>> I noticed this because my build scripts calls make dtbs && make zImage,
+>>> and started to rebuild absolutely everything all the time.
+>>>
+>>> Do you think this can be fixed? It's quite simple to reproduce...
+>>
+>> Does the attached fix your problem?
+>
+> Yes!
+> Tested-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> Please get this upstream marked for stable.
 
-Am Montag, 27. Oktober 2014, 15:42:11 schrieb Jan Kardell:
-> Hi,
-> 
-> Erlier this year the hym8563 driver was added to the kernel. When I compared
-> the datasheets of the NXP pcf8563 (that I use) and the Haoyu hym8563 I
-> cannot
-> find any significantdifferences between the two chips. Now is using
-> different
-> drivers for the two similar (or identical?) chips:
-> a) A mistake
-> b) A feature
-> c) Me beeing stupid?
+So is there a proper fix for this coming or not?
 
-option A - a mistake
+I am suffering from this problem :-(
 
-At the time I didn't check existing drivers for one with a compatible 
-interface - wrongly thinking different vendors wouldn't use the same 
-interfaces.
-
-I learned from this and am not making this mistake again [0] :-), but haven't 
-had the time so far to consolidate the two rtc drivers back into one.
-
-
-> The difference between the drivers is handling of century and that the
-> hym8563
-> driver support the clock output that both chips have.
-
-Feel free to consolidate them if you have time to spare - alternativly I 
-hopefully also will have time for this some time in the future.
-
-
-Heiko
-
-
-[0] https://lkml.org/lkml/2014/9/14/178
+Yours,
+Linus Walleij
