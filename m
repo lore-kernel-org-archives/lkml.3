@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbaJ0VRW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 17:17:22 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60302 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752229AbaJ0VRV (ORCPT
+	id S1752644AbaJ0VS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 17:18:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40692 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346AbaJ0VS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 17:17:21 -0400
-Date: Mon, 27 Oct 2014 14:13:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        htejun@gmail.com
-Subject: Re: rcu_preempt detected stalls.
-Message-ID: <20141027211329.GJ5718@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141013173504.GA27955@redhat.com>
- <543DDD5E.9080602@oracle.com>
- <20141023183917.GX4977@linux.vnet.ibm.com>
- <54494F2F.6020005@oracle.com>
- <20141023195808.GB4977@linux.vnet.ibm.com>
- <544A45F8.2030207@oracle.com>
- <20141024161337.GQ4977@linux.vnet.ibm.com>
- <544A80B3.9070800@oracle.com>
+	Mon, 27 Oct 2014 17:18:28 -0400
+Date: Mon, 27 Oct 2014 22:18:21 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Eric Paris <eparis@redhat.com>
+cc: Richard Guy Briggs <rgb@redhat.com>, linux-kernel@vger.kernel.org,
+        przanoni@gmail.com, mingo@kernel.org, hpa@linux.intel.com,
+        hpa@zytor.com, linux-tip-commits@vger.kernel.org,
+        linux-audit@redhat.com
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+In-Reply-To: <1414418157.24347.1.camel@redhat.com>
+Message-ID: <alpine.DEB.2.11.1410272212420.5308@nanos>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>  <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>  <alpine.DEB.2.11.1410251034320.5308@nanos>  <20141027023457.GY15532@madcap2.tricolour.ca>
+ <1414418157.24347.1.camel@redhat.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544A80B3.9070800@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102721-0033-0000-0000-0000027BA589
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 12:39:15PM -0400, Sasha Levin wrote:
-> On 10/24/2014 12:13 PM, Paul E. McKenney wrote:
-> > On Fri, Oct 24, 2014 at 08:28:40AM -0400, Sasha Levin wrote:
-> >> > On 10/23/2014 03:58 PM, Paul E. McKenney wrote:
-> >>> > > On Thu, Oct 23, 2014 at 02:55:43PM -0400, Sasha Levin wrote:
-> >>>>> > >> > On 10/23/2014 02:39 PM, Paul E. McKenney wrote:
-> >>>>>>> > >>> > > On Tue, Oct 14, 2014 at 10:35:10PM -0400, Sasha Levin wrote:
-> >>>>>>>>> > >>>> > >> On 10/13/2014 01:35 PM, Dave Jones wrote:
-> >>>>>>>>>>> > >>>>> > >>> oday in "rcu stall while fuzzing" news:
-> >>>>>>>>>>> > >>>>> > >>>
-> >>>>>>>>>>> > >>>>> > >>> INFO: rcu_preempt detected stalls on CPUs/tasks:
-> >>>>>>>>>>> > >>>>> > >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
-> >>>>>>>>>>> > >>>>> > >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
-> >>>>>>>>>>> > >>>>> > >>> 	(detected by 0, t=6502 jiffies, g=75434, c=75433, q=0)
-> >>>>>>>>> > >>>> > >>
-> >>>>>>>>> > >>>> > >> I've complained about RCU stalls couple days ago (in a different context)
-> >>>>>>>>> > >>>> > >> on -next. I guess whatever causing them made it into Linus's tree?
-> >>>>>>>>> > >>>> > >>
-> >>>>>>>>> > >>>> > >> https://lkml.org/lkml/2014/10/11/64
-> >>>>>>> > >>> > > 
-> >>>>>>> > >>> > > And on that one, I must confess that I don't see where the RCU read-side
-> >>>>>>> > >>> > > critical section might be.
-> >>>>>>> > >>> > > 
-> >>>>>>> > >>> > > Hmmm...  Maybe someone forgot to put an rcu_read_unlock() somewhere.
-> >>>>>>> > >>> > > Can you reproduce this with CONFIG_PROVE_RCU=y?
-> >>>>> > >> > 
-> >>>>> > >> > Paul, if that was directed to me - Yes, I see stalls with CONFIG_PROVE_RCU
-> >>>>> > >> > set and nothing else is showing up before/after that.
-> >>> > > Indeed it was directed to you.  ;-)
-> >>> > > 
-> >>> > > Does the following crude diagnostic patch turn up anything?
-> >> > 
-> >> > Nope, seeing stalls but not seeing that pr_err() you added.
-> > OK, color me confused.  Could you please send me the full dmesg or a
-> > pointer to it?
+On Mon, 27 Oct 2014, Eric Paris wrote:
+
+> My patch was already committed to the -tip urgent branch.  I believe any
+> optimization should be based on that branch, Richard.  If you are trying
+> to wrangle every bit of speed out of this, should you
 > 
-> Attached.
+> push %esi;
+> push %edi;
+> CFI_ADJUST_CFA_OFFSET 8
 
-Thank you!  I would complain about the FAULT_INJECTION messages, but
-they don't appear to be happening all that frequently.
+Wrong. You want to use pushl_cfi as you need the CFI adjustment after
+each modification of esp.
 
-The stack dumps do look different here.  I suspect that this is a real
-issue in the VM code.
+> call __audit_syscall_entry
+> pop;
+> pop;
+> CFI_ADJUST_CFA_OFFSET -8
+> 
+> Instead of using the pushl_cfi and popl_cfi macros?
 
-							Thanx, Paul
+Wrong again. See above. Aside of that, why do you want to use pop at
+all? All we care about is adjusting esp, right?
 
+Thanks,
+
+	tglx
