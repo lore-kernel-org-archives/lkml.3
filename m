@@ -1,273 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbaJ0INE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 04:13:04 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:56009 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178AbaJ0IM7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 04:12:59 -0400
-From: Johan Hovold <johan@kernel.org>
-To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Felipe Balbi <balbi@ti.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>
-Subject: [PATCH v3] rtc: omap: add support for pmic_power_en
-Date: Mon, 27 Oct 2014 09:09:28 +0100
-Message-Id: <1414397368-26480-1-git-send-email-johan@kernel.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1413913086-12730-1-git-send-email-johan@kernel.org>
-References: <1413913086-12730-1-git-send-email-johan@kernel.org>
+	id S1752616AbaJ0INV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 04:13:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24557 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752178AbaJ0INR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 04:13:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,794,1406617200"; 
+   d="scan'208";a="621214018"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>, Baoquan He <bhe@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Christian Gmeiner <christian.gmeiner@gmail.com>,
+        "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        Ryan Desfosses <ryan@desfo.org>,
+        Quentin Lambert <lambert.quentin@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [Patch Part1 v3 13/20] x86, irq: Move IOAPIC related declarations from hw_irq.h into io_apic.h
+Date: Mon, 27 Oct 2014 16:12:04 +0800
+Message-Id: <1414397531-28254-14-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new property "ti,system-power-controller" to register the RTC as a
-power-off handler.
+Clean up code by moving IOAPIC related declarations from hw_irq.h into
+io_apic.h.
 
-Some RTC IP revisions can control an external PMIC via the pmic_power_en
-pin, which can be configured to transition to OFF on ALARM2 events and
-back to ON on subsequent ALARM (wakealarm) events.
-
-This is based on earlier work by Colin Foe-Parker and AnilKumar Ch. [1]
-
-[1] https://www.mail-archive.com/linux-omap@vger.kernel.org/msg82127.html
-
-Tested-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
+ arch/x86/include/asm/hw_irq.h      |   33 ---------------------------------
+ arch/x86/include/asm/io_apic.h     |   23 ++++++++++++++++++++---
+ arch/x86/kernel/apic/io_apic.c     |   10 ++++++++++
+ arch/x86/kernel/crash.c            |    1 +
+ arch/x86/kernel/machine_kexec_32.c |    1 +
+ arch/x86/kernel/machine_kexec_64.c |    1 +
+ arch/x86/kernel/reboot.c           |    1 +
+ drivers/pci/hotplug/ibmphp_core.c  |    1 +
+ 8 files changed, 35 insertions(+), 36 deletions(-)
 
-Changes since v2:
- - add two-second delay to allow alarm to trigger before returning
-
-Andrew, can you replace just this patch in the series that you already
-have in your tree, or do you prefer I resend the whole series (with
-Felipe's Tested-by tags)?
-
-Thanks,
-Johan
-
-
- Documentation/devicetree/bindings/rtc/rtc-omap.txt |  9 +-
- drivers/rtc/rtc-omap.c                             | 95 ++++++++++++++++++++++
- 2 files changed, 103 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-index 5a0f02d34d95..750efd40c72e 100644
---- a/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-+++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-@@ -5,11 +5,17 @@ Required properties:
- 	- "ti,da830-rtc"  - for RTC IP used similar to that on DA8xx SoC family.
- 	- "ti,am3352-rtc" - for RTC IP used similar to that on AM335x SoC family.
- 			    This RTC IP has special WAKE-EN Register to enable
--			    Wakeup generation for event Alarm.
-+			    Wakeup generation for event Alarm. It can also be
-+			    used to control an external PMIC via the
-+			    pmic_power_en pin.
- - reg: Address range of rtc register set
- - interrupts: rtc timer, alarm interrupts in order
- - interrupt-parent: phandle for the interrupt controller
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index dca760e9cd12..7624fffc2822 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -154,39 +154,6 @@ static inline void lock_vector_lock(void) {}
+ static inline void unlock_vector_lock(void) {}
+ #endif	/* CONFIG_X86_LOCAL_APIC */
  
-+Optional properties:
-+- ti,system-power-controller: whether the rtc is controlling the system power
-+  through pmic_power_en
+-/* IOAPIC */
+-#ifdef CONFIG_X86_IO_APIC
+-struct io_apic_irq_attr {
+-	int ioapic;
+-	int ioapic_pin;
+-	int trigger;
+-	int polarity;
+-};
+-
+-static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
+-					int ioapic, int ioapic_pin,
+-					int trigger, int polarity)
+-{
+-	irq_attr->ioapic	= ioapic;
+-	irq_attr->ioapic_pin	= ioapic_pin;
+-	irq_attr->trigger	= trigger;
+-	irq_attr->polarity	= polarity;
+-}
+-
+-extern void setup_IO_APIC(void);
+-extern void enable_IO_APIC(void);
+-extern void disable_IO_APIC(void);
+-extern void setup_ioapic_dest(void);
+-extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
+-extern void print_IO_APICs(void);
+-
+-extern unsigned long io_apic_irqs;
+-#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1 << (x)) & io_apic_irqs))
+-#else	/* CONFIG_X86_IO_APIC */
+-#define IO_APIC_IRQ(x)	0
+-static inline void print_IO_APICs(void) {}
+-#endif	/* CONFIG_X86_IO_APIC */
+-
+ /* Statistics */
+ extern atomic_t irq_err_count;
+ extern atomic_t irq_mis_count;
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index a2245cb5ca3f..533803dc3733 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -132,6 +132,10 @@ extern int noioapicquirk;
+ /* -1 if "noapic" boot option passed */
+ extern int noioapicreroute;
+ 
++extern unsigned long io_apic_irqs;
 +
- Example:
- 
- rtc@1c23000 {
-@@ -18,4 +24,5 @@ rtc@1c23000 {
- 	interrupts = <19
- 		      19>;
- 	interrupt-parent = <&intc>;
-+	ti,system-power-controller;
- };
-diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-index c508e45ca3ce..87cfee751554 100644
---- a/drivers/rtc/rtc-omap.c
-+++ b/drivers/rtc/rtc-omap.c
-@@ -68,6 +68,15 @@
- 
- #define OMAP_RTC_IRQWAKEEN		0x7c
- 
-+#define OMAP_RTC_ALARM2_SECONDS_REG	0x80
-+#define OMAP_RTC_ALARM2_MINUTES_REG	0x84
-+#define OMAP_RTC_ALARM2_HOURS_REG	0x88
-+#define OMAP_RTC_ALARM2_DAYS_REG	0x8c
-+#define OMAP_RTC_ALARM2_MONTHS_REG	0x90
-+#define OMAP_RTC_ALARM2_YEARS_REG	0x94
++#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1 << (x)) & io_apic_irqs))
 +
-+#define OMAP_RTC_PMIC_REG		0x98
+ /*
+  * If we use the IO-APIC for IRQ routing, disable automatic
+  * assignment of PCI IRQ's.
+@@ -139,7 +143,6 @@ extern int noioapicreroute;
+ #define io_apic_assign_pci_irqs \
+ 	(mp_irq_entries && !skip_ioapic_setup && io_apic_irqs)
+ 
+-struct io_apic_irq_attr;
+ struct irq_cfg;
+ extern void ioapic_insert_resources(void);
+ 
+@@ -157,6 +160,13 @@ extern int restore_ioapic_entries(void);
+ extern void setup_ioapic_ids_from_mpc(void);
+ extern void setup_ioapic_ids_from_mpc_nocheck(void);
+ 
++struct io_apic_irq_attr {
++	int ioapic;
++	int ioapic_pin;
++	int trigger;
++	int polarity;
++};
 +
- /* OMAP_RTC_CTRL_REG bit fields: */
- #define OMAP_RTC_CTRL_SPLIT		BIT(7)
- #define OMAP_RTC_CTRL_DISABLE		BIT(6)
-@@ -80,6 +89,7 @@
+ enum ioapic_domain_type {
+ 	IOAPIC_DOMAIN_INVALID,
+ 	IOAPIC_DOMAIN_LEGACY,
+@@ -196,6 +206,7 @@ extern int mp_set_gsi_attr(u32 gsi, int trigger, int polarity, int node);
+ extern void __init pre_init_apic_IRQ0(void);
  
- /* OMAP_RTC_STATUS_REG bit fields: */
- #define OMAP_RTC_STATUS_POWER_UP	BIT(7)
-+#define OMAP_RTC_STATUS_ALARM2		BIT(7)
- #define OMAP_RTC_STATUS_ALARM		BIT(6)
- #define OMAP_RTC_STATUS_1D_EVENT	BIT(5)
- #define OMAP_RTC_STATUS_1H_EVENT	BIT(4)
-@@ -89,6 +99,7 @@
- #define OMAP_RTC_STATUS_BUSY		BIT(0)
+ extern void mp_save_irq(struct mpc_intsrc *m);
++extern bool mp_should_keep_irq(struct device *dev);
  
- /* OMAP_RTC_INTERRUPTS_REG bit fields: */
-+#define OMAP_RTC_INTERRUPTS_IT_ALARM2	BIT(4)
- #define OMAP_RTC_INTERRUPTS_IT_ALARM	BIT(3)
- #define OMAP_RTC_INTERRUPTS_IT_TIMER	BIT(2)
+ extern void disable_ioapic_support(void);
  
-@@ -98,6 +109,9 @@
- /* OMAP_RTC_IRQWAKEEN bit fields: */
- #define OMAP_RTC_IRQWAKEEN_ALARM_WAKEEN	BIT(1)
+@@ -226,13 +237,19 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
  
-+/* OMAP_RTC_PMIC bit fields: */
-+#define OMAP_RTC_PMIC_POWER_EN_EN	BIT(16)
-+
- /* OMAP_RTC_KICKER values */
- #define	KICK0_VALUE			0x83e70b13
- #define	KICK1_VALUE			0x95a4f1e0
-@@ -106,6 +120,7 @@ struct omap_rtc_device_type {
- 	bool has_32kclk_en;
- 	bool has_kicker;
- 	bool has_irqwakeen;
-+	bool has_pmic_mode;
- 	bool has_power_up_reset;
- };
+ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
  
-@@ -115,6 +130,7 @@ struct omap_rtc {
- 	int irq_alarm;
- 	int irq_timer;
- 	u8 interrupts_reg;
-+	bool is_pmic_controller;
- 	const struct omap_rtc_device_type *type;
- };
+-extern bool mp_should_keep_irq(struct device *dev);
+-
++extern void setup_IO_APIC(void);
++extern void enable_IO_APIC(void);
++extern void disable_IO_APIC(void);
++extern void setup_ioapic_dest(void);
++extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
++extern void print_IO_APICs(void);
+ #else  /* !CONFIG_X86_IO_APIC */
  
-@@ -345,6 +361,65 @@ static int omap_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
++#define IO_APIC_IRQ(x)		0
+ #define io_apic_assign_pci_irqs 0
+ #define setup_ioapic_ids_from_mpc x86_init_noop
+ static inline void ioapic_insert_resources(void) { }
++static inline void print_IO_APICs(void) {}
+ #define gsi_top (NR_IRQS_LEGACY)
+ static inline int mp_find_ioapic(u32 gsi) { return 0; }
+ static inline u32 mp_pin_to_gsi(int ioapic, int pin) { return UINT_MAX; }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index b52166a69189..b6f249ac5d20 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3015,6 +3015,16 @@ int mp_ioapic_registered(u32 gsi_base)
  	return 0;
  }
  
-+static struct omap_rtc *omap_rtc_power_off_rtc;
-+
-+/*
-+ * omap_rtc_poweroff: RTC-controlled power off
-+ *
-+ * The RTC can be used to control an external PMIC via the pmic_power_en pin,
-+ * which can be configured to transition to OFF on ALARM2 events.
-+ *
-+ * Notes:
-+ * The two-second alarm offset is the shortest offset possible as the alarm
-+ * registers must be set before the next timer update and the offset
-+ * calculation is too heavy for everything to be done within a single access
-+ * period (~15us).
-+ *
-+ * Called with local interrupts disabled.
-+ */
-+static void omap_rtc_power_off(void)
++static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
++					int ioapic, int ioapic_pin,
++					int trigger, int polarity)
 +{
-+	struct omap_rtc *rtc = omap_rtc_power_off_rtc;
-+	struct rtc_time tm;
-+	unsigned long now;
-+	u32 val;
-+
-+	/* enable pmic_power_en control */
-+	val = rtc_readl(rtc, OMAP_RTC_PMIC_REG);
-+	rtc_writel(rtc, OMAP_RTC_PMIC_REG, val | OMAP_RTC_PMIC_POWER_EN_EN);
-+
-+	/* set alarm two seconds from now */
-+	omap_rtc_read_time_raw(rtc, &tm);
-+	bcd2tm(&tm);
-+	rtc_tm_to_time(&tm, &now);
-+	rtc_time_to_tm(now + 2, &tm);
-+
-+	if (tm2bcd(&tm) < 0) {
-+		dev_err(&rtc->rtc->dev, "power off failed\n");
-+		return;
-+	}
-+
-+	rtc_wait_not_busy(rtc);
-+
-+	rtc_write(rtc, OMAP_RTC_ALARM2_SECONDS_REG, tm.tm_sec);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_MINUTES_REG, tm.tm_min);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_HOURS_REG, tm.tm_hour);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_DAYS_REG, tm.tm_mday);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_MONTHS_REG, tm.tm_mon);
-+	rtc_write(rtc, OMAP_RTC_ALARM2_YEARS_REG, tm.tm_year);
-+
-+	/*
-+	 * enable ALARM2 interrupt
-+	 *
-+	 * NOTE: this fails on AM3352 if rtc_write (writeb) is used
-+	 */
-+	val = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
-+	rtc_writel(rtc, OMAP_RTC_INTERRUPTS_REG,
-+			val | OMAP_RTC_INTERRUPTS_IT_ALARM2);
-+
-+	mdelay(2000);
++	irq_attr->ioapic	= ioapic;
++	irq_attr->ioapic_pin	= ioapic_pin;
++	irq_attr->trigger	= trigger;
++	irq_attr->polarity	= polarity;
 +}
 +
- static struct rtc_class_ops omap_rtc_ops = {
- 	.read_time	= omap_rtc_read_time,
- 	.set_time	= omap_rtc_set_time,
-@@ -361,6 +436,7 @@ static const struct omap_rtc_device_type omap_rtc_am3352_type = {
- 	.has_32kclk_en	= true,
- 	.has_kicker	= true,
- 	.has_irqwakeen	= true,
-+	.has_pmic_mode	= true,
- };
- 
- static const struct omap_rtc_device_type omap_rtc_da830_type = {
-@@ -412,6 +488,9 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 	of_id = of_match_device(omap_rtc_of_match, &pdev->dev);
- 	if (of_id) {
- 		rtc->type = of_id->data;
-+		rtc->is_pmic_controller = rtc->type->has_pmic_mode &&
-+				of_property_read_bool(pdev->dev.of_node,
-+						"ti,system-power-controller");
- 	} else {
- 		id_entry = platform_get_device_id(pdev);
- 		rtc->type = (void *)id_entry->driver_data;
-@@ -460,6 +539,9 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 
- 	mask = OMAP_RTC_STATUS_ALARM;
- 
-+	if (rtc->type->has_pmic_mode)
-+		mask |= OMAP_RTC_STATUS_ALARM2;
-+
- 	if (rtc->type->has_power_up_reset) {
- 		mask |= OMAP_RTC_STATUS_POWER_UP;
- 		if (reg & OMAP_RTC_STATUS_POWER_UP)
-@@ -520,6 +602,13 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
- 			goto err;
- 	}
- 
-+	if (rtc->is_pmic_controller) {
-+		if (!pm_power_off) {
-+			omap_rtc_power_off_rtc = rtc;
-+			pm_power_off = omap_rtc_power_off;
-+		}
-+	}
-+
- 	return 0;
- 
- err:
-@@ -536,6 +625,12 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
+ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 		     irq_hw_number_t hwirq)
  {
- 	struct omap_rtc *rtc = platform_get_drvdata(pdev);
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index f5ab56d14287..aceb2f90c716 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -28,6 +28,7 @@
+ #include <asm/nmi.h>
+ #include <asm/hw_irq.h>
+ #include <asm/apic.h>
++#include <asm/io_apic.h>
+ #include <asm/hpet.h>
+ #include <linux/kdebug.h>
+ #include <asm/cpu.h>
+diff --git a/arch/x86/kernel/machine_kexec_32.c b/arch/x86/kernel/machine_kexec_32.c
+index 72e8e310258d..469b23d6acc2 100644
+--- a/arch/x86/kernel/machine_kexec_32.c
++++ b/arch/x86/kernel/machine_kexec_32.c
+@@ -20,6 +20,7 @@
+ #include <asm/tlbflush.h>
+ #include <asm/mmu_context.h>
+ #include <asm/apic.h>
++#include <asm/io_apic.h>
+ #include <asm/cpufeature.h>
+ #include <asm/desc.h>
+ #include <asm/cacheflush.h>
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index 485981059a40..415480d3ea84 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -22,6 +22,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+ #include <asm/mmu_context.h>
++#include <asm/io_apic.h>
+ #include <asm/debugreg.h>
+ #include <asm/kexec-bzimage64.h>
  
-+	if (pm_power_off == omap_rtc_power_off &&
-+			omap_rtc_power_off_rtc == rtc) {
-+		pm_power_off = NULL;
-+		omap_rtc_power_off_rtc = NULL;
-+	}
-+
- 	device_init_wakeup(&pdev->dev, 0);
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 17962e667a91..bae6c609888e 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -12,6 +12,7 @@
+ #include <acpi/reboot.h>
+ #include <asm/io.h>
+ #include <asm/apic.h>
++#include <asm/io_apic.h>
+ #include <asm/desc.h>
+ #include <asm/hpet.h>
+ #include <asm/pgtable.h>
+diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
+index d261e623541f..96c5c729cdbc 100644
+--- a/drivers/pci/hotplug/ibmphp_core.c
++++ b/drivers/pci/hotplug/ibmphp_core.c
+@@ -36,6 +36,7 @@
+ #include <linux/wait.h>
+ #include "../pci.h"
+ #include <asm/pci_x86.h>		/* for struct irq_routing_table */
++#include <asm/io_apic.h>
+ #include "ibmphp.h"
  
- 	/* leave rtc running, but disable irqs */
+ #define attn_on(sl)  ibmphp_hpc_writeslot (sl, HPC_SLOT_ATTNON)
 -- 
-2.0.4
+1.7.10.4
 
