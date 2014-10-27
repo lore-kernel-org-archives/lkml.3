@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892AbaJ0TsR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:48:17 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:57793 "EHLO
+	id S1752707AbaJ0TuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:50:25 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:57805 "EHLO
 	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaJ0TsP (ORCPT
+	with ESMTP id S1751858AbaJ0TuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:48:15 -0400
-Message-ID: <544EA178.3090506@collabora.co.uk>
-Date: Mon, 27 Oct 2014 20:48:08 +0100
+	Mon, 27 Oct 2014 15:50:24 -0400
+Message-ID: <544EA1F9.9090605@collabora.co.uk>
+Date: Mon, 27 Oct 2014 20:50:17 +0100
 From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
@@ -24,9 +24,9 @@ CC: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH 3/8] mfd: max77686/802: Remove support for board files
-References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com> <1414422226-10948-4-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1414422226-10948-4-git-send-email-k.kozlowski@samsung.com>
+Subject: Re: [PATCH 4/8] regulator: max77686: Make regulator_desc array const
+References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com> <1414422226-10948-5-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1414422226-10948-5-git-send-email-k.kozlowski@samsung.com>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,36 +36,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hello Krzysztof,
 
 On 10/27/2014 04:03 PM, Krzysztof Kozlowski wrote:
-> The driver is used only on Exynos based boards with DTS support.
-> Convert the driver to DTS-only version. This simplifies a little the
-> code:
-> 1. No dead (unused) entries in platform_data structure.
-> 2. More code removed (from all three patches: 34 insertions(+), 107
->    deletions).
-> 3. Regulator driver does not depend on allocated memory
->    from MFD driver.
-> 4. It makes also easier extending the regulator driver
+> The regulator_register() expects array of 'regulator_desc' to be const.
 > 
 > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > ---
->  drivers/mfd/max77686.c               | 23 -----------------------
->  include/linux/mfd/max77686-private.h |  1 -
->  include/linux/mfd/max77686.h         | 22 ----------------------
->  3 files changed, 46 deletions(-)
+>  drivers/regulator/max77686.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-> index 929795eae9fc..3da237afacde 100644
-> --- a/drivers/mfd/max77686.c
-> +++ b/drivers/mfd/max77686.c
-
-As I said in Patch 2/8, I think this driver should depend on OF since
-is now DT-only. Regulator drivers don't need to do this since they
-already depend on MFD_MAX77686. With that change feel free to add:
+> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+> index 04af7a2b0910..7930b4f82c0b 100644
+> --- a/drivers/regulator/max77686.c
+> +++ b/drivers/regulator/max77686.c
+> @@ -395,7 +395,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
+>  			<< MAX77686_OPMODE_BUCK234_SHIFT,		\
+>  }
+>  
+> -static struct regulator_desc regulators[] = {
+> +static const struct regulator_desc regulators[] = {
+>  	regulator_desc_ldo1_low(1),
+>  	regulator_desc_ldo_low(2),
+>  	regulator_desc_ldo(3),
+> 
 
 Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-
-Please also add my Reviewed-by tag to Patch 2/8 since I just noticed
-that I forgot to add it.
 
 Best regards,
 Javier
