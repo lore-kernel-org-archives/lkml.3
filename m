@@ -1,100 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaJ0Rif (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:38:35 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:52432 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722AbaJ0Ri3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:38:29 -0400
-Message-ID: <544E830C.6070307@hp.com>
-Date: Mon, 27 Oct 2014 13:38:20 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
+	id S1752084AbaJ0RkP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:40:15 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:34022 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750909AbaJ0RkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:40:12 -0400
+Date: Mon, 27 Oct 2014 10:36:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>
-Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization support
-References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com> <1413483040-58399-10-git-send-email-Waiman.Long@hp.com> <20141024085437.GV21513@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141024085437.GV21513@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-unionfs@vger.kernel.org
+Subject: Re: [GIT PULL] overlay filesystem v25
+Message-ID: <20141027173621.GG5718@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141023232539.GA4662@tucsk.piliscsaba.szeredi.hu>
+ <20141024022055.GH7996@ZenIV.linux.org.uk>
+ <20141024032422.GI7996@ZenIV.linux.org.uk>
+ <CAJfpegt-X_Cd8B5H65keshhhuwH2-HPpaBC30atKeS3QjaariA@mail.gmail.com>
+ <20141025081845.GJ7996@ZenIV.linux.org.uk>
+ <CAJfpegvM8d-cizf=3KmTSFVgAYPBDp_0fQAh+G2Q87u=taXm3A@mail.gmail.com>
+ <20141025170609.GK7996@ZenIV.linux.org.uk>
+ <CAJfpegucroRzo0NHTz=4N0WcrB2oDC0eDiZXk=aKSjc8vdYDjw@mail.gmail.com>
+ <20141027155901.GE5718@linux.vnet.ibm.com>
+ <20141027172800.GW7996@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027172800.GW7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102717-0025-0000-0000-000000E95827
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2014 04:54 AM, Peter Zijlstra wrote:
-> On Thu, Oct 16, 2014 at 02:10:38PM -0400, Waiman Long wrote:
->
->> Since enabling paravirt spinlock will disable unlock function inlining,
->> a jump label can be added to the unlock function without adding patch
->> sites all over the kernel.
-> But you don't have to. My patches allowed for the inline to remain,
-> again reducing the overhead of enabling PV spinlocks while running on a
-> real machine.
->
-> Look at:
->
->    http://lkml.kernel.org/r/20140615130154.213923590@chello.nl
->
-> In particular this hunk:
->
-> Index: linux-2.6/arch/x86/kernel/paravirt_patch_64.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/paravirt_patch_64.c
-> +++ linux-2.6/arch/x86/kernel/paravirt_patch_64.c
-> @@ -22,6 +22,10 @@ DEF_NATIVE(pv_cpu_ops, swapgs, "swapgs")
->   DEF_NATIVE(, mov32, "mov %edi, %eax");
->   DEF_NATIVE(, mov64, "mov %rdi, %rax");
->
-> +#if defined(CONFIG_PARAVIRT_SPINLOCKS)&&  defined(CONFIG_QUEUE_SPINLOCK)
-> +DEF_NATIVE(pv_lock_ops, queue_unlock, "movb $0, (%rdi)");
-> +#endif
-> +
->   unsigned paravirt_patch_ident_32(void *insnbuf, unsigned len)
->   {
->          return paravirt_patch_insns(insnbuf, len,
-> @@ -61,6 +65,9 @@ unsigned native_patch(u8 type, u16 clobb
->                  PATCH_SITE(pv_cpu_ops, clts);
->                  PATCH_SITE(pv_mmu_ops, flush_tlb_single);
->                  PATCH_SITE(pv_cpu_ops, wbinvd);
-> +#if defined(CONFIG_PARAVIRT_SPINLOCKS)&&  defined(CONFIG_QUEUE_SPINLOCK)
-> +               PATCH_SITE(pv_lock_ops, queue_unlock);
-> +#endif
->
->          patch_site:
->                  ret = paravirt_patch_insns(ibuf, len, start, end);
->
->
-> That makes sure to overwrite the callee-saved call to the
-> pv_lock_ops::queue_unlock with the immediate asm "movb $0, (%rdi)".
->
->
-> Therefore you can retain the inlined unlock with hardly (there might be
-> some NOP padding) any overhead at all. On PV it reverts to a callee
-> saved function call.
+On Mon, Oct 27, 2014 at 05:28:01PM +0000, Al Viro wrote:
+> On Mon, Oct 27, 2014 at 08:59:01AM -0700, Paul E. McKenney wrote:
+> 
+> > Indeed, life is hard here.  Keep in mind that lock acquisition is not
+> > guaranteed to prevent prior operations from being reordered into the
+> > critical section, possibly as follows:
+> > 
+> > 	CPU1:
+> > 	  grab lock
+> > 	  if (!global)
+> > 	      global = p;
+> > 	  /* Assume all of CPU2's accesses happen here. */
+> > 	  p->foo = 1;
+> 
+> A bit of context: p is a local pointer to struct file here and alloc is
+> opening it...
 
-My concern is that spin_unlock() can be called in many places, including 
-loadable kernel modules. Can the paravirt_patch_ident_32() function able 
-to patch all of them in reasonable time? How about a kernel module 
-loaded later at run time?
+OK, good to know.  ;-)
 
-So I think we may still need to disable unlock function inlining even if 
-we used your way kernel site patching.
+> > This clearly allows CPU2 to execute as follows:
+> > 
+> > 	CPU2:
+> > 	  p = global; /* gets p */
+> > 	  if (p) /* non-NULL */
+> > 	  	q = p->foo; /* might not be 1 */
+> > 
+> > Not only that, on DEC Alpha, even if CPU1's accesses are ordered, CPU2's
+> > accesses can be misordered.  You need rcu_dereference() or the combination
+> > of ACCESS_ONCE() and smp_read_barrier_depends() to avoid this issue.
+> > As always, see http://www.openvms.compaq.com/wizard/wiz_2637.html for
+> > more info.
+> > 
+> > So no, there is no guarantee.  I am assuming that the lock grabbed by
+> > CPU1 guards all assignments to "global", otherwise the code needs further
+> > help.  I am further assuming that the memory pointed to by CPU1's "p"
+> > is inaccessible to any other CPU, as in CPU1 just allocated the memory.
+> > Otherwise, the assignment "p->foo = 1" is questionable.  And finally,
+> > I am assuming that p->foo stays constant once it has been made
+> > accessible to readers.
+> > 
+> > But the following should work:
+> > 
+> > 	CPU1:
+> > 	  p->foo = 1;  /* Assumes p is local. */
+> > 	  smp_mb__before_spinlock();
+> > 	  grab lock
+> > 	  if (!global)  /* Assumes lock protects all assignments to global. */
+> > 	      global = p;
+> > 
+> > 	CPU2:
+> > 	  p = rcu_dereference(global);
+> > 	  if (p)
+> > 	     q = p->foo; /* Assumes p->foo constant once visible to readers. */
+> > 	     		 /* Also assumes p and q are local. */
+> > 
+> > If the assumptions called out in the comments do not hold, you at least
+> > need ACCESS_ONCE(), and perhaps even more synchronization.  For more info
+> > on ACCESS_ONCE(), Jon's LWN article is at http://lwn.net/Articles/508991/.
+> 
+> First of all, this "p->foo = 1" is a shorthand for initialization of
+> struct file done by opening a file.  What you are saying is that it
+> can leak past the point where we stick a pointer to freshly opened
+> file into a place where another CPU can see it, but not past the
+> barrier in dropping the lock, right?
 
-Regards,
-Longman
+Exactly!
+
+I should also add that smp_mb__before_spinlock() implies smp_wmb(), but
+nothing more.  But that is OK because smp_wmb() suffices in this case.
+
+> And you are suggesting rcu_dereference() as a way to bring the required
+> barriers in.  Ouch...  The names are really bad, but there's another
+> fun issue - rcu_dereference brings in sparse noise.  Wouldn't direct use
+> of smp_read_barrier_depends() be cleaner, anyway?
+
+Code making direct use of smp_read_barrier_depends() is harder to read,
+in my experience, but good point on the sparse noise.  Maybe a new
+lockless_dereference() primitive?  Maybe something like the following?
+(Untested, probably does not even build.)
+
+#define lockless_dereference(p) \
+({ \
+	typeof(*p) *_________p1 = ACCESS_ONCE(p); \
+	smp_read_barrier_depends(); /* Dependency order vs. p above. */ \
+	_________p1; \
+})
+
+							Thanx, Paul
+
