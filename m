@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbaJ0Pdx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:33:53 -0400
+	id S1751671AbaJ0P3h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:29:37 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:48572 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaJ0P3i (ORCPT
+	with ESMTP id S1750909AbaJ0P3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:29:38 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-0b-544e64dcb8f2
+	Mon, 27 Oct 2014 11:29:33 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-91-544e64d99cd8
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
@@ -22,249 +22,140 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 6/8] regulator: max77686: Add external GPIO control
-Date: Mon, 27 Oct 2014 16:03:44 +0100
-Message-id: <1414422226-10948-7-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 3/8] mfd: max77686/802: Remove support for board files
+Date: Mon, 27 Oct 2014 16:03:41 +0100
+Message-id: <1414422226-10948-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com>
 References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xa7p3UvxCDBr+MVtsnLGe1WLSugNM
-	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
-	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
-	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DK2LL3BkvBY4uKW5ta2RsYj+l1
-	MXJySAiYSHycdYkNwhaTuHBvPZDNxSEksJRR4uuXKcwQTh+TxME9c8Cq2ASMJTYvXwJWJSLQ
-	ySzRc7AXrIpZYDWTxM8rp5hBqoQFnCWubu8E62ARUJW42rgZLM4r4C6x/NUJJoh9chInj01m
-	BbE5BTwkXt//ClYjBFTz+f1WxgmMvAsYGVYxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihAT5
-	lx2Mi49ZHWIU4GBU4uHdMc03RIg1say4MvcQowQHs5II76kAvxAh3pTEyqrUovz4otKc1OJD
-	jEwcnFINjKvWvHfz3iXHFTdr4jWReIvj/j9lN/z9mbR1bWb+IdtUfvEdzh7VnBdfdUdknbPP
-	3TS5yu7Oy+e/FZsWJD35oFj5S+DEqmALtsM/Dq87V5335Z5Z8yeT35I9v1aZJF/XOVG9dBbz
-	mSPFB+5m7kpILpJrPPhly4TJeWdEpl/dXbNXmYf1m9bCfSZKLMUZiYZazEXFiQBgfDXPUAIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xa7o3U/xCDO7NN7fYOGM9q8WkdQeY
+	LKY+fMJmcf3Lc1aL+UfOsVoc/V1g8fqFoUXvgqtsFmeb3rBb3P96lNHi25UOJotNj6+xWlze
+	NYfNYsb5fUwWty/zWqw9cpfd4nQ3q4OgR0tzD5vH3+fXWTz+rnrB7LFz1l12j02rOtk87lzb
+	w+Yx72Sgx+Yl9R59W1YxenzeJBfAFcVlk5Kak1mWWqRvl8CVsf7PNPaC+zIVHZvOsDYwnhHv
+	YuTkkBAwkTj6bAELhC0mceHeerYuRi4OIYGljBIX399jgnD6mCTaD75lAqliEzCW2Lx8CViV
+	iEAns0TPwV5mEIdZYDWTxM8rp5hBqoQF3CRWrNkG1sEioCrx6vwjsB28Au4SqyduY4fYJydx
+	8thkVhCbU8BD4vX9r2C9QkA1n99vZZzAyLuAkWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4m
+	RkiQf93BuPSY1SFGAQ5GJR7eCcW+IUKsiWXFlbmHGCU4mJVEeE8F+IUI8aYkVlalFuXHF5Xm
+	pBYfYmTi4JRqYBS0WOA4qf6mduI88e2fKxSC156J9Hm8YdqrsPMvfA4HbT7EG3a9Zrv8W0+Z
+	7weO3hG/sX3ShyMLudqzo6e3T56Uqm3UlBPJJT/t9OJgiV/OL6+HBl+QMao5cKr3+KNN0YXX
+	9cqvq6et1jj6ZJbmof2+V95k2faG/uFT0/kmeOqUhZhN26mbHIeUWIozEg21mIuKEwEUZDgd
+	UAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add control over GPIO for regulators supporting this: LDO20, LDO21,
-LDO22, buck8 and buck9.
-
-This is needed for proper (and full) configuration of the Maxim 77686
-PMIC without creating redundant 'regulator-fixed' entries.
+The driver is used only on Exynos based boards with DTS support.
+Convert the driver to DTS-only version. This simplifies a little the
+code:
+1. No dead (unused) entries in platform_data structure.
+2. More code removed (from all three patches: 34 insertions(+), 107
+   deletions).
+3. Regulator driver does not depend on allocated memory
+   from MFD driver.
+4. It makes also easier extending the regulator driver
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/regulator/max77686.c | 101 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 96 insertions(+), 5 deletions(-)
+ drivers/mfd/max77686.c               | 23 -----------------------
+ include/linux/mfd/max77686-private.h |  1 -
+ include/linux/mfd/max77686.h         | 22 ----------------------
+ 3 files changed, 46 deletions(-)
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index e5738c363f07..c54a8603f5b2 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -26,6 +26,7 @@
- #include <linux/bug.h>
- #include <linux/err.h>
- #include <linux/gpio.h>
-+#include <linux/of_gpio.h>
- #include <linux/slab.h>
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
-@@ -46,6 +47,11 @@
- #define MAX77686_DVS_UVSTEP	12500
- 
- /*
-+ * Value for configuring buck[89] and LDO{20,21,22} as external control.
-+ * It is the same as 'off' for other regulators.
-+ */
-+#define MAX77686_EXT_CONTROL		0x0
-+/*
-  * Values used for configuring LDOs and bucks.
-  * Forcing low power mode: LDO1, 3-5, 9, 13, 17-26
-  */
-@@ -85,6 +91,9 @@ struct max77686_data {
- 	struct max77686_regulator_data *regulators;
- 	int num_regulators;
- 
-+	/* Array of size num_regulators with GPIOs for external control. */
-+	int *ext_control_gpio;
-+
- 	unsigned int opmode[MAX77686_REGULATORS];
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 929795eae9fc..3da237afacde 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -205,24 +205,10 @@ static const struct of_device_id max77686_pmic_dt_match[] = {
+ 	{ },
  };
  
-@@ -102,6 +111,28 @@ static unsigned int max77686_get_opmode_shift(int id)
- 	}
- }
- 
-+/*
-+ * When regulator is configured for external control then it
-+ * replaces "normal" mode. Any change from low power mode to normal
-+ * should actually change to external control.
-+ * Map normal mode to proper value for such regulators.
-+ */
-+static int max77686_map_normal_mode(struct max77686_data *max77686, int id)
-+{
-+	switch (id) {
-+	case MAX77686_BUCK8:
-+	case MAX77686_BUCK9:
-+		if (gpio_is_valid(max77686->ext_control_gpio[id]))
-+			return MAX77686_EXT_CONTROL;
-+
-+	case MAX77686_LDO20 ... MAX77686_LDO22:
-+		if (gpio_is_valid(max77686->ext_control_gpio[id]))
-+			return MAX77686_EXT_CONTROL;
-+	}
-+
-+	return MAX77686_NORMAL;
-+}
-+
- /* Some BUCKs and LDOs supports Normal[ON/OFF] mode during suspend */
- static int max77686_set_suspend_disable(struct regulator_dev *rdev)
+-static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
+-								  *dev)
+-{
+-	struct max77686_platform_data *pd;
+-
+-	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
+-	if (!pd)
+-		return NULL;
+-
+-	dev->platform_data = pd;
+-	return pd;
+-}
+-
+ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 			      const struct i2c_device_id *id)
  {
-@@ -138,7 +169,7 @@ static int max77686_set_suspend_mode(struct regulator_dev *rdev,
- 		val = MAX77686_LDO_LOWPOWER_PWRREQ;
- 		break;
- 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
--		val = MAX77686_NORMAL;
-+		val = max77686_map_normal_mode(max77686, id);
- 		break;
- 	default:
- 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
-@@ -162,7 +193,7 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
- {
- 	unsigned int val;
- 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
--	int ret;
-+	int ret, id = rdev_get_id(rdev);
+ 	struct max77686_dev *max77686 = NULL;
+-	struct max77686_platform_data *pdata = dev_get_platdata(&i2c->dev);
+ 	const struct of_device_id *match;
+ 	unsigned int data;
+ 	int ret = 0;
+@@ -233,14 +219,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	const struct mfd_cell *cells;
+ 	int n_devs;
  
- 	switch (mode) {
- 	case REGULATOR_MODE_STANDBY:			/* switch off */
-@@ -172,7 +203,7 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
- 		val = MAX77686_LDO_LOWPOWER_PWRREQ;
- 		break;
- 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
--		val = MAX77686_NORMAL;
-+		val = max77686_map_normal_mode(max77686, id);
- 		break;
- 	default:
- 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
-@@ -186,7 +217,7 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
- 	if (ret)
- 		return ret;
+-	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node && !pdata)
+-		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
+-
+-	if (!pdata) {
+-		dev_err(&i2c->dev, "No platform data found.\n");
+-		return -EINVAL;
+-	}
+-
+ 	max77686 = devm_kzalloc(&i2c->dev,
+ 				sizeof(struct max77686_dev), GFP_KERNEL);
+ 	if (!max77686)
+@@ -259,7 +237,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 	max77686->dev = &i2c->dev;
+ 	max77686->i2c = i2c;
  
--	max77686->opmode[rdev_get_id(rdev)] = val;
-+	max77686->opmode[id] = val;
- 	return 0;
- }
+-	max77686->wakeup = pdata->wakeup;
+ 	max77686->irq = i2c->irq;
  
-@@ -199,7 +230,7 @@ static int max77686_enable(struct regulator_dev *rdev)
- 	shift = max77686_get_opmode_shift(id);
+ 	if (max77686->type == TYPE_MAX77686) {
+diff --git a/include/linux/mfd/max77686-private.h b/include/linux/mfd/max77686-private.h
+index 960b92ad450d..f5043490d67c 100644
+--- a/include/linux/mfd/max77686-private.h
++++ b/include/linux/mfd/max77686-private.h
+@@ -447,7 +447,6 @@ struct max77686_dev {
+ 	struct regmap_irq_chip_data *rtc_irq_data;
  
- 	if (max77686->opmode[id] == MAX77686_OFF_PWRREQ)
--		max77686->opmode[id] = MAX77686_NORMAL;
-+		max77686->opmode[id] = max77686_map_normal_mode(max77686, id);
- 
- 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
- 				  rdev->desc->enable_mask,
-@@ -433,6 +464,42 @@ static const struct regulator_desc regulators[] = {
- 	regulator_desc_buck(9),
+ 	int irq;
+-	bool wakeup;
+ 	struct mutex irqlock;
+ 	int irq_masks_cur[MAX77686_IRQ_GROUP_NR];
+ 	int irq_masks_cache[MAX77686_IRQ_GROUP_NR];
+diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
+index 553f7d09258a..ea8501dfc865 100644
+--- a/include/linux/mfd/max77686.h
++++ b/include/linux/mfd/max77686.h
+@@ -136,26 +136,4 @@ struct max77686_opmode_data {
+ 	int mode;
  };
  
-+static int max77686_enable_ext_control(struct regulator_dev *rdev)
-+{
-+	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+					rdev->desc->enable_mask,
-+					MAX77686_EXT_CONTROL);
-+}
-+
-+static void max77686_pmic_dt_parse_ext_control_gpio(struct platform_device *pdev,
-+		struct max77686_regulator_data *rdata,
-+		struct max77686_data *max77686)
-+{
-+	int *gpio = max77686->ext_control_gpio;
-+	unsigned int i;
-+	unsigned int valid_regulators[5] = { MAX77686_LDO20, MAX77686_LDO21,
-+		MAX77686_LDO22, MAX77686_BUCK8, MAX77686_BUCK9 };
-+
-+	/*
-+	 * 0 is a valid GPIO so initialize all GPIOs to negative value
-+	 * to indicate that external control won't be used for this regulator.
-+	 */
-+	for (i = 0; i < max77686->num_regulators; i++)
-+		max77686->ext_control_gpio[i] = -EINVAL;
-+
-+	for (i = 0; i < ARRAY_SIZE(valid_regulators); i++) {
-+		unsigned int reg = valid_regulators[i];
-+
-+		if (!rdata[reg].initdata || !rdata[reg].of_node)
-+			continue;
-+
-+		gpio[reg] = of_get_named_gpio(rdata[reg].of_node, "gpio", 0);
-+		if (gpio_is_valid(gpio[reg]))
-+			dev_dbg(&pdev->dev, "Using GPIO %d for ext-control over %d/%s\n",
-+				gpio[reg], reg, rdata[reg].of_node->name);
-+	}
-+}
-+
- static int max77686_pmic_dt_parse(struct platform_device *pdev,
- 					struct max77686_data *max77686)
- {
-@@ -457,6 +524,14 @@ static int max77686_pmic_dt_parse(struct platform_device *pdev,
- 		return -ENOMEM;
- 	}
- 
-+	max77686->ext_control_gpio = devm_kmalloc_array(&pdev->dev,
-+			max77686->num_regulators,
-+			sizeof(*max77686->ext_control_gpio), GFP_KERNEL);
-+	if (!max77686->ext_control_gpio) {
-+		of_node_put(regulators_np);
-+		return -ENOMEM;
-+	}
-+
- 	for (i = 0; i < max77686->num_regulators; i++) {
- 		rmatch.name = regulators[i].name;
- 		rmatch.init_data = NULL;
-@@ -466,7 +541,9 @@ static int max77686_pmic_dt_parse(struct platform_device *pdev,
- 		rdata[i].of_node = rmatch.of_node;
- 	}
- 
-+	max77686_pmic_dt_parse_ext_control_gpio(pdev, rdata, max77686);
- 	max77686->regulators = rdata;
-+
- 	of_node_put(regulators_np);
- 
- 	return 0;
-@@ -499,6 +576,7 @@ static int max77686_pmic_probe(struct platform_device *pdev)
- 	config.dev = &pdev->dev;
- 	config.regmap = iodev->regmap;
- 	config.driver_data = max77686;
-+	config.ena_gpio_flags = GPIOF_OUT_INIT_HIGH;
- 	platform_set_drvdata(pdev, max77686);
- 
- 	for (i = 0; i < MAX77686_REGULATORS; i++) {
-@@ -506,6 +584,8 @@ static int max77686_pmic_probe(struct platform_device *pdev)
- 
- 		config.init_data = max77686->regulators[i].initdata;
- 		config.of_node = max77686->regulators[i].of_node;
-+		config.ena_gpio = max77686->ext_control_gpio[i];
-+		config.ena_gpio_initialized = true;
- 
- 		max77686->opmode[i] = MAX77686_NORMAL;
- 
-@@ -516,6 +596,17 @@ static int max77686_pmic_probe(struct platform_device *pdev)
- 				"regulator init failed for %d\n", i);
- 			return PTR_ERR(rdev);
- 		}
-+
-+		if (gpio_is_valid(config.ena_gpio)) {
-+			ret = max77686_enable_ext_control(rdev);
-+
-+			if (ret < 0) {
-+				dev_err(&pdev->dev,
-+					"regulator enable ext control failed for %d\n",
-+					i);
-+				return ret;
-+			}
-+		}
- 	}
- 
- 	return 0;
+-struct max77686_platform_data {
+-	int ono;
+-	int wakeup;
+-
+-	/* ---- PMIC ---- */
+-	struct max77686_regulator_data *regulators;
+-	int num_regulators;
+-
+-	struct max77686_opmode_data *opmode_data;
+-
+-	/*
+-	 * GPIO-DVS feature is not enabled with the current version of
+-	 * MAX77686 driver. Buck2/3/4_voltages[0] is used as the default
+-	 * voltage at probe. DVS/SELB gpios are set as OUTPUT-LOW.
+-	 */
+-	int buck234_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
+-	int buck234_gpio_selb[3]; /* [0]SELB2, [1]SELB3, [2]SELB4 */
+-	unsigned int buck2_voltage[8]; /* buckx_voltage in uV */
+-	unsigned int buck3_voltage[8];
+-	unsigned int buck4_voltage[8];
+-};
+-
+ #endif /* __LINUX_MFD_MAX77686_H */
 -- 
 1.9.1
 
