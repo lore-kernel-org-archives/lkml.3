@@ -1,279 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbaJ0JfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 05:35:23 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:8659 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751712AbaJ0JfV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 05:35:21 -0400
-Message-ID: <544E1143.1080905@huawei.com>
-Date: Mon, 27 Oct 2014 17:32:51 +0800
-From: zhanghailiang <zhang.zhanghailiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1752118AbaJ0JgU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 05:36:20 -0400
+Received: from mail.kapsi.fi ([217.30.184.167]:38930 "EHLO mail.kapsi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751711AbaJ0JgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 05:36:18 -0400
+Message-ID: <544E1206.3050802@kapsi.fi>
+Date: Mon, 27 Oct 2014 11:36:06 +0200
+From: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>, <qemu-devel@nongnu.org>,
-        <kvm@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Andres Lagar-Cavilla <andreslc@google.com>, Dave Hansen <dave@sr71.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
-        "Mel Gorman" <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        "Dr. David Alan Gilbert" <dgilbert@redhat.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Android Kernel Team" <kernel-team@android.com>,
-        Robert Love <rlove@google.com>,
-        "Dmitry Adamushko" <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, "Mike Hommey" <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Michel Lespinasse" <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>, "Keith Packard" <keithp@keithp.com>,
-        "Huangpeng (Peter)" <peter.huangpeng@huawei.com>,
-        Isaku Yamahata <yamahata@valinux.co.jp>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
-        Wenchao Xia <wenchaoqemu@gmail.com>, Andrew Jones <drjones@redhat.com>,
-        Juan Quintela <quintela@redhat.com>
-Subject: Re: [PATCH 00/17] RFC: userfault v2
-References: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1412356087-16115-1-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
+To: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>,
+        viresh.kumar@linaro.org
+CC: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com,
+        pdeschrijver@nvidia.com, rjw@rjwysocki.net, mturquette@linaro.org,
+        pwalmsley@nvidia.com, vinceh@nvidia.com, pgaikwad@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tuomas.tynkkynen@iki.fi, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: Re: [PATCH v5 02/16] clk: tegra: Add library for the DFLL clock source
+ (open-loop mode)
+References: <1414161563-16812-1-git-send-email-mikko.perttunen@kapsi.fi> <1414161563-16812-3-git-send-email-mikko.perttunen@kapsi.fi> <544A6B84.2000508@mentor.com>
+In-Reply-To: <544A6B84.2000508@mentor.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.22.69]
-X-CFilter-Loop: Reflected
+X-SA-Exim-Connect-IP: 2001:708:30:12d0:beee:7bff:fe5b:f272
+X-SA-Exim-Mail-From: mikko.perttunen@kapsi.fi
+X-SA-Exim-Scanned: No (on mail.kapsi.fi); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrea,
+On 10/24/2014 06:08 PM, Vladimir Zapolskiy wrote:
+> Hello Mikko,
 
-Thanks for your hard work on userfault;)
+Hello Vladimir!
 
-This is really a useful API.
+>
+> On 24.10.2014 17:39, Mikko Perttunen wrote:
+>> From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+>>
+>> Add shared code to support the Tegra DFLL clocksource in open-loop
+>> mode. This root clocksource is present on the Tegra124 SoCs. The
+>> DFLL is the intended primary clock source for the fast CPU cluster.
+>>
+>> This code is very closely based on a patch by Paul Walmsley from
+>> December (http://comments.gmane.org/gmane.linux.ports.tegra/15273),
+>> which in turn comes from the internal driver by originally created
+>> by Aleksandr Frid <afrid@nvidia.com>.
+>>
+>> Subsequent patches will add support for closed loop mode and drivers
+>> for the Tegra124 fast CPU cluster DFLL devices, which rely on this
+>> code.
+>>
+>> Signed-off-by: Paul Walmsley <pwalmsley@nvidia.com>
+>> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+>> Signed-off-by: Mikko Perttunen <mikko.perttunen@kapsi.fi>
+>> ---
+>> - Style fixes
+>> - Removed incorrect and unused DFLL_I2C_CFG_SLAVE_ADDR_MASK define
+>> - Documented that dfll_register_clk can return -ENOMEM
+>> - Harmonized clock operation order
+>> - Check !soc before allocating
+>> - Comment fixes
+>>
+>>   drivers/clk/tegra/Makefile   |    1 +
+>>   drivers/clk/tegra/clk-dfll.c | 1090 ++++++++++++++++++++++++++++++++++++++++++
+>>   drivers/clk/tegra/clk-dfll.h |   55 +++
+>>   3 files changed, 1146 insertions(+)
+>>   create mode 100644 drivers/clk/tegra/clk-dfll.c
+>>   create mode 100644 drivers/clk/tegra/clk-dfll.h
+>>
+>> diff --git a/drivers/clk/tegra/Makefile b/drivers/clk/tegra/Makefile
+>> index f7dfb72..47320ca 100644
+>> --- a/drivers/clk/tegra/Makefile
+>> +++ b/drivers/clk/tegra/Makefile
+>> @@ -1,5 +1,6 @@
+>>   obj-y					+= clk.o
+>>   obj-y					+= clk-audio-sync.o
+>> +obj-y					+= clk-dfll.o
+>>   obj-y					+= clk-divider.o
+>>   obj-y					+= clk-periph.o
+>>   obj-y					+= clk-periph-gate.o
+>> diff --git a/drivers/clk/tegra/clk-dfll.c b/drivers/clk/tegra/clk-dfll.c
+>> new file mode 100644
+>> index 0000000..405fa9d
+>> --- /dev/null
+>> +++ b/drivers/clk/tegra/clk-dfll.c
+>
+> [snip]
+>
+>> +/*
+>> + * Runtime PM suspend/resume callbacks
+>> + */
+>> +
+>> +/**
+>> + * tegra_dfll_runtime_resume - enable all clocks needed by the DFLL
+>> + * @dev: DFLL device *
+>> + *
+>> + * Enable all clocks needed by the DFLL. Assumes that clk_prepare()
+>> + * has already been called on all the clocks.
+>> + *
+>> + * XXX Should also handle context restore when returning from off.
+>> + */
+>> +int tegra_dfll_runtime_resume(struct device *dev)
+>> +{
+>> +	struct tegra_dfll *td = dev_get_drvdata(dev);
+>> +	int ret;
+>> +
+>> +	ret = clk_enable(td->ref_clk);
+>> +	if (ret) {
+>> +		dev_err(dev, "could not enable ref clock: %d\n", ret);
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = clk_enable(td->soc_clk);
+>> +	if (ret) {
+>
+> What is the correct behaviour on error? Should you fallback and try to
+> enable td->i2c_clk clock or may be disable right enabled above td->ref_clk?
 
-I want to confirm a question:
-Can we support distinguishing between writing and reading memory for userfault?
-That is, we can decide whether writing a page, reading a page or both trigger userfault.
+This should probably error out and disable the previously enabled 
+clock/clocks. Will fix.
 
-I think this will help supporting vhost-scsi,ivshmem for migration,
-we can trace dirty page in userspace.
+>
+>> +		dev_err(dev, "could not enable register clock: %d\n", ret);
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = clk_enable(td->i2c_clk);
+>> +	if (ret) {
+>
+> See the comment above.
+>
+>> +		dev_err(dev, "could not enable i2c clock: %d\n", ret);
+>> +		return ret;
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +EXPORT_SYMBOL(tegra_dfll_runtime_resume);
+>> +
+>> +/**
+>> + * tegra_dfll_runtime_suspend - disable all clocks needed by the DFLL
+>> + * @dev: DFLL device *
+>> + *
+>> + * Disable all clocks needed by the DFLL. Assumes that other code
+>> + * will later call clk_unprepare().
+>> + */
+>> +int tegra_dfll_runtime_suspend(struct device *dev)
+>> +{
+>> +	struct tegra_dfll *td = dev_get_drvdata(dev);
+>> +
+>> +	clk_disable(td->ref_clk);
+>> +	clk_disable(td->soc_clk);
+>> +	clk_disable(td->i2c_clk);
+>
+> Relevant to the comment above.
+>
+>> +	return 0;
+>> +}
+>> +EXPORT_SYMBOL(tegra_dfll_runtime_suspend);
+>> +
+>
+> [snip]
+>
+>> +/**
+>> + * dfll_register_clk - register the DFLL output clock with the clock framework
+>> + * @td: DFLL instance
+>> + *
+>> + * Register the DFLL's output clock with the Linux clock framework and register
+>> + * the DFLL driver as an OF clock provider. Returns 0 upon success or -EINVAL
+>> + * or -ENOMEM upon failure.
+>> + */
+>> +static int dfll_register_clk(struct tegra_dfll *td)
+>> +{
+>> +	int ret;
+>> +
+>> +	dfll_clk_init_data.name = td->output_clock_name;
+>> +	td->dfll_clk_hw.init = &dfll_clk_init_data;
+>> +
+>> +	td->dfll_clk = clk_register(td->dev, &td->dfll_clk_hw);
+>> +	if (IS_ERR(td->dfll_clk)) {
+>> +		dev_err(td->dev, "DFLL clock registration error\n");
+>> +		return -EINVAL;
+>> +	}
+>> +
+>> +	ret = of_clk_add_provider(td->dev->of_node, of_clk_src_simple_get,
+>> +				  td->dfll_clk);
+>> +	if (ret) {
+>> +		dev_err(td->dev, "of_clk_add_provider() failed\n");
+>> +		goto out_unregister_clk;
+>> +	}
+>> +
+>> +	return 0;
+>> +
+>> +out_unregister_clk:
+>> +	clk_unregister(td->dfll_clk);
+>
+> ---8<---
+> 	if (ret) {
+> 		dev_err(td->dev, "of_clk_add_provider() failed\n");
+> 		clk_unregister(td->dfll_clk);
+> 	}
+> ---8<---
+>
+> version is 5 lines and one label less.
 
-Actually, i'm trying to relize live memory snapshot based on pre-copy and userfault,
-but reading memory from migration thread will also trigger userfault.
-It will be easy to implement live memory snapshot, if we support configuring
-userfault for writing memory only.
+Will fix.
 
+>
+>> +	return ret;
+>> +}
+>> +
+>
+> [snip]
+>
+>> +/**
+>> + * read_dt_param - helper function for reading required parameters from the DT
+>> + * @td: DFLL instance
+>> + * @param: DT property name
+>> + * @dest: output pointer for the value read
+>> + *
+>> + * Read a required numeric parameter from the DFLL device node, or complain
+>> + * if the property doesn't exist. Returns a boolean indicating success for
+>> + * easy chaining of multiple calls to this function.
+>> + */
+>> +static bool read_dt_param(struct tegra_dfll *td, const char *param, u32 *dest)
+>> +{
+>> +	int err = of_property_read_u32(td->dev->of_node, param, dest);
+>> +
+>> +	if (err < 0) {
+>> +		dev_err(td->dev, "failed to read DT parameter %s: %d\n",
+>> +			param, err);
+>> +		return false;
+>> +	}
+>> +
+>> +	return true;
+>> +}
+>
+> ^^^^ Relatively useless wrapper function used only once. You are anyway
+> going to check the return value again...
 
-Thanks,
-zhanghailiang
+As you noted, this will be used more later.
 
-On 2014/10/4 1:07, Andrea Arcangeli wrote:
-> Hello everyone,
 >
-> There's a large To/Cc list for this RFC because this adds two new
-> syscalls (userfaultfd and remap_anon_pages) and
-> MADV_USERFAULT/MADV_NOUSERFAULT, so suggestions on changes are welcome
-> sooner than later.
+>> +
+>> +/**
+>> + * dfll_fetch_common_params - read DFLL parameters from the device tree
+>> + * @td: DFLL instance
+>> + *
+>> + * Read all the DT parameters that are common to both I2C and PWM operation.
+>> + * Returns 0 on success or -EINVAL on any failure.
+>> + */
+>> +static int dfll_fetch_common_params(struct tegra_dfll *td)
+>> +{
+>> +	bool ok = true;
+>> +
+>> +	ok &= read_dt_param(td, "nvidia,droop-ctrl", &td->droop_ctrl);
 >
-> The major change compared to the previous RFC I sent a few months ago
-> is that the userfaultfd protocol now supports dynamic range
-> registration. So you can have an unlimited number of userfaults for
-> each process, so each shared library can use its own userfaultfd on
-> its own memory independently from other shared libraries or the main
-> program. This functionality was suggested from Andy Lutomirski (more
-> details on this are in the commit header of the last patch of this
-> patchset).
+> See the comment above.
 >
-> In addition the mmap_sem complexities has been sorted out. In fact the
-> real userfault patchset starts from patch number 7. Patches 1-6 will
-> be submitted separately for merging and if applied standalone they
-> provide a scalability improvement by reducing the mmap_sem hold times
-> during I/O. I included patch 1-6 here too because they're an hard
-> dependency for the userfault patchset. The userfaultfd syscall depends
-> on the first fault to always have FAULT_FLAG_ALLOW_RETRY set (the
-> later retry faults don't matter, it's fine to clear
-> FAULT_FLAG_ALLOW_RETRY with the retry faults, following the current
-> model).
+>> +	if (of_property_read_string(td->dev->of_node, "clock-output-names",
+>> +				    &td->output_clock_name)) {
+>> +		dev_err(td->dev, "missing clock-output-names property\n");
+>> +		ok = false;
+>> +	}
+>> +
+>> +	return ok ? 0 : -EINVAL;
+>> +}
 >
-> The combination of these features are what I would propose to
-> implement postcopy live migration in qemu, and in general demand
-> paging of remote memory, hosted in different cloud nodes.
 >
-> If the access could ever happen in kernel context through syscalls
-> (not not just from userland context), then userfaultfd has to be used
-> on top of MADV_USERFAULT, to make the userfault unnoticeable to the
-> syscall (no error will be returned). This latter feature is more
-> advanced than what volatile ranges alone could do with SIGBUS so far
-> (but it's optional, if the process doesn't register the memory in a
-> userfaultfd, the regular SIGBUS will fire, if the fd is closed SIGBUS
-> will also fire for any blocked userfault that was waiting a
-> userfaultfd_write ack).
->
-> userfaultfd is also a generic enough feature, that it allows KVM to
-> implement postcopy live migration without having to modify a single
-> line of KVM kernel code. Guest async page faults, FOLL_NOWAIT and all
-> other GUP features works just fine in combination with userfaults
-> (userfaults trigger async page faults in the guest scheduler so those
-> guest processes that aren't waiting for userfaults can keep running in
-> the guest vcpus).
->
-> remap_anon_pages is the syscall to use to resolve the userfaults (it's
-> not mandatory, vmsplice will likely still be used in the case of local
-> postcopy live migration just to upgrade the qemu binary, but
-> remap_anon_pages is faster and ideal for transferring memory across
-> the network, it's zerocopy and doesn't touch the vma: it only holds
-> the mmap_sem for reading).
->
-> The current behavior of remap_anon_pages is very strict to avoid any
-> chance of memory corruption going unnoticed. mremap is not strict like
-> that: if there's a synchronization bug it would drop the destination
-> range silently resulting in subtle memory corruption for
-> example. remap_anon_pages would return -EEXIST in that case. If there
-> are holes in the source range remap_anon_pages will return -ENOENT.
->
-> If remap_anon_pages is used always with 2M naturally aligned
-> addresses, transparent hugepages will not be splitted. In there could
-> be 4k (or any size) holes in the 2M (or any size) source range,
-> remap_anon_pages should be used with the RAP_ALLOW_SRC_HOLES flag to
-> relax some of its strict checks (-ENOENT won't be returned if
-> RAP_ALLOW_SRC_HOLES is set, remap_anon_pages then will just behave as
-> a noop on any hole in the source range). This flag is generally useful
-> when implementing userfaults with THP granularity, but it shouldn't be
-> set if doing the userfaults with PAGE_SIZE granularity if the
-> developer wants to benefit from the strict -ENOENT behavior.
->
-> The remap_anon_pages syscall API is not vectored, as I expect it to be
-> used mainly for demand paging (where there can be just one faulting
-> range per userfault) or for large ranges (with the THP model as an
-> alternative to zapping re-dirtied pages with MADV_DONTNEED with 4k
-> granularity before starting the guest in the destination node) where
-> vectoring isn't going to provide much performance advantages (thanks
-> to the THP coarser granularity).
->
-> On the rmap side remap_anon_pages doesn't add much complexity: there's
-> no need of nonlinear anon vmas to support it because I added the
-> constraint that it will fail if the mapcount is more than 1. So in
-> general the source range of remap_anon_pages should be marked
-> MADV_DONTFORK to prevent any risk of failure if the process ever
-> forks (like qemu can in some case).
->
-> The MADV_USERFAULT feature should be generic enough that it can
-> provide the userfaults to the Android volatile range feature too, on
-> access of reclaimed volatile pages. Or it could be used for other
-> similar things with tmpfs in the future. I've been discussing how to
-> extend it to tmpfs for example. Currently if MADV_USERFAULT is set on
-> a non-anonymous vma, it will return -EINVAL and that's enough to
-> provide backwards compatibility once MADV_USERFAULT will be extended
-> to tmpfs. An orthogonal problem then will be to identify the optimal
-> mechanism to atomically resolve a tmpfs backed userfault (like
-> remap_anon_pages does it optimally for anonymous memory) but that's
-> beyond the scope of the userfault functionality (in theory
-> remap_anon_pages is also orthogonal and I could split it off in a
-> separate patchset if somebody prefers). Of course remap_file_pages
-> should do it fine too, but it would create rmap nonlinearity which
-> isn't optimal.
->
-> The code can be found here:
->
-> git clone --reference linux git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git -b userfault
->
-> The branch is rebased so you can get updates for example with:
->
-> git fetch && git checkout -f origin/userfault
->
-> Comments welcome, thanks!
-> Andrea
->
-> Andrea Arcangeli (15):
->    mm: gup: add get_user_pages_locked and get_user_pages_unlocked
->    mm: gup: use get_user_pages_unlocked within get_user_pages_fast
->    mm: gup: make get_user_pages_fast and __get_user_pages_fast latency
->      conscious
->    mm: gup: use get_user_pages_fast and get_user_pages_unlocked
->    mm: madvise MADV_USERFAULT: prepare vm_flags to allow more than 32bits
->    mm: madvise MADV_USERFAULT
->    mm: PT lock: export double_pt_lock/unlock
->    mm: rmap preparation for remap_anon_pages
->    mm: swp_entry_swapcount
->    mm: sys_remap_anon_pages
->    waitqueue: add nr wake parameter to __wake_up_locked_key
->    userfaultfd: add new syscall to provide memory externalization
->    userfaultfd: make userfaultfd_write non blocking
->    powerpc: add remap_anon_pages and userfaultfd
->    userfaultfd: implement USERFAULTFD_RANGE_REGISTER|UNREGISTER
->
-> Andres Lagar-Cavilla (2):
->    mm: gup: add FOLL_TRIED
->    kvm: Faults which trigger IO release the mmap_sem
->
->   arch/alpha/include/uapi/asm/mman.h     |   3 +
->   arch/mips/include/uapi/asm/mman.h      |   3 +
->   arch/mips/mm/gup.c                     |   8 +-
->   arch/parisc/include/uapi/asm/mman.h    |   3 +
->   arch/powerpc/include/asm/systbl.h      |   2 +
->   arch/powerpc/include/asm/unistd.h      |   2 +-
->   arch/powerpc/include/uapi/asm/unistd.h |   2 +
->   arch/powerpc/mm/gup.c                  |   6 +-
->   arch/s390/kvm/kvm-s390.c               |   4 +-
->   arch/s390/mm/gup.c                     |   6 +-
->   arch/sh/mm/gup.c                       |   6 +-
->   arch/sparc/mm/gup.c                    |   6 +-
->   arch/x86/mm/gup.c                      | 235 +++++++----
->   arch/x86/syscalls/syscall_32.tbl       |   2 +
->   arch/x86/syscalls/syscall_64.tbl       |   2 +
->   arch/xtensa/include/uapi/asm/mman.h    |   3 +
->   drivers/dma/iovlock.c                  |  10 +-
->   drivers/iommu/amd_iommu_v2.c           |   6 +-
->   drivers/media/pci/ivtv/ivtv-udma.c     |   6 +-
->   drivers/scsi/st.c                      |  10 +-
->   drivers/video/fbdev/pvr2fb.c           |   5 +-
->   fs/Makefile                            |   1 +
->   fs/proc/task_mmu.c                     |   5 +-
->   fs/userfaultfd.c                       | 722 +++++++++++++++++++++++++++++++++
->   include/linux/huge_mm.h                |  11 +-
->   include/linux/ksm.h                    |   4 +-
->   include/linux/mm.h                     |  15 +-
->   include/linux/mm_types.h               |  13 +-
->   include/linux/swap.h                   |   6 +
->   include/linux/syscalls.h               |   5 +
->   include/linux/userfaultfd.h            |  55 +++
->   include/linux/wait.h                   |   5 +-
->   include/uapi/asm-generic/mman-common.h |   3 +
->   init/Kconfig                           |  11 +
->   kernel/sched/wait.c                    |   7 +-
->   kernel/sys_ni.c                        |   2 +
->   mm/fremap.c                            | 506 +++++++++++++++++++++++
->   mm/gup.c                               | 182 ++++++++-
->   mm/huge_memory.c                       | 208 ++++++++--
->   mm/ksm.c                               |   2 +-
->   mm/madvise.c                           |  22 +-
->   mm/memory.c                            |  14 +
->   mm/mempolicy.c                         |   4 +-
->   mm/mlock.c                             |   3 +-
->   mm/mmap.c                              |  39 +-
->   mm/mprotect.c                          |   3 +-
->   mm/mremap.c                            |   2 +-
->   mm/nommu.c                             |  23 ++
->   mm/process_vm_access.c                 |   7 +-
->   mm/rmap.c                              |   9 +
->   mm/swapfile.c                          |  13 +
->   mm/util.c                              |  10 +-
->   net/ceph/pagevec.c                     |   9 +-
->   net/sunrpc/sched.c                     |   2 +-
->   virt/kvm/async_pf.c                    |   4 +-
->   virt/kvm/kvm_main.c                    |   4 +-
->   56 files changed, 2025 insertions(+), 236 deletions(-)
->   create mode 100644 fs/userfaultfd.c
->   create mode 100644 include/linux/userfaultfd.h
 > --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> .
+> With best wishes,
+> Vladimir
 >
 
+Thanks for reviewing!
+
+Cheers,
+Mikko
 
