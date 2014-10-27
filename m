@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaJ0TGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:06:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52915 "EHLO
+	id S1752950AbaJ0TGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:06:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52910 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844AbaJ0TFE (ORCPT
+	with ESMTP id S1752617AbaJ0TFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:05:04 -0400
+	Mon, 27 Oct 2014 15:05:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 070/105] NFSv4.1: Fix an NFSv4.1 state renewal regression
-Date: Mon, 27 Oct 2014 11:56:45 -0700
-Message-Id: <1414436240-13879-71-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 075/105] dm bufio: when done scanning return from __scan immediately
+Date: Mon, 27 Oct 2014 11:56:50 -0700
+Message-Id: <1414436240-13879-76-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,95 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
+commit 0e825862f3c04cee40e25f55680333728a4ffa9b upstream.
 
-Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
-not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
-call, on the wire to renew the NFSv4.1 state if the flag was not set.
+When __scan frees the required number of buffer entries that the
+shrinker requested (nr_to_scan becomes zero) it must return.  Before
+this fix the __scan code exited only the inner loop and continued in the
+outer loop -- which could result in reduced performance due to extra
+buffers being freed (e.g. unnecessarily evicted thinp metadata needing
+to be synchronously re-read into bufio's cache).
 
-The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
-(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
-sometimes does the following:
+Also, move dm_bufio_cond_resched to __scan's inner loop, so that
+iterating the bufio client's lru lists doesn't result in scheduling
+latency.
 
-In normal operation, the only way a future state renewal call is put on the
-wire is via a call to nfs4_schedule_state_renewal, which schedules a
-nfs4_renew_state workqueue task. nfs4_renew_state determines if the
-NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
-which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
-Then the nfs41_proc_async_sequence rpc_release function schedules
-another state remewal via nfs4_schedule_state_renewal.
-
-Without this change we can get into a state where an application stops
-accessing the NFSv4.1 share, state renewal calls stop due to the
-NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
-from this situation is with a clientid re-establishment, once the application
-resumes and the server has timed out the lease and so returns
-NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
-
-An example application:
-open, lock, write a file.
-
-sleep for 6 * lease (could be less)
-
-ulock, close.
-
-In the above example with NFSv4.1 delegations enabled, without this change,
-there are no OP_SEQUENCE state renewal calls during the sleep, and the
-clientid is recovered due to lease expiration on the close.
-
-This issue does not occur with NFSv4.1 delegations disabled, nor with
-NFSv4.0, with or without delegations enabled.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
-Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Reported-by: Joe Thornber <thornber@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/nfs4proc.c   |  2 +-
- fs/nfs/nfs4renewd.c | 12 ++++++++++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/md/dm-bufio.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index b6ed520..b54753e 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -7242,7 +7242,7 @@ static int nfs41_proc_async_sequence(struct nfs_client *clp, struct rpc_cred *cr
- 	int ret = 0;
- 
- 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
--		return 0;
-+		return -EAGAIN;
- 	task = _nfs41_proc_sequence(clp, cred, false);
- 	if (IS_ERR(task))
- 		ret = PTR_ERR(task);
-diff --git a/fs/nfs/nfs4renewd.c b/fs/nfs/nfs4renewd.c
-index 1720d32..e1ba58c 100644
---- a/fs/nfs/nfs4renewd.c
-+++ b/fs/nfs/nfs4renewd.c
-@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *work)
- 			}
- 			nfs_expire_all_delegations(clp);
- 		} else {
-+			int ret;
-+
- 			/* Queue an asynchronous RENEW. */
--			ops->sched_state_renewal(clp, cred, renew_flags);
-+			ret = ops->sched_state_renewal(clp, cred, renew_flags);
- 			put_rpccred(cred);
--			goto out_exp;
-+			switch (ret) {
-+			default:
-+				goto out_exp;
-+			case -EAGAIN:
-+			case -ENOMEM:
-+				break;
-+			}
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index bb8d23d..a42efc7 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -1456,9 +1456,9 @@ static long __scan(struct dm_bufio_client *c, unsigned long nr_to_scan,
+ 		list_for_each_entry_safe_reverse(b, tmp, &c->lru[l], lru_list) {
+ 			freed += __cleanup_old_buffer(b, gfp_mask, 0);
+ 			if (!--nr_to_scan)
+-				break;
++				return freed;
++			dm_bufio_cond_resched();
  		}
- 	} else {
- 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
+-		dm_bufio_cond_resched();
+ 	}
+ 	return freed;
+ }
 -- 
 1.9.1
 
