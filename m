@@ -1,177 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751666AbaJ0PmW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:42:22 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:47120 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067AbaJ0PmU convert rfc822-to-8bit (ORCPT
+	id S1752117AbaJ0Pm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:42:29 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:47559 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067AbaJ0PmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:42:20 -0400
-Message-ID: <544E67D8.3020504@arm.com>
-Date: Mon, 27 Oct 2014 15:42:16 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 27 Oct 2014 11:42:23 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jason Cooper <jason@lakedaemon.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] genirq: Add support for priority-drop/deactivate
- interrupt controllers
-References: <1414235215-10468-1-git-send-email-marc.zyngier@arm.com> <1414235215-10468-2-git-send-email-marc.zyngier@arm.com> <alpine.DEB.2.11.1410252144170.5308@nanos>
-In-Reply-To: <alpine.DEB.2.11.1410252144170.5308@nanos>
-X-Enigmail-Version: 1.4.6
-X-OriginalArrivalTime: 27 Oct 2014 15:42:17.0225 (UTC) FILETIME=[9645E790:01CFF1FC]
-X-MC-Unique: 114102715421705101
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1413304389-6580-1-git-send-email-dianders@chromium.org>
+References: <1413304389-6580-1-git-send-email-dianders@chromium.org>
+Date: Mon, 27 Oct 2014 16:42:22 +0100
+Message-ID: <CAPDyKFrZt8J+OqVZnYGoaLTaRwba4c3m8HW=M5i71DDrPugM_A@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Remove old card detect infrastructure
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On 14 October 2014 18:33, Doug Anderson <dianders@chromium.org> wrote:
+> The dw_mmc driver had a bunch of code that ran whenever a card was
+> ejected and inserted.  However, this code was old and crufty and
+> should be removed.  Some evidence that it's really not needed:
+>
+> 1. Is is supposed to be legal to use 'cd-gpio' on dw_mmc instead of
+>    using the built-in card detect mechanism.  The 'cd-gpio' code
+>    doesn't run any of the crufty old code but yet still works.
+>
+> 2. While looking at this, I realized that my old change (369ac86 mmc:
+>    dw_mmc: don't queue up a card detect at slot startup) actually
+>    castrated the old code a little bit already and nobody noticed.
+>    Specifically "last_detect_state" was left as 0 at bootup.  That
+>    means that on the first card removal none of the crufty code ran.
+>
+> 3. I can run "while true; do dd if=/dev/mmcblk1 of=/dev/null; done"
+>    while ejecting and inserting an SD Card and the world doesn't
+>    explode.
+>
+> If some of the crufty old code is actually needed, we should justify
+> it and also put it in some place where it will be run even with
+> "cd-gpio".
+>
+> Note that in my case I'm using the "cd-gpio" mechanism but for various
+> reasons the hardware triggers a dw_mmc "card detect" at bootup.  That
+> was actually causing a real bug.  The card detect workqueue was
+> running while the system was trying to enumerate the card.  The
+> "present != slot->last_detect_state" triggered and we were doing all
+> kinds of crazy stuff and messing up enumeration.  The new mechanism of
+> just asking the core to check the card is much safer and then the
+> bogus interrupt doesn't hurt.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Thanks for looking into this.
+Thanks! Applied for next.
 
-On 25/10/14 21:27, Thomas Gleixner wrote:
-> On Sat, 25 Oct 2014, Marc Zyngier wrote:
-> 
-> @@ -330,6 +330,7 @@ struct irq_chip {
->         void            (*irq_mask)(struct irq_data *data);
->         void            (*irq_mask_ack)(struct irq_data *data);
->         void            (*irq_unmask)(struct irq_data *data);
-> +       void            (*irq_priority_drop)(struct irq_data *data);
-> 
-> Lacks the docbook comment.
+Kind regards
+Uffe
 
-Yup, will add.
-
->> +static void mask_threaded_irq(struct irq_desc *desc)
-> 
-> There is only one caller for this, i.e handle_fasteoi_irq, right? So
-> this should go to the other eoi handler specific helpers and have eoi
-> in its name.
-
-I was seeing it as the pendent of unmask_threaded_irq(). But reading
-below, you seem to have a very different approach
-
->> +{
->> +	struct irq_chip *chip = desc->irq_data.chip;
->> +
->> +	/* If we can do priority drop, then masking comes for free */
->> +	if (chip->irq_priority_drop)
->> +		irq_state_set_masked(desc);
->> +	else
->> +		mask_irq(desc);
->> +}
-> 
->>  void unmask_irq(struct irq_desc *desc)
->>  {
->> -	if (desc->irq_data.chip->irq_unmask) {
->> -		desc->irq_data.chip->irq_unmask(&desc->irq_data);
->> +	struct irq_chip *chip = desc->irq_data.chip;
->> +
->> +	if (chip->irq_unmask && !chip->irq_priority_drop)
->> +		chip->irq_unmask(&desc->irq_data);
-> 
-> I have a hard time to understand that logic. Assume the interrupt
-> being masked at the hardware level after boot. Now at request_irq()
-> time what is going to unmask that very interrupt? Ditto for masking
-> after disable_irq(). Probably not what you really want.
-
-Peering at the code (and assuming I'm finally awake), request_irq() uses
-irq_startup() -> irq_enable() -> chip->irq_unmask().
-
-But you're perfectly right, it breaks an independent use of
-unmask_irq(), which is pretty bad.
-
->> +static void eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
->> +{
->> +	if (chip->irq_priority_drop)
->> +		chip->irq_priority_drop(&desc->irq_data);
->> +	if (chip->irq_eoi)
->> +		chip->irq_eoi(&desc->irq_data);
->> +}
-> 
-> So if you are using that priority drop stuff, you need both calls even
-> for the non threaded case?
-
-Yes. This is a global property (all interrupt lines for this irqchip are
-affected), so even the non-threaded case has to issue both calls.
-
->>  static void cond_unmask_eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
->>  {
->>  	if (!(desc->istate & IRQS_ONESHOT)) {
->> -		chip->irq_eoi(&desc->irq_data);
->> +		eoi_irq(desc, chip);
->>  		return;
->>  	}
->> +
->> +	if (chip->irq_priority_drop)
->> +		chip->irq_priority_drop(&desc->irq_data);
->> +
->>  	/*
->>  	 * We need to unmask in the following cases:
->>  	 * - Oneshot irq which did not wake the thread (caused by a
->> @@ -485,7 +507,8 @@ static void cond_unmask_eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
->>  	if (!irqd_irq_disabled(&desc->irq_data) &&
->>  	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot) {
->>  		chip->irq_eoi(&desc->irq_data);
->> -		unmask_irq(desc);
->> +		if (!chip->irq_priority_drop)
->> +			unmask_irq(desc);
-> 
-> This is really completely obfuscated: Brain starts melting and
-> spiraling towards some unidentified universe.
-
-Ah! I'm glad I'm not the only one with that feeling ;-).
-
-> Seriously, I don't think it's a good idea to bandaid this
-> functionality into the existing handle_fasteoi_irq() mechanism. It's
-> complex enough already.
-
-That was the other option. I may have to duplicate (or tweak)
-handle_percpu_devid_irq as well though.
-
-> So what you really want is a separate handler for this. But aside of
-> adding the drop prio callback you probably want to handle the other
-> existing callbacks completely differently than for the regular mode of
-> that irq controller.
-> 
-> Can you please explain detailed how this "priority drop" mode
-> works? 
-
-The basics of this mode are pretty simple:
-- Interrupt signalled, CPU enter the GIC code
-- Read the IAR register, interrupt becomes active:
-  -> no other interrupt can be taken
-- Run whatever interrupt handler
-- Write to the EOI register:
-  -> interrupt is still active, and cannot be taken again, but other
-interrupts can now be taken
-- Write to the DIR register:
-  -> interrupt is now inactive, and can be taken again.
-
-A few interesting things here:
-- EOI (which causes priority drop) acts as a mask
-- DIR (which causes deactivate) acts as unmask+EOI
-
-To me, it looks like DIR operation is exactly what we need when running
-a threaded interrupt with IRQCHIP_EOI_THREADED, saving the whole
-mask/unmask that is rather slow on ARM.
-
-With that in mind, I end up mapping mask to priority_drop_irq (write to
-EOI), and unmask to eoi_irq (write to DIR). Which is admittedly an
-interesting brainfuck when trying to wire it into the existing framework.
-
-So yeah, having a different handler will make it much simpler. My main
-concern is how to plug this "elegantly" into the epilogue for a threaded
-interrupt (irq_finalize_oneshot).
-
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+> ---
+>  drivers/mmc/host/dw_mmc.c  | 121 ++++++++-------------------------------------
+>  drivers/mmc/host/dw_mmc.h  |   2 -
+>  include/linux/mmc/dw_mmc.h |   2 -
+>  3 files changed, 20 insertions(+), 105 deletions(-)
+>
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index 69f0cc6..6a86495 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -34,7 +34,6 @@
+>  #include <linux/mmc/dw_mmc.h>
+>  #include <linux/bitops.h>
+>  #include <linux/regulator/consumer.h>
+> -#include <linux/workqueue.h>
+>  #include <linux/of.h>
+>  #include <linux/of_gpio.h>
+>  #include <linux/mmc/slot-gpio.h>
+> @@ -1954,6 +1953,23 @@ static void dw_mci_cmd_interrupt(struct dw_mci *host, u32 status)
+>         tasklet_schedule(&host->tasklet);
+>  }
+>
+> +static void dw_mci_handle_cd(struct dw_mci *host)
+> +{
+> +       int i;
+> +
+> +       for (i = 0; i < host->num_slots; i++) {
+> +               struct dw_mci_slot *slot = host->slot[i];
+> +
+> +               if (!slot)
+> +                       continue;
+> +
+> +               if (slot->mmc->ops->card_event)
+> +                       slot->mmc->ops->card_event(slot->mmc);
+> +               mmc_detect_change(slot->mmc,
+> +                       msecs_to_jiffies(host->pdata->detect_delay_ms));
+> +       }
+> +}
+> +
+>  static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+>  {
+>         struct dw_mci *host = dev_id;
+> @@ -2029,7 +2045,7 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+>
+>                 if (pending & SDMMC_INT_CD) {
+>                         mci_writel(host, RINTSTS, SDMMC_INT_CD);
+> -                       queue_work(host->card_workqueue, &host->card_work);
+> +                       dw_mci_handle_cd(host);
+>                 }
+>
+>                 /* Handle SDIO Interrupts */
+> @@ -2056,88 +2072,6 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+>         return IRQ_HANDLED;
+>  }
+>
+> -static void dw_mci_work_routine_card(struct work_struct *work)
+> -{
+> -       struct dw_mci *host = container_of(work, struct dw_mci, card_work);
+> -       int i;
+> -
+> -       for (i = 0; i < host->num_slots; i++) {
+> -               struct dw_mci_slot *slot = host->slot[i];
+> -               struct mmc_host *mmc = slot->mmc;
+> -               struct mmc_request *mrq;
+> -               int present;
+> -
+> -               present = dw_mci_get_cd(mmc);
+> -               while (present != slot->last_detect_state) {
+> -                       dev_dbg(&slot->mmc->class_dev, "card %s\n",
+> -                               present ? "inserted" : "removed");
+> -
+> -                       spin_lock_bh(&host->lock);
+> -
+> -                       /* Card change detected */
+> -                       slot->last_detect_state = present;
+> -
+> -                       /* Clean up queue if present */
+> -                       mrq = slot->mrq;
+> -                       if (mrq) {
+> -                               if (mrq == host->mrq) {
+> -                                       host->data = NULL;
+> -                                       host->cmd = NULL;
+> -
+> -                                       switch (host->state) {
+> -                                       case STATE_IDLE:
+> -                                       case STATE_WAITING_CMD11_DONE:
+> -                                               break;
+> -                                       case STATE_SENDING_CMD11:
+> -                                       case STATE_SENDING_CMD:
+> -                                               mrq->cmd->error = -ENOMEDIUM;
+> -                                               if (!mrq->data)
+> -                                                       break;
+> -                                               /* fall through */
+> -                                       case STATE_SENDING_DATA:
+> -                                               mrq->data->error = -ENOMEDIUM;
+> -                                               dw_mci_stop_dma(host);
+> -                                               break;
+> -                                       case STATE_DATA_BUSY:
+> -                                       case STATE_DATA_ERROR:
+> -                                               if (mrq->data->error == -EINPROGRESS)
+> -                                                       mrq->data->error = -ENOMEDIUM;
+> -                                               /* fall through */
+> -                                       case STATE_SENDING_STOP:
+> -                                               if (mrq->stop)
+> -                                                       mrq->stop->error = -ENOMEDIUM;
+> -                                               break;
+> -                                       }
+> -
+> -                                       dw_mci_request_end(host, mrq);
+> -                               } else {
+> -                                       list_del(&slot->queue_node);
+> -                                       mrq->cmd->error = -ENOMEDIUM;
+> -                                       if (mrq->data)
+> -                                               mrq->data->error = -ENOMEDIUM;
+> -                                       if (mrq->stop)
+> -                                               mrq->stop->error = -ENOMEDIUM;
+> -
+> -                                       spin_unlock(&host->lock);
+> -                                       mmc_request_done(slot->mmc, mrq);
+> -                                       spin_lock(&host->lock);
+> -                               }
+> -                       }
+> -
+> -                       /* Power down slot */
+> -                       if (present == 0)
+> -                               dw_mci_reset(host);
+> -
+> -                       spin_unlock_bh(&host->lock);
+> -
+> -                       present = dw_mci_get_cd(mmc);
+> -               }
+> -
+> -               mmc_detect_change(slot->mmc,
+> -                       msecs_to_jiffies(host->pdata->detect_delay_ms));
+> -       }
+> -}
+> -
+>  #ifdef CONFIG_OF
+>  /* given a slot id, find out the device node representing that slot */
+>  static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
+> @@ -2289,9 +2223,6 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>         dw_mci_init_debugfs(slot);
+>  #endif
+>
+> -       /* Card initially undetected */
+> -       slot->last_detect_state = 0;
+> -
+>         return 0;
+>
+>  err_host_allocated:
+> @@ -2672,17 +2603,10 @@ int dw_mci_probe(struct dw_mci *host)
+>                 host->data_offset = DATA_240A_OFFSET;
+>
+>         tasklet_init(&host->tasklet, dw_mci_tasklet_func, (unsigned long)host);
+> -       host->card_workqueue = alloc_workqueue("dw-mci-card",
+> -                       WQ_MEM_RECLAIM, 1);
+> -       if (!host->card_workqueue) {
+> -               ret = -ENOMEM;
+> -               goto err_dmaunmap;
+> -       }
+> -       INIT_WORK(&host->card_work, dw_mci_work_routine_card);
+>         ret = devm_request_irq(host->dev, host->irq, dw_mci_interrupt,
+>                                host->irq_flags, "dw-mci", host);
+>         if (ret)
+> -               goto err_workqueue;
+> +               goto err_dmaunmap;
+>
+>         if (host->pdata->num_slots)
+>                 host->num_slots = host->pdata->num_slots;
+> @@ -2718,7 +2642,7 @@ int dw_mci_probe(struct dw_mci *host)
+>         } else {
+>                 dev_dbg(host->dev, "attempted to initialize %d slots, "
+>                                         "but failed on all\n", host->num_slots);
+> -               goto err_workqueue;
+> +               goto err_dmaunmap;
+>         }
+>
+>         if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
+> @@ -2726,9 +2650,6 @@ int dw_mci_probe(struct dw_mci *host)
+>
+>         return 0;
+>
+> -err_workqueue:
+> -       destroy_workqueue(host->card_workqueue);
+> -
+>  err_dmaunmap:
+>         if (host->use_dma && host->dma_ops->exit)
+>                 host->dma_ops->exit(host);
+> @@ -2762,8 +2683,6 @@ void dw_mci_remove(struct dw_mci *host)
+>         mci_writel(host, CLKENA, 0);
+>         mci_writel(host, CLKSRC, 0);
+>
+> -       destroy_workqueue(host->card_workqueue);
+> -
+>         if (host->use_dma && host->dma_ops->exit)
+>                 host->dma_ops->exit(host);
+>
+> diff --git a/drivers/mmc/host/dw_mmc.h b/drivers/mmc/host/dw_mmc.h
+> index 01b99e8..71d4995 100644
+> --- a/drivers/mmc/host/dw_mmc.h
+> +++ b/drivers/mmc/host/dw_mmc.h
+> @@ -214,7 +214,6 @@ extern int dw_mci_resume(struct dw_mci *host);
+>   *     with CONFIG_MMC_CLKGATE.
+>   * @flags: Random state bits associated with the slot.
+>   * @id: Number of this slot.
+> - * @last_detect_state: Most recently observed card detect state.
+>   */
+>  struct dw_mci_slot {
+>         struct mmc_host         *mmc;
+> @@ -234,7 +233,6 @@ struct dw_mci_slot {
+>  #define DW_MMC_CARD_PRESENT    0
+>  #define DW_MMC_CARD_NEED_INIT  1
+>         int                     id;
+> -       int                     last_detect_state;
+>  };
+>
+>  struct dw_mci_tuning_data {
+> diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+> index 0013669..69d0814 100644
+> --- a/include/linux/mmc/dw_mmc.h
+> +++ b/include/linux/mmc/dw_mmc.h
+> @@ -135,7 +135,6 @@ struct dw_mci {
+>         struct mmc_command      stop_abort;
+>         unsigned int            prev_blksz;
+>         unsigned char           timing;
+> -       struct workqueue_struct *card_workqueue;
+>
+>         /* DMA interface members*/
+>         int                     use_dma;
+> @@ -154,7 +153,6 @@ struct dw_mci {
+>         u32                     stop_cmdr;
+>         u32                     dir_status;
+>         struct tasklet_struct   tasklet;
+> -       struct work_struct      card_work;
+>         unsigned long           pending_events;
+>         unsigned long           completed_events;
+>         enum dw_mci_state       state;
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
