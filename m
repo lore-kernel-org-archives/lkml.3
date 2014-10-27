@@ -1,156 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962AbaJ0GqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 02:46:15 -0400
-Received: from smtprelay0004.hostedemail.com ([216.40.44.4]:49397 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751605AbaJ0GqO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 02:46:14 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1543:1593:1594:1711:1730:1747:1777:1792:1801:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3874:4321:4605:5007:6119:6120:6261:7903:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12114:12291:12296:12438:12517:12519:12555:12740:13255:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: leg38_362f2ebf9f505
-X-Filterd-Recvd-Size: 4914
-Message-ID: <1414392371.8884.2.camel@perches.com>
-Subject: Re: [RFC V2] arm/arm64:add CONFIG_HAVE_ARCH_BITREVERSE to support
- rbit instruction
-From: Joe Perches <joe@perches.com>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Will Deacon'" <Will.Deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>
-Date: Sun, 26 Oct 2014 23:46:11 -0700
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
-	 <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752126AbaJ0Gsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 02:48:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45782 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751407AbaJ0Gsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 02:48:43 -0400
+From: Juergen Gross <jgross@suse.com>
+To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH V4 3/3] Support Xen pv-domains using PAT
+Date: Mon, 27 Oct 2014 07:48:33 +0100
+Message-Id: <1414392513-24645-4-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1414392513-24645-1-git-send-email-jgross@suse.com>
+References: <1414392513-24645-1-git-send-email-jgross@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 14:37 +0800, Wang, Yalin wrote:
-> this change add CONFIG_HAVE_ARCH_BITREVERSE config option,
-> so that we can use arm/arm64 rbit instruction to do bitrev operation
-> by hardware.
-> 
-> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
-> ---
->  arch/arm/Kconfig                |  1 +
->  arch/arm/include/asm/bitrev.h   | 21 +++++++++++++++++++++
->  arch/arm64/Kconfig              |  1 +
->  arch/arm64/include/asm/bitrev.h | 21 +++++++++++++++++++++
->  include/linux/bitrev.h          |  9 +++++++++
->  lib/Kconfig                     |  9 +++++++++
->  lib/bitrev.c                    |  2 ++
->  7 files changed, 64 insertions(+)
->  create mode 100644 arch/arm/include/asm/bitrev.h
->  create mode 100644 arch/arm64/include/asm/bitrev.h
-> 
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 89c4b5c..426cbcc 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -16,6 +16,7 @@ config ARM
->  	select DCACHE_WORD_ACCESS if HAVE_EFFICIENT_UNALIGNED_ACCESS
->  	select GENERIC_ALLOCATOR
->  	select GENERIC_ATOMIC64 if (CPU_V7M || CPU_V6 || !CPU_32v6K || !AEABI)
-> +	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
->  	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
->  	select GENERIC_IDLE_POLL_SETUP
->  	select GENERIC_IRQ_PROBE
-> diff --git a/arch/arm/include/asm/bitrev.h b/arch/arm/include/asm/bitrev.h
-> new file mode 100644
-> index 0000000..0df5866
-> --- /dev/null
-> +++ b/arch/arm/include/asm/bitrev.h
-> @@ -0,0 +1,21 @@
-> +#ifndef __ASM_ARM_BITREV_H
-> +#define __ASM_ARM_BITREV_H
-> +
-> +static inline __attribute_const__ u32 __arch_bitrev32(u32 x)
-> +{
-> +	__asm__ ("rbit %0, %1" : "=r" (x) : "r" (x));
-> +	return x;
-> +}
-> +
-> +static inline __attribute_const__ u16 __arch_bitrev16(u16 x)
-> +{
-> +	return __arch_bitrev32((u32)x) >> 16;
-> +}
-> +
-> +static inline __attribute_const__ u8 __arch_bitrev8(u8 x)
-> +{
-> +	return __arch_bitrev32((u32)x) >> 24;
-> +}
-> +
-> +#endif
-> +
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index 9532f8d..263c28c 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -36,6 +36,7 @@ config ARM64
->  	select HARDIRQS_SW_RESEND
->  	select HAVE_ARCH_AUDITSYSCALL
->  	select HAVE_ARCH_JUMP_LABEL
-> +	select HAVE_ARCH_BITREVERSE
->  	select HAVE_ARCH_KGDB
->  	select HAVE_ARCH_TRACEHOOK
->  	select HAVE_BPF_JIT
-> diff --git a/arch/arm64/include/asm/bitrev.h b/arch/arm64/include/asm/bitrev.h
-> new file mode 100644
-> index 0000000..5d24c11
-> --- /dev/null
-> +++ b/arch/arm64/include/asm/bitrev.h
-> @@ -0,0 +1,21 @@
-> +#ifndef __ASM_ARM_BITREV_H
-> +#define __ASM_ARM_BITREV_H
-> +
-> +static inline __attribute_const__ u32 __arch_bitrev32(u32 x)
-> +{
-> +	__asm__ ("rbit %w0, %w1" : "=r" (x) : "r" (x));
-> +	return x;
-> +}
-> +
-> +static inline __attribute_const__ u16 __arch_bitrev16(u16 x)
-> +{
-> +	return __arch_bitrev32((u32)x) >> 16;
-> +}
-> +
-> +static inline __attribute_const__ u8 __arch_bitrev8(u8 x)
-> +{
-> +	return __arch_bitrev32((u32)x) >> 24;
-> +}
-> +
-> +#endif
-> +
-> diff --git a/include/linux/bitrev.h b/include/linux/bitrev.h
-> index 7ffe03f..ef5b2bb 100644
-> --- a/include/linux/bitrev.h
-> +++ b/include/linux/bitrev.h
-> @@ -3,6 +3,14 @@
->  
->  #include <linux/types.h>
->  
-> +#ifdef CONFIG_HAVE_ARCH_BITREVERSE
-> +#include <asm/bitrev.h>
-> +
-> +#define bitrev32 __arch_bitrev32
-> +#define bitrev16 __arch_bitrev16
-> +#define bitrev8 __arch_bitrev8
-> +
-> +#else
->  extern u8 const byte_rev_table[256];
+With the dynamical mapping between cache modes and pgprot values it is
+now possible to use all cache modes via the Xen hypervisor PAT settings
+in a pv domain.
 
-If this is done, the direct uses of byte_rev_table in
-drivers/net/wireless/ath/carl9170/phy.c and
-sound/usb/6fire/firmware.c should be converted too?
+All to be done is to read the PAT configuration MSR and set up the
+translation tables accordingly.
 
+Signed-off-by: Juergen Gross <jgross@suse.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/enlighten.c | 25 +++++++------------------
+ arch/x86/xen/mmu.c       | 47 +----------------------------------------------
+ arch/x86/xen/xen-ops.h   |  1 -
+ 3 files changed, 8 insertions(+), 65 deletions(-)
+
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index fac5e4f..6bf3a13 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1100,12 +1100,6 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+ 		/* Fast syscall setup is all done in hypercalls, so
+ 		   these are all ignored.  Stub them out here to stop
+ 		   Xen console noise. */
+-		break;
+-
+-	case MSR_IA32_CR_PAT:
+-		if (smp_processor_id() == 0)
+-			xen_set_pat(((u64)high << 32) | low);
+-		break;
+ 
+ 	default:
+ 		ret = native_write_msr_safe(msr, low, high);
+@@ -1561,10 +1555,6 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 
+ 	/* Prevent unwanted bits from being set in PTEs. */
+ 	__supported_pte_mask &= ~_PAGE_GLOBAL;
+-#if 0
+-	if (!xen_initial_domain())
+-#endif
+-		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
+ 
+ 	/*
+ 	 * Prevent page tables from being allocated in highmem, even
+@@ -1618,14 +1608,6 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 	 */
+ 	acpi_numa = -1;
+ #endif
+-#ifdef CONFIG_X86_PAT
+-	/*
+-	 * For right now disable the PAT. We should remove this once
+-	 * git commit 8eaffa67b43e99ae581622c5133e20b0f48bcef1
+-	 * (xen/pat: Disable PAT support for now) is reverted.
+-	 */
+-	pat_enabled = 0;
+-#endif
+ 	/* Don't do the full vcpu_info placement stuff until we have a
+ 	   possible map and a non-dummy shared_info. */
+ 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+@@ -1636,6 +1618,13 @@ asmlinkage __visible void __init xen_start_kernel(void)
+ 	xen_raw_console_write("mapping kernel into physical memory\n");
+ 	xen_setup_kernel_pagetable((pgd_t *)xen_start_info->pt_base, xen_start_info->nr_pages);
+ 
++	/*
++	 * Modify the cache mode translation tables to match Xen's PAT
++	 * configuration.
++	 */
++
++	pat_init_cache_modes();
++
+ 	/* keep using Xen gdt for now; no urgent need to change it */
+ 
+ #ifdef CONFIG_X86_32
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index a8a1a3d..9855eb8 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -410,13 +410,7 @@ static pteval_t pte_pfn_to_mfn(pteval_t val)
+ __visible pteval_t xen_pte_val(pte_t pte)
+ {
+ 	pteval_t pteval = pte.pte;
+-#if 0
+-	/* If this is a WC pte, convert back from Xen WC to Linux WC */
+-	if ((pteval & (_PAGE_PAT | _PAGE_PCD | _PAGE_PWT)) == _PAGE_PAT) {
+-		WARN_ON(!pat_enabled);
+-		pteval = (pteval & ~_PAGE_PAT) | _PAGE_PWT;
+-	}
+-#endif
++
+ 	return pte_mfn_to_pfn(pteval);
+ }
+ PV_CALLEE_SAVE_REGS_THUNK(xen_pte_val);
+@@ -427,47 +421,8 @@ __visible pgdval_t xen_pgd_val(pgd_t pgd)
+ }
+ PV_CALLEE_SAVE_REGS_THUNK(xen_pgd_val);
+ 
+-/*
+- * Xen's PAT setup is part of its ABI, though I assume entries 6 & 7
+- * are reserved for now, to correspond to the Intel-reserved PAT
+- * types.
+- *
+- * We expect Linux's PAT set as follows:
+- *
+- * Idx  PTE flags        Linux    Xen    Default
+- * 0                     WB       WB     WB
+- * 1            PWT      WC       WT     WT
+- * 2        PCD          UC-      UC-    UC-
+- * 3        PCD PWT      UC       UC     UC
+- * 4    PAT              WB       WC     WB
+- * 5    PAT     PWT      WC       WP     WT
+- * 6    PAT PCD          UC-      rsv    UC-
+- * 7    PAT PCD PWT      UC       rsv    UC
+- */
+-
+-void xen_set_pat(u64 pat)
+-{
+-	/* We expect Linux to use a PAT setting of
+-	 * UC UC- WC WB (ignoring the PAT flag) */
+-	WARN_ON(pat != 0x0007010600070106ull);
+-}
+-
+ __visible pte_t xen_make_pte(pteval_t pte)
+ {
+-#if 0
+-	/* If Linux is trying to set a WC pte, then map to the Xen WC.
+-	 * If _PAGE_PAT is set, then it probably means it is really
+-	 * _PAGE_PSE, so avoid fiddling with the PAT mapping and hope
+-	 * things work out OK...
+-	 *
+-	 * (We should never see kernel mappings with _PAGE_PSE set,
+-	 * but we could see hugetlbfs mappings, I think.).
+-	 */
+-	if (pat_enabled && !WARN_ON(pte & _PAGE_PAT)) {
+-		if ((pte & (_PAGE_PCD | _PAGE_PWT)) == _PAGE_PWT)
+-			pte = (pte & ~(_PAGE_PCD | _PAGE_PWT)) | _PAGE_PAT;
+-	}
+-#endif
+ 	pte = pte_pfn_to_mfn(pte);
+ 
+ 	return native_make_pte(pte);
+diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+index 28c7e0b..4ab9298 100644
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -33,7 +33,6 @@ extern unsigned long xen_max_p2m_pfn;
+ 
+ void xen_mm_pin_all(void);
+ void xen_mm_unpin_all(void);
+-void xen_set_pat(u64);
+ 
+ char * __init xen_memory_setup(void);
+ char * xen_auto_xlated_memory_setup(void);
+-- 
+1.8.4.5
 
