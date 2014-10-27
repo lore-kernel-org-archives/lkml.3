@@ -1,169 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190AbaJ0KJH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 06:09:07 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:57086 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaJ0KJB (ORCPT
+	id S1752191AbaJ0KL4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 06:11:56 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:60437 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184AbaJ0KLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 06:09:01 -0400
-Message-ID: <544E19A4.6040603@collabora.co.uk>
-Date: Mon, 27 Oct 2014 11:08:36 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Mon, 27 Oct 2014 06:11:54 -0400
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH v4 2/3] regulator: max77686: Implement suspend disable
- for some LDOs
-References: <1414403066-7872-1-git-send-email-k.kozlowski@samsung.com> <1414403066-7872-3-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1414403066-7872-3-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141027095626.GD9807@amd>
+References: <20141021202137.GA20114@www.outflux.net>
+	<20141022162638.875681da6bbb9e027d2d3bee@linux-foundation.org>
+	<CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
+	<20141027095626.GD9807@amd>
+Date: Mon, 27 Oct 2014 11:11:53 +0100
+X-Google-Sender-Auth: TCf29o5OqcT47Lj8noIaYARD3fo
+Message-ID: <CAMuHMdVeFGjti-6ghv_u6_r2HkKHwWj70TGzQ0yGkuTmu7zBLQ@mail.gmail.com>
+Subject: Re: [PATCH] sysctl: terminate strings also on \r
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
+        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        Jens Axboe <axboe@fb.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Wise <pabs3@bonedaddy.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+On Mon, Oct 27, 2014 at 10:56 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> On Wed 2014-10-22 16:43:10, Kees Cook wrote:
+>> On Wed, Oct 22, 2014 at 4:26 PM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>> > On Tue, 21 Oct 2014 13:21:37 -0700 Kees Cook <keescook@chromium.org> wrote:
+>> >
+>> >> From: Paul Wise <pabs3@bonedaddy.net>
+>> >>
+>> >> This partially mitigates a common strategy used by attackers for hiding
+>> >> the full contents of strings in procfs from naive sysadmins who use cat,
+>> >> more or sysctl to inspect the contents of strings in procfs.
+>> >>
+>> >> ...
+>> >>
+>> >> --- a/kernel/sysctl.c
+>> >> +++ b/kernel/sysctl.c
+>> >> @@ -1739,7 +1739,7 @@ static int _proc_do_string(char *data, int maxlen, int write,
+>> >>               while ((p - buffer) < *lenp && len < maxlen - 1) {
+>> >>                       if (get_user(c, p++))
+>> >>                               return -EFAULT;
+>> >> -                     if (c == 0 || c == '\n')
+>> >> +                     if (c == 0 || c == '\n' || c == '\r')
+>> >>                               break;
+>> >>                       data[len++] = c;
+>> >>               }
+>> >
+>> > There are no valid uses of \r in a procfs write?
+>>
+>> I struggle to imagine one; everything I found that uses proc_dostring
+>> seems to be names, paths, and commands.
+>
+> Well, filename can contain \r, right?
 
-On 10/27/2014 10:44 AM, Krzysztof Kozlowski wrote:
-> Some LDOs of Maxim 77686 PMIC support disabling during system suspend
-> (LDO{2,6,7,8,10,11,12,14,15,16}). This was already implemented as part
-> of set_suspend_mode function. In that case the mode was one of:
->  - disable,
->  - normal mode,
->  - low power mode.
-> However there are no bindings for setting the mode during suspend.
-> 
-> Add suspend disable for LDO regulators supporting this to the existing
-> max77686_buck_set_suspend_disable() function. This helps reducing
-> energy consumption during system sleep.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/regulator/max77686.c | 75 ++++++++++++++++++++++++++++++++++++++------
->  1 file changed, 66 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-> index 3d0922051488..4b35c19c9286 100644
-> --- a/drivers/regulator/max77686.c
-> +++ b/drivers/regulator/max77686.c
-> @@ -87,18 +87,31 @@ struct max77686_data {
->  	unsigned int opmode[MAX77686_REGULATORS];
->  };
->  
-> -/* Some BUCKS supports Normal[ON/OFF] mode during suspend */
-> -static int max77686_buck_set_suspend_disable(struct regulator_dev *rdev)
-> +/* Some BUCKs and LDOs supports Normal[ON/OFF] mode during suspend */
-> +static int max77686_set_suspend_disable(struct regulator_dev *rdev)
->  {
->  	unsigned int val;
->  	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
->  	int ret, id = rdev_get_id(rdev);
->  
-> -	if (id == MAX77686_BUCK1)
-> +	switch (id) {
-> +	case MAX77686_BUCK1:
->  		val = MAX77686_BUCK_OFF_PWRREQ;
-> -	else
-> -		val = MAX77686_BUCK_OFF_PWRREQ
-> -			<< MAX77686_OPMODE_BUCK234_SHIFT;
-> +		break;
-> +	case MAX77686_BUCK2 ...	MAX77686_BUCK4:
-> +		val = MAX77686_BUCK_OFF_PWRREQ << MAX77686_OPMODE_BUCK234_SHIFT;
-> +		break;
-> +	case MAX77686_LDO2:
-> +	case MAX77686_LDO6 ... MAX77686_LDO8:
-> +	case MAX77686_LDO10 ... MAX77686_LDO12:
-> +	case MAX77686_LDO14 ... MAX77686_LDO16:
-> +		val = MAX77686_LDO_OFF_PWRREQ << MAX77686_OPMODE_SHIFT;
-> +		break;
-> +	default:
-> +		pr_warn("%s: regulator_suspend_disable not supported\n",
-> +			rdev->desc->name);
-> +		return -EINVAL;
-> +	}
->  
->  	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
->  				 rdev->desc->enable_mask, val);
-> @@ -176,13 +189,53 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
->  	return 0;
->  }
->  
-> +/*
-> + * For regulators supporting disabled in suspend it checks if opmode
-> + * is 'off_pwrreq' mode (disabled in suspend) and changes it to 'enable'.
-> + * For other regulators does nothing.
-> + */
-> +static void max77686_set_opmode_enable(struct max77686_data *max77686, int id)
-> +{
-> +	unsigned int opmode_shift;
-> +
-> +	/*
-> +	 * Same enable function is used for LDO and bucks. Assuming
-> +	 * the same values are used for enable registers.
-> +	 */
-> +	BUILD_BUG_ON(MAX77686_LDO_OFF_PWRREQ != MAX77686_BUCK_OFF_PWRREQ);
-> +	BUILD_BUG_ON(MAX77686_LDO_NORMAL != MAX77686_BUCK_NORMAL);
-> +
-> +	switch (id) {
-> +	case MAX77686_BUCK1:
-> +		opmode_shift = 0;
-> +		break;
-> +	case MAX77686_BUCK2 ...	MAX77686_BUCK4:
-> +		opmode_shift = MAX77686_OPMODE_BUCK234_SHIFT;
-> +		break;
-> +	case MAX77686_LDO2:
-> +	case MAX77686_LDO6 ... MAX77686_LDO8:
-> +	case MAX77686_LDO10 ... MAX77686_LDO12:
-> +	case MAX77686_LDO14 ... MAX77686_LDO16:
-> +		opmode_shift = MAX77686_OPMODE_SHIFT;
-> +		break;
-> +	default:
-> +		return;
-> +	}
-> +
-> +	if (max77686->opmode[id] == (MAX77686_LDO_OFF_PWRREQ << opmode_shift))
-> +		max77686->opmode[id] = MAX77686_LDO_NORMAL << opmode_shift;
-> +}
-> +
->  static int max77686_enable(struct regulator_dev *rdev)
->  {
->  	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-> +	int id = rdev_get_id(rdev);
-> +
-> +	max77686_set_opmode_enable(max77686, id);
->  
->  	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
->  				  rdev->desc->enable_mask,
-> -				  max77686->opmode[rdev_get_id(rdev)]);
-> +				  max77686->opmode[id]);
->  }
+Even \n. AFAIK, the only thing a filename cannot contain is the nul character
+and a forward slash, as that's used to separate path components (so slash
+is valid for a path name).
 
-the max77802 driver handles this slightly differently. It stores in opmode[id]
-just the value without the shift and there is a max77802_get_opmode_shift() to
-obtain the shift that is used before updating the register, e.g:
+Still, we can hide stuff using ANSI ESC sequences, and e.g. backspaces,
+right?
 
-int shift = max77802_get_opmode_shift(id);
-return regmap_update_bits(..., max77802->opmode[id] << shift);
+Gr{oetje,eeting}s,
 
-I think the max77802 driver approach is better since it avoids duplicating the
-switch statement to get the shift for each regulator. Just look how the max77802
-enable and disable functions are easier to read. Looking at the max77686 driver,
-I see that there are assumptions that opmode[id] has the value shifted so your
-changes are consistent with the rest of the driver but I would consider changing
-this.
+                        Geert
 
-Best regards,
-Javier
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
