@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069AbaJ0N4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:56:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655AbaJ0N4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:56:11 -0400
-Message-ID: <1414418157.24347.1.camel@redhat.com>
-Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
-From: Eric Paris <eparis@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        przanoni@gmail.com, mingo@kernel.org, hpa@linux.intel.com,
-        hpa@zytor.com, linux-tip-commits@vger.kernel.org,
-        linux-audit@redhat.com
-Date: Mon, 27 Oct 2014 09:55:57 -0400
-In-Reply-To: <20141027023457.GY15532@madcap2.tricolour.ca>
-References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
-	 <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
-	 <alpine.DEB.2.11.1410251034320.5308@nanos>
-	 <20141027023457.GY15532@madcap2.tricolour.ca>
+	id S1753413AbaJ0N4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:56:21 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:49542 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117AbaJ0N4S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 09:56:18 -0400
+X-Originating-IP: 83.155.44.161
+Message-ID: <1414418126.30379.47.camel@hadess.net>
+Subject: Re: A desktop environment[1] kernel wishlist
+From: Bastien Nocera <hadess@hadess.net>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 27 Oct 2014 14:55:26 +0100
+In-Reply-To: <5446B3CC.1080904@amacapital.net>
+References: <1413881397.30379.7.camel@hadess.net>
+	 <5446B3CC.1080904@amacapital.net>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My patch was already committed to the -tip urgent branch.  I believe any
-optimization should be based on that branch, Richard.  If you are trying
-to wrangle every bit of speed out of this, should you
+On Tue, 2014-10-21 at 12:28 -0700, Andy Lutomirski wrote:
+> On 10/21/2014 01:49 AM, Bastien Nocera wrote:
+> > Hey,
+> > 
+> > GNOME has had discussions with kernel developers in the past, and,
+> > fortunately, in some cases we were able to make headway.
+> > 
+> > There are however a number of items that we still don't have solutions
+> > for, items that kernel developers might not realise we'd like to rely
+> > on, or don't know that we'd make use of if merged.
+> > 
+> > I've posted this list at:
+> > https://wiki.gnome.org/BastienNocera/KernelWishlist
+> > 
+> > Let me know on-list or off-list if you have any comments about those, so
+> > I can update the list.
+> 
+> I don't know much about desktop environment infrastructure, but I think
+> the kernel probably already has a lot of what's needed for LinuxApps.
+> 
+> Tools like Sandstorm [1] (shameless plug, but it's a good example here)
+> can already sandbox normal-ish programs, and those sandboxes can be
+> launched without privilege [2].
+> 
+> Why is kdbus needed?
 
-push %esi;
-push %edi;
-CFI_ADJUST_CFA_OFFSET 8
-call __audit_syscall_entry
-pop;
-pop;
-CFI_ADJUST_CFA_OFFSET -8
+Because it sucks less than passing fd's and using home-made protocols on
+top of it.
 
-Instead of using the pushl_cfi and popl_cfi macros?
+>   Why are overlays better than, say, btrfs
+> lightweight copies here?  Also, overlayfs might actually make it for 3.19.
 
-I wrote my patch to be obviously correct, but agree there are certainly
-some speedups possible.
+Overlayfs works on more than just btrfs, which is useful to not rely on
+a particular filesystem to implement those features.
 
--Eric
+> As for childfs, I implemented procfs polling a couple years ago, but it
+> never went anywhere:
+> 
+> http://lkml.kernel.org/g/1840e47fc4113af16989a4250d98bed62a9bce53.1354559528.git.luto@amacapital.net
+> 
+> If that would help, I can try to dust it off and get it in to the kernel.
 
-On Sun, 2014-10-26 at 22:34 -0400, Richard Guy Briggs wrote:
-> git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
-> It was writing over %esp/pt_regs semi-randomly on i686 with the expected
-> "system can't boot" results.  As noted in:
-> 
-> https://bugs.freedesktop.org/show_bug.cgi?id=85277
-> 
-> This patch stops fscking with pt_regs.  Instead it sets up the registers
-> for the call to __audit_syscall_entry in the most obvious conceivable
-> way.  It then does just a tiny tiny touch of magic.  We need to get what
-> started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
-> as a pair of pushes using the values still in those registers.
-> 
-> After the call to __audit_syscall_entry all we need to do is get that
-> now useless junk off the stack (pair of pops) and reload %eax with the
-> original syscall so other stuff can keep going about it's business.
-> 
-> Reported-by: Paulo Zanoni <przanoni@gmail.com>
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-audit@redhat.com
-> 
-> ---
-> On 14/10/25, Thomas Gleixner wrote:
-> > Why are we grabbing that from the stack? AFAICT all arguments are in
-> > the registers still.
-> 
-> Right, re-arranging the instructions slightly to avoid overwriting %edx
-> with %ebx before needing it to push onto the stack, how does this look?
-> 
->  arch/x86/kernel/entry_32.S | 15 +++++++--------
->  1 file changed, 7 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index b553ed8..344b63f 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -447,15 +447,14 @@ sysenter_exit:
->  sysenter_audit:
->  	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
->  	jnz syscall_trace_entry
-> -	addl $4,%esp
-> -	CFI_ADJUST_CFA_OFFSET -4
-> -	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
-> -	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
-> -	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
-> -	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
-> -	/* %eax already in %eax		   1st arg: syscall number */
-> +	/* movl PT_ECX(%esp), %ecx	already set, a1: 3nd arg to audit */
-> +	/* movl PT_EAX(%esp), %eax	already set, syscall number: 1st arg to audit */
-> +	pushl_cfi %esi			/* a3: 5th arg */
-> +	pushl_cfi %edx			/* a2: 4th arg */
-> +	movl %ebx, %edx			/* ebx/a0: 2nd arg to audit */
->  	call __audit_syscall_entry
-> -	pushl_cfi %ebx
-> +	popl_cfi %ecx /* get that remapped edx off the stack */
-> +	popl_cfi %ecx /* get that remapped esi off the stack */
->  	movl PT_EAX(%esp),%eax		/* reload syscall number */
->  	jmp sysenter_do_call
->  
-> 
-> - RGB
-> 
-> --
-> Richard Guy Briggs <rbriggs@redhat.com>
-> Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-> Remote, Ottawa, Canada
-> Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+I'll pass that on to Ryan who requested this feature.
 
+Cheers
 
