@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaJ0Cvs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 22:51:48 -0400
-Received: from smtprelay0009.hostedemail.com ([216.40.44.9]:39069 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751957AbaJ0Cvr (ORCPT
+	id S1752121AbaJ0C7M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:59:12 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:43343 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751984AbaJ0C7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 22:51:47 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:69:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2559:2562:2731:2828:3138:3139:3140:3141:3142:3352:3622:3865:4321:4605:5007:6119:6261:7903:9149:10004:10400:10848:11026:11232:11658:11914:12043:12295:12438:12517:12519:12555:12683:12740:13069:13311:13357:14095:14096:14110:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bead02_2c841cc64611d
-X-Filterd-Recvd-Size: 2225
-Message-ID: <1414378304.15751.26.camel@perches.com>
-Subject: Re: [LKP] [rcu] BUG: kernel_boot_hang mode:0x10d0
-From: Joe Perches <joe@perches.com>
-To: kernel test robot <fengguang.wu@intel.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Pranith Kumar <bobby.prani@gmail.com>
-Date: Sun, 26 Oct 2014 19:51:44 -0700
-In-Reply-To: <20141027020415.GC27038@yliu-dev.sh.intel.com>
-References: <20141027020415.GC27038@yliu-dev.sh.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 26 Oct 2014 22:59:11 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <gregkh@linuxfoundation.org>, Neil Zhang <zhangwm@marvell.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH V2] Driver cpu: update online when cpu_up/down besides sysfs
+Date: Mon, 27 Oct 2014 10:59:08 +0800
+Message-ID: <1414378748-8855-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-27_01:2014-10-24,2014-10-26,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=1
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1410270034
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 10:04 +0800, kernel test robot wrote:
-> FYI, we noticed the below changes on
-> 
-> commit eea203fea3484598280a07fe503e025e886297fb ("rcu: Use pr_alert/pr_cont for printing logs")
-> 
-> 
-> +------------------------------------------------------------------+------------+------------+
-> |                                                                  | 188c1e896c | eea203fea3 |
-> +------------------------------------------------------------------+------------+------------+
-> | boot_successes                                                   | 0          | 2          |
-> | boot_failures                                                    | 15         | 13         |
-> | page_allocation_failure:order:,mode:x10d0                        | 15         | 13         |
-> | Kernel_panic-not_syncing:Out_of_memory_and_no_killable_processes | 15         |            |
-> | backtrace:ring_buffer_consumer_thread                            | 15         | 13         |
-> | backtrace:rcu_torture_stats                                      | 15         |            |
-> | BUG:kernel_boot_hang                                             | 0          | 13         |
-> +------------------------------------------------------------------+------------+------------+
+The current per-cpu offline info won't be updated when we use
+any other method besides sysfs to call cpu_up/down.
+Thus the cpu/online can't reflect the real online status.
 
-I've no good idea why this change should cause any issue.
+This patch is going to fix the issue introduced by commit
+0902a9044fa5b7a0456ea4daacec2c2b3189ba8c (Driver core:
+Use generic offline/online for CPU offline/online)
 
+CC: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Tested-by: Dan Streetman <ddstreet@ieee.org>
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+---
+ drivers/base/cpu.c |   25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 006b1bc..9d61824 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -418,10 +418,35 @@ static void __init cpu_dev_register_generic(void)
+ #endif
+ }
+ 
++static int device_hotplug_notifier(struct notifier_block *nfb,
++				      unsigned long action, void *hcpu)
++{
++	unsigned int cpu = (unsigned long)hcpu;
++	struct device *dev = get_cpu_device(cpu);
++	int ret;
++
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_ONLINE:
++		dev->offline = false;
++		ret = NOTIFY_OK;
++		break;
++	case CPU_DYING:
++		dev->offline = true;
++		ret = NOTIFY_OK;
++		break;
++	default:
++		ret = NOTIFY_DONE;
++		break;
++	}
++
++	return ret;
++}
++
+ void __init cpu_dev_init(void)
+ {
+ 	if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
+ 		panic("Failed to register CPU subsystem");
+ 
+ 	cpu_dev_register_generic();
++	cpu_notifier(device_hotplug_notifier, 0);
+ }
+-- 
+1.7.9.5
 
