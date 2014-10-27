@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252AbaJ0T1s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:27:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52414 "EHLO
+	id S1754235AbaJ0T1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:27:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52415 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381AbaJ0S5m (ORCPT
+	with ESMTP id S1752384AbaJ0S5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 14:57:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Roger Tseng <rogerable@realtek.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+Cc: Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 014/105] mmc: rtsx_pci_sdmmc: fix incorrect last byte in R2 response
-Date: Mon, 27 Oct 2014 11:55:49 -0700
-Message-Id: <1414436240-13879-15-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 019/105] Bluetooth: Fix setting correct security level when initiating SMP
+Date: Mon, 27 Oct 2014 11:55:54 -0700
+Message-Id: <1414436240-13879-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,44 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roger Tseng <rogerable@realtek.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit d1419d50c1bf711e9fd27b516a739c86b23f7cf9 upstream.
+commit 5eb596f55cacc2389554a8d7572d90d5e9d4269d upstream.
 
-Current code erroneously fill the last byte of R2 response with an undefined
-value. In addition, the controller actually 'offloads' the last byte
-(CRC7, end bit) while receiving R2 response and thus it's impossible to get the
-actual value. This could cause mmc stack to obtain inconsistent CID from the
-same card after resume and misidentify it as a different card.
+We can only determine the final security level when both pairing request
+and response have been exchanged. When initiating pairing the starting
+target security level is set to MEDIUM unless explicitly specified to be
+HIGH, so that we can still perform pairing even if the remote doesn't
+have MITM capabilities. However, once we've received the pairing
+response we should re-consult the remote and local IO capabilities and
+upgrade the target security level if necessary.
 
-Fix by assigning dummy CRC and end bit: {7'b0, 1} = 0x1 to the last byte of R2.
+Without this patch the resulting Long Term Key will occasionally be
+reported to be unauthenticated when it in reality is an authenticated
+one.
 
-Fixes: ff984e57d36e ("mmc: Add realtek pcie sdmmc host driver")
-Signed-off-by: Roger Tseng <rogerable@realtek.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mmc/host/rtsx_pci_sdmmc.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ net/bluetooth/smp.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index c46feda..bdbac02 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -339,6 +339,13 @@ static void sd_send_cmd_get_rsp(struct realtek_pci_sdmmc *host,
+diff --git a/net/bluetooth/smp.c b/net/bluetooth/smp.c
+index 7e355bb..cd52609 100644
+--- a/net/bluetooth/smp.c
++++ b/net/bluetooth/smp.c
+@@ -326,8 +326,11 @@ static int tk_request(struct l2cap_conn *conn, u8 remote_oob, u8 auth,
  	}
  
- 	if (rsp_type == SD_RSP_TYPE_R2) {
-+		/*
-+		 * The controller offloads the last byte {CRC-7, end bit 1'b1}
-+		 * of response type R2. Assign dummy CRC, 0, and end bit to the
-+		 * byte(ptr[16], goes into the LSB of resp[3] later).
-+		 */
-+		ptr[16] = 1;
-+
- 		for (i = 0; i < 4; i++) {
- 			cmd->resp[i] = get_unaligned_be32(ptr + 1 + i * 4);
- 			dev_dbg(sdmmc_dev(host), "cmd->resp[%d] = 0x%08x\n",
+ 	/* Not Just Works/Confirm results in MITM Authentication */
+-	if (method != JUST_CFM)
++	if (method != JUST_CFM) {
+ 		set_bit(SMP_FLAG_MITM_AUTH, &smp->smp_flags);
++		if (hcon->pending_sec_level < BT_SECURITY_HIGH)
++			hcon->pending_sec_level = BT_SECURITY_HIGH;
++	}
+ 
+ 	/* If both devices have Keyoard-Display I/O, the master
+ 	 * Confirms and the slave Enters the passkey.
 -- 
 1.9.1
 
