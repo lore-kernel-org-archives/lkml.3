@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbaJ0TQk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:16:40 -0400
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:64458 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753015AbaJ0TQh (ORCPT
+	id S1753432AbaJ0TDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:03:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52726 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888AbaJ0TD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:16:37 -0400
+	Mon, 27 Oct 2014 15:03:28 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Roger=20Pau=20Monn=C3=A9?= <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 071/105] xen-blkback: fix leak on grant map error path
+Date: Mon, 27 Oct 2014 11:56:46 -0700
+Message-Id: <1414436240-13879-72-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
+References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <1414433284-31719-15-git-send-email-a.motakis@virtualopensystems.com>
-References: <1414433284-31719-1-git-send-email-a.motakis@virtualopensystems.com>
- <1414433284-31719-15-git-send-email-a.motakis@virtualopensystems.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 27 Oct 2014 13:16:15 -0600
-Message-ID: <CAErSpo55o00=YwtWChFaxC1tEAwv_A5nB90mDU9J6kpb9Tqf_Q@mail.gmail.com>
-Subject: Re: [PATCH v9 14/19] vfio: move eventfd support code for VFIO_PCI to
- a separate file
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: kvmarm@lists.cs.columbia.edu,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, tech@virtualopensystems.com,
-        Christoffer Dall <christoffer.dall@linaro.org>, eric.auger@linaro.org,
-        kim.phillips@freescale.com, Marc Zyngier <marc.zyngier@arm.com>,
-        Alexander Gordeev <agordeev@redhat.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:VFIO DRIVER" <kvm@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Antonios,
+3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
 
-On Mon, Oct 27, 2014 at 12:07 PM, Antonios Motakis
-<a.motakis@virtualopensystems.com> wrote:
-> The virqfd functionality that is used by VFIO_PCI to implement interrupt
-> masking and unmasking via an eventfd, is generic enough and can be reused
-> by another driver. Move it to a separate file in order to allow the code
-> to be shared.
->
-> Also properly export virqfd_enable and virqfd_disable in the process.
+------------------
 
-Alex will handle this, not me, but my personal preference is to avoid
-doing things "in the process" because the small changes get lost in
-the big patch.
+From: =?UTF-8?q?Roger=20Pau=20Monn=C3=A9?= <roger.pau@citrix.com>
 
-I'd rather see a strict move that changes no code at all (except
-things like necessary Makefile changes), followed by a smaller patch
-that does the additional stuff.
+commit 61cecca865280bef4f8a9748d0a9afa5df351ac2 upstream.
 
-Does "properly export" mean that those functions were previously
-*improperly* exported and the way they used to be exported caused a
-problem?  Or does it just mean "export"?
+Fix leaking a page when a grant mapping has failed.
 
-Bjorn
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Reported-and-Tested-by: Tao Chen <boby.chen@huawei.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/block/xen-blkback/blkback.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/vfio/Makefile               |   4 +-
->  drivers/vfio/pci/vfio_pci_intrs.c   | 213 -----------------------------------
->  drivers/vfio/pci/vfio_pci_private.h |   3 -
->  drivers/vfio/virqfd.c               | 214 ++++++++++++++++++++++++++++++++++++
->  include/linux/vfio.h                |  28 +++++
->  5 files changed, 245 insertions(+), 217 deletions(-)
->  create mode 100644 drivers/vfio/virqfd.c
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index 6620b73..6beaaf8 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -755,6 +755,7 @@ again:
+ 			BUG_ON(new_map_idx >= segs_to_map);
+ 			if (unlikely(map[new_map_idx].status != 0)) {
+ 				pr_debug(DRV_PFX "invalid buffer -- could not remap it\n");
++				put_free_pages(blkif, &pages[seg_idx]->page, 1);
+ 				pages[seg_idx]->handle = BLKBACK_INVALID_HANDLE;
+ 				ret |= 1;
+ 				goto next;
+-- 
+1.9.1
+
