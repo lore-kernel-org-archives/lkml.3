@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752327AbaJ0LYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:24:20 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:8695 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875AbaJ0LYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:24:19 -0400
-Message-ID: <544E2B18.8010702@huawei.com>
-Date: Mon, 27 Oct 2014 19:23:04 +0800
-From: Li Liu <john.liuli@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Maydell <peter.maydell@linaro.org>
-CC: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joel Schopp <joel.schopp@amd.com>,
-        Yingshiuan Pan <yingshiuan.pan@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, <remy.gauguey@cea.fr>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        QEMU Developers <qemu-devel@nongnu.org>,
-        "Nikolay Nikolaev" <n.nikolaev@virtualopensystems.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        <peter.huangpeng@huawei.com>
-Subject: Re: [Qemu-devel] [RFC PATCH 0/2] virtio-mmio: add irqfd support for
- vhost-net based on virtio-mmio
-References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com> <CAFEAcA9o8ZsbUvZb7Yp9JeO__bRLOrYcyfj4Ug4Se_rDF0y4TA@mail.gmail.com>
-In-Reply-To: <CAFEAcA9o8ZsbUvZb7Yp9JeO__bRLOrYcyfj4Ug4Se_rDF0y4TA@mail.gmail.com>
+	id S1752479AbaJ0LY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:24:29 -0400
+Received: from s3.sipsolutions.net ([5.9.151.49]:51176 "EHLO sipsolutions.net"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752347AbaJ0LY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 07:24:27 -0400
+Message-ID: <1414409035.3836.4.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] net: rfkill: gpio: Add default GPIO driver mappings for
+ ACPI
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 27 Oct 2014 12:23:55 +0100
+In-Reply-To: <1414404914-163837-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1414404914-163837-1-git-send-email-mika.westerberg@linux.intel.com>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.2-1+b1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.142.143.9]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 2014/10/27 17:37, Peter Maydell wrote:
-> On 25 October 2014 09:24, john.liuli <john.liuli@huawei.com> wrote:
->> To get the interrupt reason to support such VIRTIO_NET_F_STATUS
->> features I add a new register offset VIRTIO_MMIO_ISRMEM which
->> will help to establish a shared memory region between qemu and
->> virtio-mmio device. Then the interrupt reason can be accessed by
->> guest driver through this region. At the same time, the virtio-mmio
->> dirver check this region to see irqfd is supported or not during
->> the irq handler registration, and different handler will be assigned.
+On Mon, 2014-10-27 at 12:15 +0200, Mika Westerberg wrote:
+> The driver uses devm_gpiod_get_index(..., index) so that the index refers
+> directly to the GpioIo resource under the ACPI device. The problem with
+> this is that if the ordering changes we get wrong GPIOs.
 > 
-> If you want to add a new register you should probably propose
-> an update to the virtio spec. However, it seems to me it would
-> be better to get generic PCI/PCIe working on the ARM virt
-> board instead; then we can let virtio-mmio quietly fade away.
-> This has been on the todo list for ages (and there have been
-> RFC patches posted for plain PCI), it's just nobody's had time
-> to work on it.
+> With ACPI 5.1 _DSD we can now use names instead to reference GPIOs
+> analogous to Device Tree. However, we still have systems out there that do
+> not provide _DSD at all. These systems must be supported as well.
 > 
-> thanks
-> -- PMM
+> Luckily we now have acpi_dev_add_driver_gpios() that can be used to provide
+> mappings for systems where _DSD is not provided and still take advantage of
+> _DSD if it exists.
 > 
+> This patch changes the driver to create default GPIO mappings if we are
+> running on ACPI system.
+> 
+> While there we can drop the indices completely and use devm_gpiod_get()
+> with name instead.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+> Hi,
+> 
+> This patch is based on top of linux-pm/device-properties [1] and following
+> patch from Rafael [2].
+> 
+> Johannes, John,
+> 
+> If you are happy with the patch, can you ACK it so that we can merge it
+> with the rest of the device-properties patches. Thanks.
 
-So you mean virtio-mmio will be replaced by PCI/PCIe on ARM at last?
-If so, let this patch go with the wind:). Thx.
+Acked-by: Johannes Berg <johannes@sipsolutions.net>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
 
-Li.
-> .
-> 
+johannes
 
