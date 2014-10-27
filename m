@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaJ0Pab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:30:31 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:58845 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751777AbaJ0Pa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:30:28 -0400
-Message-ID: <1414423841.20978.1.camel@mm-sol.com>
-Subject: Re: [PATCH 2/4] Input: pmic8xxx-keypad - use regmap_field for
- register access
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>, Stephen Boyd <sboyd@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Date: Mon, 27 Oct 2014 17:30:41 +0200
-In-Reply-To: <20141013140218.GG27755@sirena.org.uk>
-References: <1412675448-11990-1-git-send-email-iivanov@mm-sol.com>
-	 <1412675448-11990-3-git-send-email-iivanov@mm-sol.com>
-	 <20141007172606.GG16469@dtor-ws> <1412759584.13569.0.camel@iivanov-dev>
-	 <1412760633.13569.4.camel@iivanov-dev> <54357BA7.3010609@codeaurora.org>
-	 <20141008181314.GC14423@dtor-ws> <5435808A.7070203@codeaurora.org>
-	 <20141008200426.GJ4609@sirena.org.uk> <20141008203233.GA15198@dtor-ws>
-	 <20141013140218.GG27755@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.13.6-fta3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752296AbaJ0Pal (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:30:41 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:37504 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaJ0Paf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:30:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACdXCX7PqUHRKJ0KipmYzRF54XRmMYYArr5iof36VskJ75PaKg@mail.gmail.com>
+References: <1412606822-3406-1-git-send-email-muth@cypress.com>
+	<CAAVeFu+vBZ49ciZT+-dnKXks201_psy_NtYsTjw0ptOkx2es7Q@mail.gmail.com>
+	<405b439b16ea40078718da326343f673@BN1PR06MB069.namprd06.prod.outlook.com>
+	<CAAVeFu+X0Lk=5sNm9kOwGX=2-DYN_-5v-7M9bAWXraffKsTkMg@mail.gmail.com>
+	<CACdXCX7PqUHRKJ0KipmYzRF54XRmMYYArr5iof36VskJ75PaKg@mail.gmail.com>
+Date: Mon, 27 Oct 2014 16:30:34 +0100
+Message-ID: <CACRpkdbe6OC-4CZ_DiUBcuv9wsMVtvk1FpkdNn5pZG+sgP6wZQ@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO adapter
+From: Linus Walleij <linus.walleij@linaro.org>
+To: RR <rajaram.officemails@gmail.com>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Muthu Mani <muth@cypress.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rajaram Regupathy <rera@cypress.com>, Johan Hovold <johan@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 9, 2014 at 1:46 AM, RR <rajaram.officemails@gmail.com> wrote:
+> On Wed, Oct 8, 2014 at 12:18 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
+>> On Wed, Oct 8, 2014 at 4:09 PM, Muthu Mani <muth@cypress.com> wrote:
 
-Hi Dmitry, 
+>>>> > +static int cy_gpio_direction_output(struct gpio_chip *chip,
+>>>> > +                                       unsigned offset, int value) {
+>>>> > +       return 0;
+>>>> > +}
+>>>>
+>>>> If that chip is capable of both output and input, shouldn't these functions be
+>>>> implemented? I think this has already been pointed out in a previous version
+>>>> but you did not reply.
+>>>
+>>> Thanks for your inputs.
+>>>
+>>> Only the GPIOs which are configured to be output GPIO can be set.
+>>
+>> In that case cy_gpio_set() should return an error for GPIOs which are
+>> not configured as outputs. Is that guaranteed by the current
+>> implementation?
+>>
+>>> The set operation would fail trying to set the input or unconfigured GPIOs.
+>>> In this version of driver, this support is not added, it can be introduced in future versions.
+>>> I will add a TODO note in the code.
+>>
+>> Argh, no TODO please. Actual code that will turn this code into a
+>> solid driver that can be merged.
+>
+> Does a driver targeted for a custom device has to implement every
+> functionality in the 1st version ?
 
-On Mon, 2014-10-13 at 16:02 +0200, Mark Brown wrote:
-> On Wed, Oct 08, 2014 at 01:32:33PM -0700, Dmitry Torokhov wrote:
-> > On Wed, Oct 08, 2014 at 09:04:26PM +0100, Mark Brown wrote:
-> > > On Wed, Oct 08, 2014 at 11:20:58AM -0700, Stephen Boyd wrote:
-> 
-> > > > Srini/Mark, any reason why the regmap_field structure is opaque?
-> 
-> > > So you can't peer into it and rely on the contents.  I can see it being
-> > > useful to add a bulk allocator.
-> 
-> > And then one have to define offsets in an array and use awkward syntax
-> > to access individual fields. Can we just reply on reviews/documentation
-> > for users to not do wrong thing?
-> 
-> I have very little confidence in users not doing awful things to be
-> honest, this is the sort of API where the users are just random things
-> all over the kernel so this sort of thing tends to be found after the
-> fact.  I get a lot of these in drivers that just got thrown over the
-> wall so nobody really knows what things are doing when you do find them.
-> 
-> If the standard allocators aren't doing a good job (I've not checked)
-> I'd much rather handle this inside the API if we can.
-> 
+When you post a driver to the GPIO maintainers it is *NOT* tageted
+at a consumer device, it is targeted at the kernel community and
+upstream maintainers.
 
-Is there something that I can help here or patches are good as they are? :-)
+Of course you can deliver add-on patches out-of-tree to your
+customers, it's generally a bad idea for the long term and maintenance
+of your driver, but it's your pick.
 
-Regards,
-Ivan
+Yours,
+Linus Walleij
