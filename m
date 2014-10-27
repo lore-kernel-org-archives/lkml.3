@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbaJ0WW1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 18:22:27 -0400
-Received: from roy.gaast.net ([80.101.33.21]:41272 "EHLO mail.gaast.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752395AbaJ0WW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 18:22:26 -0400
-Message-ID: <544EC59D.9080303@gaast.net>
-Date: Mon, 27 Oct 2014 22:22:21 +0000
-From: Wilmer van der Gaast <wilmer@gaast.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
+	id S1752636AbaJ0WY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 18:24:57 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49898 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752326AbaJ0WY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 18:24:56 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Imre Deak <imre.deak@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] PM / Sleep: fix async suspend_late/freeze_late error handling
+Date: Mon, 27 Oct 2014 23:45:30 +0100
+Message-ID: <8054820.ZaPIZ3Ztss@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414171750-6858-1-git-send-email-imre.deak@intel.com>
+References: <1414137549-30005-1-git-send-email-imre.deak@intel.com> <1414171750-6858-1-git-send-email-imre.deak@intel.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Machine crashes right *after* ~successful resume
-References: <543F049F.5090605@gaast.net> <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com> <543F9182.9000004@gaast.net> <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com> <544033CF.3080104@gaast.net> <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com> <5442FE58.5020700@gaast.net> <CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com> <5446D2D8.2090203@gaast.net> <CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com> <20141022125354.GA3832@gaast.net> <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com> <544E235C.5010908@gaast.net> <CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com>
-In-Reply-To: <CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Friday, October 24, 2014 08:29:09 PM Imre Deak wrote:
+> If an asynchronous suspend_late or freeze_late callback fails
+> during the SUSPEND, FREEZE or QUIESCE phases we don't propagate the
+> corresponding error correctly, in effect ignoring the error and
+> continuing the suspend-to-ram/hibernation. During suspend-to-ram this
+> could leave some devices without a valid saved context, leading to a
+> failure to reinitialize them during resume. During hibernation this
+> could leave some devices active interfeering with the creation /
+> restoration of the hibernation image. Also this could leave the
+> corresponding devices without a valid saved context and failure to
+> reinitialize them during resume.
+> 
+> v3 (added to patchset):
+> - split out this fix into a separate patch (Rafael)
+> 
+> Signed-off-by: Imre Deak <imre.deak@intel.com>
 
-On 27-10-14 18:23, Yinghai Lu wrote:
->
-> 04:00.0 PCI bridge: Integrated Technology Express, Inc. Device 8892
->
-> So that ITE will not work after suspend/resume?
->
-Even after the first one already, you mean?
+Both [1-2/2] applied, thanks!
 
-Honestly, I don't really know what its purpose is, and it doesn't have 
-any child nodes in the PCI tree from what I can tell. Possibly because I 
-don't have any PCI cards in the machine, just a PCIe video card - 
-assuming this is a PCI bridge taking care of legacy PCI plugin cards?
-
-> Please apply 4 attached patches and try to remove the device like
->
-> echo 1 > /sys/bus/pci/devices/0000\:04\:00.0/remove
-> echo 1 > /sys/bus/pci/devices/0000\:00\:1c.3/pcie_link_disable
->
-> before suspend/resume test.
->
-That worked! Resumed properly now.
-
-Full log in http://gaast.net/~wilmer/.lkml/good3.17.txt . Including the 
-PCI dump at boot time, where that device doesn't dump just ff's.
-
-
-Wilmer van der Gaast.
+> ---
+>  drivers/base/power/main.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> index 4497319..9717d5f 100644
+> --- a/drivers/base/power/main.c
+> +++ b/drivers/base/power/main.c
+> @@ -1266,6 +1266,8 @@ int dpm_suspend_late(pm_message_t state)
+>  	}
+>  	mutex_unlock(&dpm_list_mtx);
+>  	async_synchronize_full();
+> +	if (!error)
+> +		error = async_error;
+>  	if (error) {
+>  		suspend_stats.failed_suspend_late++;
+>  		dpm_save_failed_step(SUSPEND_SUSPEND_LATE);
+> 
 
 -- 
-+-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
-| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
-| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
-+--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
