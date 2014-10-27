@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaJZXqZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 19:46:25 -0400
-Received: from mail.sigma-star.at ([95.130.255.111]:14385 "EHLO
-	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605AbaJZXqY (ORCPT
+	id S1751816AbaJ0AB5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 20:01:57 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:42133 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbaJ0AB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 19:46:24 -0400
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, <stable@vger.kernel.org>
-Subject: [PATCH] UBI: Fix invalid vfree()
-Date: Mon, 27 Oct 2014 00:46:11 +0100
-Message-Id: <1414367171-4657-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.4.5
+	Sun, 26 Oct 2014 20:01:56 -0400
+X-Original-SENDERIP: 10.186.123.76
+X-Original-MAILFROM: gioh.kim@lge.com
+Message-ID: <544D8B64.3010501@lge.com>
+Date: Mon, 27 Oct 2014 09:01:40 +0900
+From: Gioh Kim <gioh.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Laura Abbott <lauraa@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>
+CC: devel@driverdev.osuosl.org, gunho.lee@lge.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFCv2 1/3] staging: ion: shrink page-pool by page unit
+References: <1414133248-639-1-git-send-email-gioh.kim@lge.com> <1414133248-639-2-git-send-email-gioh.kim@lge.com> <544AB20A.8090208@codeaurora.org>
+In-Reply-To: <544AB20A.8090208@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The logic of vfree()'ing vol->upd_buf is tied to vol->updating.
-In ubi_start_update() vol->updating is set long before vmalloc()'ing
-vol->upd_buf. If we encounter a write failure in ubi_start_update()
-before vmalloc() the UBI device release function will try to vfree()
-vol->upd_buf because vol->updating is set.
-Fix this by allocating vol->upd_buf directly after setting vol->updating.
 
-Fixes:
-[   31.559338] UBI warning: vol_cdev_release: update of volume 2 not finished, volume is damaged
-[   31.559340] ------------[ cut here ]------------
-[   31.559343] WARNING: CPU: 1 PID: 2747 at mm/vmalloc.c:1446 __vunmap+0xe3/0x110()
-[   31.559344] Trying to vfree() nonexistent vm area (ffffc90001f2b000)
-[   31.559345] Modules linked in:
-[   31.565620]  0000000000000bba ffff88002a0cbdb0 ffffffff818f0497 ffff88003b9ba148
-[   31.566347]  ffff88002a0cbde0 ffffffff8156f515 ffff88003b9ba148 0000000000000bba
-[   31.567073]  0000000000000000 0000000000000000 ffff88002a0cbe88 ffffffff8156c10a
-[   31.567793] Call Trace:
-[   31.568034]  [<ffffffff818f0497>] dump_stack+0x4e/0x7a
-[   31.568510]  [<ffffffff8156f515>] ubi_io_write_vid_hdr+0x155/0x160
-[   31.569084]  [<ffffffff8156c10a>] ubi_eba_write_leb+0x23a/0x870
-[   31.569628]  [<ffffffff81569b36>] vol_cdev_write+0x226/0x380
-[   31.570155]  [<ffffffff81179265>] vfs_write+0xb5/0x1f0
-[   31.570627]  [<ffffffff81179f8a>] SyS_pwrite64+0x6a/0xa0
-[   31.571123]  [<ffffffff818fde12>] system_call_fastpath+0x16/0x1b
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/upd.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+2014-10-25 오전 5:09, Laura Abbott 쓴 글:
+> Hi,
+>
+> On 10/23/2014 11:47 PM, Gioh Kim wrote:
+>> This patch shrink page-pool by page unit.
+>>
+>
+> Can you explain a bit more about what this patch is
+> fixing? The description in the cover letter would
+> be helpful here.
 
-diff --git a/drivers/mtd/ubi/upd.c b/drivers/mtd/ubi/upd.c
-index ec2c2dc..2a1b6e0 100644
---- a/drivers/mtd/ubi/upd.c
-+++ b/drivers/mtd/ubi/upd.c
-@@ -133,6 +133,10 @@ int ubi_start_update(struct ubi_device *ubi, struct ubi_volume *vol,
- 	ubi_assert(!vol->updating && !vol->changing_leb);
- 	vol->updating = 1;
- 
-+	vol->upd_buf = vmalloc(ubi->leb_size);
-+	if (!vol->upd_buf)
-+		return -ENOMEM;
-+
- 	err = set_update_marker(ubi, vol);
- 	if (err)
- 		return err;
-@@ -152,14 +156,12 @@ int ubi_start_update(struct ubi_device *ubi, struct ubi_volume *vol,
- 		err = clear_update_marker(ubi, vol, 0);
- 		if (err)
- 			return err;
-+
-+		vfree(vol->upd_buf);
- 		vol->updating = 0;
- 		return 0;
- 	}
- 
--	vol->upd_buf = vmalloc(ubi->leb_size);
--	if (!vol->upd_buf)
--		return -ENOMEM;
--
- 	vol->upd_ebs = div_u64(bytes + vol->usable_leb_size - 1,
- 			       vol->usable_leb_size);
- 	vol->upd_bytes = bytes;
--- 
-1.8.4.5
+I'm sorry for the lack of explanation.
 
+First, I wanted to shrink ion page-pool, but there was no way for it.
+So I checked the existing codes and found a problem.
+
+ion_page_pool_total() returns the number of pages in the pool,
+so ion_heap_shrink_count() returns also the number of pages.
+ion_page_pool_shrink() takes the argument nr_to_scan as the number of chunk, a bunch of pages.
+
+The system shrinker calls ion_heap_shrink_count() to get nr_to_scan,
+and pass it to ion_page_pool_shrink().
+The problem is the argument of ion_page_pool_shrink() is the amount of chunk to be shrinked.
+
+We have to make both of them take number of page or chunk respectively.
+
+The first patch is doing it.
+
+The second one is, based on the first patch, making shrink interface via debugfs.
+The third is for extra interface.
+
+>
+> Thanks,
+> Laura
+>
