@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301AbaJ0T1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:27:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52381 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358AbaJ0S5l (ORCPT
+	id S1754376AbaJ0T2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:28:39 -0400
+Received: from exprod5og119.obsmtp.com ([64.18.0.189]:56416 "HELO
+	exprod5og119.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754359AbaJ0T2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:57:41 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 012/105] UBIFS: fix free log space calculation
-Date: Mon, 27 Oct 2014 11:55:47 -0700
-Message-Id: <1414436240-13879-13-git-send-email-kamal@canonical.com>
+	Mon, 27 Oct 2014 15:28:37 -0400
+From: Feng Kan <fkan@apm.com>
+To: catalin.marinas@arm.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@apm.com
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH RESEND 0/7] APM X-Gene SoC platform device tree cleanup
+Date: Mon, 27 Oct 2014 12:28:21 -0700
+Message-Id: <1414438108-8384-1-git-send-email-fkan@apm.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
-References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
+This sums up the dts changes of the recent committed drivers into the kernel.
+This will grant PMU, reboot, USB and gpio functionalities to the platform.
+These patches are all based on existing and approved driver that is in the
+kernel tree today.
 
-------------------
+Feng Kan (7):
+  arm64: dts: Add APM X-Gene USB 2.0 DTS node
+  Documentation: arm64: add SCU dts binding documentation to linux
+    kernel
+  arm64: dts: Add X-Gene reboot driver dts node
+  arm64: dts: Add Designware GPIO dts binding to APM X-Gene platform
+  arm64: dts: Add APM X-Gene SoC GFC GPIO controller DTS entries
+  Documentation: arm: pmu: Add Potenza PMU binding
+  arm64: dts: Add PMU node for APM X-Gene Storm SOC
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+ Documentation/devicetree/bindings/arm/apm/scu.txt | 17 ++++++++
+ Documentation/devicetree/bindings/arm/pmu.txt     |  1 +
+ arch/arm64/boot/dts/apm-storm.dtsi                | 53 +++++++++++++++++++++++
+ 3 files changed, 71 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/apm/scu.txt
 
-commit ba29e721eb2df6df8f33c1f248388bb037a47914 upstream.
-
-Hu (hujianyang <hujianyang@huawei.com>) discovered an issue in the
-'empty_log_bytes()' function, which calculates how many bytes are left in the
-log:
-
-"
-If 'c->lhead_lnum + 1 == c->ltail_lnum' and 'c->lhead_offs == c->leb_size', 'h'
-would equalent to 't' and 'empty_log_bytes()' would return 'c->log_bytes'
-instead of 0.
-"
-
-At this point it is not clear what would be the consequences of this, and
-whether this may lead to any problems, but this patch addresses the issue just
-in case.
-
-Tested-by: hujianyang <hujianyang@huawei.com>
-Reported-by: hujianyang <hujianyang@huawei.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/ubifs/log.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ubifs/log.c b/fs/ubifs/log.c
-index 36bd4ef..bcae6d4 100644
---- a/fs/ubifs/log.c
-+++ b/fs/ubifs/log.c
-@@ -106,10 +106,14 @@ static inline long long empty_log_bytes(const struct ubifs_info *c)
- 	h = (long long)c->lhead_lnum * c->leb_size + c->lhead_offs;
- 	t = (long long)c->ltail_lnum * c->leb_size;
- 
--	if (h >= t)
-+	if (h > t)
- 		return c->log_bytes - h + t;
--	else
-+	else if (h != t)
- 		return t - h;
-+	else if (c->lhead_lnum != c->ltail_lnum)
-+		return 0;
-+	else
-+		return c->log_bytes;
- }
- 
- /**
 -- 
 1.9.1
 
