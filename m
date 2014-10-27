@@ -1,113 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543AbaJ0Qod (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:44:33 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:34272 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaJ0Qoa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 12:44:30 -0400
+	id S1752714AbaJ0Qql (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:46:41 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:52044 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034AbaJ0Qqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 12:46:39 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: balbi@ti.com
+Cc: Lucas Stach <l.stach@pengutronix.de>,
+        Romain Perier <romain.perier@gmail.com>, devicetree@vger.kernel.org,
+        broonie@kernel.org, lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, robh@kernel.org, mark.rutland@arm.com,
+        johan@kernel.org, linux-pm@vger.kernel.org, linux@roeck-us.net,
+        lee.jones@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, swarren@wwwdotorg.org,
+        thierry.reding@gmail.com, gnurou@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 06/10] mfd: tps65910: Use the standard DT property system-power-controller
+Date: Mon, 27 Oct 2014 17:49:34 +0100
+Message-ID: <5506459.umvW5Ff7a7@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <20141027164153.GE14253@saruman>
+References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com> <1414427749.2421.5.camel@pengutronix.de> <20141027164153.GE14253@saruman>
 MIME-Version: 1.0
-In-Reply-To: <CADnq5_O54_rjL=hxg8-4GV57JC=6j16OeFOM-zbmoMuL5yJKqw@mail.gmail.com>
-References: <2354837.kuMZPK0Y1Q@segfault> <CAErSpo6zLY8RVAHnLe81jjOE8cxGzskjPq3HL7eZVOtC-WF6=w@mail.gmail.com>
- <2298090.n99M7dPPE3@segfault> <CAErSpo4C=zANrE6muRf93nxLtmOG-U0xhWQPV_=fb8dFaKG8yw@mail.gmail.com>
- <CADnq5_O54_rjL=hxg8-4GV57JC=6j16OeFOM-zbmoMuL5yJKqw@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 27 Oct 2014 10:44:09 -0600
-Message-ID: <CAErSpo6aBAuK27LwHrdi_X1fxfZ9NN4BkqQj6h4rqHD9ssNnAA@mail.gmail.com>
-Subject: Re: [Bulk] Re: [3.16-rcX][pciehp][radeon] PCIe HotPlug conflicts with
- radeon GPU
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Shawn Starr <shawn.starr@rogers.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 26, 2014 at 11:31 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> On Mon, Oct 13, 2014 at 12:11 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> [+cc Alex, Christian, dri-devel]
->>
->> On Sat, Oct 11, 2014 at 1:37 PM, Shawn Starr <shawn.starr@rogers.com> wrote:
->>> On September 11, 2014 04:26:21 PM Bjorn Helgaas wrote:
->>>> [+cc linux-pci]
->>>>
->>>> On Sat, Aug 2, 2014 at 10:02 AM, Shawn Starr <shawn.starr@rogers.com> wrote:
->>>> > Hello devs,
->>>> >
->>>> > There are two issues I am encountering with the PCIe Hotplug driver on my
->>>> > Lenovo Laptop (W500). I note this goes back further than 3.15.
->>>> >
->>>> > It is noted here:
->>>> > http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=
->>>> > f244d8b623dae7a7bc695b0336f67729b95a9736
->>>> > https://bugzilla.kernel.org/show_bug.cgi?id=79701
->>>> >
->>>> > And my open bug here:
->>>> > https://bugzilla.kernel.org/show_bug.cgi?id=77261
->>>> >
->>>> > 1) If I enable the device to use both the integrated and discrete GPU,
->>>> > pciehp will decide to force unload radeon because it puts itself into a
->>>> > power saving state, fails back to the Intel integrated GPU in this case
->>>> > unless I tell radeon.ko to runpm=0 (no power management, then pciehp wont
->>>> > touch it).
->>>> >
->>>> > 2) If the Radeon GPU resets and you use pci_reset=1 for kernel module
->>>> > option, pciehp decides to force unload radeon even though the GPU is
->>>> > trying to setup after failing.
->>>> >
->>>> > Kernel I am using right now: 3.16.0-0.rc7.git3.1.fc21.x86_64 (about to
->>>> > boot into snapshot kernel-core-3.16.0-0.rc7.git4.1.fc21.x86_64)
->>>> Hi Shawn,
->>>>
->>>> Thanks for the report and sorry that it got dropped.  But I see you're
->>>> cc'd on https://bugzilla.kernel.org/show_bug.cgi?id=79701, so you've
->>>> probably seen the work there.  If you can try out the patches I just
->>>> posted, that would be great.
->>>>
->>>> Bjorn
->>>
->>> Hi Bjorn,
->>>
->>> For #1) This is fixed in linux-next (tracking 3.18.0-0.rc0.git1.2.fc22.1.x86_64
->>> nondebug kernel for Fedora). PCIe HotPlug no longer unloads radeon. For this
->>> bugzilla report we can close it.
->>>
->>> #2) This still has weird results however, radeon.hard_reset=1 is experimental
->>> and while it attempts to reset GPU, PCIe HotPlug seems to interact in this.
->>>
->>> This can be tested by adding to grub command line radeon.hard_reset=1.
->>> When X has started up, trigger a reset by cat
->>> /sys/kernel/debug/dri/#/radeon_gpu_reset. It will output 0, cat it again will
->>> show 1.
->>>
->>> Attempt to drag a window. The this will trigger a GPU reset, but fail to
->>> recover, its unknown if PCIe HotPlug is preventing a proper reset or not but
->>> there is pciehp calls in the stack trace.
->>
->> A PCIe device reset usually looks like a hotplug event because the
->> PCIe link goes down and comes back up.  As far as the PCI core is
->> concerned, it can't tell the difference between (1) a simple reset
->> where the link bounces and (2) removal of one device followed by
->> addition of another.
->>
->> b440bde74f04 ("PCI: Add pci_ignore_hotplug() to ignore hotplug events
->> for a device") addressed this for some similar cases, but it looks
->> like we probably need some more calls to pci_ignore_hotplug() in the
->> radeon driver reset methods.
->>
->> Can you please open a bugzilla and attach the complete dmesg log,
->> including the GPU reset and recovery failure?
->
-> Is there a way we could temporarily disable pci hotplug around a GPU reset?
+Am Montag, 27. Oktober 2014, 11:41:53 schrieb Felipe Balbi:
+> On Mon, Oct 27, 2014 at 05:35:49PM +0100, Lucas Stach wrote:
+> > Am Montag, den 27.10.2014, 16:26 +0000 schrieb Romain Perier:
+> > > No longer use custom property to define poweroff capability, use the
+> > > standard DT property instead.
+> > > 
+> > > Signed-off-by: Romain Perier <romain.perier@gmail.com>
+> > > ---
+> > > 
+> > >  drivers/mfd/tps65910.c | 3 +--
+> > >  1 file changed, 1 insertion(+), 2 deletions(-)
+> > > 
+> > > diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+> > > index 7612d89..a7faff2 100644
+> > > --- a/drivers/mfd/tps65910.c
+> > > +++ b/drivers/mfd/tps65910.c
+> > > @@ -423,8 +423,7 @@ static struct tps65910_board
+> > > *tps65910_parse_dt(struct i2c_client *client,> > 
+> > >  	board_info->irq = client->irq;
+> > >  	board_info->irq_base = -1;
+> > > 
+> > > -	board_info->pm_off = of_property_read_bool(np,
+> > > -			"ti,system-power-controller");
+> > > +	board_info->pm_off = of_is_system_power_controller();
+> > > 
+> > >  	return board_info;
+> > >  
+> > >  }
+> > 
+> > You are breaking compatibility with older DTs here. This is not
+> > acceptable.
+> > 
+> > You may change all in-tree DTs to use the new property and also patch
+> > the driver to understand it, but you must make sure that the driver
+> > still understands the old, custom property. And especially in this case
+> > it isn't really hard to do.
+> 
+> correct, it should be simple to hide that under
+> of_is_system_power_controller() itself.
 
-There is pci_ignore_hotplug().  Do you mean something more?  Oh, I
-guess you mean a way to disable, then *re*-enable hotplug.  We can
-easily add that if that would help.
+If I'm reading patch 1 correctly, it already does handle the generic "system-
+power-controller", as well as any foo,system-power-controller properties.
 
-Bjorn
+
+Heiko
+
