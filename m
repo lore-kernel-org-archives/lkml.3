@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497AbaJ0L5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:57:43 -0400
-Received: from mga14.intel.com ([192.55.52.115]:5380 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520AbaJ0L5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:57:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,795,1406617200"; 
-   d="scan'208";a="612028079"
-From: Andi Kleen <andi@firstfloor.org>
-To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, eranian@google.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Yan\, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH 2/5] perf, x86, uncore: Add Haswell-EP uncore support
-References: <1409872109-31645-1-git-send-email-andi@firstfloor.org>
-	<1409872109-31645-2-git-send-email-andi@firstfloor.org>
-	<CAADnVQKWgm9smg5vtfFwt53RiNYidgV9kiq3C0B0Xekx0cUJJg@mail.gmail.com>
-Date: Mon, 27 Oct 2014 04:57:41 -0700
-In-Reply-To: <CAADnVQKWgm9smg5vtfFwt53RiNYidgV9kiq3C0B0Xekx0cUJJg@mail.gmail.com>
-	(Alexei Starovoitov's message of "Wed, 22 Oct 2014 12:07:56 -0700")
-Message-ID: <87sii9pvwq.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752513AbaJ0L6u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:58:50 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:34955 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaJ0L6t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 07:58:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <544E2B18.8010702@huawei.com>
+References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
+ <CAFEAcA9o8ZsbUvZb7Yp9JeO__bRLOrYcyfj4Ug4Se_rDF0y4TA@mail.gmail.com> <544E2B18.8010702@huawei.com>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Mon, 27 Oct 2014 11:58:26 +0000
+Message-ID: <CAFEAcA8JgebH8B4i7aoSxdeon7B-eunXzZJhwOCXQr-ypSgfsQ@mail.gmail.com>
+Subject: Re: [Qemu-devel] [RFC PATCH 0/2] virtio-mmio: add irqfd support for
+ vhost-net based on virtio-mmio
+To: Li Liu <john.liuli@huawei.com>
+Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joel Schopp <joel.schopp@amd.com>,
+        Yingshiuan Pan <yingshiuan.pan@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, remy.gauguey@cea.fr,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        QEMU Developers <qemu-devel@nongnu.org>,
+        Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        peter.huangpeng@huawei.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexei Starovoitov <alexei.starovoitov@gmail.com> writes:
-> my E5-1630 v3 crashes hard during boot in
-> snbep_uncore_msr_init_box()+0x3c
+On 27 October 2014 11:23, Li Liu <john.liuli@huawei.com> wrote:
+> So you mean virtio-mmio will be replaced by PCI/PCIe on ARM at last?
 
-> I don't have a setup to capture the screen so early in the boot.
-> So this is just heads up.
+That is the plan, yes. I can't make any promises on
+timescales at the moment, though...
 
-Is it a general general protection fault or a page fault?
-
-If it's a page fault please post the disassembled code:
-
-gdb vmlinux
-disassemble  snbep_uncore_msr_init_box
-
-> I replaced the call above with 'return -ENODEV' as a workaround.
-> btw, E5-16xx v3 became available just a month ago.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only
+-- PMM
