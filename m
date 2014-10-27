@@ -1,136 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519AbaJ0LGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:06:31 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:60371 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752469AbaJ0LG2 (ORCPT
+	id S1752301AbaJ0LGI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:06:08 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:14311 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751586AbaJ0LGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:06:28 -0400
-Message-ID: <544E26AB.6090200@huawei.com>
-Date: Mon, 27 Oct 2014 19:04:11 +0800
-From: Li Liu <john.liuli@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, <qemu-devel@nongnu.org>,
-        <peter.huangpeng@huawei.com>, <rusty@rustcorp.com.au>,
-        <virtualization@lists.linux-foundation.org>,
-        <n.nikolaev@virtualopensystems.com>, <yingshiuan.pan@gmail.com>,
-        <remy.gauguey@cea.fr>, <joel.schopp@amd.com>
-Subject: Re: [RFC PATCH 2/2] Assign a new irq handler while irqfd enabled
-References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com> <1414225494-2208-3-git-send-email-john.liuli@huawei.com> <20141026115646.GB5497@redhat.com>
-In-Reply-To: <20141026115646.GB5497@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.142.143.9]
-X-CFilter-Loop: Reflected
+	Mon, 27 Oct 2014 07:06:01 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-6a-544e271609dd
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
+        santosh.shilimkar@ti.com, tony@atomide.com, drake@endlessm.com,
+        loeliger@gmail.com, Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v6 4/7] ARM: l2c: Add support for overriding prefetch settings
+Date: Mon, 27 Oct 2014 12:05:47 +0100
+Message-id: <1414407950-3029-5-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.9.2
+In-reply-to: <1414407950-3029-1-git-send-email-m.szyprowski@samsung.com>
+References: <1414407950-3029-1-git-send-email-m.szyprowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/xK7pi6n4hBreX8Fs8mv+Y2aJ3wVU2
+	i7NNb9gttnfOYLeY8mc5k8Wmx9dYLS7vmsNmMXtJP4vFjPP7mCxuX+a1OLd9C4vF2iN32S2W
+	Xr/IZPG6bw2zxapdfxgt9l/xchDwWDNvDaNHS3MPm8e3r5NYPC739TJ5LPqe5bFz1l12jzvX
+	9rB5bF5S79G3ZRWjx/Eb25k8Pm+SC+CO4rJJSc3JLEst0rdL4MqYcai+4LFCRee3fywNjP+l
+	uhg5OSQETCTu7nvMCmGLSVy4t56ti5GLQ0hgKaPEk01dLCAJIYE+JomLV/xBbDYBQ4mut11s
+	ILaIQLbEj2+TWUAamAVWMUtMObAOaBIHh7CAn8SzO5YgNSwCqhLvpxxhBrF5Bdwltm69yQKx
+	TE7i/8sVTCA2p4CHxOSWmUwQu9wlVn3YyziBkXcBI8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k
+	/NxNjJAA/7KDcfExq0OMAhyMSjy8O6b5hgixJpYVV+YeYpTgYFYS4XX8CRTiTUmsrEotyo8v
+	Ks1JLT7EyMTBKdXA6KMh8ezAnw3dk2ac2NeakfP9wry6n77AoN7OvTDvyuXD7CFvTjzJS274
+	JswSNuHnBu59Eb8O/5kfcmqZwMHM8l3+8uqWOUdcJJYtsl10zmvat+Ip2/L4Q9PVupRTvBjX
+	/i5mWP750sfeAz8aHq6qbLpybHPv0ZU/trbNqLlwZVdhsvAyMz71aiWW4oxEQy3mouJEANPF
+	qWZOAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Tomasz Figa <t.figa@samsung.com>
 
+Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
+settings configured in registers leading to crashes if L2C is enabled
+without overriding them. This patch introduces bindings to enable
+prefetch settings to be specified from DT and necessary support in the
+driver.
 
-On 2014/10/26 19:56, Michael S. Tsirkin wrote:
-> On Sat, Oct 25, 2014 at 04:24:54PM +0800, john.liuli wrote:
->> From: Li Liu <john.liuli@huawei.com>
->>
->> This irq handler will get the interrupt reason from a
->> shared memory. And will be assigned only while irqfd
->> enabled.
->>
->> Signed-off-by: Li Liu <john.liuli@huawei.com>
->> ---
->>  drivers/virtio/virtio_mmio.c |   34 ++++++++++++++++++++++++++++++++--
->>  1 file changed, 32 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
->> index 28ddb55..7229605 100644
->> --- a/drivers/virtio/virtio_mmio.c
->> +++ b/drivers/virtio/virtio_mmio.c
->> @@ -259,7 +259,31 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
->>  	return ret;
->>  }
->>  
->> +/* Notify all virtqueues on an interrupt. */
->> +static irqreturn_t vm_interrupt_irqfd(int irq, void *opaque)
->> +{
->> +	struct virtio_mmio_device *vm_dev = opaque;
->> +	struct virtio_mmio_vq_info *info;
->> +	unsigned long status;
->> +	unsigned long flags;
->> +	irqreturn_t ret = IRQ_NONE;
->>  
->> +	/* Read the interrupt reason and reset it */
->> +	status = *vm_dev->isr_mem;
->> +	*vm_dev->isr_mem = 0x0;
-> 
-> you are reading and modifying shared memory
-> without atomics and any memory barriers.
-> Why is this safe?
-> 
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+[mszyprow: rebased onto v3.18-rc1, added error messages when property value
+ is missing]
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+---
+ Documentation/devicetree/bindings/arm/l2cc.txt | 10 +++++
+ arch/arm/mm/cache-l2x0.c                       | 55 ++++++++++++++++++++++++++
+ 2 files changed, 65 insertions(+)
 
-good catch, a stupid mistake.
-
->> +
->> +	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)) {
->> +		virtio_config_changed(&vm_dev->vdev);
->> +		ret = IRQ_HANDLED;
->> +	}
->> +
->> +	spin_lock_irqsave(&vm_dev->lock, flags);
->> +	list_for_each_entry(info, &vm_dev->virtqueues, node)
->> +		ret |= vring_interrupt(irq, info->vq);
->> +	spin_unlock_irqrestore(&vm_dev->lock, flags);
->> +
->> +	return ret;
->> +}
->>  
->>  static void vm_del_vq(struct virtqueue *vq)
->>  {
-> 
-> So you invoke callbacks for all VQs.
-> This won't scale well as the number of VQs grows, will it?
-> 
->> @@ -391,6 +415,7 @@ error_available:
->>  	return ERR_PTR(err);
->>  }
->>  
->> +#define VIRTIO_MMIO_F_IRQFD        (1 << 7)
->>  static int vm_find_vqs(struct virtio_device *vdev, unsigned nvqs,
->>  		       struct virtqueue *vqs[],
->>  		       vq_callback_t *callbacks[],
->> @@ -400,8 +425,13 @@ static int vm_find_vqs(struct virtio_device *vdev, unsigned nvqs,
->>  	unsigned int irq = platform_get_irq(vm_dev->pdev, 0);
->>  	int i, err;
->>  
->> -	err = request_irq(irq, vm_interrupt, IRQF_SHARED,
->> -			dev_name(&vdev->dev), vm_dev);
->> +	if (*vm_dev->isr_mem & VIRTIO_MMIO_F_IRQFD) {
->> +		err = request_irq(irq, vm_interrupt_irqfd, IRQF_SHARED,
->> +				  dev_name(&vdev->dev), vm_dev);
->> +	} else {
->> +		err = request_irq(irq, vm_interrupt, IRQF_SHARED,
->> +				  dev_name(&vdev->dev), vm_dev);
->> +	}
->>  	if (err)
->>  		return err;
-> 
-> 
-> So still a single interrupt for all VQs.
-> Again this doesn't scale: a single CPU has to handle
-> interrupts for all of them.
-> I think you need to find a way to get per-VQ interrupts.
-
-Yeah, AFAIK it's impossible to distribute works to different CPUs with
-only one irq without MSI-X kind mechanism. Assign multiple gsis to one
-device, obviously it's consumptive and not scalable. Any ideas? Thx.
-
-> 
->> -- 
->> 1.7.9.5
->>
-> 
-> .
-> 
+diff --git a/Documentation/devicetree/bindings/arm/l2cc.txt b/Documentation/devicetree/bindings/arm/l2cc.txt
+index 292ef7ca3058..0dbabe9a6b0a 100644
+--- a/Documentation/devicetree/bindings/arm/l2cc.txt
++++ b/Documentation/devicetree/bindings/arm/l2cc.txt
+@@ -57,6 +57,16 @@ Optional properties:
+ - cache-id-part: cache id part number to be used if it is not present
+   on hardware
+ - wt-override: If present then L2 is forced to Write through mode
++- arm,double-linefill : Override double linefill enable setting. Enable if
++  non-zero, disable if zero.
++- arm,double-linefill-incr : Override double linefill on INCR read. Enable
++  if non-zero, disable if zero.
++- arm,double-linefill-wrap : Override double linefill on WRAP read. Enable
++  if non-zero, disable if zero.
++- arm,prefetch-drop : Override prefetch drop enable setting. Enable if non-zero,
++  disable if zero.
++- arm,prefetch-offset : Override prefetch offset value. Valid values are
++  0-7, 15, 23, and 31.
+ 
+ Example:
+ 
+diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+index ad981894de73..69cfa8359ed3 100644
+--- a/arch/arm/mm/cache-l2x0.c
++++ b/arch/arm/mm/cache-l2x0.c
+@@ -1163,6 +1163,9 @@ static void __init l2c310_of_parse(const struct device_node *np,
+ 	u32 tag[3] = { 0, 0, 0 };
+ 	u32 filter[2] = { 0, 0 };
+ 	u32 assoc;
++	u32 prefetch;
++	u32 val;
++	int ret;
+ 
+ 	of_property_read_u32_array(np, "arm,tag-latency", tag, ARRAY_SIZE(tag));
+ 	if (tag[0] && tag[1] && tag[2])
+@@ -1204,6 +1207,58 @@ static void __init l2c310_of_parse(const struct device_node *np,
+ 		pr_err("PL310 OF: %d calculated, only 8 and 16 legal\n", assoc);
+ 		break;
+ 	}
++
++	prefetch = l2x0_saved_regs.prefetch_ctrl;
++
++	ret = of_property_read_u32(np, "arm,double-linefill", &val);
++	if (ret == 0) {
++		if (val)
++			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL;
++		else
++			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL;
++	} else if (ret != -EINVAL) {
++		pr_err("PL310 OF: missing value for arm,double-linefill property\n");
++	}
++
++	ret = of_property_read_u32(np, "arm,double-linefill-incr", &val);
++	if (ret == 0) {
++		if (val)
++			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
++		else
++			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_INCR;
++	} else if (ret != -EINVAL) {
++		pr_err("PL310 OF: missing value for arm,double-linefill-incr property\n");
++	}
++
++	ret = of_property_read_u32(np, "arm,double-linefill-wrap", &val);
++	if (ret == 0) {
++		if (!val)
++			prefetch |= L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
++		else
++			prefetch &= ~L310_PREFETCH_CTRL_DBL_LINEFILL_WRAP;
++	} else if (ret != -EINVAL) {
++		pr_err("PL310 OF: missing value for arm,double-linefill-wrap property\n");
++	}
++
++	ret = of_property_read_u32(np, "arm,prefetch-drop", &val);
++	if (ret == 0) {
++		if (val)
++			prefetch |= L310_PREFETCH_CTRL_PREFETCH_DROP;
++		else
++			prefetch &= ~L310_PREFETCH_CTRL_PREFETCH_DROP;
++	} else if (ret != -EINVAL) {
++		pr_err("PL310 OF: missing value for arm,prefetch-drop property\n");
++	}
++
++	ret = of_property_read_u32(np, "arm,prefetch-offset", &val);
++	if (ret == 0) {
++		prefetch &= ~L310_PREFETCH_CTRL_OFFSET_MASK;
++		prefetch |= val & L310_PREFETCH_CTRL_OFFSET_MASK;
++	} else if (ret != -EINVAL) {
++		pr_err("PL310 OF: missing value for arm,prefetch-offset property\n");
++	}
++
++	l2x0_saved_regs.prefetch_ctrl = prefetch;
+ }
+ 
+ static const struct l2c_init_data of_l2c310_data __initconst = {
+-- 
+1.9.2
 
