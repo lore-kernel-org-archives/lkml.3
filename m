@@ -1,78 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938AbaJ0Noz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:44:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35673 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626AbaJ0Noy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:44:54 -0400
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
-        Laszlo Ersek <lersek@redhat.com>, Andrew Jones <drjones@redhat.com>
-Subject: [PATCH] xen/blkfront: improve protection against issuing unsupported REQ_FUA
-Date: Mon, 27 Oct 2014 14:44:38 +0100
-Message-Id: <1414417478-20268-1-git-send-email-vkuznets@redhat.com>
+	id S1753053AbaJ0NpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:45:09 -0400
+Received: from smtpout01.highway.telekom.at ([195.3.96.112]:44862 "EHLO
+	email.aon.at" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752971AbaJ0NpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 09:45:05 -0400
+X-A1Mail-Track-Id: 1414417493:21541:smarthub77:194.96.19.162:1
+Message-ID: <544E4C57.9080302@a1.net>
+Date: Mon, 27 Oct 2014 14:44:55 +0100
+From: Johann Klammer <klammerj@a1.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: hverkuil@xs4all.nl
+CC: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH][RESEND][TRIVIAL] Turn bothersome error into a debug message
+References: <542AE6A6.9000504@a1.net>
+In-Reply-To: <542AE6A6.9000504@a1.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guard against issuing unsupported REQ_FUA and REQ_FLUSH was introduced
-in d11e61583 and was factored out into blkif_request_flush_valid() in
-0f1ca65ee. However:
-1) This check in incomplete. In case we negotiated to feature_flush = REQ_FLUSH
-   and flush_op = BLKIF_OP_FLUSH_DISKCACHE (so FUA is unsupported) FUA request
-   will still pass the check.
-2) blkif_request_flush_valid() is misnamed. It is bool but returns true when
-   the request is invalid.
-3) When blkif_request_flush_valid() fails -EIO is being returned. It seems that
-   -EOPNOTSUPP is more appropriate here.
-Fix all of the above issues.
+Let's see if that works now...
 
-This patch is based on the original patch by Laszlo Ersek and a comment by
-Jeff Moyer.
+On 09/30/2014 07:21 PM, Johann Klammer wrote:
+> Hello,
+> 
+> After updating the kernel to 3.14.15 I am seeing these messages:
+> 
+> [273684.964081] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273690.020061] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273695.076082] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273700.132077] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273705.188070] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273710.244066] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273715.300187] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273720.356068] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273725.412188] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273730.468094] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273735.524070] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> [273740.580176] saa7146: saa7146 (0): saa7146_wait_for_debi_done_sleep
+> timed out while waiting for registers getting programmed
+> 
+> filling up the logs(one about every 5 seconds).
+> 
+> The TV card is a Terratec Cinergy 1200 DVBS (I believe.. it's rather old).
+> 
+> I can not observe any erratic behavior, just those pesky messages...
+> 
+> I see there was an earlier post here in 2008 about a similar
+> problem...(Cinergy 1200 DVB-C... a coincidence?)
+> 
+> What does it mean?
+> Do I need to be worried?
+> 
+> I am using a debian testing on a 32 bit box.
+> The previous kernel was linux-image-3.12-1-486.
+> It did not show those messages, but maybe due to some configure
+> options... I built this one from linux-source-3.14...
+> 
+Answering my own question:
+Other posts suggests that it is not actually an error on cards without a
+CI interface. Here's a patch that turns it into a debug message, so it
+does not clobber the logs.
 
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- drivers/block/xen-blkfront.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+Signed-off-by: Johann Klammer <klammerj@a1.net>
+--- linux-source-3.14/drivers/media/common/saa7146/saa7146_core.c.orig  2014-07-31 23:51:43.000000000 +0200
++++ linux-source-3.14/drivers/media/common/saa7146/saa7146_core.c 2014-10-06 18:57:54.000000000 +0200
+@@ -71,7 +71,7 @@ static inline int saa7146_wait_for_debi_
+    if (saa7146_read(dev, MC2) & 2)
+      break;
+    if (err) {
+-     pr_err("%s: %s timed out while waiting for registers getting programmed\n",
++     pr_debug("%s: %s timed out while waiting for registers getting programmed\n",
+             dev->name, __func__);
+      return -ETIMEDOUT;
+    }
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 5ac312f..2e6c103 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -582,12 +582,14 @@ static inline void flush_requests(struct blkfront_info *info)
- 		notify_remote_via_irq(info->irq);
- }
- 
--static inline bool blkif_request_flush_valid(struct request *req,
--					     struct blkfront_info *info)
-+static inline bool blkif_request_flush_invalid(struct request *req,
-+					       struct blkfront_info *info)
- {
- 	return ((req->cmd_type != REQ_TYPE_FS) ||
--		((req->cmd_flags & (REQ_FLUSH | REQ_FUA)) &&
--		!info->flush_op));
-+		((req->cmd_flags & REQ_FLUSH) &&
-+		 !(info->feature_flush & REQ_FLUSH)) ||
-+		((req->cmd_flags & REQ_FUA) &&
-+		 !(info->feature_flush & REQ_FUA)));
- }
- 
- /*
-@@ -612,8 +614,8 @@ static void do_blkif_request(struct request_queue *rq)
- 
- 		blk_start_request(req);
- 
--		if (blkif_request_flush_valid(req, info)) {
--			__blk_end_request_all(req, -EIO);
-+		if (blkif_request_flush_invalid(req, info)) {
-+			__blk_end_request_all(req, -EOPNOTSUPP);
- 			continue;
- 		}
- 
--- 
-1.9.3
 
