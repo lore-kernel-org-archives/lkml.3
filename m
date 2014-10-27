@@ -1,216 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaJ0RsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:48:09 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58429 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaJ0RsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:48:07 -0400
-Date: Mon, 27 Oct 2014 18:47:43 +0100
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
-        hpa@zytor.com, Michal Simek <monstr@monstr.eu>,
-        michal.simek@xilinx.com, rdunlap@infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
-        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, mgerlach@opensource.altera.com,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
-Message-ID: <20141027174743.GX10262@pengutronix.de>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com>
- <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
- <20141024070042.GL10262@pengutronix.de>
- <5FB7B7FD-7B5B-4250-BADE-85573FDBBE48@konsulko.com>
- <20141025144229.GR10262@pengutronix.de>
- <16E8EC52-0A91-4F28-8113-3CC5352215A5@konsulko.com>
- <20141027152306.GV10262@pengutronix.de>
- <194BE134-7804-4E84-BD5D-AB9A5892ED6F@konsulko.com>
+	id S1752019AbaJ0RsT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:48:19 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:48378 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751786AbaJ0RsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:48:17 -0400
+Date: Mon, 27 Oct 2014 10:44:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Meelis Roos <mroos@linux.ee>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: hung tasks in 3.18.0-rc1-00221-gc3351df
+Message-ID: <20141027174424.GB27568@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LRH.2.11.1410231619340.11555@adalberg.ut.ee>
+ <20141024001822.GK4977@linux.vnet.ibm.com>
+ <alpine.LRH.2.11.1410241057270.15464@adalberg.ut.ee>
+ <20141024145509.GO4977@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <194BE134-7804-4E84-BD5D-AB9A5892ED6F@konsulko.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 18:37:45 up 12 days,  4:51, 60 users,  load average: 0,05, 0,06,
- 0,05
+In-Reply-To: <20141024145509.GO4977@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102717-0033-0000-0000-000000DDA096
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 05:52:02PM +0200, Pantelis Antoniou wrote:
-> Hi Steffen,
+On Fri, Oct 24, 2014 at 07:55:09AM -0700, Paul E. McKenney wrote:
+> On Fri, Oct 24, 2014 at 10:58:17AM +0300, Meelis Roos wrote:
+
+[ . . . ]
+
+> > > The get_state_synchronize_rcu() from within the wait for _rcu_barrier()
+> > > looks a bit odd, but perhaps this is stack-tracing inaccuracy.
+> > > 
+> > > Could you please send your .config?
 > 
-> > On Oct 27, 2014, at 17:23 , Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
-> > 
-> > Hi!
-> > 
-> > On Mon, Oct 27, 2014 at 01:54:20PM +0200, Pantelis Antoniou wrote:
-> >> Hi Stefen,
-> >> 
-> >>> On Oct 25, 2014, at 17:42 , Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
-> >>> 
-> >>> Hi Pantelis!
-> >>> 
-> >>> On Fri, Oct 24, 2014 at 12:20:53PM +0300, Pantelis Antoniou wrote:
-> >>>> Hi Stefan, Allan,
-> >>>> 
-> >>>> Sorry, haven’t had a chance to review all this yet; will do so in the weekend.
-> >>>> Just wanted to pop in and comment on a few things.
-> >>>> 
-> >>>>> On Oct 24, 2014, at 10:00 AM, Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
-> >>>>> 
-> >>>>> Hi!
-> >>>>> 
-> >>>>> On Thu, Oct 23, 2014 at 06:51:06PM -0500, atull@opensource.altera.com wrote:
-> >>>>>> From: Alan Tull <atull@opensource.altera.com>
-> >>>>> 
-> >>>>> (...)
-> >>>>> 
-> >>>>>> diff --git a/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
-> >>>>>> new file mode 100644
-> >>>>>> index 0000000..bc24a2e
-> >>>>>> --- /dev/null
-> >>>>>> +++ b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
-> >>>>>> @@ -0,0 +1,53 @@
-> >>>>>> +Altera FPGA/HPS Bridge Driver
-> >>>>>> +
-> >>>>>> +This driver manages a bridge between a FPGA and a host processor system (HPS).
-> >>>>>> +User space can enable or disable the bridge by writing a "1" or a "0",
-> >>>>>> +respectively, to its enable file under bridge's entry in
-> >>>>>> +/sys/class/fpga-bridge.  Typically, one disables the bridges before
-> >>>>>> +reprogramming the FPGA.  Once the FPGA is reprogrammed, the bridges are
-> >>>>>> +reenabled.
-> >>>>>> +
-> >>>>> 
-> >>>>> NAK.
-> >>>>> 
-> >>>>> This is all linux specific and doesn't belong here.
-> >>>>> 
-> >>>> 
-> >>>> We know. The DT spec hasn’t been updated for a while, and this is going to be
-> >>>> part of what we want to do with the restarting of the ePAPR spec process.
-> >>>> 
-> >>> 
-> >>> As we don't have a new spec yet, I go with the current state of the art.
-> >>> And I don't see how "file under ... /sys/class/fpga-bridge" fits the
-> >>> current spec.
-> >>> 
-> >>>> So absolutes like “DT is a hardware description only" might be too strong statements, that
-> >>>> do not work in practice anymore.
-> >>>> 
-> >>>> There’s no such thing as pure hardware devices lately - there is always a configuration
-> >>>> component; some of it OS specific, some of it not.
-> >>>> 
-> >>> 
-> >>> If it really is necessary, I'm not against it, don't get me wrong.
-> >>> But in the grand scheme I wouldn't say that this fits my experience.
-> >>> There are some devices that need configuration and often when it is
-> >>> done in the DT, it is just a shortcut or not thought through.
-> >>> And can be also introspected dynamically. With some discussion on the
-> >>> list these bindings often change.
-> >>> 
-> >> 
-> >> Already answered and given a possible way this might work; admittedly this
-> >> specific example is not a good fit for what I was trying to say, but whatever.
-> >> Let’s get the ball rolling.
-> >> 
-> > 
-> > I would be okay with chosen-node. Not for this driver; but in general.
-> > 
+> This does look like something that a couple of other people are seeing.
+> Could you please check to see if reverting this commit makes the problem
+> go away?
 > 
-> Let’s figure out how to do it then…
+> 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
 > 
-> >>> Regarding OS specifics: already there, e.g. console setup in the chosen node.
-> >>> And other things I saw are ethernet aliases just for u-boot. Not a problem
-> >>> of the spec, just a problem of u-boot and unneccessary "configuration".
-> >>> Just to fix a bad bootloader. barebox can handle this without any
-> >>> such stuff. Maybe we should integrate the DT "overlays" barebox uses into
-> >>> the in-kernel DTs as well...but does it really help/interest someone who
-> >>> decides to use u-boot where barebox stores its environment? I guess not.
-> >>> 
-> >> 
-> >> Although I’m not against having DT overlays in the bootloader, I only see them
-> >> as a method that helps a platform developer express things easier. I am completely
-> >> against having the kernel tied to any particular bootloader.
-> >> 
-> >> We’ve all been through the hell where a kernel only boots if the bootloader has 
-> >> setup the platform “correctly”. This “correctly” has a very loose definition and
-> >> 99/100 times is extremely badly documented or not at all.
-> >> 
-> >> IMHO the bootloader should (as part of the normal boot sequence) only setup the
-> >> absolutely bare minimum and then pass control to the kernel as soon as possible.
-> >> 
-> >> The full featured bootloader environment should only be presented when the user
-> >> requests so.
-> >> 
-> > 
-> > Totally agree. The kernel shouldn't be tied to any bootloader if at all possible
-> > (the SoCFPGA is an especially bad example here again, as the pinmuxing can only
-> > happen in the bootloader).
-> 
-> I’m not familiar with SoCFPGA. Why pinmuxing is only possible in the bootloader?
-> Can’t the bootloader configure the minimum pinmux config and then have Linux setup
-> the rest?
-> 
-> If we’re feeling particularly nasty, we might just require bootloaders to clean the
-> hardware state before passing control to Linux (besides memory controller setup) and
-> see what’s broken.
-> 
+> This cannot be the full fix because this commit is itself a bug fix, but
+> it would be good to check whether you are really seeing what they are
+> seeing.  ;-)
 
-Okay, offtopic, but:
+------------------------------------------------------------------------
 
-a) datasheet explicitely states that dynamic pinmuxing is not supported.
-b) last time I checked, no documentation at all. You get some magic values spit
-   out by Altera's tools.
-c) you don't have registers. Pinmuxing is done via JTAG scan chain; which you
-   feed the magic values.
+rcu: Make rcu_barrier() understand about missing rcuo kthreads
 
-Apart from that, it seems to be the most sane idea, to at least write your
-driver in a way, that doesn't make any assumptions on HW state.
-But I think this is already common practice in mainline.
+Commit 35ce7f29a44a (rcu: Create rcuo kthreads only for onlined CPUs)
+avoids creating rcuo kthreads for CPUs that never come online.  This
+fixes a bug in many instances of firmware: Instead of lying about their
+age, these systems instead lie about the number of CPUs that they have.
+Before commit 35ce7f29a44a, this could result in huge numbers of useless
+rcuo kthreads being created.
 
-> > But should the DT include stuff than, that is only interesting for linux?
-> > 
-> 
-> Like it or not it’s Linux that’s in the forefront of many hardware designs.
-> 
+It appears that experience indicates that I should have told the
+people suffering from this problem to fix their broken firmware, but
+I instead produced what turned out to be a partial fix.   The missing
+piece supplied by this commit makes sure that rcu_barrier() knows not to
+post callbacks for no-CBs CPUs that have not yet come online, because
+otherwise rcu_barrier() will hang on systems having firmware that lies
+about the number of CPUs.
 
-I like it; pays my rent ;-)
-But I also like freedom to choose...
+It is tempting to simply have rcu_barrier() refuse to post a callback on
+any no-CBs CPU that does not have an rcuo kthread.  This unfortunately
+does not work because rcu_barrier() is required to wait for all pending
+callbacks.  It is therefore required to wait even for those callbacks
+that cannot possibly be invoked.  Even if doing so hangs the system.
 
-> There are configuration settings in DT that are part of the way hardware is presented to
-> Linux and user-space, and have been for quite some time. We’ve been pretending they don’t
-> exist, but they are there…
-> 
+Given that posting a callback to a no-CBs CPU that does not yet have an
+rcuo kthread can hang rcu_barrier(), It is tempting to report an error
+in this case.  Unfortunately, this will result in false positives at
+boot time, when it is perfectly legal to post callbacks to the boot CPU
+before the scheduler has started, in other words, before it is legal
+to invoke rcu_barrier().
 
-As far as I know, a lot of that are older bindings, where more
-things just got applied, because it wasn't clear where DT will go.
+So this commit instead has rcu_barrier() avoid posting callbacks to
+CPUs having neither rcuo kthread nor pending callbacks, and has it
+complain bitterly if it finds CPUs having no rcuo kthread but some
+pending callbacks.  And when rcu_barrier() does find CPUs having no rcuo
+kthread but pending callbacks, as noted earlier, it has no choice but
+to hang indefinitely.
 
+Reported-by: Yanko Kaneti <yaneti@declera.com>
+Reported-by: Jay Vosburgh <jay.vosburgh@canonical.com>
+Reported-by: Meelis Roos <mroos@linux.ee>
+Reported-by: Eric B Munson <emunson@akamai.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Regards,
-Steffen
+diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
+index aa8e5eea3ab4..c78e88ce5ea3 100644
+--- a/include/trace/events/rcu.h
++++ b/include/trace/events/rcu.h
+@@ -660,18 +660,18 @@ TRACE_EVENT(rcu_torture_read,
+ /*
+  * Tracepoint for _rcu_barrier() execution.  The string "s" describes
+  * the _rcu_barrier phase:
+- *	"Begin": rcu_barrier_callback() started.
+- *	"Check": rcu_barrier_callback() checking for piggybacking.
+- *	"EarlyExit": rcu_barrier_callback() piggybacked, thus early exit.
+- *	"Inc1": rcu_barrier_callback() piggyback check counter incremented.
+- *	"Offline": rcu_barrier_callback() found offline CPU
+- *	"OnlineNoCB": rcu_barrier_callback() found online no-CBs CPU.
+- *	"OnlineQ": rcu_barrier_callback() found online CPU with callbacks.
+- *	"OnlineNQ": rcu_barrier_callback() found online CPU, no callbacks.
++ *	"Begin": _rcu_barrier() started.
++ *	"Check": _rcu_barrier() checking for piggybacking.
++ *	"EarlyExit": _rcu_barrier() piggybacked, thus early exit.
++ *	"Inc1": _rcu_barrier() piggyback check counter incremented.
++ *	"OfflineNoCB": _rcu_barrier() found callback on never-online CPU
++ *	"OnlineNoCB": _rcu_barrier() found online no-CBs CPU.
++ *	"OnlineQ": _rcu_barrier() found online CPU with callbacks.
++ *	"OnlineNQ": _rcu_barrier() found online CPU, no callbacks.
+  *	"IRQ": An rcu_barrier_callback() callback posted on remote CPU.
+  *	"CB": An rcu_barrier_callback() invoked a callback, not the last.
+  *	"LastCB": An rcu_barrier_callback() invoked the last callback.
+- *	"Inc2": rcu_barrier_callback() piggyback check counter incremented.
++ *	"Inc2": _rcu_barrier() piggyback check counter incremented.
+  * The "cpu" argument is the CPU or -1 if meaningless, the "cnt" argument
+  * is the count of remaining callbacks, and "done" is the piggybacking count.
+  */
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f6880052b917..7680fc275036 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -3312,11 +3312,16 @@ static void _rcu_barrier(struct rcu_state *rsp)
+ 			continue;
+ 		rdp = per_cpu_ptr(rsp->rda, cpu);
+ 		if (rcu_is_nocb_cpu(cpu)) {
+-			_rcu_barrier_trace(rsp, "OnlineNoCB", cpu,
+-					   rsp->n_barrier_done);
+-			atomic_inc(&rsp->barrier_cpu_count);
+-			__call_rcu(&rdp->barrier_head, rcu_barrier_callback,
+-				   rsp, cpu, 0);
++			if (!rcu_nocb_cpu_needs_barrier(rsp, cpu)) {
++				_rcu_barrier_trace(rsp, "OfflineNoCB", cpu,
++						   rsp->n_barrier_done);
++			} else {
++				_rcu_barrier_trace(rsp, "OnlineNoCB", cpu,
++						   rsp->n_barrier_done);
++				atomic_inc(&rsp->barrier_cpu_count);
++				__call_rcu(&rdp->barrier_head,
++					   rcu_barrier_callback, rsp, cpu, 0);
++			}
+ 		} else if (ACCESS_ONCE(rdp->qlen)) {
+ 			_rcu_barrier_trace(rsp, "OnlineQ", cpu,
+ 					   rsp->n_barrier_done);
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 4beab3d2328c..8e7b1843896e 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -587,6 +587,7 @@ static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
+ static void print_cpu_stall_info_end(void);
+ static void zero_cpu_stall_ticks(struct rcu_data *rdp);
+ static void increment_cpu_stall_ticks(void);
++static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu);
+ static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq);
+ static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp);
+ static void rcu_init_one_nocb(struct rcu_node *rnp);
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 927c17b081c7..68c5b23b7173 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2050,6 +2050,33 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
+ }
+ 
+ /*
++ * Does the specified CPU need an RCU callback for the specified flavor
++ * of rcu_barrier()?
++ */
++static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu)
++{
++	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
++	struct rcu_head *rhp;
++
++	/* No-CBs CPUs might have callbacks on any of three lists. */
++	rhp = ACCESS_ONCE(rdp->nocb_head);
++	if (!rhp)
++		rhp = ACCESS_ONCE(rdp->nocb_gp_head);
++	if (!rhp)
++		rhp = ACCESS_ONCE(rdp->nocb_follower_head);
++
++	/* Having no rcuo kthread but CBs after scheduler starts is bad! */
++	if (!ACCESS_ONCE(rdp->nocb_kthread) && rhp) {
++		/* RCU callback enqueued before CPU first came online??? */
++		pr_err("RCU: Never-onlined no-CBs CPU %d has CB %p\n",
++		       cpu, rhp->func);
++		WARN_ON_ONCE(1);
++	}
++
++	return !!rhp;
++}
++
++/*
+  * Enqueue the specified string of rcu_head structures onto the specified
+  * CPU's no-CBs lists.  The CPU is specified by rdp, the head of the
+  * string by rhp, and the tail of the string by rhtp.  The non-lazy/lazy
+@@ -2646,6 +2673,10 @@ static bool init_nocb_callback_list(struct rcu_data *rdp)
+ 
+ #else /* #ifdef CONFIG_RCU_NOCB_CPU */
+ 
++static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu)
++{
++}
++
+ static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
+ {
+ }
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
