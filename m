@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbaJ0IKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 04:10:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5744 "EHLO mga11.intel.com"
+	id S1752859AbaJ0IK3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 04:10:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3358 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751954AbaJ0IKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 04:10:06 -0400
+	id S1751618AbaJ0IKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 04:10:23 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,794,1406617200"; 
-   d="scan'208";a="621212816"
+   d="scan'208";a="621212998"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -18,16 +18,17 @@ To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
         Borislav Petkov <bp@alien8.de>, x86@kernel.org,
         Jiang Liu <jiang.liu@linux.intel.com>,
-        Prarit Bhargava <prarit@redhat.com>
+        Prarit Bhargava <prarit@redhat.com>,
+        Grant Likely <grant.likely@linaro.org>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [Patch Part1 v3 05/20] x86, irq: Refine hw_irq.h to prepare for irqdomain support
-Date: Mon, 27 Oct 2014 16:11:56 +0800
-Message-Id: <1414397531-28254-6-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch Part1 v3 06/20] x86, irq: Rename local APIC related functions in io_apic.c as apic_xxx()
+Date: Mon, 27 Oct 2014 16:11:57 +0800
+Message-Id: <1414397531-28254-7-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
@@ -35,156 +36,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refine hw_irq.h to prepare for irqdomain support by:
-1) guarding common APIC related interfaces with CONFIG_X86_LOCAL_APIC
-2) guarding interrupt remapping related interfaces with CONFIG_IRQ_REMAP
-3) guarding IOAPIC related interfaces with CONFIG_X86_IO_APIC
-
-There should be no functional changes.
+Rename local APIC related functions in io_apic.c as apic_xxx() instead
+of ioapic_xxx(), later they will be moved into separate file.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/hw_irq.h |   94 ++++++++++++++++++++++-------------------
- 1 file changed, 51 insertions(+), 43 deletions(-)
+ arch/x86/include/asm/hw_irq.h  |    4 ++--
+ arch/x86/kernel/apic/io_apic.c |   42 ++++++++++++++++++++--------------------
+ arch/x86/platform/uv/uv_irq.c  |    2 +-
+ 3 files changed, 24 insertions(+), 24 deletions(-)
 
 diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 28f283988c8e..8188d648d48c 100644
+index 8188d648d48c..18e8717bf644 100644
 --- a/arch/x86/include/asm/hw_irq.h
 +++ b/arch/x86/include/asm/hw_irq.h
-@@ -94,30 +94,7 @@ extern void trace_call_function_single_interrupt(void);
- #define trace_kvm_posted_intr_ipi kvm_posted_intr_ipi
- #endif /* CONFIG_TRACING */
- 
--/* IOAPIC */
--#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1<<(x)) & io_apic_irqs))
--extern unsigned long io_apic_irqs;
--
--extern void setup_IO_APIC(void);
--extern void disable_IO_APIC(void);
--
--struct io_apic_irq_attr {
--	int ioapic;
--	int ioapic_pin;
--	int trigger;
--	int polarity;
--};
--
--static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
--					int ioapic, int ioapic_pin,
--					int trigger, int polarity)
--{
--	irq_attr->ioapic	= ioapic;
--	irq_attr->ioapic_pin	= ioapic_pin;
--	irq_attr->trigger	= trigger;
--	irq_attr->polarity	= polarity;
--}
--
-+#ifdef CONFIG_IRQ_REMAP
- /* Intel specific interrupt remapping information */
- struct irq_2_iommu {
- 	struct intel_iommu *iommu;
-@@ -131,14 +108,10 @@ struct irq_2_irte {
- 	u16 devid; /* Device ID for IRTE table */
- 	u16 index; /* Index into IRTE table*/
- };
-+#endif	/* CONFIG_IRQ_REMAP */
- 
--/*
-- * This is performance-critical, we want to do it O(1)
-- *
-- * Most irqs are mapped 1:1 with pins.
-- */
-+#ifdef	CONFIG_X86_LOCAL_APIC
- struct irq_cfg {
--	struct list_head	irq_2_pin;
- 	cpumask_var_t		domain;
- 	cpumask_var_t		old_domain;
- 	u8			vector;
-@@ -150,18 +123,64 @@ struct irq_cfg {
- 		struct irq_2_irte  irq_2_irte;
- 	};
- #endif
-+	union {
-+#ifdef CONFIG_X86_IO_APIC
-+		struct {
-+			struct list_head	irq_2_pin;
-+		};
-+#endif
-+	};
- };
- 
-+extern void setup_vector_irq(int cpu);
- extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
+@@ -137,8 +137,8 @@ extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
  extern void send_cleanup_vector(struct irq_cfg *);
  
  struct irq_data;
- int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
- 			  unsigned int *dest_id);
--extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
--extern void setup_ioapic_dest(void);
-+#endif	/* CONFIG_X86_LOCAL_APIC */
-+
-+#ifdef CONFIG_X86_IO_APIC
-+extern void lock_vector_lock(void);
-+extern void unlock_vector_lock(void);
-+extern void __setup_vector_irq(int cpu);
-+#else
-+static inline void lock_vector_lock(void) {}
-+static inline void unlock_vector_lock(void) {}
-+static inline void __setup_vector_irq(int cpu) {}
-+#endif
-+
-+/* IOAPIC */
-+#ifdef CONFIG_X86_IO_APIC
-+struct io_apic_irq_attr {
-+	int ioapic;
-+	int ioapic_pin;
-+	int trigger;
-+	int polarity;
-+};
-+
-+static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
-+					int ioapic, int ioapic_pin,
-+					int trigger, int polarity)
-+{
-+	irq_attr->ioapic	= ioapic;
-+	irq_attr->ioapic_pin	= ioapic_pin;
-+	irq_attr->trigger	= trigger;
-+	irq_attr->polarity	= polarity;
-+}
+-int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
+-			  unsigned int *dest_id);
++int apic_set_affinity(struct irq_data *, const struct cpumask *,
++		      unsigned int *dest_id);
+ #endif	/* CONFIG_X86_LOCAL_APIC */
  
-+extern void setup_IO_APIC(void);
- extern void enable_IO_APIC(void);
-+extern void disable_IO_APIC(void);
-+extern void setup_ioapic_dest(void);
-+extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
-+
-+extern unsigned long io_apic_irqs;
-+#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1 << (x)) & io_apic_irqs))
-+#else	/* CONFIG_X86_IO_APIC */
-+#define IO_APIC_IRQ(x)	0
-+#endif	/* CONFIG_X86_IO_APIC */
+ #ifdef CONFIG_X86_IO_APIC
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 00bd61fd1b5a..c8be3fa0844d 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2252,7 +2252,7 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
+ 	return was_pending;
+ }
  
- /* Statistics */
- extern atomic_t irq_err_count;
-@@ -195,17 +214,6 @@ extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
+-static int ioapic_retrigger_irq(struct irq_data *data)
++static int apic_retrigger_irq(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	unsigned long flags;
+@@ -2407,8 +2407,8 @@ static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq
+  * ->cpu_mask_to_apicid of that in dest_id, or returns -1 and
+  * leaves data->affinity untouched.
+  */
+-int __ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+-			  unsigned int *dest_id)
++int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
++		      unsigned int *dest_id)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	unsigned int irq = data->irq;
+@@ -2449,7 +2449,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 		return -EPERM;
  
- typedef int vector_irq_t[NR_VECTORS];
- DECLARE_PER_CPU(vector_irq_t, vector_irq);
--extern void setup_vector_irq(int cpu);
--
--#ifdef CONFIG_X86_IO_APIC
--extern void lock_vector_lock(void);
--extern void unlock_vector_lock(void);
--extern void __setup_vector_irq(int cpu);
--#else
--static inline void lock_vector_lock(void) {}
--static inline void unlock_vector_lock(void) {}
--static inline void __setup_vector_irq(int cpu) {}
--#endif
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (!ret) {
+ 		/* Only the high 8 bits are valid. */
+ 		dest = SET_APIC_LOGICAL_ID(dest);
+@@ -2460,7 +2460,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 	return ret;
+ }
  
- #endif /* !ASSEMBLY_ */
+-static void ack_apic_edge(struct irq_data *data)
++static void apic_ack_edge(struct irq_data *data)
+ {
+ 	irq_complete_move(data->chip_data);
+ 	irq_move_irq(data);
+@@ -2549,7 +2549,7 @@ static inline void ioapic_irqd_unmask(struct irq_data *data,
+ }
+ #endif
  
+-static void ack_apic_level(struct irq_data *data)
++static void ack_ioapic_level(struct irq_data *data)
+ {
+ 	struct irq_cfg *cfg = data->chip_data;
+ 	int i, irq = data->irq;
+@@ -2621,10 +2621,10 @@ static struct irq_chip ioapic_chip __read_mostly = {
+ 	.irq_startup		= startup_ioapic_irq,
+ 	.irq_mask		= mask_ioapic_irq,
+ 	.irq_unmask		= unmask_ioapic_irq,
+-	.irq_ack		= ack_apic_edge,
+-	.irq_eoi		= ack_apic_level,
++	.irq_ack		= apic_ack_edge,
++	.irq_eoi		= ack_ioapic_level,
+ 	.irq_set_affinity	= native_ioapic_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+@@ -3159,7 +3159,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 	unsigned int dest;
+ 	int ret;
+ 
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -3183,9 +3183,9 @@ static struct irq_chip msi_chip = {
+ 	.name			= "PCI-MSI",
+ 	.irq_unmask		= unmask_msi_irq,
+ 	.irq_mask		= mask_msi_irq,
+-	.irq_ack		= ack_apic_edge,
++	.irq_ack		= apic_ack_edge,
+ 	.irq_set_affinity	= msi_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+@@ -3261,7 +3261,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	struct msi_msg msg;
+ 	int ret;
+ 
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -3282,9 +3282,9 @@ static struct irq_chip dmar_msi_type = {
+ 	.name			= "DMAR_MSI",
+ 	.irq_unmask		= dmar_msi_unmask,
+ 	.irq_mask		= dmar_msi_mask,
+-	.irq_ack		= ack_apic_edge,
++	.irq_ack		= apic_ack_edge,
+ 	.irq_set_affinity	= dmar_msi_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+@@ -3313,7 +3313,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+ 	unsigned int dest;
+ 	int ret;
+ 
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -3333,9 +3333,9 @@ static struct irq_chip hpet_msi_type = {
+ 	.name = "HPET_MSI",
+ 	.irq_unmask = hpet_msi_unmask,
+ 	.irq_mask = hpet_msi_mask,
+-	.irq_ack = ack_apic_edge,
++	.irq_ack = apic_ack_edge,
+ 	.irq_set_affinity = hpet_msi_set_affinity,
+-	.irq_retrigger = ioapic_retrigger_irq,
++	.irq_retrigger = apic_retrigger_irq,
+ 	.flags = IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+@@ -3385,7 +3385,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 	unsigned int dest;
+ 	int ret;
+ 
+-	ret = __ioapic_set_affinity(data, mask, &dest);
++	ret = apic_set_affinity(data, mask, &dest);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -3397,9 +3397,9 @@ static struct irq_chip ht_irq_chip = {
+ 	.name			= "PCI-HT",
+ 	.irq_mask		= mask_ht_irq,
+ 	.irq_unmask		= unmask_ht_irq,
+-	.irq_ack		= ack_apic_edge,
++	.irq_ack		= apic_ack_edge,
+ 	.irq_set_affinity	= ht_set_affinity,
+-	.irq_retrigger		= ioapic_retrigger_irq,
++	.irq_retrigger		= apic_retrigger_irq,
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index b233681af4de..3e8fab740c1d 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -204,7 +204,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	struct uv_IO_APIC_route_entry *entry;
+ 	int mmr_pnode;
+ 
+-	if (__ioapic_set_affinity(data, mask, &dest))
++	if (apic_set_affinity(data, mask, &dest))
+ 		return -1;
+ 
+ 	mmr_value = 0;
 -- 
 1.7.10.4
 
