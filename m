@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaJ0TDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:03:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52746 "EHLO
+	id S1753944AbaJ0TO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:14:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52761 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753470AbaJ0TDg (ORCPT
+	with ESMTP id S1753487AbaJ0TDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:03:36 -0400
+	Mon, 27 Oct 2014 15:03:40 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andreas Henriksson <andreas.henriksson@endian.se>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 043/105] ARM: at91: fix at91sam9263ek DT mmc pinmuxing settings
-Date: Mon, 27 Oct 2014 11:56:18 -0700
-Message-Id: <1414436240-13879-44-git-send-email-kamal@canonical.com>
+Cc: Joe Thornber <ejt@redhat.com>, Mikulas Patocka <mpatocka@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 074/105] dm bufio: update last_accessed when relinking a buffer
+Date: Mon, 27 Oct 2014 11:56:49 -0700
+Message-Id: <1414436240-13879-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,47 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Henriksson <andreas.henriksson@endian.se>
+From: Joe Thornber <ejt@redhat.com>
 
-commit b65e0fb3d046cc65d0a3c45d43de351fb363271b upstream.
+commit eb76faf53b1ff7a77ce3f78cc98ad392ac70c2a0 upstream.
 
-As discovered on a custom board similar to at91sam9263ek and basing
-its devicetree on that one apparently the pin muxing doesn't get
-set up properly. This was discovered since the custom boards u-boot
-does funky stuff with the pin muxing and leaved it set to SPI
-which made the MMC driver not work under Linux.
-The fix is simply to define the given configuration as the default.
-This probably worked by pure luck before, but it's better to
-make the muxing explicitly set.
+The 'last_accessed' member of the dm_buffer structure was only set when
+the the buffer was created.  This led to each buffer being discarded
+after dm_bufio_max_age time even if it was used recently.  In practice
+this resulted in all thinp metadata being evicted soon after being read
+-- this is particularly problematic for metadata intensive workloads
+like multithreaded small random IO.
 
-Signed-off-by: Andreas Henriksson <andreas.henriksson@endian.se>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+'last_accessed' is now updated each time the buffer is moved to the head
+of the LRU list, so the buffer is now properly discarded if it was not
+used in dm_bufio_max_age time.
+
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/boot/dts/at91sam9263.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/dm-bufio.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
-index d5bd65f..55bb7f3 100644
---- a/arch/arm/boot/dts/at91sam9263.dtsi
-+++ b/arch/arm/boot/dts/at91sam9263.dtsi
-@@ -506,6 +506,7 @@
- 				compatible = "atmel,hsmci";
- 				reg = <0xfff80000 0x600>;
- 				interrupts = <10 IRQ_TYPE_LEVEL_HIGH 0>;
-+				pinctrl-names = "default";
- 				#address-cells = <1>;
- 				#size-cells = <0>;
- 				status = "disabled";
-@@ -515,6 +516,7 @@
- 				compatible = "atmel,hsmci";
- 				reg = <0xfff84000 0x600>;
- 				interrupts = <11 IRQ_TYPE_LEVEL_HIGH 0>;
-+				pinctrl-names = "default";
- 				#address-cells = <1>;
- 				#size-cells = <0>;
- 				status = "disabled";
+diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
+index 5056c45..bb8d23d 100644
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -463,6 +463,7 @@ static void __relink_lru(struct dm_buffer *b, int dirty)
+ 	c->n_buffers[dirty]++;
+ 	b->list_mode = dirty;
+ 	list_move(&b->lru_list, &c->lru[dirty]);
++	b->last_accessed = jiffies;
+ }
+ 
+ /*----------------------------------------------------------------
 -- 
 1.9.1
 
