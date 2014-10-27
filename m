@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873AbaJ0Vnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 17:43:45 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:54207 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813AbaJ0Vnh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 17:43:37 -0400
-From: Roman Byshko <rbyshko@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: [PATCH 5/5] ARM: dts: sun7i: Cubietruck: add power supply regulator for USB OTG VBUS
-Date: Mon, 27 Oct 2014 22:43:05 +0100
-Message-Id: <e5211c01c83a307415ba1db23279fe8b72070314.1414444953.git.rbyshko@gmail.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <cover.1414444953.git.rbyshko@gmail.com>
-References: <cover.1414444953.git.rbyshko@gmail.com>
-In-Reply-To: <cover.1414444953.git.rbyshko@gmail.com>
-References: <cover.1414444953.git.rbyshko@gmail.com>
+	id S1752650AbaJ0VvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 17:51:04 -0400
+Received: from fieldses.org ([174.143.236.118]:43860 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752325AbaJ0VvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 17:51:02 -0400
+Date: Mon, 27 Oct 2014 17:51:01 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] nfsd bugfixes for 3.18
+Message-ID: <20141027215101.GA32743@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- arch/arm/boot/dts/sun7i-a20-cubietruck.dts | 1 +
- 1 file changed, 1 insertion(+)
+Please pull nfsd bugfixes from:
 
-diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-index 1682307..a281d25 100644
---- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-+++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
-@@ -40,6 +40,7 @@
- 		};
- 
- 		usbphy: phy@01c13400 {
-+			usb0_vbus-supply = <&reg_usb0_vbus>;
- 			usb1_vbus-supply = <&reg_usb1_vbus>;
- 			usb2_vbus-supply = <&reg_usb2_vbus>;
- 			status = "okay";
--- 
-2.1.2
+  git://linux-nfs.org/~bfields/linux.git for-3.18
 
+One regression from the 3.16 xdr rewrite, one an older bug exposed by a
+separate bug in the client's new SEEK code.
+
+--b.
+
+----------------------------------------------------------------
+J. Bruce Fields (2):
+      nfsd4: fix response size estimation for OP_SEQUENCE
+      nfsd4: fix crash on unknown operation number
+
+ fs/nfsd/nfs4proc.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
