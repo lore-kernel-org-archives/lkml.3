@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbaJ0HJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 03:09:12 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:10256 "EHLO
+	id S1752389AbaJ0HJK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 03:09:10 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:10253 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752314AbaJ0HIX (ORCPT
+	with ESMTP id S1752178AbaJ0HIX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 03:08:23 -0400
 From: Yijing Wang <wangyijing@huawei.com>
@@ -17,9 +17,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         "Thierry Reding" <thierry.reding@gmail.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 04/10] PCI: tegra: Save MSI controller in pci_sys_data
-Date: Mon, 27 Oct 2014 15:48:41 +0800
-Message-ID: <1414396127-30023-5-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 09/10] arm/PCI: Clean unused pcibios_add_bus() and pcibios_remove_bus()
+Date: Mon, 27 Oct 2014 15:48:46 +0800
+Message-ID: <1414396127-30023-10-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1414396127-30023-1-git-send-email-wangyijing@huawei.com>
 References: <1414396127-30023-1-git-send-email-wangyijing@huawei.com>
@@ -31,50 +31,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save MSI controller in pci_sys_data instead of
-assigning MSI controller pointer to every pci bus
-in .add_bus().
+MSI controller has been saved in pci_sys_data, now we can
+clean up pcibios_add_bus() and pcibios_remove_bus()
+in arm, and use pcibios_msi_controller() to get MSI controller
+pointer.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/host/pci-tegra.c |   13 +++----------
- 1 files changed, 3 insertions(+), 10 deletions(-)
+ arch/arm/include/asm/mach/pci.h |    4 ----
+ arch/arm/kernel/bios32.c        |   16 ----------------
+ 2 files changed, 0 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
-index 7c3d354..89fb943 100644
---- a/drivers/pci/host/pci-tegra.c
-+++ b/drivers/pci/host/pci-tegra.c
-@@ -694,15 +694,6 @@ static int tegra_pcie_map_irq(const struct pci_dev *pdev, u8 slot, u8 pin)
- 	return irq;
- }
+diff --git a/arch/arm/include/asm/mach/pci.h b/arch/arm/include/asm/mach/pci.h
+index 8144d61..8292b5f 100644
+--- a/arch/arm/include/asm/mach/pci.h
++++ b/arch/arm/include/asm/mach/pci.h
+@@ -39,8 +39,6 @@ struct hw_pci {
+ 					  resource_size_t start,
+ 					  resource_size_t size,
+ 					  resource_size_t align);
+-	void		(*add_bus)(struct pci_bus *bus);
+-	void		(*remove_bus)(struct pci_bus *bus);
+ };
  
--static void tegra_pcie_add_bus(struct pci_bus *bus)
+ /*
+@@ -71,8 +69,6 @@ struct pci_sys_data {
+ 					  resource_size_t start,
+ 					  resource_size_t size,
+ 					  resource_size_t align);
+-	void		(*add_bus)(struct pci_bus *bus);
+-	void		(*remove_bus)(struct pci_bus *bus);
+ 	void		*private_data;	/* platform controller private data	*/
+ };
+ 
+diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
+index 073229f..32301fc 100644
+--- a/arch/arm/kernel/bios32.c
++++ b/arch/arm/kernel/bios32.c
+@@ -369,20 +369,6 @@ void pcibios_fixup_bus(struct pci_bus *bus)
+ }
+ EXPORT_SYMBOL(pcibios_fixup_bus);
+ 
+-void pcibios_add_bus(struct pci_bus *bus)
 -{
--	if (IS_ENABLED(CONFIG_PCI_MSI)) {
--		struct tegra_pcie *pcie = sys_to_pcie(bus->sysdata);
--
--		bus->msi = &pcie->msi.ctrl;
--	}
+-	struct pci_sys_data *sys = bus->sysdata;
+-	if (sys->add_bus)
+-		sys->add_bus(bus);
 -}
 -
- static struct pci_bus *tegra_pcie_scan_bus(int nr, struct pci_sys_data *sys)
- {
- 	struct tegra_pcie *pcie = sys_to_pcie(sys);
-@@ -1881,11 +1872,13 @@ static int tegra_pcie_enable(struct tegra_pcie *pcie)
+-void pcibios_remove_bus(struct pci_bus *bus)
+-{
+-	struct pci_sys_data *sys = bus->sysdata;
+-	if (sys->remove_bus)
+-		sys->remove_bus(bus);
+-}
+-
+ /*
+  * Swizzle the device pin each time we cross a bridge.  If a platform does
+  * not provide a swizzle function, we perform the standard PCI swizzling.
+@@ -487,8 +473,6 @@ static void pcibios_init_hw(struct device *parent, struct hw_pci *hw,
+ 		sys->swizzle = hw->swizzle;
+ 		sys->map_irq = hw->map_irq;
+ 		sys->align_resource = hw->align_resource;
+-		sys->add_bus = hw->add_bus;
+-		sys->remove_bus = hw->remove_bus;
+ 		INIT_LIST_HEAD(&sys->resources);
  
- 	memset(&hw, 0, sizeof(hw));
- 
-+#ifdef CONFIG_PCI_MSI
-+	hw.msi_ctrl = &pcie->msi.ctrl;
-+#endif
- 	hw.nr_controllers = 1;
- 	hw.private_data = (void **)&pcie;
- 	hw.setup = tegra_pcie_setup;
- 	hw.map_irq = tegra_pcie_map_irq;
--	hw.add_bus = tegra_pcie_add_bus;
- 	hw.scan = tegra_pcie_scan_bus;
- 	hw.ops = &tegra_pcie_ops;
- 
+ 		if (hw->private_data)
 -- 
 1.7.1
 
