@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087AbaJ0TM5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:12:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52801 "EHLO
+	id S1754104AbaJ0TNa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:13:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52782 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549AbaJ0TDy (ORCPT
+	with ESMTP id S1753506AbaJ0TDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:03:54 -0400
+	Mon, 27 Oct 2014 15:03:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 045/105] nfs: fix duplicate proc entries
-Date: Mon, 27 Oct 2014 11:56:20 -0700
-Message-Id: <1414436240-13879-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 027/105] PCI: mvebu: Fix uninitialized variable in mvebu_get_tgt_attr()
+Date: Mon, 27 Oct 2014 11:56:02 -0700
+Message-Id: <1414436240-13879-28-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,40 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabian Frederick <fabf@skynet.be>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 2f3169fb18f4643ac9a6a097a6a6c71f0b2cef75 upstream.
+commit 56fab6e189441d714a2bfc8a64f3df9c0749dff7 upstream.
 
-Commit 65b38851a174
-("NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes")
+Geert Uytterhoeven reported a warning when building pci-mvebu:
 
-updated the following function:
-static int nfs_volume_list_open(struct inode *inode, struct file *file)
+  drivers/pci/host/pci-mvebu.c: In function 'mvebu_get_tgt_attr':
+  drivers/pci/host/pci-mvebu.c:887:39: warning: 'rtype' may be used uninitialized in this function [-Wmaybe-uninitialized]
+     if (slot == PCI_SLOT(devfn) && type == rtype) {
+					 ^
 
-it used &nfs_server_list_ops instead of &nfs_volume_list_ops
-which means cat /proc/fs/nfsfs/volumes = /proc/fs/nfsfs/servers
+And indeed, the code of mvebu_get_tgt_attr() may lead to the usage of rtype
+when being uninitialized, even though it would only happen if we had
+entries other than I/O space and 32 bits memory space.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
-Fixes: 65b38851a174 (NFS: Fix /proc/fs/nfsfs/servers and...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+This commit fixes that by simply skipping the current DT range being
+considered, if it doesn't match the resource type we're looking for.
+
+Reported-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/client.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/host/pci-mvebu.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfs/client.c b/fs/nfs/client.c
-index 6e37cd0..a6bb348 100644
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1310,7 +1310,7 @@ static int nfs_server_list_show(struct seq_file *m, void *v)
-  */
- static int nfs_volume_list_open(struct inode *inode, struct file *file)
- {
--	return seq_open_net(inode, file, &nfs_server_list_ops,
-+	return seq_open_net(inode, file, &nfs_volume_list_ops,
- 			   sizeof(struct seq_net_private));
- }
+diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+index d55291c..77044b6 100644
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -824,7 +824,7 @@ static int mvebu_get_tgt_attr(struct device_node *np, int devfn,
+ 	rangesz = pna + na + ns;
+ 	nranges = rlen / sizeof(__be32) / rangesz;
  
+-	for (i = 0; i < nranges; i++) {
++	for (i = 0; i < nranges; i++, range += rangesz) {
+ 		u32 flags = of_read_number(range, 1);
+ 		u32 slot = of_read_number(range + 1, 1);
+ 		u64 cpuaddr = of_read_number(range + na, pna);
+@@ -834,14 +834,14 @@ static int mvebu_get_tgt_attr(struct device_node *np, int devfn,
+ 			rtype = IORESOURCE_IO;
+ 		else if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_MEM32)
+ 			rtype = IORESOURCE_MEM;
++		else
++			continue;
+ 
+ 		if (slot == PCI_SLOT(devfn) && type == rtype) {
+ 			*tgt = DT_CPUADDR_TO_TARGET(cpuaddr);
+ 			*attr = DT_CPUADDR_TO_ATTR(cpuaddr);
+ 			return 0;
+ 		}
+-
+-		range += rangesz;
+ 	}
+ 
+ 	return -ENOENT;
 -- 
 1.9.1
 
