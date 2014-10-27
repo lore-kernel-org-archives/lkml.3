@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbaJ0MMM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:12:12 -0400
+	id S1752670AbaJ0MML (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:12:11 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:35561 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097AbaJ0MMF (ORCPT
+	with ESMTP id S1752546AbaJ0MME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 08:12:05 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-21-544e3692d81d
+	Mon, 27 Oct 2014 08:12:04 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-80-544e3691355e
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
@@ -21,98 +21,109 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v5 3/4] regulator: max77686: Add suspend disable for some LDOs
-Date: Mon, 27 Oct 2014 13:11:49 +0100
-Message-id: <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v5 1/4] regulator: max77686: Replace hard-coded opmode values
+ with defines
+Date: Mon, 27 Oct 2014 13:11:47 +0100
+Message-id: <1414411911-5539-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com>
 References: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t/xy7qTzPxCDP6/F7LYOGM9q8WkdQeY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFLMWRmVeSWpSXmKPExsVy+t/xy7oTzfxCDN5sYLLYOGM9q8WkdQeY
 	LKY+fMJmcf3Lc1aL+UfOsVoc/V1g8fqFoUXvgqtsFmeb3rBbfLvSwWSx6fE1VovLu+awWcw4
 	v4/J4vZlXou1R+6yO/B7tDT3sHn8fX6dxePvqhfMHjtn3WX32LSqk81j85J6j74tqxg9Pm+S
-	C+CI4rJJSc3JLEst0rdL4Mr4t3Y2c8Ex8YrJrftZGhgniHQxcnJICJhILLu9iQ3CFpO4cG89
-	kM3FISSwlFFi6dnljBBOH5PE8rXv2UGq2ASMJTYvXwLWISKwn0ni8QQTkCJmgdVMEj+vnGIG
-	SQgL+ElsXnYCrIFFQFXi0Np7YHFeATeJxuP7mCDWyUmcPDaZFcTmFHCXeDOnjRHEFgKqWXbq
-	IfsERt4FjAyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MULC98sOxsXHrA4xCnAwKvHw7pjm
-	GyLEmlhWXJl7iFGCg1lJhNfxJ1CINyWxsiq1KD++qDQntfgQIxMHp1QDo/lxvXvuTleO7S2c
-	piEk+FrCQTDfS+GreoeQRwmv3cZzN+cLa92fYMR3KqPUS2X3+YdKUT/LRBz2PP9w9dbS6b6L
-	znszuXd1JOoErxIx65Hd0i6rssbI9Jd5qYjLW96/9iuz3vkZR7b57XCJqV1iMnfdr9scWhOE
-	/uyYEGYYU/NTd5uZlJOSEktxRqKhFnNRcSIAdsmfqj0CAAA=
+	C+CI4rJJSc3JLEst0rdL4Mq4fnQPc8Ec8YrXZ++yNjC2C3cxcnJICJhINO35ww5hi0lcuLee
+	rYuRi0NIYCmjxITmBlYIp49JYuWywywgVWwCxhKbly9hA7FFBPYzSTyeYAJSxCywmkni55VT
+	zCAJYYEYiaa+v2BjWQRUJbre/QVr4BVwk1i65T4jxDo5iZPHJrOC2JwC7hJv5rSBxYWAapad
+	esg+gZF3ASPDKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQ8P26g3HpMatDjAIcjEo8vBOK
+	fUOEWBPLiitzDzFKcDArifA6/gQK8aYkVlalFuXHF5XmpBYfYmTi4JRqYJzBy3vDTN5zivTW
+	2r71hZdc+K9wvD2+n33u5v+Wv2f/bw/It/7WnCJXKn7x0hPesqOiVybrsryQZXCz/+RQIrp0
+	taRXRIPaHEXHgk3LIiPrTWbL3Kjb6L2N/+nMCVf+yERk/m9ca+rq9ePBFp7yJMMF2Sd6ptx8
+	fVv59Ke8lVNtkvbXXSnY+EGJpTgj0VCLuag4EQD8xfvDPQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some LDOs of Maxim 77686 PMIC support disabling during system suspend
-(LDO{2,6,7,8,10,11,12,14,15,16}). This was already implemented as part
-of set_suspend_mode function. In that case the mode was one of:
- - disable,
- - normal mode,
- - low power mode.
-However there are no bindings for setting the mode during suspend.
+Add defines for regulator operating modes which should be more readable,
+especially if one does not have Maxim 77686 datasheet.
 
-Add suspend disable for LDO regulators supporting this. Re-use existing
-max77686_buck_set_suspend_disable() function. This helps reducing
-energy consumption during system sleep.
+The patch does not introduce any functional change.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Suggested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
 ---
- drivers/regulator/max77686.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/regulator/max77686.c | 31 ++++++++++++++++++++++++-------
+ 1 file changed, 24 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index 2ebc4257425b..c6bf6f79bd2a 100644
+index ef1af2debbd2..c625a8a7940d 100644
 --- a/drivers/regulator/max77686.c
 +++ b/drivers/regulator/max77686.c
-@@ -99,8 +99,8 @@ static unsigned int max77686_get_opmode_shift(int id)
- 	}
- }
+@@ -45,6 +45,23 @@
+ #define MAX77686_DVS_MINUV	600000
+ #define MAX77686_DVS_UVSTEP	12500
  
--/* Some BUCKS supports Normal[ON/OFF] mode during suspend */
--static int max77686_buck_set_suspend_disable(struct regulator_dev *rdev)
-+/* Some BUCKs and LDOs supports Normal[ON/OFF] mode during suspend */
-+static int max77686_set_suspend_disable(struct regulator_dev *rdev)
- {
- 	unsigned int val, shift;
- 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
-@@ -195,6 +195,9 @@ static int max77686_enable(struct regulator_dev *rdev)
- 
- 	shift = max77686_get_opmode_shift(id);
- 
-+	if (max77686->opmode[id] == MAX77686_OFF_PWRREQ)
-+		max77686->opmode[id] = MAX77686_NORMAL;
++/*
++ * Values used for configuring LDOs and bucks.
++ * Forcing low power mode: LDO1, 3-5, 9, 13, 17-26
++ */
++#define MAX77686_LDO_LOWPOWER		0x1
++/*
++ * On/off controlled by PWRREQ:
++ *  - LDO2, 6-8, 10-12, 14-16
++ *  - buck[1234]
++ */
++#define MAX77686_OFF_PWRREQ		0x1
++/* Low power mode controlled by PWRREQ: All LDOs */
++#define MAX77686_LDO_LOWPOWER_PWRREQ	0x2
++/* Forcing low power mode: buck[234] */
++#define MAX77686_BUCK_LOWPOWER		0x2
++#define MAX77686_NORMAL			0x3
 +
- 	return regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
- 				  rdev->desc->enable_mask,
- 				  max77686->opmode[id] << shift);
-@@ -247,6 +250,8 @@ static struct regulator_ops max77686_ldo_ops = {
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
- 	.set_suspend_mode	= max77686_ldo_set_suspend_mode,
-+	.set_suspend_disable	= max77686_set_suspend_disable,
-+	.set_suspend_enable	= max77686_enable,
- };
+ #define MAX77686_OPMODE_SHIFT	6
+ #define MAX77686_OPMODE_BUCK234_SHIFT	4
+ #define MAX77686_OPMODE_MASK	0x3
+@@ -76,9 +93,9 @@ static int max77686_buck_set_suspend_disable(struct regulator_dev *rdev)
+ 	int ret, id = rdev_get_id(rdev);
  
- static struct regulator_ops max77686_buck1_ops = {
-@@ -258,7 +263,8 @@ static struct regulator_ops max77686_buck1_ops = {
- 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
--	.set_suspend_disable	= max77686_buck_set_suspend_disable,
-+	.set_suspend_disable	= max77686_set_suspend_disable,
-+	.set_suspend_enable	= max77686_enable,
- };
+ 	if (id == MAX77686_BUCK1)
+-		val = 0x1;
++		val = MAX77686_OFF_PWRREQ;
+ 	else
+-		val = 0x1 << MAX77686_OPMODE_BUCK234_SHIFT;
++		val = MAX77686_OFF_PWRREQ << MAX77686_OPMODE_BUCK234_SHIFT;
  
- static struct regulator_ops max77686_buck_dvs_ops = {
-@@ -271,7 +277,8 @@ static struct regulator_ops max77686_buck_dvs_ops = {
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
- 	.set_ramp_delay		= max77686_set_ramp_delay,
--	.set_suspend_disable	= max77686_buck_set_suspend_disable,
-+	.set_suspend_disable	= max77686_set_suspend_disable,
-+	.set_suspend_enable	= max77686_enable,
- };
+ 	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+ 				 rdev->desc->enable_mask, val);
+@@ -103,10 +120,10 @@ static int max77686_set_suspend_mode(struct regulator_dev *rdev,
  
- #define regulator_desc_ldo(num)		{				\
+ 	switch (mode) {
+ 	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
+-		val = 0x2 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_LDO_LOWPOWER_PWRREQ << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
+-		val = 0x3 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_NORMAL << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	default:
+ 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
+@@ -133,13 +150,13 @@ static int max77686_ldo_set_suspend_mode(struct regulator_dev *rdev,
+ 
+ 	switch (mode) {
+ 	case REGULATOR_MODE_STANDBY:			/* switch off */
+-		val = 0x1 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_OFF_PWRREQ << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	case REGULATOR_MODE_IDLE:			/* ON in LP Mode */
+-		val = 0x2 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_LDO_LOWPOWER_PWRREQ << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	case REGULATOR_MODE_NORMAL:			/* ON in Normal Mode */
+-		val = 0x3 << MAX77686_OPMODE_SHIFT;
++		val = MAX77686_NORMAL << MAX77686_OPMODE_SHIFT;
+ 		break;
+ 	default:
+ 		pr_warn("%s: regulator_suspend_mode : 0x%x not supported\n",
 -- 
 1.9.1
 
