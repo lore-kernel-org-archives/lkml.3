@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaJ0Py7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:54:59 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:49133 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaJ0Py6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:54:58 -0400
-Date: Mon, 27 Oct 2014 15:54:45 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Mathieu Poirier <mathieu.poirier@linaro.org>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "stefano.stabellini@eu.citrix.com" <stefano.stabellini@eu.citrix.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: supplementing IO accessors with 64 bit capability
-Message-ID: <20141027155444.GW8768@arm.com>
-References: <1413993983-17310-1-git-send-email-mathieu.poirier@linaro.org>
- <20141022164454.GI15370@e104818-lin.cambridge.arm.com>
- <CANLsYkx08dw=YYBoRJ47QC+iL578HxPoMFcRDw6aKsvyqaqtkw@mail.gmail.com>
- <20141024092832.GD20534@e104818-lin.cambridge.arm.com>
- <CANLsYkz+UZv+vd9hbQOTNvsdyR7MyMrb0DxCOpMcgCr+1NQR5Q@mail.gmail.com>
- <20141024161634.GG20534@e104818-lin.cambridge.arm.com>
+	id S1752084AbaJ0PzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:55:24 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42732 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751495AbaJ0PzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:55:21 -0400
+Date: Mon, 27 Oct 2014 16:55:15 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        robh+dt@kernel.org, mark.rutland@arm.com, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        dianders@chromium.org
+Subject: Re: [PATCH v4 0/3] gpio-charger: add devicetree support
+Message-ID: <20141027155514.GA20765@earth.universe>
+References: <1411504936-21026-1-git-send-email-heiko@sntech.de>
+ <2175750.C5jxjiuVyT@diego>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
 Content-Disposition: inline
-In-Reply-To: <20141024161634.GG20534@e104818-lin.cambridge.arm.com>
+In-Reply-To: <2175750.C5jxjiuVyT@diego>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 05:16:34PM +0100, Catalin Marinas wrote:
-> On Fri, Oct 24, 2014 at 04:05:13PM +0100, Mathieu Poirier wrote:
-> > On 24 October 2014 03:28, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> > > On Wed, Oct 22, 2014 at 08:10:27PM +0100, Mathieu Poirier wrote:
-> > >> On 22 October 2014 18:44, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> > >> > On Wed, Oct 22, 2014 at 05:06:23PM +0100, mathieu.poirier@linaro.org wrote:
-> > >> >> +static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
-> > >> >> +{
-> > >> >> +     asm volatile("strd %1, %0"
-> > >> >> +                  : "+Qo" (*(volatile u64 __force *)addr)
-> > >> >> +                  : "r" (val));
-> > >> >> +}
-> > >> >> +
-> > >> >> +static inline u64 __raw_readq(const volatile void __iomem *addr)
-> > >> >> +{
-> > >> >> +     u64 val;
-> > >> >> +     asm volatile("ldrd %1, %0"
-> > >> >> +                  : "+Qo" (*(volatile u64 __force *)addr),
-> > >> >> +                    "=r" (val));
-> > >> >> +     return val;
-> > >> >> +}
-> > >> >> +#endif
-> > >> >
-> > >> > I'm curious why you need these. Do you have a device that needs a 64-bit
-> > >> > single access or you are trying to read two consecutive registers?
-> > >>
-> > >> The fundamental data size of Coresight STM32 for ARMv7 is
-> > >> implementation defined and can be 32 or 64bit.  As such stimulus ports
-> > >> can support transaction sizes of up to 64 bit.
-> > >
-> > > The STM programmer's model spec recommends something else (though I find
-> > > the "3.6 Data sizes" chapter a bit confusing):
-> > >
-> > >   To ensure that code is portable between processor micro-architectures
-> > >   and system implementations, ARM recommends that only the native data
-> > >   size of the machine is used, and smaller sizes. For the 32-bit ARMv7
-> > >   architecture, only 8, 16, and 32-bit transfers are recommended. For an
-> > >   ARMv8 processor that supports the AArch64 Execution state, it is
-> > >   recommended that the fundamental data size of 64-bits is implemented.
-> > >
-> > > Which means that you should not use readq/writeq on a 32-bit system.
-> > 
-> > Not quite.  ARM documentation IHI0054B (ARM System Trace Macrocell:
-> > Programmers' Model Architecture Specification) stipulate that "For
-> > systems with an ARMv7 processor, ARM recommends configuration 1 or
-> > configuration 2.", where configuration 2 has a fundamental size of 64
-> > bit.
-> 
-> As I said, it's confusing. Anyway, you can go ahead and add the
-> readq/writeq for ARMv6 and later, though it won't be guaranteed to have
-> a 64-bit access, it depends on the bus.
 
-I'm really not comfortable with this... we don't make any guarantees for
-32-bit CPUs that a double-word access will be single-copy atomic for MMIO.
-That means it could be subjected to things like reordering and merging,
-which I think means that it depends on both the bus *and* the endpoint as to
-whether or not this will work. Worse still, the endpoint could decide to
-return a SLVERR, which would appear as an external abort.
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is it not possible to use 32-bit MMIO accesses for this driver?
+Hi Heiko,
 
-Will
+On Sun, Oct 26, 2014 at 01:06:28PM +0100, Heiko St=FCbner wrote:
+> Am Dienstag, 23. September 2014, 22:42:13 schrieb Heiko Stuebner:
+> > This series adds devicetree support to the gpio-charger and fixes a sma=
+ll
+> > issue with the return value of gpio_get_value.
+> >=20
+> > [...]
+> >
+> > Heiko Stuebner (3):
+> >   dt-bindings: document gpio-charger bindings
+> >   power: gpio-charger: add device tree support
+> >   power: gpio-charger: do not use gpio value directly
+>=20
+> I can see patch3 in your tree (and 3.18-rc). Will you take patches 1 and =
+2 for=20
+> 3.19?
+
+Yes.
+
+> The generally used 3 week period for devicetree-binding related complaint=
+s=20
+> also should be over by now.
+
+Right.
+
+-- Sebastian
+
+--azLHFNyN32YCQGCU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUTmriAAoJENju1/PIO/qalcsP/A7hQoH9M68yinExk6meFThE
+cYWypG2aFlwYGK0K0gwOWu2PJZLQ6W8oMjxDcAp0fj3CzpR9ZRzipbEkcUPEH/1m
+/Ap4o3MapJA/CiIicxoF1BKbmPuGCaoNWctbbfZwz7wBYpW3XsHil+9Z3LpU97oh
+iOyH1FDYy1AxS/8k1kjXskXVznjiSFLBsyPTYnTTjywMIApUCb48W5bz/QH/JF/W
+eyhaA1QQQLQrocOnFuN7xfd0QBJcVPNT0ehzgOnlh8wv+Ulr/ISMNcT0HIlm23mD
+uHVuHHomkIzt5exHDfCaKPOd2X4mJdKOxomohRLP8dSPltOjaKlwf3i31EHZ0xoz
+c+s2Jm475179UWMLAJhVNTbZjZtpjgy4FSN5glxly/9ZHWqu53ED+bd8W6lMQlxl
+flowrQT74CDrW8Kc+Uv7Ptb7Pey2fb6g+oRiQ2XBz4OT/aiYM8wSQ9jTj/UBDPRF
++K9MXKV2BCxHbMen1w5650l+y9n/23zH4tq9OV6o4MQNRjflYBsxfnL/xX9UNdt5
+/rvdvQZFaK2R8//O41UpX9++/CuwTbKXp0CTOHqGOGiHjNiOBpeqXbjnypvZZuG2
+vDRaEDB1PKvqOAHS4rQXv3eWPb2yN/esa/JS+FfRDPp8svs2IPcKArzTHyCxnqDi
+5DTVI9jZzLk8vlqVDxEt
+=uBSt
+-----END PGP SIGNATURE-----
+
+--azLHFNyN32YCQGCU--
