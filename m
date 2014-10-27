@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338AbaJ0TDE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:03:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52655 "EHLO
+	id S1753376AbaJ0TDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:03:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52681 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300AbaJ0TC7 (ORCPT
+	with ESMTP id S1753334AbaJ0TDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:02:59 -0400
+	Mon, 27 Oct 2014 15:03:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Amit Shah <amit.shah@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 098/105] virtio_pci: fix virtio spec compliance on restore
-Date: Mon, 27 Oct 2014 11:57:13 -0700
-Message-Id: <1414436240-13879-99-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 035/105] Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
+Date: Mon, 27 Oct 2014 11:56:10 -0700
+Message-Id: <1414436240-13879-36-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,90 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 6fbc198cf623944ab60a1db6d306a4d55cdd820d upstream.
+commit 72c6b71c245dac8f371167d97ef471b367d0b66b upstream.
 
-On restore, virtio pci does the following:
-+ set features
-+ init vqs etc - device can be used at this point!
-+ set ACKNOWLEDGE,DRIVER and DRIVER_OK status bits
+Eliminate the call to BUG_ON() by waiting for the host to respond. We are
+trying to reclaim the ownership of memory that was given to the host and so
+we will have to wait until the host responds.
 
-This is in violation of the virtio spec, which
-requires the following order:
-- ACKNOWLEDGE
-- DRIVER
-- init vqs
-- DRIVER_OK
-
-This behaviour will break with hypervisors that assume spec compliant
-behaviour.  It seems like a good idea to have this patch applied to
-stable branches to reduce the support butden for the hypervisors.
-
-Cc: Amit Shah <amit.shah@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/virtio/virtio_pci.c | 33 ++++++++++++++++++++++++++++++---
- 1 file changed, 30 insertions(+), 3 deletions(-)
+ drivers/hv/channel.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-index a37c699..a516842 100644
---- a/drivers/virtio/virtio_pci.c
-+++ b/drivers/virtio/virtio_pci.c
-@@ -793,6 +793,7 @@ static int virtio_pci_restore(struct device *dev)
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
- 	struct virtio_pci_device *vp_dev = pci_get_drvdata(pci_dev);
- 	struct virtio_driver *drv;
-+	unsigned status = 0;
- 	int ret;
+diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+index d2d9cd6..6c28f48 100644
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -360,7 +360,6 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
+ 	u32 next_gpadl_handle;
+ 	unsigned long flags;
+ 	int ret = 0;
+-	int t;
  
- 	drv = container_of(vp_dev->vdev.dev.driver,
-@@ -803,14 +804,40 @@ static int virtio_pci_restore(struct device *dev)
- 		return ret;
+ 	next_gpadl_handle = atomic_read(&vmbus_connection.next_gpadl_handle);
+ 	atomic_inc(&vmbus_connection.next_gpadl_handle);
+@@ -407,9 +406,7 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
  
- 	pci_set_master(pci_dev);
-+	/* We always start by resetting the device, in case a previous
-+	 * driver messed it up. */
-+	vp_reset(&vp_dev->vdev);
-+
-+	/* Acknowledge that we've seen the device. */
-+	status |= VIRTIO_CONFIG_S_ACKNOWLEDGE;
-+	vp_set_status(&vp_dev->vdev, status);
-+
-+	/* Maybe driver failed before freeze.
-+	 * Restore the failed status, for debugging. */
-+	status |= vp_dev->saved_status & VIRTIO_CONFIG_S_FAILED;
-+	vp_set_status(&vp_dev->vdev, status);
-+
-+	if (!drv)
-+		return 0;
-+
-+	/* We have a driver! */
-+	status |= VIRTIO_CONFIG_S_DRIVER;
-+	vp_set_status(&vp_dev->vdev, status);
-+
- 	vp_finalize_features(&vp_dev->vdev);
+ 		}
+ 	}
+-	t = wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
+-	BUG_ON(t == 0);
+-
++	wait_for_completion(&msginfo->waitevent);
  
--	if (drv && drv->restore)
-+	if (drv->restore) {
- 		ret = drv->restore(&vp_dev->vdev);
-+		if (ret) {
-+			status |= VIRTIO_CONFIG_S_FAILED;
-+			vp_set_status(&vp_dev->vdev, status);
-+			return ret;
-+		}
-+	}
- 
- 	/* Finally, tell the device we're all set */
--	if (!ret)
--		vp_set_status(&vp_dev->vdev, vp_dev->saved_status);
-+	status |= VIRTIO_CONFIG_S_DRIVER_OK;
-+	vp_set_status(&vp_dev->vdev, status);
- 
- 	return ret;
- }
+ 	/* At this point, we received the gpadl created msg */
+ 	*gpadl_handle = gpadlmsg->gpadl;
 -- 
 1.9.1
 
