@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986AbaJ0XKK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 19:10:10 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:55617 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752833AbaJ0XKC (ORCPT
+	id S1753074AbaJ0XKs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 19:10:48 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51760 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462AbaJ0XKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 19:10:02 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Sebastian Reichel <sre@kernel.org>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH v2 6/8] ARM: at91: sam9: remove useless resource for rstc
-Date: Tue, 28 Oct 2014 00:09:35 +0100
-Message-Id: <1414451377-11053-7-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 27 Oct 2014 19:10:45 -0400
+Date: Mon, 27 Oct 2014 19:10:43 -0400 (EDT)
+Message-Id: <20141027.191043.246099210901442100.davem@davemloft.net>
+To: ast@plumgrid.com
+Cc: geert@linux-m68k.org, josh@joshtriplett.org, mingo@kernel.org,
+        rostedt@goodmis.org, hannes@stressinduktion.org, edumazet@google.com,
+        dborkman@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net] bpf: split eBPF out of NET
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
+References: <1414114868-28228-1-git-send-email-ast@plumgrid.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 27 Oct 2014 16:10:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RAMC resources are now unnecessary in the reset driver, remove them.
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Thu, 23 Oct 2014 18:41:08 -0700
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/at91sam9260.c | 5 -----
- arch/arm/mach-at91/at91sam9261.c | 5 -----
- arch/arm/mach-at91/at91sam9263.c | 5 -----
- 3 files changed, 15 deletions(-)
+> introduce two configs:
+> - hidden CONFIG_BPF to select eBPF interpreter that classic socket filters
+>   depend on
+> - visible CONFIG_BPF_SYSCALL (default off) that tracing and sockets can use
+> 
+> that solves several problems:
+> - tracing and others that wish to use eBPF don't need to depend on NET.
+>   They can use BPF_SYSCALL to allow loading from userspace or select BPF
+>   to use it directly from kernel in NET-less configs.
+> - in 3.18 programs cannot be attached to events yet, so don't force it on
+> - when the rest of eBPF infra is there in 3.19+, it's still useful to
+>   switch it off to minimize kernel size
+> 
+> Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+> ---
+> 
+> bloat-o-meter on x64 shows:
+> add/remove: 0/60 grow/shrink: 0/2 up/down: 0/-15601 (-15601)
+> 
+> tested with many different config combinations. Hopefully didn't miss anything.
 
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index d5a6df9ce570..d1c97e025483 100644
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -365,11 +365,6 @@ static struct resource rstc_resources[] = {
- 		.end    = AT91SAM9260_BASE_RSTC + SZ_16 - 1,
- 		.flags  = IORESOURCE_MEM,
- 	},
--	[1] = {
--		.start  = AT91SAM9260_BASE_SDRAMC,
--		.end    = AT91SAM9260_BASE_SDRAMC + SZ_512 - 1,
--		.flags  = IORESOURCE_MEM,
--	},
- };
- 
- static struct platform_device rstc_device = {
-diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-index 1b23a023cca6..7a354d5a3d4c 100644
---- a/arch/arm/mach-at91/at91sam9261.c
-+++ b/arch/arm/mach-at91/at91sam9261.c
-@@ -324,11 +324,6 @@ static struct resource rstc_resources[] = {
- 		.end    = AT91SAM9261_BASE_RSTC + SZ_16 - 1,
- 		.flags  = IORESOURCE_MEM,
- 	},
--	[1] = {
--		.start  = AT91SAM9261_BASE_SDRAMC,
--		.end    = AT91SAM9261_BASE_SDRAMC + SZ_512 - 1,
--		.flags  = IORESOURCE_MEM,
--	},
- };
- 
- static struct platform_device rstc_device = {
-diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-index 55c0c212fde1..1f7e7021ae83 100644
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ b/arch/arm/mach-at91/at91sam9263.c
-@@ -347,11 +347,6 @@ static struct resource rstc_resources[] = {
- 		.end    = AT91SAM9263_BASE_RSTC + SZ_16 - 1,
- 		.flags  = IORESOURCE_MEM,
- 	},
--	[1] = {
--		.start  = AT91SAM9263_BASE_SDRAMC0,
--		.end    = AT91SAM9263_BASE_SDRAMC0 + SZ_512 - 1,
--		.flags  = IORESOURCE_MEM,
--	},
- };
- 
- static struct platform_device rstc_device = {
--- 
-1.9.1
+Applied with two changes:
 
+1) boolean --> bool
+2) Moved bloat-o-meter and testing information into commit message.
+
+Thanks.
