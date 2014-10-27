@@ -1,195 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaJ0Gie (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 02:38:34 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:7227 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751141AbaJ0Gic convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 02:38:32 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Will Deacon'" <Will.Deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>
-Date: Mon, 27 Oct 2014 14:37:28 +0800
-Subject: [RFC V2] arm/arm64:add CONFIG_HAVE_ARCH_BITREVERSE to support rbit
-  instruction
-Thread-Topic: [RFC V2] arm/arm64:add CONFIG_HAVE_ARCH_BITREVERSE to support
- rbit  instruction
-Thread-Index: Ac/vSNa3pqIFIz3+QkO0bxiJmBEKOgCZ3qpA
-Message-ID: <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751858AbaJ0GlE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 02:41:04 -0400
+Received: from ozlabs.org ([103.22.144.67]:45884 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751149AbaJ0GlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 02:41:02 -0400
+In-Reply-To: <1414383875-20835-1-git-send-email-imunsie@au.ibm.com>
+To: Ian Munsie <imunsie@au1.ibm.com>, mpe <mpe@ellerman.id.au>
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>, mikey <mikey@neuling.org>,
+        arnd <arnd@arndb.de>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        greg <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>, anton <anton@samba.org>,
+        imunsie <imunsie@au1.ibm.com>, jk <jk@ozlabs.org>
+Subject: Re: CXL: Fix PSL error due to duplicate segment table entries
+Message-Id: <20141027064100.D12B514007D@ozlabs.org>
+Date: Mon, 27 Oct 2014 17:41:00 +1100 (AEDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this change add CONFIG_HAVE_ARCH_BITREVERSE config option,
-so that we can use arm/arm64 rbit instruction to do bitrev operation
-by hardware.
+On Mon, 2014-27-10 at 04:24:35 UTC, Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
+> 
+> In certain circumstances the PSL can send an interrupt for a segment
 
-Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
----
- arch/arm/Kconfig                |  1 +
- arch/arm/include/asm/bitrev.h   | 21 +++++++++++++++++++++
- arch/arm64/Kconfig              |  1 +
- arch/arm64/include/asm/bitrev.h | 21 +++++++++++++++++++++
- include/linux/bitrev.h          |  9 +++++++++
- lib/Kconfig                     |  9 +++++++++
- lib/bitrev.c                    |  2 ++
- 7 files changed, 64 insertions(+)
- create mode 100644 arch/arm/include/asm/bitrev.h
- create mode 100644 arch/arm64/include/asm/bitrev.h
+Define PSL before using it please.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 89c4b5c..426cbcc 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -16,6 +16,7 @@ config ARM
- 	select DCACHE_WORD_ACCESS if HAVE_EFFICIENT_UNALIGNED_ACCESS
- 	select GENERIC_ALLOCATOR
- 	select GENERIC_ATOMIC64 if (CPU_V7M || CPU_V6 || !CPU_32v6K || !AEABI)
-+	select HAVE_ARCH_BITREVERSE if (CPU_V7M || CPU_V7)
- 	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
- 	select GENERIC_IDLE_POLL_SETUP
- 	select GENERIC_IRQ_PROBE
-diff --git a/arch/arm/include/asm/bitrev.h b/arch/arm/include/asm/bitrev.h
-new file mode 100644
-index 0000000..0df5866
---- /dev/null
-+++ b/arch/arm/include/asm/bitrev.h
-@@ -0,0 +1,21 @@
-+#ifndef __ASM_ARM_BITREV_H
-+#define __ASM_ARM_BITREV_H
-+
-+static inline __attribute_const__ u32 __arch_bitrev32(u32 x)
-+{
-+	__asm__ ("rbit %0, %1" : "=r" (x) : "r" (x));
-+	return x;
-+}
-+
-+static inline __attribute_const__ u16 __arch_bitrev16(u16 x)
-+{
-+	return __arch_bitrev32((u32)x) >> 16;
-+}
-+
-+static inline __attribute_const__ u8 __arch_bitrev8(u8 x)
-+{
-+	return __arch_bitrev32((u32)x) >> 24;
-+}
-+
-+#endif
-+
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 9532f8d..263c28c 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -36,6 +36,7 @@ config ARM64
- 	select HARDIRQS_SW_RESEND
- 	select HAVE_ARCH_AUDITSYSCALL
- 	select HAVE_ARCH_JUMP_LABEL
-+	select HAVE_ARCH_BITREVERSE
- 	select HAVE_ARCH_KGDB
- 	select HAVE_ARCH_TRACEHOOK
- 	select HAVE_BPF_JIT
-diff --git a/arch/arm64/include/asm/bitrev.h b/arch/arm64/include/asm/bitrev.h
-new file mode 100644
-index 0000000..5d24c11
---- /dev/null
-+++ b/arch/arm64/include/asm/bitrev.h
-@@ -0,0 +1,21 @@
-+#ifndef __ASM_ARM_BITREV_H
-+#define __ASM_ARM_BITREV_H
-+
-+static inline __attribute_const__ u32 __arch_bitrev32(u32 x)
-+{
-+	__asm__ ("rbit %w0, %w1" : "=r" (x) : "r" (x));
-+	return x;
-+}
-+
-+static inline __attribute_const__ u16 __arch_bitrev16(u16 x)
-+{
-+	return __arch_bitrev32((u32)x) >> 16;
-+}
-+
-+static inline __attribute_const__ u8 __arch_bitrev8(u8 x)
-+{
-+	return __arch_bitrev32((u32)x) >> 24;
-+}
-+
-+#endif
-+
-diff --git a/include/linux/bitrev.h b/include/linux/bitrev.h
-index 7ffe03f..ef5b2bb 100644
---- a/include/linux/bitrev.h
-+++ b/include/linux/bitrev.h
-@@ -3,6 +3,14 @@
- 
- #include <linux/types.h>
- 
-+#ifdef CONFIG_HAVE_ARCH_BITREVERSE
-+#include <asm/bitrev.h>
-+
-+#define bitrev32 __arch_bitrev32
-+#define bitrev16 __arch_bitrev16
-+#define bitrev8 __arch_bitrev8
-+
-+#else
- extern u8 const byte_rev_table[256];
- 
- static inline u8 bitrev8(u8 byte)
-@@ -13,4 +21,5 @@ static inline u8 bitrev8(u8 byte)
- extern u16 bitrev16(u16 in);
- extern u32 bitrev32(u32 in);
- 
-+#endif /* CONFIG_HAVE_ARCH_BITREVERSE */
- #endif /* _LINUX_BITREV_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 54cf309..cd177ca 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -13,6 +13,15 @@ config RAID6_PQ
- config BITREVERSE
- 	tristate
- 
-+config HAVE_ARCH_BITREVERSE
-+	boolean
-+	default n
-+	depends on BITREVERSE
-+	help
-+	  This option provides an config for the architecture which have instruction
-+	  can do bitreverse operation, we use the hardware instruction if the architecture
-+	  have this capability.
-+
- config RATIONAL
- 	boolean
- 
-diff --git a/lib/bitrev.c b/lib/bitrev.c
-index 3956203..93d637a 100644
---- a/lib/bitrev.c
-+++ b/lib/bitrev.c
-@@ -1,3 +1,4 @@
-+#ifndef CONFIG_HAVE_ARCH_BITREVERSE
- #include <linux/types.h>
- #include <linux/module.h>
- #include <linux/bitrev.h>
-@@ -57,3 +58,4 @@ u32 bitrev32(u32 x)
- 	return (bitrev16(x & 0xffff) << 16) | bitrev16(x >> 16);
- }
- EXPORT_SYMBOL(bitrev32);
-+#endif /* CONFIG_HAVE_ARCH_BITREVERSE */
--- 
-2.1.1
+> miss that the kernel has already handled. This can happen if multiple
+> translations for the same segment are queued in the PSL before the
+> kernel has restarted the first translation.
+> 
+> The CXL driver did not expect this situation and did not check if a
 
+does not and does not, you haven't patched it yet.
+
+> segment had already been handled. This could cause a duplicate segment
+> table entry which in turn caused a PSL error taking down the card.
+> 
+> This patch fixes the issue by checking for existing entries in the
+> segment table that match the segment it is trying to insert to avoid
+> inserting duplicate entries.
+> 
+> Some of the code has been refactored to simplify it - the segment table
+> hash has been moved from cxl_load_segment to find_free_sste where it is
+
+Any reason that's not a separate patch?
+
+> used and we have disabled the secondary hash in the segment table to
+> reduce the number of entries that need to be tested from 16 to 8. Due to
+> the large segment sizes we use it is extremely unlikely that the
+> secondary hash would ever have been used in practice, so this should not
+> have any negative impacts and may even improve performance.
+
+Any reason that's not a separate patch?
+
+> copro_calculate_slb will now mask the ESID by the correct mask for 1T vs
+
+Didn't, but will after this patch?
+
+> 256M segments. This has no effect by itself as the extra bits were
+> ignored, but it makes debugging the segment table entries easier and
+> means that we can directly compare the ESID values for duplicates
+> without needing to worry about masking in the comparison.
+
+Separate patch?
+
+cheers
