@@ -1,88 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbaJ0PzY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:55:24 -0400
-Received: from mail.kernel.org ([198.145.19.201]:42732 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495AbaJ0PzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:55:21 -0400
-Date: Mon, 27 Oct 2014 16:55:15 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: dbaryshkov@gmail.com, dwmw2@infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        robh+dt@kernel.org, mark.rutland@arm.com, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        dianders@chromium.org
-Subject: Re: [PATCH v4 0/3] gpio-charger: add devicetree support
-Message-ID: <20141027155514.GA20765@earth.universe>
-References: <1411504936-21026-1-git-send-email-heiko@sntech.de>
- <2175750.C5jxjiuVyT@diego>
+	id S1752128AbaJ0Pzd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:55:33 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:49891 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaJ0Pz1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:55:27 -0400
+Date: Mon, 27 Oct 2014 16:55:11 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
+        Morten.Rasmussen@arm.com, kamalesh@linux.vnet.ibm.com, riel@redhat.com,
+        efault@gmx.de, nicolas.pitre@linaro.org,
+        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
+        dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
+        vincent.guittot@linaro.org, patches@linaro.org,
+        tuukka.tikkanen@linaro.org, amit.kucheria@linaro.org
+Subject: Re: [PATCH RFC 6/7] sched: cfs: cpu frequency scaling based on task
+ placement
+Message-ID: <20141027155511.GN3219@twins.programming.kicks-ass.net>
+References: <1413958051-7103-1-git-send-email-mturquette@linaro.org>
+ <1413958051-7103-7-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <2175750.C5jxjiuVyT@diego>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1413958051-7103-7-git-send-email-mturquette@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 21, 2014 at 11:07:30PM -0700, Mike Turquette wrote:
+> {en,de}queue_task_fair are updated to track which cpus will have changed
+> utilization values as function of task queueing. The affected cpus are
+> passed on to arch_eval_cpu_freq for further machine-specific processing
+> based on a selectable policy.
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yeah, I'm not sure about the arch eval hook, ideally it'd be all
+integrated with the energy model.
 
-Hi Heiko,
+> arch_scale_cpu_freq is called from run_rebalance_domains as a way to
+> kick off the scaling process (via wake_up_process), so as to prevent
+> re-entering the {en,de}queue code.
 
-On Sun, Oct 26, 2014 at 01:06:28PM +0100, Heiko St=FCbner wrote:
-> Am Dienstag, 23. September 2014, 22:42:13 schrieb Heiko Stuebner:
-> > This series adds devicetree support to the gpio-charger and fixes a sma=
-ll
-> > issue with the return value of gpio_get_value.
-> >=20
-> > [...]
-> >
-> > Heiko Stuebner (3):
-> >   dt-bindings: document gpio-charger bindings
-> >   power: gpio-charger: add device tree support
-> >   power: gpio-charger: do not use gpio value directly
->=20
-> I can see patch3 in your tree (and 3.18-rc). Will you take patches 1 and =
-2 for=20
-> 3.19?
+We might want a better name for that :-) dvfs_set_freq() or whatnot, or
+maybe preserve the cpufreq_*() namespace, people seen to know that that
+is the linux dvfs name.
 
-Yes.
+> All of the call sites in this patch are up for discussion. Does it make
+> sense to track which cpus have updated statistics in enqueue_fair_task?
 
-> The generally used 3 week period for devicetree-binding related complaint=
-s=20
-> also should be over by now.
+Like I said, I don't think so, we guestimate and approximate everything
+anyhow, don't bother trying to be 'perfect' here, its excessively
+expensive.
 
-Right.
+> I chose this because I wanted to gather statistics for all cpus affected
+> in the event CONFIG_FAIR_GROUP_SCHED is enabled. As agreed at LPC14 the
+> next version of this patch will focus on the simpler case of not using
+> scheduler cgroups, which should remove a good chunk of this code,
+> including the cpumask stuff.
 
--- Sebastian
+Yes please, make the cpumask stuff go away :-)
 
---azLHFNyN32YCQGCU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> Also discussed at LPC14 is that fact that load_balance is a very
+> interesting place to do this as frequency can be considered in concert
+> with task placement. Please put forth any ideas on a sensible way to do
+> this.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Ideally it'd be natural fallout of Morten's energy model.
 
-iQIcBAEBCgAGBQJUTmriAAoJENju1/PIO/qalcsP/A7hQoH9M68yinExk6meFThE
-cYWypG2aFlwYGK0K0gwOWu2PJZLQ6W8oMjxDcAp0fj3CzpR9ZRzipbEkcUPEH/1m
-/Ap4o3MapJA/CiIicxoF1BKbmPuGCaoNWctbbfZwz7wBYpW3XsHil+9Z3LpU97oh
-iOyH1FDYy1AxS/8k1kjXskXVznjiSFLBsyPTYnTTjywMIApUCb48W5bz/QH/JF/W
-eyhaA1QQQLQrocOnFuN7xfd0QBJcVPNT0ehzgOnlh8wv+Ulr/ISMNcT0HIlm23mD
-uHVuHHomkIzt5exHDfCaKPOd2X4mJdKOxomohRLP8dSPltOjaKlwf3i31EHZ0xoz
-c+s2Jm475179UWMLAJhVNTbZjZtpjgy4FSN5glxly/9ZHWqu53ED+bd8W6lMQlxl
-flowrQT74CDrW8Kc+Uv7Ptb7Pey2fb6g+oRiQ2XBz4OT/aiYM8wSQ9jTj/UBDPRF
-+K9MXKV2BCxHbMen1w5650l+y9n/23zH4tq9OV6o4MQNRjflYBsxfnL/xX9UNdt5
-/rvdvQZFaK2R8//O41UpX9++/CuwTbKXp0CTOHqGOGiHjNiOBpeqXbjnypvZZuG2
-vDRaEDB1PKvqOAHS4rQXv3eWPb2yN/esa/JS+FfRDPp8svs2IPcKArzTHyCxnqDi
-5DTVI9jZzLk8vlqVDxEt
-=uBSt
------END PGP SIGNATURE-----
+If you take a multi-core energy model, find its bifurcations and map its
+solution spaces I suspect there to be a fairly small set of actual
+behaviours.
 
---azLHFNyN32YCQGCU--
+The problem is, nobody seems to have done this yet so we don't know.
+
+Once you've done this, you can try and minimize the model by proving you
+retain all behaviour modes, but for now Morten has a rather full
+parameter space (not complete though, and the impact of the missing
+parameters might or might not be relevant, impossible to prove until we
+have the above done).
+
+> Is run_rebalance_domains a logical place to change cpu frequency? What
+> other call sites make sense?
+
+For the legacy systems, maybe.
+
+> Even for platforms that can target a cpu frequency without sleeping
+> (x86, some ARM platforms with PM microcontrollers) it is currently
+> necessary to always kick the frequency target work out into a kthread.
+> This is because of the rw_sem usage in the cpufreq core which might
+> sleep. Replacing that lock type is probably a good idea.
+
+I think it would be best to start with this, ideally we'd be able to RCU
+free the thing such that either holding the rwsem or rcu_read_lock is
+sufficient for usage, that way the sleeping muck can grab the rwsem, the
+non-sleeping stuff can grab rcu_read_lock.
+
+But I've not looked at the cpufreq stuff at all.
