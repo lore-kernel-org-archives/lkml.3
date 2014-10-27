@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaJ0Jhe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 05:37:34 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46237 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131AbaJ0Jhc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752143AbaJ0Jhc (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 27 Oct 2014 05:37:32 -0400
-Message-ID: <1414402583.16795.3.camel@debian>
-Subject: Re: [PATCH 0/2] RAS: add the support for handling UCNA/DEFERRED
- error
-From: Chen Yucong <slaoub@gmail.com>
-To: bp@alien8.de
-Cc: tony.luck@intel.com, ak@linux.intel.com, aravind.gopalakrishnan@amd.com,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 27 Oct 2014 17:36:23 +0800
-In-Reply-To: <1414371382-15491-1-git-send-email-slaoub@gmail.com>
-References: <1414371382-15491-1-git-send-email-slaoub@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Received: from mail-la0-f48.google.com ([209.85.215.48]:59029 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180AbaJ0Jhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 05:37:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
+References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Mon, 27 Oct 2014 09:37:09 +0000
+Message-ID: <CAFEAcA9o8ZsbUvZb7Yp9JeO__bRLOrYcyfj4Ug4Se_rDF0y4TA@mail.gmail.com>
+Subject: Re: [Qemu-devel] [RFC PATCH 0/2] virtio-mmio: add irqfd support for
+ vhost-net based on virtio-mmio
+To: "john.liuli" <john.liuli@huawei.com>
+Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joel Schopp <joel.schopp@amd.com>,
+        Yingshiuan Pan <yingshiuan.pan@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, remy.gauguey@cea.fr,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        QEMU Developers <qemu-devel@nongnu.org>,
+        Nikolay Nikolaev <n.nikolaev@virtualopensystems.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        peter.huangpeng@huawei.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 08:56 +0800, Chen Yucong wrote:
+On 25 October 2014 09:24, john.liuli <john.liuli@huawei.com> wrote:
+> To get the interrupt reason to support such VIRTIO_NET_F_STATUS
+> features I add a new register offset VIRTIO_MMIO_ISRMEM which
+> will help to establish a shared memory region between qemu and
+> virtio-mmio device. Then the interrupt reason can be accessed by
+> guest driver through this region. At the same time, the virtio-mmio
+> dirver check this region to see irqfd is supported or not during
+> the irq handler registration, and different handler will be assigned.
 
-Hi all,
+If you want to add a new register you should probably propose
+an update to the virtio spec. However, it seems to me it would
+be better to get generic PCI/PCIe working on the ARM virt
+board instead; then we can let virtio-mmio quietly fade away.
+This has been on the todo list for ages (and there have been
+RFC patches posted for plain PCI), it's just nobody's had time
+to work on it.
 
-At the suggestion of Boris, the first patch extends the mce_severity
-mechanism for handling UCNA/DEFERRED error.
-  Link: https://lkml.org/lkml/2014/10/23/190
-
-And on the basis of the first patch, the second patch adds the support
-for identifying and handling UCNA/DEFERRED error in machine_check_poll.
- 
-[PATCH 1/2] x86, mce, severity: extend the the mce_severity
-[PATCH 2/2] x86, mce: support memory error recovery for both UCNA
-
-thx!
-cyc
-
+thanks
+-- PMM
