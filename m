@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbaJ0CUJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 22:20:09 -0400
-Received: from ozlabs.org ([103.22.144.67]:53614 "EHLO ozlabs.org"
+	id S1752264AbaJ0CUd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:20:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24943 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923AbaJ0CUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 22:20:07 -0400
-Date: Mon, 27 Oct 2014 13:19:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Gustavo Padovan <gustavo@padovan.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: linux-next: build failure after merge of the bluetooth tree
-Message-ID: <20141027131956.68b62e5e@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751923AbaJ0CUb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 22:20:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,792,1406617200"; 
+   d="scan'208";a="611820582"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        "Hansen, Dave" <dave.hansen@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Subject: RE: [PATCH v9 10/12] x86, mpx: add prctl commands
+ PR_MPX_ENABLE_MANAGEMENT, PR_MPX_DISABLE_MANAGEMENT
+Thread-Topic: [PATCH v9 10/12] x86, mpx: add prctl commands
+ PR_MPX_ENABLE_MANAGEMENT, PR_MPX_DISABLE_MANAGEMENT
+Thread-Index: AQHP5dg89KIANMH5bE2fxw5ikPyI75w+wDaAgASLc3A=
+Date: Mon, 27 Oct 2014 02:17:58 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE0180ED65@shsmsx102.ccr.corp.intel.com>
+References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com>
+ <1413088915-13428-11-git-send-email-qiaowei.ren@intel.com>
+ <alpine.DEB.2.11.1410241436560.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410241436560.5308@nanos>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/CJQ8pJL_ynmO042=+mnD8Gq"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/CJQ8pJL_ynmO042=+mnD8Gq
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Gustavo,
 
-After merging the bluetooth tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+On 2014-10-24, Thomas Gleixner wrote:
+> On Sun, 12 Oct 2014, Qiaowei Ren wrote:
+>> +int mpx_enable_management(struct task_struct *tsk) {
+>> +	struct mm_struct *mm = tsk->mm;
+>> +	void __user *bd_base = MPX_INVALID_BOUNDS_DIR;
+> 
+> What's the point of initializing bd_base here. I had to look twice to
+> figure out that it gets overwritten by task_get_bounds_dir()
+> 
 
-net/bluetooth/smp.o: In function `test_smp':
-smp.c:(.init.text+0x0): multiple definition of `init_module'
-net/bluetooth/af_bluetooth.o:af_bluetooth.c:(.init.text+0x0): first defined=
- here
+I just want to put task_get_bounds_dir() outside mm->mmap_sem holding.
 
-Probably caused by commit 4cd3362da899 ("Bluetooth: Add skeleton for
-SMP self-tests").
+>> @@ -285,6 +285,7 @@ dotraplinkage void do_bounds(struct pt_regs
+>> *regs,
+> long error_code)
+>>  	struct xsave_struct *xsave_buf;
+>>  	struct task_struct *tsk = current;
+>>  	siginfo_t info;
+>> +	int ret = 0;
+>> 
+>>  	prev_state = exception_enter();
+>>  	if (notify_die(DIE_TRAP, "bounds", regs, error_code, @@ -312,8
+>> +313,35 @@ dotraplinkage void do_bounds(struct pt_regs *regs, long
+> error_code)
+>>  	 */
+>>  	switch (status & MPX_BNDSTA_ERROR_CODE) {
+>>  	case 2: /* Bound directory has invalid entry. */
+>> -		if (do_mpx_bt_fault(xsave_buf))
+>> +		down_write(&current->mm->mmap_sem);
+> 
+> The handling of mm->mmap_sem here is horrible. The only reason why you
+> want to hold mmap_sem write locked in the first place is that you want
+> to cover the allocation and the mm->bd_addr check.
+> 
+> I think it's wrong to tie this to mmap_sem in the first place. If MPX
+> is enabled then you should have mm->bd_addr and an explicit mutex to protect it.
+> 
+> So the logic would look like this:
+> 
+>    mutex_lock(&mm->bd_mutex);
+>    if (!kernel_managed(mm))
+>       do_trap(); else if (do_mpx_bt_fault()) force_sig();
+>    mutex_unlock(&mm->bd_mutex);
+> No tricks with mmap_sem, no special return value handling. Straight
+> forward code instead of a convoluted and error prone mess.
+> 
+> Hmm?
+> 
+I guess this is a good solution. If so, new field 'bd_sem' have to be added into struct mm_struct.
 
-I have used the bluetooth tree from next-20141023 for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/CJQ8pJL_ynmO042=+mnD8Gq
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUTavTAAoJEMDTa8Ir7ZwVP94P/jLxrX8EA4jElruTe2d/0IIK
-H6Zjk2agXSY3Np3V4RUXyqUZBzUsGqj0+eUBauJ47EY3cXPlJ27AEeFImQm65MWv
-yQjrmRrh3IogUMGMANsKug4yqGiq+h3ZzVRVvqtzaOMr8S3cMYBY356MEDUx2mjc
-6L7kS6n7h3xb6SIDczjwCZCMPv3t8loVf2O8LTbMQ8L0VwJZB0NnukzPFOsQhwP9
-JLccevMlImomLTEODQDidUUR13ZfEmNCf2tCuC2F+L6gJ91b1rV9JYa6R6z1eCEA
-YFm/nv3huWh8vOwVCcstrFpYJBcWUgmaMttaZH/wJ9PMR2n8TpLFLGqSTFj+If6c
-7C3b/A3o42GouQeQStcAn+vaWSynz0uKhV3+rQldFeOLXmAIMyUsXH9J50P4PAa0
-scZaHiX6qCz4xSQ5lPFM0cx0vl+sSUYGh5v0oMISJA6pMUhKANVR04OFXJMHzygj
-M1mQhDAAAx6DjcW0dWuhYhAnuxXGQTLzaVsZzcoNWaomNG5ZS7QhpmGegFRzu51Q
-bH8lu8ihOl1NNSeF08z1kNfdnejvDCIynPv+s7KfAFF4Dm0hbrlZsXiYrSIFu6VS
-uiZrDZVv3JVyX6JroujivY5RB2W6/6dmGpAY0oTRwJF2/TprCYVhMCgcoCn5l4K0
-zlG9xwnNunUjMyVfzqT9
-=VPuR
------END PGP SIGNATURE-----
-
---Sig_/CJQ8pJL_ynmO042=+mnD8Gq--
+Thanks,
+Qiaowei
