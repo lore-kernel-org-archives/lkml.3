@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752053AbaJ0Hnb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 03:43:31 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:34081 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490AbaJ0Hna (ORCPT
+	id S1752175AbaJ0Ho0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 03:44:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44246 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaJ0HoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 03:43:30 -0400
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 27 Oct 2014 16:44:42 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Weijie Yang <weijie.yang.kh@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 3/4] mm: cma: Ensure that reservations never cross the
- low/high mem boundary
-Message-ID: <20141027074442.GD23379@js1304-P5Q-DELUXE>
-References: <1414145922-26042-1-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <1414145922-26042-4-git-send-email-laurent.pinchart+renesas@ideasonboard.com>
- <xa1toat13031.fsf@mina86.com>
- <1436531.s0VJY8ZaKv@avalon>
+	Mon, 27 Oct 2014 03:44:25 -0400
+Date: Mon, 27 Oct 2014 08:44:19 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-pm@vger.kernel.org >> Linux PM list" 
+	<linux-pm@vger.kernel.org>
+Subject: Re: [RFC/PATCH] PM / Sleep: Timer quiesce in freeze state
+Message-ID: <20141027074419.GE10501@worktop.programming.kicks-ass.net>
+References: <5446787E.60202@linux.intel.com>
+ <20141024153656.GM12706@worktop.programming.kicks-ass.net>
+ <544DE5CF.9040501@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1436531.s0VJY8ZaKv@avalon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <544DE5CF.9040501@linux.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 26, 2014 at 02:43:52PM +0200, Laurent Pinchart wrote:
-> On Friday 24 October 2014 18:26:58 Michal Nazarewicz wrote:
-> > On Fri, Oct 24 2014, Laurent Pinchart wrote:
-> > > Commit 95b0e655f914 ("ARM: mm: don't limit default CMA region only to
-> > > low memory") extended CMA memory reservation to allow usage of high
-> > > memory. It relied on commit f7426b983a6a ("mm: cma: adjust address limit
-> > > to avoid hitting low/high memory boundary") to ensure that the reserved
-> > > block never crossed the low/high memory boundary. While the
-> > > implementation correctly lowered the limit, it failed to consider the
-> > > case where the base..limit range crossed the low/high memory boundary
-> > > with enough space on each side to reserve the requested size on either
-> > > low or high memory.
-> > > 
-> > > Rework the base and limit adjustment to fix the problem. The function
-> > > now starts by rejecting the reservation altogether for fixed
-> > > reservations that cross the boundary, tries to reserve from high memory
-> > > first and then falls back to low memory.
-> > > 
-> > > Signed-off-by: Laurent Pinchart
-> > > <laurent.pinchart+renesas@ideasonboard.com>
+On Mon, Oct 27, 2014 at 02:27:27PM +0800, Li, Aubrey wrote:
+> >> +static void freezer_suspend_tk(int cpu)
+> >>  {
+> >> +	if (tick_do_timer_cpu != cpu)
+> >> +		return;
+> >> +
 > > 
-> > Acked-by: Michal Nazarewicz <mina86@mina86.com>
-> 
-> Thank you. Can we get this series merged in v3.18-rc ?
+> > I had a note here that this might be broken for clocksource drivers that
+> > have suspend/resume methods. You seem to have 'lost' that note, is that
+> > because you found it isn't a problem?
+> > 
+> I don't see it's a problem as long as we do not refer the clock source
+> before it resumes. But I think my testing didn't cover that case that
+> clock source drivers have suspend/resume methods. Can you please give
+> more details what do you worry about?
 
-
-Hello,
-
-You'd better to resend whole series to Andrew.
-
-Thanks.
+I can't seem to recall :/ Maybe I conflated clocksource and clockevents
+and figured we'd need to run the clocksource suspend callback on each
+cpu.
