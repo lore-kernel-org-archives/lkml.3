@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbaJ0WIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 18:08:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46102 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752395AbaJ0WIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 18:08:13 -0400
-Date: Tue, 28 Oct 2014 00:04:27 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Burke Libbey <burke.libbey@shopify.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: [PATCH] sched: Fix race between task_group and sched_task_group
-Message-ID: <20141027230427.GA18454@redhat.com>
-References: <1414405105.19914.169.camel@tkhai>
+	id S1752704AbaJ0WKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 18:10:09 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55233 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752302AbaJ0WKH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 18:10:07 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Len Brown <lenb@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Patch v7 05/18] ACPI: Correct return value of acpi_dev_resource_address_space()
+Date: Mon, 27 Oct 2014 23:30:40 +0100
+Message-ID: <2575568.AkFDcf4v5G@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414387308-27148-6-git-send-email-jiang.liu@linux.intel.com>
+References: <1414387308-27148-1-git-send-email-jiang.liu@linux.intel.com> <1414387308-27148-6-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414405105.19914.169.camel@tkhai>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27, Kirill Tkhai wrote:
->
-> +static void cpu_cgroup_fork(struct task_struct *task)
-> +{
-> +	sched_move_task(task);
-> +}
-> +
->  static int cpu_cgroup_can_attach(struct cgroup_subsys_state *css,
->  				 struct cgroup_taskset *tset)
->  {
-> @@ -8205,6 +8210,7 @@ struct cgroup_subsys cpu_cgrp_subsys = {
->  	.css_free	= cpu_cgroup_css_free,
->  	.css_online	= cpu_cgroup_css_online,
->  	.css_offline	= cpu_cgroup_css_offline,
-> +	.fork		= cpu_cgroup_fork,
+On Monday, October 27, 2014 01:21:35 PM Jiang Liu wrote:
+> Change acpi_dev_resource_address_space() to return failure if the
+> acpi_resource structure can't be converted to an ACPI address64
+> structure, so caller could correctly detect failure.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 
-Agreed, but it seems that sched_move_task() -> task_css_check() can
-complain if CONFIG_PROVE_RCU...
+ACK
 
-cpu_cgroup_exit() too calls sched_move_task() without any lock, but
-there is the PF_EXITING check and init_css_set can't go away.
+> ---
+>  drivers/acpi/resource.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+> index 2ba8f02ced36..782a0d15c25f 100644
+> --- a/drivers/acpi/resource.c
+> +++ b/drivers/acpi/resource.c
+> @@ -200,7 +200,7 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+>  
+>  	status = acpi_resource_to_address64(ares, &addr);
+>  	if (ACPI_FAILURE(status))
+> -		return true;
+> +		return false;
+>  
+>  	res->start = addr.minimum;
+>  	res->end = addr.maximum;
+> 
 
-perhaps sched_move_task() should just take rcu_read_lock() and use
-task_css() ? This lockdep_is_held(siglock) looks ugly, and iiuc we
-need it to shut up the warning if autogroup_move_group() is the caller.
-
-Oleg.
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
