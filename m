@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687AbaJ0F1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 01:27:54 -0400
-Received: from smtprelay0030.hostedemail.com ([216.40.44.30]:37713 "EHLO
+	id S1752754AbaJ0FZY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 01:25:24 -0400
+Received: from smtprelay0101.hostedemail.com ([216.40.44.101]:44381 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752756AbaJ0FZZ (ORCPT
+	by vger.kernel.org with ESMTP id S1751326AbaJ0FZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 01:25:25 -0400
+	Mon, 27 Oct 2014 01:25:20 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3871:4321:4823:5007:6261:8957:10004:10848:11026:11658:11914:12043:12517:12519:12555:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: meat91_4c3b3036d0e17
-X-Filterd-Recvd-Size: 1953
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:973:988:989:1260:1345:1437:1534:1541:1711:1730:1747:1777:1792:1801:2198:2199:2393:2559:2562:3138:3139:3140:3141:3142:3353:3865:3866:3868:4605:4823:5007:6261:10004:10848:11026:11658:11914:12043:12048:12438:12517:12519:12555:12679:13141:13230:13311:13357:14096:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: eyes46_4b21bb1149903
+X-Filterd-Recvd-Size: 2578
 From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
-Subject: [PATCH 03/11] aiptek: Fix probable mask then right shift defects
-Date: Sun, 26 Oct 2014 22:24:59 -0700
-Message-Id: <8c6687a4d568c853ab649ba03d2477ee24bc6ff6.1414387334.git.joe@perches.com>
+To: linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org,
+        dri-devel@lists.freedesktop.org, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-parisc@vger.kernel.org
+Cc: linux-input@vger.kernel.org, linux-wireless@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 00/11] treewide: mask then shift defects and style updates
+Date: Sun, 26 Oct 2014 22:24:56 -0700
+Message-Id: <cover.1414387334.git.joe@perches.com>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <cover.1414387334.git.joe@perches.com>
-References: <cover.1414387334.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Precedence of & and >> is not the same and is not left to right.
-shift has higher precedence and should be done after the mask.
+logical mask has lower precedence than shift but should be
+done before the shift so parentheses are generally required.
 
-Here the shifts are unnecessary and a non-zero value can be used
-as the test to set 1 or zero.
+And when masking with a fixed value after a shift, normal kernel
+style has the shift on the left, then the shift on the right so
+convert a few non-conforming uses.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/input/tablet/aiptek.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Joe Perches (11):
+  block: nvme-scsi: Fix probable mask then right shift defects
+  radeon: evergreen: Fix probable mask then right shift defects
+  aiptek: Fix probable mask then right shift defects
+  dvb-net: Fix probable mask then right shift defects
+  cx25840/cx18: Use standard ordering of mask and shift
+  wm8350-core: Fix probable mask then right shift defect
+  iwlwifi: dvm: Fix probable mask then right shift defect
+  ssb: driver_chip_comon_pmu: Fix probable mask then right shift defect
+  tty: ipwireless: Fix probable mask then right shift defects
+  hwa-hc: Fix probable mask then right shift defect
+  sound: ad1889: Fix probable mask then right shift defects
 
-diff --git a/drivers/input/tablet/aiptek.c b/drivers/input/tablet/aiptek.c
-index e7f966d..dee2bb9 100644
---- a/drivers/input/tablet/aiptek.c
-+++ b/drivers/input/tablet/aiptek.c
-@@ -489,9 +489,9 @@ static void aiptek_irq(struct urb *urb)
- 			 */
- 			jitterable = data[1] & 0x07;
- 
--			left = (data[1] & aiptek->curSetting.mouseButtonLeft >> 2) != 0 ? 1 : 0;
--			right = (data[1] & aiptek->curSetting.mouseButtonRight >> 2) != 0 ? 1 : 0;
--			middle = (data[1] & aiptek->curSetting.mouseButtonMiddle >> 2) != 0 ? 1 : 0;
-+			left = data[1] & aiptek->curSetting.mouseButtonLeft ? 1 : 0;
-+			right = data[1] & aiptek->curSetting.mouseButtonRight ? 1 : 0;
-+			middle = data[1] & aiptek->curSetting.mouseButtonMiddle ? 1 : 0;
- 
- 			input_report_key(inputdev, BTN_LEFT, left);
- 			input_report_key(inputdev, BTN_MIDDLE, middle);
+ drivers/block/nvme-scsi.c                | 12 ++++++------
+ drivers/gpu/drm/radeon/evergreen.c       |  3 ++-
+ drivers/input/tablet/aiptek.c            |  6 +++---
+ drivers/media/dvb-core/dvb_net.c         |  4 +++-
+ drivers/media/i2c/cx25840/cx25840-core.c | 12 ++++++------
+ drivers/media/pci/cx18/cx18-av-core.c    | 16 ++++++++--------
+ drivers/mfd/wm8350-core.c                |  2 +-
+ drivers/net/wireless/iwlwifi/dvm/lib.c   |  4 ++--
+ drivers/ssb/driver_chipcommon_pmu.c      |  4 ++--
+ drivers/tty/ipwireless/hardware.c        | 12 ++++++------
+ drivers/usb/host/hwa-hc.c                |  2 +-
+ sound/pci/ad1889.c                       |  8 ++++----
+ 12 files changed, 44 insertions(+), 41 deletions(-)
+
 -- 
 2.1.2
 
