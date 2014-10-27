@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705AbaJ0LKN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:10:13 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59405 "EHLO bear.ext.ti.com"
+	id S1752737AbaJ0LKY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:10:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59416 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180AbaJ0LKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:10:10 -0400
+	id S1752713AbaJ0LKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 07:10:20 -0400
 From: Vignesh R <vigneshr@ti.com>
 To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
@@ -27,56 +27,60 @@ CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
         <linux-input@vger.kernel.org>, Vignesh R <vigneshr@ti.com>
-Subject: [PATCH 0/4] Touchscreen performance related fixes
-Date: Mon, 27 Oct 2014 16:38:27 +0530
-Message-ID: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
+Subject: [PATCH 4/4] input: touchscreen: ti_am335x_tsc: Use charge delay DT parameter
+Date: Mon, 27 Oct 2014 16:38:31 +0530
+Message-ID: <1414408111-2631-5-git-send-email-vigneshr@ti.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
+References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches fix TSC defects related to lag in touchscreen
-performance and cursor jump at touch release. The lag was result of
-udelay in TSC interrupt handler. Cursor jump due to false pen-up event.
-The patches implement Advisory 1.0.31 in silicon errata of am335x-evm
-to avoid false pen-up events and remove udelay. The advisory says to use
-steps 1 to 4 for ADC and 5 to 16 for TSC (assuming 4 wire TSC and 4 channel
-ADC). Further the X co-ordinate must be the last one to be sampled just
-before charge step. The first two patches implement the required changes. 
+This patch reads charge delay from tsc DT node and writes to
+REG_CHARGEDELAY register. If the charge delay is not specified in DT
+then default value of 0xB000(CHARGEDLY_OPENDLY) is used.
 
-A DT parameter to configure the duration of tsc charge step. It represents
-number of ADC clock cycles to wait between applying the step configuration
-registers and going back to the IDLE state. The charge delay value can vary
-across boards. Configuring correct value of charge delay is important to avoid
-false pen-up events. Hence it is necessary to expose charge-delay value as
-DT parameter. The pen-up detection happens immediately after the charge step
-so this does in fact function as a hardware knob for adjusting the amount of
-settling time.
+Signed-off-by: Vignesh R <vigneshr@ti.com>
+---
+ drivers/input/touchscreen/ti_am335x_tsc.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-After applying these changes false pen-up events have not be observed and
-smooth circles can be drawn on touch screen. The performance is much better
-in recognizing quick movement across the screen. No lag or cursor jump is
-observed.
-
-Brad Griffis (2):
-  input: touchscreen: ti_am335x_tsc Interchange touchscreen and ADC
-    steps
-  input: touchscreen: ti_am335x_tsc: Remove udelay in interrupt handler
-
-Vignesh R (2):
-  arm: boot: dts: am335x-evm: Make charge delay a DT parameter for tsc
-  input: touchscreen: ti_am335x_tsc: Use charge delay DT parameter
-
- .../bindings/input/touchscreen/ti-tsc-adc.txt      |  13 +++
- arch/arm/boot/dts/am335x-evm.dts                   |   1 +
- drivers/iio/adc/ti_am335x_adc.c                    |   2 +-
- drivers/input/touchscreen/ti_am335x_tsc.c          | 106 ++++++++++-----------
- drivers/mfd/ti_am335x_tscadc.c                     |   7 +-
- include/linux/mfd/ti_am335x_tscadc.h               |   4 +-
- 6 files changed, 76 insertions(+), 57 deletions(-)
-
+diff --git a/drivers/input/touchscreen/ti_am335x_tsc.c b/drivers/input/touchscreen/ti_am335x_tsc.c
+index 483fd97c0e0c..20ce76b1b6e7 100644
+--- a/drivers/input/touchscreen/ti_am335x_tsc.c
++++ b/drivers/input/touchscreen/ti_am335x_tsc.c
+@@ -52,6 +52,7 @@ struct titsc {
+ 	u32			bit_xp, bit_xn, bit_yp, bit_yn;
+ 	u32			inp_xp, inp_xn, inp_yp, inp_yn;
+ 	u32			step_mask;
++	u32			charge_delay;
+ };
+ 
+ static unsigned int titsc_readl(struct titsc *ts, unsigned int reg)
+@@ -177,7 +178,7 @@ static void titsc_step_config(struct titsc *ts_dev)
+ 
+ 	config = titsc_readl(ts_dev, REG_IDLECONFIG);
+ 	titsc_writel(ts_dev, REG_CHARGECONFIG, config);
+-	titsc_writel(ts_dev, REG_CHARGEDELAY, CHARGEDLY_OPENDLY);
++	titsc_writel(ts_dev, REG_CHARGEDELAY, ts_dev->charge_delay);
+ 
+ 	/* coordinate_readouts + 1 ... coordinate_readouts + 2 is for Z */
+ 	config = STEPCONFIG_MODE_HWSYNC |
+@@ -361,6 +362,11 @@ static int titsc_parse_dt(struct platform_device *pdev,
+ 	if (err < 0)
+ 		return err;
+ 
++	err = of_property_read_u32(node, "ti,charge-delay",
++				   &ts_dev->charge_delay);
++	if (err < 0)
++		ts_dev->charge_delay = CHARGEDLY_OPENDLY;
++
+ 	return of_property_read_u32_array(node, "ti,wire-config",
+ 			ts_dev->config_inp, ARRAY_SIZE(ts_dev->config_inp));
+ }
 -- 
 1.9.1
 
