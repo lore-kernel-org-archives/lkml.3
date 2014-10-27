@@ -1,54 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaJ0H5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 03:57:17 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:40614 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593AbaJ0H5Q (ORCPT
+	id S1752071AbaJ0H7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 03:59:18 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:51238 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaJ0H7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 03:57:16 -0400
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 27 Oct 2014 16:58:30 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com
-Subject: Re: [RFC 0/4] [RFC] slub: Fastpath optimization (especially for RT)
-Message-ID: <20141027075830.GF23379@js1304-P5Q-DELUXE>
-References: <20141022155517.560385718@linux.com>
- <20141023080942.GA7598@js1304-P5Q-DELUXE>
- <alpine.DEB.2.11.1410230916090.19494@gentwo.org>
- <20141024045630.GD15243@js1304-P5Q-DELUXE>
- <alpine.DEB.2.11.1410240938460.29214@gentwo.org>
+	Mon, 27 Oct 2014 03:59:16 -0400
+From: Sanjeev Sharma <sanjeev_sharma@mentor.com>
+To: <Larry.Finger@lwfinger.net>, <Jes.Sorensen@redhat.com>
+CC: <gregkh@linuxfoundation.org>, <linux-wireless@vger.kernel.org>,
+        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+Subject: [PATCH] staging:rtl8723au: core: Fix error reported by checkpatch.
+Date: Mon, 27 Oct 2014 13:29:05 +0530
+Message-ID: <1414396745-8845-1-git-send-email-sanjeev_sharma@mentor.com>
+X-Mailer: git-send-email 1.7.11.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1410240938460.29214@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 09:41:49AM -0500, Christoph Lameter wrote:
-> > I found that you said retrieving tid first is sufficient to do
-> > things right in old discussion. :)
-> 
-> Right but the tid can be obtained from a different processor.
-> 
-> 
-> One other aspect of this patchset is that it reduces the cache footprint
-> of the alloc and free functions. This typically results in a performance
-> increase for the allocator. If we can avoid the page_address() and
-> virt_to_head_page() stuff that is required because we drop the ->page
-> field in a sufficient number of places then this may be a benefit that
-> goes beyond the RT and CONFIG_PREEMPT case.
+This is a patch to the rtw_cmd.c file that fixes
+Error reported by checkpatch.
 
-Yeah... if we can avoid those function calls, it would be good.
+Signed-off-by: Sanjeev Sharma <Sanjeev_Sharma@mentor.com>
+---
+ drivers/staging/rtl8723au/core/rtw_cmd.c | 83 +++++++++++++++-----------------
+ 1 file changed, 40 insertions(+), 43 deletions(-)
 
-But, current struct kmem_cache_cpu occupies just 32 bytes on 64 bits
-machine, and, that means just 1 cacheline. Reducing size of struct may have
-no remarkable performance benefit in this case.
+diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
+index 4eaa502..c1f6254 100644
+--- a/drivers/staging/rtl8723au/core/rtw_cmd.c
++++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
+@@ -957,7 +957,7 @@ static void traffic_status_watchdog(struct rtw_adapter *padapter)
+ 		/*  check traffic for  powersaving. */
+ 			if (((pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod +
+ 			      pmlmepriv->LinkDetectInfo.NumTxOkInPeriod) > 8) ||
+-			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod >2)
++			    pmlmepriv->LinkDetectInfo.NumRxUnicastOkInPeriod > 2)
+ 				bEnterPS = false;
+ 			else
+ 				bEnterPS = true;
+@@ -1017,46 +1017,44 @@ static void lps_ctrl_wk_hdl(struct rtw_adapter *padapter, u8 lps_ctrl_type)
+ 	    check_fwstate(pmlmepriv, WIFI_ADHOC_STATE))
+ 		return;
+ 
+-	switch (lps_ctrl_type)
+-	{
+-		case LPS_CTRL_SCAN:
+-			rtl8723a_BT_wifiscan_notify(padapter, true);
+-			if (!rtl8723a_BT_using_antenna_1(padapter)) {
+-				if (check_fwstate(pmlmepriv, _FW_LINKED))
+-					LPS_Leave23a(padapter);
+-			}
+-			break;
+-		case LPS_CTRL_JOINBSS:
++	switch (lps_ctrl_type) {
++	case LPS_CTRL_SCAN:
++		rtl8723a_BT_wifiscan_notify(padapter, true);
++		if (!rtl8723a_BT_using_antenna_1(padapter)) {
++			if (check_fwstate(pmlmepriv, _FW_LINKED))
+ 			LPS_Leave23a(padapter);
+-			break;
+-		case LPS_CTRL_CONNECT:
+-			mstatus = 1;/* connect */
+-			/*  Reset LPS Setting */
+-			padapter->pwrctrlpriv.LpsIdleCount = 0;
+-			rtl8723a_set_FwJoinBssReport_cmd(padapter, 1);
+-			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
+-			break;
+-		case LPS_CTRL_DISCONNECT:
+-			mstatus = 0;/* disconnect */
+-			rtl8723a_BT_mediastatus_notify(padapter, mstatus);
+-			if (!rtl8723a_BT_using_antenna_1(padapter))
+-				LPS_Leave23a(padapter);
+-			rtl8723a_set_FwJoinBssReport_cmd(padapter, 0);
+-			break;
+-		case LPS_CTRL_SPECIAL_PACKET:
+-			pwrpriv->DelayLPSLastTimeStamp = jiffies;
+-			rtl8723a_BT_specialpacket_notify(padapter);
+-			if (!rtl8723a_BT_using_antenna_1(padapter))
+-				LPS_Leave23a(padapter);
+-			break;
+-		case LPS_CTRL_LEAVE:
+-			rtl8723a_BT_lps_leave(padapter);
+-			if (!rtl8723a_BT_using_antenna_1(padapter))
+-				LPS_Leave23a(padapter);
+-			break;
+-
+-		default:
+-			break;
++		}
++		break;
++	case LPS_CTRL_JOINBSS:
++		LPS_Leave23a(padapter);
++		break;
++	case LPS_CTRL_CONNECT:
++		mstatus = 1;/* connect */
++		/*  Reset LPS Setting */
++		padapter->pwrctrlpriv.LpsIdleCount = 0;
++		rtl8723a_set_FwJoinBssReport_cmd(padapter, 1);
++		rtl8723a_BT_mediastatus_notify(padapter, mstatus);
++		break;
++	case LPS_CTRL_DISCONNECT:
++		mstatus = 0;/* disconnect */
++		rtl8723a_BT_mediastatus_notify(padapter, mstatus);
++		if (!rtl8723a_BT_using_antenna_1(padapter))
++			LPS_Leave23a(padapter);
++		rtl8723a_set_FwJoinBssReport_cmd(padapter, 0);
++		break;
++	case LPS_CTRL_SPECIAL_PACKET:
++		pwrpriv->DelayLPSLastTimeStamp = jiffies;
++		rtl8723a_BT_specialpacket_notify(padapter);
++		if (!rtl8723a_BT_using_antenna_1(padapter))
++			LPS_Leave23a(padapter);
++		break;
++	case LPS_CTRL_LEAVE:
++		rtl8723a_BT_lps_leave(padapter);
++		if (!rtl8723a_BT_using_antenna_1(padapter))
++			LPS_Leave23a(padapter);
++		break;
++	default:
++		break;
+ 	}
+ }
+ 
+@@ -1152,7 +1150,7 @@ static void rtw_chk_hi_queue_hdl(struct rtw_adapter *padapter)
+ 
+ 			cnt++;
+ 
+-			if (cnt>10)
++			if (cnt > 10)
+ 				break;
+ 
+ 			val = rtl8723a_chk_hi_queue_empty(padapter);
+@@ -1305,8 +1303,7 @@ int rtw_drvextra_cmd_hdl23a(struct rtw_adapter *padapter, const u8 *pbuf)
+ 
+ 	pdrvextra_cmd = (struct drvextra_cmd_parm *)pbuf;
+ 
+-	switch (pdrvextra_cmd->ec_id)
+-	{
++	switch (pdrvextra_cmd->ec_id) {
+ 	case DYNAMIC_CHK_WK_CID:
+ 		dynamic_chk_wk_hdl(padapter, pdrvextra_cmd->pbuf,
+ 				   pdrvextra_cmd->type_size);
+-- 
+1.7.11.7
 
-Thanks.
