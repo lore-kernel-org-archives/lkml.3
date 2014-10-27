@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499AbaJ0S5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:57:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52382 "EHLO
+	id S1752561AbaJ0S6D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:58:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52436 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362AbaJ0S5l (ORCPT
+	with ESMTP id S1752479AbaJ0S5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:57:41 -0400
+	Mon, 27 Oct 2014 14:57:47 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 003/105] [media] siano: add support for PCTV 77e
-Date: Mon, 27 Oct 2014 11:55:38 -0700
-Message-Id: <1414436240-13879-4-git-send-email-kamal@canonical.com>
+Cc: Michel Lespinasse <walken@google.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andreas Gruenbacher <agruen@linbit.com>,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Jens Axboe <axboe@fb.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 018/105] drbd: compute the end before rb_insert_augmented()
+Date: Mon, 27 Oct 2014 11:55:53 -0700
+Message-Id: <1414436240-13879-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,63 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-commit 29bbb7bd0a65e01a0423e1df764676119b71ecb3 upstream.
+commit 82cfb90bc99d7b7e0ec62d0505b9d4f06805d5db upstream.
 
-Add support for PCTV microStick (77e) device that uses a sms1140
-chipset.
+Commit 98683650 "Merge branch 'drbd-8.4_ed6' into
+for-3.8-drivers-drbd-8.4_ed6" switches to the new augment API, but the
+new API requires that the tree is augmented before rb_insert_augmented()
+is called, which is missing.
 
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+So we add the augment-code to drbd_insert_interval() when it travels the
+tree up to down before rb_insert_augmented().  See the example in
+include/linux/interval_tree_generic.h or Documentation/rbtree.txt.
+
+drbd_insert_interval() may cancel the insertion when traveling, in this
+case, the just added augment-code does nothing before cancel since the
+@this node is already in the subtrees in this case.
+
+CC: Michel Lespinasse <walken@google.com>
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Andreas Gruenbacher <agruen@linbit.com>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/common/siano/sms-cards.c | 6 ++++++
- drivers/media/common/siano/sms-cards.h | 1 +
- drivers/media/usb/siano/smsusb.c       | 2 ++
- 3 files changed, 9 insertions(+)
+ drivers/block/drbd/drbd_interval.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/media/common/siano/sms-cards.c b/drivers/media/common/siano/sms-cards.c
-index 8276999..82c7a12 100644
---- a/drivers/media/common/siano/sms-cards.c
-+++ b/drivers/media/common/siano/sms-cards.c
-@@ -157,6 +157,12 @@ static struct sms_board sms_boards[] = {
- 		.type = SMS_DENVER_2160,
- 		.default_mode = DEVICE_MODE_DAB_TDMB,
- 	},
-+	[SMS1XXX_BOARD_PCTV_77E] = {
-+		.name	= "Hauppauge microStick 77e",
-+		.type	= SMS_NOVA_B0,
-+		.fw[DEVICE_MODE_DVBT_BDA] = SMS_FW_DVB_NOVA_12MHZ_B0,
-+		.default_mode = DEVICE_MODE_DVBT_BDA,
-+	},
- };
+diff --git a/drivers/block/drbd/drbd_interval.c b/drivers/block/drbd/drbd_interval.c
+index 89c497c..04a14e0 100644
+--- a/drivers/block/drbd/drbd_interval.c
++++ b/drivers/block/drbd/drbd_interval.c
+@@ -79,6 +79,7 @@ bool
+ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ {
+ 	struct rb_node **new = &root->rb_node, *parent = NULL;
++	sector_t this_end = this->sector + (this->size >> 9);
  
- struct sms_board *sms_get_board(unsigned id)
-diff --git a/drivers/media/common/siano/sms-cards.h b/drivers/media/common/siano/sms-cards.h
-index c63b544..4c4cadd 100644
---- a/drivers/media/common/siano/sms-cards.h
-+++ b/drivers/media/common/siano/sms-cards.h
-@@ -45,6 +45,7 @@
- #define SMS1XXX_BOARD_SIANO_RIO		18
- #define SMS1XXX_BOARD_SIANO_DENVER_1530	19
- #define SMS1XXX_BOARD_SIANO_DENVER_2160 20
-+#define SMS1XXX_BOARD_PCTV_77E		21
+ 	BUG_ON(!IS_ALIGNED(this->size, 512));
  
- struct sms_board_gpio_cfg {
- 	int lna_vhf_exist;
-diff --git a/drivers/media/usb/siano/smsusb.c b/drivers/media/usb/siano/smsusb.c
-index 05bd91a..35bd736 100644
---- a/drivers/media/usb/siano/smsusb.c
-+++ b/drivers/media/usb/siano/smsusb.c
-@@ -653,6 +653,8 @@ static const struct usb_device_id smsusb_id_table[] = {
- 		.driver_info = SMS1XXX_BOARD_ZTE_DVB_DATA_CARD },
- 	{ USB_DEVICE(0x19D2, 0x0078),
- 		.driver_info = SMS1XXX_BOARD_ONDA_MDTV_DATA_CARD },
-+	{ USB_DEVICE(0x2013, 0x0257),
-+		.driver_info = SMS1XXX_BOARD_PCTV_77E },
- 	{ } /* Terminating entry */
- 	};
+@@ -87,6 +88,8 @@ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ 			rb_entry(*new, struct drbd_interval, rb);
  
+ 		parent = *new;
++		if (here->end < this_end)
++			here->end = this_end;
+ 		if (this->sector < here->sector)
+ 			new = &(*new)->rb_left;
+ 		else if (this->sector > here->sector)
+@@ -99,6 +102,7 @@ drbd_insert_interval(struct rb_root *root, struct drbd_interval *this)
+ 			return false;
+ 	}
+ 
++	this->end = this_end;
+ 	rb_link_node(&this->rb, parent, new);
+ 	rb_insert_augmented(&this->rb, root, &augment_callbacks);
+ 	return true;
 -- 
 1.9.1
 
