@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaJ0POS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:14:18 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59687 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079AbaJ0POQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:14:16 -0400
-Date: Mon, 27 Oct 2014 08:10:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Eric B Munson <emunson@akamai.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Commit 35ce7f29a breaks hibernation for XPS 13
-Message-ID: <20141027151021.GC5718@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141024160815.GA2968@akamai.com>
- <20141024161634.GR4977@linux.vnet.ibm.com>
- <20141024163612.GA2256@akamai.com>
- <20141024171818.GU4977@linux.vnet.ibm.com>
- <20141024184028.GA2220@akamai.com>
- <20141024203124.GZ4977@linux.vnet.ibm.com>
- <20141027134757.GA2936@akamai.com>
+	id S1753452AbaJ0POh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:14:37 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:11947 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753122AbaJ0PNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:13:08 -0400
+X-IronPort-AV: E=Sophos;i="5.04,796,1406592000"; 
+   d="scan'208";a="185211233"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
+        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        <Stefano.Stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, <linux@arm.linux.org.uk>,
+        <will.deacon@arm.com>
+Subject: [PATCH v7 4/8] arm: introduce is_device_dma_coherent
+Date: Mon, 27 Oct 2014 15:09:24 +0000
+Message-ID: <1414422568-19103-4-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027134757.GA2936@akamai.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102715-0033-0000-0000-0000027A621A
+Content-Type: text/plain
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 09:47:57AM -0400, Eric B Munson wrote:
-> On Fri, 24 Oct 2014, Paul E. McKenney wrote:
-> 
-> > On Fri, Oct 24, 2014 at 02:40:28PM -0400, Eric B Munson wrote:
-> > > On Fri, 24 Oct 2014, Paul E. McKenney wrote:
-> > > 
-> > > > On Fri, Oct 24, 2014 at 12:36:12PM -0400, Eric B Munson wrote:
-> > > > > On Fri, 24 Oct 2014, Paul E. McKenney wrote:
-> > > > > 
-> > > > > > On Fri, Oct 24, 2014 at 12:08:15PM -0400, Eric B Munson wrote:
-> > > > > > > Paul,
-> > > > > > > 
-> > > > > > > As of 3.18-rc1 I can no longer hibernate my Dell XPS-13.  Bisect points
-> > > > > > > the finger at 35ce7f29a.  A revert of that commit confirms, I can once
-> > > > > > > again hibernate my machine without it.
-> > > > > > > 
-> > > > > > > When the hibernation fails I see this in dmesg:
-> > > > > > > [   37.953313] PM: Syncing filesystems ... done.
-> > > > > > > [   37.963694] Freezing user space processes ... (elapsed 0.001 seconds) done.
-> > > > > > > [   37.965297] PM: Marking nosave pages: [mem 0x00000000-0x00000fff]
-> > > > > > > [   37.965299] PM: Marking nosave pages: [mem 0x00058000-0x00058fff]
-> > > > > > > [   37.965301] PM: Marking nosave pages: [mem 0x0009d000-0x000fffff]
-> > > > > > > [   37.965304] PM: Marking nosave pages: [mem 0xc496a000-0xc4b6bfff]
-> > > > > > > [   37.965315] PM: Marking nosave pages: [mem 0xdadb7000-0xdcffefff]
-> > > > > > > [   37.965479] PM: Marking nosave pages: [mem 0xdd000000-0xffffffff]
-> > > > > > > [   37.966000] PM: Basic memory bitmaps created
-> > > > > > > [   37.966046] PM: Preallocating image memory... done (allocated 181989 pages)
-> > > > > > > [   38.141524] PM: Allocated 727956 kbytes in 0.17 seconds (4282.09 MB/s)
-> > > > > > > [   38.141525] Freezing remaining freezable tasks ... 
-> > > > > > > [   58.151863] Freezing of tasks failed after 20.004 seconds (0 tasks refusing to freeze, wq_busy=1):
-> > > > > > > [   58.151894] 
-> > > > > > > [   58.151896] Restarting kernel threads ... done.
-> > > > > > > [   58.181915] PM: Basic memory bitmaps freed
-> > > > > > > [   58.181917] Restarting tasks ... done.
-> > > > > > > 
-> > > > > > > 
-> > > > > > > I am not sure what else I can provide that might be useful, but I did
-> > > > > > > see the thread on net-dev about this same commit.  Please CC me on any
-> > > > > > > fixes and I will be happy to test.
-> > > > > > 
-> > > > > > Thank you for the bug report!
-> > > > > > 
-> > > > > > Does the following patch help?
-> > > > > > 
-> > > > > > 							Thanx, Paul
-> > > > > 
-> > > > > Paul,
-> > > > > 
-> > > > > This patch does not help.  I see the same dmesg output and failure to
-> > > > > hibernate.
-> > > > 
-> > > > Thank you for testing it.  Does the following (untested, might not even
-> > > > build) patch help?  (Or feel free to wait until I have done some testing
-> > > > on it.)
-> > > > 
-> > > > 							Thanx, Paul
-> > > 
-> > > Still didn't help.  If it helps, when I attempt to reboot after trying
-> > > to hibernate I see a kworker thread hung and get the stack trace below
-> > > from that thread.  I assume this is the same thread that is holding up
-> > > the hibernate.
-> > 
-> > Yep, looks like something that some other people are running into as well.
-> > 
-> > If you turn off CONFIG_RCU_NOCB_CPU, do you still get the failure?
-> 
-> Disabling CONFIG_RCU_NOCB_CPU fixes the problem.  I am able to hibernate
-> and resume successfully.
+Introduce a boolean flag and an accessor function to check whether a
+device is dma_coherent. Set the flag from set_arch_dma_coherent_ops.
 
-Very good!  Then the fix I am working on might actually be a fix.  ;-)
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux@arm.linux.org.uk
+CC: will.deacon@arm.com
+---
+ arch/arm/include/asm/device.h      |    1 +
+ arch/arm/include/asm/dma-mapping.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
-							Thanx, Paul
+diff --git a/arch/arm/include/asm/device.h b/arch/arm/include/asm/device.h
+index dc662fc..4111592 100644
+--- a/arch/arm/include/asm/device.h
++++ b/arch/arm/include/asm/device.h
+@@ -17,6 +17,7 @@ struct dev_archdata {
+ #ifdef CONFIG_ARM_DMA_USE_IOMMU
+ 	struct dma_iommu_mapping	*mapping;
+ #endif
++	bool dma_coherent;
+ };
+ 
+ struct omap_device;
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index 85738b2..8c3b616 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -123,11 +123,17 @@ static inline unsigned long dma_max_pfn(struct device *dev)
+ 
+ static inline int set_arch_dma_coherent_ops(struct device *dev)
+ {
++	dev->archdata.dma_coherent = true;
+ 	set_dma_ops(dev, &arm_coherent_dma_ops);
+ 	return 0;
+ }
+ #define set_arch_dma_coherent_ops(dev)	set_arch_dma_coherent_ops(dev)
+ 
++static inline bool is_device_dma_coherent(struct device *dev)
++{
++	return dev->archdata.dma_coherent;
++}
++
+ static inline dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
+ {
+ 	unsigned int offset = paddr & ~PAGE_MASK;
+-- 
+1.7.10.4
 
