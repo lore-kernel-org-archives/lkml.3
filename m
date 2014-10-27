@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162AbaJ0T0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:26:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52427 "EHLO
+	id S1754109AbaJ0T0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:26:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52428 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396AbaJ0S5o (ORCPT
+	with ESMTP id S1752399AbaJ0S5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 14:57:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Douglas Lehr <dllehr@us.ibm.com>, Anton Blanchard <anton@samba.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 007/105] x86, fpu: shift drop_init_fpu() from save_xstate_sig() to handle_signal()
-Date: Mon, 27 Oct 2014 11:55:42 -0700
-Message-Id: <1414436240-13879-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 017/105] PCI: Increase IBM ipr SAS Crocodile BARs to at least system page size
+Date: Mon, 27 Oct 2014 11:55:52 -0700
+Message-Id: <1414436240-13879-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,122 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Douglas Lehr <dllehr@us.ibm.com>
 
-commit 66463db4fc5605d51c7bb81d009d5bf30a783a2c upstream.
+commit 9fe373f9997b48fcd6222b95baf4a20c134b587a upstream.
 
-save_xstate_sig()->drop_init_fpu() doesn't look right. setup_rt_frame()
-can fail after that, in this case the next setup_rt_frame() triggered
-by SIGSEGV won't save fpu simply because the old state was lost. This
-obviously mean that fpu won't be restored after sys_rt_sigreturn() from
-SIGSEGV handler.
+The Crocodile chip occasionally comes up with 4k and 8k BAR sizes.  Due to
+an erratum, setting the SR-IOV page size causes the physical function BARs
+to expand to the system page size.  Since ppc64 uses 64k pages, when Linux
+tries to assign the smaller resource sizes to the now 64k BARs the address
+will be truncated and the BARs will overlap.
 
-Shift drop_init_fpu() into !failed branch in handle_signal().
+Force Linux to allocate the resource as a full page, which avoids the
+overlap.
 
-Test-case (needs -O2):
-
-	#include <stdio.h>
-	#include <signal.h>
-	#include <unistd.h>
-	#include <sys/syscall.h>
-	#include <sys/mman.h>
-	#include <pthread.h>
-	#include <assert.h>
-
-	volatile double D;
-
-	void test(double d)
-	{
-		int pid = getpid();
-
-		for (D = d; D == d; ) {
-			/* sys_tkill(pid, SIGHUP); asm to avoid save/reload
-			 * fp regs around "C" call */
-			asm ("" : : "a"(200), "D"(pid), "S"(1));
-			asm ("syscall" : : : "ax");
-		}
-
-		printf("ERR!!\n");
-	}
-
-	void sigh(int sig)
-	{
-	}
-
-	char altstack[4096 * 10] __attribute__((aligned(4096)));
-
-	void *tfunc(void *arg)
-	{
-		for (;;) {
-			mprotect(altstack, sizeof(altstack), PROT_READ);
-			mprotect(altstack, sizeof(altstack), PROT_READ|PROT_WRITE);
-		}
-	}
-
-	int main(void)
-	{
-		stack_t st = {
-			.ss_sp = altstack,
-			.ss_size = sizeof(altstack),
-			.ss_flags = SS_ONSTACK,
-		};
-
-		struct sigaction sa = {
-			.sa_handler = sigh,
-		};
-
-		pthread_t pt;
-
-		sigaction(SIGSEGV, &sa, NULL);
-		sigaltstack(&st, NULL);
-		sa.sa_flags = SA_ONSTACK;
-		sigaction(SIGHUP, &sa, NULL);
-
-		pthread_create(&pt, NULL, tfunc, NULL);
-
-		test(123.456);
-		return 0;
-	}
-
-Reported-by: Bean Anderson <bean@azulsystems.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/20140902175713.GA21646@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[bhelgaas: print expanded resource, too]
+Signed-off-by: Douglas Lehr <dllehr@us.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Milton Miller <miltonm@us.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/signal.c | 5 +++++
- arch/x86/kernel/xsave.c  | 2 --
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/pci/quirks.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 9e5de68..b88fc86 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -673,6 +673,11 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
- 		 * handler too.
- 		 */
- 		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
-+		/*
-+		 * Ensure the signal handler starts with the new fpu state.
-+		 */
-+		if (used_math())
-+			drop_init_fpu(current);
- 	}
- 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
- }
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 422fd82..31f6bfd 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -268,8 +268,6 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 	if (use_fxsr() && save_xstate_epilog(buf_fx, ia32_fxstate))
- 		return -1;
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index fbc066d..0fdf4d1 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -24,6 +24,7 @@
+ #include <linux/ioport.h>
+ #include <linux/sched.h>
+ #include <linux/ktime.h>
++#include <linux/mm.h>
+ #include <asm/dma.h>	/* isa_dma_bridge_buggy */
+ #include "pci.h"
  
--	drop_init_fpu(tsk);	/* trigger finit */
--
- 	return 0;
+@@ -287,6 +288,25 @@ static void quirk_citrine(struct pci_dev *dev)
  }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM,	PCI_DEVICE_ID_IBM_CITRINE,	quirk_citrine);
  
++/*  On IBM Crocodile ipr SAS adapters, expand BAR to system page size */
++static void quirk_extend_bar_to_page(struct pci_dev *dev)
++{
++	int i;
++
++	for (i = 0; i < PCI_STD_RESOURCE_END; i++) {
++		struct resource *r = &dev->resource[i];
++
++		if (r->flags & IORESOURCE_MEM && resource_size(r) < PAGE_SIZE) {
++			r->end = PAGE_SIZE - 1;
++			r->start = 0;
++			r->flags |= IORESOURCE_UNSET;
++			dev_info(&dev->dev, "expanded BAR %d to page size: %pR\n",
++				 i, r);
++		}
++	}
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM, 0x034a, quirk_extend_bar_to_page);
++
+ /*
+  *  S3 868 and 968 chips report region size equal to 32M, but they decode 64M.
+  *  If it's needed, re-allocate the region.
 -- 
 1.9.1
 
