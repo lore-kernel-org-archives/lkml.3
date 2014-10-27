@@ -1,106 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544AbaJ0PpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:45:15 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:49248 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497AbaJ0PpL convert rfc822-to-8bit (ORCPT
+	id S1752561AbaJ0Pp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:45:28 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:34405 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037AbaJ0PpX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:45:11 -0400
-Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
-Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
-Content-Type: text/plain; charset=utf-8
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <20141027153205.GW10262@pengutronix.de>
-Date: Mon, 27 Oct 2014 17:45:03 +0200
-Cc: Mark Brown <broonie@kernel.org>, atull@opensource.altera.com,
-        jgunthorpe@obsidianresearch.com, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>, michal.simek@xilinx.com,
-        rdunlap@infradead.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Pavel Machek <pavel@denx.de>,
-        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        mgerlach@opensource.altera.com, Alan Tull <delicious.quinoa@gmail.com>,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+	Mon, 27 Oct 2014 11:45:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <00cd01cff1b5$fda5a660$f8f0f320$@alibaba-inc.com>
+References: <00cd01cff1b5$fda5a660$f8f0f320$@alibaba-inc.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 27 Oct 2014 08:45:01 -0700
+Message-ID: <CALCETrX7-OzQrOr3+TXy8NB8LS8aYwLN_A-vAeicwoQHsUH_yw@mail.gmail.com>
+Subject: Re: [PATCH v2 7/8] x86, perf: Only allow rdpmc if a perf_event is mapped
+To: "hillf. zj" <hillf.zj@alibaba-inc.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Vince Weaver <vince@deater.net>, Paul Mackerras <paulus@samba.org>,
+        Kees Cook <keescook@chromium.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <1C42AF5D-4776-4B09-BDF4-24F001439F46@konsulko.com>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com> <1414108267-22058-3-git-send-email-atull@opensource.altera.com> <CCE2D027-AA89-41C4-B9AA-2B92AA62129B@konsulko.com> <20141027150147.GX18557@sirena.org.uk> <31BBCD26-65E2-431A-9ADF-95D7EDC7E34E@konsulko.com> <20141027153205.GW10262@pengutronix.de>
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
+On Oct 27, 2014 12:17 AM, "张静(长谷)" <hillf.zj@alibaba-inc.com> wrote:
+>
+> >
+> > We currently allow any process to use rdpmc.  This significantly
+> > weakens the protection offered by PR_TSC_DISABLED, and it could be
+> > helpful to users attempting to exploit timing attacks.
+> >
+> > Since we can't enable access to individual counters, use a very
+> > coarse heuristic to limit access to rdpmc: allow access only when
+> > a perf_event is mmapped.  This protects seccomp sandboxes.
+> >
+> > There is plenty of room to further tighen these restrictions.  For
+> > example, this allows rdpmc for any x86_pmu event, but it's only
+> > useful for self-monitoring tasks.
+> >
+> > As a side effect, cap_user_rdpmc will now be false for AMD uncore
+> > events.  This isn't a real regression, since .event_idx is disabled
+> > for these events anyway for the time being.  Whenever that gets
+> > re-added, the cap_user_rdpmc code can be adjusted or refactored
+> > accordingly.
+> >
+> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> > ---
+> >  arch/x86/include/asm/mmu.h         |  2 ++
+> >  arch/x86/include/asm/mmu_context.h | 16 +++++++++++
+> >  arch/x86/kernel/cpu/perf_event.c   | 57 +++++++++++++++++++++++++-------------
+> >  arch/x86/kernel/cpu/perf_event.h   |  2 ++
+> >  4 files changed, 58 insertions(+), 19 deletions(-)
+> >
+> > diff --git a/arch/x86/include/asm/mmu.h b/arch/x86/include/asm/mmu.h
+> > index 876e74e8eec7..09b9620a73b4 100644
+> > --- a/arch/x86/include/asm/mmu.h
+> > +++ b/arch/x86/include/asm/mmu.h
+> > @@ -19,6 +19,8 @@ typedef struct {
+> >
+> >       struct mutex lock;
+> >       void __user *vdso;
+> > +
+> > +     atomic_t perf_rdpmc_allowed;    /* nonzero if rdpmc is allowed */
+> >  } mm_context_t;
+> >
+> >  #ifdef CONFIG_SMP
+> > diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+> > index 23697f74b372..ccad8d616038 100644
+> > --- a/arch/x86/include/asm/mmu_context.h
+> > +++ b/arch/x86/include/asm/mmu_context.h
+> > @@ -19,6 +19,18 @@ static inline void paravirt_activate_mm(struct mm_struct *prev,
+> >  }
+> >  #endif       /* !CONFIG_PARAVIRT */
+> >
+> > +#ifdef CONFIG_PERF_EVENTS
+> > +static inline void load_mm_cr4(struct mm_struct *mm)
+> > +{
+> > +     if (atomic_read(&mm->context.perf_rdpmc_allowed))
+> > +             cr4_set_bits(X86_CR4_PCE);
+> > +     else
+> > +             cr4_clear_bits(X86_CR4_PCE);
+> > +}
+> > +#else
+> > +static inline void load_mm_cr4(struct mm_struct *mm) {}
+> > +#endif
+> > +
+> >  /*
+> >   * Used for LDT copy/destruction.
+> >   */
+> > @@ -53,6 +65,9 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+> >               /* Stop flush ipis for the previous mm */
+> >               cpumask_clear_cpu(cpu, mm_cpumask(prev));
+> >
+> > +             /* Load per-mm CR4 state */
+> > +             load_mm_cr4(next);
+> > +
+> >               /*
+> >                * Load the LDT, if the LDT is different.
+> >                *
+> > @@ -88,6 +103,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+> >                        */
+> >                       load_cr3(next->pgd);
+> >                       trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
+> > +                     load_mm_cr4(next);
+> >                       load_LDT_nolock(&next->context);
+> >               }
+> >       }
+> > diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> > index 00fbab7aa587..3e875b3b30f2 100644
+> > --- a/arch/x86/kernel/cpu/perf_event.c
+> > +++ b/arch/x86/kernel/cpu/perf_event.c
+> > @@ -31,6 +31,7 @@
+> >  #include <asm/nmi.h>
+> >  #include <asm/smp.h>
+> >  #include <asm/alternative.h>
+> > +#include <asm/mmu_context.h>
+> >  #include <asm/tlbflush.h>
+> >  #include <asm/timer.h>
+> >  #include <asm/desc.h>
+> > @@ -1336,8 +1337,6 @@ x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+> >               break;
+> >
+> >       case CPU_STARTING:
+> > -             if (x86_pmu.attr_rdpmc)
+> > -                     cr4_set_bits(X86_CR4_PCE);
+> >               if (x86_pmu.cpu_starting)
+> >                       x86_pmu.cpu_starting(cpu);
+> >               break;
+> > @@ -1813,14 +1812,44 @@ static int x86_pmu_event_init(struct perf_event *event)
+> >                       event->destroy(event);
+> >       }
+> >
+> > +     if (ACCESS_ONCE(x86_pmu.attr_rdpmc))
+> > +             event->hw.flags |= PERF_X86_EVENT_RDPMC_ALLOWED;
+> > +
+> >       return err;
+> >  }
+> >
+> > +static void refresh_pce(void *ignored)
+> > +{
+> > +     if (current->mm)
+> > +             load_mm_cr4(current->mm);
+> > +}
+> > +
+> > +static void x86_pmu_event_mapped(struct perf_event *event)
+> > +{
+> > +     if (!(event->hw.flags & PERF_X86_EVENT_RDPMC_ALLOWED))
+> > +             return;
+> > +
+> > +     if (atomic_inc_return(&current->mm->context.perf_rdpmc_allowed) == 1)
+> > +             on_each_cpu_mask(mm_cpumask(current->mm), refresh_pce, NULL, 1);
+> > +}
+> > +
+> > +static void x86_pmu_event_unmapped(struct perf_event *event)
+> > +{
+> > +     if (!current->mm)
+> > +             return;
+> > +
+> > +     if (!(event->hw.flags & PERF_X86_EVENT_RDPMC_ALLOWED))
+> > +             return;
+> > +
+> > +     if (atomic_dec_and_test(&current->mm->context.perf_rdpmc_allowed))
+> > +             on_each_cpu_mask(mm_cpumask(current->mm), refresh_pce, NULL, 1);
+>
+> The current task(T-a on CPU A) is asking CPUs(A, B, C, D) to refresh pce, and looks
+> the current task(T-d on CPU D) is disturbed if T-d loaded CR4 when going on CPU D.
 
-> On Oct 27, 2014, at 17:32 , Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
-> 
-> On Mon, Oct 27, 2014 at 05:05:29PM +0200, Pantelis Antoniou wrote:
->> Hi Mark,
->> 
->>> On Oct 27, 2014, at 17:01 , Mark Brown <broonie@kernel.org> wrote:
->>> 
->>> On Mon, Oct 27, 2014 at 01:48:02PM +0200, Pantelis Antoniou wrote:
->>>>> On Oct 24, 2014, at 02:51 , atull@opensource.altera.com wrote:
->>> 
->>>>> + - init-val         : 0 if driver should disable bridge at startup
->>>>> +                      1 if driver should enable bridge at startup
->>>>> +                      driver leaves bridge in current state if property not
->>>>> +		      specified.
->>> 
->>>> Isn’t init-val a boolean property? It’s not named very well.
->>> 
->>> It's not boolean, it's tristate - turn on, turn off or don't touch.
->>> 
->> 
->> I see. Even then ‘init-val’ is cryptic. I’d prefer two booleans,
->> enable-at-startup; disable-at-startup.
->> 
->>>> Along with the label, is kinda hard to defend as configuration in DT.
->>> 
->>> Yeah...  presumably this decision would fall out of the users?
->> 
->> Well, it’s the user that should make the decision, but the driver should
->> pick it up. This works but it’s not very nice.
->> 
-> 
-> Hm, convince me why this AXI bus is so special, that I even need an
-> "init-val" property? Other buses don't have that.
-> Why don't I add a property "init-val" to my SPI buses, so I can enable
-> it in the DT and still have it in reset, just because....
-> 
-> The bridges on the SoCFPGA are buses, from the HPS to the FPGA. If I have
-> written firmware to the FPGA and I have subnodes on that bus, I have to
-> get it out of reset and probe everything. Normal procedure, no ?!
-> 
+I don't understand.  This code is intended to interrupt only affected
+tasks, except for a race if cpus switch mm while this code is running.
+At worst, the race should only result in an unnecessary IPI.
 
-Well, it’s not my speciality, but my understanding is that FPGAs take (considerable)
-time to be programmed. If someone has already configured the ‘bus’ it is considered
-a win to not reload the bitstream. I.e. if you boot with the bootloader having loaded
-the bitstream already, you don’t want to do it again.
+Can you clarify your concern?
 
-I’m afraid there’s no such analogue with standard hardware busses like SPI, where
-the bus setup time is instantaneous.
+--Andy
 
-> 
-> Regards,
-> Steffen
-> 
-
-Regards
-
-— Pantelis
-
-> -- 
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
+>
+> Hillf
+> > +}
+> > +
+> >  static int x86_pmu_event_idx(struct perf_event *event)
+> >  {
+> >       int idx = event->hw.idx;
+> >
+> > -     if (!x86_pmu.attr_rdpmc)
+> > +     if (!(event->hw.flags & PERF_X86_EVENT_RDPMC_ALLOWED))
+> >               return 0;
+> >
+> >       if (x86_pmu.num_counters_fixed && idx >= INTEL_PMC_IDX_FIXED) {
+> > @@ -1838,16 +1867,6 @@ static ssize_t get_attr_rdpmc(struct device *cdev,
+> >       return snprintf(buf, 40, "%d\n", x86_pmu.attr_rdpmc);
+> >  }
+> >
+> > -static void change_rdpmc(void *info)
+> > -{
+> > -     bool enable = !!(unsigned long)info;
+> > -
+> > -     if (enable)
+> > -             cr4_set_bits(X86_CR4_PCE);
+> > -     else
+> > -             cr4_clear_bits(X86_CR4_PCE);
+> > -}
+> > -
+> >  static ssize_t set_attr_rdpmc(struct device *cdev,
+> >                             struct device_attribute *attr,
+> >                             const char *buf, size_t count)
+> > @@ -1862,11 +1881,7 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
+> >       if (x86_pmu.attr_rdpmc_broken)
+> >               return -ENOTSUPP;
+> >
+> > -     if (!!val != !!x86_pmu.attr_rdpmc) {
+> > -             x86_pmu.attr_rdpmc = !!val;
+> > -             on_each_cpu(change_rdpmc, (void *)val, 1);
+> > -     }
+> > -
+> > +     x86_pmu.attr_rdpmc = !!val;
+> >       return count;
+> >  }
+> >
+> > @@ -1909,6 +1924,9 @@ static struct pmu pmu = {
+> >
+> >       .event_init             = x86_pmu_event_init,
+> >
+> > +     .event_mapped           = x86_pmu_event_mapped,
+> > +     .event_unmapped         = x86_pmu_event_unmapped,
+> > +
+> >       .add                    = x86_pmu_add,
+> >       .del                    = x86_pmu_del,
+> >       .start                  = x86_pmu_start,
+> > @@ -1930,7 +1948,8 @@ void arch_perf_update_userpage(struct perf_event *event,
+> >
+> >       userpg->cap_user_time = 0;
+> >       userpg->cap_user_time_zero = 0;
+> > -     userpg->cap_user_rdpmc = x86_pmu.attr_rdpmc;
+> > +     userpg->cap_user_rdpmc =
+> > +             !!(event->hw.flags & PERF_X86_EVENT_RDPMC_ALLOWED);
+> >       userpg->pmc_width = x86_pmu.cntval_bits;
+> >
+> >       if (!sched_clock_stable())
+> > diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+> > index d98a34d435d7..f6868186e67b 100644
+> > --- a/arch/x86/kernel/cpu/perf_event.h
+> > +++ b/arch/x86/kernel/cpu/perf_event.h
+> > @@ -71,6 +71,8 @@ struct event_constraint {
+> >  #define PERF_X86_EVENT_COMMITTED     0x8 /* event passed commit_txn */
+> >  #define PERF_X86_EVENT_PEBS_LD_HSW   0x10 /* haswell style datala, load */
+> >  #define PERF_X86_EVENT_PEBS_NA_HSW   0x20 /* haswell style datala, unknown */
+> > +#define PERF_X86_EVENT_RDPMC_ALLOWED 0x40 /* grant rdpmc permission */
+> > +
+> >
+> >  struct amd_nb {
+> >       int nb_id;  /* NorthBridge id */
+> > --
+> > 1.9.3
+>
