@@ -1,118 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaJ0Fqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 01:46:55 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51063 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798AbaJ0Fqy (ORCPT
+	id S1751998AbaJ0FrL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 01:47:11 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:42789 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaJ0FrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 01:46:54 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <544DDC2D.8070805@jp.fujitsu.com>
-Date: Mon, 27 Oct 2014 14:46:21 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: <mingo@redhat.com>, <peterz@infradead.org>
-CC: <kernellwp@gmail.com>, <riel@redhat.com>, <tkhai@yandex.ru>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] sched/fair: Care divide error in update_task_scan_period()
-References: <54475703.8000505@jp.fujitsu.com>
-In-Reply-To: <54475703.8000505@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+	Mon, 27 Oct 2014 01:47:09 -0400
+From: "pang.xunlei" <pang.xunlei@linaro.org>
+To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
+Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "pang.xunlei" <pang.xunlei@linaro.org>
+Subject: [PATCH RFC 02/12] time: Add mktime() safe version(using time64_t)
+Date: Mon, 27 Oct 2014 13:46:32 +0800
+Message-Id: <1414388802-5866-1-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Could you review my patch?
+The kernel uses 32-bit signed value(time_t) for seconds since 1970-01-01:00:00:00, thus it
+will overflow at 2038-01-19 03:14:08 on 32-bit systems. We call this "2038 safety" issue.
 
-Thanks,
-Yasuaki Ishimatsu
+As part of addressing 2038 saftey for in-kernel uses, this patch adds the safe mktime() using
+time64_t. After this patch, mktime_unsafe() should be replaced by mktime() one by one.
 
-(2014/10/22 16:04), Yasuaki Ishimatsu wrote:
-> While offling node by hot removing memory, the following divide error
-> occurs:
-> 
->    divide error: 0000 [#1] SMP
->    [...]
->    Call Trace:
->     [...] handle_mm_fault
->     [...] ? try_to_wake_up
->     [...] ? wake_up_state
->     [...] __do_page_fault
->     [...] ? do_futex
->     [...] ? put_prev_entity
->     [...] ? __switch_to
->     [...] do_page_fault
->     [...] page_fault
->    [...]
->    RIP  [<ffffffff810a7081>] task_numa_fault
->     RSP <ffff88084eb2bcb0>
-> 
-> The issue occurs as follows:
->    1. When page fault occurs and page is allocated from node 1,
->       task_struct->numa_faults_buffer_memory[] of node 1 is
->       incremented and p->numa_faults_locality[] is also incremented
->       as follows:
-> 
->       o numa_faults_buffer_memory[]       o numa_faults_locality[]
->                NR_NUMA_HINT_FAULT_TYPES
->               |      0     |     1     |
->       ----------------------------------  ----------------------
->        node 0 |      0     |     0     |   remote |      0     |
->        node 1 |      0     |     1     |   locale |      1     |
->       ----------------------------------  ----------------------
-> 
->    2. node 1 is offlined by hot removing memory.
-> 
->    3. When page fault occurs, fault_types[] is calculated by using
->       p->numa_faults_buffer_memory[] of all online nodes in
->       task_numa_placement(). But node 1 was offline by step 2. So
->       the fault_types[] is calculated by using only
->       p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
->       are set to 0.
-> 
->    4. The values(0) of fault_types[] pass to update_task_scan_period().
-> 
->    5. numa_faults_locality[1] is set to 1. So the following division is
->       calculated.
-> 
->          static void update_task_scan_period(struct task_struct *p,
->                                  unsigned long shared, unsigned long private){
->          ...
->                  ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
->          }
-> 
->    6. But both of private and shared are set to 0. So divide error
->       occurs here.
-> 
-> The divide error is rare case because the trigger is node offline.
-> This patch always increments denominator for avoiding divide error.
-> 
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
-> v2:
->   - Simply increment a denominator
-> 
->   kernel/sched/fair.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 0b069bf..f3b492d 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1520,7 +1520,7 @@ static void update_task_scan_period(struct task_struct *p,
->   		 * scanning faster if shared accesses dominate as it may
->   		 * simply bounce migrations uselessly
->   		 */
-> -		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
-> +		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared + 1));
->   		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
->   	}
-> 
+Eventually, mktime_unsafe() will be removed from the kernel when it has no users.
 
+Signed-off-by: pang.xunlei <pang.xunlei@linaro.org>
+---
+ include/linux/time.h |    8 ++++++--
+ kernel/time/time.c   |   39 ++++++++++++++++++++++++++-------------
+ 2 files changed, 32 insertions(+), 15 deletions(-)
+
+diff --git a/include/linux/time.h b/include/linux/time.h
+index e49d421..08f413c 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -39,9 +39,13 @@ static inline int timeval_compare(const struct timeval *lhs, const struct timeva
+ 	return lhs->tv_usec - rhs->tv_usec;
+ }
+ 
++extern time64_t mktime(const unsigned int year, const unsigned int mon,
++					const unsigned int day, const unsigned int hour,
++					const unsigned int min, const unsigned int sec);
++
+ extern unsigned long mktime_unsafe(const unsigned int year, const unsigned int mon,
+-                            const unsigned int day, const unsigned int hour,
+-                            const unsigned int min, const unsigned int sec);
++							const unsigned int day, const unsigned int hour,
++							const unsigned int min, const unsigned int sec);
+ 
+ extern void set_normalized_timespec(struct timespec *ts, time_t sec, s64 nsec);
+ 
+diff --git a/kernel/time/time.c b/kernel/time/time.c
+index d6a4464..f9521fa 100644
+--- a/kernel/time/time.c
++++ b/kernel/time/time.c
+@@ -304,7 +304,8 @@ struct timespec timespec_trunc(struct timespec t, unsigned gran)
+ }
+ EXPORT_SYMBOL(timespec_trunc);
+ 
+-/* Converts Gregorian date to seconds since 1970-01-01 00:00:00.
++/*
++ * Converts Gregorian date to seconds since 1970-01-01 00:00:00.
+  * Assumes input in normal date format, i.e. 1980-12-31 23:59:59
+  * => year=1980, mon=12, day=31, hour=23, min=59, sec=59.
+  *
+@@ -314,16 +315,13 @@ EXPORT_SYMBOL(timespec_trunc);
+  * -year/100+year/400 terms, and add 10.]
+  *
+  * This algorithm was first published by Gauss (I think).
+- *
+- * WARNING: this function will overflow on 2106-02-07 06:28:16 on
+- * machines where long is 32-bit! (However, as time_t is signed, we
+- * will already get problems at other places on 2038-01-19 03:14:08)
+  */
+-unsigned long
+-mktime_unsafe(const unsigned int year0, const unsigned int mon0,
++time64_t
++mktime(const unsigned int year0, const unsigned int mon0,
+        const unsigned int day, const unsigned int hour,
+        const unsigned int min, const unsigned int sec)
+ {
++	time64_t ret;
+ 	unsigned int mon = mon0, year = year0;
+ 
+ 	/* 1..12 -> 11,12,1..10 */
+@@ -332,12 +330,27 @@ mktime_unsafe(const unsigned int year0, const unsigned int mon0,
+ 		year -= 1;
+ 	}
+ 
+-	return ((((unsigned long)
+-		  (year/4 - year/100 + year/400 + 367*mon/12 + day) +
+-		  year*365 - 719499
+-	    )*24 + hour /* now have hours */
+-	  )*60 + min /* now have minutes */
+-	)*60 + sec; /* finally seconds */
++	ret = (year/4 - year/100 + year/400 + 367*mon/12 + day) + year*365 - 719499;
++	ret = ret*24 + hour; /* now have hours */
++	ret = ret*60 + min; /* now have minutes */
++	ret = ret*60 + sec; /* finally seconds */
++
++	return ret;
++}
++
++EXPORT_SYMBOL(mktime);
++
++/*
++ * TODO: [2038 safety] 2038 unsafe for legacy, replace it by mktime().
++ * WARNING: mktime_unsafe() will overflow on 2106-02-07 06:28:16 on
++ * machines where long is 32-bit! (However, as time_t is signed, we
++ * will already get problems at other places on 2038-01-19 03:14:08)
++ */
++unsigned long mktime_unsafe(const unsigned int year0, const unsigned int mon0,
++       const unsigned int day, const unsigned int hour,
++       const unsigned int min, const unsigned int sec)
++{
++	return (unsigned long) mktime(year0, mon0, day, hour, min, sec);
+ }
+ 
+ EXPORT_SYMBOL(mktime_unsafe);
+-- 
+1.7.9.5
 
