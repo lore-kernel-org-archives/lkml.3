@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752296AbaJ0Pal (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:30:41 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:37504 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaJ0Paf (ORCPT
+	id S1752343AbaJ0Par (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:30:47 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:37480 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231AbaJ0Pao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:30:35 -0400
+	Mon, 27 Oct 2014 11:30:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACdXCX7PqUHRKJ0KipmYzRF54XRmMYYArr5iof36VskJ75PaKg@mail.gmail.com>
-References: <1412606822-3406-1-git-send-email-muth@cypress.com>
-	<CAAVeFu+vBZ49ciZT+-dnKXks201_psy_NtYsTjw0ptOkx2es7Q@mail.gmail.com>
-	<405b439b16ea40078718da326343f673@BN1PR06MB069.namprd06.prod.outlook.com>
-	<CAAVeFu+X0Lk=5sNm9kOwGX=2-DYN_-5v-7M9bAWXraffKsTkMg@mail.gmail.com>
-	<CACdXCX7PqUHRKJ0KipmYzRF54XRmMYYArr5iof36VskJ75PaKg@mail.gmail.com>
-Date: Mon, 27 Oct 2014 16:30:34 +0100
-Message-ID: <CACRpkdbe6OC-4CZ_DiUBcuv9wsMVtvk1FpkdNn5pZG+sgP6wZQ@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO adapter
-From: Linus Walleij <linus.walleij@linaro.org>
-To: RR <rajaram.officemails@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>, Muthu Mani <muth@cypress.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rajaram Regupathy <rera@cypress.com>, Johan Hovold <johan@kernel.org>
+In-Reply-To: <87wq7lpx55.fsf@tassilo.jf.intel.com>
+References: <d2466423e1d88f24a52e746d4f5c6a7abce982ae.1413844952.git.luto@amacapital.net>
+ <87wq7lpx55.fsf@tassilo.jf.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 27 Oct 2014 08:30:22 -0700
+Message-ID: <CALCETrUT=ZKNn=i0yzsVfkbY8jKrKwH-PqTYyc_wC7HdRa1Ubw@mail.gmail.com>
+Subject: Re: [PATCH v2 8/8 only] x86,vdso: Use LSL unconditionally for vgetcpu
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 9, 2014 at 1:46 AM, RR <rajaram.officemails@gmail.com> wrote:
-> On Wed, Oct 8, 2014 at 12:18 AM, Alexandre Courbot <gnurou@gmail.com> wrote:
->> On Wed, Oct 8, 2014 at 4:09 PM, Muthu Mani <muth@cypress.com> wrote:
-
->>>> > +static int cy_gpio_direction_output(struct gpio_chip *chip,
->>>> > +                                       unsigned offset, int value) {
->>>> > +       return 0;
->>>> > +}
->>>>
->>>> If that chip is capable of both output and input, shouldn't these functions be
->>>> implemented? I think this has already been pointed out in a previous version
->>>> but you did not reply.
->>>
->>> Thanks for your inputs.
->>>
->>> Only the GPIOs which are configured to be output GPIO can be set.
->>
->> In that case cy_gpio_set() should return an error for GPIOs which are
->> not configured as outputs. Is that guaranteed by the current
->> implementation?
->>
->>> The set operation would fail trying to set the input or unconfigured GPIOs.
->>> In this version of driver, this support is not added, it can be introduced in future versions.
->>> I will add a TODO note in the code.
->>
->> Argh, no TODO please. Actual code that will turn this code into a
->> solid driver that can be merged.
+On Mon, Oct 27, 2014 at 4:31 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> Andy Lutomirski <luto@amacapital.net> writes:
 >
-> Does a driver targeted for a custom device has to implement every
-> functionality in the 1st version ?
+>> LSL is faster than RDTSCP and works everywhere; there's no need to
+>> switch between them depending on CPU.
+>
+> Yes it should have been done like this from day 1.
+>
+>> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+>> index 9793322751e0..d14bb8faad16 100644
+>> --- a/arch/x86/vdso/vclock_gettime.c
+>> +++ b/arch/x86/vdso/vclock_gettime.c
+>> @@ -11,6 +11,9 @@
+>>   * Check with readelf after changing.
+>>   */
+>>
+>> +/* Disable static_cpu_has debugging; it doesn't work in the vDSO */
+>> +#undef CONFIG_X86_DEBUG_STATIC_CPU_HAS
+>> +
+>>  #include <uapi/linux/time.h>
+>>  #include <asm/vgtod.h>
+>>  #include <asm/hpet.h>
+>> diff --git a/arch/x86/vdso/vgetcpu.c b/arch/x86/vdso/vgetcpu.c
+>> index add1d98d2477..fd8470c98ab5 100644
+>> --- a/arch/x86/vdso/vgetcpu.c
+>> +++ b/arch/x86/vdso/vgetcpu.c
+>> @@ -5,10 +5,12 @@
+>>   * Fast user context implementation of getcpu()
+>>   */
+>>
+>> +/* Disable static_cpu_has debugging; it doesn't work in the vDSO */
+>> +#undef CONFIG_X86_DEBUG_STATIC_CPU_HAS
+>
+>
+> These two hunks are unrelated?
+>
 
-When you post a driver to the GPIO maintainers it is *NOT* tageted
-at a consumer device, it is targeted at the kernel community and
-upstream maintainers.
+They're related, but they're no longer necessary.  v1 of this patch
+added a static_cpu_has call to vgtod.h, breaking compilation if this
+hunk wasn't there.
 
-Of course you can deliver add-on patches out-of-tree to your
-customers, it's generally a bad idea for the long term and maintenance
-of your driver, but it's your pick.
+I can send a v3 with these deleted, but I prefer keeping them, since
+they may save whomever modifies these files next a compiler error.
 
-Yours,
-Linus Walleij
+--Andy
+
+> -Andi
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
