@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752443AbaJ0IG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 04:06:58 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:46275 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbaJ0IGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 04:06:55 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20141025170609.GK7996@ZenIV.linux.org.uk>
-References: <20141023232539.GA4662@tucsk.piliscsaba.szeredi.hu>
-	<20141024022055.GH7996@ZenIV.linux.org.uk>
-	<20141024032422.GI7996@ZenIV.linux.org.uk>
-	<CAJfpegt-X_Cd8B5H65keshhhuwH2-HPpaBC30atKeS3QjaariA@mail.gmail.com>
-	<20141025081845.GJ7996@ZenIV.linux.org.uk>
-	<CAJfpegvM8d-cizf=3KmTSFVgAYPBDp_0fQAh+G2Q87u=taXm3A@mail.gmail.com>
-	<20141025170609.GK7996@ZenIV.linux.org.uk>
-Date: Mon, 27 Oct 2014 09:06:54 +0100
-Message-ID: <CAJfpegucroRzo0NHTz=4N0WcrB2oDC0eDiZXk=aKSjc8vdYDjw@mail.gmail.com>
-Subject: Re: [GIT PULL] overlay filesystem v25
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-unionfs@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752508AbaJ0IIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 04:08:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:33019 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751834AbaJ0IIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 04:08:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,794,1406617200"; 
+   d="scan'208";a="621212285"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] pinctrl: Intel Cherryview/Braswell support
+Date: Mon, 27 Oct 2014 10:08:28 +0200
+Message-Id: <1414397312-94609-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Paul McKenney added to CC]
+[The previous series never reached LKML to misconfiguration in my mailer.
+ Resending the whole series with LKML included.]
 
-On Sat, Oct 25, 2014 at 7:06 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Sat, Oct 25, 2014 at 11:53:52AM +0200, Miklos Szeredi wrote:
->
->> Yes, but it's not about race with copy-up (which the ovl_path_upper()
->> protects against), but race of two fsync calls with each other.  If
->> there's no synchronization between them, then that od->upperfile does
->> indeed count as lockless access, no matter that the assignment was
->> done under lock.
->
->         p = global;
->         if (!p) {       // outside of lock
->                 p = alloc();
->                 grab lock
->                 if (!global) {
->                         global = p;
->                 } else {
->                         destroy(p);
->                         p = global;
->                 }
->                 drop lock
->         }
-> is a very common pattern, especially if you look for cases when lock is
-> a spinlock and allocation is blocking (in those cases you'll often see
-> destroy() part done after dropping the lock; that's where what I fucked up in
-> what I'd originally pushed.  And it wasn't even needed - fput() under
-> ->i_mutex is OK...)
+Hi,
 
-Being a very common pattern does not automatically make it correct...
+This is a complete rewrite of the GPIO driver patch I sent previously. The
+mail thread can be found here:
 
-My understanding of these issues is very limited, but it's not clear
-to me what will order initialization of members of p with the storing
-of p into global.  E.g. we start out with global == NULL and p->foo ==
-0.
+	http://marc.info/?l=linux-gpio&m=141079024403000&w=2
 
-CPU1:
-  p->foo = 1
-  grab lock
-  if (!global)
-      global = p
+Outcome of that discussion was that instead of GPIO driver, we should have
+a combined pinctrl/GPIO driver.
 
-CPU1:
-  p = global
-  if (p)
-     q = p->foo
+This patch series implements pinctrl/GPIO driver for Intel
+Cherryview/Braswell. While there we decided to put all Intel pinctrl
+drivers under drivers/pinctrl/intel/* and add an entry to MAINTAINERS. We
+are expecting to have more pinctrl drivers in future for Intel hardware.
 
-Is it guaranteed that the above sequence (as is, without any barriers
-or ACCESS_ONCE() other than the lock acquisition) will result in q ==
-1 if p != NULL?
+Mika Westerberg (4):
+  gpio / ACPI: Add knowledge about pin controllers to acpi_get_gpiod()
+  pinctrl: Move Intel Baytrail pinctrl driver under intel directory
+  MAINTAINERS: Add entry for Intel pin controller drivers
+  pinctrl: Add Intel Cherryview/Braswell pin controller support
 
-Thanks,
-Miklos
+ MAINTAINERS                                    |    6 +
+ drivers/gpio/gpiolib-acpi.c                    |   62 +-
+ drivers/pinctrl/Kconfig                        |   13 +-
+ drivers/pinctrl/Makefile                       |    2 +-
+ drivers/pinctrl/intel/Kconfig                  |   27 +
+ drivers/pinctrl/intel/Makefile                 |    4 +
+ drivers/pinctrl/{ => intel}/pinctrl-baytrail.c |    0
+ drivers/pinctrl/intel/pinctrl-cherryview.c     | 1507 ++++++++++++++++++++++++
+ 8 files changed, 1605 insertions(+), 16 deletions(-)
+ create mode 100644 drivers/pinctrl/intel/Kconfig
+ create mode 100644 drivers/pinctrl/intel/Makefile
+ rename drivers/pinctrl/{ => intel}/pinctrl-baytrail.c (100%)
+ create mode 100644 drivers/pinctrl/intel/pinctrl-cherryview.c
+
+-- 
+2.1.1
+
