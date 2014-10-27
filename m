@@ -1,106 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653AbaJ0SEy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:04:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50145 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbaJ0SEv (ORCPT
+	id S1752530AbaJ0SDs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:03:48 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:15857 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751391AbaJ0SDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:04:51 -0400
-Date: Mon, 27 Oct 2014 19:04:39 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>
-Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization
- support
-Message-ID: <20141027180439.GL3337@twins.programming.kicks-ass.net>
-References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
- <1413483040-58399-10-git-send-email-Waiman.Long@hp.com>
- <20141024085437.GV21513@worktop.programming.kicks-ass.net>
- <544E830C.6070307@hp.com>
+	Mon, 27 Oct 2014 14:03:45 -0400
+Date: Mon, 27 Oct 2014 14:03:44 -0400
+From: Eric B Munson <emunson@akamai.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Commit 35ce7f29a breaks hibernation for XPS 13
+Message-ID: <20141027180344.GA2963@akamai.com>
+References: <20141024160815.GA2968@akamai.com>
+ <20141024161634.GR4977@linux.vnet.ibm.com>
+ <20141024163612.GA2256@akamai.com>
+ <20141024171818.GU4977@linux.vnet.ibm.com>
+ <20141024184028.GA2220@akamai.com>
+ <20141024203124.GZ4977@linux.vnet.ibm.com>
+ <20141027134757.GA2936@akamai.com>
+ <20141027151021.GC5718@linux.vnet.ibm.com>
+ <20141027174025.GA27568@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <544E830C.6070307@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20141027174025.GA27568@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 01:38:20PM -0400, Waiman Long wrote:
-> On 10/24/2014 04:54 AM, Peter Zijlstra wrote:
-> >On Thu, Oct 16, 2014 at 02:10:38PM -0400, Waiman Long wrote:
-> >
-> >>Since enabling paravirt spinlock will disable unlock function inlining,
-> >>a jump label can be added to the unlock function without adding patch
-> >>sites all over the kernel.
-> >But you don't have to. My patches allowed for the inline to remain,
-> >again reducing the overhead of enabling PV spinlocks while running on a
-> >real machine.
-> >
-> >Look at:
-> >
-> >   http://lkml.kernel.org/r/20140615130154.213923590@chello.nl
-> >
-> >In particular this hunk:
-> >
-> >Index: linux-2.6/arch/x86/kernel/paravirt_patch_64.c
-> >===================================================================
-> >--- linux-2.6.orig/arch/x86/kernel/paravirt_patch_64.c
-> >+++ linux-2.6/arch/x86/kernel/paravirt_patch_64.c
-> >@@ -22,6 +22,10 @@ DEF_NATIVE(pv_cpu_ops, swapgs, "swapgs")
-> >  DEF_NATIVE(, mov32, "mov %edi, %eax");
-> >  DEF_NATIVE(, mov64, "mov %rdi, %rax");
-> >
-> >+#if defined(CONFIG_PARAVIRT_SPINLOCKS)&&  defined(CONFIG_QUEUE_SPINLOCK)
-> >+DEF_NATIVE(pv_lock_ops, queue_unlock, "movb $0, (%rdi)");
-> >+#endif
-> >+
-> >  unsigned paravirt_patch_ident_32(void *insnbuf, unsigned len)
-> >  {
-> >         return paravirt_patch_insns(insnbuf, len,
-> >@@ -61,6 +65,9 @@ unsigned native_patch(u8 type, u16 clobb
-> >                 PATCH_SITE(pv_cpu_ops, clts);
-> >                 PATCH_SITE(pv_mmu_ops, flush_tlb_single);
-> >                 PATCH_SITE(pv_cpu_ops, wbinvd);
-> >+#if defined(CONFIG_PARAVIRT_SPINLOCKS)&&  defined(CONFIG_QUEUE_SPINLOCK)
-> >+               PATCH_SITE(pv_lock_ops, queue_unlock);
-> >+#endif
-> >
-> >         patch_site:
-> >                 ret = paravirt_patch_insns(ibuf, len, start, end);
-> >
-> >
-> >That makes sure to overwrite the callee-saved call to the
-> >pv_lock_ops::queue_unlock with the immediate asm "movb $0, (%rdi)".
-> >
-> >
-> >Therefore you can retain the inlined unlock with hardly (there might be
-> >some NOP padding) any overhead at all. On PV it reverts to a callee
-> >saved function call.
+On Mon, 27 Oct 2014, Paul E. McKenney wrote:
+
+> On Mon, Oct 27, 2014 at 08:10:21AM -0700, Paul E. McKenney wrote:
+> > On Mon, Oct 27, 2014 at 09:47:57AM -0400, Eric B Munson wrote:
+> > > On Fri, 24 Oct 2014, Paul E. McKenney wrote:
 > 
-> My concern is that spin_unlock() can be called in many places, including
-> loadable kernel modules. Can the paravirt_patch_ident_32() function able to
-> patch all of them in reasonable time? How about a kernel module loaded later
-> at run time?
+> [ . . . ]
+> 
+> > > > > Still didn't help.  If it helps, when I attempt to reboot after trying
+> > > > > to hibernate I see a kworker thread hung and get the stack trace below
+> > > > > from that thread.  I assume this is the same thread that is holding up
+> > > > > the hibernate.
+> > > > 
+> > > > Yep, looks like something that some other people are running into as well.
+> > > > 
+> > > > If you turn off CONFIG_RCU_NOCB_CPU, do you still get the failure?
+> > > 
+> > > Disabling CONFIG_RCU_NOCB_CPU fixes the problem.  I am able to hibernate
+> > > and resume successfully.
+> > 
+> > Very good!  Then the fix I am working on might actually be a fix.  ;-)
+> 
+> And here is a patch that passes preliminary testing at my end.  Does it
+> help at your end?
+> 
+> 							Thanx, Paul
 
-modules should be fine, see arch/x86/kernel/module.c:module_finalize()
--> apply_paravirt().
+Thanks Paul, that fixed it for me.  Feel free to add my Tested-by: to
+the patch.
 
-Also note that the 'default' text is an indirect call into the paravirt
-ops table which routes to the 'right' function, so even if the text
-patching would be 'late' calls would 'work' as expected, just slower.
+Eric
+
+> 
+> ------------------------------------------------------------------------
+> 
+> rcu: Make rcu_barrier() understand about missing rcuo kthreads
+> 
+> Commit 35ce7f29a44a (rcu: Create rcuo kthreads only for onlined CPUs)
+> avoids creating rcuo kthreads for CPUs that never come online.  This
+> fixes a bug in many instances of firmware: Instead of lying about their
+> age, these systems instead lie about the number of CPUs that they have.
+> Before commit 35ce7f29a44a, this could result in huge numbers of useless
+> rcuo kthreads being created.
+> 
+> It appears that experience indicates that I should have told the
+> people suffering from this problem to fix their broken firmware, but
+> I instead produced what turned out to be a partial fix.   The missing
+> piece supplied by this commit makes sure that rcu_barrier() knows not to
+> post callbacks for no-CBs CPUs that have not yet come online, because
+> otherwise rcu_barrier() will hang on systems having firmware that lies
+> about the number of CPUs.
+> 
+> It is tempting to simply have rcu_barrier() refuse to post a callback on
+> any no-CBs CPU that does not have an rcuo kthread.  This unfortunately
+> does not work because rcu_barrier() is required to wait for all pending
+> callbacks.  It is therefore required to wait even for those callbacks
+> that cannot possibly be invoked.  Even if doing so hangs the system.
+> 
+> Given that posting a callback to a no-CBs CPU that does not yet have an
+> rcuo kthread can hang rcu_barrier(), It is tempting to report an error
+> in this case.  Unfortunately, this will result in false positives at
+> boot time, when it is perfectly legal to post callbacks to the boot CPU
+> before the scheduler has started, in other words, before it is legal
+> to invoke rcu_barrier().
+> 
+> So this commit instead has rcu_barrier() avoid posting callbacks to
+> CPUs having neither rcuo kthread nor pending callbacks, and has it
+> complain bitterly if it finds CPUs having no rcuo kthread but some
+> pending callbacks.  And when rcu_barrier() does find CPUs having no rcuo
+> kthread but pending callbacks, as noted earlier, it has no choice but
+> to hang indefinitely.
+> 
+> Reported-by: Yanko Kaneti <yaneti@declera.com>
+> Reported-by: Jay Vosburgh <jay.vosburgh@canonical.com>
+> Reported-by: Eric B Munson <emunson@akamai.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
+> index aa8e5eea3ab4..c78e88ce5ea3 100644
+> --- a/include/trace/events/rcu.h
+> +++ b/include/trace/events/rcu.h
+> @@ -660,18 +660,18 @@ TRACE_EVENT(rcu_torture_read,
+>  /*
+>   * Tracepoint for _rcu_barrier() execution.  The string "s" describes
+>   * the _rcu_barrier phase:
+> - *	"Begin": rcu_barrier_callback() started.
+> - *	"Check": rcu_barrier_callback() checking for piggybacking.
+> - *	"EarlyExit": rcu_barrier_callback() piggybacked, thus early exit.
+> - *	"Inc1": rcu_barrier_callback() piggyback check counter incremented.
+> - *	"Offline": rcu_barrier_callback() found offline CPU
+> - *	"OnlineNoCB": rcu_barrier_callback() found online no-CBs CPU.
+> - *	"OnlineQ": rcu_barrier_callback() found online CPU with callbacks.
+> - *	"OnlineNQ": rcu_barrier_callback() found online CPU, no callbacks.
+> + *	"Begin": _rcu_barrier() started.
+> + *	"Check": _rcu_barrier() checking for piggybacking.
+> + *	"EarlyExit": _rcu_barrier() piggybacked, thus early exit.
+> + *	"Inc1": _rcu_barrier() piggyback check counter incremented.
+> + *	"OfflineNoCB": _rcu_barrier() found callback on never-online CPU
+> + *	"OnlineNoCB": _rcu_barrier() found online no-CBs CPU.
+> + *	"OnlineQ": _rcu_barrier() found online CPU with callbacks.
+> + *	"OnlineNQ": _rcu_barrier() found online CPU, no callbacks.
+>   *	"IRQ": An rcu_barrier_callback() callback posted on remote CPU.
+>   *	"CB": An rcu_barrier_callback() invoked a callback, not the last.
+>   *	"LastCB": An rcu_barrier_callback() invoked the last callback.
+> - *	"Inc2": rcu_barrier_callback() piggyback check counter incremented.
+> + *	"Inc2": _rcu_barrier() piggyback check counter incremented.
+>   * The "cpu" argument is the CPU or -1 if meaningless, the "cnt" argument
+>   * is the count of remaining callbacks, and "done" is the piggybacking count.
+>   */
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index f6880052b917..7680fc275036 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -3312,11 +3312,16 @@ static void _rcu_barrier(struct rcu_state *rsp)
+>  			continue;
+>  		rdp = per_cpu_ptr(rsp->rda, cpu);
+>  		if (rcu_is_nocb_cpu(cpu)) {
+> -			_rcu_barrier_trace(rsp, "OnlineNoCB", cpu,
+> -					   rsp->n_barrier_done);
+> -			atomic_inc(&rsp->barrier_cpu_count);
+> -			__call_rcu(&rdp->barrier_head, rcu_barrier_callback,
+> -				   rsp, cpu, 0);
+> +			if (!rcu_nocb_cpu_needs_barrier(rsp, cpu)) {
+> +				_rcu_barrier_trace(rsp, "OfflineNoCB", cpu,
+> +						   rsp->n_barrier_done);
+> +			} else {
+> +				_rcu_barrier_trace(rsp, "OnlineNoCB", cpu,
+> +						   rsp->n_barrier_done);
+> +				atomic_inc(&rsp->barrier_cpu_count);
+> +				__call_rcu(&rdp->barrier_head,
+> +					   rcu_barrier_callback, rsp, cpu, 0);
+> +			}
+>  		} else if (ACCESS_ONCE(rdp->qlen)) {
+>  			_rcu_barrier_trace(rsp, "OnlineQ", cpu,
+>  					   rsp->n_barrier_done);
+> diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+> index 4beab3d2328c..8e7b1843896e 100644
+> --- a/kernel/rcu/tree.h
+> +++ b/kernel/rcu/tree.h
+> @@ -587,6 +587,7 @@ static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
+>  static void print_cpu_stall_info_end(void);
+>  static void zero_cpu_stall_ticks(struct rcu_data *rdp);
+>  static void increment_cpu_stall_ticks(void);
+> +static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu);
+>  static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq);
+>  static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp);
+>  static void rcu_init_one_nocb(struct rcu_node *rnp);
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 927c17b081c7..68c5b23b7173 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -2050,6 +2050,33 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
+>  }
+>  
+>  /*
+> + * Does the specified CPU need an RCU callback for the specified flavor
+> + * of rcu_barrier()?
+> + */
+> +static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu)
+> +{
+> +	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
+> +	struct rcu_head *rhp;
+> +
+> +	/* No-CBs CPUs might have callbacks on any of three lists. */
+> +	rhp = ACCESS_ONCE(rdp->nocb_head);
+> +	if (!rhp)
+> +		rhp = ACCESS_ONCE(rdp->nocb_gp_head);
+> +	if (!rhp)
+> +		rhp = ACCESS_ONCE(rdp->nocb_follower_head);
+> +
+> +	/* Having no rcuo kthread but CBs after scheduler starts is bad! */
+> +	if (!ACCESS_ONCE(rdp->nocb_kthread) && rhp) {
+> +		/* RCU callback enqueued before CPU first came online??? */
+> +		pr_err("RCU: Never-onlined no-CBs CPU %d has CB %p\n",
+> +		       cpu, rhp->func);
+> +		WARN_ON_ONCE(1);
+> +	}
+> +
+> +	return !!rhp;
+> +}
+> +
+> +/*
+>   * Enqueue the specified string of rcu_head structures onto the specified
+>   * CPU's no-CBs lists.  The CPU is specified by rdp, the head of the
+>   * string by rhp, and the tail of the string by rhtp.  The non-lazy/lazy
+> @@ -2646,6 +2673,10 @@ static bool init_nocb_callback_list(struct rcu_data *rdp)
+>  
+>  #else /* #ifdef CONFIG_RCU_NOCB_CPU */
+>  
+> +static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu)
+> +{
+> +}
+> +
+>  static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
+>  {
+>  }
+> 
