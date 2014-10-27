@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032AbaJ0TB3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:01:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52539 "EHLO
+	id S1753062AbaJ0TBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:01:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52547 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006AbaJ0TBZ (ORCPT
+	with ESMTP id S1753015AbaJ0TB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:01:25 -0400
+	Mon, 27 Oct 2014 15:01:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Xiubo Li <Li.Xiubo@freescale.com>, Mark Brown <broonie@kernel.org>,
+Cc: Willem Pinckaers <willem@lekkertech.net>,
+        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 058/105] regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.
-Date: Mon, 27 Oct 2014 11:56:33 -0700
-Message-Id: <1414436240-13879-59-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 054/105] Documentation: lzo: document part of the encoding
+Date: Mon, 27 Oct 2014 11:56:29 -0700
+Message-Id: <1414436240-13879-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,38 +29,194 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiubo Li <Li.Xiubo@freescale.com>
+From: Willy Tarreau <w@1wt.eu>
 
-commit d6b41cb06044a7d895db82bdd54f6e4219970510 upstream.
+commit d98a0526434d27e261f622cf9d2e0028b5ff1a00 upstream.
 
-Since we cannot make sure the 'val_count' will always be none zero
-here, and then if it equals to zero, the kmemdup() will return
-ZERO_SIZE_PTR, which equals to ((void *)16).
+Add a complete description of the LZO format as processed by the
+decompressor. I have not found a public specification of this format
+hence this analysis, which will be used to better understand the code.
 
-So this patch fix this with just doing the zero check before calling
-kmemdup().
-
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Cc: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/base/regmap/regmap.c | 3 +++
- 1 file changed, 3 insertions(+)
+ Documentation/lzo.txt | 164 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 164 insertions(+)
+ create mode 100644 Documentation/lzo.txt
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 1ac3c9a..ebe332c 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1529,6 +1529,9 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
- 	if (val_bytes == 1) {
- 		wval = (void *)val;
- 	} else {
-+		if (!val_count)
-+			return -EINVAL;
+diff --git a/Documentation/lzo.txt b/Documentation/lzo.txt
+new file mode 100644
+index 0000000..ea45dd3
+--- /dev/null
++++ b/Documentation/lzo.txt
+@@ -0,0 +1,164 @@
 +
- 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
- 		if (!wval) {
- 			ret = -ENOMEM;
++LZO stream format as understood by Linux's LZO decompressor
++===========================================================
++
++Introduction
++
++  This is not a specification. No specification seems to be publicly available
++  for the LZO stream format. This document describes what input format the LZO
++  decompressor as implemented in the Linux kernel understands. The file subject
++  of this analysis is lib/lzo/lzo1x_decompress_safe.c. No analysis was made on
++  the compressor nor on any other implementations though it seems likely that
++  the format matches the standard one. The purpose of this document is to
++  better understand what the code does in order to propose more efficient fixes
++  for future bug reports.
++
++Description
++
++  The stream is composed of a series of instructions, operands, and data. The
++  instructions consist in a few bits representing an opcode, and bits forming
++  the operands for the instruction, whose size and position depend on the
++  opcode and on the number of literals copied by previous instruction. The
++  operands are used to indicate :
++
++    - a distance when copying data from the dictionary (past output buffer)
++    - a length (number of bytes to copy from dictionary)
++    - the number of literals to copy, which is retained in variable "state"
++      as a piece of information for next instructions.
++
++  Optionally depending on the opcode and operands, extra data may follow. These
++  extra data can be a complement for the operand (eg: a length or a distance
++  encoded on larger values), or a literal to be copied to the output buffer.
++
++  The first byte of the block follows a different encoding from other bytes, it
++  seems to be optimized for literal use only, since there is no dictionary yet
++  prior to that byte.
++
++  Lengths are always encoded on a variable size starting with a small number
++  of bits in the operand. If the number of bits isn't enough to represent the
++  length, up to 255 may be added in increments by consuming more bytes with a
++  rate of at most 255 per extra byte (thus the compression ratio cannot exceed
++  around 255:1). The variable length encoding using #bits is always the same :
++
++       length = byte & ((1 << #bits) - 1)
++       if (!length) {
++               length = ((1 << #bits) - 1)
++               length += 255*(number of zero bytes)
++               length += first-non-zero-byte
++       }
++       length += constant (generally 2 or 3)
++
++  For references to the dictionary, distances are relative to the output
++  pointer. Distances are encoded using very few bits belonging to certain
++  ranges, resulting in multiple copy instructions using different encodings.
++  Certain encodings involve one extra byte, others involve two extra bytes
++  forming a little-endian 16-bit quantity (marked LE16 below).
++
++  After any instruction except the large literal copy, 0, 1, 2 or 3 literals
++  are copied before starting the next instruction. The number of literals that
++  were copied may change the meaning and behaviour of the next instruction. In
++  practice, only one instruction needs to know whether 0, less than 4, or more
++  literals were copied. This is the information stored in the <state> variable
++  in this implementation. This number of immediate literals to be copied is
++  generally encoded in the last two bits of the instruction but may also be
++  taken from the last two bits of an extra operand (eg: distance).
++
++  End of stream is declared when a block copy of distance 0 is seen. Only one
++  instruction may encode this distance (0001HLLL), it takes one LE16 operand
++  for the distance, thus requiring 3 bytes.
++
++  IMPORTANT NOTE : in the code some length checks are missing because certain
++  instructions are called under the assumption that a certain number of bytes
++  follow because it has already been garanteed before parsing the instructions.
++  They just have to "refill" this credit if they consume extra bytes. This is
++  an implementation design choice independant on the algorithm or encoding.
++
++Byte sequences
++
++  First byte encoding :
++
++      0..17   : follow regular instruction encoding, see below. It is worth
++                noting that codes 16 and 17 will represent a block copy from
++                the dictionary which is empty, and that they will always be
++                invalid at this place.
++
++      18..21  : copy 0..3 literals
++                state = (byte - 17) = 0..3  [ copy <state> literals ]
++                skip byte
++
++      22..255 : copy literal string
++                length = (byte - 17) = 4..238
++                state = 4 [ don't copy extra literals ]
++                skip byte
++
++  Instruction encoding :
++
++      0 0 0 0 X X X X  (0..15)
++        Depends on the number of literals copied by the last instruction.
++        If last instruction did not copy any literal (state == 0), this
++        encoding will be a copy of 4 or more literal, and must be interpreted
++        like this :
++
++           0 0 0 0 L L L L  (0..15)  : copy long literal string
++           length = 3 + (L ?: 15 + (zero_bytes * 255) + non_zero_byte)
++           state = 4  (no extra literals are copied)
++
++        If last instruction used to copy between 1 to 3 literals (encoded in
++        the instruction's opcode or distance), the instruction is a copy of a
++        2-byte block from the dictionary within a 1kB distance. It is worth
++        noting that this instruction provides little savings since it uses 2
++        bytes to encode a copy of 2 other bytes but it encodes the number of
++        following literals for free. It must be interpreted like this :
++
++           0 0 0 0 D D S S  (0..15)  : copy 2 bytes from <= 1kB distance
++           length = 2
++           state = S (copy S literals after this block)
++         Always followed by exactly one byte : H H H H H H H H
++           distance = (H << 2) + D + 1
++
++        If last instruction used to copy 4 or more literals (as detected by
++        state == 4), the instruction becomes a copy of a 3-byte block from the
++        dictionary from a 2..3kB distance, and must be interpreted like this :
++
++           0 0 0 0 D D S S  (0..15)  : copy 3 bytes from 2..3 kB distance
++           length = 3
++           state = S (copy S literals after this block)
++         Always followed by exactly one byte : H H H H H H H H
++           distance = (H << 2) + D + 2049
++
++      0 0 0 1 H L L L  (16..31)
++           Copy of a block within 16..48kB distance (preferably less than 10B)
++           length = 2 + (L ?: 7 + (zero_bytes * 255) + non_zero_byte)
++        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
++           distance = 16384 + (H << 14) + D
++           state = S (copy S literals after this block)
++           End of stream is reached if distance == 16384
++
++      0 0 1 L L L L L  (32..63)
++           Copy of small block within 16kB distance (preferably less than 34B)
++           length = 2 + (L ?: 31 + (zero_bytes * 255) + non_zero_byte)
++        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
++           distance = D + 1
++           state = S (copy S literals after this block)
++
++      0 1 L D D D S S  (64..127)
++           Copy 3-4 bytes from block within 2kB distance
++           state = S (copy S literals after this block)
++           length = 3 + L
++         Always followed by exactly one byte : H H H H H H H H
++           distance = (H << 3) + D + 1
++
++      1 L L D D D S S  (128..255)
++           Copy 5-8 bytes from block within 2kB distance
++           state = S (copy S literals after this block)
++           length = 5 + L
++         Always followed by exactly one byte : H H H H H H H H
++           distance = (H << 3) + D + 1
++
++Authors
++
++  This document was written by Willy Tarreau <w@1wt.eu> on 2014/07/19 during an
++  analysis of the decompression code available in Linux 3.16-rc5. The code is
++  tricky, it is possible that this document contains mistakes or that a few
++  corner cases were overlooked. In any case, please report any doubt, fix, or
++  proposed updates to the author(s) so that the document can be updated.
 -- 
 1.9.1
 
