@@ -1,36 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789AbaJ0OwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:52:23 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:52042 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbaJ0OwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:52:21 -0400
-Date: Mon, 27 Oct 2014 10:52:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: James Ralston <james.d.ralston@intel.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] ahci: Add Device IDs for Intel Sunrise Point PCH
-Message-ID: <20141027145217.GN4436@htj.dyndns.org>
-References: <1413238598-5425-1-git-send-email-james.d.ralston@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413238598-5425-1-git-send-email-james.d.ralston@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752868AbaJ0Owj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:52:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53777 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951AbaJ0Owh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 10:52:37 -0400
+From: Juergen Gross <jgross@suse.com>
+To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, david.vrabel@citrix.com,
+        boris.ostrovsky@oracle.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH 0/2] xen: Switch to virtual mapped linear p2m list
+Date: Mon, 27 Oct 2014 15:52:29 +0100
+Message-Id: <1414421551-31555-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 1.8.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 03:16:38PM -0700, James Ralston wrote:
-> This patch adds the AHCI-mode SATA Device IDs for the Intel Sunrise Point PCH.
-> 
-> Signed-off-by: James Ralston <james.d.ralston@intel.com>
+Paravirtualized kernels running on Xen use a three level tree for
+translation of guest specific physical addresses to machine global
+addresses. This p2m tree is used for construction of page table
+entries, so the p2m tree walk is performance critical.
 
-Applied to libata/for-3.18-fixes w/ stable cc'd.
+By using a linear virtual mapped p2m list accesses to p2m elements
+can be sped up while even simplifying code. To achieve this goal
+some p2m related initializations have to be performed later in the
+boot process, as the final p2m list can be set up only after basic
+memory management functions are available.
 
-Sorry about the delay.
+The first patch in this series modifies xen specific kernel
+initialization to be able to switch to the linear mapped p2m list
+introduced in the sewcond patch.
+
+Juergen Gross (2):
+  Xen: Delay remapping memory of pv-domain
+  Xen: switch to linear virtual mapped sparse p2m list
+
+ arch/x86/include/asm/pgtable_types.h |   1 +
+ arch/x86/include/asm/xen/page.h      |  31 +-
+ arch/x86/mm/pageattr.c               |  20 +
+ arch/x86/xen/mmu.c                   |  38 +-
+ arch/x86/xen/p2m.c                   | 986 +++++++++++++----------------------
+ arch/x86/xen/setup.c                 | 455 ++++++++--------
+ arch/x86/xen/xen-ops.h               |   6 +-
+ 7 files changed, 675 insertions(+), 862 deletions(-)
 
 -- 
-tejun
+1.8.4.5
+
