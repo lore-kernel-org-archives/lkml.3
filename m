@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaJ0T0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:26:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52432 "EHLO
+	id S1754209AbaJ0T1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:27:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52418 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408AbaJ0S5o (ORCPT
+	with ESMTP id S1752385AbaJ0S5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:57:44 -0400
+	Mon, 27 Oct 2014 14:57:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Cristian Stoica <cristian.stoica@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
+Cc: Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 006/105] crypto: caam - fix addressing of struct member
-Date: Mon, 27 Oct 2014 11:55:41 -0700
-Message-Id: <1414436240-13879-7-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 008/105] x86, fpu: __restore_xstate_sig()->math_state_restore() needs preempt_disable()
+Date: Mon, 27 Oct 2014 11:55:43 -0700
+Message-Id: <1414436240-13879-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,38 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristian Stoica <cristian.stoica@freescale.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 4451d494b1910bf7b7f8381a637d0fe6d2142467 upstream.
+commit df24fb859a4e200d9324e2974229fbb7adf00aef upstream.
 
-buf_0 and buf_1 in caam_hash_state are not next to each other.
-Accessing buf_1 is incorrect from &buf_0 with an offset of only
-size_of(buf_0). The same issue is also with buflen_0 and buflen_1
+Add preempt_disable() + preempt_enable() around math_state_restore() in
+__restore_xstate_sig(). Otherwise __switch_to() after __thread_fpu_begin()
+can overwrite fpu->state we are going to restore.
 
-Signed-off-by: Cristian Stoica <cristian.stoica@freescale.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20140902175717.GA21649@redhat.com
+Reviewed-by: Suresh Siddha <sbsiddha@gmail.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/crypto/caam/caamhash.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/xsave.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/crypto/caam/caamhash.c b/drivers/crypto/caam/caamhash.c
-index 0378328..a412745 100644
---- a/drivers/crypto/caam/caamhash.c
-+++ b/drivers/crypto/caam/caamhash.c
-@@ -1348,9 +1348,9 @@ static int ahash_update_first(struct ahash_request *req)
- 	struct device *jrdev = ctx->jrdev;
- 	gfp_t flags = (req->base.flags & (CRYPTO_TFM_REQ_MAY_BACKLOG |
- 		       CRYPTO_TFM_REQ_MAY_SLEEP)) ? GFP_KERNEL : GFP_ATOMIC;
--	u8 *next_buf = state->buf_0 + state->current_buf *
--		       CAAM_MAX_HASH_BLOCK_SIZE;
--	int *next_buflen = &state->buflen_0 + state->current_buf;
-+	u8 *next_buf = state->current_buf ? state->buf_1 : state->buf_0;
-+	int *next_buflen = state->current_buf ?
-+		&state->buflen_1 : &state->buflen_0;
- 	int to_hash;
- 	u32 *sh_desc = ctx->sh_desc_update_first, *desc;
- 	dma_addr_t ptr = ctx->sh_desc_update_first_dma;
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 31f6bfd..f5869fc 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -397,8 +397,11 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 			set_used_math();
+ 		}
+ 
+-		if (use_eager_fpu())
++		if (use_eager_fpu()) {
++			preempt_disable();
+ 			math_state_restore();
++			preempt_enable();
++		}
+ 
+ 		return err;
+ 	} else {
 -- 
 1.9.1
 
