@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaJ0Srw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:47:52 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:54943 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550AbaJ0Srt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:47:49 -0400
+	id S1752212AbaJ0SsP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:48:15 -0400
+Received: from mga11.intel.com ([192.55.52.93]:4176 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204AbaJ0SsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:48:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="406819344"
+Date: Mon, 27 Oct 2014 14:48:09 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Ross Zwisler <ross.zwisler@linux.intel.com>,
+        lttng-dev <lttng-dev@lists.lttng.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: Progress on system crash traces with LTTng using DAX and pmem
+Message-ID: <20141027184809.GW11522@wil.cx>
+References: <1254279794.1957.1414240389301.JavaMail.zimbra@efficios.com>
+ <465653369.1985.1414241485934.JavaMail.zimbra@efficios.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHse=S-x6NKEn9EGFos6bS=asK-1mWCr0r9aji2a97_fgxU+Sg@mail.gmail.com>
-References: <1413978269-17274-1-git-send-email-drysdale@google.com>
- <1413978269-17274-2-git-send-email-drysdale@google.com> <CALCETrWbj=BTDyKqtbSKteANj3J3UFZnrvWv9DMosCoEZaSoeA@mail.gmail.com>
- <CAHse=S-x6NKEn9EGFos6bS=asK-1mWCr0r9aji2a97_fgxU+Sg@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 27 Oct 2014 11:47:27 -0700
-Message-ID: <CALCETrWN+bKj_PPRJy2pNDVCRd3xyd-=w7P+9khhd-XuJRXCyA@mail.gmail.com>
-Subject: Re: [PATCHv5 1/3] syscalls,x86: implement execveat() system call
-To: David Drysdale <drysdale@google.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <465653369.1985.1414241485934.JavaMail.zimbra@efficios.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 11:03 AM, David Drysdale <drysdale@google.com> wrote:
-> On Wed, Oct 22, 2014 at 7:44 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Wed, Oct 22, 2014 at 4:44 AM, David Drysdale <drysdale@google.com> wrote:
->>> Add a new system execveat(2) syscall. execveat() is to execve() as
->>> openat() is to open(): it takes a file descriptor that refers to a
->>> directory, and resolves the filename relative to that.
->>>
->>
->>>         bprm->file = file;
->>> -       bprm->filename = bprm->interp = filename->name;
->>> +       if (fd == AT_FDCWD || filename->name[0] == '/') {
->>> +               bprm->filename = filename->name;
->>> +       } else {
->>> +               /*
->>> +                * Build a pathname that reflects how we got to the file,
->>> +                * either "/dev/fd/<fd>" (for an empty filename) or
->>> +                * "/dev/fd/<fd>/<filename>".
->>> +                */
->>> +               pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
->>> +               if (!pathbuf) {
->>> +                       retval = -ENOMEM;
->>> +                       goto out_unmark;
->>> +               }
->>> +               bprm->filename = pathbuf;
->>> +               if (filename->name[0] == '\0')
->>> +                       sprintf(pathbuf, "/dev/fd/%d", fd);
->>
->> If the fd is O_CLOEXEC, then this will result in a confused child
->> process.  Should we fail exec attempts like that for non-static
->> programs?  (E.g. set filename to "" or something and fix up the binfmt
->> drivers to handle that?)
->
-> Isn't it just scripts that get confused here (as normal executables don't
-> get to see brpm->filename)?
->
-> Given that we don't know which we have at this point, I'd suggest
-> carrying on regardless.  Or we could fall back to use the previous
-> best-effort d_path() code for O_CLOEXEC fds.  Thoughts?
+On Sat, Oct 25, 2014 at 12:51:25PM +0000, Mathieu Desnoyers wrote:
+> A quick follow up on my progress on using DAX and pmem with
+> LTTng. I've been able to successfully gather a user-space
+> trace into buffers mmap'd into an ext4 filesystem within
+> a pmem block device mounted with -o dax to bypass the page
+> cache. After a soft reboot, I'm able to mount the partition
+> again, and gather the very last data collected in the buffers
+> by the applications. I created a "lttng-crash" program that
+> extracts data from those buffers and converts the content
+> into a readable Common Trace Format trace. So I guess
+> you have a use-case for your patchsets on commodity hardware
+> right there. :)
 
-How hard would it be to mark the bprm as not having a path for the
-binary?  Then we could fail later on if and when we actually need the
-path.
+Sweet!
 
-I don't really have a strong opinion here, though.  I do prefer
-actually failing the execveat call over succeeding but invoking a
-script interpreter than can't possibly work.
+> I've been asked by my customers if DAX would work well with
+> mtd-ram, which they are using. To you foresee any roadblock
+> with this approach ?
 
->
->>> +               else
->>> +                       snprintf(pathbuf, PATH_MAX,
->>> +                                "/dev/fd/%d/%s", fd, filename->name);
->>
->> Does this need to handle the case where the result exceeds PATH_MAX?
->
-> I guess we could kmalloc(strlen(filename->name) + 19) to avoid the
-> possibility of failure, but that just defers the inevitable -- the interpreter
-> won't be able to open the script file anyway.  But it would at least then
-> generate the appropriate error (ENAMETOOLONG rather than ENOENT).
+Looks like we'd need to add support to mtd-blkdevs.c for DAX.  I assume
+they're already using one of the block-based ways to expose MTD to
+filesystems, rather than jffs2/logfs/ubifs?
 
-Depends whether anyone cares about bprm->filename.  But I think the
-code should either return an error or allocate enough space.
+I'm thinking we might want to add a flag somewhere in the block_dev / bdi
+that indicates whether DAX is supported.  Currently we rely on whether
+->direct_access is present in the block_device_operations to indicate
+that, so we'd have to have two block_dev_operations in mtd-blkdevs,
+depending on whether direct access is supported by the underlying
+MTD device.  Not a show-stopper.
 
+> Please keep me in CC on your next patch versions. I'm willing
+> to spend some more time reviewing them if needed. By the way,
+> do you guys have a target time-frame/kernel version you aim
+> at for getting this work upstream ?
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+We're trying to get it upstream ASAP.  We've been working on it
+publically since December last year, and it's getting frustrating that
+it's not upstream already.  I sent a v12 a few minutes before you sent
+this message ...  I thought git would add you to the cc's since your
+Reviewed-by is on some of the patches.
