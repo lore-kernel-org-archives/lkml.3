@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861AbaJ0TFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:05:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52906 "EHLO
+	id S1753896AbaJ0TFP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:05:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52924 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753843AbaJ0TFA (ORCPT
+	with ESMTP id S1753029AbaJ0TFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:05:00 -0400
+	Mon, 27 Oct 2014 15:05:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 084/105] fs: Fix theoretical division by 0 in super_cache_scan().
-Date: Mon, 27 Oct 2014 11:56:59 -0700
-Message-Id: <1414436240-13879-85-git-send-email-kamal@canonical.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 078/105] x86_64, entry: Filter RFLAGS.NT on entry from userspace
+Date: Mon, 27 Oct 2014 11:56:53 -0700
+Message-Id: <1414436240-13879-79-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,39 +27,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 475d0db742e3755c6b267f48577ff7cbb7dfda0d upstream.
+commit 8c7aa698baca5e8f1ba9edb68081f1e7a1abf455 upstream.
 
-total_objects could be 0 and is used as a denom.
+The NT flag doesn't do anything in long mode other than causing IRET
+to #GP.  Oddly, CPL3 code can still set NT using popf.
 
-While total_objects is a "long", total_objects == 0 unlikely happens for
-3.12 and later kernels because 32-bit architectures would not be able to
-hold (1 << 32) objects. However, total_objects == 0 may happen for kernels
-between 3.1 and 3.11 because total_objects in prune_super() was an "int"
-and (e.g.) x86_64 architecture might be able to hold (1 << 32) objects.
+Entry via hardware or software interrupt clears NT automatically, so
+the only relevant entries are fast syscalls.
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+If user code causes kernel code to run with NT set, then there's at
+least some (small) chance that it could cause trouble.  For example,
+user code could cause a call to EFI code with NT set, and who knows
+what would happen?  Apparently some games on Wine sometimes do
+this (!), and, if an IRET return happens, they will segfault.  That
+segfault cannot be handled, because signal delivery fails, too.
+
+This patch programs the CPU to clear NT on entry via SYSCALL (both
+32-bit and 64-bit, by my reading of the AMD APM), and it clears NT
+in software on entry via SYSENTER.
+
+To save a few cycles, this borrows a trick from Jan Beulich in Xen:
+it checks whether NT is set before trying to clear it.  As a result,
+it seems to have very little effect on SYSENTER performance on my
+machine.
+
+There's another minor bug fix in here: it looks like the CFI
+annotations were wrong if CONFIG_AUDITSYSCALL=n.
+
+Testers beware: on Xen, SYSENTER with NT set turns into a GPF.
+
+I haven't touched anything on 32-bit kernels.
+
+The syscall mask change comes from a variant of this patch by Anish
+Bhatt.
+
+Note to stable maintainers: there is no known security issue here.
+A misguided program can set NT and cause the kernel to try and fail
+to deliver SIGSEGV, crashing the program.  This patch fixes Far Cry
+on Wine: https://bugs.winehq.org/show_bug.cgi?id=33275
+
+Reported-by: Anish Bhatt <anish@chelsio.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/395749a5d39a29bd3e4b35899cf3a3c1340e5595.1412189265.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/super.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/ia32/ia32entry.S    | 18 +++++++++++++++++-
+ arch/x86/kernel/cpu/common.c |  2 +-
+ 2 files changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index e5f6c2c..97edaa93 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -81,6 +81,8 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
- 	inodes = list_lru_count_node(&sb->s_inode_lru, sc->nid);
- 	dentries = list_lru_count_node(&sb->s_dentry_lru, sc->nid);
- 	total_objects = dentries + inodes + fs_objects + 1;
-+	if (!total_objects)
-+		total_objects = 1;
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 4299eb0..711de08 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -151,6 +151,16 @@ ENTRY(ia32_sysenter_target)
+ 1:	movl	(%rbp),%ebp
+ 	_ASM_EXTABLE(1b,ia32_badarg)
+ 	ASM_CLAC
++
++	/*
++	 * Sysenter doesn't filter flags, so we need to clear NT
++	 * ourselves.  To save a few cycles, we can check whether
++	 * NT was set instead of doing an unconditional popfq.
++	 */
++	testl $X86_EFLAGS_NT,EFLAGS(%rsp)	/* saved EFLAGS match cpu */
++	jnz sysenter_fix_flags
++sysenter_flags_fixed:
++
+ 	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+ 	CFI_REMEMBER_STATE
+@@ -184,6 +194,8 @@ sysexit_from_sys_call:
+ 	TRACE_IRQS_ON
+ 	ENABLE_INTERRUPTS_SYSEXIT32
  
- 	/* proportion the scan between the caches */
- 	dentries = mult_frac(sc->nr_to_scan, dentries, total_objects);
++	CFI_RESTORE_STATE
++
+ #ifdef CONFIG_AUDITSYSCALL
+ 	.macro auditsys_entry_common
+ 	movl %esi,%r9d			/* 6th arg: 4th syscall arg */
+@@ -226,7 +238,6 @@ sysexit_from_sys_call:
+ 	.endm
+ 
+ sysenter_auditsys:
+-	CFI_RESTORE_STATE
+ 	auditsys_entry_common
+ 	movl %ebp,%r9d			/* reload 6th syscall arg */
+ 	jmp sysenter_dispatch
+@@ -235,6 +246,11 @@ sysexit_audit:
+ 	auditsys_exit sysexit_from_sys_call
+ #endif
+ 
++sysenter_fix_flags:
++	pushq_cfi $(X86_EFLAGS_IF|X86_EFLAGS_FIXED)
++	popfq_cfi
++	jmp sysenter_flags_fixed
++
+ sysenter_tracesys:
+ #ifdef CONFIG_AUDITSYSCALL
+ 	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index fe2bdd0..78ecb5e 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1140,7 +1140,7 @@ void syscall_init(void)
+ 	/* Flags to clear on syscall */
+ 	wrmsrl(MSR_SYSCALL_MASK,
+ 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
+-	       X86_EFLAGS_IOPL|X86_EFLAGS_AC);
++	       X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT);
+ }
+ 
+ /*
 -- 
 1.9.1
 
