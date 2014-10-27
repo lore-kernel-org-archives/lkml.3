@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaJ0J4g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 05:56:36 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48854 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586AbaJ0J4f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 05:56:35 -0400
-Date: Mon, 27 Oct 2014 10:56:26 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
-        Andi Kleen <ak@linux.intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Jens Axboe <axboe@fb.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Wise <pabs3@bonedaddy.net>
-Subject: Re: [PATCH] sysctl: terminate strings also on \r
-Message-ID: <20141027095626.GD9807@amd>
-References: <20141021202137.GA20114@www.outflux.net>
- <20141022162638.875681da6bbb9e027d2d3bee@linux-foundation.org>
- <CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
+	id S1752016AbaJ0J6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 05:58:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48510 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751492AbaJ0J6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 05:58:13 -0400
+Date: Mon, 27 Oct 2014 10:58:12 +0100
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [vfs] WARNING: CPU: 3 PID: 2339 at mm/truncate.c:758
+ pagecache_isize_extended+0xdd/0x120()
+Message-ID: <20141027095812.GA16093@quack.suse.cz>
+References: <20141016100913.GA8140@wfg-t540p.sh.intel.com>
+ <20141016110127.GD6085@quack.suse.cz>
+ <20141027010422.GA16186@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGXu5j+sW89tZDA5GQnkL4E9wHTScftyxUhyAjbWnEfxGocBjg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141027010422.GA16186@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-10-22 16:43:10, Kees Cook wrote:
-> On Wed, Oct 22, 2014 at 4:26 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Tue, 21 Oct 2014 13:21:37 -0700 Kees Cook <keescook@chromium.org> wrote:
-> >
-> >> From: Paul Wise <pabs3@bonedaddy.net>
-> >>
-> >> This partially mitigates a common strategy used by attackers for hiding
-> >> the full contents of strings in procfs from naive sysadmins who use cat,
-> >> more or sysctl to inspect the contents of strings in procfs.
-> >>
-> >> ...
-> >>
-> >> --- a/kernel/sysctl.c
-> >> +++ b/kernel/sysctl.c
-> >> @@ -1739,7 +1739,7 @@ static int _proc_do_string(char *data, int maxlen, int write,
-> >>               while ((p - buffer) < *lenp && len < maxlen - 1) {
-> >>                       if (get_user(c, p++))
-> >>                               return -EFAULT;
-> >> -                     if (c == 0 || c == '\n')
-> >> +                     if (c == 0 || c == '\n' || c == '\r')
-> >>                               break;
-> >>                       data[len++] = c;
-> >>               }
-> >
-> > There are no valid uses of \r in a procfs write?
+On Mon 27-10-14 12:04:22, Dave Chinner wrote:
+> On Thu, Oct 16, 2014 at 01:01:27PM +0200, Jan Kara wrote:
+> > From de3426d6495f4b44b14c09b7c7202e9a86d864b9 Mon Sep 17 00:00:00 2001
+> > From: Jan Kara <jack@suse.cz>
+> > Date: Thu, 16 Oct 2014 12:58:42 +0200
+> > Subject: [PATCH] mm: Remove false WARN_ON from pagecache_isize_extended()
+> > 
+> > The WARN_ON checking whether i_mutex is held in
+> > pagecache_isize_extended() was wrong because some filesystems (e.g.
+> > XFS) use different locks for serialization of truncates / writes. So
+> > just remove the check.
+> > 
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > ---
+> >  mm/truncate.c | 1 -
+> >  1 file changed, 1 deletion(-)
+> > 
+> > diff --git a/mm/truncate.c b/mm/truncate.c
+> > index 261eaf6e5a19..c646084e5eec 100644
+> > --- a/mm/truncate.c
+> > +++ b/mm/truncate.c
+> > @@ -755,7 +755,6 @@ void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
+> >  	struct page *page;
+> >  	pgoff_t index;
+> >  
+> > -	WARN_ON(!mutex_is_locked(&inode->i_mutex));
+> >  	WARN_ON(to > inode->i_size);
+> >  
+> >  	if (from >= to || bsize == PAGE_CACHE_SIZE)
 > 
-> I struggle to imagine one; everything I found that uses proc_dostring
-> seems to be names, paths, and commands.
+> Jan, Have you sent this patch upstream yet? I'm seeing it fire in
+> my testing in 3.18-rc1 kernels, so I was wondering what your plans
+> are for this...
+  I did send it but it got lost somewhere. I'll resend it.
 
-Well, filename can contain \r, right?
-									Pavel
+								Honza
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
