@@ -1,198 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaJ0QFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:05:05 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:25990 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190AbaJ0QEL (ORCPT
+	id S1752990AbaJ0P5D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:57:03 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50108 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752878AbaJ0P4y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 12:04:11 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: david.vrabel@citrix.com, konrad.wilk@oracle.com,
-        stefano.stabellini@eu.citrix.com
-Cc: jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org, boris.ostrovsky@oracle.com
-Subject: [PATCH v2 2/2] xen/pci: Use APIC directly when APIC virtualization is supported by hardware
-Date: Mon, 27 Oct 2014 12:05:53 -0400
-Message-Id: <1414425953-13987-3-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
-References: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Mon, 27 Oct 2014 11:56:54 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH v3 22/47] power/reset: restart-poweroff: Register with kernel power-off handler
+Date: Mon, 27 Oct 2014 08:55:29 -0700
+Message-Id: <1414425354-10359-23-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.544E6B46.01FB,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 132
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When hardware supports APIC/x2APIC virtualization we don't need to use pirqs
-for MSI handling and instead use APIC since most APIC accesses (MMIO or MSR)
-will now be processed without VMEXITs.
+Register with kernel power-off handler instead of setting pm_power_off
+directly.  Register as power-off handler of last resort since the driver
+does not really power off the system but executes a restart.
 
-As an example, netperf on the original code produces this profile
-(collected wih 'xentrace -e 0x0008ffff -T 5'):
+Drop remove function since it is no longer needed.
 
-    342 cpu_change
-    260 CPUID
-  34638 HLT
-  64067 INJ_VIRQ
-  28374 INTR
-  82733 INTR_WINDOW
-     10 NPF
-  24337 TRAP
- 370610 vlapic_accept_pic_intr
- 307528 VMENTRY
- 307527 VMEXIT
- 140998 VMMCALL
-    127 wrap_buffer
-
-After applying this patch the same test shows
-
-    230 cpu_change
-    260 CPUID
-  36542 HLT
-    174 INJ_VIRQ
-  27250 INTR
-    222 INTR_WINDOW
-     20 NPF
-  24999 TRAP
- 381812 vlapic_accept_pic_intr
- 166480 VMENTRY
- 166479 VMEXIT
-  77208 VMMCALL
-     81 wrap_buffer
-
-ApacheBench results (ab -n 10000 -c 200) improve by about 10%
-
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: Sebastian Reichel <sre@kernel.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Sebastian Reichel <sre@kernel.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
- arch/x86/include/asm/xen/cpuid.h |   91 ++++++++++++++++++++++++++++++++++++++
- arch/x86/pci/xen.c               |    9 ++++
- 2 files changed, 100 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/include/asm/xen/cpuid.h
+v3:
+- Replace poweroff in all newly introduced variables and in text
+  with power_off or power-off as appropriate
+- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+v2:
+- Use define to sepcify poweroff handler priority
+- Use devm_register_power_off_handler
+- Drop remove function since it is no longer needed
 
-diff --git a/arch/x86/include/asm/xen/cpuid.h b/arch/x86/include/asm/xen/cpuid.h
-new file mode 100644
-index 0000000..0d809e9
---- /dev/null
-+++ b/arch/x86/include/asm/xen/cpuid.h
-@@ -0,0 +1,91 @@
-+/******************************************************************************
-+ * arch-x86/cpuid.h
-+ *
-+ * CPUID interface to Xen.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ *
-+ * Copyright (c) 2007 Citrix Systems, Inc.
-+ *
-+ * Authors:
-+ *    Keir Fraser <keir@xen.org>
-+ */
-+
-+#ifndef __XEN_PUBLIC_ARCH_X86_CPUID_H__
-+#define __XEN_PUBLIC_ARCH_X86_CPUID_H__
-+
-+/*
-+ * For compatibility with other hypervisor interfaces, the Xen cpuid leaves
-+ * can be found at the first otherwise unused 0x100 aligned boundary starting
-+ * from 0x40000000.
-+ *
-+ * e.g If viridian extensions are enabled for an HVM domain, the Xen cpuid
-+ * leaves will start at 0x40000100
-+ */
-+
-+#define XEN_CPUID_FIRST_LEAF 0x40000000
-+#define XEN_CPUID_LEAF(i)    (XEN_CPUID_FIRST_LEAF + (i))
-+
-+/*
-+ * Leaf 1 (0x40000x00)
-+ * EAX: Largest Xen-information leaf. All leaves up to an including @EAX
-+ *      are supported by the Xen host.
-+ * EBX-EDX: "XenVMMXenVMM" signature, allowing positive identification
-+ *      of a Xen host.
-+ */
-+#define XEN_CPUID_SIGNATURE_EBX 0x566e6558 /* "XenV" */
-+#define XEN_CPUID_SIGNATURE_ECX 0x65584d4d /* "MMXe" */
-+#define XEN_CPUID_SIGNATURE_EDX 0x4d4d566e /* "nVMM" */
-+
-+/*
-+ * Leaf 2 (0x40000x01)
-+ * EAX[31:16]: Xen major version.
-+ * EAX[15: 0]: Xen minor version.
-+ * EBX-EDX: Reserved (currently all zeroes).
-+ */
-+
-+/*
-+ * Leaf 3 (0x40000x02)
-+ * EAX: Number of hypercall transfer pages. This register is always guaranteed
-+ *      to specify one hypercall page.
-+ * EBX: Base address of Xen-specific MSRs.
-+ * ECX: Features 1. Unused bits are set to zero.
-+ * EDX: Features 2. Unused bits are set to zero.
-+ */
-+
-+/* Does the host support MMU_PT_UPDATE_PRESERVE_AD for this guest? */
-+#define _XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD 0
-+#define XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD  (1u<<0)
-+
-+/*
-+ * Leaf 5 (0x40000x04)
-+ * HVM-specific features
-+ */
-+
-+/* EAX Features */
-+/* Virtualized APIC registers */
-+#define XEN_HVM_CPUID_APIC_ACCESS_VIRT (1u << 0)
-+/* Virtualized x2APIC accesses */
-+#define XEN_HVM_CPUID_X2APIC_VIRT      (1u << 1)
-+/* Memory mapped from other domains has valid IOMMU entries */
-+#define XEN_HVM_CPUID_IOMMU_MAPPINGS   (1u << 2)
-+
-+#define XEN_CPUID_MAX_NUM_LEAVES 4
-+
-+#endif /* __XEN_PUBLIC_ARCH_X86_CPUID_H__ */
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 1370716..d768371 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -23,6 +23,7 @@
- #include <xen/features.h>
- #include <xen/events.h>
- #include <asm/xen/pci.h>
-+#include <asm/xen/cpuid.h>
- #include <asm/i8259.h>
+ drivers/power/reset/restart-poweroff.c | 33 +++++++++++++--------------------
+ 1 file changed, 13 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
+index edd707e..bdd1d6e 100644
+--- a/drivers/power/reset/restart-poweroff.c
++++ b/drivers/power/reset/restart-poweroff.c
+@@ -12,37 +12,31 @@
+  */
+ #include <linux/kernel.h>
+ #include <linux/init.h>
++#include <linux/notifier.h>
+ #include <linux/platform_device.h>
+ #include <linux/of_platform.h>
+ #include <linux/module.h>
++#include <linux/pm.h>
+ #include <linux/reboot.h>
+-#include <asm/system_misc.h>
  
- static int xen_pcifront_enable_irq(struct pci_dev *dev)
-@@ -434,6 +435,14 @@ int __init pci_xen_init(void)
- #ifdef CONFIG_PCI_MSI
- void __init xen_msi_init(void)
+-static void restart_poweroff_do_poweroff(void)
++static int restart_poweroff_do_poweroff(struct notifier_block *this,
++					unsigned long unused1, void *unused2)
  {
-+	if (!disable_apic) {
-+		uint32_t eax = cpuid_eax(xen_cpuid_base() + 4);
-+
-+		if (((eax & XEN_HVM_CPUID_X2APIC_VIRT) && x2apic_mode) ||
-+		    ((eax & XEN_HVM_CPUID_APIC_ACCESS_VIRT) && cpu_has_apic))
-+			return;
-+	}
-+
- 	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
- 	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+ 	reboot_mode = REBOOT_HARD;
+ 	machine_restart(NULL);
+-}
+-
+-static int restart_poweroff_probe(struct platform_device *pdev)
+-{
+-	/* If a pm_power_off function has already been added, leave it alone */
+-	if (pm_power_off != NULL) {
+-		dev_err(&pdev->dev,
+-			"pm_power_off function already registered");
+-		return -EBUSY;
+-	}
+ 
+-	pm_power_off = &restart_poweroff_do_poweroff;
+-	return 0;
++	return NOTIFY_DONE;
  }
+ 
+-static int restart_poweroff_remove(struct platform_device *pdev)
+-{
+-	if (pm_power_off == &restart_poweroff_do_poweroff)
+-		pm_power_off = NULL;
++static struct notifier_block restart_power_off_handler = {
++	.notifier_call = restart_poweroff_do_poweroff,
++	.priority = POWER_OFF_PRIORITY_FALLBACK,
++};
+ 
+-	return 0;
++static int restart_poweroff_probe(struct platform_device *pdev)
++{
++	return devm_register_power_off_handler(&pdev->dev,
++					      &restart_power_off_handler);
+ }
+ 
+ static const struct of_device_id of_restart_poweroff_match[] = {
+@@ -52,7 +46,6 @@ static const struct of_device_id of_restart_poweroff_match[] = {
+ 
+ static struct platform_driver restart_poweroff_driver = {
+ 	.probe = restart_poweroff_probe,
+-	.remove = restart_poweroff_remove,
+ 	.driver = {
+ 		.name = "poweroff-restart",
+ 		.owner = THIS_MODULE,
 -- 
-1.7.1
+1.9.1
 
