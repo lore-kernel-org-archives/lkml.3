@@ -1,115 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaJ0B7u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 21:59:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51034 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaJ0B7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 21:59:49 -0400
-Date: Mon, 27 Oct 2014 09:58:36 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Neil Zhang <zhangwm@marvell.com>
-Cc: Dan Streetman <ddstreet@ieee.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
-Message-ID: <20141027015836.GA27978@kroah.com>
-References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
- <20141020044340.GA9589@kroah.com>
- <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com>
- <20141020064826.GA4064@kroah.com>
- <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com>
- <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com>
- <9034CBD80F070943B59700D7F8149ED9024ED2A134@SC-VEXCH4.marvell.com>
+	id S1752020AbaJ0CBz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:01:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47317 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751816AbaJ0CBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 22:01:54 -0400
+Date: Sun, 26 Oct 2014 22:01:40 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-audit@redhat.com
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+Message-ID: <20141027020140.GW15532@madcap2.tricolour.ca>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+ <54494B74.2080504@amacapital.net>
+ <1414091732.2363.11.camel@redhat.com>
+ <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com>
+ <1414092624.2363.13.camel@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <9034CBD80F070943B59700D7F8149ED9024ED2A134@SC-VEXCH4.marvell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1414092624.2363.13.camel@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 26, 2014 at 06:43:11PM -0700, Neil Zhang wrote:
-> Greg,
-> 
-> 
-> > -----Original Message-----
-> > From: ddstreet@gmail.com [mailto:ddstreet@gmail.com] On Behalf Of Dan
-> > Streetman
-> > Sent: 2014年10月21日 1:03
-> > To: Neil Zhang
-> > Cc: Greg KH; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
-> > 
-> > On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
-> > > Greg,
-> > >
-> > >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > Sent: 2014年10月20日 14:48
-> > > To: Neil Zhang
-> > > Cc: linux-kernel@vger.kernel.org
-> > > Subject: Re: [PATCH] drivers: base: update cpu offline info when do
-> > > hotplug
-> > >
-> > > On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
-> > >>> How much noise is this going to cause on a big/little system that
-> > >>> constantly hot unplug/plugs processors all of the time?
+On 14/10/23, Eric Paris wrote:
+> On Thu, 2014-10-23 at 12:20 -0700, Andy Lutomirski wrote:
+> > On Thu, Oct 23, 2014 at 12:15 PM, Eric Paris <eparis@redhat.com> wrote:
+> > > On Thu, 2014-10-23 at 11:39 -0700, Andy Lutomirski wrote:
+> > >> On 10/22/2014 09:04 PM, Eric Paris wrote:
+> > >> > git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
+> > >> > It was writing over %esp/pt_regs semi-randomly on i686  with the expected
+> > >> > "system can't boot" results.  As noted in:
+> > >> >
+> > >> > https://bugs.freedesktop.org/show_bug.cgi?id=85277
+> > >> >
+> > >> > This patch stops fscking with pt_regs.  Instead it sets up the registers
+> > >> > for the call to __audit_syscall_entry in the most obvious conceivable
+> > >> > way.  It then does just a tiny tiny touch of magic.  We need to get what
+> > >> > started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
+> > >> > as a pair of pushes.
+> > >> >
+> > >> > After the call to __audit_syscall_entry all we need to do is get that
+> > >> > now useless junk off the stack (pair of pops) and reload %eax with the
+> > >> > original syscall so other stuff can keep going about it's business.
+> > >> >
+> > >> > Signed-off-by: Eric Paris <eparis@redhat.com>
+> > >> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > >> > Cc: Ingo Molnar <mingo@redhat.com>
+> > >> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > >> > Cc: x86@kernel.org
+> > >> > Cc: linux-kernel@vger.kernel.org
+> > >> > Cc: linux-audit@redhat.com
+> > >> > ---
+> > >> >  arch/x86/kernel/entry_32.S | 15 +++++++--------
+> > >> >  1 file changed, 7 insertions(+), 8 deletions(-)
+> > >> >
+> > >> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> > >> > index f9e3fab..fb01d22 100644
+> > >> > --- a/arch/x86/kernel/entry_32.S
+> > >> > +++ b/arch/x86/kernel/entry_32.S
+> > >> > @@ -447,15 +447,14 @@ sysenter_exit:
+> > >> >  sysenter_audit:
+> > >> >     testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+> > >> >     jnz syscall_trace_entry
+> > >> > -   addl $4,%esp
+> > >> > -   CFI_ADJUST_CFA_OFFSET -4
+> > >> > -   movl %esi,4(%esp)               /* 5th arg: 4th syscall arg */
+> > >> > -   movl %edx,(%esp)                /* 4th arg: 3rd syscall arg */
+> > >> > -   /* %ecx already in %ecx            3rd arg: 2nd syscall arg */
+> > >> > -   movl %ebx,%edx                  /* 2nd arg: 1st syscall arg */
+> > >> > -   /* %eax already in %eax            1st arg: syscall number */
+> > >> > +   /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
+> > >> > +   movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
+> > >> > +   /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
+> > >> > +   pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
+> > >> > +   pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
+> > >> >     call __audit_syscall_entry
+> > >> > -   pushl_cfi %ebx
+> > >> > +   popl_cfi %ecx /* get that remapped edx off the stack */
+> > >> > +   popl_cfi %ecx /* get that remapped esi off the stack */
+> > >> >     movl PT_EAX(%esp),%eax          /* reload syscall number */
+> > >> >     jmp sysenter_do_call
+> > >> >
+> > >> >
 > > >>
-> > >> Can you explain more what kind of noise will be introduced on a big/little
-> > system?
+> > >> This looks reasonably likely to be correct, but this code is complicated
+> > >> and now ever slower.
 > > >
-> > > Have you tested this on such a machine?
+> > > I guess I could just use push/pop and do the CFI_ADJUST_CFA_OFFSET by
+> > > hand.  But I figured this was reasonable enough...
 > > >
-> > > I didn't have such kind of machine on hand.
-> > > Can anyone has such machine to verify it?
-> > > Thanks!
 > > 
-> > I tested this on a ppc PowerVM system, using dlpar operations to remove/add
-> > cpus.
+> > I'm not complaining about your new assembly in particular.  There's
+> > just too much assembly in there in general.
 > > 
-> > Without this patch the cpu online nodes get out of sync with the main online
-> > node (and the actual state of the cpus), because they aren't updated as the
-> > cpus are brought up/down:
-> > 
-> > [root@br10p02 cpu]$ pwd
-> > /sys/devices/system/cpu
-> > [root@br10p02 cpu]$ cat online
-> > 0-39
-> > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online ) -eq 1 &&
-> > echo -n "$n " ; done ; echo ""
-> > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-> > 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
-> > 
-> > 
-> > While with the patch, the cpu online nodes are kept up to date as the cpus are
-> > brought up/down:
-> > 
-> > [root@br10p02 cpu]$ pwd
-> > /sys/devices/system/cpu
-> > [root@br10p02 cpu]$ cat online
-> > 0-39
-> > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online ) -eq 1 &&
-> > echo -n "$n " ; done ; echo ""
-> > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
-> > 27 28 29 30 31 32 33 34 35 36 37 38 39
-> > 
-> > 
-> > Feel free to add
-> > 
-> > Tested-by: Dan Streetman <ddstreet@ieee.org>
-> > 
+> > But I feel like I'm missing something in the new code.  Aren't you
+> > corrupting ecx with those popl_cfi insns?
 > 
-> It's a real bug in the kernel.
+> After the call __audit_syscall_entry aren't they already polluted?
+> Isn't that the reason we need to reload EAX?  You can verify this leaves
+> things in a similar state (although slightly differently polluted) than
+> before it got screwed up.  Here is diff between before the breakage and
+> what I propose we do now.
+> 
+> (I admit I don't understand how the pushl_cfi %ebx wasn't messing up
+> PT_EBX)
 
-As this has been this way for many years, I tend to think it's not all
-that important...
+(Credit to HPA for walking me through some of this...  I had to stare at
+it for a while...)
 
-> What's your comments about this patch?
+The bottom of the stack was dropped to reuse syscall args a1-a3 on the
+stack for the call to __audit_syscall_entry while %ebx wasn't changed in
+the call.  a0 was in the unchanged %ebx and the pushl_cfi directly
+restores the value in PT_EBX when it puts a0 back on the stack and
+restores the original value of %esp.
 
-It's one of 1800+ patches that need my comments, please be patient.
+> /me anxiously awaits x86 guy to tell me how dumb I am....
 
-greg k-h
+("Dumber" tries to explain...)
+
+> $ git diff a17c8b54dc738c4fda31e8be0302cd131a04c19f -- arch/x86/kernel/entry_32.S
+> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> index 0d0c9d4..fb01d22 100644
+> --- a/arch/x86/kernel/entry_32.S
+> +++ b/arch/x86/kernel/entry_32.S
+> @@ -447,16 +447,14 @@ sysenter_exit:
+>  sysenter_audit:
+>         testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+>         jnz syscall_trace_entry
+> -       addl $4,%esp
+> -       CFI_ADJUST_CFA_OFFSET -4
+> -       /* %esi already in 8(%esp)         6th arg: 4th syscall arg */
+> -       /* %edx already in 4(%esp)         5th arg: 3rd syscall arg */
+> -       /* %ecx already in 0(%esp)         4th arg: 2nd syscall arg */
+> -       movl %ebx,%ecx                  /* 3rd arg: 1st syscall arg */
+> -       movl %eax,%edx                  /* 2nd arg: syscall number */
+> -       movl $AUDIT_ARCH_I386,%eax      /* 1st arg: audit arch */
+> +       /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
+> +       movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
+> +       /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
+> +       pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
+> +       pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
+>         call __audit_syscall_entry
+> -       pushl_cfi %ebx
+> +       popl_cfi %ecx /* get that remapped edx off the stack */
+> +       popl_cfi %ecx /* get that remapped esi off the stack */
+>         movl PT_EAX(%esp),%eax          /* reload syscall number */
+>         jmp sysenter_do_call
+> 
+> 
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
