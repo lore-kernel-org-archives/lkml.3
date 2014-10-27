@@ -1,118 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220AbaJ0PX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:23:26 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:55924 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064AbaJ0PXY (ORCPT
+	id S1753337AbaJ0PXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:23:43 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46026 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753262AbaJ0PXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:23:24 -0400
+	Mon, 27 Oct 2014 11:23:40 -0400
+Date: Mon, 27 Oct 2014 16:23:06 +0100
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
+        hpa@zytor.com, Michal Simek <monstr@monstr.eu>,
+        michal.simek@xilinx.com, rdunlap@infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
+        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, mgerlach@opensource.altera.com,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
+Message-ID: <20141027152306.GV10262@pengutronix.de>
+References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com>
+ <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
+ <20141024070042.GL10262@pengutronix.de>
+ <5FB7B7FD-7B5B-4250-BADE-85573FDBBE48@konsulko.com>
+ <20141025144229.GR10262@pengutronix.de>
+ <16E8EC52-0A91-4F28-8113-3CC5352215A5@konsulko.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFobcRL7_+ZiEkWFGXxq5Hznf5fZcpqUP+Z6VxW67mWBEw@mail.gmail.com>
-References: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1413534398-22645-2-git-send-email-alexandre.belloni@free-electrons.com>
-	<CAPDyKFobcRL7_+ZiEkWFGXxq5Hznf5fZcpqUP+Z6VxW67mWBEw@mail.gmail.com>
-Date: Mon, 27 Oct 2014 16:23:23 +0100
-Message-ID: <CAPDyKFr-pyTT=N7p+rU7mnzMg8F_rQOZvDva9GGmwy4J2t3F6Q@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] mmc: atmel-mci: move mache header to platform_data
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <chris@printf.net>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <16E8EC52-0A91-4F28-8113-3CC5352215A5@konsulko.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:07:31 up 12 days,  2:21, 85 users,  load average: 0,08, 0,07,
+ 0,05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 October 2014 15:46, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 17 October 2014 10:26, Alexandre Belloni
-> <alexandre.belloni@free-electrons.com> wrote:
->> Move the mach header that can come either from arm/mach-at91 or avr32 to
->> platform_data to be able to switch the AT91 platforms to multiplatform.
->>
->> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->
-> Thanks! Applied for next!
+Hi!
 
-Actually this one caused a compiler error due to a moved header from
-the below commit.
+On Mon, Oct 27, 2014 at 01:54:20PM +0200, Pantelis Antoniou wrote:
+> Hi Stefen,
+> 
+> > On Oct 25, 2014, at 17:42 , Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
+> > 
+> > Hi Pantelis!
+> > 
+> > On Fri, Oct 24, 2014 at 12:20:53PM +0300, Pantelis Antoniou wrote:
+> >> Hi Stefan, Allan,
+> >> 
+> >> Sorry, haven’t had a chance to review all this yet; will do so in the weekend.
+> >> Just wanted to pop in and comment on a few things.
+> >> 
+> >>> On Oct 24, 2014, at 10:00 AM, Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
+> >>> 
+> >>> Hi!
+> >>> 
+> >>> On Thu, Oct 23, 2014 at 06:51:06PM -0500, atull@opensource.altera.com wrote:
+> >>>> From: Alan Tull <atull@opensource.altera.com>
+> >>> 
+> >>> (...)
+> >>> 
+> >>>> diff --git a/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
+> >>>> new file mode 100644
+> >>>> index 0000000..bc24a2e
+> >>>> --- /dev/null
+> >>>> +++ b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
+> >>>> @@ -0,0 +1,53 @@
+> >>>> +Altera FPGA/HPS Bridge Driver
+> >>>> +
+> >>>> +This driver manages a bridge between a FPGA and a host processor system (HPS).
+> >>>> +User space can enable or disable the bridge by writing a "1" or a "0",
+> >>>> +respectively, to its enable file under bridge's entry in
+> >>>> +/sys/class/fpga-bridge.  Typically, one disables the bridges before
+> >>>> +reprogramming the FPGA.  Once the FPGA is reprogrammed, the bridges are
+> >>>> +reenabled.
+> >>>> +
+> >>> 
+> >>> NAK.
+> >>> 
+> >>> This is all linux specific and doesn't belong here.
+> >>> 
+> >> 
+> >> We know. The DT spec hasn’t been updated for a while, and this is going to be
+> >> part of what we want to do with the restarting of the ePAPR spec process.
+> >> 
+> > 
+> > As we don't have a new spec yet, I go with the current state of the art.
+> > And I don't see how "file under ... /sys/class/fpga-bridge" fits the
+> > current spec.
+> > 
+> >> So absolutes like “DT is a hardware description only" might be too strong statements, that
+> >> do not work in practice anymore.
+> >> 
+> >> There’s no such thing as pure hardware devices lately - there is always a configuration
+> >> component; some of it OS specific, some of it not.
+> >> 
+> > 
+> > If it really is necessary, I'm not against it, don't get me wrong.
+> > But in the grand scheme I wouldn't say that this fits my experience.
+> > There are some devices that need configuration and often when it is
+> > done in the DT, it is just a shortcut or not thought through.
+> > And can be also introspected dynamically. With some discussion on the
+> > list these bindings often change.
+> > 
+> 
+> Already answered and given a possible way this might work; admittedly this
+> specific example is not a good fit for what I was trying to say, but whatever.
+> Let’s get the ball rolling.
+> 
 
-3d598f47e804 dmaengine: dw: move dw_dmac.h to where it belongs to
+I would be okay with chosen-node. Not for this driver; but in general.
 
-I decided to fix it myself and fold the change into this patch, see below.
+> > Regarding OS specifics: already there, e.g. console setup in the chosen node.
+> > And other things I saw are ethernet aliases just for u-boot. Not a problem
+> > of the spec, just a problem of u-boot and unneccessary "configuration".
+> > Just to fix a bad bootloader. barebox can handle this without any
+> > such stuff. Maybe we should integrate the DT "overlays" barebox uses into
+> > the in-kernel DTs as well...but does it really help/interest someone who
+> > decides to use u-boot where barebox stores its environment? I guess not.
+> > 
+> 
+> Although I’m not against having DT overlays in the bootloader, I only see them
+> as a method that helps a platform developer express things easier. I am completely
+> against having the kernel tied to any particular bootloader.
+> 
+> We’ve all been through the hell where a kernel only boots if the bootloader has 
+> setup the platform “correctly”. This “correctly” has a very loose definition and
+> 99/100 times is extremely badly documented or not at all.
+> 
+> IMHO the bootloader should (as part of the normal boot sequence) only setup the
+> absolutely bare minimum and then pass control to the kernel as soon as possible.
+> 
+> The full featured bootloader environment should only be presented when the user
+> requests so.
+> 
 
->
-> Kind regards
-> Uffe
->
->> ---
->>  drivers/mmc/host/atmel-mci.c                |  2 +-
->>  include/linux/platform_data/mmc-atmel-mci.h | 22 ++++++++++++++++++++++
->>  2 files changed, 23 insertions(+), 1 deletion(-)
->>  create mode 100644 include/linux/platform_data/mmc-atmel-mci.h
->>
->> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
->> index bb585d940901..b1231835b031 100644
->> --- a/drivers/mmc/host/atmel-mci.c
->> +++ b/drivers/mmc/host/atmel-mci.c
->> @@ -29,11 +29,11 @@
->>  #include <linux/stat.h>
->>  #include <linux/types.h>
->>  #include <linux/platform_data/atmel.h>
->> +#include <linux/platform_data/mmc-atmel-mci.h>
->>
->>  #include <linux/mmc/host.h>
->>  #include <linux/mmc/sdio.h>
->>
->> -#include <mach/atmel-mci.h>
->>  #include <linux/atmel-mci.h>
->>  #include <linux/atmel_pdc.h>
->>
->> diff --git a/include/linux/platform_data/mmc-atmel-mci.h b/include/linux/platform_data/mmc-atmel-mci.h
->> new file mode 100644
->> index 000000000000..ebe7ae4f72e4
->> --- /dev/null
->> +++ b/include/linux/platform_data/mmc-atmel-mci.h
->> @@ -0,0 +1,22 @@
->> +#ifndef __MMC_ATMEL_MCI_H
->> +#define __MMC_ATMEL_MCI_H
->> +
->> +#include <linux/platform_data/dma-atmel.h>
->> +#include <linux/dw_dmac.h>
+Totally agree. The kernel shouldn't be tied to any bootloader if at all possible
+(the SoCFPGA is an especially bad example here again, as the pinmuxing can only
+happen in the bootloader).
+But should the DT include stuff than, that is only interesting for linux?
 
-Changed to:
+> >> We have to be engaged in the process and figure out how to update the spec for what is
+> >> now the state of the art in the industry.
+> >> 
+> > 
+> > Again, not against that if it is necessary. For example your overlay stuff might
+> > be a good update to the spec. Would be better if it is official instead of a "hack".
+> > I want that for SoCFPGA.
+> > 
+> > But having looked at one or two vendor kernels+DTs, the state of the art in the
+> > industry is: using DT wrong. (And doing HW wrong, which makes some updates to the
+> > ePAPR necessary ;-))
+> > 
+> 
+> Vendor H/W, vendor DT and a crack pipe. Or as I call it Monday.
+> 
 
-<linux/platform_data/dma-dw.h>
+;-)
 
->> +
->> +/**
->> + * struct mci_dma_data - DMA data for MCI interface
->> + */
->> +struct mci_dma_data {
->> +#ifdef CONFIG_ARM
->> +       struct at_dma_slave     sdata;
->> +#else
->> +       struct dw_dma_slave     sdata;
->> +#endif
->> +};
->> +
->> +/* accessor macros */
->> +#define        slave_data_ptr(s)       (&(s)->sdata)
->> +#define find_slave_dev(s)      ((s)->sdata.dma_dev)
->> +
->> +#endif /* __MMC_ATMEL_MCI_H */
->> --
->> 1.9.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Regards,
+Steffen
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
