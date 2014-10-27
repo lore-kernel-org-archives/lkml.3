@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaJ0WDG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 18:03:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40832 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752407AbaJ0WDE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 18:03:04 -0400
-Date: Mon, 27 Oct 2014 23:03:01 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "pang.xunlei" <pang.xunlei@linaro.org>
-cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        John Stultz <john.stultz@linaro.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [PATCH RFC 05/12] time: Convert rtc_tm_to_time_unsafe() to
- rtc_tm_to_time() in rtc_hctosys()
-In-Reply-To: <1414388802-5866-4-git-send-email-pang.xunlei@linaro.org>
-Message-ID: <alpine.DEB.2.11.1410272244270.5308@nanos>
-References: <1414388802-5866-1-git-send-email-pang.xunlei@linaro.org> <1414388802-5866-4-git-send-email-pang.xunlei@linaro.org>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1752651AbaJ0WIO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 18:08:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752395AbaJ0WIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 18:08:13 -0400
+Date: Tue, 28 Oct 2014 00:04:27 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Burke Libbey <burke.libbey@shopify.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH] sched: Fix race between task_group and sched_task_group
+Message-ID: <20141027230427.GA18454@redhat.com>
+References: <1414405105.19914.169.camel@tkhai>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414405105.19914.169.camel@tkhai>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, pang.xunlei wrote:
-> The kernel uses 32-bit signed value(time_t) for seconds since 1970-01-01:00:00:00, so it
-> will overflow at 2038-01-19 03:14:08 on 32-bit systems. We call this "2038 safety" issue.
-
-We really know that by now. No need to repeat that for every patch. 
- 
-> As part of addressing 2038 saftey for in-kernel uses, this patch creates no functional change
-> in existing users, and converts rtc_tm_to_time_unsafe() to rtc_tm_to_time() in rtc_hctosys().
-
-Please line break your changelogs properly. That's how it should look
-like:
-
-> As part of addressing 2038 saftey for in-kernel uses, this patch
-> creates no functional change in existing users, and converts
-> rtc_tm_to_time_unsafe() to rtc_tm_to_time() in rtc_hctosys().
- 
-Can you spot the difference?
-
-> @@ -26,9 +26,10 @@ static int __init rtc_hctosys(void)
+On 10/27, Kirill Tkhai wrote:
+>
+> +static void cpu_cgroup_fork(struct task_struct *task)
+> +{
+> +	sched_move_task(task);
+> +}
+> +
+>  static int cpu_cgroup_can_attach(struct cgroup_subsys_state *css,
+>  				 struct cgroup_taskset *tset)
 >  {
->  	int err = -ENODEV;
->  	struct rtc_time tm;
-> -	struct timespec tv = {
-> +	struct timespec64 tv = {
->  		.tv_nsec = NSEC_PER_SEC >> 1,
->  	};
-> +	struct timespec ts32;
+> @@ -8205,6 +8210,7 @@ struct cgroup_subsys cpu_cgrp_subsys = {
+>  	.css_free	= cpu_cgroup_css_free,
+>  	.css_online	= cpu_cgroup_css_online,
+>  	.css_offline	= cpu_cgroup_css_offline,
+> +	.fork		= cpu_cgroup_fork,
 
-So this is exactly why I dislike this whole flag day conversion
-thing. If you add
+Agreed, but it seems that sched_move_task() -> task_css_check() can
+complain if CONFIG_PROVE_RCU...
 
-       rtc_tm_to_time64()
-       do_settimeofday64()
+cpu_cgroup_exit() too calls sched_move_task() without any lock, but
+there is the PF_EXITING check and init_css_set can't go away.
 
-in the first place, you can convert the whole function in one go
-without introducing intermediate variables which then need to be
-undone later again.
+perhaps sched_move_task() should just take rcu_read_lock() and use
+task_css() ? This lockdep_is_held(siglock) looks ugly, and iiuc we
+need it to shut up the warning if autogroup_move_group() is the caller.
 
-Thanks,
+Oleg.
 
-	tglx
