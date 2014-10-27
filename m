@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077AbaJ0K2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 06:28:48 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:63105 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbaJ0K2q (ORCPT
+	id S1752162AbaJ0Kbf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 06:31:35 -0400
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:48835 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667AbaJ0Kbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 06:28:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1414158814.14830.610.camel@mtksdaap41>
-References: <1406824943-24052-1-git-send-email-matthias.bgg@gmail.com>
-	<1406824943-24052-7-git-send-email-matthias.bgg@gmail.com>
-	<CACRpkdbRhGE8tcKj+W_4F9-xmcm-fxcYuCmLOqX-ESC+3PAmyA@mail.gmail.com>
-	<CABuKBe+Q3tnN0s22EMY-dK_6FeN_xN9SmrsW3dPONR6QDJ+V_w@mail.gmail.com>
-	<CACRpkdZOB=9wQ3R3sfcBEiNXLVRtgob4iLZ9QWXyVrgjqyvGXQ@mail.gmail.com>
-	<CABuKBeJOgkDZ8drPf3LnT2jPH7PEWX2__HDM7_jZbg2BhDRy3g@mail.gmail.com>
-	<1414158814.14830.610.camel@mtksdaap41>
-Date: Mon, 27 Oct 2014 11:28:44 +0100
-Message-ID: <CABuKBe++mqhMCPxci9_4KKgq9vdoLLwZQkdb2xAGMud+=YVhkw@mail.gmail.com>
-Subject: Re: [PATCH 6/7] arm: mediatek: enable gpt6 on boot up to make arch
- timer working
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Yingjoe Chen <srv_yingjoe.chen@mediatek.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+	Mon, 27 Oct 2014 06:31:33 -0400
+Date: Mon, 27 Oct 2014 10:31:18 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stefan@agner.ch" <stefan@agner.ch>,
-        Stephen Warren <swarren@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "Berg, Anders" <anders.berg@lsi.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1
+        Rob Clark <robdclark@gmail.com>
+Subject: Re: [PATCH v2 2/3] ARM: vfp: Fix VFPv3 hwcap detection on CPUID
+ based cpus
+Message-ID: <20141027103118.GA8768@arm.com>
+References: <1413294539-22069-1-git-send-email-sboyd@codeaurora.org>
+ <1413294539-22069-3-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413294539-22069-3-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+Hi Stephen,
 
-2014-10-24 15:53 GMT+02:00 Yingjoe Chen <srv_yingjoe.chen@mediatek.com>:
->
-> Hi Matthias,
->
-> I didn't saw this in v3.18-rc1, are you working on version 2 of this?
-> mt8135 and m8127 also need this fixup and we need this to have SMP
-> working.
+On Tue, Oct 14, 2014 at 02:48:58PM +0100, Stephen Boyd wrote:
+> The subarchitecture field in the fpsid register is 7 bits wide on
+> ARM CPUs using the CPUID identification scheme, spanning bits 22
+> to 16. The topmost bit is used to designate that the
+> subarchitecture designer is not ARM when it is set to 1. On
+> non-CPUID scheme CPUs the subarchitecture field is only 4 bits
+> wide and the higher bits are used to indicate no double precision
+> support (bit 20) and the FTSMX/FLDMX format (bits 21-22).
+> 
+> The VFP support code only looks at bits 19-16 to determine the
+> VFP version. On Qualcomm's processors (Krait and Scorpion) we
+> should see that we have HWCAP_VFPv3 but we don't because bit 22
+> is set to 1 to indicate that the subarchitecture is not
+> implemented by ARM and the rest of the bits are left as 0 because
+> this is the first subarchitecture that Qualcomm has designed.
+> Unfortunately we can't just widen the FPSID subarchitecture
+> bitmask to consider all the bits on a CPUID scheme because there
+> may be CPUs without the CPUID scheme that have VFP without double
+> precision support and then the version would be a very wrong and
+> large number. Instead, update the version detection logic to
+> consider if the CPU is using the CPUID scheme.
+> 
+> If the CPU is using CPUID scheme, use the MVFR registers to
+> determine what version of VFP is supported. We already do this
+> for VFPv4, so do something similar for VFPv3 and look for single
+> or double precision support in MVFR0. Otherwise fall back to
+> using FPSID to detect VFP suppport on non-CPUID scheme CPUs. We
+> know that VFPv3 is only present in CPUs that have support for the
+> CPUID scheme so this should be equivalent.
 
-I had a discussion with Mark Rutland from ARM on this [0].
-At that point he convinced me that this was not critical.
+This looks correct to me, but it raises a bigger question about the
+suitability of hwcaps for describing features of the instruction set.
 
-If we need this for SMP, things really change here I think.
+With the extended CPUID scheme, there are a whole bunch of different
+instruction set features that are reported and bundling arbitrary subsets of
+them into hwcaps such as `VFPv4' doesn't feel like the right thing to do in
+the long run. It also doesn't seem to match where the architecture is going.
 
-Cheers,
-Matthias
+Perhaps it would be better to consider exposing the ID registers to
+userspace in some manner? This could be done either via an undef handler, or
+using the vdso. We would add a (final) hwcap advertising this cpuid support.
+For big/little systems, the kernel would need to expose a suitable subset of
+the features (we already have the sanity checking code from Rutland).
 
-[0] https://lkml.org/lkml/2014/8/21/170
+I'd certainly like to explore that route for arm64, before we start adding a
+bunch of fine-grained capabilities.
 
->
-> Joe.C
->
->
-
-
-
--- 
-motzblog.wordpress.com
+Will
