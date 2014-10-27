@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293AbaJ0O3A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:29:00 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:32935 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907AbaJ0O27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:28:59 -0400
-X-Originating-IP: 83.155.44.161
-Message-ID: <1414420084.30379.53.camel@hadess.net>
-Subject: Re: A desktop environment[1] kernel wishlist
-From: Bastien Nocera <hadess@hadess.net>
-To: Zygo Blaxell <zblaxell@furryterror.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Oct 2014 15:28:04 +0100
-In-Reply-To: <20141022170433.GA10186@hungrycats.org>
-References: <1413881397.30379.7.camel@hadess.net>
-	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	 <1413911644.30379.12.camel@hadess.net>
-	 <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	 <1413914978.30379.14.camel@hadess.net>
-	 <20141022170433.GA10186@hungrycats.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
-Mime-Version: 1.0
+	id S1753253AbaJ0OaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:30:08 -0400
+Received: from mail-bn1bon0137.outbound.protection.outlook.com ([157.56.111.137]:46624
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752930AbaJ0OaG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 10:30:06 -0400
+X-WSS-ID: 0NE3XLY-07-0U7-02
+X-M-MSG: 
+Message-ID: <544E56DB.7020305@amd.com>
+Date: Mon, 27 Oct 2014 09:29:47 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Alexander Graf <agraf@suse.de>,
+        =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        Thomas Lendacky <Thomas.Lendacky@amd.com>,
+        Joel Schopp <Joel.Schopp@amd.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "liviu.dudau@arm.com" <liviu.dudau@arm.com>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: amd-seattle: Adding device tree for AMD Seattle
+ platform
+References: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <544C2D67.8000405@suse.de> <544CEC5B.4020104@suse.de>
+ <A1BC53C1-A78E-4B0C-879B-F6A462E58C72@suse.de>
+In-Reply-To: <A1BC53C1-A78E-4B0C-879B-F6A462E58C72@suse.de>
+Content-Type: text/plain; charset="utf-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(479174003)(377454003)(24454002)(51704005)(189002)(199003)(65956001)(65806001)(4396001)(64126003)(80022003)(46102003)(97736003)(85852003)(87936001)(107046002)(105586002)(95666004)(106466001)(85306004)(93886004)(68736004)(83506001)(44976005)(54356999)(87266999)(50986999)(65816999)(84676001)(23676002)(50466002)(80316001)(76176999)(33656002)(120916001)(76482002)(102836001)(21056001)(86362001)(92566001)(120886001)(99396003)(31966008)(36756003)(64706001)(92726001)(101416001)(20776003)(47776003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB207;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB207;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0377802854
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-10-22 at 13:04 -0400, Zygo Blaxell wrote:
-> On Tue, Oct 21, 2014 at 08:09:38PM +0200, Bastien Nocera wrote:
-> > On Tue, 2014-10-21 at 11:00 -0700, John Stultz wrote:
-> > > On Tue, Oct 21, 2014 at 10:14 AM, Bastien Nocera <hadess@hadess.net> wrote:
-> > > >> As for: 'Export of "wake reason" when the system wakes up (rtc alarm,
-> > > >> lid open, etc.) and wakealarm (/sys/class/rtc/foo/wakealarm)
-> > > >> documentation'
-> > > >>
-> > > >> Can you expand more on the rational for the need here? Is this for UI
-> > > >> for power debugging, or something else?
-> > > >
-> > > > No, it would be used for automating backups, or implementing
-> > > > suspend->hibernation transitions. For example, right before the machine
-> > > > suspends, I would schedule it to wake up in a hour. If I get woken up by
-> > > > the rtc alarm (and not by the user through a lid open), I might:
-> > > > - check that I'm plugged into the AC, it's night, and in the vicinity of
-> > > > the server that handles my backups and so backup the system.
-> > > > - check whether the battery is low, and hibernate the machine (if it
-> > > > supports it, obviously).
-> > > >
-> > > > We cannot do that if we can't make out whether the wake-up came from a
-> > > > user action, or the alarm we set.
-> > > 
-> > > I suspect wakeup type reporting is maybe not the best way to go about
-> > > this, since there may be a number of causes for wakeups and they can
-> > > arrive closely together in different orders, which can result in
-> > > races.
-> > > 
-> > > For instance, if the machine suspends, and sets an alarm to be woken
-> > > up at midnight to do a backup, if the user resumes their laptop at
-> > > 11:59:59, should the backup still proceed at midnight?
-> > 
-> > No. And I would expect that we would get a wake up type of "power
-> > button" or "lid open" in this case.
-> 
-> I have been using something like this for the last 7 years or so.
-> The relevant inputs are:
-> 
-> 	1. is the user present (is there recent input on HID devices,
-> 	keyboard/mouse, but ignore devices like light sensors, 3D
-> 	accelerometers, and ACPI virtual keys)?
+On 10/26/2014 9:08 AM, Alexander Graf wrote:
+>>> This option doesn't exist in upstream kernels, does it? Why not just
+>>> >>make it dtb-y?
+>> >
+>> >CONFIG_ARCH_SEATTLE is being added one hunk above.:)
+> Oops:).
+>
+> I'm not convinced we need a config option just for the sake of compiling a device tree though.
+>
+>
+> Alex
+>
 
-If the user woke the machine up through the power button, you wouldn't
-see that from user-space. You could detect that the lid was opened,
-because you have state.
+Eventually, we would add other device driver selections when 
+CONFIG_ARCH_SEATTLE=y. At this point, those drivers are still not ready.
 
-> 	2. which network connection(s) are available to reach the
-> 	backup server?
-> 
-> 	3. how much power is available (if on battery, how much run
-> 	time left?)
-> 
-> 	4. what is the policy (do backups happen at a specific time
-> 	of day, or whenever they can?)
-> 
-> 	5. was a backup completed successfully in the last N hours?
-> 
-> Note the absence of any information about the cause of recent
-> suspend/resume activity, or any input from suspend/resume at all.
+Suravee
 
-How do I tell my environment not to wake the screen up when the machine
-was woken up by an alarm I scheduled to launch a backup? Or not to
-resume audio playback when I get woken up to handle network events
-(through connected suspend, or Wake-On-(Wireless-)LAN)?
 
