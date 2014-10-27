@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbaJ0XKI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 19:10:08 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:55611 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752908AbaJ0XKD (ORCPT
+	id S1753015AbaJ0XKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 19:10:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:61070 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752908AbaJ0XKJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 19:10:03 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Sebastian Reichel <sre@kernel.org>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH v2 7/8] ARM: at91: sam9g45/sam9rl: remove useless resources for rstc
-Date: Tue, 28 Oct 2014 00:09:36 +0100
-Message-Id: <1414451377-11053-8-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 27 Oct 2014 19:10:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,798,1406617200"; 
+   d="scan'208";a="597258674"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Chen Yucong <slaoub@gmail.com>, "bp@alien8.de" <bp@alien8.de>
+CC: "ak@linux.intel.com" <ak@linux.intel.com>,
+        "aravind.gopalakrishnan@amd.com" <aravind.gopalakrishnan@amd.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2] x86, mce: support memory error recovery for both
+ UCNA and Deferred error in machine_check_poll
+Thread-Topic: [PATCH 2/2] x86, mce: support memory error recovery for both
+ UCNA and Deferred error in machine_check_poll
+Thread-Index: AQHP8YEgk/A6GJadaEm13BiNXHlqipxEke1g
+Date: Mon, 27 Oct 2014 23:10:07 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F32917841@ORSMSX114.amr.corp.intel.com>
+References: <1414371382-15491-1-git-send-email-slaoub@gmail.com>
+ <1414371382-15491-3-git-send-email-slaoub@gmail.com>
+In-Reply-To: <1414371382-15491-3-git-send-email-slaoub@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The RAMC resources are now unnecessary in the reset driver, remove them.
++	m->mcgstatus |= (MCG_STATUS_MCIP|MCG_STATUS_RIPV);
++	severity = mce_severity(m, mca_cfg.tolerant, NULL);
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/at91sam9g45.c | 10 ----------
- arch/arm/mach-at91/at91sam9rl.c  |  5 -----
- 2 files changed, 15 deletions(-)
+This seems a big hack to make mce_severity() work when called from
+CMCI context (when MCG_STATUS register is not set).  It would also
+be confusing as the subsequent logged entries would show MCIP and RIPV
+bits set in the mcg_status.
 
-diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-index 202d9438e1d9..2e1aae8152b7 100644
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -397,16 +397,6 @@ static struct resource rstc_resources[] = {
- 		.end    = AT91SAM9G45_BASE_RSTC + SZ_16 - 1,
- 		.flags  = IORESOURCE_MEM,
- 	},
--	[1] = {
--		.start  = AT91SAM9G45_BASE_DDRSDRC1,
--		.end    = AT91SAM9G45_BASE_DDRSDRC1 + SZ_512 - 1,
--		.flags  = IORESOURCE_MEM,
--	},
--	[2] = {
--		.start  = AT91SAM9G45_BASE_DDRSDRC0,
--		.end    = AT91SAM9G45_BASE_DDRSDRC0 + SZ_512 - 1,
--		.flags  = IORESOURCE_MEM,
--	},
- };
- 
- static struct platform_device rstc_device = {
-diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-index 0e2cb3361b15..0b00b9c7bd82 100644
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ b/arch/arm/mach-at91/at91sam9rl.c
-@@ -335,11 +335,6 @@ static struct resource rstc_resources[] = {
- 		.end    = AT91SAM9RL_BASE_RSTC + SZ_16 - 1,
- 		.flags  = IORESOURCE_MEM,
- 	},
--	[1] = {
--		.start  = AT91SAM9RL_BASE_SDRAMC,
--		.end    = AT91SAM9RL_BASE_SDRAMC + SZ_512 - 1,
--		.flags  = IORESOURCE_MEM,
--	},
- };
- 
- static struct platform_device rstc_device = {
--- 
-1.9.1
+If someone can think of a less hacky way to do this, that would be good. Otherwise
+the code needs a comment, and should reset m->mcg_status to avoid making logs
+that have incorrect data.
 
+-Tony
