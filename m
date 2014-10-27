@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306AbaJ0QEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:04:13 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:25964 "EHLO
+	id S1752578AbaJ0QEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:04:23 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25995 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846AbaJ0QEJ (ORCPT
+	with ESMTP id S1752219AbaJ0QEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 12:04:09 -0400
+	Mon, 27 Oct 2014 12:04:12 -0400
 From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 To: david.vrabel@citrix.com, konrad.wilk@oracle.com,
         stefano.stabellini@eu.citrix.com
 Cc: jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
         xen-devel@lists.xen.org, boris.ostrovsky@oracle.com
-Subject: [PATCH v2 0/2] xen/pci: Use APIC for MSIs when APIC virtualization is supported
-Date: Mon, 27 Oct 2014 12:05:51 -0400
-Message-Id: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
+Subject: [PATCH v2 1/2] xen/pci: Defer initialization of MSI ops on HVM guests until after x2APIC has been set up
+Date: Mon, 27 Oct 2014 12:05:52 -0400
+Message-Id: <1414425953-13987-2-git-send-email-boris.ostrovsky@oracle.com>
 X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
+References: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes in v2:
-* New version of cpuid.h file from Xen tree (with a couple of style adjustments)
-* Whitespace cleanup
+If the hardware supports APIC virtualization we may decide not to use pirqs
+and instead use APIC/x2APIC directly, meaning that we don't want to set
+x86_msi.setup_msi_irqs and x86_msi.teardown_msi_irq to Xen-specific routines.
+However, x2APIC is not set up by the time pci_xen_hvm_init() is called so we
+need to postpone setting these ops until later, when we know which APIC mode
+is used.
 
-Currently HVM guests handle MSI interrupts using pirqs/event channels, allowing
-us to not issue APIC accesses that result in somewhat expensive VMEXITs. When
-hardware supports APIC virtualization we don't need to use pirqs anymore
-since now guest's APIC accesses can be handled by the processor itself.
+(Note that currently x2APIC is never initialized on HVM guests. This may
+change in the future)
 
-There are two patches in this series:
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+---
+ arch/x86/pci/xen.c |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
 
-1. Move setting of x86_msi ops to a later point. The reason for doing so is that
-we currently decide whether or not to use pirqs before kernel had a chance to
-see whether it should be using x2APIC instead of plain APIC. Since hardware may
-virtualize either or both of those two we can only make pirqs vs. APIC selection
-after kernel has settled down on which APIC version it will use. (Note that
-currently x2APIC is not used by HVM guests so technically this patch is not
-necessary. However, it probably makes sense to apply it now to avoid
-forgetting to do it when we enable x2APIC).
-
-2. Set x86_msi ops to use pirqs only when APIC virtualization is not available.
-The commit message describes performance improvements that this change brings.
-
-Boris Ostrovsky (2):
-  xen/pci: Defer initialization of MSI ops on HVM guests until after
-    x2APIC has been set up
-  xen/pci: Use APIC directly when APIC virtualization is supported by
-    hardware
-
- arch/x86/include/asm/xen/cpuid.h |   91 ++++++++++++++++++++++++++++++++++++++
- arch/x86/pci/xen.c               |   24 +++++++++-
- 2 files changed, 113 insertions(+), 2 deletions(-)
- create mode 100644 arch/x86/include/asm/xen/cpuid.h
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 093f5f4..1370716 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -431,6 +431,14 @@ int __init pci_xen_init(void)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PCI_MSI
++void __init xen_msi_init(void)
++{
++	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
++	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
++}
++#endif
++
+ int __init pci_xen_hvm_init(void)
+ {
+ 	if (!xen_have_vector_callback || !xen_feature(XENFEAT_hvm_pirqs))
+@@ -445,8 +453,11 @@ int __init pci_xen_hvm_init(void)
+ #endif
+ 
+ #ifdef CONFIG_PCI_MSI
+-	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
+-	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
++	/*
++	 * We need to wait until after x2apic is initialized
++	 * before we can set MSI IRQ ops.
++	 */
++	x86_platform.apic_post_init = xen_msi_init;
+ #endif
+ 	return 0;
+ }
+-- 
+1.7.1
 
