@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566AbaJ0TDz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:03:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52793 "EHLO
+	id S1753628AbaJ0TEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:04:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52824 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563AbaJ0TDw (ORCPT
+	with ESMTP id S1753591AbaJ0TED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:03:52 -0400
+	Mon, 27 Oct 2014 15:04:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris J Arges <chris.j.arges@canonical.com>,
-        Christoph Hellwig <hch@lst.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 048/105] mptfusion: enable no_write_same for vmware scsi disks
-Date: Mon, 27 Oct 2014 11:56:23 -0700
-Message-Id: <1414436240-13879-49-git-send-email-kamal@canonical.com>
+Cc: Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 031/105] mei: bus: fix possible boundaries violation
+Date: Mon, 27 Oct 2014 11:56:06 -0700
+Message-Id: <1414436240-13879-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,42 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris J Arges <chris.j.arges@canonical.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit 4089b71cc820a426d601283c92fcd4ffeb5139c2 upstream.
+commit cfda2794b5afe7ce64ee9605c64bef0e56a48125 upstream.
 
-When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
-data can be improperly zeroed out using the mptfusion driver. This patch
-disables write_same for this driver and the vmware subsystem_vendor which
-ensures that manual zeroing out is used instead.
+function 'strncpy' will fill whole buffer 'id.name' of fixed size (32)
+with string value and will not leave place for NULL-terminator.
+Possible buffer boundaries violation in following string operations.
+Replace strncpy with strlcpy.
 
-BugLink: http://bugs.launchpad.net/bugs/1371591
-Reported-by: Bruce Lucas <bruce.lucas@mongodb.com>
-Tested-by: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/message/fusion/mptspi.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/misc/mei/bus.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/message/fusion/mptspi.c b/drivers/message/fusion/mptspi.c
-index 5653e50..424f51d 100644
---- a/drivers/message/fusion/mptspi.c
-+++ b/drivers/message/fusion/mptspi.c
-@@ -1422,6 +1422,11 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 		goto out_mptspi_probe;
-         }
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index 4bc7d62..9a07bba 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -71,7 +71,7 @@ static int mei_cl_device_probe(struct device *dev)
  
-+	/* VMWare emulation doesn't properly implement WRITE_SAME
-+	 */
-+	if (pdev->subsystem_vendor == 0x15AD)
-+		sh->no_write_same = 1;
-+
- 	spin_lock_irqsave(&ioc->FreeQlock, flags);
+ 	dev_dbg(dev, "Device probe\n");
  
- 	/* Attach the SCSI Host to the IOC structure
+-	strncpy(id.name, dev_name(dev), sizeof(id.name));
++	strlcpy(id.name, dev_name(dev), sizeof(id.name));
+ 
+ 	return driver->probe(device, &id);
+ }
 -- 
 1.9.1
 
