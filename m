@@ -1,40 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaJ0Nlq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:41:46 -0400
-Received: from eddie.linux-mips.org ([148.251.95.138]:52600 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244AbaJ0Nlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:41:44 -0400
-Date: Mon, 27 Oct 2014 13:41:42 +0000 (GMT)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] tc: Error handling clean-ups
-In-Reply-To: <20141027013857.GO16320@linux-mips.org>
-Message-ID: <alpine.LFD.2.11.1410271340580.3413@eddie.linux-mips.org>
-References: <alpine.LFD.2.11.1404062030280.15266@eddie.linux-mips.org> <alpine.LFD.2.11.1410222234050.21390@eddie.linux-mips.org> <20141027101017.6af4e810@canb.auug.org.au> <alpine.LFD.2.11.1410270102540.21390@eddie.linux-mips.org>
- <20141027013857.GO16320@linux-mips.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752938AbaJ0Noz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:44:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35673 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752626AbaJ0Noy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 09:44:54 -0400
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+        Laszlo Ersek <lersek@redhat.com>, Andrew Jones <drjones@redhat.com>
+Subject: [PATCH] xen/blkfront: improve protection against issuing unsupported REQ_FUA
+Date: Mon, 27 Oct 2014 14:44:38 +0100
+Message-Id: <1414417478-20268-1-git-send-email-vkuznets@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, Ralf Baechle wrote:
+Guard against issuing unsupported REQ_FUA and REQ_FLUSH was introduced
+in d11e61583 and was factored out into blkif_request_flush_valid() in
+0f1ca65ee. However:
+1) This check in incomplete. In case we negotiated to feature_flush = REQ_FLUSH
+   and flush_op = BLKIF_OP_FLUSH_DISKCACHE (so FUA is unsupported) FUA request
+   will still pass the check.
+2) blkif_request_flush_valid() is misnamed. It is bool but returns true when
+   the request is invalid.
+3) When blkif_request_flush_valid() fails -EIO is being returned. It seems that
+   -EOPNOTSUPP is more appropriate here.
+Fix all of the above issues.
 
-> >  Andrew, can you please take the change from the LKML message heading 
-> > this thread, or shall I resend it somehow for you to pick it up?  This 
-> > doesn't really fit anywhere.
-> 
-> The original patch is marked as rejected in patchwork - but I don't recall
-> why and the patch does look good and applies, so I just applied it.  Sorry,
-> probably fat fingered patchwork ...
+This patch is based on the original patch by Laszlo Ersek and a comment by
+Jeff Moyer.
 
- Great, thanks very much indeed, Ralf!
+Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+---
+ drivers/block/xen-blkfront.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-  Maciej
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 5ac312f..2e6c103 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -582,12 +582,14 @@ static inline void flush_requests(struct blkfront_info *info)
+ 		notify_remote_via_irq(info->irq);
+ }
+ 
+-static inline bool blkif_request_flush_valid(struct request *req,
+-					     struct blkfront_info *info)
++static inline bool blkif_request_flush_invalid(struct request *req,
++					       struct blkfront_info *info)
+ {
+ 	return ((req->cmd_type != REQ_TYPE_FS) ||
+-		((req->cmd_flags & (REQ_FLUSH | REQ_FUA)) &&
+-		!info->flush_op));
++		((req->cmd_flags & REQ_FLUSH) &&
++		 !(info->feature_flush & REQ_FLUSH)) ||
++		((req->cmd_flags & REQ_FUA) &&
++		 !(info->feature_flush & REQ_FUA)));
+ }
+ 
+ /*
+@@ -612,8 +614,8 @@ static void do_blkif_request(struct request_queue *rq)
+ 
+ 		blk_start_request(req);
+ 
+-		if (blkif_request_flush_valid(req, info)) {
+-			__blk_end_request_all(req, -EIO);
++		if (blkif_request_flush_invalid(req, info)) {
++			__blk_end_request_all(req, -EOPNOTSUPP);
+ 			continue;
+ 		}
+ 
+-- 
+1.9.3
+
