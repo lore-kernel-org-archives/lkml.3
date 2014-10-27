@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330AbaJ0Mly (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:41:54 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28066 "EHLO
+	id S1752889AbaJ0Mlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:41:51 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:28073 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935AbaJ0Mlm (ORCPT
+	with ESMTP id S1751836AbaJ0Mlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 08:41:42 -0400
 From: Yijing Wang <wangyijing@huawei.com>
@@ -31,9 +31,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 07/16] MIPS/Octeon/MSI: Use MSI controller framework to configure MSI/MSI-X irq
-Date: Mon, 27 Oct 2014 21:22:13 +0800
-Message-ID: <1414416142-31239-8-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 06/16] Mips/MSI: Save MSI controller in pci sysdata
+Date: Mon, 27 Oct 2014 21:22:12 +0800
+Message-ID: <1414416142-31239-7-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
 References: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
@@ -45,150 +45,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use MSI controller framework instead of arch MSI functions to configure
-MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
+Save MSI controller in pci sysdata, add arch pcibios_msi_controller()
+to extract out MSI controller.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/mips/include/asm/octeon/pci-octeon.h |    4 +++
- arch/mips/pci/msi-octeon.c                |   31 ++++++++++++++++------------
- arch/mips/pci/pci-octeon.c                |    3 ++
- 3 files changed, 25 insertions(+), 13 deletions(-)
+ arch/mips/include/asm/pci.h |    3 +++
+ arch/mips/pci/pci.c         |    9 +++++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
 
-diff --git a/arch/mips/include/asm/octeon/pci-octeon.h b/arch/mips/include/asm/octeon/pci-octeon.h
-index 64ba56a..61c038d 100644
---- a/arch/mips/include/asm/octeon/pci-octeon.h
-+++ b/arch/mips/include/asm/octeon/pci-octeon.h
-@@ -66,4 +66,8 @@ enum octeon_dma_bar_type {
-  */
- extern enum octeon_dma_bar_type octeon_dma_bar_type;
+diff --git a/arch/mips/include/asm/pci.h b/arch/mips/include/asm/pci.h
+index 974b0e3..d7cd850 100644
+--- a/arch/mips/include/asm/pci.h
++++ b/arch/mips/include/asm/pci.h
+@@ -43,6 +43,9 @@ struct pci_controller {
+ 
+ 	int iommu;
  
 +#ifdef CONFIG_PCI_MSI
-+extern struct msi_controller octeon_msi_ctrl;
++	struct msi_controller *msi_ctrl;
 +#endif
-+
- #endif
-diff --git a/arch/mips/pci/msi-octeon.c b/arch/mips/pci/msi-octeon.c
-index 63bbe07..30976da 100644
---- a/arch/mips/pci/msi-octeon.c
-+++ b/arch/mips/pci/msi-octeon.c
-@@ -57,7 +57,7 @@ static int msi_irq_size;
-  *
-  * Returns 0 on success.
-  */
--int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
-+static int octeon_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
- {
- 	struct msi_msg msg;
- 	u16 control;
-@@ -132,12 +132,12 @@ msi_irq_allocated:
- 	/* Make sure the search for available interrupts didn't fail */
- 	if (irq >= 64) {
- 		if (request_private_bits) {
--			pr_err("arch_setup_msi_irq: Unable to find %d free interrupts, trying just one",
--			       1 << request_private_bits);
-+			pr_err("%s: Unable to find %d free interrupts, trying just one",
-+			       __func__, 1 << request_private_bits);
- 			request_private_bits = 0;
- 			goto try_only_one;
- 		} else
--			panic("arch_setup_msi_irq: Unable to find a free MSI interrupt");
-+			panic("%s: Unable to find a free MSI interrupt", __func__);
- 	}
+ 	/* Optional access methods for reading/writing the bus number
+ 	   of the PCI controller */
+ 	int (*get_busno)(void);
+diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+index 1bf60b1..7917cba 100644
+--- a/arch/mips/pci/pci.c
++++ b/arch/mips/pci/pci.c
+@@ -36,6 +36,15 @@ unsigned long PCIBIOS_MIN_MEM;
  
- 	/* MSI interrupts start at logical IRQ OCTEON_IRQ_MSI_BIT0 */
-@@ -168,7 +168,7 @@ msi_irq_allocated:
- 		msg.address_hi = (0 + CVMX_SLI_PCIE_MSI_RCV) >> 32;
- 		break;
- 	default:
--		panic("arch_setup_msi_irq: Invalid octeon_dma_bar_type");
-+		panic("%s: Invalid octeon_dma_bar_type", __func__);
- 	}
- 	msg.data = irq - OCTEON_IRQ_MSI_BIT0;
+ static int pci_initialized;
  
-@@ -182,7 +182,8 @@ msi_irq_allocated:
- 	return 0;
- }
- 
--int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+static int octeon_setup_msi_irqs(struct msi_controller *ctrl, struct pci_dev *dev,
-+		int nvec, int type)
- {
- 	struct msi_desc *entry;
- 	int ret;
-@@ -201,7 +202,7 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 		return 1;
- 
- 	list_for_each_entry(entry, &dev->msi_list, list) {
--		ret = arch_setup_msi_irq(dev, entry);
-+		ret = octeon_setup_msi_irq(dev, entry);
- 		if (ret < 0)
- 			return ret;
- 		if (ret > 0)
-@@ -210,14 +211,13 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- 
- 	return 0;
- }
--
- /**
-  * Called when a device no longer needs its MSI interrupts. All
-  * MSI interrupts for the device are freed.
-  *
-  * @irq:    The devices first irq number. There may be multple in sequence.
-  */
--void arch_teardown_msi_irq(unsigned int irq)
-+static void octeon_teardown_msi_irq(struct msi_controller *ctrl, unsigned int irq)
- {
- 	int number_irqs;
- 	u64 bitmask;
-@@ -226,8 +226,8 @@ void arch_teardown_msi_irq(unsigned int irq)
- 
- 	if ((irq < OCTEON_IRQ_MSI_BIT0)
- 		|| (irq > msi_irq_size + OCTEON_IRQ_MSI_BIT0))
--		panic("arch_teardown_msi_irq: Attempted to teardown illegal "
--		      "MSI interrupt (%d)", irq);
-+		panic("%s: Attempted to teardown illegal "
-+			"MSI interrupt (%d)", __func__, irq);
- 
- 	irq -= OCTEON_IRQ_MSI_BIT0;
- 	index = irq / 64;
-@@ -249,8 +249,8 @@ void arch_teardown_msi_irq(unsigned int irq)
- 	/* Shift the mask to the correct bit location */
- 	bitmask <<= irq0;
- 	if ((msi_free_irq_bitmask[index] & bitmask) != bitmask)
--		panic("arch_teardown_msi_irq: Attempted to teardown MSI "
--		      "interrupt (%d) not in use", irq);
-+		panic("%s: Attempted to teardown MSI "
-+			"interrupt (%d) not in use", __func__, irq);
- 
- 	/* Checks are done, update the in use bitmask */
- 	spin_lock(&msi_free_irq_bitmask_lock);
-@@ -259,6 +259,11 @@ void arch_teardown_msi_irq(unsigned int irq)
- 	spin_unlock(&msi_free_irq_bitmask_lock);
- }
- 
-+struct msi_controller octeon_msi_ctrl = {
-+	.setup_irqs = octeon_setup_msi_irqs,
-+	.teardown_irq = octeon_teardown_msi_irq,
-+};
-+
- static DEFINE_RAW_SPINLOCK(octeon_irq_msi_lock);
- 
- static u64 msi_rcv_reg[4];
-diff --git a/arch/mips/pci/pci-octeon.c b/arch/mips/pci/pci-octeon.c
-index 59cccd9..9935448 100644
---- a/arch/mips/pci/pci-octeon.c
-+++ b/arch/mips/pci/pci-octeon.c
-@@ -356,6 +356,9 @@ static struct pci_controller octeon_pci_controller = {
- 	.io_resource = &octeon_pci_io_resource,
- 	.io_offset = 0,
- 	.io_map_base = OCTEON_PCI_IOSPACE_BASE,
 +#ifdef CONFIG_PCI_MSI
-+	.msi_ctrl = &octeon_msi_ctrl,
++struct msi_controller *pcibios_msi_controller(struct pci_bus *bus)
++{
++	struct pci_controller *ctrl = bus->sysdata;
++
++	return ctrl->msi_ctrl;
++}
 +#endif
- };
- 
- 
++
+ /*
+  * We need to avoid collisions with `mirrored' VGA ports
+  * and other strange ISA hardware, so we always want the
 -- 
 1.7.1
 
