@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbaJ0TBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:01:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52533 "EHLO
+	id S1753032AbaJ0TB3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:01:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52539 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972AbaJ0TBM (ORCPT
+	with ESMTP id S1753006AbaJ0TBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:01:12 -0400
+	Mon, 27 Oct 2014 15:01:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+Cc: Xiubo Li <Li.Xiubo@freescale.com>, Mark Brown <broonie@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 067/105] framebuffer: fix border color
-Date: Mon, 27 Oct 2014 11:56:42 -0700
-Message-Id: <1414436240-13879-68-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 058/105] regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.
+Date: Mon, 27 Oct 2014 11:56:33 -0700
+Message-Id: <1414436240-13879-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,108 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
-commit f74a289b9480648a654e5afd8458c2263c03a1e1 upstream.
+commit d6b41cb06044a7d895db82bdd54f6e4219970510 upstream.
 
-The framebuffer code uses the current background color to fill the border
-when switching consoles, however, this results in inconsistent behavior.
-For example:
-- start Midnigh Commander
-- the border is black
-- switch to another console and switch back
-- the border is cyan
-- type something into the command line in mc
-- the border is cyan
-- switch to another console and switch back
-- the border is black
-- press F9 to go to menu
-- the border is black
-- switch to another console and switch back
-- the border is dark blue
+Since we cannot make sure the 'val_count' will always be none zero
+here, and then if it equals to zero, the kmemdup() will return
+ZERO_SIZE_PTR, which equals to ((void *)16).
 
-When switching to a console with Midnight Commander, the border is random
-color that was left selected by the slang subsystem.
+So this patch fix this with just doing the zero check before calling
+kmemdup().
 
-This patch fixes this inconsistency by always using black as the
-background color when switching consoles.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/video/console/bitblit.c   | 3 +--
- drivers/video/console/fbcon_ccw.c | 3 +--
- drivers/video/console/fbcon_cw.c  | 3 +--
- drivers/video/console/fbcon_ud.c  | 3 +--
- 4 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/base/regmap/regmap.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/video/console/bitblit.c b/drivers/video/console/bitblit.c
-index 61b182b..dbfe4ee 100644
---- a/drivers/video/console/bitblit.c
-+++ b/drivers/video/console/bitblit.c
-@@ -205,7 +205,6 @@ static void bit_putcs(struct vc_data *vc, struct fb_info *info,
- static void bit_clear_margins(struct vc_data *vc, struct fb_info *info,
- 			      int bottom_only)
- {
--	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
- 	unsigned int cw = vc->vc_font.width;
- 	unsigned int ch = vc->vc_font.height;
- 	unsigned int rw = info->var.xres - (vc->vc_cols*cw);
-@@ -214,7 +213,7 @@ static void bit_clear_margins(struct vc_data *vc, struct fb_info *info,
- 	unsigned int bs = info->var.yres - bh;
- 	struct fb_fillrect region;
- 
--	region.color = attr_bgcol_ec(bgshift, vc, info);
-+	region.color = 0;
- 	region.rop = ROP_COPY;
- 
- 	if (rw && !bottom_only) {
-diff --git a/drivers/video/console/fbcon_ccw.c b/drivers/video/console/fbcon_ccw.c
-index 41b32ae..5a3cbf6 100644
---- a/drivers/video/console/fbcon_ccw.c
-+++ b/drivers/video/console/fbcon_ccw.c
-@@ -197,9 +197,8 @@ static void ccw_clear_margins(struct vc_data *vc, struct fb_info *info,
- 	unsigned int bh = info->var.xres - (vc->vc_rows*ch);
- 	unsigned int bs = vc->vc_rows*ch;
- 	struct fb_fillrect region;
--	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
- 
--	region.color = attr_bgcol_ec(bgshift,vc,info);
-+	region.color = 0;
- 	region.rop = ROP_COPY;
- 
- 	if (rw && !bottom_only) {
-diff --git a/drivers/video/console/fbcon_cw.c b/drivers/video/console/fbcon_cw.c
-index a93670e..e7ee44d 100644
---- a/drivers/video/console/fbcon_cw.c
-+++ b/drivers/video/console/fbcon_cw.c
-@@ -180,9 +180,8 @@ static void cw_clear_margins(struct vc_data *vc, struct fb_info *info,
- 	unsigned int bh = info->var.xres - (vc->vc_rows*ch);
- 	unsigned int rs = info->var.yres - rw;
- 	struct fb_fillrect region;
--	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
- 
--	region.color = attr_bgcol_ec(bgshift,vc,info);
-+	region.color = 0;
- 	region.rop = ROP_COPY;
- 
- 	if (rw && !bottom_only) {
-diff --git a/drivers/video/console/fbcon_ud.c b/drivers/video/console/fbcon_ud.c
-index ff0872c..19e3714 100644
---- a/drivers/video/console/fbcon_ud.c
-+++ b/drivers/video/console/fbcon_ud.c
-@@ -227,9 +227,8 @@ static void ud_clear_margins(struct vc_data *vc, struct fb_info *info,
- 	unsigned int rw = info->var.xres - (vc->vc_cols*cw);
- 	unsigned int bh = info->var.yres - (vc->vc_rows*ch);
- 	struct fb_fillrect region;
--	int bgshift = (vc->vc_hi_font_mask) ? 13 : 12;
- 
--	region.color = attr_bgcol_ec(bgshift,vc,info);
-+	region.color = 0;
- 	region.rop = ROP_COPY;
- 
- 	if (rw && !bottom_only) {
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 1ac3c9a..ebe332c 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1529,6 +1529,9 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 	if (val_bytes == 1) {
+ 		wval = (void *)val;
+ 	} else {
++		if (!val_count)
++			return -EINVAL;
++
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
+ 			ret = -ENOMEM;
 -- 
 1.9.1
 
