@@ -1,67 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702AbaJ0S7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:59:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40373 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428AbaJ0S5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:57:45 -0400
-Date: Mon, 27 Oct 2014 20:54:05 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <ktkhai@parallels.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>, Christoph Lameter <cl@linux.com>
-Subject: [PATCH 1/3] probe_kernel_address() can use __probe_kernel_read()
-Message-ID: <20141027195405.GB11736@redhat.com>
-References: <1413962231.19914.130.camel@tkhai> <20141027195339.GA11736@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027195339.GA11736@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752714AbaJ0S7Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:59:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52458 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682AbaJ0S7F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:59:05 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 055/105] Revert "lzo: properly check for overruns"
+Date: Mon, 27 Oct 2014 11:56:30 -0700
+Message-Id: <1414436240-13879-56-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
+References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-probe_kernel_address() can just do __probe_kernel_read(sizeof(retval)),
-no need to open-code its implementation.
+3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+------------------
+
+From: Willy Tarreau <w@1wt.eu>
+
+commit af958a38a60c7ca3d8a39c918c1baa2ff7b6b233 upstream.
+
+This reverts commit 206a81c ("lzo: properly check for overruns").
+
+As analysed by Willem Pinckaers, this fix is still incomplete on
+certain rare corner cases, and it is easier to restart from the
+original code.
+
+Reported-by: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/uaccess.h |   17 ++---------------
- 1 files changed, 2 insertions(+), 15 deletions(-)
+ lib/lzo/lzo1x_decompress_safe.c | 62 ++++++++++++++---------------------------
+ 1 file changed, 21 insertions(+), 41 deletions(-)
 
-diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
-index ecd3319..effb637 100644
---- a/include/linux/uaccess.h
-+++ b/include/linux/uaccess.h
-@@ -66,22 +66,9 @@ static inline unsigned long __copy_from_user_nocache(void *to,
-  * already holds mmap_sem, or other locks which nest inside mmap_sem.
-  * This must be a macro because __get_user() needs to know the types of the
-  * args.
-- *
-- * We don't include enough header files to be able to do the set_fs().  We
-- * require that the probe_kernel_address() caller will do that.
-  */
--#define probe_kernel_address(addr, retval)		\
--	({						\
--		long ret;				\
--		mm_segment_t old_fs = get_fs();		\
--							\
--		set_fs(KERNEL_DS);			\
--		pagefault_disable();			\
--		ret = __copy_from_user_inatomic(&(retval), (__force typeof(retval) __user *)(addr), sizeof(retval));		\
--		pagefault_enable();			\
--		set_fs(old_fs);				\
--		ret;					\
--	})
-+#define probe_kernel_address(addr, retval)	\
-+	__probe_kernel_read(&(retval), (__force void *)(addr), sizeof(retval))
+diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
+index 8563081..569985d 100644
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -19,31 +19,11 @@
+ #include <linux/lzo.h>
+ #include "lzodefs.h"
  
- /*
-  * probe_kernel_read(): safely attempt to read from a location
+-#define HAVE_IP(t, x)					\
+-	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
+-
+-#define HAVE_OP(t, x)					\
+-	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
+-
+-#define NEED_IP(t, x)					\
+-	do {						\
+-		if (!HAVE_IP(t, x))			\
+-			goto input_overrun;		\
+-	} while (0)
+-
+-#define NEED_OP(t, x)					\
+-	do {						\
+-		if (!HAVE_OP(t, x))			\
+-			goto output_overrun;		\
+-	} while (0)
+-
+-#define TEST_LB(m_pos)					\
+-	do {						\
+-		if ((m_pos) < out)			\
+-			goto lookbehind_overrun;	\
+-	} while (0)
++#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
++#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
++#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
++#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
++#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+ 
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+@@ -78,14 +58,14 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						NEED_IP(1, 0);
++						NEED_IP(1);
+ 					}
+ 					t += 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
++				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
+ 					const unsigned char *ie = ip + t;
+ 					unsigned char *oe = op + t;
+ 					do {
+@@ -101,8 +81,8 @@ copy_literal_run:
+ 				} else
+ #endif
+ 				{
+-					NEED_OP(t, 0);
+-					NEED_IP(t, 3);
++					NEED_OP(t);
++					NEED_IP(t + 3);
+ 					do {
+ 						*op++ = *ip++;
+ 					} while (--t > 0);
+@@ -115,7 +95,7 @@ copy_literal_run:
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+ 				TEST_LB(m_pos);
+-				NEED_OP(2, 0);
++				NEED_OP(2);
+ 				op[0] = m_pos[0];
+ 				op[1] = m_pos[1];
+ 				op += 2;
+@@ -139,10 +119,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 31 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			m_pos = op - 1;
+ 			next = get_unaligned_le16(ip);
+@@ -157,10 +137,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 7 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			next = get_unaligned_le16(ip);
+ 			ip += 2;
+@@ -174,7 +154,7 @@ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 		if (op - m_pos >= 8) {
+ 			unsigned char *oe = op + t;
+-			if (likely(HAVE_OP(t, 15))) {
++			if (likely(HAVE_OP(t + 15))) {
+ 				do {
+ 					COPY8(op, m_pos);
+ 					op += 8;
+@@ -184,7 +164,7 @@ copy_literal_run:
+ 					m_pos += 8;
+ 				} while (op < oe);
+ 				op = oe;
+-				if (HAVE_IP(6, 0)) {
++				if (HAVE_IP(6)) {
+ 					state = next;
+ 					COPY4(op, ip);
+ 					op += next;
+@@ -192,7 +172,7 @@ copy_literal_run:
+ 					continue;
+ 				}
+ 			} else {
+-				NEED_OP(t, 0);
++				NEED_OP(t);
+ 				do {
+ 					*op++ = *m_pos++;
+ 				} while (op < oe);
+@@ -201,7 +181,7 @@ copy_literal_run:
+ #endif
+ 		{
+ 			unsigned char *oe = op + t;
+-			NEED_OP(t, 0);
++			NEED_OP(t);
+ 			op[0] = m_pos[0];
+ 			op[1] = m_pos[1];
+ 			op += 2;
+@@ -214,15 +194,15 @@ match_next:
+ 		state = next;
+ 		t = next;
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
++		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
+ 			COPY4(op, ip);
+ 			op += t;
+ 			ip += t;
+ 		} else
+ #endif
+ 		{
+-			NEED_IP(t, 3);
+-			NEED_OP(t, 0);
++			NEED_IP(t + 3);
++			NEED_OP(t);
+ 			while (t > 0) {
+ 				*op++ = *ip++;
+ 				t--;
 -- 
-1.5.5.1
-
+1.9.1
 
