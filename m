@@ -1,179 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424AbaJ0CmY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 22:42:24 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:43967 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037AbaJ0CmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 22:42:22 -0400
-Date: Mon, 27 Oct 2014 03:41:21 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 09/15] net: dsa: Add support for switch EEPROM access
-Message-ID: <20141027024121.GA16998@lunn.ch>
-References: <1414342365-27191-1-git-send-email-linux@roeck-us.net>
- <1414342365-27191-10-git-send-email-linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414342365-27191-10-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752496AbaJ0Cmm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:42:42 -0400
+Received: from regular1.263xmail.com ([211.150.99.139]:40270 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031AbaJ0Ck7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 22:40:59 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <081202b5123a3b02b890e3742c35b008>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
+Cc: zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
+        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: [PATCH v14 2/5] dt-bindings: document Rockchip thermal
+Date: Mon, 27 Oct 2014 10:39:45 +0800
+Message-Id: <1414377588-2237-3-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414377588-2237-1-git-send-email-caesar.wang@rock-chips.com>
+References: <1414377588-2237-1-git-send-email-caesar.wang@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 26, 2014 at 09:52:39AM -0700, Guenter Roeck wrote:
-> On some chips it is possible to access the switch eeprom.
-> Add infrastructure support for it.
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
-> v2:
-> - Add support for configuring switch EEPROM size through platform data
->   or devicetree data
-> - Do not compare new pointers against NULL
-> - Check if get_eeprom pointer is set before calling it
-> 
->  include/net/dsa.h | 10 ++++++++++
->  net/dsa/dsa.c     |  4 ++++
->  net/dsa/slave.c   | 41 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 55 insertions(+)
-> 
-> diff --git a/include/net/dsa.h b/include/net/dsa.h
-> index 55e75e7..37856a2 100644
-> --- a/include/net/dsa.h
-> +++ b/include/net/dsa.h
-> @@ -38,6 +38,9 @@ struct dsa_chip_data {
->  	struct device	*host_dev;
->  	int		sw_addr;
->  
-> +	/* set to size of eeprom if supported by the switch */
-> +	int		eeprom_len;
-> +
->  	/* Device tree node pointer for this specific switch chip
->  	 * used during switch setup in case additional properties
->  	 * and resources needs to be used
-> @@ -258,6 +261,13 @@ struct dsa_switch_driver {
->  	int	(*set_temp_limit)(struct dsa_switch *ds, int temp);
->  	int	(*get_temp_alarm)(struct dsa_switch *ds, bool *alarm);
->  #endif
-> +
-> +	/* EEPROM access */
-> +	int	(*get_eeprom_len)(struct dsa_switch *ds);
-> +	int	(*get_eeprom)(struct dsa_switch *ds,
-> +			      struct ethtool_eeprom *eeprom, u8 *data);
-> +	int	(*set_eeprom)(struct dsa_switch *ds,
-> +			      struct ethtool_eeprom *eeprom, u8 *data);
->  };
->  
->  void register_switch_driver(struct dsa_switch_driver *type);
-> diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
-> index 5edbbca..1c1b925 100644
-> --- a/net/dsa/dsa.c
-> +++ b/net/dsa/dsa.c
-> @@ -575,6 +575,7 @@ static int dsa_of_probe(struct platform_device *pdev)
->  	const char *port_name;
->  	int chip_index, port_index;
->  	const unsigned int *sw_addr, *port_reg;
-> +	u32 eeprom_length;
->  	int ret;
->  
->  	mdio = of_parse_phandle(np, "dsa,mii-bus", 0);
-> @@ -603,6 +604,9 @@ static int dsa_of_probe(struct platform_device *pdev)
->  	if (pd->nr_chips > DSA_MAX_SWITCHES)
->  		pd->nr_chips = DSA_MAX_SWITCHES;
->  
-> +	if (!of_property_read_u32(np, "eeprom-length", &eeprom_length))
-> +		pd->eeprom_length = eeprom_length;
-> +
+This add the necessary binding documentation for the thermal
+found on Rockchip SoCs
 
-Hi Guenter
+Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+---
+ .../bindings/thermal/rockchip-thermal.txt          | 53 ++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
 
-I would of expected a property to indicate the eeprom is present, not
-a length value. The switch determines the length, or at least the
-minimum length. So the switch driver can return the length, if the
-eeprom is indicated to be present.
-
-Also, all device tree properties need to be documented. I've not
-looked through all the patches, so maybe it is in a separate patch?
-
-> +static int dsa_slave_get_eeprom_len(struct net_device *dev)
-> +{
-> +	struct dsa_slave_priv *p = netdev_priv(dev);
-> +	struct dsa_switch *ds = p->parent;
-> +
-> +	if (ds->pd->eeprom_len)
-> +		return ds->pd->eeprom_len;
-> +
-> +	if (ds->drv->get_eeprom_len)
-> +		return ds->drv->get_eeprom_len(ds);
-> +
-> +	return 0;
-> +}
-
-This also does not look right. The default is that there is no
-property in DT, meaning the EEPROM is not present. So
-ds->pd->eeprom_len is zero. So the first if is not taken. It then
-calls into the driver which is return a length, independent of if it
-is populated or not.
-
-If we are going with your suggested binding, no value in DT, or a
-value of 0 mean no EEPROM. If there is a value in DT
-dsa_slave_get_eeprom_len() should return that value. Asking the driver
-is redundant, you can remove the get_eeprom_len() call.
-
-However, if DT just indicates the eeprom is populated or not, you
-should call the driver get_eeprom_len() is the eeprom property is
-present.
-
-> +static int dsa_slave_get_eeprom(struct net_device *dev,
-> +				struct ethtool_eeprom *eeprom, u8 *data)
-> +{
-> +	struct dsa_slave_priv *p = netdev_priv(dev);
-> +	struct dsa_switch *ds = p->parent;
-> +
-> +	if (ds->drv->get_eeprom)
-> +		return ds->drv->get_eeprom(ds, eeprom, data);
-
-This should be conditional on the length/present.
-
-> +
-> +	return -EOPNOTSUPP;
-> +}
-> +
-> +static int dsa_slave_set_eeprom(struct net_device *dev,
-> +				struct ethtool_eeprom *eeprom, u8 *data)
-> +{
-> +	struct dsa_slave_priv *p = netdev_priv(dev);
-> +	struct dsa_switch *ds = p->parent;
-> +
-> +	if (ds->drv->set_eeprom)
-> +		return ds->drv->set_eeprom(ds, eeprom, data);
-
-Same again.
-
-     Andrew
+diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+new file mode 100644
+index 0000000..d5b1401
+--- /dev/null
++++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+@@ -0,0 +1,53 @@
++* Temperature Sensor ADC (TSADC) on rockchip SoCs
++
++Required properties:
++- compatible : "rockchip,rk3288-tsadc"
++- reg : physical base address of the controller and length of memory mapped
++	region.
++- interrupts : The interrupt number to the cpu. The interrupt specifier format
++	       depends on the interrupt controller.
++- clocks : Must contain an entry for each entry in clock-names.
++- clock-names : Shall be "tsadc" for the converter-clock, and "apb_pclk" for
++		the peripheral clock.
++- #thermal-sensor-cells : Should be 1. See ./thermal.txt for a description.
++
++Exiample:
++tsadc: tsadc@ff280000 {
++	compatible = "rockchip,rk3288-tsadc";
++	reg = <0xff280000 0x100>;
++	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
++	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
++	clock-names = "tsadc", "apb_pclk";
++};
++
++Example: referring to thermal sensors:
++thermal-zones {
++	cpu_thermal: cpu_thermal {
++		polling-delay-passive = <1000>; /* milliseconds */
++		polling-delay = <5000>; /* milliseconds */
++
++		/* sensor	ID */
++		thermal-sensors = <&tsadc	1>;
++
++		trips {
++			cpu_alert0: cpu_alert {
++				temperature = <80000>; /* millicelsius */
++				hysteresis = <2000>; /* millicelsius */
++				type = "passive";
++			};
++			cpu_crit: cpu_crit {
++				temperature = <120000>; /* millicelsius */
++				hysteresis = <2000>; /* millicelsius */
++				type = "critical";
++			};
++		};
++
++		cooling-maps {
++			map0 {
++				trip = <&cpu_alert0>;
++				cooling-device =
++					<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
++			};
++		};
++	};
++};
+-- 
+1.9.1
 
 
-> +	return -EOPNOTSUPP;
-> +}
-> +
->  static void dsa_slave_get_strings(struct net_device *dev,
->  				  uint32_t stringset, uint8_t *data)
->  {
-> @@ -387,6 +425,9 @@ static const struct ethtool_ops dsa_slave_ethtool_ops = {
->  	.get_drvinfo		= dsa_slave_get_drvinfo,
->  	.nway_reset		= dsa_slave_nway_reset,
->  	.get_link		= dsa_slave_get_link,
-> +	.get_eeprom_len		= dsa_slave_get_eeprom_len,
-> +	.get_eeprom		= dsa_slave_get_eeprom,
-> +	.set_eeprom		= dsa_slave_set_eeprom,
->  	.get_strings		= dsa_slave_get_strings,
->  	.get_ethtool_stats	= dsa_slave_get_ethtool_stats,
->  	.get_sset_count		= dsa_slave_get_sset_count,
-> -- 
-> 1.9.1
-> 
