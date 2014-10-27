@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaJ0BIR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 21:08:17 -0400
-Received: from numascale.com ([213.162.240.84]:56369 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722AbaJ0BIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 21:08:16 -0400
-Message-ID: <544D9AF7.2080206@numascale.com>
-Date: Mon, 27 Oct 2014 09:08:07 +0800
-From: Daniel J Blueman <daniel@numascale.com>
-Organization: Numascale AS
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752064AbaJ0BIq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 21:08:46 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:49661 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaJ0BIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 21:08:43 -0400
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Steffen Persvold <sp@numascale.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: RCU fanout leaf balancing
-References: <544B4A4C.5070807@numascale.com> <20141025134835.GD28247@linux.vnet.ibm.com>
-In-Reply-To: <20141025134835.GD28247@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <71A9FEBE-A07D-4DFE-BDF7-D6E9A60CEFF2@zytor.com>
+References: <90d5683679179df27ffeef18c3e1010ed4e72695.1414342681.git.luto@amacapital.net>
+ <20141026171819.GQ7996@ZenIV.linux.org.uk> <CALCETrW0pqGznCOEoFT3ttEkmqNmpZVaNu-FPb=RUB3D7k+aQg@mail.gmail.com>
+ <20141026180938.GR7996@ZenIV.linux.org.uk> <71A9FEBE-A07D-4DFE-BDF7-D6E9A60CEFF2@zytor.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sun, 26 Oct 2014 18:08:21 -0700
+Message-ID: <CALCETrW1Tgp=yHVYrtHovzsyEbcsLsbBNANWrtbvRQmEZwMmPg@mail.gmail.com>
+Subject: Re: [PATCH] all arches, signal: Move restart_block to struct task_struct
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/10/2014 21:48, Paul E. McKenney wrote:
-> On Sat, Oct 25, 2014 at 02:59:24PM +0800, Daniel J Blueman wrote:
->> Hi Paul,
->>
->> Finding earlier reference to increasing RCU fanout leaf for the
->> purpose of "decrease[ing] cache-miss overhead for large systems",
->> would your suggestion be to increase the value to the next hierarchy
->> core-count above 16?
->>
->> If we have say 32 interconnected 48-core servers; 3 sockets of
->> dual-node 8-core Opteron 6300s, so 1536 cores in all. Latency across
->> the coherent interconnect is O(100x) higher than the internal
->> Hypertransport interconnect, so if we set RCU_FANOUT_LEAF to 48 to
->> keep leaf-checking local to one Hypertransport fabric, what wisdom
->> would one use for RCU_FANOUT? 4x leaf?
->>
->> Or, would it be more cache-friendly to set RCU_FANOUT_LEAF to 8 and
->> RCU_FANOUT to 48?
->
-> The easiest approach would be to use the default of 16.  Assuming
-> consecutive CPU numbering within each 48-core server, this would mean that
-> you would have three rcu_node structures per 48-core server.  The next
-> level up would of course span servers, but that level is accessed much
-> less frequently than is the root level, so this should still work.
->
-> If you also have hyperthreading, so that there are 96 hardware threads
-> per server, and if you are using the same "interesting" numbering scheme
-> that Intel uses, then this still works.  You have three leaf rcu_node
-> structure for the first set of hardware threads and another set of three
-> for the second set of hardware threads.
->
-> Or are you seeing some problem with the default?  If so, please tell me
-> what that problem is.
->
-> You can of course increase RCU_FANOUT to 24 or 48 (this latter assuming
-> a 64-bit kernel), at least if you are using a recent kernel.  However,
-> the penalty for too large a value for RCU_FANOUT is lock contention at
-> scheduling-clock-interrupt time.  So if you are setting RCU_FANOUT to 48,
-> you probably also want to boot with skew_tick set.
->
-> But the best approach is to try it.  I bet that the default will work
-> just fine for you.  ;-)
+On Sun, Oct 26, 2014 at 11:11 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On x86 we have discussed to combine thread_info and task_struct into a single allocation with a percpu variable lining pointng at it.
 
-Good info. I'll stick with the defaults of 16/64, will schedule some 
-tuning later, and let you know if I find anything significant.
+Is that better than just gradually eliminating all the members of thread_info?
 
-Thanks Paul!
+Anyway, ftrace is the only user of ti->task on x86, so it's not a very
+juicy target.
 
-Daniel
+--Andy
+
+>
+> On October 26, 2014 11:09:39 AM PDT, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+>>On Sun, Oct 26, 2014 at 10:36:45AM -0700, Andy Lutomirski wrote:
+>>
+>>> I never said it was the *only* juicy target, but we can fix the rest,
+>>> too.  Also, I suspect that overwriting task could be harder to
+>>> exploit.  First, you need to avoid crashing, and second, on systems
+>>> with SMAP or similar protection, you need to make task point
+>>somewhere
+>>> that contains a useful exploit payload.
+>>>
+>>> We could probably get rid of thread_info's task pointer on x86, too
+>>--
+>>> it's not used by get_current() any more.
+>>
+>>Huh?  If you can overwrite that pointer, you can bloody well overwrite
+>>->task itself, making it point into the overwritten part of stack right
+>>next to thread_info.
+>>
+>>Again, on most of the architectures the _only_ way to reach task_struct
+>>is via thread_info:
+>>       * everything that uses asm-generic/current.h - arm, arm64, blackfin,
+>>c6x, hexagon, metag, mips, openrisc, sh, um, unicore32
+>>       * everything that should be using it - alpha, avr32, cris, m32r,
+>>parisc, score, tile.  These guys can simply add generic-y += current.h
+>>into their asm/Kbuild and remove asm/current.h.
+>>       * nearly the same situation - xtensa (there's an asm variant of
+>>the same thing + copy of asm-generic/current.h for C)
+>>       * sparc32
+>>       * m68k-noMMU
+>>       * mn10300-SMP
+>>
+>>It's a strong majority.  Check arch/*/asm/current.h and see for
+>>yourself.
+>
+> --
+> Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+
+
+
 -- 
-Daniel J Blueman
-Principal Software Engineer, Numascale
+Andy Lutomirski
+AMA Capital Management, LLC
