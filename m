@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaJ0TAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:00:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52478 "EHLO
+	id S1752832AbaJ0TAR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:00:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52495 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752770AbaJ0S7h (ORCPT
+	with ESMTP id S1751892AbaJ0TAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:59:37 -0400
+	Mon, 27 Oct 2014 15:00:13 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 061/105] NFSv4: Fix lock recovery when CREATE_SESSION/SETCLIENTID_CONFIRM fails
-Date: Mon, 27 Oct 2014 11:56:36 -0700
-Message-Id: <1414436240-13879-62-git-send-email-kamal@canonical.com>
+Cc: Borislav Petkov <bp@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 069/105] mpc85xx_edac: Make L2 interrupt shared too
+Date: Mon, 27 Oct 2014 11:56:44 -0700
+Message-Id: <1414436240-13879-70-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,37 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Borislav Petkov <bp@suse.de>
 
-commit a4339b7b686b4acc8b6de2b07d7bacbe3ae44b83 upstream.
+commit a18c3f16a907b8977ef65fc8dd71ed3f7b751748 upstream.
 
-If a NFSv4.x server returns NFS4ERR_STALE_CLIENTID in response to a
-CREATE_SESSION or SETCLIENTID_CONFIRM in order to tell us that it rebooted
-a second time, then the client will currently take this to mean that it must
-declare all locks to be stale, and hence ineligible for reboot recovery.
+The other two interrupt handlers in this driver are shared, except this
+one. When loading the driver, it fails like this.
 
-RFC3530 and RFC5661 both suggest that the client should instead rely on the
-server to respond to inelegible open share, lock and delegation reclaim
-requests with NFS4ERR_NO_GRACE in this situation.
+So make the IRQ line shared.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Freescale(R) MPC85xx EDAC driver, (C) 2006 Montavista Software
+mpc85xx_mc_err_probe: No ECC DIMMs discovered
+EDAC DEVICE0: Giving out device to module MPC85xx_edac controller mpc85xx_l2_err: DEV mpc85xx_l2_err (INTERRUPT)
+genirq: Flags mismatch irq 16. 00000000 ([EDAC] L2 err) vs. 00000080 ([EDAC] PCI err)
+mpc85xx_l2_err_probe: Unable to request irq 16 for MPC85xx L2 err
+remove_proc_entry: removing non-empty directory 'irq/16', leaking at least 'aerdrv'
+------------[ cut here ]------------
+WARNING: at fs/proc/generic.c:521
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc5-dirty #1
+task: ee058000 ti: ee046000 task.ti: ee046000
+NIP: c016c0c4 LR: c016c0c4 CTR: c037b51c
+REGS: ee047c10 TRAP: 0700 Not tainted (3.17.0-rc5-dirty)
+MSR: 00029000 <CE,EE,ME> CR: 22008022 XER: 20000000
+
+GPR00: c016c0c4 ee047cc0 ee058000 00000053 00029000 00000000 c037c744 00000003
+GPR08: c09aab28 c09aab24 c09aab28 00000156 20008028 00000000 c0002ac8 00000000
+GPR16: 00000000 00000000 00000000 00000000 00000000 00000000 00000139 c0950394
+GPR24: c09f0000 ee5585b0 ee047d08 c0a10000 ee047d08 ee15f808 00000002 ee03f660
+NIP [c016c0c4] remove_proc_entry
+LR [c016c0c4] remove_proc_entry
+Call Trace:
+remove_proc_entry (unreliable)
+unregister_irq_proc
+free_desc
+irq_free_descs
+mpc85xx_l2_err_probe
+platform_drv_probe
+really_probe
+__driver_attach
+bus_for_each_dev
+bus_add_driver
+driver_register
+mpc85xx_mc_init
+do_one_initcall
+kernel_init_freeable
+kernel_init
+ret_from_kernel_thread
+Instruction dump: ...
+
+Reported-and-tested-by: <lpb_098@163.com>
+Acked-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/nfs4state.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/edac/mpc85xx_edac.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-index 5d02d74..931ac3d 100644
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1796,7 +1796,6 @@ static int nfs4_handle_reclaim_lease_error(struct nfs_client *clp, int status)
- 		break;
- 	case -NFS4ERR_STALE_CLIENTID:
- 		clear_bit(NFS4CLNT_LEASE_CONFIRM, &clp->cl_state);
--		nfs4_state_clear_reclaim_reboot(clp);
- 		nfs4_state_start_reclaim_reboot(clp);
- 		break;
- 	case -NFS4ERR_CLID_INUSE:
+diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+index fd46b0b..8d017ec 100644
+--- a/drivers/edac/mpc85xx_edac.c
++++ b/drivers/edac/mpc85xx_edac.c
+@@ -557,7 +557,7 @@ static int mpc85xx_l2_err_probe(struct platform_device *op)
+ 	if (edac_op_state == EDAC_OPSTATE_INT) {
+ 		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+ 		res = devm_request_irq(&op->dev, pdata->irq,
+-				       mpc85xx_l2_isr, IRQF_DISABLED,
++				       mpc85xx_l2_isr, IRQF_SHARED,
+ 				       "[EDAC] L2 err", edac_dev);
+ 		if (res < 0) {
+ 			printk(KERN_ERR
 -- 
 1.9.1
 
