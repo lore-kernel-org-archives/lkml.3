@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaJ0Pt2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:49:28 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49001 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792AbaJ0PtY (ORCPT
+	id S1752426AbaJ0Ptv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:49:51 -0400
+Received: from resqmta-ch2-05v.sys.comcast.net ([69.252.207.37]:35843 "EHLO
+	resqmta-ch2-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752163AbaJ0Pts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:49:24 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Santosh Shilimkar <ssantosh@kernel.org>
-Subject: [PATCH v3 02/47] memory: emif: Use API function to determine power-off capability
-Date: Mon, 27 Oct 2014 08:48:27 -0700
-Message-Id: <1414424952-10054-3-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414424952-10054-1-git-send-email-linux@roeck-us.net>
-References: <1414424952-10054-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A02020A.544E6984.018C,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 27 Oct 2014 11:49:48 -0400
+Date: Mon, 27 Oct 2014 10:49:45 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tejun Heo <htejun@gmail.com>
+cc: linux-arm-kernel@lists.infradead.org, Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [percpu] Convert remaining __get_cpu_var uses in 3.18-rcX
+Message-ID: <alpine.DEB.2.11.1410271047400.17089@gentwo.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use have_kernel_power_off() to determine if the kernel is able
-to power off the system.
+During the 3.18 merge period additional __get_cpu_var uses were
+added. The patch converts these to this_cpu_ptr().
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v3:
-- Replace poweroff in all newly introduced variables and in text
-  with power_off or power-off as appropriate
-v2:
-- poweroff -> power_off
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
- drivers/memory/emif.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Index: linux/arch/arm64/kernel/psci.c
+===================================================================
+--- linux.orig/arch/arm64/kernel/psci.c
++++ linux/arch/arm64/kernel/psci.c
+@@ -511,7 +511,7 @@ static int cpu_psci_cpu_kill(unsigned in
 
-diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
-index 04644e7..317d49f 100644
---- a/drivers/memory/emif.c
-+++ b/drivers/memory/emif.c
-@@ -1053,10 +1053,10 @@ static irqreturn_t emif_threaded_isr(int irq, void *dev_id)
- 		dev_emerg(emif->dev, "SDRAM temperature exceeds operating limit.. Needs shut down!!!\n");
- 
- 		/* If we have Power OFF ability, use it, else try restarting */
--		if (pm_power_off) {
-+		if (have_kernel_power_off()) {
- 			kernel_power_off();
- 		} else {
--			WARN(1, "FIXME: NO pm_power_off!!! trying restart\n");
-+			WARN(1, "FIXME: NO kernel power-off capability!!! trying restart\n");
- 			kernel_restart("SDRAM Over-temp Emergency restart");
- 		}
- 		return IRQ_HANDLED;
--- 
-1.9.1
+ static int psci_suspend_finisher(unsigned long index)
+ {
+-	struct psci_power_state *state = __get_cpu_var(psci_power_state);
++	struct psci_power_state *state = __this_cpu_read(psci_power_state);
 
+ 	return psci_ops.cpu_suspend(state[index - 1],
+ 				    virt_to_phys(cpu_resume));
+@@ -520,7 +520,7 @@ static int psci_suspend_finisher(unsigne
+ static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
+ {
+ 	int ret;
+-	struct psci_power_state *state = __get_cpu_var(psci_power_state);
++	struct psci_power_state *state = __this_cpu_read(psci_power_state);
+ 	/*
+ 	 * idle state index 0 corresponds to wfi, should never be called
+ 	 * from the cpu_suspend operations
+Index: linux/kernel/irq_work.c
+===================================================================
+--- linux.orig/kernel/irq_work.c
++++ linux/kernel/irq_work.c
+@@ -175,11 +175,11 @@ EXPORT_SYMBOL_GPL(irq_work_run);
+
+ void irq_work_tick(void)
+ {
+-	struct llist_head *raised = &__get_cpu_var(raised_list);
++	struct llist_head *raised = this_cpu_ptr(&raised_list);
+
+ 	if (!llist_empty(raised) && !arch_irq_work_has_interrupt())
+ 		irq_work_run_list(raised);
+-	irq_work_run_list(&__get_cpu_var(lazy_list));
++	irq_work_run_list(this_cpu_ptr(&lazy_list));
+ }
+
+ /*
+Index: linux/kernel/time/tick-sched.c
+===================================================================
+--- linux.orig/kernel/time/tick-sched.c
++++ linux/kernel/time/tick-sched.c
+@@ -235,7 +235,7 @@ void tick_nohz_full_kick(void)
+ 	if (!tick_nohz_full_cpu(smp_processor_id()))
+ 		return;
+
+-	irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
++	irq_work_queue(this_cpu_ptr(&nohz_full_kick_work));
+ }
+
+ /*
