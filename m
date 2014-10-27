@@ -1,214 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922AbaJ0S4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:56:39 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50059 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163AbaJ0S4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:56:38 -0400
-Message-ID: <544E95D5.1020000@oracle.com>
-Date: Mon, 27 Oct 2014 14:58:29 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752191AbaJ0S5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:57:06 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57766 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752036AbaJ0S5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:57:03 -0400
+Date: Mon, 27 Oct 2014 19:56:57 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-api@vger.kernel.org,
+        devicetree@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v2 4/5] power: max77693: Add charger driver for Maxim
+ 77693
+Message-ID: <20141027185656.GB18965@earth.universe>
+References: <1413808489-3524-1-git-send-email-k.kozlowski@samsung.com>
+ <1413808489-3524-5-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: david.vrabel@citrix.com, stefano.stabellini@eu.citrix.com,
-        jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org
-Subject: Re: [PATCH v2 2/2] xen/pci: Use APIC directly when APIC virtualization
- is supported by hardware
-References: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com> <1414425953-13987-3-git-send-email-boris.ostrovsky@oracle.com> <20141027183939.GB13854@laptop.dumpdata.com>
-In-Reply-To: <20141027183939.GB13854@laptop.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="A6N2fC+uXW/VQSAv"
+Content-Disposition: inline
+In-Reply-To: <1413808489-3524-5-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 02:39 PM, Konrad Rzeszutek Wilk wrote:
-> On Mon, Oct 27, 2014 at 12:05:53PM -0400, Boris Ostrovsky wrote:
->> When hardware supports APIC/x2APIC virtualization we don't need to use pirqs
->> for MSI handling and instead use APIC since most APIC accesses (MMIO or MSR)
->> will now be processed without VMEXITs.
->>
->> As an example, netperf on the original code produces this profile
->> (collected wih 'xentrace -e 0x0008ffff -T 5'):
->>
->>      342 cpu_change
->>      260 CPUID
->>    34638 HLT
->>    64067 INJ_VIRQ
->>    28374 INTR
->>    82733 INTR_WINDOW
->>       10 NPF
->>    24337 TRAP
->>   370610 vlapic_accept_pic_intr
->>   307528 VMENTRY
->>   307527 VMEXIT
->>   140998 VMMCALL
->>      127 wrap_buffer
->>
->> After applying this patch the same test shows
->>
->>      230 cpu_change
->>      260 CPUID
->>    36542 HLT
->>      174 INJ_VIRQ
->>    27250 INTR
->>      222 INTR_WINDOW
->>       20 NPF
->>    24999 TRAP
->>   381812 vlapic_accept_pic_intr
->>   166480 VMENTRY
->>   166479 VMEXIT
->>    77208 VMMCALL
->>       81 wrap_buffer
->>
->> ApacheBench results (ab -n 10000 -c 200) improve by about 10%
-> What type of NIC did you use for this?
 
-Intel I350 card, igb driver. I probably should have mentioned this in 
-the commit message.
+--A6N2fC+uXW/VQSAv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
--boris
+Hi,
 
+On Mon, Oct 20, 2014 at 02:34:48PM +0200, Krzysztof Kozlowski wrote:
+> Add new driver for Maxim 77693 switch-mode charger (part of max77693
+> MFD driver) providing power supply class information to userspace.
+>=20
+> The charger has +20V tolerant input. Current input can be set from 0 to
+> 2.58 A. The charger can deliver up to 2.1 A to the battery or 3.5 A to
+> the system (when supplying additional current from battery to system).
+>=20
+> The driver is configured through DTS (battery and system related
+> settings) and sysfs entries (timers and top-off charging threshold).
+>=20
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
->
-> Thanks!
->> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> ---
->>   arch/x86/include/asm/xen/cpuid.h |   91 ++++++++++++++++++++++++++++++++++++++
->>   arch/x86/pci/xen.c               |    9 ++++
->>   2 files changed, 100 insertions(+), 0 deletions(-)
->>   create mode 100644 arch/x86/include/asm/xen/cpuid.h
->>
->> diff --git a/arch/x86/include/asm/xen/cpuid.h b/arch/x86/include/asm/xen/cpuid.h
->> new file mode 100644
->> index 0000000..0d809e9
->> --- /dev/null
->> +++ b/arch/x86/include/asm/xen/cpuid.h
->> @@ -0,0 +1,91 @@
->> +/******************************************************************************
->> + * arch-x86/cpuid.h
->> + *
->> + * CPUID interface to Xen.
->> + *
->> + * Permission is hereby granted, free of charge, to any person obtaining a copy
->> + * of this software and associated documentation files (the "Software"), to
->> + * deal in the Software without restriction, including without limitation the
->> + * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
->> + * sell copies of the Software, and to permit persons to whom the Software is
->> + * furnished to do so, subject to the following conditions:
->> + *
->> + * The above copyright notice and this permission notice shall be included in
->> + * all copies or substantial portions of the Software.
->> + *
->> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
->> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
->> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
->> + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
->> + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
->> + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
->> + * DEALINGS IN THE SOFTWARE.
->> + *
->> + * Copyright (c) 2007 Citrix Systems, Inc.
->> + *
->> + * Authors:
->> + *    Keir Fraser <keir@xen.org>
->> + */
->> +
->> +#ifndef __XEN_PUBLIC_ARCH_X86_CPUID_H__
->> +#define __XEN_PUBLIC_ARCH_X86_CPUID_H__
->> +
->> +/*
->> + * For compatibility with other hypervisor interfaces, the Xen cpuid leaves
->> + * can be found at the first otherwise unused 0x100 aligned boundary starting
->> + * from 0x40000000.
->> + *
->> + * e.g If viridian extensions are enabled for an HVM domain, the Xen cpuid
->> + * leaves will start at 0x40000100
->> + */
->> +
->> +#define XEN_CPUID_FIRST_LEAF 0x40000000
->> +#define XEN_CPUID_LEAF(i)    (XEN_CPUID_FIRST_LEAF + (i))
->> +
->> +/*
->> + * Leaf 1 (0x40000x00)
->> + * EAX: Largest Xen-information leaf. All leaves up to an including @EAX
->> + *      are supported by the Xen host.
->> + * EBX-EDX: "XenVMMXenVMM" signature, allowing positive identification
->> + *      of a Xen host.
->> + */
->> +#define XEN_CPUID_SIGNATURE_EBX 0x566e6558 /* "XenV" */
->> +#define XEN_CPUID_SIGNATURE_ECX 0x65584d4d /* "MMXe" */
->> +#define XEN_CPUID_SIGNATURE_EDX 0x4d4d566e /* "nVMM" */
->> +
->> +/*
->> + * Leaf 2 (0x40000x01)
->> + * EAX[31:16]: Xen major version.
->> + * EAX[15: 0]: Xen minor version.
->> + * EBX-EDX: Reserved (currently all zeroes).
->> + */
->> +
->> +/*
->> + * Leaf 3 (0x40000x02)
->> + * EAX: Number of hypercall transfer pages. This register is always guaranteed
->> + *      to specify one hypercall page.
->> + * EBX: Base address of Xen-specific MSRs.
->> + * ECX: Features 1. Unused bits are set to zero.
->> + * EDX: Features 2. Unused bits are set to zero.
->> + */
->> +
->> +/* Does the host support MMU_PT_UPDATE_PRESERVE_AD for this guest? */
->> +#define _XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD 0
->> +#define XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD  (1u<<0)
->> +
->> +/*
->> + * Leaf 5 (0x40000x04)
->> + * HVM-specific features
->> + */
->> +
->> +/* EAX Features */
->> +/* Virtualized APIC registers */
->> +#define XEN_HVM_CPUID_APIC_ACCESS_VIRT (1u << 0)
->> +/* Virtualized x2APIC accesses */
->> +#define XEN_HVM_CPUID_X2APIC_VIRT      (1u << 1)
->> +/* Memory mapped from other domains has valid IOMMU entries */
->> +#define XEN_HVM_CPUID_IOMMU_MAPPINGS   (1u << 2)
->> +
->> +#define XEN_CPUID_MAX_NUM_LEAVES 4
->> +
->> +#endif /* __XEN_PUBLIC_ARCH_X86_CPUID_H__ */
->> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
->> index 1370716..d768371 100644
->> --- a/arch/x86/pci/xen.c
->> +++ b/arch/x86/pci/xen.c
->> @@ -23,6 +23,7 @@
->>   #include <xen/features.h>
->>   #include <xen/events.h>
->>   #include <asm/xen/pci.h>
->> +#include <asm/xen/cpuid.h>
->>   #include <asm/i8259.h>
->>   
->>   static int xen_pcifront_enable_irq(struct pci_dev *dev)
->> @@ -434,6 +435,14 @@ int __init pci_xen_init(void)
->>   #ifdef CONFIG_PCI_MSI
->>   void __init xen_msi_init(void)
->>   {
->> +	if (!disable_apic) {
->> +		uint32_t eax = cpuid_eax(xen_cpuid_base() + 4);
->> +
->> +		if (((eax & XEN_HVM_CPUID_X2APIC_VIRT) && x2apic_mode) ||
->> +		    ((eax & XEN_HVM_CPUID_APIC_ACCESS_VIRT) && cpu_has_apic))
->> +			return;
->> +	}
->> +
->>   	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
->>   	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
->>   }
->> -- 
->> 1.7.1
->>
+I guess it makes sense to queue this together with the mfd parts.
 
+Acked-By: Sebastian Reichel <sre@kernel.org>
+
+-- Sebastian
+
+--A6N2fC+uXW/VQSAv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUTpV4AAoJENju1/PIO/qary4P/iWSe9y80CmfQzeVxEYgipwf
+GFdNMLnSaWeL7lLeDFS823GL+3HWVzoweXmXmmXwgTKS/yTlOYnOllj3gmloyVoL
+pMs7x9tT9lfUg58VyEjBbtuSmvoJevzpCMp7opdEaFdt8WicItcFJU3kvqEOliAs
+ZjLBqzhpnDkWeUfDlVG8pSNFqJY39VSH6ctBoGoGFaaYXP/m6c/DvrlHPv8+bgXP
+Jv5sChSjfOfEtMyA1lOVFLl6ihUgApLicwWyXWx/bRwnFPRK/rO7pVObOLZRFHj0
+y8KrcB8QWWVmkI/a/IayRWN1jaRAXrkcbFcqKQhNWnB36cMeq7DEyGpOqeUnO5z/
+rU8oPVKXfhHKlN3/HfTRx1+xPCq8eNGPzbMG/v5jOOeUYp3DF27Cxpl64Nx85MHz
+sNpTWDpyp3kNk3Mymkm0Rnu5i1eQFnBaeD0ZLlgNBA7/LAlrzgUmMwf3XCilHRv1
+KtVVUR9llOHjjN8MHgKdHApG+DSzEWpYjyPL2K1hBHSLAjjD+XDDeV7XDGAM90m0
+Yqx2DGba505jw0aqv6ueOz/HktPTgn3rH+HRrKpeg5G7gJGq4o7YlQ5ON0+yX+Jq
+3pL3qh+BGbVb7cAgexEM+iDfNv6vgAwv6E1fJWFULNohOMYXHXS+jRfZKMcRdAq/
+mqJSGoYw4q8w4ibO/2wp
+=t70r
+-----END PGP SIGNATURE-----
+
+--A6N2fC+uXW/VQSAv--
