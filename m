@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099AbaJ0Q54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:57:56 -0400
-Received: from smtprelay0130.hostedemail.com ([216.40.44.130]:48247 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751113AbaJ0Q5y (ORCPT
+	id S1752134AbaJ0RAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:00:08 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:32817 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaJ0RAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 12:57:54 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:4250:4321:4385:5007:6119:6261:6742:10004:10400:10848:11026:11232:11473:11658:11914:12043:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: smile21_a4b63f4fcf61
-X-Filterd-Recvd-Size: 2541
-Message-ID: <1414429069.8884.10.camel@perches.com>
-Subject: Re: [PATCH v9 1/4] mfd: add support for Diolan DLN-2 devices
-From: Joe Perches <joe@perches.com>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: gregkh@linuxfoundation.org, linus.walleij@linaro.org, gnurou@gmail.com,
-        wsa@the-dreams.de, sameo@linux.intel.com, lee.jones@linaro.org,
-        arnd@arndb.de, johan@kernel.org, daniel.baluta@intel.com,
-        laurentiu.palcu@intel.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Date: Mon, 27 Oct 2014 09:57:49 -0700
-In-Reply-To: <1414427472-4100-2-git-send-email-octavian.purdila@intel.com>
-References: <1414427472-4100-1-git-send-email-octavian.purdila@intel.com>
-	 <1414427472-4100-2-git-send-email-octavian.purdila@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Oct 2014 13:00:06 -0400
+Date: Mon, 27 Oct 2014 17:56:54 +0100
+From: Johan Hovold <johan@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Johan Hovold <johan@kernel.org>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] rtc: omap: add support for pmic_power_en
+Message-ID: <20141027165654.GF2006@localhost>
+References: <1413913086-12730-1-git-send-email-johan@kernel.org>
+ <1414397368-26480-1-git-send-email-johan@kernel.org>
+ <20141027164544.GI14253@saruman>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027164544.GI14253@saruman>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 18:31 +0200, Octavian Purdila wrote:
-> This patch implements the USB part of the Diolan USB-I2C/SPI/GPIO
-> Master Adapter DLN-2. Details about the device can be found here:
+On Mon, Oct 27, 2014 at 11:45:44AM -0500, Felipe Balbi wrote:
+> On Mon, Oct 27, 2014 at 09:09:28AM +0100, Johan Hovold wrote:
+> > Add new property "ti,system-power-controller" to register the RTC as a
+> > power-off handler.
+> > 
+> > Some RTC IP revisions can control an external PMIC via the pmic_power_en
+> > pin, which can be configured to transition to OFF on ALARM2 events and
+> > back to ON on subsequent ALARM (wakealarm) events.
+> > 
+> > This is based on earlier work by Colin Foe-Parker and AnilKumar Ch. [1]
+> > 
+> > [1] https://www.mail-archive.com/linux-omap@vger.kernel.org/msg82127.html
+> > 
+> > Tested-by: Felipe Balbi <balbi@ti.com>
+> > Signed-off-by: Johan Hovold <johan@kernel.org>
+> > ---
+> > 
+> > Changes since v2:
+> >  - add two-second delay to allow alarm to trigger before returning
+> > 
+> > Andrew, can you replace just this patch in the series that you already
+> > have in your tree, or do you prefer I resend the whole series (with
+> > Felipe's Tested-by tags)?
+> > 
+> > Thanks,
+> > Johan
+> > 
+> > 
+> >  Documentation/devicetree/bindings/rtc/rtc-omap.txt |  9 +-
+> >  drivers/rtc/rtc-omap.c                             | 95 ++++++++++++++++++++++
+> >  2 files changed, 103 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
+> > index 5a0f02d34d95..750efd40c72e 100644
+> > --- a/Documentation/devicetree/bindings/rtc/rtc-omap.txt
+> > +++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
+> > @@ -5,11 +5,17 @@ Required properties:
+> >  	- "ti,da830-rtc"  - for RTC IP used similar to that on DA8xx SoC family.
+> >  	- "ti,am3352-rtc" - for RTC IP used similar to that on AM335x SoC family.
+> >  			    This RTC IP has special WAKE-EN Register to enable
+> > -			    Wakeup generation for event Alarm.
+> > +			    Wakeup generation for event Alarm. It can also be
+> > +			    used to control an external PMIC via the
+> > +			    pmic_power_en pin.
+> >  - reg: Address range of rtc register set
+> >  - interrupts: rtc timer, alarm interrupts in order
+> >  - interrupt-parent: phandle for the interrupt controller
+> >  
+> > +Optional properties:
+> > +- ti,system-power-controller: whether the rtc is controlling the system power
+> 
+> isn't there a discussion going on to drop the vendor prefix ? I wonder
+> if we should just use the final binding to avoid supporting this for
+> rtc-omap too. OTOH, all of that can be hidden under
+> of_is_system_power_controller() itself.
 
-trivia:
+Exactly, Romain intends to support both versions (i.e. with and without
+the prefix) with his helper function as there are already other uses of
+this variant in the wild.
 
-> diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
-[]
-> +static int _dln2_transfer(struct dln2_dev *dln2, u16 handle, u16 cmd,
-> +			  const void *obuf, unsigned obuf_len,
-> +			  void *ibuf, unsigned *ibuf_len)
-> +{
-> +	int ret = 0;
-> +	int rx_slot;
-> +	struct dln2_response *rsp;
-> +	struct dln2_rx_context *rxc;
-> +	struct device *dev = &dln2->interface->dev;
-> +	const int timeout = DLN2_USB_TIMEOUT * HZ / 1000;
+As I believe I mentioned in my cover letter, I suggest simply updating
+to the generic property name (i.e. use the helper and drop the prefix)
+once that code has been merged. Either way, we should always be able
+to change the property name before it has been used in a mainline
+release (as long as we update the driver and any dts use in one commit
+in order not to break bisectability).
 
-unsigned long timeout?
-
-[]
-
-> +	ret = wait_for_completion_interruptible_timeout(&rxc->done, timeout);
-> +	if (ret <= 0) {
-> +		if (!ret)
-> +			ret = -ETIMEDOUT;
-> +		goto out_free_rx_slot;
-> +	}
-
-[]
-
-> +static int dln2_print_serialno(struct dln2_dev *dln2)
-> +{
-> +	int ret;
-> +	__le32 serial_no;
-> +	int len = sizeof(serial_no);
-> +	struct device *dev = &dln2->interface->dev;
-> +
-> +	ret = _dln2_transfer(dln2, DLN2_HANDLE_CTRL, CMD_GET_DEVICE_SN, NULL, 0,
-> +			     &serial_no, &len);
-> +	if (ret < 0)
-> +		return ret;
-> +	if (len < sizeof(serial_no))
-> +		return -EREMOTEIO;
-> +
-> +	dev_info(dev, "Diolan DLN2 serial 0x%x\n", le32_to_cpu(serial_no));
-
-why a hex serial #?
-
-
+Johan
