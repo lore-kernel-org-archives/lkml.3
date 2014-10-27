@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbaJ0PFj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:05:39 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:49442 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951AbaJ0PFh convert rfc822-to-8bit (ORCPT
+	id S1752700AbaJ0PH6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:07:58 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:58513 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079AbaJ0PH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:05:37 -0400
-Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
-Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
-Content-Type: text/plain; charset=utf-8
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <20141027150147.GX18557@sirena.org.uk>
-Date: Mon, 27 Oct 2014 17:05:29 +0200
-Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
-        hpa@zytor.com, Michal Simek <monstr@monstr.eu>,
-        michal.simek@xilinx.com, rdunlap@infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Pavel Machek <pavel@denx.de>,
-        philip@balister.org, rubini@gnudd.com,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        mgerlach@opensource.altera.com, Alan Tull <delicious.quinoa@gmail.com>,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <31BBCD26-65E2-431A-9ADF-95D7EDC7E34E@konsulko.com>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com> <1414108267-22058-3-git-send-email-atull@opensource.altera.com> <CCE2D027-AA89-41C4-B9AA-2B92AA62129B@konsulko.com> <20141027150147.GX18557@sirena.org.uk>
-To: Mark Brown <broonie@kernel.org>
-X-Mailer: Apple Mail (2.1990.1)
+	Mon, 27 Oct 2014 11:07:57 -0400
+Date: Mon, 27 Oct 2014 11:07:52 -0400
+From: Tejun Heo <htejun@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: your mail
+Message-ID: <20141027150752.GQ4436@htj.dyndns.org>
+References: <alpine.DEB.2.11.1410150308150.20152@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1410150308150.20152@gentwo.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Hello, Christoph.
 
-> On Oct 27, 2014, at 17:01 , Mark Brown <broonie@kernel.org> wrote:
+On Wed, Oct 15, 2014 at 03:10:37AM -0500, Christoph Lameter wrote:
+> Subject: Convert remaining __get_cpu_var uses
 > 
-> On Mon, Oct 27, 2014 at 01:48:02PM +0200, Pantelis Antoniou wrote:
->>> On Oct 24, 2014, at 02:51 , atull@opensource.altera.com wrote:
+> During the 3.18 merge period additional __get_cpu_var uses were
+> added. The patch converts these to this_cpu_ptr().
 > 
->>> + - init-val         : 0 if driver should disable bridge at startup
->>> +                      1 if driver should enable bridge at startup
->>> +                      driver leaves bridge in current state if property not
->>> +		      specified.
+> [This does not address the powerpc issue where the conversion
+> patches were routed directly to the powerpc maintainers but were
+> not applied in the merge period. Will have to be handled separately]
 > 
->> Isn’t init-val a boolean property? It’s not named very well.
-> 
-> It's not boolean, it's tristate - turn on, turn off or don't touch.
-> 
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-I see. Even then ‘init-val’ is cryptic. I’d prefer two booleans,
-enable-at-startup; disable-at-startup.
+Can you please repost with proper subject line and the subsys
+maintainers cc'd?
 
->> Along with the label, is kinda hard to defend as configuration in DT.
-> 
-> Yeah...  presumably this decision would fall out of the users?
+Thanks.
 
-Well, it’s the user that should make the decision, but the driver should
-pick it up. This works but it’s not very nice.
-
-Regards
-
-— Pantelis
-
+-- 
+tejun
