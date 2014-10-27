@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642AbaJ0FSO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 01:18:14 -0400
-Received: from mga03.intel.com ([134.134.136.65]:9197 "EHLO mga03.intel.com"
+	id S1751802AbaJ0FSz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 01:18:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:27123 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872AbaJ0FSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 01:18:12 -0400
+	id S1751616AbaJ0FSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 01:18:53 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,792,1406617200"; 
-   d="scan'208";a="596689927"
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="406497413"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -25,8 +25,8 @@ Cc: Jiang Liu <jiang.liu@linux.intel.com>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org
 Subject: [Patch v7 00/18] Enable support of IOAPIC hotplug on x86 platforms
-Date: Mon, 27 Oct 2014 13:20:53 +0800
-Message-Id: <1414387271-27057-1-git-send-email-jiang.liu@linux.intel.com>
+Date: Mon, 27 Oct 2014 13:21:30 +0800
+Message-Id: <1414387308-27148-1-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
