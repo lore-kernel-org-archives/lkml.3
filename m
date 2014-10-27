@@ -1,109 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaJ0Xnx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 19:43:53 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:24750 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369AbaJ0Xnw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 19:43:52 -0400
-X-AuditID: cbfee68f-f791c6d000004834-5f-544ed8b5b10e
-Message-id: <544ED8B5.3090607@samsung.com>
-Date: Tue, 28 Oct 2014 08:43:49 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: kgene.kim@samsung.com
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, mark.rutland@arm.com, arnd@arndb.de,
-        olof@lixom.net, tomasz.figa@gmail.com, geunsik.lim@samsung.com,
-        inki.dae@samsung.com, sw0312.kim@samsung.com,
-        kyungmin.park@samsung.com, k.kozlowski@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv4 0/3] ARM: dts: Add new board dts file for
- Exynos3250-based Rinato board
-References: <1414156362-5752-1-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1414156362-5752-1-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsWyRsSkQHfrDb8Qg0tbTSz+TjrGbnH9y3NW
-	iz8TWtksJt2fwGLx+oWhRe+Cq2wWZ5vesFtsenyN1eLyrjlsFjPO72OyWHr9IpPFqeufgdzJ
-	L9ksVu36w+jA57Fm3hpGj9+/JjF67Jx1l91j85J6jysnmlg9+rasYvT4vEkugD2KyyYlNSez
-	LLVI3y6BK+Pjo/1sBfv5K9q3HGBuYNzM08XIySEhYCLx/vJeRghbTOLCvfVsXYxcHEICSxkl
-	Fq9fBpTgACv62h0GEZ/OKHFhSQ8zhPOaUeL1ui1sIN28AloSl7qngtksAqoSU29NBLPZgOL7
-	X9wAs0UFwiRWTr/CAlEvKPFj8j0wW0RAUqKp4Q/YUGaBe0wSK/9+YQZJCAvESyz7BjFISMBF
-	YvvXfUwgNqeAq8TydxvB4swCOhL7W6dB2fISm9e8BRskIdDJIbFr9Q9miIsEJL5NPsQC8Y6s
-	xKYDzBAvS0ocXHGDZQKj2CwkN81CMnYWkrELGJlXMYqmFiQXFCelFxnrFSfmFpfmpesl5+du
-	YgTG8+l/z/p3MN49YH2IUYCDUYmH16LQN0SINbGsuDL3EKMp0BUTmaVEk/OBSSOvJN7Q2MzI
-	wtTE1NjI3NJMSZx3odTPYCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MDrnzU5bZqDs1Ol7r
-	yfsVe8fs3Kx5s6PseLpTqg2vl14O3fz+3L9MI6b8N8djbVdwHxBUCttTlHx3ruFUcQb2pWZy
-	5gY7KvmOZZ6Y7pQ97dse5/Zkke0tM8u7BfzlvdhMrv6NfN6c+cn1e3Xp8eLtb3lO5NvvslVw
-	/esrbXrzcquDRckdc3UlluKMREMt5qLiRADD2JBk4gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jQd2tN/xCDF6e07b4O+kYu8X1L89Z
-	Lf5MaGWzmHR/AovF6xeGFr0LrrJZnG16w26x6fE1VovLu+awWcw4v4/JYun1i0wWp65/BnIn
-	v2SzWLXrD6MDn8eaeWsYPX7/msTosXPWXXaPzUvqPa6caGL16NuyitHj8ya5APaoBkabjNTE
-	lNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCTlRTKEnNKgUIB
-	icXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZHx/tZyvYz1/RvuUAcwPjZp4uRg4OCQET
-	ia/dYV2MnECmmMSFe+vZuhi5OIQEpjNKXFjSwwzhvGaUeL1uCxtIFa+AlsSl7qlgNouAqsTU
-	WxPBbDag+P4XN8BsUYEwiZXTr7BA1AtK/Jh8D8wWEZCUaGr4AzaUWeAek8TKv1+YQRLCAvES
-	y75BDBIScJHY/nUfE4jNKeAqsfzdRrA4s4COxP7WaVC2vMTmNW+ZJzAKzEKyYxaSsllIyhYw
-	Mq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECE4Wz6R3MK5qsDjEKMDBqMTDa1HoGyLEmlhW
-	XJl7iFGCg1lJhNdrh1+IEG9KYmVValF+fFFpTmrxIUZTYBBMZJYSTc4HJrK8knhDYxMzI0sj
-	c0MLI2NzJXHeg63WgUIC6YklqdmpqQWpRTB9TBycUg2MSU+nrTzA3G+isyYjLNVkY53/fp53
-	3Fevr3wtNulLgmWQr/qVYunN0RdiX5/iu/rt2r0f95fELLn5MHq7/7ncRuUGw9Mf3qRN1D/N
-	uYrhykclznNCK32Vz5fb9hTeC8qVFdgje/Hw6TjJlbMO/vijOcNMO96wMs31CvPdB9a3a4+d
-	ObkkQNaxTomlOCPRUIu5qDgRACGO7rEsAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752847AbaJ0XsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 19:48:17 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60002 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752369AbaJ0XsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 19:48:16 -0400
+Date: Mon, 27 Oct 2014 16:44:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        htejun@gmail.com, linux-mm@kvack.org
+Subject: Re: rcu_preempt detected stalls.
+Message-ID: <20141027234425.GA19438@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141013173504.GA27955@redhat.com>
+ <543DDD5E.9080602@oracle.com>
+ <20141023183917.GX4977@linux.vnet.ibm.com>
+ <54494F2F.6020005@oracle.com>
+ <20141023195808.GB4977@linux.vnet.ibm.com>
+ <544A45F8.2030207@oracle.com>
+ <20141024161337.GQ4977@linux.vnet.ibm.com>
+ <544A80B3.9070800@oracle.com>
+ <20141027211329.GJ5718@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027211329.GJ5718@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102723-0029-0000-0000-000000EC0C1C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Kukjin,
+On Mon, Oct 27, 2014 at 02:13:29PM -0700, Paul E. McKenney wrote:
+> On Fri, Oct 24, 2014 at 12:39:15PM -0400, Sasha Levin wrote:
+> > On 10/24/2014 12:13 PM, Paul E. McKenney wrote:
+> > > On Fri, Oct 24, 2014 at 08:28:40AM -0400, Sasha Levin wrote:
+> > >> > On 10/23/2014 03:58 PM, Paul E. McKenney wrote:
+> > >>> > > On Thu, Oct 23, 2014 at 02:55:43PM -0400, Sasha Levin wrote:
+> > >>>>> > >> > On 10/23/2014 02:39 PM, Paul E. McKenney wrote:
+> > >>>>>>> > >>> > > On Tue, Oct 14, 2014 at 10:35:10PM -0400, Sasha Levin wrote:
+> > >>>>>>>>> > >>>> > >> On 10/13/2014 01:35 PM, Dave Jones wrote:
+> > >>>>>>>>>>> > >>>>> > >>> oday in "rcu stall while fuzzing" news:
+> > >>>>>>>>>>> > >>>>> > >>>
+> > >>>>>>>>>>> > >>>>> > >>> INFO: rcu_preempt detected stalls on CPUs/tasks:
+> > >>>>>>>>>>> > >>>>> > >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+> > >>>>>>>>>>> > >>>>> > >>> 	Tasks blocked on level-0 rcu_node (CPUs 0-3): P766 P646
+> > >>>>>>>>>>> > >>>>> > >>> 	(detected by 0, t=6502 jiffies, g=75434, c=75433, q=0)
+> > >>>>>>>>> > >>>> > >>
+> > >>>>>>>>> > >>>> > >> I've complained about RCU stalls couple days ago (in a different context)
+> > >>>>>>>>> > >>>> > >> on -next. I guess whatever causing them made it into Linus's tree?
+> > >>>>>>>>> > >>>> > >>
+> > >>>>>>>>> > >>>> > >> https://lkml.org/lkml/2014/10/11/64
+> > >>>>>>> > >>> > > 
+> > >>>>>>> > >>> > > And on that one, I must confess that I don't see where the RCU read-side
+> > >>>>>>> > >>> > > critical section might be.
+> > >>>>>>> > >>> > > 
+> > >>>>>>> > >>> > > Hmmm...  Maybe someone forgot to put an rcu_read_unlock() somewhere.
+> > >>>>>>> > >>> > > Can you reproduce this with CONFIG_PROVE_RCU=y?
+> > >>>>> > >> > 
+> > >>>>> > >> > Paul, if that was directed to me - Yes, I see stalls with CONFIG_PROVE_RCU
+> > >>>>> > >> > set and nothing else is showing up before/after that.
+> > >>> > > Indeed it was directed to you.  ;-)
+> > >>> > > 
+> > >>> > > Does the following crude diagnostic patch turn up anything?
+> > >> > 
+> > >> > Nope, seeing stalls but not seeing that pr_err() you added.
+> > > OK, color me confused.  Could you please send me the full dmesg or a
+> > > pointer to it?
+> > 
+> > Attached.
+> 
+> Thank you!  I would complain about the FAULT_INJECTION messages, but
+> they don't appear to be happening all that frequently.
+> 
+> The stack dumps do look different here.  I suspect that this is a real
+> issue in the VM code.
 
-Did you please pick up this patchset on 3.19 queue?
+And to that end...  The filemap_map_pages() function does have loop over
+a list of pages.  I wonder if the rcu_read_lock() should be moved into
+the radix_tree_for_each_slot() loop.  CCing linux-mm for their thoughts,
+though it looks to me like the current radix_tree_for_each_slot() wants
+to be under RCU protection.  But I am not seeing anything that requires
+all iterations of the loop to be under the same RCU read-side critical
+section.  Maybe something like the following patch?
 
-Best Regards,
-Chanwoo Choi
+							Thanx, Paul
 
-On 10/24/2014 10:12 PM, Chanwoo Choi wrote:
-> This patchset adds new board dts file for Samsung Rinato board (Gear 2) which
-> is based on Exynos3250 SoC and adds sleep mode pin configuration using pinctrl
-> subsystem to reduce leakage power-consumption in sleep state.
-> 
-> This patchset is based on linux-samsung.git (for-next branch).
-> 
-> Changes from v3:
-> - Fix wrong email address
-> - Remove 'vemmc_reg' fixed regulator and then use 'ldo12_reg' for mshc_0 
-> 
-> Changes from v2:
-> - Separate patch3 from patchset[1] and then this patchset includes patch3.
->   After applied patch3, the power-consumption of Rinato board is 0.6mA in suspend state.
->   [1] [PATCHv5 0/3] regulator: of: Add support for parsing regulator suspend state
->   : https://lkml.org/lkml/2014/10/10/161
-> - Change PDN (Power-down mode) state for GPE0-3 (BT_UART_RTS) because Rinato
->   board uses UART1 for bluetooth device. BT_UART_RTS pin should be disabled in
->   suspend state by setting high state of GPE0-3
-> - Turn on always the regulator state of VAP_VMIPI_1.0V because if VAP_VMIPI_1.0V
->   is off state or would be not controlled by DRM driver, happen imprecise external abort.
-> 
-> Changes from v1:
-> - Remove useless brace
-> - Remove unneeded 'regulators' keyword
-> - Consolidate memory information in one entry
-> 
-> Chanwoo Choi (3):
->   ARM: dts: Add board dts file for Exynos3250-based Rinato board
->   ARM: dts: Add sleep mode pin configuration for exynos3250-rinato
->   ARM: dts: Add sleep mode of regulator for exynos3250-rinato board
-> 
->  arch/arm/boot/dts/Makefile                |   3 +-
->  arch/arm/boot/dts/exynos3250-pinctrl.dtsi |  16 +
->  arch/arm/boot/dts/exynos3250-rinato.dts   | 686 ++++++++++++++++++++++++++++++
->  3 files changed, 704 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/exynos3250-rinato.dts
-> 
+------------------------------------------------------------------------
+
+mm: Attempted fix for RCU CPU stall warning
+
+It appears that filemap_map_pages() can stay in a single RCU read-side
+critical section for a very long time if given a large area to map.
+This could result in RCU CPU stall warnings.  This commit therefore breaks
+the read-side critical section into per-iteration critical sections, taking
+care to make sure that the radix_tree_for_each_slot() call itself remains
+in an RCU read-side critical section, as required.
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 14b4642279f1..f78f144fb41f 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2055,6 +2055,8 @@ skip:
+ next:
+ 		if (iter.index == vmf->max_pgoff)
+ 			break;
++		rcu_read_unlock();
++		rcu_read_lock();
+ 	}
+ 	rcu_read_unlock();
+ }
 
