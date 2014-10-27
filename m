@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaJ0Pfw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:35:52 -0400
-Received: from gproxy7-pub.mail.unifiedlayer.com ([70.40.196.235]:45163 "HELO
-	gproxy7-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751230AbaJ0Pfu (ORCPT
+	id S1752103AbaJ0PhI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:37:08 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:51724 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaJ0PhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:35:50 -0400
-X-Authority-Analysis: v=2.1 cv=e5mVF8Z/ c=1 sm=1 tr=0
- a=9W6Fsu4pMcyimqnCr1W0/w==:117 a=9W6Fsu4pMcyimqnCr1W0/w==:17 a=cNaOj0WVAAAA:8
- a=f5113yIGAAAA:8 a=kj9zAlcOel0A:10 a=TBVoxVdAAAAA:8 a=GhZ5P8ky69gA:10
- a=noBwr2J6l1kA:10 a=zd2uoN0lAAAA:8 a=WmNq-fXFbju8YA80yHMA:9 a=CjuIK1q_8ugA:10
-Date: Mon, 27 Oct 2014 08:35:52 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Oded Gabbay <oded.gabbay@amd.com>
-Cc: Joerg Roedel <jroedel@suse.de>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mm: export find_extend_vma and handle_mm_fault for
- driver use
-Message-ID: <20141027083552.4af5753f@jbarnes-hsw>
-In-Reply-To: <544E61A1.7090400@amd.com>
-References: <1414179271-7621-1-git-send-email-jbarnes@virtuousgeek.org>
-	<20141027151327.GE9734@suse.de>
-	<544E61A1.7090400@amd.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 27 Oct 2014 11:37:07 -0400
+Date: Mon, 27 Oct 2014 18:36:54 +0300
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Zefan Li <lizefan@huawei.com>, Pekka Enberg <penberg@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: Re: [PATCH RESEND 2/4] cpuset: simplify cpuset_node_allowed API
+Message-ID: <20141027153654.GF17258@esperanza>
+References: <cover.1413804554.git.vdavydov@parallels.com>
+ <c52e3c30a61d29da40b69b602c41c2d91868c3ae.1413804554.git.vdavydov@parallels.com>
+ <20141027151806.GR4436@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141027151806.GR4436@htj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, I have no way of testing this, but I'm hopeful. :)
+Hi Tejun,
 
-Jesse
+On Mon, Oct 27, 2014 at 11:18:06AM -0400, Tejun Heo wrote:
+> On Mon, Oct 20, 2014 at 03:50:30PM +0400, Vladimir Davydov wrote:
+> > Current cpuset API for checking if a zone/node is allowed to allocate
+> > from looks rather awkward. We have hardwall and softwall versions of
+> > cpuset_node_allowed with the softwall version doing literally the same
+> > as the hardwall version if __GFP_HARDWALL is passed to it in gfp flags.
+> > If it isn't, the softwall version may check the given node against the
+> > enclosing hardwall cpuset, which it needs to take the callback lock to
+> > do.
+> > 
+> > Such a distinction was introduced by commit 02a0e53d8227 ("cpuset:
+> > rework cpuset_zone_allowed api"). Before, we had the only version with
+> > the __GFP_HARDWALL flag determining its behavior. The purpose of the
+> > commit was to avoid sleep-in-atomic bugs when someone would mistakenly
+> > call the function without the __GFP_HARDWALL flag for an atomic
+> > allocation. The suffixes introduced were intended to make the callers
+> > think before using the function.
+> > 
+> > However, since the callback lock was converted from mutex to spinlock by
+> > the previous patch, the softwall check function cannot sleep, and these
+> > precautions are no longer necessary.
+> > 
+> > So let's simplify the API back to the single check.
+> > 
+> > Suggested-by: David Rientjes <rientjes@google.com>
+> > Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> > Acked-by: Christoph Lameter <cl@linux.com>
+> > Acked-by: Zefan Li <lizefan@huawei.com>
+> 
+> Applied 1-2 to cgroup/for-3.19-cpuset-api-simplification which
+> contains only these two patches on top of v3.18-rc2 and will stay
+> stable.  sl[au]b trees can pull it in or I can take the other two
+> patches too.  Please let me know how the other two should be routed.
 
-On Mon, 27 Oct 2014 17:15:45 +0200
-Oded Gabbay <oded.gabbay@amd.com> wrote:
+JFYI, Andrew merged all four patches in his mmotm tree.
 
-> Sure, no problem
-> 
->      Oded
-> 
-> On 10/27/2014 05:13 PM, Joerg Roedel wrote:
-> 
-> Hi Oded,
-> 
-> can you please test these patches with the KFD driver and make sure
-> nothing breaks for you? I really like this improvement and it would be
-> great to send it upstream for v3.19.
-> 
-> Thanks,
-> 
-> 	Joerg
-> 
-> On Fri, Oct 24, 2014 at 12:34:30PM -0700, Jesse Barnes wrote:
-> 
-> > This lets drivers like the AMD IOMMUv2 driver handle faults a bit more
-> > simply, rather than doing tricks with page refs and get_user_pages().
-> >
-> > Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > ---
-> >   mm/memory.c | 1 +
-> >   mm/mmap.c   | 2 ++
-> >   2 files changed, 3 insertions(+)
-> >
-> > diff --git a/mm/memory.c b/mm/memory.c
-> > index 1cc6bfb..969ff0c 100644
-> > --- a/mm/memory.c
-> > +++ b/mm/memory.c
-> > @@ -3378,6 +3378,7 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
-> >   
-> >   	return ret;
-> >   }
-> > +EXPORT_SYMBOL_GPL(handle_mm_fault);
-> >   
-> >   #ifndef __PAGETABLE_PUD_FOLDED
-> >   /*
-> > diff --git a/mm/mmap.c b/mm/mmap.c
-> > index 7f85520..2ee7971 100644
-> > --- a/mm/mmap.c
-> > +++ b/mm/mmap.c
-> > @@ -2359,6 +2359,8 @@ find_extend_vma(struct mm_struct *mm, unsigned long addr)
-> >   }
-> >   #endif
-> >   
-> > +EXPORT_SYMBOL_GPL(find_extend_vma);
-> > +
-> >   /*
-> >    * Ok - we have the memory areas we should free on the vma list,
-> >    * so release them, and do the vma updates.
-> > -- 
-> > 1.9.1
-> 
-> 
+FWIW, there's a typo in this patch recently found and fixed by Dan
+Carpenter. The fix is below.
 
+Thanks,
+Vladimir
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+---
+From: Dan Carpenter <dan.carpenter@oracle.com>
+
+This will deadlock instead of unlocking.
+
+Fixes: f73eae8d8384 ('cpuset: simplify cpuset_node_allowed API')
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Vladimir Davydov <vdavydov@parallels.com>
+
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 38f7433..4eaa203 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1992,7 +1992,7 @@ static int cpuset_css_online(struct cgroup_subsys_state *css)
+ 	spin_lock_irq(&callback_lock);
+ 	cs->mems_allowed = parent->mems_allowed;
+ 	cpumask_copy(cs->cpus_allowed, parent->cpus_allowed);
+-	spin_lock_irq(&callback_lock);
++	spin_unlock_irq(&callback_lock);
+ out_unlock:
+ 	mutex_unlock(&cpuset_mutex);
+ 	return 0;
