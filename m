@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793AbaJ0S7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:59:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52474 "EHLO
+	id S1752198AbaJ0S7o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:59:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52486 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682AbaJ0S7f (ORCPT
+	with ESMTP id S1752682AbaJ0S7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:59:35 -0400
+	Mon, 27 Oct 2014 14:59:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sebastian Reichel <sre@kernel.org>,
+Cc: Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 051/105] power: charger-manager: Fix NULL pointer exception with missing cm-fuel-gauge
-Date: Mon, 27 Oct 2014 11:56:26 -0700
-Message-Id: <1414436240-13879-52-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 066/105] be2iscsi: check ip buffer before copying
+Date: Mon, 27 Oct 2014 11:56:41 -0700
+Message-Id: <1414436240-13879-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,89 +27,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-commit 661a88860274e059fdb744dfaa98c045db7b5d1d upstream.
+commit a41a9ad3bbf61fae0b6bfb232153da60d14fdbd9 upstream.
 
-NULL pointer exception happens during charger-manager probe if
-'cm-fuel-gauge' property is not present.
+Dan Carpenter found a issue where be2iscsi would copy the ip
+from userspace to the driver buffer before checking the len
+of the data being copied:
+http://marc.info/?l=linux-scsi&m=140982651504251&w=2
 
-[    2.448536] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-[    2.456572] pgd = c0004000
-[    2.459217] [00000000] *pgd=00000000
-[    2.462759] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[    2.468047] Modules linked in:
-[    2.471089] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc6-00251-ge44cf96cd525-dirty #969
-[    2.479765] task: ea890000 ti: ea87a000 task.ti: ea87a000
-[    2.485161] PC is at strcmp+0x4/0x30
-[    2.488719] LR is at power_supply_match_device_by_name+0x10/0x1c
-[    2.494695] pc : [<c01f4220>]    lr : [<c030fe38>]    psr: a0000113
-[    2.494695] sp : ea87bde0  ip : 00000000  fp : eaa97010
-[    2.506150] r10: 00000004  r9 : ea97269c  r8 : ea3bbfd0
-[    2.511360] r7 : eaa97000  r6 : c030fe28  r5 : 00000000  r4 : ea3b0000
-[    2.517869] r3 : 0000006d  r2 : 00000000  r1 : 00000000  r0 : c057c195
-[    2.524381] Flags: NzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[    2.531671] Control: 10c5387d  Table: 4000404a  DAC: 00000015
-[    2.537399] Process swapper/0 (pid: 1, stack limit = 0xea87a240)
-[    2.543388] Stack: (0xea87bde0 to 0xea87c000)
-[    2.547733] bde0: ea3b0210 c026b1c8 eaa97010 eaa97000 eaa97010 eabb60a8 ea3b0210 00000000
-[    2.555891] be00: 00000008 ea2db210 ea1a3410 c030fee0 ea3bbf90 c03138fc c068969c c013526c
-[    2.564050] be20: eaa040c0 00000000 c068969c 00000000 eaa040c0 ea2da300 00000002 00000000
-[    2.572208] be40: 00000001 ea2da3c0 00000000 00000001 00000000 eaa97010 c068969c 00000000
-[    2.580367] be60: 00000000 c068969c 00000000 00000002 00000000 c026b71c c026b6f0 eaa97010
-[    2.588527] be80: c0e82530 c026a330 00000000 eaa97010 c068969c eaa97044 00000000 c061df50
-[    2.596686] bea0: ea87a000 c026a4dc 00000000 c068969c c026a448 c0268b5c ea8054a8 eaa8fd50
-[    2.604845] bec0: c068969c ea2db180 c06801f8 c0269b18 c0590f68 c068969c c0656c98 c068969c
-[    2.613004] bee0: c0656c98 ea3bbe40 c06988c0 c026aaf0 00000000 c0656c98 c0656c98 c00088a4
-[    2.621163] bf00: 00000000 c0055f48 00000000 00000004 00000000 ea890000 c05dbc54 c062c178
-[    2.629323] bf20: c0603518 c005f674 00000001 ea87a000 eb7ff83b c0476440 00000091 c003d41c
-[    2.637482] bf40: c05db344 00000007 eb7ff858 00000007 c065a76c c0647d24 00000007 c062c170
-[    2.645642] bf60: c06988c0 00000091 c062c178 c0603518 00000000 c0603cc4 00000007 00000007
-[    2.653801] bf80: c0603518 c0c0c0c0 00000000 c0453948 00000000 00000000 00000000 00000000
-[    2.661959] bfa0: 00000000 c0453950 00000000 c000e728 00000000 00000000 00000000 00000000
-[    2.670118] bfc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-[    2.678277] bfe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
-[    2.686454] [<c01f4220>] (strcmp) from [<c030fe38>] (power_supply_match_device_by_name+0x10/0x1c)
-[    2.695303] [<c030fe38>] (power_supply_match_device_by_name) from [<c026b1c8>] (class_find_device+0x54/0xac)
-[    2.705106] [<c026b1c8>] (class_find_device) from [<c030fee0>] (power_supply_get_by_name+0x1c/0x30)
-[    2.714137] [<c030fee0>] (power_supply_get_by_name) from [<c03138fc>] (charger_manager_probe+0x3d8/0xe58)
-[    2.723683] [<c03138fc>] (charger_manager_probe) from [<c026b71c>] (platform_drv_probe+0x2c/0x5c)
-[    2.732532] [<c026b71c>] (platform_drv_probe) from [<c026a330>] (driver_probe_device+0x10c/0x224)
-[    2.741384] [<c026a330>] (driver_probe_device) from [<c026a4dc>] (__driver_attach+0x94/0x98)
-[    2.749813] [<c026a4dc>] (__driver_attach) from [<c0268b5c>] (bus_for_each_dev+0x54/0x88)
-[    2.757969] [<c0268b5c>] (bus_for_each_dev) from [<c0269b18>] (bus_add_driver+0xd4/0x1d0)
-[    2.766123] [<c0269b18>] (bus_add_driver) from [<c026aaf0>] (driver_register+0x78/0xf4)
-[    2.774110] [<c026aaf0>] (driver_register) from [<c00088a4>] (do_one_initcall+0x80/0x1bc)
-[    2.782276] [<c00088a4>] (do_one_initcall) from [<c0603cc4>] (kernel_init_freeable+0x100/0x1cc)
-[    2.790952] [<c0603cc4>] (kernel_init_freeable) from [<c0453950>] (kernel_init+0x8/0xec)
-[    2.799029] [<c0453950>] (kernel_init) from [<c000e728>] (ret_from_fork+0x14/0x2c)
-[    2.806572] Code: e12fff1e e1a03000 eafffff7 e4d03001 (e4d12001)
-[    2.812832] ---[ end trace 7f12556111b9e7ef ]---
+This patch just has us only copy what we the driver buffer
+can support.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: 856ee6115e2d ("charger-manager: Support deivce tree in charger manager driver")
-Signed-off-by: Sebastian Reichel <sre@kernel.org>
+Tested-by: John Soni Jose <sony.john-n@emulex.com>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/power/charger-manager.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/scsi/be2iscsi/be_mgmt.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 7287c0e..897aea6 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -1501,6 +1501,11 @@ static int charger_manager_probe(struct platform_device *pdev)
- 		return -EINVAL;
+diff --git a/drivers/scsi/be2iscsi/be_mgmt.c b/drivers/scsi/be2iscsi/be_mgmt.c
+index b2fcac7..5bb9406 100644
+--- a/drivers/scsi/be2iscsi/be_mgmt.c
++++ b/drivers/scsi/be2iscsi/be_mgmt.c
+@@ -897,17 +897,20 @@ mgmt_static_ip_modify(struct beiscsi_hba *phba,
+ 
+ 	if (ip_action == IP_ACTION_ADD) {
+ 		memcpy(req->ip_params.ip_record.ip_addr.addr, ip_param->value,
+-		       ip_param->len);
++		       sizeof(req->ip_params.ip_record.ip_addr.addr));
+ 
+ 		if (subnet_param)
+ 			memcpy(req->ip_params.ip_record.ip_addr.subnet_mask,
+-			       subnet_param->value, subnet_param->len);
++			       subnet_param->value,
++			       sizeof(req->ip_params.ip_record.ip_addr.subnet_mask));
+ 	} else {
+ 		memcpy(req->ip_params.ip_record.ip_addr.addr,
+-		       if_info->ip_addr.addr, ip_param->len);
++		       if_info->ip_addr.addr,
++		       sizeof(req->ip_params.ip_record.ip_addr.addr));
+ 
+ 		memcpy(req->ip_params.ip_record.ip_addr.subnet_mask,
+-		       if_info->ip_addr.subnet_mask, ip_param->len);
++		       if_info->ip_addr.subnet_mask,
++		       sizeof(req->ip_params.ip_record.ip_addr.subnet_mask));
  	}
  
-+	if (!desc->psy_fuel_gauge) {
-+		dev_err(&pdev->dev, "No fuel gauge power supply defined\n");
-+		return -EINVAL;
-+	}
-+
- 	/* Counting index only */
- 	while (desc->psy_charger_stat[i])
- 		i++;
+ 	rc = mgmt_exec_nonemb_cmd(phba, &nonemb_cmd, NULL, 0);
+@@ -935,7 +938,7 @@ static int mgmt_modify_gateway(struct beiscsi_hba *phba, uint8_t *gt_addr,
+ 	req->action = gtway_action;
+ 	req->ip_addr.ip_type = BE2_IPV4;
+ 
+-	memcpy(req->ip_addr.addr, gt_addr, param_len);
++	memcpy(req->ip_addr.addr, gt_addr, sizeof(req->ip_addr.addr));
+ 
+ 	return mgmt_exec_nonemb_cmd(phba, &nonemb_cmd, NULL, 0);
+ }
 -- 
 1.9.1
 
