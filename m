@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaJ0HuP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 03:50:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:1865 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751711AbaJ0HuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 03:50:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="406541627"
-Date: Mon, 27 Oct 2014 09:50:04 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Darren Hart <dvhart@linux.intel.com>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: GPIO bindings guidelines (Was: Re: [PATCH v5 10/12] gpio:
- Support for unified device properties interface)
-Message-ID: <20141027075004.GW1484@lahna.fi.intel.com>
-References: <CAAVeFuLW6fucvDxQvY5DDfnhPrgYM+1pi7WoHfBQa_BgYnc_Cw@mail.gmail.com>
- <1581499.2RkCnyfbq6@vostro.rjw.lan>
- <20141024073436.GN1484@lahna.fi.intel.com>
- <1971306.rIA5QAW7ve@vostro.rjw.lan>
+	id S1751813AbaJ0HxN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 03:53:13 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:39585 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaJ0HxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 03:53:12 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 27 Oct 2014 16:54:26 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com
+Subject: Re: [RFC 0/4] [RFC] slub: Fastpath optimization (especially for RT)
+Message-ID: <20141027075426.GE23379@js1304-P5Q-DELUXE>
+References: <20141022155517.560385718@linux.com>
+ <20141023080942.GA7598@js1304-P5Q-DELUXE>
+ <alpine.DEB.2.11.1410230916090.19494@gentwo.org>
+ <20141024045630.GD15243@js1304-P5Q-DELUXE>
+ <alpine.DEB.2.11.1410240901020.26767@gentwo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1971306.rIA5QAW7ve@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.11.1410240901020.26767@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 25, 2014 at 12:00:33AM +0200, Rafael J. Wysocki wrote:
-> I folded your fixes into my patch and I'm going to send the result, with a
-> changelog, in a reply to this message.
-
-Thanks!
-
-> If everyone is happy with it, I'll add it to the device properties patch
-> series as it depends on those.
+On Fri, Oct 24, 2014 at 09:02:18AM -0500, Christoph Lameter wrote:
+> On Fri, 24 Oct 2014, Joonsoo Kim wrote:
 > 
-> I guess you can add a changelog to your rfkill changes and then we could
-> add them to that series too if there are no objections.
+> > In this case, object from cpu1's cpu_cache should be
+> > different with cpu0's, so allocation would be failed.
+> 
+> That is true for most object pointers unless the value is NULL. Which it
+> can be. But if this is the only case then the second patch + your approach
+> would work too.
 
-OK, I'll do that today.
+Indeed... I missed the null value case.
+Your second patch + mine would fix that situation, but, I need more
+thinking. :)
+
+Thanks.
