@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751701AbaJ0R2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:28:09 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44504 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596AbaJ0R2H (ORCPT
+	id S1751593AbaJ0R2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:28:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51476 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230AbaJ0R2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:28:07 -0400
-Date: Mon, 27 Oct 2014 17:28:01 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-unionfs@vger.kernel.org
-Subject: Re: [GIT PULL] overlay filesystem v25
-Message-ID: <20141027172800.GW7996@ZenIV.linux.org.uk>
-References: <20141023232539.GA4662@tucsk.piliscsaba.szeredi.hu>
- <20141024022055.GH7996@ZenIV.linux.org.uk>
- <20141024032422.GI7996@ZenIV.linux.org.uk>
- <CAJfpegt-X_Cd8B5H65keshhhuwH2-HPpaBC30atKeS3QjaariA@mail.gmail.com>
- <20141025081845.GJ7996@ZenIV.linux.org.uk>
- <CAJfpegvM8d-cizf=3KmTSFVgAYPBDp_0fQAh+G2Q87u=taXm3A@mail.gmail.com>
- <20141025170609.GK7996@ZenIV.linux.org.uk>
- <CAJfpegucroRzo0NHTz=4N0WcrB2oDC0eDiZXk=aKSjc8vdYDjw@mail.gmail.com>
- <20141027155901.GE5718@linux.vnet.ibm.com>
+	Mon, 27 Oct 2014 13:28:02 -0400
+Date: Mon, 27 Oct 2014 17:26:36 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Romain Perier <romain.perier@gmail.com>, heiko@sntech.de,
+        devicetree@vger.kernel.org, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org, grant.likely@linaro.org, robh@kernel.org,
+        mark.rutland@arm.com, johan@kernel.org, linux-pm@vger.kernel.org,
+        linux@roeck-us.net, lee.jones@linaro.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk, swarren@wwwdotorg.org,
+        thierry.reding@gmail.com, gnurou@gmail.com,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
+Message-ID: <20141027172636.GZ18557@sirena.org.uk>
+References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
+ <1414427215-14380-2-git-send-email-romain.perier@gmail.com>
+ <20141027163918.GB14253@saruman>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YPOU9eFKIy6Wf5kE"
 Content-Disposition: inline
-In-Reply-To: <20141027155901.GE5718@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141027163918.GB14253@saruman>
+X-Cookie: FORCE YOURSELF TO RELAX!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v1 02/10] dt-bindings: Document the standard property
+ "system-power-controller"
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 08:59:01AM -0700, Paul E. McKenney wrote:
 
-> Indeed, life is hard here.  Keep in mind that lock acquisition is not
-> guaranteed to prevent prior operations from being reordered into the
-> critical section, possibly as follows:
-> 
-> 	CPU1:
-> 	  grab lock
-> 	  if (!global)
-> 	      global = p;
-> 	  /* Assume all of CPU2's accesses happen here. */
-> 	  p->foo = 1;
+--YPOU9eFKIy6Wf5kE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-A bit of context: p is a local pointer to struct file here and alloc is
-opening it...
+On Mon, Oct 27, 2014 at 11:39:18AM -0500, Felipe Balbi wrote:
+> On Mon, Oct 27, 2014 at 04:26:47PM +0000, Romain Perier wrote:
 
-> This clearly allows CPU2 to execute as follows:
-> 
-> 	CPU2:
-> 	  p = global; /* gets p */
-> 	  if (p) /* non-NULL */
-> 	  	q = p->foo; /* might not be 1 */
-> 
-> Not only that, on DEC Alpha, even if CPU1's accesses are ordered, CPU2's
-> accesses can be misordered.  You need rcu_dereference() or the combination
-> of ACCESS_ONCE() and smp_read_barrier_depends() to avoid this issue.
-> As always, see http://www.openvms.compaq.com/wizard/wiz_2637.html for
-> more info.
-> 
-> So no, there is no guarantee.  I am assuming that the lock grabbed by
-> CPU1 guards all assignments to "global", otherwise the code needs further
-> help.  I am further assuming that the memory pointed to by CPU1's "p"
-> is inaccessible to any other CPU, as in CPU1 just allocated the memory.
-> Otherwise, the assignment "p->foo = 1" is questionable.  And finally,
-> I am assuming that p->foo stays constant once it has been made
-> accessible to readers.
-> 
-> But the following should work:
-> 
-> 	CPU1:
-> 	  p->foo = 1;  /* Assumes p is local. */
-> 	  smp_mb__before_spinlock();
-> 	  grab lock
-> 	  if (!global)  /* Assumes lock protects all assignments to global. */
-> 	      global = p;
-> 
-> 	CPU2:
-> 	  p = rcu_dereference(global);
-> 	  if (p)
-> 	     q = p->foo; /* Assumes p->foo constant once visible to readers. */
-> 	     		 /* Also assumes p and q are local. */
-> 
-> If the assumptions called out in the comments do not hold, you at least
-> need ACCESS_ONCE(), and perhaps even more synchronization.  For more info
-> on ACCESS_ONCE(), Jon's LWN article is at http://lwn.net/Articles/508991/.
+> > +act8846: act8846@5 {
+> > +	 compatible = "active-semi,act8846";
+> > +	 status = "okay";
+> > +	 system-power-controller;
+> > +}
 
-First of all, this "p->foo = 1" is a shorthand for initialization of
-struct file done by opening a file.  What you are saying is that it
-can leak past the point where we stick a pointer to freshly opened
-file into a place where another CPU can see it, but not past the
-barrier in dropping the lock, right?
+> there is no mention here that system-power-controller superseeds
+> poweroff-source and deprecates that.
 
-And you are suggesting rcu_dereference() as a way to bring the required
-barriers in.  Ouch...  The names are really bad, but there's another
-fun issue - rcu_dereference brings in sparse noise.  Wouldn't direct use
-of smp_read_barrier_depends() be cleaner, anyway?
+Given that poweroff-source hasn't made it into a released kernel yet we
+can probably just kill it off completely can't we?
+
+--YPOU9eFKIy6Wf5kE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUToBLAAoJECTWi3JdVIfQ5DYH/RI8OXmYY0W2YOW2mndiN6ux
+eH0/FrQVFLEGTn4UP9EWVSBYIPVpoKFAzWmUfWqW31J0LgzsSyy2k9CRq6sD6MXS
+PlqwsgVN8rNn1GBvp18w9PFJM2lDtpIPYWQLttWAJlCDmc5KXdGSuBn1p4Rutnzy
+i71n4qKADI3IkDy/k6fnkyJXyTvwct61NBsfQiKImUpstqy0j4oP4qKT+c/8Mh5z
+RpsWbuN+3YC/uOm11rTjGcmBGcG564BfOOueiJN+HnkE9PKB9opi/t40rQXy0s0O
+FBf3dVZEkH3bqmuy0rj+b4ETBLX2SgOp/KIEZAKgh5gVploewmAGBE3yMZt9FSs=
+=Gk4X
+-----END PGP SIGNATURE-----
+
+--YPOU9eFKIy6Wf5kE--
