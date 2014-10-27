@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaJ0NsQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:48:16 -0400
-Received: from forward3o.mail.yandex.net ([37.140.190.32]:35301 "EHLO
-	forward3o.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796AbaJ0NsO (ORCPT
+	id S1753284AbaJ0NsZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:48:25 -0400
+Received: from laurent.telenet-ops.be ([195.130.137.89]:41911 "EHLO
+	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639AbaJ0NsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:48:14 -0400
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Tejun Heo <tj@kernel.org>, Burke Libbey <burke.libbey@shopify.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>
-In-Reply-To: <20141027134508.GI3337@twins.programming.kicks-ass.net>
-References: <20141024150746.GB25260@burke.local>
-	 <20141024155805.GF21513@worktop.programming.kicks-ass.net>
-	 <164441414171122@web11g.yandex.ru>
-	 <20141027120734.GA3337@twins.programming.kicks-ass.net>
-	 <20141027124002.GA4436@htj.dyndns.org>
-	 <20141027132812.GG3337@twins.programming.kicks-ass.net>
-	 <799391414416962@web4j.yandex.ru> <20141027134508.GI3337@twins.programming.kicks-ass.net>
-Subject: Re: [PATCH] sched: reset sched_entity depth on changing parent
-MIME-Version: 1.0
-Message-Id: <1234171414417688@web26o.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Mon, 27 Oct 2014 16:48:08 +0300
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+	Mon, 27 Oct 2014 09:48:20 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] cpufreq: cpufreq-dt: Restore default cpumask_setall(policy->cpus)
+Date: Mon, 27 Oct 2014 14:44:40 +0100
+Message-Id: <1414417480-10274-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 34e5a5273d6aa0ee ("cpufreq: cpufreq-dt: extend with
+platform_data") changed cpufreq_init() to only call
+cpumask_setall(policy->cpus) if the platform data indicates that all
+CPUs share the same clock. Before, cpufreq_generic_init() did this
+unconditionally.
 
+This causes a crash on r8a7791/koelsch when resuming from s2ram:
 
-27.10.2014, 16:45, "Peter Zijlstra" <peterz@infradead.org>:
-> On Mon, Oct 27, 2014 at 04:36:02PM +0300, Kirill Tkhai wrote:
->> š27.10.2014, 16:28, "Peter Zijlstra" <peterz@infradead.org>:
->>> šOn Mon, Oct 27, 2014 at 08:40:02AM -0400, Tejun Heo wrote:
->>>> ššOn Mon, Oct 27, 2014 at 01:07:34PM +0100, Peter Zijlstra wrote:
->>>>> ššOn Fri, Oct 24, 2014 at 09:18:42PM +0400, Kirill Tkhai wrote:
->>>>>> ššI was seeking a places where task_group of a task may change. I can't understand
->>>>>> ššhow changing of parent's cgroup during fork() applies to a child.
->>>>> ššI didn't know we could change cgroup on fork(), I though the idea was
->>>>> ššyou always inherited your parents cgroup.
->>>>>
->>>>> ššHow can this be?
->>>> ššHmmm? -ENEEDMORECONTEXT but the inheriting happens at one point during
->>>> ššfork in cgroup_post_fork(). šThe child inherits whatever the parent
->>>> ššcgroup is at that point.
->>> šSo Kirill is saying that there is a race between fork and attach such
->>> šthat a child can end up in a different cgroup than the parent and we
->>> šneed to use the cgroup_subsys::fork call to fix that up.
->> šI mean cgroup is the same, but sched_task_group is other (sched_task_group
->> šis equal to parent's on the moment of dup_task_struct()).
->
-> But that still means the parent changed cgroup during fork right? It
-> started out in a different cgroup than it ended up with, and we need
-> that .fork callback to fixup state.
+    Enabling non-boot CPUs ...
+    CPU1: Booted secondary processor
+    Unable to handle kernel NULL pointer dereference at virtual address 0000003c
+    pgd = ee71f980
+    [0000003c] *pgd=6eeb6003, *pmd=6e0e9003, *pte=00000000
+    Internal error: Oops: a07 [#1] SMP ARM
+    Modules linked in:
+    CPU: 0 PID: 1397 Comm: s2ram Tainted: G        W      3.18.0-rc2-koelsch-00762-g7eed2a4e61d2d978 #581
+    task: ee6b76c0 ti: ee7f0000 task.ti: ee7f0000
+    PC is at __cpufreq_add_dev.isra.24+0x24c/0x77c
+    LR is at __cpufreq_add_dev.isra.24+0x244/0x77c
+    pc : [<c029e084>]    lr : [<c029e07c>]    psr: 60000153
+    sp : ee7f1d48  ip : ee7f1d48  fp : ee7f1d84
+    r10: c04e8448  r9 : 00000000  r8 : 00000001
+    r7 : c054a8c4  r6 : 00000001  r5 : 00000001  r4 : 00000000
+    r3 : 00000000  r2 : 00000000  r1 : 20000153  r0 : c054a950
+    Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment user
+    Control: 30c5307d  Table: 6e71f980  DAC: fffffffd
+    Process s2ram (pid: 1397, stack limit = 0xee7f0240)
 
-Yeah, I'm agree.
+    ...
+
+    Backtrace:
+    [<c029de38>] (__cpufreq_add_dev.isra.24) from [<c029e620>] (cpufreq_cpu_callback+0x6c/0x74)
+     r10:eec75240 r9:c04e8448 r8:c04ef3a0 r7:00000001 r6:00000012 r5:00000000
+     r4:00000012
+    [<c029e5b4>] (cpufreq_cpu_callback) from [<c003f20c>] (notifier_call_chain+0x48/0x70)
+     r4:ffffffdd r3:c029e5b4
+    [<c003f1c4>] (notifier_call_chain) from [<c003f2cc>] (__raw_notifier_call_chain+0x1c/0x24)
+     r8:00000001 r7:00000010 r6:00000000 r5:00000000 r4:00000012 r3:ffffffff
+    [<c003f2b0>] (__raw_notifier_call_chain) from [<c0026a00>] (__cpu_notify+0x34/0x50)
+    [<c00269cc>] (__cpu_notify) from [<c0026a34>] (cpu_notify+0x18/0x1c)
+     r4:00000001
+    [<c0026a1c>] (cpu_notify) from [<c0026c44>] (_cpu_up+0x108/0x144)
+    [<c0026b3c>] (_cpu_up) from [<c0381c68>] (enable_nonboot_cpus+0x68/0xb8)
+     r10:00000000 r9:c04e8ee6 r8:00000000 r7:00000003 r6:c04e8528 r5:c0506248
+     r4:00000001
+    [<c0381c00>] (enable_nonboot_cpus) from [<c0059038>] (suspend_devices_and_enter+0x29c/0x3e8)
+     r6:c0506e70 r5:00000000 r4:00000000 r3:60000153
+
+Restore the old default of calling cpumask_setall(policy->cpus) if no
+platform data is available to fix this.
+
+Fixes: 34e5a5273d6aa0ee ("cpufreq: cpufreq-dt: extend with
+platform_data")
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+ drivers/cpufreq/cpufreq-dt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpufreq/cpufreq-dt.c b/drivers/cpufreq/cpufreq-dt.c
+index 2f25958053778ad1..3bfc1175a548c49c 100644
+--- a/drivers/cpufreq/cpufreq-dt.c
++++ b/drivers/cpufreq/cpufreq-dt.c
+@@ -293,7 +293,7 @@ static int cpufreq_init(struct cpufreq_policy *policy)
+ 	policy->cpuinfo.transition_latency = transition_latency;
+ 
+ 	pd = cpufreq_get_driver_data();
+-	if (pd && !pd->independent_clocks)
++	if (!pd || !pd->independent_clocks)
+ 		cpumask_setall(policy->cpus);
+ 
+ 	of_node_put(np);
+-- 
+1.9.1
+
