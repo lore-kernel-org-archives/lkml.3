@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633AbaJ0M1m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:27:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40466 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751862AbaJ0M1k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 08:27:40 -0400
-Message-ID: <544E3A1F.2060304@ti.com>
-Date: Mon, 27 Oct 2014 17:57:11 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752657AbaJ0M3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:29:48 -0400
+Received: from eddie.linux-mips.org ([148.251.95.138]:50603 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaJ0M3r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 08:29:47 -0400
+Date: Mon, 27 Oct 2014 12:29:44 +0000 (GMT)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Ingo Molnar <mingo@kernel.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Fix XT-PIC-XT-PIC in /proc/interrupts
+In-Reply-To: <20141027074748.GA18025@gmail.com>
+Message-ID: <alpine.LFD.2.11.1410271207230.3413@eddie.linux-mips.org>
+References: <alpine.LFD.2.11.1410260147190.21390@eddie.linux-mips.org> <20141027074748.GA18025@gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-To: <balbi@ti.com>, Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: =?windows-1252?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] phy: berlin-sata: Move PHY_BASE into private data
- struct
-References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com> <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com> <54462865.6000205@ti.com> <544629F0.3090505@gmail.com> <544AB33F.9030701@gmail.com> <20141024202510.GK11455@saruman>
-In-Reply-To: <20141024202510.GK11455@saruman>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 27 Oct 2014, Ingo Molnar wrote:
 
-On Saturday 25 October 2014 01:55 AM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Fri, Oct 24, 2014 at 10:14:55PM +0200, Sebastian Hesselbarth wrote:
->> On 21.10.2014 11:40, Sebastian Hesselbarth wrote:
->>> On 10/21/2014 11:33 AM, Kishon Vijay Abraham I wrote:
->>>> On Tuesday 21 October 2014 02:37 PM, Sebastian Hesselbarth wrote:
->>>>> Currently, Berlin SATA PHY driver assumes PHY_BASE address being
->>>>> constant. While this PHY_BASE is correct for BG2Q, older BG2 PHY_BASE
->>>>> is different. Prepare the driver for BG2 support by moving the phy_base
->>>>> into private driver data.
->>>>>
->>>>> Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
->>>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>> ...
->>>>> ---
->>>>>  drivers/phy/phy-berlin-sata.c | 42
->>>>> ++++++++++++++++++++++++++++--------------
->>>>>  1 file changed, 28 insertions(+), 14 deletions(-)
->>>>>
->>>>> diff --git a/drivers/phy/phy-berlin-sata.c
->>>>> b/drivers/phy/phy-berlin-sata.c
->>>>> index 69ced52d72aa..9682b0f66177 100644
->>>>> --- a/drivers/phy/phy-berlin-sata.c
->>>>> +++ b/drivers/phy/phy-berlin-sata.c
->>>>> @@ -30,7 +30,7 @@
->>>>>  #define MBUS_WRITE_REQUEST_SIZE_128    (BIT(2) << 16)
->>>>>  #define MBUS_READ_REQUEST_SIZE_128    (BIT(2) << 19)
->>>>>
->>>>> -#define PHY_BASE        0x200
->>>>> +#define BG2Q_PHY_BASE        0x200
->>> [...]
->>>>> +static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
->>>>> +
->>>>> +static const struct of_device_id phy_berlin_sata_of_match[] = {
->>>>> +    {
->>>>> +        .compatible = "marvell,berlin2q-sata-phy",
->>>>> +        .data = &bg2q_sata_phy_base,
->>>>
->>>> Can't the base directly come from dt?
->>>
->>> You are suggesting a "marvell,phy-base-address" property, right?
->>> I have no strong opinion about it, I accept your call (or DT maintainer
->>> ones).
->>
->> Kishon,
->>
->> I still have the DT patches for BG2Q queued up for v3.19 (I missed the
->> arm-soc merge window for v3.18). That means, there has been no release
->> with the phy binding used and I can rework a little more.
->>
->> Can you please confirm that you want a DT property for the phy base address,
->> e.g. marvell,phy-base-address = <{0x200,0x80}> ?
->>
->> If so, I'd also rename the compatible from berlin2q-sata-phy to more
->> generic berlin-sata-phy.
-> 
-> I think what Kishon is asking, is why this 0x200 offset isn't already on
-> reg. so that instead of, e.g.:
-> 
-> 	reg = <0x40000000 0x1000>;
-> 
-> you would have:
-> 
-> 	reg = <0x40000200 0x1000>;
+> What's the effect of this change on the output for non-8259A irq 
+> controllers?
 
-I had something similar to what Sebastian suggested in mind. I think phy_base
-is used for a different reason and can't be directly used in 'reg'.
+ Good question, I didn't expect any other IRQ controller to be used for 
+ISA interrupts (the APIC is handled elsewhere).  I have checked the 
+sources and the only other controller that can be used for `legacy_pic' 
+is `dummy_irq_chip' (cf. `default_legacy_pic' vs `null_legacy_pic' in 
+arch/x86/kernel/i8259.c).  That affects `init_ISA_irqs' only (the other 
+place, `make_8259A_irq', has a reference to `i8259A_chip' hardcoded).
 
-Thanks
-Kishon
+ In this case the output would change from "dummy-dummy" to "dummy", 
+which IMHO has just as much value as the change from "XT-PIC-XT-PIC" to 
+"XT-PIC".  However I don't think you'd be able to request such IRQs so 
+they will never show up in /proc/interrupts, making this observation 
+largely irrelevant.  If you think I may be wrong here, then can you 
+please find such a system and try this change with it (or can someone 
+else reading this make this check for me by any chance)?  Unfortunately 
+all x86 hardware I have does have an 8259A pair.
+
+ Also please note that both places explicitly refer to the name of the 
+IRQ chip being installed as the name of the handler as well, with 
+`i8259A_chip.name' and `chip->name' respectively, this is hardcoded.  
+So no matter which chip is used there'll be a duplicate name in 
+/proc/interrupts.
+
+ Does this answer address your concern?
+
+  Maciej
