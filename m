@@ -1,144 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401AbaJ0VBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 17:01:54 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:18443 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982AbaJ0VBw (ORCPT
+	id S1752393AbaJ0VF3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 17:05:29 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:44596 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752099AbaJ0VF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 17:01:52 -0400
-X-AuditID: cbfec373-b7f236d000000948-de-544eb2beef59
-Date: Mon, 27 Oct 2014 19:01:45 -0200
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v3.18-rc2] media fixes
-Message-id: <20141027190145.565b9ebf.m.chehab@samsung.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgluLIzCtJLcpLzFFi42I5/e9woO6+TX4hBrummVjMWb+GzeLCqQYm
-	i8u75rBZPOp7y+7A4nFixm8Wj8+b5AKYorhsUlJzMstSi/TtErgyPn3cwFzQoVBx5ORB9gbG
-	JskuRk4OCQETif2tbWwQtpjEhXvrgWwuDiGBJYwSv+bPZoFwGpgk7l9YAFbFIqAq0dtxkx3E
-	ZhMwknjV2MIKYosA2Z9fXGEFaWAWWMQoceBUMxNIQlhAV6Ll0mxGEJtXwEri07MmIJsDaJ2z
-	xPzP2RBhQYkfk++xgNjMAloSm7c1sULY8hKb17xlnsDINwtJ2SwkZbOQlC1gZF7FKFpanFxQ
-	nJSea6RXnJhbXJqXrpecn7uJERJ6xTsYX2ywOsQowMGoxMP7cKdviBBrYllxZe4hRgkOZiUR
-	3gNpfiFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGIOO5/Q6eLGnJO/VtxVOl113WcIvoy3JwezV
-	toVpPAw2guphq1xYbNOMdWo4PvDx3P399GLS4QsHFzSZ1E5KTdK4tiIrsUB849n5RX9/q/7y
-	kFneWeHr+tW2NntTy6kfSQ/+XD3be3jCpWD2RP3JXHK7JrGeZVL5Hv/Z+Zd6d7OQe0tD87sJ
-	SizFGYmGWsxFxYkACQUfFBsCAAA=
+	Mon, 27 Oct 2014 17:05:27 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtGFAB+yTlR5LabzPGdsb2JhbABcgw6BLII2hQeyGAaVR4VqAgIBAQKBGRcBBgEBAQE4O4QCAQEBBCcTHCMQCAMOAwMBAgEJJQ8FJQMHDA4TiEDLegEBAQEBAQQBAQEBAQEcGIYciXBkB4MtgR4BBJ1ggTKLOYVEhjSBWCkvgQaBRQEBAQ
+Date: Tue, 28 Oct 2014 08:05:23 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [vfs] WARNING: CPU: 3 PID: 2339 at mm/truncate.c:758
+ pagecache_isize_extended+0xdd/0x120()
+Message-ID: <20141027210523.GD6880@dastard>
+References: <20141016100913.GA8140@wfg-t540p.sh.intel.com>
+ <20141016110127.GD6085@quack.suse.cz>
+ <20141027010422.GA16186@dastard>
+ <20141027095812.GA16093@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027095812.GA16093@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Oct 27, 2014 at 10:58:12AM +0100, Jan Kara wrote:
+> On Mon 27-10-14 12:04:22, Dave Chinner wrote:
+> > On Thu, Oct 16, 2014 at 01:01:27PM +0200, Jan Kara wrote:
+> > > From de3426d6495f4b44b14c09b7c7202e9a86d864b9 Mon Sep 17 00:00:00 2001
+> > > From: Jan Kara <jack@suse.cz>
+> > > Date: Thu, 16 Oct 2014 12:58:42 +0200
+> > > Subject: [PATCH] mm: Remove false WARN_ON from pagecache_isize_extended()
+> > > 
+> > > The WARN_ON checking whether i_mutex is held in
+> > > pagecache_isize_extended() was wrong because some filesystems (e.g.
+> > > XFS) use different locks for serialization of truncates / writes. So
+> > > just remove the check.
+> > > 
+> > > Signed-off-by: Jan Kara <jack@suse.cz>
+> > > ---
+> > >  mm/truncate.c | 1 -
+> > >  1 file changed, 1 deletion(-)
+> > > 
+> > > diff --git a/mm/truncate.c b/mm/truncate.c
+> > > index 261eaf6e5a19..c646084e5eec 100644
+> > > --- a/mm/truncate.c
+> > > +++ b/mm/truncate.c
+> > > @@ -755,7 +755,6 @@ void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
+> > >  	struct page *page;
+> > >  	pgoff_t index;
+> > >  
+> > > -	WARN_ON(!mutex_is_locked(&inode->i_mutex));
+> > >  	WARN_ON(to > inode->i_size);
+> > >  
+> > >  	if (from >= to || bsize == PAGE_CACHE_SIZE)
+> > 
+> > Jan, Have you sent this patch upstream yet? I'm seeing it fire in
+> > my testing in 3.18-rc1 kernels, so I was wondering what your plans
+> > are for this...
+>   I did send it but it got lost somewhere. I'll resend it.
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media tags/media/v3.18-rc2
+If it comes to it, I can push it through the XFS tree - I've got a
+few patches I need to send for -rc3...
 
+Cheers,
 
-For a series of driver fixes:
-	- a few compilation fixes with randconfigs;
-	- one potential compilation breakage on userspace due to the usage of
-	  a gcc extension;
-	- several warnings fixed;
-	- some other random driver fixes.
-
-Thanks!
-Mauro
-
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media tags/media/v3.18-rc2
-
-for you to fetch changes up to f3d83a101266ffa0bcb0744a0d33de823a584845:
-
-  [media] s5p-jpeg: Avoid -Wuninitialized warning in s5p_jpeg_parse_hdr (2014-10-24 09:36:59 -0200)
-
-----------------------------------------------------------------
-media fixes for v3.18-rc2
-
-----------------------------------------------------------------
-Dan Carpenter (4):
-      [media] hackrf: harmless off by one in debug code
-      [media] em28xx-input: NULL dereference on error
-      [media] xc5000: use after free in release()
-      [media] usbvision-video: two use after frees
-
-Fabian Frederick (1):
-      [media] tw68: remove deprecated IRQF_DISABLED
-
-Fancy Fang (1):
-      [media] videobuf-dma-contig: set vm_pgoff to be zero to pass the sanity check in vm_iomap_memory()
-
-Hans Verkuil (5):
-      [media] vivid: fix Kconfig FB dependency
-      [media] em28xx: fix uninitialized variable warning
-      [media] vivid: fix buffer overrun
-      [media] wl128x: fix fmdbg compiler warning
-      [media] tw68: remove bogus I2C_ALGOBIT dependency
-
-Jacek Anaszewski (1):
-      [media] s5p-jpeg: Avoid -Wuninitialized warning in s5p_jpeg_parse_hdr
-
-Kees Cook (2):
-      [media] af9035: make sure loading modules is const
-      [media] anysee: make sure loading modules is const
-
-Laurent Pinchart (1):
-      [media] v4l: uvcvideo: Fix buffer completion size check
-
-Lubomir Rintel (1):
-      [media] saa7146: Create a device name before it's used
-
-Mauro Carvalho Chehab (2):
-      Merge tag 'v3.18-rc1' into v4l_for_linus
-      Revert "[media] v4l2-dv-timings: fix a sparse warning"
-
-Olli Salonen (1):
-      [media] cx23885: initialize config structs for T9580
-
-Sylwester Nawrocki (1):
-      [media] Remove references to non-existent PLAT_S5P symbol
-
-Thierry Reding (2):
-      [media] s5p-jpeg: Only build suspend/resume for PM
-      [media] s5p-fimc: Only build suspend/resume for PM
-
-Vincent Palatin (1):
-      [media] v4l: DocBook: fix media build error
-
- Documentation/DocBook/media/v4l/compat.xml    | 4 ++++
- drivers/media/common/saa7146/saa7146_core.c   | 6 +++---
- drivers/media/pci/cx23885/cx23885-dvb.c       | 3 +++
- drivers/media/pci/tw68/Kconfig                | 1 -
- drivers/media/pci/tw68/tw68-core.c            | 2 +-
- drivers/media/platform/Kconfig                | 6 +++---
- drivers/media/platform/exynos4-is/Kconfig     | 2 +-
- drivers/media/platform/exynos4-is/fimc-core.c | 2 ++
- drivers/media/platform/s5p-jpeg/jpeg-core.c   | 6 +++++-
- drivers/media/platform/s5p-tv/Kconfig         | 2 +-
- drivers/media/platform/vivid/Kconfig          | 5 ++++-
- drivers/media/platform/vivid/vivid-tpg.c      | 2 +-
- drivers/media/radio/wl128x/fmdrv_common.c     | 2 +-
- drivers/media/tuners/xc5000.c                 | 2 +-
- drivers/media/usb/dvb-usb-v2/af9035.c         | 6 +++---
- drivers/media/usb/dvb-usb-v2/anysee.c         | 6 +++---
- drivers/media/usb/em28xx/em28xx-core.c        | 2 +-
- drivers/media/usb/em28xx/em28xx-input.c       | 4 +++-
- drivers/media/usb/hackrf/hackrf.c             | 2 +-
- drivers/media/usb/usbvision/usbvision-video.c | 2 ++
- drivers/media/usb/uvc/uvc_v4l2.c              | 1 -
- drivers/media/usb/uvc/uvc_video.c             | 2 +-
- drivers/media/usb/uvc/uvcvideo.h              | 1 -
- drivers/media/v4l2-core/videobuf-dma-contig.c | 9 +++++++++
- include/uapi/linux/v4l2-dv-timings.h          | 9 +++++++++
- 25 files changed, 62 insertions(+), 27 deletions(-)
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
