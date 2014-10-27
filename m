@@ -1,74 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaJ0Lwe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:52:34 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:64373 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaJ0Lwc (ORCPT
+	id S1752123AbaJ0Lyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:54:31 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:60082 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258AbaJ0Ly3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:52:32 -0400
-Date: Mon, 27 Oct 2014 17:22:21 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+	Mon, 27 Oct 2014 07:54:29 -0400
+Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
+Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <20141025144229.GR10262@pengutronix.de>
+Date: Mon, 27 Oct 2014 13:54:20 +0200
+Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
+        hpa@zytor.com, Michal Simek <monstr@monstr.eu>,
+        michal.simek@xilinx.com, rdunlap@infradead.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8712: remove unused variables
-Message-ID: <20141027115221.GA5369@sudip-PC>
-References: <1414326813-21444-1-git-send-email-sudipm.mukherjee@gmail.com>
- <20141027111312.GA6879@mwanda>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027111312.GA6879@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
+        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, mgerlach@opensource.altera.com,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <16E8EC52-0A91-4F28-8113-3CC5352215A5@konsulko.com>
+References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com> <1414108267-22058-3-git-send-email-atull@opensource.altera.com> <20141024070042.GL10262@pengutronix.de> <5FB7B7FD-7B5B-4250-BADE-85573FDBBE48@konsulko.com> <20141025144229.GR10262@pengutronix.de>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+X-Mailer: Apple Mail (2.1990.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 02:13:12PM +0300, Dan Carpenter wrote:
-> On Sun, Oct 26, 2014 at 06:03:33PM +0530, Sudip Mukherjee wrote:
-> > @@ -262,7 +257,7 @@ static u8 rtl8712_dl_fw(struct _adapter *padapter)
-> >  		if (tmp8_a != (tmp8|BIT(2)))
-> >  			goto exit_fail;
-> >  
-> > -		tmp32 = r8712_read32(padapter, TCR);
-> > +		r8712_read32(padapter, TCR);
-> 
-> I wonder if we actually need to call r8712_read32() here?  It's not
-> clear.  The changelog should say one way or the other.  Maybe something
-> like "I left a call to r8712_read32(padapter, TCR) because I didn't know
-> if it had side effects".  When you note down questions you have in the
-> changelog that helps reviewers.
-sure. i will resend it with modified commit log.
-r8712_read32() is ultimately calling usb_read32() which is again calling  r8712_usbctrl_vendorreq().
-this r8712_usbctrl_vendorreq() is communicating through the usb bus and is sending and receiving the control msg.
-that is why i didnot remove it.
-> 
-> > --- a/drivers/staging/rtl8712/rtl871x_pwrctrl.c
-> > +++ b/drivers/staging/rtl8712/rtl871x_pwrctrl.c
-> > @@ -156,11 +156,9 @@ static void rpwm_workitem_callback(struct work_struct *work)
-> >  				       struct pwrctrl_priv, rpwm_workitem);
-> >  	struct _adapter *padapter = container_of(pwrpriv,
-> >  				    struct _adapter, pwrctrlpriv);
-> > -	u8 cpwm = pwrpriv->cpwm;
-> > -
-> >  	if (pwrpriv->cpwm != pwrpriv->rpwm) {
-> >  		_enter_pwrlock(&pwrpriv->lock);
-> > -		cpwm = r8712_read8(padapter, SDIO_HCPWM);
-> > +		r8712_read8(padapter, SDIO_HCPWM);
-> 
-> Same here.
-same reason for r8712_read8().
+Hi Stefen,
 
-thanks
-sudip
+> On Oct 25, 2014, at 17:42 , Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
+> 
+> Hi Pantelis!
+> 
+> On Fri, Oct 24, 2014 at 12:20:53PM +0300, Pantelis Antoniou wrote:
+>> Hi Stefan, Allan,
+>> 
+>> Sorry, haven’t had a chance to review all this yet; will do so in the weekend.
+>> Just wanted to pop in and comment on a few things.
+>> 
+>>> On Oct 24, 2014, at 10:00 AM, Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
+>>> 
+>>> Hi!
+>>> 
+>>> On Thu, Oct 23, 2014 at 06:51:06PM -0500, atull@opensource.altera.com wrote:
+>>>> From: Alan Tull <atull@opensource.altera.com>
+>>> 
+>>> (...)
+>>> 
+>>>> diff --git a/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
+>>>> new file mode 100644
+>>>> index 0000000..bc24a2e
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
+>>>> @@ -0,0 +1,53 @@
+>>>> +Altera FPGA/HPS Bridge Driver
+>>>> +
+>>>> +This driver manages a bridge between a FPGA and a host processor system (HPS).
+>>>> +User space can enable or disable the bridge by writing a "1" or a "0",
+>>>> +respectively, to its enable file under bridge's entry in
+>>>> +/sys/class/fpga-bridge.  Typically, one disables the bridges before
+>>>> +reprogramming the FPGA.  Once the FPGA is reprogrammed, the bridges are
+>>>> +reenabled.
+>>>> +
+>>> 
+>>> NAK.
+>>> 
+>>> This is all linux specific and doesn't belong here.
+>>> 
+>> 
+>> We know. The DT spec hasn’t been updated for a while, and this is going to be
+>> part of what we want to do with the restarting of the ePAPR spec process.
+>> 
+> 
+> As we don't have a new spec yet, I go with the current state of the art.
+> And I don't see how "file under ... /sys/class/fpga-bridge" fits the
+> current spec.
+> 
+>> So absolutes like “DT is a hardware description only" might be too strong statements, that
+>> do not work in practice anymore.
+>> 
+>> There’s no such thing as pure hardware devices lately - there is always a configuration
+>> component; some of it OS specific, some of it not.
+>> 
+> 
+> If it really is necessary, I'm not against it, don't get me wrong.
+> But in the grand scheme I wouldn't say that this fits my experience.
+> There are some devices that need configuration and often when it is
+> done in the DT, it is just a shortcut or not thought through.
+> And can be also introspected dynamically. With some discussion on the
+> list these bindings often change.
+> 
 
+Already answered and given a possible way this might work; admittedly this
+specific example is not a good fit for what I was trying to say, but whatever.
+Let’s get the ball rolling.
+
+> Regarding OS specifics: already there, e.g. console setup in the chosen node.
+> And other things I saw are ethernet aliases just for u-boot. Not a problem
+> of the spec, just a problem of u-boot and unneccessary "configuration".
+> Just to fix a bad bootloader. barebox can handle this without any
+> such stuff. Maybe we should integrate the DT "overlays" barebox uses into
+> the in-kernel DTs as well...but does it really help/interest someone who
+> decides to use u-boot where barebox stores its environment? I guess not.
 > 
-> >  		pwrpriv->rpwm_retry = 1;
-> >  		r8712_set_rpwm(padapter, pwrpriv->rpwm);
-> >  		up(&pwrpriv->lock);
+
+Although I’m not against having DT overlays in the bootloader, I only see them
+as a method that helps a platform developer express things easier. I am completely
+against having the kernel tied to any particular bootloader.
+
+We’ve all been through the hell where a kernel only boots if the bootloader has 
+setup the platform “correctly”. This “correctly” has a very loose definition and
+99/100 times is extremely badly documented or not at all.
+
+IMHO the bootloader should (as part of the normal boot sequence) only setup the
+absolutely bare minimum and then pass control to the kernel as soon as possible.
+
+The full featured bootloader environment should only be presented when the user
+requests so.
+
+>> We have to be engaged in the process and figure out how to update the spec for what is
+>> now the state of the art in the industry.
+>> 
 > 
-> regards,
-> dan carpenter
+> Again, not against that if it is necessary. For example your overlay stuff might
+> be a good update to the spec. Would be better if it is official instead of a "hack".
+> I want that for SoCFPGA.
+> 
+> But having looked at one or two vendor kernels+DTs, the state of the art in the
+> industry is: using DT wrong. (And doing HW wrong, which makes some updates to the
+> ePAPR necessary ;-))
+> 
+
+Vendor H/W, vendor DT and a crack pipe. Or as I call it Monday.
+
+> Regards,
+> Steffen
+
+Regards
+
+— Pantelis
+
