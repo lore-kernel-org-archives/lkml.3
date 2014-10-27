@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbaJ0NVo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:21:44 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:57312 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbaJ0NVm (ORCPT
+	id S1753087AbaJ0NWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:22:40 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:58072 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752382AbaJ0NWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:21:42 -0400
-Message-ID: <544E46E0.90608@collabora.co.uk>
-Date: Mon, 27 Oct 2014 14:21:36 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Mon, 27 Oct 2014 09:22:38 -0400
+Message-ID: <544E471B.8080507@roeck-us.net>
+Date: Mon, 27 Oct 2014 06:22:35 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Liam Girdwood <lgirdwood@gmail.com>
-CC: Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch v2] regulator: max77802: fix a test in max77802_set_suspend_mode()
-References: <20141027104506.GA22704@mwanda>
-In-Reply-To: <20141027104506.GA22704@mwanda>
-Content-Type: text/plain; charset=windows-1252
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Andrew Lunn <andrew@lunn.ch>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 09/15] net: dsa: Add support for switch EEPROM access
+References: <1414342365-27191-1-git-send-email-linux@roeck-us.net> <1414342365-27191-10-git-send-email-linux@roeck-us.net> <20141027024121.GA16998@lunn.ch> <544DC264.9020600@roeck-us.net> <20141027085048.GC4748@netboy>
+In-Reply-To: <20141027085048.GC4748@netboy>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.544E471E.00BA,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dan,
+On 10/27/2014 01:50 AM, Richard Cochran wrote:
+> On Sun, Oct 26, 2014 at 08:56:20PM -0700, Guenter Roeck wrote:
+>>
+>> Also, it seems that you request two separate properties, one for presence
+>> and another for length. Is that correct ? Again, I thought that would not
+>> provide any value since presence is indicated by length != 0 in the ethtool
+>> callback function. No problem, though, I'll be happy to create two separate
+>> properties and platform data variables if you think that would be better.
+>
+> The fewer properties, the better.
+>
 
-On 10/27/2014 11:45 AM, Dan Carpenter wrote:
-> The original test triggers a static checker warning.  Javier Martinez
-> Canillas says that the "!" is a typo and should be removed.
-> 
-> Fixes: 2e0eaa1aa008 ('regulator: max77802: Add set suspend mode for BUCKs and simplify code')
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> v2:  The first version of this patch was buggy.  Thanks Javier for
-> your review.
-> 
-> diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
-> index 5839c45..7718c8a 100644
-> --- a/drivers/regulator/max77802.c
-> +++ b/drivers/regulator/max77802.c
-> @@ -179,7 +179,7 @@ static int max77802_set_suspend_mode(struct regulator_dev *rdev,
->  	 * If the regulator has been disabled for suspend
->  	 * then is invalid to try setting a suspend mode.
->  	 */
-> -	if (!max77802->opmode[id] == MAX77802_OFF_PWRREQ) {
-> +	if (max77802->opmode[id] == MAX77802_OFF_PWRREQ) {
->  		dev_warn(&rdev->dev, "%s: is disabled, mode: 0x%x not set\n",
->  			 rdev->desc->name, mode);
->  		return 0;
-> 
+Right now I have:
 
-The typo was not found during testing because the expression always evaluated
-to 0 which was expected since a regulator marked to be disabled for suspend
-shouldn't have a suspend mode to be set.
+Optional properties:
+- eeprom-length         : Set to the length of an EEPROM connected to the
+                           switch. Must be set if the switch can not detect
+                           the presence and/or size of a connected EEPROM,
+                           otherwise optional.
 
-But when trying to trigger that specific case the test was indeed failing and
-the regulator mode was changed even when the regulator was marked as disabled.
+and I think Andrew is asking for the following:
 
-This patch solves the issue by making max77802_set_suspend_mode() to return
-early if the regulator was marked as disabled
+Optional properties:
+- eeprom-present	: Boolean property indicating that an EEPROM is present.
+			  Must be set if an EEPROM is present.
+- eeprom-length         : Set to the length of an EEPROM connected to the
+                           switch. Must be set if the switch can not detect
+                           the size of a connected EEPROM, otherwise optional.
 
-Thanks a lot for finding this bug.
+Platform data semantics would be the same.
 
-Acked-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+I can go either way, but I would like to get some kind of agreement before I jump
+into writing the code.
 
-Best regards,
-Javier
+Thanks,
+Guenter
+
