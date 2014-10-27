@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaJ0XJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 19:09:44 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:18755 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515AbaJ0XJn (ORCPT
+	id S1752758AbaJ0XJv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 19:09:51 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:56583 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514AbaJ0XJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 19:09:43 -0400
+	Mon, 27 Oct 2014 19:09:48 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
         akpm@linux-foundation.org, arnd@arndb.de
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, jgross@suse.com,
         stefan.bader@canonical.com, luto@amacapital.net, hmh@hmh.eng.br,
-        yigal@plexistor.com, konrad.wilk@oracle.com
-Subject: [PATCH v4 0/7] Support Write-Through mapping on x86
-Date: Mon, 27 Oct 2014 16:55:38 -0600
-Message-Id: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
+        yigal@plexistor.com, konrad.wilk@oracle.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v4 2/7] x86, mm, pat: Change reserve_memtype() to handle WT
+Date: Mon, 27 Oct 2014 16:55:40 -0600
+Message-Id: <1414450545-14028-3-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
+References: <1414450545-14028-1-git-send-email-toshi.kani@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds support of Write-Through (WT) mapping on x86.
-The study below shows that using WT mapping may be useful for
-non-volatile memory.
+This patch changes reserve_memtype() to handle the WT cache mode.
+When PAT is not enabled, it continues to set UC- to *new_type for
+any non-WB request.
 
-  http://www.hpl.hp.com/techreports/2012/HPL-2012-236.pdf
+When a target range is RAM, reserve_ram_pages_type() fails for WT
+for now.  This function may not reserve a RAM range for WT since
+reserve_ram_pages_type() uses the page flags limited to three memory
+types, WB, WC and UC.
 
-This patchset applies on top of the Juergen's patchset below,
-which provides the basis of the PAT management.
-
-  https://lkml.org/lkml/2014/10/27/71
-
-All new/modified interfaces have been tested.
-
-v4:
- - Added set_memory_wt() by adding WT support of regular memory.
-
-v3:
- - Dropped the set_memory_wt() patch. (Andy Lutomirski)
- - Refactored the !pat_enabled handling. (H. Peter Anvin,
-   Andy Lutomirski)
- - Added the picture of PTE encoding. (Konrad Rzeszutek Wilk)
-
-v2:
- - Changed WT to use slot 7 of the PAT MSR. (H. Peter Anvin,
-   Andy Lutomirski)
- - Changed to have conservative checks to exclude all Pentium 2, 3,
-   M, and 4 families. (Ingo Molnar, Henrique de Moraes Holschuh,
-   Andy Lutomirski)
- - Updated documentation to cover WT interfaces and usages.
-   (Andy Lutomirski, Yigal Korman)
-
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
-Toshi Kani (7):
-  1/7 x86, mm, pat: Set WT to PA7 slot of PAT MSR
-  2/7 x86, mm, pat: Change reserve_memtype() to handle WT
-  3/7 x86, mm, asm-gen: Add ioremap_wt() for WT
-  4/7 x86, mm, pat: Add pgprot_writethrough() for WT
-  5/7 x86, mm, pat: Refactor !pat_enable handling
-  6/7 x86, mm, asm: Add WT support to set_page_memtype()
-  7/7 x86, mm: Add set_memory_wt() for WT
+ arch/x86/include/asm/cacheflush.h |    4 ++++
+ arch/x86/mm/pat.c                 |   16 +++++++++++++---
+ 2 files changed, 17 insertions(+), 3 deletions(-)
 
----
- Documentation/x86/pat.txt            |  13 ++-
- arch/x86/include/asm/cacheflush.h    |  34 ++++---
- arch/x86/include/asm/io.h            |   2 +
- arch/x86/include/asm/pgtable_types.h |   3 +
- arch/x86/mm/init.c                   |   6 +-
- arch/x86/mm/iomap_32.c               |  18 ++--
- arch/x86/mm/ioremap.c                |  26 +++++-
- arch/x86/mm/pageattr.c               |  61 ++++++++++--
- arch/x86/mm/pat.c                    | 174 +++++++++++++++++++++--------------
- include/asm-generic/io.h             |   4 +
- include/asm-generic/iomap.h          |   4 +
- include/asm-generic/pgtable.h        |   4 +
- 12 files changed, 233 insertions(+), 116 deletions(-)
-
+diff --git a/arch/x86/include/asm/cacheflush.h b/arch/x86/include/asm/cacheflush.h
+index 157644b..c912680 100644
+--- a/arch/x86/include/asm/cacheflush.h
++++ b/arch/x86/include/asm/cacheflush.h
+@@ -53,6 +53,10 @@ static inline void set_page_memtype(struct page *pg,
+ 	case _PAGE_CACHE_MODE_WB:
+ 		memtype_flags = _PGMT_WB;
+ 		break;
++	case _PAGE_CACHE_MODE_WT:
++	case _PAGE_CACHE_MODE_WP:
++		pr_err("set_page_memtype: unsupported cachemode %d\n", memtype);
++		BUG();
+ 	default:
+ 		memtype_flags = _PGMT_DEFAULT;
+ 		break;
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index db687c3..a214f5a 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -289,6 +289,8 @@ static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
+ 
+ /*
+  * For RAM pages, we use page flags to mark the pages with appropriate type.
++ * The page flags are currently limited to three types, WB, WC and UC. Hence,
++ * any request to WT or WP will fail with -EINVAL.
+  * Here we do two pass:
+  * - Find the memtype of all the pages in the range, look for any conflicts
+  * - In case of no conflicts, set the new memtype for pages in the range
+@@ -300,6 +302,13 @@ static int reserve_ram_pages_type(u64 start, u64 end,
+ 	struct page *page;
+ 	u64 pfn;
+ 
++	if ((req_type == _PAGE_CACHE_MODE_WT) ||
++	    (req_type == _PAGE_CACHE_MODE_WP)) {
++		if (new_type)
++			*new_type = _PAGE_CACHE_MODE_UC_MINUS;
++		return -EINVAL;
++	}
++
+ 	if (req_type == _PAGE_CACHE_MODE_UC) {
+ 		/* We do not support strong UC */
+ 		WARN_ON_ONCE(1);
+@@ -349,6 +358,7 @@ static int free_ram_pages_type(u64 start, u64 end)
+  * - _PAGE_CACHE_MODE_WC
+  * - _PAGE_CACHE_MODE_UC_MINUS
+  * - _PAGE_CACHE_MODE_UC
++ * - _PAGE_CACHE_MODE_WT
+  *
+  * If new_type is NULL, function will return an error if it cannot reserve the
+  * region with req_type. If new_type is non-NULL, function will return
+@@ -368,10 +378,10 @@ int reserve_memtype(u64 start, u64 end, enum page_cache_mode req_type,
+ 	if (!pat_enabled) {
+ 		/* This is identical to page table setting without PAT */
+ 		if (new_type) {
+-			if (req_type == _PAGE_CACHE_MODE_WC)
+-				*new_type = _PAGE_CACHE_MODE_UC_MINUS;
++			if (req_type == _PAGE_CACHE_MODE_WB)
++				*new_type = _PAGE_CACHE_MODE_WB;
+ 			else
+-				*new_type = req_type;
++				*new_type = _PAGE_CACHE_MODE_UC_MINUS;
+ 		}
+ 		return 0;
+ 	}
