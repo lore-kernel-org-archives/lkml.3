@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299AbaJ0OPp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:15:45 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:50730 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193AbaJ0OPm (ORCPT
+	id S1753310AbaJ0ORJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:17:09 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:57746 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769AbaJ0ORH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:15:42 -0400
+	Mon, 27 Oct 2014 10:17:07 -0400
+Date: Mon, 27 Oct 2014 15:17:17 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Andrzej Hajda <a.hajda@samsung.com>, Dave Airlie <airlied@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, Thierry Reding <treding@nvidia.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] MAINTAINERS: Add entry for MIPI DSI bus
+Message-ID: <20141027141717.GN26941@phenom.ffwll.local>
+Mail-Followup-To: Andrzej Hajda <a.hajda@samsung.com>,
+	Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org,
+	Thierry Reding <treding@nvidia.com>,
+	open list <linux-kernel@vger.kernel.org>
+References: <1414403310-6316-1-git-send-email-a.hajda@samsung.com>
+ <1414403310-6316-2-git-send-email-a.hajda@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1413000976-2038-1-git-send-email-dianders@chromium.org>
-References: <1413000976-2038-1-git-send-email-dianders@chromium.org>
-Date: Mon, 27 Oct 2014 15:15:41 +0100
-Message-ID: <CAPDyKFr1DVqgNXzV4z5pJVr2Kn_Szzv+TU+95CScxS-L_bxh_A@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Change signal voltage error to dev_dbg()
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>, Chris Ball <chris@printf.net>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1414403310-6316-2-git-send-email-a.hajda@samsung.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 October 2014 06:16, Doug Anderson <dianders@chromium.org> wrote:
-> In (28f92b5 mmc: core: Try other signal levels during power up) we can
-> see that there are times when it's valid to try several signal
-> voltages.  Don't print an ugly error in the logs when that happens.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-
-Thanks! Applied for next!
-
-Kind regards
-Uffe
-
+On Mon, Oct 27, 2014 at 10:48:26AM +0100, Andrzej Hajda wrote:
+> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 > ---
->  drivers/mmc/host/dw_mmc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 69f0cc6..c4afbdd 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -1075,7 +1075,7 @@ static int dw_mci_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
->                 ret = regulator_set_voltage(mmc->supply.vqmmc, min_uv, max_uv);
->
->                 if (ret) {
-> -                       dev_err(&mmc->class_dev,
-> +                       dev_dbg(&mmc->class_dev,
->                                          "Regulator set error %d: %d - %d\n",
->                                          ret, min_uv, max_uv);
->                         return ret;
-> --
-> 2.1.0.rc2.206.gedb03e5
->
+>  MAINTAINERS | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index dd31933..476679c 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -3071,6 +3071,13 @@ F:	drivers/gpu/vga/
+>  F:	include/drm/
+>  F:	include/uapi/drm/
+>  
+> +DRM MIPI DSI BUS
+> +M:	Andrzej Hajda <a.hajda@samsung.com>
+> +L:	dri-devel@lists.freedesktop.org
+> +S:	Supported
+> +F:	drivers/gpu/drm/drm_mipi_dsi.c
+> +F:	include/drm/drm_mipi_dsi.h
+
+I really prefer when common infrastructure like this doesn't get
+maintainer by a vendor. And I care with my intel hat on since we also ahve
+a dsi driver that sooner or later needs to be converted to to this stuff.
+
+Why doesn't the usual model of merging stuff through Dave's tree, or if
+that doesn't work well due to patch depencies, through vendor trees with
+Dave's ack?
+
+Thanks, Daniel
+
+> +
+>  RADEON DRM DRIVERS
+>  M:	Alex Deucher <alexander.deucher@amd.com>
+>  M:	Christian König <christian.koenig@amd.com>
+> -- 
+> 1.9.1
+> 
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
