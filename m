@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112AbaJ0CQH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 22:16:07 -0400
-Received: from mga14.intel.com ([192.55.52.115]:45365 "EHLO mga14.intel.com"
+	id S1752138AbaJ0CQa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:16:30 -0400
+Received: from mga11.intel.com ([192.55.52.93]:24884 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907AbaJ0CQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 22:16:05 -0400
+	id S1751907AbaJ0CQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 22:16:28 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,792,1406617200"; 
-   d="yaml'?scan'208";a="611819023"
-Date: Mon, 27 Oct 2014 10:15:43 +0800
+   d="yaml'?scan'208";a="621098700"
+Date: Mon, 27 Oct 2014 10:16:51 +0800
 From: kernel test robot <fengguang.wu@intel.com>
-To: LKP <lkp@linux.intel.com>, Mel Gorman <mgorman@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+To: LKP <lkp@linux.intel.com>, Alexander Gordeev <agordeev@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
         Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Subject: [LKP] [mm] 3193913ce62: 4.7% will-it-scale.per_process_ops
-Message-ID: <20141027021543.GE27038@yliu-dev.sh.intel.com>
+Subject: [LKP] [AHCI] 18dcf433f3d: -3.3% fileio.requests_per_sec
+Message-ID: <20141027021651.GF27038@yliu-dev.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="rQ2U398070+RC21q"
+Content-Type: multipart/mixed; boundary="LTeJQqWS0MN7I/qa"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 User-Agent: Heirloom mailx 12.5 6/20/10
@@ -26,687 +26,549 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---rQ2U398070+RC21q
+--LTeJQqWS0MN7I/qa
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 
 FYI, we noticed the below changes on
 
-commit 3193913ce62c63056bc67a6ae378beaf494afa66 ("mm: page_alloc: default node-ordering on 64-bit NUMA, zone-ordering on 32-bit")
+commit 18dcf433f3ded61eb140a55e7048ec2fef79e723 ("AHCI: Optimize single IRQ interrupt processing")
 
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  testbox/testcase/testparams
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  testbox/testcase/testparams
 ----------------  --------------------------  ---------------------------
          %stddev     %change         %stddev
              \          |                \  
-      0.08 ±  0%      +6.2%       0.08 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-      0.08            +6.2%       0.08        GEO-MEAN will-it-scale.scalability
+     61.60 ±  1%      -3.3%      59.56 ±  0%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     61.60            -3.3%      59.56        GEO-MEAN fileio.requests_per_sec
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    238085 ±  0%      +4.7%     249169 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-    238085            +4.7%     249169        GEO-MEAN will-it-scale.per_process_ops
+    436798 ± 28%     -73.4%     116066 ± 33%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    436798           -73.4%     116066        GEO-MEAN sched_debug.cpu#2.ttwu_local
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    210740 ±  0%      +2.2%     215479 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-    210740            +2.2%     215479        GEO-MEAN will-it-scale.per_thread_ops
+     29791 ±  4%     -72.7%       8123 ±  6%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     29791           -72.7%       8123        GEO-MEAN sched_debug.cfs_rq[2]:/.exec_clock
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      2733 ±  0%      -1.6%       2689 ±  0%  client7/netperf/performance-900s-200%-TCP_STREAM
-      2733            -1.6%       2689        GEO-MEAN netperf.Throughput_Mbps
+     26505 ±  3%     -71.1%       7657 ±  6%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     26505           -71.1%       7657        GEO-MEAN sched_debug.cfs_rq[3]:/.exec_clock
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-         4 ± 40%    +2e+09%   92498119 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-         4          +2e+09%   92498119        GEO-MEAN proc-vmstat.pgalloc_dma32
+    211746 ± 47%    +122.7%     471499 ± 23%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    211746          +122.7%     471499        GEO-MEAN sched_debug.cpu#3.ttwu_count
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-         3 ± 45%     -73.7%          1 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-         3           -73.7%          1        GEO-MEAN sched_debug.cfs_rq[33]:/.runnable_load_avg
+        25 ± 38%    +206.3%         77 ± 12%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+        25          +206.3%         77        GEO-MEAN sched_debug.cfs_rq[0]:/.tg_runnable_contrib
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      4069 ± 33%    +201.3%      12262 ± 49%  lkp-wsx01/will-it-scale/performance-page_fault1
-      4069          +201.3%      12262        GEO-MEAN sched_debug.cpu#25.sched_goidle
+    395023 ± 21%    +179.3%    1103475 ±  9%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    395023          +179.3%    1103475        GEO-MEAN sched_debug.cpu#0.sched_goidle
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      8353 ± 33%    +195.8%      24712 ± 48%  lkp-wsx01/will-it-scale/performance-page_fault1
-      8353          +195.8%      24712        GEO-MEAN sched_debug.cpu#25.nr_switches
+     26678 ±  6%    +185.9%      76281 ±  0%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     26678          +185.9%      76281        GEO-MEAN sched_debug.cfs_rq[0]:/.exec_clock
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      8388 ± 33%    +195.2%      24763 ± 48%  lkp-wsx01/will-it-scale/performance-page_fault1
-      8388          +195.2%      24763        GEO-MEAN sched_debug.cpu#25.sched_count
+    206903 ± 45%    +105.1%     424444 ± 26%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    206903          +105.1%     424444        GEO-MEAN sched_debug.cpu#3.sched_goidle
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    544767 ± 41%     -54.8%     246478 ± 47%  client7/netperf/performance-900s-200%-TCP_STREAM
-    544767           -54.8%     246478        GEO-MEAN cpuidle.C1-NHM.time
+    814594 ± 21%    +173.2%    2225796 ±  9%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    814594          +173.2%    2225795        GEO-MEAN sched_debug.cpu#0.nr_switches
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-         3 ± 19%     -57.9%          1 ± 30%  lkp-wsx01/will-it-scale/performance-page_fault1
-         3           -57.9%          1        GEO-MEAN sched_debug.cfs_rq[30]:/.runnable_load_avg
+    815199 ± 21%    +173.2%    2227078 ±  9%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    815198          +173.2%    2227078        GEO-MEAN sched_debug.cpu#0.sched_count
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-         4 ± 15%     -55.0%          1 ± 41%  lkp-wsx01/will-it-scale/performance-page_fault1
-         4           -55.0%          1        GEO-MEAN sched_debug.cpu#30.cpu_load[0]
+      1213 ± 36%    +195.3%       3583 ± 12%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+      1213          +195.3%       3583        GEO-MEAN sched_debug.cfs_rq[0]:/.avg->runnable_avg_sum
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-         4 ± 35%     -60.9%          1 ± 41%  lkp-wsx01/will-it-scale/performance-page_fault1
-         4           -60.9%          1        GEO-MEAN sched_debug.cpu#22.cpu_load[0]
+     29624 ±  6%    +176.5%      81923 ±  1%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     29624          +176.5%      81923        GEO-MEAN sched_debug.cfs_rq[0]:/.min_vruntime
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      3784 ± 35%    +138.2%       9015 ± 49%  lkp-wsx01/will-it-scale/performance-page_fault1
-      3784          +138.2%       9015        GEO-MEAN sched_debug.cpu#29.sched_goidle
+    193739 ± 46%     +99.9%     387345 ± 15%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    193739           +99.9%     387345        GEO-MEAN sched_debug.cpu#1.sched_goidle
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      1704 ± 36%     +82.4%       3109 ± 32%  lkp-wsx01/will-it-scale/performance-page_fault1
-      1704           +82.4%       3109        GEO-MEAN sched_debug.cpu#22.ttwu_local
+    482611 ± 24%     -60.5%     190666 ± 19%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    482611           -60.5%     190666        GEO-MEAN sched_debug.cpu#2.sched_goidle
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      7771 ± 34%    +134.1%      18194 ± 48%  lkp-wsx01/will-it-scale/performance-page_fault1
-      7770          +134.1%      18194        GEO-MEAN sched_debug.cpu#29.nr_switches
+     31073 ±  4%     -63.6%      11312 ±  2%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     31073           -63.6%      11312        GEO-MEAN sched_debug.cfs_rq[3]:/.min_vruntime
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      7806 ± 34%    +133.3%      18216 ± 48%  lkp-wsx01/will-it-scale/performance-page_fault1
-      7806          +133.3%      18216        GEO-MEAN sched_debug.cpu#29.sched_count
+        12 ± 33%     -68.3%          4 ± 27%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+        12           -68.3%          4        GEO-MEAN sched_debug.cpu#3.cpu_load[4]
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-        44 ± 16%     -49.5%         22 ± 15%  client7/netperf/performance-900s-200%-TCP_STREAM
-        44           -49.5%         22        GEO-MEAN sched_debug.cpu#11.nr_uninterruptible
+    440281 ± 42%     +97.4%     869268 ± 25%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    440281           +97.4%     869268        GEO-MEAN sched_debug.cpu#3.nr_switches
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      1679 ± 12%     -32.6%       1131 ± 13%  lkp-wsx01/will-it-scale/performance-page_fault1
-      1678           -32.6%       1131        GEO-MEAN sched_debug.cpu#33.curr->pid
+    440898 ± 42%     +97.2%     869665 ± 25%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    440898           +97.2%     869665        GEO-MEAN sched_debug.cpu#3.sched_count
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-        29 ± 14%     -34.9%         19 ± 19%  lkp-wsx01/will-it-scale/performance-page_fault1
-        29           -34.9%         18        GEO-MEAN sched_debug.cfs_rq[51]:/.nr_spread_over
+     33967 ±  4%     -63.3%      12450 ±  3%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     33967           -63.3%      12450        GEO-MEAN sched_debug.cfs_rq[2]:/.min_vruntime
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      1516 ± 24%     -23.5%       1160 ± 21%  lkp-wsx01/will-it-scale/performance-page_fault1
-      1516           -23.5%       1160        GEO-MEAN sched_debug.cpu#37.curr->pid
+    413955 ± 43%     +93.7%     801767 ± 14%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    413955           +93.7%     801767        GEO-MEAN sched_debug.cpu#1.nr_switches
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      4991 ± 15%     +42.4%       7106 ± 21%  lkp-wsx01/will-it-scale/performance-page_fault1
-      4991           +42.4%       7106        GEO-MEAN sched_debug.cpu#22.ttwu_count
+    414509 ± 43%     +93.5%     802162 ± 14%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    414509           +93.5%     802162        GEO-MEAN sched_debug.cpu#1.sched_count
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-        18 ± 24%     +42.4%         26 ± 23%  lkp-wsx01/will-it-scale/performance-page_fault1
-        18           +42.4%         26        GEO-MEAN sched_debug.cpu#51.cpu_load[3]
+    991210 ± 24%     -57.1%     425186 ± 17%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    991210           -57.1%     425186        GEO-MEAN sched_debug.cpu#2.nr_switches
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      2077 ± 15%     -34.3%       1365 ± 16%  lkp-wsx01/will-it-scale/performance-page_fault1
-      2077           -34.3%       1365        GEO-MEAN sched_debug.cpu#30.curr->pid
+    991832 ± 24%     -57.1%     425587 ± 17%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    991831           -57.1%     425587        GEO-MEAN sched_debug.cpu#2.sched_count
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      6608 ± 13%     +30.9%       8648 ± 21%  lkp-wsx01/will-it-scale/performance-page_fault1
-      6608           +30.9%       8648        GEO-MEAN sched_debug.cpu#22.sched_goidle
+       437 ± 14%     -59.6%        176 ± 27%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+       539 ±  7%     -50.6%        266 ±  7%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+       485           -55.3%        217        GEO-MEAN slabinfo.xfs_buf.active_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     13690 ± 13%     +29.8%      17766 ± 20%  lkp-wsx01/will-it-scale/performance-page_fault1
-     13690           +29.8%      17765        GEO-MEAN sched_debug.cpu#22.nr_switches
+       446 ± 14%     -57.7%        188 ± 30%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+       548 ±  6%     -43.9%        307 ±  4%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+       494           -51.3%        240        GEO-MEAN slabinfo.xfs_buf.num_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     13732 ± 13%     +29.6%      17792 ± 20%  lkp-wsx01/will-it-scale/performance-page_fault1
-     13732           +29.6%      17792        GEO-MEAN sched_debug.cpu#22.sched_count
+    216837 ± 39%     +85.6%     402550 ± 14%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    216837           +85.6%     402550        GEO-MEAN sched_debug.cpu#1.ttwu_count
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      6728 ± 17%     -21.9%       5252 ± 10%  client7/netperf/performance-900s-200%-TCP_STREAM
-      6728           -21.9%       5252        GEO-MEAN cpuidle.C6-NHM.usage
+    496141 ± 24%    +117.8%    1080683 ±  2%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    496141          +117.8%    1080683        GEO-MEAN sched_debug.cpu#2.ttwu_count
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      5777 ± 16%     +46.6%       8469 ± 23%  lkp-wsx01/will-it-scale/performance-page_fault1
-      5777           +46.6%       8469        GEO-MEAN sched_debug.cpu#21.sched_goidle
+     23697 ±  7%     -51.9%      11404 ±  2%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     23697           -51.9%      11404        GEO-MEAN sched_debug.cfs_rq[1]:/.min_vruntime
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     12608 ± 14%     +42.5%      17962 ± 22%  lkp-wsx01/will-it-scale/performance-page_fault1
-     12607           +42.5%      17962        GEO-MEAN sched_debug.cpu#21.nr_switches
+     88762 ±  5%     +94.9%     173015 ±  2%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     88762           +94.9%     173015        GEO-MEAN sched_debug.cpu#0.nr_load_updates
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     12665 ± 14%     +42.0%      17983 ± 22%  lkp-wsx01/will-it-scale/performance-page_fault1
-     12665           +42.0%      17983        GEO-MEAN sched_debug.cpu#21.sched_count
+     21233 ±  8%     -49.3%      10767 ±  5%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     21233           -49.3%      10767        GEO-MEAN sched_debug.cfs_rq[1]:/.exec_clock
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-  41168114 ± 17%     -27.5%   29866057 ±  7%  client7/netperf/performance-900s-200%-TCP_STREAM
-  41168114           -27.5%   29866057        GEO-MEAN cpuidle.C6-NHM.time
+        14 ± 29%     -51.4%          7 ± 15%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+        14           -51.4%          6        GEO-MEAN sched_debug.cpu#3.cpu_load[3]
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      1848 ± 19%     -26.0%       1367 ± 23%  lkp-wsx01/will-it-scale/performance-page_fault1
-      1848           -26.0%       1367        GEO-MEAN sched_debug.cpu#29.curr->pid
+        44 ± 13%     -45.2%         24 ±  7%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+        44           -45.2%         24        GEO-MEAN sched_debug.cfs_rq[3]:/.tg_runnable_contrib
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     59132 ±  0%     -25.8%      43889 ±  0%  client7/netperf/performance-900s-200%-TCP_STREAM
-     59132           -25.8%      43889        GEO-MEAN numa-vmstat.node0.numa_interleave
+      5.00 ± 16%     -31.1%       3.45 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      5.00           -31.1%       3.45        GEO-MEAN perf-profile.cpu-cycles.__writeback_inodes_wb.wb_writeback.bdi_writeback_workfn.process_one_work.worker_thread
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-         8 ± 21%     -34.9%          5 ± 18%  lkp-wsx01/will-it-scale/performance-page_fault1
-         8           -34.9%          5        GEO-MEAN sched_debug.cpu#65.cpu_load[0]
+      5.00 ± 16%     -31.6%       3.42 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      5.00           -31.6%       3.42        GEO-MEAN perf-profile.cpu-cycles.writeback_sb_inodes.__writeback_inodes_wb.wb_writeback.bdi_writeback_workfn.process_one_work
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-         7 ±  9%     -25.6%          5 ± 16%  lkp-wsx01/will-it-scale/performance-page_fault1
-         7           -25.6%          5        GEO-MEAN sched_debug.cpu#65.cpu_load[1]
+      4.99 ± 16%     -31.6%       3.41 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      4.99           -31.6%       3.41        GEO-MEAN perf-profile.cpu-cycles.write_cache_pages.generic_writepages.xfs_vm_writepages.do_writepages.__writeback_single_inode
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-         6 ± 12%     +29.0%          8 ± 13%  lkp-wsx01/will-it-scale/performance-page_fault1
-         6           +29.0%          7        GEO-MEAN sched_debug.cpu#19.cpu_load[0]
+      4.99 ± 16%     -31.6%       3.41 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      4.99           -31.6%       3.41        GEO-MEAN perf-profile.cpu-cycles.xfs_vm_writepages.do_writepages.__writeback_single_inode.writeback_sb_inodes.__writeback_inodes_wb
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      2464 ±  9%     -24.6%       1857 ± 19%  lkp-wsx01/will-it-scale/performance-page_fault1
-      2464           -24.6%       1857        GEO-MEAN sched_debug.cpu#21.curr->pid
+      5.00 ± 16%     -31.1%       3.45 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      5.00           -31.1%       3.45        GEO-MEAN perf-profile.cpu-cycles.wb_writeback.bdi_writeback_workfn.process_one_work.worker_thread.kthread
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-       642 ±  4%     -20.5%        511 ±  9%  lkp-wsx01/will-it-scale/performance-page_fault1
-       642           -20.5%        511        GEO-MEAN slabinfo.ip_fib_trie.num_objs
+      4.99 ± 16%     -31.6%       3.41 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      4.99           -31.6%       3.41        GEO-MEAN perf-profile.cpu-cycles.do_writepages.__writeback_single_inode.writeback_sb_inodes.__writeback_inodes_wb.wb_writeback
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-       642 ±  4%     -20.5%        511 ±  9%  lkp-wsx01/will-it-scale/performance-page_fault1
-       642           -20.5%        511        GEO-MEAN slabinfo.ip_fib_trie.active_objs
+      4.98 ± 16%     -31.4%       3.41 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      4.98           -31.4%       3.41        GEO-MEAN perf-profile.cpu-cycles.__writepage.write_cache_pages.generic_writepages.xfs_vm_writepages.do_writepages
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-       314 ±  6%     -22.6%        243 ± 15%  lkp-wsx01/will-it-scale/performance-page_fault1
-       314           -22.6%        243        GEO-MEAN sched_debug.cfs_rq[79]:/.tg_runnable_contrib
+      5.00 ± 16%     -31.7%       3.41 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      5.00           -31.7%       3.41        GEO-MEAN perf-profile.cpu-cycles.__writeback_single_inode.writeback_sb_inodes.__writeback_inodes_wb.wb_writeback.bdi_writeback_workfn
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     14409 ±  6%     -22.3%      11197 ± 14%  lkp-wsx01/will-it-scale/performance-page_fault1
-     14409           -22.3%      11197        GEO-MEAN sched_debug.cfs_rq[79]:/.avg->runnable_avg_sum
+      4.98 ± 16%     -31.4%       3.41 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      4.98           -31.4%       3.41        GEO-MEAN perf-profile.cpu-cycles.xfs_vm_writepage.__writepage.write_cache_pages.generic_writepages.xfs_vm_writepages
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-       203 ±  9%     -13.8%        175 ±  8%  lkp-wsx01/will-it-scale/performance-page_fault1
-       203           -13.8%        175        GEO-MEAN sched_debug.cfs_rq[35]:/.tg_runnable_contrib
+      4.99 ± 16%     -31.6%       3.41 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      4.99           -31.6%       3.41        GEO-MEAN perf-profile.cpu-cycles.generic_writepages.xfs_vm_writepages.do_writepages.__writeback_single_inode.writeback_sb_inodes
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      9346 ±  9%     -13.6%       8078 ±  8%  lkp-wsx01/will-it-scale/performance-page_fault1
-      9346           -13.6%       8078        GEO-MEAN sched_debug.cfs_rq[35]:/.avg->runnable_avg_sum
+      5.00 ± 16%     -31.1%       3.45 ± 28%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      5.00           -31.1%       3.45        GEO-MEAN perf-profile.cpu-cycles.bdi_writeback_workfn.process_one_work.worker_thread.kthread.ret_from_fork
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      0.24 ± 16%     -26.9%       0.17 ±  5%  client7/netperf/performance-900s-200%-TCP_STREAM
-      0.24           -26.9%       0.17        GEO-MEAN turbostat.%c6
+      4.02 ± 17%     -37.3%       2.52 ± 32%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      4.02           -37.3%       2.52        GEO-MEAN perf-profile.cpu-cycles.xfs_cluster_write.xfs_vm_writepage.__writepage.write_cache_pages.generic_writepages
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     17920 ±  7%     -13.3%      15538 ±  7%  lkp-wsx01/will-it-scale/performance-page_fault1
-     17920           -13.3%      15538        GEO-MEAN sched_debug.cfs_rq[65]:/.avg->runnable_avg_sum
+      2071 ± 12%     -43.9%       1162 ±  6%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+      2071           -43.9%       1162        GEO-MEAN sched_debug.cfs_rq[3]:/.avg->runnable_avg_sum
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-       389 ±  7%     -13.2%        338 ±  7%  lkp-wsx01/will-it-scale/performance-page_fault1
-       389           -13.2%        338        GEO-MEAN sched_debug.cfs_rq[65]:/.tg_runnable_contrib
+        13 ± 48%     -42.6%          7 ± 18%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+        13           -42.6%          7        GEO-MEAN sched_debug.cpu#2.cpu_load[3]
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      1843 ±  1%     -23.6%       1408 ±  2%  client7/netperf/performance-900s-200%-TCP_STREAM
-      1295 ±  3%     -10.7%       1156 ±  3%  lkp-wsx01/will-it-scale/performance-page_fault1
-      1545           -17.4%       1275        GEO-MEAN numa-vmstat.node0.nr_alloc_batch
+      3.20 ± 19%     -37.6%       1.99 ± 25%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      3.20           -37.6%       1.99        GEO-MEAN perf-profile.cpu-cycles.xfs_convert_page.isra.11.xfs_cluster_write.xfs_vm_writepage.__writepage.write_cache_pages
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    426745 ± 12%     -18.6%     347562 ± 11%  lkp-wsx01/will-it-scale/performance-page_fault1
-    426745           -18.6%     347562        GEO-MEAN sched_debug.cfs_rq[35]:/.min_vruntime
+         9 ± 16%     -43.7%          5 ± 49%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+         9           -43.8%          5        GEO-MEAN sched_debug.cfs_rq[0]:/.runnable_load_avg
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-       211 ±  4%     -13.4%        182 ±  7%  lkp-wsx01/will-it-scale/performance-page_fault1
-       211           -13.4%        182        GEO-MEAN sched_debug.cpu#73.ttwu_local
+       627 ± 12%     +55.9%        978 ±  8%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+       627           +55.9%        978        GEO-MEAN slabinfo.btrfs_delayed_tree_ref.num_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-   7560956 ±  0%     +18.7%    8973197 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-   7560956           +18.7%    8973197        GEO-MEAN numa-numastat.node0.local_node
+       627 ± 12%     +54.9%        972 ±  8%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+       627           +54.9%        972        GEO-MEAN slabinfo.btrfs_delayed_tree_ref.active_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-   7566122 ±  0%     +18.7%    8978364 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-   7566122           +18.7%    8978364        GEO-MEAN numa-numastat.node0.numa_hit
+      2552 ±  8%     -35.9%       1635 ± 10%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+      2552           -35.9%       1635        GEO-MEAN slabinfo.kmalloc-96.active_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    329055 ±  9%     +23.0%     404724 ±  6%  lkp-wsx01/will-it-scale/performance-page_fault1
-    329055           +23.0%     404724        GEO-MEAN softirqs.SCHED
+      2577 ±  7%     -35.0%       1676 ±  9%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+      2577           -35.0%       1676        GEO-MEAN slabinfo.kmalloc-96.num_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-   3822373 ±  0%     +17.6%    4496660 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-   3822373           +17.6%    4496660        GEO-MEAN numa-vmstat.node0.numa_hit
+       650 ±  5%     -29.7%        457 ±  7%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+       649           -29.7%        457        GEO-MEAN slabinfo.blkdev_requests.active_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-   3817085 ±  0%     +17.7%    4490957 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-   3817085           +17.7%    4490957        GEO-MEAN numa-vmstat.node0.numa_local
+      1.17 ± 13%     +24.6%       1.46 ±  8%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      1.17           +24.6%       1.46        GEO-MEAN perf-profile.cpu-cycles.try_to_release_page.shrink_page_list.shrink_inactive_list.shrink_lruvec.shrink_zone
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
- 2.358e+09 ±  0%     -15.0%  2.004e+09 ±  0%  client7/netperf/performance-900s-200%-TCP_STREAM
- 2.358e+09           -15.0%  2.004e+09        GEO-MEAN proc-vmstat.pgalloc_normal
+       664 ±  4%     -26.8%        486 ±  7%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+       664           -26.8%        486        GEO-MEAN slabinfo.blkdev_requests.num_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      1777 ± 13%     +34.4%       2387 ± 16%  lkp-wsx01/will-it-scale/performance-page_fault1
-      1776           +34.4%       2387        GEO-MEAN sched_debug.cpu#74.sched_goidle
+      1.40 ±  4%     -23.4%       1.07 ±  9%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      1.40           -23.4%       1.07        GEO-MEAN perf-profile.cpu-cycles.default_idle.arch_cpu_idle.cpu_startup_entry.rest_init.start_kernel
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    663710 ± 10%     +22.1%     810425 ±  5%  client7/netperf/performance-900s-200%-TCP_STREAM
-    663710           +22.1%     810425        GEO-MEAN sched_debug.cpu#9.avg_idle
+      1.40 ±  4%     -22.8%       1.08 ± 10%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      1.40           -22.8%       1.08        GEO-MEAN perf-profile.cpu-cycles.arch_cpu_idle.cpu_startup_entry.rest_init.start_kernel.x86_64_start_reservations
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      3338 ±  0%     -13.8%       2876 ±  1%  client7/netperf/performance-900s-200%-TCP_STREAM
-      3338           -13.8%       2876        GEO-MEAN proc-vmstat.nr_alloc_batch
+    100710 ±  5%     +28.7%     129619 ±  0%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    100710           +28.7%     129619        GEO-MEAN sched_debug.cpu#2.nr_load_updates
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     47807 ±  6%     +19.2%      56984 ± 11%  lkp-wsx01/will-it-scale/performance-page_fault1
-     47807           +19.2%      56984        GEO-MEAN sched_debug.cpu#25.nr_load_updates
+      2671 ± 10%     +19.1%       3181 ±  6%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      2671           +19.1%       3181        GEO-MEAN slabinfo.anon_vma.num_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      3741 ± 13%     +33.3%       4985 ± 16%  lkp-wsx01/will-it-scale/performance-page_fault1
-      3740           +33.3%       4985        GEO-MEAN sched_debug.cpu#74.nr_switches
+     86107 ±  5%     -21.2%      67836 ±  8%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     86107           -21.2%      67835        GEO-MEAN sched_debug.cpu#3.nr_load_updates
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    295529 ±  3%     +16.2%     343525 ±  3%  lkp-wsx01/will-it-scale/performance-page_fault1
-    295529           +16.2%     343525        GEO-MEAN softirqs.RCU
+      1.57 ±  5%     -15.2%       1.33 ±  9%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      1.57           -15.2%       1.33        GEO-MEAN perf-profile.cpu-cycles.rest_init.start_kernel.x86_64_start_reservations.x86_64_start_kernel
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      3374 ±  4%      -9.0%       3070 ±  5%  client7/netperf/performance-900s-200%-TCP_STREAM
-      3374            -9.0%       3070        GEO-MEAN sched_debug.cpu#4.curr->pid
+      1.56 ±  5%     -14.5%       1.33 ±  9%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      1.56           -14.5%       1.33        GEO-MEAN perf-profile.cpu-cycles.cpu_startup_entry.rest_init.start_kernel.x86_64_start_reservations.x86_64_start_kernel
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      3900 ± 12%     +31.4%       5124 ± 15%  lkp-wsx01/will-it-scale/performance-page_fault1
-      3900           +31.4%       5124        GEO-MEAN sched_debug.cpu#74.sched_count
+      1.57 ±  5%     -15.2%       1.33 ±  9%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      1.57           -15.2%       1.33        GEO-MEAN perf-profile.cpu-cycles.x86_64_start_reservations.x86_64_start_kernel
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     14175 ±  3%     -19.5%      11408 ± 13%  lkp-wsx01/will-it-scale/performance-page_fault1
-     14175           -19.5%      11408        GEO-MEAN sched_debug.cfs_rq[78]:/.avg->runnable_avg_sum
+      1.57 ±  5%     -15.2%       1.33 ±  9%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      1.57           -15.2%       1.33        GEO-MEAN perf-profile.cpu-cycles.x86_64_start_kernel
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-       308 ±  3%     -19.5%        248 ± 13%  lkp-wsx01/will-it-scale/performance-page_fault1
-       308           -19.5%        248        GEO-MEAN sched_debug.cfs_rq[78]:/.tg_runnable_contrib
+      1.57 ±  5%     -15.2%       1.33 ±  9%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      1.57           -15.2%       1.33        GEO-MEAN perf-profile.cpu-cycles.start_kernel.x86_64_start_reservations.x86_64_start_kernel
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    605032 ±  8%     +19.7%     723984 ± 11%  client7/netperf/performance-900s-200%-TCP_STREAM
-    605032           +19.7%     723983        GEO-MEAN sched_debug.cpu#6.avg_idle
+        50 ± 32%     -34.0%         33 ±  5%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+        49           -34.0%         33        GEO-MEAN sched_debug.cfs_rq[2]:/.tg_runnable_contrib
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    493721 ±  2%     -10.8%     440327 ±  3%  lkp-wsx01/will-it-scale/performance-page_fault1
-    493721           -10.8%     440327        GEO-MEAN sched_debug.cfs_rq[31]:/.min_vruntime
+    815734 ±  1%     -16.3%     682841 ±  2%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    815734           -16.3%     682841        GEO-MEAN sched_debug.cpu#0.avg_idle
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    691172 ±  9%     -14.7%     589776 ±  1%  lkp-wsx01/will-it-scale/performance-page_fault1
-    691172           -14.7%     589776        GEO-MEAN sched_debug.cfs_rq[21]:/.min_vruntime
+      2341 ± 31%     -33.3%       1560 ±  4%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+      2340           -33.3%       1560        GEO-MEAN sched_debug.cfs_rq[2]:/.avg->runnable_avg_sum
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-  10083100 ±  0%      -9.5%    9128227 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-  10083100            -9.5%    9128227        GEO-MEAN time.maximum_resident_set_size
+     77032 ±  7%     -15.7%      64945 ±  4%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     77032           -15.7%      64945        GEO-MEAN sched_debug.cpu#1.nr_load_updates
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     99367 ±  3%      +8.2%     107474 ±  5%  client7/netperf/performance-900s-200%-TCP_STREAM
-     99367            +8.2%     107474        GEO-MEAN sched_debug.cpu#11.ttwu_count
+       718 ±  5%     +18.6%        852 ±  3%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+       718           +18.6%        852        GEO-MEAN slabinfo.btrfs_trans_handle.active_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      8369 ± 10%     +11.0%       9289 ±  2%  lkp-wsx01/will-it-scale/performance-page_fault1
-      8369           +11.0%       9289        GEO-MEAN sched_debug.cpu#51.sched_count
+       723 ±  5%     +18.8%        859 ±  3%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+       723           +18.8%        859        GEO-MEAN slabinfo.btrfs_trans_handle.num_objs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      8073 ± 10%     +11.1%       8968 ±  2%  lkp-wsx01/will-it-scale/performance-page_fault1
-      8073           +11.1%       8968        GEO-MEAN sched_debug.cpu#51.nr_switches
+      4889 ±  5%     -13.4%       4233 ±  5%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+      4889           -13.4%       4233        GEO-MEAN sched_debug.cpu#3.curr->pid
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     81.24 ±  1%     -16.7%      67.64 ±  1%  lkp-wsx01/will-it-scale/performance-page_fault1
-     81.24           -16.7%      67.64        GEO-MEAN time.user_time
+      4606 ±  2%     +14.4%       5268 ±  3%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+      4606           +14.4%       5268        GEO-MEAN sched_debug.cpu#2.curr->pid
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-    248649 ±  2%      +6.0%     263514 ±  1%  client7/netperf/performance-900s-200%-TCP_STREAM
-     13518 ±  2%     -16.2%      11335 ±  2%  lkp-wsx01/will-it-scale/performance-page_fault1
-     57977            -5.7%      54652        GEO-MEAN time.involuntary_context_switches
+     63213 ±  0%     +13.2%      71544 ±  0%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     63213           +13.2%      71544        GEO-MEAN softirqs.SCHED
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-       577 ±  0%      +1.5%        585 ±  0%  client7/netperf/performance-900s-200%-TCP_STREAM
-      1155 ±  0%     -11.4%       1024 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-       816            -5.2%        774        GEO-MEAN time.percent_of_cpu_this_job_got
+       166 ±  4%     +10.1%        183 ±  4%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+       166           +10.1%        183        GEO-MEAN uptime.idle
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      5059 ±  0%      +1.5%       5132 ±  0%  client7/netperf/performance-900s-200%-TCP_STREAM
-      3521 ±  0%     -11.3%       3123 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-      4220            -5.1%       4004        GEO-MEAN time.system_time
+    418402 ±  6%    +250.9%    1468345 ±  0%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    418402          +250.9%    1468345        GEO-MEAN time.voluntary_context_switches
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-      6480 ±  0%      +5.8%       6855 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-      6480            +5.8%       6855        GEO-MEAN vmstat.system.cs
+      1434 ±  0%     +56.3%       2241 ±  1%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+      1433           +56.3%       2241        GEO-MEAN vmstat.system.in
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-   2613356 ±  0%      -1.4%    2576765 ±  0%  client7/netperf/performance-900s-200%-TCP_STREAM
-    791288 ±  0%      +8.0%     854734 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-   1438026            +3.2%    1484065        GEO-MEAN time.voluntary_context_switches
+      5144 ±  0%      +6.8%       5493 ±  0%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+      2610 ±  0%     +65.1%       4310 ±  1%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+      3664           +32.8%       4865        GEO-MEAN vmstat.system.cs
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     36.32 ±  0%      -4.4%      34.72 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-     36.32            -4.4%      34.72        GEO-MEAN turbostat.%c0
+     10375 ±  3%      -7.7%       9576 ±  3%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+     10374            -7.7%       9576        GEO-MEAN time.involuntary_context_switches
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-     30544 ±  0%      -4.3%      29236 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-     30544            -4.3%      29236        GEO-MEAN vmstat.system.in
+   3210548 ±  0%      +6.7%    3426526 ±  0%  bay/dd-write/performance-1HDD-cfq-xfs-10dd
+   3210548            +6.7%    3426526        GEO-MEAN perf-stat.context-switches
 
-97ee4ba7cbd30f18  3193913ce62c63056bc67a6ae3  
+227dfb4dbf109596  18dcf433f3ded61eb140a55e70  
 ----------------  --------------------------  
-   7423764 ±  0%      +1.9%    7566579 ±  0%  lkp-wsx01/will-it-scale/performance-page_fault1
-   7423764            +1.9%    7566579        GEO-MEAN time.minor_page_faults
+    706310 ±  1%      -3.2%     683678 ±  0%  bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync
+    706310            -3.2%     683678        GEO-MEAN time.file_system_inputs
 
-lkp-wsx01: Westmere-EX
-Memory: 128G
+bay: Pentium D
+Memory: 2G
 
-client7: Nehalem EP
-Memory: 48G
 
 
 
+                            time.voluntary_context_switches
 
-                                 time.system_time
-
-  3550 ++------*---------*--------------------------------*-------*---------*
-  3500 ++.*.*.   *.. .*.  +  .*..*.  .*.  .*.*..    .*.. :   *. ..  *..*. ..|
-       *.           *      *.      *.   *.      *.*.     :     *         *  |
-  3450 ++                                               *                   |
-  3400 ++                                                                   |
-       |                                                                    |
-  3350 ++                                                                   |
-  3300 ++                                                                   |
-  3250 ++                                                                   |
-       |                                                                    |
-  3200 ++ O                                                                 |
-  3150 ++      O O                    O                      O              |
-       O    O       O O  O O  O  O O    O  O O  O O       O    O  O         |
-  3100 ++                                            O  O                   |
-  3050 ++-------------------------------------------------------------------+
-
-
-                         time.percent_of_cpu_this_job_got
-
-  1180 ++-------------------------------------------------------------------+
-       |      .*.                                         *..               *
-  1160 ++.*.*.   *.. .*..*.  .*..*.  .*.  .*.*..    .*.. :   *.  .*.*..*. ..|
-  1140 *+           *      *.      *.   *.      *.*.     :     *.        *  |
-       |                                                *                   |
-  1120 ++                                                                   |
-  1100 ++                                                                   |
-       |                                                                    |
-  1080 ++                                                                   |
-  1060 ++                                                                   |
-       |  O                                                                 |
-  1040 ++      O O                    O                                     |
-  1020 O+   O       O O  O O     O O    O  O O  O         O  O O  O         |
-       |                      O                   O  O  O                   |
-  1000 ++-------------------------------------------------------------------+
-
-
-                            time.maximum_resident_set_size
-
-  1.02e+07 ++---------------------------------------------------------------+
-           |   .*.                .*.         .*..   .*..*.*..*   *..*.*..*.|
-     1e+07 *+*.   *..*.*.*..*.*..*   *..*.*..*    *.*          + +          *
-           |                                                    *           |
-   9.8e+06 ++                                                               |
-           |                                                                |
-   9.6e+06 ++                                                               |
-           |                                                                |
-   9.4e+06 ++                                                               |
-           |                                                                |
-   9.2e+06 ++     O                     O O    O         O O                |
-           | O       O O    O O  O O O       O    O O O         O O         |
-     9e+06 O+   O        O                                    O             |
-           |                                                                |
-   8.8e+06 ++---------------------------------------------------------------+
-
-
-                           time.voluntary_context_switches
-
-  880000 ++-----------------------------------------------------------------+
-         |                                         O                        |
-  860000 ++             O           O       O    O    O    O                |
-         O      O  O O    O  O O       O O    O         O    O  O           |
-         | O  O                   O                               O         |
-  840000 ++                                                                 |
-         |                                                                  |
-  820000 ++                                                                 |
-         |                                                                  |
-  800000 ++  .*    *.     *..*                        *.              .*..  |
-         *.*.  :  :  *.. +    +  .*.    .*..*.*..*. ..  *.. .*..*.*..*      |
-         |     :  :     *      *.   *..*           *       *              *.|
-  780000 ++     ::                                                          *
-         |      *                                                           |
-  760000 ++-----------------------------------------------------------------+
-
-
-                            will-it-scale.per_process_ops
-
-  255000 ++-----------------------------------------------------------------+
-         |                                                                  |
-  250000 ++        O O    O            O                     O  O           |
-         O              O    O O  O O       O    O O  O O  O      O         |
-         | O  O O                        O    O                             |
-  245000 ++                                                                 |
-         |                                                                  |
-  240000 ++                                                                 |
-         *.*..*     .*..*.*..*.*..*.*.. .*..  *..*.*..*.*..*.*..*.*..*.*..*.*
-  235000 ++    :   *                   *     +                              |
-         |     :  +                         *                               |
-         |      :+                                                          |
-  230000 ++     *                                                           |
-         |                                                                  |
-  225000 ++-----------------------------------------------------------------+
-
-
-                                   turbostat.%c0
-
-  36.6 ++-------------------------------------------------------------------+
-  36.4 ++     .*.                                                           *
-       |   .*.   *.. .*..*.  .*..*.  .*.    .*..    .*..  *..*.  .*.*..*. ..|
-  36.2 *+.*         *      *.      *.   *..*    *.*.     +     *.        *  |
-    36 ++                                               *                   |
-       |                                                                    |
-  35.8 ++                                                                   |
-  35.6 ++                                                                   |
-  35.4 ++                                                                   |
-       |                                                                    |
-  35.2 ++                                                                   |
-    35 ++ O                                                                 |
-       |    O  O O                    O                                     |
-  34.8 O+           O O    O     O O    O  O O  O         O  O O  O         |
-  34.6 ++----------------O----O-------------------O--O--O-------------------+
-
-
-                             numa-numastat.node0.numa_hit
-
-  9.2e+06 ++----------------------------------------------------------------+
-    9e+06 O+   O    O    O O         O O  O O  O O         O O  O           |
-          | O    O    O       O O O                 O O O         O         |
-  8.8e+06 ++                                                                |
-  8.6e+06 ++                                                                |
+  1.6e+06 ++----------------------------------------------------------------+
+          |        O O O O O  O O O O OO O O O O                            |
+  1.4e+06 O+O O OO          O                                               |
           |                                                                 |
-  8.4e+06 ++                                                                |
-  8.2e+06 ++                                                                |
-    8e+06 ++                                                                |
+  1.2e+06 ++                                                                |
           |                                                                 |
-  7.8e+06 ++                                                                |
-  7.6e+06 *+*..*          .*..        .*..*.*..*.*.. .*.*.. .*.. .*..    .*.|
-          |     :   *.*..*    *.*.*..*              *      *    *    *.*.   *
-  7.4e+06 ++    : ..                                                        |
-  7.2e+06 ++-----*----------------------------------------------------------+
-
-
-                            numa-numastat.node0.local_node
-
-  9.2e+06 ++----------------------------------------------------------------+
-    9e+06 O+   O    O      O         O    O O  O O         O O  O           |
-          | O    O    O  O    O O O    O            O O O         O         |
-  8.8e+06 ++                                                                |
-  8.6e+06 ++                                                                |
+    1e+06 ++                                                                |
           |                                                                 |
-  8.4e+06 ++                                                                |
-  8.2e+06 ++                                                                |
-    8e+06 ++                                                                |
+   800000 ++                                                                |
           |                                                                 |
-  7.8e+06 ++                                                                |
-  7.6e+06 *+  .*          .*..           .*.*..*.*.. .*.*.. .*.. .*..    .*.|
-          | *.  :   *.*..*    *.*.*..*.*.           *      *    *    *.*.   *
-  7.4e+06 ++    : ..                                                        |
-  7.2e+06 ++-----*----------------------------------------------------------+
+   600000 ++                                                                |
+          |                                                         .*.     |
+   400000 *+*.*.**.*.*.*.*.**.*.*.*.*.**.*.*.*.*.**.*.*.*.*.**.*.*.*   **.*.*
+          |                                                                 |
+   200000 ++----------------------------------------------------------------+
 
 
-                                  vmstat.system.in
+                                   softirqs.SCHED
 
-  30800 ++------------------------------------------------------------------+
-        |      .*.              .*..                 *                      |
-  30600 ++  .*.   *.. .*..*.*..*     .*.. .*..*.    + +   *..*.  .*.*..*.*..*
-  30400 *+.*         *              *    *      *..*   + +     *.           |
-        |                                               *                   |
-  30200 ++                                                                  |
-  30000 ++                                                                  |
-        |                                                                   |
-  29800 ++                                                                  |
-  29600 ++                                                                  |
-        |  O                                                                |
-  29400 ++   O  O O                   O                                     |
-  29200 O+           O O    O       O    O O  O O    O    O  O O  O         |
-        |                 O    O O                 O    O                   |
-  29000 ++------------------------------------------------------------------+
+  78000 ++------------------------------------------------------------------+
+        |              O                                                    |
+  76000 ++      O                                                           |
+  74000 ++                                                                  |
+        |     O  O O       O     O  O       *                               |
+  72000 ++O O        O   O   O O  O   O O   O O                             |
+  70000 O+                                O ::                              |
+        |                                  : :                              |
+  68000 ++                                 : :                              |
+  66000 ++                                 : :                              |
+        |                                  :  :                             |
+  64000 *+                                :   :.*.**.       .*.*.   *.*. .*.|
+  62000 ++  *.*.* .*.*.*. .*.*.*. *.   .*.*   *      *.*.*.*     *.*    *   *
+        |: +     *       *       *  *.*                                     |
+  60000 ++*-----------------------------------------------------------------+
+
+
+                                 vmstat.system.in
+
+  2600 ++-------------------------------------------------------------------+
+  2400 ++           O                                                       |
+       |       O   O  O O O O O   O   O      O                              |
+  2200 O+O O O   O              O   O   O OO                                |
+  2000 ++                                                                   |
+       |                                                                    |
+  1800 ++                                                                   |
+  1600 ++                                                                   |
+  1400 *+  *.*.*.*.**.*.*.*.*.*.*.*.*.*.*.**.*.*.*.*.*.*.*.*.*.*.**.*.*.*.*.*
+       |   :                                                                |
+  1200 ++ :                                                                 |
+  1000 ++ :                                                                 |
+       | :                                                                  |
+   800 ++*                                                                  |
+   600 ++-------------------------------------------------------------------+
 
 
                                  vmstat.system.cs
 
-  7100 ++-------------------------------------------------------------------+
+  5000 ++-------------------------------------------------------------------+
        |                                                                    |
-  7000 ++                                         O                         |
-  6900 O+      O O    O            O    O    O       O                      |
-       |  O O       O    O O  O       O    O    O       O O    O            |
-  6800 ++                        O                           O    O         |
+  4500 ++    O O O OO O O   O   O   O     OO O                              |
+  4000 O+O O              O   O   O   O O                                   |
        |                                                                    |
-  6700 ++                                                                   |
+  3500 ++                                                                   |
        |                                                                    |
-  6600 ++  .*    *..                                 *..               *    |
-  6500 ++.*  :   :  *     .*..         .*..*.*..   ..            .*. .. :   |
-       *.    :  :    +  .*      .*.*..*         *.*     *.*..*.*.   *   :   |
-  6400 ++     : :     *.      *.                                         *..*
-       |      ::                                                            |
-  6300 ++------*------------------------------------------------------------+
+  3000 ++                                                                   |
+       |   *.*.*.    .*. .*.*.*.*.*. .*.   *.*.*.*. .*. .*.*.*.*.**.*.*.*.*.*
+  2500 *+  :     *.**   *           *   *.*        *   *                    |
+  2000 ++ :                                                                 |
+       |: :                                                                 |
+  1500 ++:                                                                  |
+       | *                                                                  |
+  1000 ++-------------------------------------------------------------------+
 
 
-                              proc-vmstat.pgalloc_dma32
+                         sched_debug.cfs_rq[3]:/.exec_clock
 
-  1e+08 ++------------------------------------------------------------------+
-  9e+07 O+ O O  O O  O O  O O  O O  O O  O O  O O  O O  O O  O O  O         |
+  35000 ++------------------------------------------------------------------+
         |                                                                   |
-  8e+07 ++                                                                  |
-  7e+07 ++                                                                  |
+  30000 ++                            *                                     |
+        |      .*   .*.*     *. .*   : +       .*. *.*.*.   .*         .*   |
+        |.*.*.*  :.*    +   +  *  *. :  *   *.*   *      *.*  + .*.**.*  + .*
+  25000 *+       *       *.*        *    + +                   *          * |
+        |                                 *                                 |
+  20000 ++                                                                  |
         |                                                                   |
-  6e+07 ++                                                                  |
-  5e+07 ++                                                                  |
-  4e+07 ++                                                                  |
+  15000 ++                                                                  |
+        O O O                                                               |
+        |                O                                                  |
+  10000 ++             O   O O O  O     O                                   |
+        |     O OO O O           O  O O   O O O                             |
+   5000 ++------------------------------------------------------------------+
+
+
+                        sched_debug.cfs_rq[3]:/.min_vruntime
+
+  40000 ++------------------------------------------------------------------+
+        |                             *                                     |
+  35000 ++                            ::           *                        |
+        |           .*.*        .*   : :       .*. :+       .*              |
+        |      .*  *    +   .*.*  *. :  :   *.*   *  *.*. .*  + .*.**.*.*. .*
+  30000 ++*.*.*  :+      *.*        *   *. +             *     *          * |
+        *        *                        *                                 |
+  25000 ++                                                                  |
         |                                                                   |
-  3e+07 ++                                                                  |
-  2e+07 ++                                                                  |
+  20000 ++                                                                  |
         |                                                                   |
-  1e+07 ++                                                                  |
-      0 *+-*-*--*-*--*-*--*-*--*-*--*-*--*-*--*-*--*-*--*-*--*-*--*-*--*-*--*
-
-
-                              numa-vmstat.node0.numa_hit
-
-  4.6e+06 ++----------------------------------------------------------------+
-          O                O         O O  O O  O O         O O              |
-  4.5e+06 ++O  O O  O O  O    O O O                 O O O       O O         |
-  4.4e+06 ++                                                                |
-          |                                                                 |
-  4.3e+06 ++                                                                |
-  4.2e+06 ++                                                                |
-          |                                                                 |
-  4.1e+06 ++                                                                |
-    4e+06 ++                                                                |
-          |                                                                 |
-  3.9e+06 ++              .*..                                              |
-  3.8e+06 *+*..*    *.  .*    *.*.*..*.*..*.*..*.*..*.*.*..*.*..*.*..*.*..*.*
-          |     + ..  *.                                                    |
-  3.7e+06 ++-----*----------------------------------------------------------+
-
-
-                             numa-vmstat.node0.numa_local
-
-  4.6e+06 ++----------------------------------------------------------------+
-          |                O           O  O O  O O         O O              |
-  4.5e+06 O+O  O O  O O  O    O O O  O              O O O       O O         |
-  4.4e+06 ++                                                                |
-          |                                                                 |
-  4.3e+06 ++                                                                |
-  4.2e+06 ++                                                                |
-          |                                                                 |
-  4.1e+06 ++                                                                |
-    4e+06 ++                                                                |
-          |                                                                 |
-  3.9e+06 ++              .*..                                              |
-  3.8e+06 *+*..*    *.  .*    *.*.*.. .*..*.*..*.*..*.*.*..*.*..*.*..*.*..*.|
-          |     + ..  *.             *                                      *
-  3.7e+06 ++-----*----------------------------------------------------------+
+        O                                                                   |
+  15000 ++O O            O   O                                              |
+        |          O O O   O   O OO O O O O                                 |
+  10000 ++----O-OO--------------------------O-O-----------------------------+
 
 	[*] bisect-good sample
 	[O] bisect-bad  sample
@@ -729,12 +591,12 @@ design or configuration may affect actual performance.
 Thanks,
 Fengguang
 
---rQ2U398070+RC21q
+--LTeJQqWS0MN7I/qa
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: attachment; filename="job.yaml"
 
 ---
-testcase: will-it-scale
+testcase: fileio
 default_monitors:
   wait: pre-test
   uptime: 
@@ -766,125 +628,58 @@ default_watchdogs:
 cpufreq_governor:
 - performance
 commit: f114040e3ea6e07372334ade75d1ee0775c355e1
-model: Westmere-EX
-memory: 128G
-nr_cpu: 80
-nr_hdd_partitions: 0
-hdd_partitions: 
-swap_partitions: 
-rootfs_partition: 
-rootfs: clearlinux-x86_64.cgz
-perf-profile:
-  freq: 800
-will-it-scale:
-  test:
-  - page_fault1
-enqueue_time: 2014-10-20 11:14:36.566460713 +08:00
-testbox: lkp-wsx01
-tbox_group: lkp-wsx01
+model: Pentium D
+nr_cpu: 4
+memory: 2G
+hdd_partitions: "/dev/disk/by-id/ata-ST3750528AS_6VP2TCZN-part1"
+swap_partitions: "/dev/disk/by-id/ata-ST3750528AS_9VP5LPHN-part5"
+rootfs_partition: "/dev/disk/by-id/ata-ST3750528AS_6VP2TCZN-part2"
+period: 600s
+nr_threads: 100%
+disk: 1HDD
+fs:
+- btrfs
+size: 64G
+fileio:
+  filenum: 1024f
+  rwmode:
+  - rndrw
+  iomode:
+  - sync
+enqueue_time: 2014-10-20 10:09:35.766127772 +08:00
+testbox: bay
+tbox_group: bay
 kconfig: x86_64-rhel
-head_commit: 1a7ad083caf4a29b00d7eaabfd81f63d6fecde5a
+head_commit: e0911a5d8b56753716bd15de3d2fb1d5fa39ced2
 base_commit: f114040e3ea6e07372334ade75d1ee0775c355e1
-branch: linux-devel/devel-hourly-2014102013
+branch: linux-devel/devel-hourly-2014102016
 kernel: "/kernel/x86_64-rhel/f114040e3ea6e07372334ade75d1ee0775c355e1/vmlinuz-3.18.0-rc1-gf114040"
 user: lkp
 queue: cyclic
-result_root: "/result/lkp-wsx01/will-it-scale/performance-page_fault1/clearlinux-x86_64.cgz/x86_64-rhel/f114040e3ea6e07372334ade75d1ee0775c355e1/0"
-job_file: "/lkp/scheduled/lkp-wsx01/cyclic_will-it-scale-performance-page_fault1-clearlinux-x86_64.cgz-x86_64-rhel-BASE-f114040e3ea6e07372334ade75d1ee0775c355e1-0.yaml"
-dequeue_time: 2014-10-20 13:41:08.597013596 +08:00
+result_root: "/result/bay/fileio/performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync/debian-x86_64.cgz/x86_64-rhel/f114040e3ea6e07372334ade75d1ee0775c355e1/0"
+job_file: "/lkp/scheduled/bay/cyclic_fileio-performance-600s-100%-1HDD-btrfs-64G-1024f-rndrw-sync-x86_64-rhel-BASE-f114040e3ea6e07372334ade75d1ee0775c355e1-0.yaml"
+dequeue_time: 2014-10-20 17:41:06.590446117 +08:00
 job_state: finished
-loadavg: 53.96 26.56 10.62 1/637 12621
-start_time: '1413783739'
-end_time: '1413784050'
-version: "/lkp/lkp/.src-20141020-092052"
+loadavg: 3.12 3.41 2.18 1/131 16764
+start_time: '1413798109'
+end_time: '1413799493'
+version: "/lkp/lkp/.src-20141020-171003"
 
---rQ2U398070+RC21q
+--LTeJQqWS0MN7I/qa
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: attachment; filename=reproduce
 
 echo performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 echo performance > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu10/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu11/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu12/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu13/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu14/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu15/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu16/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu17/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu18/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu19/cpufreq/scaling_governor
 echo performance > /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu20/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu21/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu22/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu23/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu24/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu25/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu26/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu27/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu28/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu29/cpufreq/scaling_governor
 echo performance > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu30/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu31/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu32/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu33/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu34/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu35/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu36/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu37/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu38/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu39/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu40/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu41/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu42/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu43/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu44/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu45/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu46/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu47/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu48/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu49/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu5/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu50/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu51/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu52/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu53/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu54/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu55/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu56/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu57/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu58/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu59/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu6/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu60/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu61/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu62/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu63/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu64/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu65/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu66/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu67/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu68/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu69/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu7/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu70/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu71/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu72/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu73/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu74/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu75/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu76/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu77/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu78/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu79/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu8/cpufreq/scaling_governor
-echo performance > /sys/devices/system/cpu/cpu9/cpufreq/scaling_governor
-./runtest.py page_fault1 16 1 10 20 30 40 60 80
+mkfs -t btrfs /dev/sda1
+mount -t btrfs /dev/sda1 /fs/sda1
+cd /fs/sda1
+sysbench --test=fileio --max-requests=0 --num-threads=4 --max-time=600 --file-test-mode=rndrw --file-total-size=68719476736 --file-io-mode=sync --file-num=1024 prepare
+sysbench --test=fileio --max-requests=0 --num-threads=4 --max-time=600 --file-test-mode=rndrw --file-total-size=68719476736 --file-io-mode=sync --file-num=1024 run
 
---rQ2U398070+RC21q
+--LTeJQqWS0MN7I/qa
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
@@ -892,4 +687,4 @@ _______________________________________________
 LKP mailing list
 LKP@linux.intel.com
 
---rQ2U398070+RC21q--
+--LTeJQqWS0MN7I/qa--
