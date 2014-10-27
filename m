@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146AbaJ0P5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:57:25 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50214 "EHLO
+	id S1753443AbaJ0QCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:02:38 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50193 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103AbaJ0P5V (ORCPT
+	with ESMTP id S1753066AbaJ0P5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:57:21 -0400
+	Mon, 27 Oct 2014 11:57:14 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH v3 34/47] acpi: Register power-off handler with kernel power-off handler
-Date: Mon, 27 Oct 2014 08:55:41 -0700
-Message-Id: <1414425354-10359-35-git-send-email-linux@roeck-us.net>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiri Kosina <jkosina@suse.cz>,
+        x86@kernel.org
+Subject: [PATCH v3 31/47] x86: apm: Register with kernel power-off handler
+Date: Mon, 27 Oct 2014 08:55:38 -0700
+Message-Id: <1414425354-10359-32-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
 References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
@@ -24,13 +25,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.544E6B61.011D,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020208.544E6B5A.0101,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 187
+X-CTCH-SenderID-TotalMessages: 175
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -51,72 +52,88 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with high priority to reflect that the driver explicitly
-overrides existing power-off handlers.
+directly. Register with high priority to reflect that the original code
+overwrites existing power-off handlers.
 
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Len Brown <lenb@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Reviewed-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v3:
 - Replace poweroff in all newly introduced variables and in text
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-- Replace acpi: with ACPI: in log message
 v2:
 - Use define to specify poweroff handler priority
-- Use pr_warn instead of pr_err
 
- drivers/acpi/sleep.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apm_32.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index 05a31b5..7875b92 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -16,6 +16,8 @@
- #include <linux/device.h>
- #include <linux/interrupt.h>
- #include <linux/suspend.h>
+diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
+index 5848744..a5c9066 100644
+--- a/arch/x86/kernel/apm_32.c
++++ b/arch/x86/kernel/apm_32.c
+@@ -219,6 +219,7 @@
+ #include <linux/init.h>
+ #include <linux/time.h>
+ #include <linux/sched.h>
 +#include <linux/notifier.h>
-+#include <linux/pm.h>
- #include <linux/reboot.h>
- #include <linux/acpi.h>
- #include <linux/module.h>
-@@ -827,14 +829,22 @@ static void acpi_power_off_prepare(void)
- 	acpi_disable_all_gpes();
- }
+ #include <linux/pm.h>
+ #include <linux/capability.h>
+ #include <linux/device.h>
+@@ -981,7 +982,8 @@ recalc:
+  *	on their first cpu.
+  */
  
--static void acpi_power_off(void)
-+static int acpi_power_off(struct notifier_block *this,
-+			  unsigned long unused1, void *unused2)
+-static void apm_power_off(void)
++static int apm_power_off(struct notifier_block *this, unsigned long unused1,
++			 void *unused2)
  {
- 	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
- 	printk(KERN_DEBUG "%s called\n", __func__);
- 	local_irq_disable();
- 	acpi_enter_sleep_state(ACPI_STATE_S5);
-+
+ 	/* Some bioses don't like being called from CPU != 0 */
+ 	if (apm_info.realmode_power_off) {
+@@ -990,8 +992,14 @@ static void apm_power_off(void)
+ 	} else {
+ 		(void)set_system_power_state(APM_STATE_OFF);
+ 	}
 +	return NOTIFY_DONE;
  }
  
-+static struct notifier_block acpi_power_off_nb = {
-+	.notifier_call = acpi_power_off,
++static struct notifier_block apm_power_off_nb = {
++	.notifier_call = apm_power_off,
 +	.priority = POWER_OFF_PRIORITY_HIGH,
 +};
 +
- int __init acpi_sleep_init(void)
- {
- 	char supported[ACPI_S_STATE_COUNT * 3 + 1];
-@@ -851,7 +861,8 @@ int __init acpi_sleep_init(void)
- 	if (acpi_sleep_state_supported(ACPI_STATE_S5)) {
- 		sleep_states[ACPI_STATE_S5] = 1;
- 		pm_power_off_prepare = acpi_power_off_prepare;
--		pm_power_off = acpi_power_off;
-+		if (register_power_off_handler(&acpi_power_off_nb))
-+			pr_warn("ACPI: Failed to register power-off handler\n");
+ #ifdef CONFIG_APM_DO_ENABLE
+ 
+ /**
+@@ -1847,8 +1855,11 @@ static int apm(void *unused)
  	}
  
- 	supported[0] = 0;
+ 	/* Install our power off handler.. */
+-	if (power_off)
+-		pm_power_off = apm_power_off;
++	if (power_off) {
++		error = register_power_off_handler(&apm_power_off_nb);
++		if (error)
++			pr_err("apm: Failed to register power-off handler\n");
++	}
+ 
+ 	if (num_online_cpus() == 1 || smp) {
+ #if defined(CONFIG_APM_DISPLAY_BLANK) && defined(CONFIG_VT)
+@@ -2408,9 +2419,8 @@ static void __exit apm_exit(void)
+ 			apm_error("disengage power management", error);
+ 	}
+ 	misc_deregister(&apm_device);
++	unregister_power_off_handler(&apm_power_off_nb);
+ 	remove_proc_entry("apm", NULL);
+-	if (power_off)
+-		pm_power_off = NULL;
+ 	if (kapmd_task) {
+ 		kthread_stop(kapmd_task);
+ 		kapmd_task = NULL;
 -- 
 1.9.1
 
