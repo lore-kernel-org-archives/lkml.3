@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165AbaJ0PjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:39:11 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:61557 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaJ0PjJ (ORCPT
+	id S1752222AbaJ0PjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:39:18 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:58227 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaJ0PjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:39:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACRpkdYtiRyJK32M2z5EVxW1wXEfv-YDqJ=JPK3TeThV2=7sHA@mail.gmail.com>
-References: <CACxGe6vCrkHPL6UNy1p8AO4+z5VFRY6w4_2grQEZQwp_3jJ7Yw@mail.gmail.com>
-	<CACRpkdZoo=P7uTO1rNDD_HUPjfAk26C0=mNYPoZmTV0wcO3V-w@mail.gmail.com>
-	<20140926141943.GC23926@titan.lakedaemon.net>
-	<CACRpkdYtiRyJK32M2z5EVxW1wXEfv-YDqJ=JPK3TeThV2=7sHA@mail.gmail.com>
-Date: Mon, 27 Oct 2014 16:39:08 +0100
-Message-ID: <CACRpkdYmJWy1_vs0tWRA7SvkQnvbXXKqf7pHpH5b5tZ6vR+KJg@mail.gmail.com>
-Subject: Re: [git pull] Devicetree changes for v3.15
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 27 Oct 2014 11:39:14 -0400
+From: mathieu.poirier@linaro.org
+To: linux@arm.linux.org.uk
+Cc: catalin.marinas@arm.com, stefano.stabellini@eu.citrix.com,
+        ezequiel.garcia@free-electrons.com, Liviu.Dudau@arm.com,
+        thomas.petazzoni@free-electrons.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        mathieu.poirier@linaro.org
+Subject: [PATCH v3] ARM: supplementing IO accessors with 64 bit capability
+Date: Mon, 27 Oct 2014 09:38:59 -0600
+Message-Id: <1414424339-23834-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 29, 2014 at 10:52 AM, Linus Walleij
-<linus.walleij@linaro.org> wrote:
-> On Fri, Sep 26, 2014 at 4:19 PM, Jason Cooper <jason@lakedaemon.net> wrote:
->> On Fri, Sep 26, 2014 at 02:30:53PM +0200, Linus Walleij wrote:
->
->> Exact patch is:
->>
->>   f4d4ffc03efc kbuild: dtbs_install: new make target
->>
->>> After this patch a while back I have observed the following behaviour
->>> of the kernel build:
->>>
->>> make zImage
->>> make zImage
->>> -> incremental build, just relink
->>>
->>> make zImage
->>> make dtbs
->>> make zImage
->>> -> The whole kernel gets rebuilt
->>>
->>> So now if I happen to recompile my device trees, I suddenly want
->>> the entire zImage to be rebuilt to? It's by definition not changes that
->>> affect the kernel build :-(
->>>
->>> I noticed this because my build scripts calls make dtbs && make zImage,
->>> and started to rebuild absolutely everything all the time.
->>>
->>> Do you think this can be fixed? It's quite simple to reproduce...
->>
->> Does the attached fix your problem?
->
-> Yes!
-> Tested-by: Linus Walleij <linus.walleij@linaro.org>
->
-> Please get this upstream marked for stable.
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-So is there a proper fix for this coming or not?
+Some drivers on ARMv7 need 64 bit read and writes.
 
-I am suffering from this problem :-(
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+---
+Change for v3:
+ - Bumped architecture version from 5 to 6
 
-Yours,
-Linus Walleij
+ arch/arm/include/asm/io.h | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/arch/arm/include/asm/io.h b/arch/arm/include/asm/io.h
+index 1805674..b755776 100644
+--- a/arch/arm/include/asm/io.h
++++ b/arch/arm/include/asm/io.h
+@@ -118,6 +118,24 @@ static inline u32 __raw_readl(const volatile void __iomem *addr)
+ 	return val;
+ }
+ 
++#if __LINUX_ARM_ARCH__ >= 6
++static inline void __raw_writeq(u64 val, volatile void __iomem *addr)
++{
++	asm volatile("strd %1, %0"
++		     : "+Qo" (*(volatile u64 __force *)addr)
++		     : "r" (val));
++}
++
++static inline u64 __raw_readq(const volatile void __iomem *addr)
++{
++	u64 val;
++	asm volatile("ldrd %1, %0"
++		     : "+Qo" (*(volatile u64 __force *)addr),
++		       "=r" (val));
++	return val;
++}
++#endif
++
+ /*
+  * Architecture ioremap implementation.
+  */
+@@ -306,10 +324,17 @@ extern void _memset_io(volatile void __iomem *, int, size_t);
+ 					__raw_readw(c)); __r; })
+ #define readl_relaxed(c) ({ u32 __r = le32_to_cpu((__force __le32) \
+ 					__raw_readl(c)); __r; })
++#if __LINUX_ARM_ARCH__ >= 6
++#define readq_relaxed(c) ({ u64 __r = le64_to_cpu((__force __le64) \
++					__raw_readq(c)); __r; })
++#endif
+ 
+ #define writeb_relaxed(v,c)	__raw_writeb(v,c)
+ #define writew_relaxed(v,c)	__raw_writew((__force u16) cpu_to_le16(v),c)
+ #define writel_relaxed(v,c)	__raw_writel((__force u32) cpu_to_le32(v),c)
++#if __LINUX_ARM_ARCH__ >= 6
++#define writeq_relaxed(v,c)	__raw_writeq((__force u64) cpu_to_le64(v),c)
++#endif
+ 
+ #define readb(c)		({ u8  __v = readb_relaxed(c); __iormb(); __v; })
+ #define readw(c)		({ u16 __v = readw_relaxed(c); __iormb(); __v; })
+-- 
+1.9.1
+
