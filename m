@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805AbaJ0TEk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:04:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52887 "EHLO
+	id S1753824AbaJ0TEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:04:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52892 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbaJ0TEh (ORCPT
+	with ESMTP id S1751773AbaJ0TEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:04:37 -0400
+	Mon, 27 Oct 2014 15:04:43 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Coddington <bcodding@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 047/105] lockd: Try to reconnect if statd has moved
-Date: Mon, 27 Oct 2014 11:56:22 -0700
-Message-Id: <1414436240-13879-48-git-send-email-kamal@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 086/105] fix misuses of f_count() in ppp and netlink
+Date: Mon, 27 Oct 2014 11:57:01 -0700
+Message-Id: <1414436240-13879-87-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,38 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Coddington <bcodding@redhat.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 173b3afceebe76fa2205b2c8808682d5b541fe3c upstream.
+commit 24dff96a37a2ca319e75a74d3929b2de22447ca6 upstream.
 
-If rpc.statd is restarted, upcalls to monitor hosts can fail with
-ECONNREFUSED.  In that case force a lookup of statd's new port and retry the
-upcall.
+we used to check for "nobody else could start doing anything with
+that opened file" by checking that refcount was 2 or less - one
+for descriptor table and one we'd acquired in fget() on the way to
+wherever we are.  That was race-prone (somebody else might have
+had a reference to descriptor table and do fget() just as we'd
+been checking) and it had become flat-out incorrect back when
+we switched to fget_light() on those codepaths - unlike fget(),
+it doesn't grab an extra reference unless the descriptor table
+is shared.  The same change allowed a race-free check, though -
+we are safe exactly when refcount is less than 2.
 
-Signed-off-by: Benjamin Coddington <bcodding@redhat.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+It was a long time ago; pre-2.6.12 for ioctl() (the codepath leading
+to ppp one) and 2.6.17 for sendmsg() (netlink one).  OTOH,
+netlink hadn't grown that check until 3.9 and ppp used to live
+in drivers/net, not drivers/net/ppp until 3.1.  The bug existed
+well before that, though, and the same fix used to apply in old
+location of file.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/lockd/mon.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/ppp/ppp_generic.c | 2 +-
+ net/netlink/af_netlink.c      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/lockd/mon.c b/fs/lockd/mon.c
-index 1812f02..6ae664b 100644
---- a/fs/lockd/mon.c
-+++ b/fs/lockd/mon.c
-@@ -159,6 +159,12 @@ static int nsm_mon_unmon(struct nsm_handle *nsm, u32 proc, struct nsm_res *res,
+diff --git a/drivers/net/ppp/ppp_generic.c b/drivers/net/ppp/ppp_generic.c
+index 72ff14b..5a1897d 100644
+--- a/drivers/net/ppp/ppp_generic.c
++++ b/drivers/net/ppp/ppp_generic.c
+@@ -601,7 +601,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 			if (file == ppp->owner)
+ 				ppp_shutdown_interface(ppp);
+ 		}
+-		if (atomic_long_read(&file->f_count) <= 2) {
++		if (atomic_long_read(&file->f_count) < 2) {
+ 			ppp_release(NULL, file);
+ 			err = 0;
+ 		} else
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index ab68a92e..dbba678 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -699,7 +699,7 @@ static int netlink_mmap_sendmsg(struct sock *sk, struct msghdr *msg,
+ 	 * after validation, the socket and the ring may only be used by a
+ 	 * single process, otherwise we fall back to copying.
+ 	 */
+-	if (atomic_long_read(&sk->sk_socket->file->f_count) > 2 ||
++	if (atomic_long_read(&sk->sk_socket->file->f_count) > 1 ||
+ 	    atomic_read(&nlk->mapped) > 1)
+ 		excl = false;
  
- 	msg.rpc_proc = &clnt->cl_procinfo[proc];
- 	status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
-+	if (status == -ECONNREFUSED) {
-+		dprintk("lockd:	NSM upcall RPC failed, status=%d, forcing rebind\n",
-+				status);
-+		rpc_force_rebind(clnt);
-+		status = rpc_call_sync(clnt, &msg, RPC_TASK_SOFTCONN);
-+	}
- 	if (status < 0)
- 		dprintk("lockd: NSM upcall RPC failed, status=%d\n",
- 				status);
 -- 
 1.9.1
 
