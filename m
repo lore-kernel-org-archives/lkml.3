@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638AbaJ0OqU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:46:20 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:55508 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920AbaJ0OqS (ORCPT
+	id S1753217AbaJ0OrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:47:06 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:56323 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094AbaJ0OrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:46:18 -0400
+	Mon, 27 Oct 2014 10:47:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <1413534398-22645-2-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1413534398-22645-3-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
-	<1413534398-22645-2-git-send-email-alexandre.belloni@free-electrons.com>
-Date: Mon, 27 Oct 2014 15:46:17 +0100
-Message-ID: <CAPDyKFobcRL7_+ZiEkWFGXxq5Hznf5fZcpqUP+Z6VxW67mWBEw@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] mmc: atmel-mci: move mache header to platform_data
+	<1413534398-22645-3-git-send-email-alexandre.belloni@free-electrons.com>
+Date: Mon, 27 Oct 2014 15:47:02 +0100
+Message-ID: <CAPDyKFo4-rKnQ3kMF46qmZ0raXZOM_CcRh+fzcKAGFweO7=N2Q@mail.gmail.com>
+Subject: Re: [PATCHv2 2/3] ARM: at91: remove mach/atmel-mci.h
 From: Ulf Hansson <ulf.hansson@linaro.org>
 To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <chris@printf.net>,
@@ -32,8 +32,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 17 October 2014 10:26, Alexandre Belloni
 <alexandre.belloni@free-electrons.com> wrote:
-> Move the mach header that can come either from arm/mach-at91 or avr32 to
-> platform_data to be able to switch the AT91 platforms to multiplatform.
+> Use the generic platform_data header file instead of mach/atmel-mci.h
 >
 > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
@@ -42,62 +41,60 @@ Thanks! Applied for next!
 Kind regards
 Uffe
 
+
 > ---
->  drivers/mmc/host/atmel-mci.c                |  2 +-
->  include/linux/platform_data/mmc-atmel-mci.h | 22 ++++++++++++++++++++++
->  2 files changed, 23 insertions(+), 1 deletion(-)
->  create mode 100644 include/linux/platform_data/mmc-atmel-mci.h
+>  arch/arm/mach-at91/at91sam9g45_devices.c    |  2 +-
+>  arch/arm/mach-at91/include/mach/atmel-mci.h | 17 -----------------
+>  2 files changed, 1 insertion(+), 18 deletions(-)
+>  delete mode 100644 arch/arm/mach-at91/include/mach/atmel-mci.h
 >
-> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-> index bb585d940901..b1231835b031 100644
-> --- a/drivers/mmc/host/atmel-mci.c
-> +++ b/drivers/mmc/host/atmel-mci.c
-> @@ -29,11 +29,11 @@
->  #include <linux/stat.h>
->  #include <linux/types.h>
->  #include <linux/platform_data/atmel.h>
+> diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+> index 21ab782cc8e9..06ecbafd01ee 100644
+> --- a/arch/arm/mach-at91/at91sam9g45_devices.c
+> +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/i2c-gpio.h>
+>  #include <linux/atmel-mci.h>
+>  #include <linux/platform_data/crypto-atmel.h>
 > +#include <linux/platform_data/mmc-atmel-mci.h>
 >
->  #include <linux/mmc/host.h>
->  #include <linux/mmc/sdio.h>
+>  #include <linux/platform_data/at91_adc.h>
 >
+> @@ -30,7 +31,6 @@
+>  #include <mach/at91_matrix.h>
+>  #include <mach/at91sam9_smc.h>
+>  #include <linux/platform_data/dma-atmel.h>
 > -#include <mach/atmel-mci.h>
->  #include <linux/atmel-mci.h>
->  #include <linux/atmel_pdc.h>
+>  #include <mach/hardware.h>
 >
-> diff --git a/include/linux/platform_data/mmc-atmel-mci.h b/include/linux/platform_data/mmc-atmel-mci.h
-> new file mode 100644
-> index 000000000000..ebe7ae4f72e4
-> --- /dev/null
-> +++ b/include/linux/platform_data/mmc-atmel-mci.h
-> @@ -0,0 +1,22 @@
-> +#ifndef __MMC_ATMEL_MCI_H
-> +#define __MMC_ATMEL_MCI_H
-> +
-> +#include <linux/platform_data/dma-atmel.h>
-> +#include <linux/dw_dmac.h>
-> +
-> +/**
-> + * struct mci_dma_data - DMA data for MCI interface
-> + */
-> +struct mci_dma_data {
-> +#ifdef CONFIG_ARM
-> +       struct at_dma_slave     sdata;
-> +#else
-> +       struct dw_dma_slave     sdata;
-> +#endif
-> +};
-> +
-> +/* accessor macros */
-> +#define        slave_data_ptr(s)       (&(s)->sdata)
-> +#define find_slave_dev(s)      ((s)->sdata.dma_dev)
-> +
-> +#endif /* __MMC_ATMEL_MCI_H */
+>  #include <media/atmel-isi.h>
+> diff --git a/arch/arm/mach-at91/include/mach/atmel-mci.h b/arch/arm/mach-at91/include/mach/atmel-mci.h
+> deleted file mode 100644
+> index 3069e4135573..000000000000
+> --- a/arch/arm/mach-at91/include/mach/atmel-mci.h
+> +++ /dev/null
+> @@ -1,17 +0,0 @@
+> -#ifndef __MACH_ATMEL_MCI_H
+> -#define __MACH_ATMEL_MCI_H
+> -
+> -#include <linux/platform_data/dma-atmel.h>
+> -
+> -/**
+> - * struct mci_dma_data - DMA data for MCI interface
+> - */
+> -struct mci_dma_data {
+> -       struct at_dma_slave     sdata;
+> -};
+> -
+> -/* accessor macros */
+> -#define        slave_data_ptr(s)       (&(s)->sdata)
+> -#define find_slave_dev(s)      ((s)->sdata.dma_dev)
+> -
+> -#endif /* __MACH_ATMEL_MCI_H */
 > --
 > 1.9.1
 >
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
