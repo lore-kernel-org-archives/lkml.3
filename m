@@ -1,119 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175AbaJ0PnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:43:16 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:47657 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725AbaJ0PnO (ORCPT
+	id S1752285AbaJ0Po2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:44:28 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:13412 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaJ0PoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:43:14 -0400
-Date: Mon, 27 Oct 2014 08:42:51 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: Hauke Mehrtens <hauke@hauke-m.de>, linux-wireless@vger.kernel.org,
-        zajec5@gmail.com, arend@broadcom.com, arnd@arndb.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] bcma: fix build when CONFIG_OF_ADDRESS is not set
-Message-ID: <20141027154251.GB7677@roeck-us.net>
-References: <5436D3CF.2030506@hauke-m.de>
- <1412890781-24160-1-git-send-email-hauke@hauke-m.de>
- <20141025203653.GA10716@roeck-us.net>
- <20141027151509.GA19976@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027151509.GA19976@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.544E6812.00F7,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 12
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 27 Oct 2014 11:44:25 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-4a-544e68569bc7
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Sangbeom Kim <sbkim73@samsung.com>, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH 4/4] regulator: s2mpa01: Make regulator_desc array const
+Date: Mon, 27 Oct 2014 16:44:14 +0100
+Message-id: <1414424654-27277-4-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1414424654-27277-1-git-send-email-k.kozlowski@samsung.com>
+References: <1414424654-27277-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJMWRmVeSWpSXmKPExsVy+t/xa7phGX4hBqf3S1hMffiEzeL1C0OL
+	b1c6mCwu75rDZnFxxRcmB1aPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
+	uzbMZiz4yVqxd+MJ9gbGdtYuRg4OCQETiWl7FLsYOYFMMYkL99azdTFycQgJLGWUeDztFZTT
+	xySxZ/d1VpAqNgFjic3Ll4AlRAR6GCXeXzrJBpJgFjCU+PnuDzuILSzgIfGm7xIjyAYWAVWJ
+	x/fqQUxeAXeJG5+qIZbJSZw8NhlsJCdQ9cIFuxlBbCGgksfbGtkmMPIuYGRYxSiaWppcUJyU
+	nmukV5yYW1yal66XnJ+7iRESMl93MC49ZnWIUYCDUYmHd0Kxb4gQa2JZcWXuIUYJDmYlEd4D
+	aX4hQrwpiZVVqUX58UWlOanFhxiZODilGhi1In72uupw3nOZsGmx5JI2+9/Tn+2d8+3Q1mhB
+	O3emdRVv9rxbfXPKcTWJ9FkF+a7eJ5/mn2b/WGxlo3Z+W+cEAxvPT9PvzC9qr1yXmXPhwe5s
+	52vfYk/61kjU/RPlvnBR4raGy4MSqUlKi2Y5KM0wvlzx9kD+rx09/vMND80M4Xoi49p4rz9C
+	iaU4I9FQi7moOBEAKU/1X/cBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 11:15:09AM -0400, John W. Linville wrote:
-> Yes, I have it queued.  Things have been delayed due to my recent
-> travels, etc.
-> 
-Thanks!
+The regulator_register() expects array of 'regulator_desc' to be const.
 
-Guenter
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/regulator/s2mpa01.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> On Sat, Oct 25, 2014 at 01:36:53PM -0700, Guenter Roeck wrote:
-> > On Thu, Oct 09, 2014 at 11:39:41PM +0200, Hauke Mehrtens wrote:
-> > > Commit 2101e533f41a ("bcma: register bcma as device tree driver")
-> > > introduces a hard dependency on OF_ADDRESS into the bcma driver.
-> > > OF_ADDRESS is specifically disabled for the sparc architecture.
-> > > This results in the following error when building sparc64:allmodconfig.
-> > > 
-> > > drivers/bcma/main.c: In function 'bcma_of_find_child_device':
-> > > drivers/bcma/main.c:150:3: error: implicit declaration of function 'of_translate_address'
-> > > 
-> > > Fixes: 2101e533f41a ("bcma: register bcma as device tree driver")
-> > > Reported-by: Guenter Roeck <linux@roeck-us.net>
-> > > Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
-> > 
-> > The upstream kernel still does not include this patch, and the sparc64 build
-> > is still broken.
-> > 
-> > Is this patch on its way upstream ?
-> > 
-> > Guenter
-> > 
-> > > ---
-> > >  drivers/bcma/main.c | 2 +-
-> > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/bcma/main.c b/drivers/bcma/main.c
-> > > index d1656c2..1000955 100644
-> > > --- a/drivers/bcma/main.c
-> > > +++ b/drivers/bcma/main.c
-> > > @@ -132,7 +132,7 @@ static bool bcma_is_core_needed_early(u16 core_id)
-> > >  	return false;
-> > >  }
-> > >  
-> > > -#ifdef CONFIG_OF
-> > > +#if defined(CONFIG_OF) && defined(CONFIG_OF_ADDRESS)
-> > >  static struct device_node *bcma_of_find_child_device(struct platform_device *parent,
-> > >  						     struct bcma_device *core)
-> > >  {
-> > > -- 
-> > > 1.9.1
-> > > 
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > > 
-> > > 
-> > 
-> 
-> -- 
-> John W. Linville		Someday the world will need a hero, and you
-> linville@tuxdriver.com			might be all we have.  Be ready.
+diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
+index 4acefa6b462e..2263071414e2 100644
+--- a/drivers/regulator/s2mpa01.c
++++ b/drivers/regulator/s2mpa01.c
+@@ -298,7 +298,7 @@ static struct regulator_ops s2mpa01_buck_ops = {
+ 	.enable_mask	= S2MPA01_ENABLE_MASK			\
+ }
+ 
+-static struct regulator_desc regulators[] = {
++static const struct regulator_desc regulators[] = {
+ 	regulator_desc_ldo(1, STEP_25_MV),
+ 	regulator_desc_ldo(2, STEP_50_MV),
+ 	regulator_desc_ldo(3, STEP_50_MV),
+-- 
+1.9.1
+
