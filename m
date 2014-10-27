@@ -1,50 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaJ0Q0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:26:55 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37649 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208AbaJ0QXv (ORCPT
+	id S1752296AbaJ0Q3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:29:10 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:39478 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaJ0Q3I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 12:23:51 -0400
-From: Romain Perier <romain.perier@gmail.com>
-To: heiko@sntech.de
-Cc: devicetree@vger.kernel.org, broonie@kernel.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org, robh@kernel.org,
-        mark.rutland@arm.com, johan@kernel.org, linux-pm@vger.kernel.org,
-        linux@roeck-us.net, lee.jones@linaro.org, balbi@ti.com,
-        robh+dt@kernel.org, pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, gnurou@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Subject: [PATCH v1 03/10] regulator: act8865: Use of_is_system_power_controller helper function
-Date: Mon, 27 Oct 2014 16:26:48 +0000
-Message-Id: <1414427215-14380-3-git-send-email-romain.perier@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
-References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
+	Mon, 27 Oct 2014 12:29:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141027022637.GC5540@kroah.com>
+References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
+ <20141020044340.GA9589@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com>
+ <20141020064826.GA4064@kroah.com> <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com>
+ <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com>
+ <9034CBD80F070943B59700D7F8149ED9024ED2A134@SC-VEXCH4.marvell.com>
+ <20141027015836.GA27978@kroah.com> <9034CBD80F070943B59700D7F8149ED9024ED2A13D@SC-VEXCH4.marvell.com>
+ <20141027022637.GC5540@kroah.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Mon, 27 Oct 2014 12:28:45 -0400
+X-Google-Sender-Auth: AF0U1zDnb7Aj6U_HqswaPkntXsI
+Message-ID: <CALZtONAO1sdMiWS=GMty6O8NYFvGFcLFSSXRTxB=vN0RTWffGQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Neil Zhang <zhangwm@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        nfont@linux.vnet.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Romain Perier <romain.perier@gmail.com>
----
- drivers/regulator/act8865-regulator.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Sun, Oct 26, 2014 at 10:26 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sun, Oct 26, 2014 at 07:17:14PM -0700, Neil Zhang wrote:
+>>
+>>
+>> > -----Original Message-----
+>> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+>> > Sent: 2014年10月27日 9:59
+>> > To: Neil Zhang
+>> > Cc: Dan Streetman; linux-kernel@vger.kernel.org
+>> > Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+>> >
+>> > On Sun, Oct 26, 2014 at 06:43:11PM -0700, Neil Zhang wrote:
+>> > > Greg,
+>> > >
+>> > >
+>> > > > -----Original Message-----
+>> > > > From: ddstreet@gmail.com [mailto:ddstreet@gmail.com] On Behalf Of
+>> > > > Dan Streetman
+>> > > > Sent: 2014年10月21日 1:03
+>> > > > To: Neil Zhang
+>> > > > Cc: Greg KH; linux-kernel@vger.kernel.org
+>> > > > Subject: Re: [PATCH] drivers: base: update cpu offline info when do
+>> > > > hotplug
+>> > > >
+>> > > > On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
+>> > > > > Greg,
+>> > > > >
+>> > > > >
+>> > > > > -----Original Message-----
+>> > > > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+>> > > > > Sent: 2014年10月20日 14:48
+>> > > > > To: Neil Zhang
+>> > > > > Cc: linux-kernel@vger.kernel.org
+>> > > > > Subject: Re: [PATCH] drivers: base: update cpu offline info when
+>> > > > > do hotplug
+>> > > > >
+>> > > > > On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
+>> > > > >>> How much noise is this going to cause on a big/little system
+>> > > > >>> that constantly hot unplug/plugs processors all of the time?
+>> > > > >>
+>> > > > >> Can you explain more what kind of noise will be introduced on a
+>> > > > >> big/little
+>> > > > system?
+>> > > > >
+>> > > > > Have you tested this on such a machine?
+>> > > > >
+>> > > > > I didn't have such kind of machine on hand.
+>> > > > > Can anyone has such machine to verify it?
+>> > > > > Thanks!
+>> > > >
+>> > > > I tested this on a ppc PowerVM system, using dlpar operations to
+>> > > > remove/add cpus.
+>> > > >
+>> > > > Without this patch the cpu online nodes get out of sync with the
+>> > > > main online node (and the actual state of the cpus), because they
+>> > > > aren't updated as the cpus are brought up/down:
+>> > > >
+>> > > > [root@br10p02 cpu]$ pwd
+>> > > > /sys/devices/system/cpu
+>> > > > [root@br10p02 cpu]$ cat online
+>> > > > 0-39
+>> > > > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
+>> > > > -eq 1 && echo -n "$n " ; done ; echo ""
+>> > > > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+>> > > > 26
+>> > > > 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+>> > > >
+>> > > >
+>> > > > While with the patch, the cpu online nodes are kept up to date as
+>> > > > the cpus are brought up/down:
+>> > > >
+>> > > > [root@br10p02 cpu]$ pwd
+>> > > > /sys/devices/system/cpu
+>> > > > [root@br10p02 cpu]$ cat online
+>> > > > 0-39
+>> > > > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
+>> > > > -eq 1 && echo -n "$n " ; done ; echo ""
+>> > > > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+>> > > > 26
+>> > > > 27 28 29 30 31 32 33 34 35 36 37 38 39
+>> > > >
+>> > > >
+>> > > > Feel free to add
+>> > > >
+>> > > > Tested-by: Dan Streetman <ddstreet@ieee.org>
+>> > > >
+>> > >
+>> > > It's a real bug in the kernel.
+>> >
+>> > As this has been this way for many years, I tend to think it's not all that
+>> > important...
+>>
+>> Actually this bug was introduced by the following patch.
+>>
+>> commit 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c
+>> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> Date:   Fri May 3 00:25:49 2013 +0200
+>>
+>>     Driver core: Use generic offline/online for CPU offline/online
+>>
+>> So seems not that long :)
+>
+> Ok, over a year.
+>
+> Any reason why this information wasn't in this patch?  Also, why not cc:
+> the authors of that patch as well?  Surely they would want to know about
+> this, right?
 
-diff --git a/drivers/regulator/act8865-regulator.c b/drivers/regulator/act8865-regulator.c
-index 76301ed..435aba1 100644
---- a/drivers/regulator/act8865-regulator.c
-+++ b/drivers/regulator/act8865-regulator.c
-@@ -365,7 +365,7 @@ static int act8865_pmic_probe(struct i2c_client *client,
- 		return ret;
- 	}
- 
--	if (of_system_has_poweroff_source(dev->of_node)) {
-+	if (of_is_system_power_controller(dev->of_node)) {
- 		if (!pm_power_off) {
- 			act8865_i2c_client = client;
- 			act8865->off_reg = off_reg;
--- 
-1.9.1
+To add a bit more info to this, while the PPC (on PowerVM) method for
+cpu hotplug, in arch/powerpc/platform/pseries/dlpar.c
+dlpar_offline_cpu(), does require this patch because it only takes a
+cpu offline during hot remove, the x86/acpi code appears to be
+different as it fully unregisters a cpu during hot remove, in
+drivers/acpi/acpi_processor.c acpi_processor_remove() - so I believe
+the entire cpuN directory would be removed.  I don't have a
+hw-hotpluggable x86 system though, and it doesn't look like qemu
+really supports cpu hotremove yet, so I can't test that.  I don't know
+how other archs handle cpu hotplug.
 
+Also, the ppc pseries dlpar code may be changed in the future to
+unregister the cpu instead of only setting it offline; I've cc'ed
+Nathan who probably would be doing that.
+
+But regardless, after commit 0902a90, when a cpu is being taken up or
+down by anything other than generic offline/online code, the cpu's
+->offline state does need to be updated.  If not by a hotplug listener
+like this, then possibly by kernel/cpu.c set_cpu_online()...
+
+
+
+>
+> greg k-h
