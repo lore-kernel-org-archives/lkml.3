@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaJ0P4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:56:33 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50003 "EHLO
+	id S1752813AbaJ0P4s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:56:48 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50072 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaJ0P4a (ORCPT
+	with ESMTP id S1752766AbaJ0P4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:56:30 -0400
+	Mon, 27 Oct 2014 11:56:45 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH v3 11/47] mfd: retu: Register with kernel power-off handler
-Date: Mon, 27 Oct 2014 08:55:18 -0700
-Message-Id: <1414425354-10359-12-git-send-email-linux@roeck-us.net>
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v3 18/47] mfd: twl4030-power: Register with kernel power-off handler
+Date: Mon, 27 Oct 2014 08:55:25 -0700
+Message-Id: <1414425354-10359-19-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
 References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
@@ -23,13 +23,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.544E6B2D.0297,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020202.544E6B3D.0229,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 75
+X-CTCH-SenderID-TotalMessages: 116
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -53,8 +53,11 @@ Register with kernel power-off handler instead of setting pm_power_off
 directly. Register with low priority to reflect that the original code
 only sets pm_power_off if it was not already set.
 
-Cc: Lee Jones <lee.jones@linaro.org>
+Make twl4030_power_off static as it is only called from the twl4030-power
+driver. Drop remove function as it is no longer needed.
+
 Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v3:
@@ -63,101 +66,112 @@ v3:
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
 - Use define to specify poweroff handler priority
-- Use devm_register_power_off_handler
 - Use dev_warn instead of dev_err
+- Use devm_register_power_off_handler
+- Drop remove function as it is no longer needed.
 
- drivers/mfd/retu-mfd.c | 33 +++++++++++++++++++--------------
- 1 file changed, 19 insertions(+), 14 deletions(-)
+ drivers/mfd/twl4030-power.c | 29 +++++++++++++++++++----------
+ include/linux/i2c/twl.h     |  1 -
+ 2 files changed, 19 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mfd/retu-mfd.c b/drivers/mfd/retu-mfd.c
-index 663f8a3..7c657e6 100644
---- a/drivers/mfd/retu-mfd.c
-+++ b/drivers/mfd/retu-mfd.c
-@@ -22,6 +22,8 @@
- #include <linux/slab.h>
- #include <linux/mutex.h>
+diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+index cf92a6d..e36eea9 100644
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -25,9 +25,10 @@
+  */
+ 
  #include <linux/module.h>
+-#include <linux/pm.h>
 +#include <linux/notifier.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/platform_device.h>
 +#include <linux/pm.h>
- #include <linux/regmap.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/retu.h>
-@@ -43,6 +45,7 @@ struct retu_dev {
- 	struct device			*dev;
- 	struct mutex			mutex;
- 	struct regmap_irq_chip_data	*irq_data;
-+	struct notifier_block		power_off_nb;
- };
+ #include <linux/of.h>
+ #include <linux/of_device.h>
  
- static struct resource retu_pwrbutton_res[] = {
-@@ -81,9 +84,6 @@ static struct regmap_irq_chip retu_irq_chip = {
- 	.ack_base	= RETU_REG_IDR,
- };
- 
--/* Retu device registered for the power off. */
--static struct retu_dev *retu_pm_power_off;
--
- static struct resource tahvo_usb_res[] = {
- 	{
- 		.name	= "tahvo-usb",
-@@ -165,12 +165,14 @@ int retu_write(struct retu_dev *rdev, u8 reg, u16 data)
- }
- EXPORT_SYMBOL_GPL(retu_write);
- 
--static void retu_power_off(void)
-+static int retu_power_off(struct notifier_block *this, unsigned long unused1,
-+			  void *unused2)
+@@ -611,7 +612,8 @@ twl4030_power_configure_resources(const struct twl4030_power_data *pdata)
+  * After a successful execution, TWL shuts down the power to the SoC
+  * and all peripherals connected to it.
+  */
+-void twl4030_power_off(void)
++static int twl4030_power_off(struct notifier_block *this, unsigned long unused1,
++			     void *unused2)
  {
--	struct retu_dev *rdev = retu_pm_power_off;
-+	struct retu_dev *rdev = container_of(this, struct retu_dev,
-+					     power_off_nb);
- 	int reg;
+ 	int err;
  
--	mutex_lock(&retu_pm_power_off->mutex);
-+	mutex_lock(&rdev->mutex);
- 
- 	/* Ignore power button state */
- 	regmap_read(rdev->regmap, RETU_REG_CC1, &reg);
-@@ -183,7 +185,9 @@ static void retu_power_off(void)
- 	for (;;)
- 		cpu_relax();
- 
--	mutex_unlock(&retu_pm_power_off->mutex);
-+	mutex_unlock(&rdev->mutex);
+@@ -619,8 +621,15 @@ void twl4030_power_off(void)
+ 			       TWL4030_PM_MASTER_P1_SW_EVENTS);
+ 	if (err)
+ 		pr_err("TWL4030 Unable to power off\n");
 +
 +	return NOTIFY_DONE;
  }
  
- static int retu_regmap_read(void *context, const void *reg, size_t reg_size,
-@@ -279,9 +283,14 @@ static int retu_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
- 		return ret;
++static struct notifier_block twl4030_power_off_nb = {
++	.notifier_call = twl4030_power_off,
++	.priority = POWER_OFF_PRIORITY_LOW,
++};
++
+ static bool twl4030_power_use_poweroff(const struct twl4030_power_data *pdata,
+ 					struct device_node *node)
+ {
+@@ -839,7 +848,9 @@ static int twl4030_power_probe(struct platform_device *pdev)
  	}
  
--	if (i2c->addr == 1 && !pm_power_off) {
--		retu_pm_power_off = rdev;
--		pm_power_off	  = retu_power_off;
-+	if (i2c->addr == 1) {
-+		rdev->power_off_nb.notifier_call = retu_power_off;
-+		rdev->power_off_nb.priority = POWER_OFF_PRIORITY_LOW;
-+		ret = devm_register_power_off_handler(rdev->dev,
-+						      &rdev->power_off_nb);
+ 	/* Board has to be wired properly to use this feature */
+-	if (twl4030_power_use_poweroff(pdata, node) && !pm_power_off) {
++	if (twl4030_power_use_poweroff(pdata, node)) {
++		int ret;
++
+ 		/* Default for SEQ_OFFSYNC is set, lets ensure this */
+ 		err = twl_i2c_read_u8(TWL_MODULE_PM_MASTER, &val,
+ 				      TWL4030_PM_MASTER_CFG_P123_TRANSITION);
+@@ -856,7 +867,11 @@ static int twl4030_power_probe(struct platform_device *pdev)
+ 			}
+ 		}
+ 
+-		pm_power_off = twl4030_power_off;
++		ret = devm_register_power_off_handler(&pdev->dev,
++						      &twl4030_power_off_nb);
 +		if (ret)
-+			dev_warn(rdev->dev,
++			dev_warn(&pdev->dev,
 +				 "Failed to register power-off handler\n");
  	}
  
- 	return 0;
-@@ -291,10 +300,6 @@ static int retu_remove(struct i2c_client *i2c)
- {
- 	struct retu_dev *rdev = i2c_get_clientdata(i2c);
+ relock:
+@@ -870,11 +885,6 @@ relock:
+ 	return err;
+ }
  
--	if (retu_pm_power_off == rdev) {
--		pm_power_off	  = NULL;
--		retu_pm_power_off = NULL;
--	}
- 	mfd_remove_devices(rdev->dev);
- 	regmap_del_irq_chip(i2c->irq, rdev->irq_data);
+-static int twl4030_power_remove(struct platform_device *pdev)
+-{
+-	return 0;
+-}
+-
+ static struct platform_driver twl4030_power_driver = {
+ 	.driver = {
+ 		.name	= "twl4030_power",
+@@ -882,7 +892,6 @@ static struct platform_driver twl4030_power_driver = {
+ 		.of_match_table = of_match_ptr(twl4030_power_of_match),
+ 	},
+ 	.probe		= twl4030_power_probe,
+-	.remove		= twl4030_power_remove,
+ };
  
+ module_platform_driver(twl4030_power_driver);
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 8cfb50f..f8544f1 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -680,7 +680,6 @@ struct twl4030_power_data {
+ };
+ 
+ extern int twl4030_remove_script(u8 flags);
+-extern void twl4030_power_off(void);
+ 
+ struct twl4030_codec_data {
+ 	unsigned int digimic_delay; /* in ms */
 -- 
 1.9.1
 
