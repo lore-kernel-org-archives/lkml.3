@@ -1,77 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892AbaJ0Rnq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:43:46 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52885 "EHLO mail.kernel.org"
+	id S1752190AbaJ0RoV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:44:21 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:51399 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751026AbaJ0Rnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:43:45 -0400
-Date: Mon, 27 Oct 2014 18:43:38 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] power: bq2415x_charger: Properly handle ENODEV
- from power_supply_get_by_phandle
-Message-ID: <20141027174338.GA10897@earth.universe>
-References: <1413383110-20310-1-git-send-email-k.kozlowski@samsung.com>
+	id S1751632AbaJ0RoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:44:19 -0400
+Date: Mon, 27 Oct 2014 10:40:25 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric B Munson <emunson@akamai.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Commit 35ce7f29a breaks hibernation for XPS 13
+Message-ID: <20141027174025.GA27568@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141024160815.GA2968@akamai.com>
+ <20141024161634.GR4977@linux.vnet.ibm.com>
+ <20141024163612.GA2256@akamai.com>
+ <20141024171818.GU4977@linux.vnet.ibm.com>
+ <20141024184028.GA2220@akamai.com>
+ <20141024203124.GZ4977@linux.vnet.ibm.com>
+ <20141027134757.GA2936@akamai.com>
+ <20141027151021.GC5718@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413383110-20310-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141027151021.GC5718@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102717-0029-0000-0000-000000EAA3E4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 27, 2014 at 08:10:21AM -0700, Paul E. McKenney wrote:
+> On Mon, Oct 27, 2014 at 09:47:57AM -0400, Eric B Munson wrote:
+> > On Fri, 24 Oct 2014, Paul E. McKenney wrote:
 
---UlVJffcvxoiEqYs2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[ . . . ]
 
-Hi,
+> > > > Still didn't help.  If it helps, when I attempt to reboot after trying
+> > > > to hibernate I see a kworker thread hung and get the stack trace below
+> > > > from that thread.  I assume this is the same thread that is holding up
+> > > > the hibernate.
+> > > 
+> > > Yep, looks like something that some other people are running into as well.
+> > > 
+> > > If you turn off CONFIG_RCU_NOCB_CPU, do you still get the failure?
+> > 
+> > Disabling CONFIG_RCU_NOCB_CPU fixes the problem.  I am able to hibernate
+> > and resume successfully.
+> 
+> Very good!  Then the fix I am working on might actually be a fix.  ;-)
 
-On Wed, Oct 15, 2014 at 04:25:09PM +0200, Krzysztof Kozlowski wrote:
-> The power_supply_get_by_phandle() on error returns ENODEV or NULL.
-> The driver later expects obtained pointer to power supply to be
-> valid or NULL. If it is not NULL then it dereferences it in
-> bq2415x_notifier_call() which would lead to dereferencing ENODEV-value
-> pointer.
->=20
-> Properly handle the power_supply_get_by_phandle() error case by
-> replacing error value with NULL. This indicates that usb charger
-> detection won't be used.
->=20
-> Fix also memory leak of 'name' if power_supply_get_by_phandle() fails
-> with NULL and probe should defer.
+And here is a patch that passes preliminary testing at my end.  Does it
+help at your end?
 
-Applied to next.
+							Thanx, Paul
 
--- Sebastian
+------------------------------------------------------------------------
 
---UlVJffcvxoiEqYs2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+rcu: Make rcu_barrier() understand about missing rcuo kthreads
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Commit 35ce7f29a44a (rcu: Create rcuo kthreads only for onlined CPUs)
+avoids creating rcuo kthreads for CPUs that never come online.  This
+fixes a bug in many instances of firmware: Instead of lying about their
+age, these systems instead lie about the number of CPUs that they have.
+Before commit 35ce7f29a44a, this could result in huge numbers of useless
+rcuo kthreads being created.
 
-iQIcBAEBCgAGBQJUToRKAAoJENju1/PIO/qaGRQQAKUdqO8qigV7WeaJy3rBvwfs
-2wTZdoMCFlteBYybwvUdPzMiyzmB1ZFCgADgfCujnvV1JwBqUawPY1F+FxpWte8Y
-JdLEGkt6LS36iklNIT8NTOkiKJYeFDfia9J8fgx6eT1cS9AdH61cy0OpSX+EstD5
-sKh+MZsZJFT9glc0nIFY6/VJYhzyQUKTAOnWkUVF/Q/r7uYLrUAvQXfoadNvvovP
-QHRL73uWsPvVRgTF7yETMjE4tudHa9vstHFoenfxQttw3ypMheJ5GiDVBkiLesNM
-Wfh/m8VEcd/TQXz4mYXAwpFKyQlN3jsMmkryTp8VPqPF/Glb+K9C/thBvWxHtWo/
-xsuDHpYH8rIS4jB+kfjzLxJKi1ZzZD/wM/0wAVcRqI8SSKkz6/Xtj71Xoh+2vyN6
-AH1D2FaR5fL2DGy7b5d2fI76ODhiOJ49/KH1PVh+AkYjxevUPDAF6N2FHxbCduQM
-U/5FqY6s9pqMWOezYwvx1ieQVRW0YdpHWNMQgFycRUEOprytC+FiuNnkSlGz0qqm
-bAJvJ4Mk6RTUY85ETIjbEtsVzI9ODmfhKiM2Fl2G3HzTd5ZtpygLizpNSv9gaRAr
-mdnSwCPBodOGTPgJvUCKDhnqYor/gJBZragCRtbkYeDATB/IhUs+eGfHWd91p2M5
-K+3ZsjsMjjKV6xE1MXRh
-=5TBn
------END PGP SIGNATURE-----
+It appears that experience indicates that I should have told the
+people suffering from this problem to fix their broken firmware, but
+I instead produced what turned out to be a partial fix.   The missing
+piece supplied by this commit makes sure that rcu_barrier() knows not to
+post callbacks for no-CBs CPUs that have not yet come online, because
+otherwise rcu_barrier() will hang on systems having firmware that lies
+about the number of CPUs.
 
---UlVJffcvxoiEqYs2--
+It is tempting to simply have rcu_barrier() refuse to post a callback on
+any no-CBs CPU that does not have an rcuo kthread.  This unfortunately
+does not work because rcu_barrier() is required to wait for all pending
+callbacks.  It is therefore required to wait even for those callbacks
+that cannot possibly be invoked.  Even if doing so hangs the system.
+
+Given that posting a callback to a no-CBs CPU that does not yet have an
+rcuo kthread can hang rcu_barrier(), It is tempting to report an error
+in this case.  Unfortunately, this will result in false positives at
+boot time, when it is perfectly legal to post callbacks to the boot CPU
+before the scheduler has started, in other words, before it is legal
+to invoke rcu_barrier().
+
+So this commit instead has rcu_barrier() avoid posting callbacks to
+CPUs having neither rcuo kthread nor pending callbacks, and has it
+complain bitterly if it finds CPUs having no rcuo kthread but some
+pending callbacks.  And when rcu_barrier() does find CPUs having no rcuo
+kthread but pending callbacks, as noted earlier, it has no choice but
+to hang indefinitely.
+
+Reported-by: Yanko Kaneti <yaneti@declera.com>
+Reported-by: Jay Vosburgh <jay.vosburgh@canonical.com>
+Reported-by: Eric B Munson <emunson@akamai.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
+index aa8e5eea3ab4..c78e88ce5ea3 100644
+--- a/include/trace/events/rcu.h
++++ b/include/trace/events/rcu.h
+@@ -660,18 +660,18 @@ TRACE_EVENT(rcu_torture_read,
+ /*
+  * Tracepoint for _rcu_barrier() execution.  The string "s" describes
+  * the _rcu_barrier phase:
+- *	"Begin": rcu_barrier_callback() started.
+- *	"Check": rcu_barrier_callback() checking for piggybacking.
+- *	"EarlyExit": rcu_barrier_callback() piggybacked, thus early exit.
+- *	"Inc1": rcu_barrier_callback() piggyback check counter incremented.
+- *	"Offline": rcu_barrier_callback() found offline CPU
+- *	"OnlineNoCB": rcu_barrier_callback() found online no-CBs CPU.
+- *	"OnlineQ": rcu_barrier_callback() found online CPU with callbacks.
+- *	"OnlineNQ": rcu_barrier_callback() found online CPU, no callbacks.
++ *	"Begin": _rcu_barrier() started.
++ *	"Check": _rcu_barrier() checking for piggybacking.
++ *	"EarlyExit": _rcu_barrier() piggybacked, thus early exit.
++ *	"Inc1": _rcu_barrier() piggyback check counter incremented.
++ *	"OfflineNoCB": _rcu_barrier() found callback on never-online CPU
++ *	"OnlineNoCB": _rcu_barrier() found online no-CBs CPU.
++ *	"OnlineQ": _rcu_barrier() found online CPU with callbacks.
++ *	"OnlineNQ": _rcu_barrier() found online CPU, no callbacks.
+  *	"IRQ": An rcu_barrier_callback() callback posted on remote CPU.
+  *	"CB": An rcu_barrier_callback() invoked a callback, not the last.
+  *	"LastCB": An rcu_barrier_callback() invoked the last callback.
+- *	"Inc2": rcu_barrier_callback() piggyback check counter incremented.
++ *	"Inc2": _rcu_barrier() piggyback check counter incremented.
+  * The "cpu" argument is the CPU or -1 if meaningless, the "cnt" argument
+  * is the count of remaining callbacks, and "done" is the piggybacking count.
+  */
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index f6880052b917..7680fc275036 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -3312,11 +3312,16 @@ static void _rcu_barrier(struct rcu_state *rsp)
+ 			continue;
+ 		rdp = per_cpu_ptr(rsp->rda, cpu);
+ 		if (rcu_is_nocb_cpu(cpu)) {
+-			_rcu_barrier_trace(rsp, "OnlineNoCB", cpu,
+-					   rsp->n_barrier_done);
+-			atomic_inc(&rsp->barrier_cpu_count);
+-			__call_rcu(&rdp->barrier_head, rcu_barrier_callback,
+-				   rsp, cpu, 0);
++			if (!rcu_nocb_cpu_needs_barrier(rsp, cpu)) {
++				_rcu_barrier_trace(rsp, "OfflineNoCB", cpu,
++						   rsp->n_barrier_done);
++			} else {
++				_rcu_barrier_trace(rsp, "OnlineNoCB", cpu,
++						   rsp->n_barrier_done);
++				atomic_inc(&rsp->barrier_cpu_count);
++				__call_rcu(&rdp->barrier_head,
++					   rcu_barrier_callback, rsp, cpu, 0);
++			}
+ 		} else if (ACCESS_ONCE(rdp->qlen)) {
+ 			_rcu_barrier_trace(rsp, "OnlineQ", cpu,
+ 					   rsp->n_barrier_done);
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 4beab3d2328c..8e7b1843896e 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -587,6 +587,7 @@ static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
+ static void print_cpu_stall_info_end(void);
+ static void zero_cpu_stall_ticks(struct rcu_data *rdp);
+ static void increment_cpu_stall_ticks(void);
++static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu);
+ static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq);
+ static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp);
+ static void rcu_init_one_nocb(struct rcu_node *rnp);
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 927c17b081c7..68c5b23b7173 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2050,6 +2050,33 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
+ }
+ 
+ /*
++ * Does the specified CPU need an RCU callback for the specified flavor
++ * of rcu_barrier()?
++ */
++static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu)
++{
++	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
++	struct rcu_head *rhp;
++
++	/* No-CBs CPUs might have callbacks on any of three lists. */
++	rhp = ACCESS_ONCE(rdp->nocb_head);
++	if (!rhp)
++		rhp = ACCESS_ONCE(rdp->nocb_gp_head);
++	if (!rhp)
++		rhp = ACCESS_ONCE(rdp->nocb_follower_head);
++
++	/* Having no rcuo kthread but CBs after scheduler starts is bad! */
++	if (!ACCESS_ONCE(rdp->nocb_kthread) && rhp) {
++		/* RCU callback enqueued before CPU first came online??? */
++		pr_err("RCU: Never-onlined no-CBs CPU %d has CB %p\n",
++		       cpu, rhp->func);
++		WARN_ON_ONCE(1);
++	}
++
++	return !!rhp;
++}
++
++/*
+  * Enqueue the specified string of rcu_head structures onto the specified
+  * CPU's no-CBs lists.  The CPU is specified by rdp, the head of the
+  * string by rhp, and the tail of the string by rhtp.  The non-lazy/lazy
+@@ -2646,6 +2673,10 @@ static bool init_nocb_callback_list(struct rcu_data *rdp)
+ 
+ #else /* #ifdef CONFIG_RCU_NOCB_CPU */
+ 
++static bool rcu_nocb_cpu_needs_barrier(struct rcu_state *rsp, int cpu)
++{
++}
++
+ static void rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
+ {
+ }
+
