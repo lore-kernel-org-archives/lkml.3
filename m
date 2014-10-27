@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaJ0Kt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 06:49:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492AbaJ0KtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 06:49:25 -0400
-Date: Mon, 27 Oct 2014 12:48:45 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Li Liu <john.liuli@huawei.com>
-Cc: linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        peter.huangpeng@huawei.com, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        n.nikolaev@virtualopensystems.com, yingshiuan.pan@gmail.com,
-        remy.gauguey@cea.fr, joel.schopp@amd.com
-Subject: Re: [RFC PATCH 0/2] virtio-mmio: add irqfd support for vhost-net
- based on virtio-mmio
-Message-ID: <20141027104845.GB18773@redhat.com>
-References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
- <20141026115210.GA5497@redhat.com>
- <544E0E1B.1060104@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544E0E1B.1060104@huawei.com>
+	id S1752240AbaJ0Ktq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 06:49:46 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:29338 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaJ0Kto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 06:49:44 -0400
+X-AuditID: cbfee68d-f79296d000004278-f0-544e23469de5
+Message-id: <544E2346.9000908@samsung.com>
+Date: Mon, 27 Oct 2014 19:49:42 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: tomasz.figa@gmail.com, kgene.kim@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com, inki.dae@samsung.com,
+        geunsik.lim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 0/2] clk: samsung: Add clock controller driver for
+ Exynos4415 SoC
+References: <1414372318-594-1-git-send-email-cw00.choi@samsung.com>
+ <544E20E3.5030609@samsung.com>
+In-reply-to: <544E20E3.5030609@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsWyRsSkRNdN2S/EoPOImsWfCa1sFpPuT2Cx
+	6F1wlc3ibNMbdovLu+awWcw4v4/J4vCbdlaLGZNfslms2vWH0YHTY+esu+wefVtWMXp83iQX
+	wBzFZZOSmpNZllqkb5fAlfFqVkjBB+aKkystGhj7mLsYOTkkBEwkOr6thLLFJC7cW88GYgsJ
+	LGWUePrDEaZmxeZFQDVcQPHpjBIrb55mg3BeM0qcPzSdCaSKV0BLYv2/FewgNouAqsTS/nVg
+	cTag+P4XN8CmigqESaycfoUFol5Q4sfke2C2iIC+xJJVF8GGMgtcZ5T482se2EnCApESB+a1
+	M0GclCLxfcFjMJtTQFti8Zb9QM0cQA16EvcvaoGEmQXkJTaveQt2qYTAMXaJ1Qsvs0AcJCDx
+	bfIhsHoJAVmJTQegPpaUOLjiBssERrFZSE6ahTB1FpKpCxiZVzGKphYkFxQnpRcZ6hUn5haX
+	5qXrJefnbmIERtzpf896dzDePmB9iFGAg1GJh9ei0DdEiDWxrLgy9xCjKdARE5mlRJPzgXGd
+	VxJvaGxmZGFqYmpsZG5ppiTOqyj1M1hIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDo/XxyB91
+	LgJ27cuqdsznKun1FD99+uiCPtbedTZePyQ7bpxsi7gtf7t6YuWzU/oK33cuu+0pzzEjp75F
+	2zAwpC7RQOHXykuMcWm1L5d4NgqWmE26ezJlr7rujLxQ8cCPws+CmKQOzL2tVrrg30bHJ8bS
+	W3zuxZ389c8nWj1rXky+2h3zzb+4lViKMxINtZiLihMBSGBUD7MCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jQV03Zb8Qg56J8hZ/JrSyWUy6P4HF
+	onfBVTaLs01v2C0u75rDZjHj/D4mi8Nv2lktZkx+yWaxatcfRgdOj52z7rJ79G1ZxejxeZNc
+	AHNUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAd
+	SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMV7NCCj4wV5xcadHA2Mfc
+	xcjJISFgIrFi8yIoW0ziwr31bF2MXBxCAtMZJVbePA3lvGaUOH9oOhNIFa+AlsT6fyvYQWwW
+	AVWJpf3rwOJsQPH9L26wgdiiAmESK6dfYYGoF5T4MfkemC0ioC+xZNVFsKHMAtcZJf78mge2
+	WlggUuLAvHawQUICKRLfFzwGszkFtCUWb9kP1MwB1KAncf+iFkiYWUBeYvOat8wTGAVmIVkx
+	C6FqFpKqBYzMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCI/qZ1A7GlQ0WhxgFOBiVeHgt
+	Cn1DhFgTy4orcw8xSnAwK4nwOv4ECvGmJFZWpRblxxeV5qQWH2I0BQbARGYp0eR8YLLJK4k3
+	NDYxM7I0Mje0MDI2VxLnPdBqHSgkkJ5YkpqdmlqQWgTTx8TBKdXAqPxt9zuP+fJTZ/5lUpbP
+	Wr84a+2HWt3+NTM/NP7Jt6mp3pDvbPWqYH2q/eQ1L2/kLhRsyO60D0jYlDvXxP/Ckg2R5rN9
+	IkX/ZfGqNk4qkXyocWPXY7aJnmwnMtQTP7bejcrjacu4/eifsElwvMbKJ+pRJZE9E7dtUm2d
+	dYeV2V3SO2G7uOdlJZbijERDLeai4kQAKxdHPf4CAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 05:19:23PM +0800, Li Liu wrote:
+On 10/27/2014 07:39 PM, Sylwester Nawrocki wrote:
+> On 27/10/14 02:11, Chanwoo Choi wrote:
+>> Chanwoo Choi (2):
+>>   clk: samsung: exynos4415: Add clocks using common clock framework
+>>   clk: samsung: Document binding for Exynos4415 clock controller
 > 
-> 
-> On 2014/10/26 19:52, Michael S. Tsirkin wrote:
-> > On Sat, Oct 25, 2014 at 04:24:52PM +0800, john.liuli wrote:
-> >> From: Li Liu <john.liuli@huawei.com>
-> >>
-> >> This set of patches try to implemet irqfd support of vhost-net 
-> >> based on virtio-mmio.
-> >>
-> >> I had posted a mail to talking about the status of vhost-net 
-> >> on kvm-arm refer to http://www.spinics.net/lists/kvm-arm/msg10804.html.
-> >> Some dependent patches are listed in the mail too. Basically the 
-> >> vhost-net brings great performance improvements, almost 50%+.
-> >>
-> >> It's easy to implement irqfd support with PCI MSI-X. But till 
-> >> now arm32 do not provide equivalent mechanism to let a device 
-> >> allocate multiple interrupts. And even the aarch64 provid LPI
-> >> but also not available in a short time.
-> >>
-> >> As Gauguey Remy said "Vhost does not emulate a complete virtio 
-> >> adapter but only manage virtqueue operations". Vhost module
-> >> don't update the ISR register, so if with only one irq then it's 
-> >> no way to get the interrupt reason even we can inject the 
-> >> irq correctly.  
-> > 
-> > Well guests don't read ISR in MSI-X mode so why does it help
-> > to set the ISR bit?
-> 
-> Yeah, vhost don't need to set ISR under MSI-X mode. But for ARM
-> without MSI-X kind mechanism guest can't get the interrupt reason
-> through the only one irq hanlder (with one gsi resource).
->
-> So I build a shared memory region to provide the interrupt reason
-> instead of ISR regiser by qemu without bothering vhost. Then even
-> there's only one irq with only one irq hanlder, it still can
-> distinguish why irq occur.
-> 
-> Li.
+> Added both to my tree, thanks. In future please put DT binding
+> documentation first in the series, before the actual driver patch.
 
-OK so this might allow sharing IRQs between config and VQs
-which might be a handy optimization even for PCI
-(at the moment reading ISR causes an exit).
+I'll put the documentation patch first in the patchset. Thanks.
 
-Need to see how all this would work on MP systems though.
+Best Regards,
+Chanwoo Choi
 
-
-> 
-> > 
-> >> To get the interrupt reason to support such VIRTIO_NET_F_STATUS 
-> >> features I add a new register offset VIRTIO_MMIO_ISRMEM which 
-> >> will help to establish a shared memory region between qemu and 
-> >> virtio-mmio device. Then the interrupt reason can be accessed by
-> >> guest driver through this region. At the same time, the virtio-mmio 
-> >> dirver check this region to see irqfd is supported or not during 
-> >> the irq handler registration, and different handler will be assigned.
-> >>
-> >> I want to know it's the right direction? Does it comply with the 
-> >> virtio-mmio spec.? Or anyone have more good ideas to emulate mis-x 
-> >> based on virtio-mmio? I hope to get feedback and guidance.
-> >> Thx for any help.
-> >>
-> >> Li Liu (2):
-> >>   Add a new register offset let interrupt reason available
-> >>   Assign a new irq handler while irqfd enabled
-> >>
-> >>  drivers/virtio/virtio_mmio.c |   55 +++++++++++++++++++++++++++++++++++++++---
-> >>  include/linux/virtio_mmio.h  |    3 +++
-> >>  2 files changed, 55 insertions(+), 3 deletions(-)
-> >>
-> >> -- 
-> >> 1.7.9.5
-> >>
-> > 
-> > .
-> > 
