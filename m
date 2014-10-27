@@ -1,134 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaJ0AFI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 20:05:08 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:58141 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbaJ0AFG (ORCPT
+	id S1751927AbaJ0AIi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 20:08:38 -0400
+Received: from mailout.micron.com ([137.201.242.129]:61587 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751645AbaJ0AIg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 20:05:06 -0400
-From: Paul McQuade <paulmcquad@gmail.com>
-To: paulmcquad@gmail.com
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
-Subject: [PATCH] staging: rtl8723au: create macro get_max_rate
-Date: Mon, 27 Oct 2014 00:05:00 +0000
-Message-Id: <1414368300-9596-1-git-send-email-paulmcquad@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Sun, 26 Oct 2014 20:08:36 -0400
+From: bpqw <bpqw@micron.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+CC: Jason Cooper <jason@lakedaemon.net>, Mark Brown <broonie@kernel.org>,
+        Heiko Stuebner <heiko@sntech.de>, Thierry Reding <treding@nvidia.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Lunn <andrew@lunn.ch>, Silvio F <silvio.fricke@gmail.com>,
+        Hayato Suzuki <hytszk@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] devicetree: bindings: Add vendor prefix for Micron
+ Technology Co., Ltd.
+Thread-Topic: [PATCH 1/1] devicetree: bindings: Add vendor prefix for Micron
+ Technology Co., Ltd.
+Thread-Index: Ac/tDA2V70hMLzyhQH+xOy9U8dubsgBjfqCwACJUHlAAlaGE0A==
+Date: Mon, 27 Oct 2014 00:07:43 +0000
+Message-ID: <A765B125120D1346A63912DDE6D8B6315E7ABD@NTXXIAMBX02.xacn.micron.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.167.84.5]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21056.003
+X-TM-AS-Result: No--4.014400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+x-mt-checkinternalsenderrule: True
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-create marco for max_rate values
+This patch is used to add vendor prefix for Micron Technology Inc in the vendor-prefixes.txt file.
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+Micron Technology, Inc. is an American multinational corporation based in Boise,
+Idaho, best known for producing many forms of semiconductor devices. This includes
+DRAM, SDRAM, flash memory, eMMC and SSDs.
+
+Signed-off-by: bean huo <beanhuo@micron.com>
 ---
- drivers/staging/rtl8723au/core/rtw_ieee80211.c | 58 ++++++++++++--------------
- 1 file changed, 26 insertions(+), 32 deletions(-)
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-index 6274cb3..4c0414d 100644
---- a/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-+++ b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-@@ -13,6 +13,8 @@
-  *
-  ******************************************************************************/
- #define _IEEE80211_C
-+#define get_max_rate(r1, r2, r3, r4)					\
-+	(bw_40MHz ? (short_GI_40 ? r1 : r2) : (short_GI_20 ? r3 : r4))
- 
- #include <drv_types.h>
- #include <linux/ieee80211.h>
-@@ -794,64 +796,56 @@ u16 rtw_mcs_rate23a(u8 rf_type, u8 bw_40MHz, u8 short_GI_20, u8 short_GI_40,
- 
- 	if (rf_type == RF_1T1R) {
- 		if (mcs->rx_mask[0] & BIT(7))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):
--				((short_GI_20)?722:650);
-+			max_rate = get_max_rate(1500, 1350, 722, 650);
- 		else if (mcs->rx_mask[0] & BIT(6))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215):
--				((short_GI_20)?650:585);
-+			max_rate = get_max_rate(1350, 1215, 650, 585);
- 		else if (mcs->rx_mask[0] & BIT(5))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):
--				((short_GI_20)?578:520);
-+			max_rate = get_max_rate(1200, 1080, 578, 520);
- 		else if (mcs->rx_mask[0] & BIT(4))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):
--				((short_GI_20)?433:390);
-+			max_rate = get_max_rate(900, 810, 433, 390);
- 		else if (mcs->rx_mask[0] & BIT(3))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):
--				((short_GI_20)?289:260);
-+			max_rate = get_max_rate(600, 540, 289, 260);
- 		else if (mcs->rx_mask[0] & BIT(2))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?450:405):
--				((short_GI_20)?217:195);
-+			max_rate = get_max_rate(450, 405, 217, 195);
- 		else if (mcs->rx_mask[0] & BIT(1))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):
--				((short_GI_20)?144:130);
-+			max_rate = get_max_rate(300, 270, 144, 130);
- 		else if (mcs->rx_mask[0] & BIT(0))
--			max_rate = (bw_40MHz) ? ((short_GI_40)?150:135):
--				((short_GI_20)?72:65);
-+			max_rate = get_max_rate(150, 135, 72, 65);
- 	} else {
- 		if (mcs->rx_mask[1]) {
- 			if (mcs->rx_mask[1] & BIT(7))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?3000:2700):((short_GI_20)?1444:1300);
-+				max_rate = get_max_rate(3000, 2700, 1444, 1300);
- 			else if (mcs->rx_mask[1] & BIT(6))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?2700:2430):((short_GI_20)?1300:1170);
-+				max_rate = get_max_rate(2700, 2430, 1300, 1170);
- 			else if (mcs->rx_mask[1] & BIT(5))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?2400:2160):((short_GI_20)?1156:1040);
-+				max_rate = get_max_rate(2400, 2160, 1156, 1040);
- 			else if (mcs->rx_mask[1] & BIT(4))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1800:1620):((short_GI_20)?867:780);
-+				max_rate = get_max_rate(1800, 1620, 867, 780);
- 			else if (mcs->rx_mask[1] & BIT(3))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):((short_GI_20)?578:520);
-+				max_rate = get_max_rate(1200, 1080, 578, 520);
- 			else if (mcs->rx_mask[1] & BIT(2))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):((short_GI_20)?433:390);
-+				max_rate = get_max_rate(900, 810, 433, 390);
- 			else if (mcs->rx_mask[1] & BIT(1))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):((short_GI_20)?289:260);
-+				max_rate = get_max_rate(600, 540, 289, 260);
- 			else if (mcs->rx_mask[1] & BIT(0))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):((short_GI_20)?144:130);
-+				max_rate = get_max_rate(300, 270, 144, 130);
- 		} else {
- 			if (mcs->rx_mask[0] & BIT(7))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):((short_GI_20)?722:650);
-+				max_rate = get_max_rate(1500, 1350, 722, 650);
- 			else if (mcs->rx_mask[0] & BIT(6))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1350:1215):((short_GI_20)?650:585);
-+				max_rate = get_max_rate(1350, 1215, 650, 585);
- 			else if (mcs->rx_mask[0] & BIT(5))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?1200:1080):((short_GI_20)?578:520);
-+				max_rate = get_max_rate(1200, 1080, 578, 520);
- 			else if (mcs->rx_mask[0] & BIT(4))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?900:810):((short_GI_20)?433:390);
-+				max_rate = get_max_rate(900, 810, 433, 390);
- 			else if (mcs->rx_mask[0] & BIT(3))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?600:540):((short_GI_20)?289:260);
-+				max_rate = get_max_rate(600, 540, 289, 260);
- 			else if (mcs->rx_mask[0] & BIT(2))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?450:405):((short_GI_20)?217:195);
-+				max_rate = get_max_rate(450, 405, 217, 195);
- 			else if (mcs->rx_mask[0] & BIT(1))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?300:270):((short_GI_20)?144:130);
-+				max_rate = get_max_rate(300, 270, 144, 130);
- 			else if (mcs->rx_mask[0] & BIT(0))
--				max_rate = (bw_40MHz) ? ((short_GI_40)?150:135):((short_GI_20)?72:65);
-+				max_rate = get_max_rate(150, 135, 72, 65);
- 		}
- 	}
- 	return max_rate;
--- 
-1.9.1
-
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 723999d..a7bbf6e 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -92,6 +92,7 @@ maxim	Maxim Integrated Products
+ mediatek	MediaTek Inc.
+ micrel	Micrel Inc.
+ microchip	Microchip Technology Inc.
++micron	Micron Technology Inc.
+ mitsubishi	Mitsubishi Electric Corporation
+ mosaixtech	Mosaix Technologies, Inc.
+ moxa	Moxa
+--
+1.7.9.5
