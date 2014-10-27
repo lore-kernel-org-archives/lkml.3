@@ -1,143 +1,1525 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaJ0C1t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 22:27:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51146 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923AbaJ0C1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 22:27:48 -0400
-Date: Mon, 27 Oct 2014 10:26:37 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Neil Zhang <zhangwm@marvell.com>
-Cc: Dan Streetman <ddstreet@ieee.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
-Message-ID: <20141027022637.GC5540@kroah.com>
-References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
- <20141020044340.GA9589@kroah.com>
- <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com>
- <20141020064826.GA4064@kroah.com>
- <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com>
- <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com>
- <9034CBD80F070943B59700D7F8149ED9024ED2A134@SC-VEXCH4.marvell.com>
- <20141027015836.GA27978@kroah.com>
- <9034CBD80F070943B59700D7F8149ED9024ED2A13D@SC-VEXCH4.marvell.com>
+	id S1752151AbaJ0C2O (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:28:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18239 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751923AbaJ0C2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 22:28:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,792,1406617200"; 
+   d="yaml'?scan'208";a="611822285"
+Date: Mon, 27 Oct 2014 10:28:22 +0800
+From: kernel test robot <fengguang.wu@intel.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>
+Subject: [LKP] [ACPI / processor] f3ca4164529: -48.3%
+ will-it-scale.per_process_ops
+Message-ID: <20141027022822.GJ27038@yliu-dev.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/mixed; boundary="9/eUdp+dLtKXvemk"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <9034CBD80F070943B59700D7F8149ED9024ED2A13D@SC-VEXCH4.marvell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Heirloom mailx 12.5 6/20/10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 26, 2014 at 07:17:14PM -0700, Neil Zhang wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > Sent: 2014ๅนด10ๆ27ๆ—ฅ 9:59
-> > To: Neil Zhang
-> > Cc: Dan Streetman; linux-kernel@vger.kernel.org
-> > Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
-> > 
-> > On Sun, Oct 26, 2014 at 06:43:11PM -0700, Neil Zhang wrote:
-> > > Greg,
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: ddstreet@gmail.com [mailto:ddstreet@gmail.com] On Behalf Of
-> > > > Dan Streetman
-> > > > Sent: 2014ๅนด10ๆ21ๆ—ฅ 1:03
-> > > > To: Neil Zhang
-> > > > Cc: Greg KH; linux-kernel@vger.kernel.org
-> > > > Subject: Re: [PATCH] drivers: base: update cpu offline info when do
-> > > > hotplug
-> > > >
-> > > > On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
-> > > > > Greg,
-> > > > >
-> > > > >
-> > > > > -----Original Message-----
-> > > > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > > > Sent: 2014ๅนด10ๆ20ๆ—ฅ 14:48
-> > > > > To: Neil Zhang
-> > > > > Cc: linux-kernel@vger.kernel.org
-> > > > > Subject: Re: [PATCH] drivers: base: update cpu offline info when
-> > > > > do hotplug
-> > > > >
-> > > > > On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
-> > > > >>> How much noise is this going to cause on a big/little system
-> > > > >>> that constantly hot unplug/plugs processors all of the time?
-> > > > >>
-> > > > >> Can you explain more what kind of noise will be introduced on a
-> > > > >> big/little
-> > > > system?
-> > > > >
-> > > > > Have you tested this on such a machine?
-> > > > >
-> > > > > I didn't have such kind of machine on hand.
-> > > > > Can anyone has such machine to verify it?
-> > > > > Thanks!
-> > > >
-> > > > I tested this on a ppc PowerVM system, using dlpar operations to
-> > > > remove/add cpus.
-> > > >
-> > > > Without this patch the cpu online nodes get out of sync with the
-> > > > main online node (and the actual state of the cpus), because they
-> > > > aren't updated as the cpus are brought up/down:
-> > > >
-> > > > [root@br10p02 cpu]$ pwd
-> > > > /sys/devices/system/cpu
-> > > > [root@br10p02 cpu]$ cat online
-> > > > 0-39
-> > > > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
-> > > > -eq 1 && echo -n "$n " ; done ; echo ""
-> > > > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
-> > > > 26
-> > > > 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
-> > > >
-> > > >
-> > > > While with the patch, the cpu online nodes are kept up to date as
-> > > > the cpus are brought up/down:
-> > > >
-> > > > [root@br10p02 cpu]$ pwd
-> > > > /sys/devices/system/cpu
-> > > > [root@br10p02 cpu]$ cat online
-> > > > 0-39
-> > > > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online )
-> > > > -eq 1 && echo -n "$n " ; done ; echo ""
-> > > > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
-> > > > 26
-> > > > 27 28 29 30 31 32 33 34 35 36 37 38 39
-> > > >
-> > > >
-> > > > Feel free to add
-> > > >
-> > > > Tested-by: Dan Streetman <ddstreet@ieee.org>
-> > > >
-> > >
-> > > It's a real bug in the kernel.
-> > 
-> > As this has been this way for many years, I tend to think it's not all that
-> > important...
-> 
-> Actually this bug was introduced by the following patch.
-> 
-> commit 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c
-> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Date:   Fri May 3 00:25:49 2013 +0200
-> 
->     Driver core: Use generic offline/online for CPU offline/online
-> 
-> So seems not that long :)
 
-Ok, over a year.
+--9/eUdp+dLtKXvemk
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 
-Any reason why this information wasn't in this patch?  Also, why not cc:
-the authors of that patch as well?  Surely they would want to know about
-this, right?
+FYI, we noticed the below changes on
 
-greg k-h
+commit f3ca4164529b875374c410193bbbac0ee960895f ("ACPI / processor: Rework processor throttling with work_on_cpu()")
+
+
+       v3.14-rc4  f3ca4164529b875374c410193b  testbox/testcase/testparams
+----------------  --------------------------  ---------------------------
+         %stddev     %change         %stddev
+             \          |                \  
+    624516 ฑ  0%     -48.3%     322914 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+    624516           -48.3%     322914        GEO-MEAN will-it-scale.per_process_ops
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    576025 ฑ  0%     -47.9%     299956 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+    576024           -47.9%     299955        GEO-MEAN will-it-scale.per_thread_ops
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      0.46 ฑ  0%      +6.5%       0.48 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      0.46            +6.5%       0.48        GEO-MEAN will-it-scale.scalability
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    176818 ฑ  3%     -84.7%      26974 ฑ  7%  brickland1/will-it-scale/powersave-pwrite1
+    176818           -84.7%      26973        GEO-MEAN cpuidle.C6-IVB.usage
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+ 7.139e+09 ฑ  1%     -78.5%  1.533e+09 ฑ  5%  brickland1/will-it-scale/powersave-pwrite1
+ 7.139e+09           -78.5%  1.533e+09        GEO-MEAN cpuidle.C6-IVB.time
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        32 ฑ 34%     -77.2%          7 ฑ 44%  brickland1/will-it-scale/powersave-pwrite1
+        32           -77.2%          7        GEO-MEAN sched_debug.cfs_rq[33]:/.blocked_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        84 ฑ 27%     -71.6%         24 ฑ 39%  brickland1/will-it-scale/powersave-pwrite1
+        84           -71.6%         24        GEO-MEAN proc-vmstat.nr_dirtied
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       976 ฑ 43%    +148.7%       2427 ฑ 37%  brickland1/will-it-scale/powersave-pwrite1
+       976          +148.7%       2427        GEO-MEAN sched_debug.cpu#20.sched_goidle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        41 ฑ 28%    +185.6%        118 ฑ 19%  brickland1/will-it-scale/powersave-pwrite1
+        41          +185.6%        118        GEO-MEAN sched_debug.cpu#76.nr_uninterruptible
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      2144 ฑ 38%    +134.5%       5027 ฑ 36%  brickland1/will-it-scale/powersave-pwrite1
+      2144          +134.5%       5027        GEO-MEAN sched_debug.cpu#20.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        37 ฑ 18%     -60.8%         14 ฑ 44%  brickland1/will-it-scale/powersave-pwrite1
+        37           -60.8%         14        GEO-MEAN sched_debug.cfs_rq[91]:/.load
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        37 ฑ 18%     -60.8%         14 ฑ 44%  brickland1/will-it-scale/powersave-pwrite1
+        37           -60.8%         14        GEO-MEAN sched_debug.cpu#91.load
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        35 ฑ 46%    +235.4%        117 ฑ 35%  brickland1/will-it-scale/powersave-pwrite1
+        34          +235.4%        117        GEO-MEAN sched_debug.cfs_rq[92]:/.tg_load_contrib
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        54 ฑ  9%     -57.0%         23 ฑ 43%  brickland1/will-it-scale/powersave-pwrite1
+        54           -57.0%         23        GEO-MEAN sched_debug.cpu#91.cpu_load[1]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        37 ฑ 29%     -64.5%         13 ฑ 16%  brickland1/will-it-scale/powersave-pwrite1
+        37           -64.5%         13        GEO-MEAN sched_debug.cfs_rq[33]:/.tg_load_contrib
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1785 ฑ 46%     +75.8%       3139 ฑ 28%  brickland1/will-it-scale/powersave-pwrite1
+      1785           +75.8%       3139        GEO-MEAN sched_debug.cpu#41.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1799 ฑ 23%     -38.6%       1104 ฑ 38%  brickland1/will-it-scale/powersave-pwrite1
+      1799           -38.6%       1104        GEO-MEAN sched_debug.cpu#60.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        46 ฑ  9%     -54.9%         21 ฑ 24%  brickland1/will-it-scale/powersave-pwrite1
+        46           -54.9%         21        GEO-MEAN sched_debug.cpu#91.cpu_load[2]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      2138 ฑ 34%    +108.7%       4462 ฑ 33%  brickland1/will-it-scale/powersave-pwrite1
+      2138          +108.7%       4462        GEO-MEAN sched_debug.cpu#43.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       344 ฑ 36%     +73.2%        596 ฑ 18%  brickland1/will-it-scale/powersave-pwrite1
+       344           +73.2%        596        GEO-MEAN sched_debug.cfs_rq[91]:/.blocked_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       104 ฑ 26%     -47.6%         54 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+       104           -47.6%         54        GEO-MEAN sched_debug.cpu#0.cpu_load[4]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1803 ฑ 23%     -37.9%       1119 ฑ 37%  brickland1/will-it-scale/powersave-pwrite1
+      1803           -37.9%       1119        GEO-MEAN sched_debug.cpu#60.sched_count
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       680 ฑ 38%    +104.0%       1387 ฑ 37%  brickland1/will-it-scale/powersave-pwrite1
+       679          +104.0%       1387        GEO-MEAN sched_debug.cpu#40.sched_goidle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        96 ฑ 26%     -47.6%         50 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+        96           -47.6%         50        GEO-MEAN sched_debug.cpu#0.cpu_load[3]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       382 ฑ 34%     +60.2%        612 ฑ 16%  brickland1/will-it-scale/powersave-pwrite1
+       382           +60.2%        612        GEO-MEAN sched_debug.cfs_rq[91]:/.tg_load_contrib
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       881 ฑ 38%    +135.9%       2079 ฑ 37%  brickland1/will-it-scale/powersave-pwrite1
+       881          +135.9%       2079        GEO-MEAN sched_debug.cpu#43.ttwu_count
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        63 ฑ 24%     -40.5%         37 ฑ  5%  brickland1/will-it-scale/powersave-pwrite1
+        63           -40.5%         37        GEO-MEAN sched_debug.cfs_rq[0]:/.runnable_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        69 ฑ 34%     -46.7%         37 ฑ  7%  brickland1/will-it-scale/powersave-pwrite1
+        69           -46.7%         37        GEO-MEAN sched_debug.cfs_rq[0]:/.load
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        63 ฑ 24%     -40.5%         37 ฑ  5%  brickland1/will-it-scale/powersave-pwrite1
+        63           -40.5%         37        GEO-MEAN sched_debug.cpu#0.load
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        85 ฑ 26%     -46.4%         45 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+        85           -46.4%         45        GEO-MEAN sched_debug.cpu#0.cpu_load[2]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        41 ฑ 12%     -50.2%         20 ฑ 15%  brickland1/will-it-scale/powersave-pwrite1
+        41           -50.2%         20        GEO-MEAN sched_debug.cpu#91.cpu_load[3]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        63 ฑ 24%     -37.0%         40 ฑ 11%  brickland1/will-it-scale/powersave-pwrite1
+        63           -37.0%         40        GEO-MEAN sched_debug.cfs_rq[0]:/.tg_load_contrib
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       374 ฑ 28%     +81.1%        678 ฑ 45%  brickland1/will-it-scale/powersave-pwrite1
+       374           +81.1%        678        GEO-MEAN sched_debug.cpu#12.sched_goidle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      2.26 ฑ  7%     +96.5%       4.44 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      2.26           +96.5%       4.44        GEO-MEAN perf-profile.cpu-cycles.scheduler_tick.update_process_times.tick_sched_handle.tick_sched_timer.__run_hrtimer
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      2.40 ฑ  8%     +95.7%       4.69 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      2.40           +95.7%       4.69        GEO-MEAN perf-profile.cpu-cycles.update_process_times.tick_sched_handle.tick_sched_timer.__run_hrtimer.hrtimer_interrupt
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      2.41 ฑ  8%     +95.7%       4.71 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      2.41           +95.7%       4.71        GEO-MEAN perf-profile.cpu-cycles.tick_sched_handle.isra.17.tick_sched_timer.__run_hrtimer.hrtimer_interrupt.local_apic_timer_interrupt
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        25 ฑ 23%     -29.9%         17 ฑ 29%  brickland1/will-it-scale/powersave-pwrite1
+        25           -29.9%         17        GEO-MEAN sched_debug.cfs_rq[17]:/.load
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        75 ฑ 28%     -41.9%         43 ฑ  5%  brickland1/will-it-scale/powersave-pwrite1
+        74           -41.9%         43        GEO-MEAN sched_debug.cpu#0.cpu_load[1]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       130 ฑ 18%     -46.8%         69 ฑ 13%  brickland1/will-it-scale/powersave-pwrite1
+       129           -46.8%         69        GEO-MEAN proc-vmstat.nr_written
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       898 ฑ 23%     +68.6%       1513 ฑ 40%  brickland1/will-it-scale/powersave-pwrite1
+       898           +68.6%       1513        GEO-MEAN sched_debug.cpu#12.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      2177 ฑ 25%    +102.9%       4418 ฑ 47%  brickland1/will-it-scale/powersave-pwrite1
+      2177          +102.9%       4418        GEO-MEAN sched_debug.cpu#46.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        66 ฑ 29%     -35.3%         43 ฑ 13%  brickland1/will-it-scale/powersave-pwrite1
+        66           -35.3%         43        GEO-MEAN sched_debug.cpu#0.cpu_load[0]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.12 ฑ  0%     -43.8%       0.63 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+      1.12           -43.8%       0.63        GEO-MEAN turbostat.GHz
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       167 ฑ 28%     +67.5%        280 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+       167           +67.5%        279        GEO-MEAN slabinfo.nfs_write_data.num_objs
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       167 ฑ 28%     +67.5%        280 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+       167           +67.5%        279        GEO-MEAN slabinfo.nfs_write_data.active_objs
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      2.00 ฑ  7%     +75.5%       3.52 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      2.00           +75.5%       3.52        GEO-MEAN perf-profile.cpu-cycles.sched_clock_tick.scheduler_tick.update_process_times.tick_sched_handle.tick_sched_timer
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        33 ฑ 13%     -39.4%         20 ฑ 13%  brickland1/will-it-scale/powersave-pwrite1
+        33           -39.4%         19        GEO-MEAN sched_debug.cpu#91.cpu_load[4]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.98 ฑ  7%     +73.2%       3.44 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      1.98           +73.2%       3.44        GEO-MEAN perf-profile.cpu-cycles.ktime_get.sched_clock_tick.scheduler_tick.update_process_times.tick_sched_handle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.96 ฑ  7%     +71.8%       3.37 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      1.96           +71.8%       3.37        GEO-MEAN perf-profile.cpu-cycles.read_hpet.ktime_get.sched_clock_tick.scheduler_tick.update_process_times
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       474 ฑ 17%     +57.3%        746 ฑ 31%  brickland1/will-it-scale/powersave-pwrite1
+       474           +57.3%        745        GEO-MEAN sched_debug.cpu#110.ttwu_count
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1585 ฑ 29%     -37.8%        985 ฑ 30%  brickland1/will-it-scale/powersave-pwrite1
+      1584           -37.8%        985        GEO-MEAN sched_debug.cpu#108.ttwu_count
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        23 ฑ  7%     +81.0%         42 ฑ 22%  brickland1/will-it-scale/powersave-pwrite1
+        23           +81.0%         42        GEO-MEAN sched_debug.cpu#106.cpu_load[4]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      2741 ฑ 19%     +43.2%       3924 ฑ 18%  brickland1/will-it-scale/powersave-pwrite1
+      2741           +43.2%       3924        GEO-MEAN sched_debug.cpu#35.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.32 ฑ  6%     +41.2%       1.86 ฑ 12%  brickland1/will-it-scale/powersave-pwrite1
+      1.32           +41.2%       1.86        GEO-MEAN perf-profile.cpu-cycles.apic_timer_interrupt.shmem_write_end.generic_file_buffered_write.__generic_file_aio_write.generic_file_aio_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+         4 ฑ  0%     +45.0%          5 ฑ 12%  brickland1/will-it-scale/powersave-pwrite1
+         4           +45.0%          5        GEO-MEAN sched_debug.cpu#92.cpu_load[2]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.29 ฑ  6%     +39.9%       1.80 ฑ 11%  brickland1/will-it-scale/powersave-pwrite1
+      1.29           +39.9%       1.80        GEO-MEAN perf-profile.cpu-cycles.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.shmem_write_end.generic_file_buffered_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.29 ฑ  7%     +40.0%       1.80 ฑ 12%  brickland1/will-it-scale/powersave-pwrite1
+      1.29           +40.0%       1.80        GEO-MEAN perf-profile.cpu-cycles.hrtimer_interrupt.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.shmem_write_end
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.29 ฑ  6%     +39.9%       1.81 ฑ 11%  brickland1/will-it-scale/powersave-pwrite1
+      1.29           +39.9%       1.81        GEO-MEAN perf-profile.cpu-cycles.smp_apic_timer_interrupt.apic_timer_interrupt.shmem_write_end.generic_file_buffered_write.__generic_file_aio_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       426 ฑ 39%     -43.1%        242 ฑ 10%  brickland1/will-it-scale/powersave-pwrite1
+       426           -43.1%        242        GEO-MEAN sched_debug.cpu#60.sched_goidle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        28 ฑ  5%     +57.4%         44 ฑ 23%  brickland1/will-it-scale/powersave-pwrite1
+        28           +57.4%         44        GEO-MEAN sched_debug.cpu#106.cpu_load[3]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+         5 ฑ  7%     +26.9%          6 ฑ  7%  brickland1/will-it-scale/powersave-pwrite1
+         5           +26.9%          6        GEO-MEAN sched_debug.cpu#32.cpu_load[3]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      7.81 ฑ  7%     +39.6%      10.91 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      7.81           +39.6%      10.91        GEO-MEAN perf-profile.cpu-cycles.__run_hrtimer.hrtimer_interrupt.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      7.78 ฑ  7%     +38.9%      10.80 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      7.78           +38.9%      10.80        GEO-MEAN perf-profile.cpu-cycles.tick_sched_timer.__run_hrtimer.hrtimer_interrupt.local_apic_timer_interrupt.smp_apic_timer_interrupt
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      2961 ฑ  9%     +30.2%       3856 ฑ 27%  brickland1/will-it-scale/powersave-pwrite1
+      2960           +30.2%       3856        GEO-MEAN sched_debug.cpu#18.sched_goidle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3.87 ฑ  5%     +40.4%       5.44 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3.87           +40.4%       5.44        GEO-MEAN perf-profile.cpu-cycles.apic_timer_interrupt.generic_file_buffered_write.__generic_file_aio_write.generic_file_aio_write.do_sync_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       106 ฑ  7%     +58.7%        169 ฑ 31%  brickland1/will-it-scale/powersave-pwrite1
+       106           +58.7%        169        GEO-MEAN sched_debug.cpu#86.ttwu_count
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3.76 ฑ  5%     +39.6%       5.24 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3.76           +39.6%       5.24        GEO-MEAN perf-profile.cpu-cycles.hrtimer_interrupt.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.generic_file_buffered_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       803 ฑ 17%     +40.3%       1127 ฑ 19%  brickland1/will-it-scale/powersave-pwrite1
+       803           +40.3%       1127        GEO-MEAN sched_debug.cpu#39.sched_goidle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3.78 ฑ  5%     +39.5%       5.27 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3.78           +39.5%       5.27        GEO-MEAN perf-profile.cpu-cycles.smp_apic_timer_interrupt.apic_timer_interrupt.generic_file_buffered_write.__generic_file_aio_write.generic_file_aio_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3.76 ฑ  5%     +39.4%       5.25 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3.76           +39.4%       5.25        GEO-MEAN perf-profile.cpu-cycles.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.generic_file_buffered_write.__generic_file_aio_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     19688 ฑ 19%     +35.1%      26591 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+     19688           +35.1%      26591        GEO-MEAN sched_debug.cfs_rq[118]:/.exec_clock
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1712 ฑ 17%     +44.7%       2477 ฑ 25%  brickland1/will-it-scale/powersave-pwrite1
+      1712           +44.7%       2476        GEO-MEAN sched_debug.cpu#39.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        73 ฑ  1%     +63.7%        119 ฑ 47%  brickland1/will-it-scale/powersave-pwrite1
+        73           +63.7%        119        GEO-MEAN sched_debug.cpu#86.ttwu_local
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       429 ฑ 23%     +46.7%        630 ฑ 29%  brickland1/will-it-scale/powersave-pwrite1
+       429           +46.7%        630        GEO-MEAN sched_debug.cpu#26.ttwu_count
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        98 ฑ 15%     +65.9%        162 ฑ 36%  brickland1/will-it-scale/powersave-pwrite1
+        98           +65.9%        162        GEO-MEAN sched_debug.cpu#86.sched_goidle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     71965 ฑ 14%     +17.5%      84574 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+     71965           +17.5%      84574        GEO-MEAN sched_debug.cfs_rq[60]:/.exec_clock
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       367 ฑ 17%     +43.8%        528 ฑ 24%  brickland1/will-it-scale/powersave-pwrite1
+       367           +43.8%        528        GEO-MEAN sched_debug.cpu#82.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       371 ฑ 17%     +45.0%        538 ฑ 26%  brickland1/will-it-scale/powersave-pwrite1
+       371           +45.0%        538        GEO-MEAN sched_debug.cpu#82.sched_count
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    196924 ฑ 13%     +17.8%     231931 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+    196924           +17.8%     231931        GEO-MEAN sched_debug.cfs_rq[60]:/.spread0
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       309 ฑ 10%     +65.1%        511 ฑ 40%  brickland1/will-it-scale/powersave-pwrite1
+       309           +65.1%        511        GEO-MEAN sched_debug.cpu#86.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3844 ฑ 17%     +30.9%       5032 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+      3844           +30.9%       5032        GEO-MEAN sched_debug.cpu#118.curr->pid
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       313 ฑ 10%     +64.4%        514 ฑ 39%  brickland1/will-it-scale/powersave-pwrite1
+       313           +64.4%        514        GEO-MEAN sched_debug.cpu#86.sched_count
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       928 ฑ 32%     -28.0%        668 ฑ 14%  brickland1/will-it-scale/powersave-pwrite1
+       928           -28.0%        668        GEO-MEAN sched_debug.cpu#63.nr_switches
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3080 ฑ  6%     +25.8%       3875 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3080           +25.8%       3875        GEO-MEAN sched_debug.cfs_rq[107]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3070 ฑ  6%     +25.4%       3849 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3070           +25.4%       3849        GEO-MEAN sched_debug.cfs_rq[109]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      6762 ฑ 12%     -18.8%       5493 ฑ 16%  brickland1/will-it-scale/powersave-pwrite1
+      6762           -18.8%       5493        GEO-MEAN proc-vmstat.pgalloc_dma32
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3072 ฑ  6%     +25.5%       3854 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3072           +25.5%       3854        GEO-MEAN sched_debug.cfs_rq[108]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+         4 ฑ  0%     +35.0%          5 ฑ 14%  brickland1/will-it-scale/powersave-pwrite1
+         4           +35.0%          5        GEO-MEAN sched_debug.cpu#92.cpu_load[4]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+         4 ฑ  0%     +45.0%          5 ฑ 20%  brickland1/will-it-scale/powersave-pwrite1
+         4           +45.0%          5        GEO-MEAN sched_debug.cpu#92.cpu_load[3]
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+   1609011 ฑ 17%     +29.1%    2076675 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+   1609011           +29.1%    2076675        GEO-MEAN sched_debug.cfs_rq[118]:/.min_vruntime
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3209 ฑ  2%     +21.4%       3896 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3209           +21.4%       3896        GEO-MEAN sched_debug.cfs_rq[100]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3105 ฑ  5%     +25.1%       3885 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3105           +25.1%       3885        GEO-MEAN sched_debug.cfs_rq[106]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3197 ฑ  2%     +21.2%       3875 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3197           +21.2%       3875        GEO-MEAN sched_debug.cfs_rq[102]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3198 ฑ  2%     +22.1%       3906 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3198           +22.1%       3906        GEO-MEAN sched_debug.cfs_rq[95]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3195 ฑ  2%     +22.0%       3897 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3195           +22.0%       3897        GEO-MEAN sched_debug.cfs_rq[99]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3202 ฑ  2%     +22.4%       3919 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3202           +22.4%       3919        GEO-MEAN sched_debug.cfs_rq[97]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3211 ฑ  2%     +21.3%       3895 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3211           +21.3%       3895        GEO-MEAN sched_debug.cfs_rq[101]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3195 ฑ  2%     +22.3%       3908 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3195           +22.3%       3908        GEO-MEAN sched_debug.cfs_rq[98]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3045 ฑ  5%     +23.4%       3758 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3045           +23.4%       3758        GEO-MEAN sched_debug.cfs_rq[119]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3076 ฑ  5%     +23.9%       3811 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3075           +23.9%       3810        GEO-MEAN sched_debug.cfs_rq[113]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3060 ฑ  5%     +24.2%       3800 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3060           +24.2%       3800        GEO-MEAN sched_debug.cfs_rq[114]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3215 ฑ  3%     +21.2%       3897 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3215           +21.2%       3897        GEO-MEAN sched_debug.cfs_rq[94]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3229 ฑ  3%     +21.0%       3906 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3229           +21.0%       3906        GEO-MEAN sched_debug.cfs_rq[93]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3071 ฑ  6%     +24.9%       3834 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3070           +24.9%       3834        GEO-MEAN sched_debug.cfs_rq[111]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       336 ฑ  4%     +23.1%        413 ฑ  6%  brickland1/will-it-scale/powersave-pwrite1
+       336           +23.1%        413        GEO-MEAN sched_debug.cfs_rq[106]:/.tg_runnable_contrib
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3081 ฑ  6%     +24.9%       3848 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3081           +24.9%       3848        GEO-MEAN sched_debug.cfs_rq[110]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3202 ฑ  2%     +21.9%       3904 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3202           +21.9%       3904        GEO-MEAN sched_debug.cfs_rq[96]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3102 ฑ  5%     +25.3%       3888 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3102           +25.3%       3888        GEO-MEAN sched_debug.cfs_rq[105]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     19954 ฑ  1%     +20.9%      24119 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+     19954           +20.9%      24119        GEO-MEAN sched_debug.cfs_rq[106]:/.exec_clock
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3056 ฑ  5%     +24.0%       3790 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3056           +24.0%       3790        GEO-MEAN sched_debug.cfs_rq[115]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3063 ฑ  5%     +23.7%       3791 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3063           +23.7%       3790        GEO-MEAN sched_debug.cfs_rq[116]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3204 ฑ  2%     +20.8%       3872 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3204           +20.8%       3872        GEO-MEAN sched_debug.cfs_rq[103]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3062 ฑ  5%     +23.4%       3778 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3062           +23.4%       3778        GEO-MEAN sched_debug.cfs_rq[117]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3072 ฑ  5%     +23.5%       3795 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3072           +23.5%       3795        GEO-MEAN sched_debug.cfs_rq[112]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3060 ฑ  5%     +23.1%       3768 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3060           +23.1%       3768        GEO-MEAN sched_debug.cfs_rq[118]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.23 ฑ  5%     +18.3%       1.46 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      1.23           +18.3%       1.46        GEO-MEAN perf-profile.cpu-cycles.apic_timer_interrupt.__generic_file_aio_write.generic_file_aio_write.do_sync_write.vfs_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     15533 ฑ  4%     +23.4%      19163 ฑ  6%  brickland1/will-it-scale/powersave-pwrite1
+     15533           +23.4%      19162        GEO-MEAN sched_debug.cfs_rq[106]:/.avg->runnable_avg_sum
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3209 ฑ  2%     +21.7%       3907 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3209           +21.7%       3907        GEO-MEAN sched_debug.cfs_rq[104]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3235 ฑ  3%     +19.9%       3877 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3235           +19.9%       3877        GEO-MEAN sched_debug.cfs_rq[92]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.21 ฑ  6%     +17.1%       1.41 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      1.21           +17.1%       1.41        GEO-MEAN perf-profile.cpu-cycles.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.__generic_file_aio_write.generic_file_aio_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.21 ฑ  6%     +17.1%       1.41 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      1.21           +17.1%       1.41        GEO-MEAN perf-profile.cpu-cycles.hrtimer_interrupt.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.__generic_file_aio_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.21 ฑ  6%     +17.2%       1.42 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      1.21           +17.2%       1.42        GEO-MEAN perf-profile.cpu-cycles.smp_apic_timer_interrupt.apic_timer_interrupt.__generic_file_aio_write.generic_file_aio_write.do_sync_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3230 ฑ  2%     +19.9%       3873 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3230           +19.9%       3873        GEO-MEAN sched_debug.cfs_rq[83]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3235 ฑ  2%     +20.3%       3891 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3235           +20.3%       3891        GEO-MEAN sched_debug.cfs_rq[85]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3239 ฑ  3%     +19.7%       3877 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3239           +19.7%       3877        GEO-MEAN sched_debug.cfs_rq[89]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3248 ฑ  3%     +19.7%       3889 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3248           +19.7%       3889        GEO-MEAN sched_debug.cfs_rq[91]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3230 ฑ  2%     +19.9%       3873 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3230           +19.9%       3873        GEO-MEAN sched_debug.cfs_rq[77]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.38 ฑ  2%     -14.6%       1.18 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      1.38           -14.6%       1.18        GEO-MEAN perf-profile.cpu-cycles.mutex_unlock.do_sync_write.vfs_write.sys_pwrite64.system_call_fastpath
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        49 ฑ  9%     +33.9%         66 ฑ 18%  brickland1/will-it-scale/powersave-pwrite1
+        49           +33.9%         66        GEO-MEAN sched_debug.cpu#118.ttwu_local
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3235 ฑ  2%     +20.3%       3891 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3235           +20.3%       3891        GEO-MEAN sched_debug.cfs_rq[84]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3226 ฑ  2%     +19.7%       3862 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3226           +19.7%       3861        GEO-MEAN sched_debug.cfs_rq[87]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3227 ฑ  3%     +20.0%       3872 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3227           +20.0%       3872        GEO-MEAN sched_debug.cfs_rq[82]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3236 ฑ  2%     +20.0%       3882 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3235           +20.0%       3882        GEO-MEAN sched_debug.cfs_rq[86]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3239 ฑ  3%     +20.1%       3891 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3239           +20.1%       3891        GEO-MEAN sched_debug.cfs_rq[90]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3239 ฑ  3%     +19.5%       3870 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3239           +19.5%       3870        GEO-MEAN sched_debug.cfs_rq[81]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3242 ฑ  3%     +18.3%       3834 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3242           +18.3%       3834        GEO-MEAN sched_debug.cfs_rq[79]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3240 ฑ  2%     +18.9%       3851 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3240           +18.9%       3851        GEO-MEAN sched_debug.cfs_rq[78]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3241 ฑ  2%     +18.1%       3828 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3241           +18.1%       3828        GEO-MEAN sched_debug.cfs_rq[80]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3232 ฑ  2%     +18.9%       3842 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3232           +18.9%       3842        GEO-MEAN sched_debug.cfs_rq[88]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3245 ฑ  2%     +18.2%       3835 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3245           +18.2%       3835        GEO-MEAN sched_debug.cfs_rq[69]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3248 ฑ  2%     +17.9%       3828 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3247           +17.9%       3828        GEO-MEAN sched_debug.cfs_rq[70]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     25.35 ฑ  1%     -15.1%      21.52 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+     25.35           -15.1%      21.52        GEO-MEAN turbostat.%pc2
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3239 ฑ  2%     +18.6%       3841 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3239           +18.6%       3841        GEO-MEAN sched_debug.cfs_rq[76]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3254 ฑ  2%     +17.4%       3821 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      3254           +17.4%       3821        GEO-MEAN sched_debug.cfs_rq[71]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        78 ฑ 15%     +30.0%        101 ฑ 12%  brickland1/will-it-scale/powersave-pwrite1
+        78           +30.0%        101        GEO-MEAN sched_debug.cpu#118.ttwu_count
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3247 ฑ  2%     +15.2%       3742 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3247           +15.2%       3742        GEO-MEAN sched_debug.cfs_rq[61]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3236 ฑ  2%     +17.9%       3814 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      3235           +17.9%       3814        GEO-MEAN sched_debug.cfs_rq[72]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       421 ฑ  5%     +11.4%        470 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+       421           +11.4%        470        GEO-MEAN sched_debug.cfs_rq[91]:/.tg_runnable_contrib
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3249 ฑ  2%     +15.0%       3735 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3249           +15.0%       3735        GEO-MEAN sched_debug.cfs_rq[62]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3246 ฑ  2%     +17.5%       3815 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3246           +17.5%       3815        GEO-MEAN sched_debug.cfs_rq[74]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3255 ฑ  2%     +16.7%       3799 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3254           +16.7%       3799        GEO-MEAN sched_debug.cfs_rq[68]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     19474 ฑ  5%     +11.2%      21665 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+     19474           +11.2%      21665        GEO-MEAN sched_debug.cfs_rq[91]:/.avg->runnable_avg_sum
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3239 ฑ  2%     +17.7%       3813 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3239           +17.7%       3813        GEO-MEAN sched_debug.cfs_rq[75]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3260 ฑ  3%     +14.6%       3735 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3260           +14.6%       3735        GEO-MEAN sched_debug.cfs_rq[59]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3244 ฑ  3%     +17.0%       3797 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3244           +17.0%       3796        GEO-MEAN sched_debug.cfs_rq[73]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      5.81 ฑ  5%     -10.1%       5.22 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      5.81           -10.1%       5.22        GEO-MEAN perf-profile.cpu-cycles.read_hpet.ktime_get_update_offsets.hrtimer_interrupt.local_apic_timer_interrupt.smp_apic_timer_interrupt
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3319 ฑ  2%     +13.7%       3773 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3318           +13.7%       3773        GEO-MEAN sched_debug.cfs_rq[46]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3978 ฑ  4%      +9.8%       4369 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      3978            +9.8%       4369        GEO-MEAN sched_debug.cpu#90.curr->pid
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3257 ฑ  2%     +14.8%       3740 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3257           +14.8%       3740        GEO-MEAN sched_debug.cfs_rq[60]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3321 ฑ  2%     +13.7%       3775 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3321           +13.7%       3774        GEO-MEAN sched_debug.cfs_rq[47]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3318 ฑ  3%     +13.4%       3764 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3318           +13.4%       3764        GEO-MEAN sched_debug.cfs_rq[44]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3272 ฑ  3%     +14.2%       3736 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3271           +14.2%       3736        GEO-MEAN sched_debug.cfs_rq[58]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3301 ฑ  3%     +13.9%       3759 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3301           +13.9%       3759        GEO-MEAN sched_debug.cfs_rq[50]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3294 ฑ  3%     +13.5%       3740 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3294           +13.5%       3740        GEO-MEAN sched_debug.cfs_rq[53]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.37 ฑ  5%     +14.1%       1.57 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      1.37           +14.1%       1.57        GEO-MEAN perf-profile.cpu-cycles.apic_timer_interrupt.fsnotify.vfs_write.sys_pwrite64.system_call_fastpath
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3241 ฑ  3%     +16.2%       3766 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3241           +16.2%       3765        GEO-MEAN sched_debug.cfs_rq[65]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3323 ฑ  2%     +13.3%       3763 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3323           +13.3%       3763        GEO-MEAN sched_debug.cfs_rq[49]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3290 ฑ  2%     +14.0%       3752 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3290           +14.0%       3751        GEO-MEAN sched_debug.cfs_rq[56]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3240 ฑ  2%     +15.9%       3755 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3240           +15.9%       3754        GEO-MEAN sched_debug.cfs_rq[66]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3242 ฑ  2%     +14.5%       3712 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3242           +14.5%       3712        GEO-MEAN sched_debug.cfs_rq[63]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3307 ฑ  3%     +13.9%       3768 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3307           +13.9%       3768        GEO-MEAN sched_debug.cfs_rq[51]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3255 ฑ  2%     +15.6%       3762 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3255           +15.6%       3762        GEO-MEAN sched_debug.cfs_rq[67]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3301 ฑ  3%     +13.4%       3744 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3301           +13.4%       3744        GEO-MEAN sched_debug.cfs_rq[55]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3315 ฑ  3%     +13.7%       3769 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3315           +13.7%       3769        GEO-MEAN sched_debug.cfs_rq[43]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3481 ฑ  4%     +10.4%       3842 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3481           +10.4%       3842        GEO-MEAN sched_debug.cfs_rq[35]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     14790 ฑ  1%     +17.6%      17396 ฑ 10%  brickland1/will-it-scale/powersave-pwrite1
+     14790           +17.6%      17396        GEO-MEAN sched_debug.cfs_rq[47]:/.exec_clock
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      5.07 ฑ  8%     +13.7%       5.77 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      5.07           +13.7%       5.77        GEO-MEAN perf-profile.cpu-cycles.ktime_get.tick_sched_timer.__run_hrtimer.hrtimer_interrupt.local_apic_timer_interrupt
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3.90 ฑ  2%     -11.1%       3.47 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      3.90           -11.1%       3.47        GEO-MEAN perf-profile.cpu-cycles.__sb_start_write.vfs_write.sys_pwrite64.system_call_fastpath.__libc_pwrite
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3295 ฑ  3%     +13.5%       3739 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3295           +13.5%       3739        GEO-MEAN sched_debug.cfs_rq[54]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3274 ฑ  2%     +14.1%       3737 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3274           +14.1%       3737        GEO-MEAN sched_debug.cfs_rq[57]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3449 ฑ  4%      +9.0%       3761 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3449            +9.0%       3761        GEO-MEAN sched_debug.cfs_rq[42]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+        73 ฑ  2%     +21.0%         88 ฑ 18%  brickland1/will-it-scale/powersave-pwrite1
+        73           +21.0%         88        GEO-MEAN sched_debug.cpu#87.ttwu_local
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3447 ฑ  4%     +10.6%       3811 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3447           +10.6%       3811        GEO-MEAN sched_debug.cfs_rq[39]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3327 ฑ  2%     +13.4%       3772 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3327           +13.4%       3772        GEO-MEAN sched_debug.cfs_rq[48]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3493 ฑ  4%      +9.8%       3834 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3493            +9.8%       3834        GEO-MEAN sched_debug.cfs_rq[29]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3247 ฑ  3%     +15.5%       3752 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3247           +15.5%       3752        GEO-MEAN sched_debug.cfs_rq[64]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3498 ฑ  4%      +9.7%       3838 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3498            +9.7%       3838        GEO-MEAN sched_debug.cfs_rq[30]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3309 ฑ  3%     +13.3%       3749 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3309           +13.3%       3749        GEO-MEAN sched_debug.cfs_rq[52]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3465 ฑ  5%     +10.0%       3812 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3465           +10.0%       3812        GEO-MEAN sched_debug.cfs_rq[37]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.34 ฑ  4%     +12.6%       1.51 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      1.34           +12.6%       1.51        GEO-MEAN perf-profile.cpu-cycles.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.fsnotify.vfs_write
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3449 ฑ  5%     +10.4%       3806 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3449           +10.4%       3806        GEO-MEAN sched_debug.cfs_rq[38]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3492 ฑ  4%      +9.5%       3824 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3492            +9.5%       3824        GEO-MEAN sched_debug.cfs_rq[31]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3471 ฑ  5%     +10.1%       3820 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3471           +10.1%       3820        GEO-MEAN sched_debug.cfs_rq[36]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3498 ฑ  4%      +9.2%       3819 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3498            +9.2%       3819        GEO-MEAN sched_debug.cfs_rq[27]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3478 ฑ  5%     +10.0%       3827 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3478           +10.0%       3827        GEO-MEAN sched_debug.cfs_rq[34]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3474 ฑ  4%     +10.3%       3834 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3474           +10.3%       3834        GEO-MEAN sched_debug.cfs_rq[33]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      5.04 ฑ  8%     +12.8%       5.68 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      5.04           +12.8%       5.68        GEO-MEAN perf-profile.cpu-cycles.read_hpet.ktime_get.tick_sched_timer.__run_hrtimer.hrtimer_interrupt
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3452 ฑ  4%      +9.4%       3776 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3452            +9.4%       3776        GEO-MEAN sched_debug.cfs_rq[40]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3455 ฑ  4%      +9.2%       3772 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      3455            +9.2%       3771        GEO-MEAN sched_debug.cfs_rq[41]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3478 ฑ  5%      +9.6%       3811 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3478            +9.6%       3811        GEO-MEAN sched_debug.cfs_rq[32]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.83 ฑ  5%     -11.3%       1.62 ฑ  5%  brickland1/will-it-scale/powersave-pwrite1
+      1.83           -11.3%       1.62        GEO-MEAN perf-profile.cpu-cycles.rw_verify_area.vfs_write.sys_pwrite64.system_call_fastpath.__libc_pwrite
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3321 ฑ  3%     +12.8%       3747 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3321           +12.8%       3747        GEO-MEAN sched_debug.cfs_rq[45]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.34 ฑ  4%     +12.7%       1.51 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      1.34           +12.7%       1.51        GEO-MEAN perf-profile.cpu-cycles.hrtimer_interrupt.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.fsnotify
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.35 ฑ  5%     +12.9%       1.52 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+      1.35           +12.9%       1.52        GEO-MEAN perf-profile.cpu-cycles.smp_apic_timer_interrupt.apic_timer_interrupt.fsnotify.vfs_write.sys_pwrite64
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3507 ฑ  4%      +9.0%       3822 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      3507            +9.0%       3822        GEO-MEAN sched_debug.cfs_rq[28]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3537 ฑ  4%      +9.1%       3858 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3537            +9.1%       3858        GEO-MEAN sched_debug.cfs_rq[21]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.18 ฑ  5%      -8.0%       1.09 ฑ  6%  brickland1/will-it-scale/powersave-pwrite1
+      1.18            -8.0%       1.09        GEO-MEAN perf-profile.cpu-cycles.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.__libc_pwrite
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.89 ฑ  1%     -10.3%       1.70 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+      1.89           -10.3%       1.70        GEO-MEAN perf-profile.cpu-cycles.system_call.__libc_pwrite
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3519 ฑ  5%      +9.5%       3855 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3519            +9.5%       3855        GEO-MEAN sched_debug.cfs_rq[19]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      5.84 ฑ  4%      -7.7%       5.40 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+      5.84            -7.7%       5.40        GEO-MEAN perf-profile.cpu-cycles.ktime_get_update_offsets.hrtimer_interrupt.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     16504 ฑ  0%      -9.7%      14896 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+     16504            -9.7%      14896        GEO-MEAN slabinfo.kmalloc-192.active_objs
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     16506 ฑ  0%      -9.8%      14897 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+     16506            -9.8%      14897        GEO-MEAN slabinfo.kmalloc-192.num_objs
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     32046 ฑ  0%     +11.3%      35673 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+     32046           +11.3%      35673        GEO-MEAN sched_debug.cfs_rq[91]:/.exec_clock
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3521 ฑ  5%      +9.4%       3853 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3521            +9.4%       3853        GEO-MEAN sched_debug.cfs_rq[20]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.18 ฑ  5%      -7.8%       1.09 ฑ  6%  brickland1/will-it-scale/powersave-pwrite1
+      1.18            -7.8%       1.09        GEO-MEAN perf-profile.cpu-cycles.hrtimer_interrupt.local_apic_timer_interrupt.smp_apic_timer_interrupt.apic_timer_interrupt.__libc_pwrite
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    853455 ฑ  1%     +10.8%     945556 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+    853455           +10.8%     945556        GEO-MEAN sched_debug.cpu#76.avg_idle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3519 ฑ  4%      +8.2%       3807 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3519            +8.2%       3807        GEO-MEAN sched_debug.cfs_rq[26]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.19 ฑ  4%      -7.9%       1.09 ฑ  5%  brickland1/will-it-scale/powersave-pwrite1
+      1.19            -7.9%       1.09        GEO-MEAN perf-profile.cpu-cycles.smp_apic_timer_interrupt.apic_timer_interrupt.__libc_pwrite
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    842339 ฑ  2%     +11.3%     937538 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+    842339           +11.3%     937537        GEO-MEAN sched_debug.cpu#64.avg_idle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     15887 ฑ  4%      +8.0%      17162 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+     15887            +8.0%      17162        GEO-MEAN sched_debug.cfs_rq[90]:/.avg->runnable_avg_sum
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       344 ฑ  4%      +7.7%        370 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+       344            +7.7%        370        GEO-MEAN sched_debug.cfs_rq[90]:/.tg_runnable_contrib
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1.21 ฑ  4%      -7.4%       1.12 ฑ  6%  brickland1/will-it-scale/powersave-pwrite1
+      1.21            -7.4%       1.12        GEO-MEAN perf-profile.cpu-cycles.apic_timer_interrupt.__libc_pwrite
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    835125 ฑ  2%     +11.7%     932608 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+    835125           +11.7%     932608        GEO-MEAN sched_debug.cpu#69.avg_idle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3547 ฑ  4%      +9.3%       3879 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3547            +9.3%       3878        GEO-MEAN sched_debug.cfs_rq[22]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    835405 ฑ  1%     +10.3%     921248 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+    835405           +10.3%     921247        GEO-MEAN sched_debug.cpu#73.avg_idle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    412312 ฑ 29%     +32.7%     547007 ฑ  1%  brickland1/will-it-scale/powersave-pwrite1
+    412312           +32.7%     547007        GEO-MEAN softirqs.SCHED
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    844305 ฑ  1%     +10.6%     933588 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+    844305           +10.6%     933587        GEO-MEAN sched_debug.cpu#65.avg_idle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+    833909 ฑ  1%     +11.6%     931037 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+    833909           +11.6%     931037        GEO-MEAN sched_debug.cpu#68.avg_idle
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     12247 ฑ  2%      +6.3%      13016 ฑ  4%  brickland1/will-it-scale/powersave-pwrite1
+     12247            +6.3%      13016        GEO-MEAN sched_debug.cfs_rq[105]:/.avg->runnable_avg_sum
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      3526 ฑ  4%      +8.0%       3810 ฑ  3%  brickland1/will-it-scale/powersave-pwrite1
+      3526            +8.0%       3810        GEO-MEAN sched_debug.cfs_rq[25]:/.tg_load_avg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      0.00 ฑ  0%    -100.0%       0.00 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+      0.00          -100.0%       0.00        GEO-MEAN energy.energy-pkg
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      0.00 ฑ  0%    -100.0%       0.00 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+      0.00          -100.0%       0.00        GEO-MEAN energy.energy-cores
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1220 ฑ  0%     -56.2%        534 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+      1220           -56.2%        534        GEO-MEAN turbostat.Cor_W
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1233 ฑ  0%     -55.6%        547 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+      1233           -55.6%        547        GEO-MEAN turbostat.Pkg_W
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+     66125 ฑ  0%     -12.5%      57879 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+     66125           -12.5%      57878        GEO-MEAN vmstat.system.in
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       495 ฑ  1%      -6.0%        465 ฑ  2%  brickland1/will-it-scale/powersave-pwrite1
+       495            -6.0%        465        GEO-MEAN time.user_time
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+      1649 ฑ  0%      +3.1%       1700 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+      1649            +3.1%       1699        GEO-MEAN vmstat.system.cs
+
+       v3.14-rc4  f3ca4164529b875374c410193b  
+----------------  --------------------------  
+       311 ฑ  0%      +1.0%        314 ฑ  0%  brickland1/will-it-scale/powersave-pwrite1
+       311            +1.0%        314        GEO-MEAN time.elapsed_time
+
+
+
+
+brickland1: Brickland Ivy Bridge-EX
+Memory: 128G
+
+testbox: fake
+Memory: 12G
+
+
+
+
+                                  time.elapsed_time
+
+  314.5 O+---------------O----------------O----------------O----------------O
+        |                                                                   |
+    314 ++                                                                  |
+        |                                                                   |
+  313.5 ++                                                                  |
+        |                                                                   |
+    313 ++                                                                  |
+        |                                                                   |
+  312.5 ++                                                                  |
+        |                                                                   |
+    312 ++                                                                  |
+        |                                                                   |
+  311.5 ++                                                                  |
+        *................*................*................*................*
+    311 ++------------------------------------------------------------------+
+
+
+                            will-it-scale.per_process_ops
+
+  650000 ++-----------------------------------------------------------------+
+         *................*................*...............*................*
+  600000 ++                                                                 |
+         |                                                                  |
+  550000 ++                                                                 |
+         |                                                                  |
+  500000 ++                                                                 |
+         |                                                                  |
+  450000 ++                                                                 |
+         |                                                                  |
+  400000 ++                                                                 |
+         |                                                                  |
+  350000 ++                                                                 |
+         O                O                O               O                O
+  300000 ++-----------------------------------------------------------------+
+
+
+                            will-it-scale.per_thread_ops
+
+  600000 ++-----------------------------------------------------------------+
+         *................*................*...............*................*
+  550000 ++                                                                 |
+         |                                                                  |
+  500000 ++                                                                 |
+         |                                                                  |
+  450000 ++                                                                 |
+         |                                                                  |
+  400000 ++                                                                 |
+         |                                                                  |
+  350000 ++                                                                 |
+         |                                                                  |
+  300000 O+               O                O               O                O
+         |                                                                  |
+  250000 ++-----------------------------------------------------------------+
+
+
+
+	[*] bisect-good sample
+	[O] bisect-bad  sample
+
+To reproduce:
+
+	apt-get install ruby ruby-oj
+	git clone git://git.kernel.org/pub/scm/linux/kernel/git/wfg/lkp-tests.git
+	cd lkp-tests
+	bin/setup-local job.yaml # the job file attached in this email
+	bin/run-local   job.yaml
+
+
+Disclaimer:
+Results have been estimated based on internal Intel analysis and are provided
+for informational purposes only. Any difference in system hardware or software
+design or configuration may affect actual performance.
+
+
+Thanks,
+Fengguang
+
+--9/eUdp+dLtKXvemk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="job.yaml"
+
+---
+testcase: will-it-scale
+default_monitors:
+  watch-oom: 
+  wait: pre-test
+  uptime: 
+  iostat: 
+  vmstat: 
+  numa-numastat: 
+  numa-vmstat: 
+  numa-meminfo: 
+  proc-vmstat: 
+  proc-stat: 
+  meminfo: 
+  slabinfo: 
+  interrupts: 
+  lock_stat: 
+  latency_stats: 
+  softirqs: 
+  bdi_dev_mapping: 
+  diskstats: 
+  energy: 
+  cpuidle: 
+  cpufreq: 
+  turbostat: 
+  sched_debug:
+    interval: 10
+  pmeter: 
+default_watchdogs:
+  watch-oom: 
+  watchdog: 
+cpufreq_governor:
+- powersave
+model: Brickland Ivy Bridge-EX
+nr_cpu: 120
+memory: 128G
+hdd_partitions: "/dev/sda2"
+swap_partitions: 
+perf-profile:
+  freq: 800
+will-it-scale:
+  test:
+  - pwrite1
+branch: linus/master
+commit: f3ca4164529b875374c410193bbbac0ee960895f
+repeat_to: 2
+enqueue_time: 2014-10-22 11:31:46.498477817 +08:00
+testbox: brickland1
+kconfig: x86_64-rhel
+tbox_group: brickland1
+user: lkp
+queue: bisect
+result_root: "/result/brickland1/will-it-scale/powersave-pwrite1/debian-x86_64.cgz/x86_64-rhel/f3ca4164529b875374c410193bbbac0ee960895f/0"
+job_file: "/lkp/scheduled/brickland1/bisect_will-it-scale-powersave-pwrite1-x86_64-rhel-f3ca4164529b875374c410193bbbac0ee960895f-1.yaml"
+history_time: 300
+kernel: "/kernel/x86_64-rhel/f3ca4164529b875374c410193bbbac0ee960895f/vmlinuz-3.14.0-rc4-gf3ca416"
+dequeue_time: 2014-10-22 11:43:21.520077865 +08:00
+job_state: finished
+loadavg: 81.71 39.71 15.71 1/964 14794
+start_time: '1413949494'
+end_time: '1413949808'
+version: "/lkp/lkp/.src-20141021-224210"
+
+--9/eUdp+dLtKXvemk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=reproduce
+
+echo powersave > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu1/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu10/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu100/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu101/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu102/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu103/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu104/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu105/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu106/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu107/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu108/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu109/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu11/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu110/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu111/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu112/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu113/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu114/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu115/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu116/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu117/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu118/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu119/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu12/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu13/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu14/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu15/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu16/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu17/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu18/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu19/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu2/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu20/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu21/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu22/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu23/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu24/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu25/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu26/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu27/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu28/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu29/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu3/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu30/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu31/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu32/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu33/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu34/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu35/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu36/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu37/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu38/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu39/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu40/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu41/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu42/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu43/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu44/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu45/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu46/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu47/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu48/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu49/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu5/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu50/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu51/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu52/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu53/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu54/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu55/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu56/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu57/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu58/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu59/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu6/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu60/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu61/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu62/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu63/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu64/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu65/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu66/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu67/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu68/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu69/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu7/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu70/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu71/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu72/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu73/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu74/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu75/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu76/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu77/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu78/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu79/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu8/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu80/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu81/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu82/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu83/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu84/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu85/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu86/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu87/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu88/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu89/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu9/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu90/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu91/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu92/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu93/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu94/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu95/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu96/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu97/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu98/cpufreq/scaling_governor
+echo powersave > /sys/devices/system/cpu/cpu99/cpufreq/scaling_governor
+./runtest.py pwrite1 16 1 15 30 45 60 90 120
+
+--9/eUdp+dLtKXvemk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+_______________________________________________
+LKP mailing list
+LKP@linux.intel.com
+
+--9/eUdp+dLtKXvemk--
