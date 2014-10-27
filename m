@@ -1,543 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131AbaJ0KRd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 06:17:33 -0400
-Received: from new-dns.whc.net ([204.90.111.214]:61955 "EHLO alt2-dns.whc.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751363AbaJ0KR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 06:17:26 -0400
-X-Greylist: delayed 3965 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Oct 2014 06:17:25 EDT
-Message-ID: <3c49e71018ed2298859d38a2db99457a.squirrel@squirrelmail.whc.net>
-Date: Mon, 27 Oct 2014 03:03:12 -0600
-Subject: Identification Number UNCC/2710/014
-From: "Maria Hernandez" <mhinn@whc.net>
-Reply-To: ups-dispatchcs@7mt.org
-User-Agent: SquirrelMail/1.4.22
+	id S1751184AbaJ0KYL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 06:24:11 -0400
+Received: from mx.vmgattei.com ([77.223.18.35]:58583 "EHLO mx.vmgattei.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750785AbaJ0KYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 06:24:10 -0400
+Message-ID: <544E1D33.8060303@sirius-es.it>
+Date: Mon, 27 Oct 2014 11:23:47 +0100
+From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-Apparently-To: <airbrushliquid@videotron.ca>
-Apparently-To: <acrair@videotron.ca>
-Apparently-To: <a.arsenault@videotron.ca>
-Apparently-To: <a-d@videotron.ca>
-Apparently-To: <Mi.Harvey@videotron.ca>
-Apparently-To: <Caroleethier@videotron.ca>
-Apparently-To: <20gillesaubert@videotron.ca>
-Apparently-To: <www.info@videothek-kaelberer.de>
-Apparently-To: <info@videothek-kaelberer.de>
-Apparently-To: <jon@videotex.net>
-Apparently-To: <pb@videotechnikbaer.de>
-Apparently-To: <mail@videosewa.org>
-Apparently-To: <info@videoredakteur.de>
-Apparently-To: <galileo@videomotiv.de>
-Apparently-To: <PWH@videometer.com>
-Apparently-To: <videolisboa@videolisboa.com>
-Apparently-To: <info@videoland-kulmbach.de>
-Apparently-To: <info@videographe.qc.ca>
-Apparently-To: <festival@videographe.qc.ca>
-Apparently-To: <festival@videographe.qc>
-Apparently-To: <sternberg@videogarden.org>
-Apparently-To: <ebay@videogame.de>
-Apparently-To: <contact@videofestival.org>
-Apparently-To: <info@videofest.org>
-Apparently-To: <info@videofemmes.org>
-Apparently-To: <ebay@videoexpress24.de>
-Apparently-To: <andre@videoconcept.com>
-Apparently-To: <irviing.perez@videocamcorp.com>
-Apparently-To: <info@videobrasil.org.br>
-Apparently-To: <v.mariamis@video24logistic.de>
-Apparently-To: <kolumbusring61@video24.org>
-Apparently-To: <info@video24.org>
-Apparently-To: <b-sterndamm15@video24.org>
-Apparently-To: <info@video-to-go.de>
-Apparently-To: <live@video-regie.de>
-Apparently-To: <info@video-oase-floersheim.de>
-Apparently-To: <fedor.bikic@video-lab.de>
-Apparently-To: <ebay@video-elektronik.de>
-Apparently-To: <event@video-art.de>
-Apparently-To: <johann.schuster@videatis.com>
-Apparently-To: <oceanosaustrales@vidasilvestre.org.ar>
-Apparently-To: <maria.pacha@vidasilvestre.org.ar>
-Apparently-To: <angela@vidasemestresse.com.br>
-Apparently-To: <dena@vidasalsera.com>
-Apparently-To: <kontor@vidarskolen.dk>
-Apparently-To: <kollegium@vidarskolan.se>
-Apparently-To: <anne.ingeborg.haugholt@vidarkliniken.org>
-Apparently-To: <epost@vidarfurholt.net>
-Apparently-To: <secretaria@vidalibarraquer.net>
-Apparently-To: <pedroblas@vidacaixa.com>
-Apparently-To: <mk.busines@vicweb.com.au>
-Apparently-To: <reception@victronenergy.com>
-Apparently-To: <theo@victron.nl>
-Apparently-To: <sgeier@victrex.com>
-Apparently-To: <dmueller@victrex.com>
-Apparently-To: <eklein@victoryep.com>
-Apparently-To: <casu@victorvox-ag.de>
-Apparently-To: <info.teistungen@victors.de>
-Apparently-To: <info.nohfelden@victors.de>
-Apparently-To: <friedhelm.fiedler@victors.de>
-Apparently-To: <antonis@victoros.com>
-Apparently-To: <jackie.brown@victorious-faith1.org>
-Apparently-To: <reservation@victoriahotels-asia.com>
-Apparently-To: <filippo@victoriabc.com>
-Apparently-To: <aa003@victoria.tc.ca>
-Apparently-To: <thomas.kueppers@victoria.de>
-Apparently-To: <richard.necker@victoria.de>
-Apparently-To: <ralf.homes@victoria.de>
-Apparently-To: <josef.pfeiffer@victoria.de>
-Apparently-To: <cornel.becherer@victoria.de>
-Apparently-To: <bernd.schunke@victoria.de>
-Apparently-To: <alexander.brand@victoria.de>
-Apparently-To: <Weigelt@victoria.de>
-Apparently-To: <info@victoria.bestwestern.de>
-Apparently-To: <aspaeth@victoria.bestwestern.de>
-Apparently-To: <info@victoria-weine.de>
-Apparently-To: <erin@victoria-miro.com>
-Apparently-To: <interlaken@victoria-jungfrau.ch>
-Apparently-To: <info@victoria-jungfrau.ch>
-Apparently-To: <h.tontsch@victoria-jungfrau.ch>
-Apparently-To: <b.makawsky@victoria-jungfrau.ch>
-Apparently-To: <wolfgang.abel@victoria-heldenbergen.de>
-Apparently-To: <info@victoria-graf.de>
-Apparently-To: <edgar.koehnke@victoria-bike-ig.com>
-Apparently-To: <sales@victorchemet.com>
-Apparently-To: <armok@victoir.com>
-Apparently-To: <fgiacalone@victaulic.com>
-Apparently-To: <stephenc@vicscouts.asn.au>
-Apparently-To: <sultan@vicontte-oman.com>
-Apparently-To: <academy@vicontte-oman.com>
-Apparently-To: <scaruso@vicon.net>
-Apparently-To: <goin247@vicon.net>
-Apparently-To: <gabriele.paolini@vicon.com>
-Apparently-To: <ateng.surachmat@vico.co.id>
-Apparently-To: <mgiffard@vicnet.net.au>
-Apparently-To: <artslink@vicnet.net.au>
-Apparently-To: <ajbishop@vicnet.net.au>
-Apparently-To: <3Dburwood@vicnet.net.au>
-Apparently-To: <wadim@vicnat.kiev.ua>
-Apparently-To: <nancyt@vicksburg.org>
-Apparently-To: <balneario@vichycatalan.es>
-Apparently-To: <vinod@vicetronic.com>
-Apparently-To: <rchang@vicepresidencia.gob.ni>
-Apparently-To: <jrizo@vicepresidencia.gob.ni>
-Apparently-To: <guillermoj@vicepresidencia.gob.ni>
-Apparently-To: <frizo@vicepresidencia.gob.ni>
-Apparently-To: <frizo@vicepresidencia.g>
-Apparently-To: <ithil0@vice1and.de>
-Apparently-To: <saul.ramos@vice.com>
-Apparently-To: <mail@vice-versa.dk>
-Apparently-To: <Petra.Manz@vice-versa-com.de>
-Apparently-To: <info@vicalinteriors.com>
-Apparently-To: <kholesova@vic.sk>
-Apparently-To: <jrcfam@vic.ozland.net.au>
-Apparently-To: <langimorgala@vic.chariot>
-Apparently-To: <ljc@vic.ca>
-Apparently-To: <spriest@vic.bigpond.net.au>
-Apparently-To: <sjames@vic.bigpond.net.au>
-Apparently-To: <info@vibro-meter.de>
-Apparently-To: <Claudia.Hausberger@vibrio.de>
-Apparently-To: <chris@vibration.demon.co.uk>
-Apparently-To: <adkins@vibeville.com>
-Apparently-To: <mschneider@vibelba.com>
-Apparently-To: <ilima@vibechild.com>
-Apparently-To: <pelham@vibe.co.za>
-Apparently-To: <andreas.krisch@vibe.at>
-Apparently-To: <albert.koellner@vibe.at>
-Apparently-To: <crbwb@vibamt.dk>
-Apparently-To: <crbtp@vibamt.dk>
-Apparently-To: <crbsjr@vibamt.dk>
-Apparently-To: <crbsbe@vibamt.dk>
-Apparently-To: <crbmg@vibamt.dk>
-Apparently-To: <crblmg@vibamt.dk>
-Apparently-To: <crblg@vibamt.dk>
-Apparently-To: <crblf@vibamt.dk>
-Apparently-To: <crbkim@vibamt.dk>
-Apparently-To: <crbjk@vibamt.dk>
-Apparently-To: <crbjej@vibamt.dk>
-Apparently-To: <crbhj@vibamt.dk>
-Apparently-To: <crbes@vibamt.dk>
-Apparently-To: <crbem@vibamt.dk>
-Apparently-To: <crbef@vibamt.dk>
-Apparently-To: <crbcz@vibamt.dk>
-Apparently-To: <crbcw@vibamt.dk>
-Apparently-To: <crbcb@vibamt.dk>
-Apparently-To: <crbbj@vibamt.dk>
-Apparently-To: <crbag@vibamt.dk>
-Apparently-To: <marc.thissen@vibam.com>
-Apparently-To: <nougatwelt@viba-sweets.de>
-Apparently-To: <aek@vib.usr.pu.ru>
-Apparently-To: <info@viavita-institut.de>
-Apparently-To: <ksba@viauc.dk>
-Apparently-To: <108036@viauc.dk>
-Apparently-To: <r.boes@viatv.de>
-Apparently-To: <info@viatoura.de>
-Apparently-To: <b.hellwing@viator.de>
-Apparently-To: <linda.luviano@viaticus.com>
-Apparently-To: <jordi.axis@viatgesitinerari.com>
-Apparently-To: <Zimmermann@viaterra-verlag.de>
-Apparently-To: <claudia@viatecnologica.org.ve>
-Apparently-To: <ruppmann@viastoria.de>
-Apparently-To: <hans-ulrich.schiedt@viastoria.ch>
-Apparently-To: <freiling@viasolaris.de>
-Apparently-To: <Freiling@viasolaris.de>
-Apparently-To: <rodrigo@viasoft.com.br>
-Apparently-To: <info@viasko.de>
-Apparently-To: <events@viariga.lv>
-Apparently-To: <chris@viarech.com>
-Apparently-To: <dmc@viapragensis.cz>
-Apparently-To: <flora.waardahl@viaplay.com>
-Apparently-To: <info@viaphoniker.de>
-Apparently-To: <karrenbauer@viaone.de>
-Apparently-To: <schroeder@vianova-jugendhilfe.de>
-Apparently-To: <info@viani.de>
-Apparently-To: <m.warg@vianetworks.de>
-Apparently-To: <sonic@vianet.on.ca>
-Apparently-To: <julian@vianet.on.ca>
-Apparently-To: <mdghobby@vianet.net.au>
-Apparently-To: <mark@vianet.net.au>
-Apparently-To: <jackson@vianet.net.au>
-Apparently-To: <dij@vianet.net.au>
-Apparently-To: <angelique@vianet.net.au>
-Apparently-To: <ivo.wegmann@vianco.ch>
-Apparently-To: <info@vianatura.gr>
-Apparently-To: <sophia.bickhardt@viamot.de>
-Apparently-To: <monferrini@viamilanomedici.net>
-Apparently-To: <info@viamedia-stiftung.de>
-Apparently-To: <advicerconsultores@viajesycultura.net>
-Apparently-To: <adela.aroca@viajesycultura.net>
-Apparently-To: <dionis@viajessancristobal.cu>
-Apparently-To: <mexico@viajesmeca.com>
-Apparently-To: <torremolinos@viajesmaster.com>
-Apparently-To: <rafael.mesa@viajesinsular.es>
-Apparently-To: <juanjo.garcia@viajesiberia.com>
-Apparently-To: <rmunoz@viajesdublin.com>
-Apparently-To: <acerrada@viajescrisol.com>
-Apparently-To: <jgomez@viajescolumbia.com>
-Apparently-To: <ferias@viajesagadir.com>
-Apparently-To: <com.incentivos@viajes.cha.cyt.cu>
-Apparently-To: <whuber@viaiulia.net>
-Apparently-To: <agnieszka-goerdt@viahansa.com>
-Apparently-To: <grupos@viagenselcorteingles.pt>
-Apparently-To: <juliomachado@viagenscvc.com.br>
-Apparently-To: <akselsen@viagalante.no>
-Apparently-To: <noreply@viaembratel.net.br>
-Apparently-To: <no-reply@viaembratel.net.br>
-Apparently-To: <ax@viaduk.net>
-Apparently-To: <reena@viadubaitravels.ae>
-Apparently-To: <chris@viadubaitravels.ae>
-Apparently-To: <info@viadrina-sprachen.com>
-Apparently-To: <gf.furmanek@viadrina-sprachen.com>
-Apparently-To: <paco@viada.fi>
-Apparently-To: <Zaimantas@viacon.lt>
-Apparently-To: <fanatic@viacobra.de>
-Apparently-To: <scorpiowp@viaccess.net>
-Apparently-To: <viacampesina@viacampesina.org>
-Apparently-To: <viabizzuno@viabizzuno.com>
-Apparently-To: <mail@viabel.de>
-Apparently-To: <angela@viabalaena.de>
-Apparently-To: <fischer@via.rwth-aachen.de>
-Apparently-To: <walber@via.de>
-Apparently-To: <muellaue@via.at>
-Apparently-To: <V.Rayen@via-verkehr.de>
-Apparently-To: <rpuiatti@via-rs.net>
-Apparently-To: <postopinheiro@via-rs.net>
-Apparently-To: <gerhard.schilk@via-donau.org>
-Apparently-To: <info@via-belle.de>
-Apparently-To: <dietrich.roth@via-aachen.de>
-Apparently-To: <pcr@vi.org>
-Apparently-To: <info@vhv-bergmann.de>
-Apparently-To: <bueter@vhv-anlagenbau.de>
-Apparently-To: <etta@vhuelsen.de>
-Apparently-To: <CChristmann@vhu.de>
-Apparently-To: <bremen@vht-online.de>
-Apparently-To: <uefa@vhsrt.de>
-Apparently-To: <heikemariefischer@vhsrottenburg.de>
-Apparently-To: <wbz.uebungsfirma@vhsbw.de>
-Apparently-To: <silvia.wirth@vhsbw.de>
-Apparently-To: <herbert.busch@vhsbw.de>
-Apparently-To: <stefan.vater@vhs.or.at>
-Apparently-To: <rita.landauer@vhs.or.at>
-Apparently-To: <Wilhelm.filla@vhs.or.at>
-Apparently-To: <burchards@vhs.norderstedt.de>
-Apparently-To: <anmeldung@vhs.herrenberg.de>
-Apparently-To: <cbordihn@vhs.essen.de>
-Apparently-To: <michaela.judy@vhs.at>
-Apparently-To: <szimmermann@vhs-wiesbaden.de>
-Apparently-To: <geschatsstelle@vhs-weilheim.de>
-Apparently-To: <joachim.rose@vhs-wedel.de>
-Apparently-To: <vhs@vhs-waltrop.de>
-Apparently-To: <kerstin.lauer@vhs-th.de>
-Apparently-To: <janine.pianetti@vhs-stuttgart.de>
-Apparently-To: <maus@vhs-stade.de>
-Apparently-To: <info@vhs-sinsheim.de>
-Apparently-To: <lv@vhs-sh.de>
-Apparently-To: <daniel.dietrich@vhs-schorndorf.de>
-Apparently-To: <briefkasten@vhs-re.de>
-Apparently-To: <dettmer@vhs-pinneberg.de>
-Apparently-To: <kontakt@vhs-papenburg.de>
-Apparently-To: <info@vhs-osnabrueck.de>
-Apparently-To: <sajons@vhs-olching.de>
-Apparently-To: <finger@vhs-nuertingen.de>
-Apparently-To: <kroeger@vhs-norderstedt.de>
-Apparently-To: <aroessler@vhs-neumarkt.de>
-Apparently-To: <g.eder@vhs-muehldorf.de>
-Apparently-To: <vhs@vhs-mainz.de>
-Apparently-To: <j.blohm@vhs-lingen.de>
-Apparently-To: <info@vhs-lauenburg.de>
-Apparently-To: <konstanz@vhs-konstanz-singen.de>
-Apparently-To: <info@vhs-kaufbeuren.de>
-Apparently-To: <seniorenservicebuero@vhs-hildesheim.de>
-Apparently-To: <pruss@vhs-hildesheim.de>
-Apparently-To: <inf@vhs-hildesheim.de>
-Apparently-To: <info@vhs-haltern.de>
-Apparently-To: <info@vhs-goettingen.de>
-Apparently-To: <vhs@vhs-freising.org>
-Apparently-To: <info@vhs-emden.de>
-Apparently-To: <filmfest@vhs-emden.de>
-Apparently-To: <christian.wolf@vhs-dresden.de>
-Apparently-To: <info@vhs-dreisamtal.de>
-Apparently-To: <vhs@vhs-dossenheim.de>
-Apparently-To: <vhs@vhs-diepholz.de>
-Apparently-To: <ute.wicke@vhs-diepholz.de>
-Apparently-To: <freudenburg@vhs-diepholz.de>
-Apparently-To: <info@vhs-delmenhorst.de>
-Apparently-To: <kockesen@vhs-bw.de>
-Apparently-To: <info@vhs-bw.de>
-Apparently-To: <ute.koopmann@vhs-braunschweig.de>
-Apparently-To: <info@vhs-braunschweig.de>
-Apparently-To: <info@vhs-bottrop.de>
-Apparently-To: <lucia.pauli@vhs-bayern.de>
-Apparently-To: <verwaltung@vhs-bad-saeckingen.de>
-Apparently-To: <info@vhs-backnang.de>
-Apparently-To: <info@vhs-aukrug.de>
-Apparently-To: <meitingen@vhs-augsburger-land.de>
-Apparently-To: <stefan.glocker@vhs-augsburg.de>
-Apparently-To: <m.ramani@vhs-augsburg.de>
-Apparently-To: <brigitte.loibl@vhs-augsburg.de>
-Apparently-To: <kelava@vhs-aschaffenburg.de>
-Apparently-To: <info@vhs-albstadt.de>
-Apparently-To: <christian.fiebig@vhs-aktuell.de>
-Apparently-To: <boer@vhs-ahaus.thn>
-Apparently-To: <petra@vheyking.de>
-Apparently-To: <cjvazque@vhebron.net>
-Apparently-To: <grier@vhda.com>
-Apparently-To: <bob.grier@vhda.com>
-Apparently-To: <wiwo@vhb.de>
-Apparently-To: <m.buchenau@vhb.de>
-Apparently-To: <k.leitel@vhb.de>
-Apparently-To: <hb.wipo@vhb.de>
-Apparently-To: <hb.online@vhb.de>
-Apparently-To: <handelsblatt@vhb.de>
-Apparently-To: <handelsblatt.com@vhb.de>
-Apparently-To: <f.meiners@vhb.de>
-Apparently-To: <Handelsblatt@vhb.de>
-Apparently-To: <r.scheck@vhb-memmingen.de>
-Apparently-To: <vonhoerner@vh-s.de>
-Apparently-To: <info@vh-himbert.de>
-Apparently-To: <vgw@vgwort.de>
-Apparently-To: <Robert.Staats@vgwort.de>
-Apparently-To: <Edgar.heeb@vgwoerrstadt.de>
-Apparently-To: <rothenfeldschule@vgwaldmohr.de>
-Apparently-To: <info@vgvkh.de>
-Apparently-To: <abartig@vgvilla.com>
-Apparently-To: <info@vgv.daun.de>
-Apparently-To: <buergermeister@vgv-neumagen-dhron.de>
-Apparently-To: <hesse@vgv-mbh.de>
-Apparently-To: <birute.tamulaitiene@vgtu.lt>
-Apparently-To: <algirdas.sakalys@vgtu.lt>
-Apparently-To: <msobianin@vgtrk.com>
-Apparently-To: <bartels@vgstuttgart.justiz.bwl.de>
-Apparently-To: <poststelle@vgsk.rlp.de>
-Apparently-To: <presse@vgschlotheim.thueringen.de>
-Apparently-To: <vgs@vgs-neuss.de>
-Apparently-To: <vgs@vgs-bled.si>
-Apparently-To: <mojca.jost@vgs-bled.si>
-Apparently-To: <clemens@vgronau.de>
-Apparently-To: <tomas.olsson@vgregion.se>
-Apparently-To: <roland.andersson@vgregion.se>
-Apparently-To: <per.horberg@vgregion.se>
-Apparently-To: <maud.sundqwist@vgregion.se>
-Apparently-To: <lars.e.nordstrom@vgregion.se>
-Apparently-To: <johnny.magnusson@vgregion.se>
-Apparently-To: <hans-ake.persson@vgregion.se>
-Apparently-To: <eva.fred@vgregion.se>
-Apparently-To: <cecilia.i.karlberg@vgregion.se>
-Apparently-To: <annette.ternstedt@vgregion.se>
-Apparently-To: <anneli.stark@vgregion.se>
-Apparently-To: <t.jung@vgo-arche-atrium.de>
-Apparently-To: <dr.jaeger@vgna.de>
-Apparently-To: <andrea.meier@vgna.de>
-Apparently-To: <info@vgmammendorf.de>
-Apparently-To: <ravipant@vgmail.in>
-Apparently-To: <abdullaha@vgmail.in>
-Apparently-To: <cblass@vgm-portal.de>
-Apparently-To: <rose-marie.mennel@vgkk.at>
-Apparently-To: <eeklind@vgif.org>
-Apparently-To: <wmhsu@vghtpe.gov.tw>
-Apparently-To: <stefan.schultz@vgh.de>
-Apparently-To: <peter.nozinski@vgh.de>
-Apparently-To: <peter.meier@vgh.de>
-Apparently-To: <lars.warneke@vgh.de>
-Apparently-To: <josef.leinemann@vgh.de>
-Apparently-To: <jens.paul@vgh.de>
-Apparently-To: <hermann-josef.albers@vgh.de>
-Apparently-To: <guenter.wessel@vgh.de>
-Apparently-To: <guenter.menken@vgh.de>
-Apparently-To: <gisela.borchers@vgh.de>
-Apparently-To: <frank.rasche@vgh.de>
-Apparently-To: <eckart.welz@vgh.de>
-Apparently-To: <dennis.pletz@vgh.de>
-Apparently-To: <annika.truemper@vgh.de>
-Apparently-To: <Klaus.Baumgarten@vgh.de>
-Apparently-To: <ellery.knake@vgh.bayern.de>
-Apparently-To: <hans.theunissen@vggm.nl>
-Apparently-To: <D.Rabenau@vgf-ffm.de>
-Apparently-To: <linux-wireless@vger.kernel.org>
-Apparently-To: <linux-kernel@vger.kernel.org>
-Apparently-To: <edmund.wirzberger@vgem-partenstein.bayern.de>
-Apparently-To: <poststelle@vgem-neusorg.de>
-Apparently-To: <konrad.koenig@vgem-neusorg.de>
-Apparently-To: <heinrich.bauersachs@vgem-mitwitz.de>
-Apparently-To: <amtsblatt.bischbrunn@vgem-marktheidenfeld.de>
-Apparently-To: <poststelle@vgem-kraiburg-a-inn.bayern.de>
-Apparently-To: <poststelle@vgem-huglfing.de>
-Apparently-To: <post@vgem-estenfeld.bayern.de>
-Apparently-To: <josef.melder@vgem-eggenthal.bayern.de>
-Apparently-To: <info@vge.de>
-Apparently-To: <bestellung@vgbahn.de>
-Apparently-To: <gerda.behrendes@vgb.org>
-Apparently-To: <dagmar.husert@vgb.de>
-Apparently-To: <liz.cullum@vgaustralia.com>
-Apparently-To: <veronica@vgarq.cl>
-Apparently-To: <info@vg-wolfstein.de>
-Apparently-To: <waldemar.kirsch@vg-weilerbach.de>
-Apparently-To: <teresa.karayel@vg-weilerbach.de>
-Apparently-To: <susanne.storck@vg-weilerbach.de>
-Apparently-To: <ina.radtke@vg-weilerbach.de>
-Apparently-To: <hans-joachim.gebhardt@vg-weilerbach.de>
-Apparently-To: <daniela.lenhardt@vg-weilerbach.de>
-Apparently-To: <axel.grob@vg-weilerbach.de>
-Apparently-To: <touristinfo@vg-wachenheim.de>
-Apparently-To: <Touristinfo@vg-wachenheim.de>
-Apparently-To: <administration@vg-u.de>
-Apparently-To: <irene.zenkel@vg-troestau.de>
-Apparently-To: <ulrich.endras@vg-stiefenhofen.de>
-Apparently-To: <jobauer@vg-salzbruecke.de>
-Apparently-To: <scharf@vg-potsdam.brandenburg.de>
-Apparently-To: <ramdohr.heike@vg-orth.de>
-Apparently-To: <grabfelder.gerd@vg-orth.de>
-Apparently-To: <info@vg-monheim.de>
-Apparently-To: <rolf.baum@vg-meissen.de>
-Apparently-To: <baumann@vg-meisenheim.de>
-Apparently-To: <info@vg-lingenfeld.de>
-Apparently-To: <touristinfo@vg-lambrecht.de>
-Apparently-To: <e.lindau@vg-kindelbrueck.de>
-Apparently-To: <ch.scharfe@vg-kindelbrueck.de>
-Apparently-To: <marktwesen@vg-kandel.de>
-Apparently-To: <Gleichstellungsbeauftragte-GemO@vg-h.de>
-Apparently-To: <info@vg-grafrath.de>
-Apparently-To: <christine.distler@vg-gosberg.de>
-Apparently-To: <stefan.petry@vg-gau-algesheim.de>
-Apparently-To: <simone.schiavo@vg-gau-algesheim.de>
-Apparently-To: <info@vg-gau-algesheim.de>
-Apparently-To: <christian.fuerst@vg-gau-algesheim.de>
-Apparently-To: <beate.kenn@vg-gau-algesheim.de>
-Apparently-To: <amtsblatt@vg-gau-algesheim.de>
-Apparently-To: <amtsblatt@vg-freinsheim.de>
-Apparently-To: <gemeinschaftsvorsitzender@vg-dornburg-camburg.de>
-Apparently-To: <bau-liegenschaften@vg-dornburg-camburg.de>
-Apparently-To: <Martina.Kroeper@vg-deidesheim.rlp.de>
-Apparently-To: <Martina.Daniels@vg-deidesheim.rlp.de>
-Apparently-To: <info@vg-boos.de>
-Apparently-To: <verwaltung@vg-bodenheim.de>
-Apparently-To: <ingo.riebel@vg-bodenheim.de>
-Apparently-To: <caroline.hassemer@vg-bodenheim.de>
-Apparently-To: <annika.jeremies@vg-bodenheim.de>
-Apparently-To: <winfried.schneider@vg-altenkirchen.de>
-Apparently-To: <a.mohr@vg-alsenz-obermoschel.de>
-Apparently-To: <info@vfw123.de>
-Apparently-To: <hannover@vfw.de>
-Apparently-To: <manager@vfv.de>
-Apparently-To: <mail@vfv-langenhagen.org>
-Apparently-To: <office@vfv-duernkrut-waidendorf.at>
-Apparently-To: <rektor@vfu.cz>
-Apparently-To: <prorektorvvz@vfu.cz>
-Apparently-To: <rector@vfu.bg>
-Apparently-To: <projects@vfu.bg>
-Apparently-To: <vernie@vfsourcing.com>
-Apparently-To: <ross@vfsl.co.zw>
-Apparently-To: <valdis@vfs.lv>
-Apparently-To: <larry@vfs.com>
-Apparently-To: <juergen.czerny-strubl@vfrmeerholz.de>
-Apparently-To: <christine@vfrankenberg.de>
-Apparently-To: <klaus.busch@vfr09meerholz-jugend.de>
-Apparently-To: <peter.bode@vfr08-osterode.de>
-Apparently-To: <info@vfr06.de>
-Apparently-To: <JGF@vfr-wuerselen-jugend.de>
-Apparently-To: <info@vfr-weddel.de>
-Apparently-To: <Bernd@vfr-ruesselsheim.de>
-Apparently-To: <ralf.auer@vfr-mannheim.de>
-Apparently-To: <kontakt@vfr-mannheim.de>
-Apparently-To: <friedbert.daniels@vfr-linden-neusen.com>
-Apparently-To: <alboule@vfr-koblenz.de>
-Apparently-To: <info@vfr-eberstadt.de>
-Apparently-To: <bernd.paeffgen@vfpa.fak12.uni-muenchen.de>
-Apparently-To: <anmeldung@vfos.info>
-Apparently-To: <verlagsbuero-sommerfeld@vfmz.de>
-Apparently-To: <service@vfm24.de>
-Apparently-To: <Eva.brannas@vfm.slu.se>
-Apparently-To: <service@vfm.de>
-Apparently-To: <rudolf.kaep@vfm.de>
-Apparently-To: <metzlerundkalic@vfm.de>
-Apparently-To: <mbgbr@vfm.de>
-Apparently-To: <karl.wagner@vfm.de>
-Apparently-To: <holger.gotthardt@vfm.de>
-Apparently-To: <rolf@vfm-bottrop.de>
-Apparently-To: <info@vflulm.de>
-Apparently-To: <info@vflschwimmen.de>
-Apparently-To: <schwimmen@vfljugend.de>
-Apparently-To: <verein@vflhalle96.de>
-Apparently-To: <dirk.triepel@vflhalle96.de>
-Apparently-To: <ulrichludger.vandoorn@vflgladbeck.de>
-Apparently-To: <rainer.krueger@vflgladbeck.de>
-Apparently-To: <info@vflbrackenheim.de>
-Apparently-To: <jugend@vfl05.de>
-Apparently-To: <JBO@vfl.dk>
-Apparently-To: <fussball@vfl-wolfsburg.de>
-Apparently-To: <Elsner@vfl-wolfsburg.de>
-Apparently-To: <leichtathletik@vfl-wob.de>
-Apparently-To: <dagmar.barbichoofs@vfl-witzhelden.de>
-Apparently-To: <moss@vfl-weisse-elf.de>
-Apparently-To: <marc.brommer@vfl-waiblingen.de>
-Apparently-To: <info@vfl-waiblingen.de>
-Apparently-To: <info@vfl-sindelfingen.de>
-Apparently-To: <info@vfl-schwartbuck.de>
-Apparently-To: <info@vfl-pinneberg.de>
-Apparently-To: <gabi.herold@vfl-pinneberg.de>
-Apparently-To: <geschaeftsstelle@vfl-oldesloe.de>
-Apparently-To: <vogel@vfl-nuernberg-volleyball.de>
-To: unlisted-recipients:; (no To-header on input)
+To: chris@printf.net, ulf.hansson@linaro.org
+CC: shc_work@mail.ru, s.hauer@pengutronix.de, peter.griffin@linaro.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org, agust@denx.de,
+        gsi@denx.de, sbabic@denx.de
+Subject: Re: [PATCH v2 2/2] mmc: mxcmmc: fix the default value for available
+ voltages into mxcmci_probe
+References: <1412778273-13464-1-git-send-email-matteo.facchinetti@sirius-es.it>
+In-Reply-To: <1412778273-13464-1-git-send-email-matteo.facchinetti@sirius-es.it>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to inform you finally about your outstanding Compensation check
-payment of $1,859,000 USD. This compensation is being made to all banks
-and Internet users. For more info, contact the assigned UPS agent for the
-delivery of your cashier check.
+This patch was reviewed, and seems that work it's complete.
 
-Please Send your Name, Address, City, State, Zip Code, Country and
-telephone number to ups-dispatchcs@7mt.org for your cashier check
-delivery.
+Can you merge?
 
-Please note that you are to pay $85 USD fee to the UPS for
-shipping/handling of your cheque parcel.
 
-Thanks for your attention.
-
-Maria Hernandez
-Program Manager
-United Nations Human Settlement Programme
+On 08/10/2014 16:24, Matteo Facchinetti wrote:
+> From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+>
+> If available voltages are not given, mmc_regulator_get_supply() function
+> returns 0 and mxcmmc driver doesn't set a value for ocr_avail mask.
+>
+> In accordance with the comment in platform_data/mmc-mxcmmc.h,
+> fix it, assuming MMC_VDD_32_33 | MMC_VDD_33_34 as default value.
+>
+> Signed-off-by: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+> ---
+> v2:
+> * Add test to check if mmc->ocr_avail is setted by mmc_regulator_get_supply().
+>    This will prevent that it be overwritten unconditionally.
+> ---
+>   drivers/mmc/host/mxcmmc.c | 12 +++++++-----
+>   1 file changed, 7 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
+> index 536a898..5316d9b 100644
+> --- a/drivers/mmc/host/mxcmmc.c
+> +++ b/drivers/mmc/host/mxcmmc.c
+> @@ -1077,12 +1077,14 @@ static int mxcmci_probe(struct platform_device *pdev)
+>   		dat3_card_detect = true;
+>   
+>   	ret = mmc_regulator_get_supply(mmc);
+> -	if (ret) {
+> -		if (pdata && ret != -EPROBE_DEFER)
+> -			mmc->ocr_avail = pdata->ocr_avail ? :
+> -				MMC_VDD_32_33 | MMC_VDD_33_34;
+> +	if (ret == -EPROBE_DEFER)
+> +		goto out_free;
+> +
+> +	if (!mmc->ocr_avail) {
+> +		if (pdata && pdata->ocr_avail)
+> +			mmc->ocr_avail = pdata->ocr_avail;
+>   		else
+> -			goto out_free;
+> +			mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+>   	}
+>   
+>   	if (dat3_card_detect)
 
