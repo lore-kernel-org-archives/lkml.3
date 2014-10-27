@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832AbaJ0TAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:00:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52495 "EHLO
+	id S1752855AbaJ0TAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:00:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52501 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892AbaJ0TAN (ORCPT
+	with ESMTP id S1752116AbaJ0TAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:00:13 -0400
+	Mon, 27 Oct 2014 15:00:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Borislav Petkov <bp@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 069/105] mpc85xx_edac: Make L2 interrupt shared too
-Date: Mon, 27 Oct 2014 11:56:44 -0700
-Message-Id: <1414436240-13879-70-git-send-email-kamal@canonical.com>
+Cc: "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 056/105] lzo: check for length overrun in variable length encoding.
+Date: Mon, 27 Oct 2014 11:56:31 -0700
+Message-Id: <1414436240-13879-57-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -26,77 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@suse.de>
+From: Willy Tarreau <w@1wt.eu>
 
-commit a18c3f16a907b8977ef65fc8dd71ed3f7b751748 upstream.
+commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
 
-The other two interrupt handlers in this driver are shared, except this
-one. When loading the driver, it fails like this.
+This fix ensures that we never meet an integer overflow while adding
+255 while parsing a variable length encoding. It works differently from
+commit 206a81c ("lzo: properly check for overruns") because instead of
+ensuring that we don't overrun the input, which is tricky to guarantee
+due to many assumptions in the code, it simply checks that the cumulated
+number of 255 read cannot overflow by bounding this number.
 
-So make the IRQ line shared.
+The MAX_255_COUNT is the maximum number of times we can add 255 to a base
+count without overflowing an integer. The multiply will overflow when
+multiplying 255 by more than MAXINT/255. The sum will overflow earlier
+depending on the base count. Since the base count is taken from a u8
+and a few bits, it is safe to assume that it will always be lower than
+or equal to 2*255, thus we can always prevent any overflow by accepting
+two less 255 steps.
 
-Freescale(R) MPC85xx EDAC driver, (C) 2006 Montavista Software
-mpc85xx_mc_err_probe: No ECC DIMMs discovered
-EDAC DEVICE0: Giving out device to module MPC85xx_edac controller mpc85xx_l2_err: DEV mpc85xx_l2_err (INTERRUPT)
-genirq: Flags mismatch irq 16. 00000000 ([EDAC] L2 err) vs. 00000080 ([EDAC] PCI err)
-mpc85xx_l2_err_probe: Unable to request irq 16 for MPC85xx L2 err
-remove_proc_entry: removing non-empty directory 'irq/16', leaking at least 'aerdrv'
-------------[ cut here ]------------
-WARNING: at fs/proc/generic.c:521
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc5-dirty #1
-task: ee058000 ti: ee046000 task.ti: ee046000
-NIP: c016c0c4 LR: c016c0c4 CTR: c037b51c
-REGS: ee047c10 TRAP: 0700 Not tainted (3.17.0-rc5-dirty)
-MSR: 00029000 <CE,EE,ME> CR: 22008022 XER: 20000000
+This patch also reduces the CPU overhead and actually increases performance
+by 1.1% compared to the initial code, while the previous fix costs 3.1%
+(measured on x86_64).
 
-GPR00: c016c0c4 ee047cc0 ee058000 00000053 00029000 00000000 c037c744 00000003
-GPR08: c09aab28 c09aab24 c09aab28 00000156 20008028 00000000 c0002ac8 00000000
-GPR16: 00000000 00000000 00000000 00000000 00000000 00000000 00000139 c0950394
-GPR24: c09f0000 ee5585b0 ee047d08 c0a10000 ee047d08 ee15f808 00000002 ee03f660
-NIP [c016c0c4] remove_proc_entry
-LR [c016c0c4] remove_proc_entry
-Call Trace:
-remove_proc_entry (unreliable)
-unregister_irq_proc
-free_desc
-irq_free_descs
-mpc85xx_l2_err_probe
-platform_drv_probe
-really_probe
-__driver_attach
-bus_for_each_dev
-bus_add_driver
-driver_register
-mpc85xx_mc_init
-do_one_initcall
-kernel_init_freeable
-kernel_init
-ret_from_kernel_thread
-Instruction dump: ...
+The fix needs to be backported to all currently supported stable kernels.
 
-Reported-and-tested-by: <lpb_098@163.com>
-Acked-by: Johannes Thumshirn <johannes.thumshirn@men.de>
-Signed-off-by: Borislav Petkov <bp@suse.de>
-[ kamal: backport to 3.13-stable: context ]
+Reported-by: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/edac/mpc85xx_edac.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/lzo/lzo1x_decompress_safe.c | 43 +++++++++++++++++++++++++++++++++++------
+ 1 file changed, 37 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index fd46b0b..8d017ec 100644
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -557,7 +557,7 @@ static int mpc85xx_l2_err_probe(struct platform_device *op)
- 	if (edac_op_state == EDAC_OPSTATE_INT) {
- 		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
- 		res = devm_request_irq(&op->dev, pdata->irq,
--				       mpc85xx_l2_isr, IRQF_DISABLED,
-+				       mpc85xx_l2_isr, IRQF_SHARED,
- 				       "[EDAC] L2 err", edac_dev);
- 		if (res < 0) {
- 			printk(KERN_ERR
+diff --git a/lib/lzo/lzo1x_decompress_safe.c b/lib/lzo/lzo1x_decompress_safe.c
+index 569985d..a1c387f 100644
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -25,6 +25,16 @@
+ #define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
+ #define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+ 
++/* This MAX_255_COUNT is the maximum number of times we can add 255 to a base
++ * count without overflowing an integer. The multiply will overflow when
++ * multiplying 255 by more than MAXINT/255. The sum will overflow earlier
++ * depending on the base count. Since the base count is taken from a u8
++ * and a few bits, it is safe to assume that it will always be lower than
++ * or equal to 2*255, thus we can always prevent any overflow by accepting
++ * two less 255 steps. See Documentation/lzo.txt for more information.
++ */
++#define MAX_255_COUNT      ((((size_t)~0) / 255) - 2)
++
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+ {
+@@ -55,12 +65,19 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 		if (t < 16) {
+ 			if (likely(state == 0)) {
+ 				if (unlikely(t == 0)) {
++					size_t offset;
++					const unsigned char *ip_last = ip;
++
+ 					while (unlikely(*ip == 0)) {
+-						t += 255;
+ 						ip++;
+ 						NEED_IP(1);
+ 					}
+-					t += 15 + *ip++;
++					offset = ip - ip_last;
++					if (unlikely(offset > MAX_255_COUNT))
++						return LZO_E_ERROR;
++
++					offset = (offset << 8) - offset;
++					t += offset + 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+@@ -116,12 +133,19 @@ copy_literal_run:
+ 		} else if (t >= 32) {
+ 			t = (t & 31) + (3 - 1);
+ 			if (unlikely(t == 2)) {
++				size_t offset;
++				const unsigned char *ip_last = ip;
++
+ 				while (unlikely(*ip == 0)) {
+-					t += 255;
+ 					ip++;
+ 					NEED_IP(1);
+ 				}
+-				t += 31 + *ip++;
++				offset = ip - ip_last;
++				if (unlikely(offset > MAX_255_COUNT))
++					return LZO_E_ERROR;
++
++				offset = (offset << 8) - offset;
++				t += offset + 31 + *ip++;
+ 				NEED_IP(2);
+ 			}
+ 			m_pos = op - 1;
+@@ -134,12 +158,19 @@ copy_literal_run:
+ 			m_pos -= (t & 8) << 11;
+ 			t = (t & 7) + (3 - 1);
+ 			if (unlikely(t == 2)) {
++				size_t offset;
++				const unsigned char *ip_last = ip;
++
+ 				while (unlikely(*ip == 0)) {
+-					t += 255;
+ 					ip++;
+ 					NEED_IP(1);
+ 				}
+-				t += 7 + *ip++;
++				offset = ip - ip_last;
++				if (unlikely(offset > MAX_255_COUNT))
++					return LZO_E_ERROR;
++
++				offset = (offset << 8) - offset;
++				t += offset + 7 + *ip++;
+ 				NEED_IP(2);
+ 			}
+ 			next = get_unaligned_le16(ip);
 -- 
 1.9.1
 
