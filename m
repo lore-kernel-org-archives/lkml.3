@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752650AbaJ0VvE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 17:51:04 -0400
-Received: from fieldses.org ([174.143.236.118]:43860 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752325AbaJ0VvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 17:51:02 -0400
-Date: Mon, 27 Oct 2014 17:51:01 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] nfsd bugfixes for 3.18
-Message-ID: <20141027215101.GA32743@fieldses.org>
+	id S1752680AbaJ0Vyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 17:54:40 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:46173 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752318AbaJ0Vyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 17:54:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+In-Reply-To: <alpine.DEB.2.11.1410272223330.5308@nanos>
+References: <1414388748-3333-1-git-send-email-pang.xunlei@linaro.org>
+	<alpine.DEB.2.11.1410272223330.5308@nanos>
+Date: Mon, 27 Oct 2014 14:54:38 -0700
+Message-ID: <CALAqxLV39LXWO6Lg+q8sU3SbrXh=8=gDqzpF1BGYckXB7Odn6g@mail.gmail.com>
+Subject: Re: [PATCH RFC 01/12] time: Rename mktime() to mktime_unsafe()
+From: John Stultz <john.stultz@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "pang.xunlei" <pang.xunlei@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull nfsd bugfixes from:
+On Mon, Oct 27, 2014 at 2:38 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 27 Oct 2014, pang.xunlei wrote:
+>
+>> The kernel uses 32-bit signed value(time_t) for seconds since 1970-01-01:00:00:00, thus it
+>> will overflow at 2038-01-19 03:14:08 on 32-bit systems. We call this "2038 safety" issue.
+>>
+>> Currently, mktime() deals with "unsigned long" which is 2038 unsafe on 32-bit systems.
+>>
+>> As part of addressing 2038 saftey for in-kernel uses, this patch renames mktime() to
+>> mktime_unsafe(), and changes all its calling users correspondingly. The safe version
+>> of mktime() will be added in the following patch.
+>
+> This is a flag day change. We really want to avoid that. Can we please
+> add a new interface first, then convert all the existing users and
+> kill the old interface.
+>
+> If we really care we can rename it back to the old name once all that
+> has been done, but I personally do not care whether its mktime or
+> mktime64 as long as it is fixed proper.
 
-  git://linux-nfs.org/~bfields/linux.git for-3.18
+This was my bad, as I gave him guidance here. I was hoping to avoid
+doing the one-by-one function renaming dance twice, just to fix the
+function.
 
-One regression from the 3.16 xdr rewrite, one an older bug exposed by a
-separate bug in the client's new SEEK code.
+But you're probably right, and someone will probably add a new usage
+right before this gets merged and we'll have some pain there.
 
---b.
-
-----------------------------------------------------------------
-J. Bruce Fields (2):
-      nfsd4: fix response size estimation for OP_SEQUENCE
-      nfsd4: fix crash on unknown operation number
-
- fs/nfsd/nfs4proc.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+-john
