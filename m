@@ -1,187 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaJ0SaV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:30:21 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:57132 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513AbaJ0SaS (ORCPT
+	id S1751903AbaJ0S3x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:29:53 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:39403 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751191AbaJ0S3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:30:18 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-doc@vger.kernel.org,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v3] gpio: lib-sysfs: Add 'wakeup' attribute
-Date: Mon, 27 Oct 2014 11:30:02 -0700
-Message-Id: <1414434602-14263-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 2.1.2.1.g5e69ed6
+	Mon, 27 Oct 2014 14:29:50 -0400
+Message-Id: <20141027182948.432689737@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Mon, 27 Oct 2014 14:27:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jiri Kosina <jkosina@suse.cz>, Josh Poimboeuf <jpoimboe@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [for-next][PATCH 2/4] ftrace/x86: Show trampoline call function in enabled_functions
+References: <20141027182702.778680710@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0002-ftrace-x86-Show-trampoline-call-function-in-enabled_.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an attribute 'wakeup' to the GPIO sysfs interface which allows
-marking/unmarking a GPIO as wake IRQ.
-The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
-is associated with that GPIO and the irqchip implements set_wake().
-Writing 'enabled' to that file will enable wake for that GPIO, while
-writing 'disabled' will disable wake.
-Reading that file will return either 'disabled' or 'enabled' depening on
-the currently set flag for the GPIO's IRQ.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+The file /sys/kernel/debug/tracing/eneabled_functions is used to debug
+ftrace function hooks. Add to the output what function is being called
+by the trampoline if the arch supports it.
+
+Add support for this feature in x86_64.
+
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
-v3:
- - add documentation
-v2:
- - fix error path to unlock mutex before return
+ arch/x86/kernel/ftrace.c | 98 ++++++++++++++++++++++++++++++++++++++++++------
+ kernel/trace/ftrace.c    | 22 ++++++++++-
+ 2 files changed, 106 insertions(+), 14 deletions(-)
 
-As additional reference, these are the email threads of the v2 and v1
-submission:
-https://lkml.org/lkml/2014/10/13/481
-https://lkml.org/lkml/2014/9/4/496
----
- Documentation/ABI/testing/sysfs-gpio |  1 +
- Documentation/gpio/sysfs.txt         |  8 ++++
- drivers/gpio/gpiolib-sysfs.c         | 77 +++++++++++++++++++++++++++++++++---
- 3 files changed, 80 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-gpio b/Documentation/ABI/testing/sysfs-gpio
-index 80f4c94c7bef..4cc7f4b3f724 100644
---- a/Documentation/ABI/testing/sysfs-gpio
-+++ b/Documentation/ABI/testing/sysfs-gpio
-@@ -20,6 +20,7 @@ Description:
- 	    /value ... always readable, writes fail for input GPIOs
- 	    /direction ... r/w as: in, out (default low); write: high, low
- 	    /edge ... r/w as: none, falling, rising, both
-+	    /wakeup ... r/w as: enabled, disabled
- 	/gpiochipN ... for each gpiochip; #N is its first GPIO
- 	    /base ... (r/o) same as N
- 	    /label ... (r/o) descriptive, not necessarily unique
-diff --git a/Documentation/gpio/sysfs.txt b/Documentation/gpio/sysfs.txt
-index c2c3a97f8ff7..f703377d528f 100644
---- a/Documentation/gpio/sysfs.txt
-+++ b/Documentation/gpio/sysfs.txt
-@@ -97,6 +97,14 @@ and have the following read/write attributes:
- 		for "rising" and "falling" edges will follow this
- 		setting.
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index e4d48f6cad86..ca17c20a1010 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -48,7 +48,7 @@ int ftrace_arch_code_modify_post_process(void)
+ union ftrace_code_union {
+ 	char code[MCOUNT_INSN_SIZE];
+ 	struct {
+-		char e8;
++		unsigned char e8;
+ 		int offset;
+ 	} __attribute__((packed));
+ };
+@@ -797,12 +797,26 @@ static unsigned long create_trampoline(struct ftrace_ops *ops)
+ 	return (unsigned long)trampoline;
+ }
  
-+	"wakeup" ... reads as either "enabled" or "disabled". Write these
-+		strings to set/clear the 'wakeup' flag of the IRQ associated
-+		with this GPIO. If the IRQ has the 'wakeup' flag set, it can
-+		wake the system from sleep states.
-+
-+		This file exists only if the pin can generate interrupts and
-+		the driver implements the required infrastructure.
-+
- GPIO controllers have paths like /sys/class/gpio/gpiochip42/ (for the
- controller implementing GPIOs starting at #42) and have the following
- read-only attributes:
-diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
-index 5f2150b619a7..7588b6d5ba94 100644
---- a/drivers/gpio/gpiolib-sysfs.c
-+++ b/drivers/gpio/gpiolib-sysfs.c
-@@ -286,6 +286,58 @@ found:
- 
- static DEVICE_ATTR(edge, 0644, gpio_edge_show, gpio_edge_store);
- 
-+static ssize_t gpio_wakeup_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
++static unsigned long calc_trampoline_call_offset(bool save_regs)
 +{
-+	ssize_t			status;
-+	const struct gpio_desc	*desc = dev_get_drvdata(dev);
-+	int			irq = gpiod_to_irq(desc);
-+	struct irq_desc		*irq_desc = irq_to_desc(irq);
++	unsigned long start_offset;
++	unsigned long call_offset;
 +
-+	mutex_lock(&sysfs_lock);
-+
-+	if (irqd_is_wakeup_set(&irq_desc->irq_data))
-+		status = sprintf(buf, "enabled\n");
-+	else
-+		status = sprintf(buf, "disabled\n");
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status;
-+}
-+
-+static ssize_t gpio_wakeup_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	int			ret;
-+	unsigned int		on;
-+	struct gpio_desc	*desc = dev_get_drvdata(dev);
-+	int			irq = gpiod_to_irq(desc);
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	if (sysfs_streq("enabled", buf)) {
-+		on = true;
-+	} else if (sysfs_streq("disabled", buf)) {
-+		on = false;
++	if (save_regs) {
++		start_offset = (unsigned long)ftrace_regs_caller;
++		call_offset = (unsigned long)ftrace_regs_call;
 +	} else {
-+		mutex_unlock(&sysfs_lock);
-+		return -EINVAL;
++		start_offset = (unsigned long)ftrace_caller;
++		call_offset = (unsigned long)ftrace_call;
 +	}
 +
-+	ret = irq_set_irq_wake(irq, on);
-+
-+	mutex_unlock(&sysfs_lock);
-+
-+	if (ret)
-+		pr_warn("%s: failed to %s wake\n", __func__,
-+				on ? "enable" : "disable");
-+
-+	return size;
++	return call_offset - start_offset;
 +}
 +
-+static DEVICE_ATTR(wakeup, 0644, gpio_wakeup_show, gpio_wakeup_store);
-+
- static int sysfs_set_active_low(struct gpio_desc *desc, struct device *dev,
- 				int value)
+ void arch_ftrace_update_trampoline(struct ftrace_ops *ops)
  {
-@@ -526,7 +578,7 @@ static struct class gpio_class = {
- int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- {
- 	unsigned long		flags;
--	int			status;
-+	int			status, irq;
- 	const char		*ioname = NULL;
- 	struct device		*dev;
- 	int			offset;
-@@ -582,11 +634,24 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
- 			goto fail_unregister_device;
+ 	ftrace_func_t func;
+ 	unsigned char *new;
+-	unsigned long start_offset;
+-	unsigned long call_offset;
+ 	unsigned long offset;
+ 	unsigned long ip;
+ 	int ret;
+@@ -820,15 +834,7 @@ void arch_ftrace_update_trampoline(struct ftrace_ops *ops)
+ 			return;
  	}
  
--	if (gpiod_to_irq(desc) >= 0 && (direction_may_change ||
--				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
--		status = device_create_file(dev, &dev_attr_edge);
--		if (status)
--			goto fail_unregister_device;
-+	irq = gpiod_to_irq(desc);
-+	if (irq >= 0) {
-+		struct irq_desc *irq_desc = irq_to_desc(irq);
-+		struct irq_chip	*irqchip = irq_desc_get_chip(irq_desc);
-+
-+		if (direction_may_change ||
-+				!test_bit(FLAG_IS_OUT, &desc->flags)) {
-+			status = device_create_file(dev, &dev_attr_edge);
-+			if (status)
-+				goto fail_unregister_device;
-+		}
-+
-+		if (irqchip->flags & IRQCHIP_SKIP_SET_WAKE ||
-+				irqchip->irq_set_wake) {
-+			status = device_create_file(dev, &dev_attr_wakeup);
-+			if (status)
-+				goto fail_unregister_device;
-+		}
- 	}
+-	if (ops->flags & FTRACE_OPS_FL_SAVE_REGS) {
+-		start_offset = (unsigned long)ftrace_regs_caller;
+-		call_offset = (unsigned long)ftrace_regs_call;
+-	} else {
+-		start_offset = (unsigned long)ftrace_caller;
+-		call_offset = (unsigned long)ftrace_call;
+-	}
+-
+-	offset = call_offset - start_offset;
++	offset = calc_trampoline_call_offset(ops->flags & FTRACE_OPS_FL_SAVE_REGS);
+ 	ip = ops->trampoline + offset;
  
- 	set_bit(FLAG_EXPORT, &desc->flags);
+ 	func = ftrace_ops_get_func(ops);
+@@ -840,6 +846,74 @@ void arch_ftrace_update_trampoline(struct ftrace_ops *ops)
+ 	/* The update should never fail */
+ 	WARN_ON(ret);
+ }
++
++/* Return the address of the function the trampoline calls */
++static void *addr_from_call(void *ptr)
++{
++	union ftrace_code_union calc;
++	int ret;
++
++	ret = probe_kernel_read(&calc, ptr, MCOUNT_INSN_SIZE);
++	if (WARN_ON_ONCE(ret < 0))
++		return NULL;
++
++	/* Make sure this is a call */
++	if (WARN_ON_ONCE(calc.e8 != 0xe8)) {
++		pr_warn("Expected e8, got %x\n", calc.e8);
++		return NULL;
++	}
++
++	return ptr + MCOUNT_INSN_SIZE + calc.offset;
++}
++
++void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
++			   unsigned long frame_pointer);
++
++/*
++ * If the ops->trampoline was not allocated, then it probably
++ * has a static trampoline func, or is the ftrace caller itself.
++ */
++static void *static_tramp_func(struct ftrace_ops *ops, struct dyn_ftrace *rec)
++{
++	unsigned long offset;
++	bool save_regs = rec->flags & FTRACE_FL_REGS_EN;
++	void *ptr;
++
++	if (ops && ops->trampoline) {
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++		/*
++		 * We only know about function graph tracer setting as static
++		 * trampoline.
++		 */
++		if (ops->trampoline == FTRACE_GRAPH_ADDR)
++			return (void *)prepare_ftrace_return;
++#endif
++		return NULL;
++	}
++
++	offset = calc_trampoline_call_offset(save_regs);
++
++	if (save_regs)
++		ptr = (void *)FTRACE_REGS_ADDR + offset;
++	else
++		ptr = (void *)FTRACE_ADDR + offset;
++
++	return addr_from_call(ptr);
++}
++
++void *arch_ftrace_trampoline_func(struct ftrace_ops *ops, struct dyn_ftrace *rec)
++{
++	unsigned long offset;
++
++	/* If we didn't allocate this trampoline, consider it static */
++	if (!ops || !(ops->flags & FTRACE_OPS_FL_ALLOC_TRAMP))
++		return static_tramp_func(ops, rec);
++
++	offset = calc_trampoline_call_offset(ops->flags & FTRACE_OPS_FL_SAVE_REGS);
++	return addr_from_call((void *)ops->trampoline + offset);
++}
++
++
+ #endif /* CONFIG_X86_64 */
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+ 
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 15f85eac7e95..422e1f8300b1 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2952,6 +2952,22 @@ static void t_stop(struct seq_file *m, void *p)
+ 	mutex_unlock(&ftrace_lock);
+ }
+ 
++void * __weak
++arch_ftrace_trampoline_func(struct ftrace_ops *ops, struct dyn_ftrace *rec)
++{
++	return NULL;
++}
++
++static void add_trampoline_func(struct seq_file *m, struct ftrace_ops *ops,
++				struct dyn_ftrace *rec)
++{
++	void *ptr;
++
++	ptr = arch_ftrace_trampoline_func(ops, rec);
++	if (ptr)
++		seq_printf(m, " ->%pS", ptr);
++}
++
+ static int t_show(struct seq_file *m, void *v)
+ {
+ 	struct ftrace_iterator *iter = m->private;
+@@ -2975,19 +2991,21 @@ static int t_show(struct seq_file *m, void *v)
+ 
+ 	seq_printf(m, "%ps", (void *)rec->ip);
+ 	if (iter->flags & FTRACE_ITER_ENABLED) {
++		struct ftrace_ops *ops = NULL;
++
+ 		seq_printf(m, " (%ld)%s",
+ 			   ftrace_rec_count(rec),
+ 			   rec->flags & FTRACE_FL_REGS ? " R" : "  ");
+ 		if (rec->flags & FTRACE_FL_TRAMP_EN) {
+-			struct ftrace_ops *ops;
+-
+ 			ops = ftrace_find_tramp_ops_any(rec);
+ 			if (ops)
+ 				seq_printf(m, "\ttramp: %pS",
+ 					   (void *)ops->trampoline);
+ 			else
+ 				seq_printf(m, "\ttramp: ERROR!");
++
+ 		}
++		add_trampoline_func(m, ops, rec);
+ 	}	
+ 
+ 	seq_printf(m, "\n");
 -- 
-2.1.2.1.g5e69ed6
+2.1.1
+
 
