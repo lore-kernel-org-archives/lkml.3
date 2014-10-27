@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaJ0S5G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:57:06 -0400
-Received: from mail.kernel.org ([198.145.19.201]:57766 "EHLO mail.kernel.org"
+	id S1752276AbaJ0S50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:57:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58979 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752036AbaJ0S5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:57:03 -0400
-Date: Mon, 27 Oct 2014 19:56:57 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-api@vger.kernel.org,
-        devicetree@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 4/5] power: max77693: Add charger driver for Maxim
- 77693
-Message-ID: <20141027185656.GB18965@earth.universe>
-References: <1413808489-3524-1-git-send-email-k.kozlowski@samsung.com>
- <1413808489-3524-5-git-send-email-k.kozlowski@samsung.com>
+	id S1752229AbaJ0S5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:57:24 -0400
+Date: Mon, 27 Oct 2014 20:53:39 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <ktkhai@parallels.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>, Christoph Lameter <cl@linux.com>
+Subject: [PATCH 0/3] introduce task_rcu_dereference()
+Message-ID: <20141027195339.GA11736@redhat.com>
+References: <1413962231.19914.130.camel@tkhai>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="A6N2fC+uXW/VQSAv"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1413808489-3524-5-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1413962231.19914.130.camel@tkhai>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Peter, let me repeat once again, if you still prefer to avoid
+probe_slab_address() and use SLAB_DESTROY_BY_RCU I won't argue.
 
---A6N2fC+uXW/VQSAv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I do not like SLAB_DESTROY_BY_RCU in this particular case. With
+or without SDBR rq->curr can be reused and we need to avoid this
+race. The fact that with SDBR it can be reused only as another
+instance of task_struct is absolutely immaterial imo.
 
-Hi,
+Not to mention that SDBR still adds some overhead while probe_slab()
+is free unless CONFIG_DEBUG_PAGEALLOC, but this option adds a large
+slowdown anyway.
 
-On Mon, Oct 20, 2014 at 02:34:48PM +0200, Krzysztof Kozlowski wrote:
-> Add new driver for Maxim 77693 switch-mode charger (part of max77693
-> MFD driver) providing power supply class information to userspace.
->=20
-> The charger has +20V tolerant input. Current input can be set from 0 to
-> 2.58 A. The charger can deliver up to 2.1 A to the battery or 3.5 A to
-> the system (when supplying additional current from battery to system).
->=20
-> The driver is configured through DTS (battery and system related
-> settings) and sysfs entries (timers and top-off charging threshold).
->=20
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+However, my arguments against SDBR are not strictly technical, and
+I think that this falls into "maintainer is always right" category.
 
-I guess it makes sense to queue this together with the mfd parts.
+So please tell me if you prefer v2 with SDBR. In this case 2/3 is
+not needed, and 3/3 can simply read ->sighand. Otherwise the code
+(and even the comments) will be the same.
 
-Acked-By: Sebastian Reichel <sre@kernel.org>
+Compared to the draft patch I sent before
 
--- Sebastian
+	- update the comments
 
---A6N2fC+uXW/VQSAv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	- do not use ERR_PTR(), just return the task or NULL, so
+	  kernel/sched/ doesn't need another helper.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+	  This means that task_rcu_dereference() does retry itself.
+	  We can add __task_rcu_dereference() if we have another
+	  which do not need/want to retry.
 
-iQIcBAEBCgAGBQJUTpV4AAoJENju1/PIO/qary4P/iWSe9y80CmfQzeVxEYgipwf
-GFdNMLnSaWeL7lLeDFS823GL+3HWVzoweXmXmmXwgTKS/yTlOYnOllj3gmloyVoL
-pMs7x9tT9lfUg58VyEjBbtuSmvoJevzpCMp7opdEaFdt8WicItcFJU3kvqEOliAs
-ZjLBqzhpnDkWeUfDlVG8pSNFqJY39VSH6ctBoGoGFaaYXP/m6c/DvrlHPv8+bgXP
-Jv5sChSjfOfEtMyA1lOVFLl6ihUgApLicwWyXWx/bRwnFPRK/rO7pVObOLZRFHj0
-y8KrcB8QWWVmkI/a/IayRWN1jaRAXrkcbFcqKQhNWnB36cMeq7DEyGpOqeUnO5z/
-rU8oPVKXfhHKlN3/HfTRx1+xPCq8eNGPzbMG/v5jOOeUYp3DF27Cxpl64Nx85MHz
-sNpTWDpyp3kNk3Mymkm0Rnu5i1eQFnBaeD0ZLlgNBA7/LAlrzgUmMwf3XCilHRv1
-KtVVUR9llOHjjN8MHgKdHApG+DSzEWpYjyPL2K1hBHSLAjjD+XDDeV7XDGAM90m0
-Yqx2DGba505jw0aqv6ueOz/HktPTgn3rH+HRrKpeg5G7gJGq4o7YlQ5ON0+yX+Jq
-3pL3qh+BGbVb7cAgexEM+iDfNv6vgAwv6E1fJWFULNohOMYXHXS+jRfZKMcRdAq/
-mqJSGoYw4q8w4ibO/2wp
-=t70r
------END PGP SIGNATURE-----
+Oleg.
 
---A6N2fC+uXW/VQSAv--
+ include/linux/sched.h   |    1 +
+ include/linux/uaccess.h |   30 +++++++++++++++-------------
+ kernel/exit.c           |   49 +++++++++++++++++++++++++++++++++++++++++++++++
+ mm/slub.c               |    6 +----
+ 4 files changed, 67 insertions(+), 19 deletions(-)
+
