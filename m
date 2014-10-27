@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaJ0SBf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:01:35 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:33966 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaJ0SBc (ORCPT
+	id S1752515AbaJ0SBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:01:54 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:49892 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752468AbaJ0SBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:01:32 -0400
+	Mon, 27 Oct 2014 14:01:52 -0400
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 03/11] aiptek: Fix probable mask then right shift defects
+Date: Mon, 27 Oct 2014 11:01:49 -0700
+Message-ID: <3320721.qubDk7TkeJ@dtor-glaptop>
+User-Agent: KMail/4.13.3 (Linux/3.13.0-37-generic; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1414432614.18896.1.camel@perches.com>
+References: <cover.1414387334.git.joe@perches.com> <20141027144411.GA7594@dtor-ws> <1414432614.18896.1.camel@perches.com>
 MIME-Version: 1.0
-In-Reply-To: <87wq7shuk6.fsf@x220.int.ebiederm.org>
-References: <1401975635-6162-1-git-send-email-drysdale@google.com>
- <CALCETrVraoD+r4zxBoGd+BV5P275AXcRV_R00SSr8fjQzRHnUg@mail.gmail.com>
- <87zjcszz8y.fsf@x220.int.ebiederm.org> <CAHse=S-Xyk7CFn=tAGzo+tuUFt+04aBw+mGQmi=kWAaBJGALBw@mail.gmail.com>
- <CALCETrXBjLZTWVJfcsE4NA-JP9zSSgn=6ND0=cZ9BTy=CoN7pA@mail.gmail.com>
- <87ioje2ggq.fsf@x220.int.ebiederm.org> <CAHse=S_dpm8Do-H01Bo49a9TdYw+pSDzYomLOrBsYEcdO=Pytw@mail.gmail.com>
- <87wq7shuk6.fsf@x220.int.ebiederm.org>
-From: David Drysdale <drysdale@google.com>
-Date: Mon, 27 Oct 2014 18:01:10 +0000
-Message-ID: <CAHse=S8qDS5z+Ac7TVY0QE2W9oNUaaaiZE0Vuytv15d7aFLEWw@mail.gmail.com>
-Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 6:40 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> David Drysdale <drysdale@google.com> writes:
->> On Tue, Oct 21, 2014 at 5:29 AM, Eric W. Biederman
->> <ebiederm@xmission.com> wrote:
->>> It is more a description of what we have done but as a magic string it
->>> is descriptive.  Documetation/devices.txt documents that /dev/fd/ should
->>> exist, making it an unambiguous path.  Further these days the kernel
->>> sets the device naming policy in dev, so I think we are strongly safe in
->>> using that path in any event.
->>>
->>> I think execveat is interesting in the kernel because the motivating
->>> cases are the cases where anything except a static executable is
->>> uninteresting.
->>
->> FYI, there is potential in the future for something other than static
->> executables -- the FreeBSD Capsicum implementation includes changes
->> to the dynamic linker to get its search path as a list of pre-opened dfds
->> (in LD_LIBRARY_PATH_FDS) rather than paths.
->
-> Which still leaves open the question how do you find the dynamic
-> linker.  Is that also a pre-opened dfd?
+On Monday, October 27, 2014 10:56:54 AM Joe Perches wrote:
+> On Mon, 2014-10-27 at 07:44 -0700, Dmitry Torokhov wrote:
+> > Hi Joe,
+> 
+> Hello Dmitry.
+> 
+> > On Sun, Oct 26, 2014 at 10:24:59PM -0700, Joe Perches wrote:
+> > > Precedence of & and >> is not the same and is not left to right.
+> > > shift has higher precedence and should be done after the mask.
+> > 
+> > Looking at the protocol description the current code is exactly right.
+> > We want to "move" button bits first as in packet type 1 they are in a
+> > different place than in other packets.
+> > 
+> > I'll take a patch that adds parenthesis around shifts to make clear it
+> > is intended.
+> 
+> I think it's more sensible to do the shift first to a
+> temporary then direct comparisons.
+> 
+> Perhaps something like this cleanup that also uses
+> a temporary for aiptek->curSetting and
+> !!(foo & mask) instead of ((foo & mask) != 0) ? 1 : 0;
 
-I *think* it's still effectively a path lookup of the INTERP header in
-the kernel (but the pathname is restricted to be one of a set of
-standard pre-registered interpreters).
+Unless you have the device I'd rather kept the changes (which are mostly
+cosmetic in nature and do not fix any bugs) to a minimum.
 
-> Using /dev/fd/$N is also the kind of thing that a shell or a script
-> interpret could special case instead relying on a filesystem node
-> to exist.
+Thanks.
 
-True.
+-- 
+Dmitry
