@@ -1,80 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbaJ0Nvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:51:31 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45378 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753393AbaJ0Nv1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:51:27 -0400
-Date: Mon, 27 Oct 2014 13:50:36 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thomas Lendacky <Thomas.Lendacky@amd.com>,
-        Joel Schopp <Joel.Schopp@amd.com>
-Subject: Re: [PATCH] arm64: amd-seattle: Adding device tree for AMD Seattle
- platform
-Message-ID: <20141027135035.GA2629@leverpostej>
-References: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753256AbaJ0NwX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:52:23 -0400
+Received: from mga03.intel.com ([134.134.136.65]:17592 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753349AbaJ0NvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 09:51:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,796,1406617200"; 
+   d="scan'208";a="626225568"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 7/9] perf tools: Add call information to the database export API
+Date: Mon, 27 Oct 2014 15:49:28 +0200
+Message-Id: <1414417770-18602-8-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414417770-18602-1-git-send-email-adrian.hunter@intel.com>
+References: <1414417770-18602-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suravee,
+Make it possible for the database export API to use the
+enhanced thread stack and export detailed information
+about paired calls and returns.
 
-[...]
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/db-export.c | 52 ++++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/db-export.h | 12 +++++++++++
+ 2 files changed, 63 insertions(+), 1 deletion(-)
 
->  dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
->  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
->  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
-> +dtb-$(CONFIG_ARCH_SEATTLE) += amd-seattle.dtb
+diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
+index 8353e2f..259be45 100644
+--- a/tools/perf/util/db-export.c
++++ b/tools/perf/util/db-export.c
+@@ -21,6 +21,7 @@
+ #include "comm.h"
+ #include "symbol.h"
+ #include "event.h"
++#include "thread-stack.h"
+ #include "db-export.h"
+ 
+ int db_export__init(struct db_export *dbe)
+@@ -29,8 +30,10 @@ int db_export__init(struct db_export *dbe)
+ 	return 0;
+ }
+ 
+-void db_export__exit(struct db_export *dbe __maybe_unused)
++void db_export__exit(struct db_export *dbe)
+ {
++	call_return_processor__free(dbe->crp);
++	dbe->crp = NULL;
+ }
+ 
+ int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel)
+@@ -270,6 +273,13 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 				     &es.addr_sym_db_id, &es.addr_offset);
+ 		if (err)
+ 			return err;
++		if (dbe->crp) {
++			err = thread_stack__process(thread, comm, sample, al,
++						    &addr_al, es.db_id,
++						    dbe->crp);
++			if (err)
++				return err;
++		}
+ 	}
+ 
+ 	if (dbe->export_sample)
+@@ -316,3 +326,43 @@ int db_export__branch_types(struct db_export *dbe)
+ 	}
+ 	return err;
+ }
++
++int db_export__call_path(struct db_export *dbe, struct call_path *cp)
++{
++	int err;
++
++	if (cp->db_id)
++		return 0;
++
++	if (cp->parent) {
++		err = db_export__call_path(dbe, cp->parent);
++		if (err)
++			return err;
++	}
++
++	cp->db_id = ++dbe->call_path_last_db_id;
++
++	if (dbe->export_call_path)
++		return dbe->export_call_path(dbe, cp);
++
++	return 0;
++}
++
++int db_export__call_return(struct db_export *dbe, struct call_return *cr)
++{
++	int err;
++
++	if (cr->db_id)
++		return 0;
++
++	err = db_export__call_path(dbe, cr->cp);
++	if (err)
++		return err;
++
++	cr->db_id = ++dbe->call_return_last_db_id;
++
++	if (dbe->export_call_return)
++		return dbe->export_call_return(dbe, cr);
++
++	return 0;
++}
+diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
+index e4baa45..dd5ac2a 100644
+--- a/tools/perf/util/db-export.h
++++ b/tools/perf/util/db-export.h
+@@ -25,6 +25,9 @@ struct comm;
+ struct dso;
+ struct perf_sample;
+ struct addr_location;
++struct call_return_processor;
++struct call_path;
++struct call_return;
+ 
+ struct export_sample {
+ 	union perf_event	*event;
+@@ -57,6 +60,10 @@ struct db_export {
+ 	int (*export_branch_type)(struct db_export *dbe, u32 branch_type,
+ 				  const char *name);
+ 	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
++	int (*export_call_path)(struct db_export *dbe, struct call_path *cp);
++	int (*export_call_return)(struct db_export *dbe,
++				  struct call_return *cr);
++	struct call_return_processor *crp;
+ 	u64 evsel_last_db_id;
+ 	u64 machine_last_db_id;
+ 	u64 thread_last_db_id;
+@@ -65,6 +72,8 @@ struct db_export {
+ 	u64 dso_last_db_id;
+ 	u64 symbol_last_db_id;
+ 	u64 sample_last_db_id;
++	u64 call_path_last_db_id;
++	u64 call_return_last_db_id;
+ };
+ 
+ int db_export__init(struct db_export *dbe);
+@@ -89,4 +98,7 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
+ 
+ int db_export__branch_types(struct db_export *dbe);
+ 
++int db_export__call_path(struct db_export *dbe, struct call_path *cp);
++int db_export__call_return(struct db_export *dbe, struct call_return *cr);
++
+ #endif
+-- 
+1.9.1
 
-This should move earlier in the list (to keep things organised
-alphabetically).
-
-[...]
-
-> +	v2m_serial0: uart@1010000 {
-
-Drop the "v2m_" prefix -- in other dts that refers to a Versatile
-Express μATX motherboard (the V2M-P1), and this isn't a Versatile
-Express.
-
-Also, I believe the preferred node name is "serial" rather than "uart".
-
-[...]
-
-> +	chosen {
-> +		linux,stdout-path = "console=ttyAMA0,115200 earlycon=pl011,0xe1010000";
-
-The stdout-path property should just be a path to the UART node. It's
-not a direct replacement for /chosen/bootargs.
-
-This should be (assuming you fix up the label above):
-
-	stdout-path = &serial0;
-
-That will give us earlycon if "earlycon" (with no arguments) is provided
-on the command line, and should set up that UART as the console. There's
-no need for the "linux," prefix now either.
-
-Unfortuantely, I believe that the UART rate will get changed when the
-real PL011 driver registers, unless the rate is explicitly provided on
-the command line. It might be worth looking into retaining the
-configured rate somehow indepentent of bootargs (unless overriden).
-
-Thanks,
-Mark.
