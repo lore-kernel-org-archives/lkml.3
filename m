@@ -1,144 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816AbaJ0WiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 18:38:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51371 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785AbaJ0WiC convert rfc822-to-8bit (ORCPT
+	id S1752256AbaJ0WiZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 18:38:25 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54464 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751999AbaJ0WiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 18:38:02 -0400
-Date: Mon, 27 Oct 2014 23:37:39 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Alexis Berlemont <alexis.berlemont@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, paulus@samba.org, acme@kernel.org,
-        namhyung@kernel.org, mmarek@suse.cz
-Subject: Re: [PATCH v4 00/14] Kbuild for perf
-Message-ID: <20141027223739.GA21965@krava.redhat.com>
-References: <20141024124601.GX14687@kernel.org>
- <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
+	Mon, 27 Oct 2014 18:38:23 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, peterz@infradead.org
+Cc: nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH 1/5] sched: idle: cpuidle: Check the latency req before idle
+Date: Mon, 27 Oct 2014 23:58:57 +0100
+Message-ID: <1777440.htuxA0nWAA@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1413822343-1972-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1413822343-1972-1-git-send-email-daniel.lezcano@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1414275639-1053-1-git-send-email-alexis.berlemont@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 26, 2014 at 12:20:25AM +0200, Alexis Berlemont wrote:
-> Hello,
+On Monday, October 20, 2014 06:25:39 PM Daniel Lezcano wrote:
+> When the pmqos latency requirement is set to zero that means "poll in all the
+> cases".
 > 
-> Here is a proposal of perf's build process managed by Kbuild:
-> * The file Makefile.perf is replaced by Makefile.kbuild
-> * Makefile.kbuild generates a default .config file if none exists
->   (allyesconfig)
-> * Makefile.kbuild adapts the .config file according to the
->   features-check tests results
-> * Makefile.kbuild builds external dependencies (linux/tools/lib/*)
-> * Makefile.kbuild leaves the rest to Kbuild 
+> That is correctly implemented on x86 but not on the other archs.
 > 
-> Changes since v3:
->  * Patchs were generated starting from the following branch:
->  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
->  * Add Kconfig options for 32-bit compatibility VDSOs
->  * Target build-test: for each .config-based test case, call "make
->    olddefconfig" so as to prevent failure because of new Kconfig
->    symbol(s)
+> As how is written the code, if the latency request is zero, the governor will
+> return zero, so corresponding, for x86, to the poll function, but for the
+> others arch the default idle function. For example, on ARM this is wait-for-
+> interrupt with a latency of '1', so violating the constraint.
+> 
+> In order to fix that, do the latency requirement check *before* calling the
+> cpuidle framework in order to jump to the poll function without entering
+> cpuidle. That has several benefits:
+> 
+>  1. It clarifies and unifies the code
+>  2. It fixes x86 vs other archs behavior
+>  3. Factors out the call to the same function
+>  4. Prevent to enter the cpuidle framework with its expensive cost in
+>     calculation
+> 
+> As the latency_req is needed in all the cases, change the select API to take
+> the latency_req as parameter in case it is not equal to zero.
+> 
+> As a positive side effect, it introduces the latency constraint specified
+> externally, so one more step to the cpuidle/scheduler integration.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-hi,
-I tried 'make clean && make' and got attached errors.
-I'm running Fedora 20 on x86_64
+I've discussed this series with Len and the patches look good to us.
 
-jirka
+I can apply them unless Peter prefers to take them through sched.  In which
+case Peter please add my ACK to them.
 
 
----
-  BUILD:   Doing 'make [33m-j4[m' parallel build
-  GEN     tools/perf/PERF-VERSION-FILE
-make[3]: *** No rule to make target `kernelversion'.  Stop.
-  MKDIR    libapi_dirs
-  CC       /home/jolsa/kernel.org/linux-perf/tools/lib/api/fs/fs.o
-  CC       /home/jolsa/kernel.org/linux-perf/tools/lib/api/fs/debugfs.o
-  CC       /home/jolsa/kernel.org/linux-perf/tools/lib/api/fd/array.o
-  AR       libapikfs.a
-  LD      tools/perf/arch/built-in.o
-  LD      tools/perf/built-in.o
-  LD      tools/perf/perf
-/bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-/bin/ld: skipping incompatible /lib/librt.so when searching for -lrt
-/bin/ld: skipping incompatible /lib/librt.a when searching for -lrt
-/bin/ld: skipping incompatible /lib/librt.so when searching for -lrt
-/bin/ld: skipping incompatible /lib/librt.a when searching for -lrt
-/bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-/bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-/bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-/bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libresolv.so when searching for -lresolv
-/bin/ld: skipping incompatible /lib/libresolv.a when searching for -lresolv
-/bin/ld: skipping incompatible /lib/libresolv.so when searching for -lresolv
-/bin/ld: skipping incompatible /lib/libresolv.a when searching for -lresolv
-/bin/ld: skipping incompatible /lib/libnsl.so when searching for -lnsl
-/bin/ld: skipping incompatible /lib/libnsl.a when searching for -lnsl
-/bin/ld: skipping incompatible /lib/libnsl.so when searching for -lnsl
-/bin/ld: skipping incompatible /lib/libnsl.a when searching for -lnsl
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-/bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-/bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-/bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-/bin/ld: skipping incompatible /lib/libcrypt.so when searching for -lcrypt
-/bin/ld: skipping incompatible /lib/libcrypt.a when searching for -lcrypt
-/bin/ld: skipping incompatible /lib/libcrypt.so when searching for -lcrypt
-/bin/ld: skipping incompatible /lib/libcrypt.a when searching for -lcrypt
-/bin/ld: skipping incompatible /lib/libutil.so when searching for -lutil
-/bin/ld: skipping incompatible /lib/libutil.a when searching for -lutil
-/bin/ld: skipping incompatible /lib/libutil.so when searching for -lutil
-/bin/ld: skipping incompatible /lib/libutil.a when searching for -lutil
-/bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libc.so when searching for -lc
-/bin/ld: skipping incompatible /lib/libc.a when searching for -lc
-/bin/ld: skipping incompatible /lib/libc.so when searching for -lc
-/bin/ld: skipping incompatible /lib/libc.a when searching for -lc
-/bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libpthread.so when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libpthread.a when searching for -lpthread
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libutil.so when searching for -lutil
-/bin/ld: skipping incompatible /lib/libutil.a when searching for -lutil
-/bin/ld: skipping incompatible /lib/libutil.so when searching for -lutil
-/bin/ld: skipping incompatible /lib/libutil.a when searching for -lutil
-/bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-/bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-/bin/ld: skipping incompatible /lib/libm.so when searching for -lm
-/bin/ld: skipping incompatible /lib/libm.a when searching for -lm
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.so when searching for -ldl
-/bin/ld: skipping incompatible /lib/libdl.a when searching for -ldl
-/bin/ld: skipping incompatible /lib/libc.so when searching for -lc
-/bin/ld: skipping incompatible /lib/libc.a when searching for -lc
-/bin/ld: skipping incompatible /lib/libc.so when searching for -lc
-/bin/ld: skipping incompatible /lib/libc.a when searching for -lc
+> ---
+>  drivers/cpuidle/cpuidle.c          |  5 +++--
+>  drivers/cpuidle/governors/ladder.c |  9 +--------
+>  drivers/cpuidle/governors/menu.c   |  8 ++------
+>  include/linux/cpuidle.h            |  7 ++++---
+>  kernel/sched/idle.c                | 18 ++++++++++++++----
+>  5 files changed, 24 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index ee9df5e..372c36f 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -158,7 +158,8 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+>   *
+>   * Returns the index of the idle state.
+>   */
+> -int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+> +int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
+> +		   int latency_req)
+>  {
+>  	if (off || !initialized)
+>  		return -ENODEV;
+> @@ -169,7 +170,7 @@ int cpuidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>  	if (unlikely(use_deepest_state))
+>  		return cpuidle_find_deepest_state(drv, dev);
+>  
+> -	return cpuidle_curr_governor->select(drv, dev);
+> +	return cpuidle_curr_governor->select(drv, dev, latency_req);
+>  }
+>  
+>  /**
+> diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
+> index 044ee0d..18f0da9 100644
+> --- a/drivers/cpuidle/governors/ladder.c
+> +++ b/drivers/cpuidle/governors/ladder.c
+> @@ -64,18 +64,11 @@ static inline void ladder_do_selection(struct ladder_device *ldev,
+>   * @dev: the CPU
+>   */
+>  static int ladder_select_state(struct cpuidle_driver *drv,
+> -				struct cpuidle_device *dev)
+> +			       struct cpuidle_device *dev, int latency_req)
+>  {
+>  	struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
+>  	struct ladder_device_state *last_state;
+>  	int last_residency, last_idx = ldev->last_state_idx;
+> -	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+> -
+> -	/* Special case when user has set very strict latency requirement */
+> -	if (unlikely(latency_req == 0)) {
+> -		ladder_do_selection(ldev, last_idx, 0);
+> -		return 0;
+> -	}
+>  
+>  	last_state = &ldev->states[last_idx];
+>  
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index 34db2fb..96f8fb0 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -287,10 +287,10 @@ again:
+>   * @drv: cpuidle driver containing state data
+>   * @dev: the CPU
+>   */
+> -static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+> +static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
+> +		       int latency_req)
+>  {
+>  	struct menu_device *data = &__get_cpu_var(menu_devices);
+> -	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+>  	int i;
+>  	unsigned int interactivity_req;
+>  	unsigned long nr_iowaiters, cpu_load;
+> @@ -302,10 +302,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>  
+>  	data->last_state_idx = CPUIDLE_DRIVER_STATE_START - 1;
+>  
+> -	/* Special case when user has set very strict latency requirement */
+> -	if (unlikely(latency_req == 0))
+> -		return 0;
+> -
+>  	/* determine the expected residency time, round up */
+>  	data->next_timer_us = ktime_to_us(tick_nohz_get_sleep_length());
+>  
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index 25e0df6..fb465c1 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -122,7 +122,7 @@ struct cpuidle_driver {
+>  extern void disable_cpuidle(void);
+>  
+>  extern int cpuidle_select(struct cpuidle_driver *drv,
+> -			  struct cpuidle_device *dev);
+> +			  struct cpuidle_device *dev, int latency_req);
+>  extern int cpuidle_enter(struct cpuidle_driver *drv,
+>  			 struct cpuidle_device *dev, int index);
+>  extern void cpuidle_reflect(struct cpuidle_device *dev, int index);
+> @@ -150,7 +150,7 @@ extern struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
+>  #else
+>  static inline void disable_cpuidle(void) { }
+>  static inline int cpuidle_select(struct cpuidle_driver *drv,
+> -				 struct cpuidle_device *dev)
+> +				 struct cpuidle_device *dev, int latency_req)
+>  {return -ENODEV; }
+>  static inline int cpuidle_enter(struct cpuidle_driver *drv,
+>  				struct cpuidle_device *dev, int index)
+> @@ -205,7 +205,8 @@ struct cpuidle_governor {
+>  					struct cpuidle_device *dev);
+>  
+>  	int  (*select)		(struct cpuidle_driver *drv,
+> -					struct cpuidle_device *dev);
+> +				 struct cpuidle_device *dev,
+> +				 int latency_req);
+>  	void (*reflect)		(struct cpuidle_device *dev, int index);
+>  
+>  	struct module 		*owner;
+> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+> index 11e7bc4..25ba94d 100644
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -5,6 +5,7 @@
+>  #include <linux/cpu.h>
+>  #include <linux/cpuidle.h>
+>  #include <linux/tick.h>
+> +#include <linux/pm_qos.h>
+>  #include <linux/mm.h>
+>  #include <linux/stackprotector.h>
+>  
+> @@ -74,7 +75,7 @@ void __weak arch_cpu_idle(void)
+>   * set, and it returns with polling set.  If it ever stops polling, it
+>   * must clear the polling bit.
+>   */
+> -static void cpuidle_idle_call(void)
+> +static void cpuidle_idle_call(unsigned int latency_req)
+>  {
+>  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+> @@ -107,7 +108,7 @@ static void cpuidle_idle_call(void)
+>  	 * Ask the cpuidle framework to choose a convenient idle state.
+>  	 * Fall back to the default arch idle method on errors.
+>  	 */
+> -	next_state = cpuidle_select(drv, dev);
+> +	next_state = cpuidle_select(drv, dev, latency_req);
+>  	if (next_state < 0) {
+>  use_default:
+>  		/*
+> @@ -182,6 +183,8 @@ exit_idle:
+>   */
+>  static void cpu_idle_loop(void)
+>  {
+> +	unsigned int latency_req;
+> +
+>  	while (1) {
+>  		/*
+>  		 * If the arch has a polling bit, we maintain an invariant:
+> @@ -205,19 +208,26 @@ static void cpu_idle_loop(void)
+>  			local_irq_disable();
+>  			arch_cpu_idle_enter();
+>  
+> +			latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+> +
+>  			/*
+>  			 * In poll mode we reenable interrupts and spin.
+>  			 *
+> +			 * If the latency req is zero, we don't want to
+> +			 * enter any idle state and we jump to the poll
+> +			 * function directly
+> +			 *
+>  			 * Also if we detected in the wakeup from idle
+>  			 * path that the tick broadcast device expired
+>  			 * for us, we don't want to go deep idle as we
+>  			 * know that the IPI is going to arrive right
+>  			 * away
+>  			 */
+> -			if (cpu_idle_force_poll || tick_check_broadcast_expired())
+> +			if (!latency_req || cpu_idle_force_poll ||
+> +			    tick_check_broadcast_expired())
+>  				cpu_idle_poll();
+>  			else
+> -				cpuidle_idle_call();
+> +				cpuidle_idle_call(latency_req);
+>  
+>  			arch_cpu_idle_exit();
+>  		}
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
