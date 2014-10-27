@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753755AbaJ0TWw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:22:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52577 "EHLO
+	id S1753140AbaJ0TCA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:02:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52561 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117AbaJ0TCI (ORCPT
+	with ESMTP id S1753104AbaJ0TB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:02:08 -0400
+	Mon, 27 Oct 2014 15:01:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oren Givon <oren.givon@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+Cc: Tejun Heo <tj@kernel.org>, Honggang Li <enjoymindful@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 021/105] iwlwifi: Add missing PCI IDs for the 7260 series
-Date: Mon, 27 Oct 2014 11:55:56 -0700
-Message-Id: <1414436240-13879-22-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 023/105] Revert "percpu: free percpu allocation info for uniprocessor system"
+Date: Mon, 27 Oct 2014 11:55:58 -0700
+Message-Id: <1414436240-13879-24-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,41 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oren Givon <oren.givon@intel.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 4f08970f5284dce486f0e2290834aefb2a262189 upstream.
+commit bb2e226b3bef596dd56be97df655d857b4603923 upstream.
 
-Add 4 missing PCI IDs for the 7260 series.
+This reverts commit 3189eddbcafc ("percpu: free percpu allocation info for
+uniprocessor system").
 
-Signed-off-by: Oren Givon <oren.givon@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+The commit causes a hang with a crisv32 image. This may be an architecture
+problem, but at least for now the revert is necessary to be able to boot a
+crisv32 image.
+
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Honggang Li <enjoymindful@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Fixes: 3189eddbcafc ("percpu: free percpu allocation info for uniprocessor system")
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/iwlwifi/pcie/drv.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ mm/percpu.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/net/wireless/iwlwifi/pcie/drv.c b/drivers/net/wireless/iwlwifi/pcie/drv.c
-index d408df2..d9bb9b8 100644
---- a/drivers/net/wireless/iwlwifi/pcie/drv.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
-@@ -272,6 +272,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
- 	{IWL_PCI_DEVICE(0x08B1, 0x4070, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4072, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4170, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0x4C60, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0x4C70, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4060, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x406A, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4160, iwl7260_2n_cfg)},
-@@ -312,6 +314,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
- 	{IWL_PCI_DEVICE(0x08B1, 0xC770, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0xC760, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC270, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0xCC70, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0xCC60, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC272, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC260, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC26A, iwl7260_n_cfg)},
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 02a89cb..7d6ce15 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -1911,8 +1911,6 @@ void __init setup_per_cpu_areas(void)
+ 
+ 	if (pcpu_setup_first_chunk(ai, fc) < 0)
+ 		panic("Failed to initialize percpu areas.");
+-
+-	pcpu_free_alloc_info(ai);
+ }
+ 
+ #endif	/* CONFIG_SMP */
 -- 
 1.9.1
 
