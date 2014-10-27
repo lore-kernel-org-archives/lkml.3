@@ -1,110 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaJ0Qsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:48:55 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:46008 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752600AbaJ0Qsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 12:48:52 -0400
-Date: Mon, 27 Oct 2014 11:47:41 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Johan Hovold <johan@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, Romain Perier <romain.perier@gmail.com>,
-        <heiko@sntech.de>, <devicetree@vger.kernel.org>, <broonie@kernel.org>,
-        <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@linaro.org>, <robh@kernel.org>, <mark.rutland@arm.com>,
-        <linux-pm@vger.kernel.org>, <linux@roeck-us.net>,
-        <lee.jones@linaro.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <swarren@wwwdotorg.org>,
-        <thierry.reding@gmail.com>, <gnurou@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v1 01/10] of: Rename "poweroff-source" property to
- "system-power-controller"
-Message-ID: <20141027164741.GJ14253@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
- <20141027163840.GA14253@saruman>
- <20141027164103.GD2006@localhost>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CxDuMX1Cv2n9FQfo"
-Content-Disposition: inline
-In-Reply-To: <20141027164103.GD2006@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753157AbaJ0Qtb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:49:31 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:56725 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951AbaJ0Qrv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 12:47:51 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-f1-544e773528cc
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Dmitry Vyukov <dvyukov@google.com>,
+        Konstantin Serebryany <kcc@google.com>,
+        Dmitry Chernenkov <dmitryc@google.com>,
+        Andrey Konovalov <adech.fo@gmail.com>,
+        Yuri Gribov <tetra2005@gmail.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Vegard Nossum <vegard.nossum@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH v5 08/12] mm: slub: introduce
+ metadata_access_enable()/metadata_access_disable()
+Date: Mon, 27 Oct 2014 19:46:55 +0300
+Message-id: <1414428419-17860-9-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.1.2
+In-reply-to: <1414428419-17860-1-git-send-email-a.ryabinin@samsung.com>
+References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
+ <1414428419-17860-1-git-send-email-a.ryabinin@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xa7qm5X4hBo9vslts+/WIzeL33pms
+	FnPWr2GzOHLtO7vF9W9vGC0+vXzAaLHlehOTxfOHD9ktJjxsY7eYtlHcYmV3M5vF9mdvmSxW
+	dj5gtbi8aw6bxb01/1kt2j7/AxJLNjJZLD5ym9ni3bPJzBZXVx1kt/ix4TGrg6jH/J0fGT12
+	zrrL7rFgU6nH4j0vmTw2repk89j0aRK7R9fbK0weJ2b8ZvF4cmU6k8fHp7dYPN7vu8rm0bdl
+	FaPH501yHidavrAG8EVx2aSk5mSWpRbp2yVwZRxY8Iip4DR/xdnLx1gaGC/zdDFyckgImEis
+	OXWFDcIWk7hwbz2YLSSwlFHizKyCLkYuILuPSWLBpT4mkASbgJ7Ev1nbwYpEBHQlVj3fxQxS
+	xCxwgVWir2sOO0hCWCBJ4uLZZ4wgNouAqsSsNU1gDbwCbhJb/i9gh9gmJzF9710WEJtTwF2i
+	59I0FohtTYwSfVOWM09g5F3AyLCKUTS1NLmgOCk910ivODG3uDQvXS85P3cTIyR2vu5gXHrM
+	6hCjAAejEg/vhGLfECHWxLLiytxDjBIczEoivAfS/EKEeFMSK6tSi/Lji0pzUosPMTJxcEo1
+	MEZo9oSuUfimZq8mwsGiVvbEgfXQ5lN3ZFn+dnrm3v0RsrxF4z/vY5NrBYG1BkLOAv+fS83M
+	ElXOvmGsVTR7tzW74cQ1m2+2nFjq5LLecabX+tgVr36sfVgirCs36Ztd4t7qs72fn3VHLHs5
+	g7mjd76n8iNvmT9KCq1Vf9X38WzMzZ9ltSD+qxJLcUaioRZzUXEiAEMtFfZ7AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---CxDuMX1Cv2n9FQfo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Wrap access to object's metadata in external functions with
+metadata_access_enable()/metadata_access_disable() function calls.
 
-On Mon, Oct 27, 2014 at 05:41:03PM +0100, Johan Hovold wrote:
-> On Mon, Oct 27, 2014 at 11:38:40AM -0500, Felipe Balbi wrote:
-> > On Mon, Oct 27, 2014 at 04:26:46PM +0000, Romain Perier wrote:
-> > > As discussed on the mailing list, it makes more sense to rename this =
-property
-> > > to "system-power-controller". Problem being that the word "source" us=
-ually tends
-> > > to be used for inputs and that is out of control of the OS. The power=
-off
-> > > capability is an output which simply turns the system-power off. Also=
-, this
-> > > property might be used by drivers which power-off the system and powe=
-r back on
-> > > subsequent RTC alarms. This seems to suggest to remove "poweroff" fro=
-m the
-> > > property name and to choose "system-power-controller" as the more gen=
-eric name.
-> > > This patchs adds the required renaming changes and defines an helper =
-function
-> > > which is compatible with both properties, the old one prefixed by a v=
-endor name
-> > > and the new one without any prefix.
->=20
-> > I think you still need to support poweroff-source since it has been
-> > released on a stable kernel. Perhaps add a warning message telling users
-> > it's deprecated and asking them to switch over to
-> > system-power-controller ? Still, simply removing it isn't very nice.
->=20
-> No, Romain sent a patch that replaced "<vendor>,system-power-controller"
-> with "poweroff-source". It's now in Mark's tree (for v3.19), and this
-> series "reverts" to the old name minus the vendor-prefix.
+This hooks separates payload accesses from metadata accesses
+which might be useful for different checkers (e.g. KASan).
 
-oh, so poweroff-source isn't in Linus' tree yet ? (/me goes grep)
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ mm/slub.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-Then it should be fine. My bad.
+diff --git a/mm/slub.c b/mm/slub.c
+index 1458629..2116ccd 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -467,13 +467,23 @@ static int slub_debug;
+ static char *slub_debug_slabs;
+ static int disable_higher_order_debug;
+ 
++static inline void metadata_access_enable(void)
++{
++}
++
++static inline void metadata_access_disable(void)
++{
++}
++
+ /*
+  * Object debugging
+  */
+ static void print_section(char *text, u8 *addr, unsigned int length)
+ {
++	metadata_access_enable();
+ 	print_hex_dump(KERN_ERR, text, DUMP_PREFIX_ADDRESS, 16, 1, addr,
+ 			length, 1);
++	metadata_access_disable();
+ }
+ 
+ static struct track *get_track(struct kmem_cache *s, void *object,
+@@ -503,7 +513,9 @@ static void set_track(struct kmem_cache *s, void *object,
+ 		trace.max_entries = TRACK_ADDRS_COUNT;
+ 		trace.entries = p->addrs;
+ 		trace.skip = 3;
++		metadata_access_enable();
+ 		save_stack_trace(&trace);
++		metadata_access_disable();
+ 
+ 		/* See rant in lockdep.c */
+ 		if (trace.nr_entries != 0 &&
+@@ -677,7 +689,9 @@ static int check_bytes_and_report(struct kmem_cache *s, struct page *page,
+ 	u8 *fault;
+ 	u8 *end;
+ 
++	metadata_access_enable();
+ 	fault = memchr_inv(start, value, bytes);
++	metadata_access_disable();
+ 	if (!fault)
+ 		return 1;
+ 
+@@ -770,7 +784,9 @@ static int slab_pad_check(struct kmem_cache *s, struct page *page)
+ 	if (!remainder)
+ 		return 1;
+ 
++	metadata_access_enable();
+ 	fault = memchr_inv(end - remainder, POISON_INUSE, remainder);
++	metadata_access_disable();
+ 	if (!fault)
+ 		return 1;
+ 	while (end > fault && end[-1] == POISON_INUSE)
+-- 
+2.1.2
 
-Many of the other comments are still valid because even though
-poweroff-source isn't in mainline yet, this series still creates
-bisection points which are broken. The best solution would be to drop
-all those patches from Mark's tree. Read, not revert, drop.
-
---=20
-balbi
-
---CxDuMX1Cv2n9FQfo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUTnctAAoJEIaOsuA1yqREsJkQALJ3aXbosR8yYYtnJFpbgj95
-vPH6TxKswvvyVXgqVXY4qhkO2iUVZVeFXO5HZmrBW7Xy9Sclr539L+df97s30rpG
-4/HbvH/VS3QI5FB4ZLh5z+yvYQ3mBd2In/6jB6RQV4HC1xvnnfchC2bHtSuEoB88
-Es4giJh/xgOst0eaMWfC+oo3pk8gjWXWGzi6O323I+2npzDv41IBNJpEdNErSSaW
-lCRNTS6BhqyGNCDs41lti5ylLaDZaBecSR5WkYdw55yM2yuXyPlBtk1LnnN0+VVA
-zijfIQ0WF7eU0MhATOeHmV3v5+jYSKAM0pHldqYCBwmp+ObeMxzP13UGGgfG/xqn
-7gh00ZqJeXccC1gjRd/KWM0onyBvilqv5tZ1XRgvyLjdxf4z3dx6WoNjv+HoRc9y
-e43iRbPx1C3nTK33E3XT9a83ZURDgMNZuYrxoeQyd17deL6OdolUzI5VocTHSO6T
-cbaLwAo5mj+/Yplj0JgmZf1Fqg9gKK1WJOoJ2nR4Jt12hWqJSD4+twe46Y2KmHmh
-cdiTYCBFrGP/9HU4AGRTfz4QE82WrBQQ8RLt4gHjISgbaFjtAszpxl0tTNkJ7hD3
-cSfus/RtT9cV5tC/JSfz149IXmVZHvw+HRBYzBCU2v7CrTD+u6aa/FHX64bBOyP+
-5Vd07CyjRSk5pYwy/FSe
-=gpvh
------END PGP SIGNATURE-----
-
---CxDuMX1Cv2n9FQfo--
