@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaJ0GlE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 02:41:04 -0400
-Received: from ozlabs.org ([103.22.144.67]:45884 "EHLO ozlabs.org"
+	id S1751795AbaJ0Got (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 02:44:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39001 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149AbaJ0GlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 02:41:02 -0400
-In-Reply-To: <1414383875-20835-1-git-send-email-imunsie@au.ibm.com>
-To: Ian Munsie <imunsie@au1.ibm.com>, mpe <mpe@ellerman.id.au>
-From: Michael Ellerman <mpe@ellerman.id.au>
-Cc: cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>, mikey <mikey@neuling.org>,
-        arnd <arnd@arndb.de>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        greg <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>, anton <anton@samba.org>,
-        imunsie <imunsie@au1.ibm.com>, jk <jk@ozlabs.org>
-Subject: Re: CXL: Fix PSL error due to duplicate segment table entries
-Message-Id: <20141027064100.D12B514007D@ozlabs.org>
-Date: Mon, 27 Oct 2014 17:41:00 +1100 (AEDT)
+	id S1751141AbaJ0Gos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 02:44:48 -0400
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Paul McQuade <paulmcquad@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org,
+        gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
+Subject: Re: [PATCH 2/2] staging: rtl8723au:core
+References: <1414340332-4556-1-git-send-email-paulmcquad@gmail.com>
+	<1414350250.15751.22.camel@perches.com> <wrfjegtucbgo.fsf@redhat.com>
+	<1414389096.15751.34.camel@perches.com> <wrfj1tpuca0q.fsf@redhat.com>
+	<1414390984.8884.0.camel@perches.com>
+Date: Mon, 27 Oct 2014 07:44:37 +0100
+In-Reply-To: <1414390984.8884.0.camel@perches.com> (Joe Perches's message of
+	"Sun, 26 Oct 2014 23:23:04 -0700")
+Message-ID: <wrfjd29eau5m.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-27-10 at 04:24:35 UTC, Ian Munsie wrote:
-> From: Ian Munsie <imunsie@au1.ibm.com>
-> 
-> In certain circumstances the PSL can send an interrupt for a segment
+Joe Perches <joe@perches.com> writes:
+> On Mon, 2014-10-27 at 07:16 +0100, Jes Sorensen wrote:
+>> Joe Perches <joe@perches.com> writes:
+>> > On Mon, 2014-10-27 at 06:45 +0100, Jes Sorensen wrote:
+>> >> Joe Perches <joe@perches.com> writes:
+>> >> > On Sun, 2014-10-26 at 16:18 +0000, Paul McQuade wrote:
+>> >> >> ERROR: spaces required around that ':' (ctx:VxE)
+>> > []
+>> >> >> diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c
+>> >> >> b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
+>> > []
+>> >> >> @@ -794,28 +794,28 @@ u16 rtw_mcs_rate23a(u8 rf_type, u8 bw_40MHz, u8 short_GI_20, u8 short_GI_40,
+>> >> >>  
+>> >> >>  	if (rf_type == RF_1T1R) {
+>> >> >>  		if (mcs->rx_mask[0] & BIT(7))
+>> >> >> -			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):
+>> >> >> +			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350) :
+>> > []
+>> >> >
+>> >> > A macro could help intelligibility here - maybe something like:
+>> >> >
+>> >> > #define get_max_rate(r1, r2, r3, r4)					\
+>> >> > 	(bw_40MHz ? (short_GI_40 ? r1 : r2) : (short_GI_20 ? r3 : r4))
+>> >> > and:
+>> >> >  		if (mcs->rx_mask[0] & BIT(7))
+>> >> > 			max_rate = get_max_rate(1500, 1350, 722, 650);
+>> >> 
+>> >> Hiding a parameter to a macro like that is bad coding practice, so don't
+>> >> do that please!
+>> >
+>> > Yes and no.
+>> >
+>> > Adding the other 3 arguments to the macro doesn't help legibility.
+>> >
+>> > Keeping the macro definition local to the place that it's used
+>> > can help avoid typos.
+>> 
+>> It's wrong, so just don't do it here!
+>
+> It's not "wrong", you just don't like it.
 
-Define PSL before using it please.
+I consider it wrong, and I am the co-maintainer of this driver .... and
+I NACK it.
 
-> miss that the kernel has already handled. This can happen if multiple
-> translations for the same segment are queued in the PSL before the
-> kernel has restarted the first translation.
-> 
-> The CXL driver did not expect this situation and did not check if a
+There's a gazillion real issues to fix in this driver, adding a bad
+macro isn't on that list.
 
-does not and does not, you haven't patched it yet.
-
-> segment had already been handled. This could cause a duplicate segment
-> table entry which in turn caused a PSL error taking down the card.
-> 
-> This patch fixes the issue by checking for existing entries in the
-> segment table that match the segment it is trying to insert to avoid
-> inserting duplicate entries.
-> 
-> Some of the code has been refactored to simplify it - the segment table
-> hash has been moved from cxl_load_segment to find_free_sste where it is
-
-Any reason that's not a separate patch?
-
-> used and we have disabled the secondary hash in the segment table to
-> reduce the number of entries that need to be tested from 16 to 8. Due to
-> the large segment sizes we use it is extremely unlikely that the
-> secondary hash would ever have been used in practice, so this should not
-> have any negative impacts and may even improve performance.
-
-Any reason that's not a separate patch?
-
-> copro_calculate_slb will now mask the ESID by the correct mask for 1T vs
-
-Didn't, but will after this patch?
-
-> 256M segments. This has no effect by itself as the extra bits were
-> ignored, but it makes debugging the segment table entries easier and
-> means that we can directly compare the ESID values for duplicates
-> without needing to worry about masking in the comparison.
-
-Separate patch?
-
-cheers
+Jes
