@@ -1,229 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832AbaJ0RQF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:16:05 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:40266 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbaJ0RQD (ORCPT
+	id S1751901AbaJ0RQh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:16:37 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:32771 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141AbaJ0RQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:16:03 -0400
-Message-ID: <544E7DC9.5020903@hp.com>
-Date: Mon, 27 Oct 2014 13:15:53 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 27 Oct 2014 13:16:36 -0400
+Date: Mon, 27 Oct 2014 10:16:17 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>,
+        Johan Hovold <johan@kernel.org>
+Subject: Re: [PATCH v3 00/47] kernel: Add support for power-off handler call
+ chain
+Message-ID: <20141027171617.GA19379@roeck-us.net>
+References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+ <20141027160324.GD10814@saruman>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>
-Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization support
-References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com> <1413483040-58399-10-git-send-email-Waiman.Long@hp.com> <20141024084738.GU21513@worktop.programming.kicks-ass.net> <544ABC47.2000700@hp.com> <20141024220423.GB10501@worktop.programming.kicks-ass.net>
-In-Reply-To: <20141024220423.GB10501@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027160324.GD10814@saruman>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.544E7DF3.015C,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/24/2014 06:04 PM, Peter Zijlstra wrote:
-> On Fri, Oct 24, 2014 at 04:53:27PM -0400, Waiman Long wrote:
->> The additional register pressure may just cause a few more register moves
->> which should be negligible in the overall performance . The additional
->> icache pressure, however, may have some impact on performance. I was trying
->> to balance the performance of the pv and non-pv versions so that we won't
->> penalize the pv code too much for a bit more performance in the non-pv code.
->> Doing it your way will add a lot of function call and register
->> saving/restoring to the pv code.
-> If people care about performance they should not be using virt crap :-)
->
-> I only really care about bare metal.
+On Mon, Oct 27, 2014 at 11:03:24AM -0500, Felipe Balbi wrote:
+> Adding Johan, who's working on RTC power off for AM335x devices
+> 
+Hi Felipe,
 
-Yes, I am aware of that. However, the whole point of doing PV spinlock 
-is to improve performance in a virtual guest.
+is that the rtc-omap driver ?
 
-Anyway, I had done some measurements. In my test system, the 
-queue_spin_lock_slowpath() function has a text size of about 400 bytes 
-without PV, but 1120 bytes with PV. I made some changes to create 
-separate versions of PV and non-PV slowpath functions as shown by the 
-diff below. The text size is now about 430 bytes for the non-PV version 
-and 925 bytes for the PV version. The overall object size increases by a 
-bit more than 200 bytes, but the icache footprint should be reduced no 
-matter which version is used.
+I am tracking linux-next for related changes. As new power-off handlers are
+introduced, I prepare patches for those as well. I currently have patches for
+the following two drivers in the queue:
+	drivers/regulator/act8865-regulator.c
+	drivers/rtc/rtc-omap.c
 
--Longman
+I plan to send review requests for those patches in a week or so (I think
+there is still some change pending to the power-off function in the rtc-omap
+driver, and I want to wait for it).
 
-----------------------------------------
+My current plan is to send a pull request for the series directly to Linus
+when the next commit window opens; this is what a number of maintainers
+suggested I should do. This pull request would exclude the last patch,
+so pm_power_off would still be there. Next steps would then be to submit
+another set of patches to update the newly introduced power-off handlers
+and then to finally remove pm_power_off; this would probably happen after
+the commit window closes.
 
-diff --git a/arch/x86/include/asm/pvqspinlock.h 
-b/arch/x86/include/asm/pvqspinlo
-index d424252..241bf30 100644
---- a/arch/x86/include/asm/pvqspinlock.h
-+++ b/arch/x86/include/asm/pvqspinlock.h
-@@ -79,9 +79,6 @@ static inline void pv_init_node(struct mcs_spinlock *node)
+At least that is the plan unless someone has a better idea ....
 
-         BUILD_BUG_ON(sizeof(struct pv_qnode) > 5*sizeof(struct 
-mcs_spinlock));
+There may be some variants; for example, it might make sense to create an
+immutable branch with the key patches (1-3 and 8) to enable others to use
+the new functions immediately. That would require Acks from affected
+maintainers for patch 1, though, so I can not do that yet.
 
--       if (!pv_enabled())
--               return;
--
-         pn->cpustate = PV_CPU_ACTIVE;
-         pn->mayhalt  = false;
-         pn->mycpu    = smp_processor_id();
-@@ -132,9 +129,6 @@ static inline bool pv_link_and_wait_node(u32 old, 
-struct mcs
-         struct pv_qnode *ppn, *pn = (struct pv_qnode *)node;
-         unsigned int count;
+Thanks,
+Guenter
 
--       if (!pv_enabled())
--               return false;
--
-         if (!(old & _Q_TAIL_MASK)) {
-                 node->locked = true;    /* At queue head now */
-                 goto ret;
-@@ -236,9 +230,6 @@ pv_wait_head(struct qspinlock *lock, struct 
-mcs_spinlock *no
-  {
-         struct pv_qnode *pn = (struct pv_qnode *)node;
+> On Mon, Oct 27, 2014 at 08:55:07AM -0700, Guenter Roeck wrote:
+> > Various drivers implement architecture and/or device specific means to
+> > remove power from the system.  For the most part, those drivers set the
+> > global variable pm_power_off to point to a function within the driver.
+> > 
+> > This mechanism has a number of drawbacks.  Typically only one means
+> > to remove power is supported (at least if pm_power_off is used).
+> > At least in theory there can be multiple means to remove power, some of
+> > which may be less desirable.  For example, one mechanism might power off the
+> > entire system through an I/O port or gpio pin, while another might power off
+> > a board by disabling its power controller. Other mechanisms may really just
+> > execute a restart sequence or drop into the ROM monitor, or put the CPU into
+> > sleep mode.  Using pm_power_off can also be racy if the function pointer is
+> > set from a driver built as module, as the driver may be in the process of
+> > being unloaded when pm_power_off is called.  If there are multiple power-off
+> > handlers in the system, removing a module with such a handler may
+> > inadvertently reset the pointer to pm_power_off to NULL, leaving the system
+> > with no means to remove power.
+> > 
+> > Introduce a system power-off handler call chain to solve the described
+> > problems.  This call chain is expected to be executed from the architecture
+> > specific machine_power_off() function.  Drivers providing system power-off
+> > functionality are expected to register with this call chain.  By using the
+> > priority field in the notifier block, callers can control power-off handler
+> > execution sequence and thus ensure that the power-off handler with the
+> > optimal capabilities to remove power for a given system is called first.
+> > A call chain instead of a single call to the highest priority handler is
+> > used to provide fallback: If multiple power-off handlers are installed,
+> > all handlers will be called until one actually succeeds to power off the
+> > system.
+> > 
+> > Patch 01/47 implements the power-off handler API.
+> > 
+> > Patches 02/47 to 04/47 are cleanup patches to prepare for the move of
+> > pm_power_off to a common location.
+> > 
+> > Patches 05/47 to 07/47 remove references to pm_power_off from devicetree
+> > bindings descriptions.
+> > 
+> > Patch 08/47 moves the pm_power_off variable from architecture code to
+> > kernel/reboot.c. 
+> > 
+> > Patches 09/47 to 34/47 convert various drivers to register with the kernel
+> > power-off handler instead of setting pm_power_off directly.
+> > 
+> > Patches 35/47 to 46/47 do the same for architecture code.
+> > 
+> > Patch 47/47 finally removes pm_power_off.
+> > 
+> > For the most part, the individual patches include explanations why specific
+> > priorities were chosen, at least if the selected priority is not the default
+> > priority. Subsystem and architecture maintainers are encouraged to have a look
+> > at the selected priorities and suggest improvements.
+> > 
+> > I ran the final code through my normal build and qemu tests. Results are
+> > available at http://server.roeck-us.net:8010/builders in the 'poweroff-handler'
+> > column. I also built all available configurations for arm, mips, powerpc,
+> > m68k, and sh architectures.
+> > 
+> > The series is available in branch poweroff-handler of my repository at
+> > git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git.
+> > It is based on 3.18-rc2.
+> > 
+> > A note on Cc: In the initial submission I had way too many Cc:, causing the
+> > patchset to be treated as spam by many mailers and mailing list handlers,
+> > which of course defeated the purpose. This time around I am cutting down
+> > the distribution list down significantly. My apologies to anyone I may have
+> > failed to copy this time around.
+> > 
+> > Important changes since v2:
+> > - Rebased series to v3.18-rc2.
+> > - Do not hold any locks while executing the power-off call chain.
+> >   This ensures that power-off handlers are executed in the state
+> >   selected by the machine_power_off function for a given architecture,
+> >   ie without changing the current semantics of power-off callbacks and
+> >   machine_power_off functions.
+> >   Power-off handler registration and de-registration is handled in atomic
+> >   context with interrupts disabled to ensure that those functions are not
+> >   interrupted by code which powers off the system.
+> > - Use [xxx_]power_off[_xxx] instead of [xxx_]poweroff[_xxx] for newly
+> >   introduced function and variable names.
+> > - Use power-off instead of poweroff in descriptive text and comments.
+> > - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+> > - Use ACPI: instead of acpi: for messages in acpi code.
+> > 
+> > Important changes since v1:
+> > - Rebased series to v3.18-rc1.
+> > - Use raw notifier with spinlock protection instead of atomic notifiers,
+> >   since some power-off handlers need to have interrupts enabled.
+> > - Renamed API functions from _poweroff to _power_off.
+> > - Added various Acks.
+> > - Build tested all configurations for arm, powerpc, and mips architectures.
+> > - Fixed two compile errors in mips patch.
+> > - Replaced dev_err and pr_err with dev_warn and pr_warn if an error is not
+> >   fatal.
+> > - Provide managed resources API and use where appropriate.
+> > - Provide and use definitions for standard priorities.
+> > - Added patches to convert newly introduced power-off handlers.
+> > - Various minor changes.
+> > 
+> > Important changes since RFC:
+> > - Move API to new file kernel/power/power_off_handler.c.
+> > - Move pm_power_off pointer to kernel/power/power_off_handler.c. Call
+> >   pm_power_off from do_kernel_power_off, and only call do_kernel_power_off
+> >   from architecture code instead of calling both pm_power_off and
+> >   do_kernel_power_off.
+> > - Provide additional API function register_power_off_handler_simple
+> >   to simplify conversion of architecture code.
+> > - Provide additional API function have_kernel_power_off to check if
+> >   a power-off handler was installed.
+> > - Convert all drivers and architecture code to use the new API.
+> > - Remove pm_power_off as last patch of the series.
+> > 
+> > Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+> > Cc: Alexander Graf <agraf@suse.de>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> > cc: Heiko Stuebner <heiko@sntech.de>
+> > Cc: Lee Jones <lee.jones@linaro.org>
+> > Cc: Len Brown <len.brown@intel.com>
+> > Cc: Pavel Machek <pavel@ucw.cz>
+> > Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> > Cc: Romain Perier <romain.perier@gmail.com>
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> balbi
 
--       if (!pv_enabled())
--               return smp_load_acquire(&lock->val.counter);
--
-         for (;;) {
-                 unsigned int count;
-                 s8 oldstate;
-@@ -328,8 +319,6 @@ static inline void pv_wait_check(struct qspinlock *lock,
-         struct pv_qnode *pnxt = (struct pv_qnode *)next;
-         struct pv_qnode *pcur = (struct pv_qnode *)node;
-
--       if (!pv_enabled())
--               return;
-         /*
-          * Clear the locked and head values of lock holder
-          */
-diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
-index 1662dbd..05aea57 100644
---- a/kernel/locking/qspinlock.c
-+++ b/kernel/locking/qspinlock.c
-@@ -16,6 +16,7 @@
-   * Authors: Waiman Long <waiman.long@hp.com>
-   *          Peter Zijlstra <pzijlstr@redhat.com>
-   */
-+#ifndef _GEN_PV_LOCK_SLOWPATH
-  #include <linux/smp.h>
-  #include <linux/bug.h>
-  #include <linux/cpumask.h>
-@@ -271,19 +272,37 @@ void queue_spin_unlock_slowpath(struct qspinlock 
-*lock)
-  }
-  EXPORT_SYMBOL(queue_spin_unlock_slowpath);
-
--#else
-+static void pv_queue_spin_lock_slowpath(struct qspinlock *lock, u32 val);
-+
-+#else  /* CONFIG_PARAVIRT_SPINLOCKS */
-+
-+static inline void pv_queue_spin_lock_slowpath(struct qspinlock *lock, 
-u32 val)
-+       { }
-
--static inline void pv_init_node(struct mcs_spinlock *node)     { }
--static inline void pv_wait_check(struct qspinlock *lock,
--                                struct mcs_spinlock *node,
--                                struct mcs_spinlock *next)     { }
--static inline bool pv_link_and_wait_node(u32 old, struct mcs_spinlock 
-*node)
-+#endif /* CONFIG_PARAVIRT_SPINLOCKS */
-+
-+/*
-+ * Dummy PV functions for bare-metal slowpath code
-+ */
-+static inline void nopv_init_node(struct mcs_spinlock *node)   { }
-+static inline void nopv_wait_check(struct qspinlock *lock,
-+                                  struct mcs_spinlock *node,
-+                                  struct mcs_spinlock *next)   { }
-+static inline bool nopv_link_and_wait_node(u32 old, struct mcs_spinlock 
-*node)
-                    { return false; }
--static inline int  pv_wait_head(struct qspinlock *lock,
-+static inline int  nopv_wait_head(struct qspinlock *lock,
-                                 struct mcs_spinlock *node)
-                    { return smp_load_acquire(&lock->val.counter); }
-+static inline bool return_true(void)   { return true;  }
-+static inline bool return_false(void)  { return false; }
-
--#endif /* CONFIG_PARAVIRT_SPINLOCKS */
-+#define pv_init_node           nopv_init_node
-+#define pv_wait_check          nopv_wait_check
-+#define pv_link_and_wait_node  nopv_link_and_wait_node
-+#define pv_wait_head           nopv_wait_head
-+#define in_pv_code             return_false
-+
-+#endif /* _GEN_PV_LOCK_SLOWPATH */
-
-  /**
-   * queue_spin_lock_slowpath - acquire the queue spinlock
-@@ -306,7 +325,11 @@ static inline int  pv_wait_head(struct qspinlock *lock,
-   * contended             :    (*,x,y) +--> (*,0,0) ---> (*,0,1) -'  :
-   *   queue               :         ^--'                             :
-   */
-+#ifdef _GEN_PV_LOCK_SLOWPATH
-+static void pv_queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
-+#else
-  void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
-+#endif
-  {
-         struct mcs_spinlock *prev, *next, *node;
-         u32 new, old, tail;
-@@ -314,7 +337,12 @@ void queue_spin_lock_slowpath(struct qspinlock 
-*lock, u32 v
-
-         BUILD_BUG_ON(CONFIG_NR_CPUS >= (1U << _Q_TAIL_CPU_BITS));
-
--       if (pv_enabled())
-+       if (pv_enabled()) {
-+               pv_queue_spin_lock_slowpath(lock, val);
-+               return;
-+       }
-+
-+       if (in_pv_code())
-                 goto queue;
-
-         if (virt_queue_spin_lock(lock))
-@@ -474,3 +502,23 @@ release:
-         this_cpu_dec(mcs_nodes[0].count);
-  }
-  EXPORT_SYMBOL(queue_spin_lock_slowpath);
-+
-+#if !defined(_GEN_PV_LOCK_SLOWPATH) && defined(CONFIG_PARAVIRT_SPINLOCKS)
-+/*
-+ * Generate the PV version of the queue_spin_lock_slowpath function
-+ */
-+#undef pv_init_node
-+#undef pv_wait_check
-+#undef pv_link_and_wait_node
-+#undef pv_wait_head
-+#undef EXPORT_SYMBOL
-+#undef in_pv_code
-+
-+#define _GEN_PV_LOCK_SLOWPATH
-+#define EXPORT_SYMBOL(x)
-+#define in_pv_code     return_true
-+#define pv_enabled     return_false
-+
-+#include "qspinlock.c"
-+
-+#endif
 
