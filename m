@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015AbaJ0TRf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:17:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52711 "EHLO
+	id S1753392AbaJ0TDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:03:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52694 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700AbaJ0TDX (ORCPT
+	with ESMTP id S1752700AbaJ0TDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:03:23 -0400
+	Mon, 27 Oct 2014 15:03:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Junxiao Bi <junxiao.bi@oracle.com>, Dave Chinner <david@fromorbit.com>,
-        "joyce.xue" <xuejiufei@huawei.com>, Ming Lei <ming.lei@canonical.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 089/105] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-Date: Mon, 27 Oct 2014 11:57:04 -0700
-Message-Id: <1414436240-13879-90-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 038/105] Drivers: hv: vmbus: Cleanup hv_post_message()
+Date: Mon, 27 Oct 2014 11:56:13 -0700
+Message-Id: <1414436240-13879-39-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -31,67 +28,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 934f3072c17cc8886f4c043b47eeeb1b12f8de33 upstream.
+commit b29ef3546aecb253a5552b198cef23750d56e1e4 upstream.
 
-commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O
-during memory allocation") introduces PF_MEMALLOC_NOIO flag to avoid doing
-I/O inside memory allocation, __GFP_IO is cleared when this flag is set,
-but __GFP_FS implies __GFP_IO, it should also be cleared.  Or it may still
-run into I/O, like in superblock shrinker.  And this will make the kernel
-run into the deadlock case described in that commit.
+Minimize failures in this function by pre-allocating the buffer
+for posting messages. The hypercall for posting the message can fail
+for a number of reasons:
 
-See Dave Chinner's comment about io in superblock shrinker:
+        1. Transient resource related issues
+        2. Buffer alignment
+        3. Buffer cannot span a page boundry
 
-Filesystem shrinkers do indeed perform IO from the superblock shrinker and
-have for years.  Even clean inodes can require IO before they can be freed
-- e.g.  on an orphan list, need truncation of post-eof blocks, need to
-wait for ordered operations to complete before it can be freed, etc.
+We address issues 2 and 3 by preallocating a per-cpu page for the buffer.
+Transient resource related failures are handled by retrying by the callers
+of this function.
 
-IOWs, Ext4, btrfs and XFS all can issue and/or block on arbitrary amounts
-of IO in the superblock shrinker context.  XFS, in particular, has been
-doing transactions and IO from the VFS inode cache shrinker since it was
-first introduced....
+This patch is based on the investigation
+done by Dexuan Cui <decui@microsoft.com>.
 
-Fix this by clearing __GFP_FS in memalloc_noio_flags(), this function has
-masked all the gfp_mask that will be passed into fs for the processes
-setting PF_MEMALLOC_NOIO in the direct reclaim path.
+I would like to thank Sitsofe Wheeler <sitsofe@yahoo.com>
+for reporting the issue and helping in debuggging.
 
-v1 thread at: https://lkml.org/lkml/2014/9/3/32
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: joyce.xue <xuejiufei@huawei.com>
-Cc: Ming Lei <ming.lei@canonical.com>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/sched.h | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/hv/hv.c           | 27 +++++++++++++++------------
+ drivers/hv/hyperv_vmbus.h |  4 ++++
+ 2 files changed, 19 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index c06daac..81c20c49 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1744,11 +1744,13 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
- #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
- #define used_math() tsk_used_math(current)
- 
--/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
-+/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
-+ * __GFP_FS is also cleared as it implies __GFP_IO.
-+ */
- static inline gfp_t memalloc_noio_flags(gfp_t flags)
+diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
+index f0c5e07..0e3c124 100644
+--- a/drivers/hv/hv.c
++++ b/drivers/hv/hv.c
+@@ -138,6 +138,8 @@ int hv_init(void)
+ 	memset(hv_context.synic_event_page, 0, sizeof(void *) * NR_CPUS);
+ 	memset(hv_context.synic_message_page, 0,
+ 	       sizeof(void *) * NR_CPUS);
++	memset(hv_context.post_msg_page, 0,
++	       sizeof(void *) * NR_CPUS);
+ 	memset(hv_context.vp_index, 0,
+ 	       sizeof(int) * NR_CPUS);
+ 	memset(hv_context.event_dpc, 0,
+@@ -217,26 +219,18 @@ int hv_post_message(union hv_connection_id connection_id,
+ 		  enum hv_message_type message_type,
+ 		  void *payload, size_t payload_size)
  {
- 	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
--		flags &= ~__GFP_IO;
-+		flags &= ~(__GFP_IO | __GFP_FS);
- 	return flags;
+-	struct aligned_input {
+-		u64 alignment8;
+-		struct hv_input_post_message msg;
+-	};
+ 
+ 	struct hv_input_post_message *aligned_msg;
+ 	u16 status;
+-	unsigned long addr;
+ 
+ 	if (payload_size > HV_MESSAGE_PAYLOAD_BYTE_COUNT)
+ 		return -EMSGSIZE;
+ 
+-	addr = (unsigned long)kmalloc(sizeof(struct aligned_input), GFP_ATOMIC);
+-	if (!addr)
+-		return -ENOMEM;
+-
+ 	aligned_msg = (struct hv_input_post_message *)
+-			(ALIGN(addr, HV_HYPERCALL_PARAM_ALIGN));
++			hv_context.post_msg_page[get_cpu()];
+ 
+ 	aligned_msg->connectionid = connection_id;
++	aligned_msg->reserved = 0;
+ 	aligned_msg->message_type = message_type;
+ 	aligned_msg->payload_size = payload_size;
+ 	memcpy((void *)aligned_msg->payload, payload, payload_size);
+@@ -244,8 +238,7 @@ int hv_post_message(union hv_connection_id connection_id,
+ 	status = do_hypercall(HVCALL_POST_MESSAGE, aligned_msg, NULL)
+ 		& 0xFFFF;
+ 
+-	kfree((void *)addr);
+-
++	put_cpu();
+ 	return status;
  }
  
+@@ -294,6 +287,14 @@ int hv_synic_alloc(void)
+ 			pr_err("Unable to allocate SYNIC event page\n");
+ 			goto err;
+ 		}
++
++		hv_context.post_msg_page[cpu] =
++			(void *)get_zeroed_page(GFP_ATOMIC);
++
++		if (hv_context.post_msg_page[cpu] == NULL) {
++			pr_err("Unable to allocate post msg page\n");
++			goto err;
++		}
+ 	}
+ 
+ 	return 0;
+@@ -308,6 +309,8 @@ void hv_synic_free_cpu(int cpu)
+ 		free_page((unsigned long)hv_context.synic_event_page[cpu]);
+ 	if (hv_context.synic_message_page[cpu])
+ 		free_page((unsigned long)hv_context.synic_message_page[cpu]);
++	if (hv_context.post_msg_page[cpu])
++		free_page((unsigned long)hv_context.post_msg_page[cpu]);
+ }
+ 
+ void hv_synic_free(void)
+diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
+index e055176..9fa0cab 100644
+--- a/drivers/hv/hyperv_vmbus.h
++++ b/drivers/hv/hyperv_vmbus.h
+@@ -510,6 +510,10 @@ struct hv_context {
+ 	 * basis.
+ 	 */
+ 	struct tasklet_struct *event_dpc[NR_CPUS];
++	/*
++	 * buffer to post messages to the host.
++	 */
++	void *post_msg_page[NR_CPUS];
+ };
+ 
+ extern struct hv_context hv_context;
 -- 
 1.9.1
 
