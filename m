@@ -1,85 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaJ0AlA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 20:41:00 -0400
-Received: from smtprelay0007.hostedemail.com ([216.40.44.7]:37882 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751722AbaJ0Ak7 (ORCPT
+	id S1751999AbaJ0AlQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 20:41:16 -0400
+Received: from smtp103.biz.mail.bf1.yahoo.com ([98.139.221.62]:41231 "EHLO
+	smtp103.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751722AbaJ0AlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 20:40:59 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3867:3872:4321:5007:6261:8957:10004:10400:10848:11026:11473:11657:11658:11914:12043:12296:12517:12519:12555:12683:12740:13069:13311:13357:14110:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: pump90_4285175ae140a
-X-Filterd-Recvd-Size: 2484
-Message-ID: <1414370455.15751.24.camel@perches.com>
-Subject: Re: [PATCH] staging: rtl8723au: create macro get_max_rate
-From: Joe Perches <joe@perches.com>
-To: Paul McQuade <paulmcquad@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, gregkh@linuxfoundation.org,
-        Jes.Sorensen@redhat.com, Larry.Finger@lwfinger.net
-Date: Sun, 26 Oct 2014 17:40:55 -0700
-In-Reply-To: <1414368300-9596-1-git-send-email-paulmcquad@gmail.com>
-References: <1414368300-9596-1-git-send-email-paulmcquad@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	Sun, 26 Oct 2014 20:41:14 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: UtuifpMVM1nQjWAo81iqH5SGbOUD8RORQmTmoKXBnToPAoo
+ UNaA3XezdbZS1wzD3qs.OyTy.4FGBUN7CXOo1d.YUwH2qKnL5w.0wPCR14af
+ UL0a8q_dFWX4qwZAmzyzrad69IQixMzh3caIuRjWFreEqRIEIUGFziIjk7Fq
+ hJOglpwomrHCkIxKyzW3ZOJ8h76M0xr3puryFbE_Z5plVNC4tXLMzQHo17pJ
+ Pb0EsAwGuFD9eFBGMsfZ.XdfzWANCwWazASITbOfiHZxbS6QCjikSeGuh.P7
+ y_DMUmKZUsetJlgmFf8_e5rFyYHhae75ruS.P0FPXB51As0JJG2aeydZubbP
+ qR5AKjKb_qLt.qoP.Kcl62qvq6_x1Yvuz6RCsaGKsg1sFhm5n9nTFBlC5oC8
+ hXVz30Ijns5_JIBHvNZra4oUu5H8C4hWltt4iRmiVwJcz9wfbBTbrQwYyT6A
+ n308ZMrbiox9l3PhV6UGHTG6aHfUKMkz9GNf7fO_iPlP.RqRNpQg9LETIY5u
+ qReWlvFJ36iFG2VQbWcajhQDUMlqe6MKbkccmfWuky2M1
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <544D94C1.8010402@schaufler-ca.com>
+Date: Sun, 26 Oct 2014 17:41:37 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: PINTU KUMAR <pintu_agarwal@yahoo.com>, Rohit <rohit.kr@samsung.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "james.l.morris@oracle.com" <james.l.morris@oracle.com>,
+        "serge@hallyn.com" <serge@hallyn.com>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpgs@samsung.com" <cpgs@samsung.com>,
+        "pintu.k@samsung.com" <pintu.k@samsung.com>,
+        "vishnu.ps@samsung.com" <vishnu.ps@samsung.com>,
+        "iqbal.ams@samsung.com" <iqbal.ams@samsung.com>,
+        "ed.savinay@samsung.com" <ed.savinay@samsung.com>,
+        "me.rohit@live.com" <me.rohit@live.com>
+Subject: Re: [PATCH v2] Security: smack: replace kzalloc with kmem_cache for
+ inode_smack
+References: <1413375041-29741-1-git-send-email-rohit.kr@samsung.com> <543FF121.7000502@schaufler-ca.com> <20141017171229.7c1a113e@rohitk-ubuntu.sisodomain.com> <544129FD.8060902@schaufler-ca.com> <1413563667.96709.YahooMailNeo@web160104.mail.bf1.yahoo.com> <544153D1.50304@schaufler-ca.com>
+In-Reply-To: <544153D1.50304@schaufler-ca.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 00:05 +0000, Paul McQuade wrote:
-> create marco for max_rate values
+On 10/17/2014 10:37 AM, Casey Schaufler wrote:
+> On 10/17/2014 9:34 AM, PINTU KUMAR wrote:
+>> Hi,
+>>
+>>
+>>> ________________________________
+>>> From: Casey Schaufler <casey@schaufler-ca.com>
+>>> To: Rohit <rohit.kr@samsung.com> 
+>>> Cc: akpm@linux-foundation.org; james.l.morris@oracle.com; serge@hallyn.com; linux-security-module@vger.kernel.org; linux-kernel@vger.kernel.org; cpgs@samsung.com; pintu.k@samsung.com; vishnu.ps@samsung.com; iqbal.ams@samsung.com; ed.savinay@samsung.com; me.rohit@live.com; pintu_agarwal@yahoo.com; Casey Schaufler <casey@schaufler-ca.com> 
+>>> Sent: Friday, 17 October 2014 8:08 PM
+>>> Subject: Re: [PATCH v2] Security: smack: replace kzalloc with kmem_cache for inode_smack
+>>>
+>>>
+>>> On 10/17/2014 4:42 AM, Rohit wrote:
+>>>> On Thu, 16 Oct 2014 09:24:01 -0700
+>>>> Casey Schaufler <casey@schaufler-ca.com> wrote:
+>>>>
+>>>>> On 10/15/2014 5:10 AM, Rohit wrote:
+>>>>>> The patch use kmem_cache to allocate/free inode_smack since they are
+>>>>>> alloced in high volumes making it a perfect case for kmem_cache.
+>>>>>>
+>>>>>> As per analysis, 24 bytes of memory is wasted per allocation due
+>>>>>> to internal fragmentation. With kmem_cache, this can be avoided.
+>>>>> What impact does this have on performance? I am much more
+>>>>> concerned with speed than with small amount of memory.
+>>>>>
+>>>> I think there should not be any performance problem as such.
+>>>> However, please let me know how to check the performance in this case.
+>>> Any inode intensive benchmark would suffice. Even the classic
+>>> kernel build would do.
+>>>
+>>>> As far as i know, kzalloc first finds the kmalloc_index corresponding to
+>>>> the size to get the kmem_cache_object and then calls kmem_cache_alloc
+>>>> with the kmalloc_index(kmem_cache object). Here, we create kmem_cache
+>>>> object specific for inode_smack and directly calls kmem_cache_alloc()
+>>>> which should give better performance as compared to kzalloc.
+>>> That would be my guess as well, but performance is tricky. Sometimes
+>>> things that "obviously" make performance better make it worse. There can
+>>> be unanticipated side effects.
+>>>
+>>>
+>>>> Please let me know your comments.
+>>> If you can run any sort of test that demonstrates this change
+>>> does not have performance impact, I'm fine with it. Smack is being
+>>> used in small devices, and both memory use and performance are critical
+>>> to the success of these devices. Of the two, performance is currently
+>>> more of an issue.
+>>>
+>> SMACK is used heavily in Tizen. We verified these changes for one of Tizen project.
+>> During boot time we observed that this object is used heavily, as identified by kmalloc-accounting.
+>> After replacing this we did not observe any difference in boot time. Also there was no side-effects seen so far.
+>> If you know of any other tests, please let us know.
+>> We will also try to gather some performance stats and present here.
+> We need to be somewhat more precise than "did not observe any
+> difference in boot time". The ideal benchmark would perform lots
+> of changes to the filesystem without doing lots of IO. One process
+> that matches that profile fairly well is a kernel make. I would be
+> satisfied with something as crude as using time(1) on a small (5?)
+> number of clean kernel makes each with and without the patch on the
+> running kernel. At the level of accuracy you usually get from time(1)
+> you won't find trivial differences, but if the change is a big problem
+> (or a big win) we'll know.
 
-macro
+I have not seen anything indicating that the requested performance
+measurements have been done. I have no intention of accepting this
+without assurance that performance has not been damaged. I request
+that no one else carry this forward, either. The performance impact
+of security facilities comes under too much scrutiny to ignore it.
 
-> diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-[]
-> @@ -13,6 +13,8 @@
->   *
->   ******************************************************************************/
->  #define _IEEE80211_C
-> +#define get_max_rate(r1, r2, r3, r4)					\
-> +	(bw_40MHz ? (short_GI_40 ? r1 : r2) : (short_GI_20 ? r3 : r4))
-
-This macro should really be defined next to the uses as
-it's dependent on naming within the rtw_mcs_rate23a function.
-
-> @@ -794,64 +796,56 @@ u16 rtw_mcs_rate23a(u8 rf_type, u8 bw_40MHz, u8 short_GI_20, u8 short_GI_40,
->  
->  	if (rf_type == RF_1T1R) {
->  		if (mcs->rx_mask[0] & BIT(7))
-> -			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):
-> -				((short_GI_20)?722:650);
-> +			max_rate = get_max_rate(1500, 1350, 722, 650);
-[...]
->  	} else {
->  		if (mcs->rx_mask[1]) {
->  			if (mcs->rx_mask[1] & BIT(7))
-> -				max_rate = (bw_40MHz) ? ((short_GI_40)?3000:2700):((short_GI_20)?1444:1300);
-> +				max_rate = get_max_rate(3000, 2700, 1444, 1300);
-[...]
->  		} else {
->  			if (mcs->rx_mask[0] & BIT(7))
-> -				max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):((short_GI_20)?722:650);
-> +				max_rate = get_max_rate(1500, 1350, 722, 650);
-[...]
->  		}
->  	}
->  	return max_rate;
-
-This can be written with fewer indents as
-
-	if (rf_type == RF_1T1R( {
-		[...]
-	else if (mcs->rx_mask[1]) {
-		[...]
-	} else {
-		[...]
-	}
-
-	return max_rate;
-}
-
+> ... 
 
