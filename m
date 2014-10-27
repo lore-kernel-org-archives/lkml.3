@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990AbaJ0P5D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:57:03 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50108 "EHLO
+	id S1753446AbaJ0QF6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:05:58 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50160 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878AbaJ0P4y (ORCPT
+	with ESMTP id S1752653AbaJ0P5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:56:54 -0400
+	Mon, 27 Oct 2014 11:57:05 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Sebastian Reichel <sre@kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH v3 22/47] power/reset: restart-poweroff: Register with kernel power-off handler
-Date: Mon, 27 Oct 2014 08:55:29 -0700
-Message-Id: <1414425354-10359-23-git-send-email-linux@roeck-us.net>
+        Sebastian Reichel <sre@kernel.org>
+Subject: [PATCH v3 27/47] power/reset: vexpress-poweroff: Register with kernel power-off handler
+Date: Mon, 27 Oct 2014 08:55:34 -0700
+Message-Id: <1414425354-10359-28-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
 References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
@@ -25,13 +25,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.544E6B46.01FB,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020202.544E6B51.014F,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 132
+X-CTCH-SenderID-TotalMessages: 159
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -52,15 +52,9 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel power-off handler instead of setting pm_power_off
-directly.  Register as power-off handler of last resort since the driver
-does not really power off the system but executes a restart.
+directly. Select default priority to reflect that the original code sets
+pm_power_off unconditionally.
 
-Drop remove function since it is no longer needed.
-
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Acked-by: Andrew Lunn <andrew@lunn.ch>
 Acked-by: Sebastian Reichel <sre@kernel.org>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
@@ -69,76 +63,66 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to sepcify poweroff handler priority
-- Use devm_register_power_off_handler
-- Drop remove function since it is no longer needed
+- Use define to specify poweroff handler priority
 
- drivers/power/reset/restart-poweroff.c | 33 +++++++++++++--------------------
- 1 file changed, 13 insertions(+), 20 deletions(-)
+ drivers/power/reset/vexpress-poweroff.c | 19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/power/reset/restart-poweroff.c b/drivers/power/reset/restart-poweroff.c
-index edd707e..bdd1d6e 100644
---- a/drivers/power/reset/restart-poweroff.c
-+++ b/drivers/power/reset/restart-poweroff.c
-@@ -12,37 +12,31 @@
+diff --git a/drivers/power/reset/vexpress-poweroff.c b/drivers/power/reset/vexpress-poweroff.c
+index 4dc102e2..b0a39cc 100644
+--- a/drivers/power/reset/vexpress-poweroff.c
++++ b/drivers/power/reset/vexpress-poweroff.c
+@@ -12,6 +12,7 @@
   */
- #include <linux/kernel.h>
- #include <linux/init.h>
+ 
+ #include <linux/delay.h>
 +#include <linux/notifier.h>
+ #include <linux/of.h>
+ #include <linux/of_device.h>
  #include <linux/platform_device.h>
- #include <linux/of_platform.h>
- #include <linux/module.h>
-+#include <linux/pm.h>
- #include <linux/reboot.h>
--#include <asm/system_misc.h>
+@@ -36,11 +37,19 @@ static void vexpress_reset_do(struct device *dev, const char *what)
  
--static void restart_poweroff_do_poweroff(void)
-+static int restart_poweroff_do_poweroff(struct notifier_block *this,
-+					unsigned long unused1, void *unused2)
+ static struct device *vexpress_power_off_device;
+ 
+-static void vexpress_power_off(void)
++static int vexpress_power_off(struct notifier_block *this,
++			      unsigned long unused1, void *unused2)
  {
- 	reboot_mode = REBOOT_HARD;
- 	machine_restart(NULL);
--}
--
--static int restart_poweroff_probe(struct platform_device *pdev)
--{
--	/* If a pm_power_off function has already been added, leave it alone */
--	if (pm_power_off != NULL) {
--		dev_err(&pdev->dev,
--			"pm_power_off function already registered");
--		return -EBUSY;
--	}
- 
--	pm_power_off = &restart_poweroff_do_poweroff;
--	return 0;
+ 	vexpress_reset_do(vexpress_power_off_device, "power off");
++
 +	return NOTIFY_DONE;
  }
  
--static int restart_poweroff_remove(struct platform_device *pdev)
--{
--	if (pm_power_off == &restart_poweroff_do_poweroff)
--		pm_power_off = NULL;
-+static struct notifier_block restart_power_off_handler = {
-+	.notifier_call = restart_poweroff_do_poweroff,
-+	.priority = POWER_OFF_PRIORITY_FALLBACK,
++static struct notifier_block vexpress_power_off_nb = {
++	.notifier_call = vexpress_power_off,
++	.priority = POWER_OFF_PRIORITY_DEFAULT,
 +};
++
+ static struct device *vexpress_restart_device;
  
--	return 0;
-+static int restart_poweroff_probe(struct platform_device *pdev)
-+{
-+	return devm_register_power_off_handler(&pdev->dev,
-+					      &restart_power_off_handler);
- }
+ static void vexpress_restart(enum reboot_mode reboot_mode, const char *cmd)
+@@ -92,6 +101,7 @@ static int vexpress_reset_probe(struct platform_device *pdev)
+ 	const struct of_device_id *match =
+ 			of_match_device(vexpress_reset_of_match, &pdev->dev);
+ 	struct regmap *regmap;
++	int ret;
  
- static const struct of_device_id of_restart_poweroff_match[] = {
-@@ -52,7 +46,6 @@ static const struct of_device_id of_restart_poweroff_match[] = {
- 
- static struct platform_driver restart_poweroff_driver = {
- 	.probe = restart_poweroff_probe,
--	.remove = restart_poweroff_remove,
- 	.driver = {
- 		.name = "poweroff-restart",
- 		.owner = THIS_MODULE,
+ 	if (match)
+ 		func = (enum vexpress_reset_func)match->data;
+@@ -106,7 +116,12 @@ static int vexpress_reset_probe(struct platform_device *pdev)
+ 	switch (func) {
+ 	case FUNC_SHUTDOWN:
+ 		vexpress_power_off_device = &pdev->dev;
+-		pm_power_off = vexpress_power_off;
++		ret = register_power_off_handler(&vexpress_power_off_nb);
++		if (ret) {
++			dev_err(&pdev->dev,
++				"Failed to register power-off handler\n");
++			return ret;
++		}
+ 		break;
+ 	case FUNC_RESET:
+ 		if (!vexpress_restart_device)
 -- 
 1.9.1
 
