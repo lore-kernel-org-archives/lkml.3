@@ -1,130 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbaJ0RkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:40:15 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:34022 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909AbaJ0RkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:40:12 -0400
-Date: Mon, 27 Oct 2014 10:36:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-unionfs@vger.kernel.org
-Subject: Re: [GIT PULL] overlay filesystem v25
-Message-ID: <20141027173621.GG5718@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141023232539.GA4662@tucsk.piliscsaba.szeredi.hu>
- <20141024022055.GH7996@ZenIV.linux.org.uk>
- <20141024032422.GI7996@ZenIV.linux.org.uk>
- <CAJfpegt-X_Cd8B5H65keshhhuwH2-HPpaBC30atKeS3QjaariA@mail.gmail.com>
- <20141025081845.GJ7996@ZenIV.linux.org.uk>
- <CAJfpegvM8d-cizf=3KmTSFVgAYPBDp_0fQAh+G2Q87u=taXm3A@mail.gmail.com>
- <20141025170609.GK7996@ZenIV.linux.org.uk>
- <CAJfpegucroRzo0NHTz=4N0WcrB2oDC0eDiZXk=aKSjc8vdYDjw@mail.gmail.com>
- <20141027155901.GE5718@linux.vnet.ibm.com>
- <20141027172800.GW7996@ZenIV.linux.org.uk>
+	id S1751844AbaJ0RmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:42:06 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:49625 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaJ0RmE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:42:04 -0400
+Message-ID: <544E8401.2030409@arm.com>
+Date: Mon, 27 Oct 2014 17:42:25 +0000
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027172800.GW7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102717-0025-0000-0000-000000E95827
+To: Mike Turquette <mturquette@linaro.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "kamalesh@linux.vnet.ibm.com" <kamalesh@linux.vnet.ibm.com>,
+        "riel@redhat.com" <riel@redhat.com>, "efault@gmx.de" <efault@gmx.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "pjt@google.com" <pjt@google.com>,
+        "bsegall@google.com" <bsegall@google.com>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "tuukka.tikkanen@linaro.org" <tuukka.tikkanen@linaro.org>,
+        "amit.kucheria@linaro.org" <amit.kucheria@linaro.org>
+Subject: Re: [PATCH RFC 6/7] sched: cfs: cpu frequency scaling based on task
+ placement
+References: <1413958051-7103-1-git-send-email-mturquette@linaro.org> <1413958051-7103-7-git-send-email-mturquette@linaro.org>
+In-Reply-To: <1413958051-7103-7-git-send-email-mturquette@linaro.org>
+X-OriginalArrivalTime: 27 Oct 2014 17:42:00.0019 (UTC) FILETIME=[4F8D4A30:01CFF20D]
+X-MC-Unique: 114102717420109901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 05:28:01PM +0000, Al Viro wrote:
-> On Mon, Oct 27, 2014 at 08:59:01AM -0700, Paul E. McKenney wrote:
+Hi Mike,
+
+On 22/10/14 07:07, Mike Turquette wrote:
+> {en,de}queue_task_fair are updated to track which cpus will have changed
+> utilization values as function of task queueing.
+
+The sentence is a little bit misleading. We update the se utilization
+contrib and the cfs_rq utilization in {en,de}queue_task_fair for a
+specific se and a specific cpu = rq_of(cfs_rq_of(se))->cpu .
+
+> The affected cpus are
+> passed on to arch_eval_cpu_freq for further machine-specific processing
+> based on a selectable policy.
+
+I'm not sure if separating the evaluation and the setting of the cpu
+frequency makes sense. You could evaluate and possibly set the cpu
+frequency in one go. Right now you evaluate if the cfs_rq utilization
+exceeds the thresholds for the current index every time a task is
+enqueued or dequeued but that's not necessary since you only try to set
+the cpu frequency in the softirq. The history (and the future if we
+consider blocked utilization) is already captured in the cfs_rq
+utilization itself.
+
 > 
-> > Indeed, life is hard here.  Keep in mind that lock acquisition is not
-> > guaranteed to prevent prior operations from being reordered into the
-> > critical section, possibly as follows:
-> > 
-> > 	CPU1:
-> > 	  grab lock
-> > 	  if (!global)
-> > 	      global = p;
-> > 	  /* Assume all of CPU2's accesses happen here. */
-> > 	  p->foo = 1;
+> arch_scale_cpu_freq is called from run_rebalance_domains as a way to
+> kick off the scaling process (via wake_up_process), so as to prevent
+> re-entering the {en,de}queue code.
+
+The name is misleading from the viewpoint of the CFS sched class. The
+original scaling function of the CFS scheduler
+(arch_scale_{freq,smt/cpu,rt}_capacity) scale capacity based on
+frequency, uarch or rt. So your function should be call
+arch_scale_util_cpu_freq or even better arch_set_cpu_freq.
+
 > 
-> A bit of context: p is a local pointer to struct file here and alloc is
-> opening it...
+> All of the call sites in this patch are up for discussion. Does it make
+> sense to track which cpus have updated statistics in enqueue_fair_task?
 
-OK, good to know.  ;-)
+Not really because cfs_rq utilization tracks the history/(future) of cpu
+utilization and you can evaluate the signal when you want to set the cpu
+frequency.
 
-> > This clearly allows CPU2 to execute as follows:
-> > 
-> > 	CPU2:
-> > 	  p = global; /* gets p */
-> > 	  if (p) /* non-NULL */
-> > 	  	q = p->foo; /* might not be 1 */
-> > 
-> > Not only that, on DEC Alpha, even if CPU1's accesses are ordered, CPU2's
-> > accesses can be misordered.  You need rcu_dereference() or the combination
-> > of ACCESS_ONCE() and smp_read_barrier_depends() to avoid this issue.
-> > As always, see http://www.openvms.compaq.com/wizard/wiz_2637.html for
-> > more info.
-> > 
-> > So no, there is no guarantee.  I am assuming that the lock grabbed by
-> > CPU1 guards all assignments to "global", otherwise the code needs further
-> > help.  I am further assuming that the memory pointed to by CPU1's "p"
-> > is inaccessible to any other CPU, as in CPU1 just allocated the memory.
-> > Otherwise, the assignment "p->foo = 1" is questionable.  And finally,
-> > I am assuming that p->foo stays constant once it has been made
-> > accessible to readers.
-> > 
-> > But the following should work:
-> > 
-> > 	CPU1:
-> > 	  p->foo = 1;  /* Assumes p is local. */
-> > 	  smp_mb__before_spinlock();
-> > 	  grab lock
-> > 	  if (!global)  /* Assumes lock protects all assignments to global. */
-> > 	      global = p;
-> > 
-> > 	CPU2:
-> > 	  p = rcu_dereference(global);
-> > 	  if (p)
-> > 	     q = p->foo; /* Assumes p->foo constant once visible to readers. */
-> > 	     		 /* Also assumes p and q are local. */
-> > 
-> > If the assumptions called out in the comments do not hold, you at least
-> > need ACCESS_ONCE(), and perhaps even more synchronization.  For more info
-> > on ACCESS_ONCE(), Jon's LWN article is at http://lwn.net/Articles/508991/.
+> I chose this because I wanted to gather statistics for all cpus affected
+> in the event CONFIG_FAIR_GROUP_SCHED is enabled. As agreed at LPC14 the
+> next version of this patch will focus on the simpler case of not using
+> scheduler cgroups, which should remove a good chunk of this code,
+> including the cpumask stuff.
+
+I don't understand why you should care about task groups at all. The
+task groups contribution to the utilization of a cpu should be already
+encountered for in the appropriate cpu's cfs_rq utilization signal.
+
+But I can see a dependency to the fact that there is a difference
+between systems with per-cluster (package) or per-cpu frequency scaling.
+But there is no SD_SHARE_FREQDOMAIN (sched domain flag) today which
+applied to the SD level MC could tell you tahts we deal with per-cluster
+frequency scaling though.
+On systems with per-cpu frequency scaling you can set the frequency for
+individual cpus by hooking into the scheduler but for systems with
+per-cluster frequency scaling, you would have to respect the maximum cpu
+utilization of all cpus in the cluster.
+
+A similar problem occurs with hardware threads (SMT sd level).
+
+But I don't know right now how the sd topology hierarchy can become
+handy here.
+
 > 
-> First of all, this "p->foo = 1" is a shorthand for initialization of
-> struct file done by opening a file.  What you are saying is that it
-> can leak past the point where we stick a pointer to freshly opened
-> file into a place where another CPU can see it, but not past the
-> barrier in dropping the lock, right?
+> Also discussed at LPC14 is that fact that load_balance is a very
+> interesting place to do this as frequency can be considered in concert
+> with task placement. Please put forth any ideas on a sensible way to do
+> this.
+> 
+> Is run_rebalance_domains a logical place to change cpu frequency? What
+> other call sites make sense?
 
-Exactly!
+At least it's a good place to test this feature for now.
 
-I should also add that smp_mb__before_spinlock() implies smp_wmb(), but
-nothing more.  But that is OK because smp_wmb() suffices in this case.
+> 
+> Even for platforms that can target a cpu frequency without sleeping
+> (x86, some ARM platforms with PM microcontrollers) it is currently
+> necessary to always kick the frequency target work out into a kthread.
+> This is because of the rw_sem usage in the cpufreq core which might
+> sleep. Replacing that lock type is probably a good idea.
+> 
+> Not-signed-off-by: Mike Turquette <mturquette@linaro.org>
+> ---
+>  kernel/sched/fair.c | 39 +++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 39 insertions(+)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 1af6f6d..3619f63 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3999,6 +3999,9 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  {
+>  	struct cfs_rq *cfs_rq;
+>  	struct sched_entity *se = &p->se;
+> +	struct cpumask update_cpus;
+> +
+> +	cpumask_clear(&update_cpus);
+>  
+>  	for_each_sched_entity(se) {
+>  		if (se->on_rq)
+> @@ -4028,12 +4031,27 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  
+>  		update_cfs_shares(cfs_rq);
+>  		update_entity_load_avg(se, 1);
+> +		/* track cpus that need to be re-evaluated */
+> +		cpumask_set_cpu(cpu_of(rq_of(cfs_rq)), &update_cpus);
+>  	}
+>  
+> +	/* !CONFIG_FAIR_GROUP_SCHED */
+>  	if (!se) {
+>  		update_rq_runnable_avg(rq, rq->nr_running);
+>  		add_nr_running(rq, 1);
+> +
+> +		/*
+> +		 * FIXME for !CONFIG_FAIR_GROUP_SCHED it might be nice to
+> +		 * typedef update_cpus into an int and skip all of the cpumask
+> +		 * stuff
+> +		 */
+> +		cpumask_set_cpu(cpu_of(rq), &update_cpus);
+>  	}
+> +
+> +	if (energy_aware())
+> +		if (!cpumask_empty(&update_cpus))
+> +			arch_eval_cpu_freq(&update_cpus);
+> +
+>  	hrtick_update(rq);
+>  }
+>  
+> @@ -4049,6 +4067,9 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  	struct cfs_rq *cfs_rq;
+>  	struct sched_entity *se = &p->se;
+>  	int task_sleep = flags & DEQUEUE_SLEEP;
+> +	struct cpumask update_cpus;
+> +
+> +	cpumask_clear(&update_cpus);
+>  
+>  	for_each_sched_entity(se) {
+>  		cfs_rq = cfs_rq_of(se);
+> @@ -4089,12 +4110,27 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  
+>  		update_cfs_shares(cfs_rq);
+>  		update_entity_load_avg(se, 1);
+> +		/* track runqueues/cpus that need to be re-evaluated */
+> +		cpumask_set_cpu(cpu_of(rq_of(cfs_rq)), &update_cpus);
+>  	}
+>  
+> +	/* !CONFIG_FAIR_GROUP_SCHED */
+>  	if (!se) {
+>  		sub_nr_running(rq, 1);
+>  		update_rq_runnable_avg(rq, 1);
+> +
+> +		/*
+> +		 * FIXME for !CONFIG_FAIR_GROUP_SCHED it might be nice to
+> +		 * typedef update_cpus into an int and skip all of the cpumask
+> +		 * stuff
+> +		 */
+> +		cpumask_set_cpu(cpu_of(rq), &update_cpus);
+>  	}
+> +
+> +	if (energy_aware())
+> +		if (!cpumask_empty(&update_cpus))
+> +			arch_eval_cpu_freq(&update_cpus);
+> +
+>  	hrtick_update(rq);
+>  }
+>  
+> @@ -7536,6 +7572,9 @@ static void run_rebalance_domains(struct softirq_action *h)
+>  	 * stopped.
+>  	 */
+>  	nohz_idle_balance(this_rq, idle);
+> +
+> +	if (energy_aware())
+> +		arch_scale_cpu_freq();
+>  }
+>  
+>  /*
+> 
 
-> And you are suggesting rcu_dereference() as a way to bring the required
-> barriers in.  Ouch...  The names are really bad, but there's another
-> fun issue - rcu_dereference brings in sparse noise.  Wouldn't direct use
-> of smp_read_barrier_depends() be cleaner, anyway?
-
-Code making direct use of smp_read_barrier_depends() is harder to read,
-in my experience, but good point on the sparse noise.  Maybe a new
-lockless_dereference() primitive?  Maybe something like the following?
-(Untested, probably does not even build.)
-
-#define lockless_dereference(p) \
-({ \
-	typeof(*p) *_________p1 = ACCESS_ONCE(p); \
-	smp_read_barrier_depends(); /* Dependency order vs. p above. */ \
-	_________p1; \
-})
-
-							Thanx, Paul
 
