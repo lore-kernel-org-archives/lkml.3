@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaJ0Ktq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 06:49:46 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:29338 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbaJ0Kto (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 06:49:44 -0400
-X-AuditID: cbfee68d-f79296d000004278-f0-544e23469de5
-Message-id: <544E2346.9000908@samsung.com>
-Date: Mon, 27 Oct 2014 19:49:42 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: tomasz.figa@gmail.com, kgene.kim@samsung.com, sw0312.kim@samsung.com,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        geunsik.lim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 0/2] clk: samsung: Add clock controller driver for
- Exynos4415 SoC
-References: <1414372318-594-1-git-send-email-cw00.choi@samsung.com>
- <544E20E3.5030609@samsung.com>
-In-reply-to: <544E20E3.5030609@samsung.com>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsWyRsSkRNdN2S/EoPOImsWfCa1sFpPuT2Cx
-	6F1wlc3ibNMbdovLu+awWcw4v4/J4vCbdlaLGZNfslms2vWH0YHTY+esu+wefVtWMXp83iQX
-	wBzFZZOSmpNZllqkb5fAlfFqVkjBB+aKkystGhj7mLsYOTkkBEwkOr6thLLFJC7cW88GYgsJ
-	LGWUePrDEaZmxeZFQDVcQPHpjBIrb55mg3BeM0qcPzSdCaSKV0BLYv2/FewgNouAqsTS/nVg
-	cTag+P4XN8CmigqESaycfoUFol5Q4sfke2C2iIC+xJJVF8GGMgtcZ5T482se2EnCApESB+a1
-	M0GclCLxfcFjMJtTQFti8Zb9QM0cQA16EvcvaoGEmQXkJTaveQt2qYTAMXaJ1Qsvs0AcJCDx
-	bfIhsHoJAVmJTQegPpaUOLjiBssERrFZSE6ahTB1FpKpCxiZVzGKphYkFxQnpRcZ6hUn5haX
-	5qXrJefnbmIERtzpf896dzDePmB9iFGAg1GJh9ei0DdEiDWxrLgy9xCjKdARE5mlRJPzgXGd
-	VxJvaGxmZGFqYmpsZG5ppiTOqyj1M1hIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDo/XxyB91
-	LgJ27cuqdsznKun1FD99+uiCPtbedTZePyQ7bpxsi7gtf7t6YuWzU/oK33cuu+0pzzEjp75F
-	2zAwpC7RQOHXykuMcWm1L5d4NgqWmE26ezJlr7rujLxQ8cCPws+CmKQOzL2tVrrg30bHJ8bS
-	W3zuxZ389c8nWj1rXky+2h3zzb+4lViKMxINtZiLihMBSGBUD7MCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t9jQV03Zb8Qg56J8hZ/JrSyWUy6P4HF
-	onfBVTaLs01v2C0u75rDZjHj/D4mi8Nv2lktZkx+yWaxatcfRgdOj52z7rJ79G1ZxejxeZNc
-	AHNUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAd
-	SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMV7NCCj4wV5xcadHA2Mfc
-	xcjJISFgIrFi8yIoW0ziwr31bF2MXBxCAtMZJVbePA3lvGaUOH9oOhNIFa+AlsT6fyvYQWwW
-	AVWJpf3rwOJsQPH9L26wgdiiAmESK6dfYYGoF5T4MfkemC0ioC+xZNVFsKHMAtcZJf78mge2
-	WlggUuLAvHawQUICKRLfFzwGszkFtCUWb9kP1MwB1KAncf+iFkiYWUBeYvOat8wTGAVmIVkx
-	C6FqFpKqBYzMqxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCI/qZ1A7GlQ0WhxgFOBiVeHgt
-	Cn1DhFgTy4orcw8xSnAwK4nwOv4ECvGmJFZWpRblxxeV5qQWH2I0BQbARGYp0eR8YLLJK4k3
-	NDYxM7I0Mje0MDI2VxLnPdBqHSgkkJ5YkpqdmlqQWgTTx8TBKdXAqPxt9zuP+fJTZ/5lUpbP
-	Wr84a+2HWt3+NTM/NP7Jt6mp3pDvbPWqYH2q/eQ1L2/kLhRsyO60D0jYlDvXxP/Ckg2R5rN9
-	IkX/ZfGqNk4qkXyocWPXY7aJnmwnMtQTP7bejcrjacu4/eifsElwvMbKJ+pRJZE9E7dtUm2d
-	dYeV2V3SO2G7uOdlJZbijERDLeai4kQAKxdHPf4CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752302AbaJ0KuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 06:50:11 -0400
+Received: from roy.gaast.net ([80.101.33.21]:37575 "EHLO mail.gaast.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751230AbaJ0KuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 06:50:10 -0400
+Message-ID: <544E235C.5010908@gaast.net>
+Date: Mon, 27 Oct 2014 10:50:04 +0000
+From: Wilmer van der Gaast <wilmer@gaast.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Machine crashes right *after* ~successful resume
+References: <543F049F.5090605@gaast.net> <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com> <543F9182.9000004@gaast.net> <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com> <544033CF.3080104@gaast.net> <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com> <5442FE58.5020700@gaast.net> <CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com> <5446D2D8.2090203@gaast.net> <CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com> <20141022125354.GA3832@gaast.net> <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
+In-Reply-To: <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 07:39 PM, Sylwester Nawrocki wrote:
-> On 27/10/14 02:11, Chanwoo Choi wrote:
->> Chanwoo Choi (2):
->>   clk: samsung: exynos4415: Add clocks using common clock framework
->>   clk: samsung: Document binding for Exynos4415 clock controller
-> 
-> Added both to my tree, thanks. In future please put DT binding
-> documentation first in the series, before the actual driver patch.
+Hello Yinghai,
 
-I'll put the documentation patch first in the patchset. Thanks.
+Thanks again for your time!
 
-Best Regards,
-Chanwoo Choi
+I've applied your two patches, and as a wild guess also added pci=dump 
+to my kernel cmdline though I guess that just gave me a boot-time dump - 
+which mostly didn't make it into my dmesg.
 
+I accidentally booted with no_console_suspend on the first run, which 
+still caused no output at all on the failed resume. I'm including the 
+output of that anyway, but also I have a run with that flag removed, and 
+annoyingly the crash appears to happen before the dump during the crash 
+finishes - while dumping info for this device, it seems:
+
+04:00.0 PCI bridge: Integrated Technology Express, Inc. Device 8892 (rev 
+10) (prog-if 01 [Subtractive decode])
+
+(More info in my lspci.txt)
+
+Wondering what device that is exactly, I stumbled upon 
+http://sourceforge.net/p/linux1394/mailman/message/29755048/ where 
+someone describes it as a "cheap and crappy PCI bridge". More and more I 
+wonder if I should just buy a new motherboard - sadly this one wasn't 
+even that cheap. :-( Though I don't know if the output stopping while 
+dumping output for this device means that it is the culprit, is printk() 
+to the serial console in any way blocking/buffered?
+
+Anyway, dumps are in:
+
+http://gaast.net/~wilmer/.lkml/bad3.17-pcidumps-no_console_suspend.txt
+http://gaast.net/~wilmer/.lkml/bad3.17-pcidumps.txt
+
+
+Cheers,
+
+Wilmer van der Gaast.
+
+-- 
++-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
+| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
+| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
++--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
