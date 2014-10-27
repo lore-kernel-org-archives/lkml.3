@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaJ0P3q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:29:46 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:48572 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536AbaJ0P3f (ORCPT
+	id S1752138AbaJ0PaA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:30:00 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:52986 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053AbaJ0P3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:29:35 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-11-544e64ddb69a
+	Mon, 27 Oct 2014 11:29:44 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-b9-544e64e14a53
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
@@ -22,51 +22,124 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 7/8] mfd/regulator: dt-bindings: max77686: Document gpio
- property
-Date: Mon, 27 Oct 2014 16:03:45 +0100
-Message-id: <1414422226-10948-8-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 8/8] ARM: dts: exynos4412-trats: Switch max77686 regulators to
+ GPIO control
+Date: Mon, 27 Oct 2014 16:03:46 +0100
+Message-id: <1414422226-10948-9-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com>
 References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/xa7p3U/xCDNbs57HYOGM9q8WkdQeY
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t/xa7oPU/xCDPbsFLXYOGM9q8WkdQeY
 	LKY+fMJmcf3Lc1aL+UfOsVoc/V1g8fqFoUXvgqtsFmeb3rBb3P96lNHi25UOJotNj6+xWlze
 	NYfNYsb5fUwWty/zWqw9cpfd4nQ3q4OgR0tzD5vH3+fXWTz+rnrB7LFz1l12j02rOtk87lzb
-	w+Yx72Sgx+Yl9R59W1YxenzeJBfAFcVlk5Kak1mWWqRvl8CVcW/OD9aCx2wVS343sTcw3mHt
-	YuTkkBAwkXi+7DkzhC0mceHeerYuRi4OIYGljBKft65lBEkICfQxSez4pAFiswkYS2xevgSs
-	SESgk1mi52AvM4jDLLCaSeLnlVNgo4QFgiWun30AZrMIqErs6/nC1MXIwcEr4C6xYJspxDY5
-	iZPHJoNdwSngIfH6/ldmiGXuEp/fb2WcwMi7gJFhFaNoamlyQXFSeq6hXnFibnFpXrpecn7u
-	JkZIgH/Zwbj4mNUhRgEORiUe3h3TfEOEWBPLiitzDzFKcDArifCeCvALEeJNSaysSi3Kjy8q
-	zUktPsTIxMEp1cA47fizOc0tcavCYueasPJs7f2t4PTr+rFS1ef/HqxdOGXFqkc/btxNf/1T
-	3an0wM68+/18q9J3V03w5dTTvGZ18RHn+RdNGpzr5gUvu3Em9cbdnFDhf1EzukVKD/382RDD
-	ZXM8pXzpH4GLe729z+svnPgtc/rt5mWNjBNfcq2oSn0+KfWMn9FDJyWW4oxEQy3mouJEAEXv
-	N7VOAgAA
+	w+Yx72Sgx+Yl9R59W1YxenzeJBfAFcVlk5Kak1mWWqRvl8CVMXHXAuaCJ+IV81fkNDCeFOpi
+	5OSQEDCR2L29hx3CFpO4cG89WxcjF4eQwFJGifd/9jNCOH1MEpNXXWUFqWITMJbYvHwJWJWI
+	QCezRM/BXmYQh1lgNZPEzyungBwODmGBWInZc+RAGlgEVCW+L98ItoJXwF3i67HvzBDr5CRO
+	HpsMNpRTwEPi9f2vYHEhoJrP77cyTmDkXcDIsIpRNLU0uaA4KT3XSK84Mbe4NC9dLzk/dxMj
+	JMC/7mBceszqEKMAB6MSD++EYt8QIdbEsuLK3EOMEhzMSiK8pwL8QoR4UxIrq1KL8uOLSnNS
+	iw8xMnFwSjUwxht7LjNK+573ScRaceXtnkNtP3eUzjAMeuQkLfSvOTlR6UP9MmYjv1LdW+fY
+	xDelib5/aT7ngsf+2Y0vLf6mf/wYF1fN/ceQ5bxjuL/PtQMOXWl7zvRdNTtz5MW3p8p793QY
+	zkpMnsdUxZ92lruhSzyL5dkNBjaPsN/pmdcMmbf/co3lFTZUYinOSDTUYi4qTgQAdWZY6U4C	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document usage of gpio property which turns on external control over
-regulator.
+Remove fixed regulators (duplicating what max77686 provides) and
+add GPIO control to max77686 regulators.
+
+This gives the system full control over those regulators. Previously
+the state of such regulators was a mixture of what max77686 driver set
+over I2C and what regulator-fixed set through GPIO.
+
+Removal of 'regulator-always-on' from CAM_ISP_CORE_1.2V (buck9) allows
+disabling it when it is not used. Previously this regulator was always
+enabled because its enable state is a OR of:
+ - ENB9 GPIO (turned by regulator-fixed),
+ - BUCK9EN field in BUCK9CTRL register (max77686 through I2C).
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- Documentation/devicetree/bindings/mfd/max77686.txt | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/arm/boot/dts/exynos4412-trats2.dts | 25 +++++--------------------
+ 1 file changed, 5 insertions(+), 20 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
-index 75fdfaf41831..e41dfa7e2b90 100644
---- a/Documentation/devicetree/bindings/mfd/max77686.txt
-+++ b/Documentation/devicetree/bindings/mfd/max77686.txt
-@@ -39,6 +39,9 @@ to get matched with their hardware counterparts as follow:
- 	-BUCKn	:	1-4.
-   Use standard regulator bindings for it ('regulator-off-in-suspend').
+diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
+index 7a68e0832cd6..ac1baff7130d 100644
+--- a/arch/arm/boot/dts/exynos4412-trats2.dts
++++ b/arch/arm/boot/dts/exynos4412-trats2.dts
+@@ -58,15 +58,6 @@
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
  
-+  Optional properties:
-+  - gpio : GPIO to use for external control. Valid only for LDO20, LDO21,
-+    LDO22, BUCK8 and BUCK9 regulators.
+-		vemmc_reg: regulator-0 {
+-			compatible = "regulator-fixed";
+-			regulator-name = "VMEM_VDD_2.8V";
+-			regulator-min-microvolt = <2800000>;
+-			regulator-max-microvolt = <2800000>;
+-			gpio = <&gpk0 2 0>;
+-			enable-active-high;
+-		};
+-
+ 		cam_io_reg: voltage-regulator-1 {
+ 			compatible = "regulator-fixed";
+ 			regulator-name = "CAM_SENSOR_A";
+@@ -94,16 +85,6 @@
+ 			enable-active-high;
+ 		};
  
- Example:
+-		cam_isp_core_reg: voltage-regulator-4 {
+-			compatible = "regulator-fixed";
+-			regulator-name = "CAM_ISP_CORE_1.2V_EN";
+-			regulator-min-microvolt = <1200000>;
+-			regulator-max-microvolt = <1200000>;
+-			gpio = <&gpm0 3 0>;
+-			enable-active-high;
+-			regulator-always-on;
+-		};
+-
+ 		ps_als_reg: voltage-regulator-5 {
+ 			compatible = "regulator-fixed";
+ 			regulator-name = "LED_A_3.0V";
+@@ -405,6 +386,7 @@
+ 					regulator-name = "VTF_2.8V";
+ 					regulator-min-microvolt = <2800000>;
+ 					regulator-max-microvolt = <2800000>;
++					gpio = <&gpy2 0 0>;
+ 				};
  
+ 				ldo22_reg: ldo22 {
+@@ -412,6 +394,7 @@
+ 					regulator-name = "VMEM_VDD_2.8V";
+ 					regulator-min-microvolt = <2800000>;
+ 					regulator-max-microvolt = <2800000>;
++					gpio = <&gpk0 2 0>;
+ 				};
+ 
+ 				ldo23_reg: ldo23 {
+@@ -518,6 +501,7 @@
+ 					regulator-name = "VMEM_VDDF_3.0V";
+ 					regulator-min-microvolt = <2850000>;
+ 					regulator-max-microvolt = <2850000>;
++					gpio = <&gpk0 2 0>;
+ 				};
+ 
+ 				buck9_reg: buck9 {
+@@ -525,6 +509,7 @@
+ 					regulator-name = "CAM_ISP_CORE_1.2V";
+ 					regulator-min-microvolt = <1000000>;
+ 					regulator-max-microvolt = <1200000>;
++					gpio = <&gpm0 3 0>;
+ 				};
+ 			};
+ 		};
+@@ -591,7 +576,7 @@
+ 		broken-cd;
+ 		non-removable;
+ 		card-detect-delay = <200>;
+-		vmmc-supply = <&vemmc_reg>;
++		vmmc-supply = <&ldo22_reg>;
+ 		clock-frequency = <400000000>;
+ 		samsung,dw-mshc-ciu-div = <0>;
+ 		samsung,dw-mshc-sdr-timing = <2 3>;
 -- 
 1.9.1
 
