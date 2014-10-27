@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320AbaJ0T1z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:27:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52374 "EHLO
+	id S1754337AbaJ0T15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:27:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52356 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354AbaJ0S5l (ORCPT
+	with ESMTP id S1752347AbaJ0S5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 14:57:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
+Cc: Richard Genoud <richard.genoud@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 015/105] KVM: s390: unintended fallthrough for external call
-Date: Mon, 27 Oct 2014 11:55:50 -0700
-Message-Id: <1414436240-13879-16-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 016/105] UBI: add missing kmem_cache_free() in process_pool_aeb error path
+Date: Mon, 27 Oct 2014 11:55:51 -0700
+Message-Id: <1414436240-13879-17-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,31 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Richard Genoud <richard.genoud@gmail.com>
 
-commit f346026e55f1efd3949a67ddd1dcea7c1b9a615e upstream.
+commit 1bf1890e86869032099b539bc83b098be12fc5a7 upstream.
 
-We must not fallthrough if the conditions for external call are not met.
+I ran into this error after a ubiupdatevol, because I forgot to backport
+e9110361a9a4 UBI: fix the volumes tree sorting criteria.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Thomas Huth <thuth@linux.vnet.ibm.com>
+UBI error: process_pool_aeb: orphaned volume in fastmap pool
+UBI error: ubi_scan_fastmap: Attach by fastmap failed, doing a full scan!
+kmem_cache_destroy ubi_ainf_peb_slab: Slab cache still has objects
+CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.18-00053-gf05cac8dbf85 #1
+[<c000d298>] (unwind_backtrace) from [<c000baa8>] (show_stack+0x10/0x14)
+[<c000baa8>] (show_stack) from [<c01b7a68>] (destroy_ai+0x230/0x244)
+[<c01b7a68>] (destroy_ai) from [<c01b8fd4>] (ubi_attach+0x98/0x1ec)
+[<c01b8fd4>] (ubi_attach) from [<c01ade90>] (ubi_attach_mtd_dev+0x2b8/0x868)
+[<c01ade90>] (ubi_attach_mtd_dev) from [<c038b510>] (ubi_init+0x1dc/0x2ac)
+[<c038b510>] (ubi_init) from [<c0008860>] (do_one_initcall+0x94/0x140)
+[<c0008860>] (do_one_initcall) from [<c037aadc>] (kernel_init_freeable+0xe8/0x1b0)
+[<c037aadc>] (kernel_init_freeable) from [<c02730ac>] (kernel_init+0x8/0xe4)
+[<c02730ac>] (kernel_init) from [<c00093f0>] (ret_from_fork+0x14/0x24)
+UBI: scanning is finished
+
+Freeing the cache in the error path fixes the Slab error.
+
+Tested on at91sam9g35 (3.14.18+fastmap backports)
+
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/s390/kvm/interrupt.c | 1 +
+ drivers/mtd/ubi/fastmap.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/s390/kvm/interrupt.c b/arch/s390/kvm/interrupt.c
-index 5f79d2d..f1ba119 100644
---- a/arch/s390/kvm/interrupt.c
-+++ b/arch/s390/kvm/interrupt.c
-@@ -71,6 +71,7 @@ static int __interrupt_is_deliverable(struct kvm_vcpu *vcpu,
- 			return 0;
- 		if (vcpu->arch.sie_block->gcr[0] & 0x2000ul)
- 			return 1;
-+		return 0;
- 	case KVM_S390_INT_EMERGENCY:
- 		if (psw_extint_disabled(vcpu))
- 			return 0;
+diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
+index ead8613..fdbaf7a 100644
+--- a/drivers/mtd/ubi/fastmap.c
++++ b/drivers/mtd/ubi/fastmap.c
+@@ -330,6 +330,7 @@ static int process_pool_aeb(struct ubi_device *ubi, struct ubi_attach_info *ai,
+ 		av = tmp_av;
+ 	else {
+ 		ubi_err("orphaned volume in fastmap pool!");
++		kmem_cache_free(ai->aeb_slab_cache, new_aeb);
+ 		return UBI_BAD_FASTMAP;
+ 	}
+ 
 -- 
 1.9.1
 
