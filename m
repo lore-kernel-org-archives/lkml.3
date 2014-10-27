@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876AbaJ0TFM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:05:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52926 "EHLO
+	id S1752777AbaJ0TGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:06:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52915 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593AbaJ0TFI (ORCPT
+	with ESMTP id S1753844AbaJ0TFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:05:08 -0400
+	Mon, 27 Oct 2014 15:05:04 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Scott Carter <ccscott@funsoft.com>, Tejun Heo <tj@kernel.org>,
+Cc: Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 080/105] pata_serverworks: disable 64-KB DMA transfers on Broadcom OSB4 IDE Controller
-Date: Mon, 27 Oct 2014 11:56:55 -0700
-Message-Id: <1414436240-13879-81-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 070/105] NFSv4.1: Fix an NFSv4.1 state renewal regression
+Date: Mon, 27 Oct 2014 11:56:45 -0700
+Message-Id: <1414436240-13879-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,164 +28,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Carter <ccscott@funsoft.com>
+From: Andy Adamson <andros@netapp.com>
 
-commit 37017ac6849e772e67dd187ba2fbd056c4afa533 upstream.
+commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
 
-The Broadcom OSB4 IDE Controller (vendor and device IDs: 1166:0211)
-does not support 64-KB DMA transfers.
-Whenever a 64-KB DMA transfer is attempted,
-the transfer fails and messages similar to the following
-are written to the console log:
+Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
+not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
+call, on the wire to renew the NFSv4.1 state if the flag was not set.
 
-   [ 2431.851125] sr 0:0:0:0: [sr0] Unhandled sense code
-   [ 2431.851139] sr 0:0:0:0: [sr0]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-   [ 2431.851152] sr 0:0:0:0: [sr0]  Sense Key : Hardware Error [current]
-   [ 2431.851166] sr 0:0:0:0: [sr0]  Add. Sense: Logical unit communication time-out
-   [ 2431.851182] sr 0:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 76 f4 00 00 40 00
-   [ 2431.851210] end_request: I/O error, dev sr0, sector 121808
+The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
+(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
+sometimes does the following:
 
-When the libata and pata_serverworks modules
-are recompiled with ATA_DEBUG and ATA_VERBOSE_DEBUG defined in libata.h,
-the 64-KB transfer size in the scatter-gather list can be seen
-in the console log:
+In normal operation, the only way a future state renewal call is put on the
+wire is via a call to nfs4_schedule_state_renewal, which schedules a
+nfs4_renew_state workqueue task. nfs4_renew_state determines if the
+NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
+which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
+Then the nfs41_proc_async_sequence rpc_release function schedules
+another state remewal via nfs4_schedule_state_renewal.
 
-   [ 2664.897267] sr 9:0:0:0: [sr0] Send:
-   [ 2664.897274] 0xf63d85e0
-   [ 2664.897283] sr 9:0:0:0: [sr0] CDB:
-   [ 2664.897288] Read(10): 28 00 00 00 7f b4 00 00 40 00
-   [ 2664.897319] buffer = 0xf6d6fbc0, bufflen = 131072, queuecommand 0xf81b7700
-   [ 2664.897331] ata_scsi_dump_cdb: CDB (1:0,0,0) 28 00 00 00 7f b4 00 00 40
-   [ 2664.897338] ata_scsi_translate: ENTER
-   [ 2664.897345] ata_sg_setup: ENTER, ata1
-   [ 2664.897356] ata_sg_setup: 3 sg elements mapped
-   [ 2664.897364] ata_bmdma_fill_sg: PRD[0] = (0x66FD2000, 0xE000)
-   [ 2664.897371] ata_bmdma_fill_sg: PRD[1] = (0x65000000, 0x10000)
-   ------------------------------------------------------> =======
-   [ 2664.897378] ata_bmdma_fill_sg: PRD[2] = (0x66A10000, 0x2000)
-   [ 2664.897386] ata1: ata_dev_select: ENTER, device 0, wait 1
-   [ 2664.897422] ata_sff_tf_load: feat 0x1 nsect 0x0 lba 0x0 0x0 0xFC
-   [ 2664.897428] ata_sff_tf_load: device 0xA0
-   [ 2664.897448] ata_sff_exec_command: ata1: cmd 0xA0
-   [ 2664.897457] ata_scsi_translate: EXIT
-   [ 2664.897462] leaving scsi_dispatch_cmnd()
-   [ 2664.897497] Doing sr request, dev = sr0, block = 0
-   [ 2664.897507] sr0 : reading 64/256 512 byte blocks.
-   [ 2664.897553] ata_sff_hsm_move: ata1: protocol 7 task_state 1 (dev_stat 0x58)
-   [ 2664.897560] atapi_send_cdb: send cdb
-   [ 2666.910058] ata_bmdma_port_intr: ata1: host_stat 0x64
-   [ 2666.910079] __ata_sff_port_intr: ata1: protocol 7 task_state 3
-   [ 2666.910093] ata_sff_hsm_move: ata1: protocol 7 task_state 3 (dev_stat 0x51)
-   [ 2666.910101] ata_sff_hsm_move: ata1: protocol 7 task_state 4 (dev_stat 0x51)
-   [ 2666.910129] sr 9:0:0:0: [sr0] Done:
-   [ 2666.910136] 0xf63d85e0 TIMEOUT
+Without this change we can get into a state where an application stops
+accessing the NFSv4.1 share, state renewal calls stop due to the
+NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
+from this situation is with a clientid re-establishment, once the application
+resumes and the server has timed out the lease and so returns
+NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
 
-lspci shows that the driver used for the Broadcom OSB4 IDE Controller is
-pata_serverworks:
+An example application:
+open, lock, write a file.
 
-   00:0f.1 IDE interface: Broadcom OSB4 IDE Controller (prog-if 8e [Master SecP SecO PriP])
-           Flags: bus master, medium devsel, latency 64
-           [virtual] Memory at 000001f0 (32-bit, non-prefetchable) [size=8]
-           [virtual] Memory at 000003f0 (type 3, non-prefetchable) [size=1]
-           I/O ports at 0170 [size=8]
-           I/O ports at 0374 [size=4]
-           I/O ports at 1440 [size=16]
-           Kernel driver in use: pata_serverworks
+sleep for 6 * lease (could be less)
 
-The pata_serverworks driver supports five distinct device IDs,
-one being the OSB4 and the other four belonging to the CSB series.
-The CSB series appears to support 64-KB DMA transfers,
-as tests on a machine with an SAI2 motherboard
-containing a Broadcom CSB5 IDE Controller (vendor and device IDs: 1166:0212)
-showed no problems with 64-KB DMA transfers.
+ulock, close.
 
-This problem was first discovered when attempting to install openSUSE
-from a DVD on a machine with an STL2 motherboard.
-Using the pata_serverworks module,
-older releases of openSUSE will not install at all due to the timeouts.
-Releases of openSUSE prior to 11.3 can be installed by disabling
-the pata_serverworks module using the brokenmodules boot parameter,
-which causes the serverworks module to be used instead.
-Recent releases of openSUSE (12.2 and later) include better error recovery and
-will install, though very slowly.
-On all openSUSE releases, the problem can be recreated
-on a machine containing a Broadcom OSB4 IDE Controller
-by mounting an install DVD and running a command similar to the following:
+In the above example with NFSv4.1 delegations enabled, without this change,
+there are no OP_SEQUENCE state renewal calls during the sleep, and the
+clientid is recovered due to lease expiration on the close.
 
-   find /mnt -type f -print | xargs cat > /dev/null
+This issue does not occur with NFSv4.1 delegations disabled, nor with
+NFSv4.0, with or without delegations enabled.
 
-The patch below corrects the problem.
-Similar to the other ATA drivers that do not support 64-KB DMA transfers,
-the patch changes the ata_port_operations qc_prep vector to point to a routine
-that breaks any 64-KB segment into two 32-KB segments and
-changes the scsi_host_template sg_tablesize element to reduce by half
-the number of scatter/gather elements allowed.
-These two changes affect only the OSB4.
-
-Signed-off-by: Scott Carter <ccscott@funsoft.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
+Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/pata_serverworks.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ fs/nfs/nfs4proc.c   |  2 +-
+ fs/nfs/nfs4renewd.c | 12 ++++++++++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/ata/pata_serverworks.c b/drivers/ata/pata_serverworks.c
-index 96c6a79..79dedba 100644
---- a/drivers/ata/pata_serverworks.c
-+++ b/drivers/ata/pata_serverworks.c
-@@ -252,12 +252,18 @@ static void serverworks_set_dmamode(struct ata_port *ap, struct ata_device *adev
- 	pci_write_config_byte(pdev, 0x54, ultra_cfg);
- }
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index b6ed520..b54753e 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7242,7 +7242,7 @@ static int nfs41_proc_async_sequence(struct nfs_client *clp, struct rpc_cred *cr
+ 	int ret = 0;
  
--static struct scsi_host_template serverworks_sht = {
-+static struct scsi_host_template serverworks_osb4_sht = {
-+	ATA_BMDMA_SHT(DRV_NAME),
-+	.sg_tablesize	= LIBATA_DUMB_MAX_PRD,
-+};
+ 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
+-		return 0;
++		return -EAGAIN;
+ 	task = _nfs41_proc_sequence(clp, cred, false);
+ 	if (IS_ERR(task))
+ 		ret = PTR_ERR(task);
+diff --git a/fs/nfs/nfs4renewd.c b/fs/nfs/nfs4renewd.c
+index 1720d32..e1ba58c 100644
+--- a/fs/nfs/nfs4renewd.c
++++ b/fs/nfs/nfs4renewd.c
+@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *work)
+ 			}
+ 			nfs_expire_all_delegations(clp);
+ 		} else {
++			int ret;
 +
-+static struct scsi_host_template serverworks_csb_sht = {
- 	ATA_BMDMA_SHT(DRV_NAME),
- };
- 
- static struct ata_port_operations serverworks_osb4_port_ops = {
- 	.inherits	= &ata_bmdma_port_ops,
-+	.qc_prep	= ata_bmdma_dumb_qc_prep,
- 	.cable_detect	= serverworks_cable_detect,
- 	.mode_filter	= serverworks_osb4_filter,
- 	.set_piomode	= serverworks_set_piomode,
-@@ -266,6 +272,7 @@ static struct ata_port_operations serverworks_osb4_port_ops = {
- 
- static struct ata_port_operations serverworks_csb_port_ops = {
- 	.inherits	= &serverworks_osb4_port_ops,
-+	.qc_prep	= ata_bmdma_qc_prep,
- 	.mode_filter	= serverworks_csb_filter,
- };
- 
-@@ -405,6 +412,7 @@ static int serverworks_init_one(struct pci_dev *pdev, const struct pci_device_id
+ 			/* Queue an asynchronous RENEW. */
+-			ops->sched_state_renewal(clp, cred, renew_flags);
++			ret = ops->sched_state_renewal(clp, cred, renew_flags);
+ 			put_rpccred(cred);
+-			goto out_exp;
++			switch (ret) {
++			default:
++				goto out_exp;
++			case -EAGAIN:
++			case -ENOMEM:
++				break;
++			}
  		}
- 	};
- 	const struct ata_port_info *ppi[] = { &info[id->driver_data], NULL };
-+	struct scsi_host_template *sht = &serverworks_csb_sht;
- 	int rc;
- 
- 	rc = pcim_enable_device(pdev);
-@@ -418,6 +426,7 @@ static int serverworks_init_one(struct pci_dev *pdev, const struct pci_device_id
- 		/* Select non UDMA capable OSB4 if we can't do fixups */
- 		if (rc < 0)
- 			ppi[0] = &info[1];
-+		sht = &serverworks_osb4_sht;
- 	}
- 	/* setup CSB5/CSB6 : South Bridge and IDE option RAID */
- 	else if ((pdev->device == PCI_DEVICE_ID_SERVERWORKS_CSB5IDE) ||
-@@ -434,7 +443,7 @@ static int serverworks_init_one(struct pci_dev *pdev, const struct pci_device_id
- 			ppi[1] = &ata_dummy_port_info;
- 	}
- 
--	return ata_pci_bmdma_init_one(pdev, ppi, &serverworks_sht, NULL, 0);
-+	return ata_pci_bmdma_init_one(pdev, ppi, sht, NULL, 0);
- }
- 
- #ifdef CONFIG_PM
+ 	} else {
+ 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
 -- 
 1.9.1
 
