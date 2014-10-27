@@ -1,90 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaJ0TLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:11:08 -0400
-Received: from mail-bn1on0060.outbound.protection.outlook.com ([157.56.110.60]:38286
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753663AbaJ0TEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:04:22 -0400
-X-Greylist: delayed 867 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Oct 2014 15:04:21 EDT
-Message-ID: <544E93F0.3030409@opensource.altera.com>
-Date: Mon, 27 Oct 2014 13:50:24 -0500
-From: Thor Thayer <tthayer@opensource.altera.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
+	id S1754052AbaJ0TLn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:11:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52829 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753611AbaJ0TEG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 15:04:06 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        "Mihai Don\\u021bu" <mihai.dontu@gmail.com>,
+        =?UTF-8?q?P=C3=A1draig=20Brady?= <P@draigBrady.com>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>, Jan Kara <jack@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
+        Richard Guy Briggs <rgb@redhat.com>, Eric Paris <eparis@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 088/105] fanotify: enable close-on-exec on events' fd when requested in fanotify_init()
+Date: Mon, 27 Oct 2014 11:57:03 -0700
+Message-Id: <1414436240-13879-89-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
+References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-To: <bp@alien8.de>, <dougthompson@xmission.com>, <m.chehab@samsung.com>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <linux@arm.linux.org.uk>, <dinguyen@altera.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-edac@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <tthayer.linux@gmail.com>,
-        <tthayer@altera.com>
-Subject: Re: [PATCHv2 0/4] Add Altera peripheral memories to EDAC framework
-References: <1413578029-13205-1-git-send-email-tthayer@opensource.altera.com>
-In-Reply-To: <1413578029-13205-1-git-send-email-tthayer@opensource.altera.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: DM2PR10CA0024.namprd10.prod.outlook.com (25.160.213.34) To
- BLUPR03MB119.namprd03.prod.outlook.com (10.255.212.20)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB119;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0377802854
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6049001)(6009001)(164054003)(51704005)(24454002)(377454003)(479174003)(189002)(199003)(59896002)(87976001)(2201001)(92566001)(21056001)(31966008)(99396003)(83506001)(85852003)(64706001)(65806001)(80316001)(120916001)(47776003)(19580405001)(66066001)(86362001)(65956001)(20776003)(23746002)(85306004)(19580395003)(76482002)(97736003)(33656002)(54356999)(76176999)(87266999)(50986999)(42186005)(50466002)(46102003)(95666004)(105586002)(107046002)(92726001)(80022003)(106356001)(122386002)(101416001)(40100003)(102836001)(77096002)(4396001)(1121002)(921003);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB119;H:[137.57.160.203];FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
+3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
 
-On 10/17/2014 03:33 PM, tthayer@opensource.altera.com wrote:
-> From: Thor Thayer <tthayer@opensource.altera.com>
->
-> This patch adds the L2 cache and OCRAM peripherals to the EDAC framework
-> using the EDAC device framework. The ECC is enabled early in the boot
-> process in the platform specific code.
->
-> Thor Thayer (4):
->    arm: socfpga: Enable L2 Cache ECC on startup.
->    arm: socfpga: Enable OCRAM ECC on startup.
->    edac: altera: Add Altera L2 Cache and OCRAM EDAC Support
->    arm: dts: Add Altera L2 Cache and OCRAM EDAC
->
->   .../bindings/arm/altera/socfpga-l2-edac.txt        |   15 ++
->   .../bindings/arm/altera/socfpga-ocram-edac.txt     |   16 ++
->   MAINTAINERS                                        |    4 +-
->   arch/arm/boot/dts/socfpga.dtsi                     |   15 +-
->   arch/arm/mach-socfpga/Makefile                     |    2 +
->   arch/arm/mach-socfpga/l2_cache.c                   |   44 ++++
->   arch/arm/mach-socfpga/l2_cache.h                   |   28 +++
->   arch/arm/mach-socfpga/ocram.c                      |   90 +++++++
->   arch/arm/mach-socfpga/ocram.h                      |   28 +++
->   arch/arm/mach-socfpga/socfpga.c                    |   13 +-
->   drivers/edac/Kconfig                               |   14 ++
->   drivers/edac/Makefile                              |    3 +
->   drivers/edac/altera_edac_mgr.c                     |  261 ++++++++++++++++++++
->   drivers/edac/altera_edac_mgr.h                     |   56 +++++
->   drivers/edac/altera_l2_edac.c                      |  130 ++++++++++
->   drivers/edac/altera_ocram_edac.c                   |  107 ++++++++
->   16 files changed, 823 insertions(+), 3 deletions(-)
->   create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-l2-edac.txt
->   create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-ocram-edac.txt
->   create mode 100644 arch/arm/mach-socfpga/l2_cache.c
->   create mode 100644 arch/arm/mach-socfpga/l2_cache.h
->   create mode 100644 arch/arm/mach-socfpga/ocram.c
->   create mode 100644 arch/arm/mach-socfpga/ocram.h
->   create mode 100644 drivers/edac/altera_edac_mgr.c
->   create mode 100644 drivers/edac/altera_edac_mgr.h
->   create mode 100644 drivers/edac/altera_l2_edac.c
->   create mode 100644 drivers/edac/altera_ocram_edac.c
->
-Do you have any comments about this driver?
+------------------
 
-Thanks,
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-Thor
+commit 0b37e097a648aa71d4db1ad108001e95b69a2da4 upstream.
+
+According to commit 80af258867648 ("fanotify: groups can specify their
+f_flags for new fd"), file descriptors created as part of file access
+notification events inherit flags from the event_f_flags argument passed
+to syscall fanotify_init(2)[1].
+
+Unfortunately O_CLOEXEC is currently silently ignored.
+
+Indeed, event_f_flags are only given to dentry_open(), which only seems to
+care about O_ACCMODE and O_PATH in do_dentry_open(), O_DIRECT in
+open_check_o_direct() and O_LARGEFILE in generic_file_open().
+
+It's a pity, since, according to some lookup on various search engines and
+http://codesearch.debian.net/, there's already some userspace code which
+use O_CLOEXEC:
+
+- in systemd's readahead[2]:
+
+    fanotify_fd = fanotify_init(FAN_CLOEXEC|FAN_NONBLOCK, O_RDONLY|O_LARGEFILE|O_CLOEXEC|O_NOATIME);
+
+- in clsync[3]:
+
+    #define FANOTIFY_EVFLAGS (O_LARGEFILE|O_RDONLY|O_CLOEXEC)
+
+    int fanotify_d = fanotify_init(FANOTIFY_FLAGS, FANOTIFY_EVFLAGS);
+
+- in examples [4] from "Filesystem monitoring in the Linux
+  kernel" article[5] by Aleksander Morgado:
+
+    if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
+                                      O_RDONLY | O_CLOEXEC | O_LARGEFILE)) < 0)
+
+Additionally, since commit 48149e9d3a7e ("fanotify: check file flags
+passed in fanotify_init").  having O_CLOEXEC as part of fanotify_init()
+second argument is expressly allowed.
+
+So it seems expected to set close-on-exec flag on the file descriptors if
+userspace is allowed to request it with O_CLOEXEC.
+
+But Andrew Morton raised[6] the concern that enabling now close-on-exec
+might break existing applications which ask for O_CLOEXEC but expect the
+file descriptor to be inherited across exec().
+
+In the other hand, as reported by Mihai Dontu[7] close-on-exec on the file
+descriptor returned as part of file access notify can break applications
+due to deadlock.  So close-on-exec is needed for most applications.
+
+More, applications asking for close-on-exec are likely expecting it to be
+enabled, relying on O_CLOEXEC being effective.  If not, it might weaken
+their security, as noted by Jan Kara[8].
+
+So this patch replaces call to macro get_unused_fd() by a call to function
+get_unused_fd_flags() with event_f_flags value as argument.  This way
+O_CLOEXEC flag in the second argument of fanotify_init(2) syscall is
+interpreted and close-on-exec get enabled when requested.
+
+[1] http://man7.org/linux/man-pages/man2/fanotify_init.2.html
+[2] http://cgit.freedesktop.org/systemd/systemd/tree/src/readahead/readahead-collect.c?id=v208#n294
+[3] https://github.com/xaionaro/clsync/blob/v0.2.1/sync.c#L1631
+    https://github.com/xaionaro/clsync/blob/v0.2.1/configuration.h#L38
+[4] http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
+[5] http://www.lanedo.com/2013/filesystem-monitoring-linux-kernel/
+[6] http://lkml.kernel.org/r/20141001153621.65e9258e65a6167bf2e4cb50@linux-foundation.org
+[7] http://lkml.kernel.org/r/20141002095046.3715eb69@mdontu-l
+[8] http://lkml.kernel.org/r/20141002104410.GB19748@quack.suse.cz
+
+Link: http://lkml.kernel.org/r/cover.1411562410.git.ydroneaud@opteya.com
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Reviewed by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Tested-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Mihai Don\u021bu <mihai.dontu@gmail.com>
+Cc: Pádraig Brady <P@draigBrady.com>
+Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Cc: Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Cc: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Cc: Richard Guy Briggs <rgb@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ fs/notify/fanotify/fanotify_user.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 6663511..cc80b0a 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -69,7 +69,7 @@ static int create_fd(struct fsnotify_group *group,
+ 
+ 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
+ 
+-	client_fd = get_unused_fd();
++	client_fd = get_unused_fd_flags(group->fanotify_data.f_flags);
+ 	if (client_fd < 0)
+ 		return client_fd;
+ 
+-- 
+1.9.1
+
