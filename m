@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019AbaJ0RsT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:48:19 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48378 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751786AbaJ0RsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:48:17 -0400
-Date: Mon, 27 Oct 2014 10:44:24 -0700
+	id S1752129AbaJ0Rte (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:49:34 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59168 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbaJ0Rtc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:49:32 -0400
+Date: Mon, 27 Oct 2014 10:45:39 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: hung tasks in 3.18.0-rc1-00221-gc3351df
-Message-ID: <20141027174424.GB27568@linux.vnet.ibm.com>
+To: Jay Vosburgh <jay.vosburgh@canonical.com>
+Cc: Yanko Kaneti <yaneti@declera.com>, Josh Boyer <jwboyer@fedoraproject.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cong Wang <cwang@twopensource.com>, Kevin Fenzi <kevin@scrye.com>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        mroos@linux.ee, tj@kernel.org
+Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
+Message-ID: <20141027174539.GC27568@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LRH.2.11.1410231619340.11555@adalberg.ut.ee>
- <20141024001822.GK4977@linux.vnet.ibm.com>
- <alpine.LRH.2.11.1410241057270.15464@adalberg.ut.ee>
- <20141024145509.GO4977@linux.vnet.ibm.com>
+References: <20141024214927.GA4977@linux.vnet.ibm.com>
+ <8915.1414190047@famine>
+ <20141024225931.GC4977@linux.vnet.ibm.com>
+ <20141024230524.GA16023@linux.vnet.ibm.com>
+ <10136.1414196448@famine>
+ <20141025020324.GA28247@linux.vnet.ibm.com>
+ <11813.1414211613@famine>
+ <20141025051602.GB28247@linux.vnet.ibm.com>
+ <15891.1414255096@famine>
+ <20141025181827.GE28247@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141024145509.GO4977@linux.vnet.ibm.com>
+In-Reply-To: <20141025181827.GE28247@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102717-0033-0000-0000-000000DDA096
+x-cbid: 14102717-0033-0000-0000-0000027ADCFE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 07:55:09AM -0700, Paul E. McKenney wrote:
-> On Fri, Oct 24, 2014 at 10:58:17AM +0300, Meelis Roos wrote:
+On Sat, Oct 25, 2014 at 11:18:27AM -0700, Paul E. McKenney wrote:
+> On Sat, Oct 25, 2014 at 09:38:16AM -0700, Jay Vosburgh wrote:
+> > Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > >On Fri, Oct 24, 2014 at 09:33:33PM -0700, Jay Vosburgh wrote:
+> > >> 	Looking at the dmesg, the early boot messages seem to be
+> > >> confused as to how many CPUs there are, e.g.,
+> > >> 
+> > >> [    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+> > >> [    0.000000] Hierarchical RCU implementation.
+> > >> [    0.000000]  RCU debugfs-based tracing is enabled.
+> > >> [    0.000000]  RCU dyntick-idle grace-period acceleration is enabled.
+> > >> [    0.000000]  RCU restricting CPUs from NR_CPUS=256 to nr_cpu_ids=4.
+> > >> [    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+> > >> [    0.000000] NR_IRQS:16640 nr_irqs:456 0
+> > >> [    0.000000]  Offload RCU callbacks from all CPUs
+> > >> [    0.000000]  Offload RCU callbacks from CPUs: 0-3.
+> > >> 
+> > >> 	but later shows 2:
+> > >> 
+> > >> [    0.233703] x86: Booting SMP configuration:
+> > >> [    0.236003] .... node  #0, CPUs:      #1
+> > >> [    0.255528] x86: Booted up 1 node, 2 CPUs
+> > >> 
+> > >> 	In any event, the E8400 is a 2 core CPU with no hyperthreading.
+> > >
+> > >Well, this might explain some of the difficulties.  If RCU decides to wait
+> > >on CPUs that don't exist, we will of course get a hang.  And rcu_barrier()
+> > >was definitely expecting four CPUs.
+> > >
+> > >So what happens if you boot with maxcpus=2?  (Or build with
+> > >CONFIG_NR_CPUS=2.) I suspect that this might avoid the hang.  If so,
+> > >I might have some ideas for a real fix.
+> > 
+> > 	Booting with maxcpus=2 makes no difference (the dmesg output is
+> > the same).
+> > 
+> > 	Rebuilding with CONFIG_NR_CPUS=2 makes the problem go away, and
+> > dmesg has different CPU information at boot:
+> > 
+> > [    0.000000] smpboot: 4 Processors exceeds NR_CPUS limit of 2
+> > [    0.000000] smpboot: Allowing 2 CPUs, 0 hotplug CPUs
+> >  [...]
+> > [    0.000000] setup_percpu: NR_CPUS:2 nr_cpumask_bits:2 nr_cpu_ids:2 nr_node_ids:1
+> >  [...]
+> > [    0.000000] Hierarchical RCU implementation.
+> > [    0.000000] 	RCU debugfs-based tracing is enabled.
+> > [    0.000000] 	RCU dyntick-idle grace-period acceleration is enabled.
+> > [    0.000000] NR_IRQS:4352 nr_irqs:440 0
+> > [    0.000000] 	Offload RCU callbacks from all CPUs
+> > [    0.000000] 	Offload RCU callbacks from CPUs: 0-1.
+> 
+> Thank you -- this confirms my suspicions on the fix, though I must admit
+> to being surprised that maxcpus made no difference.
 
-[ . . . ]
+And here is an alleged fix, lightly tested at this end.  Does this patch
+help?
 
-> > > The get_state_synchronize_rcu() from within the wait for _rcu_barrier()
-> > > looks a bit odd, but perhaps this is stack-tracing inaccuracy.
-> > > 
-> > > Could you please send your .config?
-> 
-> This does look like something that a couple of other people are seeing.
-> Could you please check to see if reverting this commit makes the problem
-> go away?
-> 
-> 35ce7f29a44a rcu: Create rcuo kthreads only for onlined CPUs
-> 
-> This cannot be the full fix because this commit is itself a bug fix, but
-> it would be good to check whether you are really seeing what they are
-> seeing.  ;-)
+							Thanx, Paul
 
 ------------------------------------------------------------------------
 
