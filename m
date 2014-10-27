@@ -1,128 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062AbaJ0MmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:42:07 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28071 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570AbaJ0Mlm (ORCPT
+	id S1753196AbaJ0MnE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:43:04 -0400
+Received: from mail-oi0-f45.google.com ([209.85.218.45]:44289 "EHLO
+	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173AbaJ0MnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 08:41:42 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 01/16] PCI/MSI: Refactor MSI controller to make it become more common
-Date: Mon, 27 Oct 2014 21:22:07 +0800
-Message-ID: <1414416142-31239-2-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
-References: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
+	Mon, 27 Oct 2014 08:43:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.175.100.166]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20141023151940.GA21210@localhost>
+References: <1413384491-23703-1-git-send-email-octavian.purdila@intel.com>
+	<1413384491-23703-3-git-send-email-octavian.purdila@intel.com>
+	<20141023151940.GA21210@localhost>
+Date: Mon, 27 Oct 2014 14:42:57 +0200
+Message-ID: <CAMoF9u2S9ZbsgeVaBKhc0o5Zo2pz7naomUv2RbvN-G=0C2Dt9A@mail.gmail.com>
+Subject: Re: [PATCH v8 2/4] i2c: add support for Diolan DLN-2 USB-I2C adapter
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: Johan Hovold <johan@kernel.org>
+Cc: Octavian Purdila <octavian.purdila@intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>, linus.walleij@linaro.org,
+        gnurou@gmail.com, wsa@the-dreams.de, sameo@linux.intel.com,
+        lee.jones@linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Daniel Baluta <daniel.baluta@intel.com>,
+        Laurentiu Palcu <laurentiu.palcu@intel.com>, linux-usb@vger.kernel.org,
+        lkml <linux-kernel@vger.kernel.org>, linux-gpio@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now there are a lot of weak arch MSI functions in MSI code.
-These functions make MSI driver complex. Because people need
-to know much which arch MSI function should be overrode and
-which is not. Thierry introduced MSI chip framework to configure
-MSI/MSI-X irq in arm. MSI chip framework is better than raw arch
-MSI functions, people can clearly know they should implement which
-MSI ops in specific platform. Use MSI chip framework to refactor all
-other platform MSI code to eliminate weak arch MSI functions.
-This patch add .restore_irqs(), .teardown_irqs() and .setup_irqs()
-to make it become more common.
+On Thu, Oct 23, 2014 at 6:19 PM, Johan Hovold <johan@kernel.org> wrote:
+>
+> On Wed, Oct 15, 2014 at 05:48:09PM +0300, Octavian Purdila wrote:
+>
+> > +static int dln2_i2c_xfer(struct i2c_adapter *adapter,
+> > +                      struct i2c_msg *msgs, int num)
+> > +{
+> > +     struct dln2_i2c *dln2 = i2c_get_adapdata(adapter);
+> > +     struct i2c_msg *pmsg;
+> > +     struct device *dev = &dln2->pdev->dev;
+>
+> You want to use the i2c-adapter device here (not the platform device).
+>
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Reviewed-by: Lucas Stach <l.stach@pengutronix.de>
----
- drivers/pci/msi.c   |   15 +++++++++++++++
- include/linux/msi.h |    8 ++++++--
- 2 files changed, 21 insertions(+), 2 deletions(-)
+You are right, I will fix in v9.
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 27b6a54..0e1da3e 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -70,6 +70,11 @@ int __weak arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- {
- 	struct msi_desc *entry;
- 	int ret;
-+	struct msi_controller *ctrl;
-+
-+	ctrl = pci_msi_controller(dev->bus);
-+	if (ctrl && ctrl->setup_irqs)
-+		return ctrl->setup_irqs(ctrl, dev, nvec, type);
- 
- 	/*
- 	 * If an architecture wants to support multiple MSI, it needs to
-@@ -112,6 +117,11 @@ void default_teardown_msi_irqs(struct pci_dev *dev)
- 
- void __weak arch_teardown_msi_irqs(struct pci_dev *dev)
- {
-+	struct msi_controller *ctrl = pci_msi_controller(dev->bus);
-+
-+	if (ctrl && ctrl->teardown_irqs)
-+		return ctrl->teardown_irqs(ctrl, dev);
-+
- 	return default_teardown_msi_irqs(dev);
- }
- 
-@@ -135,6 +145,11 @@ static void default_restore_msi_irq(struct pci_dev *dev, int irq)
- 
- void __weak arch_restore_msi_irqs(struct pci_dev *dev)
- {
-+	struct msi_controller *ctrl = pci_msi_controller(dev->bus);
-+
-+	if (ctrl && ctrl->restore_irqs)
-+             return ctrl->restore_irqs(ctrl, dev);
-+
- 	return default_restore_msi_irqs(dev);
- }
- 
-diff --git a/include/linux/msi.h b/include/linux/msi.h
-index 6704991..4426cb4 100644
---- a/include/linux/msi.h
-+++ b/include/linux/msi.h
-@@ -71,9 +71,13 @@ struct msi_controller {
- 	struct device_node *of_node;
- 	struct list_head list;
- 
--	int (*setup_irq)(struct msi_controller *chip, struct pci_dev *dev,
-+	int (*setup_irq)(struct msi_controller *ctrl, struct pci_dev *dev,
- 			 struct msi_desc *desc);
--	void (*teardown_irq)(struct msi_controller *chip, unsigned int irq);
-+	int (*setup_irqs)(struct msi_controller *ctrl, struct pci_dev *dev,
-+			int nvec, int type);
-+	void (*teardown_irq)(struct msi_controller *ctrl, unsigned int irq);
-+	void (*teardown_irqs)(struct msi_controller *ctrl, struct pci_dev *dev);
-+	void (*restore_irqs)(struct msi_controller *ctrl, struct pci_dev *dev);
- };
- 
- #endif /* LINUX_MSI_H */
--- 
-1.7.1
+> > +     int i;
+> > +
+> > +     for (i = 0; i < num; i++) {
+> > +             int ret;
+> > +
+> > +             pmsg = &msgs[i];
+> > +
+> > +             if (pmsg->len > DLN2_I2C_MAX_XFER_SIZE) {
+> > +                     dev_warn(dev, "maximum transfer size exceeded\n");
+> > +                     return -EOPNOTSUPP;
+> > +             }
+> > +
+> > +             if (pmsg->flags & I2C_M_RD) {
+> > +                     ret = dln2_i2c_read(dln2, pmsg->addr, pmsg->buf,
+> > +                                         pmsg->len);
+> > +                     if (ret < 0)
+> > +                             return ret;
+> > +
+> > +                     pmsg->len = ret;
+> > +             } else {
+> > +                     ret = dln2_i2c_write(dln2, pmsg->addr, pmsg->buf,
+> > +                                          pmsg->len);
+> > +                     if (ret != pmsg->len)
+> > +                             return -EPROTO;
+> > +             }
+> > +     }
+> > +
+> > +     return num;
+> > +}
+>
+> [...]
+>
+> > +static int dln2_i2c_probe(struct platform_device *pdev)
+> > +{
+> > +     int ret;
+> > +     struct dln2_i2c *dln2;
+> > +     struct device *dev = &pdev->dev;
+> > +     struct dln2_platform_data *pdata = dev_get_platdata(&pdev->dev);
+> > +
+> > +     dln2 = devm_kzalloc(dev, sizeof(*dln2), GFP_KERNEL);
+> > +     if (!dln2)
+> > +             return -ENOMEM;
+> > +
+> > +     dln2->buf = devm_kmalloc(dev, DLN2_I2C_BUF_SIZE, GFP_KERNEL);
+> > +     if (!dln2->buf)
+> > +             return -ENOMEM;
+> > +
+> > +     dln2->pdev = pdev;
+> > +     dln2->port = pdata->port;
+> > +
+> > +     /* setup i2c adapter description */
+> > +     dln2->adapter.owner = THIS_MODULE;
+> > +     dln2->adapter.class = I2C_CLASS_HWMON;
+> > +     dln2->adapter.algo = &dln2_i2c_usb_algorithm;
+> > +     dln2->adapter.dev.parent = dev;
+> > +     i2c_set_adapdata(&dln2->adapter, dln2);
+> > +     snprintf(dln2->adapter.name, sizeof(dln2->adapter.name), "%s-%s-%d",
+> > +              "dln2-i2c", dev_name(pdev->dev.parent), dln2->port);
+> > +
+> > +     platform_set_drvdata(pdev, dln2);
+> > +
+> > +     /* initialize the i2c interface */
+>
+> No longer "initialisation" since you dropped the frequency setup?
+>
+> > +     ret = dln2_i2c_enable(dln2, true);
+> > +     if (ret < 0) {
+> > +             dev_err(dev, "failed to initialize adapter: %d\n", ret);
+>
+> Same here.
 
+Hmm, I still consider this to be an initialization operation, albeit
+less complex then it was before. If you don't mind too much, I would
+prefer to keep it this way.
