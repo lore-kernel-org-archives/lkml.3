@@ -1,100 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076AbaJ0CfO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 22:35:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51240 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923AbaJ0CfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 22:35:11 -0400
-Date: Sun, 26 Oct 2014 22:34:57 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, eparis@redhat.com, przanoni@gmail.com,
-        mingo@kernel.org, hpa@linux.intel.com, hpa@zytor.com,
-        linux-tip-commits@vger.kernel.org, linux-audit@redhat.com
-Subject: [PATCH] i386/audit: stop scribbling on the stack frame
-Message-ID: <20141027023457.GY15532@madcap2.tricolour.ca>
-References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
- <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
- <alpine.DEB.2.11.1410251034320.5308@nanos>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1410251034320.5308@nanos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752229AbaJ0ClG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:41:06 -0400
+Received: from regular1.263xmail.com ([211.150.99.130]:35815 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096AbaJ0ClB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 22:41:01 -0400
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: wxt@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: wxt@rock-chips.com
+X-UNIQUE-TAG: <af69f3c940f9f3c5863dff5151f7bf89>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <caesar.wang@rock-chips.com>
+To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
+Cc: zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
+        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
+        Caesar Wang <caesar.wang@rock-chips.com>
+Subject: [PATCH v14 3/5] ARM: dts: add RK3288 Thermal data
+Date: Mon, 27 Oct 2014 10:39:46 +0800
+Message-Id: <1414377588-2237-4-git-send-email-caesar.wang@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414377588-2237-1-git-send-email-caesar.wang@rock-chips.com>
+References: <1414377588-2237-1-git-send-email-caesar.wang@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
-It was writing over %esp/pt_regs semi-randomly on i686 with the expected
-"system can't boot" results.  As noted in:
+This patch changes a dtsi file to contain the thermal data
+on RK3288 and later SoCs. This data will
+enable a thermal shutdown over 120C.
 
-https://bugs.freedesktop.org/show_bug.cgi?id=85277
-
-This patch stops fscking with pt_regs.  Instead it sets up the registers
-for the call to __audit_syscall_entry in the most obvious conceivable
-way.  It then does just a tiny tiny touch of magic.  We need to get what
-started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
-as a pair of pushes using the values still in those registers.
-
-After the call to __audit_syscall_entry all we need to do is get that
-now useless junk off the stack (pair of pops) and reload %eax with the
-original syscall so other stuff can keep going about it's business.
-
-Reported-by: Paulo Zanoni <przanoni@gmail.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-audit@redhat.com
-
+Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
 ---
-On 14/10/25, Thomas Gleixner wrote:
-> Why are we grabbing that from the stack? AFAICT all arguments are in
-> the registers still.
+ arch/arm/boot/dts/rk3288-thermal.dtsi | 65 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
 
-Right, re-arranging the instructions slightly to avoid overwriting %edx
-with %ebx before needing it to push onto the stack, how does this look?
+diff --git a/arch/arm/boot/dts/rk3288-thermal.dtsi b/arch/arm/boot/dts/rk3288-thermal.dtsi
+new file mode 100644
+index 0000000..0555224
+--- /dev/null
++++ b/arch/arm/boot/dts/rk3288-thermal.dtsi
+@@ -0,0 +1,65 @@
++/*
++ * Device Tree Source for RK3288 SoC thermal
++ *
++ * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
++ *
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
++ */
++
++#include <dt-bindings/thermal/thermal.h>
++
++reserve_thermal: reserve_thermal {
++	polling-delay-passive = <1000>; /* milliseconds */
++	polling-delay = <5000>; /* milliseconds */
++
++			/* sensor	ID */
++	thermal-sensors = <&tsadc	0>;
++
++};
++
++cpu_thermal: cpu_thermal {
++	polling-delay-passive = <1000>; /* milliseconds */
++	polling-delay = <5000>; /* milliseconds */
++
++			/* sensor	ID */
++	thermal-sensors = <&tsadc	1>;
++
++	trips {
++		cpu_alert0: cpu_alert0 {
++			temperature = <80000>; /* millicelsius */
++			hysteresis = <2000>; /* millicelsius */
++			type = "passive";
++		};
++		cpu_crit: cpu_crit {
++			temperature = <120000>; /* millicelsius */
++			hysteresis = <2000>; /* millicelsius */
++			type = "critical";
++		};
++	};
++
++	cooling-maps {
++		map0 {
++		trip = <&cpu_alert0>;
++			cooling-device =
++				<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
++		};
++	};
++};
++
++gpu_thermal: gpu_thermal {
++	polling-delay-passive = <1000>; /* milliseconds */
++	polling-delay = <5000>; /* milliseconds */
++
++			/* sensor	ID */
++	thermal-sensors = <&tsadc	2>;
++
++	trips {
++		gpu_crit: gpu_crit {
++			temperature = <120000>; /* millicelsius */
++			hysteresis = <2000>; /* millicelsius */
++			type = "critical";
++		};
++	};
++};
+-- 
+1.9.1
 
- arch/x86/kernel/entry_32.S | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index b553ed8..344b63f 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -447,15 +447,14 @@ sysenter_exit:
- sysenter_audit:
- 	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
- 	jnz syscall_trace_entry
--	addl $4,%esp
--	CFI_ADJUST_CFA_OFFSET -4
--	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
--	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
--	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
--	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
--	/* %eax already in %eax		   1st arg: syscall number */
-+	/* movl PT_ECX(%esp), %ecx	already set, a1: 3nd arg to audit */
-+	/* movl PT_EAX(%esp), %eax	already set, syscall number: 1st arg to audit */
-+	pushl_cfi %esi			/* a3: 5th arg */
-+	pushl_cfi %edx			/* a2: 4th arg */
-+	movl %ebx, %edx			/* ebx/a0: 2nd arg to audit */
- 	call __audit_syscall_entry
--	pushl_cfi %ebx
-+	popl_cfi %ecx /* get that remapped edx off the stack */
-+	popl_cfi %ecx /* get that remapped esi off the stack */
- 	movl PT_EAX(%esp),%eax		/* reload syscall number */
- 	jmp sysenter_do_call
- 
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
