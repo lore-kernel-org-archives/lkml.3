@@ -1,53 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaJ0R2K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:28:10 -0400
-Received: from hofr.at ([212.69.189.236]:52970 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909AbaJ0R2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751701AbaJ0R2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:28:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44504 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596AbaJ0R2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 13:28:07 -0400
-Date: Mon, 27 Oct 2014 18:28:05 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: typo fix in arch/x86/kernel/asm_offset_64.c
-Message-ID: <20141027172805.GA19760@opentech.at>
+Date: Mon, 27 Oct 2014 17:28:01 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-unionfs@vger.kernel.org
+Subject: Re: [GIT PULL] overlay filesystem v25
+Message-ID: <20141027172800.GW7996@ZenIV.linux.org.uk>
+References: <20141023232539.GA4662@tucsk.piliscsaba.szeredi.hu>
+ <20141024022055.GH7996@ZenIV.linux.org.uk>
+ <20141024032422.GI7996@ZenIV.linux.org.uk>
+ <CAJfpegt-X_Cd8B5H65keshhhuwH2-HPpaBC30atKeS3QjaariA@mail.gmail.com>
+ <20141025081845.GJ7996@ZenIV.linux.org.uk>
+ <CAJfpegvM8d-cizf=3KmTSFVgAYPBDp_0fQAh+G2Q87u=taXm3A@mail.gmail.com>
+ <20141025170609.GK7996@ZenIV.linux.org.uk>
+ <CAJfpegucroRzo0NHTz=4N0WcrB2oDC0eDiZXk=aKSjc8vdYDjw@mail.gmail.com>
+ <20141027155901.GE5718@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20141027155901.GE5718@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 27, 2014 at 08:59:01AM -0700, Paul E. McKenney wrote:
 
-drope double entry for pt_regs_bx
+> Indeed, life is hard here.  Keep in mind that lock acquisition is not
+> guaranteed to prevent prior operations from being reordered into the
+> critical section, possibly as follows:
+> 
+> 	CPU1:
+> 	  grab lock
+> 	  if (!global)
+> 	      global = p;
+> 	  /* Assume all of CPU2's accesses happen here. */
+> 	  p->foo = 1;
 
-This seems to be a typo - resulting in a double entry in the
-generated include/generated/asm-offsets.h which is not necessary
+A bit of context: p is a local pointer to struct file here and alloc is
+opening it...
 
-Build-tested and booted on x86 64 box to make sure it was not
-doing any strange magic.... after all it was in the kernel in
-this form for almost 10 years.
+> This clearly allows CPU2 to execute as follows:
+> 
+> 	CPU2:
+> 	  p = global; /* gets p */
+> 	  if (p) /* non-NULL */
+> 	  	q = p->foo; /* might not be 1 */
+> 
+> Not only that, on DEC Alpha, even if CPU1's accesses are ordered, CPU2's
+> accesses can be misordered.  You need rcu_dereference() or the combination
+> of ACCESS_ONCE() and smp_read_barrier_depends() to avoid this issue.
+> As always, see http://www.openvms.compaq.com/wizard/wiz_2637.html for
+> more info.
+> 
+> So no, there is no guarantee.  I am assuming that the lock grabbed by
+> CPU1 guards all assignments to "global", otherwise the code needs further
+> help.  I am further assuming that the memory pointed to by CPU1's "p"
+> is inaccessible to any other CPU, as in CPU1 just allocated the memory.
+> Otherwise, the assignment "p->foo = 1" is questionable.  And finally,
+> I am assuming that p->foo stays constant once it has been made
+> accessible to readers.
+> 
+> But the following should work:
+> 
+> 	CPU1:
+> 	  p->foo = 1;  /* Assumes p is local. */
+> 	  smp_mb__before_spinlock();
+> 	  grab lock
+> 	  if (!global)  /* Assumes lock protects all assignments to global. */
+> 	      global = p;
+> 
+> 	CPU2:
+> 	  p = rcu_dereference(global);
+> 	  if (p)
+> 	     q = p->foo; /* Assumes p->foo constant once visible to readers. */
+> 	     		 /* Also assumes p and q are local. */
+> 
+> If the assumptions called out in the comments do not hold, you at least
+> need ACCESS_ONCE(), and perhaps even more synchronization.  For more info
+> on ACCESS_ONCE(), Jon's LWN article is at http://lwn.net/Articles/508991/.
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- arch/x86/kernel/asm-offsets_64.c |    1 -
- 1 file changed, 1 deletion(-)
+First of all, this "p->foo = 1" is a shorthand for initialization of
+struct file done by opening a file.  What you are saying is that it
+can leak past the point where we stick a pointer to freshly opened
+file into a place where another CPU can see it, but not past the
+barrier in dropping the lock, right?
 
-diff --git a/arch/x86/kernel/asm-offsets_64.c b/arch/x86/kernel/asm-offsets_64.c
-index e7c798b..4f9359f 100644
---- a/arch/x86/kernel/asm-offsets_64.c
-+++ b/arch/x86/kernel/asm-offsets_64.c
-@@ -48,7 +48,6 @@ int main(void)
- 
- #define ENTRY(entry) OFFSET(pt_regs_ ## entry, pt_regs, entry)
- 	ENTRY(bx);
--	ENTRY(bx);
- 	ENTRY(cx);
- 	ENTRY(dx);
- 	ENTRY(sp);
--- 
-1.7.10.4
-
+And you are suggesting rcu_dereference() as a way to bring the required
+barriers in.  Ouch...  The names are really bad, but there's another
+fun issue - rcu_dereference brings in sparse noise.  Wouldn't direct use
+of smp_read_barrier_depends() be cleaner, anyway?
