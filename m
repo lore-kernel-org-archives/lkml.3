@@ -1,128 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753351AbaJ0MpX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:45:23 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:39252 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930AbaJ0Ml4 (ORCPT
+	id S1753333AbaJ0MpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:45:22 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:37450 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752371AbaJ0MpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 08:41:56 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 15/16] tile/MSI: Use MSI controller framework to configure MSI/MSI-X irq
-Date: Mon, 27 Oct 2014 21:22:21 +0800
-Message-ID: <1414416142-31239-16-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
-References: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
+	Mon, 27 Oct 2014 08:45:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.175.100.166]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.544E3D91.01B0,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: a79e6222ac16149ce64752b2f173711a
+In-Reply-To: <20141027103429.GC8768@arm.com>
+References: <1413868050-6173-1-git-send-email-takahiro.akashi@linaro.org>
+	<20141027103429.GC8768@arm.com>
+Date: Mon, 27 Oct 2014 18:15:17 +0530
+Message-ID: <CALicx6vdZY9ThfOMEg3gFMBzYZyOjdtLD5Sm6shVBs8VO9bV4Q@mail.gmail.com>
+Subject: Re: [PATCH] arm64: kgdb: fix single stepping
+From: Vijay Kilari <vijay.kilari@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "Vijaya.Kumar@caviumnetworks.com" <Vijaya.Kumar@caviumnetworks.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use MSI controller framework instead of arch MSI functions to configure
-MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
+Hi Akashi,
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- arch/tile/include/asm/pci.h |    2 ++
- arch/tile/kernel/pci_gx.c   |   18 ++++++++++++++++--
- 2 files changed, 18 insertions(+), 2 deletions(-)
+   I could not reproduce this with my simulator.
+It would be good  if you could post result of KGDB test suite.
 
-diff --git a/arch/tile/include/asm/pci.h b/arch/tile/include/asm/pci.h
-index dfedd7a..3ebd66b 100644
---- a/arch/tile/include/asm/pci.h
-+++ b/arch/tile/include/asm/pci.h
-@@ -152,6 +152,7 @@ struct pci_controller {
- 	int pio_io_index;	/* PIO region index for I/O space access */
- #endif
- 
-+	struct msi_controller *msi_ctrl;
- 	/*
- 	 * Mem-Map regions for all the memory controllers so that Linux can
- 	 * map all of its physical memory space to the PCI bus.
-@@ -179,6 +180,7 @@ struct pci_controller {
- 	int irq_intx_table[4];
- };
- 
-+extern struct msi_controller tilegx_msi_ctrl;
- extern struct pci_controller pci_controllers[TILEGX_NUM_TRIO * TILEGX_TRIO_PCIES];
- extern gxio_trio_context_t trio_contexts[TILEGX_NUM_TRIO];
- extern int num_trio_shims;
-diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
-index e39f9c5..6bf5a24 100644
---- a/arch/tile/kernel/pci_gx.c
-+++ b/arch/tile/kernel/pci_gx.c
-@@ -887,6 +887,7 @@ int __init pcibios_init(void)
- 					controller->mem_offset);
- 		pci_add_resource(&resources, &controller->io_space);
- 		controller->first_busno = next_busno;
-+		controller->msi_ctrl = &tilegx_msi_ctrl;
- 		bus = pci_scan_root_bus(NULL, next_busno, controller->ops,
- 					controller, &resources);
- 		controller->root_bus = bus;
-@@ -1485,7 +1486,15 @@ static struct irq_chip tilegx_msi_chip = {
- 	/* TBD: support set_affinity. */
- };
- 
--int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
-+struct msi_controller *pcibios_msi_controller(struct pci_bus *bus)
-+{
-+	struct pci_controller *controller = bus->sysdata;
-+
-+	return controller->msi_ctrl;
-+}
-+
-+static int tile_setup_msi_irq(struct msi_controller *ctrl,
-+		struct pci_dev *pdev, struct msi_desc *desc)
- {
- 	struct pci_controller *controller;
- 	gxio_trio_context_t *trio_context;
-@@ -1604,7 +1613,12 @@ is_64_failure:
- 	return ret;
- }
- 
--void arch_teardown_msi_irq(unsigned int irq)
-+static void tile_teardown_msi_irq(struct msi_controller *ctrl, unsigned int irq)
- {
- 	irq_free_hwirq(irq);
- }
-+
-+struct msi_controller tilegx_msi_ctrl = {
-+	.setup_irq = tile_setup_msi_irq,
-+	.teardown_irq = tile_teardown_msi_irq,
-+};
--- 
-1.7.1
+>From sysfs you can launch using below command:
 
+echo V1F1000 > /sys/module/kgdbts/parameters/kgdbts
+or enable boot test.
+
+Other than that it is OK.
+
+
+On Mon, Oct 27, 2014 at 4:04 PM, Will Deacon <will.deacon@arm.com> wrote:
+> On Tue, Oct 21, 2014 at 06:07:30AM +0100, AKASHI Takahiro wrote:
+>> I tried to verify kgdb in vanilla kernel on fast model, but it seems that
+>> the single stepping with kgdb doesn't work correctly since its first
+>> appearance at v3.15.
+>>
+>> On v3.15, 'stepi' command after breaking the kernel at some breakpoint
+>> steps forward to the next instruction, but the succeeding 'stepi' never
+>> goes beyond that.
+>> On v3.16, 'stepi' moves forward and stops at the next instruction just
+>> after enable_dbg in el1_dbg, and never goes beyond that. This variance of
+>> behavior seems to come in with the following patch in v3.16:
+>>
+>>     commit 2a2830703a23 ("arm64: debug: avoid accessing mdscr_el1 on fault
+>>     paths where possible")
+>>
+>> This patch
+>> (1) moves kgdb_disable_single_step() from 'c' command handling to single
+>>     step handler.
+>>     This makes sure that single stepping gets effective at every 's' command.
+>>     Please note that, under the current implementation, single step bit in
+>>     spsr, which is cleared by the first single stepping, will not be set
+>>     again for the consecutive 's' commands because single step bit in mdscr
+>>     is still kept on (that is, kernel_active_single_step() in
+>>     kgdb_arch_handle_exception() is true).
+>> (2) re-implements kgdb_roundup_cpus() because the current implementation
+>>     enabled interrupts naively. See below.
+>> (3) removes 'enable_dbg' in el1_dbg.
+>>     Single step bit in mdscr is turned on in do_handle_exception()->
+>>     kgdb_handle_expection() before returning to debugged context, and if
+>>     debug exception is enabled in el1_dbg, we will see unexpected single-
+>>     stepping in el1_dbg.
+>>     Since v3.18, the following patch does the same:
+>>       commit 1059c6bf8534 ("arm64: debug: don't re-enable debug exceptions
+>>       on return from el1_dbg)
+>> (4) masks interrupts while single-stepping one instruction.
+>>     If an interrupt is caught during processing a single-stepping, debug
+>>     exception is unintentionally enabled by el1_irq's 'enable_dbg' before
+>>     returning to debugged context.
+>>     Thus, like in (2), we will see unexpected single-stepping in el1_irq.
+>>
+>> Basically (1) and (2) are for v3.15, (3) and (4) for v3.1[67].
+>
+> (3) was CC'd for stable, so I don't think you need to mention that here.
+>
+> I'd like an ack from a KGDB person before I take this via the arm64 tree.
+>
+> Will
+>
+>>
+>> * issue fixed by (2):
+>> Without (2), we would see another problem if a breakpoint is set at
+>> interrupt-sensible places, like gic_handle_irq():
+>>
+>>     KGDB: re-enter error: breakpoint removed ffffffc000081258
+>>     ------------[ cut here ]------------
+>>     WARNING: CPU: 0 PID: 650 at kernel/debug/debug_core.c:435
+>>                                       kgdb_handle_exception+0x1dc/0x1f4()
+>>     Modules linked in:
+>>     CPU: 0 PID: 650 Comm: sh Not tainted 3.17.0-rc2+ #177
+>>     Call trace:
+>>     [<ffffffc000087fac>] dump_backtrace+0x0/0x130
+>>     [<ffffffc0000880ec>] show_stack+0x10/0x1c
+>>     [<ffffffc0004d683c>] dump_stack+0x74/0xb8
+>>     [<ffffffc0000ab824>] warn_slowpath_common+0x8c/0xb4
+>>     [<ffffffc0000ab90c>] warn_slowpath_null+0x14/0x20
+>>     [<ffffffc000121bfc>] kgdb_handle_exception+0x1d8/0x1f4
+>>     [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+>>     [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+>>     [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+>>     Exception stack(0xffffffc07e027650 to 0xffffffc07e027770)
+>>     ...
+>>     [<ffffffc000083cac>] el1_dbg+0x14/0x68
+>>     [<ffffffc00012178c>] kgdb_cpu_enter+0x464/0x5c0
+>>     [<ffffffc000121bb4>] kgdb_handle_exception+0x190/0x1f4
+>>     [<ffffffc000092ffc>] kgdb_brk_fn+0x18/0x28
+>>     [<ffffffc0000821c8>] brk_handler+0x9c/0xe8
+>>     [<ffffffc0000811e8>] do_debug_exception+0x3c/0xac
+>>     Exception stack(0xffffffc07e027ac0 to 0xffffffc07e027be0)
+>>     ...
+>>     [<ffffffc000083cac>] el1_dbg+0x14/0x68
+>>     [<ffffffc00032e4b4>] __handle_sysrq+0x11c/0x190
+>>     [<ffffffc00032e93c>] write_sysrq_trigger+0x4c/0x60
+>>     [<ffffffc0001e7d58>] proc_reg_write+0x54/0x84
+>>     [<ffffffc000192fa4>] vfs_write+0x98/0x1c8
+>>     [<ffffffc0001939b0>] SyS_write+0x40/0xa0
+>>
+>> Once some interrupt occurs, a breakpoint at gic_handle_irq() triggers kgdb.
+>> Kgdb then calls kgdb_roundup_cpus() to sync with other cpus.
+>> Current kgdb_roundup_cpus() unmasks interrupts temporarily to
+>> use smp_call_function().
+>> This eventually allows another interrupt to occur and likely results in
+>> hitting a breakpoint at gic_handle_irq() again since debug exception is
+>> always enabled in el1_irq.
+>>
+>> We can avoid this issue by specifying "nokgdbroundup" in kernel parameter,
+>> but this will also leave other cpus be in unknown state in terms of kgdb,
+>> and may result in interfering with kgdb activity.
+>>
+>> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+>> ---
+>>  arch/arm64/kernel/kgdb.c |   60 +++++++++++++++++++++++++++++++++++-----------
+>>  1 file changed, 46 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/arch/arm64/kernel/kgdb.c b/arch/arm64/kernel/kgdb.c
+>> index a0d10c5..81b5910 100644
+>> --- a/arch/arm64/kernel/kgdb.c
+>> +++ b/arch/arm64/kernel/kgdb.c
+>> @@ -19,9 +19,13 @@
+>>   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>>   */
+>>
+>> +#include <linux/cpumask.h>
+>>  #include <linux/irq.h>
+>> +#include <linux/irq_work.h>
+>>  #include <linux/kdebug.h>
+>>  #include <linux/kgdb.h>
+>> +#include <linux/percpu.h>
+>> +#include <asm/ptrace.h>
+>>  #include <asm/traps.h>
+>>
+>>  struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
+>> @@ -95,6 +99,9 @@ struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
+>>       { "fpcr", 4, -1 },
+>>  };
+>>
+>> +static DEFINE_PER_CPU(unsigned int, kgdb_pstate);
+>> +static DEFINE_PER_CPU(struct irq_work, kgdb_irq_work);
+>> +
+>>  char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
+>>  {
+>>       if (regno >= DBG_MAX_REG_NUM || regno < 0)
+>> @@ -176,18 +183,14 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
+>>                * over and over again.
+>>                */
+>>               kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
+>> -             atomic_set(&kgdb_cpu_doing_single_step, -1);
+>> -             kgdb_single_step =  0;
+>> -
+>> -             /*
+>> -              * Received continue command, disable single step
+>> -              */
+>> -             if (kernel_active_single_step())
+>> -                     kernel_disable_single_step();
+>>
+>>               err = 0;
+>>               break;
+>>       case 's':
+>> +             /* mask interrupts while single stepping */
+>> +             __this_cpu_write(kgdb_pstate, linux_regs->pstate);
+>> +             linux_regs->pstate |= PSR_I_BIT;
+>> +
+>>               /*
+>>                * Update step address value with address passed
+>>                * with step packet.
+>> @@ -198,8 +201,6 @@ int kgdb_arch_handle_exception(int exception_vector, int signo,
+>>                */
+>>               kgdb_arch_update_addr(linux_regs, remcom_in_buffer);
+>>               atomic_set(&kgdb_cpu_doing_single_step, raw_smp_processor_id());
+>> -             kgdb_single_step =  1;
+>> -
+>>               /*
+>>                * Enable single step handling
+>>                */
+>> @@ -229,6 +230,18 @@ static int kgdb_compiled_brk_fn(struct pt_regs *regs, unsigned int esr)
+>>
+>>  static int kgdb_step_brk_fn(struct pt_regs *regs, unsigned int esr)
+>>  {
+>> +     unsigned int pstate;
+>> +
+>> +     kernel_disable_single_step();
+>> +     atomic_set(&kgdb_cpu_doing_single_step, -1);
+>> +
+>> +     /* restore interrupt mask status */
+>> +     pstate = __this_cpu_read(kgdb_pstate);
+>> +     if (pstate & PSR_I_BIT)
+>> +             regs->pstate |= PSR_I_BIT;
+>> +     else
+>> +             regs->pstate &= ~PSR_I_BIT;
+>> +
+>>       kgdb_handle_exception(1, SIGTRAP, 0, regs);
+>>       return 0;
+>>  }
+>> @@ -249,16 +262,27 @@ static struct step_hook kgdb_step_hook = {
+>>       .fn             = kgdb_step_brk_fn
+>>  };
+>>
+>> -static void kgdb_call_nmi_hook(void *ignored)
+>> +static void kgdb_roundup_hook(struct irq_work *work)
+>>  {
+>>       kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
+>>  }
+>>
+>>  void kgdb_roundup_cpus(unsigned long flags)
+>>  {
+>> -     local_irq_enable();
+>> -     smp_call_function(kgdb_call_nmi_hook, NULL, 0);
+>> -     local_irq_disable();
+>> +     int cpu;
+>> +     struct cpumask mask;
+>> +     struct irq_work *work;
+>> +
+>> +     mask = *cpu_online_mask;
+>> +     cpumask_clear_cpu(smp_processor_id(), &mask);
+>> +     cpu = cpumask_first(&mask);
+>> +     if (cpu >= nr_cpu_ids)
+>> +             return;
+>> +
+>> +     for_each_cpu(cpu, &mask) {
+>> +             work = per_cpu_ptr(&kgdb_irq_work, cpu);
+>> +             irq_work_queue_on(work, cpu);
+>> +     }
+>>  }
+>>
+>>  static int __kgdb_notify(struct die_args *args, unsigned long cmd)
+>> @@ -299,6 +323,8 @@ static struct notifier_block kgdb_notifier = {
+>>  int kgdb_arch_init(void)
+>>  {
+>>       int ret = register_die_notifier(&kgdb_notifier);
+>> +     int cpu;
+>> +     struct irq_work *work;
+>>
+>>       if (ret != 0)
+>>               return ret;
+>> @@ -306,6 +332,12 @@ int kgdb_arch_init(void)
+>>       register_break_hook(&kgdb_brkpt_hook);
+>>       register_break_hook(&kgdb_compiled_brkpt_hook);
+>>       register_step_hook(&kgdb_step_hook);
+>> +
+>> +     for_each_possible_cpu(cpu) {
+>> +             work = per_cpu_ptr(&kgdb_irq_work, cpu);
+>> +             init_irq_work(work, kgdb_roundup_hook);
+>> +     }
+>> +
+>>       return 0;
+>>  }
+>>
+>> --
+>> 1.7.9.5
+>>
+
+Acked-by: Vijaya Kumar K <Vijaya.Kumar@caviumnetworks.com>
+
+Regards
+Vijay
