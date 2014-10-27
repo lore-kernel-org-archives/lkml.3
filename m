@@ -1,194 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbaJ0TxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:53:13 -0400
-Received: from hofr.at ([212.69.189.236]:54336 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751973AbaJ0TxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:53:12 -0400
-Date: Mon, 27 Oct 2014 20:53:10 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Randy Dunlap <rdunlap@infradead.org>, Michal Marek <mmarek@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>, Joe Perches <joe@perches.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] Description of offset header files handling
-Message-ID: <20141027195310.GD10079@opentech.at>
+	id S1753164AbaJ0Txl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:53:41 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:30631 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808AbaJ0Txk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 15:53:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+XjhmcRQwO5ryHVkYaHAaa
+Date: Mon, 27 Oct 2014 12:52:09 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Felipe Balbi <balbi@ti.com>, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: USB Ethernet gadget on Nokia n900
+Message-ID: <20141027195209.GP2560@atomide.com>
+References: <20141019090107.GA19132@amd>
+ <201410262222.39892@pali>
+ <20141026215548.GA9004@amd>
+ <201410262323.17891@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201410262323.17891@pali>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Pali Rohár <pali.rohar@gmail.com> [141026 15:24]:
+> On Sunday 26 October 2014 22:55:48 Pavel Machek wrote:
+> > > > I have root prepared on /dev/mmcblk0p6. I tried 3.17 with
+> > > > rx51_defconfig, but no, it refuses to mount it.
+> > > > 
+> > > > VFS: Cannot open root device "mmcblk0p6" or ....: error
+> > > > -19.
+> > > > 
+> > > > And then it proceeds to list mmcblk0p6 as one of available
+> > > > options
+> > > > 
+> > > > :-(.
+> > > > 
+> > > > Ideas welcome.
+> > > 
+> > > Try to add rootdelay=30 or rootwait to kernel cmdline.
+> > 
+> > I had rootdelay=3. Will try rootwait... no change. This is
+> > v3.17 with rx51_defconfig. CONFIG_MACH_NOKIA_RX51=y => device
+> > tree will not be used AFAICT.
+> > 
+> > Now I'm back at 3.14 without device tree; same setup works
+> > there. I tried disabling RX51 support in 3.14 (to make it
+> > boot using device tree) but that did not work.
+> > 								Pavel
+> 
+> I remember that there was some problem with initializing mmc 
+> device. Sometimes something failed and reading from eMMC was not 
+> possible. Try to boot kernel from uboot. Maybe it can help.
 
-Description of offset header files handling
+Would be nice to have both the USB and the MMC issues sorted
+out in the mainline kernel naturally and get rid of any bootloader
+dependencies.
 
-This adds a section on offset header files handling in Kbuild.
+I think the USB issue because usb_gadget_probe_driver() bails
+out with -ENODEV before the USB controller is found. Felipe, got
+any ideas how to fix this to work with -EPROBE_DEFER? Should this
+get called only from the USB controller probe?
 
-This patch is against linux 3.18.0-rc1
+Regards,
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- Documentation/kbuild/makefiles.txt |  123 ++++++++++++++++++++++++++++++++++--
- 1 file changed, 117 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-index 3697be4..364f466 100644
---- a/Documentation/kbuild/makefiles.txt
-+++ b/Documentation/kbuild/makefiles.txt
-@@ -51,8 +51,9 @@ This document describes the Linux kernel Makefiles.
- 
- 	=== 8 Kbuild Variables
- 	=== 9 Makefile language
--	=== 10 Credits
--	=== 11 TODO
-+	=== 10 Generating offset header files
-+	=== 11 Credits
-+	=== 12 TODO
- 
- === 1 Overview
- 
-@@ -1033,7 +1034,7 @@ When kbuild executes, the following steps are followed (roughly):
- 
- 	In this example, the file target maketools will be processed
- 	before descending down in the subdirectories.
--	See also chapter XXX-TODO that describe how kbuild supports
-+	See also chapter 10 that describe how kbuild supports
- 	generating offset header files.
- 
- 
-@@ -1449,17 +1450,127 @@ time the left-hand side is used.
- There are some cases where "=" is appropriate.  Usually, though, ":="
- is the right choice.
- 
--=== 10 Credits
-+=== 10 Generating offset header files
-+
-+The problem: Given the following structure:
-+
-+	Example:
-+		typedef struct
-+		{
-+		     int a;
-+		     int b;
-+		} some_thing;
-+
-+ If as asm function is receiving a pointer of a some_thing structure
-+ then we have the problem of the elements offset in the structure
-+ are not accessible in the assembler code.
-+
-+ If the pointer were passed in through r0 then access to the elements
-+ a and b would need to have the offsets hard coded like:
-+
-+	Example:
-+	   ldr      r1, [r0, #0] // read a
-+	   ldr      r2, [r0, #4] // read b
-+
-+ but you do not want to hard-code them in maintainable code so the
-+ offsets need to be deduced from the C-code and made available for use
-+ in the assembler code in some symbolic manner.
-+
-+	Example:
-+	   ldr      r1, [r0, #THING_A]
-+	   ldr      r2, [r0, #THING_B]
-+
-+ The Kbuild system provides methods to calculate the necessary offsets
-+ from the C and stores them in a generated header file as preprocessor
-+ constants which allows to write maintainable and readable assembler code.
-+
-+ The elements that are needed in assembler code are placed in a C-file
-+ arch/ARCHkernel/asm-offsets_{32,64}.c which is then processed into a
-+ assembler file (by calling gcc -S) and from this Kbuild then extracts
-+ the defines and places them into the generated asm-offsets.h
-+
-+	Example:
-+		arch/x86/kernel/asm-offsets_64.c
-+		<snip>
-+		...
-+		#define ENTRY(entry) OFFSET(pt_regs_ ## entry, pt_regs, entry)
-+			ENTRY(bx);
-+		...
-+		<snip>
-+
-+ from this the pt_regs_bx offset is generated and stored in
-+ the asm-offsets.s as verbose asm from the top level Kbuild file
-+ (arch/$(SRCARCH)/kernel/asm-offsets.s: arch/$(SRCARCH)/kernel/asm-offsets.c)
-+
-+	 Example:
-+		->pt_regs_bx $40 offsetof(struct pt_regs, bx)   #
-+		# 0 "" 2
-+		# 51 "arch/x86/kernel/asm-offsets_64.c" 1
-+
-+ This intermediate assembler file is then processed by a somewhat brute-force
-+ (or elegant - depending on how much you like sed) sed script in the top
-+ level Kbuild file to generate the asm-offsets.h file
-+
-+ define sed-y
-+	"/^->/{s:->#\(.*\):/* \1 */:; \
-+	s:^->\([^ ]*\) [\$$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; \
-+	s:^->\([^ ]*\) [\$$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; \
-+	s:->::; p;}"
-+ endef
-+
-+ The generated files include a header generated by the Kbuild file indicating
-+ that is is generated and should not be modified and then contains the
-+ set of #define and as documentation the C-structure element e.g.
-+
-+ #define pt_regs_bx 40 /* offsetof(struct pt_regs, bx)   # */
-+
-+	Example: arch/x86/power/hibernate_asm_64.S
-+		...
-+		#include <asm/asm-offsets.h>
-+		#include <asm/processor-flags.h>
-+
-+		ENTRY(swsusp_arch_suspend)
-+			movq    $saved_context, %rax
-+			movq    %rsp, pt_regs_sp(%rax)
-+		...
-+
-+ To now add a generated offset one needs to edit the C-file in
-+ arch/$(SRCARCH)/kernel/asm-offsets.c respectively if it is only
-+ for the 32 or 64 bit build in the asm-offsets_32/64.c and include
-+ the respective structure/element one needs access to.
-+
-+ The syntax for this is
-+ OFFSET(MACRONAME, STRUCTURE, ELEMENT);
-+
-+ Example:
-+	<snip>
-+	 ...
-+	#include <asm/thread_info.h>
-+	 ...
-+	void common(void) {
-+		BLANK();
-+		OFFSET(TI_flags, thread_info, flags);
-+	<snip>
-+
-+ The BLANK(); macro is used to make the generated header file more
-+ readable and as the name indicates will insert a blank line.
-+
-+ The dependency tracking is done through Kbuild so if a structure that
-+ is included in arch/ARCH/kernel/asm_offsets.c or in the 32/64 bit
-+ variants then asm_offsets.h is regenerated correctly.
-+
-+
-+=== 11 Credits
- 
- Original version made by Michael Elizabeth Chastain, <mailto:mec@shout.net>
- Updates by Kai Germaschewski <kai@tp1.ruhr-uni-bochum.de>
- Updates by Sam Ravnborg <sam@ravnborg.org>
- Language QA by Jan Engelhardt <jengelh@gmx.de>
- Kbuild support for shipped files Nicholas Mc Guire <der.herr@hofr.at>
-+Added description of offset header files Nicholas Mc Guire <der.herr@hofr.at>
- 
--=== 11 TODO
-+=== 12 TODO
- 
--- Generating offset header files.
- - Add more variables to section 7?
- 
- 
--- 
-1.7.10.4
-
+Tony
