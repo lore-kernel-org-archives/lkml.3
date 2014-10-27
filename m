@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaJ0Mlv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:41:51 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28073 "EHLO
+	id S1752855AbaJ0Mlt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:41:49 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:28067 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836AbaJ0Mlm (ORCPT
+	with ESMTP id S1751492AbaJ0Mlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 08:41:42 -0400
 From: Yijing Wang <wangyijing@huawei.com>
@@ -31,9 +31,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 06/16] Mips/MSI: Save MSI controller in pci sysdata
-Date: Mon, 27 Oct 2014 21:22:12 +0800
-Message-ID: <1414416142-31239-7-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 08/16] MIPS/Xlp/MSI: Use MSI controller framework to configure MSI/MSI-X irq
+Date: Mon, 27 Oct 2014 21:22:14 +0800
+Message-ID: <1414416142-31239-9-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
 References: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
@@ -45,49 +45,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save MSI controller in pci sysdata, add arch pcibios_msi_controller()
-to extract out MSI controller.
+Use MSI controller framework instead of arch MSI functions to configure
+MSI/MSI-X IRQ. So we can manage MSI/MSI-X irq in a unified framework.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/mips/include/asm/pci.h |    3 +++
- arch/mips/pci/pci.c         |    9 +++++++++
- 2 files changed, 12 insertions(+), 0 deletions(-)
+ arch/mips/include/asm/netlogic/xlp-hal/pcibus.h |    1 +
+ arch/mips/pci/msi-xlp.c                         |   11 +++++++++--
+ arch/mips/pci/pci-xlp.c                         |    3 +++
+ 3 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/include/asm/pci.h b/arch/mips/include/asm/pci.h
-index 974b0e3..d7cd850 100644
---- a/arch/mips/include/asm/pci.h
-+++ b/arch/mips/include/asm/pci.h
-@@ -43,6 +43,9 @@ struct pci_controller {
+diff --git a/arch/mips/include/asm/netlogic/xlp-hal/pcibus.h b/arch/mips/include/asm/netlogic/xlp-hal/pcibus.h
+index 91540f4..8e6869a 100644
+--- a/arch/mips/include/asm/netlogic/xlp-hal/pcibus.h
++++ b/arch/mips/include/asm/netlogic/xlp-hal/pcibus.h
+@@ -103,6 +103,7 @@
  
- 	int iommu;
+ #ifdef CONFIG_PCI_MSI
+ void xlp_init_node_msi_irqs(int node, int link);
++extern struct msi_controller xlp_msi_ctrl;
+ #else
+ static inline void xlp_init_node_msi_irqs(int node, int link) {}
+ #endif
+diff --git a/arch/mips/pci/msi-xlp.c b/arch/mips/pci/msi-xlp.c
+index fa374fe..d18a162 100644
+--- a/arch/mips/pci/msi-xlp.c
++++ b/arch/mips/pci/msi-xlp.c
+@@ -245,7 +245,8 @@ static struct irq_chip xlp_msix_chip = {
+ 	.irq_unmask	= unmask_msi_irq,
+ };
  
-+#ifdef CONFIG_PCI_MSI
-+	struct msi_controller *msi_ctrl;
-+#endif
- 	/* Optional access methods for reading/writing the bus number
- 	   of the PCI controller */
- 	int (*get_busno)(void);
-diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
-index 1bf60b1..7917cba 100644
---- a/arch/mips/pci/pci.c
-+++ b/arch/mips/pci/pci.c
-@@ -36,6 +36,15 @@ unsigned long PCIBIOS_MIN_MEM;
+-void arch_teardown_msi_irq(unsigned int irq)
++static void xlp_teardown_msi_irq(struct msi_controller *ctrl,
++		unsigned int irq)
+ {
+ }
  
- static int pci_initialized;
+@@ -452,7 +453,8 @@ static int xlp_setup_msix(uint64_t lnkbase, int node, int link,
+ 	return 0;
+ }
  
-+#ifdef CONFIG_PCI_MSI
-+struct msi_controller *pcibios_msi_controller(struct pci_bus *bus)
-+{
-+	struct pci_controller *ctrl = bus->sysdata;
+-int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
++static int xlp_setup_msi_irq(struct msi_controller *ctrl,
++		struct pci_dev *dev, struct msi_desc *desc)
+ {
+ 	struct pci_dev *lnkdev;
+ 	uint64_t lnkbase;
+@@ -474,6 +476,11 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ 		return xlp_setup_msi(lnkbase, node, link, desc);
+ }
+ 
++struct msi_controller xlp_msi_ctrl = {
++	.setup_irq = xlp_setup_msi_irq,
++	.teardown_irq = xlp_teardown_msi_irq,
++};
 +
-+	return ctrl->msi_ctrl;
-+}
+ void __init xlp_init_node_msi_irqs(int node, int link)
+ {
+ 	struct nlm_soc_info *nodep;
+diff --git a/arch/mips/pci/pci-xlp.c b/arch/mips/pci/pci-xlp.c
+index 7babf01..ab80417 100644
+--- a/arch/mips/pci/pci-xlp.c
++++ b/arch/mips/pci/pci-xlp.c
+@@ -174,6 +174,9 @@ struct pci_controller nlm_pci_controller = {
+ 	.mem_offset	= 0x00000000UL,
+ 	.io_resource	= &nlm_pci_io_resource,
+ 	.io_offset	= 0x00000000UL,
++#ifdef CONFIG_PCI_MSI
++	.msi_ctrl = &xlp_msi_ctrl,
 +#endif
-+
- /*
-  * We need to avoid collisions with `mirrored' VGA ports
-  * and other strange ISA hardware, so we always want the
+ };
+ 
+ struct pci_dev *xlp_get_pcie_link(const struct pci_dev *dev)
 -- 
 1.7.1
 
