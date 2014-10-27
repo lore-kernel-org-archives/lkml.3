@@ -1,135 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbaJ0IJj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 04:09:39 -0400
-Received: from mga14.intel.com ([192.55.52.115]:33074 "EHLO mga14.intel.com"
+	id S1752764AbaJ0IJt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 04:09:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13492 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752700AbaJ0IJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 04:09:31 -0400
+	id S1752740AbaJ0IJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 04:09:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,794,1406617200"; 
-   d="scan'208";a="611931009"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Ning Li <ning.li@intel.com>,
-        Alan Cox <alan@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] pinctrl: Move Intel Baytrail pinctrl driver under intel directory
-Date: Mon, 27 Oct 2014 10:08:30 +0200
-Message-Id: <1414397312-94609-3-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414397312-94609-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1414397312-94609-1-git-send-email-mika.westerberg@linux.intel.com>
+   d="scan'208";a="621212629"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ryan Desfosses <ryan@desfo.org>,
+        Quentin Lambert <lambert.quentin@gmail.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch Part1 v3 03/20] x86, irq: Kill fourth parameter of IO_APIC_get_PCI_irq_vector()
+Date: Mon, 27 Oct 2014 16:11:54 +0800
+Message-Id: <1414397531-28254-4-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to have more pinctrl drivers for Intel hardware so separate
-all our pin controller drivers to own directory.
+Now the fourth parameter of IO_APIC_get_PCI_irq_vector() is useless,
+so kill it.  Assume it's only used by ibmphp PCI hotplug driver
+though IO_APIC_get_PCI_irq_vector() has been exported,
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
-Mathias, can you ACK this if you are happy with the change?
+ arch/x86/include/asm/hw_irq.h     |    2 +-
+ arch/x86/kernel/apic/io_apic.c    |   13 +++----------
+ arch/x86/pci/irq.c                |    6 ++----
+ drivers/pci/hotplug/ibmphp_core.c |    5 +----
+ 4 files changed, 7 insertions(+), 19 deletions(-)
 
- drivers/pinctrl/Kconfig                        | 13 +------------
- drivers/pinctrl/Makefile                       |  2 +-
- drivers/pinctrl/intel/Kconfig                  | 15 +++++++++++++++
- drivers/pinctrl/intel/Makefile                 |  3 +++
- drivers/pinctrl/{ => intel}/pinctrl-baytrail.c |  0
- 5 files changed, 20 insertions(+), 13 deletions(-)
- create mode 100644 drivers/pinctrl/intel/Kconfig
- create mode 100644 drivers/pinctrl/intel/Makefile
- rename drivers/pinctrl/{ => intel}/pinctrl-baytrail.c (100%)
-
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index c6a66de6ed72..d014f22f387a 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -67,18 +67,6 @@ config PINCTRL_AT91
- 	help
- 	  Say Y here to enable the at91 pinctrl driver
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 4615906d83df..64330c2e172e 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -158,7 +158,7 @@ extern void send_cleanup_vector(struct irq_cfg *);
+ struct irq_data;
+ int __ioapic_set_affinity(struct irq_data *, const struct cpumask *,
+ 			  unsigned int *dest_id);
+-extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin, struct io_apic_irq_attr *irq_attr);
++extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
+ extern void setup_ioapic_dest(void);
  
--config PINCTRL_BAYTRAIL
--	bool "Intel Baytrail GPIO pin control"
--	depends on GPIOLIB && ACPI && X86
--	select GPIOLIB_IRQCHIP
--	help
--	  driver for memory mapped GPIO functionality on Intel Baytrail
--	  platforms. Supports 3 banks with 102, 28 and 44 gpios.
--	  Most pins are usually muxed to some other functionality by firmware,
--	  so only a small amount is available for gpio use.
+ extern void enable_IO_APIC(void);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index df3858de3031..117ec58fff02 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1179,8 +1179,7 @@ void mp_unmap_irq(int irq)
+  * Find a specific PCI IRQ entry.
+  * Not an __init, possibly needed by modules
+  */
+-int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+-				struct io_apic_irq_attr *irq_attr)
++int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin)
+ {
+ 	int irq, i, best_ioapic = -1, best_idx = -1;
+ 
+@@ -1234,14 +1233,8 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ 		return -1;
+ 
+ out:
+-	irq = pin_2_irq(best_idx, best_ioapic, mp_irqs[best_idx].dstirq,
+-			IOAPIC_MAP_ALLOC);
+-	if (irq > 0)
+-		set_io_apic_irq_attr(irq_attr, best_ioapic,
+-				     mp_irqs[best_idx].dstirq,
+-				     irq_trigger(best_idx),
+-				     irq_polarity(best_idx));
+-	return irq;
++	return pin_2_irq(best_idx, best_ioapic, mp_irqs[best_idx].dstirq,
++			 IOAPIC_MAP_ALLOC);
+ }
+ EXPORT_SYMBOL(IO_APIC_get_PCI_irq_vector);
+ 
+diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
+index a47e2dea0972..7765b3facd4b 100644
+--- a/arch/x86/pci/irq.c
++++ b/arch/x86/pci/irq.c
+@@ -1200,14 +1200,12 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ #ifdef CONFIG_X86_IO_APIC
+ 			struct pci_dev *temp_dev;
+ 			int irq;
+-			struct io_apic_irq_attr irq_attr;
+ 
+ 			if (dev->irq_managed && dev->irq > 0)
+ 				return 0;
+ 
+ 			irq = IO_APIC_get_PCI_irq_vector(dev->bus->number,
+-						PCI_SLOT(dev->devfn),
+-						pin - 1, &irq_attr);
++						PCI_SLOT(dev->devfn), pin - 1);
+ 			/*
+ 			 * Busses behind bridges are typically not listed in the MP-table.
+ 			 * In this case we have to look up the IRQ based on the parent bus,
+@@ -1221,7 +1219,7 @@ static int pirq_enable_irq(struct pci_dev *dev)
+ 				pin = pci_swizzle_interrupt_pin(dev, pin);
+ 				irq = IO_APIC_get_PCI_irq_vector(bridge->bus->number,
+ 						PCI_SLOT(bridge->devfn),
+-						pin - 1, &irq_attr);
++						pin - 1);
+ 				if (irq >= 0)
+ 					dev_warn(&dev->dev, "using bridge %s "
+ 						 "INT %c to get IRQ %d\n",
+diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
+index 3efaf4c38528..d261e623541f 100644
+--- a/drivers/pci/hotplug/ibmphp_core.c
++++ b/drivers/pci/hotplug/ibmphp_core.c
+@@ -155,13 +155,10 @@ int ibmphp_init_devno(struct slot **cur_slot)
+ 	for (loop = 0; loop < len; loop++) {
+ 		if ((*cur_slot)->number == rtable->slots[loop].slot &&
+ 		    (*cur_slot)->bus == rtable->slots[loop].bus) {
+-			struct io_apic_irq_attr irq_attr;
 -
--	  Requires ACPI device enumeration code to set up a platform device.
--
- config PINCTRL_BCM2835
- 	bool
- 	select PINMUX
-@@ -205,6 +193,7 @@ config PINCTRL_PALMAS
+ 			(*cur_slot)->device = PCI_SLOT(rtable->slots[loop].devfn);
+ 			for (i = 0; i < 4; i++)
+ 				(*cur_slot)->irq[i] = IO_APIC_get_PCI_irq_vector((int) (*cur_slot)->bus,
+-						(int) (*cur_slot)->device, i,
+-						&irq_attr);
++						(int) (*cur_slot)->device, i);
  
- source "drivers/pinctrl/berlin/Kconfig"
- source "drivers/pinctrl/freescale/Kconfig"
-+source "drivers/pinctrl/intel/Kconfig"
- source "drivers/pinctrl/mvebu/Kconfig"
- source "drivers/pinctrl/nomadik/Kconfig"
- source "drivers/pinctrl/qcom/Kconfig"
-diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
-index 51f52d32859e..c030b3db8034 100644
---- a/drivers/pinctrl/Makefile
-+++ b/drivers/pinctrl/Makefile
-@@ -15,7 +15,6 @@ obj-$(CONFIG_PINCTRL_BF54x)	+= pinctrl-adi2-bf54x.o
- obj-$(CONFIG_PINCTRL_BF60x)	+= pinctrl-adi2-bf60x.o
- obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
- obj-$(CONFIG_PINCTRL_BCM2835)	+= pinctrl-bcm2835.o
--obj-$(CONFIG_PINCTRL_BAYTRAIL)	+= pinctrl-baytrail.o
- obj-$(CONFIG_PINCTRL_BCM281XX)	+= pinctrl-bcm281xx.o
- obj-$(CONFIG_PINCTRL_FALCON)	+= pinctrl-falcon.o
- obj-$(CONFIG_PINCTRL_PALMAS)	+= pinctrl-palmas.o
-@@ -39,6 +38,7 @@ obj-$(CONFIG_PINCTRL_ST) 	+= pinctrl-st.o
- 
- obj-$(CONFIG_ARCH_BERLIN)	+= berlin/
- obj-y				+= freescale/
-+obj-$(CONFIG_X86)		+= intel/
- obj-$(CONFIG_PLAT_ORION)        += mvebu/
- obj-y				+= nomadik/
- obj-$(CONFIG_ARCH_QCOM)		+= qcom/
-diff --git a/drivers/pinctrl/intel/Kconfig b/drivers/pinctrl/intel/Kconfig
-new file mode 100644
-index 000000000000..957c90386307
---- /dev/null
-+++ b/drivers/pinctrl/intel/Kconfig
-@@ -0,0 +1,15 @@
-+#
-+# Intel pin control drivers
-+#
-+
-+config PINCTRL_BAYTRAIL
-+	bool "Intel Baytrail GPIO pin control"
-+	depends on GPIOLIB && ACPI
-+	select GPIOLIB_IRQCHIP
-+	help
-+	  driver for memory mapped GPIO functionality on Intel Baytrail
-+	  platforms. Supports 3 banks with 102, 28 and 44 gpios.
-+	  Most pins are usually muxed to some other functionality by firmware,
-+	  so only a small amount is available for gpio use.
-+
-+	  Requires ACPI device enumeration code to set up a platform device.
-diff --git a/drivers/pinctrl/intel/Makefile b/drivers/pinctrl/intel/Makefile
-new file mode 100644
-index 000000000000..d049b769e327
---- /dev/null
-+++ b/drivers/pinctrl/intel/Makefile
-@@ -0,0 +1,3 @@
-+# Intel pin control drivers
-+
-+obj-$(CONFIG_PINCTRL_BAYTRAIL)		+= pinctrl-baytrail.o
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/intel/pinctrl-baytrail.c
-similarity index 100%
-rename from drivers/pinctrl/pinctrl-baytrail.c
-rename to drivers/pinctrl/intel/pinctrl-baytrail.c
+ 			debug("(*cur_slot)->irq[0] = %x\n",
+ 					(*cur_slot)->irq[0]);
 -- 
-2.1.1
+1.7.10.4
 
