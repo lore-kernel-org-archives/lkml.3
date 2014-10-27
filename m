@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644AbaJ0VS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 17:18:29 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40692 "EHLO
+	id S1752569AbaJ0VVQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 17:21:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40703 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346AbaJ0VS2 (ORCPT
+	with ESMTP id S1752308AbaJ0VVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 17:18:28 -0400
-Date: Mon, 27 Oct 2014 22:18:21 +0100 (CET)
+	Mon, 27 Oct 2014 17:21:15 -0400
+Date: Mon, 27 Oct 2014 22:21:12 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Eric Paris <eparis@redhat.com>
-cc: Richard Guy Briggs <rgb@redhat.com>, linux-kernel@vger.kernel.org,
-        przanoni@gmail.com, mingo@kernel.org, hpa@linux.intel.com,
-        hpa@zytor.com, linux-tip-commits@vger.kernel.org,
-        linux-audit@redhat.com
-Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
-In-Reply-To: <1414418157.24347.1.camel@redhat.com>
-Message-ID: <alpine.DEB.2.11.1410272212420.5308@nanos>
-References: <1414037043-30647-1-git-send-email-eparis@redhat.com>  <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>  <alpine.DEB.2.11.1410251034320.5308@nanos>  <20141027023457.GY15532@madcap2.tricolour.ca>
- <1414418157.24347.1.camel@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Heena Sirwani <heenasirwani@gmail.com>, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org
+Subject: Re: [PATCH v5] timekeeping: Added a function to return tv_sec portion
+ of ktime_get_ts64()
+In-Reply-To: <6577930.2pEqZJjtqW@wuerfel>
+Message-ID: <alpine.DEB.2.11.1410272219560.5308@nanos>
+References: <20141025123406.GA13128@heena.com> <alpine.DEB.2.11.1410251705550.5308@nanos> <6577930.2pEqZJjtqW@wuerfel>
 User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -29,28 +27,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, Eric Paris wrote:
-
-> My patch was already committed to the -tip urgent branch.  I believe any
-> optimization should be based on that branch, Richard.  If you are trying
-> to wrangle every bit of speed out of this, should you
+On Sun, 26 Oct 2014, Arnd Bergmann wrote:
+> On Saturday 25 October 2014 17:12:48 Thomas Gleixner wrote:
+> > I'd rather have an extra field in the timekeeper
+> > 
+> >     u64 xtime_sec;
+> > +   u64 ktime_sec;
+> > 
+> > and update this in tk_update_ktime_data() so the readout function
+> > boils down to
+> > 
+> > time64_t ktime_get_seconds(void)
+> > {
+> > #if BITS_PER_LONG < 64
+> >         u64 sec;
+> >         int seq;
+> > 
+> >         do {
+> >                 seq = read_seqcount_begin(&tk_core.seq);
+> >                 sec = tk->ktime_sec;
+> >         } while (read_seqcount_retry(&tk_core.seq, seq));
+> > 
+> >         return sec;
+> > #else
+> >         return tk->ktime_sec;
+> > #endif
+> > }
+> > 
+> > So 64bit can do w/o the seqcount and 32bit avoids all extra math, right?
+> > 
 > 
-> push %esi;
-> push %edi;
-> CFI_ADJUST_CFA_OFFSET 8
-
-Wrong. You want to use pushl_cfi as you need the CFI adjustment after
-each modification of esp.
-
-> call __audit_syscall_entry
-> pop;
-> pop;
-> CFI_ADJUST_CFA_OFFSET -8
+> But where would you set ktime_sec? My first thought was tk_update_ktime_data(),
+> but would then either be slightly wrong because it doesn't take the current
+> xtime_nsec + tk->wall_to_monotonic.tv_nsec into account, if we do
 > 
-> Instead of using the pushl_cfi and popl_cfi macros?
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index ec1791fae965..d72a456c6bd3 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -426,8 +426,8 @@ static inline void tk_update_ktime_data(struct timekeeper *tk)
+>  	 *	nsec = base_mono + now();
+>  	 * ==> base_mono = (xtime_sec + wtm_sec) * 1e9 + wtm_nsec
+>  	 */
+> -	nsec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
+> -	nsec *= NSEC_PER_SEC;
+> +	tk->ktime_sec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
+> +	nsec = tk->ktime_sec * NSEC_PER_SEC;
+>  	nsec += tk->wall_to_monotonic.tv_nsec;
+>  	tk->tkr.base_mono = ns_to_ktime(nsec);
+>  
+> 
+> or we'd have to add an expensive timekeeping_get_ns() call:
+> 
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index ec1791fae965..d4c95b815de6 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -426,9 +426,11 @@ static inline void tk_update_ktime_data(struct timekeeper *tk)
+>  	 *	nsec = base_mono + now();
+>  	 * ==> base_mono = (xtime_sec + wtm_sec) * 1e9 + wtm_nsec
+>  	 */
+> -	nsec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
+> -	nsec *= NSEC_PER_SEC;
+> -	nsec += tk->wall_to_monotonic.tv_nsec;
+> +	tk->ktime_sec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
+> +	nsec = tk->wall_to_monotonic.tv_nsec;
+> +	if ((nsec + timekeeping_get_ns()) > NSEC_PER_SEC)
+> +		tk->ktime_sec += 1;
+> +	nsec += tk->ktime_sec * NSEC_PER_SEC;
+>  	tk->tkr.base_mono = ns_to_ktime(nsec);
 
-Wrong again. See above. Aside of that, why do you want to use pop at
-all? All we care about is adjusting esp, right?
+No. Why would you do that? Look at the math you implemented and just
+do the same thing in the update function.
 
 Thanks,
 
