@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbaJ0JvW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 05:51:22 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:29800 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114AbaJ0JtB (ORCPT
+	id S1752600AbaJ0Jvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 05:51:45 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:8635 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaJ0Js5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 05:49:01 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-3d-544e150c1abe
+	Mon, 27 Oct 2014 05:48:57 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-07-544e1508be93
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: dri-devel@lists.freedesktop.org
 Cc: Andrzej Hajda <a.hajda@samsung.com>, Inki Dae <inki.dae@samsung.com>,
         Thierry Reding <treding@nvidia.com>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 5/5] MAINTAINERS: Add entry for Exynos MIPI DPI DRM driver
-Date: Mon, 27 Oct 2014 10:48:30 +0100
-Message-id: <1414403310-6316-6-git-send-email-a.hajda@samsung.com>
+Subject: [PATCH 2/5] MAINTAINERS: Add entry for LD9040 drm panel driver
+Date: Mon, 27 Oct 2014 10:48:27 +0100
+Message-id: <1414403310-6316-3-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1414403310-6316-1-git-send-email-a.hajda@samsung.com>
 References: <1414403310-6316-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKJMWRmVeSWpSXmKPExsVy+t/xq7o8on4hBmvbxSxurTvHanHl63s2
-	i0n3J7BYXN41h83i9m8+B1aP+93HmTx6m9+xefRtWcXo8XmTXABLFJdNSmpOZllqkb5dAlfG
-	17vHWAr+sVScuRfawDiLpYuRk0NCwESi+fU5ZghbTOLCvfVsXYxcHEICSxkl9n/4ww7h9DFJ
-	3L45BayKTUBT4u/mm2wgtoiAssTfiasYQYqYBWYySmz9cpkVJCEs4CWx9/xkoBUcHCwCqhJz
-	DrmAhHkFnCSur/kEtVlO4uSxyWDlnALOEn+nfgebKQRUc/zjOZYJjLwLGBlWMYqmliYXFCel
-	5xrpFSfmFpfmpesl5+duYoQEzdcdjEuPWR1iFOBgVOLhnVDsGyLEmlhWXJl7iFGCg1lJhNfx
-	J1CINyWxsiq1KD++qDQntfgQIxMHp1QDo1Xi6sMPvype82Xd43mkZxX/yvsRK2vf+sw69TOw
-	sr7L7pzH9x+Zac4zMyYo5Ust0K+dXJRuI2woqJ9v/fiS+eTv7j58S5u2/atbz1LKO/XLm3Ih
-	tmtWy3ouqa/dPeGXnsad+UwzzgZ/XPmRpb/HumDS49ZFC/XPJWze73K60qdj0hHNt5pXbymx
-	FGckGmoxFxUnAgApyvL7+AEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGJMWRmVeSWpSXmKPExsVy+t/xq7ocon4hBtPPcVjcWneO1eLK1/ds
+	FpPuT2CxuLxrDpvF7d98Dqwe97uPM3n0Nr9j8+jbsorR4/MmuQCWKC6blNSczLLUIn27BK6M
+	VTcuMBb8Y61oXfyXuYFxImsXIweHhICJxJ4GvS5GTiBTTOLCvfVsXYxcHEICSxkl9v9+wgjh
+	9DFJvLy4gBWkik1AU+Lv5ptsILaIgLLE34mrwIqYBWYySmz9chmsSFjAXeLpv5PsIDaLgKrE
+	jUsnweK8Ak4Sd/csYYFYJydx8thksDingLPE36nfwYYKAdUc/3iOZQIj7wJGhlWMoqmlyQXF
+	Sem5hnrFibnFpXnpesn5uZsYIWHzZQfj4mNWhxgFOBiVeHh3TPMNEWJNLCuuzD3EKMHBrCTC
+	6/gTKMSbklhZlVqUH19UmpNafIiRiYNTqoFRQFSwny9u42SJq/UW4VtOJvZs1ZnY8XDPs6w7
+	vKp166yuZyoWiM3oYN5aYPpxTbXP67zW5Ulm3ZFbJ8o1nz3/TLLGPuSSw6mJd//tOxwbsH1V
+	wgMjP25hoYN9frsDK24pxz+6oOzvmHQy8KbRsrWpbg/WaRaJeGjNTkxbuqL1Vc0Sj7YZYSxK
+	LMUZiYZazEXFiQDOheke+QEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- MAINTAINERS | 6 ++++++
- 1 file changed, 6 insertions(+)
+ MAINTAINERS | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 256183e..06cdb5a 100644
+index 476679c..6e57cad 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -3656,6 +3656,12 @@ L:	dri-devel@lists.freedesktop.org
- S:	Supported
- F:	drivers/gpu/drm/exynos/exynos_drm_dsi.c
+@@ -3097,6 +3097,13 @@ F:	drivers/gpu/drm/panel/
+ F:	include/drm/drm_panel.h
+ F:	Documentation/devicetree/bindings/panel/
  
-+EXYNOS MIPI DPI DRM DRIVER
++DRM PANEL LD9040 DRIVER
 +M:	Andrzej Hajda <a.hajda@samsung.com>
 +L:	dri-devel@lists.freedesktop.org
 +S:	Supported
-+F:	drivers/gpu/drm/exynos/exynos_drm_dpi.c
++F:	drivers/gpu/drm/panel/panel-ld9040.c
++F:	Documentation/devicetree/bindings/panel/samsung,ld9040.txt
 +
- F71805F HARDWARE MONITORING DRIVER
- M:	Jean Delvare <jdelvare@suse.de>
- L:	lm-sensors@lm-sensors.org
+ INTEL DRM DRIVERS (excluding Poulsbo, Moorestown and derivative chipsets)
+ M:	Daniel Vetter <daniel.vetter@intel.com>
+ M:	Jani Nikula <jani.nikula@linux.intel.com>
 -- 
 1.9.1
 
