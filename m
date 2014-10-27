@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaJ0TW3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:22:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52588 "EHLO
+	id S1753755AbaJ0TWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:22:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52577 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240AbaJ0TCN (ORCPT
+	with ESMTP id S1752117AbaJ0TCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:02:13 -0400
+	Mon, 27 Oct 2014 15:02:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Oren Givon <oren.givon@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 052/105] rt2800: correct BBP1_TX_POWER_CTRL mask
-Date: Mon, 27 Oct 2014 11:56:27 -0700
-Message-Id: <1414436240-13879-53-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 021/105] iwlwifi: Add missing PCI IDs for the 7260 series
+Date: Mon, 27 Oct 2014 11:55:56 -0700
+Message-Id: <1414436240-13879-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,34 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Oren Givon <oren.givon@intel.com>
 
-commit 01f7feeaf4528bec83798316b3c811701bac5d3e upstream.
+commit 4f08970f5284dce486f0e2290834aefb2a262189 upstream.
 
-Two bits control TX power on BBP_R1 register. Correct the mask,
-otherwise we clear additional bit on BBP_R1 register, what can have
-unknown, possible negative effect.
+Add 4 missing PCI IDs for the 7260 series.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Oren Givon <oren.givon@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rt2x00/rt2800.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/pcie/drv.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2800.h b/drivers/net/wireless/rt2x00/rt2800.h
-index aab6b5e..6b1e2cc 100644
---- a/drivers/net/wireless/rt2x00/rt2800.h
-+++ b/drivers/net/wireless/rt2x00/rt2800.h
-@@ -2041,7 +2041,7 @@ struct mac_iveiv_entry {
-  * 2 - drop tx power by 12dBm,
-  * 3 - increase tx power by 6dBm
-  */
--#define BBP1_TX_POWER_CTRL		FIELD8(0x07)
-+#define BBP1_TX_POWER_CTRL		FIELD8(0x03)
- #define BBP1_TX_ANTENNA			FIELD8(0x18)
- 
- /*
+diff --git a/drivers/net/wireless/iwlwifi/pcie/drv.c b/drivers/net/wireless/iwlwifi/pcie/drv.c
+index d408df2..d9bb9b8 100644
+--- a/drivers/net/wireless/iwlwifi/pcie/drv.c
++++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
+@@ -272,6 +272,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4070, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4072, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4170, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0x4C60, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0x4C70, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4060, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x406A, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4160, iwl7260_2n_cfg)},
+@@ -312,6 +314,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_card_ids) = {
+ 	{IWL_PCI_DEVICE(0x08B1, 0xC770, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0xC760, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC270, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0xCC70, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0xCC60, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC272, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC260, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC26A, iwl7260_n_cfg)},
 -- 
 1.9.1
 
