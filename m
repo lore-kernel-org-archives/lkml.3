@@ -1,141 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366AbaJ0QCg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:02:36 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50200 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077AbaJ0P5Q (ORCPT
+	id S1753461AbaJ0QC7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:02:59 -0400
+Received: from mail-oi0-f42.google.com ([209.85.218.42]:61858 "EHLO
+	mail-oi0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766AbaJ0QCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:57:16 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH v3 32/47] x86: olpc: Register xo1 power-off handler with kernel power-off handler
-Date: Mon, 27 Oct 2014 08:55:39 -0700
-Message-Id: <1414425354-10359-33-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
-References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.544E6B5C.013D,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 178
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 27 Oct 2014 12:02:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141027092311.GA9807@amd>
+References: <1413881397.30379.7.camel@hadess.net>
+	<loom.20141021T140216-28@post.gmane.org>
+	<20141027092311.GA9807@amd>
+Date: Mon, 27 Oct 2014 20:02:51 +0400
+X-Google-Sender-Auth: 1EMxSiJa5DHWztGdCqGXXuqx_uU
+Message-ID: <CABaUXi4CkosMHDuNMMhTg3Ahrts5re-rJsPxN4JNp0Wu3AbKdA@mail.gmail.com>
+Subject: Re: A desktop environment[1] kernel wishlist
+From: "Sergey \"Shnatsel\" Davidoff" <sergey@elementaryos.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with high priority to reflect that the driver
-explicitly wants to override default power-off handlers.
+> If "recursive mtime" was available, would that work for you?
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v3:
-- Replace poweroff in all newly introduced variables and in text
-  with power_off or power-off as appropriate
-- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-v2:
-- Use define to specify poweroff handler priority
+It would work for detecting "offline" changes. I suppose recursive
+mtime not viable for online monitoring, mostly because detecting file
+renaming would be a massive PITA (and we already have fanotify with
+exactly this problem).
 
- arch/x86/platform/olpc/olpc-xo1-pm.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+Another approach to offline monitoring is using things like btrfs
+changelogs - e.g. incremental "btrfs send", but I don't think that's
+viable for other filesystems and I don't know how efficient it is even
+on btrfs.
 
-diff --git a/arch/x86/platform/olpc/olpc-xo1-pm.c b/arch/x86/platform/olpc/olpc-xo1-pm.c
-index a9acde7..e1b7ad0 100644
---- a/arch/x86/platform/olpc/olpc-xo1-pm.c
-+++ b/arch/x86/platform/olpc/olpc-xo1-pm.c
-@@ -15,6 +15,7 @@
- #include <linux/cs5535.h>
- #include <linux/platform_device.h>
- #include <linux/export.h>
-+#include <linux/notifier.h>
- #include <linux/pm.h>
- #include <linux/mfd/core.h>
- #include <linux/suspend.h>
-@@ -92,7 +93,8 @@ asmlinkage __visible int xo1_do_sleep(u8 sleep_state)
- 	return 0;
- }
- 
--static void xo1_power_off(void)
-+static int xo1_power_off(struct notifier_block *this, unsigned long unused1,
-+			 void *unused2)
- {
- 	printk(KERN_INFO "OLPC XO-1 power off sequence...\n");
- 
-@@ -108,8 +110,15 @@ static void xo1_power_off(void)
- 
- 	/* Write SLP_EN bit to start the machinery */
- 	outl(0x00002000, acpi_base + CS5536_PM1_CNT);
-+
-+	return NOTIFY_DONE;
- }
- 
-+static struct notifier_block xo1_power_off_nb = {
-+	.notifier_call = xo1_power_off,
-+	.priority = POWER_OFF_PRIORITY_HIGH,
-+};
-+
- static int xo1_power_state_valid(suspend_state_t pm_state)
- {
- 	/* suspend-to-RAM only */
-@@ -146,8 +155,12 @@ static int xo1_pm_probe(struct platform_device *pdev)
- 
- 	/* If we have both addresses, we can override the poweroff hook */
- 	if (pms_base && acpi_base) {
-+		err = register_power_off_handler(&xo1_power_off_nb);
-+		if (err) {
-+			dev_err(&pdev->dev, "Failed to register power-off handler\n");
-+			return err;
-+		}
- 		suspend_set_ops(&xo1_suspend_ops);
--		pm_power_off = xo1_power_off;
- 		printk(KERN_INFO "OLPC XO-1 support registered\n");
- 	}
- 
-@@ -158,12 +171,13 @@ static int xo1_pm_remove(struct platform_device *pdev)
- {
- 	mfd_cell_disable(pdev);
- 
-+	unregister_power_off_handler(&xo1_power_off_nb);
-+
- 	if (strcmp(pdev->name, "cs5535-pms") == 0)
- 		pms_base = 0;
- 	else if (strcmp(pdev->name, "olpc-xo1-pm-acpi") == 0)
- 		acpi_base = 0;
- 
--	pm_power_off = NULL;
- 	return 0;
- }
- 
+Actually, being able to read btrfs changelog from userspace more or
+less as it happens (<200ms latency on commodity x86) would fulfill our
+requirements for online VFS monitoring facility, and we could use
+"btrfs send" approach for replaying offline changes. The good thing
+about this approach is that it can use a fixed-size buffer for feeding
+the info in userspace - if userspace can't keep up, the data is not
+lost but recorded to the filesystem and can be retrieved from it
+later. In this case we'd be tied to a specific filesystem, but that's
+worlds better than nothing at all.
+
 -- 
-1.9.1
-
+Sergey "Shnatsel" Davidoff
