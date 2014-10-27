@@ -1,67 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492AbaJ0P72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:59:28 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:49142 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773AbaJ0P7Y (ORCPT
+	id S1753506AbaJ0P7u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:59:50 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50330 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342AbaJ0P5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:59:24 -0400
-Date: Mon, 27 Oct 2014 15:59:11 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <htejun@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [percpu] Convert remaining __get_cpu_var uses in 3.18-rcX
-Message-ID: <20141027155910.GX8768@arm.com>
-References: <alpine.DEB.2.11.1410271047400.17089@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1410271047400.17089@gentwo.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 27 Oct 2014 11:57:49 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH v3 44/47] x86: intel-mid: Drop registration of dummy power-off handlers
+Date: Mon, 27 Oct 2014 08:55:51 -0700
+Message-Id: <1414425354-10359-45-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.544E6B7C.02C8,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 253
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 03:49:45PM +0000, Christoph Lameter wrote:
-> During the 3.18 merge period additional __get_cpu_var uses were
-> added. The patch converts these to this_cpu_ptr().
-> 
-> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> Index: linux/arch/arm64/kernel/psci.c
-> ===================================================================
-> --- linux.orig/arch/arm64/kernel/psci.c
-> +++ linux/arch/arm64/kernel/psci.c
-> @@ -511,7 +511,7 @@ static int cpu_psci_cpu_kill(unsigned in
-> 
->  static int psci_suspend_finisher(unsigned long index)
->  {
-> -	struct psci_power_state *state = __get_cpu_var(psci_power_state);
-> +	struct psci_power_state *state = __this_cpu_read(psci_power_state);
-> 
->  	return psci_ops.cpu_suspend(state[index - 1],
->  				    virt_to_phys(cpu_resume));
-> @@ -520,7 +520,7 @@ static int psci_suspend_finisher(unsigne
->  static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
->  {
->  	int ret;
-> -	struct psci_power_state *state = __get_cpu_var(psci_power_state);
-> +	struct psci_power_state *state = __this_cpu_read(psci_power_state);
->  	/*
->  	 * idle state index 0 corresponds to wfi, should never be called
->  	 * from the cpu_suspend operations
+A dummy power-off handler does not serve any purpose. Drop it.
 
-Apologies for not spotting this one during review:
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v3:
+- Replace poweroff in all newly introduced variables and in text
+  with power_off or power-off as appropriate
+- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+v2:
+- Use define to specify poweroff handler priority
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+ arch/x86/platform/intel-mid/intel-mid.c | 5 -----
+ arch/x86/platform/intel-mid/mfld.c      | 5 -----
+ 2 files changed, 10 deletions(-)
 
-Feel free to take this via some other route (than the arm64 tree).
+diff --git a/arch/x86/platform/intel-mid/intel-mid.c b/arch/x86/platform/intel-mid/intel-mid.c
+index 1bbedc4..4b70666 100644
+--- a/arch/x86/platform/intel-mid/intel-mid.c
++++ b/arch/x86/platform/intel-mid/intel-mid.c
+@@ -67,10 +67,6 @@ static void *(*get_intel_mid_ops[])(void) = INTEL_MID_OPS_INIT;
+ enum intel_mid_cpu_type __intel_mid_cpu_chip;
+ EXPORT_SYMBOL_GPL(__intel_mid_cpu_chip);
+ 
+-static void intel_mid_power_off(void)
+-{
+-};
+-
+ static void intel_mid_reboot(void)
+ {
+ 	intel_scu_ipc_simple_command(IPCMSG_COLD_BOOT, 0);
+@@ -183,7 +179,6 @@ void __init x86_intel_mid_early_setup(void)
+ 
+ 	legacy_pic = &null_legacy_pic;
+ 
+-	pm_power_off = intel_mid_power_off;
+ 	machine_ops.emergency_restart  = intel_mid_reboot;
+ 
+ 	/* Avoid searching for BIOS MP tables */
+diff --git a/arch/x86/platform/intel-mid/mfld.c b/arch/x86/platform/intel-mid/mfld.c
+index 23381d2..cf6842f 100644
+--- a/arch/x86/platform/intel-mid/mfld.c
++++ b/arch/x86/platform/intel-mid/mfld.c
+@@ -23,10 +23,6 @@ static struct intel_mid_ops penwell_ops = {
+ 	.arch_setup = penwell_arch_setup,
+ };
+ 
+-static void mfld_power_off(void)
+-{
+-}
+-
+ static unsigned long __init mfld_calibrate_tsc(void)
+ {
+ 	unsigned long fast_calibrate;
+@@ -61,7 +57,6 @@ static unsigned long __init mfld_calibrate_tsc(void)
+ static void __init penwell_arch_setup(void)
+ {
+ 	x86_platform.calibrate_tsc = mfld_calibrate_tsc;
+-	pm_power_off = mfld_power_off;
+ }
+ 
+ void *get_penwell_ops(void)
+-- 
+1.9.1
 
-Will
