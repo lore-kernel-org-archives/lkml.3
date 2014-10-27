@@ -1,136 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752408AbaJ0SB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:01:26 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48998 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751827AbaJ0SBY (ORCPT
+	id S1752462AbaJ0SBf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:01:35 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:33966 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412AbaJ0SBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:01:24 -0400
-Date: Mon, 27 Oct 2014 19:00:49 +0100
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Mark Brown <broonie@kernel.org>, atull@opensource.altera.com,
-        jgunthorpe@obsidianresearch.com, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>, michal.simek@xilinx.com,
-        rdunlap@infradead.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Pavel Machek <pavel@denx.de>,
-        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        mgerlach@opensource.altera.com, Alan Tull <delicious.quinoa@gmail.com>,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
-Message-ID: <20141027180049.GY10262@pengutronix.de>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com>
- <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
- <CCE2D027-AA89-41C4-B9AA-2B92AA62129B@konsulko.com>
- <20141027150147.GX18557@sirena.org.uk>
- <31BBCD26-65E2-431A-9ADF-95D7EDC7E34E@konsulko.com>
- <20141027153205.GW10262@pengutronix.de>
- <1C42AF5D-4776-4B09-BDF4-24F001439F46@konsulko.com>
+	Mon, 27 Oct 2014 14:01:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1C42AF5D-4776-4B09-BDF4-24F001439F46@konsulko.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 18:49:47 up 12 days,  5:03, 60 users,  load average: 0,11, 0,06,
- 0,05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <87wq7shuk6.fsf@x220.int.ebiederm.org>
+References: <1401975635-6162-1-git-send-email-drysdale@google.com>
+ <CALCETrVraoD+r4zxBoGd+BV5P275AXcRV_R00SSr8fjQzRHnUg@mail.gmail.com>
+ <87zjcszz8y.fsf@x220.int.ebiederm.org> <CAHse=S-Xyk7CFn=tAGzo+tuUFt+04aBw+mGQmi=kWAaBJGALBw@mail.gmail.com>
+ <CALCETrXBjLZTWVJfcsE4NA-JP9zSSgn=6ND0=cZ9BTy=CoN7pA@mail.gmail.com>
+ <87ioje2ggq.fsf@x220.int.ebiederm.org> <CAHse=S_dpm8Do-H01Bo49a9TdYw+pSDzYomLOrBsYEcdO=Pytw@mail.gmail.com>
+ <87wq7shuk6.fsf@x220.int.ebiederm.org>
+From: David Drysdale <drysdale@google.com>
+Date: Mon, 27 Oct 2014 18:01:10 +0000
+Message-ID: <CAHse=S8qDS5z+Ac7TVY0QE2W9oNUaaaiZE0Vuytv15d7aFLEWw@mail.gmail.com>
+Subject: Re: [PATCHv4 RESEND 0/3] syscalls,x86: Add execveat() system call
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 05:45:03PM +0200, Pantelis Antoniou wrote:
-> Hi Stefan,
-> 
-> > On Oct 27, 2014, at 17:32 , Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
-> > 
-> > On Mon, Oct 27, 2014 at 05:05:29PM +0200, Pantelis Antoniou wrote:
-> >> Hi Mark,
-> >> 
-> >>> On Oct 27, 2014, at 17:01 , Mark Brown <broonie@kernel.org> wrote:
-> >>> 
-> >>> On Mon, Oct 27, 2014 at 01:48:02PM +0200, Pantelis Antoniou wrote:
-> >>>>> On Oct 24, 2014, at 02:51 , atull@opensource.altera.com wrote:
-> >>> 
-> >>>>> + - init-val         : 0 if driver should disable bridge at startup
-> >>>>> +                      1 if driver should enable bridge at startup
-> >>>>> +                      driver leaves bridge in current state if property not
-> >>>>> +		      specified.
-> >>> 
-> >>>> Isn’t init-val a boolean property? It’s not named very well.
-> >>> 
-> >>> It's not boolean, it's tristate - turn on, turn off or don't touch.
-> >>> 
-> >> 
-> >> I see. Even then ‘init-val’ is cryptic. I’d prefer two booleans,
-> >> enable-at-startup; disable-at-startup.
-> >> 
-> >>>> Along with the label, is kinda hard to defend as configuration in DT.
-> >>> 
-> >>> Yeah...  presumably this decision would fall out of the users?
-> >> 
-> >> Well, it’s the user that should make the decision, but the driver should
-> >> pick it up. This works but it’s not very nice.
-> >> 
-> > 
-> > Hm, convince me why this AXI bus is so special, that I even need an
-> > "init-val" property? Other buses don't have that.
-> > Why don't I add a property "init-val" to my SPI buses, so I can enable
-> > it in the DT and still have it in reset, just because....
-> > 
-> > The bridges on the SoCFPGA are buses, from the HPS to the FPGA. If I have
-> > written firmware to the FPGA and I have subnodes on that bus, I have to
-> > get it out of reset and probe everything. Normal procedure, no ?!
-> > 
-> 
-> Well, it’s not my speciality, but my understanding is that FPGAs take (considerable)
-> time to be programmed. If someone has already configured the ‘bus’ it is considered
-> a win to not reload the bitstream. I.e. if you boot with the bootloader having loaded
-> the bitstream already, you don’t want to do it again.
-> 
-> I’m afraid there’s no such analogue with standard hardware busses like SPI, where
-> the bus setup time is instantaneous.
+On Wed, Oct 22, 2014 at 6:40 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> David Drysdale <drysdale@google.com> writes:
+>> On Tue, Oct 21, 2014 at 5:29 AM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>> It is more a description of what we have done but as a magic string it
+>>> is descriptive.  Documetation/devices.txt documents that /dev/fd/ should
+>>> exist, making it an unambiguous path.  Further these days the kernel
+>>> sets the device naming policy in dev, so I think we are strongly safe in
+>>> using that path in any event.
+>>>
+>>> I think execveat is interesting in the kernel because the motivating
+>>> cases are the cases where anything except a static executable is
+>>> uninteresting.
+>>
+>> FYI, there is potential in the future for something other than static
+>> executables -- the FreeBSD Capsicum implementation includes changes
+>> to the dynamic linker to get its search path as a list of pre-opened dfds
+>> (in LD_LIBRARY_PATH_FDS) rather than paths.
+>
+> Which still leaves open the question how do you find the dynamic
+> linker.  Is that also a pre-opened dfd?
 
-Ah, okay. I see why you got confused.
-The bridges are not in any way responsible for loading the FPGA nor will
-resetting them reset the bitstream.
+I *think* it's still effectively a path lookup of the INTERP header in
+the kernel (but the pathname is restricted to be one of a set of
+standard pre-registered interpreters).
 
-The FPGA Manager, a different IP core, is responsible for that. And AFAIK
-it has a status bit, that tells you if the FPGA is programmed or not.
-Loading the bitstream is in the order of milliseconds.
+> Using /dev/fd/$N is also the kind of thing that a shell or a script
+> interpret could special case instead relying on a filesystem node
+> to exist.
 
-So from the bridges point of view, when you probe it, you can ask the
-FPGA manager if is done, otherwise -EPROBE_DEFER and than go on and
-probe the subdevices.
-
-
-If you are bored, take a look at
-http://www.altera.com/literature/hb/cyclone-v/cv_54004.pdf
-page 7-2. There you can see the hardware setup.
-
-Regards,
-Steffen
-
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+True.
