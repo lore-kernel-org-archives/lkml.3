@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbaJ0S7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:59:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52434 "EHLO
+	id S1752658AbaJ0S7C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:59:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52446 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417AbaJ0S5p (ORCPT
+	with ESMTP id S1752190AbaJ0S66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:57:45 -0400
+	Mon, 27 Oct 2014 14:58:58 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Champion Chen <champion_chen@realsil.com.cn>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Marcel Holtmann <marcel@holtmann.org>,
+Cc: Xiubo Li <Li.Xiubo@freescale.com>, Mark Brown <broonie@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 013/105] Bluetooth: Fix issue with USB suspend in btusb driver
-Date: Mon, 27 Oct 2014 11:55:48 -0700
-Message-Id: <1414436240-13879-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 057/105] regmap: debugfs: fix possbile NULL pointer dereference
+Date: Mon, 27 Oct 2014 11:56:32 -0700
+Message-Id: <1414436240-13879-58-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -29,58 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Champion Chen <champion_chen@realsil.com.cn>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
-commit 85560c4a828ec9c8573840c9b66487b6ae584768 upstream.
+commit 2c98e0c1cc6b8e86f1978286c3d4e0769ee9d733 upstream.
 
-Suspend could fail for some platforms because
-btusb_suspend==> btusb_stop_traffic ==> usb_kill_anchored_urbs.
+If 'map->dev' is NULL and there will lead dev_name() to be NULL pointer
+dereference. So before dev_name(), we need to have check of the map->dev
+pionter.
 
-When btusb_bulk_complete returns before system suspend and resubmits
-an URB, the system cannot enter suspend state.
+We also should make sure that the 'name' pointer shouldn't be NULL for
+debugfs_create_dir(). So here using one default "dummy" debugfs name when
+the 'name' pointer and 'map->dev' are both NULL.
 
-Signed-off-by: Champion Chen <champion_chen@realsil.com.cn>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/bluetooth/btusb.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/base/regmap/regmap-debugfs.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 3980fd1..f3cd23d 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -305,6 +305,9 @@ static void btusb_intr_complete(struct urb *urb)
- 			BT_ERR("%s corrupted event packet", hdev->name);
- 			hdev->stat.err_rx++;
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index f89d382..004e132 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -473,6 +473,7 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
+ {
+ 	struct rb_node *next;
+ 	struct regmap_range_node *range_node;
++	const char *devname = "dummy";
+ 
+ 	/* If we don't have the debugfs root yet, postpone init */
+ 	if (!regmap_debugfs_root) {
+@@ -491,12 +492,15 @@ void regmap_debugfs_init(struct regmap *map, const char *name)
+ 	INIT_LIST_HEAD(&map->debugfs_off_cache);
+ 	mutex_init(&map->cache_lock);
+ 
++	if (map->dev)
++		devname = dev_name(map->dev);
++
+ 	if (name) {
+ 		map->debugfs_name = kasprintf(GFP_KERNEL, "%s-%s",
+-					      dev_name(map->dev), name);
++					      devname, name);
+ 		name = map->debugfs_name;
+ 	} else {
+-		name = dev_name(map->dev);
++		name = devname;
  	}
  
- 	if (!test_bit(BTUSB_INTR_RUNNING, &data->flags))
-@@ -393,6 +396,9 @@ static void btusb_bulk_complete(struct urb *urb)
- 			BT_ERR("%s corrupted ACL packet", hdev->name);
- 			hdev->stat.err_rx++;
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
- 
- 	if (!test_bit(BTUSB_BULK_RUNNING, &data->flags))
-@@ -487,6 +493,9 @@ static void btusb_isoc_complete(struct urb *urb)
- 				hdev->stat.err_rx++;
- 			}
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
- 
- 	if (!test_bit(BTUSB_ISOC_RUNNING, &data->flags))
+ 	map->debugfs = debugfs_create_dir(name, regmap_debugfs_root);
 -- 
 1.9.1
 
