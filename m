@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310AbaJ0ORJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:17:09 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:57746 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769AbaJ0ORH (ORCPT
+	id S1753328AbaJ0ORS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:17:18 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:44540 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910AbaJ0ORQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:17:07 -0400
-Date: Mon, 27 Oct 2014 15:17:17 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Andrzej Hajda <a.hajda@samsung.com>, Dave Airlie <airlied@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, Thierry Reding <treding@nvidia.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] MAINTAINERS: Add entry for MIPI DSI bus
-Message-ID: <20141027141717.GN26941@phenom.ffwll.local>
-Mail-Followup-To: Andrzej Hajda <a.hajda@samsung.com>,
-	Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org,
-	Thierry Reding <treding@nvidia.com>,
-	open list <linux-kernel@vger.kernel.org>
-References: <1414403310-6316-1-git-send-email-a.hajda@samsung.com>
- <1414403310-6316-2-git-send-email-a.hajda@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414403310-6316-2-git-send-email-a.hajda@samsung.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 27 Oct 2014 10:17:16 -0400
+From: Jan Kardell <jan.kardell@telliq.com>
+To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Cc: Vincent Donnefort <vdonnefort@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH 2/6] rtc: pcf8563 Fix write of invalid bits to ST2 reg
+Date: Mon, 27 Oct 2014 15:16:57 +0100
+Message-Id: <1414419421-11098-3-git-send-email-jan.kardell@telliq.com>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1414419421-11098-1-git-send-email-jan.kardell@telliq.com>
+References: <1414419421-11098-1-git-send-email-jan.kardell@telliq.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 10:48:26AM +0100, Andrzej Hajda wrote:
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-> ---
->  MAINTAINERS | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index dd31933..476679c 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3071,6 +3071,13 @@ F:	drivers/gpu/vga/
->  F:	include/drm/
->  F:	include/uapi/drm/
->  
-> +DRM MIPI DSI BUS
-> +M:	Andrzej Hajda <a.hajda@samsung.com>
-> +L:	dri-devel@lists.freedesktop.org
-> +S:	Supported
-> +F:	drivers/gpu/drm/drm_mipi_dsi.c
-> +F:	include/drm/drm_mipi_dsi.h
+>From the NXP datasheet:
+"Bits labeled as N should always be written with logic 0."
 
-I really prefer when common infrastructure like this doesn't get
-maintainer by a vendor. And I care with my intel hat on since we also ahve
-a dsi driver that sooner or later needs to be converted to to this stuff.
+At least one of those bits is sometime read as a 1, therfore violating
+this rule. To fix this we mask away those bits.
 
-Why doesn't the usual model of merging stuff through Dave's tree, or if
-that doesn't work well due to patch depencies, through vendor trees with
-Dave's ack?
+Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
+---
+ drivers/rtc/rtc-pcf8563.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks, Daniel
-
-> +
->  RADEON DRM DRIVERS
->  M:	Alex Deucher <alexander.deucher@amd.com>
->  M:	Christian König <christian.koenig@amd.com>
-> -- 
-> 1.9.1
-> 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-
+diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
+index 1a865c9..8c23606 100644
+--- a/drivers/rtc/rtc-pcf8563.c
++++ b/drivers/rtc/rtc-pcf8563.c
+@@ -28,6 +28,7 @@
+ #define PCF8563_REG_ST2		0x01
+ #define PCF8563_BIT_AIE		(1 << 1)
+ #define PCF8563_BIT_AF		(1 << 3)
++#define PCF8563_BITS_ST2_N	(7 << 5)
+ 
+ #define PCF8563_REG_SC		0x02 /* datetime */
+ #define PCF8563_REG_MN		0x03
+@@ -130,7 +131,7 @@ static int pcf8563_set_alarm_mode(struct i2c_client *client, bool on)
+ 	else
+ 		buf &= ~PCF8563_BIT_AIE;
+ 
+-	buf &= ~PCF8563_BIT_AF;
++	buf &= ~(PCF8563_BIT_AF | PCF8563_BITS_ST2_N);
+ 
+ 	err = pcf8563_write_block_data(client, PCF8563_REG_ST2, 1, &buf);
+ 	if (err < 0) {
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.8.4.5
+
