@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbaJ0L4V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:56:21 -0400
-Received: from unicorn.mansr.com ([81.2.72.234]:56087 "EHLO unicorn.mansr.com"
+	id S1752497AbaJ0L5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:57:43 -0400
+Received: from mga14.intel.com ([192.55.52.115]:5380 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191AbaJ0L4U convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:56:20 -0400
-X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Oct 2014 07:56:19 EDT
-From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+	id S1751520AbaJ0L5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 07:57:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,795,1406617200"; 
+   d="scan'208";a="612028079"
+From: Andi Kleen <andi@firstfloor.org>
+To: Alexei Starovoitov <alexei.starovoitov@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
         "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm\@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH v2 2/3] ARM: vfp: Fix VFPv3 hwcap detection on CPUID based cpus
-References: <1413294539-22069-1-git-send-email-sboyd@codeaurora.org>
-	<1413294539-22069-3-git-send-email-sboyd@codeaurora.org>
-	<20141027103118.GA8768@arm.com>
-Date: Mon, 27 Oct 2014 11:49:15 +0000
-In-Reply-To: <20141027103118.GA8768@arm.com> (Will Deacon's message of "Mon,
-	27 Oct 2014 10:31:18 +0000")
-Message-ID: <yw1xppddwx50.fsf@unicorn.mansr.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+        Ingo Molnar <mingo@kernel.org>, eranian@google.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Yan\, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH 2/5] perf, x86, uncore: Add Haswell-EP uncore support
+References: <1409872109-31645-1-git-send-email-andi@firstfloor.org>
+	<1409872109-31645-2-git-send-email-andi@firstfloor.org>
+	<CAADnVQKWgm9smg5vtfFwt53RiNYidgV9kiq3C0B0Xekx0cUJJg@mail.gmail.com>
+Date: Mon, 27 Oct 2014 04:57:41 -0700
+In-Reply-To: <CAADnVQKWgm9smg5vtfFwt53RiNYidgV9kiq3C0B0Xekx0cUJJg@mail.gmail.com>
+	(Alexei Starovoitov's message of "Wed, 22 Oct 2014 12:07:56 -0700")
+Message-ID: <87sii9pvwq.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will Deacon <will.deacon@arm.com> writes:
+Alexei Starovoitov <alexei.starovoitov@gmail.com> writes:
+> my E5-1630 v3 crashes hard during boot in
+> snbep_uncore_msr_init_box()+0x3c
 
-> Perhaps it would be better to consider exposing the ID registers to
-> userspace in some manner? This could be done either via an undef handler, or
-> using the vdso. We would add a (final) hwcap advertising this cpuid support.
-> For big/little systems, the kernel would need to expose a suitable subset of
-> the features (we already have the sanity checking code from Rutland).
+> I don't have a setup to capture the screen so early in the boot.
+> So this is just heads up.
 
-This was discussed a few years ago, and some people raised various
-objections.  Off the top of my head:
+Is it a general general protection fault or a page fault?
 
-- Some features (e.g. VFP/NEON) need kernel support, and if this is not
-  enabled, the actual system capabilities will not match the raw
-  register value.  Fudging the values exposed to userspace would be
-  fragile.
-  (This argument has some merit.)
+If it's a page fault please post the disassembled code:
 
-- Only v7 and newer CPUs have the CPUID registers.  Ridiculously old
-  CPUs don't even have a CP15.  Providing synthetic values might be
-  tricky.  Software thus needs to support alternate feature detection
-  methods for such hardware.
-  (This is true enough.)
+gdb vmlinux
+disassemble  snbep_uncore_msr_init_box
 
-- It would only be available on new kernels, so software would still
-  need a fallback to another method for the foreseeable future.
-  (This is a rather lazy argument.)
+> I replaced the call above with 'return -ENODEV' as a workaround.
+> btw, E5-16xx v3 became available just a month ago.
 
-- It would be specific to Linux, so software can't rely on it anyway.
-  (This is an even lazier argument.)
-
+-Andi
 -- 
-Måns Rullgård
-mans@mansr.com
+ak@linux.intel.com -- Speaking for myself only
