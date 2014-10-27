@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbaJ0T1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:27:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52418 "EHLO
+	id S1754320AbaJ0T1z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:27:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52374 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385AbaJ0S5n (ORCPT
+	with ESMTP id S1752354AbaJ0S5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:57:43 -0400
+	Mon, 27 Oct 2014 14:57:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 008/105] x86, fpu: __restore_xstate_sig()->math_state_restore() needs preempt_disable()
-Date: Mon, 27 Oct 2014 11:55:43 -0700
-Message-Id: <1414436240-13879-9-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 015/105] KVM: s390: unintended fallthrough for external call
+Date: Mon, 27 Oct 2014 11:55:50 -0700
+Message-Id: <1414436240-13879-16-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,40 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-commit df24fb859a4e200d9324e2974229fbb7adf00aef upstream.
+commit f346026e55f1efd3949a67ddd1dcea7c1b9a615e upstream.
 
-Add preempt_disable() + preempt_enable() around math_state_restore() in
-__restore_xstate_sig(). Otherwise __switch_to() after __thread_fpu_begin()
-can overwrite fpu->state we are going to restore.
+We must not fallthrough if the conditions for external call are not met.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Link: http://lkml.kernel.org/r/20140902175717.GA21649@redhat.com
-Reviewed-by: Suresh Siddha <sbsiddha@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Thomas Huth <thuth@linux.vnet.ibm.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/xsave.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/s390/kvm/interrupt.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 31f6bfd..f5869fc 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -397,8 +397,11 @@ int __restore_xstate_sig(void __user *buf, void __user *buf_fx, int size)
- 			set_used_math();
- 		}
- 
--		if (use_eager_fpu())
-+		if (use_eager_fpu()) {
-+			preempt_disable();
- 			math_state_restore();
-+			preempt_enable();
-+		}
- 
- 		return err;
- 	} else {
+diff --git a/arch/s390/kvm/interrupt.c b/arch/s390/kvm/interrupt.c
+index 5f79d2d..f1ba119 100644
+--- a/arch/s390/kvm/interrupt.c
++++ b/arch/s390/kvm/interrupt.c
+@@ -71,6 +71,7 @@ static int __interrupt_is_deliverable(struct kvm_vcpu *vcpu,
+ 			return 0;
+ 		if (vcpu->arch.sie_block->gcr[0] & 0x2000ul)
+ 			return 1;
++		return 0;
+ 	case KVM_S390_INT_EMERGENCY:
+ 		if (psw_extint_disabled(vcpu))
+ 			return 0;
 -- 
 1.9.1
 
