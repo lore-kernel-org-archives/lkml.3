@@ -1,130 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaJ0PMN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:12:13 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:4108 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752198AbaJ0PML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:12:11 -0400
-X-IronPort-AV: E=Sophos;i="5.04,796,1406592000"; 
-   d="scan'208";a="186508126"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v7 7/8] xen/arm/arm64: introduce xen_arch_need_swiotlb
-Date: Mon, 27 Oct 2014 15:09:27 +0000
-Message-ID: <1414422568-19103-7-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
+	id S1753032AbaJ0PMt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:12:49 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:39801 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866AbaJ0PMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:12:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+In-Reply-To: <1414418126.30379.47.camel@hadess.net>
+References: <1413881397.30379.7.camel@hadess.net> <5446B3CC.1080904@amacapital.net>
+ <1414418126.30379.47.camel@hadess.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 27 Oct 2014 08:12:26 -0700
+Message-ID: <CALCETrWQ5r39aqP+MFZuD__5HiNAc+cDQoghsDSEc9oVsmsyvQ@mail.gmail.com>
+Subject: Re: A desktop environment[1] kernel wishlist
+To: Bastien Nocera <hadess@hadess.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce an arch specific function to find out whether a particular dma
-mapping operation needs to bounce on the swiotlb buffer.
+On Oct 27, 2014 6:56 AM, "Bastien Nocera" <hadess@hadess.net> wrote:
+>
+> On Tue, 2014-10-21 at 12:28 -0700, Andy Lutomirski wrote:
+> > On 10/21/2014 01:49 AM, Bastien Nocera wrote:
+> > > Hey,
+> > >
+> > > GNOME has had discussions with kernel developers in the past, and,
+> > > fortunately, in some cases we were able to make headway.
+> > >
+> > > There are however a number of items that we still don't have solutions
+> > > for, items that kernel developers might not realise we'd like to rely
+> > > on, or don't know that we'd make use of if merged.
+> > >
+> > > I've posted this list at:
+> > > https://wiki.gnome.org/BastienNocera/KernelWishlist
+> > >
+> > > Let me know on-list or off-list if you have any comments about those, so
+> > > I can update the list.
+> >
+> > I don't know much about desktop environment infrastructure, but I think
+> > the kernel probably already has a lot of what's needed for LinuxApps.
+> >
+> > Tools like Sandstorm [1] (shameless plug, but it's a good example here)
+> > can already sandbox normal-ish programs, and those sandboxes can be
+> > launched without privilege [2].
+> >
+> > Why is kdbus needed?
+>
+> Because it sucks less than passing fd's and using home-made protocols on
+> top of it.
 
-On ARM and ARM64, if the page involved is a foreign page and the device
-is not coherent, we need to bounce because at unmap time we cannot
-execute any required cache maintenance operations (we don't know how to
-find the pfn from the mfn).
+For securely communicating with a container, "it sucks less" is hard
+to use as a design criterion.
 
-No change of behaviour for x86.
+What's wrong with fds, and how does kdbus solve it?
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
----
-
-Changes in v6:
-- fix ts.
-
-Changes in v5:
-- fix indentation.
----
- arch/arm/include/asm/xen/page.h |    4 ++++
- arch/arm/xen/mm.c               |    7 +++++++
- arch/x86/include/asm/xen/page.h |    7 +++++++
- drivers/xen/swiotlb-xen.c       |    5 ++++-
- 4 files changed, 22 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-index 135c24a..68c739b 100644
---- a/arch/arm/include/asm/xen/page.h
-+++ b/arch/arm/include/asm/xen/page.h
-@@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
- #define xen_unmap(cookie) iounmap((cookie))
- 
-+bool xen_arch_need_swiotlb(struct device *dev,
-+			   unsigned long pfn,
-+			   unsigned long mfn);
-+
- #endif /* _ASM_ARM_XEN_PAGE_H */
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index ff413a8..28396aa 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -139,6 +139,13 @@ void xen_dma_sync_single_for_device(struct device *hwdev,
- 	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
- }
- 
-+bool xen_arch_need_swiotlb(struct device *dev,
-+			   unsigned long pfn,
-+			   unsigned long mfn)
-+{
-+	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-+}
-+
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
- 				 unsigned int address_bits,
- 				 dma_addr_t *dma_handle)
-diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-index c949923..f58ef6c 100644
---- a/arch/x86/include/asm/xen/page.h
-+++ b/arch/x86/include/asm/xen/page.h
-@@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
- #define xen_remap(cookie, size) ioremap((cookie), (size));
- #define xen_unmap(cookie) iounmap((cookie))
- 
-+static inline bool xen_arch_need_swiotlb(struct device *dev,
-+					 unsigned long pfn,
-+					 unsigned long mfn)
-+{
-+	return false;
-+}
-+
- #endif /* _ASM_X86_XEN_PAGE_H */
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index ebd8f21..ac5d41b 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
- 	 * buffering it.
- 	 */
- 	if (dma_capable(dev, dev_addr, size) &&
--	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-+	    !range_straddles_page_boundary(phys, size) &&
-+		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
-+		!swiotlb_force) {
- 		/* we are not interested in the dma_addr returned by
- 		 * xen_dma_map_page, only in the potential cache flushes executed
- 		 * by the function. */
-@@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
- 
- 		if (swiotlb_force ||
-+		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
- 		    !dma_capable(hwdev, dev_addr, sg->length) ||
- 		    range_straddles_page_boundary(paddr, sg->length)) {
- 			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
--- 
-1.7.10.4
-
+--Andy
