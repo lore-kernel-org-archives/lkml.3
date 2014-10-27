@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093AbaJ0Niw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:38:52 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:59208 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064AbaJ0Niu convert rfc822-to-8bit (ORCPT
+	id S1753153AbaJ0NjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:39:12 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:57306 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119AbaJ0NjJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:38:50 -0400
+	Mon, 27 Oct 2014 09:39:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <1413883364-681-3-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413883364-681-4-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1413883364-681-3-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 27 Oct 2014 14:38:49 +0100
-Message-ID: <CAPDyKFqOf7JgYv23hqwf-fee5h+588qxPR7=-7ae61XLd+YYKA@mail.gmail.com>
-Subject: Re: [PATCH RESEND 02/12] mmc: sdhci-pxav3: Respect MMC_DDR52 timing
- on uhs signaling
+	<1413883364-681-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Mon, 27 Oct 2014 14:39:04 +0100
+Message-ID: <CAPDyKFo+sSgc+J5uiNyhzwF69ncLmo7aoVgUB5O1JA4MrhhPbA@mail.gmail.com>
+Subject: Re: [PATCH RESEND 03/12] mmc: sdhci-pxav3: Move private driver data
+ to driver source
 From: Ulf Hansson <ulf.hansson@linaro.org>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Chris Ball <chris@printf.net>,
@@ -32,14 +32,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 21 October 2014 11:22, Sebastian Hesselbarth
 <sebastian.hesselbarth@gmail.com> wrote:
-> commit bb8175a8aa42d731a840cd474e348ac3367eb5a0
->   ("mmc: sdhci: clarify DDR timing mode between SD-UHS and eMMC")
-> added MMC_DDR52 as eMMC's DDR mode to be distinguished from SD-UHS.
->
-> While the differentation may be useful, pxav3 SDHCI controller lacks
-> a corresponding check in its custom .set_uhs_signaling callback for
-> MMC_DDR52. This patch adds a new switch case for MMC_TIMING_MMC_DDR52
-> to MMC_TIMING_UHS_DDR50 case.
+> struct sdhci_pxa is only used in sdhci_pxa driver itself, so move it
+> there.
 >
 > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
@@ -58,21 +52,40 @@ Uffe
 > Cc: linux-arm-kernel@lists.infradead.org
 > Cc: linux-kernel@vger.kernel.org
 > ---
->  drivers/mmc/host/sdhci-pxav3.c | 1 +
->  1 file changed, 1 insertion(+)
+>  drivers/mmc/host/sdhci-pxav3.c          | 5 +++++
+>  include/linux/platform_data/pxa_sdhci.h | 5 -----
+>  2 files changed, 5 insertions(+), 5 deletions(-)
 >
 > diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-> index 5036d7d39529..b55c807982fe 100644
+> index b55c807982fe..48bc8179c8fc 100644
 > --- a/drivers/mmc/host/sdhci-pxav3.c
 > +++ b/drivers/mmc/host/sdhci-pxav3.c
-> @@ -211,6 +211,7 @@ static void pxav3_set_uhs_signaling(struct sdhci_host *host, unsigned int uhs)
->         case MMC_TIMING_UHS_SDR104:
->                 ctrl_2 |= SDHCI_CTRL_UHS_SDR104 | SDHCI_CTRL_VDD_180;
->                 break;
-> +       case MMC_TIMING_MMC_DDR52:
->         case MMC_TIMING_UHS_DDR50:
->                 ctrl_2 |= SDHCI_CTRL_UHS_DDR50 | SDHCI_CTRL_VDD_180;
->                 break;
+> @@ -58,6 +58,11 @@
+>  #define SDCE_MISC_INT          (1<<2)
+>  #define SDCE_MISC_INT_EN       (1<<1)
+>
+> +struct sdhci_pxa {
+> +       u8      clk_enable;
+> +       u8      power_mode;
+> +};
+> +
+>  /*
+>   * These registers are relative to the second register region, for the
+>   * MBus bridge.
+> diff --git a/include/linux/platform_data/pxa_sdhci.h b/include/linux/platform_data/pxa_sdhci.h
+> index 27d3156d093a..9e20c2fb4ffd 100644
+> --- a/include/linux/platform_data/pxa_sdhci.h
+> +++ b/include/linux/platform_data/pxa_sdhci.h
+> @@ -55,9 +55,4 @@ struct sdhci_pxa_platdata {
+>         unsigned int    quirks2;
+>         unsigned int    pm_caps;
+>  };
+> -
+> -struct sdhci_pxa {
+> -       u8      clk_enable;
+> -       u8      power_mode;
+> -};
+>  #endif /* _PXA_SDHCI_H_ */
 > --
 > 2.1.1
 >
