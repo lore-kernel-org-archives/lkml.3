@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194AbaJ0Njp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:39:45 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:55576 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562AbaJ0Njn convert rfc822-to-8bit (ORCPT
+	id S1753224AbaJ0NkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:40:08 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:57354 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752781AbaJ0NkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:39:43 -0400
+	Mon, 27 Oct 2014 09:40:05 -0400
+Message-ID: <544E4B25.7080503@collabora.co.uk>
+Date: Mon, 27 Oct 2014 14:39:49 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <1413883364-681-6-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1413883364-681-6-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Mon, 27 Oct 2014 14:39:42 +0100
-Message-ID: <CAPDyKFqn2=rm8ROGBuvYuBscd6oNuOGLk=Z6pmW0Q3GqfPBzVQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND 05/12] mmc: sdhci-pxav3: Remove checks for
- mandatory host clock
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Chris Ball <chris@printf.net>,
-        =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH v5 3/4] regulator: max77686: Add suspend disable for some
+ LDOs
+References: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com> <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 October 2014 11:22, Sebastian Hesselbarth
-<sebastian.hesselbarth@gmail.com> wrote:
-> NULL-checking a struct clk it not only wrong but also not required as
-> for PXAv3 driver the corresponding clock is mandatory. Remove the
-> checks from sdhci_pxav3_runtime_{suspend,resume}.
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Hello Krzysztof,
 
-Thanks! Applied for next!
-
-Kind regards
-Uffe
-
-
+On 10/27/2014 01:11 PM, Krzysztof Kozlowski wrote:
+> Some LDOs of Maxim 77686 PMIC support disabling during system suspend
+> (LDO{2,6,7,8,10,11,12,14,15,16}). This was already implemented as part
+> of set_suspend_mode function. In that case the mode was one of:
+>  - disable,
+>  - normal mode,
+>  - low power mode.
+> However there are no bindings for setting the mode during suspend.
+> 
+> Add suspend disable for LDO regulators supporting this. Re-use existing
+> max77686_buck_set_suspend_disable() function. This helps reducing
+> energy consumption during system sleep.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > ---
-> Cc: Chris Ball <chris@printf.net>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
-> Cc: linux-mmc@vger.kernel.org
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/mmc/host/sdhci-pxav3.c | 20 ++++++++------------
->  1 file changed, 8 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-> index d1f63d32b2cd..e52bbbb09d88 100644
-> --- a/drivers/mmc/host/sdhci-pxav3.c
-> +++ b/drivers/mmc/host/sdhci-pxav3.c
-> @@ -448,13 +448,11 @@ static int sdhci_pxav3_runtime_suspend(struct device *dev)
->         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
->         unsigned long flags;
->
-> -       if (pltfm_host->clk) {
-> -               spin_lock_irqsave(&host->lock, flags);
-> -               host->runtime_suspended = true;
-> -               spin_unlock_irqrestore(&host->lock, flags);
-> +       spin_lock_irqsave(&host->lock, flags);
-> +       host->runtime_suspended = true;
-> +       spin_unlock_irqrestore(&host->lock, flags);
->
-> -               clk_disable_unprepare(pltfm_host->clk);
-> -       }
-> +       clk_disable_unprepare(pltfm_host->clk);
->
->         return 0;
->  }
-> @@ -465,13 +463,11 @@ static int sdhci_pxav3_runtime_resume(struct device *dev)
->         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
->         unsigned long flags;
->
-> -       if (pltfm_host->clk) {
-> -               clk_prepare_enable(pltfm_host->clk);
-> +       clk_prepare_enable(pltfm_host->clk);
->
-> -               spin_lock_irqsave(&host->lock, flags);
-> -               host->runtime_suspended = false;
-> -               spin_unlock_irqrestore(&host->lock, flags);
-> -       }
-> +       spin_lock_irqsave(&host->lock, flags);
-> +       host->runtime_suspended = false;
-> +       spin_unlock_irqrestore(&host->lock, flags);
->
->         return 0;
->  }
-> --
-> 2.1.1
->
+>  drivers/regulator/max77686.c | 15 +++++++++++----
+>  1 file changed, 11 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+> index 2ebc4257425b..c6bf6f79bd2a 100644
+> --- a/drivers/regulator/max77686.c
+> +++ b/drivers/regulator/max77686.c
+
+Looks good to me.
+
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+
+Best regards,
+Javier
+
