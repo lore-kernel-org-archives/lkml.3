@@ -1,126 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaJ0RPH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:15:07 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:38470 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaJ0RPC convert rfc822-to-8bit (ORCPT
+	id S1751832AbaJ0RQF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:16:05 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:40266 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaJ0RQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:15:02 -0400
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, stable@vger.kernel.org
-Subject: Re: [PATCH v4 2/4] mm/page_alloc: add freepage on isolate pageblock to correct buddy list
-In-Reply-To: <1414051821-12769-3-git-send-email-iamjoonsoo.kim@lge.com>
-Organization: http://mina86.com/
-References: <1414051821-12769-1-git-send-email-iamjoonsoo.kim@lge.com> <1414051821-12769-3-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:141027:t.stanislaws@samsung.com::FgW1m/YuWX+SE0ni:00000000000000000000000000000000000000Bm0
-X-Hashcash: 1:20:141027:vbabka@suse.cz::wT7gUD+rt1NfXp3N:00007qj
-X-Hashcash: 1:20:141027:minchan@kernel.org::QW9H37YQlb3SFJAj:00000000000000000000000000000000000000000000Jff
-X-Hashcash: 1:20:141027:stable@vger.kernel.org::rzcdy4BsAdXWidcz:0000000000000000000000000000000000000000Ir4
-X-Hashcash: 1:20:141027:tangchen@cn.fujitsu.com::UuaMBZD01a0amUHW:000000000000000000000000000000000000000TZV
-X-Hashcash: 1:20:141027:peterz@infradead.org::ze7+GYS/hn354HqN:000000000000000000000000000000000000000000MFd
-X-Hashcash: 1:20:141027:riel@redhat.com::fhc1vX7h1gaL1E2+:000luu
-X-Hashcash: 1:20:141027:ritesh.list@gmail.com::NSSvfcPr4DJ1dVfT:00000000000000000000000000000000000000000pGU
-X-Hashcash: 1:20:141027:heesub.shin@samsung.com::cv4PG9ivO+YDFxRX:000000000000000000000000000000000000000/au
-X-Hashcash: 1:20:141027:lauraa@codeaurora.org::AXKZF5KQcdLuedO2:00000000000000000000000000000000000000000xhM
-X-Hashcash: 1:20:141027:akpm@linux-foundation.org::m4p1JkOPNy1/En20:0000000000000000000000000000000000001EOS
-X-Hashcash: 1:20:141027:isimatu.yasuaki@jp.fujitsu.com::PcmIM8NO+qEPE1CS:00000000000000000000000000000001lk1
-X-Hashcash: 1:20:141027:kirill.shutemov@linux.intel.com::D53K2VLEU30MvPTR:0000000000000000000000000000001uRs
-X-Hashcash: 1:20:141027:zhangyanfei@cn.fujitsu.com::lqffmmVMjVqvIQVJ:000000000000000000000000000000000002MCF
-X-Hashcash: 1:20:141027:mgorman@suse.de::bKB0S/NnBwO+TNtX:002igL
-X-Hashcash: 1:20:141027:gioh.kim@lge.com::EsM7XowIi7/QsbCJ:02rlN
-X-Hashcash: 1:20:141027:b.zolnierkie@samsung.com::q1PQCfms7xtl/p6u:00000000000000000000000000000000000002bRx
-X-Hashcash: 1:20:141027:hannes@cmpxchg.org::E2JEImOIKM8YlmVw:00000000000000000000000000000000000000000003E16
-X-Hashcash: 1:20:141027:m.szyprowski@samsung.com::FOAK4u37PIfwN2iv:00000000000000000000000000000000000003T4B
-X-Hashcash: 1:20:141027:aneesh.kumar@linux.vnet.ibm.com::TCIVHGDDwkj/egi7:0000000000000000000000000000003Zx6
-X-Hashcash: 1:20:141027:iamjoonsoo.kim@lge.com::WkzaE1KRt5i+iaRa:0000000000000000000000000000000000000004nGk
-X-Hashcash: 1:20:141027:linux-mm@kvack.org::oyzi2gsdIaQUJ3kQ:00000000000000000000000000000000000000000005LMN
-X-Hashcash: 1:20:141027:iamjoonsoo.kim@lge.com::uUl+5dR3PMN+PEWt:0000000000000000000000000000000000000005Lx3
-X-Hashcash: 1:20:141027:linux-kernel@vger.kernel.org::bFzFKyvOq/oUdGGv:0000000000000000000000000000000005fJ3
-X-Hashcash: 1:20:141027:n-horiguchi@ah.jp.nec.com::MYJsUwJkXAmVQ7iZ:0000000000000000000000000000000000007dGI
-X-Hashcash: 1:20:141027:wency@cn.fujitsu.com::HCD/jdv9d1W4vYDz:000000000000000000000000000000000000000009UWg
-Date: Mon, 27 Oct 2014 18:14:55 +0100
-Message-ID: <xa1tlho1o2nk.fsf@mina86.com>
+	Mon, 27 Oct 2014 13:16:03 -0400
+Message-ID: <544E7DC9.5020903@hp.com>
+Date: Mon, 27 Oct 2014 13:15:53 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>
+Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization support
+References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com> <1413483040-58399-10-git-send-email-Waiman.Long@hp.com> <20141024084738.GU21513@worktop.programming.kicks-ass.net> <544ABC47.2000700@hp.com> <20141024220423.GB10501@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141024220423.GB10501@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23 2014, Joonsoo Kim wrote:
-> In free_pcppages_bulk(), we use cached migratetype of freepage
-> to determine type of buddy list where freepage will be added.
-> This information is stored when freepage is added to pcp list, so
-> if isolation of pageblock of this freepage begins after storing,
-> this cached information could be stale. In other words, it has
-> original migratetype rather than MIGRATE_ISOLATE.
+On 10/24/2014 06:04 PM, Peter Zijlstra wrote:
+> On Fri, Oct 24, 2014 at 04:53:27PM -0400, Waiman Long wrote:
+>> The additional register pressure may just cause a few more register moves
+>> which should be negligible in the overall performance . The additional
+>> icache pressure, however, may have some impact on performance. I was trying
+>> to balance the performance of the pv and non-pv versions so that we won't
+>> penalize the pv code too much for a bit more performance in the non-pv code.
+>> Doing it your way will add a lot of function call and register
+>> saving/restoring to the pv code.
+> If people care about performance they should not be using virt crap :-)
 >
-> There are two problems caused by this stale information. One is that
-> we can't keep these freepages from being allocated. Although this
-> pageblock is isolated, freepage will be added to normal buddy list
-> so that it could be allocated without any restriction. And the other
-> problem is incorrect freepage accounting. Freepages on isolate pageblock
-> should not be counted for number of freepage.
->
-> Following is the code snippet in free_pcppages_bulk().
->
-> /* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
-> __free_one_page(page, page_to_pfn(page), zone, 0, mt);
-> trace_mm_page_pcpu_drain(page, 0, mt);
-> if (likely(!is_migrate_isolate_page(page))) {
-> 	__mod_zone_page_state(zone, NR_FREE_PAGES, 1);
-> 	if (is_migrate_cma(mt))
-> 		__mod_zone_page_state(zone, NR_FREE_CMA_PAGES, 1);
-> }
->
-> As you can see above snippet, current code already handle second problem,
-> incorrect freepage accounting, by re-fetching pageblock migratetype
-> through is_migrate_isolate_page(page). But, because this re-fetched
-> information isn't used for __free_one_page(), first problem would not be
-> solved. This patch try to solve this situation to re-fetch pageblock
-> migratetype before __free_one_page() and to use it for __free_one_page().
->
-> In addition to move up position of this re-fetch, this patch use
-> optimization technique, re-fetching migratetype only if there is
-> isolate pageblock. Pageblock isolation is rare event, so we can
-> avoid re-fetching in common case with this optimization.
->
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> I only really care about bare metal.
 
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Yes, I am aware of that. However, the whole point of doing PV spinlock 
+is to improve performance in a virtual guest.
 
-> ---
->  mm/page_alloc.c |   13 ++++++++-----
->  1 file changed, 8 insertions(+), 5 deletions(-)
+Anyway, I had done some measurements. In my test system, the 
+queue_spin_lock_slowpath() function has a text size of about 400 bytes 
+without PV, but 1120 bytes with PV. I made some changes to create 
+separate versions of PV and non-PV slowpath functions as shown by the 
+diff below. The text size is now about 430 bytes for the non-PV version 
+and 925 bytes for the PV version. The overall object size increases by a 
+bit more than 200 bytes, but the icache footprint should be reduced no 
+matter which version is used.
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+-Longman
+
+----------------------------------------
+
+diff --git a/arch/x86/include/asm/pvqspinlock.h 
+b/arch/x86/include/asm/pvqspinlo
+index d424252..241bf30 100644
+--- a/arch/x86/include/asm/pvqspinlock.h
++++ b/arch/x86/include/asm/pvqspinlock.h
+@@ -79,9 +79,6 @@ static inline void pv_init_node(struct mcs_spinlock *node)
+
+         BUILD_BUG_ON(sizeof(struct pv_qnode) > 5*sizeof(struct 
+mcs_spinlock));
+
+-       if (!pv_enabled())
+-               return;
+-
+         pn->cpustate = PV_CPU_ACTIVE;
+         pn->mayhalt  = false;
+         pn->mycpu    = smp_processor_id();
+@@ -132,9 +129,6 @@ static inline bool pv_link_and_wait_node(u32 old, 
+struct mcs
+         struct pv_qnode *ppn, *pn = (struct pv_qnode *)node;
+         unsigned int count;
+
+-       if (!pv_enabled())
+-               return false;
+-
+         if (!(old & _Q_TAIL_MASK)) {
+                 node->locked = true;    /* At queue head now */
+                 goto ret;
+@@ -236,9 +230,6 @@ pv_wait_head(struct qspinlock *lock, struct 
+mcs_spinlock *no
+  {
+         struct pv_qnode *pn = (struct pv_qnode *)node;
+
+-       if (!pv_enabled())
+-               return smp_load_acquire(&lock->val.counter);
+-
+         for (;;) {
+                 unsigned int count;
+                 s8 oldstate;
+@@ -328,8 +319,6 @@ static inline void pv_wait_check(struct qspinlock *lock,
+         struct pv_qnode *pnxt = (struct pv_qnode *)next;
+         struct pv_qnode *pcur = (struct pv_qnode *)node;
+
+-       if (!pv_enabled())
+-               return;
+         /*
+          * Clear the locked and head values of lock holder
+          */
+diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
+index 1662dbd..05aea57 100644
+--- a/kernel/locking/qspinlock.c
++++ b/kernel/locking/qspinlock.c
+@@ -16,6 +16,7 @@
+   * Authors: Waiman Long <waiman.long@hp.com>
+   *          Peter Zijlstra <pzijlstr@redhat.com>
+   */
++#ifndef _GEN_PV_LOCK_SLOWPATH
+  #include <linux/smp.h>
+  #include <linux/bug.h>
+  #include <linux/cpumask.h>
+@@ -271,19 +272,37 @@ void queue_spin_unlock_slowpath(struct qspinlock 
+*lock)
+  }
+  EXPORT_SYMBOL(queue_spin_unlock_slowpath);
+
+-#else
++static void pv_queue_spin_lock_slowpath(struct qspinlock *lock, u32 val);
++
++#else  /* CONFIG_PARAVIRT_SPINLOCKS */
++
++static inline void pv_queue_spin_lock_slowpath(struct qspinlock *lock, 
+u32 val)
++       { }
+
+-static inline void pv_init_node(struct mcs_spinlock *node)     { }
+-static inline void pv_wait_check(struct qspinlock *lock,
+-                                struct mcs_spinlock *node,
+-                                struct mcs_spinlock *next)     { }
+-static inline bool pv_link_and_wait_node(u32 old, struct mcs_spinlock 
+*node)
++#endif /* CONFIG_PARAVIRT_SPINLOCKS */
++
++/*
++ * Dummy PV functions for bare-metal slowpath code
++ */
++static inline void nopv_init_node(struct mcs_spinlock *node)   { }
++static inline void nopv_wait_check(struct qspinlock *lock,
++                                  struct mcs_spinlock *node,
++                                  struct mcs_spinlock *next)   { }
++static inline bool nopv_link_and_wait_node(u32 old, struct mcs_spinlock 
+*node)
+                    { return false; }
+-static inline int  pv_wait_head(struct qspinlock *lock,
++static inline int  nopv_wait_head(struct qspinlock *lock,
+                                 struct mcs_spinlock *node)
+                    { return smp_load_acquire(&lock->val.counter); }
++static inline bool return_true(void)   { return true;  }
++static inline bool return_false(void)  { return false; }
+
+-#endif /* CONFIG_PARAVIRT_SPINLOCKS */
++#define pv_init_node           nopv_init_node
++#define pv_wait_check          nopv_wait_check
++#define pv_link_and_wait_node  nopv_link_and_wait_node
++#define pv_wait_head           nopv_wait_head
++#define in_pv_code             return_false
++
++#endif /* _GEN_PV_LOCK_SLOWPATH */
+
+  /**
+   * queue_spin_lock_slowpath - acquire the queue spinlock
+@@ -306,7 +325,11 @@ static inline int  pv_wait_head(struct qspinlock *lock,
+   * contended             :    (*,x,y) +--> (*,0,0) ---> (*,0,1) -'  :
+   *   queue               :         ^--'                             :
+   */
++#ifdef _GEN_PV_LOCK_SLOWPATH
++static void pv_queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
++#else
+  void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
++#endif
+  {
+         struct mcs_spinlock *prev, *next, *node;
+         u32 new, old, tail;
+@@ -314,7 +337,12 @@ void queue_spin_lock_slowpath(struct qspinlock 
+*lock, u32 v
+
+         BUILD_BUG_ON(CONFIG_NR_CPUS >= (1U << _Q_TAIL_CPU_BITS));
+
+-       if (pv_enabled())
++       if (pv_enabled()) {
++               pv_queue_spin_lock_slowpath(lock, val);
++               return;
++       }
++
++       if (in_pv_code())
+                 goto queue;
+
+         if (virt_queue_spin_lock(lock))
+@@ -474,3 +502,23 @@ release:
+         this_cpu_dec(mcs_nodes[0].count);
+  }
+  EXPORT_SYMBOL(queue_spin_lock_slowpath);
++
++#if !defined(_GEN_PV_LOCK_SLOWPATH) && defined(CONFIG_PARAVIRT_SPINLOCKS)
++/*
++ * Generate the PV version of the queue_spin_lock_slowpath function
++ */
++#undef pv_init_node
++#undef pv_wait_check
++#undef pv_link_and_wait_node
++#undef pv_wait_head
++#undef EXPORT_SYMBOL
++#undef in_pv_code
++
++#define _GEN_PV_LOCK_SLOWPATH
++#define EXPORT_SYMBOL(x)
++#define in_pv_code     return_true
++#define pv_enabled     return_false
++
++#include "qspinlock.c"
++
++#endif
+
