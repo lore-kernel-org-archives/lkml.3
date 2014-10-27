@@ -1,214 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963AbaJ0QEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:04:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59390 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998AbaJ0QE1 (ORCPT
+	id S1751554AbaJ0QFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:05:05 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25990 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190AbaJ0QEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 12:04:27 -0400
-Date: Mon, 27 Oct 2014 11:03:24 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Romain Perier <romain.perier@gmail.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: Re: [PATCH v3 00/47] kernel: Add support for power-off handler call
- chain
-Message-ID: <20141027160324.GD10814@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3Pql8miugIZX0722"
-Content-Disposition: inline
-In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 27 Oct 2014 12:04:11 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+To: david.vrabel@citrix.com, konrad.wilk@oracle.com,
+        stefano.stabellini@eu.citrix.com
+Cc: jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org, boris.ostrovsky@oracle.com
+Subject: [PATCH v2 2/2] xen/pci: Use APIC directly when APIC virtualization is supported by hardware
+Date: Mon, 27 Oct 2014 12:05:53 -0400
+Message-Id: <1414425953-13987-3-git-send-email-boris.ostrovsky@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
+References: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3Pql8miugIZX0722
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+When hardware supports APIC/x2APIC virtualization we don't need to use pirqs
+for MSI handling and instead use APIC since most APIC accesses (MMIO or MSR)
+will now be processed without VMEXITs.
 
-Adding Johan, who's working on RTC power off for AM335x devices
+As an example, netperf on the original code produces this profile
+(collected wih 'xentrace -e 0x0008ffff -T 5'):
 
-On Mon, Oct 27, 2014 at 08:55:07AM -0700, Guenter Roeck wrote:
-> Various drivers implement architecture and/or device specific means to
-> remove power from the system.  For the most part, those drivers set the
-> global variable pm_power_off to point to a function within the driver.
->=20
-> This mechanism has a number of drawbacks.  Typically only one means
-> to remove power is supported (at least if pm_power_off is used).
-> At least in theory there can be multiple means to remove power, some of
-> which may be less desirable.  For example, one mechanism might power off =
-the
-> entire system through an I/O port or gpio pin, while another might power =
-off
-> a board by disabling its power controller. Other mechanisms may really ju=
-st
-> execute a restart sequence or drop into the ROM monitor, or put the CPU i=
-nto
-> sleep mode.  Using pm_power_off can also be racy if the function pointer =
-is
-> set from a driver built as module, as the driver may be in the process of
-> being unloaded when pm_power_off is called.  If there are multiple power-=
-off
-> handlers in the system, removing a module with such a handler may
-> inadvertently reset the pointer to pm_power_off to NULL, leaving the syst=
-em
-> with no means to remove power.
->=20
-> Introduce a system power-off handler call chain to solve the described
-> problems.  This call chain is expected to be executed from the architectu=
-re
-> specific machine_power_off() function.  Drivers providing system power-off
-> functionality are expected to register with this call chain.  By using the
-> priority field in the notifier block, callers can control power-off handl=
-er
-> execution sequence and thus ensure that the power-off handler with the
-> optimal capabilities to remove power for a given system is called first.
-> A call chain instead of a single call to the highest priority handler is
-> used to provide fallback: If multiple power-off handlers are installed,
-> all handlers will be called until one actually succeeds to power off the
-> system.
->=20
-> Patch 01/47 implements the power-off handler API.
->=20
-> Patches 02/47 to 04/47 are cleanup patches to prepare for the move of
-> pm_power_off to a common location.
->=20
-> Patches 05/47 to 07/47 remove references to pm_power_off from devicetree
-> bindings descriptions.
->=20
-> Patch 08/47 moves the pm_power_off variable from architecture code to
-> kernel/reboot.c.=20
->=20
-> Patches 09/47 to 34/47 convert various drivers to register with the kernel
-> power-off handler instead of setting pm_power_off directly.
->=20
-> Patches 35/47 to 46/47 do the same for architecture code.
->=20
-> Patch 47/47 finally removes pm_power_off.
->=20
-> For the most part, the individual patches include explanations why specif=
-ic
-> priorities were chosen, at least if the selected priority is not the defa=
-ult
-> priority. Subsystem and architecture maintainers are encouraged to have a=
- look
-> at the selected priorities and suggest improvements.
->=20
-> I ran the final code through my normal build and qemu tests. Results are
-> available at http://server.roeck-us.net:8010/builders in the 'poweroff-ha=
-ndler'
-> column. I also built all available configurations for arm, mips, powerpc,
-> m68k, and sh architectures.
->=20
-> The series is available in branch poweroff-handler of my repository at
-> git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git.
-> It is based on 3.18-rc2.
->=20
-> A note on Cc: In the initial submission I had way too many Cc:, causing t=
-he
-> patchset to be treated as spam by many mailers and mailing list handlers,
-> which of course defeated the purpose. This time around I am cutting down
-> the distribution list down significantly. My apologies to anyone I may ha=
-ve
-> failed to copy this time around.
->=20
-> Important changes since v2:
-> - Rebased series to v3.18-rc2.
-> - Do not hold any locks while executing the power-off call chain.
->   This ensures that power-off handlers are executed in the state
->   selected by the machine_power_off function for a given architecture,
->   ie without changing the current semantics of power-off callbacks and
->   machine_power_off functions.
->   Power-off handler registration and de-registration is handled in atomic
->   context with interrupts disabled to ensure that those functions are not
->   interrupted by code which powers off the system.
-> - Use [xxx_]power_off[_xxx] instead of [xxx_]poweroff[_xxx] for newly
->   introduced function and variable names.
-> - Use power-off instead of poweroff in descriptive text and comments.
-> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-> - Use ACPI: instead of acpi: for messages in acpi code.
->=20
-> Important changes since v1:
-> - Rebased series to v3.18-rc1.
-> - Use raw notifier with spinlock protection instead of atomic notifiers,
->   since some power-off handlers need to have interrupts enabled.
-> - Renamed API functions from _poweroff to _power_off.
-> - Added various Acks.
-> - Build tested all configurations for arm, powerpc, and mips architecture=
-s.
-> - Fixed two compile errors in mips patch.
-> - Replaced dev_err and pr_err with dev_warn and pr_warn if an error is not
->   fatal.
-> - Provide managed resources API and use where appropriate.
-> - Provide and use definitions for standard priorities.
-> - Added patches to convert newly introduced power-off handlers.
-> - Various minor changes.
->=20
-> Important changes since RFC:
-> - Move API to new file kernel/power/power_off_handler.c.
-> - Move pm_power_off pointer to kernel/power/power_off_handler.c. Call
->   pm_power_off from do_kernel_power_off, and only call do_kernel_power_off
->   from architecture code instead of calling both pm_power_off and
->   do_kernel_power_off.
-> - Provide additional API function register_power_off_handler_simple
->   to simplify conversion of architecture code.
-> - Provide additional API function have_kernel_power_off to check if
->   a power-off handler was installed.
-> - Convert all drivers and architecture code to use the new API.
-> - Remove pm_power_off as last patch of the series.
->=20
-> Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
-> Cc: Alexander Graf <agraf@suse.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> cc: Heiko Stuebner <heiko@sntech.de>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> Cc: Romain Perier <romain.perier@gmail.com>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+    342 cpu_change
+    260 CPUID
+  34638 HLT
+  64067 INJ_VIRQ
+  28374 INTR
+  82733 INTR_WINDOW
+     10 NPF
+  24337 TRAP
+ 370610 vlapic_accept_pic_intr
+ 307528 VMENTRY
+ 307527 VMEXIT
+ 140998 VMMCALL
+    127 wrap_buffer
 
---=20
-balbi
+After applying this patch the same test shows
 
---3Pql8miugIZX0722
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+    230 cpu_change
+    260 CPUID
+  36542 HLT
+    174 INJ_VIRQ
+  27250 INTR
+    222 INTR_WINDOW
+     20 NPF
+  24999 TRAP
+ 381812 vlapic_accept_pic_intr
+ 166480 VMENTRY
+ 166479 VMEXIT
+  77208 VMMCALL
+     81 wrap_buffer
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+ApacheBench results (ab -n 10000 -c 200) improve by about 10%
 
-iQIcBAEBAgAGBQJUTmzMAAoJEIaOsuA1yqRExOcP/23YMnGVJWKRZhcYX22hGVJz
-EAf56161IaAZbulj/SPxRAj0rBLo4fskag9e+XxxI744g6F8FkIduIu6I+PeSm1+
-9eHgnt3HE5DUL/u77QrgHxix2DhxGN9cu5QiMGz8VQ/PXcheVhFkQftZQgDQ9625
-FUTJiI0BoFIBnJFGM9mjM3Ff19dhbJ9+wcoy26MvInXBH9HBNaFDvLFJM+wzXFoV
-wkSmNQ/feMvcbpVlf6VmzzG1IfQP/0tEoYRZRcr+Ml412X80X1Pm951Xl4HoOI1T
-Mjk1DBdqOF67loFeoT/oOOlqY1yozyp/0yCT7LdZIqWUkHAoxqU1k2SNQ2Rd4QQC
-LT6TsgLwbCb/2UlpqhhIBHQharAI0CFwElxhdy2VCV3+4KQYHnZmOeVc70JWIHM4
-8WxA7NuXMNaPytR3SzoxZSg2d+FGLtsy8slQXGDX6A3Y6ehLLCPY2xYZ+sU5c8cb
-se7SS8fYkp2wcx77TgMAu1n96aqFqiCviXxtEEDdLG1d0hZgtb1gzXV+3fejn+qC
-tf1UKTXNLI9u/ribMKoNeEG5PGpuKh6FEte85DH7CaA+tUSy+sg7grLYMVBmQTtW
-QkJzp09wczObD9fW4DvSxLnlztsTUGZRjyz/s/E/Sf5swWedj/gaO73pBy+1dYxu
-8pvXU4UHPh/u+mJYKw6J
-=Y8HG
------END PGP SIGNATURE-----
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+---
+ arch/x86/include/asm/xen/cpuid.h |   91 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/pci/xen.c               |    9 ++++
+ 2 files changed, 100 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/xen/cpuid.h
 
---3Pql8miugIZX0722--
+diff --git a/arch/x86/include/asm/xen/cpuid.h b/arch/x86/include/asm/xen/cpuid.h
+new file mode 100644
+index 0000000..0d809e9
+--- /dev/null
++++ b/arch/x86/include/asm/xen/cpuid.h
+@@ -0,0 +1,91 @@
++/******************************************************************************
++ * arch-x86/cpuid.h
++ *
++ * CPUID interface to Xen.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to
++ * deal in the Software without restriction, including without limitation the
++ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
++ * sell copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++ * DEALINGS IN THE SOFTWARE.
++ *
++ * Copyright (c) 2007 Citrix Systems, Inc.
++ *
++ * Authors:
++ *    Keir Fraser <keir@xen.org>
++ */
++
++#ifndef __XEN_PUBLIC_ARCH_X86_CPUID_H__
++#define __XEN_PUBLIC_ARCH_X86_CPUID_H__
++
++/*
++ * For compatibility with other hypervisor interfaces, the Xen cpuid leaves
++ * can be found at the first otherwise unused 0x100 aligned boundary starting
++ * from 0x40000000.
++ *
++ * e.g If viridian extensions are enabled for an HVM domain, the Xen cpuid
++ * leaves will start at 0x40000100
++ */
++
++#define XEN_CPUID_FIRST_LEAF 0x40000000
++#define XEN_CPUID_LEAF(i)    (XEN_CPUID_FIRST_LEAF + (i))
++
++/*
++ * Leaf 1 (0x40000x00)
++ * EAX: Largest Xen-information leaf. All leaves up to an including @EAX
++ *      are supported by the Xen host.
++ * EBX-EDX: "XenVMMXenVMM" signature, allowing positive identification
++ *      of a Xen host.
++ */
++#define XEN_CPUID_SIGNATURE_EBX 0x566e6558 /* "XenV" */
++#define XEN_CPUID_SIGNATURE_ECX 0x65584d4d /* "MMXe" */
++#define XEN_CPUID_SIGNATURE_EDX 0x4d4d566e /* "nVMM" */
++
++/*
++ * Leaf 2 (0x40000x01)
++ * EAX[31:16]: Xen major version.
++ * EAX[15: 0]: Xen minor version.
++ * EBX-EDX: Reserved (currently all zeroes).
++ */
++
++/*
++ * Leaf 3 (0x40000x02)
++ * EAX: Number of hypercall transfer pages. This register is always guaranteed
++ *      to specify one hypercall page.
++ * EBX: Base address of Xen-specific MSRs.
++ * ECX: Features 1. Unused bits are set to zero.
++ * EDX: Features 2. Unused bits are set to zero.
++ */
++
++/* Does the host support MMU_PT_UPDATE_PRESERVE_AD for this guest? */
++#define _XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD 0
++#define XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD  (1u<<0)
++
++/*
++ * Leaf 5 (0x40000x04)
++ * HVM-specific features
++ */
++
++/* EAX Features */
++/* Virtualized APIC registers */
++#define XEN_HVM_CPUID_APIC_ACCESS_VIRT (1u << 0)
++/* Virtualized x2APIC accesses */
++#define XEN_HVM_CPUID_X2APIC_VIRT      (1u << 1)
++/* Memory mapped from other domains has valid IOMMU entries */
++#define XEN_HVM_CPUID_IOMMU_MAPPINGS   (1u << 2)
++
++#define XEN_CPUID_MAX_NUM_LEAVES 4
++
++#endif /* __XEN_PUBLIC_ARCH_X86_CPUID_H__ */
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 1370716..d768371 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -23,6 +23,7 @@
+ #include <xen/features.h>
+ #include <xen/events.h>
+ #include <asm/xen/pci.h>
++#include <asm/xen/cpuid.h>
+ #include <asm/i8259.h>
+ 
+ static int xen_pcifront_enable_irq(struct pci_dev *dev)
+@@ -434,6 +435,14 @@ int __init pci_xen_init(void)
+ #ifdef CONFIG_PCI_MSI
+ void __init xen_msi_init(void)
+ {
++	if (!disable_apic) {
++		uint32_t eax = cpuid_eax(xen_cpuid_base() + 4);
++
++		if (((eax & XEN_HVM_CPUID_X2APIC_VIRT) && x2apic_mode) ||
++		    ((eax & XEN_HVM_CPUID_APIC_ACCESS_VIRT) && cpu_has_apic))
++			return;
++	}
++
+ 	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
+ 	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+ }
+-- 
+1.7.1
+
