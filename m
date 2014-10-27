@@ -1,77 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945AbaJ0ODl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:03:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54444 "EHLO mga09.intel.com"
+	id S1753152AbaJ0OFe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:05:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613AbaJ0ODj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:03:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,796,1406617200"; 
-   d="scan'208";a="596922388"
-Date: Mon, 27 Oct 2014 22:03:25 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKP <lkp@01.org>, linux-kernel@vger.kernel.org,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [rfcomm_run] WARNING: CPU: 0 PID: 95 at kernel/sched/core.c:7312
- __might_sleep()
-Message-ID: <20141027140325.GA15725@wfg-t540p.sh.intel.com>
-References: <20141027130621.GA6336@wfg-t540p.sh.intel.com>
- <20141027133627.GH3337@twins.programming.kicks-ass.net>
+	id S1752930AbaJ0OFc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 10:05:32 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@ZenIV.linux.org.uk>
+cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-unionfs@vger.kernel.org
+Subject: Locking problem in overlayfs
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027133627.GH3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <5393.1414418718.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 27 Oct 2014 14:05:18 +0000
+Message-ID: <5394.1414418718@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 02:36:27PM +0100, Peter Zijlstra wrote:
-> On Mon, Oct 27, 2014 at 09:06:21PM +0800, Fengguang Wu wrote:
-> > Hi Peter,
-> > 
-> > FYI, this bug seems still there on v3.18-rc2.
-> 
-> Oh, right, I commented out that patch and the audit one because I was
-> waiting for some feedback. Lemme go prod people.
+Using my testsuite, I see the attached moan from lockdep.  Unfortunately, it
+doesn't cause the testsuite to actually fail, so I'm going to have to manually
+try and isolate the failing test.
 
-One more warning, looks like triggered by thermal_apic_exit. Authors CCed.
+David
 
-[   29.107798] Running tests on trace events:
-[   29.108302] Testing event thermal_apic_exit: 
-[   29.143786] ------------[ cut here ]------------
-[   29.144489] WARNING: CPU: 1 PID: 101 at kernel/sched/core.c:7187 __might_sleep+0xb9/0x100()
-[   29.145781] do not call blocking ops when !TASK_RUNNING; state=1 set at [<c1e62e65>] event_test_thread+0x58/0x92
-[   29.147139] Modules linked in:
-[   29.147604] CPU: 1 PID: 101 Comm: test-events Not tainted 3.17.0-rc6-01872-ga0d2c46 #17
-[   29.148646] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_083030-gandalf 04/01/2014
-[   29.149969]  00000001 00000000 ffffffff cbc4fe5c c17ef50f cbc4fea4 00000001 00000065
-[   29.151143]  cbc4fe78 c10689d7 00001c13 c10a5f59 00000001 00000000 00000029 cbc4fe90
-[   29.152343]  c1068a1b 00000009 cbc4fe88 c1b5cc24 cbc4fea4 cbc4fec4 c10a5f59 c1b5c9b0
-[   29.153511] Call Trace:
-[   29.153859]  [<c17ef50f>] dump_stack+0x78/0xa8
-[   29.154448]  [<c10689d7>] warn_slowpath_common+0x87/0xa0
-[   29.155119]  [<c10a5f59>] ? __might_sleep+0xb9/0x100
-[   29.155706]  [<c1068a1b>] warn_slowpath_fmt+0x2b/0x30
-[   29.164357]  [<c10a5f59>] __might_sleep+0xb9/0x100
-[   29.164935]  [<c1e62e65>] ? event_test_thread+0x58/0x92
-[   29.165541]  [<c1e62e65>] ? event_test_thread+0x58/0x92
-[   29.166154]  [<c17f8d4c>] down_read+0x1c/0x50
-[   29.166660]  [<c1083a6f>] exit_signals+0x1f/0x1d0
-[   29.167215]  [<c106bc1f>] do_exit+0x1bf/0x13a0
-[   29.167748]  [<c1e62e0d>] ? event_test_stuff+0x6c/0x6c
-[   29.168434]  [<c109bea8>] ? kthread_should_stop+0x8/0x20
-[   29.169145]  [<c1e62e0d>] ? event_test_stuff+0x6c/0x6c
-[   29.169829]  [<c109c3d4>] kthread+0xe4/0x110
-[   29.170397]  [<c1e62e0d>] ? event_test_stuff+0x6c/0x6c
-[   29.171082]  [<c10d0000>] ? push_dl_task+0x50/0x5a0
-[   29.171759]  [<c17fbf21>] ret_from_kernel_thread+0x21/0x30
-[   29.172496]  [<c109c2f0>] ? insert_kthread_work+0x110/0x110
-[   29.173234] ---[ end trace 12bb28a4b269a09b ]---
-[   29.173913] test-events (101) used greatest stack depth: 6712 bytes left
+=============================================
+[ INFO: possible recursive locking detected ]
+3.18.0-rc2-fsdevel+ #910 Tainted: G        W     
+---------------------------------------------
+run/2642 is trying to acquire lock:
+ (&sb->s_type->i_mutex_key#10/1){+.+.+.}, at: [<ffffffff81203d81>] ovl_cleanup_whiteouts+0x29/0xb4
 
-Thanks,
-Fengguang
+but task is already holding lock:
+ (&sb->s_type->i_mutex_key#10/1){+.+.+.}, at: [<ffffffff8113abff>] lock_rename+0xb7/0xd7
+
+other info that might help us debug this:
+ Possible unsafe locking scenario:
+
+       CPU0
+       ----
+  lock(&sb->s_type->i_mutex_key#10/1);
+  lock(&sb->s_type->i_mutex_key#10/1);
+
+ *** DEADLOCK ***
+
+ May be due to missing lock nesting notation
+
+7 locks held by run/2642:
+ #0:  (sb_writers#15){.+.+.+}, at: [<ffffffff8114a1e2>] mnt_want_write+0x1f/0x46
+ #1:  (&sb->s_type->i_mutex_key#17/1){+.+.+.}, at: [<ffffffff8113c737>] do_rmdir+0xa9/0x165
+ #2:  (&sb->s_type->i_mutex_key#17){+.+.+.}, at: [<ffffffff8113c0ad>] vfs_rmdir+0x5a/0x115
+ #3:  (sb_writers#8){.+.+.+}, at: [<ffffffff8114a1e2>] mnt_want_write+0x1f/0x46
+ #4:  (&type->s_vfs_rename_key){+.+.+.}, at: [<ffffffff8113ab88>] lock_rename+0x40/0xd7
+ #5:  (&sb->s_type->i_mutex_key#10/1){+.+.+.}, at: [<ffffffff8113abff>] lock_rename+0xb7/0xd7
+ #6:  (&sb->s_type->i_mutex_key#10/2){+.+.+.}, at: [<ffffffff8113ac15>] lock_rename+0xcd/0xd7
+
+stack backtrace:
+CPU: 0 PID: 2642 Comm: run Tainted: G        W      3.18.0-rc2-fsdevel+ #910
+Hardware name:                  /DG965RY, BIOS MQ96510J.86A.0816.2006.0716.2308 07/16/2006
+ ffffffff823989e0 ffff880038d8fa68 ffffffff815222f2 0000000000000006
+ ffffffff823989e0 ffff880038d8fb38 ffffffff810738f4 000000000000000b
+ ffff880037ebc710 ffff880038d8fb00 ffff880037ebcf58 0000000000000005
+Call Trace:
+ [<ffffffff815222f2>] dump_stack+0x4e/0x68
+ [<ffffffff810738f4>] __lock_acquire+0x7b5/0x1a17
+ [<ffffffff8107522d>] lock_acquire+0xa3/0x11d
+ [<ffffffff81203d81>] ? ovl_cleanup_whiteouts+0x29/0xb4
+ [<ffffffff8111ff14>] ? kfree+0x17e/0x1ca
+ [<ffffffff8152580a>] mutex_lock_nested+0x5a/0x304
+ [<ffffffff81203d81>] ? ovl_cleanup_whiteouts+0x29/0xb4
+ [<ffffffff81139123>] ? vfs_rename+0x602/0x689
+ [<ffffffff81203d81>] ovl_cleanup_whiteouts+0x29/0xb4
+ [<ffffffff81202252>] ovl_clear_empty+0x195/0x216
+ [<ffffffff81202315>] ovl_check_empty_and_clear+0x42/0x5d
+ [<ffffffff81056944>] ? creds_are_invalid+0x17/0x4a
+ [<ffffffff81202a19>] ovl_do_remove+0x189/0x36a
+ [<ffffffff81202c0b>] ovl_rmdir+0x11/0x13
+ [<ffffffff8113c0f2>] vfs_rmdir+0x9f/0x115
+ [<ffffffff8113c784>] do_rmdir+0xf6/0x165
+ [<ffffffff8100d224>] ? do_audit_syscall_entry+0x4a/0x4c
+ [<ffffffff8100e43f>] ? syscall_trace_enter_phase2+0x178/0x1c1
+ [<ffffffff810e5aae>] ? context_tracking_user_exit+0x54/0xce
+ [<ffffffff8113d007>] SyS_rmdir+0x11/0x13
+ [<ffffffff81528a09>] tracesys_phase2+0xd4/0xd9
