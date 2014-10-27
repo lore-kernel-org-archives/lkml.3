@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaJ0TAs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:00:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52514 "EHLO
+	id S1752968AbaJ0TBL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:01:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52528 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868AbaJ0TAm (ORCPT
+	with ESMTP id S1751650AbaJ0TBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:00:42 -0400
+	Mon, 27 Oct 2014 15:01:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Ball <chris@printf.net>, Lee Jones <lee.jones@linaro.org>,
+Cc: Ondrej Zary <linux@rainbow-software.org>, Tejun Heo <tj@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 050/105] mfd: rtsx_pcr: Fix MSI enable error handling
-Date: Mon, 27 Oct 2014 11:56:25 -0700
-Message-Id: <1414436240-13879-51-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 060/105] libata-sff: Fix controllers with no ctl port
+Date: Mon, 27 Oct 2014 11:56:35 -0700
+Message-Id: <1414436240-13879-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,39 +27,112 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Ball <chris@printf.net>
+From: Ondrej Zary <linux@rainbow-software.org>
 
-commit 5152970538a5e16c03bbcb9f1c780489a795ed40 upstream.
+commit 6d8ca28fa688a9354bc9fbc935bdaeb3651b6677 upstream.
 
-pci_enable_msi() can return failure with both positive and negative
-integers -- it returns 0 for success -- but is only tested here for
-"if (ret < 0)".  This causes us to try to use MSI on the RTS5249 SD
-reader in the Dell XPS 11 when enabling MSI failed, causing:
+Currently, ata_sff_softreset is skipped for controllers with no ctl port.
+But that also skips ata_sff_dev_classify required for device detection.
+This means that libata is currently broken on controllers with no ctl port.
 
-[    1.737110] rtsx_pci: probe of 0000:05:00.0 failed with error -110
+No device connected:
+[    1.872480] pata_isapnp 01:01.02: activated
+[    1.889823] scsi2 : pata_isapnp
+[    1.890109] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    6.888110] ata3.01: qc timeout (cmd 0xec)
+[    6.888179] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   16.888085] ata3.01: qc timeout (cmd 0xec)
+[   16.888147] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   46.888086] ata3.01: qc timeout (cmd 0xec)
+[   46.888148] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   51.888100] ata3.00: qc timeout (cmd 0xec)
+[   51.888160] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   61.888079] ata3.00: qc timeout (cmd 0xec)
+[   61.888141] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   91.888089] ata3.00: qc timeout (cmd 0xec)
+[   91.888152] ata3.00: failed to IDENTIFY (I/O error, err_mask=0x5)
 
-Reported-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
-Tested-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
-Signed-off-by: Chris Ball <chris@printf.net>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+ATAPI device connected:
+[    1.882061] pata_isapnp 01:01.02: activated
+[    1.893430] scsi2 : pata_isapnp
+[    1.893719] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    6.892107] ata3.01: qc timeout (cmd 0xec)
+[    6.892171] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   16.892079] ata3.01: qc timeout (cmd 0xec)
+[   16.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   46.892079] ata3.01: qc timeout (cmd 0xec)
+[   46.892138] ata3.01: failed to IDENTIFY (I/O error, err_mask=0x5)
+[   46.908586] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
+[   46.924570] ata3.00: configured for PIO0 (device error ignored)
+[   46.926295] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
+[   46.984519] sr0: scsi3-mmc drive: 6x/6x xa/form2 tray
+[   46.984592] cdrom: Uniform CD-ROM driver Revision: 3.20
+
+So don't skip ata_sff_softreset, just skip the reset part of ata_bus_softreset
+if the ctl port is not available.
+
+This makes IDE port on ES968 behave correctly:
+
+No device connected:
+[    4.670888] pata_isapnp 01:01.02: activated
+[    4.673207] scsi host2: pata_isapnp
+[    4.673675] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    7.081840] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
+
+ATAPI device connected:
+[    4.704362] pata_isapnp 01:01.02: activated
+[    4.706620] scsi host2: pata_isapnp
+[    4.706877] ata3: PATA max PIO0 cmd 0x1e8 ctl 0x0 irq 11
+[    4.872782] ata3.00: ATAPI: ACER CD-767E/O, V1.5X, max PIO2, CDB intr
+[    4.888673] ata3.00: configured for PIO0 (device error ignored)
+[    4.893984] scsi 2:0:0:0: CD-ROM            ACER     CD-767E/O        1.5X PQ: 0 ANSI: 5
+[    7.015578] Adding 2541652k swap on /dev/sda2.  Priority:-1 extents:1 across:2541652k
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/rtsx_pcr.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/libata-sff.c | 20 +++++++++-----------
+ 1 file changed, 9 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 705698f..eb45a42 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -1172,7 +1172,7 @@ static int rtsx_pci_probe(struct pci_dev *pcidev,
- 	pcr->msi_en = msi_en;
- 	if (pcr->msi_en) {
- 		ret = pci_enable_msi(pcidev);
--		if (ret < 0)
-+		if (ret)
- 			pcr->msi_en = false;
- 	}
+diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
+index b603720..37acda6 100644
+--- a/drivers/ata/libata-sff.c
++++ b/drivers/ata/libata-sff.c
+@@ -2008,13 +2008,15 @@ static int ata_bus_softreset(struct ata_port *ap, unsigned int devmask,
  
+ 	DPRINTK("ata%u: bus reset via SRST\n", ap->print_id);
+ 
+-	/* software reset.  causes dev0 to be selected */
+-	iowrite8(ap->ctl, ioaddr->ctl_addr);
+-	udelay(20);	/* FIXME: flush */
+-	iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
+-	udelay(20);	/* FIXME: flush */
+-	iowrite8(ap->ctl, ioaddr->ctl_addr);
+-	ap->last_ctl = ap->ctl;
++	if (ap->ioaddr.ctl_addr) {
++		/* software reset.  causes dev0 to be selected */
++		iowrite8(ap->ctl, ioaddr->ctl_addr);
++		udelay(20);	/* FIXME: flush */
++		iowrite8(ap->ctl | ATA_SRST, ioaddr->ctl_addr);
++		udelay(20);	/* FIXME: flush */
++		iowrite8(ap->ctl, ioaddr->ctl_addr);
++		ap->last_ctl = ap->ctl;
++	}
+ 
+ 	/* wait the port to become ready */
+ 	return ata_sff_wait_after_reset(&ap->link, devmask, deadline);
+@@ -2215,10 +2217,6 @@ void ata_sff_error_handler(struct ata_port *ap)
+ 
+ 	spin_unlock_irqrestore(ap->lock, flags);
+ 
+-	/* ignore ata_sff_softreset if ctl isn't accessible */
+-	if (softreset == ata_sff_softreset && !ap->ioaddr.ctl_addr)
+-		softreset = NULL;
+-
+ 	/* ignore built-in hardresets if SCR access is not available */
+ 	if ((hardreset == sata_std_hardreset ||
+ 	     hardreset == sata_sff_hardreset) && !sata_scr_valid(&ap->link))
 -- 
 1.9.1
 
