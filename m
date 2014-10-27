@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaJ0OSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:18:11 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:36675 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313AbaJ0ORV (ORCPT
+	id S1753500AbaJ0OS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:18:29 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:38126 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752786AbaJ0OSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:17:21 -0400
-From: Jan Kardell <jan.kardell@telliq.com>
-To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Cc: Vincent Donnefort <vdonnefort@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 6/6] rtc: pcf8563 Clear expired alarm at boot time
-Date: Mon, 27 Oct 2014 15:17:01 +0100
-Message-Id: <1414419421-11098-7-git-send-email-jan.kardell@telliq.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414419421-11098-1-git-send-email-jan.kardell@telliq.com>
-References: <1414419421-11098-1-git-send-email-jan.kardell@telliq.com>
+	Mon, 27 Oct 2014 10:18:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413304752-7823-1-git-send-email-dianders@chromium.org>
+References: <1413304752-7823-1-git-send-email-dianders@chromium.org>
+Date: Mon, 27 Oct 2014 15:18:24 +0100
+Message-ID: <CAPDyKFppFkiv1=8Jxn8xs6A8+Rm1BjtkfyvyMyXNAuz8xG+oow@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: rockchip: Don't recalc the clock when it
+ goes off
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Addy Ke <addy.ke@rock-chips.com>, Sonny Rao <sonnyrao@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Chris Ball <chris@printf.net>, linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-rockchip@lists.infradead.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case the card is woken up of the rtc alarm, the devm_rtc_device_register
-function detects it as a pending alarm about a month in the future. Fix this
-by clearing the alarm in module probe.
+On 14 October 2014 18:39, Doug Anderson <dianders@chromium.org> wrote:
+> The "set_ios" function is called with a clock of 0 when the clock is
+> turning off.  There's no reason to go through all the extra Rockchip
+> logic (whose goal is to make sure DIV is 0 or 1) in that case.  The
+> Rockchip logic happened to work because the CCF will pick the lowest
+> possible rate when you ask it for a clock of 0, but it's silly to go
+> through all the remuxing and adjusting for no reason.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
----
- drivers/rtc/rtc-pcf8563.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+Thanks! Applied for next!
 
-diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
-index 1e14f60..96fb32e 100644
---- a/drivers/rtc/rtc-pcf8563.c
-+++ b/drivers/rtc/rtc-pcf8563.c
-@@ -396,6 +396,7 @@ static int pcf8563_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *tm)
- 
- static int pcf8563_irq_enable(struct device *dev, unsigned int enabled)
- {
-+	dev_dbg(dev, "%s: en=%d\n", __func__, enabled);
- 	return pcf8563_set_alarm_mode(to_i2c_client(dev), !!enabled);
- }
- 
-@@ -414,6 +415,7 @@ static int pcf8563_probe(struct i2c_client *client,
- 	struct pcf8563 *pcf8563;
- 	int err;
- 	unsigned char buf;
-+	unsigned char alm_pending;
- 
- 	dev_dbg(&client->dev, "%s\n", __func__);
- 
-@@ -439,6 +441,14 @@ static int pcf8563_probe(struct i2c_client *client,
- 		return err;
- 	}
- 
-+	err = pcf8563_get_alarm_mode(client, NULL, &alm_pending);
-+	if (err < 0) {
-+		dev_err(&client->dev, "%s: read error\n", __func__);
-+		return err;
-+	}
-+	if (alm_pending)
-+		pcf8563_set_alarm_mode(client, 0);
-+
- 	pcf8563->rtc = devm_rtc_device_register(&client->dev,
- 				pcf8563_driver.driver.name,
- 				&pcf8563_rtc_ops, THIS_MODULE);
--- 
-1.8.4.5
+Kind regards
+Uffe
 
+> ---
+>  drivers/mmc/host/dw_mmc-rockchip.c | 3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/mmc/host/dw_mmc-rockchip.c b/drivers/mmc/host/dw_mmc-rockchip.c
+> index f0c2cb1..bbb4ec3 100644
+> --- a/drivers/mmc/host/dw_mmc-rockchip.c
+> +++ b/drivers/mmc/host/dw_mmc-rockchip.c
+> @@ -37,6 +37,9 @@ static void dw_mci_rk3288_set_ios(struct dw_mci *host, struct mmc_ios *ios)
+>         unsigned int cclkin;
+>         u32 bus_hz;
+>
+> +       if (ios->clock == 0)
+> +               return;
+> +
+>         /*
+>          * cclkin: source clock of mmc controller
+>          * bus_hz: card interface clock generated by CLKGEN
+> --
+> 2.1.0.rc2.206.gedb03e5
+>
