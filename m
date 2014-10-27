@@ -1,59 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416AbaJ0OVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:21:50 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:34087 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752934AbaJ0OVs (ORCPT
+	id S1753408AbaJ0OXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:23:16 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:51487 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752927AbaJ0OXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:21:48 -0400
-X-Originating-IP: 83.155.44.161
-Message-ID: <1414419657.30379.51.camel@hadess.net>
-Subject: Re: A desktop environment[1] kernel wishlist
-From: Bastien Nocera <hadess@hadess.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Oct 2014 15:20:57 +0100
-In-Reply-To: <CAMuHMdWw+rX-r2uVN0ZL-GFirOkCn7+Gh7BVd3JvyXXS_pcdVw@mail.gmail.com>
-References: <1413881397.30379.7.camel@hadess.net>
-	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	 <1413911644.30379.12.camel@hadess.net>
-	 <CAMuHMdWw+rX-r2uVN0ZL-GFirOkCn7+Gh7BVd3JvyXXS_pcdVw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
-Mime-Version: 1.0
+	Mon, 27 Oct 2014 10:23:14 -0400
+Date: Mon, 27 Oct 2014 15:22:51 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-pm@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: cpufreq-dt: Restore default
+ cpumask_setall(policy->cpus)
+Message-ID: <20141027152251.0249368b@free-electrons.com>
+In-Reply-To: <1414417480-10274-1-git-send-email-geert+renesas@glider.be>
+References: <1414417480-10274-1-git-send-email-geert+renesas@glider.be>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-21 at 20:24 +0200, Geert Uytterhoeven wrote:
-> On Tue, Oct 21, 2014 at 7:14 PM, Bastien Nocera <hadess@hadess.net> wrote:
-> >> As for: 'Export of "wake reason" when the system wakes up (rtc alarm,
-> >> lid open, etc.) and wakealarm (/sys/class/rtc/foo/wakealarm)
-> >> documentation'
-> >>
-> >> Can you expand more on the rational for the need here? Is this for UI
-> >> for power debugging, or something else?
-> >
-> > No, it would be used for automating backups, or implementing
-> > suspend->hibernation transitions. For example, right before the machine
-> > suspends, I would schedule it to wake up in a hour. If I get woken up by
-> > the rtc alarm (and not by the user through a lid open), I might:
-> > - check that I'm plugged into the AC, it's night, and in the vicinity of
-> > the server that handles my backups and so backup the system.
-> > - check whether the battery is low, and hibernate the machine (if it
-> > supports it, obviously).
+Dear Geert Uytterhoeven,
+
+On Mon, 27 Oct 2014 14:44:40 +0100, Geert Uytterhoeven wrote:
+> Commit 34e5a5273d6aa0ee ("cpufreq: cpufreq-dt: extend with
+> platform_data") changed cpufreq_init() to only call
+> cpumask_setall(policy->cpus) if the platform data indicates that all
+> CPUs share the same clock. Before, cpufreq_generic_init() did this
+> unconditionally.
 > 
-> Isn't this already available through /sys/kernel/debug/wakeup_sources
-> and/or the various power/wake* files in sysfs?
+> This causes a crash on r8a7791/koelsch when resuming from s2ram:
+> 
+>     Enabling non-boot CPUs ...
+>     CPU1: Booted secondary processor
+>     Unable to handle kernel NULL pointer dereference at virtual address 0000003c
+>     pgd = ee71f980
+>     [0000003c] *pgd=6eeb6003, *pmd=6e0e9003, *pte=00000000
+>     Internal error: Oops: a07 [#1] SMP ARM
+>     Modules linked in:
+>     CPU: 0 PID: 1397 Comm: s2ram Tainted: G        W      3.18.0-rc2-koelsch-00762-g7eed2a4e61d2d978 #581
+>     task: ee6b76c0 ti: ee7f0000 task.ti: ee7f0000
+>     PC is at __cpufreq_add_dev.isra.24+0x24c/0x77c
+>     LR is at __cpufreq_add_dev.isra.24+0x244/0x77c
+>     pc : [<c029e084>]    lr : [<c029e07c>]    psr: 60000153
+>     sp : ee7f1d48  ip : ee7f1d48  fp : ee7f1d84
+>     r10: c04e8448  r9 : 00000000  r8 : 00000001
+>     r7 : c054a8c4  r6 : 00000001  r5 : 00000001  r4 : 00000000
+>     r3 : 00000000  r2 : 00000000  r1 : 20000153  r0 : c054a950
+>     Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment user
+>     Control: 30c5307d  Table: 6e71f980  DAC: fffffffd
+>     Process s2ram (pid: 1397, stack limit = 0xee7f0240)
+> 
+>     ...
+> 
+>     Backtrace:
+>     [<c029de38>] (__cpufreq_add_dev.isra.24) from [<c029e620>] (cpufreq_cpu_callback+0x6c/0x74)
+>      r10:eec75240 r9:c04e8448 r8:c04ef3a0 r7:00000001 r6:00000012 r5:00000000
+>      r4:00000012
+>     [<c029e5b4>] (cpufreq_cpu_callback) from [<c003f20c>] (notifier_call_chain+0x48/0x70)
+>      r4:ffffffdd r3:c029e5b4
+>     [<c003f1c4>] (notifier_call_chain) from [<c003f2cc>] (__raw_notifier_call_chain+0x1c/0x24)
+>      r8:00000001 r7:00000010 r6:00000000 r5:00000000 r4:00000012 r3:ffffffff
+>     [<c003f2b0>] (__raw_notifier_call_chain) from [<c0026a00>] (__cpu_notify+0x34/0x50)
+>     [<c00269cc>] (__cpu_notify) from [<c0026a34>] (cpu_notify+0x18/0x1c)
+>      r4:00000001
+>     [<c0026a1c>] (cpu_notify) from [<c0026c44>] (_cpu_up+0x108/0x144)
+>     [<c0026b3c>] (_cpu_up) from [<c0381c68>] (enable_nonboot_cpus+0x68/0xb8)
+>      r10:00000000 r9:c04e8ee6 r8:00000000 r7:00000003 r6:c04e8528 r5:c0506248
+>      r4:00000001
+>     [<c0381c00>] (enable_nonboot_cpus) from [<c0059038>] (suspend_devices_and_enter+0x29c/0x3e8)
+>      r6:c0506e70 r5:00000000 r4:00000000 r3:60000153
+> 
+> Restore the old default of calling cpumask_setall(policy->cpus) if no
+> platform data is available to fix this.
+> 
+> Fixes: 34e5a5273d6aa0ee ("cpufreq: cpufreq-dt: extend with
+> platform_data")
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> ---
+>  drivers/cpufreq/cpufreq-dt.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq-dt.c b/drivers/cpufreq/cpufreq-dt.c
+> index 2f25958053778ad1..3bfc1175a548c49c 100644
+> --- a/drivers/cpufreq/cpufreq-dt.c
+> +++ b/drivers/cpufreq/cpufreq-dt.c
+> @@ -293,7 +293,7 @@ static int cpufreq_init(struct cpufreq_policy *policy)
+>  	policy->cpuinfo.transition_latency = transition_latency;
+>  
+>  	pd = cpufreq_get_driver_data();
+> -	if (pd && !pd->independent_clocks)
+> +	if (!pd || !pd->independent_clocks)
+>  		cpumask_setall(policy->cpus);
+>  
+>  	of_node_put(np);
 
-That might very well be, but /sys/kernel/debug/wakeup_sources really
-isn't much of a user-space API. Where's the documentation for the
-various power/wake* files?
+Aah, yes, indeed.
 
-As in my mail to John, that information might already be available
-within the kernel, but it's not exported in a sensible way to
-user-space.
+Reviewed-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
+Thanks for spotting the issue and fixing it!
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
