@@ -1,181 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaJ0ATR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 20:19:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49650 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722AbaJ0ATP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 20:19:15 -0400
-Date: Mon, 27 Oct 2014 01:18:42 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        aneesh.kumar@linux.vnet.ibm.com, steve.capper@linaro.org,
-        mpe@ellerman.id.au, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        hannes@cmpxchg.org
-Subject: Re: [PATCH V2 1/2] mm: Update generic gup implementation to handle
- hugepage directory
-Message-ID: <20141027001842.GU6911@redhat.com>
-References: <1413520687-31729-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20141022160224.9c2268795e55d5a2eff5b94d@linux-foundation.org>
- <20141023.184035.388557314666522484.davem@davemloft.net>
- <1414107635.364.91.camel@pasglop>
- <1414167761.19984.17.camel@jarvis.lan>
- <1414356641.364.142.camel@pasglop>
+	id S1751949AbaJ0AYO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 20:24:14 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:34930 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754AbaJ0AYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 20:24:12 -0400
+Date: Mon, 27 Oct 2014 09:24:03 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>, linux-sh@vger.kernel.org,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Magnus Damm <magnus.damm@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] clocksource: sh_tmu: Document R-Mobile r8a7740
+ binding
+Message-ID: <20141027002402.GB32437@verge.net.au>
+References: <1413970709-26607-1-git-send-email-geert+renesas@glider.be>
+ <1413970709-26607-2-git-send-email-geert+renesas@glider.be>
+ <6890235.hnMLlLN6KA@avalon>
+ <20141024023451.GE7537@verge.net.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414356641.364.142.camel@pasglop>
+In-Reply-To: <20141024023451.GE7537@verge.net.au>
+Organisation: Horms Solutions Ltd.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Mon, Oct 27, 2014 at 07:50:41AM +1100, Benjamin Herrenschmidt wrote:
-> On Fri, 2014-10-24 at 09:22 -0700, James Bottomley wrote:
-> 
-> > Parisc does this.  As soon as one CPU issues a TLB purge, it's broadcast
-> > to all the CPUs on the inter-CPU bus.  The next instruction isn't
-> > executed until they respond.
+On Fri, Oct 24, 2014 at 11:34:55AM +0900, Simon Horman wrote:
+> On Wed, Oct 22, 2014 at 05:59:25PM +0300, Laurent Pinchart wrote:
+> > Hi Geert,
 > > 
-> > But this is only for our CPU TLB.  There's no other external
-> > consequence, so removal from the page tables isn't effected by this TLB
-> > flush, therefore the theory on which Dave bases the change to
-> > atomic_add() should work for us (of course, atomic_add is lock add
-> > unlock on our CPU, so it's not going to be of much benefit).
+> > Thank you for the patch.
+> > 
+> > On Wednesday 22 October 2014 11:38:27 Geert Uytterhoeven wrote:
+> > > Compared to the r8a7779, the r8a7740 lacks the input capture register,
+> > > which is not used by the driver (the current driver already handles the
+> > > r8a7740 in the non-DT case).
+> > > 
+> > > Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+> > 
+> > Acked-by: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
 > 
-> I'm not sure I follow you here.
-> 
-> Do you or do you now perform an IPI to do TLB flushes ? If you don't
-> (for example because you have HW broadcast), then you need the
-> speculative get_page(). If you do (and can read a PTE atomically), you
-> can get away with atomic_add().
-> 
-> The reason is that if you remember how zap_pte_range works, we perform
-> the flush before we get rid of the page.
-> 
-> So if your using IPIs for the flush, the fact that gup_fast has
-> interrupts disabled will delay the IPI response and thus effectively
-> prevent the pages from being actually freed, allowing us to simply do
-> the atomic_add() on x86.
-> 
-> But if we don't use IPIs because we have HW broadcast of TLB
-> invalidations, then we don't have that synchronization. atomic_add won't
-> work, we need get_page_speculative() because the page could be
-> concurrently being freed.
+> Acked-by: Simon Horman <horms+renesas@verge.net.au>
 
-I looked at how this works more closely and I agree
-get_page_unless_zero is always necessary if the TLB flush doesn't
-always wait for IPIs to all CPUs where a gup_fast may be running onto.
-
-To summarize, the pagetables are freed with RCU (arch sets
-HAVE_RCU_TABLE_FREE) and that allows to walk them lockless with RCU.
-
-After we can walk the pagetables lockless with RCU, we get to the page
-lockless, but the pages themself can still be freed at any time from
-under us (hence the need for get_page_unless_zero).
-
-The additional trick gup_fast RCU does is to recheck the pte after
-elevating the page count with get_page_unless_zero. Rechecking the
-pte/hugepmd to be sure it didn't change from under us is critical to
-be sure get_page_unless_zero didn't run after the page was freed and
-reallocated which would otherwise lead to a security problem too
-(i.e. it protects against get_page_unless_zero false positives).
-
-The last bit required is to still disable irqs like on x86 to
-serialize against THP splits combined with pmdp_splitting_flush always
-delivering IPIs (pmdp_splitting_flush must wait all gup_fast to
-complete before proceeding in mangling the page struct of the compound
-page).
-
-Preventing the irq disable while taking a gup_fast pin using
-compound_lock isn't as "easy" as it is to do for put_page. put_page
-(non-compound) fastest path remains THP agnostic because
-collapse_huge_page is inhibited by any existing gup pin, but here
-we're exactly taking it, so we can't depend on it to already exist to
-avoid the race with collapse_huge_page. It's not just split_huge_page
-we need to protect against.
-
-So while thinking the above summary, I noticed this patch misses a IPI
-in mm/huge_memory.c that must be delivered after pmdp_clear_flush
-below to be safe against collapse_huge_page for the same reasons it
-sends it within pmdp_splitting_flush. Without this IPI what can happen
-is that the GUP pin protection in __collapse_huge_page_isolate races
-against gup_fast-RCU.
-
-If gup_fast reads the pte on one CPU before pmdp_clear_flush, and on
-the other CPU __collapse_huge_page_isolate succeeds, then gup_fast
-could recheck the pte that hasn't been zapped yet by
-__collapse_huge_page_copy. gup_fast would succeed because the pte
-wasn't zapped yet, but then __collapse_huge_page_copy would run
-replacing the pte with a transhuge pmd, making gup_fast return the old
-page, while the process got the copy as part of the collapsed hugepage.
-
-	/*
-	 * After this gup_fast can't run anymore. This also removes
-	   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ -> invariant broken by gup_fast-RCU
-	 * any huge TLB entry from the CPU so we won't allow
-	 * huge and small TLB entries for the same virtual address
-	 * to avoid the risk of CPU bugs in that area.
-	 */
-	_pmd = pmdp_clear_flush(vma, address, pmd);
-	spin_unlock(pmd_ptl);
-	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-
-	spin_lock(pte_ptl);
-	isolated = __collapse_huge_page_isolate(vma, address, pte);
-	spin_unlock(pte_ptl);
-
-CPU0					CPU1
----------				-------------
-gup_fast-RCU
-local_irq_disable()
-pte = pte_offset_map(pmd, address)
-
-					pmdp_clear_flush (not sending IPI -> bug)
-
-					__collapse_huge_page_isolate -> succeeds
-
-					(page_count != 1 gup-pin check of
-					__collapse_huge_page_isolate
-					didn't fire)
-
-page = vm_normal_page(pte)
-get_page_unless_zero() -> succeeds
-recheck pte -> succeeds
-local_irq_enable()
-return page
-
-					collapse_huge_page thought
-					no gup_fast could run after
-					pmdp_clear_flush returned
-
-					__collapse_huge_page_copy (zap
-					pte too late, gup_fast already
-					returned on the other CPU)
-
-					set_pmd_at(mm, address, pmd, _pmd);
-
-					virtual memory backed by THP
-
-gup_fast went out of sync with virtual memory
-
-It could be solved also without IPI, for example by adding a failure
-path to __collapse_huge_page_copy and by adding a second gup-pin check
-(page_count != 1) after pte_clear(vma->vm_mm, address, _pte) (with a
-smp_mb() in between) and returning a failure if the check
-triggers. However then we need to store the 512 pte pointers in a
-temporary page to roll all of them back if we raced.
-
-Comments what is preferable between IPI and a gup-pin check after
-zapping the pte in __collapse_huge_page_copy welcome. If a
-modification to __collapse_huge_page_copy is preferable the temporary
-pte allocation (for rollback in the gup-pin check trigger case) should
-still be skipped on x86.
-
-Thanks,
-Andrea
+It seems that I have committed the last few changes to this file,
+so I've queued up this one too.
