@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224AbaJ0NkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:40:08 -0400
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:57354 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781AbaJ0NkF (ORCPT
+	id S1752964AbaJ0NlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:41:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46205 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752260AbaJ0NlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:40:05 -0400
-Message-ID: <544E4B25.7080503@collabora.co.uk>
-Date: Mon, 27 Oct 2014 14:39:49 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+	Mon, 27 Oct 2014 09:41:10 -0400
+Date: Mon, 27 Oct 2014 14:41:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: mingo@kernel.org, oleg@redhat.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, ilya.dryomov@inktank.com,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        rafael.j.wysocki@intel.com
+Subject: Re: [PATCH 00/11] nested sleeps, fixes and debug infrastructure
+Message-ID: <20141027134103.GA10476@twins.programming.kicks-ass.net>
+References: <20140924081845.572814794@infradead.org>
+ <1411633803.15810.12.camel@marge.simpson.net>
+ <20140925090619.GA5430@worktop>
+ <20140925091556.GB5430@worktop>
+ <20141002102251.GA6324@worktop.programming.kicks-ass.net>
+ <20141002121553.GB6324@worktop.programming.kicks-ass.net>
 MIME-Version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
-CC: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH v5 3/4] regulator: max77686: Add suspend disable for some
- LDOs
-References: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com> <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
-In-Reply-To: <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141002121553.GB6324@worktop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Krzysztof,
+On Thu, Oct 02, 2014 at 02:15:53PM +0200, Peter Zijlstra wrote:
+> On Thu, Oct 02, 2014 at 12:22:51PM +0200, Peter Zijlstra wrote:
 
-On 10/27/2014 01:11 PM, Krzysztof Kozlowski wrote:
-> Some LDOs of Maxim 77686 PMIC support disabling during system suspend
-> (LDO{2,6,7,8,10,11,12,14,15,16}). This was already implemented as part
-> of set_suspend_mode function. In that case the mode was one of:
->  - disable,
->  - normal mode,
->  - low power mode.
-> However there are no bindings for setting the mode during suspend.
+> > +#define __wait_event_freezable(wq, condition)				\
+> > +	(void)___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, 0,	\
+> > +			    schedule(); try_to_freeze())
+> > +
+> > +/**
+> > + * wait_event - sleep until a condition gets true or freeze (for kthreads)
+> > + * @wq: the waitqueue to wait on
+> > + * @condition: a C expression for the event to wait for
+> > + *
+> > + * The process is put to sleep (TASK_INTERRUPTIBLE -- so as not to contribute
+> > + * to system load) until the @condition evaluates to true. The
+> > + * @condition is checked each time the waitqueue @wq is woken up.
+> > + *
+> > + * wake_up() has to be called after changing any variable that could
+> > + * change the result of the wait condition.
+> > + */
+> > +#define wait_event_freezable(wq, condition)				\
+> > +do {									\
+> > +	WARN_ON_ONCE(!(current->flags & PF_KTHREAD));			\
+> > +	might_sleep();							\
+> > +	if (condition)							\
+> > +		break;							\
+> > +	__wait_event_freezable(wq, condition);				\
+> > +} while (0)
+> > +
+> >  #define __wait_event_timeout(wq, condition, timeout)			\
+> >  	___wait_event(wq, ___wait_cond_timeout(condition),		\
+> >  		      TASK_UNINTERRUPTIBLE, 0, timeout,			\
 > 
-> Add suspend disable for LDO regulators supporting this. Re-use existing
-> max77686_buck_set_suspend_disable() function. This helps reducing
-> energy consumption during system sleep.
+> Bah, that doesn't compile, because there already appears to be one,
+> hidden in freezer.h. Now I can't actually tell if it does the same thing
+> or not.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/regulator/max77686.c | 15 +++++++++++----
->  1 file changed, 11 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-> index 2ebc4257425b..c6bf6f79bd2a 100644
-> --- a/drivers/regulator/max77686.c
-> +++ b/drivers/regulator/max77686.c
+> Rafael?
 
-Looks good to me.
-
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-
-Best regards,
-Javier
-
+Ping?
