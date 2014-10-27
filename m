@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189AbaJ0HDy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 03:03:54 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:58998 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752AbaJ0HDv (ORCPT
+	id S1752013AbaJ0HDl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 03:03:41 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:59436 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbaJ0HDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 03:03:51 -0400
+	Mon, 27 Oct 2014 03:03:38 -0400
 From: gyungoh@gmail.com
 X-Google-Original-From: jack.yoo@skyworksinc.com
 To: sameo@linux.intel.com, lee.jones@linaro.org, jg1.han@samsung.com,
@@ -19,9 +19,9 @@ Cc: jack.yoo@skyworksinc.com, linux-kernel@vger.kernel.org,
         shawn.guo@freescale.com, treding@nvidia.com, florian.vaussard@epfl.ch,
         trivial@kernel.org, linux@roeck-us.net, andrew@lunn.ch,
         jic23@kernel.org
-Subject: [RESUBMIT PATCH v5 6/8] devicetree: i2c: Add SKY81452 to the Trivial Devices list
-Date: Mon, 27 Oct 2014 16:02:47 +0900
-Message-Id: <1414393369-31583-7-git-send-email-jack.yoo@skyworksinc.com>
+Subject: [RESUBMIT PATCH v5 4/8] devicetree: backlight: Add new SKY81452 backlight binding
+Date: Mon, 27 Oct 2014 16:02:45 +0900
+Message-Id: <1414393369-31583-5-git-send-email-jack.yoo@skyworksinc.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414393369-31583-1-git-send-email-jack.yoo@skyworksinc.com>
 References: <1413179262-27636-1-git-send-email-jack.yoo@skyworksinc.com>
@@ -46,23 +46,42 @@ Changes v3:
 Nothing
 
 Changes v2:
-Add SKY81452 to the Trivial Devices list
+Added reg attribute for I2C slave address
 
- Documentation/devicetree/bindings/i2c/trivial-devices.txt | 1 +
- 1 file changed, 1 insertion(+)
+ .../video/backlight/sky81452-backlight.txt         | 24 ++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
 
-diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-index fbde415..122fa1e 100644
---- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-+++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
-@@ -77,6 +77,7 @@ ramtron,24c64		i2c serial eeprom  (24cxx)
- ricoh,rs5c372a		I2C bus SERIAL INTERFACE REAL-TIME CLOCK IC
- samsung,24ad0xd1	S524AD0XF1 (128K/256K-bit Serial EEPROM for Low Power)
- sii,s35390a		2-wire CMOS real-time clock
-+skyworks,sky81452	Skyworks SKY81452: Six-Channel White LED Driver with Touch Panel Bias Supply
- st-micro,24c256		i2c serial eeprom  (24cxx)
- stm,m41t00		Serial Access TIMEKEEPER
- stm,m41t62		Serial real-time clock (RTC) with alarm
+diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+new file mode 100644
+index 0000000..2c2d947
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+@@ -0,0 +1,24 @@
++SKY81452-backlight bindings
++
++Required properties:
++- compatible		: Must be "skyworks,sky81452-backlight"
++
++Optional properties:
++- name			: Name of backlight device. Default is 'lcd-backlight'.
++- gpio-enable		: GPIO to use to EN pin.
++- enable		: Enable mask for current sink channel 1 to 6.
++- ignore-pwm		: Ignore both PWM input
++- dpwm-mode		: Enable DPWM dimming mode, otherwise Analog dimming mode
++- phase-shift		: Enable phase shift mode
++- ovp-level		: Over-voltage protection level. Should be between 14 or 28V.
++- short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
++- boost-current-limit	: It should be one of 800, 1100 and 1500mA.
++
++Example:
++
++	backlight {
++		compatible = "skyworks,sky81452-backlight";
++		name = "pwm-backlight";
++		enable = <0x3F>;
++		ignore-pwm;
++	};
 -- 
 1.9.1
 
