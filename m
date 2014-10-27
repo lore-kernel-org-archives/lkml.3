@@ -1,80 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675AbaJ0Prh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:47:37 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:42046 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962AbaJ0Prf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:47:35 -0400
-Message-ID: <544E690D.1030506@osg.samsung.com>
-Date: Mon, 27 Oct 2014 09:47:25 -0600
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-CC: Takashi Iwai <tiwai@suse.de>, Hans Verkuil <hverkuil@xs4all.nl>,
-        Lars-Peter Clausen <lars@metafoo.de>, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, crope@iki.fi, olebowle@gmx.com,
-        dheitmueller@kernellabs.com, ramakrmu@cisco.com,
-        sakari.ailus@linux.intel.com, laurent.pinchart@ideasonboard.com,
-        perex@perex.cz, prabhakar.csengg@gmail.com, tim.gardner@canonical.com,
-        linux@eikelenboom.it, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, linux-media@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH v2 5/6] sound/usb: pcm changes to use media
- token api
-References: <cover.1413246370.git.shuahkh@osg.samsung.com> <cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com> <543FB374.8020604@metafoo.de> <543FC3CD.8050805@osg.samsung.com> <s5h38aow1ub.wl-tiwai@suse.de> <543FD1EC.5010206@osg.samsung.com> <s5hy4sgumjo.wl-tiwai@suse.de> <543FD892.6010209@osg.samsung.com> <s5htx34ul3w.wl-tiwai@suse.de> <54467EFB.7050800@xs4all.nl> <s5hbnp5z9uy.wl-tiwai@suse.de> <5446989A.3010000@osg.samsung.com> <20141025085742.43e20bb5.m.chehab@samsung.com>
-In-Reply-To: <20141025085742.43e20bb5.m.chehab@samsung.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1751752AbaJ0PtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:49:21 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:48971 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaJ0PtT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:49:19 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: [PATCH v3 00/47] kernel: Add support for power-off handler call chain
+Date: Mon, 27 Oct 2014 08:48:25 -0700
+Message-Id: <1414424952-10054-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A02020A.544E697F.00B2,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/25/2014 04:57 AM, Mauro Carvalho Chehab wrote:
-> Hi,
-> 
-> Sorry to enter into this thread so late. Last week was a full week, due to the
-> 4 conferences I paticiapated, and last week I needed to fill lots of trip
-> reports. Also, I have another trip to give two speeches.
-> 
-> Em Tue, 21 Oct 2014 11:32:10 -0600
-> Shuah Khan <shuahkh@osg.samsung.com> escreveu:
-> 
->> Here is what I propose for patch v3:
->> - make it a module under media
->> - collapse tuner and audio tokens into media token
-> 
-> I'm a little skeptical about this. Merging tuner and audio tokens seems
-> weird on my eyes, as there are actually two different hardware resources
-> we need to lock, and we may be locking them on different places.
+Various drivers implement architecture and/or device specific means to
+remove power from the system.  For the most part, those drivers set the
+global variable pm_power_off to point to a function within the driver.
 
-I think the suggestion for collapsing came about because, in this
-patch series, the dvb and v4l use-cases are such that tuner and
-audio need to be held together. i.e when tuner is held, audio is
-held as well. With an intent to simplify the usage, I decided to
-have get_tuner interface to return audio token. It does simplify
-the logic for callers - all the paces that get tuner will also
-need to make a call to get audio and handle errors when audio is
-not available. That made it even more confusing perhaps and raised
-the question that "why can't we collapse".
+This mechanism has a number of drawbacks.  Typically only one means
+to remove power is supported (at least if pm_power_off is used).
+At least in theory there can be multiple means to remove power, some of
+which may be less desirable.  For example, one mechanism might power off the
+entire system through an I/O port or gpio pin, while another might power off
+a board by disabling its power controller. Other mechanisms may really just
+execute a restart sequence or drop into the ROM monitor, or put the CPU into
+sleep mode.  Using pm_power_off can also be racy if the function pointer is
+set from a driver built as module, as the driver may be in the process of
+being unloaded when pm_power_off is called.  If there are multiple power-off
+handlers in the system, removing a module with such a handler may
+inadvertently reset the pointer to pm_power_off to NULL, leaving the system
+with no means to remove power.
 
-Having two tokens will allow the ability hold them independently.
-Maybe the right approach for patch v3 is don't collapse, but
-change dvb and v4l to get tuner followed by audio and handle the
-errors paths themselves.
+Introduce a system power-off handler call chain to solve the described
+problems.  This call chain is expected to be executed from the architecture
+specific machine_power_off() function.  Drivers providing system power-off
+functionality are expected to register with this call chain.  By using the
+priority field in the notifier block, callers can control power-off handler
+execution sequence and thus ensure that the power-off handler with the
+optimal capabilities to remove power for a given system is called first.
+A call chain instead of a single call to the highest priority handler is
+used to provide fallback: If multiple power-off handlers are installed,
+all handlers will be called until one actually succeeds to power off the
+system.
 
-> 
->> - change names (get rid of abbreviated tkn stuff)
->> - Make other changes Takashi/Lars pointed out in pcm
->> - hold token in pcm open/close
-> 
+Patch 01/47 implements the power-off handler API.
 
--- Shuah
+Patches 02/47 to 04/47 are cleanup patches to prepare for the move of
+pm_power_off to a common location.
 
+Patches 05/47 to 07/47 remove references to pm_power_off from devicetree
+bindings descriptions.
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Patch 08/47 moves the pm_power_off variable from architecture code to
+kernel/reboot.c. 
+
+Patches 09/47 to 34/47 convert various drivers to register with the kernel
+power-off handler instead of setting pm_power_off directly.
+
+Patches 35/47 to 46/47 do the same for architecture code.
+
+Patch 47/47 finally removes pm_power_off.
+
+For the most part, the individual patches include explanations why specific
+priorities were chosen, at least if the selected priority is not the default
+priority. Subsystem and architecture maintainers are encouraged to have a look
+at the selected priorities and suggest improvements.
+
+I ran the final code through my normal build and qemu tests. Results are
+available at http://server.roeck-us.net:8010/builders in the 'poweroff-handler'
+column. I also built all available configurations for arm, mips, powerpc,
+m68k, and sh architectures.
+
+The series is available in branch poweroff-handler of my repository at
+git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git.
+It is based on 3.18-rc2.
+
+A note on Cc: In the initial submission I had way too many Cc:, causing the
+patchset to be treated as spam by many mailers and mailing list handlers,
+which of course defeated the purpose. This time around I am cutting down
+the distribution list down significantly. My apologies to anyone I may have
+failed to copy this time around.
+
+Important changes since v2:
+- Rebased series to v3.18-rc2.
+- Do not hold any locks while executing the power-off call chain.
+  This ensures that power-off handlers are executed in the state
+  selected by the machine_power_off function for a given architecture,
+  ie without changing the current semantics of power-off callbacks and
+  machine_power_off functions.
+  Power-off handler registration and de-registration is handled in atomic
+  context with interrupts disabled to ensure that those functions are not
+  interrupted by code which powers off the system.
+- Use [xxx_]power_off[_xxx] instead of [xxx_]poweroff[_xxx] for newly
+  introduced function and variable names.
+- Use power-off instead of poweroff in descriptive text and comments.
+- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+- Use ACPI: instead of acpi: for messages in acpi code.
+
+Important changes since v1:
+- Rebased series to v3.18-rc1.
+- Use raw notifier with spinlock protection instead of atomic notifiers,
+  since some power-off handlers need to have interrupts enabled.
+- Renamed API functions from _poweroff to _power_off.
+- Added various Acks.
+- Build tested all configurations for arm, powerpc, and mips architectures.
+- Fixed two compile errors in mips patch.
+- Replaced dev_err and pr_err with dev_warn and pr_warn if an error is not
+  fatal.
+- Provide managed resources API and use where appropriate.
+- Provide and use definitions for standard priorities.
+- Added patches to convert newly introduced power-off handlers.
+- Various minor changes.
+
+Important changes since RFC:
+- Move API to new file kernel/power/power_off_handler.c.
+- Move pm_power_off pointer to kernel/power/power_off_handler.c. Call
+  pm_power_off from do_kernel_power_off, and only call do_kernel_power_off
+  from architecture code instead of calling both pm_power_off and
+  do_kernel_power_off.
+- Provide additional API function register_power_off_handler_simple
+  to simplify conversion of architecture code.
+- Provide additional API function have_kernel_power_off to check if
+  a power-off handler was installed.
+- Convert all drivers and architecture code to use the new API.
+- Remove pm_power_off as last patch of the series.
+
+Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Heiko Stuebner <heiko@sntech.de>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Romain Perier <romain.perier@gmail.com>
