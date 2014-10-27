@@ -1,130 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094AbaJ0Sno (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:43:44 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:35164 "EHLO smtp.gentoo.org"
+	id S1752178AbaJ0SoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:44:04 -0400
+Received: from mail.kernel.org ([198.145.19.201]:57250 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553AbaJ0Snl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:43:41 -0400
-From: Richard Yao <ryao@gentoo.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mateusz Guzik <mguzik@redhat.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel@gentoo.org, Matthew Thode <mthode@mthode.org>,
-        =?UTF-8?q?Michael=20M=C3=BCller?= <michael@fds-team.de>,
-        Daniel Robbins <drobbins@funtoo.org>, Richard Yao <ryao@gentoo.org>
-Subject: [PATCH v4 1/1] vfs: Respect MS_RDONLY at bind mount creation
-Date: Mon, 27 Oct 2014 14:43:26 -0400
-Message-Id: <1414435406-59678-2-git-send-email-ryao@gentoo.org>
-X-Mailer: git-send-email 2.0.4
-In-Reply-To: <1414435406-59678-1-git-send-email-ryao@gentoo.org>
-References: <1414435406-59678-1-git-send-email-ryao@gentoo.org>
+	id S1751602AbaJ0SoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:44:01 -0400
+Date: Mon, 27 Oct 2014 19:43:55 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH 0/2] power: charger-manager: Fixes for unbinding other psy
+Message-ID: <20141027184354.GA18965@earth.universe>
+References: <1413207271-23836-1-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Disposition: inline
+In-Reply-To: <1413207271-23836-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-`mount -o bind,ro ...` suffers from a silent failure where the readonly
-flag is ignored. The bind mount will be created rw whenever the target
-is rw. Users typically workaround this by remounting readonly, but that
-does not work when you want to define readonly bind mounts in fstab.
-This is a major annoyance when dealing with recursive bind mounts
-because the userland mount command does not expose the option to
-recursively remount a subtree as readonly.
 
-Signed-off-by: Richard Yao <ryao@gentoo.org>
----
- fs/namespace.c | 20 ++++++++++++++++----
- fs/pnode.h     | 17 +++++++++--------
- 2 files changed, 25 insertions(+), 12 deletions(-)
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 5b66b2b..6f07336 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -990,6 +990,14 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
- 	if (flag & CL_MAKE_SHARED)
- 		set_mnt_shared(mnt);
- 
-+	/*
-+	 * We set the flag directly because the mount point is not yet visible.
-+	 * This means there are no writers that require the checks in
-+	 * mnt_make_readonly().
-+	 */
-+	if (flag & CL_MAKE_RDONLY)
-+		mnt->mnt.mnt_flags |= MNT_READONLY;
-+
- 	/* stick the duplicate mount on the same expiry list
- 	 * as the original if that was on one */
- 	if (flag & CL_EXPIRE) {
-@@ -1992,11 +2000,13 @@ static bool has_locked_children(struct mount *mnt, struct dentry *dentry)
-  * do loopback mount.
-  */
- static int do_loopback(struct path *path, const char *old_name,
--				int recurse)
-+				unsigned long flags)
- {
- 	struct path old_path;
- 	struct mount *mnt = NULL, *old, *parent;
- 	struct mountpoint *mp;
-+	int recurse = flags & MS_REC;
-+	int clflags = (flags & MS_RDONLY) ? CL_MAKE_RDONLY : 0;
- 	int err;
- 	if (!old_name || !*old_name)
- 		return -EINVAL;
-@@ -2027,9 +2037,10 @@ static int do_loopback(struct path *path, const char *old_name,
- 		goto out2;
- 
- 	if (recurse)
--		mnt = copy_tree(old, old_path.dentry, CL_COPY_MNT_NS_FILE);
-+		mnt = copy_tree(old, old_path.dentry, CL_COPY_MNT_NS_FILE |
-+			clflags);
- 	else
--		mnt = clone_mnt(old, old_path.dentry, 0);
-+		mnt = clone_mnt(old, old_path.dentry, clflags);
- 
- 	if (IS_ERR(mnt)) {
- 		err = PTR_ERR(mnt);
-@@ -2625,7 +2636,8 @@ long do_mount(const char *dev_name, const char __user *dir_name,
- 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
- 				    data_page);
- 	else if (flags & MS_BIND)
--		retval = do_loopback(&path, dev_name, flags & MS_REC);
-+		retval = do_loopback(&path, dev_name, flags & (MS_REC |
-+							       MS_RDONLY));
- 	else if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
- 		retval = do_change_type(&path, flags);
- 	else if (flags & MS_MOVE)
-diff --git a/fs/pnode.h b/fs/pnode.h
-index 4a24635..326f5be 100644
---- a/fs/pnode.h
-+++ b/fs/pnode.h
-@@ -20,14 +20,15 @@
- #define SET_MNT_MARK(m) ((m)->mnt.mnt_flags |= MNT_MARKED)
- #define CLEAR_MNT_MARK(m) ((m)->mnt.mnt_flags &= ~MNT_MARKED)
- 
--#define CL_EXPIRE    		0x01
--#define CL_SLAVE     		0x02
--#define CL_COPY_UNBINDABLE	0x04
--#define CL_MAKE_SHARED 		0x08
--#define CL_PRIVATE 		0x10
--#define CL_SHARED_TO_SLAVE	0x20
--#define CL_UNPRIVILEGED		0x40
--#define CL_COPY_MNT_NS_FILE	0x80
-+#define CL_EXPIRE		0x001
-+#define CL_SLAVE		0x002
-+#define CL_COPY_UNBINDABLE	0x004
-+#define CL_MAKE_SHARED		0x008
-+#define CL_PRIVATE		0x010
-+#define CL_SHARED_TO_SLAVE	0x020
-+#define CL_UNPRIVILEGED		0x040
-+#define CL_COPY_MNT_NS_FILE	0x080
-+#define CL_MAKE_RDONLY		0x100
- 
- #define CL_COPY_ALL		(CL_COPY_UNBINDABLE | CL_COPY_MNT_NS_FILE)
- 
--- 
-2.0.4
+Hi,
 
+On Mon, Oct 13, 2014 at 03:34:29PM +0200, Krzysztof Kozlowski wrote:
+> These are two fixes for accessing old power supply by charger manager
+> after unbinding the driver implementing given power supply.
+>=20
+> Actually the source of these two bugs and the solution for them is the
+> same in both patches. However I decided to split this because fixing
+> this was quite intrusive and squashed patch would be rather big.
+
+pulled into next branch of battery-2.6.git. I will include this in
+the 3.18-rc pull request.
+
+-- Sebastian
+
+--r5Pyd7+fXNt84Ff3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUTpJqAAoJENju1/PIO/qa6TEP/1Ag0oG2xXugNceva/iTnROi
+gjXecTXCQI29Mo0+eDYjGkcZGAemnjYpNyXHJIdro/7M97esXOzhOFjWGsYAWttE
+YU2Gf0zeGu22uDpFUKSWODdR99UIOzHuXc6Pxq+z56iUiK+Ij3egPh2pxTRYg1mD
+pxJBv4ynHUH8ufH6cGqZdGpyrHgF9vPmtB+b107P2ndMuqCA3rmqVP6jA8eVnniX
+V3e5zBWiJ+DipaMFkjbYsjCZnyvTF0xrXnZCqFi2UD2KiPrbpBRuValsoj7nsXmd
+nS1pboLshj187TY3SAP1NfGdpd46U2yAIyBMe1V2Rt6iQD7HV3Jp0GzW4fmRFmH9
+KYYZnu+XnmHYAFDWAR2N4+2DhyfgATt+xEqBLz+6xscSpAdxj/KKWcdSDpSWjCUI
+/9zAYV7cjKD6GMH5UlC2UHiOi+Xf2ZZlin3DKOgbOqm6NlMit3KZI29klKEsdozQ
+uOoI9aSAgkZQ98MLe8uIq47OX+c9lSb+aI6nKiqN9OSOZZaw62UN0ansjmDQEwoe
+9UIrCAj39xzSLxsndjvfoWis5MNqt5Ukl03ZeSBFJlIawxa0igWRJX5QxTvOL2+A
+G0fMcpLB9F/o9QMS2PQfh7YeoiVDMfA88WtbTnnS7VCxfPpdvDv/VkenaT2JJXX1
+ymLEVYiHfhJn7/kvHztr
+=+NNJ
+-----END PGP SIGNATURE-----
+
+--r5Pyd7+fXNt84Ff3--
