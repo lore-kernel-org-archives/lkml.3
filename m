@@ -1,40 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaJ0WuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 18:50:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49346 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752420AbaJ0WuR (ORCPT
+	id S1752630AbaJ0WvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 18:51:21 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:55300 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751953AbaJ0WvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 18:50:17 -0400
-Message-ID: <544ECAB2.3060706@wwwdotorg.org>
-Date: Mon, 27 Oct 2014 16:44:02 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 27 Oct 2014 18:51:19 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Len Brown <lenb@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [Patch v7 05/18] ACPI: Correct return value of acpi_dev_resource_address_space()
+Date: Tue, 28 Oct 2014 00:11:53 +0100
+Message-ID: <2637527.N3qngMM9sh@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAErSpo6hq9+RV9sFe2gZL2mMHTPEDGQDfqP5J=TAZtJsj_1-Pg@mail.gmail.com>
+References: <1414387308-27148-1-git-send-email-jiang.liu@linux.intel.com> <1414387308-27148-6-git-send-email-jiang.liu@linux.intel.com> <CAErSpo6hq9+RV9sFe2gZL2mMHTPEDGQDfqP5J=TAZtJsj_1-Pg@mail.gmail.com>
 MIME-Version: 1.0
-To: Matthias Klein <matthias.klein@linux.com>,
-        linux-rpi-kernel@lists.infradead.org, linus.walleij@linaro.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] pinctrl: bcm2835: Start GPIO numeration at zero
-References: <1414447799-1284-1-git-send-email-matthias.klein@linux.com>
-In-Reply-To: <1414447799-1284-1-git-send-email-matthias.klein@linux.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 04:09 PM, Matthias Klein wrote:
-> Numerate the GPIOs from 0..53 instead of 202..255.
+On Monday, October 27, 2014 04:49:06 PM Bjorn Helgaas wrote:
+> On Sun, Oct 26, 2014 at 11:21 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> > Change acpi_dev_resource_address_space() to return failure if the
+> > acpi_resource structure can't be converted to an ACPI address64
+> > structure, so caller could correctly detect failure.
+> 
+> Fixes: 046d9ce6820e ("ACPI: Move device resources interpretation code
+> from PNP to ACPI core")
+> 
+> Possible stable candidate?  046d9ce6820e appeared in v3.8.
 
-What's the motivation for this? The GPIO IDs should all come from DT, 
-which encodes everything as an ID relative to a particular controllers, 
-and hence the actual value of the base address should be irrelevant.
+Well, are we seeing problems with it?
 
-> diff --git a/drivers/pinctrl/pinctrl-bcm2835.c b/drivers/pinctrl/pinctrl-bcm2835.c
+> > Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> > ---
+> >  drivers/acpi/resource.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+> > index 2ba8f02ced36..782a0d15c25f 100644
+> > --- a/drivers/acpi/resource.c
+> > +++ b/drivers/acpi/resource.c
+> > @@ -200,7 +200,7 @@ bool acpi_dev_resource_address_space(struct acpi_resource *ares,
+> >
+> >         status = acpi_resource_to_address64(ares, &addr);
+> >         if (ACPI_FAILURE(status))
+> > -               return true;
+> > +               return false;
+> >
+> >         res->start = addr.minimum;
+> >         res->end = addr.maximum;
+> > --
+> > 1.7.10.4
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> @@ -382,7 +382,7 @@ static struct gpio_chip bcm2835_gpio_chip = {
-
-> -	.base = -1,
-> +	.base = 0,
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
