@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753617AbaJ0Omy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:42:54 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19833 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907AbaJ0Omw (ORCPT
+	id S1753503AbaJ0OoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:44:17 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:37700 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043AbaJ0OoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:42:52 -0400
-Message-ID: <544E59DC.3060906@oracle.com>
-Date: Mon, 27 Oct 2014 10:42:36 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Mon, 27 Oct 2014 10:44:16 -0400
+Date: Mon, 27 Oct 2014 07:44:11 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 03/11] aiptek: Fix probable mask then right shift defects
+Message-ID: <20141027144411.GA7594@dtor-ws>
+References: <cover.1414387334.git.joe@perches.com>
+ <8c6687a4d568c853ab649ba03d2477ee24bc6ff6.1414387334.git.joe@perches.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: a.ryabinin@samsung.com, pablo@netfilter.org, mschmidt@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] netlink: don't copy over empty attribute data
-References: <54471438.1040907@oracle.com>	<20141022.021508.2011745433893496421.davem@davemloft.net>	<544D849A.4040304@oracle.com> <20141026.220350.2098346782596904995.davem@davemloft.net>
-In-Reply-To: <20141026.220350.2098346782596904995.davem@davemloft.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8c6687a4d568c853ab649ba03d2477ee24bc6ff6.1414387334.git.joe@perches.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2014 10:03 PM, David Miller wrote:
-> From: Sasha Levin <sasha.levin@oracle.com>
-> Date: Sun, 26 Oct 2014 19:32:42 -0400
+Hi Joe,
+
+On Sun, Oct 26, 2014 at 10:24:59PM -0700, Joe Perches wrote:
+> Precedence of & and >> is not the same and is not left to right.
+> shift has higher precedence and should be done after the mask.
+
+Looking at the protocol description the current code is exactly right.
+We want to "move" button bits first as in packet type 1 they are in a
+different place than in other packets.
+
+I'll take a patch that adds parenthesis around shifts to make clear it
+is intended.
+
+Thanks.
+
 > 
->> How so? GCC states clearly that you should *never* pass a NULL
->> pointer there:
->>
->> "The pointers passed to memmove (and similar functions in <string.h>) must
->> be non-null even when nbytes==0" (https://gcc.gnu.org/gcc-4.9/porting_to.html).
->>
->> Even if it doesn't dereference it, it can break somehow in a subtle way. Leaving
->> the kernel code assuming that gcc (or any other compiler) would always behave
->> the same in a situation that shouldn't occur.
+> Here the shifts are unnecessary and a non-zero value can be used
+> as the test to set 1 or zero.
 > 
-> Show me a legal way in which one could legally dereference the pointer
-> when length is zero, and I'll entertain this patch.
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/input/tablet/aiptek.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/input/tablet/aiptek.c b/drivers/input/tablet/aiptek.c
+> index e7f966d..dee2bb9 100644
+> --- a/drivers/input/tablet/aiptek.c
+> +++ b/drivers/input/tablet/aiptek.c
+> @@ -489,9 +489,9 @@ static void aiptek_irq(struct urb *urb)
+>  			 */
+>  			jitterable = data[1] & 0x07;
+>  
+> -			left = (data[1] & aiptek->curSetting.mouseButtonLeft >> 2) != 0 ? 1 : 0;
+> -			right = (data[1] & aiptek->curSetting.mouseButtonRight >> 2) != 0 ? 1 : 0;
+> -			middle = (data[1] & aiptek->curSetting.mouseButtonMiddle >> 2) != 0 ? 1 : 0;
+> +			left = data[1] & aiptek->curSetting.mouseButtonLeft ? 1 : 0;
+> +			right = data[1] & aiptek->curSetting.mouseButtonRight ? 1 : 0;
+> +			middle = data[1] & aiptek->curSetting.mouseButtonMiddle ? 1 : 0;
+>  
+>  			input_report_key(inputdev, BTN_LEFT, left);
+>  			input_report_key(inputdev, BTN_MIDDLE, middle);
+> -- 
+> 2.1.2
+> 
 
-The moment you've triggered an undefined behaviour you have GCC license to
-dereference anything it wants. GCC would be well within it's rights
-dereferencing a NULL "from".
-
-They even state it clearly in that GCC 4.9 porting guide I've linked above:
-
-"""
-Calling copy(p, NULL, 0) can therefore deference a null pointer and crash.
-
-The example above needs to be fixed to avoid the invalid memmove call, for example:
-
-
-    if (nbytes != 0)
-      memmove (dest, src, nbytes);
-"""
-
-
-Thanks,
-Sasha
+-- 
+Dmitry
