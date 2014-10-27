@@ -1,67 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132AbaJ0TPI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:15:08 -0400
-Received: from mail-bl2on0140.outbound.protection.outlook.com ([65.55.169.140]:33721
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752571AbaJ0TPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:15:03 -0400
-X-WSS-ID: 0NE4ASU-08-230-02
-X-M-MSG: 
-Message-ID: <544E99A4.4020906@amd.com>
-Date: Mon, 27 Oct 2014 14:14:44 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754142AbaJ0TPg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:15:36 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:33311 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753459AbaJ0TDf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 15:03:35 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: <mark.rutland@arm.com>, <will.deacon@arm.com>, <catalin.marinas@arm.com>,
-        Thomas Lendacky <Thomas.Lendacky@amd.com>,
-        Joel Schopp <Joel.Schopp@amd.com>, <marc.zyngier@arm.com>,
-        <liviu.dudau@arm.com>, <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH V2] arm64: amd-seattle: Adding device tree for AMD Seattle
- platform
-References: <1414436065-7717-1-git-send-email-suravee.suthikulpanit@amd.com>
- <2202046.Qx9l5PJfzL@wuerfel>
-In-Reply-To: <2202046.Qx9l5PJfzL@wuerfel>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(479174003)(377454003)(51704005)(24454002)(85852003)(4396001)(87266999)(76176999)(50986999)(92566001)(92726001)(54356999)(87936001)(97736003)(47776003)(20776003)(64706001)(65806001)(65956001)(36756003)(86362001)(68736004)(19580395003)(19580405001)(80316001)(44976005)(106466001)(120886001)(120916001)(50466002)(84676001)(83506001)(76482002)(107046002)(23746002)(21056001)(85306004)(80022003)(46102003)(31966008)(59896002)(105586002)(99396003)(95666004)(102836001)(33656002)(101416001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0377802854
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <ba8d704a12c7ceffce610fc438a0af11a3422002.1413923420.git.milosz@adfin.com>
+References: <cover.1413923420.git.milosz@adfin.com> <ba8d704a12c7ceffce610fc438a0af11a3422002.1413923420.git.milosz@adfin.com>
+From: Steve French <smfrench@gmail.com>
+Date: Mon, 27 Oct 2014 14:03:14 -0500
+Message-ID: <CAH2r5msUXQn+J3hoU-66Oz5EQpB7f_ObOaw9vnqY8=tgCB4J7g@mail.gmail.com>
+Subject: Re: [PATCH 4/4] vfs: RWF_NONBLOCK flag for preadv2
+To: Milosz Tanski <milosz@adfin.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-aio@kvack.org,
+        Mel Gorman <mgorman@suse.de>,
+        Volker Lendecke <Volker.Lendecke@sernet.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 2:07 PM, Arnd Bergmann wrote:
-> On Monday 27 October 2014 13:54:25 suravee.suthikulpanit@amd.com wrote:
->> +       sata0: sata@00300000 {
->> +               compatible = "snps,spear-ahci";
->> +               reg = <0 0x300000 0 0x800>;
->> +               interrupts = <0 355 4>;
->> +               clocks = <&sataclk_333mhz>;
->> +               clock-names = "apb_pclk";
->> +               dma-coherent;
->> +       };
->
-> Please use "snps,dwc-ahci" as the compatible string for a designware
-> ahci controller, not "snps,spear-ahci", which refers to the implementation
-> of that in the ST microelectronics SPEAr consumer SoC.
->
-> It would be good to also add a string that is specific for your SoC if
-> we ever need to identify it directly.
->
-> 	Arnd
->
+What would be required for a network file system to support the
+RWF_NONBLOCK flag?
 
-Thanks. I will update this in V3.
+SMB3 operations are all async (on the wire) by default but they do
+block on the network send and interim response.
 
-Suravee
+On Tue, Oct 21, 2014 at 3:46 PM, Milosz Tanski <milosz@adfin.com> wrote:
+> Filesystems that generic_file_read_iter will not be allowed to perform
+> non-blocking reads. This only will read data if it's in the page cache and if
+> there is no page error (causing a re-read).
+>
+> Christoph Hellwig wrote the filesystem specify code (cifs, ofs, shm, xfs).
+>
+> Signed-off-by: Milosz Tanski <milosz@adfin.com>
+> ---
+>  fs/cifs/file.c     |  6 ++++++
+>  fs/ocfs2/file.c    |  6 ++++++
+>  fs/pipe.c          |  3 ++-
+>  fs/read_write.c    | 21 ++++++++++++++-------
+>  fs/xfs/xfs_file.c  |  4 ++++
+>  include/linux/fs.h |  3 +++
+>  mm/filemap.c       | 18 ++++++++++++++++++
+>  mm/shmem.c         |  4 ++++
+>  8 files changed, 57 insertions(+), 8 deletions(-)
+>
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index 3e4d00a..c485afa 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -3005,6 +3005,9 @@ ssize_t cifs_user_readv(struct kiocb *iocb, struct iov_iter *to)
+>         struct cifs_readdata *rdata, *tmp;
+>         struct list_head rdata_list;
+>
+> +       if (iocb->ki_rwflags & RWF_NONBLOCK)
+> +               return -EAGAIN;
+> +
+>         len = iov_iter_count(to);
+>         if (!len)
+>                 return 0;
+> @@ -3123,6 +3126,9 @@ cifs_strict_readv(struct kiocb *iocb, struct iov_iter *to)
+>             ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0))
+>                 return generic_file_read_iter(iocb, to);
+>
+> +       if (iocb->ki_rwflags & RWF_NONBLOCK)
+> +               return -EAGAIN;
+> +
+>         /*
+>          * We need to hold the sem to be sure nobody modifies lock list
+>          * with a brlock that prevents reading.
+> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+> index 324dc93..bb66ca4 100644
+> --- a/fs/ocfs2/file.c
+> +++ b/fs/ocfs2/file.c
+> @@ -2472,6 +2472,12 @@ static ssize_t ocfs2_file_read_iter(struct kiocb *iocb,
+>                         filp->f_path.dentry->d_name.name,
+>                         to->nr_segs);   /* GRRRRR */
+>
+> +       /*
+> +        * No non-blocking reads for ocfs2 for now.  Might be doable with
+> +        * non-blocking cluster lock helpers.
+> +        */
+> +       if (iocb->ki_rwflags & RWF_NONBLOCK)
+> +               return -EAGAIN;
+>
+>         if (!inode) {
+>                 ret = -EINVAL;
+> diff --git a/fs/pipe.c b/fs/pipe.c
+> index 21981e5..212bf68 100644
+> --- a/fs/pipe.c
+> +++ b/fs/pipe.c
+> @@ -302,7 +302,8 @@ pipe_read(struct kiocb *iocb, struct iov_iter *to)
+>                          */
+>                         if (ret)
+>                                 break;
+> -                       if (filp->f_flags & O_NONBLOCK) {
+> +                       if ((filp->f_flags & O_NONBLOCK) ||
+> +                           (iocb->ki_rwflags & RWF_NONBLOCK)) {
+>                                 ret = -EAGAIN;
+>                                 break;
+>                         }
+> diff --git a/fs/read_write.c b/fs/read_write.c
+> index e3d8451..955d829 100644
+> --- a/fs/read_write.c
+> +++ b/fs/read_write.c
+> @@ -835,14 +835,19 @@ static ssize_t do_readv_writev(int type, struct file *file,
+>                 file_start_write(file);
+>         }
+>
+> -       if (iter_fn)
+> +       if (iter_fn) {
+>                 ret = do_iter_readv_writev(file, type, iov, nr_segs, tot_len,
+>                                                 pos, iter_fn, flags);
+> -       else if (fnv)
+> -               ret = do_sync_readv_writev(file, iov, nr_segs, tot_len,
+> -                                               pos, fnv);
+> -       else
+> -               ret = do_loop_readv_writev(file, iov, nr_segs, pos, fn);
+> +       } else {
+> +               if (type == READ && (flags & RWF_NONBLOCK))
+> +                       return -EAGAIN;
+> +
+> +               if (fnv)
+> +                       ret = do_sync_readv_writev(file, iov, nr_segs, tot_len,
+> +                                                       pos, fnv);
+> +               else
+> +                       ret = do_loop_readv_writev(file, iov, nr_segs, pos, fn);
+> +       }
+>
+>         if (type != READ)
+>                 file_end_write(file);
+> @@ -866,8 +871,10 @@ ssize_t vfs_readv(struct file *file, const struct iovec __user *vec,
+>                 return -EBADF;
+>         if (!(file->f_mode & FMODE_CAN_READ))
+>                 return -EINVAL;
+> -       if (flags & ~0)
+> +       if (flags & ~RWF_NONBLOCK)
+>                 return -EINVAL;
+> +       if ((file->f_flags & O_DIRECT) && (flags & RWF_NONBLOCK))
+> +               return -EAGAIN;
+>
+>         return do_readv_writev(READ, file, vec, vlen, pos, flags);
+>  }
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index eb596b4..b1f6334 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -246,6 +246,10 @@ xfs_file_read_iter(
+>
+>         XFS_STATS_INC(xs_read_calls);
+>
+> +       /* XXX: need a non-blocking iolock helper, shouldn't be too hard */
+> +       if (iocb->ki_rwflags & RWF_NONBLOCK)
+> +               return -EAGAIN;
+> +
+>         if (unlikely(file->f_flags & O_DIRECT))
+>                 ioflags |= XFS_IO_ISDIRECT;
+>         if (file->f_mode & FMODE_NOCMTIME)
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 9ed5711..eaebd99 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1459,6 +1459,9 @@ struct block_device_operations;
+>  #define HAVE_COMPAT_IOCTL 1
+>  #define HAVE_UNLOCKED_IOCTL 1
+>
+> +/* These flags are used for the readv/writev syscalls with flags. */
+> +#define RWF_NONBLOCK 0x00000001
+> +
+>  struct iov_iter;
+>
+>  struct file_operations {
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index 45964c8..e73ba7e 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -1493,6 +1493,8 @@ static ssize_t do_generic_file_read(struct file *filp, loff_t *ppos,
+>  find_page:
+>                 page = find_get_page(mapping, index);
+>                 if (!page) {
+> +                       if (flags & RWF_NONBLOCK)
+> +                               goto would_block;
+>                         page_cache_sync_readahead(mapping,
+>                                         ra, filp,
+>                                         index, last_index - index);
+> @@ -1584,6 +1586,11 @@ page_ok:
+>                 continue;
+>
+>  page_not_up_to_date:
+> +               if (flags & RWF_NONBLOCK) {
+> +                       page_cache_release(page);
+> +                       goto would_block;
+> +               }
+> +
+>                 /* Get exclusive access to the page ... */
+>                 error = lock_page_killable(page);
+>                 if (unlikely(error))
+> @@ -1603,6 +1610,12 @@ page_not_up_to_date_locked:
+>                         goto page_ok;
+>                 }
+>
+> +               if (flags & RWF_NONBLOCK) {
+> +                       unlock_page(page);
+> +                       page_cache_release(page);
+> +                       goto would_block;
+> +               }
+> +
+>  readpage:
+>                 /*
+>                  * A previous I/O error may have been due to temporary
+> @@ -1673,6 +1686,8 @@ no_cached_page:
+>                 goto readpage;
+>         }
+>
+> +would_block:
+> +       error = -EAGAIN;
+>  out:
+>         ra->prev_pos = prev_index;
+>         ra->prev_pos <<= PAGE_CACHE_SHIFT;
+> @@ -1706,6 +1721,9 @@ generic_file_read_iter(struct kiocb *iocb, struct iov_iter *iter)
+>                 size_t count = iov_iter_count(iter);
+>                 loff_t size;
+>
+> +               if (iocb->ki_rwflags & RWF_NONBLOCK)
+> +                       return -EAGAIN;
+> +
+>                 if (!count)
+>                         goto out; /* skip atime */
+>                 size = i_size_read(inode);
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index cd6fc75..5c30f04 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+> @@ -1531,6 +1531,10 @@ static ssize_t shmem_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
+>         ssize_t retval = 0;
+>         loff_t *ppos = &iocb->ki_pos;
+>
+> +       /* XXX: should be easily supportable */
+> +       if (iocb->ki_rwflags & RWF_NONBLOCK)
+> +               return -EAGAIN;
+> +
+>         /*
+>          * Might this read be for a stacking filesystem?  Then when reading
+>          * holes of a sparse file, we actually need to allocate those pages,
+> --
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
+
+
+-- 
+Thanks,
+
+Steve
