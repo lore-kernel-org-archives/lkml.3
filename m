@@ -1,159 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaJ0MOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:14:44 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:38654 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581AbaJ0MMF (ORCPT
+	id S1751954AbaJ0MSh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:18:37 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:37805 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149AbaJ0MSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 08:12:05 -0400
+	Mon, 27 Oct 2014 08:18:36 -0400
+Date: Mon, 27 Oct 2014 17:48:28 +0530
+From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: devel@driverdev.osuosl.org,
+        Florian Schilhabel <florian.c.schilhabel@googlemail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH] staging: rtl8712: remove unused variables
+Message-ID: <20141027121828.GB5369@sudip-PC>
+References: <1414326813-21444-1-git-send-email-sudipm.mukherjee@gmail.com>
+ <20141027111312.GA6879@mwanda>
+ <20141027115221.GA5369@sudip-PC>
+ <20141027121256.GF6879@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <1412089178-21946-2-git-send-email-matteo.facchinetti@sirius-es.it>
-References: <1412089178-21946-1-git-send-email-matteo.facchinetti@sirius-es.it>
-	<1412089178-21946-2-git-send-email-matteo.facchinetti@sirius-es.it>
-Date: Mon, 27 Oct 2014 13:12:04 +0100
-Message-ID: <CAPDyKFo7SuWA81QeitBzr6JyyKERkL2N4VK-KEOSK+31oZiYCQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] mmc: mxcmmc: fix race condition when dma finish a
- data transfer
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
-Cc: Chris Ball <chris@printf.net>, Alexander Shiyan <shc_work@mail.ru>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linucppc-dev@lists.ozlabs.org, Anatolij Gustschin <agust@denx.de>,
-        gsi@denx.de, sbabic@denx.de
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027121256.GF6879@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 September 2014 16:59, Matteo Facchinetti
-<matteo.facchinetti@sirius-es.it> wrote:
-> From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
->
-> During a read of data block using dma, driver might have two ways to finish to read
-> and free the resources:
-> 1) checking STATUS_DATA_TRANS_DONE mask, in the mxcmci_irq() routine
->    (pending to mmc irq)
-> 2) mxmmc driver, registers also a mxcmci_dma_callback() and when transfer is finished,
->    dma driver calls this callback. (pending to dma irq)
-> Both ways are concurrent with each other.
->
-> Race condition happens when following events occur:
-> /* (1) mxcmci driver start data transfer */
->          158.418970: mpc_dma_execute: mpc_dma_execute(): will_access_peripheral start cid=31
->          158.418976: mpc_dma_issue_pending <-mxcmci_request
->          158.418983: mxcmci_start_cmd <-mxcmci_request
-> /* (2) mxcmci driver receive mmc irq */
->          158.419656: mxcmci_irq <-handle_irq_event_percpu
->          158.419692: mxcmci_read_response <-mxcmci_irq
-> /* (3) mxcmci driver checks that transfer is complete and call mxcmci_finish_data() */
->          158.419726: mxcmci_data_done <-mxcmci_irq
->          158.419729: mxcmci_finish_data <-mxcmci_data_done
->          158.419733: dma_direct_unmap_sg <-mxcmci_finish_data
->          158.419736: mxcmci_swap_buffers.isra.24 <-mxcmci_finish_data
->          158.419762: mxcmci_read_response <-mxcmci_data_done
-> /* (4) mxcmci driver (no dma): send stop command */
->          158.419765: mxcmci_start_cmd <-mxcmci_data_done
-> /* (5) mxcmci driver (no dma): receive the stop command irq response */
->          158.419782: mxcmci_irq <-handle_irq_event_percpu
->          158.419812: mxcmci_read_response <-mxcmci_irq
->          158.419843: mxcmci_finish_request <-mxcmci_irq
-> /* (6) dma driver: receive dma irq (finish data transfer) related by request on step 1 */
->          158.419853: mpc_dma_irq <-handle_irq_event_percpu
->          158.420001: mpc_dma_irq_process <-mpc_dma_irq
->          158.420004: mpc_dma_irq_process <-mpc_dma_irq
-> /* (7) dma driver: start dma tasklet to finish the dma irq handling */
->          158.420008: mpc_dma_irq_process: mpc_dma_irq_process(): completed ch:31
-> /* (8) mxcmci driver: start next data transfer using dma */
->          158.420174: mxcmci_request <-mmc_start_req
->          158.420182: dma_direct_map_sg <-mxcmci_request
->          158.420192: mpc_dma_prep_slave_sg <-mxcmci_request
-> /* (9) dma driver: schedule irq tasklet and execute mxcmci dma driver callback */
->          158.420250: mpc_dma_tasklet <-tasklet_action
->          158.420254: mpc_dma_process_completed <-tasklet_action
->          158.420267: mxcmci_dma_callback <-mpc_dma_process_completed
-> /* ERROR!!! (10) mxcmci driver callback works on dma data related to the step 1
->                  that is already finished */
->          158.420271: mxcmci_data_done <-mpc_dma_process_completed
->          158.420273: mxcmci_finish_data <-mxcmci_data_done
-> /* ERROR!!! (11) mxcmci driver: clear data that should be used by step 8 and
->                  send an other mmc stop command (already sended on step 4) */
->          158.420276: dma_direct_unmap_sg <-mxcmci_finish_data
->          158.420279: mxcmci_swap_buffers.isra.24 <-mxcmci_finish_data
->          158.420330: mxcmci_read_response <-mxcmci_data_done
->          158.420333: mxcmci_start_cmd <-mxcmci_data_done
->          158.420338: dma_run_dependencies <-mpc_dma_process_completed
-> ...
-> ...
-> ...
->          168.474223: mxcmci_watchdog <-call_timer_fn
->          168.474236: mxcmci_watchdog: mxcmci_watchdog
->          168.474397: mpc_dma_device_control <-mxcmci_watchdog
->
->
-> In accordance with the other drivers that using the dma engine,
-> fix it, leaving *only* to dma driver the complete control to
-> ending the read operation.
->
-> Removing STATUS_READ_OP_DONE event activation, has as effect
-> to force mxcmci driver to handle the finish data transfer only
-> by mxcmci dma callback.
->
-> Signed-off-by: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+On Mon, Oct 27, 2014 at 03:12:57PM +0300, Dan Carpenter wrote:
+> On Mon, Oct 27, 2014 at 05:22:21PM +0530, Sudip Mukherjee wrote:
+> > On Mon, Oct 27, 2014 at 02:13:12PM +0300, Dan Carpenter wrote:
+> > > On Sun, Oct 26, 2014 at 06:03:33PM +0530, Sudip Mukherjee wrote:
+> > > > @@ -262,7 +257,7 @@ static u8 rtl8712_dl_fw(struct _adapter *padapter)
+> > > >  		if (tmp8_a != (tmp8|BIT(2)))
+> > > >  			goto exit_fail;
+> > > >  
+> > > > -		tmp32 = r8712_read32(padapter, TCR);
+> > > > +		r8712_read32(padapter, TCR);
+> > > 
+> > > I wonder if we actually need to call r8712_read32() here?  It's not
+> > > clear.  The changelog should say one way or the other.  Maybe something
+> > > like "I left a call to r8712_read32(padapter, TCR) because I didn't know
+> > > if it had side effects".  When you note down questions you have in the
+> > > changelog that helps reviewers.
+> > sure. i will resend it with modified commit log.
+> > r8712_read32() is ultimately calling usb_read32() which is again calling  r8712_usbctrl_vendorreq().
+> > this r8712_usbctrl_vendorreq() is communicating through the usb bus and is sending and receiving the control msg.
+> > that is why i didnot remove it.
+> 
+> Yeah.  I'm 95% sure it's not needed, but I suppose it's better to err
+> on the side of caution.
+i have already sent the v2 with modified commit log.
 
-Thanks! Applied for next!
+thanks
+sudip
 
-Kind regards
-Uffe
-
-> ---
->  drivers/mmc/host/mxcmmc.c | 13 +++----------
->  1 file changed, 3 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
-> index ad11142..536a898 100644
-> --- a/drivers/mmc/host/mxcmmc.c
-> +++ b/drivers/mmc/host/mxcmmc.c
-> @@ -373,13 +373,9 @@ static void mxcmci_dma_callback(void *data)
->         del_timer(&host->watchdog);
->
->         stat = mxcmci_readl(host, MMC_REG_STATUS);
-> -       mxcmci_writel(host, stat & ~STATUS_DATA_TRANS_DONE, MMC_REG_STATUS);
->
->         dev_dbg(mmc_dev(host->mmc), "%s: 0x%08x\n", __func__, stat);
->
-> -       if (stat & STATUS_READ_OP_DONE)
-> -               mxcmci_writel(host, STATUS_READ_OP_DONE, MMC_REG_STATUS);
-> -
->         mxcmci_data_done(host, stat);
->  }
->
-> @@ -743,10 +739,8 @@ static irqreturn_t mxcmci_irq(int irq, void *devid)
->         sdio_irq = (stat & STATUS_SDIO_INT_ACTIVE) && host->use_sdio;
->         spin_unlock_irqrestore(&host->lock, flags);
->
-> -       if (mxcmci_use_dma(host) &&
-> -           (stat & (STATUS_READ_OP_DONE | STATUS_WRITE_OP_DONE)))
-> -               mxcmci_writel(host, STATUS_READ_OP_DONE | STATUS_WRITE_OP_DONE,
-> -                       MMC_REG_STATUS);
-> +       if (mxcmci_use_dma(host) && (stat & (STATUS_WRITE_OP_DONE)))
-> +               mxcmci_writel(host, STATUS_WRITE_OP_DONE, MMC_REG_STATUS);
->
->         if (sdio_irq) {
->                 mxcmci_writel(host, STATUS_SDIO_INT_ACTIVE, MMC_REG_STATUS);
-> @@ -756,8 +750,7 @@ static irqreturn_t mxcmci_irq(int irq, void *devid)
->         if (stat & STATUS_END_CMD_RESP)
->                 mxcmci_cmd_done(host, stat);
->
-> -       if (mxcmci_use_dma(host) &&
-> -                 (stat & (STATUS_DATA_TRANS_DONE | STATUS_WRITE_OP_DONE))) {
-> +       if (mxcmci_use_dma(host) && (stat & STATUS_WRITE_OP_DONE)) {
->                 del_timer(&host->watchdog);
->                 mxcmci_data_done(host, stat);
->         }
-> --
-> 1.8.3.2
->
+> 
+> regards,
+> dan carpenter
+> 
