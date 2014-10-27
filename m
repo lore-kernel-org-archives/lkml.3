@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354AbaJ0RAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:00:55 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:52280 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752237AbaJ0RAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:00:53 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: balbi@ti.com
-Cc: Romain Perier <romain.perier@gmail.com>, devicetree@vger.kernel.org,
-        broonie@kernel.org, lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, robh@kernel.org, mark.rutland@arm.com,
-        johan@kernel.org, linux-pm@vger.kernel.org, linux@roeck-us.net,
-        lee.jones@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, gnurou@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v1 03/10] regulator: act8865: Use of_is_system_power_controller helper function
-Date: Mon, 27 Oct 2014 18:03:51 +0100
-Message-ID: <7689962.rlsfMIoFoC@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <20141027164022.GC14253@saruman>
-References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com> <1414427215-14380-3-git-send-email-romain.perier@gmail.com> <20141027164022.GC14253@saruman>
+	id S1752329AbaJ0RC2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:02:28 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:46334 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565AbaJ0RC1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:02:27 -0400
+Date: Mon, 27 Oct 2014 18:02:19 +0100
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Frank Blaschka <blaschka@linux.vnet.ibm.com>, schwidefsky@de.ibm.com,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        iommu@lists.linux-foundation.org, sebott@linux.vnet.ibm.com
+Subject: Re: [PATCH linux-next] iommu: add iommu for s390 platform
+Message-ID: <20141027180219.62b1ac4a@thinkpad>
+In-Reply-To: <20141027162502.GB6202@8bytes.org>
+References: <1413892645-37657-1-git-send-email-blaschka@linux.vnet.ibm.com>
+	<20141022141728.GG10074@8bytes.org>
+	<20141022154320.GA42442@tuxmaker.boeblingen.de.ibm.com>
+	<20141023124115.GB10053@8bytes.org>
+	<20141023140437.GA31009@tuxmaker.boeblingen.de.ibm.com>
+	<20141027153201.517f4ff4@thinkpad>
+	<20141027162502.GB6202@8bytes.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102717-0041-0000-0000-000001D59DA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 27. Oktober 2014, 11:40:22 schrieb Felipe Balbi:
-> On Mon, Oct 27, 2014 at 04:26:48PM +0000, Romain Perier wrote:
-> > Signed-off-by: Romain Perier <romain.perier@gmail.com>
-> > ---
-> > 
-> >  drivers/regulator/act8865-regulator.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/regulator/act8865-regulator.c
-> > b/drivers/regulator/act8865-regulator.c index 76301ed..435aba1 100644
-> > --- a/drivers/regulator/act8865-regulator.c
-> > +++ b/drivers/regulator/act8865-regulator.c
-> > @@ -365,7 +365,7 @@ static int act8865_pmic_probe(struct i2c_client
-> > *client,> 
-> >  		return ret;
-> >  	
-> >  	}
-> > 
-> > -	if (of_system_has_poweroff_source(dev->of_node)) {
-> > +	if (of_is_system_power_controller(dev->of_node)) {
-> 
-> so building this driver is broken until this patch ? not very good
-> either.
-> 
-> Looks to me you should add of_is_system_power_controller without remove
-> of_system_has_poweroff_source() until all users of that have been
-> converted over.
+On Mon, 27 Oct 2014 17:25:02 +0100
+Joerg Roedel <joro@8bytes.org> wrote:
 
-or alternatively fold this change into patch1 to keep the renaming together
+> On Mon, Oct 27, 2014 at 03:32:01PM +0100, Gerald Schaefer wrote:
+> > Not sure if I understood the concept of IOMMU domains right. But if
+> > this is about having multiple devices in the same domain, so that
+> > iommu_ops->map will establish the _same_ DMA mapping on _all_
+> > registered devices, then this should be possible.
+> 
+> Yes, this is what domains are about. A domain describes a set of DMA
+> mappings which can be assigned to multiple devices in parallel.
+> 
+> > We cannot have shared DMA tables because each device gets its own
+> > DMA table allocated during device initialization.
+> 
+> Is there some hardware reason for this or is that just an
+> implementation detail that can be changed. In other words, does the
+> hardware allow to use the same DMA table for multiple devices?
+
+Yes, the HW would allow shared DMA tables, but the implementation would
+need some non-trivial changes. For example, we have a per-device spin_lock
+for DMA table manipulations and the code in arch/s390/pci/pci_dma.c knows
+nothing about IOMMU domains or shared DMA tables, it just implements a set
+of dma_map_ops.
+
+Of course this would also go horribly wrong if a device was already
+in use (via the current dma_map_ops), but I guess using devices through
+the IOMMU_API prevents using them otherwise?
+
+> 
+> > But we could just keep all devices from one domain in a list and
+> > then call dma_update_trans() for all devices during
+> > iommu_ops->map/unmap.
+> 
+> This sounds complicated. Note that a device can be assigned to a
+> domain that already has existing mappings. In this case you need to
+> make sure that the new device inherits these mappings (and destroy
+> all old mappings for the device that possibly exist).
+> 
+> I think it is much easier to use the same DMA table for all devices
+> in a domain, if the hardware allows that.
+
+Yes, in this case, having one DMA table per domain and sharing it
+between all devices in that domain sounds like a good idea. However,
+I can't think of any use case for this, and Frank probably had a very
+special use case in mind where this scenario doesn't appear, hence the
+"one device per domain" restriction.
+
+So, if having multiple devices per domain is a must, then we probably
+need a thorough rewrite of the arch/s390/pci/pci_dma.c code.
+
+Gerald
+
