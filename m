@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaJ0NSh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:18:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51954 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752758AbaJ0NSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:18:33 -0400
-Date: Mon, 27 Oct 2014 14:18:31 +0100
-From: David Sterba <dsterba@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 09/11] tty: ipwireless: Fix probable mask then right
- shift defects
-Message-ID: <20141027131831.GE22943@suse.cz>
-Reply-To: dsterba@suse.cz
-Mail-Followup-To: dsterba@suse.cz, Joe Perches <joe@perches.com>,
-	linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Jiri Slaby <jslaby@suse.cz>
-References: <cover.1414387334.git.joe@perches.com>
- <5f61fec0dbc7d50715800c94b19db5914b1af610.1414387334.git.joe@perches.com>
+	id S1752692AbaJ0NUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:20:32 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:34844 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaJ0NUb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 09:20:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5f61fec0dbc7d50715800c94b19db5914b1af610.1414387334.git.joe@perches.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <1412351606-29453-1-git-send-email-tomeu.vizoso@collabora.com>
+References: <1412351606-29453-1-git-send-email-tomeu.vizoso@collabora.com>
+Date: Mon, 27 Oct 2014 14:20:30 +0100
+Message-ID: <CAPDyKFrp0cqUhH-2XUhCiMdWonb6TJ_v6TA9568KUKEx5=CGDA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sunxi: Remove unused includes of linux/clk-private.h
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Chris Ball <chris@printf.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, Hans de Goede <hdegoede@redhat.com>,
+        =?UTF-8?Q?David_Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 26, 2014 at 10:25:05PM -0700, Joe Perches wrote:
-> Precedence of & and >> is not the same and is not left to right.
-> shift has higher precedence and should be done after the mask.
-> 
-> Add parentheses around the masks.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+On 3 October 2014 17:53, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
-Acked-by: David Sterba <dsterba@suse.cz>
+Thanks! Applied for next.
 
-Thanks.
+Kind regards
+Uffe
+
+> ---
+>  drivers/mmc/host/sunxi-mmc.c | 1 -
+>  1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/sunxi-mmc.c b/drivers/mmc/host/sunxi-mmc.c
+> index 024f67c..647955d 100644
+> --- a/drivers/mmc/host/sunxi-mmc.c
+> +++ b/drivers/mmc/host/sunxi-mmc.c
+> @@ -21,7 +21,6 @@
+>  #include <linux/err.h>
+>
+>  #include <linux/clk.h>
+> -#include <linux/clk-private.h>
+>  #include <linux/clk/sunxi.h>
+>
+>  #include <linux/gpio.h>
+> --
+> 1.9.3
+>
