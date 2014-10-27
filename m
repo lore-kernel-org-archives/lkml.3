@@ -1,69 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090AbaJ0RVc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:21:32 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:34502 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaJ0RV3 convert rfc822-to-8bit (ORCPT
+	id S1751377AbaJ0R1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:27:36 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58748 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaJ0R1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:21:29 -0400
-Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
-Mime-Version: 1.0 (Mac OS X Mail 8.0 \(1990.1\))
-Content-Type: text/plain; charset=utf-8
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <20141027171731.GY18557@sirena.org.uk>
-Date: Mon, 27 Oct 2014 19:21:22 +0200
-Cc: Steffen Trumtrar <s.trumtrar@pengutronix.de>, atull@opensource.altera.com,
-        jgunthorpe@obsidianresearch.com, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>, michal.simek@xilinx.com,
-        rdunlap@infradead.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Pavel Machek <pavel@denx.de>,
-        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        mgerlach@opensource.altera.com, Alan Tull <delicious.quinoa@gmail.com>,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <09D1D469-01B8-44BD-BC18-EB879297BB85@konsulko.com>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com> <1414108267-22058-3-git-send-email-atull@opensource.altera.com> <CCE2D027-AA89-41C4-B9AA-2B92AA62129B@konsulko.com> <20141027150147.GX18557@sirena.org.uk> <31BBCD26-65E2-431A-9ADF-95D7EDC7E34E@konsulko.com> <20141027153205.GW10262@pengutronix.de> <1C42AF5D-4776-4B09-BDF4-24F001439F46@konsulko.com> <20141027171731.GY18557@sirena.org.uk>
-To: Mark Brown <broonie@kernel.org>
-X-Mailer: Apple Mail (2.1990.1)
+	Mon, 27 Oct 2014 13:27:34 -0400
+Date: Mon, 27 Oct 2014 18:27:19 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>
+Subject: Re: [PATCH v12 09/11] pvqspinlock, x86: Add para-virtualization
+ support
+Message-ID: <20141027172719.GK3337@twins.programming.kicks-ass.net>
+References: <1413483040-58399-1-git-send-email-Waiman.Long@hp.com>
+ <1413483040-58399-10-git-send-email-Waiman.Long@hp.com>
+ <20141024084738.GU21513@worktop.programming.kicks-ass.net>
+ <544ABC47.2000700@hp.com>
+ <20141024220423.GB10501@worktop.programming.kicks-ass.net>
+ <544E7DC9.5020903@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544E7DC9.5020903@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-> On Oct 27, 2014, at 19:17 , Mark Brown <broonie@kernel.org> wrote:
+On Mon, Oct 27, 2014 at 01:15:53PM -0400, Waiman Long wrote:
+> On 10/24/2014 06:04 PM, Peter Zijlstra wrote:
+> >On Fri, Oct 24, 2014 at 04:53:27PM -0400, Waiman Long wrote:
+> >>The additional register pressure may just cause a few more register moves
+> >>which should be negligible in the overall performance . The additional
+> >>icache pressure, however, may have some impact on performance. I was trying
+> >>to balance the performance of the pv and non-pv versions so that we won't
+> >>penalize the pv code too much for a bit more performance in the non-pv code.
+> >>Doing it your way will add a lot of function call and register
+> >>saving/restoring to the pv code.
+> >If people care about performance they should not be using virt crap :-)
+> >
+> >I only really care about bare metal.
 > 
-> On Mon, Oct 27, 2014 at 05:45:03PM +0200, Pantelis Antoniou wrote:
-> 
-> Please fix your mail client to word wrap at less than 80 columns.
-> 
->> Well, it’s not my speciality, but my understanding is that FPGAs take (considerable)
->> time to be programmed. If someone has already configured the ‘bus’ it is considered
->> a win to not reload the bitstream. I.e. if you boot with the bootloader having loaded
->> the bitstream already, you don’t want to do it again.
-> 
-> That's not what your property is saying, though - if it were just about
-> handover between the bootloader and the kernel that'd be one thing but
-> it's also got this additional possibility to instruct the kernel that
-> the device must be either disabled or explicitly programmed.  Having a
-> property that just says "this FPGA is programmed" covers the handover
-> case but this property does more than that.
+> Yes, I am aware of that. However, the whole point of doing PV spinlock is to
+> improve performance in a virtual guest.
 
-It’s not my property. This is not my driver. The property is badly-named
-as it is IMHO.
+Anything that avoids the lock holder preemption nonsense is a _massive_
+win for them, a few function calls should not even register on that
+scale.
 
-Why don’t we let Alan chime in?
+> +#ifdef _GEN_PV_LOCK_SLOWPATH
+> +static void pv_queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+> +#else
+>  void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+> +#endif
 
-Regards
+If you have two functions you might as well use the PV stuff to patch in
+the right function call at the usage sites and avoid:
 
-— Pantelis
+> +       if (pv_enabled()) {
+> +               pv_queue_spin_lock_slowpath(lock, val);
+> +               return;
+> +       }
 
+this alltogether.
+
+>         this_cpu_dec(mcs_nodes[0].count);
+>  }
+>  EXPORT_SYMBOL(queue_spin_lock_slowpath);
+> +
+> +#if !defined(_GEN_PV_LOCK_SLOWPATH) && defined(CONFIG_PARAVIRT_SPINLOCKS)
+> +/*
+> + * Generate the PV version of the queue_spin_lock_slowpath function
+> + */
+> +#undef pv_init_node
+> +#undef pv_wait_check
+> +#undef pv_link_and_wait_node
+> +#undef pv_wait_head
+> +#undef EXPORT_SYMBOL
+> +#undef in_pv_code
+> +
+> +#define _GEN_PV_LOCK_SLOWPATH
+> +#define EXPORT_SYMBOL(x)
+> +#define in_pv_code     return_true
+> +#define pv_enabled     return_false
+> +
+> +#include "qspinlock.c"
+> +
+> +#endif
+
+That's properly disgusting :-) But a lot better than actually
+duplicating everything I suppose.
