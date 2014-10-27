@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaJ0JX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 05:23:29 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:57141 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548AbaJ0JX2 (ORCPT
+	id S1752623AbaJ0JYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 05:24:19 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:42010 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751808AbaJ0JYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 05:23:28 -0400
-Date: Mon, 27 Oct 2014 14:53:17 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Yao Dongdong <yaodongdong@huawei.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched:skip loop non-idle cpus after find an idle cpu
- while find_idlest_cpu
-Message-ID: <20141027092317.GC10867@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <544DB84D.1030504@huawei.com>
- <20141027080422.GB10867@linux.vnet.ibm.com>
- <544E091D.9040102@huawei.com>
+	Mon, 27 Oct 2014 05:24:17 -0400
+X-IronPort-AV: E=Sophos;i="5.04,794,1406563200"; 
+   d="scan'208";a="42387981"
+Message-ID: <544E0FFD.1060006@cn.fujitsu.com>
+Date: Mon, 27 Oct 2014 17:27:25 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <544E091D.9040102@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102709-0013-0000-0000-000001E5AFCF
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 0/3] workqueue: unbound workqueue management Vs hotplug
+References: <1412740423-20782-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1412740423-20782-1-git-send-email-laijs@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Yao Dongdong <yaodongdong@huawei.com> [2014-10-27 16:58:05]:
+ping
 
-> On 2014/10/27 16:04, Srikar Dronamraju wrote:
-> > * Yao Dongdong <yaodongdong@huawei.com> [2014-10-27 11:13:17]:
-> >
-> >> Idle cpu is idler than non-idle cpu, so we needn't loop non-idle cpus after find an idle cpu.
-> >>
-> > While this check looks good,
-> > I dont see how we are avoiding a loop?
-> >
-> > Are you suggesting that we break of the for loop once we set
-> > shallowest_idle_cpu?
-> >
-> Thanks for your review.
+On 10/08/2014 11:53 AM, Lai Jiangshan wrote:
+> Hi, TJ
 > 
-> I agree that the submit message is a bit misleading, what this patch do is just avoiding search for least_loaded_cpu
-> in non-idle cpus.
+> These patches are for unbound workqueue management (hotplug).
 > 
->     sched:add check of shallowest_idle_cpu before search for least_loaded_cpu
+> This patchset simplify the unbound workqueue management when hotplug.
+> This is also a preparation patchset for later unbound workqueue management
+> patches.
 > 
->     Idle cpu is idler than non-idle cpu, so we needn't search for least_loaded_cpu
->     after we have found an idle cpu.
+> Thanks,
+> Lai.
 > 
-
-Looks good for me.
-
-Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-
--- 
-Thanks and Regards
-Srikar Dronamraju
+> Lai Jiangshan (3):
+>   workqueue: add wq_unbound_online_cpumask
+>   workqueue: extend wq_pool_mutex to also protect pwq-installation
+>   workqueue: remove get_online_cpus() from apply_workqueue_attrs()
+> 
+>  kernel/workqueue.c |   61 ++++++++++++++++++++-------------------------------
+>  1 files changed, 24 insertions(+), 37 deletions(-)
+> 
 
