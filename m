@@ -1,121 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaJ0S61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:58:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40634 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602AbaJ0S6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:58:25 -0400
-Date: Mon, 27 Oct 2014 20:54:46 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <ktkhai@parallels.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>, Christoph Lameter <cl@linux.com>
-Subject: [PATCH 3/3] introduce task_rcu_dereference()
-Message-ID: <20141027195446.GD11736@redhat.com>
-References: <1413962231.19914.130.camel@tkhai> <20141027195339.GA11736@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027195339.GA11736@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752459AbaJ0S5p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:57:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52388 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372AbaJ0S5l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:57:41 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 020/105] mmc: tmio: prevent endless loop in tmio_mmc_set_clock()
+Date: Mon, 27 Oct 2014 11:55:55 -0700
+Message-Id: <1414436240-13879-21-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
+References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_struct is only protected by RCU if it was found on a RCU protected
-list (say, for_each_process() or find_task_by_vpid()).
+3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
 
-And as Kirill pointed out rq->curr isn't protected by RCU, the scheduler
-drops the (potentially) last reference without RCU gp, this means that we
-need to fix the code which uses foreign_rq->curr under rcu_read_lock().
+------------------
 
-Add a new helper which can be used to dereferene rq->curr or any other
-pointer to task_struct assuming that it should be cleared or updated
-before the final put_task_struct(). It returns non-NULL only if this
-task can't go away before rcu_read_unlock().
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-Suggested-by: Kirill Tkhai <ktkhai@parallels.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+commit bb98d9d1d2e791f368295c9c09c9a03fe3ac0e62 upstream.
+
+I spent a couple of days with the driver just hanging due to me forgetting to
+specify the external crystal frequency,  so that clk_get_rate() returned 0 and
+thus the loop in tmio_mmc_set_clock() never ended. I don't think that's an
+acceptable behavior, so I suggest that the minimum frequency is checked for 0
+in tmio_mmc_host_probe().
+
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Acked-by: Ian Molton <ian.molton@codethink.co.uk>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/sched.h |    1 +
- kernel/exit.c         |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 50 insertions(+), 0 deletions(-)
+ drivers/mmc/host/tmio_mmc_pio.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 857ba40..0ba420e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2300,6 +2300,7 @@ extern void block_all_signals(int (*notifier)(void *priv), void *priv,
- 			      sigset_t *mask);
- extern void unblock_all_signals(void);
- extern void release_task(struct task_struct * p);
-+extern struct task_struct *task_rcu_dereference(struct task_struct **ptask);
- extern int send_sig_info(int, struct siginfo *, struct task_struct *);
- extern int force_sigsegv(int, struct task_struct *);
- extern int force_sig_info(int, struct siginfo *, struct task_struct *);
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 32c58f7..d8b95c2 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -213,6 +213,55 @@ repeat:
- 		goto repeat;
- }
+diff --git a/drivers/mmc/host/tmio_mmc_pio.c b/drivers/mmc/host/tmio_mmc_pio.c
+index f3b2d8c..51add7f 100644
+--- a/drivers/mmc/host/tmio_mmc_pio.c
++++ b/drivers/mmc/host/tmio_mmc_pio.c
+@@ -1042,6 +1042,15 @@ int tmio_mmc_host_probe(struct tmio_mmc_host **host,
+ 	}
  
-+struct task_struct *task_rcu_dereference(struct task_struct **ptask)
-+{
-+	struct task_struct *task;
-+	struct sighand_struct *sighand;
+ 	/*
++	 * Check the sanity of mmc->f_min to prevent tmio_mmc_set_clock() from
++	 * looping forever...
++	 */
++	if (mmc->f_min == 0) {
++		ret = -EINVAL;
++		goto host_free;
++	}
 +
 +	/*
-+	 * We need to verify that release_task() was not called and thus
-+	 * delayed_put_task_struct() can't run and drop the last reference
-+	 * before rcu_read_unlock(). We check task->sighand != NULL, but
-+	 * we can read the already freed and reused memory.
-+	 */
-+ retry:
-+	task = rcu_dereference(*ptask);
-+	if (!task)
-+		return NULL;
-+
-+	probe_slab_address(&task->sighand, sighand);
-+	/*
-+	 * Pairs with atomic_dec_and_test(usage) in put_task_struct(task).
-+	 * If this task was already freed we can not miss the preceding
-+	 * update of this pointer.
-+	 */
-+	smp_rmb();
-+	if (unlikely(task != ACCESS_ONCE(*ptask)))
-+		goto retry;
-+
-+	/*
-+	 * Either this is the same task and we can trust sighand != NULL, or
-+	 * its memory was re-instantiated as another instance of task_struct.
-+	 * In the latter case the new task can not go away until another rcu
-+	 * gp pass, so the only problem is that sighand == NULL can be false
-+	 * positive but we can pretend we got this NULL before it was freed.
-+	 */
-+	if (sighand)
-+		return task;
-+
-+	/*
-+	 * We could even eliminate the false positive mentioned above:
-+	 *
-+	 *	probe_slab_address(&task->sighand, sighand);
-+	 *	if (sighand)
-+	 *		goto retry;
-+	 *
-+	 * if sighand != NULL because we read the freed memory we should
-+	 * see the new pointer, otherwise we will likely return this task.
-+	 */
-+	return NULL;
-+}
-+
- /*
-  * This checks not only the pgrp, but falls back on the pid if no
-  * satisfactory pgrp is found. I dunno - gdb doesn't work correctly
+ 	 * There are 4 different scenarios for the card detection:
+ 	 *  1) an external gpio irq handles the cd (best for power savings)
+ 	 *  2) internal sdhi irq handles the cd
 -- 
-1.5.5.1
-
+1.9.1
 
