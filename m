@@ -1,119 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924AbaJ0MOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:14:45 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:18501 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108AbaJ0MMD (ORCPT
+	id S1752900AbaJ0MOo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:14:44 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:38654 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581AbaJ0MMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 08:12:03 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-7f-544e3690838d
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v5 0/4] regulator: max77686/trats2: Disable some regulators in
- suspend
-Date: Mon, 27 Oct 2014 13:11:46 +0100
-Message-id: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xy7oTzPxCDNZOELfYOGM9q8WkdQeY
-	LKY+fMJmcf3Lc1aL+UfOsVoc/V1g8fqFoUXvgqtsFmeb3rBbfLvSwWSx6fE1VovLu+awWcw4
-	v4/J4vZlXou1R+6yO/B7tDT3sHn8fX6dxePvqhfMHjtn3WX32LSqk81j85J6j74tqxg9Pm+S
-	C+CI4rJJSc3JLEst0rdL4Mq4fbObraBNrGJVy3/mBsYXgl2MnBwSAiYS575eY4awxSQu3FvP
-	1sXIxSEksJRR4t/No1BOH5PE578HmUCq2ASMJTYvX8IGYosI7GeSeDzBBKSIWWA1k8TPK6fA
-	RgkLREhMPr6QFcRmEVCVePB2K1gDr4CbxJbnh1kg1slJnDw2mXUCI/cCRoZVjKKppckFxUnp
-	uUZ6xYm5xaV56XrJ+bmbGCHh+HUH49JjVocYBTgYlXh4JxT7hgixJpYVV+YeYpTgYFYS4XX8
-	CRTiTUmsrEotyo8vKs1JLT7EyMTBKdXAeDWO9WbgwTdRXjn1SxjZCleI7zc76pbd0hLw+tjn
-	soBrcRNfs1yKkPtY9lFU9JTdew2m251dDA9fMZ15bhCns1drcaX6tys+s64/zPiocXES0+eQ
-	DQ+0rn2amrlsIYvexI3nP/5OnKeV+zO7bN4efvFUQ4EFx8ol+s4sfRuyWCJaeIfHJrlPZ5RY
-	ijMSDbWYi4oTAbUfbbklAgAA
+	Mon, 27 Oct 2014 08:12:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <1412089178-21946-2-git-send-email-matteo.facchinetti@sirius-es.it>
+References: <1412089178-21946-1-git-send-email-matteo.facchinetti@sirius-es.it>
+	<1412089178-21946-2-git-send-email-matteo.facchinetti@sirius-es.it>
+Date: Mon, 27 Oct 2014 13:12:04 +0100
+Message-ID: <CAPDyKFo7SuWA81QeitBzr6JyyKERkL2N4VK-KEOSK+31oZiYCQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mmc: mxcmmc: fix race condition when dma finish a
+ data transfer
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+Cc: Chris Ball <chris@printf.net>, Alexander Shiyan <shc_work@mail.ru>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linucppc-dev@lists.ozlabs.org, Anatolij Gustschin <agust@denx.de>,
+        gsi@denx.de, sbabic@denx.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 30 September 2014 16:59, Matteo Facchinetti
+<matteo.facchinetti@sirius-es.it> wrote:
+> From: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
+>
+> During a read of data block using dma, driver might have two ways to finish to read
+> and free the resources:
+> 1) checking STATUS_DATA_TRANS_DONE mask, in the mxcmci_irq() routine
+>    (pending to mmc irq)
+> 2) mxmmc driver, registers also a mxcmci_dma_callback() and when transfer is finished,
+>    dma driver calls this callback. (pending to dma irq)
+> Both ways are concurrent with each other.
+>
+> Race condition happens when following events occur:
+> /* (1) mxcmci driver start data transfer */
+>          158.418970: mpc_dma_execute: mpc_dma_execute(): will_access_peripheral start cid=31
+>          158.418976: mpc_dma_issue_pending <-mxcmci_request
+>          158.418983: mxcmci_start_cmd <-mxcmci_request
+> /* (2) mxcmci driver receive mmc irq */
+>          158.419656: mxcmci_irq <-handle_irq_event_percpu
+>          158.419692: mxcmci_read_response <-mxcmci_irq
+> /* (3) mxcmci driver checks that transfer is complete and call mxcmci_finish_data() */
+>          158.419726: mxcmci_data_done <-mxcmci_irq
+>          158.419729: mxcmci_finish_data <-mxcmci_data_done
+>          158.419733: dma_direct_unmap_sg <-mxcmci_finish_data
+>          158.419736: mxcmci_swap_buffers.isra.24 <-mxcmci_finish_data
+>          158.419762: mxcmci_read_response <-mxcmci_data_done
+> /* (4) mxcmci driver (no dma): send stop command */
+>          158.419765: mxcmci_start_cmd <-mxcmci_data_done
+> /* (5) mxcmci driver (no dma): receive the stop command irq response */
+>          158.419782: mxcmci_irq <-handle_irq_event_percpu
+>          158.419812: mxcmci_read_response <-mxcmci_irq
+>          158.419843: mxcmci_finish_request <-mxcmci_irq
+> /* (6) dma driver: receive dma irq (finish data transfer) related by request on step 1 */
+>          158.419853: mpc_dma_irq <-handle_irq_event_percpu
+>          158.420001: mpc_dma_irq_process <-mpc_dma_irq
+>          158.420004: mpc_dma_irq_process <-mpc_dma_irq
+> /* (7) dma driver: start dma tasklet to finish the dma irq handling */
+>          158.420008: mpc_dma_irq_process: mpc_dma_irq_process(): completed ch:31
+> /* (8) mxcmci driver: start next data transfer using dma */
+>          158.420174: mxcmci_request <-mmc_start_req
+>          158.420182: dma_direct_map_sg <-mxcmci_request
+>          158.420192: mpc_dma_prep_slave_sg <-mxcmci_request
+> /* (9) dma driver: schedule irq tasklet and execute mxcmci dma driver callback */
+>          158.420250: mpc_dma_tasklet <-tasklet_action
+>          158.420254: mpc_dma_process_completed <-tasklet_action
+>          158.420267: mxcmci_dma_callback <-mpc_dma_process_completed
+> /* ERROR!!! (10) mxcmci driver callback works on dma data related to the step 1
+>                  that is already finished */
+>          158.420271: mxcmci_data_done <-mpc_dma_process_completed
+>          158.420273: mxcmci_finish_data <-mxcmci_data_done
+> /* ERROR!!! (11) mxcmci driver: clear data that should be used by step 8 and
+>                  send an other mmc stop command (already sended on step 4) */
+>          158.420276: dma_direct_unmap_sg <-mxcmci_finish_data
+>          158.420279: mxcmci_swap_buffers.isra.24 <-mxcmci_finish_data
+>          158.420330: mxcmci_read_response <-mxcmci_data_done
+>          158.420333: mxcmci_start_cmd <-mxcmci_data_done
+>          158.420338: dma_run_dependencies <-mpc_dma_process_completed
+> ...
+> ...
+> ...
+>          168.474223: mxcmci_watchdog <-call_timer_fn
+>          168.474236: mxcmci_watchdog: mxcmci_watchdog
+>          168.474397: mpc_dma_device_control <-mxcmci_watchdog
+>
+>
+> In accordance with the other drivers that using the dma engine,
+> fix it, leaving *only* to dma driver the complete control to
+> ending the read operation.
+>
+> Removing STATUS_READ_OP_DONE event activation, has as effect
+> to force mxcmci driver to handle the finish data transfer only
+> by mxcmci dma callback.
+>
+> Signed-off-by: Matteo Facchinetti <matteo.facchinetti@sirius-es.it>
 
+Thanks! Applied for next!
 
-Changes since v4
-================
-1. New patch: 2/4. Store the current value of opmode in
-   non-shifted form. Along with changes in defines used for opmodes
-   this simplifies everything a lot. Suggested by Javier.
-2. Drop Javier's review-by from patch 1 because I changed the
-   defines to cover both LDO and buck at the same time.
-3. Patch 3/4: adding suspend disable is now simpler - just re-use
-   the existing function.
+Kind regards
+Uffe
 
-Changes since v3
-================
-1. Dropped patch 3/4 ("mfd/regulator: dt-bindings: max77686: Document
-   regulators off in suspend"), applied by Lee Jones.
-2. Patch 2/3: Fix missing shift when checking if current opmode is
-   equal to off in suspend. The shift is various so I added a simple
-   function max77686_set_opmode_enable(). Dropped Javier's review-by.
-3. Patch 1/3: Add Javier's review-by.
-4. Patch 3/3: Add Chanwoo's review-by.
-
-Changes since v2
-================
-1. Patch 1/4: Fully describe different values used for controlling
-   the regulators (low power modes, enable, disable). Remove "opmode"
-   from new defines. Suggested by Javier.
-2. Patch 2/4: minor nits after changing patch 1.
-3. Add Javier's reviewed-by to 2, 3 and 4 patch.
-4. Patch 3/4 (changes in documentation) should be picked up by Lee
-   Jones but I'm resending it anyway.
-
-Changes since v1
-================
-1. Add patch 1/4 and 3/4.
-2. Patch 2/4: Extend existing set_suspend_disable (for bucks) with
-   LDO support. Implement set_suspend_enable. Suggested by Javier.
-3. Patch 4/4: Add regulator suspend properties only to regulators
-   actually supporting this. Other regulators, not implementing
-   suspend enable/disable, will warn ("VCC_1.8V_IO: No configuration").
-4. Patch 4/4: In suspend enable VHSIC_1.0V and VHSIC_1.8V regulators.
-   Suggested by Chanwoo Choi.
-
-
-Description
-===========
-This patchset makes use of Javier Martinez Cainllas changes [1].
-It allows disabling some of the regulators during suspend to RAM.
-
-Javier's patchset is necessary only to test it.
-
-[1] [PATCH v3 0/2] ARM: EXYNOS: Call regulator suspend prepare/finish
-    https://lkml.org/lkml/2014/10/20/545
-
-
-Best regards,
-Krzysztof
-
-
-Krzysztof Kozlowski (4):
-  regulator: max77686: Replace hard-coded opmode values with defines
-  regulator: max77686: Store opmode non-shifted
-  regulator: max77686: Implement suspend disable for some LDOs
-  ARM: dts: exynos4412-trats: Add suspend configuration for max77686
-    regulators
-
- arch/arm/boot/dts/exynos4412-trats2.dts | 72 +++++++++++++++++------------
- drivers/gpu/arm/mali400/ump/arch        |  1 +
- drivers/regulator/max77686.c            | 81 +++++++++++++++++++++++++--------
- 3 files changed, 105 insertions(+), 49 deletions(-)
- create mode 120000 drivers/gpu/arm/mali400/ump/arch
-
--- 
-1.9.1
-
+> ---
+>  drivers/mmc/host/mxcmmc.c | 13 +++----------
+>  1 file changed, 3 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/mmc/host/mxcmmc.c b/drivers/mmc/host/mxcmmc.c
+> index ad11142..536a898 100644
+> --- a/drivers/mmc/host/mxcmmc.c
+> +++ b/drivers/mmc/host/mxcmmc.c
+> @@ -373,13 +373,9 @@ static void mxcmci_dma_callback(void *data)
+>         del_timer(&host->watchdog);
+>
+>         stat = mxcmci_readl(host, MMC_REG_STATUS);
+> -       mxcmci_writel(host, stat & ~STATUS_DATA_TRANS_DONE, MMC_REG_STATUS);
+>
+>         dev_dbg(mmc_dev(host->mmc), "%s: 0x%08x\n", __func__, stat);
+>
+> -       if (stat & STATUS_READ_OP_DONE)
+> -               mxcmci_writel(host, STATUS_READ_OP_DONE, MMC_REG_STATUS);
+> -
+>         mxcmci_data_done(host, stat);
+>  }
+>
+> @@ -743,10 +739,8 @@ static irqreturn_t mxcmci_irq(int irq, void *devid)
+>         sdio_irq = (stat & STATUS_SDIO_INT_ACTIVE) && host->use_sdio;
+>         spin_unlock_irqrestore(&host->lock, flags);
+>
+> -       if (mxcmci_use_dma(host) &&
+> -           (stat & (STATUS_READ_OP_DONE | STATUS_WRITE_OP_DONE)))
+> -               mxcmci_writel(host, STATUS_READ_OP_DONE | STATUS_WRITE_OP_DONE,
+> -                       MMC_REG_STATUS);
+> +       if (mxcmci_use_dma(host) && (stat & (STATUS_WRITE_OP_DONE)))
+> +               mxcmci_writel(host, STATUS_WRITE_OP_DONE, MMC_REG_STATUS);
+>
+>         if (sdio_irq) {
+>                 mxcmci_writel(host, STATUS_SDIO_INT_ACTIVE, MMC_REG_STATUS);
+> @@ -756,8 +750,7 @@ static irqreturn_t mxcmci_irq(int irq, void *devid)
+>         if (stat & STATUS_END_CMD_RESP)
+>                 mxcmci_cmd_done(host, stat);
+>
+> -       if (mxcmci_use_dma(host) &&
+> -                 (stat & (STATUS_DATA_TRANS_DONE | STATUS_WRITE_OP_DONE))) {
+> +       if (mxcmci_use_dma(host) && (stat & STATUS_WRITE_OP_DONE)) {
+>                 del_timer(&host->watchdog);
+>                 mxcmci_data_done(host, stat);
+>         }
+> --
+> 1.8.3.2
+>
