@@ -1,186 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337AbaJ0PXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:23:43 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46026 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262AbaJ0PXk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:23:40 -0400
-Date: Mon, 27 Oct 2014 16:23:06 +0100
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
-        hpa@zytor.com, Michal Simek <monstr@monstr.eu>,
-        michal.simek@xilinx.com, rdunlap@infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
-        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, mgerlach@opensource.altera.com,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
-Message-ID: <20141027152306.GV10262@pengutronix.de>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com>
- <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
- <20141024070042.GL10262@pengutronix.de>
- <5FB7B7FD-7B5B-4250-BADE-85573FDBBE48@konsulko.com>
- <20141025144229.GR10262@pengutronix.de>
- <16E8EC52-0A91-4F28-8113-3CC5352215A5@konsulko.com>
+	id S1753255AbaJ0PZE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:25:04 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:9927 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929AbaJ0PZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:25:02 -0400
+X-IronPort-AV: E=Sophos;i="5.04,796,1406592000"; 
+   d="scan'208";a="186513198"
+Date: Mon, 27 Oct 2014 15:22:02 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Xen-devel] [PATCH v4 3/7] [RFC] arm/arm64: introduce
+ is_dma_coherent
+In-Reply-To: <544E2637.8000902@citrix.com>
+Message-ID: <alpine.DEB.2.02.1410271423550.22875@kaball.uk.xensource.com>
+References: <1412941908-5850-3-git-send-email-stefano.stabellini@eu.citrix.com> <20141010120702.GI7755@arm.com> <alpine.DEB.2.02.1410101401250.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410131215400.17038@kaball.uk.xensource.com> <20141013125725.GA19156@arm.com>
+ <alpine.DEB.2.02.1410131358490.17038@kaball.uk.xensource.com> <alpine.DEB.2.02.1410221703560.876@kaball.uk.xensource.com> <alpine.DEB.2.02.1410231516450.876@kaball.uk.xensource.com> <20141024104746.GC1955@localhost> <alpine.DEB.2.02.1410241233080.22875@kaball.uk.xensource.com>
+ <20141024154353.GE20534@e104818-lin.cambridge.arm.com> <alpine.DEB.2.02.1410241751160.22875@kaball.uk.xensource.com> <alpine.DEB.2.02.1410241828110.22875@kaball.uk.xensource.com> <alpine.DEB.2.02.1410251424350.22875@kaball.uk.xensource.com>
+ <1414251629.3584.20.camel@citrix.com> <alpine.DEB.2.02.1410251714450.22875@kaball.uk.xensource.com> <544E2637.8000902@citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <16E8EC52-0A91-4F28-8113-3CC5352215A5@konsulko.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:07:31 up 12 days,  2:21, 85 users,  load average: 0,08, 0,07,
- 0,05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, 27 Oct 2014, David Vrabel wrote:
+> On 25/10/14 17:15, Stefano Stabellini wrote:
+> > On Sat, 25 Oct 2014, Ian Campbell wrote:
+> >> On Sat, 2014-10-25 at 14:29 +0100, Stefano Stabellini wrote:
+> >>>  
+> >>> Your suggestions and looking more at the code gave me another idea, that
+> >>> I think is clean and at the same time suitable for 3.18.
+> >>> What do you think of the following? It is simple, self-contained and
+> >>> doesn't need a new flag in struct device.
+> >>
+> >> of_dma_is_coherent looks to be quite expensive though (walks up the
+> >> Device Tree doing strcmps on each property of each node until it finds
+> >> the one it is looking for.
+> > 
+> > It takes spin_locks too!
+> > Too bad, I think I'll have to ditch it. In that case I'l try the new
+> > flag in struct device approach.
+> 
+> If you're having to make changes to struct device, this is looking like
+> a series for 3.19 (not 3.18).
 
-On Mon, Oct 27, 2014 at 01:54:20PM +0200, Pantelis Antoniou wrote:
-> Hi Stefen,
-> 
-> > On Oct 25, 2014, at 17:42 , Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
-> > 
-> > Hi Pantelis!
-> > 
-> > On Fri, Oct 24, 2014 at 12:20:53PM +0300, Pantelis Antoniou wrote:
-> >> Hi Stefan, Allan,
-> >> 
-> >> Sorry, haven’t had a chance to review all this yet; will do so in the weekend.
-> >> Just wanted to pop in and comment on a few things.
-> >> 
-> >>> On Oct 24, 2014, at 10:00 AM, Steffen Trumtrar <s.trumtrar@pengutronix.de> wrote:
-> >>> 
-> >>> Hi!
-> >>> 
-> >>> On Thu, Oct 23, 2014 at 06:51:06PM -0500, atull@opensource.altera.com wrote:
-> >>>> From: Alan Tull <atull@opensource.altera.com>
-> >>> 
-> >>> (...)
-> >>> 
-> >>>> diff --git a/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
-> >>>> new file mode 100644
-> >>>> index 0000000..bc24a2e
-> >>>> --- /dev/null
-> >>>> +++ b/Documentation/devicetree/bindings/fpga/altera-hps2fpga-bridge.txt
-> >>>> @@ -0,0 +1,53 @@
-> >>>> +Altera FPGA/HPS Bridge Driver
-> >>>> +
-> >>>> +This driver manages a bridge between a FPGA and a host processor system (HPS).
-> >>>> +User space can enable or disable the bridge by writing a "1" or a "0",
-> >>>> +respectively, to its enable file under bridge's entry in
-> >>>> +/sys/class/fpga-bridge.  Typically, one disables the bridges before
-> >>>> +reprogramming the FPGA.  Once the FPGA is reprogrammed, the bridges are
-> >>>> +reenabled.
-> >>>> +
-> >>> 
-> >>> NAK.
-> >>> 
-> >>> This is all linux specific and doesn't belong here.
-> >>> 
-> >> 
-> >> We know. The DT spec hasn’t been updated for a while, and this is going to be
-> >> part of what we want to do with the restarting of the ePAPR spec process.
-> >> 
-> > 
-> > As we don't have a new spec yet, I go with the current state of the art.
-> > And I don't see how "file under ... /sys/class/fpga-bridge" fits the
-> > current spec.
-> > 
-> >> So absolutes like “DT is a hardware description only" might be too strong statements, that
-> >> do not work in practice anymore.
-> >> 
-> >> There’s no such thing as pure hardware devices lately - there is always a configuration
-> >> component; some of it OS specific, some of it not.
-> >> 
-> > 
-> > If it really is necessary, I'm not against it, don't get me wrong.
-> > But in the grand scheme I wouldn't say that this fits my experience.
-> > There are some devices that need configuration and often when it is
-> > done in the DT, it is just a shortcut or not thought through.
-> > And can be also introspected dynamically. With some discussion on the
-> > list these bindings often change.
-> > 
-> 
-> Already answered and given a possible way this might work; admittedly this
-> specific example is not a good fit for what I was trying to say, but whatever.
-> Let’s get the ball rolling.
-> 
-
-I would be okay with chosen-node. Not for this driver; but in general.
-
-> > Regarding OS specifics: already there, e.g. console setup in the chosen node.
-> > And other things I saw are ethernet aliases just for u-boot. Not a problem
-> > of the spec, just a problem of u-boot and unneccessary "configuration".
-> > Just to fix a bad bootloader. barebox can handle this without any
-> > such stuff. Maybe we should integrate the DT "overlays" barebox uses into
-> > the in-kernel DTs as well...but does it really help/interest someone who
-> > decides to use u-boot where barebox stores its environment? I guess not.
-> > 
-> 
-> Although I’m not against having DT overlays in the bootloader, I only see them
-> as a method that helps a platform developer express things easier. I am completely
-> against having the kernel tied to any particular bootloader.
-> 
-> We’ve all been through the hell where a kernel only boots if the bootloader has 
-> setup the platform “correctly”. This “correctly” has a very loose definition and
-> 99/100 times is extremely badly documented or not at all.
-> 
-> IMHO the bootloader should (as part of the normal boot sequence) only setup the
-> absolutely bare minimum and then pass control to the kernel as soon as possible.
-> 
-> The full featured bootloader environment should only be presented when the user
-> requests so.
-> 
-
-Totally agree. The kernel shouldn't be tied to any bootloader if at all possible
-(the SoCFPGA is an especially bad example here again, as the pinmuxing can only
-happen in the bootloader).
-But should the DT include stuff than, that is only interesting for linux?
-
-> >> We have to be engaged in the process and figure out how to update the spec for what is
-> >> now the state of the art in the industry.
-> >> 
-> > 
-> > Again, not against that if it is necessary. For example your overlay stuff might
-> > be a good update to the spec. Would be better if it is official instead of a "hack".
-> > I want that for SoCFPGA.
-> > 
-> > But having looked at one or two vendor kernels+DTs, the state of the art in the
-> > industry is: using DT wrong. (And doing HW wrong, which makes some updates to the
-> > ePAPR necessary ;-))
-> > 
-> 
-> Vendor H/W, vendor DT and a crack pipe. Or as I call it Monday.
-> 
-
-;-)
-
-Regards,
-Steffen
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+After looking more into it, I went for adding the flag to dev_archdata
+under arm and arm64. Let's see what the maintainers say.
