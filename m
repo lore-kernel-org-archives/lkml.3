@@ -1,130 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176AbaJ0Rev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:34:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33932 "EHLO mx1.redhat.com"
+	id S1751712AbaJ0RgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:36:09 -0400
+Received: from bues.ch ([80.190.117.144]:45964 "EHLO bues.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623AbaJ0Ret (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:34:49 -0400
-Date: Mon, 27 Oct 2014 13:33:53 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Marcel Holtmann <marcel@holtmann.org>, LKP <lkp@01.org>,
-        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
-Subject: Re: [rfcomm_run] WARNING: CPU: 0 PID: 95 at kernel/sched/core.c:7312
- __might_sleep()
-Message-ID: <20141027173353.GZ15532@madcap2.tricolour.ca>
-References: <20141027130621.GA6336@wfg-t540p.sh.intel.com>
- <20141027133627.GH3337@twins.programming.kicks-ass.net>
- <20141027134948.GA8977@wfg-t540p.sh.intel.com>
+	id S1750873AbaJ0RgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:36:08 -0400
+Date: Mon, 27 Oct 2014 18:32:31 +0100
+From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 08/11] ssb: driver_chip_comon_pmu: Fix probable mask
+ then right shift defect
+Message-ID: <20141027183231.2a9abbb4@wiggum>
+In-Reply-To: <e68a49a228d8d2495630b4ef03a1f32b33fce7fe.1414387334.git.joe@perches.com>
+References: <cover.1414387334.git.joe@perches.com>
+	<e68a49a228d8d2495630b4ef03a1f32b33fce7fe.1414387334.git.joe@perches.com>
+X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027134948.GA8977@wfg-t540p.sh.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/CAj/qyhiMumS69DuPDRPde2"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/27, Fengguang Wu wrote:
-> On Mon, Oct 27, 2014 at 02:36:27PM +0100, Peter Zijlstra wrote:
-> > On Mon, Oct 27, 2014 at 09:06:21PM +0800, Fengguang Wu wrote:
-> > > Hi Peter,
-> > > 
-> > > FYI, this bug seems still there on v3.18-rc2.
-> > 
-> > Oh, right, I commented out that patch and the audit one because I was
-> > waiting for some feedback. Lemme go prod people.
-> 
-> audit? I do hit an kauditd_thread warning recently:
-> 
-> [   89.102903] ------------[ cut here ]------------
-> [   89.107650] WARNING: CPU: 6 PID: 3175 at /kbuild/src/lkp/kernel/sched/core.c:7310 __might_sleep+0x8e/0xc0()
-> [   89.117606] do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff811088f8>] kauditd_thread+0x168/0x220
-> [   89.128588] Modules linked in: btrfs raid456 async_raid6_recov async_memcpy async_pq async_xor xor async_tx raid6_pq ipmi_watchdog ipmi_msghandler ses enclosure sg s
-> d_mod ata_generic pata_acpi floppy parport_pc parport snd_pcm snd_timer snd ata_piix soundcore i2c_i801 serio_raw mptsas libata pcspkr i5400_edac shpchp mptscsih edac_core mptbase i5k_amb tpm_infineon scsi_transport_sas                                                                                                                     [   89.165503] CPU: 6 PID: 3175 Comm: kauditd Tainted: G        W      3.18.0-rc2-g8696cce #1
-> [   89.173988] Hardware name: Supermicro X7DW3/X7DWN, BIOS 6.00 09/28/2007
-> [   89.180735]  0000000000000009 ffff880229d8bd78 ffffffff81876101 ffff88022fd90478
-> [   89.188596]  ffff880229d8bdc8 ffff880229d8bdb8 ffffffff8106a421 ffff880229d8bda8
-> [   89.196483]  ffffffff81b345f0 0000000000000038 0000000000000000 ffff8800bd0fd850
-> [   89.204364] Call Trace:
-> [   89.206945]  [<ffffffff81876101>] dump_stack+0x4e/0x68
-> [   89.212209]  [<ffffffff8106a421>] warn_slowpath_common+0x81/0xa0
-> [   89.218362]  [<ffffffff8106a486>] warn_slowpath_fmt+0x46/0x50
-> [   89.224257]  [<ffffffff811088f8>] ? kauditd_thread+0x168/0x220
-> [   89.230216]  [<ffffffff811088f8>] ? kauditd_thread+0x168/0x220
-> [   89.236201]  [<ffffffff8109039e>] __might_sleep+0x8e/0xc0
-> [   89.241746]  [<ffffffff8110897b>] kauditd_thread+0x1eb/0x220
-> [   89.247536]  [<ffffffff81098030>] ? wake_up_state+0x20/0x20
-> [   89.253247]  [<ffffffff81108790>] ? audit_printk_skb+0x70/0x70
-> [   89.259237]  [<ffffffff81089e8f>] kthread+0xef/0x110
-> [   89.264330]  [<ffffffff81089da0>] ? kthread_create_on_node+0x180/0x180
-> [   89.271010]  [<ffffffff8187eabc>] ret_from_fork+0x7c/0xb0
-> [   89.276543]  [<ffffffff81089da0>] ? kthread_create_on_node+0x180/0x180
-> [   89.283205] ---[ end trace 4692477bd4539c42 ]---
-> 
-> However I'm not sure if it's a bug in 3.18-rc2, or one of the
-> following trees introduced that warning.
+--Sig_/CAj/qyhiMumS69DuPDRPde2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-My guess is that none of the trees below would likely have caused this
-except maybe top/locking/urgent (and obviously the peterz-queue ones),
-and even then, I'd look in the v3.18-rc2 code first.  I'll have a look
-in the audit code to see if anything jumps out at me.  There have been
-wait issues in audit recently and may not be entirely cleaned up.
+On Sun, 26 Oct 2014 22:25:04 -0700
+Joe Perches <joe@perches.com> wrote:
 
->  amirv/driver_updates
->  arm-platforms/irq/irqchip_state
->  arm-platforms/irq/priority_drop
->  asoc/for-linus
->  asoc/for-next
->  asoc/topic/sgtl5000
->  bluetooth/master
->  chanwoo-extcon/extcon-next
->  drm-intel/drm-intel-next-queued
->  drm-intel/drm-intel-nightly
->  hwmon/poweroff-handler
->  ipsec-next/master
->  ipsec-next/testing
->  jiangliu/ioapic/hotplug_v7
->  kees/lsm/modpin.old
->  kvm/queue
->  m68k/for-3.19
->  m68k/for-linus
->  m68k/for-next
->  m68k/m68k-queue
->  mips-john/mips-for-linux-next
->  net/master
->  net-next/master
->  peterz-queue/locking/urgent
->  peterz-queue/perf/core
->  peterz-queue/perf/urgent
->  peterz-queue/sched/urgent
->  peterz-queue/sched/wait
->  peterz-queue/timers/urgent
->  regulator/for-next
->  renesas/cleanup-for-v3.19
->  renesas/devel
->  renesas/dt-clocksource-for-v3.19
->  renesas/dt-du-for-v3.19
->  renesas/dt-for-v3.19
->  renesas/next
->  renesas/soc-for-v3.19
->  sound/for-linus
->  spi/for-linus
->  spi/for-next
->  staging/staging-testing
->  tip/locking/urgent
->  usb/usb-linus
-> 
-> Thanks,
-> Fengguang
+> Precedence of & and >> is not the same and is not left to right.
+> shift has higher precedence and should be done after the mask.
+>=20
+> Add parentheses around the mask.
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-- RGB
+Good catch.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Reviewed-by: Michael B=C3=BCsch <m@bues.ch>
+
+> ---
+>  drivers/ssb/driver_chipcommon_pmu.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/ssb/driver_chipcommon_pmu.c b/drivers/ssb/driver_chi=
+pcommon_pmu.c
+> index 1173a09..bc71583 100644
+> --- a/drivers/ssb/driver_chipcommon_pmu.c
+> +++ b/drivers/ssb/driver_chipcommon_pmu.c
+> @@ -621,8 +621,8 @@ static u32 ssb_pmu_get_alp_clock_clk0(struct ssb_chip=
+common *cc)
+>  	u32 crystalfreq;
+>  	const struct pmu0_plltab_entry *e =3D NULL;
+> =20
+> -	crystalfreq =3D chipco_read32(cc, SSB_CHIPCO_PMU_CTL) &
+> -		      SSB_CHIPCO_PMU_CTL_XTALFREQ >> SSB_CHIPCO_PMU_CTL_XTALFREQ_SHIFT;
+> +	crystalfreq =3D (chipco_read32(cc, SSB_CHIPCO_PMU_CTL) &
+> +		       SSB_CHIPCO_PMU_CTL_XTALFREQ) >> SSB_CHIPCO_PMU_CTL_XTALFREQ_SHI=
+FT;
+>  	e =3D pmu0_plltab_find_entry(crystalfreq);
+>  	BUG_ON(!e);
+>  	return e->freq * 1000;
+
+
+
+
+--=20
+Michael
+
+--Sig_/CAj/qyhiMumS69DuPDRPde2
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUToGxAAoJEPUyvh2QjYsOMegP/RvSLPksqP6l7dXDkcVr9jpK
+s7ns/qqO0CVYWFoEFKmkPe5B5IIKaX8YHhJSL8A+SZhT/GDd0KEKjhNjJJUXZt6j
+ZNSVsrW4jQyxQO+Z6a3TML5UQMg3NZeaeooeLrLQwuja4ViZmc0NjhZiZp3y6Hda
+NxaaUE5lh7O6BUJfJf16oizheFz7koTqJigyrflJ4Al5XhxALgIt7w8dzq5rnlog
+1jsr5r/Pp5BytUOorL3+6f8iDPHOfg9sJyDsGwHl1/pXL+KTdEkvmSzC3VaKDNot
+JbpJFR0wvroQzj56dFcULIa2fa2bcF9+oUHKw2mGITYZqDY8umwkPSNi0oC7+mZl
+/HJGk+SGrfFdkUjweAXymjkSfjHfKGeJNvfF5ndr5ijY+rHJG4uRte6W1JlDvZtF
+HDzpAv3N4PPsPmQzFrVxdDhbPEjGUDIDGum3QkpiK5w2rnOqncaXq3caH6LDRFYS
+gsV6j1pv1kXaQFKlQea5K1DxQcA9phXwHq3XVfhQ4uVAyUqP9JuAT+z2VlF4jEPH
+9dfOURbBJDj2brp7PDm+548R3TGnvcL4zOWlgYdcGZLfwoy9sScynZbFxf8ll5/C
+IFLxuza9YOTHaIUlr1l14+1850we5KKkZuS6iYELaJMXwlCj3G1ciFKqXB4g0dJO
+0p/2mx3T8kxxkg6Yd7Pg
+=qznj
+-----END PGP SIGNATURE-----
+
+--Sig_/CAj/qyhiMumS69DuPDRPde2--
