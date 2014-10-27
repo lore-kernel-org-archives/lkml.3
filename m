@@ -1,146 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaJ0ClA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 22:41:00 -0400
-Received: from regular1.263xmail.com ([211.150.99.135]:34421 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752027AbaJ0Ck5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 22:40:57 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <33789c49564a62039a7abb6e67bab50c>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
-        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v14 0/5] Rockchip soc thermal driver
-Date: Mon, 27 Oct 2014 10:39:43 +0800
-Message-Id: <1414377588-2237-1-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752424AbaJ0CmY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:42:24 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:43967 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752037AbaJ0CmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 22:42:22 -0400
+Date: Mon, 27 Oct 2014 03:41:21 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 09/15] net: dsa: Add support for switch EEPROM access
+Message-ID: <20141027024121.GA16998@lunn.ch>
+References: <1414342365-27191-1-git-send-email-linux@roeck-us.net>
+ <1414342365-27191-10-git-send-email-linux@roeck-us.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414342365-27191-10-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series patchs tested on rk3288 SDK board and pinky-v1,v2 board.
-I believe the driver can be used on the rk3288-evb board.
+On Sun, Oct 26, 2014 at 09:52:39AM -0700, Guenter Roeck wrote:
+> On some chips it is possible to access the switch eeprom.
+> Add infrastructure support for it.
+> 
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+> v2:
+> - Add support for configuring switch EEPROM size through platform data
+>   or devicetree data
+> - Do not compare new pointers against NULL
+> - Check if get_eeprom pointer is set before calling it
+> 
+>  include/net/dsa.h | 10 ++++++++++
+>  net/dsa/dsa.c     |  4 ++++
+>  net/dsa/slave.c   | 41 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 55 insertions(+)
+> 
+> diff --git a/include/net/dsa.h b/include/net/dsa.h
+> index 55e75e7..37856a2 100644
+> --- a/include/net/dsa.h
+> +++ b/include/net/dsa.h
+> @@ -38,6 +38,9 @@ struct dsa_chip_data {
+>  	struct device	*host_dev;
+>  	int		sw_addr;
+>  
+> +	/* set to size of eeprom if supported by the switch */
+> +	int		eeprom_len;
+> +
+>  	/* Device tree node pointer for this specific switch chip
+>  	 * used during switch setup in case additional properties
+>  	 * and resources needs to be used
+> @@ -258,6 +261,13 @@ struct dsa_switch_driver {
+>  	int	(*set_temp_limit)(struct dsa_switch *ds, int temp);
+>  	int	(*get_temp_alarm)(struct dsa_switch *ds, bool *alarm);
+>  #endif
+> +
+> +	/* EEPROM access */
+> +	int	(*get_eeprom_len)(struct dsa_switch *ds);
+> +	int	(*get_eeprom)(struct dsa_switch *ds,
+> +			      struct ethtool_eeprom *eeprom, u8 *data);
+> +	int	(*set_eeprom)(struct dsa_switch *ds,
+> +			      struct ethtool_eeprom *eeprom, u8 *data);
+>  };
+>  
+>  void register_switch_driver(struct dsa_switch_driver *type);
+> diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+> index 5edbbca..1c1b925 100644
+> --- a/net/dsa/dsa.c
+> +++ b/net/dsa/dsa.c
+> @@ -575,6 +575,7 @@ static int dsa_of_probe(struct platform_device *pdev)
+>  	const char *port_name;
+>  	int chip_index, port_index;
+>  	const unsigned int *sw_addr, *port_reg;
+> +	u32 eeprom_length;
+>  	int ret;
+>  
+>  	mdio = of_parse_phandle(np, "dsa,mii-bus", 0);
+> @@ -603,6 +604,9 @@ static int dsa_of_probe(struct platform_device *pdev)
+>  	if (pd->nr_chips > DSA_MAX_SWITCHES)
+>  		pd->nr_chips = DSA_MAX_SWITCHES;
+>  
+> +	if (!of_property_read_u32(np, "eeprom-length", &eeprom_length))
+> +		pd->eeprom_length = eeprom_length;
+> +
 
-Add this driver, The system can reset the entire chip when
-the thermal temperture over 120C, In case of rising over 125C
-when tha hardware shorting,The sodftware will shutdown via "critical".
+Hi Guenter
 
-Changes in v14:
-	* address comments from Dmitry Torokhov.
-	- adjust-alarm-rate-depending-on-clock.
-	- 0001-rockchip-thermal-do-not-register-cpufreq-cooling-dev.
+I would of expected a property to indicate the eeprom is present, not
+a length value. The switch determines the length, or at least the
+minimum length. So the switch driver can return the length, if the
+eeprom is indicated to be present.
 
-Changes in v13:
-	- add cooling-maps for cpu-thermal.
-	- put tshut polarity in device tree.
+Also, all device tree properties need to be documented. I've not
+looked through all the patches, so maybe it is in a separate patch?
 
-Changes in v12:
-	* address comments from Dmitry Torokhov and Vladimir Zapolskiy.
-	- split-sensor-handling.
-	- rename-rockchip_tsadc_platform_data.
+> +static int dsa_slave_get_eeprom_len(struct net_device *dev)
+> +{
+> +	struct dsa_slave_priv *p = netdev_priv(dev);
+> +	struct dsa_switch *ds = p->parent;
+> +
+> +	if (ds->pd->eeprom_len)
+> +		return ds->pd->eeprom_len;
+> +
+> +	if (ds->drv->get_eeprom_len)
+> +		return ds->drv->get_eeprom_len(ds);
+> +
+> +	return 0;
+> +}
 
-Changes in v11:
-	* address comments from Vladimir Zapolskiy.
-	- fix cpufreq_cooling_unregister() to put in correct position.
-	- fix "data->chn",at least can get valid Tsensor temp.
+This also does not look right. The default is that there is no
+property in DT, meaning the EEPROM is not present. So
+ds->pd->eeprom_len is zero. So the first if is not taken. It then
+calls into the driver which is return a length, independent of if it
+is populated or not.
 
-Changes in v10:
-	* address comments from Doug Anderson.
-	- fix TSHUT polarity,ensure support TSHUT.
-	- add the decription for rk_tsadcv2_initialize().
+If we are going with your suggested binding, no value in DT, or a
+value of 0 mean no EEPROM. If there is a value in DT
+dsa_slave_get_eeprom_len() should return that value. Asking the driver
+is redundant, you can remove the get_eeprom_len() call.
 
-Changes in v9:
-	* address comments from Dmitry Torokhov.
-	- fix some style be defined
-	- remove some unused code.
-	- clk_disable_unprepare->clk_disable in suspend()
+However, if DT just indicates the eeprom is populated or not, you
+should call the driver get_eeprom_len() is the eeprom property is
+present.
 
-Changes in v8:
-	* address comments from Dmitry Torokhov and Doug Anderson.
-	- add three Teperture Sensors.
-	- support CRU and GPIO reset chip.
-	- rename rk3xxx-cpu-thermal.dtsi as rk3288-thermal.dtsi
-	- alarm-temp via set_trips() callback
-	- remove "reset-gpios"
+> +static int dsa_slave_get_eeprom(struct net_device *dev,
+> +				struct ethtool_eeprom *eeprom, u8 *data)
+> +{
+> +	struct dsa_slave_priv *p = netdev_priv(dev);
+> +	struct dsa_switch *ds = p->parent;
+> +
+> +	if (ds->drv->get_eeprom)
+> +		return ds->drv->get_eeprom(ds, eeprom, data);
 
-Changes in v7:
-	- fix get data->clk=0 when in probe() function.
-	- fix some style code.
-	- modify dts,main add rk3xxx-cpu-thermal.dtsi
+This should be conditional on the length/present.
 
-Changes in v6:
-	* address comments from Tomeu Vizoso.
-	- use thermal's generic framework.
+> +
+> +	return -EOPNOTSUPP;
+> +}
+> +
+> +static int dsa_slave_set_eeprom(struct net_device *dev,
+> +				struct ethtool_eeprom *eeprom, u8 *data)
+> +{
+> +	struct dsa_slave_priv *p = netdev_priv(dev);
+> +	struct dsa_switch *ds = p->parent;
+> +
+> +	if (ds->drv->set_eeprom)
+> +		return ds->drv->set_eeprom(ds, eeprom, data);
 
-Changes in v5:
-	* address comments from Eduardo Valentin,rui.zhang and Heiko Stubner:
-	- with BIT() macro
-	- manage clocks in suspend/resume.
-	- license is fixed as GPLv2.
-	- #include "thermal_core.h"->#include <linux/thermal.h>
-	- use the generic trip-points.the hw-shut-temp isn't generic trip-points.
-	- The method of binding and unbinding be fixed.
-	- The pin-name tsadc->otp_out
+Same again.
 
-Changes in v4:
-	* address comments from Jonathan Cameron,huangtao and zhaoyifeng:
-	- this series thermal driver still be put in driver/thermal/
-	- modify the thermal driver description.
-
-Changes in v3:(add dts configure)
-	* address comments from Dmitry Torokhov and Arnd Bergmann:
-	- fix clock-names in rockchip-thermal.txt
-	- remove rockchip_thermal_control() in rockchip_set_mode()
-	- fix some code style.
-	- add dts configure.
-
-Changes in v2:
-	* address comments from Heiko Stubner:
-	- fix dt-bindings in rockchip-thermal.txt
-	- remove Author mark
-	- rename TSADC_XXX->TSADCV2_XXX,it eill ready to merge compatible other SoCs.
-	- fix a identation
-	- remove clk_set_rate(),it's no necessary.
-	- fix the SIMPLE_DEV_PM_OPS() function  style.
-
-Caesar Wang (5):
-  thermal: rockchip: add driver for thermal
-  dt-bindings: document Rockchip thermal
-  ARM: dts: add RK3288 Thermal data
-  ARM: dts: add main Thermal info to rk3288
-  ARM: dts: enable Thermal on rk3288-evb board
-
- .../bindings/thermal/rockchip-thermal.txt          |  45 ++
- arch/arm/boot/dts/rk3288-evb.dtsi                  |   5 +
- arch/arm/boot/dts/rk3288-thermal.dtsi              |  58 ++
- arch/arm/boot/dts/rk3288.dtsi                      |  23 +
- drivers/thermal/Kconfig                            |   9 +
- drivers/thermal/Makefile                           |   1 +
- drivers/thermal/rockchip_thermal.c                 | 628 +++++++++++++++++++++
- 7 files changed, 769 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
- create mode 100644 arch/arm/boot/dts/rk3288-thermal.dtsi
- create mode 100644 drivers/thermal/rockchip_thermal.c
-
--- 
-1.9.1
+     Andrew
 
 
+> +	return -EOPNOTSUPP;
+> +}
+> +
+>  static void dsa_slave_get_strings(struct net_device *dev,
+>  				  uint32_t stringset, uint8_t *data)
+>  {
+> @@ -387,6 +425,9 @@ static const struct ethtool_ops dsa_slave_ethtool_ops = {
+>  	.get_drvinfo		= dsa_slave_get_drvinfo,
+>  	.nway_reset		= dsa_slave_nway_reset,
+>  	.get_link		= dsa_slave_get_link,
+> +	.get_eeprom_len		= dsa_slave_get_eeprom_len,
+> +	.get_eeprom		= dsa_slave_get_eeprom,
+> +	.set_eeprom		= dsa_slave_set_eeprom,
+>  	.get_strings		= dsa_slave_get_strings,
+>  	.get_ethtool_stats	= dsa_slave_get_ethtool_stats,
+>  	.get_sset_count		= dsa_slave_get_sset_count,
+> -- 
+> 1.9.1
+> 
