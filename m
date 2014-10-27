@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaJ0ONQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:13:16 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:63241 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844AbaJ0ONP (ORCPT
+	id S1753242AbaJ0OPH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:15:07 -0400
+Received: from nm2-vm9.access.bullet.mail.bf1.yahoo.com ([216.109.114.82]:45574
+	"EHLO nm2-vm9.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752861AbaJ0OPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:13:15 -0400
+	Mon, 27 Oct 2014 10:15:03 -0400
+X-Greylist: delayed 414 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Oct 2014 10:15:03 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s1024; d=rogers.com;
+	b=l/zn6i0OJLbWGd5Xa8mRyXCOvLd/0OfId9IRW0zrDOAx2vUR8IxUozdLEpONam5jNcOZyhrTyIwSroRay6tg8c4Mg7INiEMkLnVnW505u+vRVs7oEPm15Exg5gHmynrsf98Pv5pG2n3s9K1XtqyIbkMcHcwUN9T9TdJd1JbP/Og=;
+X-Yahoo-Newman-Id: 861655.10852.bm@smtp119.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: oKbTlbYVM1kXGTHzZLq9Wj2qbbFMS1Dy2.ZLK2XWi97gyQB
+ Lm1jGjd0JXb2ixDZTsD20.8zCNwboFYKtomPfLeaN4AyosdcrLZKtTr4nMYQ
+ gzKHNmNjiHWKIW1UBOvTpcgfaDp9w1ClNWODBe668zl16MGR2LEko3vzYz2d
+ xo3V3I8lK9RZzrp4Fg57JAcOBkbd1Q8Oncq89ZzZipd8sAmQqhju2EXAweUY
+ C3pA2iwDO_YQJlLrNvJ_vuxq19Z6O.m4EyGK.3RurCDkVqqeM5XSlLhCyI8j
+ biyrUfEEHMwlEJ6gbsp9BSPFsfoiHZMNO81WyoadhHVjHk_QVK.GQddceqLR
+ ll16310HAtLdxI1zyYD44j5OJxcGyj3f28s7nZcmvZctQJK7uq7HUrmDKDZ0
+ JFDHisFFGsNHVaCqVjx1D9ZbgSnrjc4rKgv52pXlycCnpDRHcjN5dzTxgcPF
+ d2cx.KL.DkCww6ftKMWoGHtZbwVnHnN1vEcY9.E8q.IVv7XumOMCMEXVvSCC
+ Cr3wD0MhFu0x12lzC4Y9AKSFcbAcQZRku0CmDofj9YA--
+X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
+From: Shawn Starr <shawn.starr@rogers.com>
+To: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: [3.18-rc1] Regression in userspace - Google Chrome
+Date: Mon, 27 Oct 2014 10:08:02 -0400
+Message-ID: <4344395.V0onCpLkaI@segfault>
+Organization: sh0n.net
+User-Agent: KMail/4.14.2 (Linux/3.17.1-303.fc21.x86_64; KDE/4.14.2; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <1413478686-6857-1-git-send-email-sonnyrao@chromium.org>
-References: <1413478686-6857-1-git-send-email-sonnyrao@chromium.org>
-Date: Mon, 27 Oct 2014 15:13:03 +0100
-Message-ID: <CAPDyKFoBw8p_cGCz9+j5naNeCXu6tn_YEuLss3tSUSowbCAeGQ@mail.gmail.com>
-Subject: Re: [PATCH v2] mmc: dw_mmc: Reset DMA before enabling IDMAC
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Sonny Rao <sonnyrao@chromium.org>
-Cc: Alim Akhtar <alim.akhtar@gmail.com>, linux-mmc <linux-mmc@vger.kernel.org>,
-        Heiko Stuebner <heiko@sntech.de>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, eddie.cai@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 October 2014 18:58, Sonny Rao <sonnyrao@chromium.org> wrote:
-> We've already got a reset of DMA after it's done.  Add one before we
-> start DMA too.  This fixes a data corruption on Rockchip SoCs which
-> will get bad data when doing a DMA transfer after doing a PIO transfer.
->
-> We tested this on an Exynos 5800 with HS200 and didn't notice any
-> difference in sequential read throughput.
->
-> Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Doug Anderson <dianders@chromium.org>
+Hello kernel folks,
 
-Thanks! Applied for next!
+In -rc1, I had problems running Google Chrome with sandbox enabled by default. 
+Chrome would start once, sometimes not run at all, setuid binary would be 
+stuck in 'D' state.
 
-Kind regards
-Uffe
+Using my current kernel (kernel-3.17.1-303.fc21.x86_64) no such problems 
+exist.  I know 3.18 is early in it's -rc cycle but this is a heads up if 
+nobody else noticed.
 
-> ---
->  drivers/mmc/host/dw_mmc.c | 5 +++++
->  1 file changed, 5 insertions(+)
->
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index 69f0cc6..ca67f69 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -83,6 +83,7 @@ struct idmac_desc {
->  #endif /* CONFIG_MMC_DW_IDMAC */
->
->  static bool dw_mci_reset(struct dw_mci *host);
-> +static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
->
->  #if defined(CONFIG_DEBUG_FS)
->  static int dw_mci_req_show(struct seq_file *s, void *v)
-> @@ -448,6 +449,10 @@ static void dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
->
->         dw_mci_translate_sglist(host, host->data, sg_len);
->
-> +       /* Make sure to reset DMA in case we did PIO before this */
-> +       dw_mci_ctrl_reset(host, SDMMC_CTRL_DMA_RESET);
-> +       dw_mci_idmac_reset(host);
-> +
->         /* Select IDMAC interface */
->         temp = mci_readl(host, CTRL);
->         temp |= SDMMC_CTRL_USE_IDMAC;
-> --
-> 2.1.2
->
+Now that -rc2 is out and soon Fedora will have a -rc2 kernel for me to play 
+with, I'll will see if this was just noise in the merge window.
+
+Thanks,
+Shawn
