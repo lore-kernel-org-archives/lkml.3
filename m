@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957AbaJ0TTB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:19:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52671 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752582AbaJ0TDG (ORCPT
+	id S1754054AbaJ0TTL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:19:11 -0400
+Received: from mail-wi0-f193.google.com ([209.85.212.193]:56343 "EHLO
+	mail-wi0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335AbaJ0TTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:03:06 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 094/105] ALSA: emu10k1: Fix deadlock in synth voice lookup
-Date: Mon, 27 Oct 2014 11:57:09 -0700
-Message-Id: <1414436240-13879-95-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
-References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 27 Oct 2014 15:19:08 -0400
+From: Nikos Giotis <nikos.giotis@gmail.com>
+To: yann.morin.1998@free.fr
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Nikos Giotis <nikos.giotis@gmail.com>
+Subject: [PATCH] scripts/kconfig: Add tinfo library to linker library search
+Date: Mon, 27 Oct 2014 21:18:37 +0200
+Message-Id: <1414437517-23558-1-git-send-email-nikos.giotis@gmail.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
+For systems that have ncurses library configured with the
+"--with termlib=tinfo" option the linker reports errors when
+running "make menuconfig" due to undefined reference to symbol
+'acs_map'. The change does not change the behaviour when
+building against ncurses configured without this option. The
+tinfo library is included in the lists of libraries that are
+searched when buidling lxdialog sources.
 
-------------------
+Tested with kernel 3.14.22 and latest master from git
 
-From: Takashi Iwai <tiwai@suse.de>
-
-commit 95926035b187cc9fee6fb61385b7da9c28123f74 upstream.
-
-The emu10k1 voice allocator takes voice_lock spinlock.  When there is
-no empty stream available, it tries to release a voice used by synth,
-and calls get_synth_voice.  The callback function,
-snd_emu10k1_synth_get_voice(), however, also takes the voice_lock,
-thus it deadlocks.
-
-The fix is simply removing the voice_lock holds in
-snd_emu10k1_synth_get_voice(), as this is always called in the
-spinlock context.
-
-Reported-and-tested-by: Arthur Marsh <arthur.marsh@internode.on.net>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Signed-off-by: Nikos Giotis <nikos.giotis@gmail.com>
 ---
- sound/pci/emu10k1/emu10k1_callback.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ scripts/kconfig/lxdialog/check-lxdialog.sh | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/sound/pci/emu10k1/emu10k1_callback.c b/sound/pci/emu10k1/emu10k1_callback.c
-index cae3659..0a34b5f 100644
---- a/sound/pci/emu10k1/emu10k1_callback.c
-+++ b/sound/pci/emu10k1/emu10k1_callback.c
-@@ -85,6 +85,8 @@ snd_emu10k1_ops_setup(struct snd_emux *emux)
-  * get more voice for pcm
-  *
-  * terminate most inactive voice and give it as a pcm voice.
-+ *
-+ * voice_lock is already held.
-  */
- int
- snd_emu10k1_synth_get_voice(struct snd_emu10k1 *hw)
-@@ -92,12 +94,10 @@ snd_emu10k1_synth_get_voice(struct snd_emu10k1 *hw)
- 	struct snd_emux *emu;
- 	struct snd_emux_voice *vp;
- 	struct best_voice best[V_END];
--	unsigned long flags;
- 	int i;
- 
- 	emu = hw->synth;
- 
--	spin_lock_irqsave(&emu->voice_lock, flags);
- 	lookup_voices(emu, hw, best, 1); /* no OFF voices */
- 	for (i = 0; i < V_END; i++) {
- 		if (best[i].voice >= 0) {
-@@ -113,11 +113,9 @@ snd_emu10k1_synth_get_voice(struct snd_emu10k1 *hw)
- 			vp->emu->num_voices--;
- 			vp->ch = -1;
- 			vp->state = SNDRV_EMUX_ST_OFF;
--			spin_unlock_irqrestore(&emu->voice_lock, flags);
- 			return ch;
- 		}
- 	}
--	spin_unlock_irqrestore(&emu->voice_lock, flags);
- 
- 	/* not found */
- 	return -ENOMEM;
+diff --git a/scripts/kconfig/lxdialog/check-lxdialog.sh b/scripts/kconfig/lxdialog/check-lxdialog.sh
+index 5075ebf..202e4bf 100755
+--- a/scripts/kconfig/lxdialog/check-lxdialog.sh
++++ b/scripts/kconfig/lxdialog/check-lxdialog.sh
+@@ -4,10 +4,10 @@
+ # What library to link
+ ldflags()
+ {
+-	pkg-config --libs ncursesw 2>/dev/null && exit
+-	pkg-config --libs ncurses 2>/dev/null && exit
++	pkg-config --libs ncursesw tinfo 2>/dev/null && exit
++	pkg-config --libs ncurses tinfo 2>/dev/null && exit
+ 	for ext in so a dll.a dylib ; do
+-		for lib in ncursesw ncurses curses ; do
++		for lib in ncursesw ncurses curses tinfo ; do
+ 			$cc -print-file-name=lib${lib}.${ext} | grep -q /
+ 			if [ $? -eq 0 ]; then
+ 				echo "-l${lib}"
 -- 
-1.9.1
+1.8.4
 
