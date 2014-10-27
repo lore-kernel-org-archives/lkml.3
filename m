@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaJ0IQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 04:16:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17108 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753016AbaJ0IN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 04:13:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,794,1406617200"; 
-   d="scan'208";a="621214353"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Joerg Roedel <joro@8bytes.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [Patch Part1 v3 18/20] iommu/vt-d: Use helpers to access irq_cfg data structure associated with IRQ
-Date: Mon, 27 Oct 2014 16:12:09 +0800
-Message-Id: <1414397531-28254-19-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1751814AbaJ0IYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 04:24:53 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:36660 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099AbaJ0IYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 04:24:51 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Subject: [PATCH 1/3] microblaze: Fix missing NR_CPUS in menuconfig
+Date: Mon, 27 Oct 2014 09:24:33 +0100
+Message-Id: <4cbbbb43d666468d87f99676cf05fb5154d1228b.1414398260.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-25718-1414398275-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use helpers to access irq_cfg data structure associated with IRQ,
-instead of accessing irq_data->chip_data directly. Later we could
-rewrite those helpers to support hierarchy irqdomain.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+--=_mimegpg-monstr-desktop-25718-1414398275-0001
+
+The time Kconfig expects that NR_CPUS is defined.
+
+This patch remove this config warning:
+"kernel/time/Kconfig:163:warning: range is invalid"
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 ---
- drivers/iommu/intel_irq_remapping.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index 7c80661b35c1..fd181cf8a589 100644
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -55,7 +55,7 @@ static int __init parse_ioapics_under_ir(void);
- 
- static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
- {
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	return cfg ? &cfg->irq_2_iommu : NULL;
- }
- 
-@@ -86,7 +86,7 @@ static int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
- {
- 	struct ir_table *table = iommu->ir_table;
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned int mask = 0;
- 	unsigned long flags;
- 	int index;
-@@ -154,7 +154,7 @@ static int map_irq_to_irte_handle(int irq, u16 *sub_handle)
- static int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
- {
- 	struct irq_2_iommu *irq_iommu = irq_2_iommu(irq);
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg = irq_cfg(irq);
- 	unsigned long flags;
- 
- 	if (!irq_iommu)
-@@ -1008,7 +1008,7 @@ static int
- intel_ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 			  bool force)
- {
--	struct irq_cfg *cfg = data->chip_data;
-+	struct irq_cfg *cfg = irqd_cfg(data);
- 	unsigned int dest, irq = data->irq;
- 	struct irte irte;
- 	int err;
-@@ -1063,7 +1063,7 @@ static void intel_compose_msi_msg(struct pci_dev *pdev,
- 	u16 sub_handle = 0;
- 	int ir_index;
- 
--	cfg = irq_get_chip_data(irq);
-+	cfg = irq_cfg(irq);
- 
- 	ir_index = map_irq_to_irte_handle(irq, &sub_handle);
- 	BUG_ON(ir_index == -1);
--- 
-1.7.10.4
+ arch/microblaze/Kconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff --git a/arch/microblaze/Kconfig b/arch/microblaze/Kconfig
+index 6feded3b0c4c..a7736fa0580c 100644
+--- a/arch/microblaze/Kconfig
++++ b/arch/microblaze/Kconfig
+@@ -129,6 +129,10 @@ endmenu
+
+ menu "Kernel features"
+
++config NR_CPUS
++	int
++	default "1"
++
+ config ADVANCED_OPTIONS
+ 	bool "Prompt for advanced kernel configuration options"
+ 	help
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-25718-1414398275-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlROAUMACgkQykllyylKDCGhUgCglsMyPEZQHhkWCeVaOcTfrGbA
+KksAn2bEkErEm2+QLu8hhQswkebGzpUp
+=VU/t
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-25718-1414398275-0001--
