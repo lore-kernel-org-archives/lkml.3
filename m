@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaJ0LiL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:38:11 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51009 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832AbaJ0LiJ (ORCPT
+	id S1751832AbaJ0LmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:42:06 -0400
+Received: from 9.mo1.mail-out.ovh.net ([178.32.108.172]:55659 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751149AbaJ0LmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:38:09 -0400
-Date: Mon, 27 Oct 2014 11:37:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20141027113737.GV18557@sirena.org.uk>
+	Mon, 27 Oct 2014 07:42:05 -0400
+X-Greylist: delayed 13122 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Oct 2014 07:42:04 EDT
+Message-ID: <544DFC31.4090307@neo-technologies.fr>
+Date: Mon, 27 Oct 2014 09:02:57 +0100
+From: NEO-Technologies / Julien CHAUVEAU 
+	<julien.chauveau@neo-technologies.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PoKbPPFu8MuDl6RC"
-Content-Disposition: inline
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [GIT PULL] regulator fixes for v3.18
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM/Rockchip SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: rockchip: use internal pull-up resistors on
+ I2C busses
+References: <1413556830-27854-1-git-send-email-julien.chauveau@neo-technologies.fr> <8843018.dv9ckEkBvo@diego>
+In-Reply-To: <8843018.dv9ckEkBvo@diego>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 18172868921916784865
+X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-01-116-88.w193-248.abo.wanadoo.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Heiko,
 
---PoKbPPFu8MuDl6RC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Le 27/10/2014 01:27, Heiko Stübner a écrit :
+> The rk3066a does not support distinguishing between up and down pulls. On it
+> only &pcfg_pull_default is possible that configures the pull to a pin-specific
+> pull direction. For the i2c pins the direction is (of course) "up".
 
-The following changes since commit cac7f2429872d3733dc3f9915857b1691da2eb2f:
+Thank you for the information. I will send a new patch to fix the pull 
+configuration for the rk3066a.
 
-  Linux 3.18-rc2 (2014-10-26 16:48:41 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.18-rc2
-
-for you to fetch changes up to bc02871b4583ac2fc2567d9d1826b2857cf169ac:
-
-  Merge remote-tracking branch 'regulator/fix/rk808' into regulator-linus (2014-10-27 11:26:24 +0000)
-
-----------------------------------------------------------------
-regulator: Fixes for v3.18
-
-A couple of fixes for v3.18, one fix for an incorrect voltage to
-register mapping in the rk808 driver and a fix for a build failure in
-some SH defconfigs.
-
-----------------------------------------------------------------
-Chris Zhong (1):
-      regulator: rk808: Fix min_uV for DCDC1 & DCDC2
-
-Guenter Roeck (1):
-      regulator: Include err.h from consumer.h to fix build failure
-
-Mark Brown (2):
-      Merge remote-tracking branch 'regulator/fix/core' into regulator-linus
-      Merge remote-tracking branch 'regulator/fix/rk808' into regulator-linus
-
- drivers/regulator/rk808-regulator.c | 2 +-
- include/linux/regulator/consumer.h  | 2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
---PoKbPPFu8MuDl6RC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUTi6AAAoJECTWi3JdVIfQ29UH/jZmx8nP3Nlu8z5bnjO35QUQ
-m0mE4rvSHsLNNZVieDRhGkti2Dkm5YoYiqt7H/uw6uNrPJM2AxIL5q/+imFvolj4
-9SvpK+GtsfvzfxcvpiIJjwRKm+RJbHfF2SM40l0dv6FR7/lFE+K3VDybMF+re0j2
-3gS4p+VVrEqCzgu5gtMCseX/K7QNulIwYhRWt/aR2Vo845msf9b82HSgrzVDEp9F
-sJTYyT4vDclAL6fvZQU+JpIEt14exzPKsaQE9Ym8Hnx2x+h5F5RE5AkqEdyTGcJs
-8dcu7BFtTqHrqX0VRcL3YHUgYzBwBFiUB9yNKRLotmaf1N3mkU/sLKO1MjEGWHw=
-=nAOP
------END PGP SIGNATURE-----
-
---PoKbPPFu8MuDl6RC--
+Julien
