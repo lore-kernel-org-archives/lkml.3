@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572AbaJ0QMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:12:00 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49982 "EHLO
+	id S1752521AbaJ0P40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:56:26 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:49929 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532AbaJ0P41 (ORCPT
+	with ESMTP id S1752372AbaJ0P4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:56:27 -0400
+	Mon, 27 Oct 2014 11:56:15 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH v3 10/47] mfd: axp20x: Register with kernel power-off handler
-Date: Mon, 27 Oct 2014 08:55:17 -0700
-Message-Id: <1414425354-10359-11-git-send-email-linux@roeck-us.net>
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH v3 06/47] gpio-poweroff: Drop reference to pm_power_off from devicetree bindings
+Date: Mon, 27 Oct 2014 08:55:13 -0700
+Message-Id: <1414425354-10359-7-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
 References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
@@ -23,13 +26,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.544E6B2B.0162,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020208.544E6B1F.0188,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 65
+X-CTCH-SenderID-TotalMessages: 34
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -49,102 +52,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with a low priority value of 64 to reflect that
-the original code only sets pm_power_off if it was not already set.
+pm_power_off is an implementation detail. Replace it with a more generic
+description of the driver's functionality.
 
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v3:
 - Replace poweroff in all newly introduced variables and in text
   with power_off or power-off as appropriate
-- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Use define to specify powroff handler priority
-- Use devm_register_power_off_handler
-- Use dev_warn instead of dev_err
+- No change
 
- drivers/mfd/axp20x.c       | 30 ++++++++++++++++--------------
- include/linux/mfd/axp20x.h |  1 +
- 2 files changed, 17 insertions(+), 14 deletions(-)
+ Documentation/devicetree/bindings/gpio/gpio-poweroff.txt | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
-index 6231adb..f00db57 100644
---- a/drivers/mfd/axp20x.c
-+++ b/drivers/mfd/axp20x.c
-@@ -17,7 +17,8 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/pm_runtime.h>
-+#include <linux/notifier.h>
-+#include <linux/pm.h>
- #include <linux/regmap.h>
- #include <linux/slab.h>
- #include <linux/regulator/consumer.h>
-@@ -150,11 +151,16 @@ static struct mfd_cell axp20x_cells[] = {
- 	},
- };
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt b/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt
+index d4eab92..78262de 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio-poweroff.txt
+@@ -2,12 +2,12 @@ Driver a GPIO line that can be used to turn the power off.
  
--static struct axp20x_dev *axp20x_pm_power_off;
--static void axp20x_power_off(void)
-+static int axp20x_power_off(struct notifier_block *this, unsigned long unused1,
-+			    void *unused2)
-+
- {
--	regmap_write(axp20x_pm_power_off->regmap, AXP20X_OFF_CTRL,
--		     AXP20X_OFF);
-+	struct axp20x_dev *axp20x = container_of(this, struct axp20x_dev,
-+						 power_off_nb);
-+
-+	regmap_write(axp20x->regmap, AXP20X_OFF_CTRL, AXP20X_OFF);
-+
-+	return NOTIFY_DONE;
- }
+ The driver supports both level triggered and edge triggered power off.
+ At driver load time, the driver will request the given gpio line and
+-install a pm_power_off handler. If the optional properties 'input' is
+-not found, the GPIO line will be driven in the inactive
++install a handler to power off the system. If the optional properties
++'input' is not found, the GPIO line will be driven in the inactive
+ state. Otherwise its configured as an input.
  
- static int axp20x_i2c_probe(struct i2c_client *i2c,
-@@ -204,10 +210,11 @@ static int axp20x_i2c_probe(struct i2c_client *i2c,
- 		return ret;
- 	}
+-When the pm_power_off is called, the gpio is configured as an output,
+-and drive active, so triggering a level triggered power off
++When the the power-off handler is called, the gpio is configured as an
++output, and drive active, so triggering a level triggered power off
+ condition. This will also cause an inactive->active edge condition, so
+ triggering positive edge triggered power off. After a delay of 100ms,
+ the GPIO is set to inactive, thus causing an active->inactive edge,
+@@ -24,7 +24,7 @@ Required properties:
  
--	if (!pm_power_off) {
--		axp20x_pm_power_off = axp20x;
--		pm_power_off = axp20x_power_off;
--	}
-+	axp20x->power_off_nb.notifier_call = axp20x_power_off;
-+	axp20x->power_off_nb.priority = POWER_OFF_PRIORITY_LOW;
-+	ret = devm_register_power_off_handler(&i2c->dev, &axp20x->power_off_nb);
-+	if (ret)
-+		dev_warn(&i2c->dev, "failed to register power-off handler\n");
+ Optional properties:
+ - input : Initially configure the GPIO line as an input. Only reconfigure
+-  it to an output when the pm_power_off function is called. If this optional
++  it to an output when the power-off handler is called. If this optional
+   property is not specified, the GPIO is initialized as an output in its
+   inactive state.
  
- 	dev_info(&i2c->dev, "AXP20X driver loaded\n");
- 
-@@ -218,11 +225,6 @@ static int axp20x_i2c_remove(struct i2c_client *i2c)
- {
- 	struct axp20x_dev *axp20x = i2c_get_clientdata(i2c);
- 
--	if (axp20x == axp20x_pm_power_off) {
--		axp20x_pm_power_off = NULL;
--		pm_power_off = NULL;
--	}
--
- 	mfd_remove_devices(axp20x->dev);
- 	regmap_del_irq_chip(axp20x->i2c_client->irq, axp20x->regmap_irqc);
- 
-diff --git a/include/linux/mfd/axp20x.h b/include/linux/mfd/axp20x.h
-index d0e31a2..9b15482 100644
---- a/include/linux/mfd/axp20x.h
-+++ b/include/linux/mfd/axp20x.h
-@@ -175,6 +175,7 @@ struct axp20x_dev {
- 	struct regmap			*regmap;
- 	struct regmap_irq_chip_data	*regmap_irqc;
- 	long				variant;
-+	struct notifier_block		power_off_nb;
- };
- 
- #endif /* __LINUX_MFD_AXP20X_H */
 -- 
 1.9.1
 
