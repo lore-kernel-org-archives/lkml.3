@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaJ0RmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:42:19 -0400
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:51027 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676AbaJ0RmP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:42:15 -0400
+	id S1751892AbaJ0Rnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:43:46 -0400
+Received: from mail.kernel.org ([198.145.19.201]:52885 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026AbaJ0Rnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:43:45 -0400
+Date: Mon, 27 Oct 2014 18:43:38 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] power: bq2415x_charger: Properly handle ENODEV
+ from power_supply_get_by_phandle
+Message-ID: <20141027174338.GA10897@earth.universe>
+References: <1413383110-20310-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <7ha94l6syu.fsf@deeprootsystems.com>
-References: <1413862894-2623-1-git-send-email-zyw@rock-chips.com>
-	<1413863063-2815-1-git-send-email-zyw@rock-chips.com>
-	<7ha94l6syu.fsf@deeprootsystems.com>
-Date: Mon, 27 Oct 2014 10:42:14 -0700
-X-Google-Sender-Auth: 43NKnUlxY3r430jifSgpmvixVlw
-Message-ID: <CAD=FV=WLqbtRSVU+jqwn9qt33uNLbaWqL6NOCOMiutWn=8iVPw@mail.gmail.com>
-Subject: Re: [PATCH v3 4/6] ARM: rockchip: add suspend and resume for RK3288
-From: Doug Anderson <dianders@chromium.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Chris <zyw@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-rockchip@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Tony Xie <xxx@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
+Content-Disposition: inline
+In-Reply-To: <1413383110-20310-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin,
 
-On Fri, Oct 24, 2014 at 2:47 PM, Kevin Hilman <khilman@kernel.org> wrote:
->> +static void rk3288_fill_in_bootram(u32 level)
->> +{
->> +     rkpm_bootdata_cpusp = rk3288_bootram_phy + (SZ_4K - 8);
->> +     rkpm_bootdata_cpu_code = virt_to_phys(cpu_resume);
->> +
->> +     rkpm_bootdata_l2ctlr_f  = 1;
->> +     rkpm_bootdata_l2ctlr = rk3288_l2_config();
->
-> You're storing this to an offset in your assembly code, which is then
-> copied to SRAM.  Why not just read/store it from your assembly code?
+--UlVJffcvxoiEqYs2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I didn't understand this comment.  Chris is saving the pre-suspend
-value into a location that will be accessible to the resume code.  It
-needs to be PC-relative for the resume code to get to it since there's
-no MMU yet.
+Hi,
 
-He could copy it to SRAM first and then put it into SRAM, but I'm not
-sure it makes a huge difference.
+On Wed, Oct 15, 2014 at 04:25:09PM +0200, Krzysztof Kozlowski wrote:
+> The power_supply_get_by_phandle() on error returns ENODEV or NULL.
+> The driver later expects obtained pointer to power supply to be
+> valid or NULL. If it is not NULL then it dereferences it in
+> bq2415x_notifier_call() which would lead to dereferencing ENODEV-value
+> pointer.
+>=20
+> Properly handle the power_supply_get_by_phandle() error case by
+> replacing error value with NULL. This indicates that usb charger
+> detection won't be used.
+>=20
+> Fix also memory leak of 'name' if power_supply_get_by_phandle() fails
+> with NULL and probe should defer.
 
+Applied to next.
 
->> +static int rk3288_suspend_enter(suspend_state_t state)
->> +{
->> +     local_fiq_disable();
->> +
->> +     rk3288_save_settings(ROCKCHIP_ARM_OFF_LOGIC_NORMAL);
->
-> You (re)write your assembly code into SRAM every time you suspend.  Does
-> your SRAM lose context? ...
->
->> +     cpu_suspend(0, rockchip_lpmode_enter);
->> +
->> +     rk3288_restore_settings();
->
-> ... or is it just because you overwrite it here?
->
-> Why are you reading/writing 4K of SRAM every suspend/resume?  Is it
-> because the SRAM is actually shared with some other devices/drivers?
->
-> If so, maybe you should be using an SRAM allocator so the SRAM can be
-> shared, and you don't have to read/write a full page of SRAM for every
-> suspend/resume.
+-- Sebastian
 
-This 4K chunk of SRAM is pretty specifically for suspend/resume, at
-least on rk3288.  Other than the fact that it's only 4K, it has a lot
-of severe limitations that keep it from being generally useful (it
-will crash the SoC if you write non word-sized data to it and also it
-can't be cached).
+--UlVJffcvxoiEqYs2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I'm going to suggest that we just don't save/restore it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUToRKAAoJENju1/PIO/qaGRQQAKUdqO8qigV7WeaJy3rBvwfs
+2wTZdoMCFlteBYybwvUdPzMiyzmB1ZFCgADgfCujnvV1JwBqUawPY1F+FxpWte8Y
+JdLEGkt6LS36iklNIT8NTOkiKJYeFDfia9J8fgx6eT1cS9AdH61cy0OpSX+EstD5
+sKh+MZsZJFT9glc0nIFY6/VJYhzyQUKTAOnWkUVF/Q/r7uYLrUAvQXfoadNvvovP
+QHRL73uWsPvVRgTF7yETMjE4tudHa9vstHFoenfxQttw3ypMheJ5GiDVBkiLesNM
+Wfh/m8VEcd/TQXz4mYXAwpFKyQlN3jsMmkryTp8VPqPF/Glb+K9C/thBvWxHtWo/
+xsuDHpYH8rIS4jB+kfjzLxJKi1ZzZD/wM/0wAVcRqI8SSKkz6/Xtj71Xoh+2vyN6
+AH1D2FaR5fL2DGy7b5d2fI76ODhiOJ49/KH1PVh+AkYjxevUPDAF6N2FHxbCduQM
+U/5FqY6s9pqMWOezYwvx1ieQVRW0YdpHWNMQgFycRUEOprytC+FiuNnkSlGz0qqm
+bAJvJ4Mk6RTUY85ETIjbEtsVzI9ODmfhKiM2Fl2G3HzTd5ZtpygLizpNSv9gaRAr
+mdnSwCPBodOGTPgJvUCKDhnqYor/gJBZragCRtbkYeDATB/IhUs+eGfHWd91p2M5
+K+3ZsjsMjjKV6xE1MXRh
+=5TBn
+-----END PGP SIGNATURE-----
+
+--UlVJffcvxoiEqYs2--
