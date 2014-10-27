@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaJ0NxP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:53:15 -0400
-Received: from tex.lwn.net ([70.33.254.29]:39207 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752767AbaJ0NxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:53:12 -0400
-Date: Mon, 27 Oct 2014 09:53:07 -0400
-From: Jonathan Corbet <corbet@lwn.net>
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-Cc: linux-doc@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] doc: kernel-parameters.txt: Add ide-generic.probe-mask
-Message-ID: <20141027095307.3e022c6a@lwn.net>
-In-Reply-To: <alpine.LFD.2.11.1410251638230.21390@eddie.linux-mips.org>
-References: <alpine.LFD.2.11.1410251638230.21390@eddie.linux-mips.org>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1753481AbaJ0Nxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:53:52 -0400
+Received: from resqmta-po-07v.sys.comcast.net ([96.114.154.166]:52954 "EHLO
+	resqmta-po-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753056AbaJ0Nxu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 09:53:50 -0400
+Date: Mon, 27 Oct 2014 08:53:48 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com
+Subject: Re: [RFC 0/4] [RFC] slub: Fastpath optimization (especially for
+ RT)
+In-Reply-To: <20141027075830.GF23379@js1304-P5Q-DELUXE>
+Message-ID: <alpine.DEB.2.11.1410270850160.14245@gentwo.org>
+References: <20141022155517.560385718@linux.com> <20141023080942.GA7598@js1304-P5Q-DELUXE> <alpine.DEB.2.11.1410230916090.19494@gentwo.org> <20141024045630.GD15243@js1304-P5Q-DELUXE> <alpine.DEB.2.11.1410240938460.29214@gentwo.org>
+ <20141027075830.GF23379@js1304-P5Q-DELUXE>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Oct 2014 17:03:52 +0100 (BST)
-"Maciej W. Rozycki" <macro@linux-mips.org> wrote:
+On Mon, 27 Oct 2014, Joonsoo Kim wrote:
 
->  Not much to say beyond the subject.  Noticed while fiddling with a plain 
-> ISA multi-I/O card (remember those?) having a single IDE channel only, as 
-> usually with them, to avoid errors like:
+> > One other aspect of this patchset is that it reduces the cache footprint
+> > of the alloc and free functions. This typically results in a performance
+> > increase for the allocator. If we can avoid the page_address() and
+> > virt_to_head_page() stuff that is required because we drop the ->page
+> > field in a sufficient number of places then this may be a benefit that
+> > goes beyond the RT and CONFIG_PREEMPT case.
+>
+> Yeah... if we can avoid those function calls, it would be good.
 
-Applied; wording tweaked slightly.
+One trick that may be possible is to have an address mask for the
+page_address. If a pointer satisfies the mask requuirements then its on
+the right page and we do not need to do virt_to_head_page.
 
-Thanks,
+> But, current struct kmem_cache_cpu occupies just 32 bytes on 64 bits
+> machine, and, that means just 1 cacheline. Reducing size of struct may have
+> no remarkable performance benefit in this case.
 
-jon
+Hmmm... If we also drop the partial field then a 64 byte cacheline would
+fit kmem_cache_cpu structs from 4 caches. If we place them correctly then
+the frequently used caches could avoid fetching up to 3 cachelines.
+
+You are right just dropping ->page wont do anything since the
+kmem_cache_cpu struct is aligned to a double word boundary.
+
