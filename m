@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbaJ0OS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 10:18:58 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:47543 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070AbaJ0ORR (ORCPT
+	id S1753545AbaJ0OTn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 10:19:43 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:37404 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523AbaJ0OTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 10:17:17 -0400
-From: Jan Kardell <jan.kardell@telliq.com>
-To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Cc: Vincent Donnefort <vdonnefort@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 3/6] rtc: pcf8563 Fix wrong time from read_alarm
-Date: Mon, 27 Oct 2014 15:16:58 +0100
-Message-Id: <1414419421-11098-4-git-send-email-jan.kardell@telliq.com>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1414419421-11098-1-git-send-email-jan.kardell@telliq.com>
-References: <1414419421-11098-1-git-send-email-jan.kardell@telliq.com>
+	Mon, 27 Oct 2014 10:19:41 -0400
+Date: Mon, 27 Oct 2014 15:19:35 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: David Howells <dhowells@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-unionfs@vger.kernel.org
+Subject: Re: Locking problem in overlayfs
+Message-ID: <20141027141935.GC3021@tucsk.piliscsaba.szeredi.hu>
+References: <5394.1414418718@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5394.1414418718@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Incorrect mask was used for hour and monthday fields.
+On Mon, Oct 27, 2014 at 02:05:18PM +0000, David Howells wrote:
+> Using my testsuite, I see the attached moan from lockdep.  Unfortunately, it
+> doesn't cause the testsuite to actually fail, so I'm going to have to manually
+> try and isolate the failing test.
+> 
+> David
+> 
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 3.18.0-rc2-fsdevel+ #910 Tainted: G        W     
+> ---------------------------------------------
+> run/2642 is trying to acquire lock:
+>  (&sb->s_type->i_mutex_key#10/1){+.+.+.}, at: [<ffffffff81203d81>] ovl_cleanup_whiteouts+0x29/0xb4
+> 
+> but task is already holding lock:
+>  (&sb->s_type->i_mutex_key#10/1){+.+.+.}, at: [<ffffffff8113abff>] lock_rename+0xb7/0xd7
 
-Signed-off-by: Jan Kardell <jan.kardell@telliq.com>
----
- drivers/rtc/rtc-pcf8563.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Uh-oh.  We changed nesting late in the cycle and I didn't retest with lockdep.
 
-diff --git a/drivers/rtc/rtc-pcf8563.c b/drivers/rtc/rtc-pcf8563.c
-index 8c23606..78f76d9 100644
---- a/drivers/rtc/rtc-pcf8563.c
-+++ b/drivers/rtc/rtc-pcf8563.c
-@@ -336,8 +336,8 @@ static int pcf8563_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *tm)
- 		__func__, buf[0], buf[1], buf[2], buf[3]);
- 
- 	tm->time.tm_min = bcd2bin(buf[0] & 0x7F);
--	tm->time.tm_hour = bcd2bin(buf[1] & 0x7F);
--	tm->time.tm_mday = bcd2bin(buf[2] & 0x1F);
-+	tm->time.tm_hour = bcd2bin(buf[1] & 0x3F);
-+	tm->time.tm_mday = bcd2bin(buf[2] & 0x3F);
- 	tm->time.tm_wday = bcd2bin(buf[3] & 0x7);
- 	tm->time.tm_mon = -1;
- 	tm->time.tm_year = -1;
--- 
-1.8.4.5
+And it's actually harmless, but AFAICS needs another level of nesting between
+I_MUTEX_CHILD and I_MUTEX_NORMAL.
 
+Will do a patch.
+
+Thanks,
+Miklos
