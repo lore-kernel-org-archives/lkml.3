@@ -1,104 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaJ0Hof (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 03:44:35 -0400
-Received: from mailgw01.mediatek.com ([210.61.82.183]:56789 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751254AbaJ0Hoc (ORCPT
+	id S1751739AbaJ0Hry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 03:47:54 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:56948 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024AbaJ0Hrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 03:44:32 -0400
-X-Listener-Flag: 11101
-Subject: Re: [PATCH v4 0/7] ARM: mediatek: Add support for interrupt
- polarity
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, <arm@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        srv_heupstream <srv_heupstream@mediatek.com>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        Hsien-Chun Yen <hc.yen@mediatek.com>,
-        huang eddie <eddie.huang@mediatek.com>,
-        Nathan Chung <nathan.chung@mediatek.com>,
-        Yuhau Chen <yh.chen@mediatek.com>
-In-Reply-To: <1414163209.14830.614.camel@mtksdaap41>
-References: <1414079595-26129-1-git-send-email-yingjoe.chen@mediatek.com>
-	 <CABuKBeLjFDm2TSqxc=K3rDnYTKRok3sCvEuL+chxxo7p1UbhLQ@mail.gmail.com>
-	 <1414163209.14830.614.camel@mtksdaap41>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Oct 2014 15:44:22 +0800
-Message-ID: <1414395862.32399.9.camel@mtksdaap41>
+	Mon, 27 Oct 2014 03:47:52 -0400
+Date: Mon, 27 Oct 2014 08:47:48 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Fix XT-PIC-XT-PIC in /proc/interrupts
+Message-ID: <20141027074748.GA18025@gmail.com>
+References: <alpine.LFD.2.11.1410260147190.21390@eddie.linux-mips.org>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-MTK: N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.11.1410260147190.21390@eddie.linux-mips.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Hi Matthias,
+* Maciej W. Rozycki <macro@linux-mips.org> wrote:
 
-On Fri, 2014-10-24 at 23:06 +0800, Yingjoe Chen wrote:
-> On Fri, 2014-10-24 at 16:59 +0200, Matthias Brugger wrote:
-> > Hi Joe,
-> > 
-> > 2014-10-23 17:53 GMT+02:00 Yingjoe Chen <yingjoe.chen@mediatek.com>:
-> > > This series is 4th version of interrupt polarity support for MediaTek SoCs.
-> > > This is based on Jiang's hierarchy irqdomain v2 [1] and my mediatek SoC
-> > > basic support [2].
-> > >
-> > > This version addressed comments from previous discussion[3]. I removed
-> > > arm,hierarchy-irq-domain property. When GIC is probed by DT, it will
-> > > support hierarchy irqdomain. I still keep the first patch because this is
-> > > still base on hierarchy irqdomain v2.
-> > 
-> > Is this set based on v3.17-rc1?
-> > Is it based on one of Jiangs trees [0]?
-> > 
-> > I tried to use your patch set with v3.18-rc1 using Jiangs tree but the
-> > kernel crashed on mt6589 with a null-pointer exception [1]. A test
-> > with mt6592 didn't work either.
-> > 
-> > It would be convenient if you rebase your patches to v3.18-rc1.
+> Fix duplicate XT-PIC seen in /proc/interrupts on x86 systems that make 
+> use of 8259A Programmable Interrupt Controllers.  Specifically convert 
+> output like this:
 > 
-> It is based on Jiang's tree[0], which is based on v3.17-rc1. So yes,
-> this series is still on v3.17-rc1.
+>            CPU0
+>   0:      76573    XT-PIC-XT-PIC    timer
+>   1:         11    XT-PIC-XT-PIC    i8042
+>   2:          0    XT-PIC-XT-PIC    cascade
+>   4:          8    XT-PIC-XT-PIC    serial
+>   6:          3    XT-PIC-XT-PIC    floppy
+>   7:          0    XT-PIC-XT-PIC    parport0
+>   8:          1    XT-PIC-XT-PIC    rtc0
+>  10:        448    XT-PIC-XT-PIC    fddi0
+>  12:         23    XT-PIC-XT-PIC    eth0
+>  14:       2464    XT-PIC-XT-PIC    ide0
+> NMI:          0   Non-maskable interrupts
+> ERR:          0
 > 
-> All I need from Jiang's series are the first 2 patches, I'll bring them
-> to v3.18-rc1 to test next week.
+> to one like this:
+> 
+>            CPU0
+>   0:     122033    XT-PIC  timer
+>   1:         11    XT-PIC  i8042
+>   2:          0    XT-PIC  cascade
+>   4:          8    XT-PIC  serial
+>   6:          3    XT-PIC  floppy
+>   7:          0    XT-PIC  parport0
+>   8:          1    XT-PIC  rtc0
+>  10:        145    XT-PIC  fddi0
+>  12:         31    XT-PIC  eth0
+>  14:       2245    XT-PIC  ide0
+> NMI:          0   Non-maskable interrupts
+> ERR:          0
+> 
+> that is one like we used to have from ~2.2 till it was changed sometime.
+> 
+> The rationale is there is no value in this duplicate information, it 
+> merely clutters output and looks ugly.  We only have one handler for 
+> 8259A interrupts so there is no need to give it a name separate from the 
+> name already given to irq_chip.
+> 
+> We could define meaningful names for handlers based on bits in the ELCR 
+> register on systems that have it or the value of the LTIM bit we use in 
+> ICW1 otherwise (hardcoded to 0 though with MCA support gone), to tell 
+> edge-triggered and level-triggered inputs apart.  While that information 
+> does not affect 8259A interrupt handlers it could help people determine 
+> which lines are shareable and which are not.  That is material for a 
+> separate change though.
+> 
+> Any tools that parse /proc/interrupts are supposed not to be affected 
+> since it was many years we used the format this change converts back to.
 
-I cherry-pick/rebase my series with Jiang's 2 patches to v3.18-rc1,
-there are 2 conflicts but they are quite easy to fix so I won't repost
-this series now. I tested it on mt8127 with Eddie's uart patch and it
-boot to shell successfully.
+What's the effect of this change on the output for non-8259A irq 
+controllers?
 
-About crash on mt6589, I made a mistake in mt6589.dtsi. Please help to
-test with the following change:
+Thanks,
 
---- a/arch/arm/boot/dts/mt6589.dtsi
-+++ b/arch/arm/boot/dts/mt6589.dtsi
-@@ -86,7 +86,7 @@
-                        interrupt-controller;
-                        #interrupt-cells = <3>;
-                        interrupt-parent = <&gic>;
--                       reg = <0 0x10200100 0 0x1c>;
-+                       reg = <0x10200100 0x1c>;
-
-Joe.C
-
-
+	Ingo
