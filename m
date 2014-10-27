@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaJ0BMO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 21:12:14 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:16706 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813AbaJ0BMK (ORCPT
+	id S1752203AbaJ0BMa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 21:12:30 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:49171 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813AbaJ0BM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 21:12:10 -0400
-X-AuditID: cbfee68d-f79296d000004278-78-544d9be0e033
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: s.nawrocki@samsung.com, tomasz.figa@gmail.com
-Cc: kgene.kim@samsung.com, sw0312.kim@samsung.com, kyungmin.park@samsung.com,
-        inki.dae@samsung.com, geunsik.lim@samsung.com, cw00.choi@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 2/2] clk: samsung: Document binding for Exynos4415 clock
- controller
-Date: Mon, 27 Oct 2014 10:11:58 +0900
-Message-id: <1414372318-594-3-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-In-reply-to: <1414372318-594-1-git-send-email-cw00.choi@samsung.com>
-References: <1414372318-594-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsWyRsSkSPfBbN8Qg3enZCyuf3nOavFnQiub
-	xaT7E1gsehdcZbM42/SG3eLyrjlsFjPO72OyOPymndVixuSXbBardv1hdODy2DnrLrtH35ZV
-	jB6fN8kFMEdx2aSk5mSWpRbp2yVwZfTvX8hecEig4t+drWwNjN95uxg5OSQETCTWvDnECmGL
-	SVy4t56ti5GLQ0hgKaPEvXMrmGCKjr9ZxQ6RmM4osfDIAyiniUni1aRVjCBVbAJaEvtf3ABq
-	5+AQETCUuHlICaSGWeA6o8TMUz1gcWGBcIkpS71BylkEVCX2HtjEDmLzCjhLPDn0iBlimYLE
-	suUzwS7iFHCR+Hr3FliNEFDNw7lHwPZKCCxil3i1qYENYpCAxLfJh1hA5ksIyEpsOgA1R1Li
-	4IobLBMYhRcwMqxiFE0tSC4oTkovMtQrTswtLs1L10vOz93ECAz40/+e9e5gvH3A+hCjAAej
-	Eg+vRaFviBBrYllxZe4hRlOgDROZpUST84FxlVcSb2hsZmRhamJqbGRuaaYkzqso9TNYSCA9
-	sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2PxFD9v2Y9J/k/Drpsq6czau0p4f6qcq7yMtpaW6nLL
-	yfz8rU5BU6uyzqhek1zXypay+rR9ftyzu1Nnp82aHf2TR/C1Svgm/7csSk3beIz/p/7LOmBe
-	zf876vF8pQK7OVKpHl+iciWmv/xd/fYcw99zfv3y5nZqh9WZZM0MuI72ChjHcsy7qcRSnJFo
-	qMVcVJwIAI4ogY9zAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jQd0Hs31DDD4/FLW4/uU5q8WfCa1s
-	FpPuT2Cx6F1wlc3ibNMbdovLu+awWcw4v4/J4vCbdlaLGZNfslms2vWH0YHLY+esu+wefVtW
-	MXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg
-	65aZA3SMkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjGjf/9C9oJDAhX/
-	7mxla2D8ztvFyMkhIWAicfzNKnYIW0ziwr31bF2MXBxCAtMZJRYeecAO4TQxSbyatIoRpIpN
-	QEti/4sbQFUcHCIChhI3DymB1DALXGeUmHmqBywuLBAuMWWpN0g5i4CqxN4Dm8AW8Ao4Szw5
-	9IgZYpmCxLLlM1lBbE4BF4mvd2+B1QgB1Tyce4R9AiPvAkaGVYyiqQXJBcVJ6bmGesWJucWl
-	eel6yfm5mxjB8fRMagfjygaLQ4wCHIxKPLwWhb4hQqyJZcWVuYcYJTiYlUR4RfOBQrwpiZVV
-	qUX58UWlOanFhxhNga6ayCwlmpwPjPW8knhDYxMzI0sjc0MLI2NzJXHeA63WgUIC6Yklqdmp
-	qQWpRTB9TBycUg2MsclB897x1KxdqNwtIMD1MUftMO87+4iga3GTl4u8eBD23OXztfU2xU9K
-	mIKOHpykYP7n6U2XdE2hmRdcDUMWiBbN3XSK7c6Ce9XW/SuUF2Sy7X3runhi16oZGyrmndEs
-	eyxzNedflnNlcJtIgUecKBufnM3eJAX3lYWTYkuqOc9t/LLz6M5pSizFGYmGWsxFxYkAwSgf
-	qL0CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 26 Oct 2014 21:12:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141026202943.GA9871@lerouge>
+References: <CALCETrUmA+5499fEqp7S-nfSBVxTEo76mA9r32zYQ41E3c+YhQ@mail.gmail.com>
+ <CAFTL4hz87W1G2atf3mt+aG72Q-z8MwxFpguQgtT9kvHYE7pKEw@mail.gmail.com>
+ <CALCETrWyvXZCocPgcbatFvphgBuGbKhsMvYJNuy9EFc4kM-TGw@mail.gmail.com> <20141026202943.GA9871@lerouge>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sun, 26 Oct 2014 18:12:05 -0700
+Message-ID: <CALCETrWqRxDD84o99nRGa3cv4qYqgWpwk0_woe6w60JYzpNEog@mail.gmail.com>
+Subject: Re: vmalloced stacks on x86_64?
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds DT binding documentation for Exynos4415 SoC system
-clock controllers.
+On Sun, Oct 26, 2014 at 1:29 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> On Sat, Oct 25, 2014 at 10:49:25PM -0700, Andy Lutomirski wrote:
+>> On Oct 25, 2014 9:11 PM, "Frederic Weisbecker" <fweisbec@gmail.com> wrote:
+>> >
+>> > 2014-10-25 2:22 GMT+02:00 Andy Lutomirski <luto@amacapital.net>:
+>> > > Is there any good reason not to use vmalloc for x86_64 stacks?
+>> > >
+>> > > The tricky bits I've thought of are:
+>> > >
+>> > >  - On any context switch, we probably need to probe the new stack
+>> > > before switching to it.  That way, if it's going to fault due to an
+>> > > out-of-sync pgd, we still have a stack available to handle the fault.
+>> >
+>> > Would that prevent from any further fault on a vmalloc'ed kernel
+>> > stack? We would need to ensure that pre-faulting, say the first byte,
+>> > is enough to sync the whole new stack entirely otherwise we risk
+>> > another future fault and some places really aren't safely faulted.
+>> >
+>>
+>> I think so.  The vmalloc faults only happen when the entire top-level
+>> page table entry is missing, and those cover giant swaths of address
+>> space.
+>>
+>> I don't know whether the vmalloc code guarantees not to span a pmd
+>> (pud? why couldn't these be called pte0, pte1, pte2, etc.?) boundary.
+>
+> So dereferencing stack[0] is probably enough for 8KB worth of stack. I think
+> we have vmalloc_sync_all() but I heard this only work on x86-64.
+>
 
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
- .../devicetree/bindings/clock/exynos4415-clock.txt | 38 ++++++++++++++++++++++
- 1 file changed, 38 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/exynos4415-clock.txt
+I have no desire to do this for 32-bit.  But we don't need
+vmalloc_sync_all -- we just need to sync the ony required entry.
 
-diff --git a/Documentation/devicetree/bindings/clock/exynos4415-clock.txt b/Documentation/devicetree/bindings/clock/exynos4415-clock.txt
-new file mode 100644
-index 0000000..847d98b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/exynos4415-clock.txt
-@@ -0,0 +1,38 @@
-+* Samsung Exynos4415 Clock Controller
-+
-+The Exynos4415 clock controller generates and supplies clock to various
-+consumer devices within the Exynos4415 SoC.
-+
-+Required properties:
-+
-+- compatible: should be one of the following:
-+  - "samsung,exynos4415-cmu" - for the main system clocks controller
-+    (CMU_LEFTBUS, CMU_RIGHTBUS, CMU_TOP, CMU_CPU clock domains).
-+  - "samsung,exynos4415-cmu-dmc" - for the Exynos4415 SoC DRAM Memory
-+    Controller (DMC) domain clock controller.
-+
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+
-+- #clock-cells: should be 1.
-+
-+Each clock is assigned an identifier and client nodes can use this identifier
-+to specify the clock which they consume.
-+
-+All available clocks are defined as preprocessor macros in
-+dt-bindings/clock/exynos4415.h header and can be used in device
-+tree sources.
-+
-+Example 1: An example of a clock controller node is listed below.
-+
-+	cmu: clock-controller@10030000 {
-+		compatible = "samsung,exynos4415-cmu";
-+		reg = <0x10030000 0x18000>;
-+		#clock-cells = <1>;
-+	};
-+
-+	cmu-dmc: clock-controller@105C0000 {
-+		compatible = "samsung,exynos4415-cmu-dmc";
-+		reg = <0x105C0000 0x3000>;
-+		#clock-cells = <1>;
-+	};
--- 
-1.8.5.5
+> Too bad we don't have a universal solution, I have that problem with per cpu allocated
+> memory faulting at random places. I hit at least two places where it got harmful:
+> context tracking and perf callchains. We fixed the latter using open-coded per cpu
+> allocation. I still haven't found a solution for context tracking.
 
+In principle, we could pre-populate all top-level pgd entries at boot,
+but that would cost up to 256 pages of memory, I think.
+
+--Andy
