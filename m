@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635AbaJ0Fvl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 01:51:41 -0400
-Received: from smtprelay0092.hostedemail.com ([216.40.44.92]:46972 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751060AbaJ0Fvj (ORCPT
+	id S1751386AbaJ0GOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 02:14:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:23810 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815AbaJ0GOe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 01:51:39 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:3874:4321:5007:6261:7875:8957:9040:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12517:12519:12555:12740:13069:13141:13230:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wool60_e277aa51133e
-X-Filterd-Recvd-Size: 2192
-Message-ID: <1414389096.15751.34.camel@perches.com>
-Subject: Re: [PATCH 2/2] staging: rtl8723au:core
-From: Joe Perches <joe@perches.com>
-To: Jes Sorensen <Jes.Sorensen@redhat.com>
-Cc: Paul McQuade <paulmcquad@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org,
-        gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
-Date: Sun, 26 Oct 2014 22:51:36 -0700
-In-Reply-To: <wrfjegtucbgo.fsf@redhat.com>
-References: <1414340332-4556-1-git-send-email-paulmcquad@gmail.com>
-	 <1414350250.15751.22.camel@perches.com> <wrfjegtucbgo.fsf@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Oct 2014 02:14:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,793,1406617200"; 
+   d="scan'208";a="596708063"
+From: "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>
+To: Joe Perches <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Berg, Johannes" <johannes.berg@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [PATCH 07/11] iwlwifi: dvm: Fix probable mask then right shift
+ defect
+Thread-Topic: [PATCH 07/11] iwlwifi: dvm: Fix probable mask then right shift
+ defect
+Thread-Index: AQHP8aaWhm+RpgRvEUej0xCtk4mSrZxDdyZg
+Date: Mon, 27 Oct 2014 06:14:29 +0000
+Message-ID: <0BA3FCBA62E2DC44AF3030971E174FB31B556ABD@hasmsx107.ger.corp.intel.com>
+References: <cover.1414387334.git.joe@perches.com>
+ <83c3bfdd0c8f21fbbcbd9ebb5746a8fb04494fac.1414387334.git.joe@perches.com>
+In-Reply-To: <83c3bfdd0c8f21fbbcbd9ebb5746a8fb04494fac.1414387334.git.joe@perches.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 06:45 +0100, Jes Sorensen wrote:
-> Joe Perches <joe@perches.com> writes:
-> > On Sun, 2014-10-26 at 16:18 +0000, Paul McQuade wrote:
-> >> ERROR: spaces required around that ':' (ctx:VxE)
-[]
-> >> diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
-[]
-> >> @@ -794,28 +794,28 @@ u16 rtw_mcs_rate23a(u8 rf_type, u8 bw_40MHz, u8 short_GI_20, u8 short_GI_40,
-> >>  
-> >>  	if (rf_type == RF_1T1R) {
-> >>  		if (mcs->rx_mask[0] & BIT(7))
-> >> -			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):
-> >> +			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350) :
-[]
-> >
-> > A macro could help intelligibility here - maybe something like:
-> >
-> > #define get_max_rate(r1, r2, r3, r4)					\
-> > 	(bw_40MHz ? (short_GI_40 ? r1 : r2) : (short_GI_20 ? r3 : r4))
-> > and:
-> >  		if (mcs->rx_mask[0] & BIT(7))
-> > 			max_rate = get_max_rate(1500, 1350, 722, 650);
 > 
-> Hiding a parameter to a macro like that is bad coding practice, so don't
-> do that please!
+> Precedence of & and >> is not the same and is not left to right.
+> shift has higher precedence and should be done after the mask.
+> 
+> Add parentheses around the mask.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
 
-Yes and no.
-
-Adding the other 3 arguments to the macro doesn't help legibility.
-
-Keeping the macro definition local to the place that it's used
-can help avoid typos.
-
-
+Applied - thanks.
