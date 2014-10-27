@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaJ0BjX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 21:39:23 -0400
-Received: from eddie.linux-mips.org ([148.251.95.138]:47802 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977AbaJ0BjJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 21:39:09 -0400
-Date: Mon, 27 Oct 2014 01:16:37 +0000 (GMT)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: Ralf Baechle <ralf@linux-mips.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] tc: Error handling clean-ups
-In-Reply-To: <20141027101017.6af4e810@canb.auug.org.au>
-Message-ID: <alpine.LFD.2.11.1410270102540.21390@eddie.linux-mips.org>
-References: <alpine.LFD.2.11.1404062030280.15266@eddie.linux-mips.org>        <alpine.LFD.2.11.1410222234050.21390@eddie.linux-mips.org> <20141027101017.6af4e810@canb.auug.org.au>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752091AbaJ0Blg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 21:41:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:12393 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751850AbaJ0Blf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 21:41:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,792,1406617200"; 
+   d="scan'208";a="621089504"
+From: Wanpeng Li <wanpeng.li@linux.intel.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Juri Lelli <juri.lelli@arm.com>, linux-kernel@vger.kernel.org,
+        Wanpeng Li <wanpeng.li@linux.intel.com>
+Subject: [PATCH 1/6] sched/rt: check if curr can be pushed/pulled somewhere else in advance
+Date: Mon, 27 Oct 2014 09:41:02 +0800
+Message-Id: <1414374067-7209-1-git-send-email-wanpeng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen, Andrew --
+This patch checks if current can be pushed/pulled somewhere else 
+in advance to make logic clear.
 
-> >  I posted this fix originally to linux-mips@linux-mips.org back in April, 
-> > but it got lost and I don't want to give Ralf more stuff to handle than 
-> > absolutely necessary, he is really busy these days.  Can you please take 
-> > it directly to linux-next then?  There's nothing specific to MIPS in this 
-> > code really.
-> 
-> I don't take patches directly into linux-next (unless they are very
-> specific bug fixes for things that affect my builds - and even then I
-> only keep them until a maintainer picks them up).
+- If current can't be migrated, useless to reschedule, let's hope 
+  task can move out.
+- If task is migratable, so let's not schedule it and see if it 
+  can be pushed or pulled somewhere else.
 
- Good to know, will remember, thanks, and apologies to bother you then.  
-As the maintainer of this bus subsystem I wasn't sure what to do given 
-the situation.
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
+---
+ kernel/sched/rt.c | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
-> Sorry.  You could try sending it to Linus or Andrew Morton.
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 87ea5bf..ca1b7c7 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1351,16 +1351,22 @@ out:
+ 
+ static void check_preempt_equal_prio(struct rq *rq, struct task_struct *p)
+ {
+-	if (rq->curr->nr_cpus_allowed == 1)
++	/*
++	 * Current can't be migrated, useless to reschedule,
++	 * let's hope p can move out.
++	 */
++	if (rq->curr->nr_cpus_allowed == 1 ||
++		!cpupri_find(&rq->rd->cpupri, rq->curr, NULL))
+ 		return;
+ 
++	/*
++	 * p is migratable, so let's not schedule it and
++	 * see if it is pushed or pulled somewhere else.
++	 */
+ 	if (p->nr_cpus_allowed != 1
+ 	    && cpupri_find(&rq->rd->cpupri, p, NULL))
+ 		return;
+ 
+-	if (!cpupri_find(&rq->rd->cpupri, rq->curr, NULL))
+-		return;
+-
+ 	/*
+ 	 * There appears to be other cpus that can accept
+ 	 * current and none to run 'p', so lets reschedule
+-- 
+1.9.1
 
- Andrew, can you please take the change from the LKML message heading 
-this thread, or shall I resend it somehow for you to pick it up?  This 
-doesn't really fit anywhere.
-
- Thanks,
-
-  Maciej
