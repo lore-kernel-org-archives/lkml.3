@@ -1,89 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329AbaJ0RC2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:02:28 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:46334 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565AbaJ0RC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:02:27 -0400
-Date: Mon, 27 Oct 2014 18:02:19 +0100
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Frank Blaschka <blaschka@linux.vnet.ibm.com>, schwidefsky@de.ibm.com,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        iommu@lists.linux-foundation.org, sebott@linux.vnet.ibm.com
-Subject: Re: [PATCH linux-next] iommu: add iommu for s390 platform
-Message-ID: <20141027180219.62b1ac4a@thinkpad>
-In-Reply-To: <20141027162502.GB6202@8bytes.org>
-References: <1413892645-37657-1-git-send-email-blaschka@linux.vnet.ibm.com>
-	<20141022141728.GG10074@8bytes.org>
-	<20141022154320.GA42442@tuxmaker.boeblingen.de.ibm.com>
-	<20141023124115.GB10053@8bytes.org>
-	<20141023140437.GA31009@tuxmaker.boeblingen.de.ibm.com>
-	<20141027153201.517f4ff4@thinkpad>
-	<20141027162502.GB6202@8bytes.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1752488AbaJ0RCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:02:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45167 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751565AbaJ0RC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:02:29 -0400
+Message-ID: <544E7A8D.1030909@zytor.com>
+Date: Mon, 27 Oct 2014 10:02:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Eric Paris <eparis@redhat.com>, Richard Guy Briggs <rgb@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        przanoni@gmail.com, mingo@kernel.org, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>	 <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>	 <alpine.DEB.2.11.1410251034320.5308@nanos>	 <20141027023457.GY15532@madcap2.tricolour.ca> <1414418157.24347.1.camel@redhat.com>
+In-Reply-To: <1414418157.24347.1.camel@redhat.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102717-0041-0000-0000-000001D59DA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014 17:25:02 +0100
-Joerg Roedel <joro@8bytes.org> wrote:
-
-> On Mon, Oct 27, 2014 at 03:32:01PM +0100, Gerald Schaefer wrote:
-> > Not sure if I understood the concept of IOMMU domains right. But if
-> > this is about having multiple devices in the same domain, so that
-> > iommu_ops->map will establish the _same_ DMA mapping on _all_
-> > registered devices, then this should be possible.
+On 10/27/2014 06:55 AM, Eric Paris wrote:
+> My patch was already committed to the -tip urgent branch.  I believe any
+> optimization should be based on that branch, Richard.  If you are trying
+> to wrangle every bit of speed out of this, should you
 > 
-> Yes, this is what domains are about. A domain describes a set of DMA
-> mappings which can be assigned to multiple devices in parallel.
+> push %esi;
+> push %edi;
+> CFI_ADJUST_CFA_OFFSET 8
+> call __audit_syscall_entry
+> pop;
+> pop;
+> CFI_ADJUST_CFA_OFFSET -8
 > 
-> > We cannot have shared DMA tables because each device gets its own
-> > DMA table allocated during device initialization.
+> Instead of using the pushl_cfi and popl_cfi macros?
 > 
-> Is there some hardware reason for this or is that just an
-> implementation detail that can be changed. In other words, does the
-> hardware allow to use the same DMA table for multiple devices?
-
-Yes, the HW would allow shared DMA tables, but the implementation would
-need some non-trivial changes. For example, we have a per-device spin_lock
-for DMA table manipulations and the code in arch/s390/pci/pci_dma.c knows
-nothing about IOMMU domains or shared DMA tables, it just implements a set
-of dma_map_ops.
-
-Of course this would also go horribly wrong if a device was already
-in use (via the current dma_map_ops), but I guess using devices through
-the IOMMU_API prevents using them otherwise?
-
+> I wrote my patch to be obviously correct, but agree there are certainly
+> some speedups possible.
 > 
-> > But we could just keep all devices from one domain in a list and
-> > then call dma_update_trans() for all devices during
-> > iommu_ops->map/unmap.
-> 
-> This sounds complicated. Note that a device can be assigned to a
-> domain that already has existing mappings. In this case you need to
-> make sure that the new device inherits these mappings (and destroy
-> all old mappings for the device that possibly exist).
-> 
-> I think it is much easier to use the same DMA table for all devices
-> in a domain, if the hardware allows that.
 
-Yes, in this case, having one DMA table per domain and sharing it
-between all devices in that domain sounds like a good idea. However,
-I can't think of any use case for this, and Frank probably had a very
-special use case in mind where this scenario doesn't appear, hence the
-"one device per domain" restriction.
+Uh... not only is that plain wrong (the CFI should be adjusted after
+each instruction that changes the stack pointer), but what the heck is
+wrong with using the macros?
 
-So, if having multiple devices per domain is a must, then we probably
-need a thorough rewrite of the arch/s390/pci/pci_dma.c code.
+	-hpa
 
-Gerald
+
 
