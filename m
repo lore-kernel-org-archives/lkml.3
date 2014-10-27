@@ -1,96 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712AbaJ0RgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:36:09 -0400
-Received: from bues.ch ([80.190.117.144]:45964 "EHLO bues.ch"
+	id S1751847AbaJ0Ria (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:38:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35651 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873AbaJ0RgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:36:08 -0400
-Date: Mon, 27 Oct 2014 18:32:31 +0100
-From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 08/11] ssb: driver_chip_comon_pmu: Fix probable mask
- then right shift defect
-Message-ID: <20141027183231.2a9abbb4@wiggum>
-In-Reply-To: <e68a49a228d8d2495630b4ef03a1f32b33fce7fe.1414387334.git.joe@perches.com>
-References: <cover.1414387334.git.joe@perches.com>
-	<e68a49a228d8d2495630b4ef03a1f32b33fce7fe.1414387334.git.joe@perches.com>
-X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1751596AbaJ0Ri2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:38:28 -0400
+Date: Mon, 27 Oct 2014 13:38:15 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        przanoni@gmail.com, mingo@kernel.org, hpa@linux.intel.com,
+        hpa@zytor.com, linux-tip-commits@vger.kernel.org,
+        linux-audit@redhat.com
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+Message-ID: <20141027173815.GA15532@madcap2.tricolour.ca>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+ <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
+ <alpine.DEB.2.11.1410251034320.5308@nanos>
+ <20141027023457.GY15532@madcap2.tricolour.ca>
+ <1414418157.24347.1.camel@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/CAj/qyhiMumS69DuPDRPde2"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414418157.24347.1.camel@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/CAj/qyhiMumS69DuPDRPde2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 14/10/27, Eric Paris wrote:
+> My patch was already committed to the -tip urgent branch.  I believe any
+> optimization should be based on that branch, Richard.  If you are trying
+> to wrangle every bit of speed out of this, should you
+> 
+> push %esi;
+> push %edi;
+> CFI_ADJUST_CFA_OFFSET 8
+> call __audit_syscall_entry
+> pop;
+> pop;
+> CFI_ADJUST_CFA_OFFSET -8
+> 
+> Instead of using the pushl_cfi and popl_cfi macros?
+> 
+> I wrote my patch to be obviously correct, but agree there are certainly
+> some speedups possible.
 
-On Sun, 26 Oct 2014 22:25:04 -0700
-Joe Perches <joe@perches.com> wrote:
+I was just more surprised that you didn't use the assumptions and
+approach of the original code before I botched it, which simply re-used
+values in registers that were already there, rather than fetching them
+from the pt_regs struct on the stack and adjusting the reference with an
+offset on the fly as you're pushing items onto the stack.
 
-> Precedence of & and >> is not the same and is not left to right.
-> shift has higher precedence and should be done after the mask.
->=20
-> Add parentheses around the mask.
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
+> -Eric
+> 
+> On Sun, 2014-10-26 at 22:34 -0400, Richard Guy Briggs wrote:
+> > git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
+> > It was writing over %esp/pt_regs semi-randomly on i686 with the expected
+> > "system can't boot" results.  As noted in:
+> > 
+> > https://bugs.freedesktop.org/show_bug.cgi?id=85277
+> > 
+> > This patch stops fscking with pt_regs.  Instead it sets up the registers
+> > for the call to __audit_syscall_entry in the most obvious conceivable
+> > way.  It then does just a tiny tiny touch of magic.  We need to get what
+> > started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
+> > as a pair of pushes using the values still in those registers.
+> > 
+> > After the call to __audit_syscall_entry all we need to do is get that
+> > now useless junk off the stack (pair of pops) and reload %eax with the
+> > original syscall so other stuff can keep going about it's business.
+> > 
+> > Reported-by: Paulo Zanoni <przanoni@gmail.com>
+> > Signed-off-by: Eric Paris <eparis@redhat.com>
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: x86@kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > Cc: linux-audit@redhat.com
+> > 
+> > ---
+> > On 14/10/25, Thomas Gleixner wrote:
+> > > Why are we grabbing that from the stack? AFAICT all arguments are in
+> > > the registers still.
+> > 
+> > Right, re-arranging the instructions slightly to avoid overwriting %edx
+> > with %ebx before needing it to push onto the stack, how does this look?
+> > 
+> >  arch/x86/kernel/entry_32.S | 15 +++++++--------
+> >  1 file changed, 7 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> > index b553ed8..344b63f 100644
+> > --- a/arch/x86/kernel/entry_32.S
+> > +++ b/arch/x86/kernel/entry_32.S
+> > @@ -447,15 +447,14 @@ sysenter_exit:
+> >  sysenter_audit:
+> >  	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
+> >  	jnz syscall_trace_entry
+> > -	addl $4,%esp
+> > -	CFI_ADJUST_CFA_OFFSET -4
+> > -	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
+> > -	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
+> > -	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
+> > -	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
+> > -	/* %eax already in %eax		   1st arg: syscall number */
+> > +	/* movl PT_ECX(%esp), %ecx	already set, a1: 3nd arg to audit */
+> > +	/* movl PT_EAX(%esp), %eax	already set, syscall number: 1st arg to audit */
+> > +	pushl_cfi %esi			/* a3: 5th arg */
+> > +	pushl_cfi %edx			/* a2: 4th arg */
+> > +	movl %ebx, %edx			/* ebx/a0: 2nd arg to audit */
+> >  	call __audit_syscall_entry
+> > -	pushl_cfi %ebx
+> > +	popl_cfi %ecx /* get that remapped edx off the stack */
+> > +	popl_cfi %ecx /* get that remapped esi off the stack */
+> >  	movl PT_EAX(%esp),%eax		/* reload syscall number */
+> >  	jmp sysenter_do_call
+> >  
+> > 
+> > - RGB
+> > 
+> > --
+> > Richard Guy Briggs <rbriggs@redhat.com>
+> > Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+> > Remote, Ottawa, Canada
+> > Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> 
+> 
 
-Good catch.
+- RGB
 
-Reviewed-by: Michael B=C3=BCsch <m@bues.ch>
-
-> ---
->  drivers/ssb/driver_chipcommon_pmu.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/ssb/driver_chipcommon_pmu.c b/drivers/ssb/driver_chi=
-pcommon_pmu.c
-> index 1173a09..bc71583 100644
-> --- a/drivers/ssb/driver_chipcommon_pmu.c
-> +++ b/drivers/ssb/driver_chipcommon_pmu.c
-> @@ -621,8 +621,8 @@ static u32 ssb_pmu_get_alp_clock_clk0(struct ssb_chip=
-common *cc)
->  	u32 crystalfreq;
->  	const struct pmu0_plltab_entry *e =3D NULL;
-> =20
-> -	crystalfreq =3D chipco_read32(cc, SSB_CHIPCO_PMU_CTL) &
-> -		      SSB_CHIPCO_PMU_CTL_XTALFREQ >> SSB_CHIPCO_PMU_CTL_XTALFREQ_SHIFT;
-> +	crystalfreq =3D (chipco_read32(cc, SSB_CHIPCO_PMU_CTL) &
-> +		       SSB_CHIPCO_PMU_CTL_XTALFREQ) >> SSB_CHIPCO_PMU_CTL_XTALFREQ_SHI=
-FT;
->  	e =3D pmu0_plltab_find_entry(crystalfreq);
->  	BUG_ON(!e);
->  	return e->freq * 1000;
-
-
-
-
---=20
-Michael
-
---Sig_/CAj/qyhiMumS69DuPDRPde2
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUToGxAAoJEPUyvh2QjYsOMegP/RvSLPksqP6l7dXDkcVr9jpK
-s7ns/qqO0CVYWFoEFKmkPe5B5IIKaX8YHhJSL8A+SZhT/GDd0KEKjhNjJJUXZt6j
-ZNSVsrW4jQyxQO+Z6a3TML5UQMg3NZeaeooeLrLQwuja4ViZmc0NjhZiZp3y6Hda
-NxaaUE5lh7O6BUJfJf16oizheFz7koTqJigyrflJ4Al5XhxALgIt7w8dzq5rnlog
-1jsr5r/Pp5BytUOorL3+6f8iDPHOfg9sJyDsGwHl1/pXL+KTdEkvmSzC3VaKDNot
-JbpJFR0wvroQzj56dFcULIa2fa2bcF9+oUHKw2mGITYZqDY8umwkPSNi0oC7+mZl
-/HJGk+SGrfFdkUjweAXymjkSfjHfKGeJNvfF5ndr5ijY+rHJG4uRte6W1JlDvZtF
-HDzpAv3N4PPsPmQzFrVxdDhbPEjGUDIDGum3QkpiK5w2rnOqncaXq3caH6LDRFYS
-gsV6j1pv1kXaQFKlQea5K1DxQcA9phXwHq3XVfhQ4uVAyUqP9JuAT+z2VlF4jEPH
-9dfOURbBJDj2brp7PDm+548R3TGnvcL4zOWlgYdcGZLfwoy9sScynZbFxf8ll5/C
-IFLxuza9YOTHaIUlr1l14+1850we5KKkZuS6iYELaJMXwlCj3G1ciFKqXB4g0dJO
-0p/2mx3T8kxxkg6Yd7Pg
-=qznj
------END PGP SIGNATURE-----
-
---Sig_/CAj/qyhiMumS69DuPDRPde2--
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
