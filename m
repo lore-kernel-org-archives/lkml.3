@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbaJ0A0v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 20:26:51 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:51664 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754AbaJ0A0t (ORCPT
+	id S1751922AbaJ0AhX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 20:37:23 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:21134 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722AbaJ0AhW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 20:26:49 -0400
-Date: Mon, 27 Oct 2014 09:26:40 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        linux-sh@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] clocksource: sh_mtu2: Drop incorrect SoC family name
-Message-ID: <20141027002639.GJ25692@verge.net.au>
-References: <1414150178-4986-1-git-send-email-geert+renesas@glider.be>
- <2748392.6fMSe2cx9z@avalon>
+	Sun, 26 Oct 2014 20:37:22 -0400
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>
+CC: "khilman@kernel.org" <khilman@kernel.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v3 2/3] i2c/at91: add support for system PM
+Thread-Topic: [PATCH v3 2/3] i2c/at91: add support for system PM
+Thread-Index: AQHP71dHQ1buYqHchkKqIC8pNa0M75w+sMaAgARr0NA=
+Date: Mon, 27 Oct 2014 00:35:48 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641BF59D3F4@penmbx01>
+References: <1414133417-11530-1-git-send-email-wenyou.yang@atmel.com>
+ <1414133417-11530-3-git-send-email-wenyou.yang@atmel.com>
+ <544A4DED.6090009@cogentembedded.com>
+In-Reply-To: <544A4DED.6090009@cogentembedded.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2748392.6fMSe2cx9z@avalon>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 26, 2014 at 03:14:19PM +0200, Laurent Pinchart wrote:
-> Hi Geert,
+Hi,
+
+> -----Original Message-----
+> From: Sergei Shtylyov [mailto:sergei.shtylyov@cogentembedded.com]
+> Sent: Friday, October 24, 2014 9:03 PM
+> To: Yang, Wenyou; wsa@the-dreams.de; Desroches, Ludovic
+> Cc: khilman@kernel.org; Ferre, Nicolas; linux-kernel@vger.kernel.org; linux-
+> i2c@vger.kernel.org; linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH v3 2/3] i2c/at91: add support for system PM
 > 
-> Thank you for the patch.
+> Hello.
 > 
-> On Friday 24 October 2014 13:29:38 Geert Uytterhoeven wrote:
-> > The TPU2 hardware block is found in many Renesas SH and ARM SoCs, but
+> On 10/24/2014 10:50 AM, Wenyou Yang wrote:
 > 
-> s/TPU2/MTU2/
+> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> > ---
+> >   drivers/i2c/busses/i2c-at91.c |   26 ++++++++++++++++++++++++++
+> >   1 file changed, 26 insertions(+)
 > 
-> With this fixed,
+> > diff --git a/drivers/i2c/busses/i2c-at91.c
+> > b/drivers/i2c/busses/i2c-at91.c index a25fb5e..6a84a2a 100644
+> > --- a/drivers/i2c/busses/i2c-at91.c
+> > +++ b/drivers/i2c/busses/i2c-at91.c
+> > @@ -861,7 +861,33 @@ static int at91_twi_runtime_resume(struct device
+> > *dev)
+> [...]
+> > +static int at91_twi_resume_noirq(struct device *dev) {
+> > +	int ret;
+> > +
+> > +	if (!pm_runtime_status_suspended(dev)) {
+> > +		ret = at91_twi_runtime_resume(dev);
 > 
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>     Resume if *not* suspended?
+Yes, if it is not runtime_suspended, it must be the system suspended, then resume it. I think so.
 
-Thanks, I have fixed that and queued up the following:
+> 
+> > +		if (ret)
+> > +			return ret;
+> > +	}
+> > +
+> > +	pm_runtime_mark_last_busy(dev);
+> > +	pm_request_autosuspend(dev);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> [...]
+> 
+> WBR, Sergei
 
-
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-
-[PATCH] clocksource: sh_mtu2: Drop incorrect SoC family name
-
-The MTU2 hardware block is found in many Renesas SH and ARM SoCs, but
-not in R-Car.
-
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Simon Horman <horms+renesas@verge.net.au>
----
- Documentation/devicetree/bindings/timer/renesas,mtu2.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/Documentation/devicetree/bindings/timer/renesas,mtu2.txt b/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
-index d9a8d5a..ba0a34d 100644
---- a/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
-+++ b/Documentation/devicetree/bindings/timer/renesas,mtu2.txt
-@@ -1,4 +1,4 @@
--* Renesas R-Car Multi-Function Timer Pulse Unit 2 (MTU2)
-+* Renesas Multi-Function Timer Pulse Unit 2 (MTU2)
- 
- The MTU2 is a multi-purpose, multi-channel timer/counter with configurable
- clock inputs and programmable compare match.
--- 
-2.1.1
-
+Best Regards,
+Wenyou Yang
