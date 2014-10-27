@@ -1,92 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaJ0VjB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 17:39:01 -0400
-Received: from mga03.intel.com ([134.134.136.65]:31360 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752335AbaJ0VjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 17:39:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,798,1406617200"; 
-   d="scan'208";a="597216574"
-Message-ID: <544EBB70.6020507@intel.com>
-Date: Mon, 27 Oct 2014 22:38:56 +0100
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
- 173, 80-298 Gdansk
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752535AbaJ0VlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 17:41:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40754 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605AbaJ0VlP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 17:41:15 -0400
+Date: Mon, 27 Oct 2014 22:41:13 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "pang.xunlei" <pang.xunlei@linaro.org>
+cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        John Stultz <john.stultz@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [PATCH RFC 06/12] time: Fix build warnings for time64_t to
+ __kernel_time_t warning on 64-bit systems.
+In-Reply-To: <1414388802-5866-5-git-send-email-pang.xunlei@linaro.org>
+Message-ID: <alpine.DEB.2.11.1410272239370.5308@nanos>
+References: <1414388802-5866-1-git-send-email-pang.xunlei@linaro.org> <1414388802-5866-5-git-send-email-pang.xunlei@linaro.org>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Neil Zhang <zhangwm@marvell.com>, linux-kernel@vger.kernel.org
-CC: gregkh@linuxfoundation.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH V2] Driver cpu: update online when cpu_up/down besides
- sysfs
-References: <1414378748-8855-1-git-send-email-zhangwm@marvell.com>
-In-Reply-To: <1414378748-8855-1-git-send-email-zhangwm@marvell.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 3:59 AM, Neil Zhang wrote:
-> The current per-cpu offline info won't be updated when we use
-> any other method besides sysfs to call cpu_up/down.
-> Thus the cpu/online can't reflect the real online status.
->
-> This patch is going to fix the issue introduced by commit
-> 0902a9044fa5b7a0456ea4daacec2c2b3189ba8c (Driver core:
-> Use generic offline/online for CPU offline/online)
->
-> CC: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Tested-by: Dan Streetman <ddstreet@ieee.org>
-> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+On Mon, 27 Oct 2014, pang.xunlei wrote:
 
-Oh dear, no.
+> The kernel uses 32-bit signed value(time_t) for seconds since 1970-01-01:00:00:00, so it
+> will overflow at 2038-01-19 03:14:08 on 32-bit systems. We call this "2038 safety" issue.
+> 
+> This patch fixed the build warnings brought by former patches.
 
-Please first tell me what exactly the problem you're seeing is.
+If we know that the previous patch introduced the warning and that
+patch has not yet been committed to any immutable git tree then we fix
+it in that very patch and not after the fact.
 
-> ---
->   drivers/base/cpu.c |   25 +++++++++++++++++++++++++
->   1 file changed, 25 insertions(+)
->
-> diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-> index 006b1bc..9d61824 100644
-> --- a/drivers/base/cpu.c
-> +++ b/drivers/base/cpu.c
-> @@ -418,10 +418,35 @@ static void __init cpu_dev_register_generic(void)
->   #endif
->   }
->   
-> +static int device_hotplug_notifier(struct notifier_block *nfb,
-> +				      unsigned long action, void *hcpu)
-> +{
-> +	unsigned int cpu = (unsigned long)hcpu;
-> +	struct device *dev = get_cpu_device(cpu);
-> +	int ret;
-> +
-> +	switch (action & ~CPU_TASKS_FROZEN) {
-> +	case CPU_ONLINE:
-> +		dev->offline = false;
-> +		ret = NOTIFY_OK;
-> +		break;
-> +	case CPU_DYING:
-> +		dev->offline = true;
-> +		ret = NOTIFY_OK;
-> +		break;
-> +	default:
-> +		ret = NOTIFY_DONE;
-> +		break;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
->   void __init cpu_dev_init(void)
->   {
->   	if (subsys_system_register(&cpu_subsys, cpu_root_attr_groups))
->   		panic("Failed to register CPU subsystem");
->   
->   	cpu_dev_register_generic();
-> +	cpu_notifier(device_hotplug_notifier, 0);
->   }
+Thanks,
 
+	tglx
