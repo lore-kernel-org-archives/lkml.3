@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103AbaJ0MmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:42:10 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28141 "EHLO
+	id S1753081AbaJ0MmJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:42:09 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:28075 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625AbaJ0Mlm (ORCPT
+	with ESMTP id S1752446AbaJ0Mlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 08:41:42 -0400
 From: Yijing Wang <wangyijing@huawei.com>
@@ -31,9 +31,9 @@ CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Thierry Reding <thierry.reding@gmail.com>,
         "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 13/16] IA64/MSI: Use MSI controller framework to configure MSI/MSI-X irq
-Date: Mon, 27 Oct 2014 21:22:19 +0800
-Message-ID: <1414416142-31239-14-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 09/16] MIPS/Xlr/MSI: Use MSI controller framework to configure MSI/MSI-X irq
+Date: Mon, 27 Oct 2014 21:22:15 +0800
+Message-ID: <1414416142-31239-10-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
 References: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
@@ -50,106 +50,61 @@ MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/ia64/include/asm/pci.h |    3 ++-
- arch/ia64/kernel/msi_ia64.c |   24 ++++++++++++++++++------
- arch/ia64/pci/pci.c         |    1 +
- 3 files changed, 21 insertions(+), 7 deletions(-)
+ arch/mips/pci/pci-xlr.c |   17 +++++++++++++++--
+ 1 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/arch/ia64/include/asm/pci.h b/arch/ia64/include/asm/pci.h
-index 52af5ed..805bbc3 100644
---- a/arch/ia64/include/asm/pci.h
-+++ b/arch/ia64/include/asm/pci.h
-@@ -93,7 +93,7 @@ struct pci_controller {
- 	void *iommu;
- 	int segment;
- 	int node;		/* nearest node with memory or NUMA_NO_NODE for global allocation */
--
-+	struct msi_controller *msi_ctrl;
- 	void *platform_data;
+diff --git a/arch/mips/pci/pci-xlr.c b/arch/mips/pci/pci-xlr.c
+index 0dde803..1e43c70 100644
+--- a/arch/mips/pci/pci-xlr.c
++++ b/arch/mips/pci/pci-xlr.c
+@@ -149,6 +149,8 @@ static struct resource nlm_pci_io_resource = {
+ 	.flags		= IORESOURCE_IO,
  };
  
-@@ -101,6 +101,7 @@ struct pci_controller {
- #define PCI_CONTROLLER(busdev) ((struct pci_controller *) busdev->sysdata)
- #define pci_domain_nr(busdev)    (PCI_CONTROLLER(busdev)->segment)
++static struct msi_controller xlr_msi_ctrl;
++
+ struct pci_controller nlm_pci_controller = {
+ 	.index		= 0,
+ 	.pci_ops	= &nlm_pci_ops,
+@@ -156,6 +158,9 @@ struct pci_controller nlm_pci_controller = {
+ 	.mem_offset	= 0x00000000UL,
+ 	.io_resource	= &nlm_pci_io_resource,
+ 	.io_offset	= 0x00000000UL,
++#ifdef CONFIG_PCI_MSI
++	.msi_ctrl = &xlr_msi_ctrl,
++#endif
+ };
  
-+extern struct msi_controller ia64_msi_ctrl;
- extern struct pci_ops pci_root_ops;
- 
- static inline int pci_proc_domain(struct pci_bus *bus)
-diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
-index 8c3730c..b92b8e2 100644
---- a/arch/ia64/kernel/msi_ia64.c
-+++ b/arch/ia64/kernel/msi_ia64.c
-@@ -42,7 +42,7 @@ static int ia64_set_msi_irq_affinity(struct irq_data *idata,
+ /*
+@@ -214,11 +219,13 @@ static int get_irq_vector(const struct pci_dev *dev)
  }
- #endif /* CONFIG_SMP */
  
--int ia64_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
-+int __ia64_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
+ #ifdef CONFIG_PCI_MSI
+-void arch_teardown_msi_irq(unsigned int irq)
++static void xlr_teardown_msi_irq(struct msi_controller *ctrl,
++		unsigned int irq)
  {
- 	struct msi_msg	msg;
- 	unsigned long	dest_phys_id;
-@@ -77,7 +77,7 @@ int ia64_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
+ }
+ 
+-int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
++static int xlr_setup_msi_irq(struct msi_controller *ctrl,
++		struct pci_dev *dev, struct msi_desc *desc)
+ {
+ 	struct msi_msg msg;
+ 	struct pci_dev *lnk;
+@@ -263,6 +270,12 @@ int arch_setup_msi_irq(struct pci_dev *dev, struct msi_desc *desc)
+ 	write_msi_msg(irq, &msg);
  	return 0;
  }
- 
--void ia64_teardown_msi_irq(unsigned int irq)
-+void __ia64_teardown_msi_irq(unsigned int irq)
- {
- 	destroy_irq(irq);
- }
-@@ -111,23 +111,35 @@ static struct irq_chip ia64_msi_chip = {
- 	.irq_retrigger		= ia64_msi_retrigger_irq,
- };
- 
-+struct msi_controller *pcibios_msi_controller(struct pci_bus *bus)
-+{
-+	struct pci_controller *ctrl = bus->sysdata;
 +
-+	return ctrl->msi_ctrl;
-+}
- 
--int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
-+static int ia64_setup_msi_irq(struct msi_controller *ctrl,
-+		struct pci_dev *pdev, struct msi_desc *desc)
- {
- 	if (platform_setup_msi_irq)
- 		return platform_setup_msi_irq(pdev, desc);
- 
--	return ia64_setup_msi_irq(pdev, desc);
-+	return __ia64_setup_msi_irq(pdev, desc);
- }
- 
--void arch_teardown_msi_irq(unsigned int irq)
-+static void ia64_teardown_msi_irq(struct msi_controller *ctrl, unsigned int irq)
- {
- 	if (platform_teardown_msi_irq)
- 		return platform_teardown_msi_irq(irq);
- 
--	return ia64_teardown_msi_irq(irq);
-+	return __ia64_teardown_msi_irq(irq);
- }
- 
-+struct msi_controller ia64_msi_ctrl = {
-+	.setup_irq = ia64_setup_msi_irq,
-+	.teardown_irq = ia64_teardown_msi_irq,
++static struct msi_controller xlr_msi_ctrl = {
++	.setup_irq = xlr_setup_msi_irq,
++	.teardown_irq = xlr_teardown_msi_irq,
 +};
 +
- #ifdef CONFIG_INTEL_IOMMU
- #ifdef CONFIG_SMP
- static int dmar_msi_set_affinity(struct irq_data *data,
-diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-index 291a582..875f46a 100644
---- a/arch/ia64/pci/pci.c
-+++ b/arch/ia64/pci/pci.c
-@@ -437,6 +437,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ #endif
  
- 	controller->companion = device;
- 	controller->node = acpi_get_node(device->handle);
-+	controller->msi_ctrl = &ia64_msi_ctrl;
- 
- 	info = kzalloc(sizeof(*info), GFP_KERNEL);
- 	if (!info) {
+ /* Extra ACK needed for XLR on chip PCI controller */
 -- 
 1.7.1
 
