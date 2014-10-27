@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaJ0P5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:57:11 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50165 "EHLO
+	id S1753099AbaJ0P5T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:57:19 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50182 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011AbaJ0P5H (ORCPT
+	with ESMTP id S1753015AbaJ0P5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:57:07 -0400
+	Mon, 27 Oct 2014 11:57:12 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Sebastian Reichel <sre@kernel.org>
-Subject: [PATCH v3 28/47] power/reset: at91-poweroff: Register with kernel power-off handler
-Date: Mon, 27 Oct 2014 08:55:35 -0700
-Message-Id: <1414425354-10359-29-git-send-email-linux@roeck-us.net>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH v3 30/47] x86: iris: Register with kernel power-off handler
+Date: Mon, 27 Oct 2014 08:55:37 -0700
+Message-Id: <1414425354-10359-31-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
 References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
@@ -25,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.544E6B53.0163,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.544E6B57.033E,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 161
+X-CTCH-SenderID-TotalMessages: 170
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -52,10 +51,12 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel power-off handler instead of setting pm_power_off
-directly. Select default priority to reflect that the original code sets
-pm_power_off unconditionally.
+directly. Register with high priority to reflect that the original code
+overwrites existing power-off handlers.
 
-Acked-by: Sebastian Reichel <sre@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v3:
@@ -63,58 +64,78 @@ v3:
   with power_off or power-off as appropriate
 - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- Added patch
+- Use define to specify poweroff handler priority
+- Use devm_register_power_off_handler
 
- drivers/power/reset/at91-poweroff.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ arch/x86/platform/iris/iris.c | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/power/reset/at91-poweroff.c b/drivers/power/reset/at91-poweroff.c
-index c610003..0894b45 100644
---- a/drivers/power/reset/at91-poweroff.c
-+++ b/drivers/power/reset/at91-poweroff.c
-@@ -12,8 +12,10 @@
+diff --git a/arch/x86/platform/iris/iris.c b/arch/x86/platform/iris/iris.c
+index 4d171e8..aac23db 100644
+--- a/arch/x86/platform/iris/iris.c
++++ b/arch/x86/platform/iris/iris.c
+@@ -23,6 +23,7 @@
  
- #include <linux/io.h>
+ #include <linux/moduleparam.h>
  #include <linux/module.h>
 +#include <linux/notifier.h>
- #include <linux/of.h>
  #include <linux/platform_device.h>
-+#include <linux/pm.h>
- #include <linux/printk.h>
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
+@@ -47,15 +48,21 @@ static bool force;
+ module_param(force, bool, 0);
+ MODULE_PARM_DESC(force, "Set to one to force poweroff handler installation.");
  
- #define AT91_SHDW_CR	0x00		/* Shut Down Control Register */
-@@ -66,11 +68,19 @@ static void __init at91_wakeup_status(void)
- 	pr_info("AT91: Wake-Up source: %s\n", reason);
- }
- 
--static void at91_poweroff(void)
-+static int at91_poweroff(struct notifier_block *this, unsigned long unused1,
-+			 void *unused2)
+-static void (*old_pm_power_off)(void);
+-
+-static void iris_power_off(void)
++static int iris_power_off(struct notifier_block *this, unsigned long unused1,
++			  void *unused2)
  {
- 	writel(AT91_SHDW_KEY | AT91_SHDW_SHDW, at91_shdwc_base + AT91_SHDW_CR);
+ 	outb(IRIS_GIO_PULSE, IRIS_GIO_OUTPUT);
+ 	msleep(850);
+ 	outb(IRIS_GIO_REST, IRIS_GIO_OUTPUT);
 +
 +	return NOTIFY_DONE;
  }
  
-+static struct notifier_block at91_power_off_nb = {
-+	.notifier_call = at91_poweroff,
-+	.priority = POWER_OFF_PRIORITY_DEFAULT,
++static struct notifier_block iris_power_off_nb = {
++	.notifier_call = iris_power_off,
++	.priority = POWER_OFF_PRIORITY_HIGH,
 +};
 +
- const enum wakeup_type at91_poweroff_get_wakeup_mode(struct device_node *np)
+ /*
+  * Before installing the power_off handler, try to make sure the OS is
+  * running on an Iris.  Since Iris does not support DMI, this is done
+@@ -65,20 +72,25 @@ static void iris_power_off(void)
+ static int iris_probe(struct platform_device *pdev)
  {
- 	const char *pm;
-@@ -134,9 +144,7 @@ static int at91_poweroff_probe(struct platform_device *pdev)
- 	if (pdev->dev.of_node)
- 		at91_poweroff_dt_set_wakeup_mode(pdev);
- 
--	pm_power_off = at91_poweroff;
--
--	return 0;
-+	return devm_register_power_off_handler(&pdev->dev, &at91_power_off_nb);
+ 	unsigned char status = inb(IRIS_GIO_INPUT);
++	int ret;
++
+ 	if (status == IRIS_GIO_NODEV) {
+ 		printk(KERN_ERR "This machine does not seem to be an Iris. "
+ 			"Power off handler not installed.\n");
+ 		return -ENODEV;
+ 	}
+-	old_pm_power_off = pm_power_off;
+-	pm_power_off = &iris_power_off;
++
++	ret = devm_register_power_off_handler(&pdev->dev, &iris_power_off_nb);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to register power-off handler\n");
++		return ret;
++	}
+ 	printk(KERN_INFO "Iris power_off handler installed.\n");
+ 	return 0;
  }
  
- static struct of_device_id at91_poweroff_of_match[] = {
+ static int iris_remove(struct platform_device *pdev)
+ {
+-	pm_power_off = old_pm_power_off;
+ 	printk(KERN_INFO "Iris power_off handler uninstalled.\n");
+ 	return 0;
+ }
 -- 
 1.9.1
 
