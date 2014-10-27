@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbaJ0P6d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:58:33 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50342 "EHLO
+	id S1753384AbaJ0P5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:57:52 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50321 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389AbaJ0P5x (ORCPT
+	with ESMTP id S1752658AbaJ0P5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:57:53 -0400
+	Mon, 27 Oct 2014 11:57:47 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Matt Fleming <matt.fleming@intel.com>, linux-efi@vger.kernel.org
-Subject: [PATCH v3 46/47] efi: Register power-off handler with kernel power-off handler
-Date: Mon, 27 Oct 2014 08:55:53 -0700
-Message-Id: <1414425354-10359-47-git-send-email-linux@roeck-us.net>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH v3 43/47] x86: ce4100: Register with kernel power-off handler
+Date: Mon, 27 Oct 2014 08:55:50 -0700
+Message-Id: <1414425354-10359-44-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
 References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
@@ -23,13 +24,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.544E6B81.0048,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020209.544E6B7A.0296,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 263
+X-CTCH-SenderID-TotalMessages: 246
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -50,12 +51,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with low priority since the efi code states that
-this is a power-off handler of last resort.
+directly.
 
-Cc: Matt Fleming <matt.fleming@intel.com>
-Acked-by: Matt Fleming <matt.fleming@intel.com>
-Acked-by: Mark Salter <msalter@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v3:
@@ -65,59 +65,21 @@ v3:
 v2:
 - Use define to specify poweroff handler priority
 
- drivers/firmware/efi/reboot.c | 23 +++++++++++++++++++----
- 1 file changed, 19 insertions(+), 4 deletions(-)
+ arch/x86/platform/ce4100/ce4100.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/firmware/efi/reboot.c b/drivers/firmware/efi/reboot.c
-index 9c59d1c..df0ceb9 100644
---- a/drivers/firmware/efi/reboot.c
-+++ b/drivers/firmware/efi/reboot.c
-@@ -3,6 +3,8 @@
-  * Copyright (c) 2014 Red Hat, Inc., Mark Salter <msalter@redhat.com>
-  */
- #include <linux/efi.h>
-+#include <linux/notifier.h>
-+#include <linux/pm.h>
- #include <linux/reboot.h>
+diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
+index 701fd58..1816bc1 100644
+--- a/arch/x86/platform/ce4100/ce4100.c
++++ b/arch/x86/platform/ce4100/ce4100.c
+@@ -164,5 +164,6 @@ void __init x86_ce4100_early_setup(void)
+ 	 */
+ 	reboot_type = BOOT_KBD;
  
- int efi_reboot_quirk_mode = -1;
-@@ -38,19 +40,32 @@ bool __weak efi_poweroff_required(void)
- 	return false;
+-	pm_power_off = ce4100_power_off;
++	register_power_off_handler_simple(ce4100_power_off,
++					  POWER_OFF_PRIORITY_DEFAULT);
  }
- 
--static void efi_power_off(void)
-+static int efi_power_off(struct notifier_block *this,
-+			 unsigned long unused1, void *unused2)
- {
- 	efi.reset_system(EFI_RESET_SHUTDOWN, EFI_SUCCESS, 0, NULL);
-+
-+	return NOTIFY_DONE;
- }
- 
-+static struct notifier_block efi_power_off_nb = {
-+	.notifier_call = efi_power_off,
-+	.priority = POWER_OFF_PRIORITY_LOW,
-+};
-+
- static int __init efi_shutdown_init(void)
- {
-+	int ret = 0;
-+
- 	if (!efi_enabled(EFI_RUNTIME_SERVICES))
- 		return -ENODEV;
- 
--	if (efi_poweroff_required())
--		pm_power_off = efi_power_off;
-+	if (efi_poweroff_required()) {
-+		ret = register_power_off_handler(&efi_power_off_nb);
-+		if (ret)
-+			pr_err("efi: Failed to register power-off handler\n");
-+	}
- 
--	return 0;
-+	return ret;
- }
- late_initcall(efi_shutdown_init);
 -- 
 1.9.1
 
