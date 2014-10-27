@@ -1,185 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaJ0POA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:14:00 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:11947 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753143AbaJ0PNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:13:09 -0400
-X-IronPort-AV: E=Sophos;i="5.04,796,1406592000"; 
-   d="scan'208";a="185211239"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
-        <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v7 8/8] xen/arm: introduce GNTTABOP_cache_flush
-Date: Mon, 27 Oct 2014 15:09:28 +0000
-Message-ID: <1414422568-19103-8-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
+	id S1753380AbaJ0POS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:14:18 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59687 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079AbaJ0POQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:14:16 -0400
+Date: Mon, 27 Oct 2014 08:10:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Eric B Munson <emunson@akamai.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Commit 35ce7f29a breaks hibernation for XPS 13
+Message-ID: <20141027151021.GC5718@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141024160815.GA2968@akamai.com>
+ <20141024161634.GR4977@linux.vnet.ibm.com>
+ <20141024163612.GA2256@akamai.com>
+ <20141024171818.GU4977@linux.vnet.ibm.com>
+ <20141024184028.GA2220@akamai.com>
+ <20141024203124.GZ4977@linux.vnet.ibm.com>
+ <20141027134757.GA2936@akamai.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027134757.GA2936@akamai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102715-0033-0000-0000-0000027A621A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce support for new hypercall GNTTABOP_cache_flush.
-Use it to perform cache flashing on pages used for dma when necessary.
+On Mon, Oct 27, 2014 at 09:47:57AM -0400, Eric B Munson wrote:
+> On Fri, 24 Oct 2014, Paul E. McKenney wrote:
+> 
+> > On Fri, Oct 24, 2014 at 02:40:28PM -0400, Eric B Munson wrote:
+> > > On Fri, 24 Oct 2014, Paul E. McKenney wrote:
+> > > 
+> > > > On Fri, Oct 24, 2014 at 12:36:12PM -0400, Eric B Munson wrote:
+> > > > > On Fri, 24 Oct 2014, Paul E. McKenney wrote:
+> > > > > 
+> > > > > > On Fri, Oct 24, 2014 at 12:08:15PM -0400, Eric B Munson wrote:
+> > > > > > > Paul,
+> > > > > > > 
+> > > > > > > As of 3.18-rc1 I can no longer hibernate my Dell XPS-13.  Bisect points
+> > > > > > > the finger at 35ce7f29a.  A revert of that commit confirms, I can once
+> > > > > > > again hibernate my machine without it.
+> > > > > > > 
+> > > > > > > When the hibernation fails I see this in dmesg:
+> > > > > > > [   37.953313] PM: Syncing filesystems ... done.
+> > > > > > > [   37.963694] Freezing user space processes ... (elapsed 0.001 seconds) done.
+> > > > > > > [   37.965297] PM: Marking nosave pages: [mem 0x00000000-0x00000fff]
+> > > > > > > [   37.965299] PM: Marking nosave pages: [mem 0x00058000-0x00058fff]
+> > > > > > > [   37.965301] PM: Marking nosave pages: [mem 0x0009d000-0x000fffff]
+> > > > > > > [   37.965304] PM: Marking nosave pages: [mem 0xc496a000-0xc4b6bfff]
+> > > > > > > [   37.965315] PM: Marking nosave pages: [mem 0xdadb7000-0xdcffefff]
+> > > > > > > [   37.965479] PM: Marking nosave pages: [mem 0xdd000000-0xffffffff]
+> > > > > > > [   37.966000] PM: Basic memory bitmaps created
+> > > > > > > [   37.966046] PM: Preallocating image memory... done (allocated 181989 pages)
+> > > > > > > [   38.141524] PM: Allocated 727956 kbytes in 0.17 seconds (4282.09 MB/s)
+> > > > > > > [   38.141525] Freezing remaining freezable tasks ... 
+> > > > > > > [   58.151863] Freezing of tasks failed after 20.004 seconds (0 tasks refusing to freeze, wq_busy=1):
+> > > > > > > [   58.151894] 
+> > > > > > > [   58.151896] Restarting kernel threads ... done.
+> > > > > > > [   58.181915] PM: Basic memory bitmaps freed
+> > > > > > > [   58.181917] Restarting tasks ... done.
+> > > > > > > 
+> > > > > > > 
+> > > > > > > I am not sure what else I can provide that might be useful, but I did
+> > > > > > > see the thread on net-dev about this same commit.  Please CC me on any
+> > > > > > > fixes and I will be happy to test.
+> > > > > > 
+> > > > > > Thank you for the bug report!
+> > > > > > 
+> > > > > > Does the following patch help?
+> > > > > > 
+> > > > > > 							Thanx, Paul
+> > > > > 
+> > > > > Paul,
+> > > > > 
+> > > > > This patch does not help.  I see the same dmesg output and failure to
+> > > > > hibernate.
+> > > > 
+> > > > Thank you for testing it.  Does the following (untested, might not even
+> > > > build) patch help?  (Or feel free to wait until I have done some testing
+> > > > on it.)
+> > > > 
+> > > > 							Thanx, Paul
+> > > 
+> > > Still didn't help.  If it helps, when I attempt to reboot after trying
+> > > to hibernate I see a kworker thread hung and get the stack trace below
+> > > from that thread.  I assume this is the same thread that is holding up
+> > > the hibernate.
+> > 
+> > Yep, looks like something that some other people are running into as well.
+> > 
+> > If you turn off CONFIG_RCU_NOCB_CPU, do you still get the failure?
+> 
+> Disabling CONFIG_RCU_NOCB_CPU fixes the problem.  I am able to hibernate
+> and resume successfully.
 
-If GNTTABOP_cache_flush is supported by the hypervisor, we don't need to
-bounce dma map operations that involve foreign grants and non-coherent
-devices.
+Very good!  Then the fix I am working on might actually be a fix.  ;-)
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
----
-
-Changes in v5:
-- rename hypercall_flush to hypercall_cflush;
-- remove spurious change.
-
-Changes in v4:
-- add comment;
-- avoid bouncing dma map operations that involve foreign grants and
-non-coherent devices if GNTTABOP_cache_flush is provided by Xen.
-
-Changes in v3:
-- fix the cache maintenance op call to match what Linux does natively;
-- update the hypercall interface to match Xen.
-
-Changes in v2:
-- update the hypercall interface to match Xen;
-- call the interface on a single page at a time.
----
- arch/arm/xen/mm.c                   |   39 ++++++++++++++++++++++++++++++-----
- include/xen/interface/grant_table.h |   19 +++++++++++++++++
- 2 files changed, 53 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index 28396aa..e20a57f 100644
---- a/arch/arm/xen/mm.c
-+++ b/arch/arm/xen/mm.c
-@@ -12,6 +12,7 @@
- #include <linux/swiotlb.h>
- 
- #include <xen/xen.h>
-+#include <xen/interface/grant_table.h>
- #include <xen/interface/memory.h>
- #include <xen/swiotlb-xen.h>
- 
-@@ -20,6 +21,8 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/interface.h>
- 
-+static bool hypercall_cflush = false;
-+
- 
- #ifdef CONFIG_ARM64
- static inline void dmac_map_area(const void *start, size_t size, int dir)
-@@ -60,17 +63,35 @@ static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
- 	do {
- 		size_t len = left;
- 		void *vaddr;
-+
-+		/* buffers in highmem or foreign pages cannot cross page
-+		 * boundaries */
-+		if (len + offset > PAGE_SIZE)
-+			len = PAGE_SIZE - offset;
- 	
- 		if (!pfn_valid(pfn))
- 		{
--			/* TODO: cache flush */
-+			struct gnttab_cache_flush cflush;
-+
-+			cflush.op = 0;
-+			cflush.a.dev_bus_addr = pfn << PAGE_SHIFT;
-+			cflush.offset = offset;
-+			cflush.length = len;
-+
-+			if (op == dmac_unmap_area && dir != DMA_TO_DEVICE)
-+				cflush.op = GNTTAB_CACHE_INVAL;
-+			if (op == dmac_map_area) {
-+				if (dir == DMA_FROM_DEVICE)
-+					cflush.op = GNTTAB_CACHE_INVAL;
-+				else
-+					cflush.op = GNTTAB_CACHE_CLEAN;
-+			}
-+			if (cflush.op)
-+				HYPERVISOR_grant_table_op(GNTTABOP_cache_flush, &cflush, 1);
- 		} else {
- 			struct page *page = pfn_to_page(pfn);
- 
- 			if (PageHighMem(page)) {
--				if (len + offset > PAGE_SIZE)
--					len = PAGE_SIZE - offset;
--
- 				if (cache_is_vipt_nonaliasing()) {
- 					vaddr = kmap_atomic(page);
- 					op(vaddr + offset, len, dir);
-@@ -143,7 +164,7 @@ bool xen_arch_need_swiotlb(struct device *dev,
- 			   unsigned long pfn,
- 			   unsigned long mfn)
- {
--	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-+	return (!hypercall_cflush && (pfn != mfn) && !is_device_dma_coherent(dev));
- }
- 
- int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
-@@ -186,10 +207,18 @@ static struct dma_map_ops xen_swiotlb_dma_ops = {
- 
- int __init xen_mm_init(void)
- {
-+	struct gnttab_cache_flush cflush;
- 	if (!xen_initial_domain())
- 		return 0;
- 	xen_swiotlb_init(1, false);
- 	xen_dma_ops = &xen_swiotlb_dma_ops;
-+
-+	cflush.op = 0;
-+	cflush.a.dev_bus_addr = 0;
-+	cflush.offset = 0;
-+	cflush.length = 0;
-+	if (HYPERVISOR_grant_table_op(GNTTABOP_cache_flush, &cflush, 1) != -ENOSYS)
-+		hypercall_cflush = true;
- 	return 0;
- }
- arch_initcall(xen_mm_init);
-diff --git a/include/xen/interface/grant_table.h b/include/xen/interface/grant_table.h
-index e40fae9..bcce564 100644
---- a/include/xen/interface/grant_table.h
-+++ b/include/xen/interface/grant_table.h
-@@ -479,6 +479,25 @@ struct gnttab_get_version {
- DEFINE_GUEST_HANDLE_STRUCT(gnttab_get_version);
- 
- /*
-+ * Issue one or more cache maintenance operations on a portion of a
-+ * page granted to the calling domain by a foreign domain.
-+ */
-+#define GNTTABOP_cache_flush          12
-+struct gnttab_cache_flush {
-+    union {
-+        uint64_t dev_bus_addr;
-+        grant_ref_t ref;
-+    } a;
-+    uint16_t offset;   /* offset from start of grant */
-+    uint16_t length;   /* size within the grant */
-+#define GNTTAB_CACHE_CLEAN          (1<<0)
-+#define GNTTAB_CACHE_INVAL          (1<<1)
-+#define GNTTAB_CACHE_SOURCE_GREF    (1<<31)
-+    uint32_t op;
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(gnttab_cache_flush);
-+
-+/*
-  * Bitfield values for update_pin_status.flags.
-  */
-  /* Map the grant entry for access by I/O devices. */
--- 
-1.7.10.4
+							Thanx, Paul
 
