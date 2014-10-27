@@ -1,134 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaJ0LGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:06:10 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:14311 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056AbaJ0LGC (ORCPT
+	id S1752519AbaJ0LGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:06:31 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:60371 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469AbaJ0LG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:06:02 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-6d-544e271668e8
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
-        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
-        santosh.shilimkar@ti.com, tony@atomide.com, drake@endlessm.com,
-        loeliger@gmail.com, Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH v6 5/7] ARM: EXYNOS: Add .write_sec outer cache callback for
- L2C-310
-Date: Mon, 27 Oct 2014 12:05:48 +0100
-Message-id: <1414407950-3029-6-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.9.2
-In-reply-to: <1414407950-3029-1-git-send-email-m.szyprowski@samsung.com>
-References: <1414407950-3029-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xK7pi6n4hBi/XW1o8mv+Y2aJ3wVU2
-	i7NNb9gttnfOYLeY8mc5k8Wmx9dYLS7vmsNmMXtJP4vFjPP7mCxuX+a1OLd9C4vF2iN32S2W
-	Xr/IZPG6bw2zxapdfxgt9l/xchDwWDNvDaNHS3MPm8e3r5NYPC739TJ5LPqe5bFz1l12jzvX
-	9rB5bF5S79G3ZRWjx/Eb25k8Pm+SC+CO4rJJSc3JLEst0rdL4MpofjeJqWCrWMWlqy9YGhi3
-	CXUxcnJICJhI7D//ih3CFpO4cG89WxcjF4eQwFJGifYprSwgCSGBPiaJi1f8QWw2AUOJrrdd
-	bCC2iEC2xI9vk1lAGpgFVjFLTDmwjhUkISwQJrHh5WxGEJtFQFXi5PVOsDivgLvEviWzmSC2
-	yUn8f7kCzOYU8JCY3DKTCWKZu8SqD3sZJzDyLmBkWMUomlqaXFCclJ5rqFecmFtcmpeul5yf
-	u4kREuRfdjAuPmZ1iFGAg1GJh3fHNN8QIdbEsuLK3EOMEhzMSiK8jj+BQrwpiZVVqUX58UWl
-	OanFhxiZODilGhib3IUmbzxnLcbHuVzs6rM738xDTj3Kk4n6krd4f0KlaMD3OIcFfxtSpy92
-	l3g6XfSZuA2HfuC52Say2xdrhvMUuyve7Iuoy2x65XZrzt/EW46d6xxttS4GcN154XSpYkmc
-	v2ZEj927UPf9NteLgvima5u8uvSv4qTuPFsJMYEqlnaHD0+im5VYijMSDbWYi4oTAS3szsJQ	AgAA
+	Mon, 27 Oct 2014 07:06:28 -0400
+Message-ID: <544E26AB.6090200@huawei.com>
+Date: Mon, 27 Oct 2014 19:04:11 +0800
+From: Li Liu <john.liuli@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, <qemu-devel@nongnu.org>,
+        <peter.huangpeng@huawei.com>, <rusty@rustcorp.com.au>,
+        <virtualization@lists.linux-foundation.org>,
+        <n.nikolaev@virtualopensystems.com>, <yingshiuan.pan@gmail.com>,
+        <remy.gauguey@cea.fr>, <joel.schopp@amd.com>
+Subject: Re: [RFC PATCH 2/2] Assign a new irq handler while irqfd enabled
+References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com> <1414225494-2208-3-git-send-email-john.liuli@huawei.com> <20141026115646.GB5497@redhat.com>
+In-Reply-To: <20141026115646.GB5497@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.142.143.9]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
 
-Exynos4 SoCs equipped with an L2C-310 cache controller and running under
-secure firmware require certain registers of aforementioned IP to be
-accessed only from secure mode. This means that SMC calls are required
-for certain register writes. To handle this, an implementation of
-.write_sec and .configure callbacks is provided by this patch.
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-[added comment and reworked unconditional call to SMC_CMD_L2X0INVALL]
-Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
----
- arch/arm/mach-exynos/firmware.c | 50 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+On 2014/10/26 19:56, Michael S. Tsirkin wrote:
+> On Sat, Oct 25, 2014 at 04:24:54PM +0800, john.liuli wrote:
+>> From: Li Liu <john.liuli@huawei.com>
+>>
+>> This irq handler will get the interrupt reason from a
+>> shared memory. And will be assigned only while irqfd
+>> enabled.
+>>
+>> Signed-off-by: Li Liu <john.liuli@huawei.com>
+>> ---
+>>  drivers/virtio/virtio_mmio.c |   34 ++++++++++++++++++++++++++++++++--
+>>  1 file changed, 32 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
+>> index 28ddb55..7229605 100644
+>> --- a/drivers/virtio/virtio_mmio.c
+>> +++ b/drivers/virtio/virtio_mmio.c
+>> @@ -259,7 +259,31 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
+>>  	return ret;
+>>  }
+>>  
+>> +/* Notify all virtqueues on an interrupt. */
+>> +static irqreturn_t vm_interrupt_irqfd(int irq, void *opaque)
+>> +{
+>> +	struct virtio_mmio_device *vm_dev = opaque;
+>> +	struct virtio_mmio_vq_info *info;
+>> +	unsigned long status;
+>> +	unsigned long flags;
+>> +	irqreturn_t ret = IRQ_NONE;
+>>  
+>> +	/* Read the interrupt reason and reset it */
+>> +	status = *vm_dev->isr_mem;
+>> +	*vm_dev->isr_mem = 0x0;
+> 
+> you are reading and modifying shared memory
+> without atomics and any memory barriers.
+> Why is this safe?
+> 
 
-diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-index f5e626d55951..e6a052c593f2 100644
---- a/arch/arm/mach-exynos/firmware.c
-+++ b/arch/arm/mach-exynos/firmware.c
-@@ -17,6 +17,7 @@
- #include <asm/cacheflush.h>
- #include <asm/cputype.h>
- #include <asm/firmware.h>
-+#include <asm/hardware/cache-l2x0.h>
- #include <asm/suspend.h>
- 
- #include <mach/map.h>
-@@ -120,6 +121,43 @@ static const struct firmware_ops exynos_firmware_ops = {
- 	.resume			= exynos_resume,
- };
- 
-+static void exynos_l2_write_sec(unsigned long val, unsigned reg)
-+{
-+	static int l2cache_enabled;
-+
-+	switch (reg) {
-+	case L2X0_CTRL:
-+		if (val & L2X0_CTRL_EN) {
-+			/*
-+			 * Before the cache can be enabled, due to firmware
-+			 * design, SMC_CMD_L2X0INVALL must be called.
-+			 */
-+			if (!l2cache_enabled) {
-+				exynos_smc(SMC_CMD_L2X0INVALL, 0, 0, 0);
-+				l2cache_enabled = 1;
-+			}
-+		} else {
-+			l2cache_enabled = 0;
-+		}
-+		exynos_smc(SMC_CMD_L2X0CTRL, val, 0, 0);
-+		break;
-+
-+	case L2X0_DEBUG_CTRL:
-+		exynos_smc(SMC_CMD_L2X0DEBUG, val, 0, 0);
-+		break;
-+
-+	default:
-+		WARN_ONCE(1, "%s: ignoring write to reg 0x%x\n", __func__, reg);
-+	}
-+}
-+
-+static void exynos_l2_configure(const struct l2x0_regs *regs)
-+{
-+	exynos_smc(SMC_CMD_L2X0SETUP1, regs->tag_latency, regs->data_latency,
-+			regs->prefetch_ctrl);
-+	exynos_smc(SMC_CMD_L2X0SETUP2, regs->pwr_ctrl, regs->aux_ctrl, 0);
-+}
-+
- void __init exynos_firmware_init(void)
- {
- 	struct device_node *nd;
-@@ -139,4 +177,16 @@ void __init exynos_firmware_init(void)
- 	pr_info("Running under secure firmware.\n");
- 
- 	register_firmware_ops(&exynos_firmware_ops);
-+
-+	/*
-+	 * Exynos 4 SoCs (based on Cortex A9 and equipped with L2C-310),
-+	 * running under secure firmware, require certain registers of L2
-+	 * cache controller to be written in secure mode. Here .write_sec
-+	 * callback is provided to perform necessary SMC calls.
-+	 */
-+	if (IS_ENABLED(CONFIG_CACHE_L2X0)
-+	    && read_cpuid_part() == ARM_CPU_PART_CORTEX_A9) {
-+		outer_cache.write_sec = exynos_l2_write_sec;
-+		outer_cache.configure = exynos_l2_configure;
-+	}
- }
--- 
-1.9.2
+good catch, a stupid mistake.
+
+>> +
+>> +	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)) {
+>> +		virtio_config_changed(&vm_dev->vdev);
+>> +		ret = IRQ_HANDLED;
+>> +	}
+>> +
+>> +	spin_lock_irqsave(&vm_dev->lock, flags);
+>> +	list_for_each_entry(info, &vm_dev->virtqueues, node)
+>> +		ret |= vring_interrupt(irq, info->vq);
+>> +	spin_unlock_irqrestore(&vm_dev->lock, flags);
+>> +
+>> +	return ret;
+>> +}
+>>  
+>>  static void vm_del_vq(struct virtqueue *vq)
+>>  {
+> 
+> So you invoke callbacks for all VQs.
+> This won't scale well as the number of VQs grows, will it?
+> 
+>> @@ -391,6 +415,7 @@ error_available:
+>>  	return ERR_PTR(err);
+>>  }
+>>  
+>> +#define VIRTIO_MMIO_F_IRQFD        (1 << 7)
+>>  static int vm_find_vqs(struct virtio_device *vdev, unsigned nvqs,
+>>  		       struct virtqueue *vqs[],
+>>  		       vq_callback_t *callbacks[],
+>> @@ -400,8 +425,13 @@ static int vm_find_vqs(struct virtio_device *vdev, unsigned nvqs,
+>>  	unsigned int irq = platform_get_irq(vm_dev->pdev, 0);
+>>  	int i, err;
+>>  
+>> -	err = request_irq(irq, vm_interrupt, IRQF_SHARED,
+>> -			dev_name(&vdev->dev), vm_dev);
+>> +	if (*vm_dev->isr_mem & VIRTIO_MMIO_F_IRQFD) {
+>> +		err = request_irq(irq, vm_interrupt_irqfd, IRQF_SHARED,
+>> +				  dev_name(&vdev->dev), vm_dev);
+>> +	} else {
+>> +		err = request_irq(irq, vm_interrupt, IRQF_SHARED,
+>> +				  dev_name(&vdev->dev), vm_dev);
+>> +	}
+>>  	if (err)
+>>  		return err;
+> 
+> 
+> So still a single interrupt for all VQs.
+> Again this doesn't scale: a single CPU has to handle
+> interrupts for all of them.
+> I think you need to find a way to get per-VQ interrupts.
+
+Yeah, AFAIK it's impossible to distribute works to different CPUs with
+only one irq without MSI-X kind mechanism. Assign multiple gsis to one
+device, obviously it's consumptive and not scalable. Any ideas? Thx.
+
+> 
+>> -- 
+>> 1.7.9.5
+>>
+> 
+> .
+> 
 
