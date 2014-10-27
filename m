@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaJ0TDo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:03:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52763 "EHLO
+	id S1753484AbaJ0TDk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:03:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52746 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753492AbaJ0TDl (ORCPT
+	with ESMTP id S1753470AbaJ0TDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:03:41 -0400
+	Mon, 27 Oct 2014 15:03:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+Cc: Andreas Henriksson <andreas.henriksson@endian.se>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 042/105] x86/intel/quark: Switch off CR4.PGE so TLB flush uses CR3 instead
-Date: Mon, 27 Oct 2014 11:56:17 -0700
-Message-Id: <1414436240-13879-43-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 043/105] ARM: at91: fix at91sam9263ek DT mmc pinmuxing settings
+Date: Mon, 27 Oct 2014 11:56:18 -0700
+Message-Id: <1414436240-13879-44-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,55 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: Andreas Henriksson <andreas.henriksson@endian.se>
 
-commit ee1b5b165c0a2f04d2107e634e51f05d0eb107de upstream.
+commit b65e0fb3d046cc65d0a3c45d43de351fb363271b upstream.
 
-Quark x1000 advertises PGE via the standard CPUID method
-PGE bits exist in Quark X1000's PTEs. In order to flush
-an individual PTE it is necessary to reload CR3 irrespective
-of the PTE.PGE bit.
+As discovered on a custom board similar to at91sam9263ek and basing
+its devicetree on that one apparently the pin muxing doesn't get
+set up properly. This was discovered since the custom boards u-boot
+does funky stuff with the pin muxing and leaved it set to SPI
+which made the MMC driver not work under Linux.
+The fix is simply to define the given configuration as the default.
+This probably worked by pure luck before, but it's better to
+make the muxing explicitly set.
 
-See Quark Core_DevMan_001.pdf section 6.4.11
-
-This bug was fixed in Galileo kernels, unfixed vanilla kernels are expected to
-crash and burn on this platform.
-
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andreas Henriksson <andreas.henriksson@endian.se>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/cpu/intel.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ arch/arm/boot/dts/at91sam9263.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index bbe1b8b..46d612d 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -154,6 +154,21 @@ static void early_init_intel(struct cpuinfo_x86 *c)
- 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
- 		}
- 	}
-+
-+	/*
-+	 * Intel Quark Core DevMan_001.pdf section 6.4.11
-+	 * "The operating system also is required to invalidate (i.e., flush)
-+	 *  the TLB when any changes are made to any of the page table entries.
-+	 *  The operating system must reload CR3 to cause the TLB to be flushed"
-+	 *
-+	 * As a result cpu_has_pge() in arch/x86/include/asm/tlbflush.h should
-+	 * be false so that __flush_tlb_all() causes CR3 insted of CR4.PGE
-+	 * to be modified
-+	 */
-+	if (c->x86 == 5 && c->x86_model == 9) {
-+		pr_info("Disabling PGE capability bit\n");
-+		setup_clear_cpu_cap(X86_FEATURE_PGE);
-+	}
- }
- 
- #ifdef CONFIG_X86_32
+diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+index d5bd65f..55bb7f3 100644
+--- a/arch/arm/boot/dts/at91sam9263.dtsi
++++ b/arch/arm/boot/dts/at91sam9263.dtsi
+@@ -506,6 +506,7 @@
+ 				compatible = "atmel,hsmci";
+ 				reg = <0xfff80000 0x600>;
+ 				interrupts = <10 IRQ_TYPE_LEVEL_HIGH 0>;
++				pinctrl-names = "default";
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 				status = "disabled";
+@@ -515,6 +516,7 @@
+ 				compatible = "atmel,hsmci";
+ 				reg = <0xfff84000 0x600>;
+ 				interrupts = <11 IRQ_TYPE_LEVEL_HIGH 0>;
++				pinctrl-names = "default";
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 				status = "disabled";
 -- 
 1.9.1
 
