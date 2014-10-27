@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaJ0VV7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 17:21:59 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41336 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335AbaJ0VV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 17:21:58 -0400
-Date: Mon, 27 Oct 2014 22:21:55 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Wilmer van der Gaast <wilmer@gaast.net>
-Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Machine crashes right *after* ~successful resume
-Message-ID: <20141027212155.GB3755@amd>
-References: <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com>
- <544033CF.3080104@gaast.net>
- <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com>
- <5442FE58.5020700@gaast.net>
- <CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com>
- <5446D2D8.2090203@gaast.net>
- <CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com>
- <20141022125354.GA3832@gaast.net>
- <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
- <544E235C.5010908@gaast.net>
+	id S1752689AbaJ0VWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 17:22:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51548 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752335AbaJ0VWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 17:22:17 -0400
+Date: Mon, 27 Oct 2014 17:22:06 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        przanoni@gmail.com, mingo@kernel.org, hpa@linux.intel.com,
+        hpa@zytor.com, linux-tip-commits@vger.kernel.org,
+        linux-audit@redhat.com
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+Message-ID: <20141027212206.GE15532@madcap2.tricolour.ca>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+ <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
+ <alpine.DEB.2.11.1410251034320.5308@nanos>
+ <20141027023457.GY15532@madcap2.tricolour.ca>
+ <1414418157.24347.1.camel@redhat.com>
+ <alpine.DEB.2.11.1410272212420.5308@nanos>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <544E235C.5010908@gaast.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.DEB.2.11.1410272212420.5308@nanos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-10-27 10:50:04, Wilmer van der Gaast wrote:
-> Hello Yinghai,
+On 14/10/27, Thomas Gleixner wrote:
+> On Mon, 27 Oct 2014, Eric Paris wrote:
+> > My patch was already committed to the -tip urgent branch.  I believe any
+> > optimization should be based on that branch, Richard.  If you are trying
+> > to wrangle every bit of speed out of this, should you
+> > 
+> > push %esi;
+> > push %edi;
+> > CFI_ADJUST_CFA_OFFSET 8
 > 
-> Thanks again for your time!
+> Wrong. You want to use pushl_cfi as you need the CFI adjustment after
+> each modification of esp.
 > 
-> I've applied your two patches, and as a wild guess also added pci=dump to my
-> kernel cmdline though I guess that just gave me a boot-time dump - which
-> mostly didn't make it into my dmesg.
+> > call __audit_syscall_entry
+> > pop;
+> > pop;
+> > CFI_ADJUST_CFA_OFFSET -8
+> > 
+> > Instead of using the pushl_cfi and popl_cfi macros?
 > 
-> I accidentally booted with no_console_suspend on the first run, which still
-> caused no output at all on the failed resume. I'm including the output of
-> that anyway, but also I have a run with that flag removed, and annoyingly
-> the crash appears to happen before the dump during the crash finishes -
-> while dumping info for this device, it seems:
-> 
-> 04:00.0 PCI bridge: Integrated Technology Express, Inc. Device 8892 (rev 10)
-> (prog-if 01 [Subtractive decode])
-> 
-> (More info in my lspci.txt)
-> 
-> Wondering what device that is exactly, I stumbled upon
-> http://sourceforge.net/p/linux1394/mailman/message/29755048/ where someone
-> describes it as a "cheap and crappy PCI bridge". More and more I wonder if I
-> should just buy a new motherboard - sadly this one wasn't even that
-> cheap.
+> Wrong again. See above. Aside of that, why do you want to use pop at
+> all? All we care about is adjusting esp, right?
 
-It is probably not just you that is affected, and we already know what
-change broke it. So we really should fix it.
+Right.  We don't care about those two values on the bottom of the stack.
+Just move the extended stack pointer and adjust CFI.
 
-> :-( Though I don't know if the output stopping while dumping output for this
-> device means that it is the culprit, is printk() to the serial console in
-> any way blocking/buffered?
+> Thanks,
+> 
+> 	tglx
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
