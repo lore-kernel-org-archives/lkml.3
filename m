@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020AbaJ0T0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:26:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52452 "EHLO
+	id S1754162AbaJ0T0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:26:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52427 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630AbaJ0S7B (ORCPT
+	with ESMTP id S1752396AbaJ0S5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:59:01 -0400
+	Mon, 27 Oct 2014 14:57:44 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Oleg Nesterov <oleg@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 064/105] serial: 8250: Add Quark X1000 to 8250_pci.c
-Date: Mon, 27 Oct 2014 11:56:39 -0700
-Message-Id: <1414436240-13879-65-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 007/105] x86, fpu: shift drop_init_fpu() from save_xstate_sig() to handle_signal()
+Date: Mon, 27 Oct 2014 11:55:42 -0700
+Message-Id: <1414436240-13879-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,88 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 1ede7dcca3c4fa15a518ab0473126f9c3e621e4c upstream.
+commit 66463db4fc5605d51c7bb81d009d5bf30a783a2c upstream.
 
-Quark X1000 contains two designware derived 8250 serial ports.
-Each port has a unique PCI configuration space consisting of
-BAR0:UART BAR1:DMA respectively.
+save_xstate_sig()->drop_init_fpu() doesn't look right. setup_rt_frame()
+can fail after that, in this case the next setup_rt_frame() triggered
+by SIGSEGV won't save fpu simply because the old state was lost. This
+obviously mean that fpu won't be restored after sys_rt_sigreturn() from
+SIGSEGV handler.
 
-Unlike the standard 8250 the register width is 32 bits for RHR,IER etc
-The Quark UART has a fundamental clock @ 44.2368 MHz allowing for a
-bitrate of up to about 2.76 megabits per second.
+Shift drop_init_fpu() into !failed branch in handle_signal().
 
-This patch enables standard 8250 mode
+Test-case (needs -O2):
 
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	#include <stdio.h>
+	#include <signal.h>
+	#include <unistd.h>
+	#include <sys/syscall.h>
+	#include <sys/mman.h>
+	#include <pthread.h>
+	#include <assert.h>
+
+	volatile double D;
+
+	void test(double d)
+	{
+		int pid = getpid();
+
+		for (D = d; D == d; ) {
+			/* sys_tkill(pid, SIGHUP); asm to avoid save/reload
+			 * fp regs around "C" call */
+			asm ("" : : "a"(200), "D"(pid), "S"(1));
+			asm ("syscall" : : : "ax");
+		}
+
+		printf("ERR!!\n");
+	}
+
+	void sigh(int sig)
+	{
+	}
+
+	char altstack[4096 * 10] __attribute__((aligned(4096)));
+
+	void *tfunc(void *arg)
+	{
+		for (;;) {
+			mprotect(altstack, sizeof(altstack), PROT_READ);
+			mprotect(altstack, sizeof(altstack), PROT_READ|PROT_WRITE);
+		}
+	}
+
+	int main(void)
+	{
+		stack_t st = {
+			.ss_sp = altstack,
+			.ss_size = sizeof(altstack),
+			.ss_flags = SS_ONSTACK,
+		};
+
+		struct sigaction sa = {
+			.sa_handler = sigh,
+		};
+
+		pthread_t pt;
+
+		sigaction(SIGSEGV, &sa, NULL);
+		sigaltstack(&st, NULL);
+		sa.sa_flags = SA_ONSTACK;
+		sigaction(SIGHUP, &sa, NULL);
+
+		pthread_create(&pt, NULL, tfunc, NULL);
+
+		test(123.456);
+		return 0;
+	}
+
+Reported-by: Bean Anderson <bean@azulsystems.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Link: http://lkml.kernel.org/r/20140902175713.GA21646@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/tty/serial/8250/8250_pci.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ arch/x86/kernel/signal.c | 5 +++++
+ arch/x86/kernel/xsave.c  | 2 --
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
-index 77d0aca..4ba3ee1 100644
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -1766,6 +1766,7 @@ pci_wch_ch353_setup(struct serial_private *priv,
- #define PCI_DEVICE_ID_COMMTECH_4222PCIE	0x0022
- #define PCI_DEVICE_ID_BROADCOM_TRUMANAGE 0x160a
- #define PCI_DEVICE_ID_AMCC_ADDIDATA_APCI7800 0x818e
-+#define PCI_DEVICE_ID_INTEL_QRK_UART	0x0936
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 9e5de68..b88fc86 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -673,6 +673,11 @@ handle_signal(struct ksignal *ksig, struct pt_regs *regs)
+ 		 * handler too.
+ 		 */
+ 		regs->flags &= ~(X86_EFLAGS_DF|X86_EFLAGS_RF|X86_EFLAGS_TF);
++		/*
++		 * Ensure the signal handler starts with the new fpu state.
++		 */
++		if (used_math())
++			drop_init_fpu(current);
+ 	}
+ 	signal_setup_done(failed, ksig, test_thread_flag(TIF_SINGLESTEP));
+ }
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 422fd82..31f6bfd 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -268,8 +268,6 @@ int save_xstate_sig(void __user *buf, void __user *buf_fx, int size)
+ 	if (use_fxsr() && save_xstate_epilog(buf_fx, ia32_fxstate))
+ 		return -1;
  
- #define PCI_VENDOR_ID_SUNIX		0x1fd4
- #define PCI_DEVICE_ID_SUNIX_1999	0x1999
-@@ -1876,6 +1877,13 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.subdevice	= PCI_ANY_ID,
- 		.setup		= byt_serial_setup,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_INTEL,
-+		.device		= PCI_DEVICE_ID_INTEL_QRK_UART,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.setup		= pci_default_setup,
-+	},
- 	/*
- 	 * ITE
- 	 */
-@@ -2710,6 +2718,7 @@ enum pci_board_num_t {
- 	pbn_ADDIDATA_PCIe_8_3906250,
- 	pbn_ce4100_1_115200,
- 	pbn_byt,
-+	pbn_qrk,
- 	pbn_omegapci,
- 	pbn_NETMOS9900_2s_115200,
- 	pbn_brcm_trumanage,
-@@ -3456,6 +3465,12 @@ static struct pciserial_board pci_boards[] = {
- 		.uart_offset	= 0x80,
- 		.reg_shift      = 2,
- 	},
-+	[pbn_qrk] = {
-+		.flags		= FL_BASE0,
-+		.num_ports	= 1,
-+		.base_baud	= 2764800,
-+		.reg_shift	= 2,
-+	},
- 	[pbn_omegapci] = {
- 		.flags		= FL_BASE0,
- 		.num_ports	= 8,
-@@ -5150,6 +5165,12 @@ static struct pci_device_id serial_pci_tbl[] = {
- 		pbn_byt },
+-	drop_init_fpu(tsk);	/* trigger finit */
+-
+ 	return 0;
+ }
  
- 	/*
-+	 * Intel Quark x1000
-+	 */
-+	{	PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_QRK_UART,
-+		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
-+		pbn_qrk },
-+	/*
- 	 * Cronyx Omega PCI
- 	 */
- 	{	PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_CRONYX_OMEGA,
 -- 
 1.9.1
 
