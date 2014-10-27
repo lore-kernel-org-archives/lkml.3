@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaJ0JXS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 05:23:18 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47940 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258AbaJ0JXQ (ORCPT
+	id S1752593AbaJ0JX3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 05:23:29 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:57141 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548AbaJ0JX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 05:23:16 -0400
-Date: Mon, 27 Oct 2014 10:23:11 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Sergey <sergey@elementaryos.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141027092311.GA9807@amd>
-References: <1413881397.30379.7.camel@hadess.net>
- <loom.20141021T140216-28@post.gmane.org>
+	Mon, 27 Oct 2014 05:23:28 -0400
+Date: Mon, 27 Oct 2014 14:53:17 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Yao Dongdong <yaodongdong@huawei.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched:skip loop non-idle cpus after find an idle cpu
+ while find_idlest_cpu
+Message-ID: <20141027092317.GC10867@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <544DB84D.1030504@huawei.com>
+ <20141027080422.GB10867@linux.vnet.ibm.com>
+ <544E091D.9040102@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <loom.20141021T140216-28@post.gmane.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <544E091D.9040102@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102709-0013-0000-0000-000001E5AFCF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-10-21 13:11:07, Sergey wrote:
-> Hey everyone,
-> 
-> I'm glad we're having some discussion on this, because we have almost
-> exactly the same kernel wishlist internally for elementary OS / Pantheon DE.
-> 
-> I believe I can further elaborate on the VFS monitoring part. We need a file
-> monitoring facility that's scalable (unlike inotify) and can provide a
-> decent level of detail (unlike fanotify). In particular, we need to be able
-> to detect file/directory creation, renaming and removal events, as well as
-> close_write event. And, in an ideal world, all of that without requiring
-> root permissions.
-> 
-> This can be almost accomplished by combining output of fanotify with that of
-> a custom LSM module that just reports events to userspace (e.g. rlocate uses
-> such a thing). There are two problems with this: first, it's a hideous hack,
-> and second, it doesn't detect deletions.
+* Yao Dongdong <yaodongdong@huawei.com> [2014-10-27 16:58:05]:
 
-And third, it will eat unbounded ammounts of memory, right?
+> On 2014/10/27 16:04, Srikar Dronamraju wrote:
+> > * Yao Dongdong <yaodongdong@huawei.com> [2014-10-27 11:13:17]:
+> >
+> >> Idle cpu is idler than non-idle cpu, so we needn't loop non-idle cpus after find an idle cpu.
+> >>
+> > While this check looks good,
+> > I dont see how we are avoiding a loop?
+> >
+> > Are you suggesting that we break of the for loop once we set
+> > shallowest_idle_cpu?
+> >
+> Thanks for your review.
+> 
+> I agree that the submit message is a bit misleading, what this patch do is just avoiding search for least_loaded_cpu
+> in non-idle cpus.
+> 
+>     sched:add check of shallowest_idle_cpu before search for least_loaded_cpu
+> 
+>     Idle cpu is idler than non-idle cpu, so we needn't search for least_loaded_cpu
+>     after we have found an idle cpu.
+> 
 
-If "recursive mtime" was available, would that work for you?
-									Pavel
+Looks good for me.
+
+Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks and Regards
+Srikar Dronamraju
+
