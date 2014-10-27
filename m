@@ -1,67 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753273AbaJ0PSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:18:12 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:63276 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990AbaJ0PSJ (ORCPT
+	id S1753248AbaJ0PUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:20:31 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:31042 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848AbaJ0PUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:18:09 -0400
-Date: Mon, 27 Oct 2014 11:18:06 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Zefan Li <lizefan@huawei.com>, Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH RESEND 2/4] cpuset: simplify cpuset_node_allowed API
-Message-ID: <20141027151806.GR4436@htj.dyndns.org>
-References: <cover.1413804554.git.vdavydov@parallels.com>
- <c52e3c30a61d29da40b69b602c41c2d91868c3ae.1413804554.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c52e3c30a61d29da40b69b602c41c2d91868c3ae.1413804554.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 27 Oct 2014 11:20:30 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfec7f4-b7f6c6d00000120b-a8-544e62b721f3
+Content-transfer-encoding: 8BIT
+Message-id: <544E62B5.8060603@samsung.com>
+Date: Mon, 27 Oct 2014 16:20:21 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+To: Dave Airlie <airlied@gmail.com>, dri-devel@lists.freedesktop.org,
+        Thierry Reding <treding@nvidia.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] MAINTAINERS: Add entry for MIPI DSI bus
+References: <1414403310-6316-1-git-send-email-a.hajda@samsung.com>
+ <1414403310-6316-2-git-send-email-a.hajda@samsung.com>
+ <20141027141717.GN26941@phenom.ffwll.local>
+In-reply-to: <20141027141717.GN26941@phenom.ffwll.local>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t/xa7rbk/xCDKZsYrY4cX0Rk8WVr+/Z
+	LC7vmsNmcfs3nwOLx85Zd9k97ncfZ/LobX7H5vF5k1wASxSXTUpqTmZZapG+XQJXxp3vU5kK
+	pvNW7Nv6kbWB8QJXFyMnh4SAicT1g1cYIWwxiQv31rOB2EICSxklXs6vA7F5BQQlfky+x9LF
+	yMHBLCAvceRSNoSpLjFlSm4XIxdQ9SdGia0zT7FClGtJPN73mwXEZhFQlbi77xcTiM0moCnx
+	d/NNsPGiAhESV9bMYQRpFhGYyigxae5qsCJhAQeJ7kOToG5YySix4Ug5iM0pYCHxcGo38wRG
+	/llITpqFcNIshJMWMDKvYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJzi87GBcfszrEKMDB
+	qMTDu2Oab4gQa2JZcWXuIUYJDmYlEd5TAX4hQrwpiZVVqUX58UWlOanFhxiZODilGhhrmn9v
+	emmw3KLrTqTs7bnzlzyZefq3386rPKv6T3vVXd7eKbNzUU55vf97N84ld0IWnxdULpvcP01z
+	l7ztBKF1+4rzjjlf2GgnNan1RoeXfYoC4753CYE6czwFGXd23JTonqJ+wpf7o+ry/znL3/Sl
+	Fee86y1c8X/Sfr0Vu6N+CT2OmC7Df8xaiaU4I9FQi7moOBEAEPwCViwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 03:50:30PM +0400, Vladimir Davydov wrote:
-> Current cpuset API for checking if a zone/node is allowed to allocate
-> from looks rather awkward. We have hardwall and softwall versions of
-> cpuset_node_allowed with the softwall version doing literally the same
-> as the hardwall version if __GFP_HARDWALL is passed to it in gfp flags.
-> If it isn't, the softwall version may check the given node against the
-> enclosing hardwall cpuset, which it needs to take the callback lock to
-> do.
+On 10/27/2014 03:17 PM, Daniel Vetter wrote:
+> On Mon, Oct 27, 2014 at 10:48:26AM +0100, Andrzej Hajda wrote:
+>> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+>> ---
+>>  MAINTAINERS | 7 +++++++
+>>  1 file changed, 7 insertions(+)
+>>
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index dd31933..476679c 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -3071,6 +3071,13 @@ F:	drivers/gpu/vga/
+>>  F:	include/drm/
+>>  F:	include/uapi/drm/
+>>  
+>> +DRM MIPI DSI BUS
+>> +M:	Andrzej Hajda <a.hajda@samsung.com>
+>> +L:	dri-devel@lists.freedesktop.org
+>> +S:	Supported
+>> +F:	drivers/gpu/drm/drm_mipi_dsi.c
+>> +F:	include/drm/drm_mipi_dsi.h
 > 
-> Such a distinction was introduced by commit 02a0e53d8227 ("cpuset:
-> rework cpuset_zone_allowed api"). Before, we had the only version with
-> the __GFP_HARDWALL flag determining its behavior. The purpose of the
-> commit was to avoid sleep-in-atomic bugs when someone would mistakenly
-> call the function without the __GFP_HARDWALL flag for an atomic
-> allocation. The suffixes introduced were intended to make the callers
-> think before using the function.
+> I really prefer when common infrastructure like this doesn't get
+> maintainer by a vendor. And I care with my intel hat on since we also ahve
+> a dsi driver that sooner or later needs to be converted to to this stuff.
 > 
-> However, since the callback lock was converted from mutex to spinlock by
-> the previous patch, the softwall check function cannot sleep, and these
-> precautions are no longer necessary.
-> 
-> So let's simplify the API back to the single check.
-> 
-> Suggested-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Acked-by: Christoph Lameter <cl@linux.com>
-> Acked-by: Zefan Li <lizefan@huawei.com>
+> Why doesn't the usual model of merging stuff through Dave's tree, or if
+> that doesn't work well due to patch depencies, through vendor trees with
+> Dave's ack?
 
-Applied 1-2 to cgroup/for-3.19-cpuset-api-simplification which
-contains only these two patches on top of v3.18-rc2 and will stay
-stable.  sl[au]b trees can pull it in or I can take the other two
-patches too.  Please let me know how the other two should be routed.
+The main intention of this patch is to be on CC in case of patches
+touching MIPI DSI bus.
+I do not want to create separate tree for such small subsystem.
 
-Thanks.
+So if such things are not allowed please drop the patch and sorry for
+the noise.
 
--- 
-tejun
+Regards
+Andrzej
+
+> 
+> Thanks, Daniel
+> 
+>> +
+>>  RADEON DRM DRIVERS
+>>  M:	Alex Deucher <alexander.deucher@amd.com>
+>>  M:	Christian König <christian.koenig@amd.com>
+>> -- 
+>> 1.9.1
+>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> 
+
