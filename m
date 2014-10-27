@@ -1,123 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbaJ0MsA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:48:00 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28143 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758AbaJ0Mln (ORCPT
+	id S1753045AbaJ0Msz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:48:55 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:57015 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362AbaJ0Msw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 08:41:43 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Xinwei Hu <huxinwei@huawei.com>, Wuyun <wuyun.wu@huawei.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <xen-devel@lists.xenproject.org>, Joerg Roedel <joro@8bytes.org>,
-        <iommu@lists.linux-foundation.org>, <linux-mips@linux-mips.org>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-s390@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Tony Luck" <tony.luck@intel.com>, <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, <sparclinux@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "Sergei Shtylyov" <sergei.shtylyov@cogentembedded.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "Thomas Petazzoni" <thomas.petazzoni@free-electrons.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 11/16] s390/MSI: Use MSI controller framework to configure MSI/MSI-X irq
-Date: Mon, 27 Oct 2014 21:22:17 +0800
-Message-ID: <1414416142-31239-12-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
-References: <1414416142-31239-1-git-send-email-wangyijing@huawei.com>
+	Mon, 27 Oct 2014 08:48:52 -0400
+Date: Mon, 27 Oct 2014 13:48:48 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-unionfs@vger.kernel.org
+Subject: Re: [PATCH] ovl: fix check for cursor
+Message-ID: <20141027124848.GB3021@tucsk.piliscsaba.szeredi.hu>
+References: <20141027124315.GA3021@tucsk.piliscsaba.szeredi.hu>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.175.100.166]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027124315.GA3021@tucsk.piliscsaba.szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use MSI controller framework instead of arch MSI functions to configure
-MSI/MSI-X irq. So we can manage MSI/MSI-X irq in a unified framework.
+D'oh, I must remember to review own patches *before* sending them, not after...
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Acked-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Here's an updated one.
+
+Thanks,
+Miklos
 ---
- arch/s390/include/asm/pci.h |    1 +
- arch/s390/pci/pci.c         |   19 +++++++++++++++++--
- 2 files changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/arch/s390/include/asm/pci.h b/arch/s390/include/asm/pci.h
-index c030900..bf14da2 100644
---- a/arch/s390/include/asm/pci.h
-+++ b/arch/s390/include/asm/pci.h
-@@ -88,6 +88,7 @@ struct zpci_dev {
- 	u32 uid;			/* user defined id */
- 	u8 util_str[CLP_UTIL_STR_LEN];	/* utility string */
+Subject: ovl: fix check for cursor
+From: Miklos Szeredi <mszeredi@suse.cz>
+
+ovl_cache_entry.name is now an array not a pointer, so it makes no sense
+test for it being NULL.
+
+Detected by coverity.
+
+Fixes: 68bf8611076a ("overlayfs: make ovl_cache_entry->name an array instead of pointer")
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/overlayfs/readdir.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+--- a/fs/overlayfs/readdir.c
++++ b/fs/overlayfs/readdir.c
+@@ -21,9 +21,10 @@ struct ovl_cache_entry {
+ 	unsigned int len;
+ 	unsigned int type;
+ 	u64 ino;
+-	bool is_whiteout;
+ 	struct list_head l_node;
+ 	struct rb_node node;
++	bool is_whiteout;
++	bool is_cursor;
+ 	char name[];
+ };
  
-+	struct msi_controller *msi_ctrl;
- 	/* IRQ stuff */
- 	u64		msi_addr;	/* MSI address */
- 	struct airq_iv *aibv;		/* adapter interrupt bit vector */
-diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-index 552b990..beed5ab 100644
---- a/arch/s390/pci/pci.c
-+++ b/arch/s390/pci/pci.c
-@@ -358,7 +358,15 @@ static void zpci_irq_handler(struct airq_struct *airq)
+@@ -251,7 +252,7 @@ static int ovl_dir_mark_whiteouts(struct
+ 
+ 	mutex_lock(&dir->d_inode->i_mutex);
+ 	list_for_each_entry(p, rdd->list, l_node) {
+-		if (!p->name)
++		if (p->is_cursor)
+ 			continue;
+ 
+ 		if (p->type != DT_CHR)
+@@ -307,7 +308,6 @@ static inline int ovl_dir_read_merged(st
  	}
+ out:
+ 	return err;
+-
  }
  
--int arch_setup_msi_irqs(struct pci_dev *pdev, int nvec, int type)
-+struct msi_controller *pcibios_msi_controller(struct pci_bus *bus)
-+{
-+	struct zpci_dev *zpci = bus->sysdata;
-+
-+	return zpci->msi_ctrl;
-+}
-+
-+static int zpci_setup_msi_irqs(struct msi_controller *ctrl,
-+		struct pci_dev *pdev, int nvec, int type)
- {
- 	struct zpci_dev *zdev = get_zdev(pdev);
- 	unsigned int hwirq, msi_vecs;
-@@ -434,7 +442,8 @@ out:
- 	return rc;
- }
+ static void ovl_seek_cursor(struct ovl_dir_file *od, loff_t pos)
+@@ -316,7 +316,7 @@ static void ovl_seek_cursor(struct ovl_d
+ 	loff_t off = 0;
  
--void arch_teardown_msi_irqs(struct pci_dev *pdev)
-+static void zpci_teardown_msi_irqs(struct msi_controller *ctrl,
-+		struct pci_dev *pdev)
- {
- 	struct zpci_dev *zdev = get_zdev(pdev);
- 	struct msi_desc *msi;
-@@ -464,6 +473,11 @@ void arch_teardown_msi_irqs(struct pci_dev *pdev)
- 	airq_iv_free_bit(zpci_aisb_iv, zdev->aisb);
- }
+ 	list_for_each_entry(p, &od->cache->entries, l_node) {
+-		if (!p->name)
++		if (p->is_cursor)
+ 			continue;
+ 		if (off >= pos)
+ 			break;
+@@ -389,7 +389,7 @@ static int ovl_iterate(struct file *file
  
-+static struct msi_controller zpci_msi_ctrl = {
-+	.setup_irqs = zpci_setup_msi_irqs,
-+	.teardown_irqs = zpci_teardown_msi_irqs,
-+};
-+
- static void zpci_map_resources(struct zpci_dev *zdev)
- {
- 	struct pci_dev *pdev = zdev->pdev;
-@@ -749,6 +763,7 @@ static int zpci_scan_bus(struct zpci_dev *zdev)
- 	if (ret)
- 		return ret;
+ 		p = list_entry(od->cursor.l_node.next, struct ovl_cache_entry, l_node);
+ 		/* Skip cursors */
+-		if (p->name) {
++		if (!p->is_cursor) {
+ 			if (!p->is_whiteout) {
+ 				if (!dir_emit(ctx, p->name, p->len, p->ino, p->type))
+ 					break;
+@@ -518,6 +518,7 @@ static int ovl_dir_open(struct inode *in
+ 	od->realfile = realfile;
+ 	od->is_real = (type != OVL_PATH_MERGE);
+ 	od->is_upper = (type != OVL_PATH_LOWER);
++	od->cursor.is_cursor = true;
+ 	file->private_data = od;
  
-+	zdev->msi_ctrl = &zpci_msi_ctrl;
- 	zdev->bus = pci_scan_root_bus(NULL, ZPCI_BUS_NR, &pci_root_ops,
- 				      zdev, &resources);
- 	if (!zdev->bus) {
--- 
-1.7.1
-
+ 	return 0;
