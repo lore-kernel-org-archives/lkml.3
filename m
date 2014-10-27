@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832AbaJ0LmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:42:06 -0400
-Received: from 9.mo1.mail-out.ovh.net ([178.32.108.172]:55659 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751149AbaJ0LmF (ORCPT
+	id S1752142AbaJ0Lm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:42:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39532 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315AbaJ0Lm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:42:05 -0400
-X-Greylist: delayed 13122 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Oct 2014 07:42:04 EDT
-Message-ID: <544DFC31.4090307@neo-technologies.fr>
-Date: Mon, 27 Oct 2014 09:02:57 +0100
-From: NEO-Technologies / Julien CHAUVEAU 
-	<julien.chauveau@neo-technologies.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 27 Oct 2014 07:42:58 -0400
+Date: Mon, 27 Oct 2014 14:42:40 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Gioh Kim <gioh.kim@lge.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        devel@driverdev.osuosl.org, gunho.lee@lge.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/2] staging: ion: debugfs to shrink pool
+Message-ID: <20141027114240.GC6879@mwanda>
+References: <1414068740-9553-1-git-send-email-gioh.kim@lge.com>
+ <1414068740-9553-3-git-send-email-gioh.kim@lge.com>
 MIME-Version: 1.0
-To: =?windows-1252?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "moderated list:ARM/Rockchip SoC..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: rockchip: use internal pull-up resistors on
- I2C busses
-References: <1413556830-27854-1-git-send-email-julien.chauveau@neo-technologies.fr> <8843018.dv9ckEkBvo@diego>
-In-Reply-To: <8843018.dv9ckEkBvo@diego>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 18172868921916784865
-X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-01-116-88.w193-248.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejhedrvddvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414068740-9553-3-git-send-email-gioh.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heiko,
+On Thu, Oct 23, 2014 at 09:52:20PM +0900, Gioh Kim wrote:
+> This patch creates debugfs files, /sys/kernel/debug/ion/heaps/system_shrink,
+> to shrink pool or get pool size.
+> Reading the file returns pool size and writing occurs to shrink pool.
 
-Le 27/10/2014 01:27, Heiko Stübner a écrit :
-> The rk3066a does not support distinguishing between up and down pulls. On it
-> only &pcfg_pull_default is possible that configures the pull to a pin-specific
-> pull direction. For the i2c pins the direction is (of course) "up".
+The patch looks fine.  Of course, the original code was debugfs before
+it bitrotted and stopped compiling, but is there there a reason why we
+shouldn't move this to sysfs instead?  Just curious.
 
-Thank you for the information. I will send a new patch to fix the pull 
-configuration for the rk3066a.
+regards,
+dan carpenter
 
-Julien
