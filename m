@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaJ0TNv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:13:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52773 "EHLO
+	id S1753512AbaJ0TDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:03:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52763 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaJ0TDp (ORCPT
+	with ESMTP id S1753492AbaJ0TDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:03:45 -0400
+	Mon, 27 Oct 2014 15:03:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 090/105] Input: synaptics - gate forcepad support by DMI check
-Date: Mon, 27 Oct 2014 11:57:05 -0700
-Message-Id: <1414436240-13879-91-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 042/105] x86/intel/quark: Switch off CR4.PGE so TLB flush uses CR3 instead
+Date: Mon, 27 Oct 2014 11:56:17 -0700
+Message-Id: <1414436240-13879-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,102 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
-commit aa972409951e0675e07918620427517cad5090e0 upstream.
+commit ee1b5b165c0a2f04d2107e634e51f05d0eb107de upstream.
 
-Unfortunately, ForcePad capability is not actually exported over PS/2, so
-we have to resort to DMI checks.
+Quark x1000 advertises PGE via the standard CPUID method
+PGE bits exist in Quark X1000's PTEs. In order to flush
+an individual PTE it is necessary to reload CR3 irrespective
+of the PTE.PGE bit.
 
-Reported-by: Nicole Faerber <nicole.faerber@kernelconcepts.de>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+See Quark Core_DevMan_001.pdf section 6.4.11
+
+This bug was fixed in Galileo kernels, unfixed vanilla kernels are expected to
+crash and burn on this platform.
+
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/mouse/synaptics.c | 22 +++++++++++++++++++++-
- drivers/input/mouse/synaptics.h |  8 ++------
- 2 files changed, 23 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/intel.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index 4b7996e..925e46c 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -538,6 +538,8 @@ static void synaptics_parse_agm(const unsigned char buf[],
- 	priv->agm_pending = true;
- }
- 
-+static bool is_forcepad;
-+
- static int synaptics_parse_hw_state(const unsigned char buf[],
- 				    struct synaptics_data *priv,
- 				    struct synaptics_hw_state *hw)
-@@ -567,7 +569,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
- 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
- 		hw->right = (buf[0] & 0x02) ? 1 : 0;
- 
--		if (SYN_CAP_FORCEPAD(priv->ext_cap_0c)) {
-+		if (is_forcepad) {
- 			/*
- 			 * ForcePads, like Clickpads, use middle button
- 			 * bits to report primary button clicks.
-@@ -1628,6 +1630,18 @@ static const struct dmi_system_id min_max_dmi_table[] __initconst = {
- 	{ }
- };
- 
-+static const struct dmi_system_id forcepad_dmi_table[] __initconst = {
-+#if defined(CONFIG_DMI) && defined(CONFIG_X86)
-+	{
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook Folio 1040 G1"),
-+		},
-+	},
-+#endif
-+	{ }
-+};
-+
- void __init synaptics_module_init(void)
- {
- 	const struct dmi_system_id *min_max_dmi;
-@@ -1638,6 +1652,12 @@ void __init synaptics_module_init(void)
- 	min_max_dmi = dmi_first_match(min_max_dmi_table);
- 	if (min_max_dmi)
- 		quirk_min_max = min_max_dmi->driver_data;
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index bbe1b8b..46d612d 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -154,6 +154,21 @@ static void early_init_intel(struct cpuinfo_x86 *c)
+ 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
+ 		}
+ 	}
 +
 +	/*
-+	 * Unfortunately ForcePad capability is not exported over PS/2,
-+	 * so we have to resort to checking DMI.
++	 * Intel Quark Core DevMan_001.pdf section 6.4.11
++	 * "The operating system also is required to invalidate (i.e., flush)
++	 *  the TLB when any changes are made to any of the page table entries.
++	 *  The operating system must reload CR3 to cause the TLB to be flushed"
++	 *
++	 * As a result cpu_has_pge() in arch/x86/include/asm/tlbflush.h should
++	 * be false so that __flush_tlb_all() causes CR3 insted of CR4.PGE
++	 * to be modified
 +	 */
-+	is_forcepad = dmi_check_system(forcepad_dmi_table);
++	if (c->x86 == 5 && c->x86_model == 9) {
++		pr_info("Disabling PGE capability bit\n");
++		setup_clear_cpu_cap(X86_FEATURE_PGE);
++	}
  }
  
- static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index fb2e076..1bd01f2 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -77,12 +77,9 @@
-  *					for noise.
-  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
-  *					reports 2.
-+ * 2	0x01	uniform clickpad	whole clickpad moves instead of being
-+ *					hinged at the top.
-  * 2	0x20	report min		query 0x0f gives min coord reported
-- * 2	0x80	forcepad		forcepad is a variant of clickpad that
-- *					does not have physical buttons but rather
-- *					uses pressure above certain threshold to
-- *					report primary clicks. Forcepads also have
-- *					clickpad bit set.
-  */
- #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
- #define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
-@@ -91,7 +88,6 @@
- #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
- #define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
- #define SYN_CAP_IMAGE_SENSOR(ex0c)	((ex0c) & 0x000800)
--#define SYN_CAP_FORCEPAD(ex0c)		((ex0c) & 0x008000)
- 
- /* synaptics modes query bits */
- #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
+ #ifdef CONFIG_X86_32
 -- 
 1.9.1
 
