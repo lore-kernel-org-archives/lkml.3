@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbaJ0NPx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:15:53 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:59819 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094AbaJ0NPw (ORCPT
+	id S1752747AbaJ0NSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:18:32 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:64968 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752572AbaJ0NSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:15:52 -0400
-Date: Mon, 27 Oct 2014 09:15:48 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] workqueue: add wq_unbound_online_cpumask
-Message-ID: <20141027131548.GD4436@htj.dyndns.org>
-References: <1412740423-20782-1-git-send-email-laijs@cn.fujitsu.com>
- <1412740423-20782-2-git-send-email-laijs@cn.fujitsu.com>
+	Mon, 27 Oct 2014 09:18:31 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18uPfYKk4ryKeDIHslJTK0kB2rQIoo2X+w=
+X-DKIM: OpenDKIM Filter v2.0.1 titan EF6226093C9
+Date: Mon, 27 Oct 2014 09:18:25 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Eric Rost <eric.rost@mybabylon.net>
+Cc: gregkh@linuxfoundation.org, jake@lwn.net, antonysaraev@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 7/7] staging: skein: Removes skein_debug include
+Message-ID: <20141027131825.GA15252@titan.lakedaemon.net>
+References: <cover.1414189566.git.eric.rost@mybabylon.net>
+ <11468e1b3923e05c6683dd388136b9ba925aff10.1414189566.git.eric.rost@mybabylon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1412740423-20782-2-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <11468e1b3923e05c6683dd388136b9ba925aff10.1414189566.git.eric.rost@mybabylon.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 08, 2014 at 11:53:31AM +0800, Lai Jiangshan wrote:
-> Current wq_calc_node_cpumask() is complicated by cpumask_of_node(node) whose
-> value need to be revised before using and the "revising" needs @cpu_going_down
-> which makes more complicated.
+On Fri, Oct 24, 2014 at 05:34:56PM -0500, Eric Rost wrote:
+> Removes skein_debug.h include since skein_debug.h is nonexistent.
 > 
-> This patch introduces wq_unbound_online_cpumask which is updated before
-> wq_update_unbound_numa() in the cpu-hotplug callbacks and wq_calc_node_cpumask()
-> can use it instead of cpumask_of_node(node). Thus wq_calc_node_cpumask()
-> becomes much simpler and @cpu_going_down is gone.
-> 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
 > ---
->  kernel/workqueue.c |   42 ++++++++++++++++++++----------------------
->  1 files changed, 20 insertions(+), 22 deletions(-)
+>  drivers/staging/skein/skein_base.h | 9 +--------
+>  1 file changed, 1 insertion(+), 8 deletions(-)
+> 
+> diff --git a/drivers/staging/skein/skein_base.h b/drivers/staging/skein/skein_base.h
+> index 0111fa4..5b69e5a 100644
+> --- a/drivers/staging/skein/skein_base.h
+> +++ b/drivers/staging/skein/skein_base.h
+> @@ -15,10 +15,6 @@
+>  **
+>  ** The "default" note explains what happens when the switch is not defined.
+>  **
+> -**  SKEIN_DEBUG            -- make callouts from inside Skein code
+> -**                            to examine/display intermediate values.
+> -**                            [default: no callouts (no overhead)]
+> -**
+>  **  SKEIN_ERR_CHECK        -- how error checking is handled inside Skein
+>  **                            code. If not defined, most error checking
+>  **                            is disabled (for performance). Otherwise,
+> @@ -282,15 +278,12 @@ int skein_1024_output(struct skein_1024_ctx *ctx, u8 *hash_val);
+>  /*****************************************************************
+>  ** "Internal" Skein definitions for debugging and error checking
+>  ******************************************************************/
+> -#ifdef SKEIN_DEBUG             /* examine/display intermediate values? */
+> -#include "skein_debug.h"
+> -#else                           /* default is no callouts */
+>  #define skein_show_block(bits, ctx, x, blk_ptr, w_ptr, ks_event_ptr, ks_odd_ptr)
+>  #define skein_show_round(bits, ctx, r, x)
+>  #define skein_show_r_ptr(bits, ctx, r, x_ptr)
+>  #define skein_show_final(bits, ctx, cnt, out_ptr)
+>  #define skein_show_key(bits, ctx, key, key_bytes)
 
-"much simpler" seems a bit overblown for 2 LOC reduction.
+Are these called anywhere (sorry, away from dev box atm)?  If so, we
+should remove those as well.
 
-> +/* PL: online cpumask for all unbound wqs */
-> +static struct cpumask wq_unbound_online_cpumask;
+We shouldn't let this hold up the rest of the series, though.  I'll R-b
+the rest and we'll keep working on this one.
 
-And now someone who's reading the code has to wonder "why is wq
-maintaining a separate copy of cpumask?" and from the code itself it
-isn't clear at all.  I don't necessarily dislike the patch and it does
-make the code a bit simpler but at the cost of higher obscurity.
-You'll at least need to add more comments explaining why the separate
-cpumask is necessary and how it's used.  If there are more
-simplifications which can build atop, it'd be fine; otherwise, this is
-firmly in the 'meh...' territory.
+thx,
 
-Thanks.
+Jason.
 
--- 
-tejun
+> -#endif
+> +
+>  
+>  /* ignore all asserts, for performance */
+>  #define skein_assert_ret(x, ret_code)
+> -- 
+> 2.1.1
+> 
