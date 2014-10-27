@@ -1,90 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaJ0SaL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:30:11 -0400
-Received: from mail.kernel.org ([198.145.19.201]:56420 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751513AbaJ0SaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:30:05 -0400
-Date: Mon, 27 Oct 2014 19:29:58 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 1/2] power_supply: Add no_thermal property to prevent
- recursive get_temp calls
-Message-ID: <20141027182957.GD10897@earth.universe>
-References: <1412696857-14803-1-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="hoZxPH4CaxYzWscb"
-Content-Disposition: inline
-In-Reply-To: <1412696857-14803-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752159AbaJ0SaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:30:21 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:57132 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513AbaJ0SaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:30:18 -0400
+From: Soren Brinkmann <soren.brinkmann@xilinx.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Cc: Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-gpio@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>
+Subject: [PATCH v3] gpio: lib-sysfs: Add 'wakeup' attribute
+Date: Mon, 27 Oct 2014 11:30:02 -0700
+Message-Id: <1414434602-14263-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Mailer: git-send-email 2.1.2.1.g5e69ed6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add an attribute 'wakeup' to the GPIO sysfs interface which allows
+marking/unmarking a GPIO as wake IRQ.
+The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
+is associated with that GPIO and the irqchip implements set_wake().
+Writing 'enabled' to that file will enable wake for that GPIO, while
+writing 'disabled' will disable wake.
+Reading that file will return either 'disabled' or 'enabled' depening on
+the currently set flag for the GPIO's IRQ.
 
---hoZxPH4CaxYzWscb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+v3:
+ - add documentation
+v2:
+ - fix error path to unlock mutex before return
 
-Hi,
+As additional reference, these are the email threads of the v2 and v1
+submission:
+https://lkml.org/lkml/2014/10/13/481
+https://lkml.org/lkml/2014/9/4/496
+---
+ Documentation/ABI/testing/sysfs-gpio |  1 +
+ Documentation/gpio/sysfs.txt         |  8 ++++
+ drivers/gpio/gpiolib-sysfs.c         | 77 +++++++++++++++++++++++++++++++++---
+ 3 files changed, 80 insertions(+), 6 deletions(-)
 
-On Tue, Oct 07, 2014 at 05:47:36PM +0200, Krzysztof Kozlowski wrote:
-> Add a 'no_thermal' property to the power supply class. If true then
-> thermal zone won't be created for this power supply in
-> power_supply_register().
->=20
-> Power supply drivers may want to set it if they support
-> POWER_SUPPLY_PROP_TEMP and they are forwarding this get property call to
-> other thermal zone.
->=20
-> If they won't set it lockdep may report false positive deadlock for
-> thermal zone's mutex because of nested calls to thermal_zone_get_temp().
-> First is the call to thermal_zone_get_temp() of the driver's thermal
-> zone. Thermal core gets POWER_SUPPLY_PROP_TEMP property from this
-> driver. The driver then calls other thermal zone thermal_zone_get_temp()
-> and returns result.
->=20
-> Example of such driver is charger manager.
->=20
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+diff --git a/Documentation/ABI/testing/sysfs-gpio b/Documentation/ABI/testing/sysfs-gpio
+index 80f4c94c7bef..4cc7f4b3f724 100644
+--- a/Documentation/ABI/testing/sysfs-gpio
++++ b/Documentation/ABI/testing/sysfs-gpio
+@@ -20,6 +20,7 @@ Description:
+ 	    /value ... always readable, writes fail for input GPIOs
+ 	    /direction ... r/w as: in, out (default low); write: high, low
+ 	    /edge ... r/w as: none, falling, rising, both
++	    /wakeup ... r/w as: enabled, disabled
+ 	/gpiochipN ... for each gpiochip; #N is its first GPIO
+ 	    /base ... (r/o) same as N
+ 	    /label ... (r/o) descriptive, not necessarily unique
+diff --git a/Documentation/gpio/sysfs.txt b/Documentation/gpio/sysfs.txt
+index c2c3a97f8ff7..f703377d528f 100644
+--- a/Documentation/gpio/sysfs.txt
++++ b/Documentation/gpio/sysfs.txt
+@@ -97,6 +97,14 @@ and have the following read/write attributes:
+ 		for "rising" and "falling" edges will follow this
+ 		setting.
+ 
++	"wakeup" ... reads as either "enabled" or "disabled". Write these
++		strings to set/clear the 'wakeup' flag of the IRQ associated
++		with this GPIO. If the IRQ has the 'wakeup' flag set, it can
++		wake the system from sleep states.
++
++		This file exists only if the pin can generate interrupts and
++		the driver implements the required infrastructure.
++
+ GPIO controllers have paths like /sys/class/gpio/gpiochip42/ (for the
+ controller implementing GPIOs starting at #42) and have the following
+ read-only attributes:
+diff --git a/drivers/gpio/gpiolib-sysfs.c b/drivers/gpio/gpiolib-sysfs.c
+index 5f2150b619a7..7588b6d5ba94 100644
+--- a/drivers/gpio/gpiolib-sysfs.c
++++ b/drivers/gpio/gpiolib-sysfs.c
+@@ -286,6 +286,58 @@ found:
+ 
+ static DEVICE_ATTR(edge, 0644, gpio_edge_show, gpio_edge_store);
+ 
++static ssize_t gpio_wakeup_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	ssize_t			status;
++	const struct gpio_desc	*desc = dev_get_drvdata(dev);
++	int			irq = gpiod_to_irq(desc);
++	struct irq_desc		*irq_desc = irq_to_desc(irq);
++
++	mutex_lock(&sysfs_lock);
++
++	if (irqd_is_wakeup_set(&irq_desc->irq_data))
++		status = sprintf(buf, "enabled\n");
++	else
++		status = sprintf(buf, "disabled\n");
++
++	mutex_unlock(&sysfs_lock);
++
++	return status;
++}
++
++static ssize_t gpio_wakeup_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	int			ret;
++	unsigned int		on;
++	struct gpio_desc	*desc = dev_get_drvdata(dev);
++	int			irq = gpiod_to_irq(desc);
++
++	mutex_lock(&sysfs_lock);
++
++	if (sysfs_streq("enabled", buf)) {
++		on = true;
++	} else if (sysfs_streq("disabled", buf)) {
++		on = false;
++	} else {
++		mutex_unlock(&sysfs_lock);
++		return -EINVAL;
++	}
++
++	ret = irq_set_irq_wake(irq, on);
++
++	mutex_unlock(&sysfs_lock);
++
++	if (ret)
++		pr_warn("%s: failed to %s wake\n", __func__,
++				on ? "enable" : "disable");
++
++	return size;
++}
++
++static DEVICE_ATTR(wakeup, 0644, gpio_wakeup_show, gpio_wakeup_store);
++
+ static int sysfs_set_active_low(struct gpio_desc *desc, struct device *dev,
+ 				int value)
+ {
+@@ -526,7 +578,7 @@ static struct class gpio_class = {
+ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+ {
+ 	unsigned long		flags;
+-	int			status;
++	int			status, irq;
+ 	const char		*ioname = NULL;
+ 	struct device		*dev;
+ 	int			offset;
+@@ -582,11 +634,24 @@ int gpiod_export(struct gpio_desc *desc, bool direction_may_change)
+ 			goto fail_unregister_device;
+ 	}
+ 
+-	if (gpiod_to_irq(desc) >= 0 && (direction_may_change ||
+-				       !test_bit(FLAG_IS_OUT, &desc->flags))) {
+-		status = device_create_file(dev, &dev_attr_edge);
+-		if (status)
+-			goto fail_unregister_device;
++	irq = gpiod_to_irq(desc);
++	if (irq >= 0) {
++		struct irq_desc *irq_desc = irq_to_desc(irq);
++		struct irq_chip	*irqchip = irq_desc_get_chip(irq_desc);
++
++		if (direction_may_change ||
++				!test_bit(FLAG_IS_OUT, &desc->flags)) {
++			status = device_create_file(dev, &dev_attr_edge);
++			if (status)
++				goto fail_unregister_device;
++		}
++
++		if (irqchip->flags & IRQCHIP_SKIP_SET_WAKE ||
++				irqchip->irq_set_wake) {
++			status = device_create_file(dev, &dev_attr_wakeup);
++			if (status)
++				goto fail_unregister_device;
++		}
+ 	}
+ 
+ 	set_bit(FLAG_EXPORT, &desc->flags);
+-- 
+2.1.2.1.g5e69ed6
 
-pulled into next, I will include it in 3.18-rc pull request.
-
--- Sebastian
-
---hoZxPH4CaxYzWscb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUTo8lAAoJENju1/PIO/qaSKgP/0W568cgElfXRQQPBY1ftAlY
-r/R0nI4tewbf4U/XeigGbo/4rST43FxlBG1YUkRmemdUTe0U/Ze+IKzMLoTwjQiw
-9NRXB/4UdromCkJWDLzWE2RTuHGj3duxpjtXAMo0g+Di9U9FXibAXYaqUho6h+H+
-sx4iIfB/gtSUXzyEXakEXyr4ktEiYsherxWl0rPo5EQkW7+IANY+l5bpCfOYlJJF
-EgcfRjh13tGAn1BTPGxs5Ic+XAmQPvpFCzZNCD5Aut/c6ZSXETSlzYtFjw9+6d+0
-5caP9rtuPsnv5/+YBmEY2ykI3+H0sAIW8bK7YCGljKqbsu2pR9pQAC7ABxnAocSn
-BPBXNuXkHDBSYBkgGTL1azt8n/uL/5FmcSq9RI2zfdO1OUyG7aXJgyFtDrU7XM63
-hR5Du1U77JqFZMwrBE7kjLjuO437aI27qfPRGHWGQngdT7QDw8DFZY02/3Iyh6Rx
-IcQXgj3yvzj0vZtc6AIzn3tmLgOa8sGTQufp4UDzWxMElhnz9fu9S4fKJWIfDg+Y
-X06q2mPn+VaGlkeHJwmxsiR7E2z6lO+NqmTwun4k5y1U7yjb7aHVElROXMXT+oYo
-reyjiajhdsMsDA8pU9BW0XCDHl/EHGNCt5Hs41ukiQxQrmZTbRbfcQOvpzzj2mPy
-MeKxFpdyAgf7J65hb0WR
-=Kt52
------END PGP SIGNATURE-----
-
---hoZxPH4CaxYzWscb--
