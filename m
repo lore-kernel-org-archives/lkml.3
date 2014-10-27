@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaJ0XRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 19:17:24 -0400
-Received: from smtprelay0027.hostedemail.com ([216.40.44.27]:55931 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752741AbaJ0XRW (ORCPT
+	id S1752658AbaJ0XWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 19:22:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41219 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949AbaJ0XWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 19:17:22 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3167:3352:3622:3867:3872:4321:4385:5007:6261:7809:10004:10400:10848:11232:11658:11914:12043:12517:12519:12740:13019:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: deer38_7a1f446f7af12
-X-Filterd-Recvd-Size: 2660
-Message-ID: <1414451837.18896.14.camel@perches.com>
-Subject: Re: [PATCH v2 8/8] MAINTAINERS: add at91 power and memory entries
-From: Joe Perches <joe@perches.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Sebastian Reichel <sre@kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Date: Mon, 27 Oct 2014 16:17:17 -0700
-In-Reply-To: <1414451377-11053-9-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
-	 <1414451377-11053-9-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	Mon, 27 Oct 2014 19:22:52 -0400
+Date: Mon, 27 Oct 2014 16:22:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johan Hovold <johan@kernel.org>
+Cc: Felipe Balbi <balbi@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
+Message-Id: <20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org>
+In-Reply-To: <20141024195532.GF19377@localhost>
+References: <1412881594-25678-1-git-send-email-johan@kernel.org>
+	<1413913086-12730-1-git-send-email-johan@kernel.org>
+	<20141024160845.GM26941@saruman>
+	<20141024190251.GB19377@localhost>
+	<20141024192540.GD11455@saruman>
+	<20141024192948.GE11455@saruman>
+	<20141024193655.GD19377@localhost>
+	<20141024194442.GG11455@saruman>
+	<20141024195532.GF19377@localhost>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-28 at 00:09 +0100, Alexandre Belloni wrote:
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-[]
-> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> @@ -871,6 +871,25 @@ M:	Boris Brezillon <boris.brezillon@free-electrons.com>
->  S:	Maintained
->  F:	drivers/clk/at91
->  
-> +ARM/ATMEL AT91 Poweroff driver
-> +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	Maintained
-> +F:	drivers/power/reset/at91-poweroff.c
+On Fri, 24 Oct 2014 21:55:32 +0200 Johan Hovold <johan@kernel.org> wrote:
+
+> On Fri, Oct 24, 2014 at 02:44:42PM -0500, Felipe Balbi wrote:
+> > On Fri, Oct 24, 2014 at 09:36:55PM +0200, Johan Hovold wrote:
+> > > On Fri, Oct 24, 2014 at 02:29:48PM -0500, Felipe Balbi wrote:
+> > > > Hi,
+> > > > 
+> > > > On Fri, Oct 24, 2014 at 02:25:40PM -0500, Felipe Balbi wrote:
+> 
+> > > > > with this I always get to "Power off failed -- system halted". If I
+> > > > > switch to v3.18-rc1 vanilla, then it works. So it's definitely caused by
+> > > > > your rtc-only patches.
+> > > 
+> > > That's expected (see below). It works with v3.18-rc1 vanilla because
+> > > machine_halt is called instead of machine_power_off as there is no
+> > > registered power-off handler.
+> > 
+> > yeah, that much I figured :-)
+> > 
+> > > > ok, so it seems like it takes more than 1 second for things to
+> > > > propagate. If I increase that mdelay() to 3000, then everything works
+> > > > fine on my end. I think we should get RMK's input on this 3000ms delay
+> > > > to machine_power_off(). Should it be generic, or should we add it to our
+> > > > rtc pm_power_off implementation ?
+> > > 
+> > > As I wrote above, we still need a 2-second mdelay in rtc-omap, which I
+> > > intend to add to the pmic_power_en patch.
+> > 
+> > oh, alright then. If you can Cc me, I'll make sure to test that too ;-)
+> 
+> I will. :) Just wanted to see whether Andrew preferred I resend the
+> whole series or just that one patch first.
+> 
+> The diff is minimal:
+> 
+> diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+> index e74750f00b18..e4f97ad9eb21 100644
+> --- a/drivers/rtc/rtc-omap.c
+> +++ b/drivers/rtc/rtc-omap.c
+> @@ -423,6 +423,8 @@ static void omap_rtc_power_off(void)
+>         val = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
+>         rtc_writel(rtc, OMAP_RTC_INTERRUPTS_REG,
+>                         val | OMAP_RTC_INTERRUPTS_IT_ALARM2);
 > +
-> +ARM/ATMEL AT91 Reset driver
-> +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	Maintained
-> +F:	drivers/power/reset/at91-reset.c
+> +       mdelay(2000);
+>  }
 
-It's traditional to use upper case section descriptions.
+Yes, having read this threadlet: we need a very good comment in there
+explaining what's going on, please.
 
-Do these 2 really need to be separate entries?
-
-> +
-> +ARM/ATMEL AT91 SDRAM Controller driver
-> +M:	Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> +L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-> +S:	Maintained
-> +F:	drivers/memory/atmel-sdramc.c
-> +F:	include/soc/atmel/memory.h
-> +
->  ARM/CALXEDA HIGHBANK ARCHITECTURE
->  M:	Rob Herring <robh@kernel.org>
->  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
-
-
-
+Do we even need this delay on anything other than arm?  Or even on all arm?
