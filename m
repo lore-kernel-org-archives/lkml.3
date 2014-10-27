@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbaJ0P57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:57:59 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50349 "EHLO
+	id S1753474AbaJ0P6d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:58:33 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:50342 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314AbaJ0P5z (ORCPT
+	with ESMTP id S1753389AbaJ0P5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:57:55 -0400
+	Mon, 27 Oct 2014 11:57:53 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH v3 47/47] kernel: Remove pm_power_off
-Date: Mon, 27 Oct 2014 08:55:54 -0700
-Message-Id: <1414425354-10359-48-git-send-email-linux@roeck-us.net>
+        Matt Fleming <matt.fleming@intel.com>, linux-efi@vger.kernel.org
+Subject: [PATCH v3 46/47] efi: Register power-off handler with kernel power-off handler
+Date: Mon, 27 Oct 2014 08:55:53 -0700
+Message-Id: <1414425354-10359-47-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
 References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
 X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=1.3
+X-OutGoing-Spam-Status: No, score=-1.0
 X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020209.544E6B83.00EB,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020208.544E6B81.0048,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 265
+X-CTCH-SenderID-TotalMessages: 263
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -50,70 +49,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No users of pm_power_off are left, so it is safe to remove the function.
+Register with kernel power-off handler instead of setting pm_power_off
+directly. Register with low priority since the efi code states that
+this is a power-off handler of last resort.
 
-Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: Len Brown <len.brown@intel.com>
-Acked-by: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Acked-by: Matt Fleming <matt.fleming@intel.com>
+Acked-by: Mark Salter <msalter@redhat.com>
 Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 ---
 v3:
 - Replace poweroff in all newly introduced variables and in text
   with power_off or power-off as appropriate
+- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
 v2:
-- poweroff -> power_off for API functions
+- Use define to specify poweroff handler priority
 
- include/linux/pm.h               |  1 -
- kernel/power/power_off_handler.c | 10 +---------
- 2 files changed, 1 insertion(+), 10 deletions(-)
+ drivers/firmware/efi/reboot.c | 23 +++++++++++++++++++----
+ 1 file changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index 49b3420..4d92122 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -31,7 +31,6 @@
- /*
-  * Callbacks for platform drivers to implement.
+diff --git a/drivers/firmware/efi/reboot.c b/drivers/firmware/efi/reboot.c
+index 9c59d1c..df0ceb9 100644
+--- a/drivers/firmware/efi/reboot.c
++++ b/drivers/firmware/efi/reboot.c
+@@ -3,6 +3,8 @@
+  * Copyright (c) 2014 Red Hat, Inc., Mark Salter <msalter@redhat.com>
   */
--extern void (*pm_power_off)(void);
- extern void (*pm_power_off_prepare)(void);
+ #include <linux/efi.h>
++#include <linux/notifier.h>
++#include <linux/pm.h>
+ #include <linux/reboot.h>
  
- /*
-diff --git a/kernel/power/power_off_handler.c b/kernel/power/power_off_handler.c
-index 97b7163..8d01e77 100644
---- a/kernel/power/power_off_handler.c
-+++ b/kernel/power/power_off_handler.c
-@@ -22,12 +22,6 @@
- #include <linux/types.h>
- 
- /*
-- * If set, calling this function will power off the system immediately.
-- */
--void (*pm_power_off)(void);
--EXPORT_SYMBOL(pm_power_off);
--
--/*
-  *	Notifier list for kernel code which wants to be called
-  *	to power off the system.
-  */
-@@ -259,8 +253,6 @@ void do_kernel_power_off(void)
- 	 * removed while the call chain is traversed, but we'll have to carry
- 	 * that risk.
- 	 */
--	if (pm_power_off)
--		pm_power_off();
- 	raw_notifier_call_chain(&power_off_handler_list, 0, NULL);
+ int efi_reboot_quirk_mode = -1;
+@@ -38,19 +40,32 @@ bool __weak efi_poweroff_required(void)
+ 	return false;
  }
  
-@@ -271,6 +263,6 @@ void do_kernel_power_off(void)
-  */
- bool have_kernel_power_off(void)
+-static void efi_power_off(void)
++static int efi_power_off(struct notifier_block *this,
++			 unsigned long unused1, void *unused2)
  {
--	return pm_power_off != NULL || power_off_handler_list.head != NULL;
-+	return power_off_handler_list.head != NULL;
+ 	efi.reset_system(EFI_RESET_SHUTDOWN, EFI_SUCCESS, 0, NULL);
++
++	return NOTIFY_DONE;
  }
- EXPORT_SYMBOL(have_kernel_power_off);
+ 
++static struct notifier_block efi_power_off_nb = {
++	.notifier_call = efi_power_off,
++	.priority = POWER_OFF_PRIORITY_LOW,
++};
++
+ static int __init efi_shutdown_init(void)
+ {
++	int ret = 0;
++
+ 	if (!efi_enabled(EFI_RUNTIME_SERVICES))
+ 		return -ENODEV;
+ 
+-	if (efi_poweroff_required())
+-		pm_power_off = efi_power_off;
++	if (efi_poweroff_required()) {
++		ret = register_power_off_handler(&efi_power_off_nb);
++		if (ret)
++			pr_err("efi: Failed to register power-off handler\n");
++	}
+ 
+-	return 0;
++	return ret;
+ }
+ late_initcall(efi_shutdown_init);
 -- 
 1.9.1
 
