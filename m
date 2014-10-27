@@ -1,68 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaJ0Bpz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 21:45:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49646 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816AbaJ0Bpx convert rfc822-to-8bit (ORCPT
+	id S1751951AbaJ0B7u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 21:59:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51034 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaJ0B7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 21:45:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,792,1406617200"; 
-   d="scan'208";a="625947589"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        "Hansen, Dave" <dave.hansen@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
-Subject: RE: [PATCH v9 09/12] x86, mpx: decode MPX instruction to get bound
- violation information
-Thread-Topic: [PATCH v9 09/12] x86, mpx: decode MPX instruction to get bound
- violation information
-Thread-Index: AQHP5dg7yyhiQxbkmEGH5PJVxeeZs5w+vGAAgASFDTA=
-Date: Mon, 27 Oct 2014 01:43:00 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE0180ED16@shsmsx102.ccr.corp.intel.com>
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com>
- <1413088915-13428-10-git-send-email-qiaowei.ren@intel.com>
- <alpine.DEB.2.11.1410241408360.5308@nanos>
-In-Reply-To: <alpine.DEB.2.11.1410241408360.5308@nanos>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 26 Oct 2014 21:59:49 -0400
+Date: Mon, 27 Oct 2014 09:58:36 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Neil Zhang <zhangwm@marvell.com>
+Cc: Dan Streetman <ddstreet@ieee.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+Message-ID: <20141027015836.GA27978@kroah.com>
+References: <1413775748-22478-1-git-send-email-zhangwm@marvell.com>
+ <20141020044340.GA9589@kroah.com>
+ <9034CBD80F070943B59700D7F8149ED9024EB81CAF@SC-VEXCH4.marvell.com>
+ <20141020064826.GA4064@kroah.com>
+ <9034CBD80F070943B59700D7F8149ED9024EB81CC6@SC-VEXCH4.marvell.com>
+ <CALZtONDEdFbx+zTWYdmz3HsfCnV+RtTPAuY4p-RK1DN3g2CwrQ@mail.gmail.com>
+ <9034CBD80F070943B59700D7F8149ED9024ED2A134@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <9034CBD80F070943B59700D7F8149ED9024ED2A134@SC-VEXCH4.marvell.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 2014-10-24, Thomas Gleixner wrote:
-> On Sun, 12 Oct 2014, Qiaowei Ren wrote:
+On Sun, Oct 26, 2014 at 06:43:11PM -0700, Neil Zhang wrote:
+> Greg,
 > 
->> This patch sets bound violation fields of siginfo struct in #BR
->> exception handler by decoding the user instruction and constructing
->> the faulting pointer.
->> 
->> This patch does't use the generic decoder, and implements a limited
->> special-purpose decoder to decode MPX instructions, simply because
->> the generic decoder is very heavyweight not just in terms of
->> performance but in terms of interface -- because it has to.
 > 
-> My question still stands why using the existing decoder is an issue.
-> Performance is a complete non issue in case of a bounds violation and
-> the interface argument is just silly, really.
+> > -----Original Message-----
+> > From: ddstreet@gmail.com [mailto:ddstreet@gmail.com] On Behalf Of Dan
+> > Streetman
+> > Sent: 2014年10月21日 1:03
+> > To: Neil Zhang
+> > Cc: Greg KH; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] drivers: base: update cpu offline info when do hotplug
+> > 
+> > On Mon, Oct 20, 2014 at 3:40 AM, Neil Zhang <zhangwm@marvell.com> wrote:
+> > > Greg,
+> > >
+> > >
+> > > -----Original Message-----
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: 2014年10月20日 14:48
+> > > To: Neil Zhang
+> > > Cc: linux-kernel@vger.kernel.org
+> > > Subject: Re: [PATCH] drivers: base: update cpu offline info when do
+> > > hotplug
+> > >
+> > > On Sun, Oct 19, 2014 at 11:39:23PM -0700, Neil Zhang wrote:
+> > >>> How much noise is this going to cause on a big/little system that
+> > >>> constantly hot unplug/plugs processors all of the time?
+> > >>
+> > >> Can you explain more what kind of noise will be introduced on a big/little
+> > system?
+> > >
+> > > Have you tested this on such a machine?
+> > >
+> > > I didn't have such kind of machine on hand.
+> > > Can anyone has such machine to verify it?
+> > > Thanks!
+> > 
+> > I tested this on a ppc PowerVM system, using dlpar operations to remove/add
+> > cpus.
+> > 
+> > Without this patch the cpu online nodes get out of sync with the main online
+> > node (and the actual state of the cpus), because they aren't updated as the
+> > cpus are brought up/down:
+> > 
+> > [root@br10p02 cpu]$ pwd
+> > /sys/devices/system/cpu
+> > [root@br10p02 cpu]$ cat online
+> > 0-39
+> > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online ) -eq 1 &&
+> > echo -n "$n " ; done ; echo ""
+> > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+> > 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47
+> > 
+> > 
+> > While with the patch, the cpu online nodes are kept up to date as the cpus are
+> > brought up/down:
+> > 
+> > [root@br10p02 cpu]$ pwd
+> > /sys/devices/system/cpu
+> > [root@br10p02 cpu]$ cat online
+> > 0-39
+> > [root@br10p02 cpu]$ for n in {0..47} ; do test $( cat cpu$n/online ) -eq 1 &&
+> > echo -n "$n " ; done ; echo ""
+> > 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+> > 27 28 29 30 31 32 33 34 35 36 37 38 39
+> > 
+> > 
+> > Feel free to add
+> > 
+> > Tested-by: Dan Streetman <ddstreet@ieee.org>
+> > 
 > 
+> It's a real bug in the kernel.
 
-As hpa said, we only need to decode several mpx instructions including BNDCL/BNDCU, and general decoder looks like a little heavy. Peter, what do you think about it?
+As this has been this way for many years, I tend to think it's not all
+that important...
 
-Thanks,
-Qiaowei
+> What's your comments about this patch?
 
+It's one of 1800+ patches that need my comments, please be patient.
+
+greg k-h
