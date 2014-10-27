@@ -1,294 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753011AbaJ0IMW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 04:12:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:56417 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314AbaJ0IMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 04:12:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,794,1406617200"; 
-   d="scan'208";a="621213674"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Prarit Bhargava <prarit@redhat.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch Part1 v3 12/20] x86, irq: Move HT IRQ related code from io_apic.c into htirq.c
-Date: Mon, 27 Oct 2014 16:12:03 +0800
-Message-Id: <1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752415AbaJ0INE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 04:13:04 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:56009 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178AbaJ0IM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 04:12:59 -0400
+From: Johan Hovold <johan@kernel.org>
+To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Felipe Balbi <balbi@ti.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, Johan Hovold <johan@kernel.org>
+Subject: [PATCH v3] rtc: omap: add support for pmic_power_en
+Date: Mon, 27 Oct 2014 09:09:28 +0100
+Message-Id: <1414397368-26480-1-git-send-email-johan@kernel.org>
+X-Mailer: git-send-email 2.0.4
+In-Reply-To: <1413913086-12730-1-git-send-email-johan@kernel.org>
+References: <1413913086-12730-1-git-send-email-johan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create arch/x86/kernel/apic/htirq.c to host Hypertransport IRQ related
-code, preparing for enabling hierarchy irqdomain.
+Add new property "ti,system-power-controller" to register the RTC as a
+power-off handler.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Some RTC IP revisions can control an external PMIC via the pmic_power_en
+pin, which can be configured to transition to OFF on ALARM2 events and
+back to ON on subsequent ALARM (wakealarm) events.
+
+This is based on earlier work by Colin Foe-Parker and AnilKumar Ch. [1]
+
+[1] https://www.mail-archive.com/linux-omap@vger.kernel.org/msg82127.html
+
+Tested-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 ---
- arch/x86/kernel/apic/Makefile  |    1 +
- arch/x86/kernel/apic/htirq.c   |  107 ++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/apic/io_apic.c |   92 ----------------------------------
- 3 files changed, 108 insertions(+), 92 deletions(-)
- create mode 100644 arch/x86/kernel/apic/htirq.c
 
-diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
-index aac300750f0e..8bb12ddc5db8 100644
---- a/arch/x86/kernel/apic/Makefile
-+++ b/arch/x86/kernel/apic/Makefile
-@@ -7,6 +7,7 @@ obj-y				+= hw_nmi.o
+Changes since v2:
+ - add two-second delay to allow alarm to trigger before returning
+
+Andrew, can you replace just this patch in the series that you already
+have in your tree, or do you prefer I resend the whole series (with
+Felipe's Tested-by tags)?
+
+Thanks,
+Johan
+
+
+ Documentation/devicetree/bindings/rtc/rtc-omap.txt |  9 +-
+ drivers/rtc/rtc-omap.c                             | 95 ++++++++++++++++++++++
+ 2 files changed, 103 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
+index 5a0f02d34d95..750efd40c72e 100644
+--- a/Documentation/devicetree/bindings/rtc/rtc-omap.txt
++++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
+@@ -5,11 +5,17 @@ Required properties:
+ 	- "ti,da830-rtc"  - for RTC IP used similar to that on DA8xx SoC family.
+ 	- "ti,am3352-rtc" - for RTC IP used similar to that on AM335x SoC family.
+ 			    This RTC IP has special WAKE-EN Register to enable
+-			    Wakeup generation for event Alarm.
++			    Wakeup generation for event Alarm. It can also be
++			    used to control an external PMIC via the
++			    pmic_power_en pin.
+ - reg: Address range of rtc register set
+ - interrupts: rtc timer, alarm interrupts in order
+ - interrupt-parent: phandle for the interrupt controller
  
- obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
- obj-$(CONFIG_PCI_MSI)		+= msi.o
-+obj-$(CONFIG_HT_IRQ)		+= htirq.o
- obj-$(CONFIG_SMP)		+= ipi.o
++Optional properties:
++- ti,system-power-controller: whether the rtc is controlling the system power
++  through pmic_power_en
++
+ Example:
  
- ifeq ($(CONFIG_X86_64),y)
-diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
-new file mode 100644
-index 000000000000..a4980c5091f0
---- /dev/null
-+++ b/arch/x86/kernel/apic/htirq.c
-@@ -0,0 +1,107 @@
+ rtc@1c23000 {
+@@ -18,4 +24,5 @@ rtc@1c23000 {
+ 	interrupts = <19
+ 		      19>;
+ 	interrupt-parent = <&intc>;
++	ti,system-power-controller;
+ };
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index c508e45ca3ce..87cfee751554 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -68,6 +68,15 @@
+ 
+ #define OMAP_RTC_IRQWAKEEN		0x7c
+ 
++#define OMAP_RTC_ALARM2_SECONDS_REG	0x80
++#define OMAP_RTC_ALARM2_MINUTES_REG	0x84
++#define OMAP_RTC_ALARM2_HOURS_REG	0x88
++#define OMAP_RTC_ALARM2_DAYS_REG	0x8c
++#define OMAP_RTC_ALARM2_MONTHS_REG	0x90
++#define OMAP_RTC_ALARM2_YEARS_REG	0x94
++
++#define OMAP_RTC_PMIC_REG		0x98
++
+ /* OMAP_RTC_CTRL_REG bit fields: */
+ #define OMAP_RTC_CTRL_SPLIT		BIT(7)
+ #define OMAP_RTC_CTRL_DISABLE		BIT(6)
+@@ -80,6 +89,7 @@
+ 
+ /* OMAP_RTC_STATUS_REG bit fields: */
+ #define OMAP_RTC_STATUS_POWER_UP	BIT(7)
++#define OMAP_RTC_STATUS_ALARM2		BIT(7)
+ #define OMAP_RTC_STATUS_ALARM		BIT(6)
+ #define OMAP_RTC_STATUS_1D_EVENT	BIT(5)
+ #define OMAP_RTC_STATUS_1H_EVENT	BIT(4)
+@@ -89,6 +99,7 @@
+ #define OMAP_RTC_STATUS_BUSY		BIT(0)
+ 
+ /* OMAP_RTC_INTERRUPTS_REG bit fields: */
++#define OMAP_RTC_INTERRUPTS_IT_ALARM2	BIT(4)
+ #define OMAP_RTC_INTERRUPTS_IT_ALARM	BIT(3)
+ #define OMAP_RTC_INTERRUPTS_IT_TIMER	BIT(2)
+ 
+@@ -98,6 +109,9 @@
+ /* OMAP_RTC_IRQWAKEEN bit fields: */
+ #define OMAP_RTC_IRQWAKEEN_ALARM_WAKEEN	BIT(1)
+ 
++/* OMAP_RTC_PMIC bit fields: */
++#define OMAP_RTC_PMIC_POWER_EN_EN	BIT(16)
++
+ /* OMAP_RTC_KICKER values */
+ #define	KICK0_VALUE			0x83e70b13
+ #define	KICK1_VALUE			0x95a4f1e0
+@@ -106,6 +120,7 @@ struct omap_rtc_device_type {
+ 	bool has_32kclk_en;
+ 	bool has_kicker;
+ 	bool has_irqwakeen;
++	bool has_pmic_mode;
+ 	bool has_power_up_reset;
+ };
+ 
+@@ -115,6 +130,7 @@ struct omap_rtc {
+ 	int irq_alarm;
+ 	int irq_timer;
+ 	u8 interrupts_reg;
++	bool is_pmic_controller;
+ 	const struct omap_rtc_device_type *type;
+ };
+ 
+@@ -345,6 +361,65 @@ static int omap_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
+ 	return 0;
+ }
+ 
++static struct omap_rtc *omap_rtc_power_off_rtc;
++
 +/*
-+ * Support Hypertransport IRQ
++ * omap_rtc_poweroff: RTC-controlled power off
 + *
-+ * Copyright (C) 1997, 1998, 1999, 2000, 2009 Ingo Molnar, Hajnalka Szabo
-+ *	Moved from arch/x86/kernel/apic/io_apic.c.
++ * The RTC can be used to control an external PMIC via the pmic_power_en pin,
++ * which can be configured to transition to OFF on ALARM2 events.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * Notes:
++ * The two-second alarm offset is the shortest offset possible as the alarm
++ * registers must be set before the next timer update and the offset
++ * calculation is too heavy for everything to be done within a single access
++ * period (~15us).
++ *
++ * Called with local interrupts disabled.
 + */
-+#include <linux/mm.h>
-+#include <linux/interrupt.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/pci.h>
-+#include <linux/htirq.h>
-+#include <asm/hw_irq.h>
-+#include <asm/apic.h>
-+#include <asm/hypertransport.h>
-+
-+/*
-+ * Hypertransport interrupt support
-+ */
-+static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
++static void omap_rtc_power_off(void)
 +{
-+	struct ht_irq_msg msg;
++	struct omap_rtc *rtc = omap_rtc_power_off_rtc;
++	struct rtc_time tm;
++	unsigned long now;
++	u32 val;
 +
-+	fetch_ht_irq_msg(irq, &msg);
++	/* enable pmic_power_en control */
++	val = rtc_readl(rtc, OMAP_RTC_PMIC_REG);
++	rtc_writel(rtc, OMAP_RTC_PMIC_REG, val | OMAP_RTC_PMIC_POWER_EN_EN);
 +
-+	msg.address_lo &= ~(HT_IRQ_LOW_VECTOR_MASK | HT_IRQ_LOW_DEST_ID_MASK);
-+	msg.address_hi &= ~(HT_IRQ_HIGH_DEST_ID_MASK);
++	/* set alarm two seconds from now */
++	omap_rtc_read_time_raw(rtc, &tm);
++	bcd2tm(&tm);
++	rtc_tm_to_time(&tm, &now);
++	rtc_time_to_tm(now + 2, &tm);
 +
-+	msg.address_lo |= HT_IRQ_LOW_VECTOR(vector) | HT_IRQ_LOW_DEST_ID(dest);
-+	msg.address_hi |= HT_IRQ_HIGH_DEST_ID(dest);
++	if (tm2bcd(&tm) < 0) {
++		dev_err(&rtc->rtc->dev, "power off failed\n");
++		return;
++	}
 +
-+	write_ht_irq_msg(irq, &msg);
++	rtc_wait_not_busy(rtc);
++
++	rtc_write(rtc, OMAP_RTC_ALARM2_SECONDS_REG, tm.tm_sec);
++	rtc_write(rtc, OMAP_RTC_ALARM2_MINUTES_REG, tm.tm_min);
++	rtc_write(rtc, OMAP_RTC_ALARM2_HOURS_REG, tm.tm_hour);
++	rtc_write(rtc, OMAP_RTC_ALARM2_DAYS_REG, tm.tm_mday);
++	rtc_write(rtc, OMAP_RTC_ALARM2_MONTHS_REG, tm.tm_mon);
++	rtc_write(rtc, OMAP_RTC_ALARM2_YEARS_REG, tm.tm_year);
++
++	/*
++	 * enable ALARM2 interrupt
++	 *
++	 * NOTE: this fails on AM3352 if rtc_write (writeb) is used
++	 */
++	val = rtc_read(rtc, OMAP_RTC_INTERRUPTS_REG);
++	rtc_writel(rtc, OMAP_RTC_INTERRUPTS_REG,
++			val | OMAP_RTC_INTERRUPTS_IT_ALARM2);
++
++	mdelay(2000);
 +}
 +
-+static int
-+ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
-+{
-+	struct irq_cfg *cfg = data->chip_data;
-+	unsigned int dest;
-+	int ret;
-+
-+	ret = apic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
-+
-+	target_ht_irq(data->irq, dest, cfg->vector);
-+	return IRQ_SET_MASK_OK_NOCOPY;
-+}
-+
-+static struct irq_chip ht_irq_chip = {
-+	.name			= "PCI-HT",
-+	.irq_mask		= mask_ht_irq,
-+	.irq_unmask		= unmask_ht_irq,
-+	.irq_ack		= apic_ack_edge,
-+	.irq_set_affinity	= ht_set_affinity,
-+	.irq_retrigger		= apic_retrigger_irq,
-+	.flags			= IRQCHIP_SKIP_SET_WAKE,
-+};
-+
-+int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
-+{
-+	struct irq_cfg *cfg;
-+	struct ht_irq_msg msg;
-+	unsigned dest;
-+	int err;
-+
-+	if (disable_apic)
-+		return -ENXIO;
-+
-+	cfg = irq_cfg(irq);
-+	err = assign_irq_vector(irq, cfg, apic->target_cpus());
-+	if (err)
-+		return err;
-+
-+	err = apic->cpu_mask_to_apicid_and(cfg->domain,
-+					   apic->target_cpus(), &dest);
-+	if (err)
-+		return err;
-+
-+	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
-+
-+	msg.address_lo =
-+		HT_IRQ_LOW_BASE |
-+		HT_IRQ_LOW_DEST_ID(dest) |
-+		HT_IRQ_LOW_VECTOR(cfg->vector) |
-+		((apic->irq_dest_mode == 0) ?
-+			HT_IRQ_LOW_DM_PHYSICAL :
-+			HT_IRQ_LOW_DM_LOGICAL) |
-+		HT_IRQ_LOW_RQEOI_EDGE |
-+		((apic->irq_delivery_mode != dest_LowestPrio) ?
-+			HT_IRQ_LOW_MT_FIXED :
-+			HT_IRQ_LOW_MT_ARBITRATED) |
-+		HT_IRQ_LOW_IRQ_MASKED;
-+
-+	write_ht_irq_msg(irq, &msg);
-+
-+	irq_set_chip_and_handler_name(irq, &ht_irq_chip,
-+				      handle_edge_irq, "edge");
-+
-+	dev_dbg(&dev->dev, "irq %d for HT\n", irq);
-+
-+	return 0;
-+}
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index f35dc27b48e7..b52166a69189 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -32,7 +32,6 @@
- #include <linux/module.h>
- #include <linux/syscore_ops.h>
- #include <linux/irqdomain.h>
--#include <linux/htirq.h>
- #include <linux/freezer.h>
- #include <linux/kthread.h>
- #include <linux/jiffies.h>	/* time_after() */
-@@ -49,7 +48,6 @@
- #include <asm/dma.h>
- #include <asm/timer.h>
- #include <asm/i8259.h>
--#include <asm/hypertransport.h>
- #include <asm/setup.h>
- #include <asm/irq_remapping.h>
- #include <asm/hw_irq.h>
-@@ -2450,96 +2448,6 @@ static int __init ioapic_init_ops(void)
+ static struct rtc_class_ops omap_rtc_ops = {
+ 	.read_time	= omap_rtc_read_time,
+ 	.set_time	= omap_rtc_set_time,
+@@ -361,6 +436,7 @@ static const struct omap_rtc_device_type omap_rtc_am3352_type = {
+ 	.has_32kclk_en	= true,
+ 	.has_kicker	= true,
+ 	.has_irqwakeen	= true,
++	.has_pmic_mode	= true,
+ };
  
- device_initcall(ioapic_init_ops);
+ static const struct omap_rtc_device_type omap_rtc_da830_type = {
+@@ -412,6 +488,9 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 	of_id = of_match_device(omap_rtc_of_match, &pdev->dev);
+ 	if (of_id) {
+ 		rtc->type = of_id->data;
++		rtc->is_pmic_controller = rtc->type->has_pmic_mode &&
++				of_property_read_bool(pdev->dev.of_node,
++						"ti,system-power-controller");
+ 	} else {
+ 		id_entry = platform_get_device_id(pdev);
+ 		rtc->type = (void *)id_entry->driver_data;
+@@ -460,6 +539,9 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
  
--/*
-- * Hypertransport interrupt support
-- */
--#ifdef CONFIG_HT_IRQ
--
--static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
--{
--	struct ht_irq_msg msg;
--	fetch_ht_irq_msg(irq, &msg);
--
--	msg.address_lo &= ~(HT_IRQ_LOW_VECTOR_MASK | HT_IRQ_LOW_DEST_ID_MASK);
--	msg.address_hi &= ~(HT_IRQ_HIGH_DEST_ID_MASK);
--
--	msg.address_lo |= HT_IRQ_LOW_VECTOR(vector) | HT_IRQ_LOW_DEST_ID(dest);
--	msg.address_hi |= HT_IRQ_HIGH_DEST_ID(dest);
--
--	write_ht_irq_msg(irq, &msg);
--}
--
--static int
--ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
--{
--	struct irq_cfg *cfg = data->chip_data;
--	unsigned int dest;
--	int ret;
--
--	ret = apic_set_affinity(data, mask, &dest);
--	if (ret)
--		return ret;
--
--	target_ht_irq(data->irq, dest, cfg->vector);
--	return IRQ_SET_MASK_OK_NOCOPY;
--}
--
--static struct irq_chip ht_irq_chip = {
--	.name			= "PCI-HT",
--	.irq_mask		= mask_ht_irq,
--	.irq_unmask		= unmask_ht_irq,
--	.irq_ack		= apic_ack_edge,
--	.irq_set_affinity	= ht_set_affinity,
--	.irq_retrigger		= apic_retrigger_irq,
--	.flags			= IRQCHIP_SKIP_SET_WAKE,
--};
--
--int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
--{
--	struct irq_cfg *cfg;
--	struct ht_irq_msg msg;
--	unsigned dest;
--	int err;
--
--	if (disable_apic)
--		return -ENXIO;
--
--	cfg = irq_cfg(irq);
--	err = assign_irq_vector(irq, cfg, apic->target_cpus());
--	if (err)
--		return err;
--
--	err = apic->cpu_mask_to_apicid_and(cfg->domain,
--					   apic->target_cpus(), &dest);
--	if (err)
--		return err;
--
--	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
--
--	msg.address_lo =
--		HT_IRQ_LOW_BASE |
--		HT_IRQ_LOW_DEST_ID(dest) |
--		HT_IRQ_LOW_VECTOR(cfg->vector) |
--		((apic->irq_dest_mode == 0) ?
--			HT_IRQ_LOW_DM_PHYSICAL :
--			HT_IRQ_LOW_DM_LOGICAL) |
--		HT_IRQ_LOW_RQEOI_EDGE |
--		((apic->irq_delivery_mode != dest_LowestPrio) ?
--			HT_IRQ_LOW_MT_FIXED :
--			HT_IRQ_LOW_MT_ARBITRATED) |
--		HT_IRQ_LOW_IRQ_MASKED;
--
--	write_ht_irq_msg(irq, &msg);
--
--	irq_set_chip_and_handler_name(irq, &ht_irq_chip,
--				      handle_edge_irq, "edge");
--
--	dev_printk(KERN_DEBUG, &dev->dev, "irq %d for HT\n", irq);
--
--	return 0;
--}
--#endif /* CONFIG_HT_IRQ */
--
- static int
- io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
+ 	mask = OMAP_RTC_STATUS_ALARM;
+ 
++	if (rtc->type->has_pmic_mode)
++		mask |= OMAP_RTC_STATUS_ALARM2;
++
+ 	if (rtc->type->has_power_up_reset) {
+ 		mask |= OMAP_RTC_STATUS_POWER_UP;
+ 		if (reg & OMAP_RTC_STATUS_POWER_UP)
+@@ -520,6 +602,13 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 			goto err;
+ 	}
+ 
++	if (rtc->is_pmic_controller) {
++		if (!pm_power_off) {
++			omap_rtc_power_off_rtc = rtc;
++			pm_power_off = omap_rtc_power_off;
++		}
++	}
++
+ 	return 0;
+ 
+ err:
+@@ -536,6 +625,12 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
  {
+ 	struct omap_rtc *rtc = platform_get_drvdata(pdev);
+ 
++	if (pm_power_off == omap_rtc_power_off &&
++			omap_rtc_power_off_rtc == rtc) {
++		pm_power_off = NULL;
++		omap_rtc_power_off_rtc = NULL;
++	}
++
+ 	device_init_wakeup(&pdev->dev, 0);
+ 
+ 	/* leave rtc running, but disable irqs */
 -- 
-1.7.10.4
+2.0.4
 
