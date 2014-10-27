@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203AbaJ0TCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:02:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52594 "EHLO
+	id S1753222AbaJ0TC2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:02:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52610 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862AbaJ0TCT (ORCPT
+	with ESMTP id S1751862AbaJ0TCY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:02:19 -0400
+	Mon, 27 Oct 2014 15:02:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Prarit Bhargava <prarit@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andy Lutomirski <luto@amacapital.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 097/105] modules, lock around setting of MODULE_STATE_UNFORMED
-Date: Mon, 27 Oct 2014 11:57:12 -0700
-Message-Id: <1414436240-13879-98-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 096/105] mnt: Prevent pivot_root from creating a loop in the mount tree
+Date: Mon, 27 Oct 2014 11:57:11 -0700
+Message-Id: <1414436240-13879-97-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,170 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Prarit Bhargava <prarit@redhat.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit d3051b489aa81ca9ba62af366149ef42b8dae97c upstream.
+commit 0d0826019e529f21c84687521d03f60cd241ca7d upstream.
 
-A panic was seen in the following sitation.
+Andy Lutomirski recently demonstrated that when chroot is used to set
+the root path below the path for the new ``root'' passed to pivot_root
+the pivot_root system call succeeds and leaks mounts.
 
-There are two threads running on the system. The first thread is a system
-monitoring thread that is reading /proc/modules. The second thread is
-loading and unloading a module (in this example I'm using my simple
-dummy-module.ko).  Note, in the "real world" this occurred with the qlogic
-driver module.
+In examining the code I see that starting with a new root that is
+below the current root in the mount tree will result in a loop in the
+mount tree after the mounts are detached and then reattached to one
+another.  Resulting in all kinds of ugliness including a leak of that
+mounts involved in the leak of the mount loop.
 
-When doing this, the following panic occurred:
+Prevent this problem by ensuring that the new mount is reachable from
+the current root of the mount tree.
 
- ------------[ cut here ]------------
- kernel BUG at kernel/module.c:3739!
- invalid opcode: 0000 [#1] SMP
- Modules linked in: binfmt_misc sg nfsv3 rpcsec_gss_krb5 nfsv4 dns_resolver nfs fscache intel_powerclamp coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel lrw igb gf128mul glue_helper iTCO_wdt iTCO_vendor_support ablk_helper ptp sb_edac cryptd pps_core edac_core shpchp i2c_i801 pcspkr wmi lpc_ich ioatdma mfd_core dca ipmi_si nfsd ipmi_msghandler auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c sr_mod cdrom sd_mod crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper ttm isci drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror dm_region_hash dm_log dm_mod [last unloaded: dummy_module]
- CPU: 37 PID: 186343 Comm: cat Tainted: GF          O--------------   3.10.0+ #7
- Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.00.29.D696.1311111329 11/11/2013
- task: ffff8807fd2d8000 ti: ffff88080fa7c000 task.ti: ffff88080fa7c000
- RIP: 0010:[<ffffffff810d64c5>]  [<ffffffff810d64c5>] module_flags+0xb5/0xc0
- RSP: 0018:ffff88080fa7fe18  EFLAGS: 00010246
- RAX: 0000000000000003 RBX: ffffffffa03b5200 RCX: 0000000000000000
- RDX: 0000000000001000 RSI: ffff88080fa7fe38 RDI: ffffffffa03b5000
- RBP: ffff88080fa7fe28 R08: 0000000000000010 R09: 0000000000000000
- R10: 0000000000000000 R11: 000000000000000f R12: ffffffffa03b5000
- R13: ffffffffa03b5008 R14: ffffffffa03b5200 R15: ffffffffa03b5000
- FS:  00007f6ae57ef740(0000) GS:ffff88101e7a0000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 0000000000404f70 CR3: 0000000ffed48000 CR4: 00000000001407e0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Stack:
-  ffffffffa03b5200 ffff8810101e4800 ffff88080fa7fe70 ffffffff810d666c
-  ffff88081e807300 000000002e0f2fbf 0000000000000000 ffff88100f257b00
-  ffffffffa03b5008 ffff88080fa7ff48 ffff8810101e4800 ffff88080fa7fee0
- Call Trace:
-  [<ffffffff810d666c>] m_show+0x19c/0x1e0
-  [<ffffffff811e4d7e>] seq_read+0x16e/0x3b0
-  [<ffffffff812281ed>] proc_reg_read+0x3d/0x80
-  [<ffffffff811c0f2c>] vfs_read+0x9c/0x170
-  [<ffffffff811c1a58>] SyS_read+0x58/0xb0
-  [<ffffffff81605829>] system_call_fastpath+0x16/0x1b
- Code: 48 63 c2 83 c2 01 c6 04 03 29 48 63 d2 eb d9 0f 1f 80 00 00 00 00 48 63 d2 c6 04 13 2d 41 8b 0c 24 8d 50 02 83 f9 01 75 b2 eb cb <0f> 0b 66 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 89 e5 41
- RIP  [<ffffffff810d64c5>] module_flags+0xb5/0xc0
-  RSP <ffff88080fa7fe18>
+[Added stable cc.  Fixes CVE-2014-7970.  --Andy]
 
-    Consider the two processes running on the system.
-
-    CPU 0 (/proc/modules reader)
-    CPU 1 (loading/unloading module)
-
-    CPU 0 opens /proc/modules, and starts displaying data for each module by
-    traversing the modules list via fs/seq_file.c:seq_open() and
-    fs/seq_file.c:seq_read().  For each module in the modules list, seq_read
-    does
-
-            op->start()  <-- this is a pointer to m_start()
-            op->show()   <- this is a pointer to m_show()
-            op->stop()   <-- this is a pointer to m_stop()
-
-    The m_start(), m_show(), and m_stop() module functions are defined in
-    kernel/module.c. The m_start() and m_stop() functions acquire and release
-    the module_mutex respectively.
-
-    ie) When reading /proc/modules, the module_mutex is acquired and released
-    for each module.
-
-    m_show() is called with the module_mutex held.  It accesses the module
-    struct data and attempts to write out module data.  It is in this code
-    path that the above BUG_ON() warning is encountered, specifically m_show()
-    calls
-
-    static char *module_flags(struct module *mod, char *buf)
-    {
-            int bx = 0;
-
-            BUG_ON(mod->state == MODULE_STATE_UNFORMED);
-    ...
-
-    The other thread, CPU 1, in unloading the module calls the syscall
-    delete_module() defined in kernel/module.c.  The module_mutex is acquired
-    for a short time, and then released.  free_module() is called without the
-    module_mutex.  free_module() then sets mod->state = MODULE_STATE_UNFORMED,
-    also without the module_mutex.  Some additional code is called and then the
-    module_mutex is reacquired to remove the module from the modules list:
-
-        /* Now we can delete it from the lists */
-        mutex_lock(&module_mutex);
-        stop_machine(__unlink_module, mod, NULL);
-        mutex_unlock(&module_mutex);
-
-This is the sequence of events that leads to the panic.
-
-CPU 1 is removing dummy_module via delete_module().  It acquires the
-module_mutex, and then releases it.  CPU 1 has NOT set dummy_module->state to
-MODULE_STATE_UNFORMED yet.
-
-CPU 0, which is reading the /proc/modules, acquires the module_mutex and
-acquires a pointer to the dummy_module which is still in the modules list.
-CPU 0 calls m_show for dummy_module.  The check in m_show() for
-MODULE_STATE_UNFORMED passed for dummy_module even though it is being
-torn down.
-
-Meanwhile CPU 1, which has been continuing to remove dummy_module without
-holding the module_mutex, now calls free_module() and sets
-dummy_module->state to MODULE_STATE_UNFORMED.
-
-CPU 0 now calls module_flags() with dummy_module and ...
-
-static char *module_flags(struct module *mod, char *buf)
-{
-        int bx = 0;
-
-        BUG_ON(mod->state == MODULE_STATE_UNFORMED);
-
-and BOOM.
-
-Acquire and release the module_mutex lock around the setting of
-MODULE_STATE_UNFORMED in the teardown path, which should resolve the
-problem.
-
-Testing: In the unpatched kernel I can panic the system within 1 minute by
-doing
-
-while (true) do insmod dummy_module.ko; rmmod dummy_module.ko; done
-
-and
-
-while (true) do cat /proc/modules; done
-
-in separate terminals.
-
-In the patched kernel I was able to run just over one hour without seeing
-any issues.  I also verified the output of panic via sysrq-c and the output
-of /proc/modules looks correct for all three states for the dummy_module.
-
-        dummy_module 12661 0 - Unloading 0xffffffffa03a5000 (OE-)
-        dummy_module 12661 0 - Live 0xffffffffa03bb000 (OE)
-        dummy_module 14015 1 - Loading 0xffffffffa03a5000 (OE+)
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
+Link: http://lkml.kernel.org/r/87bnpmihks.fsf@x220.int.ebiederm.org
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/module.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/namespace.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 6716a1f..1d679a6 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1841,7 +1841,9 @@ static void free_module(struct module *mod)
- 
- 	/* We leave it in list to prevent duplicate loads, but make sure
- 	 * that noone uses it while it's being deconstructed. */
-+	mutex_lock(&module_mutex);
- 	mod->state = MODULE_STATE_UNFORMED;
-+	mutex_unlock(&module_mutex);
- 
- 	/* Remove dynamic debug info */
- 	ddebug_remove_module(mod->name);
+diff --git a/fs/namespace.c b/fs/namespace.c
+index b1af425..fe2b527 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2812,6 +2812,9 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
+ 	/* make sure we can reach put_old from new_root */
+ 	if (!is_path_reachable(old_mnt, old.dentry, &new))
+ 		goto out4;
++	/* make certain new is below the root */
++	if (!is_path_reachable(new_mnt, new.dentry, &root))
++		goto out4;
+ 	root_mp->m_count++; /* pin it so it won't go away */
+ 	lock_mount_hash();
+ 	detach_mnt(new_mnt, &parent_path);
 -- 
 1.9.1
 
