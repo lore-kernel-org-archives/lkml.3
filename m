@@ -1,391 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175AbaJ0Syj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:54:39 -0400
-Received: from mail-bn1on0144.outbound.protection.outlook.com ([157.56.110.144]:57259
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751593AbaJ0Syh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:54:37 -0400
-X-WSS-ID: 0NE49UU-07-IML-02
-X-M-MSG: 
-From: <suravee.suthikulpanit@amd.com>
-To: <mark.rutland@arm.com>, <will.deacon@arm.com>, <catalin.marinas@arm.com>
-CC: <marc.zyngier@arm.com>, <liviu.dudau@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Thomas Lendacky <Thomas.Lendacky@amd.com>,
-        Joel Schopp <Joel.Schopp@amd.com>
-Subject: [PATCH V2] arm64: amd-seattle: Adding device tree for AMD Seattle platform
-Date: Mon, 27 Oct 2014 13:54:25 -0500
-Message-ID: <1414436065-7717-1-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.3
+	id S1751922AbaJ0S4j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:56:39 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50059 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaJ0S4i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:56:38 -0400
+Message-ID: <544E95D5.1020000@oracle.com>
+Date: Mon, 27 Oct 2014 14:58:29 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(95666004)(97736003)(84676001)(2201001)(68736004)(4396001)(19580395003)(101416001)(106466001)(105586002)(33646002)(62966002)(102836001)(64706001)(104166001)(107046002)(229853001)(50986999)(47776003)(86152002)(92566001)(76482002)(85852003)(120916001)(89996001)(50226001)(36756003)(86362001)(87286001)(19580405001)(48376002)(99396003)(93916002)(77096002)(85306004)(92726001)(20776003)(21056001)(50466002)(80022003)(46102003)(31966008)(53416004)(88136002)(44976005)(77156001)(87936001)(427584002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB193;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB193;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0377802854
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB343;
-X-OriginatorOrg: amd4.onmicrosoft.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: david.vrabel@citrix.com, stefano.stabellini@eu.citrix.com,
+        jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org
+Subject: Re: [PATCH v2 2/2] xen/pci: Use APIC directly when APIC virtualization
+ is supported by hardware
+References: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com> <1414425953-13987-3-git-send-email-boris.ostrovsky@oracle.com> <20141027183939.GB13854@laptop.dumpdata.com>
+In-Reply-To: <20141027183939.GB13854@laptop.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+On 10/27/2014 02:39 PM, Konrad Rzeszutek Wilk wrote:
+> On Mon, Oct 27, 2014 at 12:05:53PM -0400, Boris Ostrovsky wrote:
+>> When hardware supports APIC/x2APIC virtualization we don't need to use pirqs
+>> for MSI handling and instead use APIC since most APIC accesses (MMIO or MSR)
+>> will now be processed without VMEXITs.
+>>
+>> As an example, netperf on the original code produces this profile
+>> (collected wih 'xentrace -e 0x0008ffff -T 5'):
+>>
+>>      342 cpu_change
+>>      260 CPUID
+>>    34638 HLT
+>>    64067 INJ_VIRQ
+>>    28374 INTR
+>>    82733 INTR_WINDOW
+>>       10 NPF
+>>    24337 TRAP
+>>   370610 vlapic_accept_pic_intr
+>>   307528 VMENTRY
+>>   307527 VMEXIT
+>>   140998 VMMCALL
+>>      127 wrap_buffer
+>>
+>> After applying this patch the same test shows
+>>
+>>      230 cpu_change
+>>      260 CPUID
+>>    36542 HLT
+>>      174 INJ_VIRQ
+>>    27250 INTR
+>>      222 INTR_WINDOW
+>>       20 NPF
+>>    24999 TRAP
+>>   381812 vlapic_accept_pic_intr
+>>   166480 VMENTRY
+>>   166479 VMEXIT
+>>    77208 VMMCALL
+>>       81 wrap_buffer
+>>
+>> ApacheBench results (ab -n 10000 -c 200) improve by about 10%
+> What type of NIC did you use for this?
 
-Initial revision of device tree for AMD Seattle platform
+Intel I350 card, igb driver. I probably should have mentioned this in 
+the commit message.
 
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Rob Herring <robh+dt@kernel.org>
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-Signed-off-by: Thomas Lendacky <Thomas.Lendacky@amd.com>
-Signed-off-by: Joel Schopp <Joel.Schopp@amd.com>
----
-Change in V2:
-	* Re-order the CONFIG_ARCH_SEATTLE alphabetically
-	* Clean up stdout-path to include only &serial0
-	* Rename uart to serial
-	* Remove aliase entry since not needed
+-boris
 
- arch/arm64/Kconfig                          |   5 +
- arch/arm64/boot/dts/Makefile                |   1 +
- arch/arm64/boot/dts/amd-seattle-periph.dtsi | 164 ++++++++++++++++++++++++++++
- arch/arm64/boot/dts/amd-seattle.dts         | 122 +++++++++++++++++++++
- 4 files changed, 292 insertions(+)
- create mode 100644 arch/arm64/boot/dts/amd-seattle-periph.dtsi
- create mode 100644 arch/arm64/boot/dts/amd-seattle.dts
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index ef8b4f2..83fa301 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -143,6 +143,11 @@ source "kernel/Kconfig.freezer"
- 
- menu "Platform selection"
- 
-+config ARCH_SEATTLE
-+	bool "AMD Seattle SoC Family"
-+	help
-+	  This enables support for AMD Seattle SOC Family
-+
- config ARCH_THUNDER
- 	bool "Cavium Inc. Thunder SoC Family"
- 	help
-diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-index f8001a6..604af09 100644
---- a/arch/arm64/boot/dts/Makefile
-+++ b/arch/arm64/boot/dts/Makefile
-@@ -1,3 +1,4 @@
-+dtb-$(CONFIG_ARCH_SEATTLE) += amd-seattle.dtb
- dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
- dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
- dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
-diff --git a/arch/arm64/boot/dts/amd-seattle-periph.dtsi b/arch/arm64/boot/dts/amd-seattle-periph.dtsi
-new file mode 100644
-index 0000000..fb651a73
---- /dev/null
-+++ b/arch/arm64/boot/dts/amd-seattle-periph.dtsi
-@@ -0,0 +1,164 @@
-+/*
-+ * DTS file for AMD Seattle Peripheral
-+ *
-+ * Copyright (C) 2014 Advanced Micro Devices, Inc.
-+ */
-+
-+motherboard {
-+	compatible = "simple-bus";
-+	#address-cells = <2>;
-+	#size-cells = <2>;
-+	ranges;
-+
-+	adl3clk_100mhz: clk100mhz_0 {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <100000000>;
-+		clock-output-names = "adl3clk_100mhz";
-+	};
-+
-+	ccpclk_375mhz: clk375mhz {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <375000000>;
-+		clock-output-names = "ccpclk_375mhz";
-+	};
-+
-+	sataclk_333mhz: clk333mhz {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <333000000>;
-+		clock-output-names = "sataclk_333mhz";
-+	};
-+
-+	pcieclk_500mhz: clk500mhz_0 {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <500000000>;
-+		clock-output-names = "pcieclk_500mhz";
-+	};
-+
-+	dmaclk_500mhz: clk500mhz_1 {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <500000000>;
-+		clock-output-names = "dmaclk_500mhz";
-+	};
-+
-+	miscclk_250mhz: clk250mhz_4 {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <250000000>;
-+		clock-output-names = "miscclk_250mhz";
-+	};
-+
-+	uartspiclk_100mhz: clk100mhz_1 {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <100000000>;
-+		clock-output-names = "uartspiclk_100mhz";
-+	};
-+
-+	dma0: dma@0500000 {
-+		compatible = "arm,pl330", "arm,primecell";
-+		reg = <0 0x0500000 0 0x1000>;
-+		interrupts =
-+			<0 368 4>,
-+			<0 369 4>,
-+			<0 370 4>,
-+			<0 371 4>,
-+			<0 372 4>,
-+			<0 373 4>,
-+			<0 374 4>,
-+			<0 375 4>;
-+		clocks = <&dmaclk_500mhz>;
-+		clock-names = "apb_pclk";
-+		#dma-cells = <1>;
-+	};
-+
-+	sata0: sata@00300000 {
-+		compatible = "snps,spear-ahci";
-+		reg = <0 0x300000 0 0x800>;
-+		interrupts = <0 355 4>;
-+		clocks = <&sataclk_333mhz>;
-+		clock-names = "apb_pclk";
-+		dma-coherent;
-+	};
-+
-+	i2c@1000000 {
-+		compatible = "snps,designware-i2c";
-+		reg = <0 0x01000000 0 0x1000>;
-+		interrupts = <0 357 4>;
-+		clocks = <&uartspiclk_100mhz>;
-+		clock-names = "apb_pclk";
-+	};
-+
-+	serial0: serial@1010000 {
-+		compatible = "arm,pl011", "arm,primecell";
-+		reg = <0 0x1010000 0 0x1000>;
-+		interrupts = <0 328 4>;
-+		clocks = <&uartspiclk_100mhz>, <&uartspiclk_100mhz>;
-+		clock-names = "uartclk", "apb_pclk";
-+	};
-+
-+	ssp@1020000 {
-+		compatible = "arm,pl022", "arm,primecell";
-+		#gpio-cells = <2>;
-+		reg = <0 0x1020000 0 0x1000>;
-+		spi-controller;
-+		interrupts = <0 330 4>;
-+		clocks = <&uartspiclk_100mhz>;
-+		clock-names = "apb_pclk";
-+	};
-+
-+	ssp@1030000 {
-+		compatible = "arm,pl022", "arm,primecell";
-+		#gpio-cells = <2>;
-+		reg = <0 0x1030000 0 0x1000>;
-+		spi-controller;
-+		interrupts = <0 329 4>;
-+		clocks = <&uartspiclk_100mhz>;
-+		clock-names = "apb_pclk";
-+		num-cs = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		sdcard@0 {
-+			compatible = "mmc-spi-slot";
-+			reg = <0>;
-+			spi-max-frequency = <20000000>;
-+			pl022,hierarchy = <0>;
-+			pl022,interface = <0>;
-+			pl022,com-mode = <0x0>;
-+			pl022,rx-level-trig = <0>;
-+			pl022,tx-level-trig = <0>;
-+		};
-+	};
-+
-+	gpio0: gpio@1040000 {
-+		compatible = "arm,pl061", "arm,primecell";
-+		#gpio-cells = <2>;
-+		reg = <0 0x1040000 0 0x1000>;
-+		gpio-controller;
-+		interrupts = <0 359 4>;
-+		clocks = <&uartspiclk_100mhz>;
-+		clock-names = "apb_pclk";
-+	};
-+
-+	gpio1: gpio@1050000 {
-+		compatible = "arm,pl061", "arm,primecell";
-+		#gpio-cells = <2>;
-+		reg = <0 0x1050000 0 0x1000>;
-+		gpio-controller;
-+		interrupts = <0 358 4>;
-+		clocks = <&uartspiclk_100mhz>;
-+		clock-names = "apb_pclk";
-+	};
-+
-+	ccp: ccp@00100000 {
-+		compatible = "amd,ccp-seattle-v1a";
-+		reg = <0 0x00100000 0 0x10000>;
-+		interrupts = <0 3 4>;
-+		dma-coherent;
-+	};
-+};
-diff --git a/arch/arm64/boot/dts/amd-seattle.dts b/arch/arm64/boot/dts/amd-seattle.dts
-new file mode 100644
-index 0000000..726e444
---- /dev/null
-+++ b/arch/arm64/boot/dts/amd-seattle.dts
-@@ -0,0 +1,122 @@
-+/*
-+ * DTS file for AMD Seattle
-+ *
-+ * Copyright (C) 2014 Advanced Micro Devices, Inc.
-+ */
-+
-+/dts-v1/;
-+
-+/ {
-+	compatible = "amd,seattle";
-+	interrupt-parent = <&gic>;
-+	#address-cells = <2>;
-+	#size-cells = <2>;
-+
-+	chosen {
-+		stdout-path = &serial0;
-+		linux,pci-probe-only;
-+	};
-+
-+	gic: interrupt-controller@e1101000 {
-+		compatible = "arm,gic-400", "arm,cortex-a15-gic";
-+		interrupt-controller;
-+		#interrupt-cells = <3>;
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		reg = <0x0 0xe1110000 0 0x1000>,
-+		      <0x0 0xe112f000 0 0x2000>,
-+		      <0x0 0xe1140000 0 0x10000>,
-+		      <0x0 0xe1160000 0 0x10000>;
-+		interrupts = <1 8 0xf04>;
-+		ranges;
-+		v2m0: v2m@e1180000 {
-+			compatible = "arm,gic-v2m-frame";
-+			msi-controller;
-+			arm,msi-base-spi = <64>;
-+			arm,msi-num-spis = <256>;
-+			reg = <0x0 0xe1180000 0 0x1000>;
-+		};
-+	};
-+
-+	timer {
-+		compatible = "arm,armv8-timer";
-+		interrupts = <1 13 0xff01>,
-+			     <1 14 0xff01>,
-+			     <1 11 0xff01>,
-+			     <1 10 0xff01>;
-+	};
-+
-+	pmu {
-+		compatible = "arm,armv8-pmuv3";
-+		interrupts = <0 7 4>,
-+			     <0 8 4>,
-+			     <0 9 4>,
-+			     <0 10 4>,
-+			     <0 11 4>,
-+			     <0 12 4>,
-+			     <0 13 4>,
-+			     <0 14 4>;
-+	};
-+
-+	/* This entry is modified by UEFI */
-+	pcie0: pcie-controller{
-+		compatible = "pci-host-ecam-generic";
-+		#address-cells = <3>;
-+		#size-cells = <2>;
-+		device_type = "pci";
-+		bus-range = <0 0xff>;
-+		reg = <0 0xf0000000 0 0x10000000>;
-+		dma-coherent;
-+		msi-parent = <&v2m0>;
-+
-+		interrupts =
-+			<0 320 4>, /* ioc_soc_serr */
-+			<0 321 4>; /* ioc_soc_sci */
-+
-+		ranges =
-+			/* I/O Memory (size=64K) */
-+			<0x01000000 0x00 0xefff0000 0x00 0xefff0000 0x00 0x00010000>,
-+
-+			/* Non-Pref 32-bit MMIO (size=512M) */
-+			<0x02000000 0x00 0x40000000 0x00 0x40000000 0x00 0x20000000>,
-+
-+			/* Non-Pref 32-bit MMIO (size=512M) */
-+			<0x02000000 0x00 0x60000000 0x00 0x60000000 0x00 0x20000000>,
-+
-+			/* Non-Pref 32-bit MMIO (size=512M) */
-+			<0x02000000 0x00 0x80000000 0x00 0x80000000 0x00 0x20000000>,
-+
-+			/* Non-Pref 32-bit MMIO (size=512M) */
-+			<0x02000000 0x00 0xa0000000 0x00 0xa0000000 0x00 0x20000000>,
-+
-+			/* Pref 64-bit MMIO (size= 4G) */
-+			<0x43000000 0x01 0x00000000 0x01 0x00000000 0x01 0x00000000>,
-+
-+			/* Pref 64-bit MMIO (size= 8G) */
-+			<0x43000000 0x02 0x00000000 0x02 0x00000000 0x02 0x00000000>,
-+
-+			/* Pref 64-bit MMIO (size=16G) */
-+			<0x43000000 0x04 0x00000000 0x04 0x00000000 0x04 0x00000000>,
-+
-+			/* Pref 64-bit MMIO (size=32G) */
-+			<0x43000000 0x08 0x00000000 0x08 0x00000000 0x08 0x00000000>,
-+
-+			/* Pref 64-bit MMIO (size=64G) */
-+			<0x43000000 0x10 0x00000000 0x10 0x00000000 0x10 0x00000000>,
-+
-+			/* Pref 64-bit MMIO (size=128G) */
-+			<0x43000000 0x20 0x00000000 0x20 0x00000000 0x20 0x00000000>,
-+
-+			/* Pref 64-bit MMIO (size=256G) */
-+			<0x43000000 0x40 0x00000000 0x40 0x00000000 0x40 0x00000000>;
-+	};
-+
-+	smb {
-+		compatible = "simple-bus";
-+		#address-cells = <2>;
-+		#size-cells = <2>;
-+		ranges = <0 0 0 0xE0000000 0 0x01300000>;
-+
-+		/include/ "amd-seattle-periph.dtsi"
-+	};
-+};
--- 
-1.9.3
+>
+> Thanks!
+>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+>> ---
+>>   arch/x86/include/asm/xen/cpuid.h |   91 ++++++++++++++++++++++++++++++++++++++
+>>   arch/x86/pci/xen.c               |    9 ++++
+>>   2 files changed, 100 insertions(+), 0 deletions(-)
+>>   create mode 100644 arch/x86/include/asm/xen/cpuid.h
+>>
+>> diff --git a/arch/x86/include/asm/xen/cpuid.h b/arch/x86/include/asm/xen/cpuid.h
+>> new file mode 100644
+>> index 0000000..0d809e9
+>> --- /dev/null
+>> +++ b/arch/x86/include/asm/xen/cpuid.h
+>> @@ -0,0 +1,91 @@
+>> +/******************************************************************************
+>> + * arch-x86/cpuid.h
+>> + *
+>> + * CPUID interface to Xen.
+>> + *
+>> + * Permission is hereby granted, free of charge, to any person obtaining a copy
+>> + * of this software and associated documentation files (the "Software"), to
+>> + * deal in the Software without restriction, including without limitation the
+>> + * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+>> + * sell copies of the Software, and to permit persons to whom the Software is
+>> + * furnished to do so, subject to the following conditions:
+>> + *
+>> + * The above copyright notice and this permission notice shall be included in
+>> + * all copies or substantial portions of the Software.
+>> + *
+>> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+>> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+>> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+>> + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+>> + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+>> + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+>> + * DEALINGS IN THE SOFTWARE.
+>> + *
+>> + * Copyright (c) 2007 Citrix Systems, Inc.
+>> + *
+>> + * Authors:
+>> + *    Keir Fraser <keir@xen.org>
+>> + */
+>> +
+>> +#ifndef __XEN_PUBLIC_ARCH_X86_CPUID_H__
+>> +#define __XEN_PUBLIC_ARCH_X86_CPUID_H__
+>> +
+>> +/*
+>> + * For compatibility with other hypervisor interfaces, the Xen cpuid leaves
+>> + * can be found at the first otherwise unused 0x100 aligned boundary starting
+>> + * from 0x40000000.
+>> + *
+>> + * e.g If viridian extensions are enabled for an HVM domain, the Xen cpuid
+>> + * leaves will start at 0x40000100
+>> + */
+>> +
+>> +#define XEN_CPUID_FIRST_LEAF 0x40000000
+>> +#define XEN_CPUID_LEAF(i)    (XEN_CPUID_FIRST_LEAF + (i))
+>> +
+>> +/*
+>> + * Leaf 1 (0x40000x00)
+>> + * EAX: Largest Xen-information leaf. All leaves up to an including @EAX
+>> + *      are supported by the Xen host.
+>> + * EBX-EDX: "XenVMMXenVMM" signature, allowing positive identification
+>> + *      of a Xen host.
+>> + */
+>> +#define XEN_CPUID_SIGNATURE_EBX 0x566e6558 /* "XenV" */
+>> +#define XEN_CPUID_SIGNATURE_ECX 0x65584d4d /* "MMXe" */
+>> +#define XEN_CPUID_SIGNATURE_EDX 0x4d4d566e /* "nVMM" */
+>> +
+>> +/*
+>> + * Leaf 2 (0x40000x01)
+>> + * EAX[31:16]: Xen major version.
+>> + * EAX[15: 0]: Xen minor version.
+>> + * EBX-EDX: Reserved (currently all zeroes).
+>> + */
+>> +
+>> +/*
+>> + * Leaf 3 (0x40000x02)
+>> + * EAX: Number of hypercall transfer pages. This register is always guaranteed
+>> + *      to specify one hypercall page.
+>> + * EBX: Base address of Xen-specific MSRs.
+>> + * ECX: Features 1. Unused bits are set to zero.
+>> + * EDX: Features 2. Unused bits are set to zero.
+>> + */
+>> +
+>> +/* Does the host support MMU_PT_UPDATE_PRESERVE_AD for this guest? */
+>> +#define _XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD 0
+>> +#define XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD  (1u<<0)
+>> +
+>> +/*
+>> + * Leaf 5 (0x40000x04)
+>> + * HVM-specific features
+>> + */
+>> +
+>> +/* EAX Features */
+>> +/* Virtualized APIC registers */
+>> +#define XEN_HVM_CPUID_APIC_ACCESS_VIRT (1u << 0)
+>> +/* Virtualized x2APIC accesses */
+>> +#define XEN_HVM_CPUID_X2APIC_VIRT      (1u << 1)
+>> +/* Memory mapped from other domains has valid IOMMU entries */
+>> +#define XEN_HVM_CPUID_IOMMU_MAPPINGS   (1u << 2)
+>> +
+>> +#define XEN_CPUID_MAX_NUM_LEAVES 4
+>> +
+>> +#endif /* __XEN_PUBLIC_ARCH_X86_CPUID_H__ */
+>> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+>> index 1370716..d768371 100644
+>> --- a/arch/x86/pci/xen.c
+>> +++ b/arch/x86/pci/xen.c
+>> @@ -23,6 +23,7 @@
+>>   #include <xen/features.h>
+>>   #include <xen/events.h>
+>>   #include <asm/xen/pci.h>
+>> +#include <asm/xen/cpuid.h>
+>>   #include <asm/i8259.h>
+>>   
+>>   static int xen_pcifront_enable_irq(struct pci_dev *dev)
+>> @@ -434,6 +435,14 @@ int __init pci_xen_init(void)
+>>   #ifdef CONFIG_PCI_MSI
+>>   void __init xen_msi_init(void)
+>>   {
+>> +	if (!disable_apic) {
+>> +		uint32_t eax = cpuid_eax(xen_cpuid_base() + 4);
+>> +
+>> +		if (((eax & XEN_HVM_CPUID_X2APIC_VIRT) && x2apic_mode) ||
+>> +		    ((eax & XEN_HVM_CPUID_APIC_ACCESS_VIRT) && cpu_has_apic))
+>> +			return;
+>> +	}
+>> +
+>>   	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
+>>   	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+>>   }
+>> -- 
+>> 1.7.1
+>>
 
