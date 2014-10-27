@@ -1,82 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaJ0Seu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:34:50 -0400
-Received: from mail-bn1on0144.outbound.protection.outlook.com ([157.56.110.144]:12786
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751650AbaJ0Set (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:34:49 -0400
-X-WSS-ID: 0NE48XS-08-ZH7-02
-X-M-MSG: 
-Message-ID: <544E9038.5050004@amd.com>
-Date: Mon, 27 Oct 2014 13:34:32 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751688AbaJ0Sjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:39:54 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37248 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaJ0Sjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:39:52 -0400
+Date: Mon, 27 Oct 2014 14:39:39 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Cc: david.vrabel@citrix.com, stefano.stabellini@eu.citrix.com,
+        jun.nakajima@intel.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org
+Subject: Re: [PATCH v2 2/2] xen/pci: Use APIC directly when APIC
+ virtualization is supported by hardware
+Message-ID: <20141027183939.GB13854@laptop.dumpdata.com>
+References: <1414425953-13987-1-git-send-email-boris.ostrovsky@oracle.com>
+ <1414425953-13987-3-git-send-email-boris.ostrovsky@oracle.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "Thomas Lendacky" <Thomas.Lendacky@amd.com>,
-        Joel Schopp <Joel.Schopp@amd.com>
-Subject: Re: [PATCH] arm64: amd-seattle: Adding device tree for AMD Seattle
- platform
-References: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com>
- <20141027135035.GA2629@leverpostej>
-In-Reply-To: <20141027135035.GA2629@leverpostej>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(164054003)(51914003)(24454002)(377454003)(51704005)(479174003)(199003)(64706001)(47776003)(20776003)(65806001)(65956001)(97736003)(87936001)(64126003)(85852003)(4396001)(50466002)(80022003)(36756003)(46102003)(33656002)(23676002)(68736004)(92566001)(110136001)(50986999)(76176999)(83506001)(101416001)(102836001)(87266999)(54356999)(65816999)(31966008)(107046002)(86362001)(76482002)(95666004)(99396003)(106466001)(80316001)(92726001)(44976005)(105586002)(120886001)(120916001)(59896002)(85306004)(84676001)(21056001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR02MB199;H:atltwp02.amd.com;FPR:;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR02MB199;
-X-Forefront-PRVS: 0377802854
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414425953-13987-3-git-send-email-boris.ostrovsky@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 8:50 AM, Mark Rutland wrote:
-> Hi Suravee,
->
-> [...]
->
->> +	chosen {
->> +		linux,stdout-path = "console=ttyAMA0,115200 earlycon=pl011,0xe1010000";
->
-> The stdout-path property should just be a path to the UART node. It's
-> not a direct replacement for /chosen/bootargs.
->
-> This should be (assuming you fix up the label above):
->
-> 	stdout-path = &serial0;
->
-> That will give us earlycon if "earlycon" (with no arguments) is provided
-> on the command line, and should set up that UART as the console. There's
-> no need for the "linux," prefix now either.
->
-> Unfortuantely, I believe that the UART rate will get changed when the
-> real PL011 driver registers, unless the rate is explicitly provided on
-> the command line. It might be worth looking into retaining the
-> configured rate somehow indepentent of bootargs (unless overriden).
+On Mon, Oct 27, 2014 at 12:05:53PM -0400, Boris Ostrovsky wrote:
+> When hardware supports APIC/x2APIC virtualization we don't need to use pirqs
+> for MSI handling and instead use APIC since most APIC accesses (MMIO or MSR)
+> will now be processed without VMEXITs.
+> 
+> As an example, netperf on the original code produces this profile
+> (collected wih 'xentrace -e 0x0008ffff -T 5'):
+> 
+>     342 cpu_change
+>     260 CPUID
+>   34638 HLT
+>   64067 INJ_VIRQ
+>   28374 INTR
+>   82733 INTR_WINDOW
+>      10 NPF
+>   24337 TRAP
+>  370610 vlapic_accept_pic_intr
+>  307528 VMENTRY
+>  307527 VMEXIT
+>  140998 VMMCALL
+>     127 wrap_buffer
+> 
+> After applying this patch the same test shows
+> 
+>     230 cpu_change
+>     260 CPUID
+>   36542 HLT
+>     174 INJ_VIRQ
+>   27250 INTR
+>     222 INTR_WINDOW
+>      20 NPF
+>   24999 TRAP
+>  381812 vlapic_accept_pic_intr
+>  166480 VMENTRY
+>  166479 VMEXIT
+>   77208 VMMCALL
+>      81 wrap_buffer
+> 
+> ApacheBench results (ab -n 10000 -c 200) improve by about 10%
 
-Thanks for the explanation. I think I should be able to get rid of the 
-"console=ttyAMA0,115200 earlycon=pl011,0xe1010000" altogether. I'll send 
-out V2 soon.
+What type of NIC did you use for this?
 
-Thanks,
-
-Suravee
-
-> Thanks,
-> Mark.
->
-
-
+Thanks!
+> 
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> ---
+>  arch/x86/include/asm/xen/cpuid.h |   91 ++++++++++++++++++++++++++++++++++++++
+>  arch/x86/pci/xen.c               |    9 ++++
+>  2 files changed, 100 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/x86/include/asm/xen/cpuid.h
+> 
+> diff --git a/arch/x86/include/asm/xen/cpuid.h b/arch/x86/include/asm/xen/cpuid.h
+> new file mode 100644
+> index 0000000..0d809e9
+> --- /dev/null
+> +++ b/arch/x86/include/asm/xen/cpuid.h
+> @@ -0,0 +1,91 @@
+> +/******************************************************************************
+> + * arch-x86/cpuid.h
+> + *
+> + * CPUID interface to Xen.
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a copy
+> + * of this software and associated documentation files (the "Software"), to
+> + * deal in the Software without restriction, including without limitation the
+> + * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+> + * sell copies of the Software, and to permit persons to whom the Software is
+> + * furnished to do so, subject to the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+> + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+> + * DEALINGS IN THE SOFTWARE.
+> + *
+> + * Copyright (c) 2007 Citrix Systems, Inc.
+> + *
+> + * Authors:
+> + *    Keir Fraser <keir@xen.org>
+> + */
+> +
+> +#ifndef __XEN_PUBLIC_ARCH_X86_CPUID_H__
+> +#define __XEN_PUBLIC_ARCH_X86_CPUID_H__
+> +
+> +/*
+> + * For compatibility with other hypervisor interfaces, the Xen cpuid leaves
+> + * can be found at the first otherwise unused 0x100 aligned boundary starting
+> + * from 0x40000000.
+> + *
+> + * e.g If viridian extensions are enabled for an HVM domain, the Xen cpuid
+> + * leaves will start at 0x40000100
+> + */
+> +
+> +#define XEN_CPUID_FIRST_LEAF 0x40000000
+> +#define XEN_CPUID_LEAF(i)    (XEN_CPUID_FIRST_LEAF + (i))
+> +
+> +/*
+> + * Leaf 1 (0x40000x00)
+> + * EAX: Largest Xen-information leaf. All leaves up to an including @EAX
+> + *      are supported by the Xen host.
+> + * EBX-EDX: "XenVMMXenVMM" signature, allowing positive identification
+> + *      of a Xen host.
+> + */
+> +#define XEN_CPUID_SIGNATURE_EBX 0x566e6558 /* "XenV" */
+> +#define XEN_CPUID_SIGNATURE_ECX 0x65584d4d /* "MMXe" */
+> +#define XEN_CPUID_SIGNATURE_EDX 0x4d4d566e /* "nVMM" */
+> +
+> +/*
+> + * Leaf 2 (0x40000x01)
+> + * EAX[31:16]: Xen major version.
+> + * EAX[15: 0]: Xen minor version.
+> + * EBX-EDX: Reserved (currently all zeroes).
+> + */
+> +
+> +/*
+> + * Leaf 3 (0x40000x02)
+> + * EAX: Number of hypercall transfer pages. This register is always guaranteed
+> + *      to specify one hypercall page.
+> + * EBX: Base address of Xen-specific MSRs.
+> + * ECX: Features 1. Unused bits are set to zero.
+> + * EDX: Features 2. Unused bits are set to zero.
+> + */
+> +
+> +/* Does the host support MMU_PT_UPDATE_PRESERVE_AD for this guest? */
+> +#define _XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD 0
+> +#define XEN_CPUID_FEAT1_MMU_PT_UPDATE_PRESERVE_AD  (1u<<0)
+> +
+> +/*
+> + * Leaf 5 (0x40000x04)
+> + * HVM-specific features
+> + */
+> +
+> +/* EAX Features */
+> +/* Virtualized APIC registers */
+> +#define XEN_HVM_CPUID_APIC_ACCESS_VIRT (1u << 0)
+> +/* Virtualized x2APIC accesses */
+> +#define XEN_HVM_CPUID_X2APIC_VIRT      (1u << 1)
+> +/* Memory mapped from other domains has valid IOMMU entries */
+> +#define XEN_HVM_CPUID_IOMMU_MAPPINGS   (1u << 2)
+> +
+> +#define XEN_CPUID_MAX_NUM_LEAVES 4
+> +
+> +#endif /* __XEN_PUBLIC_ARCH_X86_CPUID_H__ */
+> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+> index 1370716..d768371 100644
+> --- a/arch/x86/pci/xen.c
+> +++ b/arch/x86/pci/xen.c
+> @@ -23,6 +23,7 @@
+>  #include <xen/features.h>
+>  #include <xen/events.h>
+>  #include <asm/xen/pci.h>
+> +#include <asm/xen/cpuid.h>
+>  #include <asm/i8259.h>
+>  
+>  static int xen_pcifront_enable_irq(struct pci_dev *dev)
+> @@ -434,6 +435,14 @@ int __init pci_xen_init(void)
+>  #ifdef CONFIG_PCI_MSI
+>  void __init xen_msi_init(void)
+>  {
+> +	if (!disable_apic) {
+> +		uint32_t eax = cpuid_eax(xen_cpuid_base() + 4);
+> +
+> +		if (((eax & XEN_HVM_CPUID_X2APIC_VIRT) && x2apic_mode) ||
+> +		    ((eax & XEN_HVM_CPUID_APIC_ACCESS_VIRT) && cpu_has_apic))
+> +			return;
+> +	}
+> +
+>  	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
+>  	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
+>  }
+> -- 
+> 1.7.1
+> 
