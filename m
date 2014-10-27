@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaJ0NwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:52:23 -0400
+	id S1753456AbaJ0NxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:53:06 -0400
 Received: from mga03.intel.com ([134.134.136.65]:17592 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349AbaJ0NvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:51:22 -0400
+	id S1752767AbaJ0NvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 09:51:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,796,1406617200"; 
-   d="scan'208";a="626225568"
+   d="scan'208";a="626225492"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 7/9] perf tools: Add call information to the database export API
-Date: Mon, 27 Oct 2014 15:49:28 +0200
-Message-Id: <1414417770-18602-8-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 3/9] perf tools: Add a thread stack for synthesizing call chains
+Date: Mon, 27 Oct 2014 15:49:24 +0200
+Message-Id: <1414417770-18602-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414417770-18602-1-git-send-email-adrian.hunter@intel.com>
 References: <1414417770-18602-1-git-send-email-adrian.hunter@intel.com>
@@ -27,140 +27,322 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make it possible for the database export API to use the
-enhanced thread stack and export detailed information
-about paired calls and returns.
+Add a thread stack for synthesizing call chains from call
+and return events.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/db-export.c | 52 ++++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/db-export.h | 12 +++++++++++
- 2 files changed, 63 insertions(+), 1 deletion(-)
+ tools/perf/Makefile.perf       |   2 +
+ tools/perf/util/event.h        |  26 +++++++
+ tools/perf/util/thread-stack.c | 158 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/thread-stack.h |  32 +++++++++
+ tools/perf/util/thread.c       |   3 +
+ tools/perf/util/thread.h       |   3 +
+ 6 files changed, 224 insertions(+)
+ create mode 100644 tools/perf/util/thread-stack.c
+ create mode 100644 tools/perf/util/thread-stack.h
 
-diff --git a/tools/perf/util/db-export.c b/tools/perf/util/db-export.c
-index 8353e2f..259be45 100644
---- a/tools/perf/util/db-export.c
-+++ b/tools/perf/util/db-export.c
-@@ -21,6 +21,7 @@
- #include "comm.h"
- #include "symbol.h"
- #include "event.h"
-+#include "thread-stack.h"
- #include "db-export.h"
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 3caf7da..0ebcc4a 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -317,6 +317,7 @@ LIB_H += ui/util.h
+ LIB_H += ui/ui.h
+ LIB_H += util/data.h
+ LIB_H += util/kvm-stat.h
++LIB_H += util/thread-stack.h
  
- int db_export__init(struct db_export *dbe)
-@@ -29,8 +30,10 @@ int db_export__init(struct db_export *dbe)
- 	return 0;
- }
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -394,6 +395,7 @@ LIB_OBJS += $(OUTPUT)util/srcline.o
+ LIB_OBJS += $(OUTPUT)util/data.o
+ LIB_OBJS += $(OUTPUT)util/tsc.o
+ LIB_OBJS += $(OUTPUT)util/cloexec.o
++LIB_OBJS += $(OUTPUT)util/thread-stack.o
  
--void db_export__exit(struct db_export *dbe __maybe_unused)
-+void db_export__exit(struct db_export *dbe)
- {
-+	call_return_processor__free(dbe->crp);
-+	dbe->crp = NULL;
- }
- 
- int db_export__evsel(struct db_export *dbe, struct perf_evsel *evsel)
-@@ -270,6 +273,13 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
- 				     &es.addr_sym_db_id, &es.addr_offset);
- 		if (err)
- 			return err;
-+		if (dbe->crp) {
-+			err = thread_stack__process(thread, comm, sample, al,
-+						    &addr_al, es.db_id,
-+						    dbe->crp);
-+			if (err)
-+				return err;
-+		}
- 	}
- 
- 	if (dbe->export_sample)
-@@ -316,3 +326,43 @@ int db_export__branch_types(struct db_export *dbe)
- 	}
- 	return err;
- }
-+
-+int db_export__call_path(struct db_export *dbe, struct call_path *cp)
-+{
-+	int err;
-+
-+	if (cp->db_id)
-+		return 0;
-+
-+	if (cp->parent) {
-+		err = db_export__call_path(dbe, cp->parent);
-+		if (err)
-+			return err;
-+	}
-+
-+	cp->db_id = ++dbe->call_path_last_db_id;
-+
-+	if (dbe->export_call_path)
-+		return dbe->export_call_path(dbe, cp);
-+
-+	return 0;
-+}
-+
-+int db_export__call_return(struct db_export *dbe, struct call_return *cr)
-+{
-+	int err;
-+
-+	if (cr->db_id)
-+		return 0;
-+
-+	err = db_export__call_path(dbe, cr->cp);
-+	if (err)
-+		return err;
-+
-+	cr->db_id = ++dbe->call_return_last_db_id;
-+
-+	if (dbe->export_call_return)
-+		return dbe->export_call_return(dbe, cr);
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/db-export.h b/tools/perf/util/db-export.h
-index e4baa45..dd5ac2a 100644
---- a/tools/perf/util/db-export.h
-+++ b/tools/perf/util/db-export.h
-@@ -25,6 +25,9 @@ struct comm;
- struct dso;
- struct perf_sample;
- struct addr_location;
-+struct call_return_processor;
-+struct call_path;
-+struct call_return;
- 
- struct export_sample {
- 	union perf_event	*event;
-@@ -57,6 +60,10 @@ struct db_export {
- 	int (*export_branch_type)(struct db_export *dbe, u32 branch_type,
- 				  const char *name);
- 	int (*export_sample)(struct db_export *dbe, struct export_sample *es);
-+	int (*export_call_path)(struct db_export *dbe, struct call_path *cp);
-+	int (*export_call_return)(struct db_export *dbe,
-+				  struct call_return *cr);
-+	struct call_return_processor *crp;
- 	u64 evsel_last_db_id;
- 	u64 machine_last_db_id;
- 	u64 thread_last_db_id;
-@@ -65,6 +72,8 @@ struct db_export {
- 	u64 dso_last_db_id;
- 	u64 symbol_last_db_id;
- 	u64 sample_last_db_id;
-+	u64 call_path_last_db_id;
-+	u64 call_return_last_db_id;
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index 8c7fe9d..1bbe9fe 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -143,6 +143,32 @@ struct branch_stack {
+ 	struct branch_entry	entries[0];
  };
  
- int db_export__init(struct db_export *dbe);
-@@ -89,4 +98,7 @@ int db_export__sample(struct db_export *dbe, union perf_event *event,
- 
- int db_export__branch_types(struct db_export *dbe);
- 
-+int db_export__call_path(struct db_export *dbe, struct call_path *cp);
-+int db_export__call_return(struct db_export *dbe, struct call_return *cr);
++enum {
++	PERF_FLAG_BRANCH		= 1ULL << 0,
++	PERF_FLAG_CALL			= 1ULL << 1,
++	PERF_FLAG_RETURN		= 1ULL << 2,
++	PERF_FLAG_CONDITIONAL		= 1ULL << 3,
++	PERF_FLAG_SYSCALLRET		= 1ULL << 4,
++	PERF_FLAG_ASYNC			= 1ULL << 5,
++	PERF_FLAG_INTERRUPT		= 1ULL << 6,
++	PERF_FLAG_TX_ABORT		= 1ULL << 7,
++	PERF_FLAG_TRACE_BEGIN		= 1ULL << 8,
++	PERF_FLAG_TRACE_END		= 1ULL << 9,
++	PERF_FLAG_IN_TX			= 1ULL << 10,
++};
 +
- #endif
++#define PERF_BRANCH_MASK	(\
++	PERF_FLAG_BRANCH	|\
++	PERF_FLAG_CALL		|\
++	PERF_FLAG_RETURN	|\
++	PERF_FLAG_CONDITIONAL	|\
++	PERF_FLAG_SYSCALLRET	|\
++	PERF_FLAG_ASYNC		|\
++	PERF_FLAG_INTERRUPT	|\
++	PERF_FLAG_TX_ABORT	|\
++	PERF_FLAG_TRACE_BEGIN	|\
++	PERF_FLAG_TRACE_END)
++
+ struct perf_sample {
+ 	u64 ip;
+ 	u32 pid, tid;
+diff --git a/tools/perf/util/thread-stack.c b/tools/perf/util/thread-stack.c
+new file mode 100644
+index 0000000..a959032
+--- /dev/null
++++ b/tools/perf/util/thread-stack.c
+@@ -0,0 +1,158 @@
++/*
++ * thread-stack.c: Synthesize a thread's stack using call / return events
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#include "thread.h"
++#include "event.h"
++#include "util.h"
++#include "debug.h"
++#include "thread-stack.h"
++
++#define STACK_GROWTH 4096
++
++struct thread_stack_entry {
++	u64 ret_addr;
++};
++
++struct thread_stack {
++	struct thread_stack_entry *stack;
++	size_t cnt;
++	size_t sz;
++	u64 trace_nr;
++};
++
++static void thread_stack__grow(struct thread_stack *ts)
++{
++	struct thread_stack_entry *new_stack;
++	size_t sz, new_sz;
++
++	new_sz = ts->sz + STACK_GROWTH;
++	sz = new_sz * sizeof(struct thread_stack_entry);
++	new_stack = realloc(ts->stack, sz);
++	if (new_stack) {
++		ts->stack = new_stack;
++		ts->sz = new_sz;
++	}
++}
++
++static struct thread_stack *thread_stack__new(void)
++{
++	struct thread_stack *ts;
++
++	ts = zalloc(sizeof(struct thread_stack));
++	if (!ts)
++		return NULL;
++
++	thread_stack__grow(ts);
++	if (!ts->stack) {
++		free(ts);
++		return NULL;
++	}
++
++	return ts;
++}
++
++static void thread_stack__push(struct thread_stack *ts, u64 ret_addr)
++{
++	if (ts->cnt == ts->sz) {
++		thread_stack__grow(ts);
++		if (ts->cnt == ts->sz) {
++			pr_warning("Out of memory: discarding thread stack\n");
++			ts->cnt = 0;
++		}
++	}
++
++	ts->stack[ts->cnt++].ret_addr = ret_addr;
++}
++
++static void thread_stack__pop(struct thread_stack *ts, u64 ret_addr)
++{
++	size_t i;
++
++	/*
++	 * In some cases there may be functions which are not seen to return.
++	 * For example when setjmp / longjmp has been used.  Or the perf context
++	 * switch in the kernel which doesn't stop and start tracing in exactly
++	 * the same code path.  When that happens the return address will be
++	 * further down the stack.  If the return address is not found at all,
++	 * we assume the opposite (i.e. this is a return for a call that wasn't
++	 * seen for some reason) and leave the stack alone.
++	 */
++	for (i = ts->cnt; i; ) {
++		if (ts->stack[--i].ret_addr == ret_addr) {
++			ts->cnt = i;
++			return;
++		}
++	}
++}
++
++void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
++			 u64 to_ip, u16 insn_len, u64 trace_nr)
++{
++	if (!thread)
++		return;
++
++	if (!thread->ts) {
++		thread->ts = thread_stack__new();
++		if (!thread->ts) {
++			pr_warning("Out of memory: no thread stack\n");
++			return;
++		}
++		thread->ts->trace_nr = trace_nr;
++	}
++
++	if (trace_nr != thread->ts->trace_nr) {
++		thread->ts->trace_nr = trace_nr;
++		thread->ts->cnt = 0;
++	}
++
++	if (flags & PERF_FLAG_CALL) {
++		u64 ret_addr;
++
++		if (!to_ip)
++			return;
++		ret_addr = from_ip + insn_len;
++		if (ret_addr == to_ip)
++			return; /* Zero-length calls are excluded */
++		thread_stack__push(thread->ts, ret_addr);
++	} else if (flags & PERF_FLAG_RETURN) {
++		if (!from_ip)
++			return;
++		thread_stack__pop(thread->ts, to_ip);
++	}
++}
++
++void thread_stack__free(struct thread *thread)
++{
++	if (thread->ts) {
++		zfree(&thread->ts->stack);
++		zfree(&thread->ts);
++	}
++}
++
++void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
++			  size_t sz, u64 ip)
++{
++	size_t i;
++
++	if (!thread || !thread->ts)
++		chain->nr = 1;
++	else
++		chain->nr = min(sz, thread->ts->cnt + 1);
++
++	chain->ips[0] = ip;
++
++	for (i = 1; i < chain->nr; i++)
++		chain->ips[i] = thread->ts->stack[thread->ts->cnt - i].ret_addr;
++}
+diff --git a/tools/perf/util/thread-stack.h b/tools/perf/util/thread-stack.h
+new file mode 100644
+index 0000000..c0ba4cf
+--- /dev/null
++++ b/tools/perf/util/thread-stack.h
+@@ -0,0 +1,32 @@
++/*
++ * thread-stack.h: Synthesize a thread's stack using call / return events
++ * Copyright (c) 2014, Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ */
++
++#ifndef __PERF_THREAD_STACK_H
++#define __PERF_THREAD_STACK_H
++
++#include <sys/types.h>
++
++#include <linux/types.h>
++
++struct thread;
++struct ip_callchain;
++
++void thread_stack__event(struct thread *thread, u32 flags, u64 from_ip,
++			 u64 to_ip, u16 insn_len, u64 trace_nr);
++void thread_stack__sample(struct thread *thread, struct ip_callchain *chain,
++			  size_t sz, u64 ip);
++void thread_stack__free(struct thread *thread);
++
++#endif
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index bf5bf85..a2157f0 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -4,6 +4,7 @@
+ #include <string.h>
+ #include "session.h"
+ #include "thread.h"
++#include "thread-stack.h"
+ #include "util.h"
+ #include "debug.h"
+ #include "comm.h"
+@@ -66,6 +67,8 @@ void thread__delete(struct thread *thread)
+ {
+ 	struct comm *comm, *tmp;
+ 
++	thread_stack__free(thread);
++
+ 	if (thread->mg) {
+ 		map_groups__put(thread->mg);
+ 		thread->mg = NULL;
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index d34cf5c..160fd06 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -8,6 +8,8 @@
+ #include "symbol.h"
+ #include <strlist.h>
+ 
++struct thread_stack;
++
+ struct thread {
+ 	union {
+ 		struct rb_node	 rb_node;
+@@ -26,6 +28,7 @@ struct thread {
+ 	u64			db_id;
+ 
+ 	void			*priv;
++	struct thread_stack	*ts;
+ };
+ 
+ struct machine;
 -- 
 1.9.1
 
