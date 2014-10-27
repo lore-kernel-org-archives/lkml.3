@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748AbaJ0TEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:04:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52871 "EHLO
+	id S1753981AbaJ0TJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:09:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52877 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982AbaJ0TEb (ORCPT
+	with ESMTP id S1753723AbaJ0TEc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:04:31 -0400
+	Mon, 27 Oct 2014 15:04:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Olga Kornievskaia <kolga@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 046/105] Fixing lease renewal
-Date: Mon, 27 Oct 2014 11:56:21 -0700
-Message-Id: <1414436240-13879-47-git-send-email-kamal@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 083/105] [jffs2] kill wbuf_queued/wbuf_dwork_lock
+Date: Mon, 27 Oct 2014 11:56:58 -0700
+Message-Id: <1414436240-13879-84-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -28,36 +26,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olga Kornievskaia <kolga@netapp.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 8faaa6d5d48b201527e0451296d9e71d23afb362 upstream.
+commit 99358a1ca53e8e6ce09423500191396f0e6584d2 upstream.
 
-Commit c9fdeb28 removed a 'continue' after checking if the lease needs
-to be renewed. However, if client hasn't moved, the code falls down to
-starting reboot recovery erroneously (ie., sends open reclaim and gets
-back stale_clientid error) before recovering from getting stale_clientid
-on the renew operation.
+schedule_delayed_work() happening when the work is already pending is
+a cheap no-op.  Don't bother with ->wbuf_queued logics - it's both
+broken (cancelling ->wbuf_dwork leaves it set, as spotted by Jeff Harris)
+and pointless.  It's cheaper to let schedule_delayed_work() handle that
+case.
 
-Signed-off-by: Olga Kornievskaia <kolga@netapp.com>
-Fixes: c9fdeb280b8c (NFS: Add basic migration support to state manager thread)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Reported-by: Jeff Harris <jefftharris@gmail.com>
+Tested-by: Jeff Harris <jefftharris@gmail.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfs/nfs4state.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/jffs2/jffs2_fs_sb.h |  2 --
+ fs/jffs2/wbuf.c        | 17 ++---------------
+ 2 files changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
-index b3b8aea..5d02d74 100644
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -2378,6 +2378,7 @@ static void nfs4_state_manager(struct nfs_client *clp)
- 			status = nfs4_check_lease(clp);
- 			if (status < 0)
- 				goto out_error;
-+			continue;
- 		}
+diff --git a/fs/jffs2/jffs2_fs_sb.h b/fs/jffs2/jffs2_fs_sb.h
+index 413ef89..046fee8 100644
+--- a/fs/jffs2/jffs2_fs_sb.h
++++ b/fs/jffs2/jffs2_fs_sb.h
+@@ -134,8 +134,6 @@ struct jffs2_sb_info {
+ 	struct rw_semaphore wbuf_sem;	/* Protects the write buffer */
  
- 		if (test_and_clear_bit(NFS4CLNT_MOVED, &clp->cl_state)) {
+ 	struct delayed_work wbuf_dwork; /* write-buffer write-out work */
+-	int wbuf_queued;                /* non-zero delayed work is queued */
+-	spinlock_t wbuf_dwork_lock;     /* protects wbuf_dwork and and wbuf_queued */
+ 
+ 	unsigned char *oobbuf;
+ 	int oobavail; /* How many bytes are available for JFFS2 in OOB */
+diff --git a/fs/jffs2/wbuf.c b/fs/jffs2/wbuf.c
+index a6597d6..09ed551 100644
+--- a/fs/jffs2/wbuf.c
++++ b/fs/jffs2/wbuf.c
+@@ -1162,10 +1162,6 @@ static void delayed_wbuf_sync(struct work_struct *work)
+ 	struct jffs2_sb_info *c = work_to_sb(work);
+ 	struct super_block *sb = OFNI_BS_2SFFJ(c);
+ 
+-	spin_lock(&c->wbuf_dwork_lock);
+-	c->wbuf_queued = 0;
+-	spin_unlock(&c->wbuf_dwork_lock);
+-
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		jffs2_dbg(1, "%s()\n", __func__);
+ 		jffs2_flush_wbuf_gc(c, 0);
+@@ -1180,14 +1176,9 @@ void jffs2_dirty_trigger(struct jffs2_sb_info *c)
+ 	if (sb->s_flags & MS_RDONLY)
+ 		return;
+ 
+-	spin_lock(&c->wbuf_dwork_lock);
+-	if (!c->wbuf_queued) {
++	delay = msecs_to_jiffies(dirty_writeback_interval * 10);
++	if (queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay))
+ 		jffs2_dbg(1, "%s()\n", __func__);
+-		delay = msecs_to_jiffies(dirty_writeback_interval * 10);
+-		queue_delayed_work(system_long_wq, &c->wbuf_dwork, delay);
+-		c->wbuf_queued = 1;
+-	}
+-	spin_unlock(&c->wbuf_dwork_lock);
+ }
+ 
+ int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
+@@ -1211,7 +1202,6 @@ int jffs2_nand_flash_setup(struct jffs2_sb_info *c)
+ 
+ 	/* Initialise write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize = c->mtd->writesize;
+ 	c->wbuf_ofs = 0xFFFFFFFF;
+@@ -1251,7 +1241,6 @@ int jffs2_dataflash_setup(struct jffs2_sb_info *c) {
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 	c->wbuf_pagesize =  c->mtd->erasesize;
+ 
+@@ -1311,7 +1300,6 @@ int jffs2_nor_wbuf_flash_setup(struct jffs2_sb_info *c) {
+ 
+ 	/* Initialize write buffer */
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize = c->mtd->writesize;
+@@ -1346,7 +1334,6 @@ int jffs2_ubivol_setup(struct jffs2_sb_info *c) {
+ 		return 0;
+ 
+ 	init_rwsem(&c->wbuf_sem);
+-	spin_lock_init(&c->wbuf_dwork_lock);
+ 	INIT_DELAYED_WORK(&c->wbuf_dwork, delayed_wbuf_sync);
+ 
+ 	c->wbuf_pagesize =  c->mtd->writesize;
 -- 
 1.9.1
 
