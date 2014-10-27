@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978AbaJ0NVg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:21:36 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:55114 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944AbaJ0NVc (ORCPT
+	id S1753026AbaJ0NVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:21:44 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:57312 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995AbaJ0NVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:21:32 -0400
+	Mon, 27 Oct 2014 09:21:42 -0400
+Message-ID: <544E46E0.90608@collabora.co.uk>
+Date: Mon, 27 Oct 2014 14:21:36 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-In-Reply-To: <20141027025531.GB5149@hr-slim.amd.com>
-References: <1413536021-4886-1-git-send-email-ray.huang@amd.com>
- <1413536021-4886-3-git-send-email-ray.huang@amd.com> <20141024163529.GA7075@google.com>
- <20141027025531.GB5149@hr-slim.amd.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 27 Oct 2014 07:21:10 -0600
-Message-ID: <CAErSpo6qdkteY=UW-f23vOHwYj0x+yheno-_XvLerdB2W5wA8w@mail.gmail.com>
-Subject: Re: [PATCH v2 02/16] pci: quirks: add quirk to avoid AMD NL to bind
- with xhci
-To: Huang Rui <ray.huang@amd.com>
-Cc: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Vincent Wan <vincent.wan@amd.com>, Tony Li <tony.li@amd.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+CC: Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch v2] regulator: max77802: fix a test in max77802_set_suspend_mode()
+References: <20141027104506.GA22704@mwanda>
+In-Reply-To: <20141027104506.GA22704@mwanda>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 26, 2014 at 8:55 PM, Huang Rui <ray.huang@amd.com> wrote:
-> On Fri, Oct 24, 2014 at 10:35:29AM -0600, Bjorn Helgaas wrote:
->> On Fri, Oct 17, 2014 at 04:53:27PM +0800, Huang Rui wrote:
+Hello Dan,
 
->> > +/* FIXME should define in <linux/pci_ids.h> */
->> > +#define PCI_DEVICE_ID_AMD_NL       0x7912
->>
->> If you KNOW this should be in linux/pci_ids.h (and it looks like it COULD
->> go there, since you do use the same definition in patch [01/16]), why don't
->> you just do it?  Why are you wasting our time reviewing trivial stuff like
->> this?
->>
->
-> Apology, I was told that it could not add device id into pci_ids.h
-> from my buddy with below thread discussion last year, but I don't
-> confirm at current. I check the git log at pci_ids.h, it looks like
-> it's able to add device id marco again, is that right?
->
-> http://marc.info/?l=linux-pci&m=137028614924258&w=2
->
-> If I misunderstand your meaning, please correct me.
+On 10/27/2014 11:45 AM, Dan Carpenter wrote:
+> The original test triggers a static checker warning.  Javier Martinez
+> Canillas says that the "!" is a typo and should be removed.
+> 
+> Fixes: 2e0eaa1aa008 ('regulator: max77802: Add set suspend mode for BUCKs and simplify code')
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> v2:  The first version of this patch was buggy.  Thanks Javier for
+> your review.
+> 
+> diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+> index 5839c45..7718c8a 100644
+> --- a/drivers/regulator/max77802.c
+> +++ b/drivers/regulator/max77802.c
+> @@ -179,7 +179,7 @@ static int max77802_set_suspend_mode(struct regulator_dev *rdev,
+>  	 * If the regulator has been disabled for suspend
+>  	 * then is invalid to try setting a suspend mode.
+>  	 */
+> -	if (!max77802->opmode[id] == MAX77802_OFF_PWRREQ) {
+> +	if (max77802->opmode[id] == MAX77802_OFF_PWRREQ) {
+>  		dev_warn(&rdev->dev, "%s: is disabled, mode: 0x%x not set\n",
+>  			 rdev->desc->name, mode);
+>  		return 0;
+> 
 
-Just read the text at the beginning of pci_ids.h.
+The typo was not found during testing because the expression always evaluated
+to 0 which was expected since a regulator marked to be disabled for suspend
+shouldn't have a suspend mode to be set.
 
-If you have to use the same ID in two different files, you should add
-it to pci_ids.h.
+But when trying to trigger that specific case the test was indeed failing and
+the regulator mode was changed even when the regulator was marked as disabled.
+
+This patch solves the issue by making max77802_set_suspend_mode() to return
+early if the regulator was marked as disabled
+
+Thanks a lot for finding this bug.
+
+Acked-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+
+Best regards,
+Javier
