@@ -1,166 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020AbaJ0CBz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 22:01:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816AbaJ0CBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 22:01:54 -0400
-Date: Sun, 26 Oct 2014 22:01:40 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-audit@redhat.com
-Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
-Message-ID: <20141027020140.GW15532@madcap2.tricolour.ca>
-References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
- <54494B74.2080504@amacapital.net>
- <1414091732.2363.11.camel@redhat.com>
- <CALCETrWQNuGr=Sf7X4E6ZkJQ+diJao30=CeH4xd0T855TgX+rg@mail.gmail.com>
- <1414092624.2363.13.camel@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414092624.2363.13.camel@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752099AbaJ0CD4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:03:56 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43805 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751919AbaJ0CDz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 22:03:55 -0400
+Date: Sun, 26 Oct 2014 22:03:50 -0400 (EDT)
+Message-Id: <20141026.220350.2098346782596904995.davem@davemloft.net>
+To: sasha.levin@oracle.com
+Cc: a.ryabinin@samsung.com, pablo@netfilter.org, mschmidt@redhat.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] netlink: don't copy over empty attribute data
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <544D849A.4040304@oracle.com>
+References: <54471438.1040907@oracle.com>
+	<20141022.021508.2011745433893496421.davem@davemloft.net>
+	<544D849A.4040304@oracle.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 26 Oct 2014 19:03:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/10/23, Eric Paris wrote:
-> On Thu, 2014-10-23 at 12:20 -0700, Andy Lutomirski wrote:
-> > On Thu, Oct 23, 2014 at 12:15 PM, Eric Paris <eparis@redhat.com> wrote:
-> > > On Thu, 2014-10-23 at 11:39 -0700, Andy Lutomirski wrote:
-> > >> On 10/22/2014 09:04 PM, Eric Paris wrote:
-> > >> > git commit b4f0d3755c5e9cc86292d5fd78261903b4f23d4a was very very dumb.
-> > >> > It was writing over %esp/pt_regs semi-randomly on i686  with the expected
-> > >> > "system can't boot" results.  As noted in:
-> > >> >
-> > >> > https://bugs.freedesktop.org/show_bug.cgi?id=85277
-> > >> >
-> > >> > This patch stops fscking with pt_regs.  Instead it sets up the registers
-> > >> > for the call to __audit_syscall_entry in the most obvious conceivable
-> > >> > way.  It then does just a tiny tiny touch of magic.  We need to get what
-> > >> > started in PT_EDX into 0(%esp) and PT_ESI into 4(%esp).  This is as easy
-> > >> > as a pair of pushes.
-> > >> >
-> > >> > After the call to __audit_syscall_entry all we need to do is get that
-> > >> > now useless junk off the stack (pair of pops) and reload %eax with the
-> > >> > original syscall so other stuff can keep going about it's business.
-> > >> >
-> > >> > Signed-off-by: Eric Paris <eparis@redhat.com>
-> > >> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > >> > Cc: Ingo Molnar <mingo@redhat.com>
-> > >> > Cc: "H. Peter Anvin" <hpa@zytor.com>
-> > >> > Cc: x86@kernel.org
-> > >> > Cc: linux-kernel@vger.kernel.org
-> > >> > Cc: linux-audit@redhat.com
-> > >> > ---
-> > >> >  arch/x86/kernel/entry_32.S | 15 +++++++--------
-> > >> >  1 file changed, 7 insertions(+), 8 deletions(-)
-> > >> >
-> > >> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> > >> > index f9e3fab..fb01d22 100644
-> > >> > --- a/arch/x86/kernel/entry_32.S
-> > >> > +++ b/arch/x86/kernel/entry_32.S
-> > >> > @@ -447,15 +447,14 @@ sysenter_exit:
-> > >> >  sysenter_audit:
-> > >> >     testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
-> > >> >     jnz syscall_trace_entry
-> > >> > -   addl $4,%esp
-> > >> > -   CFI_ADJUST_CFA_OFFSET -4
-> > >> > -   movl %esi,4(%esp)               /* 5th arg: 4th syscall arg */
-> > >> > -   movl %edx,(%esp)                /* 4th arg: 3rd syscall arg */
-> > >> > -   /* %ecx already in %ecx            3rd arg: 2nd syscall arg */
-> > >> > -   movl %ebx,%edx                  /* 2nd arg: 1st syscall arg */
-> > >> > -   /* %eax already in %eax            1st arg: syscall number */
-> > >> > +   /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
-> > >> > +   movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
-> > >> > +   /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
-> > >> > +   pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
-> > >> > +   pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
-> > >> >     call __audit_syscall_entry
-> > >> > -   pushl_cfi %ebx
-> > >> > +   popl_cfi %ecx /* get that remapped edx off the stack */
-> > >> > +   popl_cfi %ecx /* get that remapped esi off the stack */
-> > >> >     movl PT_EAX(%esp),%eax          /* reload syscall number */
-> > >> >     jmp sysenter_do_call
-> > >> >
-> > >> >
-> > >>
-> > >> This looks reasonably likely to be correct, but this code is complicated
-> > >> and now ever slower.
-> > >
-> > > I guess I could just use push/pop and do the CFI_ADJUST_CFA_OFFSET by
-> > > hand.  But I figured this was reasonable enough...
-> > >
-> > 
-> > I'm not complaining about your new assembly in particular.  There's
-> > just too much assembly in there in general.
-> > 
-> > But I feel like I'm missing something in the new code.  Aren't you
-> > corrupting ecx with those popl_cfi insns?
+From: Sasha Levin <sasha.levin@oracle.com>
+Date: Sun, 26 Oct 2014 19:32:42 -0400
+
+> How so? GCC states clearly that you should *never* pass a NULL
+> pointer there:
 > 
-> After the call __audit_syscall_entry aren't they already polluted?
-> Isn't that the reason we need to reload EAX?  You can verify this leaves
-> things in a similar state (although slightly differently polluted) than
-> before it got screwed up.  Here is diff between before the breakage and
-> what I propose we do now.
+> "The pointers passed to memmove (and similar functions in <string.h>) must
+> be non-null even when nbytes==0" (https://gcc.gnu.org/gcc-4.9/porting_to.html).
 > 
-> (I admit I don't understand how the pushl_cfi %ebx wasn't messing up
-> PT_EBX)
+> Even if it doesn't dereference it, it can break somehow in a subtle way. Leaving
+> the kernel code assuming that gcc (or any other compiler) would always behave
+> the same in a situation that shouldn't occur.
 
-(Credit to HPA for walking me through some of this...  I had to stare at
-it for a while...)
-
-The bottom of the stack was dropped to reuse syscall args a1-a3 on the
-stack for the call to __audit_syscall_entry while %ebx wasn't changed in
-the call.  a0 was in the unchanged %ebx and the pushl_cfi directly
-restores the value in PT_EBX when it puts a0 back on the stack and
-restores the original value of %esp.
-
-> /me anxiously awaits x86 guy to tell me how dumb I am....
-
-("Dumber" tries to explain...)
-
-> $ git diff a17c8b54dc738c4fda31e8be0302cd131a04c19f -- arch/x86/kernel/entry_32.S
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index 0d0c9d4..fb01d22 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -447,16 +447,14 @@ sysenter_exit:
->  sysenter_audit:
->         testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags(%ebp)
->         jnz syscall_trace_entry
-> -       addl $4,%esp
-> -       CFI_ADJUST_CFA_OFFSET -4
-> -       /* %esi already in 8(%esp)         6th arg: 4th syscall arg */
-> -       /* %edx already in 4(%esp)         5th arg: 3rd syscall arg */
-> -       /* %ecx already in 0(%esp)         4th arg: 2nd syscall arg */
-> -       movl %ebx,%ecx                  /* 3rd arg: 1st syscall arg */
-> -       movl %eax,%edx                  /* 2nd arg: syscall number */
-> -       movl $AUDIT_ARCH_I386,%eax      /* 1st arg: audit arch */
-> +       /* movl PT_EAX(%esp), %eax      already set, syscall number: 1st arg to audit */
-> +       movl PT_EBX(%esp), %edx         /* ebx/a0: 2nd arg to audit */
-> +       /* movl PT_ECX(%esp), %ecx      already set, a1: 3nd arg to audit */
-> +       pushl_cfi PT_ESI(%esp)          /* a3: 5th arg */
-> +       pushl_cfi PT_EDX+4(%esp)        /* a2: 4th arg */
->         call __audit_syscall_entry
-> -       pushl_cfi %ebx
-> +       popl_cfi %ecx /* get that remapped edx off the stack */
-> +       popl_cfi %ecx /* get that remapped esi off the stack */
->         movl PT_EAX(%esp),%eax          /* reload syscall number */
->         jmp sysenter_do_call
-> 
-> 
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Show me a legal way in which one could legally dereference the pointer
+when length is zero, and I'll entertain this patch.
