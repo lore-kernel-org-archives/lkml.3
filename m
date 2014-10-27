@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302AbaJ0KuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 06:50:11 -0400
-Received: from roy.gaast.net ([80.101.33.21]:37575 "EHLO mail.gaast.net"
+	id S1751700AbaJ0K6b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 06:58:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49611 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230AbaJ0KuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 06:50:10 -0400
-Message-ID: <544E235C.5010908@gaast.net>
-Date: Mon, 27 Oct 2014 10:50:04 +0000
-From: Wilmer van der Gaast <wilmer@gaast.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Machine crashes right *after* ~successful resume
-References: <543F049F.5090605@gaast.net> <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com> <543F9182.9000004@gaast.net> <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com> <544033CF.3080104@gaast.net> <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com> <5442FE58.5020700@gaast.net> <CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com> <5446D2D8.2090203@gaast.net> <CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com> <20141022125354.GA3832@gaast.net> <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
-In-Reply-To: <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1750967AbaJ0K63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 06:58:29 -0400
+Message-ID: <1414407519.26910.5.camel@linux-0dmf.site>
+Subject: Re: [PATCH] usb: serial: Perform verification for FTDI FT232R
+ devices
+From: Oliver Neukum <oneukum@suse.de>
+To: russ.dill@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, greg@kroah.com
+Date: Mon, 27 Oct 2014 11:58:39 +0100
+In-Reply-To: <1414054344-3688-1-git-send-email-Russ.Dill@gmail.com>
+References: <1414054344-3688-1-git-send-email-Russ.Dill@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Yinghai,
+On Thu, 2014-10-23 at 01:52 -0700, russ.dill@gmail.com wrote:
+> From: Russ Dill <Russ.Dill@gmail.com>
+> 
+> This patch provides the FTDI genuine product verification steps
+> as contained within the new 2.12.00 official release. It ensures
+> that counterfeiters don't exploit engineering investment made
+> by FTDI. Counterfeit ICs are destroying innovation in the
+> industry.
+> 
+> FTDI recommends that to guarantee genuine FTDI products
+> please purchase either from FTDI directly or an authorised
+> distributor.
+> 
+> This is definitely not targeting end users - if you're unsure if
+> ICs are genuine then please don't use the drivers.
 
-Thanks again for your time!
+So you don't want this merged?
+If you want to have it merged please explain the benefit.
 
-I've applied your two patches, and as a wild guess also added pci=dump 
-to my kernel cmdline though I guess that just gave me a boot-time dump - 
-which mostly didn't make it into my dmesg.
+> +static void ftdi_verify(struct usb_serial_port *port)
+> +{
+> +	struct ftdi_private *priv = usb_get_serial_port_data(port);
+> +	u16 *eeprom_data;
+> +	u16 checksum;
+> +	int eeprom_size;
+> +	int i;
+> +
+> +	switch (priv->chip_type) {
+> +	case FT232RL:
+> +		eeprom_size = 0x40;
+> +		break;
+> +	default:
+> +		/* Unsupported for verification */
+> +		return;
+> +	}
+> +
+> +	/* Latency timer needs to be 0x77 to unlock EEPROM programming */
+> +	if (priv->latency != 0x77) {
+> +		int orig_latency = priv->latency;
+> +		priv->latency = 0x77;
+> +		write_latency_timer(port);
+> +		priv->latency = orig_latency;
+> +	}
+> +
+> +	eeprom_data = kzalloc(eeprom_size * 2, GFP_KERNEL);
+> +	if (!eeprom_data)
+> +		return;
+> +
+> +	/* Read in EEPROM */
+> +	for (i = 0; i < eeprom_size; i++)
+> +		if (read_eeprom(port, i, eeprom_data + i) < 0)
+> +			goto end_verify;
+> +
+> +	/* Verify EEPROM is valid */
+> +	checksum = ftdi_checksum(eeprom_data, eeprom_size);
+> +	if (checksum != eeprom_data[eeprom_size - 1])
+> +		goto end_verify;
+> +
+> +	/* Attempt to set Vendor ID to 0 */
+> +	eeprom_data[1] = 0;
+> +
+> +	/* Calculate new checksum to avoid bricking devices */
+> +	checksum = ftdi_checksum(eeprom_data, eeprom_size);
+> +
+> +	/* Verify EEPROM programming behavior/nonbehavior */
+> +	write_eeprom(port, 1, 0);
 
-I accidentally booted with no_console_suspend on the first run, which 
-still caused no output at all on the failed resume. I'm including the 
-output of that anyway, but also I have a run with that flag removed, and 
-annoyingly the crash appears to happen before the dump during the crash 
-finishes - while dumping info for this device, it seems:
+In case of disconnect here, what have we just done to the device?
 
-04:00.0 PCI bridge: Integrated Technology Express, Inc. Device 8892 (rev 
-10) (prog-if 01 [Subtractive decode])
+> +	write_eeprom(port, eeprom_size - 1, checksum);
+> +
+> +end_verify:
+> +	kfree(eeprom_data);
+> +}
+> +
 
-(More info in my lspci.txt)
-
-Wondering what device that is exactly, I stumbled upon 
-http://sourceforge.net/p/linux1394/mailman/message/29755048/ where 
-someone describes it as a "cheap and crappy PCI bridge". More and more I 
-wonder if I should just buy a new motherboard - sadly this one wasn't 
-even that cheap. :-( Though I don't know if the output stopping while 
-dumping output for this device means that it is the culprit, is printk() 
-to the serial console in any way blocking/buffered?
-
-Anyway, dumps are in:
-
-http://gaast.net/~wilmer/.lkml/bad3.17-pcidumps-no_console_suspend.txt
-http://gaast.net/~wilmer/.lkml/bad3.17-pcidumps.txt
+	Oliver
 
 
-Cheers,
-
-Wilmer van der Gaast.
-
--- 
-+-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
-| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
-| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
-+--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
