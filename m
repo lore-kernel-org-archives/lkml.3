@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094AbaJ0TBv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:01:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52552 "EHLO
+	id S1753157AbaJ0TCE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:02:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52566 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaJ0TBs (ORCPT
+	with ESMTP id S1753120AbaJ0TCA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:01:48 -0400
+	Mon, 27 Oct 2014 15:02:00 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 065/105] missing data dependency barrier in prepend_name()
-Date: Mon, 27 Oct 2014 11:56:40 -0700
-Message-Id: <1414436240-13879-66-git-send-email-kamal@canonical.com>
+Cc: Joe Savage <joe.savage@goketra.com>, Johan Hovold <johan@kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 024/105] USB: serial: cp210x: added Ketra N1 wireless interface support
+Date: Mon, 27 Oct 2014 11:55:59 -0700
+Message-Id: <1414436240-13879-25-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -26,62 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Joe Savage <joe.savage@goketra.com>
 
-commit 6d13f69444bd3d4888e43f7756449748f5a98bad upstream.
+commit bfc2d7dfdd761ae3beccdb26abebe03cef042f46 upstream.
 
-AFAICS, prepend_name() is broken on SMP alpha.  Disclaimer: I don't have
-SMP alpha boxen to reproduce it on.  However, it really looks like the race
-is real.
+Added support for Ketra N1 wireless interface, which uses the
+Silicon Labs' CP2104 USB to UART bridge with customized PID 8946.
 
-CPU1: d_path() on /mnt/ramfs/<255-character>/foo
-CPU2: mv /mnt/ramfs/<255-character> /mnt/ramfs/<63-character>
-
-CPU2 does d_alloc(), which allocates an external name, stores the name there
-including terminating NUL, does smp_wmb() and stores its address in
-dentry->d_name.name.  It proceeds to d_add(dentry, NULL) and d_move()
-old dentry over to that.  ->d_name.name value ends up in that dentry.
-
-In the meanwhile, CPU1 gets to prepend_name() for that dentry.  It fetches
-->d_name.name and ->d_name.len; the former ends up pointing to new name
-(64-byte kmalloc'ed array), the latter - 255 (length of the old name).
-Nothing to force the ordering there, and normally that would be OK, since we'd
-run into the terminating NUL and stop.  Except that it's alpha, and we'd need
-a data dependency barrier to guarantee that we see that store of NUL
-__d_alloc() has done.  In a similar situation dentry_cmp() would survive; it
-does explicit smp_read_barrier_depends() after fetching ->d_name.name.
-prepend_name() doesn't and it risks walking past the end of kmalloc'ed object
-and possibly oops due to taking a page fault in kernel mode.
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Joe Savage <joe.savage@goketra.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/dcache.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 7f3b400..2e3c637 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2825,6 +2825,9 @@ static int prepend(char **buffer, int *buflen, const char *str, int namelen)
-  * the beginning of the name. The sequence number check at the caller will
-  * retry it again when a d_move() does happen. So any garbage in the buffer
-  * due to mismatched pointer and length will be discarded.
-+ *
-+ * Data dependency barrier is needed to make sure that we see that terminating
-+ * NUL.  Alpha strikes again, film at 11...
-  */
- static int prepend_name(char **buffer, int *buflen, struct qstr *name)
- {
-@@ -2832,6 +2835,8 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
- 	u32 dlen = ACCESS_ONCE(name->len);
- 	char *p;
- 
-+	smp_read_barrier_depends();
-+
- 	*buflen -= dlen + 1;
- 	if (*buflen < 0)
- 		return -ENAMETOOLONG;
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index 1db213a..df16884 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -122,6 +122,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
++	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
 -- 
 1.9.1
 
