@@ -1,91 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313AbaJ0Scl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 14:32:41 -0400
-Received: from mail.kernel.org ([198.145.19.201]:56584 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958AbaJ0Sck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 14:32:40 -0400
-Date: Mon, 27 Oct 2014 19:32:33 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Anton Vorontsov <anton@enomsg.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 2/2] power: charger-manager: Avoid recursive thermal
- get_temp call
-Message-ID: <20141027183232.GE10897@earth.universe>
-References: <1412696857-14803-1-git-send-email-k.kozlowski@samsung.com>
- <1412696857-14803-2-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="wTWi5aaYRw9ix9vO"
-Content-Disposition: inline
-In-Reply-To: <1412696857-14803-2-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752463AbaJ0SdH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 14:33:07 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:35463 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513AbaJ0SdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 14:33:05 -0400
+Message-ID: <544E8FDB.109@gmail.com>
+Date: Mon, 27 Oct 2014 19:32:59 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.1.2
+To: Kishon Vijay Abraham I <kishon@ti.com>, balbi@ti.com
+CC: =?windows-1252?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] phy: berlin-sata: Move PHY_BASE into private data
+ struct
+References: <1413882477-27922-1-git-send-email-sebastian.hesselbarth@gmail.com> <1413882477-27922-2-git-send-email-sebastian.hesselbarth@gmail.com> <54462865.6000205@ti.com> <544629F0.3090505@gmail.com> <544AB33F.9030701@gmail.com> <20141024202510.GK11455@saruman> <544E3A1F.2060304@ti.com>
+In-Reply-To: <544E3A1F.2060304@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/27/2014 01:27 PM, Kishon Vijay Abraham I wrote:
+> On Saturday 25 October 2014 01:55 AM, Felipe Balbi wrote:
+>> On Fri, Oct 24, 2014 at 10:14:55PM +0200, Sebastian Hesselbarth wrote:
+>>> On 21.10.2014 11:40, Sebastian Hesselbarth wrote:
+>>>> On 10/21/2014 11:33 AM, Kishon Vijay Abraham I wrote:
+>>>>> On Tuesday 21 October 2014 02:37 PM, Sebastian Hesselbarth wrote:
+>>>>>> Currently, Berlin SATA PHY driver assumes PHY_BASE address being
+>>>>>> constant. While this PHY_BASE is correct for BG2Q, older BG2 PHY_BASE
+>>>>>> is different. Prepare the driver for BG2 support by moving the phy_base
+>>>>>> into private driver data.
+>>>>>>
+>>>>>> Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+>>>>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>>> ...
+>>>>>> ---
+>>>>>>   drivers/phy/phy-berlin-sata.c | 42
+>>>>>> ++++++++++++++++++++++++++++--------------
+>>>>>>   1 file changed, 28 insertions(+), 14 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/phy/phy-berlin-sata.c
+>>>>>> b/drivers/phy/phy-berlin-sata.c
+>>>>>> index 69ced52d72aa..9682b0f66177 100644
+>>>>>> --- a/drivers/phy/phy-berlin-sata.c
+>>>>>> +++ b/drivers/phy/phy-berlin-sata.c
+>>>>>> @@ -30,7 +30,7 @@
+>>>>>>   #define MBUS_WRITE_REQUEST_SIZE_128    (BIT(2) << 16)
+>>>>>>   #define MBUS_READ_REQUEST_SIZE_128    (BIT(2) << 19)
+>>>>>>
+>>>>>> -#define PHY_BASE        0x200
+>>>>>> +#define BG2Q_PHY_BASE        0x200
+>>>> [...]
+>>>>>> +static u32 bg2q_sata_phy_base = BG2Q_PHY_BASE;
+>>>>>> +
+>>>>>> +static const struct of_device_id phy_berlin_sata_of_match[] = {
+>>>>>> +    {
+>>>>>> +        .compatible = "marvell,berlin2q-sata-phy",
+>>>>>> +        .data = &bg2q_sata_phy_base,
+>>>>>
+>>>>> Can't the base directly come from dt?
+>>>>
+>>>> You are suggesting a "marvell,phy-base-address" property, right?
+>>>> I have no strong opinion about it, I accept your call (or DT maintainer
+>>>> ones).
+>>>
+>>> I still have the DT patches for BG2Q queued up for v3.19 (I missed the
+>>> arm-soc merge window for v3.18). That means, there has been no release
+>>> with the phy binding used and I can rework a little more.
+>>>
+>>> Can you please confirm that you want a DT property for the phy base address,
+>>> e.g. marvell,phy-base-address = <{0x200,0x80}> ?
+>>>
+>>> If so, I'd also rename the compatible from berlin2q-sata-phy to more
+>>> generic berlin-sata-phy.
+>>
+>> I think what Kishon is asking, is why this 0x200 offset isn't already on
+>> reg. so that instead of, e.g.:
+>>
+>> 	reg = <0x40000000 0x1000>;
+>>
+>> you would have:
+>>
+>> 	reg = <0x40000200 0x1000>;
+>
+> I had something similar to what Sebastian suggested in mind. I think phy_base
+> is used for a different reason and can't be directly used in 'reg'.
 
---wTWi5aaYRw9ix9vO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Kishon,
 
-Hi,
+thanks for the clarification. While the extra marvell,phy-base-address
+property basically works and I agree with it, I may have some
+_potential_ draw-backs:
 
-On Tue, Oct 07, 2014 at 05:47:37PM +0200, Krzysztof Kozlowski wrote:
-> The charger manager supports POWER_SUPPLY_PROP_TEMP property and acts
-> as a thermal zone if any of these conditions match:
-> 1. Fuel gauge used by charger manager supports POWER_SUPPLY_PROP_TEMP.
-> 2. 'cm-thermal-zone' property is present in DTS (then it will supersede
->    the fuel gauge temperature property).
->=20
-> However in case 1 (fuel gauge reports temperature and 'cm-thermal-zone'
-> is not set) the charger manager forwards its get_temp calls to fuel
-> gauge thermal zone.
->=20
-> This leads to reporting by lockdep a false positive deadlock for thermal
-> zone's mutex because of nested calls to thermal_zone_get_temp(). This is
-> false positive because these are different mutexes: one for charger
-> manager thermal zone and second for fuel gauge thermal zone.
->=20
-> Get rid of false lockdep alert and recursive call by setting
-> 'no_thermal' property for this power supply class. The thermal zone for
-> charger manager won't be created (user space does not use it anyway).
+The Marvell BSP code (which I have no clue _why_ it does what it does
+or if it is required) has some magic writes to "improve" serial signal
+quality. I left them out as my HDD was detected with and without them.
 
-also pulled into next, will also be included in 3.18-rc pull request.
+Now, if we find that they are required, we have to find a way to make
+the PHY driver know about the PHY revision. We'd usually add a
+different compatible and deal with it accordingly.
 
--- Sebastian
+So, not adding the compatible now _may_ just postpone a follow-up patch
+for the different PHY setup of BG2 and render the new phy_base property
+basically useless.
 
---wTWi5aaYRw9ix9vO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If you are just unhappy with the "static u32 bg2q_sata_phy_base"
+assigned to of_device_id.data, I can convert that to Felipe's proposal.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUTo/AAAoJENju1/PIO/qaZr8P/3HwAnw5yV1GVUOxJUtFwAvX
-qRriDhVSrg6NqenMIXNYbt8lpASHoxYyp+/kidO5NYTIIXehsbBYK0kZgC3QAYT4
-HwDNUMJJTmCyFqKJsSRtWtv+a4xluB424b8Fdp67YEraQwy6vUttIMuHahnWJIvR
-FhnSqSkKKSCf9Pm+cJJ/mktlX+FVoNWWgxdtcFBehLO81KuNA/t8d231DJ6e+JDF
-O+E8MDSsRuGqefgkbGe2QOpzEzMbD0bFbT5d/Ibnr+4yaew3JSCLh2GoJ4mUt7+h
-asfPICgDFcFFrr54Jtkx9G3R7RA1YgrI3BuDMo8crdwdT2+MI8thAzFVsXiSLu5I
-8TTXVMcCLuGifQE3b33EC8CyhECk/90NNxgobtdyA2L007eHyKe/3uLAtWXqwJBj
-QVd/7qiI1xTA5F4Bdo8oVtVQrub8Bl0kEoPTS+TLFdYIlDmdsZKsQE3aYeLKRDAY
-1/koaMVrGoDTbMTOH0xiMRa3/a3nY0IX/i5CJsOvtvv3ITj67C3K+7XT5gF7oqSH
-Janq2bYf6wqMDg7bNiopUhAIgw7wPs0hgY643kmAvQMdDHfZGfk26GwEJTweYI9X
-Md4YWcBK99IuO7jqbTxSVDo9Bc6JXQlX+I9btYOUyeCxX6aWg2ytXv0fKuE9AXG9
-Cf4nYEX+RZbhSsNI0BJj
-=GGo5
------END PGP SIGNATURE-----
-
---wTWi5aaYRw9ix9vO--
+Sebastian
