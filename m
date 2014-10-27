@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaJ0PMP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:12:15 -0400
+	id S1752858AbaJ0PMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:12:13 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:4108 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752631AbaJ0PMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:12:12 -0400
+	id S1752198AbaJ0PML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:12:11 -0400
 X-IronPort-AV: E=Sophos;i="5.04,796,1406592000"; 
-   d="scan'208";a="186508127"
+   d="scan'208";a="186508126"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: <xen-devel@lists.xensource.com>
 CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
@@ -15,346 +15,116 @@ CC: <konrad.wilk@oracle.com>, <Ian.Campbell@citrix.com>,
         <Stefano.Stabellini@eu.citrix.com>,
         <linux-arm-kernel@lists.infradead.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v7 6/8] xen/arm/arm64: merge xen/mm32.c into xen/mm.c
-Date: Mon, 27 Oct 2014 15:09:26 +0000
-Message-ID: <1414422568-19103-6-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v7 7/8] xen/arm/arm64: introduce xen_arch_need_swiotlb
+Date: Mon, 27 Oct 2014 15:09:27 +0000
+Message-ID: <1414422568-19103-7-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
 References: <alpine.DEB.2.02.1410261621200.22875@kaball.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-DLP: MIA2
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merge xen/mm32.c into xen/mm.c.
-As a consequence the code gets compiled on arm64 too: introduce a few
-compat functions to actually be able to compile it.
+Introduce an arch specific function to find out whether a particular dma
+mapping operation needs to bounce on the swiotlb buffer.
+
+On ARM and ARM64, if the page involved is a foreign page and the device
+is not coherent, we need to bounce because at unmap time we cannot
+execute any required cache maintenance operations (we don't know how to
+find the pfn from the mfn).
+
+No change of behaviour for x86.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Acked-by: Ian Campbell <ian.campbell@citrix.com>
----
- arch/arm/xen/Makefile                      |    2 +-
- arch/arm/xen/mm.c                          |  123 ++++++++++++++++++++++++++++
- arch/arm/xen/mm32.c                        |  110 -------------------------
- arch/arm64/include/asm/xen/page-coherent.h |   44 +---------
- 4 files changed, 125 insertions(+), 154 deletions(-)
- delete mode 100644 arch/arm/xen/mm32.c
 
-diff --git a/arch/arm/xen/Makefile b/arch/arm/xen/Makefile
-index 1f85bfe..1296952 100644
---- a/arch/arm/xen/Makefile
-+++ b/arch/arm/xen/Makefile
-@@ -1 +1 @@
--obj-y		:= enlighten.o hypercall.o grant-table.o p2m.o mm.o mm32.o
-+obj-y		:= enlighten.o hypercall.o grant-table.o p2m.o mm.o
+---
+
+Changes in v6:
+- fix ts.
+
+Changes in v5:
+- fix indentation.
+---
+ arch/arm/include/asm/xen/page.h |    4 ++++
+ arch/arm/xen/mm.c               |    7 +++++++
+ arch/x86/include/asm/xen/page.h |    7 +++++++
+ drivers/xen/swiotlb-xen.c       |    5 ++++-
+ 4 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
+index 135c24a..68c739b 100644
+--- a/arch/arm/include/asm/xen/page.h
++++ b/arch/arm/include/asm/xen/page.h
+@@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+ #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
+ #define xen_unmap(cookie) iounmap((cookie))
+ 
++bool xen_arch_need_swiotlb(struct device *dev,
++			   unsigned long pfn,
++			   unsigned long mfn);
++
+ #endif /* _ASM_ARM_XEN_PAGE_H */
 diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-index b0e77de..ff413a8 100644
+index ff413a8..28396aa 100644
 --- a/arch/arm/xen/mm.c
 +++ b/arch/arm/xen/mm.c
-@@ -1,6 +1,10 @@
-+#include <linux/cpu.h>
-+#include <linux/dma-mapping.h>
- #include <linux/bootmem.h>
- #include <linux/gfp.h>
-+#include <linux/highmem.h>
- #include <linux/export.h>
-+#include <linux/of_address.h>
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/dma-mapping.h>
-@@ -16,6 +20,125 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/interface.h>
+@@ -139,6 +139,13 @@ void xen_dma_sync_single_for_device(struct device *hwdev,
+ 	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
+ }
  
-+
-+#ifdef CONFIG_ARM64
-+static inline void dmac_map_area(const void *start, size_t size, int dir)
++bool xen_arch_need_swiotlb(struct device *dev,
++			   unsigned long pfn,
++			   unsigned long mfn)
 +{
-+	return __dma_map_area(start, size, dir);
-+}
-+
-+static inline void dmac_unmap_area(const void *start, size_t size, int dir)
-+{
-+	return __dma_unmap_area(start, size, dir);
-+}
-+
-+static inline bool cache_is_vipt_nonaliasing(void)
-+{
-+	return true;
-+}
-+
-+static inline void *kmap_high_get(struct page *page)
-+{
-+	return NULL;
-+}
-+
-+static inline void kunmap_high(struct page *page) {}
-+#endif
-+
-+/* functions called by SWIOTLB */
-+
-+static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
-+	size_t size, enum dma_data_direction dir,
-+	void (*op)(const void *, size_t, int))
-+{
-+	unsigned long pfn;
-+	size_t left = size;
-+
-+	pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
-+	offset %= PAGE_SIZE;
-+
-+	do {
-+		size_t len = left;
-+		void *vaddr;
-+	
-+		if (!pfn_valid(pfn))
-+		{
-+			/* TODO: cache flush */
-+		} else {
-+			struct page *page = pfn_to_page(pfn);
-+
-+			if (PageHighMem(page)) {
-+				if (len + offset > PAGE_SIZE)
-+					len = PAGE_SIZE - offset;
-+
-+				if (cache_is_vipt_nonaliasing()) {
-+					vaddr = kmap_atomic(page);
-+					op(vaddr + offset, len, dir);
-+					kunmap_atomic(vaddr);
-+				} else {
-+					vaddr = kmap_high_get(page);
-+					if (vaddr) {
-+						op(vaddr + offset, len, dir);
-+						kunmap_high(page);
-+					}
-+				}
-+			} else {
-+				vaddr = page_address(page) + offset;
-+				op(vaddr, len, dir);
-+			}
-+		}
-+
-+		offset = 0;
-+		pfn++;
-+		left -= len;
-+	} while (left);
-+}
-+
-+static void __xen_dma_page_dev_to_cpu(struct device *hwdev, dma_addr_t handle,
-+		size_t size, enum dma_data_direction dir)
-+{
-+	/* Cannot use __dma_page_dev_to_cpu because we don't have a
-+	 * struct page for handle */
-+
-+	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_unmap_area);
-+}
-+
-+static void __xen_dma_page_cpu_to_dev(struct device *hwdev, dma_addr_t handle,
-+		size_t size, enum dma_data_direction dir)
-+{
-+
-+	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_map_area);
-+}
-+
-+void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
-+		size_t size, enum dma_data_direction dir,
-+		struct dma_attrs *attrs)
-+
-+{
-+	if (is_device_dma_coherent(hwdev))
-+		return;
-+	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
-+		return;
-+
-+	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
-+}
-+
-+void xen_dma_sync_single_for_cpu(struct device *hwdev,
-+		dma_addr_t handle, size_t size, enum dma_data_direction dir)
-+{
-+	if (is_device_dma_coherent(hwdev))
-+		return;
-+	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
-+}
-+
-+void xen_dma_sync_single_for_device(struct device *hwdev,
-+		dma_addr_t handle, size_t size, enum dma_data_direction dir)
-+{
-+	if (is_device_dma_coherent(hwdev))
-+		return;
-+	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
++	return ((pfn != mfn) && !is_device_dma_coherent(dev));
 +}
 +
  int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
  				 unsigned int address_bits,
  				 dma_addr_t *dma_handle)
-diff --git a/arch/arm/xen/mm32.c b/arch/arm/xen/mm32.c
-deleted file mode 100644
-index d8ed359..0000000
---- a/arch/arm/xen/mm32.c
-+++ /dev/null
-@@ -1,110 +0,0 @@
--#include <linux/cpu.h>
--#include <linux/dma-mapping.h>
--#include <linux/gfp.h>
--#include <linux/highmem.h>
--
--#include <xen/features.h>
--
--
--/* functions called by SWIOTLB */
--
--static void dma_cache_maint(dma_addr_t handle, unsigned long offset,
--	size_t size, enum dma_data_direction dir,
--	void (*op)(const void *, size_t, int))
--{
--	unsigned long pfn;
--	size_t left = size;
--
--	pfn = (handle >> PAGE_SHIFT) + offset / PAGE_SIZE;
--	offset %= PAGE_SIZE;
--
--	do {
--		size_t len = left;
--		void *vaddr;
--	
--		if (!pfn_valid(pfn))
--		{
--			/* TODO: cache flush */
--		} else {
--			struct page *page = pfn_to_page(pfn);
--
--			if (PageHighMem(page)) {
--				if (len + offset > PAGE_SIZE)
--					len = PAGE_SIZE - offset;
--
--				if (cache_is_vipt_nonaliasing()) {
--					vaddr = kmap_atomic(page);
--					op(vaddr + offset, len, dir);
--					kunmap_atomic(vaddr);
--				} else {
--					vaddr = kmap_high_get(page);
--					if (vaddr) {
--						op(vaddr + offset, len, dir);
--						kunmap_high(page);
--					}
--				}
--			} else {
--				vaddr = page_address(page) + offset;
--				op(vaddr, len, dir);
--			}
--		}
--
--		offset = 0;
--		pfn++;
--		left -= len;
--	} while (left);
--}
--
--static void __xen_dma_page_dev_to_cpu(struct device *hwdev, dma_addr_t handle,
--		size_t size, enum dma_data_direction dir)
--{
--	/* Cannot use __dma_page_dev_to_cpu because we don't have a
--	 * struct page for handle */
--
--	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_unmap_area);
--}
--
--static void __xen_dma_page_cpu_to_dev(struct device *hwdev, dma_addr_t handle,
--		size_t size, enum dma_data_direction dir)
--{
--
--	dma_cache_maint(handle & PAGE_MASK, handle & ~PAGE_MASK, size, dir, dmac_map_area);
--}
--
--void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
--		size_t size, enum dma_data_direction dir,
--		struct dma_attrs *attrs)
--
--{
--	if (is_device_dma_coherent(hwdev))
--		return;
--	if (dma_get_attr(DMA_ATTR_SKIP_CPU_SYNC, attrs))
--		return;
--
--	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
--}
--
--void xen_dma_sync_single_for_cpu(struct device *hwdev,
--		dma_addr_t handle, size_t size, enum dma_data_direction dir)
--{
--	if (is_device_dma_coherent(hwdev))
--		return;
--	__xen_dma_page_dev_to_cpu(hwdev, handle, size, dir);
--}
--
--void xen_dma_sync_single_for_device(struct device *hwdev,
--		dma_addr_t handle, size_t size, enum dma_data_direction dir)
--{
--	if (is_device_dma_coherent(hwdev))
--		return;
--	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
--}
--
--int __init xen_mm32_init(void)
--{
--	if (!xen_initial_domain())
--		return 0;
--
--	return 0;
--}
--arch_initcall(xen_mm32_init);
-diff --git a/arch/arm64/include/asm/xen/page-coherent.h b/arch/arm64/include/asm/xen/page-coherent.h
-index dde3fc9..2052102 100644
---- a/arch/arm64/include/asm/xen/page-coherent.h
-+++ b/arch/arm64/include/asm/xen/page-coherent.h
-@@ -1,43 +1 @@
--#ifndef _ASM_ARM64_XEN_PAGE_COHERENT_H
--#define _ASM_ARM64_XEN_PAGE_COHERENT_H
--
--#include <asm/page.h>
--#include <linux/dma-attrs.h>
--#include <linux/dma-mapping.h>
--
--static inline void *xen_alloc_coherent_pages(struct device *hwdev, size_t size,
--		dma_addr_t *dma_handle, gfp_t flags,
--		struct dma_attrs *attrs)
--{
--	return __generic_dma_ops(hwdev)->alloc(hwdev, size, dma_handle, flags, attrs);
--}
--
--static inline void xen_free_coherent_pages(struct device *hwdev, size_t size,
--		void *cpu_addr, dma_addr_t dma_handle,
--		struct dma_attrs *attrs)
--{
--	__generic_dma_ops(hwdev)->free(hwdev, size, cpu_addr, dma_handle, attrs);
--}
--
--static inline void xen_dma_map_page(struct device *hwdev, struct page *page,
--	     unsigned long offset, size_t size, enum dma_data_direction dir,
--	     struct dma_attrs *attrs)
--{
--}
--
--static inline void xen_dma_unmap_page(struct device *hwdev, dma_addr_t handle,
--		size_t size, enum dma_data_direction dir,
--		struct dma_attrs *attrs)
--{
--}
--
--static inline void xen_dma_sync_single_for_cpu(struct device *hwdev,
--		dma_addr_t handle, size_t size, enum dma_data_direction dir)
--{
--}
--
--static inline void xen_dma_sync_single_for_device(struct device *hwdev,
--		dma_addr_t handle, size_t size, enum dma_data_direction dir)
--{
--}
--#endif /* _ASM_ARM64_XEN_PAGE_COHERENT_H */
-+#include <../../arm/include/asm/xen/page-coherent.h>
+diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
+index c949923..f58ef6c 100644
+--- a/arch/x86/include/asm/xen/page.h
++++ b/arch/x86/include/asm/xen/page.h
+@@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
+ #define xen_remap(cookie, size) ioremap((cookie), (size));
+ #define xen_unmap(cookie) iounmap((cookie))
+ 
++static inline bool xen_arch_need_swiotlb(struct device *dev,
++					 unsigned long pfn,
++					 unsigned long mfn)
++{
++	return false;
++}
++
+ #endif /* _ASM_X86_XEN_PAGE_H */
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index ebd8f21..ac5d41b 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
+ 	 * buffering it.
+ 	 */
+ 	if (dma_capable(dev, dev_addr, size) &&
+-	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
++	    !range_straddles_page_boundary(phys, size) &&
++		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
++		!swiotlb_force) {
+ 		/* we are not interested in the dma_addr returned by
+ 		 * xen_dma_map_page, only in the potential cache flushes executed
+ 		 * by the function. */
+@@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
+ 		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
+ 
+ 		if (swiotlb_force ||
++		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
+ 		    !dma_capable(hwdev, dev_addr, sg->length) ||
+ 		    range_straddles_page_boundary(paddr, sg->length)) {
+ 			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
 -- 
 1.7.10.4
 
