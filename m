@@ -1,154 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776AbaJ0P4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:56:45 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:50062 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752011AbaJ0P4n (ORCPT
+	id S1753362AbaJ0QIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:08:43 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:39048 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaJ0QIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:56:43 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v3 17/47] mfd: tps65910: Register with kernel power-off handler
-Date: Mon, 27 Oct 2014 08:55:24 -0700
-Message-Id: <1414425354-10359-18-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
-References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.544E6B3B.008B,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 110
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 27 Oct 2014 12:08:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <1414424723.30379.59.camel@hadess.net>
+References: <1413881397.30379.7.camel@hadess.net> <5446B3CC.1080904@amacapital.net>
+ <1414418126.30379.47.camel@hadess.net> <CALCETrWQ5r39aqP+MFZuD__5HiNAc+cDQoghsDSEc9oVsmsyvQ@mail.gmail.com>
+ <1414424723.30379.59.camel@hadess.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 27 Oct 2014 09:08:17 -0700
+Message-ID: <CALCETrVYK=GBHbcoJr-zz4tUWv7sdxb-6v7TuuOgcHPCq7s9Pg@mail.gmail.com>
+Subject: Re: A desktop environment[1] kernel wishlist
+To: Bastien Nocera <hadess@hadess.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register with kernel power-off handler instead of setting pm_power_off
-directly. Register with low priority to reflect that the original code
-only sets pm_power_off if it was not already set.
+On Mon, Oct 27, 2014 at 8:45 AM, Bastien Nocera <hadess@hadess.net> wrote:
+> On Mon, 2014-10-27 at 08:12 -0700, Andy Lutomirski wrote:
+>> On Oct 27, 2014 6:56 AM, "Bastien Nocera" <hadess@hadess.net> wrote:
+>> >
+>> > On Tue, 2014-10-21 at 12:28 -0700, Andy Lutomirski wrote:
+>> > > On 10/21/2014 01:49 AM, Bastien Nocera wrote:
+>> > > > Hey,
+>> > > >
+>> > > > GNOME has had discussions with kernel developers in the past, and,
+>> > > > fortunately, in some cases we were able to make headway.
+>> > > >
+>> > > > There are however a number of items that we still don't have solutions
+>> > > > for, items that kernel developers might not realise we'd like to rely
+>> > > > on, or don't know that we'd make use of if merged.
+>> > > >
+>> > > > I've posted this list at:
+>> > > > https://wiki.gnome.org/BastienNocera/KernelWishlist
+>> > > >
+>> > > > Let me know on-list or off-list if you have any comments about those, so
+>> > > > I can update the list.
+>> > >
+>> > > I don't know much about desktop environment infrastructure, but I think
+>> > > the kernel probably already has a lot of what's needed for LinuxApps.
+>> > >
+>> > > Tools like Sandstorm [1] (shameless plug, but it's a good example here)
+>> > > can already sandbox normal-ish programs, and those sandboxes can be
+>> > > launched without privilege [2].
+>> > >
+>> > > Why is kdbus needed?
+>> >
+>> > Because it sucks less than passing fd's and using home-made protocols on
+>> > top of it.
+>>
+>> For securely communicating with a container, "it sucks less" is hard
+>> to use as a design criterion.
+>
+> Sucking less is a requirement when it comes to being able to use it. At
+> the very least, when it comes to security, the fact that the protocol
+> can be captured and analysed in wireshark is already of great help to
+> inspect what each component of the system is doing. More so than passing
+> fd's and using a custom protocol on the server and client sides.
+>
+>> What's wrong with fds, and how does kdbus solve it?
+>
+> By having a well-known protocol and defined semantics on top of that
+> communication channel. I could try and re-explain why kdbus is needed,
+> but I wouldn't do as good a job as the people working on it, so best to
+> refer to the individual threads about kdbus on this list.
+>
 
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v3:
-- Replace poweroff in all newly introduced variables and in text
-  with power_off or power-off as appropriate
-- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-v2:
-- Use define to specify poweroff handler priority
-- Use dev_warn instead of dev_err
+I didn't do a good job asking the question, then.
 
- drivers/mfd/tps65910.c       | 27 ++++++++++++++++++---------
- include/linux/mfd/tps65910.h |  3 +++
- 2 files changed, 21 insertions(+), 9 deletions(-)
+What's wrong with fds in the context of communicating with a
+container?  What does kdbus do container-wise that helps?
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index 7612d89..3c94dbf 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -23,6 +23,8 @@
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
- #include <linux/mfd/core.h>
-+#include <linux/notifier.h>
-+#include <linux/pm.h>
- #include <linux/regmap.h>
- #include <linux/mfd/tps65910.h>
- #include <linux/of.h>
-@@ -437,19 +439,20 @@ struct tps65910_board *tps65910_parse_dt(struct i2c_client *client,
- }
- #endif
- 
--static struct i2c_client *tps65910_i2c_client;
--static void tps65910_power_off(void)
-+static int tps65910_power_off(struct notifier_block *this,
-+			      unsigned long unused1, void *unused2)
- {
--	struct tps65910 *tps65910;
--
--	tps65910 = dev_get_drvdata(&tps65910_i2c_client->dev);
-+	struct tps65910 *tps65910 = container_of(this, struct tps65910,
-+						 power_off_nb);
- 
- 	if (tps65910_reg_set_bits(tps65910, TPS65910_DEVCTRL,
- 			DEVCTRL_PWR_OFF_MASK) < 0)
--		return;
-+		return NOTIFY_DONE;
- 
- 	tps65910_reg_clear_bits(tps65910, TPS65910_DEVCTRL,
- 			DEVCTRL_DEV_ON_MASK);
-+
-+	return NOTIFY_DONE;
- }
- 
- static int tps65910_i2c_probe(struct i2c_client *i2c,
-@@ -505,9 +508,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	tps65910_ck32k_init(tps65910, pmic_plat_data);
- 	tps65910_sleepinit(tps65910, pmic_plat_data);
- 
--	if (pmic_plat_data->pm_off && !pm_power_off) {
--		tps65910_i2c_client = i2c;
--		pm_power_off = tps65910_power_off;
-+	if (pmic_plat_data->pm_off) {
-+		tps65910->power_off_nb.notifier_call = tps65910_power_off;
-+		tps65910->power_off_nb.priority = POWER_OFF_PRIORITY_LOW;
-+		ret = register_power_off_handler(&tps65910->power_off_nb);
-+		if (ret)
-+			dev_warn(&i2c->dev,
-+				 "failed to register power-off handler\n");
- 	}
- 
- 	ret = mfd_add_devices(tps65910->dev, -1,
-@@ -527,6 +534,8 @@ static int tps65910_i2c_remove(struct i2c_client *i2c)
- {
- 	struct tps65910 *tps65910 = i2c_get_clientdata(i2c);
- 
-+	unregister_power_off_handler(&tps65910->power_off_nb);
-+
- 	tps65910_irq_exit(tps65910);
- 	mfd_remove_devices(tps65910->dev);
- 
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 6483a6f..94876c4 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -905,6 +905,9 @@ struct tps65910 {
- 	/* IRQ Handling */
- 	int chip_irq;
- 	struct regmap_irq_chip_data *irq_data;
-+
-+	/* Power-off handling */
-+	struct notifier_block power_off_nb;
- };
- 
- struct tps65910_platform_data {
--- 
-1.9.1
-
+--Andy
