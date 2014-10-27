@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448AbaJ0T3W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:29:22 -0400
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:55670 "HELO
-	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754117AbaJ0T2p (ORCPT
+	id S1754388AbaJ0T2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:28:44 -0400
+Received: from exprod5og116.obsmtp.com ([64.18.0.147]:44097 "HELO
+	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754117AbaJ0T2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:28:45 -0400
+	Mon, 27 Oct 2014 15:28:40 -0400
 From: Feng Kan <fkan@apm.com>
 To: catalin.marinas@arm.com, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         patches@apm.com
-Cc: Feng Kan <fkan@apm.com>, Vinayak Kale <vkale@apm.com>
-Subject: [PATCH RESEND 7/7] arm64: dts: Add PMU node for APM X-Gene Storm SOC
-Date: Mon, 27 Oct 2014 12:28:28 -0700
-Message-Id: <1414438108-8384-8-git-send-email-fkan@apm.com>
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH RESEND 2/7] Documentation: arm64: add SCU dts binding documentation to linux kernel
+Date: Mon, 27 Oct 2014 12:28:23 -0700
+Message-Id: <1414438108-8384-3-git-send-email-fkan@apm.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414438108-8384-1-git-send-email-fkan@apm.com>
 References: <1414438108-8384-1-git-send-email-fkan@apm.com>
@@ -22,30 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the PMU device tree node for APM X-Gene Storm SOC.
+This add documentation for the SCU system clock unit device tree binding
+to the kernel.
 
-Signed-off-by: Vinayak Kale <vkale@apm.com>
 Signed-off-by: Feng Kan <fkan@apm.com>
 ---
- arch/arm64/boot/dts/apm-storm.dtsi | 5 +++++
- 1 file changed, 5 insertions(+)
+ Documentation/devicetree/bindings/arm/apm/scu.txt | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/apm/scu.txt
 
-diff --git a/arch/arm64/boot/dts/apm-storm.dtsi b/arch/arm64/boot/dts/apm-storm.dtsi
-index b2e6068..85d2dd7 100644
---- a/arch/arm64/boot/dts/apm-storm.dtsi
-+++ b/arch/arm64/boot/dts/apm-storm.dtsi
-@@ -97,6 +97,11 @@
- 		clock-frequency = <50000000>;
- 	};
- 
-+	pmu {
-+		compatible = "apm,potenza-pmu", "arm,armv8-pmuv3";
-+		interrupts = <1 12 0xff04>;
-+	};
+diff --git a/Documentation/devicetree/bindings/arm/apm/scu.txt b/Documentation/devicetree/bindings/arm/apm/scu.txt
+new file mode 100644
+index 0000000..b45be06
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/apm/scu.txt
+@@ -0,0 +1,17 @@
++APM X-GENE SoC series SCU Registers
 +
- 	soc {
- 		compatible = "simple-bus";
- 		#address-cells = <2>;
++This system clock unit contain various register that control block resets,
++clock enable/disables, clock divisors and other deepsleep registers.
++
++Properties:
++ - compatible : should contain two values. First value must be:
++		   - "apm,xgene-scu"
++		second value must be always "syscon".
++
++ - reg : offset and length of the register set.
++
++Example :
++	scu: system-clk-controller@17000000 {
++		compatible = "apm,xgene-scu","syscon";
++		reg = <0x0 0x17000000 0x0 0x400>;
++	};
 -- 
 1.9.1
 
