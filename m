@@ -1,77 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbaJ0Got (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 02:44:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141AbaJ0Gos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 02:44:48 -0400
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: Paul McQuade <paulmcquad@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org,
-        gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
-Subject: Re: [PATCH 2/2] staging: rtl8723au:core
-References: <1414340332-4556-1-git-send-email-paulmcquad@gmail.com>
-	<1414350250.15751.22.camel@perches.com> <wrfjegtucbgo.fsf@redhat.com>
-	<1414389096.15751.34.camel@perches.com> <wrfj1tpuca0q.fsf@redhat.com>
-	<1414390984.8884.0.camel@perches.com>
-Date: Mon, 27 Oct 2014 07:44:37 +0100
-In-Reply-To: <1414390984.8884.0.camel@perches.com> (Joe Perches's message of
-	"Sun, 26 Oct 2014 23:23:04 -0700")
-Message-ID: <wrfjd29eau5m.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751921AbaJ0Gpj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 02:45:39 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:33523 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965AbaJ0Gpi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 02:45:38 -0400
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 27 Oct 2014 15:46:51 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 1/5] mm, compaction: pass classzone_idx and alloc_flags
+ to watermark checking
+Message-ID: <20141027064651.GA23379@js1304-P5Q-DELUXE>
+References: <1412696019-21761-1-git-send-email-vbabka@suse.cz>
+ <1412696019-21761-2-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412696019-21761-2-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
-> On Mon, 2014-10-27 at 07:16 +0100, Jes Sorensen wrote:
->> Joe Perches <joe@perches.com> writes:
->> > On Mon, 2014-10-27 at 06:45 +0100, Jes Sorensen wrote:
->> >> Joe Perches <joe@perches.com> writes:
->> >> > On Sun, 2014-10-26 at 16:18 +0000, Paul McQuade wrote:
->> >> >> ERROR: spaces required around that ':' (ctx:VxE)
->> > []
->> >> >> diff --git a/drivers/staging/rtl8723au/core/rtw_ieee80211.c
->> >> >> b/drivers/staging/rtl8723au/core/rtw_ieee80211.c
->> > []
->> >> >> @@ -794,28 +794,28 @@ u16 rtw_mcs_rate23a(u8 rf_type, u8 bw_40MHz, u8 short_GI_20, u8 short_GI_40,
->> >> >>  
->> >> >>  	if (rf_type == RF_1T1R) {
->> >> >>  		if (mcs->rx_mask[0] & BIT(7))
->> >> >> -			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350):
->> >> >> +			max_rate = (bw_40MHz) ? ((short_GI_40)?1500:1350) :
->> > []
->> >> >
->> >> > A macro could help intelligibility here - maybe something like:
->> >> >
->> >> > #define get_max_rate(r1, r2, r3, r4)					\
->> >> > 	(bw_40MHz ? (short_GI_40 ? r1 : r2) : (short_GI_20 ? r3 : r4))
->> >> > and:
->> >> >  		if (mcs->rx_mask[0] & BIT(7))
->> >> > 			max_rate = get_max_rate(1500, 1350, 722, 650);
->> >> 
->> >> Hiding a parameter to a macro like that is bad coding practice, so don't
->> >> do that please!
->> >
->> > Yes and no.
->> >
->> > Adding the other 3 arguments to the macro doesn't help legibility.
->> >
->> > Keeping the macro definition local to the place that it's used
->> > can help avoid typos.
->> 
->> It's wrong, so just don't do it here!
->
-> It's not "wrong", you just don't like it.
+On Tue, Oct 07, 2014 at 05:33:35PM +0200, Vlastimil Babka wrote:
+> Compaction relies on zone watermark checks for decisions such as if it's worth
+> to start compacting in compaction_suitable() or whether compaction should stop
+> in compact_finished(). The watermark checks take classzone_idx and alloc_flags
+> parameters, which are related to the memory allocation request. But from the
+> context of compaction they are currently passed as 0, including the direct
+> compaction which is invoked to satisfy the allocation request, and could
+> therefore know the proper values.
+> 
+> The lack of proper values can lead to mismatch between decisions taken during
+> compaction and decisions related to the allocation request. Lack of proper
+> classzone_idx value means that lowmem_reserve is not taken into account.
+> This has manifested (during recent changes to deferred compaction) when DMA
+> zone was used as fallback for preferred Normal zone. compaction_suitable()
+> without proper classzone_idx would think that the watermarks are already
+> satisfied, but watermark check in get_page_from_freelist() would fail. Because
+> of this problem, deferring compaction has extra complexity that can be removed
+> in the following patch.
+> 
+> The issue (not confirmed in practice) with missing alloc_flags is opposite in
+> nature. For allocations that include ALLOC_HIGH, ALLOC_HIGHER or ALLOC_CMA in
+> alloc_flags (the last includes all MOVABLE allocations on CMA-enabled systems)
+> the watermark checking in compaction with 0 passed will be stricter than in
+> get_page_from_freelist(). In these cases compaction might be running for a
+> longer time than is really needed.
+> 
+> This patch fixes these problems by adding alloc_flags and classzone_idx to
+> struct compact_control and related functions involved in direct compaction and
+> watermark checking. Where possible, all other callers of compaction_suitable()
+> pass proper values where those are known. This is currently limited to
+> classzone_idx, which is sometimes known in kswapd context. However, the direct
+> reclaim callers should_continue_reclaim() and compaction_ready() do not
+> currently know the proper values, so the coordination between reclaim and
+> compaction may still not be as accurate as it could. This can be fixed later,
+> if it's shown to be an issue.
+> 
+> The effect of this patch should be slightly better high-order allocation
+> success rates and/or less compaction overhead, depending on the type of
+> allocations and presence of CMA. It allows simplifying deferred compaction
+> code in a followup patch.
+> 
+> When testing with stress-highalloc, there was some slight improvement (which
+> might be just due to variance) in success rates of non-THP-like allocations.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+> ---
+>  include/linux/compaction.h |  8 ++++++--
+>  mm/compaction.c            | 29 +++++++++++++++--------------
+>  mm/internal.h              |  2 ++
+>  mm/page_alloc.c            |  1 +
+>  mm/vmscan.c                | 12 ++++++------
+>  5 files changed, 30 insertions(+), 22 deletions(-)
+> 
+> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> index 60bdf8d..d896765 100644
+> --- a/include/linux/compaction.h
+> +++ b/include/linux/compaction.h
+> @@ -33,10 +33,12 @@ extern int fragmentation_index(struct zone *zone, unsigned int order);
+>  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  			int order, gfp_t gfp_mask, nodemask_t *mask,
+>  			enum migrate_mode mode, int *contended,
+> +			int alloc_flags, int classzone_idx,
+>  			struct zone **candidate_zone);
+>  extern void compact_pgdat(pg_data_t *pgdat, int order);
+>  extern void reset_isolation_suitable(pg_data_t *pgdat);
+> -extern unsigned long compaction_suitable(struct zone *zone, int order);
+> +extern unsigned long compaction_suitable(struct zone *zone, int order,
+> +					int alloc_flags, int classzone_idx);
+>  
+>  /* Do not skip compaction more than 64 times */
+>  #define COMPACT_MAX_DEFER_SHIFT 6
+> @@ -103,6 +105,7 @@ static inline bool compaction_restarting(struct zone *zone, int order)
+>  static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+>  			enum migrate_mode mode, int *contended,
+> +			int alloc_flags, int classzone_idx,
+>  			struct zone **candidate_zone)
+>  {
+>  	return COMPACT_CONTINUE;
+> @@ -116,7 +119,8 @@ static inline void reset_isolation_suitable(pg_data_t *pgdat)
+>  {
+>  }
+>  
+> -static inline unsigned long compaction_suitable(struct zone *zone, int order)
+> +static inline unsigned long compaction_suitable(struct zone *zone, int order,
+> +					int alloc_flags, int classzone_idx)
+>  {
+>  	return COMPACT_SKIPPED;
+>  }
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index edba18a..dba8891 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -1069,9 +1069,9 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
+>  
+>  	/* Compaction run is not finished if the watermark is not met */
+>  	watermark = low_wmark_pages(zone);
+> -	watermark += (1 << cc->order);
+>  
+> -	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
+> +	if (!zone_watermark_ok(zone, cc->order, watermark, cc->classzone_idx,
+> +							cc->alloc_flags))
+>  		return COMPACT_CONTINUE;
+>  
+>  	/* Direct compactor: Is a suitable page free? */
+> @@ -1097,7 +1097,8 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
+>   *   COMPACT_PARTIAL  - If the allocation would succeed without compaction
+>   *   COMPACT_CONTINUE - If compaction should run now
+>   */
+> -unsigned long compaction_suitable(struct zone *zone, int order)
+> +unsigned long compaction_suitable(struct zone *zone, int order,
+> +					int alloc_flags, int classzone_idx)
+>  {
+>  	int fragindex;
+>  	unsigned long watermark;
+> @@ -1134,7 +1135,7 @@ unsigned long compaction_suitable(struct zone *zone, int order)
+>  		return COMPACT_SKIPPED;
+>  
+>  	if (fragindex == -1000 && zone_watermark_ok(zone, order, watermark,
+> -	    0, 0))
+> +	    classzone_idx, alloc_flags))
+>  		return COMPACT_PARTIAL;
 
-I consider it wrong, and I am the co-maintainer of this driver .... and
-I NACK it.
+Hello,
 
-There's a gazillion real issues to fix in this driver, adding a bad
-macro isn't on that list.
+compaction_suitable() has one more zone_watermark_ok(). Why is it
+unchanged?
 
-Jes
+Thanks.
