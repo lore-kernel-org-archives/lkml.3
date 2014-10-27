@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaJ0TAv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:00:51 -0400
-Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:51199 "EHLO
-	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752915AbaJ0TAt (ORCPT
+	id S1752913AbaJ0TAs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:00:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52514 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868AbaJ0TAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:00:49 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmEPABmVTlRXQ3zJ/2dsb2JhbABcgw6BLLlDCwUBdJpDgR4XAX2EXyOBGjeIRQG9AI5iLIY0ilQdhDUFnWGMaolEgUcBbIFFPC+CSwEBAQ
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] ipx: move extern sysctl_ipx_pprop_broadcasting to header file
-Date: Mon, 27 Oct 2014 20:00:41 +0100
-Message-Id: <1414436441-4784-1-git-send-email-fabf@skynet.be>
+	Mon, 27 Oct 2014 15:00:42 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Chris Ball <chris@printf.net>, Lee Jones <lee.jones@linaro.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13 050/105] mfd: rtsx_pcr: Fix MSI enable error handling
+Date: Mon, 27 Oct 2014 11:56:25 -0700
+Message-Id: <1414436240-13879-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
+References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-include ipx.h from sysctl_net_ipx.c
+3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
+------------------
+
+From: Chris Ball <chris@printf.net>
+
+commit 5152970538a5e16c03bbcb9f1c780489a795ed40 upstream.
+
+pci_enable_msi() can return failure with both positive and negative
+integers -- it returns 0 for success -- but is only tested here for
+"if (ret < 0)".  This causes us to try to use MSI on the RTS5249 SD
+reader in the Dell XPS 11 when enabling MSI failed, causing:
+
+[    1.737110] rtsx_pci: probe of 0000:05:00.0 failed with error -110
+
+Reported-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
+Tested-by: D. Jared Dominguez <Jared_Dominguez@Dell.com>
+Signed-off-by: Chris Ball <chris@printf.net>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/net/ipx.h        | 3 +++
- net/ipx/sysctl_net_ipx.c | 4 +---
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/mfd/rtsx_pcr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/net/ipx.h b/include/net/ipx.h
-index 0143180..320f47b 100644
---- a/include/net/ipx.h
-+++ b/include/net/ipx.h
-@@ -42,6 +42,9 @@ struct ipxhdr {
- 	struct ipx_address	ipx_source __packed;
- };
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index 705698f..eb45a42 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -1172,7 +1172,7 @@ static int rtsx_pci_probe(struct pci_dev *pcidev,
+ 	pcr->msi_en = msi_en;
+ 	if (pcr->msi_en) {
+ 		ret = pci_enable_msi(pcidev);
+-		if (ret < 0)
++		if (ret)
+ 			pcr->msi_en = false;
+ 	}
  
-+/* From af_ipx.c */
-+extern int sysctl_ipx_pprop_broadcasting;
-+
- static __inline__ struct ipxhdr *ipx_hdr(struct sk_buff *skb)
- {
- 	return (struct ipxhdr *)skb_transport_header(skb);
-diff --git a/net/ipx/sysctl_net_ipx.c b/net/ipx/sysctl_net_ipx.c
-index ad7c03d..0dafcc5 100644
---- a/net/ipx/sysctl_net_ipx.c
-+++ b/net/ipx/sysctl_net_ipx.c
-@@ -9,14 +9,12 @@
- #include <linux/mm.h>
- #include <linux/sysctl.h>
- #include <net/net_namespace.h>
-+#include <net/ipx.h>
- 
- #ifndef CONFIG_SYSCTL
- #error This file should not be compiled without CONFIG_SYSCTL defined
- #endif
- 
--/* From af_ipx.c */
--extern int sysctl_ipx_pprop_broadcasting;
--
- static struct ctl_table ipx_table[] = {
- 	{
- 		.procname	= "ipx_pprop_broadcasting",
 -- 
 1.9.1
 
