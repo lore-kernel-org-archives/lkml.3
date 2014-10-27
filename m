@@ -1,41 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701AbaJ0LJJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 07:09:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49740 "EHLO mx2.suse.de"
+	id S1752705AbaJ0LKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 07:10:13 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59405 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308AbaJ0LJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 07:09:07 -0400
-Message-ID: <1414408157.26910.6.camel@linux-0dmf.site>
-Subject: Re: [PATCH] usb: serial: Perform verification for FTDI FT232R
- devices
-From: Oliver Neukum <oneukum@suse.de>
-To: russ.dill@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, greg@kroah.com
-Date: Mon, 27 Oct 2014 12:09:17 +0100
-In-Reply-To: <1414054344-3688-1-git-send-email-Russ.Dill@gmail.com>
-References: <1414054344-3688-1-git-send-email-Russ.Dill@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751180AbaJ0LKK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 07:10:10 -0400
+From: Vignesh R <vigneshr@ti.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Felipe Balbi <balbi@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Jan Kardell <jan.kardell@telliq.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Brad Griffis <bgriffis@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-iio@vger.kernel.org>,
+        <linux-input@vger.kernel.org>, Vignesh R <vigneshr@ti.com>
+Subject: [PATCH 0/4] Touchscreen performance related fixes
+Date: Mon, 27 Oct 2014 16:38:27 +0530
+Message-ID: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-10-23 at 01:52 -0700, russ.dill@gmail.com wrote:
-> From: Russ Dill <Russ.Dill@gmail.com>
-> 
-> This patch provides the FTDI genuine product verification steps
-> as contained within the new 2.12.00 official release. It ensures
-> that counterfeiters don't exploit engineering investment made
-> by FTDI. Counterfeit ICs are destroying innovation in the
-> industry.
+This series of patches fix TSC defects related to lag in touchscreen
+performance and cursor jump at touch release. The lag was result of
+udelay in TSC interrupt handler. Cursor jump due to false pen-up event.
+The patches implement Advisory 1.0.31 in silicon errata of am335x-evm
+to avoid false pen-up events and remove udelay. The advisory says to use
+steps 1 to 4 for ADC and 5 to 16 for TSC (assuming 4 wire TSC and 4 channel
+ADC). Further the X co-ordinate must be the last one to be sampled just
+before charge step. The first two patches implement the required changes. 
 
-Sorry about not getting the joke. I should read news before
-going through a backlog.
+A DT parameter to configure the duration of tsc charge step. It represents
+number of ADC clock cycles to wait between applying the step configuration
+registers and going back to the IDLE state. The charge delay value can vary
+across boards. Configuring correct value of charge delay is important to avoid
+false pen-up events. Hence it is necessary to expose charge-delay value as
+DT parameter. The pen-up detection happens immediately after the charge step
+so this does in fact function as a hardware knob for adjusting the amount of
+settling time.
 
-	Regards
-		Oliver
+After applying these changes false pen-up events have not be observed and
+smooth circles can be drawn on touch screen. The performance is much better
+in recognizing quick movement across the screen. No lag or cursor jump is
+observed.
 
+Brad Griffis (2):
+  input: touchscreen: ti_am335x_tsc Interchange touchscreen and ADC
+    steps
+  input: touchscreen: ti_am335x_tsc: Remove udelay in interrupt handler
+
+Vignesh R (2):
+  arm: boot: dts: am335x-evm: Make charge delay a DT parameter for tsc
+  input: touchscreen: ti_am335x_tsc: Use charge delay DT parameter
+
+ .../bindings/input/touchscreen/ti-tsc-adc.txt      |  13 +++
+ arch/arm/boot/dts/am335x-evm.dts                   |   1 +
+ drivers/iio/adc/ti_am335x_adc.c                    |   2 +-
+ drivers/input/touchscreen/ti_am335x_tsc.c          | 106 ++++++++++-----------
+ drivers/mfd/ti_am335x_tscadc.c                     |   7 +-
+ include/linux/mfd/ti_am335x_tscadc.h               |   4 +-
+ 6 files changed, 76 insertions(+), 57 deletions(-)
+
+-- 
+1.9.1
 
