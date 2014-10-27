@@ -1,117 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaJ0ReJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:34:09 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54899 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855AbaJ0ReH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:34:07 -0400
-Date: Mon, 27 Oct 2014 12:33:10 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pm@vger.kernel.org>, Alan Cox <gnomes@lxorguk.ukuu.org.uk>,
-        Alexander Graf <agraf@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Romain Perier <romain.perier@gmail.com>,
-        Johan Hovold <johan@kernel.org>
-Subject: Re: [PATCH v3 00/47] kernel: Add support for power-off handler call
- chain
-Message-ID: <20141027173310.GB16005@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
- <20141027160324.GD10814@saruman>
- <20141027171617.GA19379@roeck-us.net>
+	id S1752142AbaJ0Ree (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:34:34 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60971 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaJ0Rec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:34:32 -0400
+Message-ID: <544E821D.5040004@linutronix.de>
+Date: Mon, 27 Oct 2014 18:34:21 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MW5yreqqjyrRcusr"
-Content-Disposition: inline
-In-Reply-To: <20141027171617.GA19379@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Vignesh R <vigneshr@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Felipe Balbi <balbi@ti.com>, Jan Kardell <jan.kardell@telliq.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Brad Griffis <bgriffis@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 0/4] Touchscreen performance related fixes
+References: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
+In-Reply-To: <1414408111-2631-1-git-send-email-vigneshr@ti.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---MW5yreqqjyrRcusr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10/27/2014 12:08 PM, Vignesh R wrote:
+> This series of patches fix TSC defects related to lag in touchscreen
 
-On Mon, Oct 27, 2014 at 10:16:17AM -0700, Guenter Roeck wrote:
-> On Mon, Oct 27, 2014 at 11:03:24AM -0500, Felipe Balbi wrote:
-> > Adding Johan, who's working on RTC power off for AM335x devices
-> >=20
-> Hi Felipe,
->=20
-> is that the rtc-omap driver ?
+I will try to look this in the next few days. Do we really need #3 (and
+then #4)? Given the complexity we have already, is there any benefit by
+decreasing this value? Would  someone want to increase it? Can we safely
+determine a value which works for everyone?
 
-yes it is.
+Sebastian
 
-> I am tracking linux-next for related changes. As new power-off handlers a=
-re
-> introduced, I prepare patches for those as well. I currently have patches=
- for
-> the following two drivers in the queue:
-> 	drivers/regulator/act8865-regulator.c
-> 	drivers/rtc/rtc-omap.c
->=20
-> I plan to send review requests for those patches in a week or so (I think
-> there is still some change pending to the power-off function in the rtc-o=
-map
-> driver, and I want to wait for it).
-
-yeah, Johan's working on that.
-
-> My current plan is to send a pull request for the series directly to Linus
-> when the next commit window opens; this is what a number of maintainers
-> suggested I should do. This pull request would exclude the last patch,
-> so pm_power_off would still be there. Next steps would then be to submit
-> another set of patches to update the newly introduced power-off handlers
-> and then to finally remove pm_power_off; this would probably happen after
-> the commit window closes.
->=20
-> At least that is the plan unless someone has a better idea ....
-
-sounds like a good idea to me :-)
-
-> There may be some variants; for example, it might make sense to create an
-> immutable branch with the key patches (1-3 and 8) to enable others to use
-> the new functions immediately. That would require Acks from affected
-> maintainers for patch 1, though, so I can not do that yet.
-
-alright, I think an immutable branch people can merge would be
-appreciated nevertheless, but I'd certainly defer that to arch and soc
-maintainers.
-
-cheers
-
---=20
-balbi
-
---MW5yreqqjyrRcusr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUToHWAAoJEIaOsuA1yqREuxAP/0qWwU4sAxICAhF1ymX8ip2N
-Z/loXagIwC9RqzS7oKAGZIeBYT5nUOsNjbcA45D3GD9/gmIjdirixP7OvkhjFG6H
-jC0Vr1uiE9dRwEJvTzpASuCZcxKS9kNO/DDWZJk+Ktjr4izCXZ68hQARCv6epbX0
-KEPBbQAvmYIuC4Yc5caHmh7/TWsOnp5Py/Hg6UGY1szmtWXU9PKFwoDZB0b7WCdv
-uKIGLPPr7ilFR7+lDeIC65ziNtT26r00LTA81l58iQqIvJD1mfYt95P+IR6C1h/A
-LZLx2ZkULY8tAT7XzYLhOs1BeydCWDpe2I44UrxkKlhholigCFKuG9lRkDAJ57mD
-u3rQKBS98FvJUeraNWj4YRR/Ugy/dU4+vY2BNqnj7yX8z6jvqcEWxosn75JDDCrG
-iTaU47Y57F80NELox9yjmY0GzZGody3rlliOIFrtyR3/aZmT/BguqRuqTeJC3j/H
-bXpl1rskY5O8QTvxisS6MXOJI4BCi2olnjzU+LOUIvZ4+719SzyNmmr8NC7uzWya
-dkw1W8UzJIV52wdlz5d0dNm5uFePncIpZfUI95aqcxmDfgc9G0X9UUgwlM/kvI2H
-o/1DlJ9FmTKyxUUPWbkxH1sGZ/J8Irm2HSYmx+iZsnj+fSOa59ZkcVmbnGUs4LZn
-o0LF8kq7aTK9pTXj8S12
-=1DHn
------END PGP SIGNATURE-----
-
---MW5yreqqjyrRcusr--
