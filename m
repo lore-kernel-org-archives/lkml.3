@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaJ0RUN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:20:13 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:48254 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751368AbaJ0RUH (ORCPT
+	id S1752037AbaJ0RUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:20:18 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:57788 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751368AbaJ0RUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:20:07 -0400
-Date: Mon, 27 Oct 2014 18:16:55 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Romain Perier <romain.perier@gmail.com>
-Cc: heiko@sntech.de, devicetree@vger.kernel.org, broonie@kernel.org,
-        lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org, robh@kernel.org, mark.rutland@arm.com,
-        johan@kernel.org, linux-pm@vger.kernel.org, linux@roeck-us.net,
-        lee.jones@linaro.org, balbi@ti.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, gnurou@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v1 01/10] of: Rename "poweroff-source" property to
- "system-power-controller"
-Message-ID: <20141027171655.GH2006@localhost>
-References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
+	Mon, 27 Oct 2014 13:20:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140901065916.28909.35097.stgit@zurg>
+References: <20140901065916.28909.35097.stgit@zurg>
+Date: Mon, 27 Oct 2014 21:20:14 +0400
+Message-ID: <CALYGNiOC7E9kPLn_+rA7Wv7AMQgzyrot9Uyd0s3DDEw+78KWGQ@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] kconfig: store default ARCH in .config
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Michal Marek <mmarek@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 04:26:46PM +0000, Romain Perier wrote:
-> As discussed on the mailing list, it makes more sense to rename this property
-> to "system-power-controller". Problem being that the word "source" usually tends
-> to be used for inputs and that is out of control of the OS. The poweroff
-> capability is an output which simply turns the system-power off. Also, this
-> property might be used by drivers which power-off the system and power back on
-> subsequent RTC alarms. This seems to suggest to remove "poweroff" from the
-> property name and to choose "system-power-controller" as the more generic name.
-> This patchs adds the required renaming changes and defines an helper function
-> which is compatible with both properties, the old one prefixed by a vendor name
-> and the new one without any prefix.
-> 
-> Signed-off-by: Romain Perier <romain.perier@gmail.com>
+Bump.
+
+On Mon, Sep 1, 2014 at 11:16 AM, Konstantin Khlebnikov <koct9i@gmail.com> wrote:
+> This is second attempt of fixing target archecture amnesia.
+> v1 patch: http://lkml.kernel.org/r/20140706080234.19520.96704.stgit@zurg
+>
+> First version saved ARCH as CONFIG_DEFAULT_ARCH and used it as defult ARCH.
+>
+> This version changes semantic of Kconfig option env="...", now it acts more
+> like the user input, except that the value comes from the environment.
+> Variable from environment overrides all defaults and value from config file.
+> If environment variable is not defined this option has no effect.
+>
+> So, now ARCH is saved as CONFIG_ARCH.
+>
+> Also this patchset links CONFIG_CROSS_COMPILE and CROSS_COMPILE in the same way.
+> Changing it in command line/environment also updates value in the config file.
+>
 > ---
->  include/linux/of.h | 27 +++++++++++++++++++++++----
->  1 file changed, 23 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 27b3ba1..c1ed2a5 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -867,14 +867,33 @@ static inline int of_changeset_update_property(struct of_changeset *ocs,
->  extern int of_resolve_phandles(struct device_node *tree);
->  
->  /**
-> - * of_system_has_poweroff_source - Tells if poweroff-source is found for device_node
-> + * of_is_system_power_controller - Tells if the property for controlling system
-> + * power is found in device_node.
->   * @np: Pointer to the given device_node
->   *
->   * return true if present false otherwise
->   */
-> -static inline bool of_system_has_poweroff_source(const struct device_node *np)
-> -{
-> -	return of_property_read_bool(np, "poweroff-source");
-> +static inline bool of_is_system_power_controller(const struct device_node *np)
-> +{
-> +	struct property *pp;
-> +	unsigned long flags;
-> +	char *sep;
-> +	bool found = false;
-> +
-> +	raw_spin_lock_irqsave(&devtree_lock, flags);
-> +	for_each_property_of_node(np, pp) {
-> +		if (of_prop_cmp(pp->name, "system-power-controller") == 0) {
-> +			found = true;
-> +			break;
-> +		}
-> +		sep = strchr(pp->name, ',');
-> +		if (sep && sep - pp->name && of_prop_cmp(sep + 1, "system-power-controller") == 0) {
-> +			found = true;
-> +			break;
-> +		}
-> +	}
-> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
-> +	return found;
->  }
-
-You probably don't want this to be inline.
-
-Johan
+>
+> Konstantin Khlebnikov (4):
+>       kconfig: save values imported from environment into config file
+>       scripts/config: add option for changing output for undefined options
+>       kconfig: get target architecture from config file
+>       kconfig: link CONFIG_CROSS_COMPILE with environment variable
+>
+>
+>  Documentation/kbuild/kconfig-language.txt |   10 ++++------
+>  Documentation/kbuild/makefiles.txt        |    3 ++-
+>  Makefile                                  |   21 +++++++++++++++------
+>  init/Kconfig                              |    1 +
+>  scripts/config                            |   15 ++++++++++++---
+>  scripts/kconfig/confdata.c                |   26 ++++++++++++++++++++++++++
+>  scripts/kconfig/expr.h                    |    2 +-
+>  scripts/kconfig/symbol.c                  |    3 ---
+>  8 files changed, 61 insertions(+), 20 deletions(-)
+>
+> --
+> Signature
