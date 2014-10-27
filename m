@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaJ0DfT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 23:35:19 -0400
-Received: from ozlabs.org ([103.22.144.67]:56607 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984AbaJ0DfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 23:35:17 -0400
-Date: Mon, 27 Oct 2014 14:35:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Naveen Krishna Ch <naveenkrishna.ch@gmail.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Subject: linux-next: build failure after merge of the pinctrl tree
-Message-ID: <20141027143509.550b8545@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1752205AbaJ0Djq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 23:39:46 -0400
+Received: from mail-bl2on0116.outbound.protection.outlook.com ([65.55.169.116]:31618
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751984AbaJ0Djo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Oct 2014 23:39:44 -0400
+From: Yuantian Tang <Yuantian.Tang@freescale.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>
+Subject: RE: [PATCH] cpufreq: qoriq: Make the driver usable on all QorIQ
+ platforms
+Thread-Topic: [PATCH] cpufreq: qoriq: Make the driver usable on all QorIQ
+ platforms
+Thread-Index: AQHP6bh2NIuvlhOTzUyj6ABxjLiyN5wz774AgAZVyiCAAALMgIAJE1uw
+Date: Mon, 27 Oct 2014 03:39:40 +0000
+Message-ID: <c94b68be09dd4bfaa8a80d9877362fb5@DM2PR03MB574.namprd03.prod.outlook.com>
+References: <1413515616-15874-1-git-send-email-B29983@freescale.com>
+	<CAKohpokotKSvQ13uU4MnCer+qzBUUbGVTd19y7xswCAEKk3nGQ@mail.gmail.com>
+	<6aaa50ef5f234fe2896f1c66eb646dfb@DM2PR03MB574.namprd03.prod.outlook.com>
+ <CAKohpokSuKOwZ3-OWFtU0z7E1fsMg4tyPiUoFUfw26pD9Py=MA@mail.gmail.com>
+In-Reply-To: <CAKohpokSuKOwZ3-OWFtU0z7E1fsMg4tyPiUoFUfw26pD9Py=MA@mail.gmail.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [192.88.158.211]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB576;UriScan:;
+x-forefront-prvs: 0377802854
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(377454003)(51704005)(199003)(24454002)(13464003)(86362001)(110136001)(74316001)(33646002)(50986999)(54356999)(21056001)(92566001)(76576001)(4396001)(101416001)(76176999)(93886004)(120916001)(85306004)(106356001)(122556002)(107046002)(19580405001)(19580395003)(40100003)(106116001)(105586002)(95666004)(99286002)(20776003)(108616004)(66066001)(64706001)(76482002)(31966008)(87936001)(46102003)(80022003)(97736003)(2656002)(85852003)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB576;H:DM2PR03MB574.namprd03.prod.outlook.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/C1BSpUh2I3mVNTU03U7UEow"; protocol="application/pgp-signature"
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB335;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9R3dpIR002924
 
---Sig_/C1BSpUh2I3mVNTU03U7UEow
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+> -----Original Message-----
+> From: Viresh Kumar [mailto:viresh.kumar@linaro.org]
+> Sent: Tuesday, October 21, 2014 5:04 PM
+> To: Tang Yuantian-B29983
+> Cc: Rafael J. Wysocki; Linux Kernel Mailing List; linux-pm@vger.kernel.org;
+> linuxppc-dev@ozlabs.org
+> Subject: Re: [PATCH] cpufreq: qoriq: Make the driver usable on all QorIQ
+> platforms
+> 
+> On 21 October 2014 14:29, Yuantian Tang <Yuantian.Tang@freescale.com>
+> wrote:
+> > If I do so, menuconfig will display like this(on PPC):
+> >         PowerPC CPU frequency scaling drivers  ----
+> >     QorIQ CPU Frequency scaling  --->
+> >                 <*> CPU frequency scaling driver for Freescale QorIQ
+> > SoCs On ARM, there should be a similar problem.
+> > Isn't weird?
+> 
+> Similar is true for cpufreq-cpu0 driver as well.. Maybe we can create a
+> Kconfig.drivers configuration and include it from all architecture specific ones ?
+> 
+> @ Rafael ?
 
-After merging the pinctrl tree, today's linux-next build (arm multi_v7_defc=
-onfig)
-failed like this:
+Do we have a conclusion yet?
 
-drivers/pinctrl/samsung/pinctrl-exynos.c:1194:43: error: array type has inc=
-omplete element type
- static const struct samsung_pin_bank_data exynos7_pin_banks0[] __initconst=
- =3D {
-                                           ^
-drivers/pinctrl/samsung/pinctrl-exynos.c:1195:2: error: field name not in r=
-ecord or union initializer
-  EXYNOS_PIN_BANK_EINTW(8, 0x000, "gpa0", 0x00),
-  ^
-drivers/pinctrl/samsung/pinctrl-exynos.c:1195:2: error: (near initializatio=
-n for 'exynos7_pin_banks0')
-drivers/pinctrl/samsung/pinctrl-exynos.c:1195:2: error: field name not in r=
-ecord or union initializer
-
-And so on ...
-
-Caused by commit 9d3de28d785f ("pinctrl: exynos: Add initial driver
-data for Exynos7").
-
-I have used the pinctrl tree from next-20141023 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/C1BSpUh2I3mVNTU03U7UEow
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUTb1xAAoJEMDTa8Ir7ZwVJMIQAI1OOG8NNXaMrovW4i0hSHNg
-lqJMuqSlEn9cUIMnO80i15lb0n8ZDgi2H47jGQhN4dJnPjfLncrIrtjKPOQ7LIXY
-oBw8cNqfqyOCO7rLVXmUsg31jJKfNx+MgAHqR6TmTcPG0IFgVgC6Y8LNkEnaIvG9
-BryUlKu8u5I2HKpRbKrA6tQMloM0XpbFRqf+ZApbqw/nBQLlPuH+vbZfSgxBcSUL
-qG/9l3NWIH/Q6Y48BAF4H048P1qmEQhcUTKG8Tp72H1+cfjIh4nzmVtbKT1LPCbl
-tj7TRUvL1zZSqGuTKwWOXAQSlW2qRX9omorOhwWTJfZLd4UqY6nVLgp9PU3UtSW+
-mBQ4oQF5ciEzXJPM1+ucxccz1TufW98OAiA6k2Uj92++oFVAHaqZBWtd4N3Iq/73
-yKVe2j49atPw3bnUOmJr3xORadLiTZGZ3rVgiyzk6V/WLY/TPKjTakEUPccY+kP8
-qfUir4ntUYBzcLP8pv04MeabCXz23gycHLmdf3nSLgAsWWylt8xWwdNcNqCmUZT7
-2sZ6GAksP0JursKh5vZqBjdAOQdP4A7mwX6lI+VU3zkSW6dU4flc5hnBa4aj7b4p
-Kgj4iq/lieJyuGxuyNq2lUErnuHxzbK2u6NW/OO1cl6E50L0BI4Dp6CNbnLGwPO4
-hYmXDV/asCwE/9+hkMpj
-=Oh+d
------END PGP SIGNATURE-----
-
---Sig_/C1BSpUh2I3mVNTU03U7UEow--
+Regards,
+Yuantian
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
