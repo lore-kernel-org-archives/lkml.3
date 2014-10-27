@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657AbaJ0M3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:29:48 -0400
-Received: from eddie.linux-mips.org ([148.251.95.138]:50603 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766AbaJ0M3r (ORCPT
+	id S1752666AbaJ0MbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:31:06 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40170 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755AbaJ0MbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 08:29:47 -0400
-Date: Mon, 27 Oct 2014 12:29:44 +0000 (GMT)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Ingo Molnar <mingo@kernel.org>
-cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Fix XT-PIC-XT-PIC in /proc/interrupts
-In-Reply-To: <20141027074748.GA18025@gmail.com>
-Message-ID: <alpine.LFD.2.11.1410271207230.3413@eddie.linux-mips.org>
-References: <alpine.LFD.2.11.1410260147190.21390@eddie.linux-mips.org> <20141027074748.GA18025@gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Mon, 27 Oct 2014 08:31:04 -0400
+Date: Mon, 27 Oct 2014 13:30:56 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Yao Dongdong <yaodongdong@huawei.com>
+Cc: Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2]sched:add check of shallowest_idle_cpu before search
+ for least_loaded_cpu
+Message-ID: <20141027123056.GE3337@twins.programming.kicks-ass.net>
+References: <544E1348.4050100@huawei.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544E1348.4050100@huawei.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, Ingo Molnar wrote:
 
-> What's the effect of this change on the output for non-8259A irq 
-> controllers?
+Please as to try again:
 
- Good question, I didn't expect any other IRQ controller to be used for 
-ISA interrupts (the APIC is handled elsewhere).  I have checked the 
-sources and the only other controller that can be used for `legacy_pic' 
-is `dummy_irq_chip' (cf. `default_legacy_pic' vs `null_legacy_pic' in 
-arch/x86/kernel/i8259.c).  That affects `init_ISA_irqs' only (the other 
-place, `make_8259A_irq', has a reference to `i8259A_chip' hardcoded).
+Applying patch patches/yao_dongdong-sched_add_check_of_shallowest_idle_cpu_before_search_for_least_loaded_cpu.patch
+patching file kernel/sched/fair.c
+Hunk #1 FAILED at 4446.
+1 out of 1 hunk FAILED -- rejects in file kernel/sched/fair.c
+Patch patches/yao_dongdong-sched_add_check_of_shallowest_idle_cpu_before_search_for_least_loaded_cpu.patch does not apply (enforce with -f)
+quilt returned 1, with 0 fuzz and 1 rejects
+use quilt -f? y/n [y]: y
+Applying patch patches/yao_dongdong-sched_add_check_of_shallowest_idle_cpu_before_search_for_least_loaded_cpu.patch
+patching file kernel/sched/fair.c
+Hunk #1 FAILED at 4446.
+1 out of 1 hunk FAILED -- saving rejects to file kernel/sched/fair.c.rej
+Applied patch patches/yao_dongdong-sched_add_check_of_shallowest_idle_cpu_before_search_for_least_loaded_cpu.patch (forced; needs refresh)
+reject patch patches/yao_dongdong-sched_add_check_of_shallowest_idle_cpu_before_search_for_least_loaded_cpu.patch file kernel/sched/fair.c hunk 1 line 4
+[a]uto[m]erge,edit [f]ile [p]atch [r]ej,[n]ext,[d]elete: [amfdprn]: m
+rej started:
+[a]uto[m]erge,edit [f]ile [p]atch [r]ej,[n]ext,[d]elete: [amfdprn]:     kernel/sched/fair.c: 1 matched, 0 conflicts remain
+n
+patches/yao_dongdong-sched_add_check_of_shallowest_idle_cpu_before_search_for_least_loaded_cpu.patch done [s]top, [n]ext, [r]efresh [snr]: r
+WARNING: Use a single space after Signed-off-by:
+#13: 
+Signed-off-by:yaodongdong@huawei.com
 
- In this case the output would change from "dummy-dummy" to "dummy", 
-which IMHO has just as much value as the change from "XT-PIC-XT-PIC" to 
-"XT-PIC".  However I don't think you'd be able to request such IRQs so 
-they will never show up in /proc/interrupts, making this observation 
-largely irrelevant.  If you think I may be wrong here, then can you 
-please find such a system and try this change with it (or can someone 
-else reading this make this check for me by any chance)?  Unfortunately 
-all x86 hardware I have does have an 8259A pair.
+ERROR: code indent should use tabs where possible
+#25: FILE: kernel/sched/fair.c:4644:
++               } else if (shallowest_idle_cpu == -1) {$
 
- Also please note that both places explicitly refer to the name of the 
-IRQ chip being installed as the name of the handler as well, with 
-`i8259A_chip.name' and `chip->name' respectively, this is hardcoded.  
-So no matter which chip is used there'll be a duplicate name in 
-/proc/interrupts.
+WARNING: please, no spaces at the start of a line
+#25: FILE: kernel/sched/fair.c:4644:
++               } else if (shallowest_idle_cpu == -1) {$
 
- Does this answer address your concern?
+total: 1 errors, 2 warnings, 8 lines checked
 
-  Maciej
+NOTE: whitespace errors detected, you may wish to use scripts/cleanpatch or
+      scripts/cleanfile
