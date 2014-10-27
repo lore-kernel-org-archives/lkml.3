@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148AbaJ0BJe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 21:09:34 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:49170 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751893AbaJ0BJc (ORCPT
+	id S1752116AbaJ0BMF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 21:12:05 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:16903 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813AbaJ0BMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 21:09:32 -0400
-Message-ID: <544D9B00.4040603@huawei.com>
-Date: Mon, 27 Oct 2014 09:08:16 +0800
-From: "Zhangjie (HZ)" <zhangjie14@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Rick Jones <rick.jones2@hp.com>, <kvm@vger.kernel.org>,
-        Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <liuyongan@huawei.com>,
-        <qinchuanyu@huawei.com>
-Subject: Re: [QA-TCP] How to send tcp small packages immediately?
-References: <544A029D.3080508@huawei.com> <544A6E12.2000007@hp.com>
-In-Reply-To: <544A6E12.2000007@hp.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.210]
+	Sun, 26 Oct 2014 21:12:03 -0400
+X-AuditID: cbfee68e-f79b46d000002b74-71-544d9be0f759
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: s.nawrocki@samsung.com, tomasz.figa@gmail.com
+Cc: kgene.kim@samsung.com, sw0312.kim@samsung.com, kyungmin.park@samsung.com,
+        inki.dae@samsung.com, geunsik.lim@samsung.com, cw00.choi@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv3 0/2] clk: samsung: Add clock controller driver for Exynos4415
+ SoC
+Date: Mon, 27 Oct 2014 10:11:56 +0900
+Message-id: <1414372318-594-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsWyRsSkSPfBbN8Qg78TeC2uf3nOavFnQiub
+	xaT7E1gsehdcZbM42/SG3eLyrjlsFjPO72OyOPymndVixuSXbBardv1hdODy2DnrLrtH35ZV
+	jB6fN8kFMEdx2aSk5mSWpRbp2yVwZbQ/f8Bc8Iuj4s3qtUwNjLPZuxg5OSQETCQWfTzGCGGL
+	SVy4t54NxBYSWMoosfZQHUzN4QefWLoYuYDi0xklnizaxwrhNDFJ7H3TxgxSxSagJbH/xQ2g
+	bg4OEQFDiZuHlEBqmAWuM0rMPNUDNlVYIFTi4dc1YJtZBFQlJk5sANvMK+AscXjDfDaIbQoS
+	y5bPZIWw29klFs+zh6gXkPg2+RALyHwJAVmJTQeYIUokJQ6uuMEygVFwASPDKkbR1ILkguKk
+	9CIjveLE3OLSvHS95PzcTYzA8D3971nfDsabB6wPMQpwMCrx8FoU+oYIsSaWFVfmHmI0Bdow
+	kVlKNDkfGCV5JfGGxmZGFqYmpsZG5pZmSuK8CVI/g4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFw
+	SjUwyry6Kr2Q2T9Bd9euqaUcnZ1813eYe0jPL7xqMFN93mv7Y/0Szzljlyzh+1uyalFF5uwD
+	xcY9xZrdG071Hn6UtFvh9KnkdxYz2kukA4o2JHFGFqR717KFXgi9u3fFjjCZwuucYa0hhnbH
+	bPprtp24ra34l/vMXfXrvtNKBLqlOrdnX25IeZCpxFKckWioxVxUnAgAcTZj3loCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jQd0Hs31DDE5PZbe4/uU5q8WfCa1s
+	FpPuT2Cx6F1wlc3ibNMbdovLu+awWcw4v4/J4vCbdlaLGZNfslms2vWH0YHLY+esu+wefVtW
+	MXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg
+	65aZA3SMkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjGj/fkD5oJfHBVv
+	Vq9lamCczd7FyMkhIWAicfjBJxYIW0ziwr31bF2MXBxCAtMZJZ4s2scK4TQxSex908YMUsUm
+	oCWx/8UNoCoODhEBQ4mbh5RAapgFrjNKzDzVwwZSIywQKvHw6xqwDSwCqhITJzYwgti8As4S
+	hzfMZ4PYpiCxbPlM1gmM3AsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEfIM6kdjCsb
+	LA4xCnAwKvHwWhT6hgixJpYVV+YeYpTgYFYS4RXNBwrxpiRWVqUW5ccXleakFh9iNAXaPpFZ
+	SjQ5Hxi9eSXxhsYmZkaWRuaGFkbG5krivAdarQOFBNITS1KzU1MLUotg+pg4OKUaGPWbNj3+
+	wV5bNilKJ6Vdo/vHPdtJnhczZSJ/3uD1adZ49bJ5Wvnum6xmPjMipvx6GCxlMcH16PbPC74m
+	xAh1mc1pDS4Oyb11ZM6fztAkHcsjl9s4m6JcHTrYZf5rFCW+rFn7O55lDb9mG++P3IQ575q+
+	m3bHddd/ku0oULO/ef/jKvmAmdPWKLEUZyQaajEXFScCABHRGlOmAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A02020A.544D9B4A.0200,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: d4a094dc43a23fd7176f2f39766b4969
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds new clock controller device driver for Exynos4415 SoC.
 
-Thanks!
-On 2014/10/24 23:19, Rick Jones wrote:
-> On 10/24/2014 12:41 AM, Zhangjie (HZ) wrote:
->> Hi,
->>
->> I use netperf to test the performance of small tcp package, with TCP_NODELAY set :
->>
->> netperf -H 129.9.7.164 -l 100 -- -m 512 -D
->>
->> Among the packages I got by tcpdump, there is not only small packages, also lost of
->> big ones (skb->len=65160).
->>
->> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 65160
->> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
->> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
->> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
->> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 65160
->> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
->> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
->> IP 129.9.7.164.34607 > 129.9.7.186.60840: tcp 0
->> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 80
->> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 512
->> IP 129.9.7.186.60840 > 129.9.7.164.34607: tcp 512
->>
->> SO, how to test small tcp packages? Including TCP_NODELAY, What else should be set?
-> 
-> Well, I don't think there is anything else you can set.  Even with TCP_NODELAY set, segment size with TCP will still be controlled by factors such as congestion window.
-> 
-> I am ass-u-me-ing your packet trace is at the sender.  I suppose if your sender were fast enough compared to the path that might combine with congestion window to result in the very large segments.
-> 
-> Not to say there cannot be a bug somewhere with TSO overriding TCP_NODELAY, but in broad terms, even TCP_NODELAY does not guarantee small TCP segments.  That has been something of a bane on my attempts to use TCP for aggregate small-packet performance measurements via netperf for quite some time.
-> 
-> And since you seem to have included a virtualization mailing list I would also ass-u-me that virtualization is involved somehow.  Knuth only knows how that will affect the timing of events, which will be very much involved in matters of congestion window and such.  I suppose it is even possible that if the packet trace is on a VM receiver that some delays in getting the VM running could mean that GRO would end-up making large segments being pushed up the stack.
-> 
-> happy benchmarking,
-Yes. Using netperf to send tcp packages frome physical nic has the same problems.
-Thanks for your explanation!
-> 
-> rick jones
-> .
-> 
+Changes from v2:
+- Fix issue by checkpatch.pl
+- Add 'exynos4415' prefix to the name of tables/functions/variables
+
+Changes from v1:
+- Separate only clock patches from Exynos4415 patchset[1]
+ [1] [PATCH 0/5] Support new Exynos4415 SoC based on Cortex-A9 quad cores
+  : https://lkml.org/lkml/2014/10/19/253
+- Fix string issue on documentation file of Exynos4415 clock controller
+
+Chanwoo Choi (2):
+  clk: samsung: exynos4415: Add clocks using common clock framework
+  clk: samsung: Document binding for Exynos4415 clock controller
+
+ .../devicetree/bindings/clock/exynos4415-clock.txt |   38 +
+ drivers/clk/samsung/Makefile                       |    1 +
+ drivers/clk/samsung/clk-exynos4415.c               | 1142 ++++++++++++++++++++
+ include/dt-bindings/clock/exynos4415.h             |  360 ++++++
+ 4 files changed, 1541 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/exynos4415-clock.txt
+ create mode 100644 drivers/clk/samsung/clk-exynos4415.c
+ create mode 100644 include/dt-bindings/clock/exynos4415.h
 
 -- 
-Best Wishes!
-Zhang Jie
+1.8.5.5
 
