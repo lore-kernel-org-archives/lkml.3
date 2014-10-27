@@ -1,103 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaJ0Qiv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 12:38:51 -0400
-Received: from mail.kernel.org ([198.145.19.201]:47693 "EHLO mail.kernel.org"
+	id S1752633AbaJ0QkD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 12:40:03 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44451 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751872AbaJ0Qit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 12:38:49 -0400
-Date: Mon, 27 Oct 2014 17:38:43 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dbaryshkov@gmail.com, dwmw2@infradead.org
-Subject: Re: [PATCH v4] Add LTC2941/LTC2943 Battery Gauge Driver
-Message-ID: <20141027163842.GB20765@earth.universe>
-References: <1412748300-3915-1-git-send-email-mike.looijmans@topic.nl>
- <1414067918-6688-1-git-send-email-mike.looijmans@topic.nl>
+	id S1751511AbaJ0Qj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 12:39:59 -0400
+Date: Mon, 27 Oct 2014 11:38:40 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Romain Perier <romain.perier@gmail.com>
+CC: <heiko@sntech.de>, <devicetree@vger.kernel.org>, <broonie@kernel.org>,
+        <lgirdwood@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@linaro.org>, <robh@kernel.org>, <mark.rutland@arm.com>,
+        <johan@kernel.org>, <linux-pm@vger.kernel.org>, <linux@roeck-us.net>,
+        <lee.jones@linaro.org>, <balbi@ti.com>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <linux@arm.linux.org.uk>,
+        <swarren@wwwdotorg.org>, <thierry.reding@gmail.com>,
+        <gnurou@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v1 01/10] of: Rename "poweroff-source" property to
+ "system-power-controller"
+Message-ID: <20141027163840.GA14253@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="QTprm0S8XgL7H0Dt"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cWoXeonUoKmBZSoM"
 Content-Disposition: inline
-In-Reply-To: <1414067918-6688-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---QTprm0S8XgL7H0Dt
+--cWoXeonUoKmBZSoM
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Thu, Oct 23, 2014 at 02:38:38PM +0200, Mike Looijmans wrote:
-> Both the LTC2941 and LTC2943 measure battery capacity.
-> The LTC2943 is compatible with the LTC2941, it adds voltage and
-> temperature monitoring, and uses a slightly different conversion
-> formula for the charge counter.
+On Mon, Oct 27, 2014 at 04:26:46PM +0000, Romain Perier wrote:
+> As discussed on the mailing list, it makes more sense to rename this prop=
+erty
+> to "system-power-controller". Problem being that the word "source" usuall=
+y tends
+> to be used for inputs and that is out of control of the OS. The poweroff
+> capability is an output which simply turns the system-power off. Also, th=
+is
+> property might be used by drivers which power-off the system and power ba=
+ck on
+> subsequent RTC alarms. This seems to suggest to remove "poweroff" from the
+> property name and to choose "system-power-controller" as the more generic=
+ name.
+> This patchs adds the required renaming changes and defines an helper func=
+tion
+> which is compatible with both properties, the old one prefixed by a vendo=
+r name
+> and the new one without any prefix.
 >=20
-> To avoid confusion with e.g. the LTC2945, the driver is called
-> LTC2941 instead of LTC294X.
->=20
-> v2: Fix units of measurement: uV, uA and centidegrees.
-> v3: Correctly set configuration register. Allow negative values
->     for the sense resistor.
-> v4: Run checkpatch.pl and fix all errors and warnings.
->=20
-> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+> Signed-off-by: Romain Perier <romain.perier@gmail.com>
 > ---
-> [...]
->
-> +	np =3D of_node_get(client->dev.of_node);
+>  include/linux/of.h | 27 +++++++++++++++++++++++----
+>  1 file changed, 23 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index 27b3ba1..c1ed2a5 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -867,14 +867,33 @@ static inline int of_changeset_update_property(stru=
+ct of_changeset *ocs,
+>  extern int of_resolve_phandles(struct device_node *tree);
+> =20
+>  /**
+> - * of_system_has_poweroff_source - Tells if poweroff-source is found for=
+ device_node
+> + * of_is_system_power_controller - Tells if the property for controlling=
+ system
+> + * power is found in device_node.
+>   * @np: Pointer to the given device_node
+>   *
+>   * return true if present false otherwise
+>   */
+> -static inline bool of_system_has_poweroff_source(const struct device_nod=
+e *np)
+> -{
+> -	return of_property_read_bool(np, "poweroff-source");
+> +static inline bool of_is_system_power_controller(const struct device_nod=
+e *np)
+> +{
+> +	struct property *pp;
+> +	unsigned long flags;
+> +	char *sep;
+> +	bool found =3D false;
 > +
-> +	/* r_sense can be negative, when sense+ is connected to the battery
-> +	 * instead of the sense-. This results in reversed measurements. */
-> +	ret =3D of_property_read_u32(np, "resistor-sense", &r_sense);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev,
-> +			"Could not find resistor-sense in devicetree\n");
-> +		goto fail_name;
+> +	raw_spin_lock_irqsave(&devtree_lock, flags);
+> +	for_each_property_of_node(np, pp) {
+> +		if (of_prop_cmp(pp->name, "system-power-controller") =3D=3D 0) {
+> +			found =3D true;
+> +			break;
+> +		}
+> +		sep =3D strchr(pp->name, ',');
+> +		if (sep && sep - pp->name && of_prop_cmp(sep + 1, "system-power-contro=
+ller") =3D=3D 0) {
+> +			found =3D true;
+> +			break;
+> +		}
 > +	}
-> +	info->r_sense =3D r_sense;
-> +
-> +	ret =3D of_property_read_u32(np, "prescaler-exponent", &prescaler_exp);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev,
-> +			"PrescalerExponent not in devicetree, assume max\n");
-> +		prescaler_exp =3D LTC2941_MAX_PRESCALER_EXP;
-> +	}
+> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+> +	return found;
+>  }
+> =20
+>  #endif /* _LINUX_OF_H */
 
-The device tree properties are not documented. Please document them
-in a separate patch and Cc devicetree binding maintainers.
+I think you still need to support poweroff-source since it has been
+released on a stable kernel. Perhaps add a warning message telling users
+it's deprecated and asking them to switch over to
+system-power-controller ? Still, simply removing it isn't very nice.
 
-Apart from that the properties should be vendor prefixed (e.g.
-"lltc,resistor-sense").
+--=20
+balbi
 
--- Sebastian
-
---QTprm0S8XgL7H0Dt
+--cWoXeonUoKmBZSoM
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIbBAEBCgAGBQJUTnUSAAoJENju1/PIO/qaIFEP+OKLYgb13e0vfUGnQnqE2JRF
-tJ+1acnS/6eEiLrR6i7YAXLyFKjLAa3QInstcn37sqV8fP3N8ox6S062VmcZQZzn
-yzzbj4djYUVKs+b98VXKdOXm5yw7ewXvi7J/igcWLAJ/6IHgxX48g8Qk3wXYqTkN
-NbXy1Re/E42jNvMAhAFJZOmVA+Jb5fb0Pl/DUJpyhtQYNTS7e4VoFBEExpGNNh+s
-IlgirjKdjP/BHf9OpTkRSV3jWgj1QMMrQTq7CpAmmX+bzULwi6KbiZdG7SvmS5oR
-BoqFeRpgHwzhYjKpNHwyJMFEiGuLEYDEAL74fDSifrs3qosvT3ZUiYK7Vv+yT5y6
-/aAQhxPIHjK8zNEvD90x/wmVyo805XSA2iOAqjpzhtM0lmBpmNiB+w0w2U1V1vcZ
-DnFqeRUIdL88uAbVdOFc0EAP74XmQH5uafYOtKFO1PuIN35Tyn/bWm0g91dDJ+qp
-hoqi2ecVcYEKc15FTXPmyAsYV47RMYb0Pll8wjnX+Fk0iEO2A7SFW+OyGlcjrEVc
-1Eke/BeF8dGN52kdpSHtlddlTFszFbPOwFAOhlFlNhLOw6UErOMVEjC73HJFfHyo
-okAd38kk8b5Kwsr8MEKNMHGU7nueezq0i6Z5MA8FgHvTJ5NJhHSDcN4wnEdR+jZT
-SC7awXMq0v0zkAGzHEU=
-=5B8d
+iQIcBAEBAgAGBQJUTnUQAAoJEIaOsuA1yqREykcP/17WeGaNRLnzPysmdrRd0aG2
+Uuj4lMvYp8V4vxXQKDBuywISe/JgiqiS3KTSb6qbqmfObpqdRbTmPxaPoC0VpaKT
+Cd2x/fDqfiDF+Q9Ask5TD4FajTUzEU4V7S/Xhprjyv4+8Hc+uIoLJFwMs3TTlhhB
+P55JZXo0BjtTg/WU1l2kVo3CZ592GYyqBlwlG5i1klyAn+5qX/hGTu8PZc+8yhOW
+lXevpzblHj6bcgosK0zFQ73RUTGc767kxEV6tS9CucHWjU/Ib2M5d0zo9RIEQDMf
+wvNHVCy51JHzEcYDOKMdShv/q/kG5tgrnmPhEomOIDvY1edIos8204xMq0AI75yw
+6KM+FZp1TixmIFPruBeipF/kTdowknRzDd8ZpAT9uwPNwOUkAzFf6v6XtuB97I3k
+zTsVWaa1F+ao2Mhd2ZCBJJgIJ8RvBB2m4wcQ3q8oq9K77XWrnXSnjPcNVLNbuYZB
+tEQRBcO3eSkAgMsRZrRjdk9nkDx8GVNn2nnxDGDKZbIYTEyLqDT6I1Bn9PsdGxR2
+b889nBP4gKuqfNTd2zXJexSZqt2uB7q9iVmzL/nz5r7hEk2rc7Y2Tygye/VusVtr
+fHoqjqblMYiBIV0R5iawJonC1seTpyKweOYKEFiyNy92keStoTxSCIb6cnu9yl9h
+UlEC6LfKctEgnvCZZXif
+=PLaD
 -----END PGP SIGNATURE-----
 
---QTprm0S8XgL7H0Dt--
+--cWoXeonUoKmBZSoM--
