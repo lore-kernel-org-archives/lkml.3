@@ -1,54 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaJ0N2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:28:19 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:41528 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730AbaJ0N2S (ORCPT
+	id S1752863AbaJ0N2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:28:45 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:54548 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801AbaJ0N2m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:28:18 -0400
-Date: Mon, 27 Oct 2014 14:28:12 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Burke Libbey <burke.libbey@shopify.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>
-Subject: Re: [PATCH] sched: reset sched_entity depth on changing parent
-Message-ID: <20141027132812.GG3337@twins.programming.kicks-ass.net>
-References: <20141024150746.GB25260@burke.local>
- <20141024155805.GF21513@worktop.programming.kicks-ass.net>
- <164441414171122@web11g.yandex.ru>
- <20141027120734.GA3337@twins.programming.kicks-ass.net>
- <20141027124002.GA4436@htj.dyndns.org>
+	Mon, 27 Oct 2014 09:28:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027124002.GA4436@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1413883364-681-7-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1413883364-681-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Mon, 27 Oct 2014 14:28:41 +0100
+Message-ID: <CAPDyKFroUmuQU_mBmSNEQAHe9Y-OF4pkkK=4Qe=JtibWThaHPA@mail.gmail.com>
+Subject: Re: [PATCH RESEND 06/12] mmc: sdhci-pxav3: Move I/O clock to private data
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Chris Ball <chris@printf.net>,
+        =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 08:40:02AM -0400, Tejun Heo wrote:
-> On Mon, Oct 27, 2014 at 01:07:34PM +0100, Peter Zijlstra wrote:
-> > On Fri, Oct 24, 2014 at 09:18:42PM +0400, Kirill Tkhai wrote:
-> > > I was seeking a places where task_group of a task may change. I can't understand
-> > > how changing of parent's cgroup during fork() applies to a child.
-> > 
-> > I didn't know we could change cgroup on fork(), I though the idea was
-> > you always inherited your parents cgroup.
-> > 
-> > How can this be?
-> 
-> Hmmm? -ENEEDMORECONTEXT but the inheriting happens at one point during
-> fork in cgroup_post_fork().  The child inherits whatever the parent
-> cgroup is at that point.
+On 21 October 2014 11:22, Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com> wrote:
+> As we are using references to the I/O clock throughout the driver,
+> move it to the private data. Also, in preparation for core clock,
+> rename it to clk_io.
+>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Chris Ball <chris@printf.net>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+> Cc: linux-mmc@vger.kernel.org
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/mmc/host/sdhci-pxav3.c | 24 +++++++++++++-----------
+>  1 file changed, 13 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+> index e52bbbb09d88..a34a589670e6 100644
+> --- a/drivers/mmc/host/sdhci-pxav3.c
+> +++ b/drivers/mmc/host/sdhci-pxav3.c
+> @@ -59,6 +59,7 @@
+>  #define SDCE_MISC_INT_EN       (1<<1)
+>
+>  struct sdhci_pxa {
+> +       struct clk *clk_io;
+>         u8      power_mode;
+>  };
+>
+> @@ -288,9 +289,7 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+>         struct sdhci_host *host = NULL;
+>         struct sdhci_pxa *pxa = NULL;
+>         const struct of_device_id *match;
+> -
+>         int ret;
+> -       struct clk *clk;
+>
+>         pxa = devm_kzalloc(&pdev->dev, sizeof(struct sdhci_pxa), GFP_KERNEL);
+>         if (!pxa)
+> @@ -310,14 +309,14 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+>         pltfm_host = sdhci_priv(host);
+>         pltfm_host->priv = pxa;
+>
+> -       clk = devm_clk_get(dev, NULL);
+> -       if (IS_ERR(clk)) {
+> +       pxa->clk_io = devm_clk_get(dev, NULL);
+> +       if (IS_ERR(pxa->clk_io)) {
+>                 dev_err(dev, "failed to get io clock\n");
+> -               ret = PTR_ERR(clk);
+> +               ret = PTR_ERR(pxa->clk_io);
+>                 goto err_clk_get;
+>         }
+> -       pltfm_host->clk = clk;
+> -       clk_prepare_enable(clk);
+> +       pltfm_host->clk = pxa->clk_io;
 
-So Kirill is saying that there is a race between fork and attach such
-that a child can end up in a different cgroup than the parent and we
-need to use the cgroup_subsys::fork call to fix that up.
+Is the above still needed?
 
-I was always under the impression that fork was an 'atomic' operation
-from the point of cgroups, an attach (or move) would happen either
-before the fork or after, not during. But I appear to be mistaken in
-that assumption, going by the comments around cgroup_post_fork().
+> +       clk_prepare_enable(pxa->clk_io);
+>
+>         /* enable 1/8V DDR capable */
+>         host->mmc->caps |= MMC_CAP_1_8V_DDR;
+> @@ -390,7 +389,7 @@ err_add_host:
+>         pm_runtime_disable(&pdev->dev);
+>  err_of_parse:
+>  err_cd_req:
+> -       clk_disable_unprepare(clk);
+> +       clk_disable_unprepare(pxa->clk_io);
+>  err_clk_get:
+>  err_mbus_win:
+>         sdhci_pltfm_free(pdev);
+> @@ -401,12 +400,13 @@ static int sdhci_pxav3_remove(struct platform_device *pdev)
+>  {
+>         struct sdhci_host *host = platform_get_drvdata(pdev);
+>         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_pxa *pxa = pltfm_host->priv;
+>
+>         pm_runtime_get_sync(&pdev->dev);
+>         sdhci_remove_host(host, 1);
+>         pm_runtime_disable(&pdev->dev);
+>
+> -       clk_disable_unprepare(pltfm_host->clk);
+> +       clk_disable_unprepare(pxa->clk_io);
+>
+>         sdhci_pltfm_free(pdev);
+>
+> @@ -446,13 +446,14 @@ static int sdhci_pxav3_runtime_suspend(struct device *dev)
+>  {
+>         struct sdhci_host *host = dev_get_drvdata(dev);
+>         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_pxa *pxa = pltfm_host->priv;
+>         unsigned long flags;
+>
+>         spin_lock_irqsave(&host->lock, flags);
+>         host->runtime_suspended = true;
+>         spin_unlock_irqrestore(&host->lock, flags);
+>
+> -       clk_disable_unprepare(pltfm_host->clk);
+> +       clk_disable_unprepare(pxa->clk_io);
+>
+>         return 0;
+>  }
+> @@ -461,9 +462,10 @@ static int sdhci_pxav3_runtime_resume(struct device *dev)
+>  {
+>         struct sdhci_host *host = dev_get_drvdata(dev);
+>         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_pxa *pxa = pltfm_host->priv;
+>         unsigned long flags;
+>
+> -       clk_prepare_enable(pltfm_host->clk);
+> +       clk_prepare_enable(pxa->clk_io);
+>
+>         spin_lock_irqsave(&host->lock, flags);
+>         host->runtime_suspended = false;
+> --
+> 2.1.1
+>
+
+Kind regards
+Uffe
