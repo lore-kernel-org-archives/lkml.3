@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285AbaJ0Po2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:44:28 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:13412 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998AbaJ0PoZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752201AbaJ0PoZ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 27 Oct 2014 11:44:25 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-4a-544e68569bc7
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Sangbeom Kim <sbkim73@samsung.com>, linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 4/4] regulator: s2mpa01: Make regulator_desc array const
-Date: Mon, 27 Oct 2014 16:44:14 +0100
-Message-id: <1414424654-27277-4-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1414424654-27277-1-git-send-email-k.kozlowski@samsung.com>
-References: <1414424654-27277-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCJMWRmVeSWpSXmKPExsVy+t/xa7phGX4hBqf3S1hMffiEzeL1C0OL
-	b1c6mCwu75rDZnFxxRcmB1aPnbPusntsWtXJ5tG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZ
-	uzbMZiz4yVqxd+MJ9gbGdtYuRg4OCQETiWl7FLsYOYFMMYkL99azdTFycQgJLGWUeDztFZTT
-	xySxZ/d1VpAqNgFjic3Ll4AlRAR6GCXeXzrJBpJgFjCU+PnuDzuILSzgIfGm7xIjyAYWAVWJ
-	x/fqQUxeAXeJG5+qIZbJSZw8NhlsJCdQ9cIFuxlBbCGgksfbGtkmMPIuYGRYxSiaWppcUJyU
-	nmukV5yYW1yal66XnJ+7iRESMl93MC49ZnWIUYCDUYmHd0Kxb4gQa2JZcWXuIUYJDmYlEd4D
-	aX4hQrwpiZVVqUX58UWlOanFhxiZODilGhi1In72uupw3nOZsGmx5JI2+9/Tn+2d8+3Q1mhB
-	O3emdRVv9rxbfXPKcTWJ9FkF+a7eJ5/mn2b/WGxlo3Z+W+cEAxvPT9PvzC9qr1yXmXPhwe5s
-	52vfYk/61kjU/RPlvnBR4raGy4MSqUlKi2Y5KM0wvlzx9kD+rx09/vMND80M4Xoi49p4rz9C
-	iaU4I9FQi7moOBEAKU/1X/cBAAA=
+Received: from down.free-electrons.com ([37.187.137.238]:52197 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751500AbaJ0PoW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 11:44:22 -0400
+Date: Mon, 27 Oct 2014 16:44:19 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Chris Ball <chris@printf.net>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCHv2 1/3] mmc: atmel-mci: move mache header to platform_data
+Message-ID: <20141027154419.GE22660@piout.net>
+References: <1413534398-22645-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1413534398-22645-2-git-send-email-alexandre.belloni@free-electrons.com>
+ <CAPDyKFobcRL7_+ZiEkWFGXxq5Hznf5fZcpqUP+Z6VxW67mWBEw@mail.gmail.com>
+ <CAPDyKFr-pyTT=N7p+rU7mnzMg8F_rQOZvDva9GGmwy4J2t3F6Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPDyKFr-pyTT=N7p+rU7mnzMg8F_rQOZvDva9GGmwy4J2t3F6Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The regulator_register() expects array of 'regulator_desc' to be const.
+Hi,
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/regulator/s2mpa01.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On 27/10/2014 at 16:23:23 +0100, Ulf Hansson wrote :
+> On 27 October 2014 15:46, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> > On 17 October 2014 10:26, Alexandre Belloni
+> > <alexandre.belloni@free-electrons.com> wrote:
+> >> Move the mach header that can come either from arm/mach-at91 or avr32 to
+> >> platform_data to be able to switch the AT91 platforms to multiplatform.
+> >>
+> >> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> >
+> > Thanks! Applied for next!
+> 
+> Actually this one caused a compiler error due to a moved header from
+> the below commit.
+> 
+> 3d598f47e804 dmaengine: dw: move dw_dmac.h to where it belongs to
+> 
+> I decided to fix it myself and fold the change into this patch, see below.
+> 
 
-diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
-index 4acefa6b462e..2263071414e2 100644
---- a/drivers/regulator/s2mpa01.c
-+++ b/drivers/regulator/s2mpa01.c
-@@ -298,7 +298,7 @@ static struct regulator_ops s2mpa01_buck_ops = {
- 	.enable_mask	= S2MPA01_ENABLE_MASK			\
- }
- 
--static struct regulator_desc regulators[] = {
-+static const struct regulator_desc regulators[] = {
- 	regulator_desc_ldo(1, STEP_25_MV),
- 	regulator_desc_ldo(2, STEP_50_MV),
- 	regulator_desc_ldo(3, STEP_50_MV),
+what you did seems fine. It was the same commit that conflicted with the
+third patch.
+
+Thanks!
+
 -- 
-1.9.1
-
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
