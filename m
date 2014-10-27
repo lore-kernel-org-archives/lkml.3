@@ -1,101 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaJ0Pzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 11:55:33 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49891 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909AbaJ0Pz1 (ORCPT
+	id S1752209AbaJ0P4F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 11:56:05 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:49868 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaJ0P4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 11:55:27 -0400
-Date: Mon, 27 Oct 2014 16:55:11 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, preeti@linux.vnet.ibm.com,
-        Morten.Rasmussen@arm.com, kamalesh@linux.vnet.ibm.com, riel@redhat.com,
-        efault@gmx.de, nicolas.pitre@linaro.org,
-        linaro-kernel@lists.linaro.org, daniel.lezcano@linaro.org,
-        dietmar.eggemann@arm.com, pjt@google.com, bsegall@google.com,
-        vincent.guittot@linaro.org, patches@linaro.org,
-        tuukka.tikkanen@linaro.org, amit.kucheria@linaro.org
-Subject: Re: [PATCH RFC 6/7] sched: cfs: cpu frequency scaling based on task
- placement
-Message-ID: <20141027155511.GN3219@twins.programming.kicks-ass.net>
-References: <1413958051-7103-1-git-send-email-mturquette@linaro.org>
- <1413958051-7103-7-git-send-email-mturquette@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1413958051-7103-7-git-send-email-mturquette@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Mon, 27 Oct 2014 11:56:01 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: [PATCH v3 00/47] kernel: Add support for power-off handler call chain
+Date: Mon, 27 Oct 2014 08:55:07 -0700
+Message-Id: <1414425354-10359-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020208.544E6B10.024D,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 8
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 21, 2014 at 11:07:30PM -0700, Mike Turquette wrote:
-> {en,de}queue_task_fair are updated to track which cpus will have changed
-> utilization values as function of task queueing. The affected cpus are
-> passed on to arch_eval_cpu_freq for further machine-specific processing
-> based on a selectable policy.
+Various drivers implement architecture and/or device specific means to
+remove power from the system.  For the most part, those drivers set the
+global variable pm_power_off to point to a function within the driver.
 
-Yeah, I'm not sure about the arch eval hook, ideally it'd be all
-integrated with the energy model.
+This mechanism has a number of drawbacks.  Typically only one means
+to remove power is supported (at least if pm_power_off is used).
+At least in theory there can be multiple means to remove power, some of
+which may be less desirable.  For example, one mechanism might power off the
+entire system through an I/O port or gpio pin, while another might power off
+a board by disabling its power controller. Other mechanisms may really just
+execute a restart sequence or drop into the ROM monitor, or put the CPU into
+sleep mode.  Using pm_power_off can also be racy if the function pointer is
+set from a driver built as module, as the driver may be in the process of
+being unloaded when pm_power_off is called.  If there are multiple power-off
+handlers in the system, removing a module with such a handler may
+inadvertently reset the pointer to pm_power_off to NULL, leaving the system
+with no means to remove power.
 
-> arch_scale_cpu_freq is called from run_rebalance_domains as a way to
-> kick off the scaling process (via wake_up_process), so as to prevent
-> re-entering the {en,de}queue code.
+Introduce a system power-off handler call chain to solve the described
+problems.  This call chain is expected to be executed from the architecture
+specific machine_power_off() function.  Drivers providing system power-off
+functionality are expected to register with this call chain.  By using the
+priority field in the notifier block, callers can control power-off handler
+execution sequence and thus ensure that the power-off handler with the
+optimal capabilities to remove power for a given system is called first.
+A call chain instead of a single call to the highest priority handler is
+used to provide fallback: If multiple power-off handlers are installed,
+all handlers will be called until one actually succeeds to power off the
+system.
 
-We might want a better name for that :-) dvfs_set_freq() or whatnot, or
-maybe preserve the cpufreq_*() namespace, people seen to know that that
-is the linux dvfs name.
+Patch 01/47 implements the power-off handler API.
 
-> All of the call sites in this patch are up for discussion. Does it make
-> sense to track which cpus have updated statistics in enqueue_fair_task?
+Patches 02/47 to 04/47 are cleanup patches to prepare for the move of
+pm_power_off to a common location.
 
-Like I said, I don't think so, we guestimate and approximate everything
-anyhow, don't bother trying to be 'perfect' here, its excessively
-expensive.
+Patches 05/47 to 07/47 remove references to pm_power_off from devicetree
+bindings descriptions.
 
-> I chose this because I wanted to gather statistics for all cpus affected
-> in the event CONFIG_FAIR_GROUP_SCHED is enabled. As agreed at LPC14 the
-> next version of this patch will focus on the simpler case of not using
-> scheduler cgroups, which should remove a good chunk of this code,
-> including the cpumask stuff.
+Patch 08/47 moves the pm_power_off variable from architecture code to
+kernel/reboot.c. 
 
-Yes please, make the cpumask stuff go away :-)
+Patches 09/47 to 34/47 convert various drivers to register with the kernel
+power-off handler instead of setting pm_power_off directly.
 
-> Also discussed at LPC14 is that fact that load_balance is a very
-> interesting place to do this as frequency can be considered in concert
-> with task placement. Please put forth any ideas on a sensible way to do
-> this.
+Patches 35/47 to 46/47 do the same for architecture code.
 
-Ideally it'd be natural fallout of Morten's energy model.
+Patch 47/47 finally removes pm_power_off.
 
-If you take a multi-core energy model, find its bifurcations and map its
-solution spaces I suspect there to be a fairly small set of actual
-behaviours.
+For the most part, the individual patches include explanations why specific
+priorities were chosen, at least if the selected priority is not the default
+priority. Subsystem and architecture maintainers are encouraged to have a look
+at the selected priorities and suggest improvements.
 
-The problem is, nobody seems to have done this yet so we don't know.
+I ran the final code through my normal build and qemu tests. Results are
+available at http://server.roeck-us.net:8010/builders in the 'poweroff-handler'
+column. I also built all available configurations for arm, mips, powerpc,
+m68k, and sh architectures.
 
-Once you've done this, you can try and minimize the model by proving you
-retain all behaviour modes, but for now Morten has a rather full
-parameter space (not complete though, and the impact of the missing
-parameters might or might not be relevant, impossible to prove until we
-have the above done).
+The series is available in branch poweroff-handler of my repository at
+git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git.
+It is based on 3.18-rc2.
 
-> Is run_rebalance_domains a logical place to change cpu frequency? What
-> other call sites make sense?
+A note on Cc: In the initial submission I had way too many Cc:, causing the
+patchset to be treated as spam by many mailers and mailing list handlers,
+which of course defeated the purpose. This time around I am cutting down
+the distribution list down significantly. My apologies to anyone I may have
+failed to copy this time around.
 
-For the legacy systems, maybe.
+Important changes since v2:
+- Rebased series to v3.18-rc2.
+- Do not hold any locks while executing the power-off call chain.
+  This ensures that power-off handlers are executed in the state
+  selected by the machine_power_off function for a given architecture,
+  ie without changing the current semantics of power-off callbacks and
+  machine_power_off functions.
+  Power-off handler registration and de-registration is handled in atomic
+  context with interrupts disabled to ensure that those functions are not
+  interrupted by code which powers off the system.
+- Use [xxx_]power_off[_xxx] instead of [xxx_]poweroff[_xxx] for newly
+  introduced function and variable names.
+- Use power-off instead of poweroff in descriptive text and comments.
+- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+- Use ACPI: instead of acpi: for messages in acpi code.
 
-> Even for platforms that can target a cpu frequency without sleeping
-> (x86, some ARM platforms with PM microcontrollers) it is currently
-> necessary to always kick the frequency target work out into a kthread.
-> This is because of the rw_sem usage in the cpufreq core which might
-> sleep. Replacing that lock type is probably a good idea.
+Important changes since v1:
+- Rebased series to v3.18-rc1.
+- Use raw notifier with spinlock protection instead of atomic notifiers,
+  since some power-off handlers need to have interrupts enabled.
+- Renamed API functions from _poweroff to _power_off.
+- Added various Acks.
+- Build tested all configurations for arm, powerpc, and mips architectures.
+- Fixed two compile errors in mips patch.
+- Replaced dev_err and pr_err with dev_warn and pr_warn if an error is not
+  fatal.
+- Provide managed resources API and use where appropriate.
+- Provide and use definitions for standard priorities.
+- Added patches to convert newly introduced power-off handlers.
+- Various minor changes.
 
-I think it would be best to start with this, ideally we'd be able to RCU
-free the thing such that either holding the rwsem or rcu_read_lock is
-sufficient for usage, that way the sleeping muck can grab the rwsem, the
-non-sleeping stuff can grab rcu_read_lock.
+Important changes since RFC:
+- Move API to new file kernel/power/power_off_handler.c.
+- Move pm_power_off pointer to kernel/power/power_off_handler.c. Call
+  pm_power_off from do_kernel_power_off, and only call do_kernel_power_off
+  from architecture code instead of calling both pm_power_off and
+  do_kernel_power_off.
+- Provide additional API function register_power_off_handler_simple
+  to simplify conversion of architecture code.
+- Provide additional API function have_kernel_power_off to check if
+  a power-off handler was installed.
+- Convert all drivers and architecture code to use the new API.
+- Remove pm_power_off as last patch of the series.
 
-But I've not looked at the cpufreq stuff at all.
+Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Heiko Stuebner <heiko@sntech.de>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Romain Perier <romain.perier@gmail.com>
