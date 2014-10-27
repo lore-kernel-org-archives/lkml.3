@@ -1,34 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaJ0NfU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 09:35:20 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:57011 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249AbaJ0NfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 09:35:18 -0400
-Date: Mon, 27 Oct 2014 14:35:10 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Fabian Frederick <fabf@skynet.be>
-CC: <linux-kernel@vger.kernel.org>, Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH 1/1 net-next] xfrm: fix set but not used warning in
- xfrm_policy_queue_process()
-Message-ID: <20141027133510.GA25142@secunet.com>
-References: <1414250829-17908-1-git-send-email-fabf@skynet.be>
+	id S1752802AbaJ0NgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 09:36:09 -0400
+Received: from forward14.mail.yandex.net ([95.108.130.92]:55878 "EHLO
+	forward14.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaJ0NgH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 09:36:07 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>
+Cc: Burke Libbey <burke.libbey@shopify.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>
+In-Reply-To: <20141027132812.GG3337@twins.programming.kicks-ass.net>
+References: <20141024150746.GB25260@burke.local>
+	 <20141024155805.GF21513@worktop.programming.kicks-ass.net>
+	 <164441414171122@web11g.yandex.ru>
+	 <20141027120734.GA3337@twins.programming.kicks-ass.net>
+	 <20141027124002.GA4436@htj.dyndns.org> <20141027132812.GG3337@twins.programming.kicks-ass.net>
+Subject: Re: [PATCH] sched: reset sched_entity depth on changing parent
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1414250829-17908-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [10.182.7.102]
-X-EXCLAIMER-MD-CONFIG: 2c86f778-e09b-4440-8b15-867914633a10
+Message-Id: <799391414416962@web4j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Mon, 27 Oct 2014 16:36:02 +0300
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 25, 2014 at 05:27:09PM +0200, Fabian Frederick wrote:
-> err was set but unused.
-> 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 
-Applied to ipsec-next, thanks!
+
+27.10.2014, 16:28, "Peter Zijlstra" <peterz@infradead.org>:
+> On Mon, Oct 27, 2014 at 08:40:02AM -0400, Tejun Heo wrote:
+>> šOn Mon, Oct 27, 2014 at 01:07:34PM +0100, Peter Zijlstra wrote:
+>>> šOn Fri, Oct 24, 2014 at 09:18:42PM +0400, Kirill Tkhai wrote:
+>>>> šI was seeking a places where task_group of a task may change. I can't understand
+>>>> šhow changing of parent's cgroup during fork() applies to a child.
+>>> šI didn't know we could change cgroup on fork(), I though the idea was
+>>> šyou always inherited your parents cgroup.
+>>>
+>>> šHow can this be?
+>> šHmmm? -ENEEDMORECONTEXT but the inheriting happens at one point during
+>> šfork in cgroup_post_fork(). šThe child inherits whatever the parent
+>> šcgroup is at that point.
+>
+> So Kirill is saying that there is a race between fork and attach such
+> that a child can end up in a different cgroup than the parent and we
+> need to use the cgroup_subsys::fork call to fix that up.
+
+I mean cgroup is the same, but sched_task_group is other (sched_task_group
+is equal to parent's on the moment of dup_task_struct()).
+
+
+> I was always under the impression that fork was an 'atomic' operation
+> from the point of cgroups, an attach (or move) would happen either
+> before the fork or after, not during. But I appear to be mistaken in
+> that assumption, going by the comments around cgroup_post_fork().
