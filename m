@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593AbaJ0R2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:28:06 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51476 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230AbaJ0R2C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:28:02 -0400
-Date: Mon, 27 Oct 2014 17:26:36 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Romain Perier <romain.perier@gmail.com>, heiko@sntech.de,
-        devicetree@vger.kernel.org, lgirdwood@gmail.com,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org, robh@kernel.org,
-        mark.rutland@arm.com, johan@kernel.org, linux-pm@vger.kernel.org,
-        linux@roeck-us.net, lee.jones@linaro.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, gnurou@gmail.com,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org
-Message-ID: <20141027172636.GZ18557@sirena.org.uk>
-References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
- <1414427215-14380-2-git-send-email-romain.perier@gmail.com>
- <20141027163918.GB14253@saruman>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YPOU9eFKIy6Wf5kE"
-Content-Disposition: inline
-In-Reply-To: <20141027163918.GB14253@saruman>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v1 02/10] dt-bindings: Document the standard property
- "system-power-controller"
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1751973AbaJ0R37 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:29:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37766 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751113AbaJ0R36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:29:58 -0400
+Message-ID: <1414430984.24347.6.camel@redhat.com>
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+From: Eric Paris <eparis@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, przanoni@gmail.com, mingo@kernel.org,
+        hpa@linux.intel.com, linux-tip-commits@vger.kernel.org,
+        linux-audit@redhat.com
+Date: Mon, 27 Oct 2014 13:29:44 -0400
+In-Reply-To: <544E7A8D.1030909@zytor.com>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+		 <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
+		 <alpine.DEB.2.11.1410251034320.5308@nanos>
+		 <20141027023457.GY15532@madcap2.tricolour.ca>
+	 <1414418157.24347.1.camel@redhat.com> <544E7A8D.1030909@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-10-27 at 10:02 -0700, H. Peter Anvin wrote:
+> On 10/27/2014 06:55 AM, Eric Paris wrote:
+> > My patch was already committed to the -tip urgent branch.  I believe any
+> > optimization should be based on that branch, Richard.  If you are trying
+> > to wrangle every bit of speed out of this, should you
+> > 
+> > push %esi;
+> > push %edi;
+> > CFI_ADJUST_CFA_OFFSET 8
+> > call __audit_syscall_entry
+> > pop;
+> > pop;
+> > CFI_ADJUST_CFA_OFFSET -8
+> > 
+> > Instead of using the pushl_cfi and popl_cfi macros?
+> > 
+> > I wrote my patch to be obviously correct, but agree there are certainly
+> > some speedups possible.
+> > 
+> 
+> Uh... not only is that plain wrong (the CFI should be adjusted after
+> each instruction that changes the stack pointer),
 
---YPOU9eFKIy6Wf5kE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Sure, things would be screwed up between the two push's
 
-On Mon, Oct 27, 2014 at 11:39:18AM -0500, Felipe Balbi wrote:
-> On Mon, Oct 27, 2014 at 04:26:47PM +0000, Romain Perier wrote:
+>  but what the heck is
+> wrong with using the macros?
 
-> > +act8846: act8846@5 {
-> > +	 compatible = "active-semi,act8846";
-> > +	 status = "okay";
-> > +	 system-power-controller;
-> > +}
+I was asking if that would save an instruction or two by consolidating
+the CFI update and if so would that tradeoff be worth it, given the
+regularity of this code being run.
 
-> there is no mention here that system-power-controller superseeds
-> poweroff-source and deprecates that.
+> 
+> 	-hpa
+> 
+> 
+> 
 
-Given that poweroff-source hasn't made it into a released kernel yet we
-can probably just kill it off completely can't we?
 
---YPOU9eFKIy6Wf5kE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUToBLAAoJECTWi3JdVIfQ5DYH/RI8OXmYY0W2YOW2mndiN6ux
-eH0/FrQVFLEGTn4UP9EWVSBYIPVpoKFAzWmUfWqW31J0LgzsSyy2k9CRq6sD6MXS
-PlqwsgVN8rNn1GBvp18w9PFJM2lDtpIPYWQLttWAJlCDmc5KXdGSuBn1p4Rutnzy
-i71n4qKADI3IkDy/k6fnkyJXyTvwct61NBsfQiKImUpstqy0j4oP4qKT+c/8Mh5z
-RpsWbuN+3YC/uOm11rTjGcmBGcG564BfOOueiJN+HnkE9PKB9opi/t40rQXy0s0O
-FBf3dVZEkH3bqmuy0rj+b4ETBLX2SgOp/KIEZAKgh5gVploewmAGBE3yMZt9FSs=
-=Gk4X
------END PGP SIGNATURE-----
-
---YPOU9eFKIy6Wf5kE--
