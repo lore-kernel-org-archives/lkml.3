@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319AbaJ0TDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 15:03:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52641 "EHLO
+	id S1753671AbaJ0TUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 15:20:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52654 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753280AbaJ0TC5 (ORCPT
+	with ESMTP id S1752164AbaJ0TC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 15:02:57 -0400
+	Mon, 27 Oct 2014 15:02:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Smalley <sds@tycho.nsa.gov>, Paul Moore <pmoore@redhat.com>,
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13 101/105] selinux: fix inode security list corruption
-Date: Mon, 27 Oct 2014 11:57:16 -0700
-Message-Id: <1414436240-13879-102-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13 105/105] crypto: caam - remove duplicated sg copy functions
+Date: Mon, 27 Oct 2014 11:57:20 -0700
+Message-Id: <1414436240-13879-106-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414436240-13879-1-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
@@ -27,61 +27,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Smalley <sds@tycho.nsa.gov>
+From: Cristian Stoica <cristian.stoica@freescale.com>
 
-commit 923190d32de4428afbea5e5773be86bea60a9925 upstream.
+commit 307fd543f3d23f8f56850eca1b27b1be2fe71017 upstream.
 
-sb_finish_set_opts() can race with inode_free_security()
-when initializing inode security structures for inodes
-created prior to initial policy load or by the filesystem
-during ->mount().   This appears to have always been
-a possible race, but commit 3dc91d4 ("SELinux:  Fix possible
-NULL pointer dereference in selinux_inode_permission()")
-made it more evident by immediately reusing the unioned
-list/rcu element  of the inode security structure for call_rcu()
-upon an inode_free_security().  But the underlying issue
-was already present before that commit as a possible use-after-free
-of isec.
+Replace equivalent (and partially incorrect) scatter-gather functions
+with ones from crypto-API.
 
-Shivnandan Kumar reported the list corruption and proposed
-a patch to split the list and rcu elements out of the union
-as separate fields of the inode_security_struct so that setting
-the rcu element would not affect the list element.  However,
-this would merely hide the issue and not truly fix the code.
+The replacement is motivated by page-faults in sg_copy_part triggered
+by successive calls to crypto_hash_update. The following fault appears
+after calling crypto_ahash_update twice, first with 13 and then
+with 285 bytes:
 
-This patch instead moves up the deletion of the list entry
-prior to dropping the sbsec->isec_lock initially.  Then,
-if the inode is dropped subsequently, there will be no further
-references to the isec.
+Unable to handle kernel paging request for data at address 0x00000008
+Faulting instruction address: 0xf9bf9a8c
+Oops: Kernel access of bad area, sig: 11 [#1]
+SMP NR_CPUS=8 CoreNet Generic
+Modules linked in: tcrypt(+) caamhash caam_jr caam tls
+CPU: 6 PID: 1497 Comm: cryptomgr_test Not tainted
+3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2 #75
+task: e9308530 ti: e700e000 task.ti: e700e000
+NIP: f9bf9a8c LR: f9bfcf28 CTR: c0019ea0
+REGS: e700fb80 TRAP: 0300   Not tainted
+(3.12.19-rt30-QorIQ-SDK-V1.6+g9fda9f2)
+MSR: 00029002 <CE,EE,ME>  CR: 44f92024  XER: 20000000
+DEAR: 00000008, ESR: 00000000
 
-Reported-by: Shivnandan Kumar <shivnandan.k@samsung.com>
-Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+GPR00: f9bfcf28 e700fc30 e9308530 e70b1e55 00000000 ffffffdd e70b1e54 0bebf888
+GPR08: 902c7ef5 c0e771e2 00000002 00000888 c0019ea0 00000000 00000000 c07a4154
+GPR16: c08d0000 e91a8f9c 00000001 e98fb400 00000100 e9c83028 e70b1e08 e70b1d48
+GPR24: e992ce10 e70b1dc8 f9bfe4f4 e70b1e55 ffffffdd e70b1ce0 00000000 00000000
+NIP [f9bf9a8c] sg_copy+0x1c/0x100 [caamhash]
+LR [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
+Call Trace:
+[e700fc30] [f9bf9c50] sg_copy_part+0xe0/0x160 [caamhash] (unreliable)
+[e700fc50] [f9bfcf28] ahash_update_no_ctx+0x628/0x660 [caamhash]
+[e700fcb0] [f954e19c] crypto_tls_genicv+0x13c/0x300 [tls]
+[e700fd10] [f954e65c] crypto_tls_encrypt+0x5c/0x260 [tls]
+[e700fd40] [c02250ec] __test_aead.constprop.9+0x2bc/0xb70
+[e700fe40] [c02259f0] alg_test_aead+0x50/0xc0
+[e700fe60] [c02241e4] alg_test+0x114/0x2e0
+[e700fee0] [c022276c] cryptomgr_test+0x4c/0x60
+[e700fef0] [c004f658] kthread+0x98/0xa0
+[e700ff40] [c000fd04] ret_from_kernel_thread+0x5c/0x64
+
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- security/selinux/hooks.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/crypto/caam/caamhash.c   | 22 ++++++++++------
+ drivers/crypto/caam/sg_sw_sec4.h | 54 ----------------------------------------
+ 2 files changed, 14 insertions(+), 62 deletions(-)
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 019749c..b7ecd63 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -471,6 +471,7 @@ next_inode:
- 				list_entry(sbsec->isec_head.next,
- 					   struct inode_security_struct, list);
- 		struct inode *inode = isec->inode;
-+		list_del_init(&isec->list);
- 		spin_unlock(&sbsec->isec_lock);
- 		inode = igrab(inode);
- 		if (inode) {
-@@ -479,7 +480,6 @@ next_inode:
- 			iput(inode);
+diff --git a/drivers/crypto/caam/caamhash.c b/drivers/crypto/caam/caamhash.c
+index a412745..d97a03d 100644
+--- a/drivers/crypto/caam/caamhash.c
++++ b/drivers/crypto/caam/caamhash.c
+@@ -835,8 +835,9 @@ static int ahash_update_ctx(struct ahash_request *req)
+ 					   edesc->sec4_sg + sec4_sg_src_index,
+ 					   chained);
+ 			if (*next_buflen) {
+-				sg_copy_part(next_buf, req->src, to_hash -
+-					     *buflen, req->nbytes);
++				scatterwalk_map_and_copy(next_buf, req->src,
++							 to_hash - *buflen,
++							 *next_buflen, 0);
+ 				state->current_buf = !state->current_buf;
+ 			}
+ 		} else {
+@@ -869,7 +870,8 @@ static int ahash_update_ctx(struct ahash_request *req)
+ 			kfree(edesc);
  		}
- 		spin_lock(&sbsec->isec_lock);
--		list_del_init(&isec->list);
- 		goto next_inode;
+ 	} else if (*next_buflen) {
+-		sg_copy(buf + *buflen, req->src, req->nbytes);
++		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
++					 req->nbytes, 0);
+ 		*buflen = *next_buflen;
+ 		*next_buflen = last_buflen;
  	}
- 	spin_unlock(&sbsec->isec_lock);
+@@ -1216,8 +1218,9 @@ static int ahash_update_no_ctx(struct ahash_request *req)
+ 		src_map_to_sec4_sg(jrdev, req->src, src_nents,
+ 				   edesc->sec4_sg + 1, chained);
+ 		if (*next_buflen) {
+-			sg_copy_part(next_buf, req->src, to_hash - *buflen,
+-				    req->nbytes);
++			scatterwalk_map_and_copy(next_buf, req->src,
++						 to_hash - *buflen,
++						 *next_buflen, 0);
+ 			state->current_buf = !state->current_buf;
+ 		}
+ 
+@@ -1248,7 +1251,8 @@ static int ahash_update_no_ctx(struct ahash_request *req)
+ 			kfree(edesc);
+ 		}
+ 	} else if (*next_buflen) {
+-		sg_copy(buf + *buflen, req->src, req->nbytes);
++		scatterwalk_map_and_copy(buf + *buflen, req->src, 0,
++					 req->nbytes, 0);
+ 		*buflen = *next_buflen;
+ 		*next_buflen = 0;
+ 	}
+@@ -1405,7 +1409,8 @@ static int ahash_update_first(struct ahash_request *req)
+ 		}
+ 
+ 		if (*next_buflen)
+-			sg_copy_part(next_buf, req->src, to_hash, req->nbytes);
++			scatterwalk_map_and_copy(next_buf, req->src, to_hash,
++						 *next_buflen, 0);
+ 
+ 		sh_len = desc_len(sh_desc);
+ 		desc = edesc->hw_desc;
+@@ -1438,7 +1443,8 @@ static int ahash_update_first(struct ahash_request *req)
+ 		state->update = ahash_update_no_ctx;
+ 		state->finup = ahash_finup_no_ctx;
+ 		state->final = ahash_final_no_ctx;
+-		sg_copy(next_buf, req->src, req->nbytes);
++		scatterwalk_map_and_copy(next_buf, req->src, 0,
++					 req->nbytes, 0);
+ 	}
+ #ifdef DEBUG
+ 	print_hex_dump(KERN_ERR, "next buf@"__stringify(__LINE__)": ",
+diff --git a/drivers/crypto/caam/sg_sw_sec4.h b/drivers/crypto/caam/sg_sw_sec4.h
+index b12ff85..ce28a56 100644
+--- a/drivers/crypto/caam/sg_sw_sec4.h
++++ b/drivers/crypto/caam/sg_sw_sec4.h
+@@ -116,57 +116,3 @@ static int dma_unmap_sg_chained(struct device *dev, struct scatterlist *sg,
+ 	}
+ 	return nents;
+ }
+-
+-/* Map SG page in kernel virtual address space and copy */
+-static inline void sg_map_copy(u8 *dest, struct scatterlist *sg,
+-			       int len, int offset)
+-{
+-	u8 *mapped_addr;
+-
+-	/*
+-	 * Page here can be user-space pinned using get_user_pages
+-	 * Same must be kmapped before use and kunmapped subsequently
+-	 */
+-	mapped_addr = kmap_atomic(sg_page(sg));
+-	memcpy(dest, mapped_addr + offset, len);
+-	kunmap_atomic(mapped_addr);
+-}
+-
+-/* Copy from len bytes of sg to dest, starting from beginning */
+-static inline void sg_copy(u8 *dest, struct scatterlist *sg, unsigned int len)
+-{
+-	struct scatterlist *current_sg = sg;
+-	int cpy_index = 0, next_cpy_index = current_sg->length;
+-
+-	while (next_cpy_index < len) {
+-		sg_map_copy(dest + cpy_index, current_sg, current_sg->length,
+-			    current_sg->offset);
+-		current_sg = scatterwalk_sg_next(current_sg);
+-		cpy_index = next_cpy_index;
+-		next_cpy_index += current_sg->length;
+-	}
+-	if (cpy_index < len)
+-		sg_map_copy(dest + cpy_index, current_sg, len-cpy_index,
+-			    current_sg->offset);
+-}
+-
+-/* Copy sg data, from to_skip to end, to dest */
+-static inline void sg_copy_part(u8 *dest, struct scatterlist *sg,
+-				      int to_skip, unsigned int end)
+-{
+-	struct scatterlist *current_sg = sg;
+-	int sg_index, cpy_index, offset;
+-
+-	sg_index = current_sg->length;
+-	while (sg_index <= to_skip) {
+-		current_sg = scatterwalk_sg_next(current_sg);
+-		sg_index += current_sg->length;
+-	}
+-	cpy_index = sg_index - to_skip;
+-	offset = current_sg->offset + current_sg->length - cpy_index;
+-	sg_map_copy(dest, current_sg, cpy_index, offset);
+-	if (end - sg_index) {
+-		current_sg = scatterwalk_sg_next(current_sg);
+-		sg_copy(dest + cpy_index, current_sg, end - sg_index);
+-	}
+-}
 -- 
 1.9.1
 
