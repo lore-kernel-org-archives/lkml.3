@@ -1,139 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586AbaJ0MFP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 08:05:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49081 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751775AbaJ0MFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 08:05:14 -0400
-Date: Mon, 27 Oct 2014 14:03:54 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Li Liu <john.liuli@huawei.com>
-Cc: linux-kernel@vger.kernel.org, qemu-devel@nongnu.org,
-        peter.huangpeng@huawei.com, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org,
-        n.nikolaev@virtualopensystems.com, yingshiuan.pan@gmail.com,
-        remy.gauguey@cea.fr, joel.schopp@amd.com
-Subject: Re: [RFC PATCH 2/2] Assign a new irq handler while irqfd enabled
-Message-ID: <20141027120354.GA19169@redhat.com>
-References: <1414225494-2208-1-git-send-email-john.liuli@huawei.com>
- <1414225494-2208-3-git-send-email-john.liuli@huawei.com>
- <20141026115646.GB5497@redhat.com>
- <544E26AB.6090200@huawei.com>
+	id S1752409AbaJ0MHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 08:07:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45565 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258AbaJ0MHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 08:07:39 -0400
+Date: Mon, 27 Oct 2014 13:07:34 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Burke Libbey <burke.libbey@shopify.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@kernel.org" <mingo@kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] sched: reset sched_entity depth on changing parent
+Message-ID: <20141027120734.GA3337@twins.programming.kicks-ass.net>
+References: <20141024150746.GB25260@burke.local>
+ <20141024155805.GF21513@worktop.programming.kicks-ass.net>
+ <164441414171122@web11g.yandex.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <544E26AB.6090200@huawei.com>
+In-Reply-To: <164441414171122@web11g.yandex.ru>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 07:04:11PM +0800, Li Liu wrote:
-> 
-> 
-> On 2014/10/26 19:56, Michael S. Tsirkin wrote:
-> > On Sat, Oct 25, 2014 at 04:24:54PM +0800, john.liuli wrote:
-> >> From: Li Liu <john.liuli@huawei.com>
-> >>
-> >> This irq handler will get the interrupt reason from a
-> >> shared memory. And will be assigned only while irqfd
-> >> enabled.
-> >>
-> >> Signed-off-by: Li Liu <john.liuli@huawei.com>
-> >> ---
-> >>  drivers/virtio/virtio_mmio.c |   34 ++++++++++++++++++++++++++++++++--
-> >>  1 file changed, 32 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/virtio/virtio_mmio.c b/drivers/virtio/virtio_mmio.c
-> >> index 28ddb55..7229605 100644
-> >> --- a/drivers/virtio/virtio_mmio.c
-> >> +++ b/drivers/virtio/virtio_mmio.c
-> >> @@ -259,7 +259,31 @@ static irqreturn_t vm_interrupt(int irq, void *opaque)
-> >>  	return ret;
-> >>  }
-> >>  
-> >> +/* Notify all virtqueues on an interrupt. */
-> >> +static irqreturn_t vm_interrupt_irqfd(int irq, void *opaque)
-> >> +{
-> >> +	struct virtio_mmio_device *vm_dev = opaque;
-> >> +	struct virtio_mmio_vq_info *info;
-> >> +	unsigned long status;
-> >> +	unsigned long flags;
-> >> +	irqreturn_t ret = IRQ_NONE;
-> >>  
-> >> +	/* Read the interrupt reason and reset it */
-> >> +	status = *vm_dev->isr_mem;
-> >> +	*vm_dev->isr_mem = 0x0;
-> > 
-> > you are reading and modifying shared memory
-> > without atomics and any memory barriers.
-> > Why is this safe?
-> > 
-> 
-> good catch, a stupid mistake.
-> 
-> >> +
-> >> +	if (unlikely(status & VIRTIO_MMIO_INT_CONFIG)) {
-> >> +		virtio_config_changed(&vm_dev->vdev);
-> >> +		ret = IRQ_HANDLED;
-> >> +	}
-> >> +
-> >> +	spin_lock_irqsave(&vm_dev->lock, flags);
-> >> +	list_for_each_entry(info, &vm_dev->virtqueues, node)
-> >> +		ret |= vring_interrupt(irq, info->vq);
-> >> +	spin_unlock_irqrestore(&vm_dev->lock, flags);
-> >> +
-> >> +	return ret;
-> >> +}
-> >>  
-> >>  static void vm_del_vq(struct virtqueue *vq)
-> >>  {
-> > 
-> > So you invoke callbacks for all VQs.
-> > This won't scale well as the number of VQs grows, will it?
-> > 
-> >> @@ -391,6 +415,7 @@ error_available:
-> >>  	return ERR_PTR(err);
-> >>  }
-> >>  
-> >> +#define VIRTIO_MMIO_F_IRQFD        (1 << 7)
-> >>  static int vm_find_vqs(struct virtio_device *vdev, unsigned nvqs,
-> >>  		       struct virtqueue *vqs[],
-> >>  		       vq_callback_t *callbacks[],
-> >> @@ -400,8 +425,13 @@ static int vm_find_vqs(struct virtio_device *vdev, unsigned nvqs,
-> >>  	unsigned int irq = platform_get_irq(vm_dev->pdev, 0);
-> >>  	int i, err;
-> >>  
-> >> -	err = request_irq(irq, vm_interrupt, IRQF_SHARED,
-> >> -			dev_name(&vdev->dev), vm_dev);
-> >> +	if (*vm_dev->isr_mem & VIRTIO_MMIO_F_IRQFD) {
-> >> +		err = request_irq(irq, vm_interrupt_irqfd, IRQF_SHARED,
-> >> +				  dev_name(&vdev->dev), vm_dev);
-> >> +	} else {
-> >> +		err = request_irq(irq, vm_interrupt, IRQF_SHARED,
-> >> +				  dev_name(&vdev->dev), vm_dev);
-> >> +	}
-> >>  	if (err)
-> >>  		return err;
-> > 
-> > 
-> > So still a single interrupt for all VQs.
-> > Again this doesn't scale: a single CPU has to handle
-> > interrupts for all of them.
-> > I think you need to find a way to get per-VQ interrupts.
-> 
-> Yeah, AFAIK it's impossible to distribute works to different CPUs with
-> only one irq without MSI-X kind mechanism. Assign multiple gsis to one
-> device, obviously it's consumptive and not scalable.
+On Fri, Oct 24, 2014 at 09:18:42PM +0400, Kirill Tkhai wrote:
+> I was seeking a places where task_group of a task may change. I can't understand
+> how changing of parent's cgroup during fork() applies to a child.
 
-Why not? How many gsis are there on ARM?
+I didn't know we could change cgroup on fork(), I though the idea was
+you always inherited your parents cgroup.
 
-> Any ideas? Thx.
-> 
-> > 
-> >> -- 
-> >> 1.7.9.5
-> >>
-> > 
-> > .
-> > 
+How can this be?
