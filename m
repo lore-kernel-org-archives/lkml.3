@@ -1,113 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496AbaJ0Cmm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Oct 2014 22:42:42 -0400
-Received: from regular1.263xmail.com ([211.150.99.139]:40270 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031AbaJ0Ck7 (ORCPT
+	id S1752139AbaJ0Crz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Oct 2014 22:47:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44077 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984AbaJ0Crx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Oct 2014 22:40:59 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: wxt@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: wxt@rock-chips.com
-X-UNIQUE-TAG: <081202b5123a3b02b890e3742c35b008>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <caesar.wang@rock-chips.com>
-To: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com
-Cc: zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dmitry.torokhov@gmail.com, dbasehore@chromium.org,
-        huangtao@rock-chips.com, cjf@rock-chips.com, zhengsq@rock-chips.com,
-        Caesar Wang <caesar.wang@rock-chips.com>
-Subject: [PATCH v14 2/5] dt-bindings: document Rockchip thermal
-Date: Mon, 27 Oct 2014 10:39:45 +0800
-Message-Id: <1414377588-2237-3-git-send-email-caesar.wang@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414377588-2237-1-git-send-email-caesar.wang@rock-chips.com>
-References: <1414377588-2237-1-git-send-email-caesar.wang@rock-chips.com>
+	Sun, 26 Oct 2014 22:47:53 -0400
+Date: Sun, 26 Oct 2014 22:47:50 -0400 (EDT)
+Message-Id: <20141026.224750.69834261666003874.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: klamm@yandex-team.ru, jeffrey.t.kirsher@intel.com,
+        jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
+        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
+        gregory.v.rose@intel.com, peter.p.waskiewicz.jr@intel.com,
+        alexander.h.duyck@intel.com, john.ronciak@intel.com,
+        tushar.n.dave@intel.com, sassmann@kpanic.de,
+        gregkh@linuxfoundation.org, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATHC] net: napi_reuse_skb() should check pfmemalloc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1414071030.2094.46.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1413992737.9031.1.camel@edumazet-glaptop2.roam.corp.google.com>
+	<1811414063272@webcorp02e.yandex-team.ru>
+	<1414071030.2094.46.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 26 Oct 2014 19:47:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This add the necessary binding documentation for the thermal
-found on Rockchip SoCs
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Thu, 23 Oct 2014 06:30:30 -0700
 
-Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
-Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
----
- .../bindings/thermal/rockchip-thermal.txt          | 53 ++++++++++++++++++++++
- 1 file changed, 53 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> From: Eric Dumazet <edumazet@google.com>
+> 
+> Do not reuse skb if it was pfmemalloc tainted, otherwise
+> future frame might be dropped anyway.
+> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
 
-diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-new file mode 100644
-index 0000000..d5b1401
---- /dev/null
-+++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
-@@ -0,0 +1,53 @@
-+* Temperature Sensor ADC (TSADC) on rockchip SoCs
-+
-+Required properties:
-+- compatible : "rockchip,rk3288-tsadc"
-+- reg : physical base address of the controller and length of memory mapped
-+	region.
-+- interrupts : The interrupt number to the cpu. The interrupt specifier format
-+	       depends on the interrupt controller.
-+- clocks : Must contain an entry for each entry in clock-names.
-+- clock-names : Shall be "tsadc" for the converter-clock, and "apb_pclk" for
-+		the peripheral clock.
-+- #thermal-sensor-cells : Should be 1. See ./thermal.txt for a description.
-+
-+Exiample:
-+tsadc: tsadc@ff280000 {
-+	compatible = "rockchip,rk3288-tsadc";
-+	reg = <0xff280000 0x100>;
-+	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
-+	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
-+	clock-names = "tsadc", "apb_pclk";
-+};
-+
-+Example: referring to thermal sensors:
-+thermal-zones {
-+	cpu_thermal: cpu_thermal {
-+		polling-delay-passive = <1000>; /* milliseconds */
-+		polling-delay = <5000>; /* milliseconds */
-+
-+		/* sensor	ID */
-+		thermal-sensors = <&tsadc	1>;
-+
-+		trips {
-+			cpu_alert0: cpu_alert {
-+				temperature = <80000>; /* millicelsius */
-+				hysteresis = <2000>; /* millicelsius */
-+				type = "passive";
-+			};
-+			cpu_crit: cpu_crit {
-+				temperature = <120000>; /* millicelsius */
-+				hysteresis = <2000>; /* millicelsius */
-+				type = "critical";
-+			};
-+		};
-+
-+		cooling-maps {
-+			map0 {
-+				trip = <&cpu_alert0>;
-+				cooling-device =
-+					<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
-+			};
-+		};
-+	};
-+};
--- 
-1.9.1
-
-
+Applied, thanks Eric.
