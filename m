@@ -1,92 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002AbaJ0R6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 13:58:40 -0400
-Received: from 8bytes.org ([81.169.241.247]:35153 "EHLO theia.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751912AbaJ0R6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 13:58:38 -0400
-Date: Mon, 27 Oct 2014 18:58:35 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Cc: Frank Blaschka <blaschka@linux.vnet.ibm.com>, schwidefsky@de.ibm.com,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        iommu@lists.linux-foundation.org, sebott@linux.vnet.ibm.com
-Subject: Re: [PATCH linux-next] iommu: add iommu for s390 platform
-Message-ID: <20141027175835.GC6202@8bytes.org>
-References: <1413892645-37657-1-git-send-email-blaschka@linux.vnet.ibm.com>
- <20141022141728.GG10074@8bytes.org>
- <20141022154320.GA42442@tuxmaker.boeblingen.de.ibm.com>
- <20141023124115.GB10053@8bytes.org>
- <20141023140437.GA31009@tuxmaker.boeblingen.de.ibm.com>
- <20141027153201.517f4ff4@thinkpad>
- <20141027162502.GB6202@8bytes.org>
- <20141027180219.62b1ac4a@thinkpad>
+	id S1752092AbaJ0R6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 13:58:49 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:44979 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751912AbaJ0R6r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 13:58:47 -0400
+Message-Id: <20141027175845.233342474@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Mon, 27 Oct 2014 13:56:08 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2/2] ftrace: Fix checking of trampoline ftrace_ops in finding trampoline
+References: <20141027175606.622391559@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141027180219.62b1ac4a@thinkpad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0002-ftrace-Fix-checking-of-trampoline-ftrace_ops-in-find.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 06:02:19PM +0100, Gerald Schaefer wrote:
-> On Mon, 27 Oct 2014 17:25:02 +0100
-> Joerg Roedel <joro@8bytes.org> wrote:
-> > Is there some hardware reason for this or is that just an
-> > implementation detail that can be changed. In other words, does the
-> > hardware allow to use the same DMA table for multiple devices?
-> 
-> Yes, the HW would allow shared DMA tables, but the implementation would
-> need some non-trivial changes. For example, we have a per-device spin_lock
-> for DMA table manipulations and the code in arch/s390/pci/pci_dma.c knows
-> nothing about IOMMU domains or shared DMA tables, it just implements a set
-> of dma_map_ops.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-I think it would make sense to move the DMA table handling code and the
-dma_map_ops implementation to the IOMMU driver too. This is also how
-some other IOMMU drivers implement it.
+When modifying code, ftrace has several checks to make sure things
+are being done correctly. One of them is to make sure any code it
+modifies is exactly what it expects it to be before it modifies it.
+In order to do so with the new trampoline logic, it must be able
+to find out what trampoline a function is hooked to in order to
+see if the code that hooks to it is what's expected.
 
-The plan is to consolidate the dma_ops implementations someday and have
-a common implementation that works with all IOMMU drivers across
-architectures. This would benefit s390 as well and obsoletes the driver
-specific dma_ops implementation.
+The logic to find the trampoline from a record (accounting descriptor
+for a function that is hooked) needs to only look at the "old_hash"
+of an ops that is being modified. The old_hash is the list of function
+an ops is hooked to before its update. Since a record would only be
+pointing to an ops that is being modified if it was already hooked
+before.
 
-> Of course this would also go horribly wrong if a device was already
-> in use (via the current dma_map_ops), but I guess using devices through
-> the IOMMU_API prevents using them otherwise?
+Currently, it can pick a modified ops based on its new functions it
+will be hooked to, and this picks the wrong trampoline and causes
+the check to fail, disabling ftrace.
 
-This is taken care of by the device drivers. A driver for a device
-either uses the DMA-API or does its own management of DMA mappings using
-the IOMMU-API. VFIO is an example for the later case.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-> > I think it is much easier to use the same DMA table for all devices
-> > in a domain, if the hardware allows that.
-> 
-> Yes, in this case, having one DMA table per domain and sharing it
-> between all devices in that domain sounds like a good idea. However,
-> I can't think of any use case for this, and Frank probably had a very
-> special use case in mind where this scenario doesn't appear, hence the
-> "one device per domain" restriction.
+ftrace: squash into ordering of ops for modification
+---
+ kernel/trace/ftrace.c | 30 ++++++++++++++++++++++--------
+ 1 file changed, 22 insertions(+), 8 deletions(-)
 
-One usecase is device access from user-space via VFIO. A userspace
-process might want to access multiple devices at the same time and VFIO
-would implement this by assigning all of these devices to the same IOMMU
-domain.
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 483b8c1b1de0..31c90fec4158 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1925,8 +1925,16 @@ ftrace_find_tramp_ops_curr(struct dyn_ftrace *rec)
+ 	 * when we are adding another op to the rec or removing the
+ 	 * current one. Thus, if the op is being added, we can
+ 	 * ignore it because it hasn't attached itself to the rec
+-	 * yet. That means we just need to find the op that has a
+-	 * trampoline and is not beeing added.
++	 * yet.
++	 *
++	 * If an ops is being modified (hooking to different functions)
++	 * then we don't care about the new functions that are being
++	 * added, just the old ones (that are probably being removed).
++	 *
++	 * If we are adding an ops to a function that already is using
++	 * a trampoline, it needs to be removed (trampolines are only
++	 * for single ops connected), then an ops that is not being
++	 * modified also needs to be checked.
+ 	 */
+ 	do_for_each_ftrace_op(op, ftrace_ops_list) {
+ 
+@@ -1940,17 +1948,23 @@ ftrace_find_tramp_ops_curr(struct dyn_ftrace *rec)
+ 		if (op->flags & FTRACE_OPS_FL_ADDING)
+ 			continue;
+ 
++
+ 		/*
+-		 * If the ops is not being added and has a trampoline,
+-		 * then it must be the one that we want!
++		 * If the ops is being modified and is in the old
++		 * hash, then it is probably being removed from this
++		 * function.
+ 		 */
+-		if (hash_contains_ip(ip, op->func_hash))
+-			return op;
+-
+-		/* If the ops is being modified, it may be in the old hash. */
+ 		if ((op->flags & FTRACE_OPS_FL_MODIFYING) &&
+ 		    hash_contains_ip(ip, &op->old_hash))
+ 			return op;
++		/*
++		 * If the ops is not being added or modified, and it's
++		 * in its normal filter hash, then this must be the one
++		 * we want!
++		 */
++		if (!(op->flags & FTRACE_OPS_FL_MODIFYING) &&
++		    hash_contains_ip(ip, op->func_hash))
++			return op;
+ 
+ 	} while_for_each_ftrace_op(op);
+ 
+-- 
+2.1.1
 
-This requirement also comes also from the IOMMU-API itself. The
-intention of the API is to make different IOMMUs look the same through
-the API, and this is violated when drivers implement a 1-1
-domain->device mapping.
-
-> So, if having multiple devices per domain is a must, then we probably
-> need a thorough rewrite of the arch/s390/pci/pci_dma.c code.
-
-Yes, this is a requirement for new IOMMU drivers. We already have
-drivers implementing the same 1-1 relation and we are about to fix them.
-But I don't want to add new drivers doing the same.
-
-
-	Joerg
 
