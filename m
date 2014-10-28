@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932216AbaJ1Va7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:30:59 -0400
+	id S1755660AbaJ1Vgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:36:36 -0400
 Received: from down.free-electrons.com ([37.187.137.238]:37149 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932111AbaJ1Vau (ORCPT
+	with ESMTP id S932197AbaJ1Va7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:30:50 -0400
+	Tue, 28 Oct 2014 17:30:59 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 45/58] dmaengine: pch-dma: Rename device_control
-Date: Tue, 28 Oct 2014 22:26:00 +0100
-Message-Id: <1414531573-18807-46-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 52/58] dmaengine: nbpfaxi: Declare slave capabilities for the generic code
+Date: Tue, 28 Oct 2014 22:26:07 +0100
+Message-Id: <1414531573-18807-53-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,46 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the device_control callback of the Intel PCH DMA driver to terminate_all
-since it's all it's really doing. That will eventually be used to retrieve
-slave capabilities.
+Now that the generic slave caps code can make use of the device assigned
+capabilities, instead of relying on a callback to be implemented.
+
+Make use of this code.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/pch_dma.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/dma/nbpfaxi.c | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index 9f9ca9fe5ce6..d03b9c93ccab 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -665,16 +665,12 @@ err_desc_get:
- 	return NULL;
+diff --git a/drivers/dma/nbpfaxi.c b/drivers/dma/nbpfaxi.c
+index a07698fc798f..11bcfc1f413a 100644
+--- a/drivers/dma/nbpfaxi.c
++++ b/drivers/dma/nbpfaxi.c
+@@ -1069,18 +1069,6 @@ static void nbpf_free_chan_resources(struct dma_chan *dchan)
+ 	}
  }
  
--static int pd_device_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			     unsigned long arg)
-+static int pd_device_terminate_all(struct dma_chan *chan)
- {
- 	struct pch_dma_chan *pd_chan = to_pd_chan(chan);
- 	struct pch_dma_desc *desc, *_d;
- 	LIST_HEAD(list);
- 
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENXIO;
+-static int nbpf_slave_caps(struct dma_chan *dchan,
+-			   struct dma_slave_caps *caps)
+-{
+-	caps->src_addr_widths = NBPF_DMA_BUSWIDTHS;
+-	caps->dst_addr_widths = NBPF_DMA_BUSWIDTHS;
+-	caps->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
+-	caps->cmd_pause = false;
+-	caps->cmd_terminate = true;
 -
- 	spin_lock_irq(&pd_chan->lock);
+-	return 0;
+-}
+-
+ static struct dma_chan *nbpf_of_xlate(struct of_phandle_args *dma_spec,
+ 				      struct of_dma *ofdma)
+ {
+@@ -1411,7 +1399,6 @@ static int nbpf_probe(struct platform_device *pdev)
+ 	dma_dev->device_prep_dma_memcpy = nbpf_prep_memcpy;
+ 	dma_dev->device_tx_status = nbpf_tx_status;
+ 	dma_dev->device_issue_pending = nbpf_issue_pending;
+-	dma_dev->device_slave_caps = nbpf_slave_caps;
  
- 	pdc_set_mode(&pd_chan->chan, DMA_CTL0_DISABLE);
-@@ -932,7 +928,7 @@ static int pch_dma_probe(struct pci_dev *pdev,
- 	pd->dma.device_tx_status = pd_tx_status;
- 	pd->dma.device_issue_pending = pd_issue_pending;
- 	pd->dma.device_prep_slave_sg = pd_prep_slave_sg;
--	pd->dma.device_control = pd_device_control;
-+	pd->dma.device_terminate_all = pd_device_terminate_all;
+ 	/*
+ 	 * If we drop support for unaligned MEMCPY buffer addresses and / or
+@@ -1427,6 +1414,10 @@ static int nbpf_probe(struct platform_device *pdev)
+ 	dma_dev->device_pause = nbpf_pause;
+ 	dma_dev->device_terminate_all = nbpf_terminate_all;
  
- 	err = dma_async_device_register(&pd->dma);
- 	if (err) {
++	dma_dev->src_addr_widths = NBPF_DMA_BUSWIDTHS;
++	dma_dev->dst_addr_widths = NBPF_DMA_BUSWIDTHS;
++	dma_dev->directions = BIT(DMA_DEV_TO_MEM) | BIT(DMA_MEM_TO_DEV);
++
+ 	platform_set_drvdata(pdev, nbpf);
+ 
+ 	ret = clk_prepare_enable(nbpf->clk);
 -- 
 2.1.1
 
