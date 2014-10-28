@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbaJ1QGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:06:38 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:50254 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaJ1QGg (ORCPT
+	id S1753552AbaJ1QHS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:07:18 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:60868 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751254AbaJ1QHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:06:36 -0400
+	Tue, 28 Oct 2014 12:07:16 -0400
+Message-ID: <544FBF1C.80305@ti.com>
+Date: Tue, 28 Oct 2014 12:06:52 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZO+TuCodDzLZ2evRc0ak+4of38aKNqCiC5cMkm++keHw@mail.gmail.com>
-References: <1413847670-12245-1-git-send-email-dianders@chromium.org>
-	<CACRpkdZO+TuCodDzLZ2evRc0ak+4of38aKNqCiC5cMkm++keHw@mail.gmail.com>
-Date: Tue, 28 Oct 2014 09:06:35 -0700
-X-Google-Sender-Auth: jVXsaOURHeVsFZXTCMKQFEZ7-Z8
-Message-ID: <CAD=FV=UFRPDtKpgpbnMf4U33C0VVP+BzZRj4rsN_D3OGxJwfzA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] pinctrl: rockchip: Set wake_enabled
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Heiko Stuebner <heiko@sntech.de>, Chris Zhong <zyw@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Enable PCI controller for Keystone SoCs
+References: <1414173095-32511-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1414173095-32511-1-git-send-email-m-karicheri2@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
-
-On Tue, Oct 28, 2014 at 8:51 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Oct 21, 2014 at 1:27 AM, Doug Anderson <dianders@chromium.org> wrote:
+On 10/24/2014 01:51 PM, Murali Karicheri wrote:
+> Now that Keystone PCI driver is merged to v3.18, this patch series
+> add build options and DTS bindings to enable the driver for Keystone SoCs.
 >
->> The rockchip pinctrl driver uses irq_gc_set_wake() but doesn't setup
->> the .wake_enabled member.  That means that we can never actually use a
->> pin for wakeup.  When "irq_set_irq_wake()" tries to call through it
->> will always get a failure from set_irq_wake_real() and will then set
->> wake_depth to 0.  Assuming you can resume you'll later get an error
->> message about "Unbalanced IRQ x wake disable".
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> CC : Santosh Shilimkar<santosh.shilimkar@gmail.com>
+> CC : Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+> CC : Rob Herring<robh+dt@kernel.org>
+> CC : Pawel Moll<pawel.moll@arm.com>
+> CC : Mark Rutland<mark.rutland@arm.com>
+> CC : Ian Campbell<ijc+devicetree@hellion.org.uk>
+> CC : Kumar Gala<galak@codeaurora.org>
+> CC : Russell King<linux@arm.linux.org.uk>
+> CC : devicetree@vger.kernel.org
 >
-> Heiko, are you looking at this patch series? Need you Reviewed-by
-> to merge this stuff.
+> Murali Karicheri (4):
+>    ARM: keystone: add pcie related options
+>    ARM: keystone: defconfig: add options to enable PCI controller
+>    ARM: keystone: dts: add DT bindings for PCI controller for port 0
+>    ARM: keystone: dts: add DT bindings for PCI controller for port 1
+>
+>   arch/arm/boot/dts/k2e.dtsi          |   45 +++++++++++++++++++++++++++++++++++
+>   arch/arm/boot/dts/keystone.dtsi     |   45 +++++++++++++++++++++++++++++++++++
+>   arch/arm/configs/keystone_defconfig |    3 +++
+>   arch/arm/mach-keystone/Kconfig      |    2 ++
+>   4 files changed, 95 insertions(+)
+>
+Santosh,
 
-See Heiko's review on the latest version of this series (v2).
+Could you review this and apply to your tree for merge by end of this 
+week if this looks good and there are no comments?
 
-https://patchwork.kernel.org/patch/5126811/
-https://patchwork.kernel.org/patch/5126941/
-https://patchwork.kernel.org/patch/5126971/
-https://patchwork.kernel.org/patch/5126801/
-
--Doug
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
