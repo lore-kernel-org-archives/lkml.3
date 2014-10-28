@@ -1,67 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158AbaJ1SA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:00:26 -0400
-Received: from forward3l.mail.yandex.net ([84.201.143.136]:56411 "EHLO
-	forward3l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982AbaJ1SAZ (ORCPT
+	id S1754204AbaJ1SBJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:01:09 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:36103 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaJ1SBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:00:25 -0400
-X-Yandex-Uniq: 57c83e68-c6f1-4784-ab71-f43319889694
-Authentication-Results: smtp2h.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <544FD9B2.70108@yandex.ru>
-Date: Tue, 28 Oct 2014 21:00:18 +0300
-From: Kirill Tkhai <tkhai@yandex.ru>
-Reply-To: tkhai@yandex.ru
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:33.0) Gecko/20100101 Icedove/33.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>
-CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 2/3] introduce probe_slab_address()
-References: <1413962231.19914.130.camel@tkhai> <20141027195339.GA11736@redhat.com> <20141027195425.GC11736@redhat.com> <1414475091.8574.6.camel@tkhai> <20141028150102.GP3219@twins.programming.kicks-ass.net> <544FD8C6.5020606@yandex.ru>
-In-Reply-To: <544FD8C6.5020606@yandex.ru>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Tue, 28 Oct 2014 14:01:06 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: backports@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
+        "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [RFC v1 0/3] backports: kernel integration support
+Date: Tue, 28 Oct 2014 11:00:57 -0700
+Message-Id: <1414519260-4780-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.10.2014 20:56, Kirill Tkhai wrote:
-> On 28.10.2014 18:01, Peter Zijlstra wrote:
->> On Tue, Oct 28, 2014 at 08:44:51AM +0300, Kirill Tkhai wrote:
->>> В Пн, 27/10/2014 в 20:54 +0100, Oleg Nesterov пишет:
->>
->>>> +#define probe_slab_address(addr, retval)	\
->>>> +	probe_kernel_address(addr, retval)
->>>
->>> probe_kernel_read() was arch-dependent on tree platforms:
->>>
->>> arch/blackfin/mm/maccess.c
->>> arch/parisc/lib/memcpy.c
->>> arch/um/kernel/maccess.c
->>>
->>> But now we skip these arch-dependent implementations. Is there no a problem?
->>
->> Nope, see the first patch, it makes probe_kernel_address use
->> __probe_kernel_read().
->>
-> 
-> Yes, probe_kernel_read() is in [1/3], but it's not the same as
-> __probe_kernel_read() for blackfin, for example.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Vise versa, I mean __probe_kernel_read() is in [1/3].
+Here's my first batch if changes I've been grooming so far
+in order to support kernel integration for backports, that
+is in oder to allow folks to use backports to place drivers
+from future kernels backported for target specific older
+kernel source trees.
 
-> It's defined as
-> 
-> long __weak probe_kernel_read(void *dst, const void *src, size_t size)
->     __attribute__((alias("__probe_kernel_read")));
-> 
-> But blackfin's probe_kernel_read() redefines this __weak function,
-> isn't it? Didn't get_freepointer_safe() use to call architecture's
-> probe_kernel_read() before?
-> 
-> I don't see how it is called now...
-> 
+We got away with not doing much modifications on backports
+for external module packages by relying on the CPTCFG hack
+which in itself relies on the fact that kconfig internally
+uses CONFIG_ as a macro for a getenv(), for kernel integration
+relying on this doesn't work well, so we either diverge for
+kernel integration or try to find a unified solution. Since
+we have to address built-in support it seems best to just
+address unifying the solution so I went with a CONFIG_BACKPORT
+prefix instead of CPTCFG. This requires quite a bit of changes
+on the Kconfig entries but also on the Makefiles.
+
+Another set of changes required for kernel integration is to
+ensure we provide a full path to the directory where we have
+our backport sources, for an external package this is all
+relateive to the parent directory but for kernel integration
+I've stuffed all backport code on the backports/ directory
+of the kernel source, this meant having to specify a variable
+for our paths so that we can use the same Makefiles for both
+packages / kernel integration.
+
+This bit of changes are just the first step, but since this
+is also a major change I think its best we start reviewing
+this now. So far things look OK and I just have to address
+what went wrong with compilation on older kernels:
+
+mcgrof@drvbp1 ~/build/next-20141023 $ cat ckmake-report.log 
+1   3.0.101             [  FAIL  ]
+2   3.1.10              [  FAIL  ]
+3   3.2.62              [  FAIL  ]
+4   3.3.8               [  FAIL  ]
+5   3.4.104             [  FAIL  ]
+6   3.5.7               [  FAIL  ]
+7   3.6.11              [  FAIL  ]
+8   3.7.10              [  FAIL  ]
+9   3.8.13              [  FAIL  ]
+10  3.9.11              [  FAIL  ]
+11  3.10.58             [  OK  ]
+12  3.11.10             [  OK  ]
+13  3.12.31             [  OK  ]
+14  3.13.11             [  OK  ]
+15  3.14.22             [  OK  ]
+16  3.15.10             [  OK  ]
+17  3.16.6              [  OK  ]
+18  3.17.1              [  OK  ]
+19  3.18-rc1            [  OK  ]
+
+Once this is address the next steps to take to finish
+kernel integration shouldn't be too hard. The real difficulty
+here is actually the logic behind what we should do for symbols
+on the kconfig entries once backported. I've stuffed most of
+that logic on the kconfig library we have, it is OK but with
+time I think we might want something a bit more well refined.
+
+If this looks OK I'll continue to chug on. Let me know.
+
+Luis R. Rodriguez (3):
+  backports: replace CPTCFG prefix for CONFIG_BACKPORT
+  backports: replace BACKPORT_PWD with BACKPORT_DIR
+  backports: use BACKPORT_DIR prefix on kconfig sources
+
+ backport/Kconfig                                   |   43 +-
+ backport/Makefile                                  |    6 +-
+ backport/Makefile.build                            |    4 +-
+ backport/Makefile.kernel                           |   36 +-
+ backport/Makefile.real                             |    4 +-
+ backport/backport-include/asm/dma-mapping.h        |    4 +-
+ backport/backport-include/backport/backport.h      |    1 -
+ backport/backport-include/backport/checks.h        |   12 -
+ backport/backport-include/backport/leds-disabled.h |    2 +-
+ backport/backport-include/net/net_namespace.h      |    4 +-
+ backport/compat/Makefile                           |   38 +-
+ backport/compat/backport-3.15.c                    |    4 +-
+ backport/compat/backports.h                        |    4 +-
+ backport/defconfigs/alx                            |    2 +-
+ backport/defconfigs/ar5523                         |   16 +-
+ backport/defconfigs/ath10k                         |   22 +-
+ backport/defconfigs/ath5k                          |   16 +-
+ backport/defconfigs/ath6kl                         |   14 +-
+ backport/defconfigs/ath9k                          |   18 +-
+ backport/defconfigs/ath9k-debug                    |   38 +-
+ backport/defconfigs/b43                            |   40 +-
+ backport/defconfigs/b43legacy                      |   24 +-
+ backport/defconfigs/brcmfmac                       |   14 +-
+ backport/defconfigs/brcmsmac                       |   18 +-
+ backport/defconfigs/carl9170                       |   16 +-
+ backport/defconfigs/cw1200                         |   18 +-
+ backport/defconfigs/hwsim                          |   24 +-
+ backport/defconfigs/ieee802154                     |   16 +-
+ backport/defconfigs/igb                            |    4 +-
+ backport/defconfigs/iwlwifi                        |   34 +-
+ backport/defconfigs/media                          | 1026 ++++++++++----------
+ backport/defconfigs/nfc                            |   40 +-
+ backport/defconfigs/rtlwifi                        |   46 +-
+ backport/defconfigs/wcn36xx                        |   26 +-
+ backport/defconfigs/wifi                           |  232 ++---
+ backport/defconfigs/wil6210                        |   10 +-
+ backport/defconfigs/wwan                           |   12 +-
+ backport/scripts/uninstall.sh                      |    4 +-
+ devel/ckmake                                       |    4 +-
+ devel/doc/kconfig-operation                        |   22 +-
+ gentree.py                                         |   30 +-
+ lib/kconfig.py                                     |  126 ++-
+ patches/backport-adjustments/devcoredump.patch     |    4 +-
+ 43 files changed, 1092 insertions(+), 986 deletions(-)
+ delete mode 100644 backport/backport-include/backport/checks.h
+
+-- 
+2.1.1
+
