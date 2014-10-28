@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448AbaJ1Vtj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:49:39 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:42142 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329AbaJ1Vti (ORCPT
+	id S1755776AbaJ1VuH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:50:07 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:37746 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755193AbaJ1VuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:49:38 -0400
+	Tue, 28 Oct 2014 17:50:05 -0400
+Date: Tue, 28 Oct 2014 22:47:56 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Roman Byshko <rbyshko@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH 1/5] phy: sun4i: add support for USB phy0
+Message-ID: <20141028214756.GF9255@lukather>
+References: <cover.1414444953.git.rbyshko@gmail.com>
+ <668c1b5541fc0175957573bd5f8d40dd2eaccae1.1414444953.git.rbyshko@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20141028212642.GH10873@pd.tnic>
-References: <20141007150132.GA7307@nazgul.tnic>
-	<20141007170748.GA25767@jig.fritz.box>
-	<20141008151730.GB16892@pd.tnic>
-	<CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
-	<20141008222619.GG16892@pd.tnic>
-	<20141012125515.GA32045@jig.fritz.box>
-	<20141028185756.GD10873@pd.tnic>
-	<CA+rthh9qePkJogFDT+ttSLvYPvJrAM6CXMJ407Hq3PjcRw9WTw@mail.gmail.com>
-	<20141028201342.GG10873@pd.tnic>
-	<CA+rthh9LSRm12qYORAd5BWzpw7DEP7hqHLA3EDdfUDxwx-4=2g@mail.gmail.com>
-	<20141028212642.GH10873@pd.tnic>
-Date: Tue, 28 Oct 2014 22:49:36 +0100
-Message-ID: <CA+rthh-Tk3PO0qUeyLzxggCYOhr5D4EvPjKR+jhmjdPXi4yu=Q@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
-From: Mathias Krause <minipli@googlemail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86-ml <x86@kernel.org>, Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="L2Brqb15TUChFOBK"
+Content-Disposition: inline
+In-Reply-To: <668c1b5541fc0175957573bd5f8d40dd2eaccae1.1414444953.git.rbyshko@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 October 2014 22:26, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Oct 28, 2014 at 10:14:25PM +0100, Mathias Krause wrote:
->> Oh, well. Have fun with that! I would take the "map kernel into EFI
->> page table" route instead. ;)
->
-> Actually, I want to try to keep them completely separate and sync only
-> before an EFI RT call for function arguments.
 
-Sync only data or kernel code, too?
+--L2Brqb15TUChFOBK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> And then remove PGDs after
-> I return from it. We'll see how it all works out.
+Hi Roman,
 
-That shouldn't be needed as you're switching away from the EFI page
-table, so its entries wouldn't be effective any more anyway.
+Thanks for your patches
 
-Really, I'd just map the EFI RT service virtual mappings "somewhere"
-but at pgd[511] and have pgd[511] initially set up as
-init_level4_pgt[511]. Then, thing should "just work"(TM).
+On Mon, Oct 27, 2014 at 10:43:01PM +0100, Roman Byshko wrote:
+> The driver for sun4i USB phys currently supports
+> only phy1 and phy2 which are used for USB host
+> controllers. This patch adds support for USB phy0,
+> which is used by the musb hdrc USB controller.
 
-If you fear the EFI code might do harm to the kernel code/data, then
-you've lost anyway. Nothing will prevent the EFI code from doing nasty
-things -- like setting up its own mappings to tamper with the kernel's
-memory.
+Like Andreas already pointed out, your signed-off-by is missing from
+all your patches.
 
-Regards,
-Mathias
+> ---
+>  drivers/phy/phy-sun4i-usb.c | 9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+>=20
+> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
+> index 0baf5ef..a24728b 100644
+> --- a/drivers/phy/phy-sun4i-usb.c
+> +++ b/drivers/phy/phy-sun4i-usb.c
+> @@ -157,6 +157,10 @@ static int sun4i_usb_phy_init(struct phy *_phy)
+>  		return ret;
+>  	}
+> =20
+> +	/* Regulation 45 ohms */
+> +	if (phy->index =3D=3D 0)
+> +		sun4i_usb_phy_write(phy, PHY_RES45_CAL_EN, 0x01, 1);
+
+What is this code supposed to do?
+
+Some define for this bit and/or a better comment would be nice.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--L2Brqb15TUChFOBK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUUA8MAAoJEBx+YmzsjxAgM0QP/2ZXa7TA8q6vNv1+wTapPFg0
+2CD6nTL+KDzDceNqm3U58dH0qjNqOXxKcEgoaxDD69FE/HJn4F7y1JHDHMSrNJDd
+B/26qHFA2UYqAEltVpVGQRhz5zolKZmpiQ2w4vADiA2z+UYVbkqu7oDKuaKu7otH
+Wb/eedjYXWHf9+WTWA1K0sdbBUz605L7+i71AUQx5A8IiPzIb8hfLRW0gO6iJCr4
+4QUHKGr102rQK3jJ7vcaFN+Wc3rxvP4+Ge3HLTB6v05j6e8jnqHG2NwNkwY8wbbp
+ICKRoORFe7XubVsyOsNx74bJdS8fMGHP34Ia77oetXmPc75LuiIZ3UV3hbV8PmAG
+4vrcKO3Dctdhgm+jlgc4YM6nbvR2lCCd3Y0lmFrv9WhcTjE+8qr0h6k2M5CURSRk
+Zt9DDwbF4l1WytS0gwJkfRbNj7X1TPoIu6fuv6rvQiskQTlPcCFYy2DXtNLd8WLJ
+vehqTYVozqxGPmUPxMLvp7Q4wfZ19Vs/IGD4S3mrkHuI7oJVsCJxb8M1HPG67sUT
+QlzeA7/4DlPOAGDKObiquJwvipWVO+Zamq37C9iYnNXeXBpU8ZrNu1RLr7Bm5SDe
+4ZxLmztQvqFSiomAXc2u3iDnhEMlW4/7PXrqXl8HDuyV0AgDiR07hzS14AsblRaV
+MaxK2lL/MownZOuibJCV
+=HpcL
+-----END PGP SIGNATURE-----
+
+--L2Brqb15TUChFOBK--
