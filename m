@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312AbaJ1OzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 10:55:10 -0400
-Received: from smtp-out-146.synserver.de ([212.40.185.146]:1127 "EHLO
-	smtp-out-146.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858AbaJ1OzI (ORCPT
+	id S1754678AbaJ1Ozg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 10:55:36 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:47727 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaJ1Oze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 10:55:08 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 2801
-Message-ID: <544FAE35.4000509@metafoo.de>
-Date: Tue, 28 Oct 2014 15:54:45 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.1
+	Tue, 28 Oct 2014 10:55:34 -0400
 MIME-Version: 1.0
-To: Qais Yousef <qais.yousef@imgtec.com>, Clemens Ladisch <clemens@ladisch.de>,
-        linux-kernel@vger.kernel.org
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org, alsa-devel@alsa-project.org,
-        Neil Jones <neil.jones@imgtec.com>
-Subject: Re: [PATCH 00/11] Add AXD Audio Processing IP driver
-References: <1414495589-8579-1-git-send-email-qais.yousef@imgtec.com> <544F8439.4080402@ladisch.de> <544F97A4.7080209@imgtec.com>
-In-Reply-To: <544F97A4.7080209@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1413479495-14206-3-git-send-email-soren.brinkmann@xilinx.com>
+References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
+	<1413479495-14206-3-git-send-email-soren.brinkmann@xilinx.com>
+Date: Tue, 28 Oct 2014 15:55:34 +0100
+Message-ID: <CACRpkdYDDm1ZL1EVNBzvJaCR7oT-NagJT2bmscMAu=3PJ1pX_g@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 2/8] pinctrl: pinconf-generic: Add flag to print arguments
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 02:18 PM, Qais Yousef wrote:
-> On 10/28/2014 11:55 AM, Clemens Ladisch wrote:
->> Qais Yousef wrote:
->>> AXD Audio Processing IP performs audio decoding, encoding, mixing,
->>> equalisation,
->>> synchronisation and playback.
->> What exactly do you mean with "synchronisation" and "playback"?
+On Thu, Oct 16, 2014 at 7:11 PM, Soren Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
+
+> When dumping pinconf information in debugfs, config arguments are only
+> printed when a unit is present and the argument is != 0. For parameters
+> like the slew rate, this does not work. The slew rate uses a driver
+> specific format for the argument, i.e. 0 can be a valid argument and a
+> unit is not provided for it.
+> For that reason, add a flag to enable printing the argument instead of
+> inferring it from the presence of a unit and the value of the argument.
 >
-> Synchronisation refers to accurate audio playout relative to a master
-> clock source including compensation of drift between the master clock
-> source and the playout clock of the audio hardware. Hence allowing
-> synchronised audio playout across multiple independent devices.
->
-> Playback simple refers to the fact that AXD is capable of managing audio
-> playout hardware like I2S and SPDIF interfaces.
->
->
->>> It doesn't fit in alsa subsystem but I Cced them to confirm.
->> ... because those two words sound like something that a sound card could do.
->
-> The problem mainly stems from the fact that we take a variety of
-> compressed audio as input and we could perform audio encoding. The
-> problem with the compressed audio is that the range of decoders and
-> configuration supported in alsa is limited and there's no support for
-> taking raw pcm and producing compressed output. I'm not an expert on
-> alsa but when I looked it looked like there's more infra structure
-> required.
->
-> [...]
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-This doesn't sound to different from any of the other supported audio DSPs. 
-ALSA seems to have 95% of what you need. And the missing 5% is probably 
-stuff that is not specific to your hardware but rather something that other 
-hardware will need as well. The framework is not set in stone you can make 
-modifications and add the features that are missing to make your hardware work.
+Patch applied.
 
-E.g. look at sound/soc/intel/ for an example of a audio DSP.
-
-No integrating this into ALSA will quite likely result in a quite messy 
-situation for you on the long run.
-
-- Lars
-
-
-
+Yours,
+Linus Walleij
