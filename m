@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178AbaJ1RnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:43:22 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:33919 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751662AbaJ1RnU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:43:20 -0400
-Message-ID: <544FD5B1.9090407@cogentembedded.com>
-Date: Tue, 28 Oct 2014 20:43:13 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754266AbaJ1Rnv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:43:51 -0400
+Received: from mga02.intel.com ([134.134.136.20]:57751 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752788AbaJ1Rnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 13:43:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,804,1406617200"; 
+   d="scan'208";a="597816713"
+Message-ID: <544FD5D4.4090404@intel.com>
+Date: Tue, 28 Oct 2014 10:43:48 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-To: Antoine Tenart <antoine.tenart@free-electrons.com>, balbi@ti.com,
-        gregkh@linuxfoundation.org, Peter.Chen@freescale.com, kishon@ti.com,
-        stern@rowland.harvard.edu
-CC: alexandre.belloni@free-electrons.com, thomas.petazzoni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 6/7] usb: chipidea: move usb_otg into struct ci_hdrc
-References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com> <1414514141-31767-7-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1414514141-31767-7-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Thomas Gleixner <tglx@linutronix.de>, Qiaowei Ren <qiaowei.ren@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH v9 05/12] x86, mpx: on-demand kernel allocation of bounds
+ tables
+References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-6-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241257300.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410241257300.5308@nanos>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 10/24/2014 05:08 AM, Thomas Gleixner wrote:
+> On Sun, 12 Oct 2014, Qiaowei Ren wrote:
+>> +	/*
+>> +	 * Go poke the address of the new bounds table in to the
+>> +	 * bounds directory entry out in userspace memory.  Note:
+>> +	 * we may race with another CPU instantiating the same table.
+>> +	 * In that case the cmpxchg will see an unexpected
+>> +	 * 'actual_old_val'.
+>> +	 */
+>> +	ret = user_atomic_cmpxchg_inatomic(&actual_old_val, bd_entry,
+>> +					   expected_old_val, bt_addr);
+> 
+> This is fully preemptible non-atomic context, right?
+> 
+> So this wants a proper comment, why using
+> user_atomic_cmpxchg_inatomic() is the right thing to do here.
 
-On 10/28/2014 07:35 PM, Antoine Tenart wrote:
+Hey Thomas,
 
-> Move the usb_otg member from struct usb_phy to struct ci_hdrc. Rework
+How's this for a new comment?  Does this cover the points you think need
+clarified?
 
-    You're not reallky touching 'struct usb_phy'. ;-)
+====
 
-> its initialization taking in account this modification.
+The kernel has allocated a bounds table and needs to point the
+(userspace-allocated) directory to it.  The directory entry is the
+*only* place we track that this table was allocated, so we essentially
+use it instead of an kernel data structure for synchronization.  A
+copy_to_user()-style function would not give us the atomicity that we need.
 
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-> Acked-by: Peter Chen <peter.chen@freescale.com>
-
-WBR, Sergei
-
-
+If two threads race to instantiate a table, the cmpxchg ensures we know
+which one lost the race and that the loser frees the table that they
+just allocated.
