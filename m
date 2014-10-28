@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaJ1Pi3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:38:29 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:39120 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155AbaJ1Pi2 (ORCPT
+	id S1752407AbaJ1Pkm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:40:42 -0400
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:33469 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaJ1Pkl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:38:28 -0400
+	Tue, 28 Oct 2014 11:40:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <1413792260-4265-3-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1413792260-4265-4-git-send-email-antoine.tenart@free-electrons.com>
 References: <1413792260-4265-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1413792260-4265-3-git-send-email-antoine.tenart@free-electrons.com>
-Date: Tue, 28 Oct 2014 16:38:27 +0100
-Message-ID: <CACRpkdaPPcUkWrQ8G19igEdDGCXGUGd=utFzny54oRpZ=UNuYA@mail.gmail.com>
-Subject: Re: [PATCH 2/4] pinctrl: add helpers for group based drivers
+	<1413792260-4265-4-git-send-email-antoine.tenart@free-electrons.com>
+Date: Tue, 28 Oct 2014 16:40:40 +0100
+Message-ID: <CACRpkdZ7H=yApLia7-OeM4RMPdM0Upk3wohGHgMYfhe3DiaPgg@mail.gmail.com>
+Subject: Re: [PATCH 3/4] pinctrl: add a generic way to map node to map for
+ group based drivers
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Antoine Tenart <antoine.tenart@free-electrons.com>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
@@ -26,65 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Mon, Oct 20, 2014 at 10:04 AM, Antoine Tenart
 <antoine.tenart@free-electrons.com> wrote:
 
-> Since the group based drivers have their dt properties documented in the
-> generic pinctrl documentation, add generic helpers to avoid duplicating
-> code and to be sure new drivers won't use specific bindings for a known
-> purpose.
+> This patch add a generic function to use a standard callback to
+> .dt_node_to_map for group based pinctrl drivers.
 >
-> This patch add two functions to help group based drivers map their
-> nodes:
-> - of_pinctrl_utils_read_function(): reads the function name of a
->   specified node, and gets the number of groups it should be
->   applied to.
-> - of_pinctrl_for_each_function_group(): navigates through the groups of
->   a specified node, reading at each iteration the name of the current
->   group.
+> It parses nodes of the form:
+>
+>         foo_pmux: foo-pmux {
+>                 function = "foo";
+>                 groups = "g0", "g1", "g2";
+>         }
 >
 > Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
 
-GOOD IDEA!
+Really nice! :)
 
-Let's work from this and change a few drivers.
-
-Some comments:
-
-> +#ifdef CONFIG_OF
-> +int of_pinctrl_utils_read_function(struct pinctrl_dev *pctldev,
-> +               struct device_node *node, const char **function_name,
-> +               int *ngroups)
+> +int pinconf_generic_function_groups_dt_node_to_map(struct pinctrl_dev *pctldev,
+> +               struct device_node *node, struct pinctrl_map **map,
+> +               unsigned *num_maps)
 > +{
-> +       int ret;
+> +       struct property *prop;
+> +       unsigned reserved_maps = 0;
+> +       const char *function_name, *group_name;
+> +       int ngroups, ret;
 > +
-> +       ret = of_property_read_string(node, "function", function_name);
-> +       if (ret) {
-> +               dev_err(pctldev->dev, "missing function property in node %s\n",
-> +                       node->name);
-> +               return -EINVAL;
-> +       }
+> +       *map = NULL;
+> +       *num_maps = 0;
 > +
-> +       *ngroups = of_property_count_strings(node, "groups");
-> +       if (ngroups <= 0) {
-> +               dev_err(pctldev->dev, "missing groups property in node %s\n",
-> +                       node->name);
-> +               return -EINVAL;
+> +       ret = of_pinctrl_utils_read_function(pctldev, node, &function_name,
+> +                                            &ngroups);
+> +       if (ret)
+> +               return ret;
+
+So maybe you want this not to print errors as I said in the first patch.
+
+Or add a function of_pinctrl_utils_is_mux()?
+
+> +       ret = pinctrl_utils_reserve_map(pctldev, map, &reserved_maps, num_maps,
+> +                                       ngroups);
+> +       if (ret)
+> +               return ret;
+> +
+> +       of_pinctrl_for_each_function_group(node, prop, group_name) {
+> +               ret = pinctrl_utils_add_map_mux(pctldev, map, &reserved_maps,
+> +                                               num_maps, group_name,
+> +                                               function_name);
+> +               if (ret) {
+> +                       dev_err(pctldev->dev, "cannot add map: %d\n", ret);
+> +                       return ret;
+> +               }
 > +       }
 > +
 > +       return 0;
 > +}
-> +EXPORT_SYMBOL_GPL(of_pinctrl_utils_read_function);
-> +#endif
+> +EXPORT_SYMBOL_GPL(pinconf_generic_function_groups_dt_node_to_map);
 
-Isn't it nasty to print dev_err() here if you maybe just want
-to check if this node has a "function" element and proceed to
-see if it's a pin config group in case it hasn't?
-
-Or should we add of_pinctrl_utils_node_is_mux() and
-of_pinctrl_utils_node_is_config() to check this?
-
-> +#define of_pinctrl_for_each_function_group(node, prop, group_name)     \
-> +               of_property_for_each_string(node, "groups", prop, group_name)
-
-I *really* like this macro.
+The rest looks really good.
 
 Yours,
 Linus Walleij
