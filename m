@@ -1,27 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189AbaJ1LCw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:02:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50883 "EHLO
+	id S1755243AbaJ1LDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:03:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50902 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930AbaJ1LCt (ORCPT
+	with ESMTP id S1755191AbaJ1LDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:02:49 -0400
-Date: Tue, 28 Oct 2014 04:01:30 -0700
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-eeb61e53ea19be0c4015b00b2e8b3b2185436f2b@git.kernel.org>
-Cc: ktkhai@parallels.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org
-Reply-To: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, ktkhai@parallels.com,
-        peterz@infradead.org, mingo@kernel.org
-In-Reply-To: <1414405105.19914.169.camel@tkhai>
-References: <1414405105.19914.169.camel@tkhai>
+	Tue, 28 Oct 2014 07:03:08 -0400
+Date: Tue, 28 Oct 2014 04:01:49 -0700
+From: tip-bot for Juri Lelli <tipbot@zytor.com>
+Message-ID: <tip-64be6f1f5f710f5995d41caf8a1767fe6d2b5a87@git.kernel.org>
+Cc: torvalds@linux-foundation.org, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, raistlin@linux.it,
+        juri.lelli@arm.com, mingo@kernel.org, hpa@zytor.com,
+        daniel.wagner@bmw-carit.de, fchecconi@gmail.com,
+        michael@amarulasolutions.com
+Reply-To: torvalds@linux-foundation.org, raistlin@linux.it,
+        peterz@infradead.org, linux-kernel@vger.kernel.org, juri.lelli@arm.com,
+        tglx@linutronix.de, mingo@kernel.org, hpa@zytor.com,
+        fchecconi@gmail.com, daniel.wagner@bmw-carit.de,
+        michael@amarulasolutions.com
+In-Reply-To: <1414142198-18552-4-git-send-email-juri.lelli@arm.com>
+References: <1414142198-18552-4-git-send-email-juri.lelli@arm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Fix race between task_group and sched_task_group
-Git-Commit-ID: eeb61e53ea19be0c4015b00b2e8b3b2185436f2b
+Subject: [tip:sched/core] sched/deadline: Don'
+ t replenish from a !SCHED_DEADLINE entity
+Git-Commit-ID: 64be6f1f5f710f5995d41caf8a1767fe6d2b5a87
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,60 +38,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eeb61e53ea19be0c4015b00b2e8b3b2185436f2b
-Gitweb:     http://git.kernel.org/tip/eeb61e53ea19be0c4015b00b2e8b3b2185436f2b
-Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Mon, 27 Oct 2014 14:18:25 +0400
+Commit-ID:  64be6f1f5f710f5995d41caf8a1767fe6d2b5a87
+Gitweb:     http://git.kernel.org/tip/64be6f1f5f710f5995d41caf8a1767fe6d2b5a87
+Author:     Juri Lelli <juri.lelli@arm.com>
+AuthorDate: Fri, 24 Oct 2014 10:16:37 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:45:59 +0100
+CommitDate: Tue, 28 Oct 2014 10:46:00 +0100
 
-sched: Fix race between task_group and sched_task_group
+sched/deadline: Don't replenish from a !SCHED_DEADLINE entity
 
-The race may happen when somebody is changing task_group of a forking task.
-Child's cgroup is the same as parent's after dup_task_struct() (there just
-memory copying). Also, cfs_rq and rt_rq are the same as parent's.
+In the deboost path, right after the dl_boosted flag has been
+reset, we can currently end up replenishing using -deadline
+parameters of a !SCHED_DEADLINE entity. This of course causes
+a bug, as those parameters are empty.
 
-But if parent changes its task_group before it's called cgroup_post_fork(),
-we do not reflect this situation on child. Child's cfs_rq and rt_rq remain
-the same, while child's task_group changes in cgroup_post_fork().
+In the case depicted above it is safe to simply bail out, as
+the deboosted task is going to be back to its original scheduling
+class anyway.
 
-To fix this we introduce fork() method, which calls sched_move_task() directly.
-This function changes sched_task_group on appropriate (also its logic has
-no problem with freshly created tasks, so we shouldn't introduce something
-special; we are able just to use it).
-
-Possibly, this decides the Burke Libbey's problem: https://lkml.org/lkml/2014/10/24/456
-
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Reported-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+Tested-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+Signed-off-by: Juri Lelli <juri.lelli@arm.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1414405105.19914.169.camel@tkhai
+Cc: vincent@legout.info
+Cc: Dario Faggioli <raistlin@linux.it>
+Cc: Michael Trimarchi <michael@amarulasolutions.com>
+Cc: Fabio Checconi <fchecconi@gmail.com>
+Link: http://lkml.kernel.org/r/1414142198-18552-4-git-send-email-juri.lelli@arm.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ kernel/sched/deadline.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 4499950..dde8adb 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7833,6 +7833,11 @@ static void cpu_cgroup_css_offline(struct cgroup_subsys_state *css)
- 	sched_offline_group(tg);
- }
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 256e577..92279ea 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -847,8 +847,19 @@ static void enqueue_task_dl(struct rq *rq, struct task_struct *p, int flags)
+ 	 * smaller than our one... OTW we keep our runtime and
+ 	 * deadline.
+ 	 */
+-	if (pi_task && p->dl.dl_boosted && dl_prio(pi_task->normal_prio))
++	if (pi_task && p->dl.dl_boosted && dl_prio(pi_task->normal_prio)) {
+ 		pi_se = &pi_task->dl;
++	} else if (!dl_prio(p->normal_prio)) {
++		/*
++		 * Special case in which we have a !SCHED_DEADLINE task
++		 * that is going to be deboosted, but exceedes its
++		 * runtime while doing so. No point in replenishing
++		 * it, as it's going to return back to its original
++		 * scheduling class after this.
++		 */
++		BUG_ON(!p->dl.dl_boosted || flags != ENQUEUE_REPLENISH);
++		return;
++	}
  
-+static void cpu_cgroup_fork(struct task_struct *task)
-+{
-+	sched_move_task(task);
-+}
-+
- static int cpu_cgroup_can_attach(struct cgroup_subsys_state *css,
- 				 struct cgroup_taskset *tset)
- {
-@@ -8205,6 +8210,7 @@ struct cgroup_subsys cpu_cgrp_subsys = {
- 	.css_free	= cpu_cgroup_css_free,
- 	.css_online	= cpu_cgroup_css_online,
- 	.css_offline	= cpu_cgroup_css_offline,
-+	.fork		= cpu_cgroup_fork,
- 	.can_attach	= cpu_cgroup_can_attach,
- 	.attach		= cpu_cgroup_attach,
- 	.exit		= cpu_cgroup_exit,
+ 	/*
+ 	 * If p is throttled, we do nothing. In fact, if it exhausted
