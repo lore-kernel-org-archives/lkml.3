@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555AbaJ1DgO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:36:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44265 "EHLO
+	id S1756441AbaJ1IIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:08:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44273 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239AbaJ1DgI (ORCPT
+	with ESMTP id S1753419AbaJ1DgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:36:08 -0400
+	Mon, 27 Oct 2014 23:36:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Qu Wenruo <quwenruo@cn.fujitsu.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.17 011/146] btrfs: Fix the wrong condition judgment about subset extent map
-Date: Tue, 28 Oct 2014 11:32:33 +0800
-Message-Id: <20141028033343.923305147@linuxfoundation.org>
+        Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.17 013/146] Revert "Btrfs: race free update of commit root for ro snapshots"
+Date: Tue, 28 Oct 2014 11:32:35 +0800
+Message-Id: <20141028033344.005349986@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -28,37 +28,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Qu Wenruo <quwenruo@cn.fujitsu.com>
+From: Chris Mason <clm@fb.com>
 
-commit 32be3a1ac6d09576c57063c6c350ca36eaebdbd3 upstream.
+commit d37973082b453ba6b89ec07eb7b84305895d35e1 upstream.
 
-Previous commit: btrfs: Fix and enhance merge_extent_mapping() to insert
-best fitted extent map
-is using wrong condition to judgement whether the range is a subset of a
-existing extent map.
+This reverts commit 9c3b306e1c9e6be4be09e99a8fe2227d1005effc.
 
-This may cause bug in btrfs no-holes mode.
+Switching only one commit root during a transaction is wrong because it
+leads the fs into an inconsistent state. All commit roots should be
+switched at once, at transaction commit time, otherwise backref walking
+can often miss important references that were only accessible through
+the old commit root.  Plus, the root item for the snapshot's root wasn't
+getting updated and preventing the next transaction commit to do it.
 
-This patch will correct the judgment and fix the bug.
+This made several users get into random corruption issues after creation
+of readonly snapshots.
 
-Signed-off-by: Qu Wenruo <quwenruo@cn.fujitsu.com>
+A regression test for xfstests will follow soon.
+
+Cc: stable@vger.kernel.org # 3.17
+Signed-off-by: Filipe Manana <fdmanana@suse.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/btrfs/inode.c |   36 ------------------------------------
+ fs/btrfs/ioctl.c |   33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 36 deletions(-)
 
 --- a/fs/btrfs/inode.c
 +++ b/fs/btrfs/inode.c
-@@ -6528,7 +6528,7 @@ insert:
- 		 * extent causing the -EEXIST.
- 		 */
- 		if (start >= extent_map_end(existing) ||
--		    start + len <= existing->start) {
-+		    start <= existing->start) {
- 			/*
- 			 * The existing extent map is the one nearest to
- 			 * the [start, start + len) range which overlaps
+@@ -5203,42 +5203,6 @@ struct inode *btrfs_lookup_dentry(struct
+ 			iput(inode);
+ 			inode = ERR_PTR(ret);
+ 		}
+-		/*
+-		 * If orphan cleanup did remove any orphans, it means the tree
+-		 * was modified and therefore the commit root is not the same as
+-		 * the current root anymore. This is a problem, because send
+-		 * uses the commit root and therefore can see inode items that
+-		 * don't exist in the current root anymore, and for example make
+-		 * calls to btrfs_iget, which will do tree lookups based on the
+-		 * current root and not on the commit root. Those lookups will
+-		 * fail, returning a -ESTALE error, and making send fail with
+-		 * that error. So make sure a send does not see any orphans we
+-		 * have just removed, and that it will see the same inodes
+-		 * regardless of whether a transaction commit happened before
+-		 * it started (meaning that the commit root will be the same as
+-		 * the current root) or not.
+-		 */
+-		if (sub_root->node != sub_root->commit_root) {
+-			u64 sub_flags = btrfs_root_flags(&sub_root->root_item);
+-
+-			if (sub_flags & BTRFS_ROOT_SUBVOL_RDONLY) {
+-				struct extent_buffer *eb;
+-
+-				/*
+-				 * Assert we can't have races between dentry
+-				 * lookup called through the snapshot creation
+-				 * ioctl and the VFS.
+-				 */
+-				ASSERT(mutex_is_locked(&dir->i_mutex));
+-
+-				down_write(&root->fs_info->commit_root_sem);
+-				eb = sub_root->commit_root;
+-				sub_root->commit_root =
+-					btrfs_root_node(sub_root);
+-				up_write(&root->fs_info->commit_root_sem);
+-				free_extent_buffer(eb);
+-			}
+-		}
+ 	}
+ 
+ 	return inode;
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -714,6 +714,39 @@ static int create_snapshot(struct btrfs_
+ 	if (ret)
+ 		goto fail;
+ 
++	ret = btrfs_orphan_cleanup(pending_snapshot->snap);
++	if (ret)
++		goto fail;
++
++	/*
++	 * If orphan cleanup did remove any orphans, it means the tree was
++	 * modified and therefore the commit root is not the same as the
++	 * current root anymore. This is a problem, because send uses the
++	 * commit root and therefore can see inode items that don't exist
++	 * in the current root anymore, and for example make calls to
++	 * btrfs_iget, which will do tree lookups based on the current root
++	 * and not on the commit root. Those lookups will fail, returning a
++	 * -ESTALE error, and making send fail with that error. So make sure
++	 * a send does not see any orphans we have just removed, and that it
++	 * will see the same inodes regardless of whether a transaction
++	 * commit happened before it started (meaning that the commit root
++	 * will be the same as the current root) or not.
++	 */
++	if (readonly && pending_snapshot->snap->node !=
++	    pending_snapshot->snap->commit_root) {
++		trans = btrfs_join_transaction(pending_snapshot->snap);
++		if (IS_ERR(trans) && PTR_ERR(trans) != -ENOENT) {
++			ret = PTR_ERR(trans);
++			goto fail;
++		}
++		if (!IS_ERR(trans)) {
++			ret = btrfs_commit_transaction(trans,
++						       pending_snapshot->snap);
++			if (ret)
++				goto fail;
++		}
++	}
++
+ 	inode = btrfs_lookup_dentry(dentry->d_parent->d_inode, dentry);
+ 	if (IS_ERR(inode)) {
+ 		ret = PTR_ERR(inode);
 
 
