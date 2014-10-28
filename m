@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111AbaJ1R1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:27:46 -0400
-Received: from smtprelay0247.hostedemail.com ([216.40.44.247]:44955 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750925AbaJ1R1o (ORCPT
+	id S1753028AbaJ1R3T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:29:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51388 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979AbaJ1R3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:27:44 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6119:6261:7903:7974:10004:10400:10848:10967:11026:11232:11658:11914:12296:12517:12519:12663:12740:13018:13019:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: dirt19_261d42703771d
-X-Filterd-Recvd-Size: 2380
-Message-ID: <1414517260.6643.21.camel@perches.com>
-Subject: Re: [PATCH 7/7] docg3: Fix miuse of seq_printf return value
-From: Joe Perches <joe@perches.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+	Tue, 28 Oct 2014 13:29:18 -0400
+Date: Tue, 28 Oct 2014 18:29:07 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Minfei Huang <mnfhuang@gmail.com>, mingo@redhat.com, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 28 Oct 2014 10:27:40 -0700
-In-Reply-To: <20141028120552.63c2324c@gandalf.local.home>
-References: <20140929124246.3e39dac8@gandalf.local.home>
-	 <cover.1412031505.git.joe@perches.com>
-	 <c1a1138f1b05e87a3fbd8737af2f2c0be6e2724b.1412031505.git.joe@perches.com>
-	 <20141022082916.GD16128@brian-ubuntu>
-	 <20141028111301.22481f2a@gandalf.local.home>
-	 <1414511877.6643.12.camel@perches.com>
-	 <20141028120552.63c2324c@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] mm: Avoid overlap the fixmap area on i386
+In-Reply-To: <544FD138.3030305@zytor.com>
+Message-ID: <alpine.DEB.2.11.1410281828340.5308@nanos>
+References: <6B680A9E-6CE9-4C96-934B-CB01DCB58278@gmail.com> <alpine.DEB.2.11.1410281159590.5308@nanos> <544FD138.3030305@zytor.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-28 at 12:05 -0400, Steven Rostedt wrote:
-> On Tue, 28 Oct 2014 08:57:57 -0700
-> Joe Perches <joe@perches.com> wrote:
-> 
-> > On Tue, 2014-10-28 at 11:13 -0400, Steven Rostedt wrote:
-> > > I'm going to be working on changes to remove the return value of
-> > > seq_printf() and friends.
+On Tue, 28 Oct 2014, H. Peter Anvin wrote:
+> On 10/28/2014 04:06 AM, Thomas Gleixner wrote:
+> >>
+> >> The available address we can use is lower than FIXADDR_BOOT_START. So
+> >> We will set the kmap boundary below the FIXADDR_BOOT_START, if configure
+> >> the high memory.
+> >>
+> >> If we configure the high memory, the vmalloc reserve area should end
+> >> up to PKMAP_BASE, otherwise should end up to FIXADDR_BOOT_START.
 > > 
-> > I'm sure you know all of this, but for anyone else:
+> > Which is not really a problem, because the FIXADDR_BOOT area is only
+> > used during boot for early_ioremap() and it's unused when ioremap() is
+> > functional. vmalloc becomes available after early boot so the
+> > FIXADDR_BOOT area is available for reuse.
 > > 
-> > This doesn't need to be done in a single pass.
 > 
-> Yeah, I took a look at all the places, and I've decided to take it off
-> in chunks. I'm starting with the ones you posted, and will try to get
-> acks for them. And then go after other chunks as I have time.
-> 
-> I would like to get this done before I do my merge of trace_seq and
-> seq_file, but I'm thinking I may have to do that in parallel.
+> Given the very limited address space available on i386, it would be
+> extremely undesirable to not reuse address space when possible.
 
-I think the most important thing is to get the
-seq_is_overflown (or seq_has_overflowed or whatever
-other name is chosen) function added then the rest
-of the patches can be applied whenever maintainers
-(or Andrew or trivial or ...) pick them up.
+Fair enough. Then we should do that for the highmem=y case as well.
 
+Thanks,
 
-
-
+	tglx
