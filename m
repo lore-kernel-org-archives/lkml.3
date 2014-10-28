@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaJ1INA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 04:13:00 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:36117 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414AbaJ1IMy (ORCPT
+	id S1755887AbaJ1IN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:13:27 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49431 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755461AbaJ1INX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 04:12:54 -0400
+	Tue, 28 Oct 2014 04:13:23 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: Ian Munsie <imunsie@au1.ibm.com>, mpe <mpe@ellerman.id.au>
 Cc: greg <greg@kroah.com>, arnd <arnd@arndb.de>,
@@ -15,17 +15,17 @@ Cc: greg <greg@kroah.com>, arnd <arnd@arndb.de>,
         linuxppc-dev <linuxppc-dev@ozlabs.org>, jk <jk@ozlabs.org>,
         imunsie <imunsie@au1.ibm.com>,
         cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>
-Subject: Re: [PATCH v2 1/4] CXL: Disable secondary hash in segment table
-In-Reply-To: <1414466730-15591-2-git-send-email-imunsie@au.ibm.com>
-References: <1414466730-15591-1-git-send-email-imunsie@au.ibm.com> <1414466730-15591-2-git-send-email-imunsie@au.ibm.com>
+Subject: Re: [PATCH v2 2/4] CXL: Refactor cxl_load_segment and find_free_sste
+In-Reply-To: <1414466730-15591-3-git-send-email-imunsie@au.ibm.com>
+References: <1414466730-15591-1-git-send-email-imunsie@au.ibm.com> <1414466730-15591-3-git-send-email-imunsie@au.ibm.com>
 User-Agent: Notmuch/0.18.2+145~g9619379 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
-Date: Tue, 28 Oct 2014 13:42:38 +0530
-Message-ID: <87d29cy5mx.fsf@linux.vnet.ibm.com>
+Date: Tue, 28 Oct 2014 13:43:12 +0530
+Message-ID: <87a94gy5lz.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102808-0021-0000-0000-000001E70B51
+x-cbid: 14102808-4790-0000-0000-000004891C8C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,119 +34,81 @@ Ian Munsie <imunsie@au1.ibm.com> writes:
 
 > From: Ian Munsie <imunsie@au1.ibm.com>
 >
-> This patch simplifies the process of finding a free segment table entry
-> by disabling the secondary hash. This reduces the number of possible
-> entries in the segment table for a given address from 16 to 8.
->
-> Due to the large segment sizes we use it is extremely unlikely that the
-> secondary hash would ever have been used in practice, so this should not
-> have any negative impacts and may even improve performance due to the
-> reduced number of comparisons that software & hardware need to perform.
->
-> This patch clears the SC bit in the hardware's state register
-> (CXL_PSL_SR_An) to disable the secondary hash in the hardware since we
-> can no longer fill out entries using it.
-
-This could have also gone as a code comment.
-
-
+> This moves the segment table hash calculation from cxl_load_segment into
+> find_free_sste since that is the only place it is actually used.
 >
 > Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+
 
 Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
 > ---
->  drivers/misc/cxl/fault.c  | 30 ++++++++----------------------
->  drivers/misc/cxl/native.c |  4 ++--
->  2 files changed, 10 insertions(+), 24 deletions(-)
+>  drivers/misc/cxl/fault.c | 34 ++++++++++++++++++----------------
+>  1 file changed, 18 insertions(+), 16 deletions(-)
 >
 > diff --git a/drivers/misc/cxl/fault.c b/drivers/misc/cxl/fault.c
-> index 69506eb..d0e97fd 100644
+> index d0e97fd..cb4f323 100644
 > --- a/drivers/misc/cxl/fault.c
 > +++ b/drivers/misc/cxl/fault.c
-> @@ -22,29 +22,19 @@
+> @@ -21,20 +21,30 @@
+>  
 >  #include "cxl.h"
 >  
->  static struct cxl_sste* find_free_sste(struct cxl_sste *primary_group,
-> -				       bool sec_hash,
-> -				       struct cxl_sste *secondary_group,
->  				       unsigned int *lru)
+> -static struct cxl_sste* find_free_sste(struct cxl_sste *primary_group,
+> -				       unsigned int *lru)
+> +/* This finds a free SSTE for the given SLB */
+> +static struct cxl_sste* find_free_sste(struct cxl_context *ctx,
+> +				       struct copro_slb *slb)
 >  {
-> -	unsigned int i, entry;
-> +	unsigned int entry;
->  	struct cxl_sste *sste, *group = primary_group;
+> +	struct cxl_sste *primary, *sste;
+> +	unsigned int mask = (ctx->sst_size >> 7) - 1; /* SSTP0[SegTableSize] */
+>  	unsigned int entry;
+> -	struct cxl_sste *sste, *group = primary_group;
+> +	unsigned int hash;
+> +
+> +	if (slb->vsid & SLB_VSID_B_1T)
+> +		hash = (slb->esid >> SID_SHIFT_1T) & mask;
+> +	else /* 256M */
+> +		hash = (slb->esid >> SID_SHIFT) & mask;
 >  
-> -	for (i = 0; i < 2; i++) {
-> -		for (entry = 0; entry < 8; entry++) {
-> -			sste = group + entry;
-> -			if (!(be64_to_cpu(sste->esid_data) & SLB_ESID_V))
-> -				return sste;
-> -		}
-> -		if (!sec_hash)
-> -			break;
-> -		group = secondary_group;
-> +	for (entry = 0; entry < 8; entry++) {
-> +		sste = group + entry;
-> +		if (!(be64_to_cpu(sste->esid_data) & SLB_ESID_V))
-> +			return sste;
+> -	for (entry = 0; entry < 8; entry++) {
+> -		sste = group + entry;
+> +	primary = ctx->sstp + (hash << 3);
+> +
+> +	for (entry = 0, sste = primary; entry < 8; entry++, sste++) {
+>  		if (!(be64_to_cpu(sste->esid_data) & SLB_ESID_V))
+>  			return sste;
 >  	}
+> +
 >  	/* Nothing free, select an entry to cast out */
-> -	if (sec_hash && (*lru & 0x8))
-> -		sste = secondary_group + (*lru & 0x7);
-> -	else
-> -		sste = primary_group + (*lru & 0x7);
-> -	*lru = (*lru + 1) & 0xf;
-> +	sste = primary_group + *lru;
-> +	*lru = (*lru + 1) & 0x7;
+> -	sste = primary_group + *lru;
+> -	*lru = (*lru + 1) & 0x7;
+> +	sste = primary + ctx->sst_lru;
+> +	ctx->sst_lru = (ctx->sst_lru + 1) & 0x7;
 >  
 >  	return sste;
 >  }
-> @@ -53,22 +43,18 @@ static void cxl_load_segment(struct cxl_context *ctx, struct copro_slb *slb)
+> @@ -42,19 +52,11 @@ static struct cxl_sste* find_free_sste(struct cxl_sste *primary_group,
+>  static void cxl_load_segment(struct cxl_context *ctx, struct copro_slb *slb)
 >  {
 >  	/* mask is the group index, we search primary and secondary here. */
->  	unsigned int mask = (ctx->sst_size >> 7)-1; /* SSTP0[SegTableSize] */
-> -	bool sec_hash = 1;
+> -	unsigned int mask = (ctx->sst_size >> 7)-1; /* SSTP0[SegTableSize] */
 >  	struct cxl_sste *sste;
->  	unsigned int hash;
+> -	unsigned int hash;
 >  	unsigned long flags;
 >  
->  
-> -	sec_hash = !!(cxl_p1n_read(ctx->afu, CXL_PSL_SR_An) & CXL_PSL_SR_An_SC);
 > -
->  	if (slb->vsid & SLB_VSID_B_1T)
->  		hash = (slb->esid >> SID_SHIFT_1T) & mask;
->  	else /* 256M */
->  		hash = (slb->esid >> SID_SHIFT) & mask;
->  
+> -	if (slb->vsid & SLB_VSID_B_1T)
+> -		hash = (slb->esid >> SID_SHIFT_1T) & mask;
+> -	else /* 256M */
+> -		hash = (slb->esid >> SID_SHIFT) & mask;
+> -
 >  	spin_lock_irqsave(&ctx->sste_lock, flags);
-> -	sste = find_free_sste(ctx->sstp + (hash << 3), sec_hash,
-> -			      ctx->sstp + ((~hash & mask) << 3), &ctx->sst_lru);
-> +	sste = find_free_sste(ctx->sstp + (hash << 3), &ctx->sst_lru);
+> -	sste = find_free_sste(ctx->sstp + (hash << 3), &ctx->sst_lru);
+> +	sste = find_free_sste(ctx, slb);
 >  
 >  	pr_devel("CXL Populating SST[%li]: %#llx %#llx\n",
 >  			sste - ctx->sstp, slb->vsid, slb->esid);
-> diff --git a/drivers/misc/cxl/native.c b/drivers/misc/cxl/native.c
-> index 623286a..d47532e 100644
-> --- a/drivers/misc/cxl/native.c
-> +++ b/drivers/misc/cxl/native.c
-> @@ -417,7 +417,7 @@ static int attach_afu_directed(struct cxl_context *ctx, u64 wed, u64 amr)
->  	ctx->elem->haurp = 0; /* disable */
->  	ctx->elem->sdr = cpu_to_be64(mfspr(SPRN_SDR1));
->  
-> -	sr = CXL_PSL_SR_An_SC;
-> +	sr = 0;
->  	if (ctx->master)
->  		sr |= CXL_PSL_SR_An_MP;
->  	if (mfspr(SPRN_LPCR) & LPCR_TC)
-> @@ -508,7 +508,7 @@ static int attach_dedicated(struct cxl_context *ctx, u64 wed, u64 amr)
->  	u64 sr;
->  	int rc;
->  
-> -	sr = CXL_PSL_SR_An_SC;
-> +	sr = 0;
->  	set_endian(sr);
->  	if (ctx->master)
->  		sr |= CXL_PSL_SR_An_MP;
 > -- 
 > 2.1.1
 >
