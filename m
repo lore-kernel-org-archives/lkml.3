@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882AbaJ1Drz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:47:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45653 "EHLO
+	id S1760334AbaJ1Gyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:54:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45658 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932863AbaJ1Drv (ORCPT
+	with ESMTP id S932875AbaJ1Dry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:51 -0400
+	Mon, 27 Oct 2014 23:47:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.14 020/100] regmap: fix NULL pointer dereference in _regmap_write/read
-Date: Tue, 28 Oct 2014 11:35:05 +0800
-Message-Id: <20141028033501.539070519@linuxfoundation.org>
+        Xiubo Li <Li.Xiubo@freescale.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.14 021/100] regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.
+Date: Tue, 28 Oct 2014 11:35:06 +0800
+Message-Id: <20141028033501.583688126@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,41 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
-commit 5336be8416a71b5568d2cf54a2f2066abe9f2a53 upstream.
+commit d6b41cb06044a7d895db82bdd54f6e4219970510 upstream.
 
-If LOG_DEVICE is defined and map->dev is NULL it will lead to NULL
-pointer dereference. This patch fixes this issue by adding check for
-dev->NULL in all such places in regmap.c
+Since we cannot make sure the 'val_count' will always be none zero
+here, and then if it equals to zero, the kmemdup() will return
+ZERO_SIZE_PTR, which equals to ((void *)16).
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+So this patch fix this with just doing the zero check before calling
+kmemdup().
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/regmap.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/base/regmap/regmap.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
 --- a/drivers/base/regmap/regmap.c
 +++ b/drivers/base/regmap/regmap.c
-@@ -1308,7 +1308,7 @@ int _regmap_write(struct regmap *map, un
- 	}
+@@ -1557,6 +1557,9 @@ int regmap_bulk_write(struct regmap *map
+ 	} else {
+ 		void *wval;
  
- #ifdef LOG_DEVICE
--	if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
-+	if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
- 		dev_info(map->dev, "%x <= %x\n", reg, val);
- #endif
- 
-@@ -1739,7 +1739,7 @@ static int _regmap_read(struct regmap *m
- 	ret = map->reg_read(context, reg, val);
- 	if (ret == 0) {
- #ifdef LOG_DEVICE
--		if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
-+		if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
- 			dev_info(map->dev, "%x => %x\n", reg, *val);
- #endif
- 
++		if (!val_count)
++			return -EINVAL;
++
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
+ 			ret = -ENOMEM;
 
 
