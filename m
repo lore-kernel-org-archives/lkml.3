@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaJ1Dhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:37:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44429 "EHLO
+	id S1754020AbaJ1Dhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:37:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44413 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043AbaJ1Dhg (ORCPT
+	with ESMTP id S1753766AbaJ1Dh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:36 -0400
+	Mon, 27 Oct 2014 23:37:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: [PATCH 3.17 047/146] Drivers: hv: vmbus: Cleanup vmbus_close_internal()
-Date: Tue, 28 Oct 2014 11:33:09 +0800
-Message-Id: <20141028033345.456921298@linuxfoundation.org>
+        Bryan ODonoghue <pure.logic@nexus-software.ie>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.17 022/146] x86/intel/quark: Switch off CR4.PGE so TLB flush uses CR3 instead
+Date: Tue, 28 Oct 2014 11:32:44 +0800
+Message-Id: <20141028033344.402148144@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,77 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
-commit 98d731bb064a9d1817a6ca9bf8b97051334a7cfe upstream.
+commit ee1b5b165c0a2f04d2107e634e51f05d0eb107de upstream.
 
-Eliminate calls to BUG_ON() in vmbus_close_internal().
-We have chosen to potentially leak memory, than crash the guest
-in case of failures.
+Quark x1000 advertises PGE via the standard CPUID method
+PGE bits exist in Quark X1000's PTEs. In order to flush
+an individual PTE it is necessary to reload CR3 irrespective
+of the PTE.PGE bit.
 
-In this version of the patch I have addressed comments from
-Dan Carpenter (dan.carpenter@oracle.com).
+See Quark Core_DevMan_001.pdf section 6.4.11
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+This bug was fixed in Galileo kernels, unfixed vanilla kernels are expected to
+crash and burn on this platform.
+
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/channel.c |   29 +++++++++++++++++++++++------
- 1 file changed, 23 insertions(+), 6 deletions(-)
+ arch/x86/kernel/cpu/intel.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -479,7 +479,7 @@ static void reset_channel_cb(void *arg)
- 	channel->onchannel_callback = NULL;
- }
- 
--static void vmbus_close_internal(struct vmbus_channel *channel)
-+static int vmbus_close_internal(struct vmbus_channel *channel)
- {
- 	struct vmbus_channel_close_channel *msg;
- 	int ret;
-@@ -502,11 +502,28 @@ static void vmbus_close_internal(struct
- 
- 	ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel));
- 
--	BUG_ON(ret != 0);
-+	if (ret) {
-+		pr_err("Close failed: close post msg return is %d\n", ret);
-+		/*
-+		 * If we failed to post the close msg,
-+		 * it is perhaps better to leak memory.
-+		 */
-+		return ret;
-+	}
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -144,6 +144,21 @@ static void early_init_intel(struct cpui
+ 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
+ 		}
+ 	}
 +
- 	/* Tear down the gpadl for the channel's ring buffer */
--	if (channel->ringbuffer_gpadlhandle)
--		vmbus_teardown_gpadl(channel,
--					  channel->ringbuffer_gpadlhandle);
-+	if (channel->ringbuffer_gpadlhandle) {
-+		ret = vmbus_teardown_gpadl(channel,
-+					   channel->ringbuffer_gpadlhandle);
-+		if (ret) {
-+			pr_err("Close failed: teardown gpadl return %d\n", ret);
-+			/*
-+			 * If we failed to teardown gpadl,
-+			 * it is perhaps better to leak memory.
-+			 */
-+			return ret;
-+		}
++	/*
++	 * Intel Quark Core DevMan_001.pdf section 6.4.11
++	 * "The operating system also is required to invalidate (i.e., flush)
++	 *  the TLB when any changes are made to any of the page table entries.
++	 *  The operating system must reload CR3 to cause the TLB to be flushed"
++	 *
++	 * As a result cpu_has_pge() in arch/x86/include/asm/tlbflush.h should
++	 * be false so that __flush_tlb_all() causes CR3 insted of CR4.PGE
++	 * to be modified
++	 */
++	if (c->x86 == 5 && c->x86_model == 9) {
++		pr_info("Disabling PGE capability bit\n");
++		setup_clear_cpu_cap(X86_FEATURE_PGE);
 +	}
- 
- 	/* Cleanup the ring buffers for this channel */
- 	hv_ringbuffer_cleanup(&channel->outbound);
-@@ -515,7 +532,7 @@ static void vmbus_close_internal(struct
- 	free_pages((unsigned long)channel->ringbuffer_pages,
- 		get_order(channel->ringbuffer_pagecount * PAGE_SIZE));
- 
--
-+	return ret;
  }
  
- /*
+ #ifdef CONFIG_X86_32
 
 
