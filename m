@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759488AbaJ1Hnb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:43:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44663 "EHLO
+	id S1759503AbaJ1Hn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:43:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44656 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706AbaJ1Djr (ORCPT
+	with ESMTP id S1754678AbaJ1Djm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:47 -0400
+	Mon, 27 Oct 2014 23:39:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Loic Poulain <loic.poulain@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.17 099/146] Bluetooth: Fix HCI H5 corrupted ack value
-Date: Tue, 28 Oct 2014 11:34:01 +0800
-Message-Id: <20141028033347.769852005@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.17 097/146] rt2800: correct BBP1_TX_POWER_CTRL mask
+Date: Tue, 28 Oct 2014 11:33:59 +0800
+Message-Id: <20141028033347.679030198@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,35 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Loic Poulain <loic.poulain@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 4807b51895dce8aa650ebebc51fa4a795ed6b8b8 upstream.
+commit 01f7feeaf4528bec83798316b3c811701bac5d3e upstream.
 
-In this expression: seq = (seq - 1) % 8
-seq (u8) is implicitly converted to an int in the arithmetic operation.
-So if seq value is 0, operation is ((0 - 1) % 8) => (-1 % 8) => -1.
-The new seq value is 0xff which is an invalid ACK value, we expect 0x07.
-It leads to frequent dropped ACK and retransmission.
-Fix this by using '&' binary operator instead of '%'.
+Two bits control TX power on BBP_R1 register. Correct the mask,
+otherwise we clear additional bit on BBP_R1 register, what can have
+unknown, possible negative effect.
 
-Signed-off-by: Loic Poulain <loic.poulain@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/hci_h5.c |    2 +-
+ drivers/net/wireless/rt2x00/rt2800.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/bluetooth/hci_h5.c
-+++ b/drivers/bluetooth/hci_h5.c
-@@ -237,7 +237,7 @@ static void h5_pkt_cull(struct h5 *h5)
- 			break;
+--- a/drivers/net/wireless/rt2x00/rt2800.h
++++ b/drivers/net/wireless/rt2x00/rt2800.h
+@@ -2039,7 +2039,7 @@ struct mac_iveiv_entry {
+  * 2 - drop tx power by 12dBm,
+  * 3 - increase tx power by 6dBm
+  */
+-#define BBP1_TX_POWER_CTRL		FIELD8(0x07)
++#define BBP1_TX_POWER_CTRL		FIELD8(0x03)
+ #define BBP1_TX_ANTENNA			FIELD8(0x18)
  
- 		to_remove--;
--		seq = (seq - 1) % 8;
-+		seq = (seq - 1) & 0x07;
- 	}
- 
- 	if (seq != h5->rx_ack)
+ /*
 
 
