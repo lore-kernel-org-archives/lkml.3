@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760973AbaJ1IAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 04:00:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44355 "EHLO
+	id S1757383AbaJ1IAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:00:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44363 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857AbaJ1DhA (ORCPT
+	with ESMTP id S1753864AbaJ1DhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:00 -0400
+	Mon, 27 Oct 2014 23:37:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Soni Jose <sony.john-n@emulex.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.17 033/146] be2iscsi: check ip buffer before copying
-Date: Tue, 28 Oct 2014 11:32:55 +0800
-Message-Id: <20141028033344.869254384@linuxfoundation.org>
+        David Matlack <dmatlack@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.17 016/146] kvm: x86: fix stale mmio cache bug
+Date: Tue, 28 Oct 2014 11:32:38 +0800
+Message-Id: <20141028033344.128442228@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,62 +30,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: David Matlack <dmatlack@google.com>
 
-commit a41a9ad3bbf61fae0b6bfb232153da60d14fdbd9 upstream.
+commit 56f17dd3fbc44adcdbc3340fe3988ddb833a47a7 upstream.
 
-Dan Carpenter found a issue where be2iscsi would copy the ip
-from userspace to the driver buffer before checking the len
-of the data being copied:
-http://marc.info/?l=linux-scsi&m=140982651504251&w=2
+The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
+up to userspace:
 
-This patch just has us only copy what we the driver buffer
-can support.
+(1) Guest accesses gpa X without a memory slot. The gfn is cached in
+struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
+the SPTE write-execute-noread so that future accesses cause
+EPT_MISCONFIGs.
 
-Tested-by: John Soni Jose <sony.john-n@emulex.com>
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+(2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
+covering the page just accessed.
+
+(3) Guest attempts to read or write to gpa X again. On Intel, this
+generates an EPT_MISCONFIG. The memory slot generation number that
+was incremented in (2) would normally take care of this but we fast
+path mmio faults through quickly_check_mmio_pf(), which only checks
+the per-vcpu mmio cache. Since we hit the cache, KVM passes a
+KVM_EXIT_MMIO up to userspace.
+
+This patch fixes the issue by using the memslot generation number
+to validate the mmio cache.
+
+Signed-off-by: David Matlack <dmatlack@google.com>
+[xiaoguangrong: adjust the code to make it simpler for stable-tree fix.]
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Reviewed-by: David Matlack <dmatlack@google.com>
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Tested-by: David Matlack <dmatlack@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/be2iscsi/be_mgmt.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/mmu.c              |    2 +-
+ arch/x86/kvm/x86.h              |   20 +++++++++++++++-----
+ 3 files changed, 17 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/be2iscsi/be_mgmt.c
-+++ b/drivers/scsi/be2iscsi/be_mgmt.c
-@@ -943,17 +943,20 @@ mgmt_static_ip_modify(struct beiscsi_hba
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -481,6 +481,7 @@ struct kvm_vcpu_arch {
+ 	u64 mmio_gva;
+ 	unsigned access;
+ 	gfn_t mmio_gfn;
++	u64 mmio_gen;
  
- 	if (ip_action == IP_ACTION_ADD) {
- 		memcpy(req->ip_params.ip_record.ip_addr.addr, ip_param->value,
--		       ip_param->len);
-+		       sizeof(req->ip_params.ip_record.ip_addr.addr));
+ 	struct kvm_pmu pmu;
  
- 		if (subnet_param)
- 			memcpy(req->ip_params.ip_record.ip_addr.subnet_mask,
--			       subnet_param->value, subnet_param->len);
-+			       subnet_param->value,
-+			       sizeof(req->ip_params.ip_record.ip_addr.subnet_mask));
- 	} else {
- 		memcpy(req->ip_params.ip_record.ip_addr.addr,
--		       if_info->ip_addr.addr, ip_param->len);
-+		       if_info->ip_addr.addr,
-+		       sizeof(req->ip_params.ip_record.ip_addr.addr));
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -3163,7 +3163,7 @@ static void mmu_sync_roots(struct kvm_vc
+ 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+ 		return;
  
- 		memcpy(req->ip_params.ip_record.ip_addr.subnet_mask,
--		       if_info->ip_addr.subnet_mask, ip_param->len);
-+		       if_info->ip_addr.subnet_mask,
-+		       sizeof(req->ip_params.ip_record.ip_addr.subnet_mask));
- 	}
- 
- 	rc = mgmt_exec_nonemb_cmd(phba, &nonemb_cmd, NULL, 0);
-@@ -981,7 +984,7 @@ static int mgmt_modify_gateway(struct be
- 	req->action = gtway_action;
- 	req->ip_addr.ip_type = BE2_IPV4;
- 
--	memcpy(req->ip_addr.addr, gt_addr, param_len);
-+	memcpy(req->ip_addr.addr, gt_addr, sizeof(req->ip_addr.addr));
- 
- 	return mgmt_exec_nonemb_cmd(phba, &nonemb_cmd, NULL, 0);
+-	vcpu_clear_mmio_info(vcpu, ~0ul);
++	vcpu_clear_mmio_info(vcpu, MMIO_GVA_ANY);
+ 	kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
+ 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
+ 		hpa_t root = vcpu->arch.mmu.root_hpa;
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -88,15 +88,23 @@ static inline void vcpu_cache_mmio_info(
+ 	vcpu->arch.mmio_gva = gva & PAGE_MASK;
+ 	vcpu->arch.access = access;
+ 	vcpu->arch.mmio_gfn = gfn;
++	vcpu->arch.mmio_gen = kvm_memslots(vcpu->kvm)->generation;
++}
++
++static inline bool vcpu_match_mmio_gen(struct kvm_vcpu *vcpu)
++{
++	return vcpu->arch.mmio_gen == kvm_memslots(vcpu->kvm)->generation;
  }
+ 
+ /*
+- * Clear the mmio cache info for the given gva,
+- * specially, if gva is ~0ul, we clear all mmio cache info.
++ * Clear the mmio cache info for the given gva. If gva is MMIO_GVA_ANY, we
++ * clear all mmio cache info.
+  */
++#define MMIO_GVA_ANY (~(gva_t)0)
++
+ static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
+ {
+-	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
++	if (gva != MMIO_GVA_ANY && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
+ 		return;
+ 
+ 	vcpu->arch.mmio_gva = 0;
+@@ -104,7 +112,8 @@ static inline void vcpu_clear_mmio_info(
+ 
+ static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
+ {
+-	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gva &&
++	      vcpu->arch.mmio_gva == (gva & PAGE_MASK))
+ 		return true;
+ 
+ 	return false;
+@@ -112,7 +121,8 @@ static inline bool vcpu_match_mmio_gva(s
+ 
+ static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
+ {
+-	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gfn &&
++	      vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
+ 		return true;
+ 
+ 	return false;
 
 
