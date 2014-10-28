@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339AbaJ1V6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:58:07 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:51223 "EHLO e7.ny.us.ibm.com"
+	id S1755685AbaJ1V7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:59:52 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43320 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390AbaJ1V5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:57:35 -0400
+	id S1755335AbaJ1V5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 17:57:34 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,104 +14,163 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 03/10] rcu: Remove "cpu" argument to rcu_check_callbacks()
-Date: Tue, 28 Oct 2014 14:53:30 -0700
-Message-Id: <1414533217-24910-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 06/10] rcu: Remove "cpu" argument to rcu_note_context_switch()
+Date: Tue, 28 Oct 2014 14:53:33 -0700
+Message-Id: <1414533217-24910-6-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20141028215140.GA23970@linux.vnet.ibm.com>
  <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102821-0025-0000-0000-000000F04B2D
+x-cbid: 14102821-0033-0000-0000-000000E3EBB1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The "cpu" argument was kept around on the off-chance that RCU might
-offload scheduler-clock interrupts.  However, this offload approach
-has been replaced by NO_HZ_FULL, which offloads -all- RCU processing
-from qualifying CPUs.  It is therefore time to remove the "cpu" argument
-to rcu_check_callbacks(), which this commit does.
+The "cpu" argument to rcu_note_context_switch() is always the current
+CPU, so drop it.  This in turn allows the "cpu" argument to
+rcu_preempt_note_context_switch() to be removed, which allows the sole
+use of "cpu" in both functions to be replaced with a this_cpu_ptr().
+Again, the anticipated cross-CPU uses of these functions has been
+replaced by NO_HZ_FULL.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h | 2 +-
- kernel/rcu/tiny.c        | 2 +-
- kernel/rcu/tree.c        | 6 +++---
- kernel/time/timer.c      | 3 +--
- 4 files changed, 6 insertions(+), 7 deletions(-)
+ include/linux/rcutiny.h  | 2 +-
+ include/linux/rcutree.h  | 4 ++--
+ kernel/rcu/tree.c        | 4 ++--
+ kernel/rcu/tree.h        | 2 +-
+ kernel/rcu/tree_plugin.h | 6 +++---
+ kernel/sched/core.c      | 2 +-
+ kernel/softirq.c         | 2 +-
+ 7 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index a4a819ffb2d1..b4ad275d90d0 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -260,7 +260,7 @@ static inline int rcu_preempt_depth(void)
- void rcu_init(void);
- void rcu_sched_qs(void);
- void rcu_bh_qs(void);
--void rcu_check_callbacks(int cpu, int user);
-+void rcu_check_callbacks(int user);
- struct notifier_block;
- void rcu_idle_enter(void);
- void rcu_idle_exit(void);
-diff --git a/kernel/rcu/tiny.c b/kernel/rcu/tiny.c
-index c0623fc47125..01570c68d237 100644
---- a/kernel/rcu/tiny.c
-+++ b/kernel/rcu/tiny.c
-@@ -247,7 +247,7 @@ void rcu_bh_qs(void)
-  * be called from hardirq context.  It is normally called from the
-  * scheduling-clock interrupt.
-  */
--void rcu_check_callbacks(int cpu, int user)
-+void rcu_check_callbacks(int user)
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index 38cc5b1e252d..0e5366200154 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -78,7 +78,7 @@ static inline void kfree_call_rcu(struct rcu_head *head,
+ 	call_rcu(head, func);
+ }
+ 
+-static inline void rcu_note_context_switch(int cpu)
++static inline void rcu_note_context_switch(void)
  {
- 	RCU_TRACE(check_cpu_stalls());
- 	if (user || rcu_is_cpu_rrupt_from_idle())
+ 	rcu_sched_qs();
+ }
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 3e2f5d432743..7b5484db1857 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -30,7 +30,7 @@
+ #ifndef __LINUX_RCUTREE_H
+ #define __LINUX_RCUTREE_H
+ 
+-void rcu_note_context_switch(int cpu);
++void rcu_note_context_switch(void);
+ #ifndef CONFIG_RCU_NOCB_CPU_ALL
+ int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies);
+ #endif /* #ifndef CONFIG_RCU_NOCB_CPU_ALL */
+@@ -43,7 +43,7 @@ void rcu_cpu_stall_reset(void);
+  */
+ static inline void rcu_virt_note_context_switch(int cpu)
+ {
+-	rcu_note_context_switch(cpu);
++	rcu_note_context_switch();
+ }
+ 
+ void synchronize_rcu_bh(void);
 diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index ab6fcfb4fe11..3107811bba69 100644
+index 1af5e2cdcbeb..b591f1459240 100644
 --- a/kernel/rcu/tree.c
 +++ b/kernel/rcu/tree.c
-@@ -2388,7 +2388,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
-  * invoked from the scheduling-clock interrupt.  If rcu_pending returns
-  * false, there is no point in invoking rcu_check_callbacks().
+@@ -286,11 +286,11 @@ static void rcu_momentary_dyntick_idle(void)
+  * and requires special handling for preemptible RCU.
+  * The caller must have disabled preemption.
   */
--void rcu_check_callbacks(int cpu, int user)
-+void rcu_check_callbacks(int user)
+-void rcu_note_context_switch(int cpu)
++void rcu_note_context_switch(void)
  {
- 	trace_rcu_utilization(TPS("Start scheduler-tick"));
- 	increment_cpu_stall_ticks();
-@@ -2420,8 +2420,8 @@ void rcu_check_callbacks(int cpu, int user)
- 
- 		rcu_bh_qs();
- 	}
--	rcu_preempt_check_callbacks(cpu);
--	if (rcu_pending(cpu))
-+	rcu_preempt_check_callbacks(smp_processor_id());
-+	if (rcu_pending(smp_processor_id()))
- 		invoke_rcu_core();
- 	if (user)
- 		rcu_note_voluntary_context_switch(current);
-diff --git a/kernel/time/timer.c b/kernel/time/timer.c
-index 3260ffdb368f..2d3f5c504939 100644
---- a/kernel/time/timer.c
-+++ b/kernel/time/timer.c
-@@ -1377,12 +1377,11 @@ unsigned long get_next_timer_interrupt(unsigned long now)
- void update_process_times(int user_tick)
+ 	trace_rcu_utilization(TPS("Start context switch"));
+ 	rcu_sched_qs();
+-	rcu_preempt_note_context_switch(cpu);
++	rcu_preempt_note_context_switch();
+ 	if (unlikely(raw_cpu_read(rcu_sched_qs_mask)))
+ 		rcu_momentary_dyntick_idle();
+ 	trace_rcu_utilization(TPS("End context switch"));
+diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
+index 94a26e330c1b..238ac39053fc 100644
+--- a/kernel/rcu/tree.h
++++ b/kernel/rcu/tree.h
+@@ -547,7 +547,7 @@ DECLARE_PER_CPU(char, rcu_cpu_has_work);
+ /* Forward declarations for rcutree_plugin.h */
+ static void rcu_bootup_announce(void);
+ long rcu_batches_completed(void);
+-static void rcu_preempt_note_context_switch(int cpu);
++static void rcu_preempt_note_context_switch(void);
+ static int rcu_preempt_blocked_readers_cgp(struct rcu_node *rnp);
+ #ifdef CONFIG_HOTPLUG_CPU
+ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp,
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 7158814b7b4a..495d4cce47a7 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -156,7 +156,7 @@ static void rcu_preempt_qs(void)
+  *
+  * Caller must disable preemption.
+  */
+-static void rcu_preempt_note_context_switch(int cpu)
++static void rcu_preempt_note_context_switch(void)
  {
- 	struct task_struct *p = current;
--	int cpu = smp_processor_id();
+ 	struct task_struct *t = current;
+ 	unsigned long flags;
+@@ -167,7 +167,7 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 	    !t->rcu_read_unlock_special.b.blocked) {
  
- 	/* Note: this timer irq context must be accounted for as well. */
- 	account_process_tick(p, user_tick);
- 	run_local_timers();
--	rcu_check_callbacks(cpu, user_tick);
-+	rcu_check_callbacks(user_tick);
- #ifdef CONFIG_IRQ_WORK
- 	if (in_irq())
- 		irq_work_tick();
+ 		/* Possibly blocking in an RCU read-side critical section. */
+-		rdp = per_cpu_ptr(rcu_preempt_state.rda, cpu);
++		rdp = this_cpu_ptr(rcu_preempt_state.rda);
+ 		rnp = rdp->mynode;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		smp_mb__after_unlock_lock();
+@@ -945,7 +945,7 @@ EXPORT_SYMBOL_GPL(rcu_batches_completed);
+  * Because preemptible RCU does not exist, we never have to check for
+  * CPUs being in quiescent states.
+  */
+-static void rcu_preempt_note_context_switch(int cpu)
++static void rcu_preempt_note_context_switch(void)
+ {
+ }
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 44999505e1bf..cc186945296d 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2802,7 +2802,7 @@ need_resched:
+ 	preempt_disable();
+ 	cpu = smp_processor_id();
+ 	rq = cpu_rq(cpu);
+-	rcu_note_context_switch(cpu);
++	rcu_note_context_switch();
+ 	prev = rq->curr;
+ 
+ 	schedule_debug(prev);
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 0699add19164..501baa9ac1be 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -656,7 +656,7 @@ static void run_ksoftirqd(unsigned int cpu)
+ 		 * in the task stack here.
+ 		 */
+ 		__do_softirq();
+-		rcu_note_context_switch(cpu);
++		rcu_note_context_switch();
+ 		local_irq_enable();
+ 		cond_resched();
+ 		return;
 -- 
 1.8.1.5
 
