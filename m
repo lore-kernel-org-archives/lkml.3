@@ -1,206 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982AbaJ1W1I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:27:08 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:34584 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751911AbaJ1W1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:27:03 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, Clark Williams <clark.williams@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 4/7] rcu: Unify boost and kthread priorities
-Date: Tue, 28 Oct 2014 15:22:59 -0700
-Message-Id: <1414534982-29203-4-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1414534982-29203-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20141028222224.GA28263@linux.vnet.ibm.com>
- <1414534982-29203-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102822-0025-0000-0000-000000F06A36
+	id S1755097AbaJ1W1R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:27:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:59869 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaJ1W1O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:27:14 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Input: i8042 - add mux quirk for HP EliteBook
+Date: Tue, 28 Oct 2014 22:27:12 +0000
+Message-Id: <1414535232-4780-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Clark Williams <clark.williams@gmail.com>
+This laptop requires active multiplexing to be enabled in order to be able
+to separate the PS/2 mouse and the touchpad.
 
-Rename CONFIG_RCU_BOOST_PRIO to CONFIG_RCU_KTHREAD_PRIO and use this
-value for both the per-CPU kthreads (rcuc/N) and the rcu boosting
-threads (rcub/n).
-
-Also, create the module_parameter rcutree.kthread_prio to be used on
-the kernel command line at boot to set a new value (rcutree.kthread_prio=N).
-
-Signed-off-by: Clark Williams <clark.williams@gmail.com>
-[ paulmck: Ported to rcu/dev, applied Paul Bolle feedback. ]
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/kernel-parameters.txt                |  6 ++++++
- init/Kconfig                                       | 23 +++++++++++-----------
- kernel/rcu/tree_plugin.h                           | 20 +++++++++----------
- .../selftests/rcutorture/configs/rcu/TREE03        |  2 +-
- .../selftests/rcutorture/doc/TREE_RCU-kconfig.txt  |  4 ++--
- 5 files changed, 31 insertions(+), 24 deletions(-)
+ drivers/input/serio/i8042-x86ia64io.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7dbe5ec9d9cd..7d3b3328bf5c 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2922,6 +2922,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			quiescent states.  Units are jiffies, minimum
- 			value is one, and maximum value is HZ.
+diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
+index a0bcbb64d06d..2bd486e83b43 100644
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -220,6 +220,13 @@ static const struct dmi_system_id __initconst i8042_dmi_mux_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "CF-18"),
+ 		},
+ 	},
++	{
++		/* HP EliteBook */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook"),
++		},
++	},
+ 	{ }
+ };
  
-+	rcutree.kthread_prio= 	 [KNL,BOOT]
-+			Set the SCHED_FIFO priority of the RCU
-+			per-CPU kthreads (rcuc/N). This value is also
-+			used for the priority of the RCU boost threads
-+			(rcub/N). Valid values are 1-99.
-+
- 	rcutree.rcu_nocb_leader_stride= [KNL]
- 			Set the number of NOCB kthread groups, which
- 			defaults to the square root of the number of
-diff --git a/init/Kconfig b/init/Kconfig
-index 0c9546ba56e8..15c299cc7c1e 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -672,30 +672,31 @@ config RCU_BOOST
- 	  Say Y here if you are working with real-time apps or heavy loads
- 	  Say N here if you are unsure.
- 
--config RCU_BOOST_PRIO
--	int "Real-time priority to boost RCU readers to"
-+config RCU_KTHREAD_PRIO
-+	int "Real-time priority to use for RCU worker threads"
- 	range 1 99
- 	depends on RCU_BOOST
- 	default 1
- 	help
--	  This option specifies the real-time priority to which long-term
--	  preempted RCU readers are to be boosted.  If you are working
--	  with a real-time application that has one or more CPU-bound
--	  threads running at a real-time priority level, you should set
--	  RCU_BOOST_PRIO to a priority higher then the highest-priority
--	  real-time CPU-bound thread.  The default RCU_BOOST_PRIO value
--	  of 1 is appropriate in the common case, which is real-time
-+	  This option specifies the SCHED_FIFO priority value that will be
-+	  assigned to the rcuc/n and rcub/n threads and is also the value
-+	  used for RCU_BOOST (if enabled). If you are working with a
-+	  real-time application that has one or more CPU-bound threads
-+	  running at a real-time priority level, you should set
-+	  RCU_KTHREAD_PRIO to a priority higher than the highest-priority
-+	  real-time CPU-bound application thread.  The default RCU_KTHREAD_PRIO
-+	  value of 1 is appropriate in the common case, which is real-time
- 	  applications that do not have any CPU-bound threads.
- 
- 	  Some real-time applications might not have a single real-time
- 	  thread that saturates a given CPU, but instead might have
- 	  multiple real-time threads that, taken together, fully utilize
--	  that CPU.  In this case, you should set RCU_BOOST_PRIO to
-+	  that CPU.  In this case, you should set RCU_KTHREAD_PRIO to
- 	  a priority higher than the lowest-priority thread that is
- 	  conspiring to prevent the CPU from running any non-real-time
- 	  tasks.  For example, if one thread at priority 10 and another
- 	  thread at priority 5 are between themselves fully consuming
--	  the CPU time on a given CPU, then RCU_BOOST_PRIO should be
-+	  the CPU time on a given CPU, then RCU_KTHREAD_PRIO should be
- 	  set to priority 6 or higher.
- 
- 	  Specify the real-time priority, or take the default if unsure.
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 357891104ea0..344f0e661515 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -30,12 +30,13 @@
- #include <linux/smpboot.h>
- #include "../time/tick-internal.h"
- 
--#define RCU_KTHREAD_PRIO 1
--
- #ifdef CONFIG_RCU_BOOST
- 
- #include "../locking/rtmutex_common.h"
--#define RCU_BOOST_PRIO CONFIG_RCU_BOOST_PRIO
-+
-+/* rcuc/rcub kthread realtime priority */
-+static int kthread_prio = CONFIG_RCU_KTHREAD_PRIO;
-+module_param(kthread_prio, int, 0644);
- 
- /*
-  * Control variables for per-CPU and per-rcu_node kthreads.  These
-@@ -46,11 +47,7 @@ DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_status);
- DEFINE_PER_CPU(unsigned int, rcu_cpu_kthread_loops);
- DEFINE_PER_CPU(char, rcu_cpu_has_work);
- 
--#else /* #ifdef CONFIG_RCU_BOOST */
--
--#define RCU_BOOST_PRIO RCU_KTHREAD_PRIO
--
--#endif /* #else #ifdef CONFIG_RCU_BOOST */
-+#endif /* #ifdef CONFIG_RCU_BOOST */
- 
- #ifdef CONFIG_RCU_NOCB_CPU
- static cpumask_var_t rcu_nocb_mask; /* CPUs to have callbacks offloaded. */
-@@ -98,6 +95,9 @@ static void __init rcu_bootup_announce_oddness(void)
- 		pr_info("\tBoot-time adjustment of leaf fanout to %d.\n", rcu_fanout_leaf);
- 	if (nr_cpu_ids != NR_CPUS)
- 		pr_info("\tRCU restricting CPUs from NR_CPUS=%d to nr_cpu_ids=%d.\n", NR_CPUS, nr_cpu_ids);
-+#ifdef CONFIG_RCU_BOOST
-+	pr_info("\tRCU kthread priority: %d.\n", kthread_prio);
-+#endif
- }
- 
- #ifdef CONFIG_TREE_PREEMPT_RCU
-@@ -1339,7 +1339,7 @@ static int rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
- 	smp_mb__after_unlock_lock();
- 	rnp->boost_kthread_task = t;
- 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
--	sp.sched_priority = RCU_BOOST_PRIO;
-+	sp.sched_priority = kthread_prio;
- 	sched_setscheduler_nocheck(t, SCHED_FIFO, &sp);
- 	wake_up_process(t); /* get to TASK_INTERRUPTIBLE quickly. */
- 	return 0;
-@@ -1356,7 +1356,7 @@ static void rcu_cpu_kthread_setup(unsigned int cpu)
- {
- 	struct sched_param sp;
- 
--	sp.sched_priority = RCU_KTHREAD_PRIO;
-+	sp.sched_priority = kthread_prio;
- 	sched_setscheduler_nocheck(current, SCHED_FIFO, &sp);
- }
- 
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE03 b/tools/testing/selftests/rcutorture/configs/rcu/TREE03
-index f4567fb3e332..b95f62efd6f2 100644
---- a/tools/testing/selftests/rcutorture/configs/rcu/TREE03
-+++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE03
-@@ -17,5 +17,5 @@ CONFIG_DEBUG_LOCK_ALLOC=n
- CONFIG_RCU_CPU_STALL_INFO=n
- CONFIG_RCU_CPU_STALL_VERBOSE=n
- CONFIG_RCU_BOOST=y
--CONFIG_RCU_BOOST_PRIO=2
-+CONFIG_RCU_KTHREAD_PRIO=2
- CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
-diff --git a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
-index 3e588db86a17..ab6e7b4103ac 100644
---- a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
-+++ b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
-@@ -15,8 +15,8 @@ CONFIG_PREEMPT -- Do half.  (First three and #8.)
- CONFIG_PROVE_LOCKING -- Do all but two, covering CONFIG_PROVE_RCU and not.
- CONFIG_PROVE_RCU -- Do all but one under CONFIG_PROVE_LOCKING.
- CONFIG_RCU_BOOST -- one of TREE_PREEMPT_RCU.
--CONFIG_RCU_BOOST_PRIO -- set to 2 for _BOOST testing.
--CONFIG_RCU_CPU_STALL_INFO -- do one with and without _VERBOSE.
-+CONFIG_RCU_KTHREAD_PRIO -- set to 2 for _BOOST testing.
-+CONFIG_RCU_CPU_STALL_INFO -- Do one.
- CONFIG_RCU_CPU_STALL_VERBOSE -- do one with and without _INFO.
- CONFIG_RCU_FANOUT -- Cover hierarchy as currently, but overlap with others.
- CONFIG_RCU_FANOUT_EXACT -- Do one.
 -- 
-1.8.1.5
-
+2.1.0
