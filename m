@@ -1,144 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244AbaJ1QIX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:08:23 -0400
-Received: from mail.mandriva.com.br ([177.220.134.171]:52653 "EHLO
-	mail.mandriva.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582AbaJ1QIT (ORCPT
+	id S1752002AbaJ1QLi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:11:38 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:54373 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942AbaJ1QLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:08:19 -0400
-Date: Tue, 28 Oct 2014 14:08:12 -0200
-From: Marco A Benatto <marco.benatto@mandriva.com.br>
-To: Timofey Titovets <nefelim4ag@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: UKSM: What's maintainers think about it?
-Message-ID: <20141028160812.GB1445@sirus.conectiva>
-References: <CAGqmi77uR2Nems6fE_XM1t3a06OwuqJP-0yOMOQh7KH13vzdzw@mail.gmail.com>
- <20141025213201.005762f9.akpm@linux-foundation.org>
- <20141028133131.GA1445@sirus.conectiva>
- <CAGqmi76b0oUMAsAvBt=PwaxF5JZXcckSdWe2=bL_pXaiUFFCXQ@mail.gmail.com>
+	Tue, 28 Oct 2014 12:11:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Scott Branden <sbranden@broadcom.com>, Christian Daudt <bcm@fixthebug.org>,
+        Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        bcm-kernel-feedback-list@broadcom.com,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, devicetree@vger.kernel.org,
+        Ray Jui <rjui@broadcom.com>, linux-kernel@vger.kernel.org,
+        JD Zheng <jdzheng@broadcom.com>
+Subject: Re: [PATCH v7 4/7] ARM: dts: Enable Broadcom Cygnus SoC
+Date: Tue, 28 Oct 2014 17:10:24 +0100
+Message-ID: <12464460.6zhqY1bzdG@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414011474-11821-5-git-send-email-sbranden@broadcom.com>
+References: <1414011474-11821-5-git-send-email-sbranden@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGqmi76b0oUMAsAvBt=PwaxF5JZXcckSdWe2=bL_pXaiUFFCXQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:JjH4Y/4N0b4TO2bdNCkw+CE0THWAeS34NE4ZvHxRI21
+ t46FWdr3iGdWIw2WS6UwJtpxFKoAm39STLygtvKA3riVUwBT80
+ /JaWYQN50fgEWFCu8CYW2Yy6udG7fWHj5VHnWqgAWXB/RGjxim
+ xvr5xLp4+vphIr7NT8C0gWJu9vpdSKl1xWqGa4pL6UWB1fx8A6
+ 25nZmR9gvDhv2A00SuYEHYjKXvQn7ICY1NAK0Kpjp0A4zosg/Y
+ uQVbxIjhIJeswM4/17WLq7UaWhxnUeX7OeH66sPFUp/u+b1HzH
+ lmKig7znt93TCH4tEjXS4tt0Qt1x+uCBSRHgDnyf4D/9NdKF/U
+ MdSvIQReX+n4FBccfta4=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 04:59:45PM +0300, Timofey Titovets wrote:
-> 2014-10-28 16:31 GMT+03:00 Marco A Benatto <marco.benatto@mandriva.com.br>:
-> > Hi All,
-> >
-> > I'm not mantainer at all, but I've being using UKSM for a long time and remember
-> > to port it to 3.16 family once.
-> > UKSM seems good and stable and, at least for me, doesn't raised any errors.
-> > AFAIK the only limitation I know (maybe I has been fixed already) it isn't able
-> > to work together with zram stuff due to some race-conditions.
-> >
-> > Cheers,
-> >
-> > Marco A Benatto
-> > Mandriva OEM Developer
-> >
+On Wednesday 22 October 2014 13:57:51 Scott Branden wrote:
+> +
+> +       aliases {
+> +               serial0 = &uart3;
+> +               serial1 = &uart0;
+> +       };
+> +
+> +       chosen {
+> +               bootargs = "console=ttyS0,115200 earlyprintk debug";
+> +       };
 > 
-> http://kerneldedup.org/forum/forum.php?mod=viewthread&tid=106
-> As i did find, uksm not conflicting with zram (or zswap - on my system).
 
-Interesting,
+Please move the 'aliases' and 'chosen' node into the .dts files, these
+are board specific, not SoC specific.
 
-I've contacted the mantainers to send some patches in April and they said me this:
+For chosen, please remove earlyprintk and debug, which don't normally
+make sense unless you are debugging, and which will break in a multiplatform
+kernel.
 
-"The biggest problem between UKSM/KSM and zswap is that pages can be reclaimed so
-fast by zswap before UKSM/KSM can have a chance to merge those can be merged.
+Please also add an "stdout-path = &uart3" property in chosen so that
+earlycon can work. Note that earlycon is currently broken on arm32,
+but we'll get there.
 
-So one of the ideas that make a direct solution is that:
-1. sleep the processes who trigger the zswap
-2. wake up the UKSM thread and adjust the scan parameters properly to make it
-sample the whole memory in a limited time to judge if there are any VMAs need to
-be worked on.
-3. If there are those VMAs then merge them at full speed. if there not,
-sleep UKSM.
-4. Wake up the zswap code pathes and judge that if memory is enough to satisfy
-the requests. If there is enough memory then return and redo the memory
-allocation.
-5. if there is not, then go on to do zswapping.
-
-This is just an outline of ONE of the solutions. It need to be carefully
-tweaked. Direct page reclaiming of zswap is a time sensitive code path
-, we cannot add too much overhead by doing this,
-otherwise it loses its meaning."
- 
-> ---
-> Offtop:
-> Why i open up question about UKSM?
-> 
-> May be we (as community, who want to help) can split out UKSM in
-> "several patches" in independent git repo. For allowing maintainers to
-> review this.
-> 
-> Is it morally correct?
-> 
-> UKSM code licensed under GPL and as i think we can feel free for port
-> and adopt code (with indicating the author)
-> 
-> Please, fix me if i mistake or miss something.
-> This is just stream of my thoughts %_%
-
-If there's no problem in do this, and if you don't mind, you can help you
-out on this.
-
-Cheers,
-
-> ---
-> 
-> > On Sat, Oct 25, 2014 at 09:32:01PM -0700, Andrew Morton wrote:
-> >> On Sat, 25 Oct 2014 22:25:56 +0300 Timofey Titovets <nefelim4ag@gmail.com> wrote:
-> >>
-> >> > Good time of day, people.
-> >> > I try to find 'mm' subsystem specific people and lists, but list
-> >> > linux-mm looks dead and mail archive look like deprecated.
-> >> > If i must to sent this message to another list or add CC people, let me know.
-> >>
-> >> linux-mm@kvack.org is alive and well.
-> 
-> So cool, thanks for adding 'mm' to CC.
-> 
-> >> > If questions are already asked (i can't find activity before), feel
-> >> > free to kick me.
-> >> >
-> >> > The main questions:
-> >> > 1. Somebody test it? I see many reviews about it.
-> >> > I already port it to latest linux-next-git kernel and its work without issues.
-> >> > http://pastebin.com/6FMuKagS
-> >> > (if it matter, i can describe use cases and results, if somebody ask it)
-> >> >
-> >> > 2. Developers of UKSM already tried to merge it? Somebody talked with uksm devs?
-> >> > offtop: now i try to communicate with dev's on kerneldedup.org forum,
-> >> > but i have problems with email verification and wait admin
-> >> > registration approval.
-> >> > (i already sent questions to
-> >> > http://kerneldedup.org/forum/home.php?mod=space&username=xianai ,
-> >> > because him looks like team leader)
-> >> >
-> >> > 3. I just want collect feedbacks from linux maintainers team, if you
-> >> > decide what UKSM not needed in kernel, all other comments (as i
-> >> > understand) not matter.
-> >> >
-> >> > Like KSM, but better.
-> >> > UKSM - Ultra Kernel Samepage Merging
-> >> > http://kerneldedup.org/en/projects/uksm/introduction/
-> >>
-> >> It's the first I've heard of it.  No, as far as I know there has been
-> >> no attempt to upstream UKSM.
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> -- 
-> Have a nice day,
-> Timofey.
+	Arnd
