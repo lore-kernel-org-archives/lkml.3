@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891AbaJ1Dk2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:40:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44796 "EHLO
+	id S934007AbaJ1HjQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:39:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44817 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754853AbaJ1DkT (ORCPT
+	with ESMTP id S1754893AbaJ1Dk3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:19 -0400
+	Mon, 27 Oct 2014 23:40:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.17 104/146] Bluetooth: 6lowpan: Set the peer IPv6 address correctly
-Date: Tue, 28 Oct 2014 11:34:06 +0800
-Message-Id: <20141028033347.970555894@linuxfoundation.org>
+        "Carol L. Soto" <clsoto@us.ibm.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 3.17 116/146] powerpc/eeh: Clear frozen device state in time
+Date: Tue, 28 Oct 2014 11:34:18 +0800
+Message-Id: <20141028033348.474567593@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,48 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-commit b2799cec22812f5f1aaaa57133df51876f685d84 upstream.
+commit 22fca17924094113fe79c1db5135290e1a84ad4b upstream.
 
-The peer IPv6 address contained wrong U/L bit in the EUI-64 part.
+The problem was reported by Carol: In the scenario of passing mlx4
+adapter to guest, EEH error could be recovered successfully. When
+returning the device back to host, the driver (mlx4_core.ko)
+couldn't be loaded successfully because of error number -5 (-EIO)
+returned from mlx4_get_ownership(), which hits offlined PCI device.
+The root cause is that we missed to put the affected devices into
+normal state on clearing PE isolated state right after PE reset.
 
-Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+The patch fixes above issue by putting the affected devices to
+normal state when clearing PE isolated state in eeh_pe_state_clear().
+
+Reported-by: Carol L. Soto <clsoto@us.ibm.com>
+Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/6lowpan.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/powerpc/kernel/eeh_pe.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
---- a/net/bluetooth/6lowpan.c
-+++ b/net/bluetooth/6lowpan.c
-@@ -671,6 +671,14 @@ static struct l2cap_chan *chan_open(stru
- 	return chan;
- }
- 
-+static void set_ip_addr_bits(u8 addr_type, u8 *addr)
-+{
-+	if (addr_type == BDADDR_LE_PUBLIC)
-+		*addr |= 0x02;
-+	else
-+		*addr &= ~0x02;
-+}
-+
- static struct l2cap_chan *add_peer_chan(struct l2cap_chan *chan,
- 					struct lowpan_dev *dev)
+--- a/arch/powerpc/kernel/eeh_pe.c
++++ b/arch/powerpc/kernel/eeh_pe.c
+@@ -584,6 +584,8 @@ static void *__eeh_pe_state_clear(void *
  {
-@@ -693,6 +701,11 @@ static struct l2cap_chan *add_peer_chan(
- 	memcpy(&peer->eui64_addr, (u8 *)&peer->peer_addr.s6_addr + 8,
- 	       EUI64_ADDR_LEN);
+ 	struct eeh_pe *pe = (struct eeh_pe *)data;
+ 	int state = *((int *)flag);
++	struct eeh_dev *edev, *tmp;
++	struct pci_dev *pdev;
  
-+	/* IPv6 address needs to have the U/L bit set properly so toggle
-+	 * it back here.
+ 	/* Keep the state of permanently removed PE intact */
+ 	if ((pe->freeze_count > EEH_MAX_ALLOWED_FREEZES) &&
+@@ -592,9 +594,22 @@ static void *__eeh_pe_state_clear(void *
+ 
+ 	pe->state &= ~state;
+ 
+-	/* Clear check count since last isolation */
+-	if (state & EEH_PE_ISOLATED)
+-		pe->check_count = 0;
++	/*
++	 * Special treatment on clearing isolated state. Clear
++	 * check count since last isolation and put all affected
++	 * devices to normal state.
 +	 */
-+	set_ip_addr_bits(chan->dst_type, (u8 *)&peer->peer_addr.s6_addr + 8);
++	if (!(state & EEH_PE_ISOLATED))
++		return NULL;
 +
- 	write_lock_irqsave(&devices_lock, flags);
- 	INIT_LIST_HEAD(&peer->list);
- 	peer_add(dev, peer);
++	pe->check_count = 0;
++	eeh_pe_for_each_dev(pe, edev, tmp) {
++		pdev = eeh_dev_to_pci_dev(edev);
++		if (!pdev)
++			continue;
++
++		pdev->error_state = pci_channel_io_normal;
++	}
+ 
+ 	return NULL;
+ }
 
 
