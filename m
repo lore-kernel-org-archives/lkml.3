@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933400AbaJ1Dv5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:51:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46100 "EHLO
+	id S1752956AbaJ1G35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:29:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46090 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933340AbaJ1Dvy (ORCPT
+	with ESMTP id S933370AbaJ1Dvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:51:54 -0400
+	Mon, 27 Oct 2014 23:51:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: [PATCH 3.10 18/43] Drivers: hv: vmbus: Cleanup vmbus_teardown_gpadl()
-Date: Tue, 28 Oct 2014 11:36:16 +0800
-Message-Id: <20141028033524.186638007@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 3.10 16/43] firmware_class: make sure fw requests contain a name
+Date: Tue, 28 Oct 2014 11:36:14 +0800
+Message-Id: <20141028033524.097268322@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
 References: <20141028033523.407092670@linuxfoundation.org>
@@ -29,51 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 66be653083057358724d56d817e870e53fb81ca7 upstream.
+commit 471b095dfe0d693a8d624cbc716d1ee4d74eb437 upstream.
 
-Eliminate calls to BUG_ON() by properly handling errors. In cases where
-rollback is possible, we will return the appropriate error to have the
-calling code decide how to rollback state. In the case where we are
-transferring ownership of the guest physical pages to the host,
-we will wait for the host to respond.
+An empty firmware request name will trigger warnings when building
+device names. Make sure this is caught earlier and rejected.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+The warning was visible via the test_firmware.ko module interface:
+
+echo -ne "\x00" > /sys/devices/virtual/misc/test_firmware/trigger_request
+
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/channel.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/base/firmware_class.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -464,7 +464,7 @@ int vmbus_teardown_gpadl(struct vmbus_ch
- 	struct vmbus_channel_gpadl_teardown *msg;
- 	struct vmbus_channel_msginfo *info;
- 	unsigned long flags;
--	int ret, t;
-+	int ret;
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -1021,6 +1021,9 @@ _request_firmware(const struct firmware
+ 	if (!firmware_p)
+ 		return -EINVAL;
  
- 	info = kmalloc(sizeof(*info) +
- 		       sizeof(struct vmbus_channel_gpadl_teardown), GFP_KERNEL);
-@@ -486,11 +486,12 @@ int vmbus_teardown_gpadl(struct vmbus_ch
- 	ret = vmbus_post_msg(msg,
- 			       sizeof(struct vmbus_channel_gpadl_teardown));
- 
--	BUG_ON(ret != 0);
--	t = wait_for_completion_timeout(&info->waitevent, 5*HZ);
--	BUG_ON(t == 0);
-+	if (ret)
-+		goto post_msg_err;
- 
--	/* Received a torndown response */
-+	wait_for_completion(&info->waitevent);
++	if (!name || name[0] == '\0')
++		return -EINVAL;
 +
-+post_msg_err:
- 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
- 	list_del(&info->msglistentry);
- 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
+ 	ret = _request_firmware_prepare(&fw, name, device);
+ 	if (ret <= 0) /* error or already assigned */
+ 		goto out;
 
 
