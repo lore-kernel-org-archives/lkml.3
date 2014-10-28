@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730AbaJ1Dgl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:36:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44316 "EHLO
+	id S1753788AbaJ1Dgu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:36:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44336 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695AbaJ1Dgi (ORCPT
+	with ESMTP id S1753766AbaJ1Dgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:36:38 -0400
+	Mon, 27 Oct 2014 23:36:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Addy Ke <addy.ke@rock-chips.com>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 024/146] spi/rockchip: fix bug that cause the failure to read data in DMA mode
-Date: Tue, 28 Oct 2014 11:32:46 +0800
-Message-Id: <20141028033344.489827774@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.17 028/146] HID: rmi: check sanity of the incoming report
+Date: Tue, 28 Oct 2014 11:32:50 +0800
+Message-Id: <20141028033344.662372923@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -28,64 +29,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Addy Ke <addy.ke@rock-chips.com>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit a24e70c0ac146f8bcae3cdb7f514950d5b32219e upstream.
+commit 5b65c2a0296644dd3dbdd590d6f00174d18c96b3 upstream.
 
-In my test on RK3288-pinky board, if spi is enabled, it will begin to
-read data from slave regardless of whether the DMA is ready. So we
-need prepare DMA before spi is enable.
+In the Dell XPS 13 9333, it appears that sometimes the bus get confused
+and corrupts the incoming data. It fills the input report with the
+sentinel value "ff". Synaptics told us that such behavior does not comes
+from the touchpad itself, so we filter out such reports here.
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Unfortunately, we can not simply discard the incoming data because they
+may contain useful information. Most of the time, the misbehavior is
+quite near the end of the report, so we can still use the valid part of
+it.
+
+Fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=1123584
+
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-rockchip.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ drivers/hid/hid-rmi.c |   44 ++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 38 insertions(+), 6 deletions(-)
 
---- a/drivers/spi/spi-rockchip.c
-+++ b/drivers/spi/spi-rockchip.c
-@@ -415,7 +415,7 @@ static void rockchip_spi_dma_txcb(void *
- 	spin_unlock_irqrestore(&rs->lock, flags);
- }
+--- a/drivers/hid/hid-rmi.c
++++ b/drivers/hid/hid-rmi.c
+@@ -320,10 +320,7 @@ static int rmi_f11_input_event(struct hi
+ 	int offset;
+ 	int i;
  
--static int rockchip_spi_dma_transfer(struct rockchip_spi *rs)
-+static void rockchip_spi_prepare_dma(struct rockchip_spi *rs)
- {
- 	unsigned long flags;
- 	struct dma_slave_config rxconf, txconf;
-@@ -474,8 +474,6 @@ static int rockchip_spi_dma_transfer(str
- 		dmaengine_submit(txdesc);
- 		dma_async_issue_pending(rs->dma_tx.ch);
- 	}
+-	if (size < hdata->f11.report_size)
+-		return 0;
 -
--	return 1;
+-	if (!(irq & hdata->f11.irq_mask))
++	if (!(irq & hdata->f11.irq_mask) || size <= 0)
+ 		return 0;
+ 
+ 	offset = (hdata->max_fingers >> 2) + 1;
+@@ -332,9 +329,19 @@ static int rmi_f11_input_event(struct hi
+ 		int fs_bit_position = (i & 0x3) << 1;
+ 		int finger_state = (data[fs_byte_position] >> fs_bit_position) &
+ 					0x03;
++		int position = offset + 5 * i;
++
++		if (position + 5 > size) {
++			/* partial report, go on with what we received */
++			printk_once(KERN_WARNING
++				"%s %s: Detected incomplete finger report. Finger reports may occasionally get dropped on this platform.\n",
++				 dev_driver_string(&hdev->dev),
++				 dev_name(&hdev->dev));
++			hid_dbg(hdev, "Incomplete finger report\n");
++			break;
++		}
+ 
+-		rmi_f11_process_touch(hdata, i, finger_state,
+-				&data[offset + 5 * i]);
++		rmi_f11_process_touch(hdata, i, finger_state, &data[position]);
+ 	}
+ 	input_mt_sync_frame(hdata->input);
+ 	input_sync(hdata->input);
+@@ -352,6 +359,11 @@ static int rmi_f30_input_event(struct hi
+ 	if (!(irq & hdata->f30.irq_mask))
+ 		return 0;
+ 
++	if (size < (int)hdata->f30.report_size) {
++		hid_warn(hdev, "Click Button pressed, but the click data is missing\n");
++		return 0;
++	}
++
+ 	for (i = 0; i < hdata->gpio_led_count; i++) {
+ 		if (test_bit(i, &hdata->button_mask)) {
+ 			value = (data[i / 8] >> (i & 0x07)) & BIT(0);
+@@ -412,9 +424,29 @@ static int rmi_read_data_event(struct hi
+ 	return 1;
  }
  
- static void rockchip_spi_config(struct rockchip_spi *rs)
-@@ -557,16 +555,17 @@ static int rockchip_spi_transfer_one(
- 	else if (rs->rx)
- 		rs->tmode = CR0_XFM_RO;
- 
--	if (master->can_dma && master->can_dma(master, spi, xfer))
-+	/* we need prepare dma before spi was enabled */
-+	if (master->can_dma && master->can_dma(master, spi, xfer)) {
- 		rs->use_dma = 1;
--	else
-+		rockchip_spi_prepare_dma(rs);
-+	} else {
- 		rs->use_dma = 0;
-+	}
- 
- 	rockchip_spi_config(rs);
- 
--	if (rs->use_dma)
--		ret = rockchip_spi_dma_transfer(rs);
--	else
-+	if (!rs->use_dma)
- 		ret = rockchip_spi_pio_transfer(rs);
- 
- 	return ret;
++static int rmi_check_sanity(struct hid_device *hdev, u8 *data, int size)
++{
++	int valid_size = size;
++	/*
++	 * On the Dell XPS 13 9333, the bus sometimes get confused and fills
++	 * the report with a sentinel value "ff". Synaptics told us that such
++	 * behavior does not comes from the touchpad itself, so we filter out
++	 * such reports here.
++	 */
++
++	while ((data[valid_size - 1] == 0xff) && valid_size > 0)
++		valid_size--;
++
++	return valid_size;
++}
++
+ static int rmi_raw_event(struct hid_device *hdev,
+ 		struct hid_report *report, u8 *data, int size)
+ {
++	size = rmi_check_sanity(hdev, data, size);
++	if (size < 2)
++		return 0;
++
+ 	switch (data[0]) {
+ 	case RMI_READ_DATA_REPORT_ID:
+ 		return rmi_read_data_event(hdev, data, size);
 
 
