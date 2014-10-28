@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934190AbaJ1Dx0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:53:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46193 "EHLO
+	id S934322AbaJ1Dxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:53:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934034AbaJ1DxF (ORCPT
+	with ESMTP id S934252AbaJ1Dxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:53:05 -0400
+	Mon, 27 Oct 2014 23:53:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Champion Chen <champion_chen@realsil.com.cn>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.10 33/43] Bluetooth: Fix issue with USB suspend in btusb driver
-Date: Tue, 28 Oct 2014 11:36:31 +0800
-Message-Id: <20141028033524.823580607@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 36/43] kernel: add support for gcc 5
+Date: Tue, 28 Oct 2014 11:36:34 +0800
+Message-Id: <20141028033524.946621258@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
 References: <20141028033523.407092670@linuxfoundation.org>
@@ -30,56 +30,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Champion Chen <champion_chen@realsil.com.cn>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 85560c4a828ec9c8573840c9b66487b6ae584768 upstream.
+commit 71458cfc782eafe4b27656e078d379a34e472adf upstream.
 
-Suspend could fail for some platforms because
-btusb_suspend==> btusb_stop_traffic ==> usb_kill_anchored_urbs.
+We're missing include/linux/compiler-gcc5.h which is required now
+because gcc branched off to v5 in trunk.
 
-When btusb_bulk_complete returns before system suspend and resubmits
-an URB, the system cannot enter suspend state.
+Just copy the relevant bits out of include/linux/compiler-gcc4.h,
+no new code is added as of now.
 
-Signed-off-by: Champion Chen <champion_chen@realsil.com.cn>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+This fixes a build error when using gcc 5.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ include/linux/compiler-gcc5.h |   66 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -302,6 +302,9 @@ static void btusb_intr_complete(struct u
- 			BT_ERR("%s corrupted event packet", hdev->name);
- 			hdev->stat.err_rx++;
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
- 
- 	if (!test_bit(BTUSB_INTR_RUNNING, &data->flags))
-@@ -390,6 +393,9 @@ static void btusb_bulk_complete(struct u
- 			BT_ERR("%s corrupted ACL packet", hdev->name);
- 			hdev->stat.err_rx++;
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
- 
- 	if (!test_bit(BTUSB_BULK_RUNNING, &data->flags))
-@@ -484,6 +490,9 @@ static void btusb_isoc_complete(struct u
- 				hdev->stat.err_rx++;
- 			}
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
- 
- 	if (!test_bit(BTUSB_ISOC_RUNNING, &data->flags))
+--- /dev/null
++++ b/include/linux/compiler-gcc5.h
+@@ -0,0 +1,66 @@
++#ifndef __LINUX_COMPILER_H
++#error "Please don't include <linux/compiler-gcc5.h> directly, include <linux/compiler.h> instead."
++#endif
++
++#define __used				__attribute__((__used__))
++#define __must_check			__attribute__((warn_unused_result))
++#define __compiler_offsetof(a, b)	__builtin_offsetof(a, b)
++
++/* Mark functions as cold. gcc will assume any path leading to a call
++   to them will be unlikely.  This means a lot of manual unlikely()s
++   are unnecessary now for any paths leading to the usual suspects
++   like BUG(), printk(), panic() etc. [but let's keep them for now for
++   older compilers]
++
++   Early snapshots of gcc 4.3 don't support this and we can't detect this
++   in the preprocessor, but we can live with this because they're unreleased.
++   Maketime probing would be overkill here.
++
++   gcc also has a __attribute__((__hot__)) to move hot functions into
++   a special section, but I don't see any sense in this right now in
++   the kernel context */
++#define __cold			__attribute__((__cold__))
++
++#define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
++
++#ifndef __CHECKER__
++# define __compiletime_warning(message) __attribute__((warning(message)))
++# define __compiletime_error(message) __attribute__((error(message)))
++#endif /* __CHECKER__ */
++
++/*
++ * Mark a position in code as unreachable.  This can be used to
++ * suppress control flow warnings after asm blocks that transfer
++ * control elsewhere.
++ *
++ * Early snapshots of gcc 4.5 don't support this and we can't detect
++ * this in the preprocessor, but we can live with this because they're
++ * unreleased.  Really, we need to have autoconf for the kernel.
++ */
++#define unreachable() __builtin_unreachable()
++
++/* Mark a function definition as prohibited from being cloned. */
++#define __noclone	__attribute__((__noclone__))
++
++/*
++ * Tell the optimizer that something else uses this function or variable.
++ */
++#define __visible __attribute__((externally_visible))
++
++/*
++ * GCC 'asm goto' miscompiles certain code sequences:
++ *
++ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
++ *
++ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
++ * Fixed in GCC 4.8.2 and later versions.
++ *
++ * (asm goto is automatically volatile - the naming reflects this.)
++ */
++#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
++
++#ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
++#define __HAVE_BUILTIN_BSWAP32__
++#define __HAVE_BUILTIN_BSWAP64__
++#define __HAVE_BUILTIN_BSWAP16__
++#endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
 
 
