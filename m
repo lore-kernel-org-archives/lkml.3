@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754046AbaJ1Oer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 10:34:47 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:35631 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511AbaJ1Oeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 10:34:46 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Joerg Roedel <joro@8bytes.org>, Grant Grundler <grundler@chromium.org>,
-        =?ISO-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-        Simon Xue <xxm@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 3/3] ARM: dts: rk3288: add VOP iommu nodes
-Date: Tue, 28 Oct 2014 15:37:52 +0100
-Message-ID: <6644033.fY7Wj4BQVl@diego>
-User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
-In-Reply-To: <1414413448-15819-4-git-send-email-djkurtz@chromium.org>
-References: <1414413448-15819-1-git-send-email-djkurtz@chromium.org> <1414413448-15819-4-git-send-email-djkurtz@chromium.org>
+	id S1753930AbaJ1Ofr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 10:35:47 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47296 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751400AbaJ1Ofp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 10:35:45 -0400
+Date: Tue, 28 Oct 2014 14:35:36 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Xia Kaixu <kaixu.xia@linaro.org>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 5/5] ARM: use early console instead of early debug in
+ allmodconfig kernels
+Message-ID: <20141028143536.GI27405@n2100.arm.linux.org.uk>
+References: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org>
+ <1414503095-25986-6-git-send-email-kaixu.xia@linaro.org>
+ <20141028140536.GF27405@n2100.arm.linux.org.uk>
+ <3063784.TXO37ZkrnY@wuerfel>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3063784.TXO37ZkrnY@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 27. Oktober 2014, 20:37:28 schrieb Daniel Kurtz:
-> Add device nodes for the VOP iommus.
-> Device nodes for other iommus will be added in later patches.
+On Tue, Oct 28, 2014 at 03:29:01PM +0100, Arnd Bergmann wrote:
+> On Tuesday 28 October 2014 14:05:36 Russell King - ARM Linux wrote:
+> > On Tue, Oct 28, 2014 at 09:31:35PM +0800, Xia Kaixu wrote:
+> > > The early debug could break something when booting 'allmodconfig'
+> > > kernels. So we use early console instead of early debug.
+> > > 
+> > > The early console didn't work yet on OMAP4460 because of missing
+> > > earlycon support and I am working on that.
+> > 
+> > No. bloody. way.
+> > 
+> > > @@ -78,7 +78,7 @@ config DEBUG_USER
+> > >  # These options are only for real kernel hackers who want to get their hands dirty.
+> > >  config DEBUG_LL
+> > >       bool "Kernel low-level debugging functions (read help!)"
+> > > -     depends on DEBUG_KERNEL
+> > > +     depends on DEBUG_KERNEL && !ARCH_MULTIPLATFORM_STRICT
+> > 
+> > Firstly, this is well advertised that it can only be applied to a single
+> > configuration.  So I don't think we need this dependency here.  Even if
+> > you want to build a strict multiplatform kernel, it should still be
+> > possible to enable this for a specific platform.
 > 
-> The iommu nodes use the #iommu-cells property as described in:
->   Documentation/devicetree/bindings/iommu/iommu.txt
+> I've asked Kaixu to do this patch. This is one of the most fundamental
+> uses of ARCH_MULTIPLATFORM_STRICT: as soon as you turn on DEBUG_LL, the
+> kernel no longer runs on any other platform, so it can still be built
+> as a multiplatform kernel, but not a "strict" one that is known to
+> work on all hardware that is enabled.
+
+No, that is not correct.  You can turn on DEBUG_LL, and a multiplatform
+kernel will still run.
+
+The point at which it won't run is if you call the DEBUG_LL function on
+a platform it wasn't configured for.  That happens if you start using
+the printascii() et.al. functions, or (against my better judgement) the
+early console support is enabled.
+
+So, as the early console support went against my wishes there, I see
+this problem as more of an early console problem than a DEBUG_LL problem.
+
+> Exactly, and I think it's not asking too much from a developer to turn
+> off ARCH_MULTIPLATFORM_STRICT if they want to turn on DEBUG_LL. Nothing
+> else should change if you do that.
 > 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> Signed-off-by: Simon Xue <xxm@rock-chips.com>
+> The main use of the symbol is really to avoid turning on DEBUG_LL is
+> allmodconfig kernels, which will always enable ARCH_MULTIPLATFORM_STRICT.
 
-Looks fine and I'll pick this patch up, once Joerg is statisfied with the iommu 
-driver (patches 1 and 2).
+It's pointless if that's all that ARCH_MULTIPLATFORM_STRICT ends up
+doing.  It just needlessly adds extra configuration options.  There's
+already thousands of kernel options, we don't need any more stupid
+idiotic options to clutter the already densely populated forest, and
+make it yet harder to work out wtf we're doing with all these options.
 
-
-Heiko
-
-> ---
->  arch/arm/boot/dts/rk3288.dtsi | 18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-> index 5950b0a..df1170c 100644
-> --- a/arch/arm/boot/dts/rk3288.dtsi
-> +++ b/arch/arm/boot/dts/rk3288.dtsi
-> @@ -271,6 +271,24 @@
->  		status = "disabled";
->  	};
-> 
-> +	vopb_mmu: iommu@ff930300 {
-> +		compatible = "rockchip,iommu";
-> +		reg = <0xff930300 0x100>;
-> +		interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>;
-> +		interrupt-names = "vopb_mmu";
-> +		#iommu-cells = <0>;
-> +		status = "disabled";
-> +	};
-> +
-> +	vopl_mmu: iommu@ff940300 {
-> +		compatible = "rockchip,iommu";
-> +		reg = <0xff940300 0x100>;
-> +		interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
-> +		interrupt-names = "vopl_mmu";
-> +		#iommu-cells = <0>;
-> +		status = "disabled";
-> +	};
-> +
->  	gic: interrupt-controller@ffc01000 {
->  		compatible = "arm,gic-400";
->  		interrupt-controller;
-
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
