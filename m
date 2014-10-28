@@ -1,89 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933475AbaJ1FHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:07:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35201 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751934AbaJ1FHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 01:07:02 -0400
-Date: Tue, 28 Oct 2014 13:04:48 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        ak@linux.intel.com, ebiederm@xmission.com, kexec@lists.infradead.org,
-        whissi@whissi.de, kumagai-atsushi@mxc.nes.nec.co.jp,
-        stable@vger.kernel.org
-Subject: Re: [resend Patch v3 1/2] kaslr: check if kernel location is changed
-Message-ID: <20141028050448.GB15783@dhcp-16-105.nay.redhat.com>
-References: <543553C7.9010906@zytor.com>
- <20141008192728.GA26517@redhat.com>
- <20141011031452.GB11560@dhcp-16-116.nay.redhat.com>
- <543907B5.7060001@zytor.com>
- <20141013125257.GB6466@redhat.com>
- <20141013151955.GA9777@redhat.com>
- <543BF304.9090708@zytor.com>
- <20141013172242.GB9777@redhat.com>
- <20141014124932.GC5127@redhat.com>
- <20141015033701.GD16068@dhcp-16-116.nay.redhat.com>
+	id S933837AbaJ1FLE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:11:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46314 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933708AbaJ1Dwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 23:52:34 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Matlack <dmatlack@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 05/43] kvm: x86: fix stale mmio cache bug
+Date: Tue, 28 Oct 2014 11:36:03 +0800
+Message-Id: <20141028033523.636391365@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141015033701.GD16068@dhcp-16-116.nay.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/14 at 11:37am, Baoquan He wrote:
-> On 10/14/14 at 08:49am, Vivek Goyal wrote:
-> > On Mon, Oct 13, 2014 at 01:22:42PM -0400, Vivek Goyal wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: David Matlack <dmatlack@google.com>
+
+commit 56f17dd3fbc44adcdbc3340fe3988ddb833a47a7 upstream.
+
+The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
+up to userspace:
+
+(1) Guest accesses gpa X without a memory slot. The gfn is cached in
+struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
+the SPTE write-execute-noread so that future accesses cause
+EPT_MISCONFIGs.
+
+(2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
+covering the page just accessed.
+
+(3) Guest attempts to read or write to gpa X again. On Intel, this
+generates an EPT_MISCONFIG. The memory slot generation number that
+was incremented in (2) would normally take care of this but we fast
+path mmio faults through quickly_check_mmio_pf(), which only checks
+the per-vcpu mmio cache. Since we hit the cache, KVM passes a
+KVM_EXIT_MMIO up to userspace.
+
+This patch fixes the issue by using the memslot generation number
+to validate the mmio cache.
+
+Signed-off-by: David Matlack <dmatlack@google.com>
+[xiaoguangrong: adjust the code to make it simpler for stable-tree fix.]
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Reviewed-by: David Matlack <dmatlack@google.com>
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Tested-by: David Matlack <dmatlack@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/mmu.c              |    2 +-
+ arch/x86/kvm/x86.h              |   20 +++++++++++++++-----
+ 3 files changed, 17 insertions(+), 6 deletions(-)
+
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -463,6 +463,7 @@ struct kvm_vcpu_arch {
+ 	u64 mmio_gva;
+ 	unsigned access;
+ 	gfn_t mmio_gfn;
++	u64 mmio_gen;
  
-> > > Agreed. On x86_64, we should be able to randomize virtual address space
-> > > and physical address space independently. And in that case whole of
-> > > the physical memory should be available for a possible location for
-> > > kernel. (As opposed to a small limit (I guess 1GB) now)
-> 
-> It can be done to randomize virtual address space and physical address
-> space independently. But limited by the 2G of kernel text mapping and
-> module mapping virtual address space, virtual address can be randomized
-> in (0x1000000, 1G) range. While physical address can be randomized in
-> (0x1000000, 4G) according to the identity mapping of normal kernel. Then
-> phys_base still stores an relative value, a different offset than before.
-> 
-> This can be easily implement. One thing is still there's a limit for
-> physical addr randomization, only below 4G. So I am wondering if we can
-> extend the identify mapping to complete mapping of 48 bit, using 1G page
-> frame. This can make physical addr be randomized to anywhere.
-> 
-> So now there may be 3 options:
+ 	struct kvm_pmu pmu;
+ 
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -3072,7 +3072,7 @@ static void mmu_sync_roots(struct kvm_vc
+ 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+ 		return;
+ 
+-	vcpu_clear_mmio_info(vcpu, ~0ul);
++	vcpu_clear_mmio_info(vcpu, MMIO_GVA_ANY);
+ 	kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
+ 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
+ 		hpa_t root = vcpu->arch.mmu.root_hpa;
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -78,15 +78,23 @@ static inline void vcpu_cache_mmio_info(
+ 	vcpu->arch.mmio_gva = gva & PAGE_MASK;
+ 	vcpu->arch.access = access;
+ 	vcpu->arch.mmio_gfn = gfn;
++	vcpu->arch.mmio_gen = kvm_memslots(vcpu->kvm)->generation;
++}
++
++static inline bool vcpu_match_mmio_gen(struct kvm_vcpu *vcpu)
++{
++	return vcpu->arch.mmio_gen == kvm_memslots(vcpu->kvm)->generation;
+ }
+ 
+ /*
+- * Clear the mmio cache info for the given gva,
+- * specially, if gva is ~0ul, we clear all mmio cache info.
++ * Clear the mmio cache info for the given gva. If gva is MMIO_GVA_ANY, we
++ * clear all mmio cache info.
+  */
++#define MMIO_GVA_ANY (~(gva_t)0)
++
+ static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
+ {
+-	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
++	if (gva != MMIO_GVA_ANY && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
+ 		return;
+ 
+ 	vcpu->arch.mmio_gva = 0;
+@@ -94,7 +102,8 @@ static inline void vcpu_clear_mmio_info(
+ 
+ static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
+ {
+-	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gva &&
++	      vcpu->arch.mmio_gva == (gva & PAGE_MASK))
+ 		return true;
+ 
+ 	return false;
+@@ -102,7 +111,8 @@ static inline bool vcpu_match_mmio_gva(s
+ 
+ static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
+ {
+-	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gfn &&
++	      vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
+ 		return true;
+ 
+ 	return false;
 
-Hi hpa,
 
-About kaslr, do you have a suggestion or plan? Should we fix bug based
-on current code, or any other solutions?
-
-Thanks
-Baoquan
-
-
-> 
-> 1) Fix this bug in current kaslr. Since when randomize the new kernel
-> location in choose_kernel_location(), cmdline options has been checked
-> strictly, e.g if nokaslr is specified, it's safe to do the kernel
-> location randomization. Then in handle_relocations(), we only need to
-> check if the kernel location is changed, comparing with kernel loaded
-> addr. If changed, kaslr is done, let's do the relocation handling. If
-> not changed, no kaslr id done, just skip the relocation handling like
-> before.
-> 
-> 2) randomize the virtual addr space and physical addr space
-> independently. But physical addr space must be below 4G.
-> 
-> 3) extend the identity mapping to 48bit of addr space. Then we can
-> randomized the virtual addr space in (0x1000000, 1G) and physical addr
-> space in (0x1000000, real physical memory end).
-> 
-> If option 3 is doable, it's the best. If not, I think bug fix should be
-> better.
-> 
