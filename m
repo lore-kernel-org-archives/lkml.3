@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754748AbaJ1Dj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:39:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44678 "EHLO
+	id S1754768AbaJ1DkA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:40:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44689 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716AbaJ1Djy (ORCPT
+	with ESMTP id S1754745AbaJ1Dj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:54 -0400
+	Mon, 27 Oct 2014 23:39:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.17 102/146] Bluetooth: Fix setting correct security level when initiating SMP
-Date: Tue, 28 Oct 2014 11:34:04 +0800
-Message-Id: <20141028033347.886860697@linuxfoundation.org>
+        Arnaud Ebalard <arno@natisbad.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.17 085/146] ARM: mvebu: Netgear RN2120: Use Hardware BCH ECC
+Date: Tue, 28 Oct 2014 11:33:47 +0800
+Message-Id: <20141028033347.077312046@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,44 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hedberg <johan.hedberg@intel.com>
+From: Arnaud Ebalard <arno@natisbad.org>
 
-commit 5eb596f55cacc2389554a8d7572d90d5e9d4269d upstream.
+commit 500abb6ccb9e3f8d638a7f422443a8549245ef90 upstream.
 
-We can only determine the final security level when both pairing request
-and response have been exchanged. When initiating pairing the starting
-target security level is set to MEDIUM unless explicitly specified to be
-HIGH, so that we can still perform pairing even if the remote doesn't
-have MITM capabilities. However, once we've received the pairing
-response we should re-consult the remote and local IO capabilities and
-upgrade the target security level if necessary.
+The bootloader on the Netgear ReadyNAS RN2120 uses Hardware BCH
+ECC (strength = 4), while the pxa3xx NAND driver by default uses
+Hamming ECC (strength = 1).
 
-Without this patch the resulting Long Term Key will occasionally be
-reported to be unauthenticated when it in reality is an authenticated
-one.
+This patch changes the ECC mode on these machines to match that
+of the bootloader and of the stock firmware. That way, it is
+now possible to update the kernel from userland (e.g. using
+standard tools from mtd-utils package); u-boot will happily
+load and boot it.
 
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+The issue was initially reported and fixed by Ben Pedell for
+RN102. The RN2120 shares the same Hynix H27U1G8F2BTR NAND
+flash and setup. This patch is based on Ben's fix for RN102.
+
+Fixes: ad51eddd95ad ("ARM: mvebu: Enable NAND controller in ReadyNAS 2120 .dts file")
+Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
+Link: https://lkml.kernel.org/r/61f6a1b7ad0adc57a0e201b9680bc2e5f214a317.1410035142.git.arno@natisbad.org
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/smp.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/armada-xp-netgear-rn2120.dts |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/bluetooth/smp.c
-+++ b/net/bluetooth/smp.c
-@@ -442,8 +442,11 @@ static int tk_request(struct l2cap_conn
- 	}
+--- a/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
++++ b/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
+@@ -223,6 +223,10 @@
+ 				marvell,nand-enable-arbiter;
+ 				nand-on-flash-bbt;
  
- 	/* Not Just Works/Confirm results in MITM Authentication */
--	if (method != JUST_CFM)
-+	if (method != JUST_CFM) {
- 		set_bit(SMP_FLAG_MITM_AUTH, &smp->flags);
-+		if (hcon->pending_sec_level < BT_SECURITY_HIGH)
-+			hcon->pending_sec_level = BT_SECURITY_HIGH;
-+	}
- 
- 	/* If both devices have Keyoard-Display I/O, the master
- 	 * Confirms and the slave Enters the passkey.
++				/* Use Hardware BCH ECC */
++				nand-ecc-strength = <4>;
++				nand-ecc-step-size = <512>;
++
+ 				partition@0 {
+ 					label = "u-boot";
+ 					reg = <0x0000000 0x180000>;  /* 1.5MB */
 
 
