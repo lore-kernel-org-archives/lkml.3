@@ -1,312 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903AbaJ1LiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:38:00 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:38243 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622AbaJ1Lh5 (ORCPT
+	id S1753404AbaJ1LpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:45:11 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33024 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751591AbaJ1LpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:37:57 -0400
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <1412295313-8198-1-git-send-email-xypron.glpk@gmx.de>
-References: <1412295197-8100-1-git-send-email-xypron.glpk@gmx.de> <1412295313-8198-1-git-send-email-xypron.glpk@gmx.de>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Tue, 28 Oct 2014 12:37:36 +0100
-Message-ID: <CAKgNAkhZTHThGB+4_P6T4Gw9GBPbv4Wy5NvKOX7sG-vgk_SN3A@mail.gmail.com>
-Subject: Re: [PATCH 1/3] getrandom.2: new manpage
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: linux-man <linux-man@vger.kernel.org>,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 28 Oct 2014 07:45:08 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: torvalds@linux-foundation.org, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        benh@kernel.crashing.org, Will Deacon <will.deacon@arm.com>
+Subject: [RFC PATCH 0/2] Fix a couple of issues with zap_pte_range and MMU gather
+Date: Tue, 28 Oct 2014 11:44:20 +0000
+Message-Id: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping^2, Ted!
+Hi all,
 
-I'm still hoping for your sign-off on this man-pages patch.
+This patch series attempts to fix a couple of issues I've noticed with
+zap_pte_range and the MMU gather code on arm64.
 
-Also adding LKML in CC, in case anyone else wants to comment.
+Ths first fix resolves a TLB range truncation, which I found by code
+inspection (this is on the batch failure path, which doesn't appear to
+be regularly exercised on my system).
 
-Cheers,
+For the second fix, I'd really appreciate some comments. The problem is
+that the architecture TLB batching implementation may update the start
+and end fields of the gather structure, so that they actually cover only
+a subset of the initial range set up by tlb_gather_mmu (based on calls
+to tlb_remove_tlb_entry). In the force_flush case, zap_pte_range sets
+these fields directly, which can result in a negative range if the
+architecture has also updated the end address. The patch here uses
+min(end, addr) as the end of the first range, which creates a second
+range from that address to the end of the region. This results in a
+potential over-invalidation on arm64, but I can't think of anything
+better without updating (at least) the x86 tlb.h implementation.
 
-Michael
+Ideally, we'd let the architecture set start/end during the call to
+tlb_flush_mmu_tlbonly (arm64 does this already in tlb_flush).
 
+Thoughts?
 
-On Fri, Oct 3, 2014 at 2:15 AM, Heinrich Schuchardt <xypron.glpk@gmx.de> wrote:
-> Kernel 3.17 introduces a new system call getrandom(2).
->
-> The man page in this patch is based on the commit message by
-> Theodore Ts'o <tytso@mit.edu> and suggestion by
-> Michael Kerrisk <mtk.manpages@gmail.com>.
->
-> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
-> ---
->  man2/getrandom.2 | 242 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 242 insertions(+)
->  create mode 100644 man2/getrandom.2
->
-> diff --git a/man2/getrandom.2 b/man2/getrandom.2
-> new file mode 100644
-> index 0000000..f6a8a1b
-> --- /dev/null
-> +++ b/man2/getrandom.2
-> @@ -0,0 +1,242 @@
-> +.\" Copyright (C) 2014, Theodore Ts'o <tytso@mit.edu>
-> +.\" Copyright (C) 2014, Heinrich Schuchardt <xypron.glpk@gmx.de>
-> +.\"
-> +.\" %%%LICENSE_START(VERBATIM)
-> +.\" Permission is granted to make and distribute verbatim copies of this
-> +.\" manual provided the copyright notice and this permission notice are
-> +.\" preserved on all copies.
-> +.\"
-> +.\" Permission is granted to copy and distribute modified versions of
-> +.\" this manual under the conditions for verbatim copying, provided that
-> +.\" the entire resulting derived work is distributed under the terms of
-> +.\" a permission notice identical to this one.
-> +.\"
-> +.\" Since the Linux kernel and libraries are constantly changing, this
-> +.\" manual page may be incorrect or out-of-date.  The author(s) assume.
-> +.\" no responsibility for errors or omissions, or for damages resulting.
-> +.\" from the use of the information contained herein.  The author(s) may.
-> +.\" not have taken the same level of care in the production of this.
-> +.\" manual, which is licensed free of charge, as they might when working.
-> +.\" professionally.
-> +.\"
-> +.\" Formatted or processed versions of this manual, if unaccompanied by
-> +.\" the source, must acknowledge the copyright and authors of this work.
-> +.\" %%%LICENSE_END
-> +
-> +.TH GETRANDOM 2 2014-10-03 "Linux" "Linux Programmer's Manual"
-> +.SH NAME
-> +getrandom \- obtain a series of random bytes
-> +.SH SYNOPSIS
-> +.B #include <linux/random.h>
-> +.sp
-> +.BI "int getrandom(void *"buf ", size_t " buflen ", unsigned int " flags );
-> +.SH DESCRIPTION
-> +The system call
-> +.BR getrandom ()
-> +fills the buffer pointed to by
-> +.I buf
-> +with up to
-> +.I buflen
-> +random bytes.
-> +These can be used to seed user-space random number generators
-> +or for other cryptographic purposes.
-> +.PP
-> +.BR getrandom ()
-> +relies on entropy gathered from device drivers and other sources of
-> +environmental noise.
-> +Unnecessarily reading large quantities of data will have a negative impact
-> +on other users of the
-> +.I /dev/random
-> +and the
-> +.I /dev/urandom
-> +devices.
-> +Therefore
-> +.BR getrandom ()
-> +should not be used for Monte Carlo simulations or other
-> +programs/algorithms which are doing probabilistic sampling.
-> +.PP
-> +The
-> +.I flags
-> +argument is a bit mask that can contain zero or more of the following values
-> +ORed together:
-> +.TP
-> +.B GRND_RANDOM
-> +If this bit is set, then random bytes are drawn from the
-> +.I /dev/random
-> +pool instead of the
-> +.I /dev/urandom
-> +pool.
-> +The
-> +.I /dev/random
-> +pool is limited based on the entropy that can be obtained from environmental
-> +noise.
-> +If less random bytes are available than are requested in argument
-> +.IR buflen ,
-> +the available random bytes will be copied and the call returns.
-> +If no random byte is available, the response will depend on the
-> +presence of
-> +.B GRND_NONBLOCK
-> +in the
-> +.I flags
-> +argument.
-> +.TP
-> +.B GRND_NONBLOCK
-> +If this bit is set and there is no random byte available at all,
-> +.BR getrandom ()
-> +will return -1 with
-> +.I errno
-> +set to
-> +.BR EAGAIN .
-> +If the
-> +.B GRND_NONBLOCK
-> +bit is not set and there is no random byte available at all,
-> +.BR getrandom ()
-> +will block.
-> +.SH RETURN VALUE
-> +On success,
-> +.BR getrandom ()
-> +returns the number of bytes that were copied to the buffer
-> +.IR buf .
-> +This may be less than the bytes requested by the caller via
-> +.I buflen
-> +if insufficient entropy was present in the
-> +.IR /dev/random
-> +pool, or if the system call was interrupted by a signal.
-> +.PP
-> +On error, -1 is returned, and
-> +.I errno
-> +is set appropriately.
-> +.SH ERRORS
-> +.TP
-> +.B EINVAL
-> +An invalid flag was passed to
-> +.BR getrandom ().
-> +.TP
-> +.B EFAULT
-> +The address referenced in parameter
-> +.I buf
-> +is outside the accessible address space.
-> +.TP
-> +.B EAGAIN
-> +The requested entropy was not available, and
-> +.BR getrandom ()
-> +would have blocked if the
-> +.B GRND_NONBLOCK
-> +flag was not set.
-> +.TP
-> +.B EINTR
-> +While blocked waiting for entropy, the call was interrupted by a signal
-> +handler; see the description of how interrupted
-> +.BR read (2)
-> +calls on "slow" devices are handled with and without the
-> +.B SA_RESTART
-> +flag in the
-> +.BR signal (7)
-> +man page.
-> +.SH VERSIONS
-> +.BR getrandom ()
-> +was introduced in version 3.17 of the Linux kernel.
-> +.SH CONFORMING TO
-> +This system call is Linux-specific.
-> +.SH NOTES
-> +.SS Interruption by a signal handler
-> +The reaction of
-> +.BR getrandom ()
-> +in case of an interruption of a blocking call by a signal
-> +when reading from
-> +.I /dev/urandom
-> +.RB ( GRND_RANDOM
-> +is not set)
-> +depends on the initialization state of the entropy buffer
-> +and on the request size
-> +.IR buflen .
-> +If the entropy is not yet initialized or the request size is large
-> +.RI ( buflen
-> +> 256),
-> +.B EINTR
-> +will be returned.
-> +If the entropy pool has been intialized and the request size is small
-> +.RI ( buflen
-> +<= 256),
-> +.BR getrandom ()
-> +will not return
-> +.BR EINTR .
-> +Instead, it will return all of the bytes that have been requested.
-> +.PP
-> +When reading from
-> +.I /dev/random
-> +.RB ( GRND_RANDOM
-> +is set)
-> +these guarantees do
-> +.I not
-> +apply.
-> +.PP
-> +Calling
-> +.BR getrandom ()
-> +to read
-> +.I /dev/urandom
-> +for small values (<= 256) of
-> +.I buflen
-> +is the preferred mode of usage.
-> +.PP
-> +The special treatment of small values of
-> +.I buflen
-> +was designed for compatibility with
-> +OpenBSD's
-> +.BR getentropy ()
-> +system call.
-> +.PP
-> +The user of
-> +.BR getrandom ()
-> +.I must
-> +always check the return value, in case it indicates some error,
-> +or if fewer bytes than requested were returned.
-> +In the case where
-> +.B GRND_RANDOM
-> +is not specified and
-> +.I buflen
-> +is less than or equal to 256,
-> +a return of fewer bytes than requested should never happen,
-> +but the careful user-space code should check for this anyway!
-> +.SS Choice of random device
-> +Unless you are doing long-term key generation (and perhaps not even
-> +then), you probably shouldn't be using
-> +.B GRND_RANDOM.
-> +The cryptographic algorithms used for
-> +.I /dev/urandom
-> +are quite conservative, and so should be sufficient for all purposes.
-> +The disadvantage of
-> +.B GRND_RANDOM
-> +is that it can block.
-> +Furthermore, dealing with partially fulfilled
-> +.BR getrandom ()
-> +requests increases code complexity.
-> +.SS Emulating OpenBSD's getentropy()
-> +The
-> +.BR getentropy ()
-> +system call in OpenBSD can be emulated using the following
-> +function:
-> +
-> +.in +4n
-> +.nf
-> +int
-> +getentropy(void *buf, size_t buflen)
-> +{
-> +    int ret;
-> +
-> +    if (buflen > 256)
-> +        goto failure;
-> +    ret = getrandom(buf, buflen, 0);
-> +    if (ret < 0)
-> +        return ret;
-> +    if (ret == buflen)
-> +        return 0;
-> +failure:
-> +    errno = EIO;
-> +    return -1;
-> +}
-> +.fi
-> +.in
-> +.SH SEE ALSO
-> +.BR random (4),
-> +.BR urandom (4)
-> --
-> 2.1.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-man" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Will
 
 
+Will Deacon (2):
+  zap_pte_range: update addr when forcing flush after TLB batching
+    faiure
+  zap_pte_range: fix partial TLB flushing in response to a dirty pte
+
+ mm/memory.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+2.1.1
+
