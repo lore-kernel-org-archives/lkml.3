@@ -1,73 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111AbaJ1Jvn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 05:51:43 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:26044 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752944AbaJ1Jvl (ORCPT
+	id S932181AbaJ1Jwn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 05:52:43 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:44175 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaJ1Jwk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 05:51:41 -0400
-X-IronPort-AV: E=Sophos;i="5.04,801,1406592000"; 
-   d="scan'208";a="186791634"
-Message-ID: <1414489898.23883.25.camel@citrix.com>
-Subject: Re: [Xen-devel] [PATCH 0/2] xen: Switch to virtual mapped linear
- p2m list
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Juergen Gross <jgross@suse.com>
-CC: David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>
-Date: Tue, 28 Oct 2014 09:51:38 +0000
-In-Reply-To: <544F22E4.9040706@suse.com>
-References: <1414421551-31555-1-git-send-email-jgross@suse.com>
-	 <544E61DD.8050305@citrix.com> <544F22E4.9040706@suse.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
+	Tue, 28 Oct 2014 05:52:40 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+In-Reply-To: <1413883364-681-7-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1413883364-681-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Tue, 28 Oct 2014 10:52:35 +0100
+Message-ID: <CAPDyKFpGoa13JuodY3iKt38BBy_WP0qmCsr4yRyuJq0hmTizHQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND 06/12] mmc: sdhci-pxav3: Move I/O clock to private data
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Chris Ball <chris@printf.net>,
+        =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-28 at 06:00 +0100, Juergen Gross wrote:
-> On 10/27/2014 04:16 PM, David Vrabel wrote:
-> > On 27/10/14 14:52, Juergen Gross wrote:
-> >> Paravirtualized kernels running on Xen use a three level tree for
-> >> translation of guest specific physical addresses to machine global
-> >> addresses. This p2m tree is used for construction of page table
-> >> entries, so the p2m tree walk is performance critical.
-> >>
-> >> By using a linear virtual mapped p2m list accesses to p2m elements
-> >> can be sped up while even simplifying code. To achieve this goal
-> >> some p2m related initializations have to be performed later in the
-> >> boot process, as the final p2m list can be set up only after basic
-> >> memory management functions are available.
-> >
-> > What impact does this have on 32-bit guests which don't have huge amount
-> > of virtual address space?
-> >
-> > I think a 32-bit guest could have up to 64 GiB of PFNs, which would
-> > require a 128 MiB p2m array, which is too large?
-> 
-> It is 64 MB (one entry on 32 bit is 32 bits :-) ).
-> 
-> With a m2p array of only 16 MB size I doubt a 32 bit guest can be larger
-> than 16 GB, or am I wrong here?
+On 21 October 2014 11:22, Sebastian Hesselbarth
+<sebastian.hesselbarth@gmail.com> wrote:
+> As we are using references to the I/O clock throughout the driver,
+> move it to the private data. Also, in preparation for core clock,
+> rename it to clk_io.
+>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Chris Ball <chris@printf.net>
+> Cc: Ulf Hansson <ulf.hansson@linaro.org>
+> Cc: "Antoine Ténart" <antoine.tenart@free-electrons.com>
+> Cc: linux-mmc@vger.kernel.org
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
 
-I think they can be bigger, the compat r/o m2p is 168MB, since Xen
-doesn't need to be in the hole as well (like it was with a real 32-bit
-Xen). There is also some scope for dynamic sizing of the hole (queried
-via XENMEM_machphys_mapping), I'm not sure if pvops makes use of that
-though.
+Thanks! Applied for next!
 
-In practice a 32-bit kernel starts to get pretty unhappy somewhere
-between 32 and 64GB because it runs out of low memory for various
-structures which are sized according to the amount of RAM. Or it did,
-it's been years since I've tried, maybe things are more able to use
-highmem now. In any case if you have such large amounts of RAM using a
-64-bit kernel would be advisable.
+Kind regards
+Uffe
 
-Ian.
-
+> ---
+>  drivers/mmc/host/sdhci-pxav3.c | 24 +++++++++++++-----------
+>  1 file changed, 13 insertions(+), 11 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+> index e52bbbb09d88..a34a589670e6 100644
+> --- a/drivers/mmc/host/sdhci-pxav3.c
+> +++ b/drivers/mmc/host/sdhci-pxav3.c
+> @@ -59,6 +59,7 @@
+>  #define SDCE_MISC_INT_EN       (1<<1)
+>
+>  struct sdhci_pxa {
+> +       struct clk *clk_io;
+>         u8      power_mode;
+>  };
+>
+> @@ -288,9 +289,7 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+>         struct sdhci_host *host = NULL;
+>         struct sdhci_pxa *pxa = NULL;
+>         const struct of_device_id *match;
+> -
+>         int ret;
+> -       struct clk *clk;
+>
+>         pxa = devm_kzalloc(&pdev->dev, sizeof(struct sdhci_pxa), GFP_KERNEL);
+>         if (!pxa)
+> @@ -310,14 +309,14 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+>         pltfm_host = sdhci_priv(host);
+>         pltfm_host->priv = pxa;
+>
+> -       clk = devm_clk_get(dev, NULL);
+> -       if (IS_ERR(clk)) {
+> +       pxa->clk_io = devm_clk_get(dev, NULL);
+> +       if (IS_ERR(pxa->clk_io)) {
+>                 dev_err(dev, "failed to get io clock\n");
+> -               ret = PTR_ERR(clk);
+> +               ret = PTR_ERR(pxa->clk_io);
+>                 goto err_clk_get;
+>         }
+> -       pltfm_host->clk = clk;
+> -       clk_prepare_enable(clk);
+> +       pltfm_host->clk = pxa->clk_io;
+> +       clk_prepare_enable(pxa->clk_io);
+>
+>         /* enable 1/8V DDR capable */
+>         host->mmc->caps |= MMC_CAP_1_8V_DDR;
+> @@ -390,7 +389,7 @@ err_add_host:
+>         pm_runtime_disable(&pdev->dev);
+>  err_of_parse:
+>  err_cd_req:
+> -       clk_disable_unprepare(clk);
+> +       clk_disable_unprepare(pxa->clk_io);
+>  err_clk_get:
+>  err_mbus_win:
+>         sdhci_pltfm_free(pdev);
+> @@ -401,12 +400,13 @@ static int sdhci_pxav3_remove(struct platform_device *pdev)
+>  {
+>         struct sdhci_host *host = platform_get_drvdata(pdev);
+>         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_pxa *pxa = pltfm_host->priv;
+>
+>         pm_runtime_get_sync(&pdev->dev);
+>         sdhci_remove_host(host, 1);
+>         pm_runtime_disable(&pdev->dev);
+>
+> -       clk_disable_unprepare(pltfm_host->clk);
+> +       clk_disable_unprepare(pxa->clk_io);
+>
+>         sdhci_pltfm_free(pdev);
+>
+> @@ -446,13 +446,14 @@ static int sdhci_pxav3_runtime_suspend(struct device *dev)
+>  {
+>         struct sdhci_host *host = dev_get_drvdata(dev);
+>         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_pxa *pxa = pltfm_host->priv;
+>         unsigned long flags;
+>
+>         spin_lock_irqsave(&host->lock, flags);
+>         host->runtime_suspended = true;
+>         spin_unlock_irqrestore(&host->lock, flags);
+>
+> -       clk_disable_unprepare(pltfm_host->clk);
+> +       clk_disable_unprepare(pxa->clk_io);
+>
+>         return 0;
+>  }
+> @@ -461,9 +462,10 @@ static int sdhci_pxav3_runtime_resume(struct device *dev)
+>  {
+>         struct sdhci_host *host = dev_get_drvdata(dev);
+>         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+> +       struct sdhci_pxa *pxa = pltfm_host->priv;
+>         unsigned long flags;
+>
+> -       clk_prepare_enable(pltfm_host->clk);
+> +       clk_prepare_enable(pxa->clk_io);
+>
+>         spin_lock_irqsave(&host->lock, flags);
+>         host->runtime_suspended = false;
+> --
+> 2.1.1
+>
