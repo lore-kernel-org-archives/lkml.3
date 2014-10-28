@@ -1,373 +1,837 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395AbaJ1XnE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 19:43:04 -0400
-Received: from lists.s-osg.org ([54.187.51.154]:42343 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858AbaJ1XnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 19:43:01 -0400
-Date: Tue, 28 Oct 2014 21:42:50 -0200
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>,
-        Devin Heitmueller <dheitmueller@kernellabs.com>,
-        alsa-devel@alsa-project.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Sander Eikelenboom <linux@eikelenboom.it>, prabhakar.csengg@gmail.com,
-        Antti Palosaari <crope@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        "sakari.ailus@linux.intel.com" <sakari.ailus@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        "olebowle@gmx.com" <olebowle@gmx.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [RFCv1] Media Token API needs - Was: Re: [alsa-devel] [PATCH v2
- 5/6] sound/usb: pcm changes to use media token api
-Message-ID: <20141028214250.27f0c869@recife.lan>
-In-Reply-To: <5450077F.70101@osg.samsung.com>
-References: <cover.1413246370.git.shuahkh@osg.samsung.com>
-	<cf1059cc2606f20d921e5691e3d59945a19a7871.1413246372.git.shuahkh@osg.samsung.com>
-	<543FB374.8020604@metafoo.de>
-	<543FC3CD.8050805@osg.samsung.com>
-	<s5h38aow1ub.wl-tiwai@suse.de>
-	<543FD1EC.5010206@osg.samsung.com>
-	<s5hy4sgumjo.wl-tiwai@suse.de>
-	<543FD892.6010209@osg.samsung.com>
-	<s5htx34ul3w.wl-tiwai@suse.de>
-	<54467EFB.7050800@xs4all.nl>
-	<s5hbnp5z9uy.wl-tiwai@suse.de>
-	<CAGoCfixD-zv1MMHUXLnjGV5KVB-DGdp2ZqZ0hUTR14UvLh-Gvw@mail.gmail.com>
-	<544804F1.7090606@linux.intel.com>
-	<20141025114115.292ff5d2@recife.lan>
-	<s5hk33n8ccj.wl-tiwai@suse.de>
-	<20141027105237.5f5ec7fd@recife.lan>
-	<5450077F.70101@osg.samsung.com>
-Organization: Samsung
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1754658AbaJ1XqQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 19:46:16 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:48777 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaJ1XqN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 19:46:13 -0400
+Date: Tue, 28 Oct 2014 16:46:08 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
+        zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
+        cjf@rock-chips.com, zhengsq@rock-chips.com
+Subject: Re: [PATCH v15 1/5] thermal: rockchip: add driver for thermal
+Message-ID: <20141028234608.GC19675@dtor-ws>
+References: <1414486287-25498-1-git-send-email-caesar.wang@rock-chips.com>
+ <1414486287-25498-2-git-send-email-caesar.wang@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414486287-25498-2-git-send-email-caesar.wang@rock-chips.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shuah,
+Hi Caesar,
 
-I'm understanding that you're collecting comments to write a RFC with the
-needs by the media token, right?
-
-I'm sending you my contributions to such text. See enclosed.
-
-I suggest to change the subject and submit this on a separate thread, after
-we finish the review of such document. Anyway, I'm changing the subject
-of this Thread to reflect that.
-
-Regards,
-Mauro
-
-Em Tue, 28 Oct 2014 15:15:43 -0600
-Shuah Khan <shuahkh@osg.samsung.com> escreveu:
-
-> On 10/27/2014 06:52 AM, Mauro Carvalho Chehab wrote:
-> > Em Sun, 26 Oct 2014 09:27:40 +0100
-> > Takashi Iwai <tiwai@suse.de> escreveu:
-> > 
+On Tue, Oct 28, 2014 at 04:51:23PM +0800, Caesar Wang wrote:
+> Thermal is TS-ADC Controller module supports
+> user-defined mode and automatic mode.
 > 
-> > 
-> > Hmm... this is actually more complex than that. V4L2 driver doesn't
-> > know if ALSA is streaming or not, or even if ALSA device node is opened
-> > while he is touching at the hardware configuration or changing the
-> > state. I mean: it is not an error to set the hardware. The error only
-> > happens if ALSA and V4L2 tries to do it at the same time on an incompatible
-> > way.
-> > 
-> > Also, this won't work for DVB, as on DVB this is really an exclusive
-> > lock that would prevent both ALSA and V4L2 drivers to stream while in
-> > DVB mode.
-> > 
-> > Implementing it with a lock seems to be the best approach, at least on
-> > my eyes.
-> > 
-> >> That said, we should go back and start discussing the design goal at
-> >> first.
-> > 
-> > Surely.
+> User-defined mode refers,TSADC all the control signals entirely by
+> software writing to register for direct control.
 > 
-> This is long, however, hoping it will describe the problem and
-> solution that is being pursued in detail:
-
-Before starting with the description, this is the simplified diagram of
-a media device (without IR, eeprom and other beasts):
-
-  +-----------------------------------------------------------------------------------------+
-  |                                                                                         |
-  |                   +----------------+     +------------------+-------+----------------+  |
-  |                   |  demod_video   | <-- |      analog      | tuner |     digital    |  |
-  |                   +----------------+     +------------------+-------+----------------+  |
-  |                     |                      |                           |                |
-  |                     |                      |                           |                |
-  v                     v                      v                           v                |
-+--------------+-----+-----------------+     +------------------+        +---------------+  |
-|     dvb      | DMA |      analog     |     |   demod_audio    |        | digital_demux | -+
-+--------------+-----+-----------------+     +------------------+        +---------------+
-  |                     |                      |
-  |                     |                      |
-  v                     v                      v
-+--------------+      +----------------+     +------------------+
-| devnode dvr0 |      | devnode video0 |     |    audio DMA     |
-+--------------+      +----------------+     +------------------+
-                                               |
-                                               |
-                                               v
-                                             +------------------+
-                                             | devnode pcmC1D0c |
-                                             +------------------+
-
-There are two components that are shared there between analog and digital:
-the tuner (where the signal is captured) and the DMA engine used to stream
-analog and Digital TV (dvb).
-
-PS.: the diagram is over-simplified, as the tuner is just one of the possible
-inputs for the analog part of the device. Other possible inputs are S-Video,
-composite, HDMI, etc.
-
-Sometimes, the audio DMA is also shared, e. g. just one stream comes from
-the hardware. It is up to the driver to split audio and video and send
-them to the V4L2 and ALSA APIs. This is the case of tm6000 driver.
-
-Those shared components can be used either at analog or digital mode,
-but not at the same time.
-
-Also, programming the V4L2 analog and audio DMA and demods should be done
-via V4L2 API, as this API allows the selection of the proper audio/video
-input (almost all devices have multiple analog inputs).
-
-Please notice that, if the tuner is on digital mode, the entire analog
-path is disabled, including ALSA output.
-
-If the tuner is on analog mode, both ALSA and V4L2 can work at the
-same time. However, during the period where the tuner firmware is
-loaded, and during the DMA configuration and input selection time,
-neither ALSA or V4L2 can stream. Such configuration/firmware load
-is commanded via V4L2 API, as ALSA knows nothing about tuner or
-input selection.
-
+> Automaic mode refers to the module automatically poll TSADC output,
+> and the results were checked.If you find that the temperature High
+> in a period of time,an interrupt is generated to the processor
+> down-measures taken;If the temperature over a period of time High,
+> the resulting TSHUT gave CRU module,let it reset the entire chip,
+> or via GPIO give PMIC.
 > 
-> At a higher level the problem description is:
+> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+
+There are couple more nits below, once they are fixed you can add:
+
+Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+> ---
+>  drivers/thermal/Kconfig            |   9 +
+>  drivers/thermal/Makefile           |   1 +
+>  drivers/thermal/rockchip_thermal.c | 705 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 715 insertions(+)
+>  create mode 100644 drivers/thermal/rockchip_thermal.c
 > 
-> There are 3 different device files that get created to control
-> tuner and audio functions on a media device. 3 drivers (dvb,
-> v4l2, alsa), and 3 core apis (dvb-core, v4l-core, audio) that
-> control the tuner and audio hardware and provide user api to
-> these 3 device files.
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index ef5587f..5efcf73 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -133,6 +133,15 @@ config SPEAR_THERMAL
+>  	  Enable this to plug the SPEAr thermal sensor driver into the Linux
+>  	  thermal framework.
+>  
+> +config ROCKCHIP_THERMAL
+> +	tristate "Rockchip thermal driver"
+> +	depends on ARCH_ROCKCHIP
+> +	help
+> +	  Rockchip thermal driver provides support for Temperature sensor
+> +	  ADC (TS-ADC) found on Rockchip SoCs. It supports one critical
+> +	  trip point. Cpufreq is used as the cooling device and will throttle
+> +	  CPUs when the Temperature crosses the passive trip point.
+> +
+>  config RCAR_THERMAL
+>  	tristate "Renesas R-Car thermal driver"
+>  	depends on ARCH_SHMOBILE || COMPILE_TEST
+> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+> index 31e232f..21da0a8 100644
+> --- a/drivers/thermal/Makefile
+> +++ b/drivers/thermal/Makefile
+> @@ -19,6 +19,7 @@ thermal_sys-$(CONFIG_CPU_THERMAL)	+= cpu_cooling.o
+>  
+>  # platform thermal drivers
+>  obj-$(CONFIG_SPEAR_THERMAL)	+= spear_thermal.o
+> +obj-$(CONFIG_ROCKCHIP_THERMAL)	+= rockchip_thermal.o
+>  obj-$(CONFIG_RCAR_THERMAL)	+= rcar_thermal.o
+>  obj-$(CONFIG_KIRKWOOD_THERMAL)  += kirkwood_thermal.o
+>  obj-y				+= samsung/
+> diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
+> new file mode 100644
+> index 0000000..d6965fb
+> --- /dev/null
+> +++ b/drivers/thermal/rockchip_thermal.c
+> @@ -0,0 +1,705 @@
+> +/*
+> + * Copyright (c) 2014, Fuzhou Rockchip Electronics Co., Ltd
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/thermal.h>
+> +
+> +/**
+> + * If the temperature over a period of time High,
+> + * the resulting TSHUT gave CRU module,let it reset the entire chip,
+> + * or via GPIO give PMIC.
+> + */
+> +enum tshut_mode {
+> +	TSHUT_MODE_CRU = 0,
+> +	TSHUT_MODE_GPIO,
+> +};
+> +
+> +/**
+> + * the system Temperature Sensors tshut(tshut) polarity
+> + * the bit 8 is tshut polarity.
+> + * 0: low active, 1: high active
+> + */
+> +enum tshut_polarity {
+> +	TSHUT_LOW_ACTIVE = 0,
+> +	TSHUT_HIGH_ACTIVE,
+> +};
+> +
+> +/**
+> + * The system has three Temperature Sensors.  channel 0 is reserved,
+> + * channel 1 is for CPU, and channel 2 is for GPU.
+> + */
+> +enum sensor_id {
+> +	SENSOR_CPU = 1,
+> +	SENSOR_GPU,
+> +};
+> +
+> +struct rockchip_tsadc_chip {
+> +	long hw_shut_temp;
+> +	enum tshut_mode tshut_mode;
+> +	enum tshut_polarity tshut_polarity;
+> +
+> +	/* Chip-wide methods */
+> +	void (*initialize)(void __iomem *reg, enum tshut_polarity p,
+> +			   unsigned long clk_rate);
+> +	void (*irq_ack)(void __iomem *reg);
+> +	void (*control)(void __iomem *reg, bool on);
+> +
+> +	/* Per-sensor methods */
+> +	int (*get_temp)(int chn, void __iomem *reg, long *temp);
+> +	void (*set_alarm_temp)(int chn, void __iomem *reg, long temp);
+> +	void (*set_tshut_temp)(int chn, void __iomem *reg, long temp);
+> +	void (*set_tshut_mode)(int chn, void __iomem *reg, enum tshut_mode m);
+> +};
+> +
+> +struct rockchip_thermal_sensor {
+> +	struct rockchip_thermal_data *thermal;
+> +	struct thermal_zone_device *tzd;
+> +	enum sensor_id id;
+> +};
+> +
+> +#define NUM_SENSORS	2 /* Ignore unused sensor 0 */
+> +
+> +struct rockchip_thermal_data {
+> +	const struct rockchip_tsadc_chip *chip;
+> +	struct platform_device *pdev;
+> +
+> +	struct rockchip_thermal_sensor sensors[NUM_SENSORS];
+> +
+> +	struct clk *clk;
+> +	struct clk *pclk;
+> +
+> +	void __iomem *regs;
+> +
+> +	unsigned long clk_rate;
+> +
+> +	long hw_shut_temp;
+> +	enum tshut_mode tshut_mode;
+> +	enum tshut_polarity tshut_polarity;
+> +};
+> +
+> +/* TSADC V2 Sensor info define: */
+> +#define TSADCV2_AUTO_CON			0x04
+> +#define TSADCV2_INT_EN				0x08
+> +#define TSADCV2_INT_PD				0x0c
+> +#define TSADCV2_DATA(chn)			(0x20 + (chn) * 0x04)
+> +#define TSADCV2_COMP_INT(chn)		        (0x30 + (chn) * 0x04)
+> +#define TSADCV2_COMP_SHUT(chn)		        (0x40 + (chn) * 0x04)
+> +#define TSADCV2_HIGHT_INT_DEBOUNCE		0x60
+> +#define TSADCV2_HIGHT_TSHUT_DEBOUNCE		0x64
+> +#define TSADCV2_AUTO_PERIOD			0x68
+> +#define TSADCV2_AUTO_PERIOD_HT			0x6c
+> +
+> +#define TSADCV2_AUTO_EN				BIT(0)
+> +#define TSADCV2_AUTO_DISABLE			~BIT(0)
+> +#define TSADCV2_AUTO_SRC_EN(chn)		BIT(4 + (chn))
+> +#define TSADCV2_AUTO_TSHUT_POLARITY_HIGH	BIT(8)
+> +#define TSADCV2_AUTO_TSHUT_POLARITY_LOW		~BIT(8)
+> +
+> +#define TSADCV2_INT_SRC_EN(chn)			BIT(chn)
+> +#define TSADCV2_SHUT_2GPIO_SRC_EN(chn)		BIT(4 + (chn))
+> +#define TSADCV2_SHUT_2CRU_SRC_EN(chn)		BIT(8 + (chn))
+> +
+> +#define TSADCV2_INT_PD_CLEAR			~BIT(8)
+> +
+> +#define TSADCV2_DATA_MASK			0xfff
+> +#define TSADCV2_HIGHT_INT_DEBOUNCE_COUNT	4
+> +#define TSADCV2_HIGHT_TSHUT_DEBOUNCE_COUNT	4
+> +#define TSADCV2_AUTO_PERIOD_TIME		250 /* msec */
+> +#define TSADCV2_AUTO_PERIOD_HT_TIME		50  /* msec */
+> +
+> +struct tsadc_table {
+> +	unsigned long code;
+> +	long temp;
+> +};
+> +
+> +static const struct tsadc_table v2_code_table[] = {
+> +	{TSADCV2_DATA_MASK, -40000},
+> +	{3800, -40000},
+> +	{3792, -35000},
+> +	{3783, -30000},
+> +	{3774, -25000},
+> +	{3765, -20000},
+> +	{3756, -15000},
+> +	{3747, -10000},
+> +	{3737, -5000},
+> +	{3728, 0},
+> +	{3718, 5000},
+> +	{3708, 10000},
+> +	{3698, 15000},
+> +	{3688, 20000},
+> +	{3678, 25000},
+> +	{3667, 30000},
+> +	{3656, 35000},
+> +	{3645, 40000},
+> +	{3634, 45000},
+> +	{3623, 50000},
+> +	{3611, 55000},
+> +	{3600, 60000},
+> +	{3588, 65000},
+> +	{3575, 70000},
+> +	{3563, 75000},
+> +	{3550, 80000},
+> +	{3537, 85000},
+> +	{3524, 90000},
+> +	{3510, 95000},
+> +	{3496, 100000},
+> +	{3482, 105000},
+> +	{3467, 110000},
+> +	{3452, 115000},
+> +	{3437, 120000},
+> +	{3421, 125000},
+> +	{0, 125000},
+> +};
+> +
+> +static u32 rk_tsadcv2_temp_to_code(long temp)
+> +{
+> +	int high, low, mid;
+> +
+> +	low = 0;
+> +	high = ARRAY_SIZE(v2_code_table) - 1;
+> +	mid = (high + low) / 2;
+> +
+> +	if (temp < v2_code_table[low].temp || temp > v2_code_table[high].temp)
+> +		return 0;
+> +
+> +	while (low <= high) {
+> +		if (temp == v2_code_table[mid].temp)
+> +			return v2_code_table[mid].code;
+> +		else if (temp < v2_code_table[mid].temp)
+> +			high = mid - 1;
+> +		else
+> +			low = mid + 1;
+> +		mid = (low + high) / 2;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static long rk_tsadcv2_code_to_temp(u32 code)
+> +{
+> +	int high, low, mid;
+> +
+> +	low = 0;
+> +	high = ARRAY_SIZE(v2_code_table) - 1;
+> +	mid = (high + low) / 2;
+> +
+> +	if (code > v2_code_table[low].code || code < v2_code_table[high].code)
+> +		return 125000; /* No code available, return max temperature */
+> +
+> +	while (low <= high) {
+> +		if (code >= v2_code_table[mid].code && code <
+> +		    v2_code_table[mid - 1].code)
+> +			return v2_code_table[mid].temp;
+> +		else if (code < v2_code_table[mid].code)
+> +			low = mid + 1;
+> +		else
+> +			high = mid - 1;
+> +		mid = (low + high) / 2;
+> +	}
+> +
+> +	return 125000;
+> +}
+> +
+> +/**
+> + * rk_tsadcv2_initialize - initialize TASDC Controller
+> + * (1) Set TSADCV2_AUTO_PERIOD, configure the interleave between
+> + * every two accessing of TSADC in normal operation.
+> + * (2) Set TSADCV2_AUTO_PERIOD_HT, configure the interleave between
+> + * every two accessing of TSADC after the temperature is higher
+> + * than COM_SHUT or COM_INT.
+> + * (3) Set TSADCV2_HIGH_INT_DEBOUNCE and TSADC_HIGHT_TSHUT_DEBOUNCE,
+> + * if the temperature is higher than COMP_INT or COMP_SHUT for
+> + * "debounce" times, TSADC controller will generate interrupt or TSHUT.
+> + */
+> +static void rk_tsadcv2_initialize(void __iomem *regs,
+> +				  enum tshut_polarity tshut_polarity,
+> +				  unsigned long clk_rate)
+> +{
+> +	u32 val;
+> +
+> +	if (tshut_polarity == TSHUT_HIGH_ACTIVE)
+> +		writel_relaxed(0 | (TSADCV2_AUTO_TSHUT_POLARITY_HIGH),
+> +			       regs + TSADCV2_AUTO_CON);
+> +	else
+> +		writel_relaxed(0 | (TSADCV2_AUTO_TSHUT_POLARITY_LOW),
+> +			       regs + TSADCV2_AUTO_CON);
+> +
+> +	val = TSADCV2_AUTO_PERIOD_TIME * clk_rate / 1000;
+> +	writel_relaxed(val, regs + TSADCV2_AUTO_PERIOD);
+> +	writel_relaxed(TSADCV2_HIGHT_INT_DEBOUNCE_COUNT,
+> +		       regs + TSADCV2_HIGHT_INT_DEBOUNCE);
+> +
+> +	val = TSADCV2_AUTO_PERIOD_HT_TIME * clk_rate / 1000;
+> +	writel_relaxed(val, regs + TSADCV2_AUTO_PERIOD_HT);
+> +	writel_relaxed(TSADCV2_HIGHT_TSHUT_DEBOUNCE_COUNT,
+> +		       regs + TSADCV2_HIGHT_TSHUT_DEBOUNCE);
+> +}
+> +
+> +static void rk_tsadcv2_irq_ack(void __iomem *regs)
+> +{
+> +	u32 val;
+> +
+> +	val = readl_relaxed(regs + TSADCV2_INT_PD);
+> +	writel_relaxed(val & TSADCV2_INT_PD_CLEAR, regs + TSADCV2_INT_PD);
+> +}
+> +
+> +static void rk_tsadcv2_control(void __iomem *regs, bool enable)
+> +{
+> +	u32 val;
+> +
+> +	val = readl_relaxed(regs + TSADCV2_AUTO_CON);
+> +	if (enable)
+> +		val |= TSADCV2_AUTO_EN;
+> +	else
+> +		val &= ~TSADCV2_AUTO_EN;
+> +
+> +	writel_relaxed(val, regs + TSADCV2_AUTO_CON);
+> +}
+> +
+> +static int rk_tsadcv2_get_temp(int chn, void __iomem *regs, long *temp)
+> +{
+> +	u32 val;
+> +
+> +	/* the A/D value of the channel last conversion need some time */
+> +	val = readl_relaxed(regs + TSADCV2_DATA(chn));
+> +	if (val == 0)
+> +		return -EAGAIN;
+> +
+> +	*temp = rk_tsadcv2_code_to_temp(val);
+> +
+> +	return 0;
+> +}
+> +
+> +static void rk_tsadcv2_alarm_temp(int chn, void __iomem *regs, long temp)
+> +{
+> +	u32 alarm_value, int_en;
+> +
+> +	alarm_value = rk_tsadcv2_temp_to_code(temp);
+> +	writel_relaxed(alarm_value & TSADCV2_DATA_MASK,
+> +		       regs + TSADCV2_COMP_INT(chn));
+> +
+> +	int_en = readl_relaxed(regs + TSADCV2_INT_EN);
+> +	int_en |= TSADCV2_INT_SRC_EN(chn);
+> +	writel_relaxed(int_en, regs + TSADCV2_INT_EN);
+> +}
+> +
+> +static void rk_tsadcv2_tshut_temp(int chn, void __iomem *regs, long temp)
+> +{
+> +	u32 tshut_value, val;
+> +
+> +	tshut_value = rk_tsadcv2_temp_to_code(temp);
+> +	writel_relaxed(tshut_value, regs + TSADCV2_COMP_SHUT(chn));
+> +
+> +	/* TSHUT will be valid */
+> +	val = readl_relaxed(regs + TSADCV2_AUTO_CON);
+> +	writel_relaxed(val | TSADCV2_AUTO_SRC_EN(chn), regs + TSADCV2_AUTO_CON);
+> +}
+> +
+> +static void rk_tsadcv2_tshut_mode(int chn, void __iomem *regs,
+> +				  enum tshut_mode mode)
+> +{
+> +	u32 val;
+> +
+> +	val = readl_relaxed(regs + TSADCV2_INT_EN);
+> +	if (mode == TSHUT_MODE_GPIO) {
+> +		val &= ~TSADCV2_SHUT_2CRU_SRC_EN(chn);
+> +		val |= TSADCV2_SHUT_2GPIO_SRC_EN(chn);
+> +	} else {
+> +		val &= ~TSADCV2_SHUT_2GPIO_SRC_EN(chn);
+> +		val |= TSADCV2_SHUT_2CRU_SRC_EN(chn);
+> +	}
+> +
+> +	writel_relaxed(val, regs + TSADCV2_INT_EN);
+> +}
+> +
+> +static const struct rockchip_tsadc_chip rk3288_tsadc_data = {
+> +	.tshut_mode = TSHUT_MODE_GPIO, /* default TSHUT via GPIO give PMIC */
+> +	.tshut_polarity = TSHUT_LOW_ACTIVE, /* default TSHUT LOW ACTIVE */
+> +	.hw_shut_temp = 125000,
+> +
+> +	.initialize = rk_tsadcv2_initialize,
+> +	.irq_ack = rk_tsadcv2_irq_ack,
+> +	.control = rk_tsadcv2_control,
+> +	.get_temp = rk_tsadcv2_get_temp,
+> +	.set_alarm_temp = rk_tsadcv2_alarm_temp,
+> +	.set_tshut_temp = rk_tsadcv2_tshut_temp,
+> +	.set_tshut_mode = rk_tsadcv2_tshut_mode,
+> +};
+> +
+> +static const struct of_device_id of_rockchip_thermal_match[] = {
+> +	{
+> +		.compatible = "rockchip,rk3288-tsadc",
+> +		.data = (void *)&rk3288_tsadc_data,
+> +	},
+> +	{ /* end */ },
+> +};
+> +MODULE_DEVICE_TABLE(of, of_rockchip_thermal_match);
+> +
+> +static void
+> +rockchip_thermal_toggle_sensor(struct rockchip_thermal_sensor *sensor, bool on)
+> +{
+> +	struct thermal_zone_device *tzd = sensor->tzd;
+> +
+> +	tzd->ops->set_mode(tzd,
+> +		on ? THERMAL_DEVICE_ENABLED : THERMAL_DEVICE_DISABLED);
+> +}
+> +
+> +static irqreturn_t rockchip_thermal_alarm_irq_thread(int irq, void *dev)
+> +{
+> +	struct rockchip_thermal_data *thermal = dev;
+> +	int i;
+> +
+> +	dev_dbg(&thermal->pdev->dev, "thermal alarm\n");
+> +
+> +	thermal->chip->irq_ack(thermal->regs);
+> +
+> +	for (i = 0; i < ARRAY_SIZE(thermal->sensors); i++)
+> +		thermal_zone_device_update(thermal->sensors[i].tzd);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int rockchip_thermal_set_trips(void *_sensor, long low, long high)
+> +{
+> +	struct rockchip_thermal_sensor *sensor = _sensor;
+> +	struct rockchip_thermal_data *thermal = sensor->thermal;
+> +	const struct rockchip_tsadc_chip *tsadc = thermal->chip;
+> +
+> +	dev_dbg(&thermal->pdev->dev, "%s: sensor %d: low: %ld, high %ld\n",
+> +		__func__, sensor->id, low, high);
+> +
+> +	tsadc->set_alarm_temp(sensor->id, thermal->regs, high);
+> +
+> +	return 0;
+> +}
+> +
+> +static int rockchip_thermal_get_temp(void *_sensor, long *out_temp)
+> +{
+> +	struct rockchip_thermal_sensor *sensor = _sensor;
+> +	struct rockchip_thermal_data *thermal = sensor->thermal;
+> +	const struct rockchip_tsadc_chip *tsadc = sensor->thermal->chip;
+> +	int retval;
+> +
+> +	retval = tsadc->get_temp(sensor->id, thermal->regs, out_temp);
+> +	dev_dbg(&thermal->pdev->dev, "sensor %d - temp: %ld, retval: %d\n",
+> +		sensor->id, *out_temp, retval);
+> +
+> +	return retval;
+> +}
+> +
+> +static int rockchip_configure_from_dt(struct device *dev,
+> +				      struct device_node *np,
+> +				      struct rockchip_thermal_data *thermal)
+> +{
+> +	u32 shut_temp, tshut_mode, tshut_polarity;
+> +
+> +	if (of_property_read_u32(np, "hw-shut-temp", &shut_temp)) {
+> +		dev_warn(dev,
+> +			 "Missing tshut temp property, using default %ld\n",
+> +			 thermal->chip->hw_shut_temp);
+> +		thermal->hw_shut_temp = thermal->chip->hw_shut_temp;
+> +	} else {
+> +		thermal->hw_shut_temp = shut_temp;
+> +	}
+> +
+> +	if (thermal->hw_shut_temp > INT_MAX) {
+> +		dev_err(dev, "Invalid tshut temperature specified: %ld\n",
+> +			thermal->hw_shut_temp);
+> +		return -ERANGE;
+> +	}
+> +
+> +	if (of_property_read_u32(np, "tsadc-tshut-mode", &tshut_mode)) {
+> +		dev_warn(dev,
+> +			 "Missing tshut mode property, using default (%s)\n",
+> +			 thermal->chip->tshut_mode == TSHUT_MODE_GPIO ?
+> +				"gpio" : "cru");
+> +		thermal->tshut_mode = thermal->chip->tshut_mode;
+> +	} else {
+> +		thermal->tshut_mode = tshut_mode;
+> +	}
+> +
+> +	if (thermal->tshut_mode > 1) {
+> +		dev_err(dev, "Invalid tshut mode specified: %d\n",
+> +			thermal->tshut_mode);
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (of_property_read_u32(np, "tsadc-tshut-polarity", &tshut_polarity)) {
+> +		dev_warn(dev,
+> +			 "Missing tshut-polarity property, using default (%s)\n",
+> +			 thermal->chip->tshut_polarity == TSHUT_LOW_ACTIVE ?
+> +				"low" : "high");
+> +		thermal->tshut_polarity = thermal->chip->tshut_polarity;
+> +	} else {
+> +		thermal->tshut_polarity = tshut_polarity;
+> +	}
+> +
+> +	if (thermal->tshut_polarity > 1) {
+> +		dev_err(dev, "Invalid tshut-polarity specified: %d\n",
+> +			thermal->tshut_polarity);
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int
+> +rockchip_thermal_register_sensor(struct platform_device *pdev,
+> +				 struct rockchip_thermal_data *thermal,
+> +				 struct rockchip_thermal_sensor *sensor,
+> +				 enum sensor_id id)
+> +{
+> +	const struct rockchip_tsadc_chip *tsadc = thermal->chip;
+> +	int error;
+> +
+> +	tsadc->set_tshut_mode(id, thermal->regs, thermal->tshut_mode);
+> +	tsadc->set_tshut_temp(id, thermal->regs, thermal->hw_shut_temp);
+> +
+> +	sensor->thermal = thermal;
+> +	sensor->id = id;
+> +	sensor->tzd = thermal_zone_of_sensor_register(&pdev->dev, id, sensor,
+> +						rockchip_thermal_get_temp,
+> +						NULL,
+> +						rockchip_thermal_set_trips);
+> +	if (IS_ERR(sensor->tzd)) {
+> +		error = PTR_ERR(sensor->tzd);
+> +		dev_err(&pdev->dev, "failed to register sensor %d: %d\n",
+> +			id, error);
+> +		return error;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int rockchip_thermal_probe(struct platform_device *pdev)
+> +{
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct rockchip_thermal_data *thermal;
+> +	const struct of_device_id *match;
+> +	struct resource *res;
+> +	int irq;
+> +	int i;
+> +	int error;
+> +
+> +	match = of_match_node(of_rockchip_thermal_match, np);
+> +	if (!match)
+> +		return -ENXIO;
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (irq < 0) {
+> +		dev_err(&pdev->dev, "no irq resource?\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	thermal = devm_kzalloc(&pdev->dev, sizeof(struct rockchip_thermal_data),
+> +			       GFP_KERNEL);
+> +	if (!thermal)
+> +		return -ENOMEM;
+> +
+> +	thermal->pdev = pdev;
+> +
+> +	thermal->chip = (const struct rockchip_tsadc_chip *)match->data;
+> +	if (!thermal->chip)
+> +		return -EINVAL;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	thermal->regs = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(thermal->regs))
+> +		return PTR_ERR(thermal->regs);
+> +
+> +	thermal->clk = devm_clk_get(&pdev->dev, "tsadc");
+> +	if (IS_ERR(thermal->clk)) {
+> +		error = PTR_ERR(thermal->clk);
+> +		dev_err(&pdev->dev, "failed to get tsadc clock: %d\n", error);
+> +		return error;
+> +	}
+> +
+> +	thermal->pclk = devm_clk_get(&pdev->dev, "apb_pclk");
+> +	if (IS_ERR(thermal->pclk)) {
+> +		error = PTR_ERR(thermal->clk);
+> +		dev_err(&pdev->dev, "failed to get apb_pclk clock: %d\n",
+> +			error);
+> +		return error;
+> +	}
+> +
+> +	error = clk_prepare_enable(thermal->clk);
+> +	if (error) {
+> +		dev_err(&pdev->dev, "failed to enable converter clock: %d\n",
+> +			error);
+> +		return error;
+> +	}
+> +
+> +	error = clk_prepare_enable(thermal->pclk);
+> +	if (error) {
+> +		dev_err(&pdev->dev, "failed to enable pclk: %d\n", error);
+> +		goto err_disable_clk;
+> +	}
+> +
+> +	thermal->clk_rate = clk_get_rate(thermal->clk);
+> +	if (thermal->clk_rate == 0)
+> +		return -EPROBE_DEFER;
+> +
+> +	error = rockchip_configure_from_dt(&pdev->dev, np, thermal);
+> +	if (error) {
+> +		dev_err(&pdev->dev, "failed to parse device tree data: %d\n",
+> +			error);
+> +		goto err_disable_pclk;
+> +	}
+> +
+> +	thermal->chip->initialize(thermal->regs, thermal->tshut_polarity,
+> +				  thermal->clk_rate);
+> +
+> +	error = rockchip_thermal_register_sensor(pdev, thermal,
+> +						 &thermal->sensors[0],
+> +						 SENSOR_CPU);
+> +	if (error) {
+> +		dev_err(&pdev->dev,
+> +			"failed to register CPU thermal sensor: %d\n", error);
+> +		goto err_disable_pclk;
+> +	}
+> +
+> +	error = rockchip_thermal_register_sensor(pdev, thermal,
+> +						 &thermal->sensors[1],
+> +						 SENSOR_GPU);
+> +	if (error) {
+> +		dev_err(&pdev->dev,
+> +			"failed to register GPU thermal sensor: %d\n", error);
+> +		goto err_unregister_cpu_sensor;
+> +	}
+> +
+> +	error = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+> +					  &rockchip_thermal_alarm_irq_thread,
+> +					  IRQF_ONESHOT,
+> +					  "rockchip_thermal", thermal);
+> +	if (error) {
+> +		dev_err(&pdev->dev,
+> +			"failed to request tsadc irq: %d\n", error);
+> +		goto err_unregister_gpu_sensor;
+> +	}
+> +
+> +	thermal->chip->control(thermal->regs, true);
+> +
+> +	for (i = 0; i < ARRAY_SIZE(thermal->sensors); i++)
+> +		rockchip_thermal_toggle_sensor(&thermal->sensors[i], true);
+> +
+> +	platform_set_drvdata(pdev, thermal);
+> +
+> +	return 0;
+> +
+> +err_unregister_gpu_sensor:
+> +	thermal_zone_of_sensor_unregister(&pdev->dev, thermal->sensors[1].tzd);
+> +err_unregister_cpu_sensor:
+> +	thermal_zone_of_sensor_unregister(&pdev->dev, thermal->sensors[0].tzd);
+> +err_disable_pclk:
+> +	clk_disable_unprepare(thermal->pclk);
+> +err_disable_clk:
+> +	clk_disable_unprepare(thermal->clk);
+> +
+> +	return error;
+> +}
+> +
+> +static int rockchip_thermal_remove(struct platform_device *pdev)
+> +{
+> +	struct rockchip_thermal_data *thermal = platform_get_drvdata(pdev);
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(thermal->sensors); i++) {
+> +		struct rockchip_thermal_sensor *sensor = &thermal->sensors[i];
+> +
+> +		rockchip_thermal_toggle_sensor(sensor, false);
+> +		thermal_zone_of_sensor_unregister(&pdev->dev, sensor->tzd);
+> +	}
 
+I believe you need
 
-There's actually a 4th component for some drivers: the mceusb driver,
-that handles remote controllers. The mceusb handles the Microsoft 
-Media Center Remote Control protocol. It supports standalone remote
-controller devices, but it also supports a few USB devices that use
-a separate interface for IR.
+	thermal->chip->control(thermal->regs, false);\
 
-There are currently some issues on cx231xx and mceusb, as both drivers 
-can be used at the same time, but, when cx231xx sends certain commands, 
-the mceusb IR polls fail. This is out of the scope of the audio lock,
-but it also needs to be addressed some day.
+here.
 
-> User applications, drivers and the core have no knowledge of each
-> other. The only thing that is common across all these drivers is
-> the parent device for the main usb device which is controlled by
-> the main usb driver.
+> +
+> +	clk_disable_unprepare(thermal->clk);
+> +	clk_disable_unprepare(thermal->pclk);
+> +
+> +	return 0;
+> +}
+> +
+> +static int __maybe_unused rockchip_thermal_suspend(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct rockchip_thermal_data *thermal = platform_get_drvdata(pdev);
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(thermal->sensors); i++)
+> +		rockchip_thermal_toggle_sensor(&thermal->sensors[i], false);
+> +
+> +	thermal->chip->control(thermal->regs, false);
+> +
+> +	clk_disable(thermal->clk);
+> +	clk_disable(thermal->pclk);
+> +
+> +	return 0;
+> +}
+> +
+> +static int __maybe_unused rockchip_thermal_resume(struct device *dev)
+> +{
+> +	struct platform_device *pdev = to_platform_device(dev);
+> +	struct rockchip_thermal_data *thermal = platform_get_drvdata(pdev);
+> +	int i;
+> +	int error;
+> +
+> +	error = clk_enable(thermal->pclk);
+> +	if (error)
+> +		return error;
+> +
+> +	error = clk_enable(thermal->clk);
+> +	if (error)
+> +		return error;
+> +
+> +	thermal->chip->initialize(thermal->regs, thermal->tshut_polarity,
+> +				  thermal->clk_rate);
 
-I would add that there are user applications that can handle all
-3 APIs like MythTV. But, at least MythTV doesn't know how to associate
-ALSA, V4L2 and DVB devnodes that belong to the same device.
+Please put:
 
-I mean: if MythTV finds, let's say, 3 V4L2 nodes, 3 ALSA nodes, 
-and 1 DVB node, it doesn't know what device is associated with the
-DVB node.
+	for (i = 0; i < ARRAY_SIZE(thermal->sensors); i++) {
+		enum sendor_id id = thermal->sensors[i].id;
 
-Almost all applications that are aware of V4L2 API are also aware of
-ALSA API and may associate audio and video, as there is a way to 
-associate it using sysfs. However, several apps don't use it.
+		thermal->chip->set_tshut_mode(id, thermal->regs,
+					      thermal->tshut_mode);
+		thermal->chip->set_tshut_temp(id, thermal->regs,
+					      thermal->hw_shut_temp);
+	}
 
-> The premise for the main design idea in this series is creating
-> a common construct at the parent device structure that is visible
-> to all drivers to act as a master access control (lock). Let's call
-> this media token object with two sub-tokens one for tuner and another
-> for audio.
+here, and remove thust setting from the loop below, because you I
+believe you want to program tshut before activating automatic
+temperature sampling.
+
+> +	thermal->chip->control(thermal->regs, true);
+> +
+> +	for (i = 0; i < ARRAY_SIZE(thermal->sensors); i++) {
+> +		struct rockchip_thermal_sensor *sensor = &thermal->sensors[i];
+> +
+> +		thermal->chip->set_tshut_mode(sensor->id, thermal->regs,
+> +					      thermal->tshut_mode);
+> +		thermal->chip->set_tshut_temp(sensor->id, thermal->regs,
+> +					      thermal->hw_shut_temp);
+> +
+> +		rockchip_thermal_toggle_sensor(&thermal->sensors[i], true);
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static SIMPLE_DEV_PM_OPS(rockchip_thermal_pm_ops,
+> +			 rockchip_thermal_suspend, rockchip_thermal_resume);
+> +
+> +static struct platform_driver rockchip_thermal_driver = {
+> +	.driver = {
+> +		.name = "rockchip-thermal",
+> +		.owner = THIS_MODULE,
+> +		.pm = &rockchip_thermal_pm_ops,
+> +		.of_match_table = of_rockchip_thermal_match,
+> +	},
+> +	.probe = rockchip_thermal_probe,
+> +	.remove = rockchip_thermal_remove,
+> +};
+> +
+> +module_platform_driver(rockchip_thermal_driver);
+> +
+> +MODULE_DESCRIPTION("ROCKCHIP THERMAL Driver");
+> +MODULE_AUTHOR("Rockchip, Inc.");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:rockchip-thermal");
+> -- 
+> 1.9.1
 > 
-> Each of the apis evolved separately, hence have their own backwards
-> compatibility to maintain. Starting with v4l2:
 > 
-> v4l2 case:
-> Multiple v4l2 applications are allowed to open /dev/video0 in
-> read/write mode with no restrictions as long as the tuner is in
-> analog mode. v4l2 core handles conflicting requests between v4l2
-> applications. 
 
-> It doesn't have the knowledge that the tuner is in
+Thank you!
 
-To be clear: "It" here refers to v4l2 core. The drivers may have this
-knowledge as, except for one case (bttv driver), they share some data.
-
-> use by a dvb and/or audio is in use. As soon as a v4l2 application
-> starts, digital stream glitches and audio glitches.
-> 
-> dvb case:
-> Multiple dvb applications can open the dvb device in read only mode.
-
-There's no issue with ALSA on R/O mode, as the application is not
-allowed to modify anything at the stream. This is used only to monitor
-an already opened device in R/W mode.
-
-> As soon an application open the device read/write mode a separate
-> kthread is kicked off to handle the request. Only one application
-> can open the device in read/write mode. 
-
-> Similar to v4l2 case,
-
-s/v4l2/v4l2 core/
-
-> dvb-core doesn't have any knowledge that the tuner is in use by
-> v4l2 and/or audio is in use. As soon as a dvb application starts v4l2
-> video glitches and audio glitches.
-> 
-> audio case:
-> Same scenario is applicable to audio application. When a v4l2 or dvb
-> application starts, audio application gets impacted.
-> 
-> Problems to address:
-> 
-> dvb owns tuner and audio: another dvb, v4l2 app and audio app should
->                           detect tuner/audio busy right away and exit.
-> 
-> v4l2 owns tuner and audio: another dvb and audio app should detect
->                            tuner/audio busy right away and exit.
-
-Actually, no: audio should not exit. The V4L2 should only hold the
-token for the required time to initialize the device and/or load the
-firmware. ALSA applications should wait for V4L2 to finish
-programming at audio, and should keep working after that.
-
->                            v4l2 app can continue to use it until it
->                            tries to change the tuner/audio state.
-> 
-> 
-> audio owns audio: dvb and v4l2 apps should detect audio busy and exit.
-
-Actually no. It is, instead:
-
-audio owns audio: dvb apps should detect audio busy and exit.
-V4L2 apps should work. However, when certain V4L2 ioctls are issued, 
-the audio device driver should not send any command to the hardware.
-After such commands, the audio mixers may change.
-
-We need two separate tokens because of that: the behavior is different.
-
-This is basically why we need two separate tokens, and because we cannot
-implement locking at ALSA open/close.
-
-> 
-> Special cases:
-> 
-> dvb apps. access tuner and audio in exclusive mode. i.e only one dvb app.
-> at a time is allowed to open the device read/write mode.
-
-To be clearer: dvb apps won't use the audio node, but audio should be blocked,
-as the devices can't use audio while in DVB mode.
-
-> As dvb apps.
-> create threads to handle audio and video, 
-
-No. DVB apps don't handle audio/video. It receives data as MPEG-TS,
-using a separate device node. Yet, the same DMA engine that provides
-video (and, sometimes audio) is used by the DVB devnode.
-
-> all threads in that group
-> should be allowed by the higher level construct to access the tuner and
-> audio. dvb application will have to hold tuner and audio tokens so v4l2
-> and audio apps. know they are in use.
-> 
-> audio apps. access audio in exclusive mode. i.e only one audio app. at
-> a time is allowed to open the device in read/write mode. Audio apps.
-> create threads and thread closes and re-opens the audio device. Threads
-> can do this and hence something that higher level construct has to allow.
-> audio app. has to hold audio token so dvb and v4l2 know that it is in use.
-> (Note: I am not sure if I have the audio scenario right)
-> 
-> v4l2 apps. access tuner and audio in shared v4l2 mode. i.e several v4l2
-> processes and threads could use tuner and audio at the same time. The
-> higher level construct has to allow multiple v4l2 apps. to access and
-> disallow dvb and audio apps. access when they are in use by v4l2.
-
-Actually, V4L2 core handles concurrency. There's just one file handler
-with full control to start/stop stream at V4L2 side.
-
-> 
-> Adding to this, both dvb and v4l2 open audio device and make snd pcm
-> capture callbacks.
-
-Huh? DVB won't need to touch at PCM capture callbacks. It should just
-avoid audio PCM capture to stream while in DVB mode.
-
-> There is no way to tell if dvb or v4l2 or audio
-> app is the one that is making this request.
-
-> dvb app would like audio
-> in exclusive mode allowing only one process and its threads to access
-> it.
-
-No. It just wants to disable the part of the hardware that can now
-be powered off.
-
-> v4l2 on the other hand would like audio in shared state accessible
-> to all v4l2 processes. 
-
-> If dvb-core and v4l2-core get tuner and audio
-> tokens at the same time, the window for having tuner token and not
-> getting audio token go down.
-
-No. It should not be allowed that both dvb-core and v4l2-core to get
-the tokens at the same time. This is an exclusive lock.
-
-> In dvb case when dvb device is opened in read/write mode, and v4l2
-> case when an app. tries to change the status. Audio callbacks have to
-> detect if audio is busy, if not which mode to request the token in.
-
-Huh?
-
-> For dvb and audio app. cases, the audio token should be requested in
-> exclusive mode and in v4l2 case shared mode. The logic for requesting
-> audio token will have to be try to get in exclusive mode, if fails,
-> try to get in shared mode, and if that fails give up.
-
-Huh?
-
-> 
-> Current status:
-> Combining patch v1 and patch v2 designs by allowing shared mode token
-> hold for v4l2, and deciding on where to hold audio token from
-> alsa driver will solve the above conflict scenarios. That said, the
-> question is "is this the right approach?" or are there other ways to
-> solve the problem. One thing is clear, we need some common higher level
-> construct for all the device drivers and dvb, v4l2, and audio ioctls,
-> callbacks etc, to detect the hardware is in use.
-
-I think that the current status is that we need to finish the spec
-first. Then check if the patches are doing what's above.
-
-It seems that we agree to not agree at the requirements so far ;)
-
-> 
-> I do think lock/token approach has the best potential to solve the
-> problems. We are at this point very close to addressing conflicts.
-> At least the ones I am able to test.
-> 
-> thanks,
-> -- Shuah
-
-Regards,
-Mauro
+-- 
+Dmitry
