@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760378AbaJ1G4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:56:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45623 "EHLO
+	id S1760404AbaJ1G5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:57:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45602 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755775AbaJ1Drh (ORCPT
+	with ESMTP id S1755245AbaJ1DrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:37 -0400
+	Mon, 27 Oct 2014 23:47:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc MERLIN <marc@merlins.org>, Josef Bacik <jbacik@fb.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 006/100] Btrfs: fix build_backref_tree issue with multiple shared blocks
-Date: Tue, 28 Oct 2014 11:34:51 +0800
-Message-Id: <20141028033500.936884559@linuxfoundation.org>
+        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 001/100] btrfs: wake up transaction thread from SYNC_FS ioctl
+Date: Tue, 28 Oct 2014 11:34:46 +0800
+Message-Id: <20141028033500.727822576@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,63 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fb.com>
+From: David Sterba <dsterba@suse.cz>
 
-commit bbe9051441effce51c9a533d2c56440df64db2d7 upstream.
+commit 2fad4e83e12591eb3bd213875b9edc2d18e93383 upstream.
 
-Marc Merlin sent me a broken fs image months ago where it would blow up in the
-upper->checked BUG_ON() in build_backref_tree.  This is because we had a
-scenario like this
+The transaction thread may want to do more work, namely it pokes the
+cleaner ktread that will start processing uncleaned subvols.
 
-block a -- level 4 (not shared)
-   |
-block b -- level 3 (reloc block, shared)
-   |
-block c -- level 2 (not shared)
-   |
-block d -- level 1 (shared)
-   |
-block e -- level 0 (shared)
+This can be triggered by user via the 'btrfs fi sync' command, otherwise
+there was a delay up to 30 seconds before the cleaner started to clean
+old snapshots.
 
-We go to build a backref tree for block e, we notice block d is shared and add
-it to the list of blocks to lookup it's backrefs for.  Now when we loop around
-we will check edges for the block, so we will see we looked up block c last
-time.  So we lookup block d and then see that the block that points to it is
-block c and we can just skip that edge since we've already been up this path.
-The problem is because we clear need_check when we see block d (as it is shared)
-we never add block b as needing to be checked.  And because block c is in our
-path already we bail out before we walk up to block b and add it to the backref
-check list.
-
-To fix this we need to reset need_check if we trip over a block that doesn't
-need to be checked.  This will make sure that any subsequent blocks in the path
-as we're walking up afterwards are added to the list to be processed.  With this
-patch I can now mount Marc's fs image and it'll complete the balance without
-panicing.  Thanks,
-
-Reported-by: Marc MERLIN <marc@merlins.org>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
+Signed-off-by: David Sterba <dsterba@suse.cz>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/relocation.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/btrfs/ioctl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/btrfs/relocation.c
-+++ b/fs/btrfs/relocation.c
-@@ -977,8 +977,11 @@ again:
- 					need_check = false;
- 					list_add_tail(&edge->list[UPPER],
- 						      &list);
--				} else
-+				} else {
-+					if (upper->checked)
-+						need_check = true;
- 					INIT_LIST_HEAD(&edge->list[UPPER]);
-+				}
- 			} else {
- 				upper = rb_entry(rb_node, struct backref_node,
- 						 rb_node);
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -4750,6 +4750,12 @@ long btrfs_ioctl(struct file *file, unsi
+ 		if (ret)
+ 			return ret;
+ 		ret = btrfs_sync_fs(file->f_dentry->d_sb, 1);
++		/*
++		 * The transaction thread may want to do more work,
++		 * namely it pokes the cleaner ktread that will start
++		 * processing uncleaned subvols.
++		 */
++		wake_up_process(root->fs_info->transaction_kthread);
+ 		return ret;
+ 	}
+ 	case BTRFS_IOC_START_SYNC:
 
 
