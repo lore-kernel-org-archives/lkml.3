@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918AbaJ1WQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:16:20 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58390 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755892AbaJ1WN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:13:57 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 2/9] compiler: Allow 1- and 2-byte smp_load_acquire() and smp_store_release()
-Date: Tue, 28 Oct 2014 15:09:55 -0700
-Message-Id: <1414534202-27312-2-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1414534202-27312-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20141028220944.GA26114@linux.vnet.ibm.com>
- <1414534202-27312-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102822-0025-0000-0000-000000F05F6A
+	id S1755884AbaJ1WN4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:13:56 -0400
+Received: from [103.239.73.48] ([103.239.73.48]:54736 "EHLO a.1-hour-pay.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755796AbaJ1WNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:13:54 -0400
+Date: Wed, 29 Oct 2014 06:15:24 +0800
+From: "LED Light" <hw5@a.1-hour-pay.com>
+Reply-To: shadow@JRS-Tech.net
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: RGB LED TUBES LED GROW LIGHTS LED Street lights Underground Light
+Message-ID: <201410290615240156036@a.1-hour-pay.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9SMGMhS029986
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-
-CPUs without single-byte and double-byte loads and stores place some
-"interesting" requirements on concurrent code.  For example (adapted
-from Peter Hurley's test code), suppose we have the following structure:
-
-	struct foo {
-		spinlock_t lock1;
-		spinlock_t lock2;
-		char a; /* Protected by lock1. */
-		char b; /* Protected by lock2. */
-	};
-	struct foo *foop;
-
-Of course, it is common (and good) practice to place data protected
-by different locks in separate cache lines.  However, if the locks are
-rarely acquired (for example, only in rare error cases), and there are
-a great many instances of the data structure, then memory footprint can
-trump false-sharing concerns, so that it can be better to place them in
-the same cache cache line as above.
-
-But if the CPU does not support single-byte loads and stores, a store
-to foop->a will do a non-atomic read-modify-write operation on foop->b,
-which will come as a nasty surprise to someone holding foop->lock2.  So we
-now require CPUs to support single-byte and double-byte loads and stores.
-Therefore, this commit adjusts the definition of __native_word() to allow
-these sizes to be used by smp_load_acquire() and smp_store_release().
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
----
- include/linux/compiler.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index d5ad7b1118fc..934a834ab9f9 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -311,7 +311,7 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+Dear Mr/MS,
+Very glad to know you are looking for LED panel light and spot light in the market. 
+We are one of the biggest suppliers of LED in China and southeast Asia.
+For more information, please visit our website: http://www.jrs-led.net
+Enclosed is price list and Free sample can be sent to you for testing.
+Waiting for your reply.
  
- /* Is this type a native word size -- useful for atomic operations */
- #ifndef __native_word
--# define __native_word(t) (sizeof(t) == sizeof(int) || sizeof(t) == sizeof(long))
-+# define __native_word(t) (sizeof(t) == sizeof(char) || sizeof(t) == sizeof(short) || sizeof(t) == sizeof(int) || sizeof(t) == sizeof(long))
- #endif
- 
- /* Compile time object size, -1 for unknown */
--- 
-1.8.1.5
+Sincerely
+JRS Technology Co.,Ltd
+shadow
 
+Email£º  shadow@JRS-Tech.net
+Skype£º  techjrsb
+MSN£º    techjrsb@msn.cn
+Websit£º www.jrs-led.net
+
+
+we would be grateful if you will be our led lamps catalogue reserved for your supervisoÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
