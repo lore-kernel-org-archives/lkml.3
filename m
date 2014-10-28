@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760708AbaJ1H33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:29:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45016 "EHLO
+	id S1760717AbaJ1H3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:29:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45009 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129AbaJ1DmL (ORCPT
+	with ESMTP id S1755112AbaJ1DmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:11 -0400
+	Mon, 27 Oct 2014 23:42:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 3.16 010/127] fs: Add a missing permission check to do_umount
-Date: Tue, 28 Oct 2014 11:34:05 +0800
-Message-Id: <20141028033421.370870760@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 126/146] sparc64: Fix reversed start/end in flush_tlb_kernel_range()
+Date: Tue, 28 Oct 2014 11:34:28 +0800
+Message-Id: <20141028033348.906531757@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
-References: <20141028033420.925922046@linuxfoundation.org>
+In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
+References: <20141028033343.441992423@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,36 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit a1480dcc3c706e309a88884723446f2e84fedd5b upstream.
+[ Upstream commit 473ad7f4fb005d1bb727e4ef27d370d28703a062 ]
 
-Accessing do_remount_sb should require global CAP_SYS_ADMIN, but
-only one of the two call sites was appropriately protected.
+When we have to split up a flush request into multiple pieces
+(in order to avoid the firmware range) we don't specify the
+arguments in the right order for the second piece.
 
-Fixes CVE-2014-7975.
+Fix the order, or else we get hangs as the code tries to
+flush "a lot" of entries and we get lockups like this:
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+[ 4422.981276] NMI watchdog: BUG: soft lockup - CPU#12 stuck for 23s! [expect:117032]
+[ 4422.996130] Modules linked in: ipv6 loop usb_storage igb ptp sg sr_mod ehci_pci ehci_hcd pps_core n2_rng rng_core
+[ 4423.016617] CPU: 12 PID: 117032 Comm: expect Not tainted 3.17.0-rc4+ #1608
+[ 4423.030331] task: fff8003cc730e220 ti: fff8003d99d54000 task.ti: fff8003d99d54000
+[ 4423.045282] TSTATE: 0000000011001602 TPC: 00000000004521e8 TNPC: 00000000004521ec Y: 00000000    Not tainted
+[ 4423.064905] TPC: <__flush_tlb_kernel_range+0x28/0x40>
+[ 4423.074964] g0: 000000000052fd10 g1: 00000001295a8000 g2: ffffff7176ffc000 g3: 0000000000002000
+[ 4423.092324] g4: fff8003cc730e220 g5: fff8003dfedcc000 g6: fff8003d99d54000 g7: 0000000000000006
+[ 4423.109687] o0: 0000000000000000 o1: 0000000000000000 o2: 0000000000000003 o3: 00000000f0000000
+[ 4423.127058] o4: 0000000000000080 o5: 00000001295a8000 sp: fff8003d99d56d01 ret_pc: 000000000052ff54
+[ 4423.145121] RPC: <__purge_vmap_area_lazy+0x314/0x3a0>
+[ 4423.155185] l0: 0000000000000000 l1: 0000000000000000 l2: 0000000000a38040 l3: 0000000000000000
+[ 4423.172559] l4: fff8003dae8965e0 l5: ffffffffffffffff l6: 0000000000000000 l7: 00000000f7e2b138
+[ 4423.189913] i0: fff8003d99d576a0 i1: fff8003d99d576a8 i2: fff8003d99d575e8 i3: 0000000000000000
+[ 4423.207284] i4: 0000000000008008 i5: fff8003d99d575c8 i6: fff8003d99d56df1 i7: 0000000000530c24
+[ 4423.224640] I7: <free_vmap_area_noflush+0x64/0x80>
+[ 4423.234193] Call Trace:
+[ 4423.239051]  [0000000000530c24] free_vmap_area_noflush+0x64/0x80
+[ 4423.251029]  [0000000000531a7c] remove_vm_area+0x5c/0x80
+[ 4423.261628]  [0000000000531b80] __vunmap+0x20/0x120
+[ 4423.271352]  [000000000071cf18] n_tty_close+0x18/0x40
+[ 4423.281423]  [00000000007222b0] tty_ldisc_close+0x30/0x60
+[ 4423.292183]  [00000000007225a4] tty_ldisc_reinit+0x24/0xa0
+[ 4423.303120]  [0000000000722ab4] tty_ldisc_hangup+0xd4/0x1e0
+[ 4423.314232]  [0000000000719aa0] __tty_hangup+0x280/0x3c0
+[ 4423.324835]  [0000000000724cb4] pty_close+0x134/0x1a0
+[ 4423.334905]  [000000000071aa24] tty_release+0x104/0x500
+[ 4423.345316]  [00000000005511d0] __fput+0x90/0x1e0
+[ 4423.354701]  [000000000047fa54] task_work_run+0x94/0xe0
+[ 4423.365126]  [0000000000404b44] __handle_signal+0xc/0x2c
+
+Fixes: 4ca9a23765da ("sparc64: Guard against flushing openfirmware mappings.")
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/namespace.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/mm/init_64.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1374,6 +1374,8 @@ static int do_umount(struct mount *mnt,
- 		 * Special case for "unmounting" root ...
- 		 * we just try to remount it readonly.
- 		 */
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
- 		down_write(&sb->s_umount);
- 		if (!(sb->s_flags & MS_RDONLY))
- 			retval = do_remount_sb(sb, MS_RDONLY, NULL, 0);
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2790,8 +2790,8 @@ void flush_tlb_kernel_range(unsigned lon
+ 			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
+ 		}
+ 		if (end > HI_OBP_ADDRESS) {
+-			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
+-			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
++			flush_tsb_kernel_range(HI_OBP_ADDRESS, end);
++			do_flush_tlb_kernel_range(HI_OBP_ADDRESS, end);
+ 		}
+ 	} else {
+ 		flush_tsb_kernel_range(start, end);
 
 
