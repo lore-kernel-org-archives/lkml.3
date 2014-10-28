@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755601AbaJ1DpI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:45:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45356 "EHLO
+	id S1755612AbaJ1DpN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:45:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884AbaJ1DpF (ORCPT
+	with ESMTP id S1754257AbaJ1DpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:45:05 -0400
+	Mon, 27 Oct 2014 23:45:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.16 060/127] PCI: Add missing MEM_64 mask in pci_assign_unassigned_bridge_resources()
-Date: Tue, 28 Oct 2014 11:34:55 +0800
-Message-Id: <20141028033423.494834696@linuxfoundation.org>
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.16 062/127] PCI: Generate uppercase hex for modalias interface class
+Date: Tue, 28 Oct 2014 11:34:57 +0800
+Message-Id: <20141028033423.575193722@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -28,37 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 
-commit d61b0e87d2dfba3706dbbd6c7c6fd41c3d845685 upstream.
+commit 89ec3dcf17fd3fa009ecf8faaba36828dd6bc416 upstream.
 
-In 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to
-64-bit resources"), we added IORESOURCE_MEM_64 to the mask in
-pci_assign_unassigned_root_bus_resources(), but not to the mask in
-pci_assign_unassigned_bridge_resources().
+Some implementations of modprobe fail to load the driver for a PCI device
+automatically because the "interface" part of the modalias from the kernel
+is lowercase, and the modalias from file2alias is uppercase.
 
-Add IORESOURCE_MEM_64 to the pci_assign_unassigned_bridge_resources() type
-mask.
+The "interface" is the low-order byte of the Class Code, defined in PCI
+r3.0, Appendix D.  Most interface types defined in the spec do not use
+alpha characters, so they won't be affected.  For example, 00h, 01h, 10h,
+20h, etc. are unaffected.
 
-Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Print the "interface" byte of the Class Code in uppercase hex, as we
+already do for the Vendor ID, Device ID, Class, etc.
+
+[bhelgaas: changelog]
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/setup-bus.c |    2 +-
+ drivers/pci/pci-sysfs.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -1652,7 +1652,7 @@ void pci_assign_unassigned_bridge_resour
- 	struct pci_dev_resource *fail_res;
- 	int retval;
- 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
--				  IORESOURCE_PREFETCH;
-+				  IORESOURCE_PREFETCH | IORESOURCE_MEM_64;
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -177,7 +177,7 @@ static ssize_t modalias_show(struct devi
+ {
+ 	struct pci_dev *pci_dev = to_pci_dev(dev);
  
- again:
- 	__pci_bus_size_bridges(parent, &add_list);
+-	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
++	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X\n",
+ 		       pci_dev->vendor, pci_dev->device,
+ 		       pci_dev->subsystem_vendor, pci_dev->subsystem_device,
+ 		       (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
 
 
