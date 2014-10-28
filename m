@@ -1,94 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798AbaJ1W6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:58:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34338 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbaJ1W6x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:58:53 -0400
-Date: Tue, 28 Oct 2014 15:58:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/2 v2] binfmt_misc: add comments & debug logs
-Message-Id: <20141028155853.8327ad332397c5b426e0aa46@linux-foundation.org>
-In-Reply-To: <20141020235414.GA23349@vapier>
-References: <1413759826-11958-1-git-send-email-vapier@gentoo.org>
-	<1413845160-22497-1-git-send-email-vapier@gentoo.org>
-	<1413845996.5407.2.camel@perches.com>
-	<20141020235414.GA23349@vapier>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752379AbaJ1W7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:59:01 -0400
+Received: from ozlabs.org ([103.22.144.67]:59990 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751505AbaJ1W65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:58:57 -0400
+Date: Wed, 29 Oct 2014 09:58:48 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: linux-next: build failure after merge of the usb-gadget-fixes tree
+Message-ID: <20141029095848.12be411e@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/IU0DTIM77L__jCCUkbZl/b6"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Oct 2014 19:54:14 -0400 Mike Frysinger <vapier@gentoo.org> wrote:
+--Sig_/IU0DTIM77L__jCCUkbZl/b6
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> On 20 Oct 2014 15:59, Joe Perches wrote:
-> > On Mon, 2014-10-20 at 18:45 -0400, Mike Frysinger wrote:
-> > > diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-> > []
-> > > @@ -323,46 +343,113 @@ static Node *create_entry(const char __user *buffer, size_t count)
-> > []
-> > > +			if (e->mask) {
-> > > +				int i;
-> > > +				char *masked = kmalloc(e->size, GFP_USER);
-> > 
-> > Why GFP_USER?  Does it need it?
-> 
-> mostly a copy & paste from earlier in this func:
-> 	e = kmalloc(memsize, GFP_USER);
-> 
-> the code is running process context and this buffer is only for
-> debugging on behalf of the user (and is shortly freed there after), so
-> GFP_USER seemed appropriate.  that said, i'm certainly not an expert
-> here, so if the convention is to use GFP_KERNEL, it's easy enough to
-> change.  the kmalloc API doesn't seem to provide guidance.
+Hi Felipe,
 
-I can't see any reason to me using GFP_USER for these objects so how
-about
+After merging the usb-gadget-fixes tree, today's linux-next build
+(x86_64 allmodconfig) failed like this:
 
+drivers/usb/dwc2/gadget.c: In function 's3c_hsotg_suspend':
+drivers/usb/dwc2/gadget.c:3633:2: error: implicit declaration of function '=
+s3c_hsotg_core_disconnect' [-Werror=3Dimplicit-function-declaration]
+  s3c_hsotg_core_disconnect(hsotg);
+  ^
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: fs/binfmt_misc.c: use GFP_KERNEL instead of GFP_USER
+Caused by commit 9f2104db1295 ("usb: dwc2: gadget: fix calls to phy
+control functions in suspend/resume code").
 
-GFP_USER means "honour cpuset nodes-allowed beancounting".  These are
-regular old kernel objects and there seems no reason to give them this
-treatment.
+I have used the usb-gadget-fixes tree from next-20141028 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Joe Perches <joe@perches.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
+--Sig_/IU0DTIM77L__jCCUkbZl/b6
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
- fs/binfmt_misc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-diff -puN fs/binfmt_misc.c~fs-binfmt_miscc-use-gfp_kernel-instead-of-gfp_user fs/binfmt_misc.c
---- a/fs/binfmt_misc.c~fs-binfmt_miscc-use-gfp_kernel-instead-of-gfp_user
-+++ a/fs/binfmt_misc.c
-@@ -308,7 +308,7 @@ static Node *create_entry(const char __u
- 
- 	err = -ENOMEM;
- 	memsize = sizeof(Node) + count + 8;
--	e = kmalloc(memsize, GFP_USER);
-+	e = kmalloc(memsize, GFP_KERNEL);
- 	if (!e)
- 		goto out;
- 
-@@ -416,7 +416,7 @@ static Node *create_entry(const char __u
- 
- 			if (e->mask) {
- 				int i;
--				char *masked = kmalloc(e->size, GFP_USER);
-+				char *masked = kmalloc(e->size, GFP_KERNEL);
- 
- 				print_hex_dump_bytes(
- 					KBUILD_MODNAME ": register:  mask[decoded]: ",
-_
+iQIcBAEBCAAGBQJUUB+tAAoJEMDTa8Ir7ZwVX28P/2F7cTP4bs8N6hejjVG1n6pu
+hAF7HEOsSQ/dVDFUji20tHpFpXpTQntczjpkLg52eRdZQLGlY5QRY8lo5ng7FIQs
+rU9d5vueY2LwuP5TQjH7gUkjoUK1ObYujbe4jx8/7+MDTJz2fbxWP23YIGq0JpZS
+o3jUz8qrXokXAIv1MJzlmBitR95z6R7ZYJ19pj0REjMac9yUqGTH21iPncd8u3mW
+hF5Ecw8MR4Zz01kXeGkOwGlQhpiW83pPAJaqhktZ+3ZSXRRaJD8/Yj6LqKzywAbT
+AnSe/H4lCSijPFuenqdQdlwRuLzRREqRr6nSx+eUnDm1346GHurcmcHm0ljG/61R
+sR6p8XV9/qVYpAFkfi+RqIe3IImIWXnB3OdsbbAJn67Q0W0NB8Xv6GdCveRMSQxa
+KLpZnN/inIm0/fbhNO9aOalLRSx1cz0yjxksdhi5L0l4T4TqPUZLNTlHPnngMlzE
+isYokb+ai6JrDQnrmAdF8kVCYv2qtXu6mEIbxhWvX42Xq1vrnIm92mudL0LZe2mc
+oRzppnR4l+3JMgLA/Se1hqS+uR+zc3pQM/yron4rL8XlguQoyz4RH669HnSaYvLk
+wgImfkoUXfC9e0jNqzzfRFcEmGRJr/gJxVVVZW+scf1X8RiS26RUsCaE1fJqJSmG
+4X72N8z9JSbNI3L8Sy9D
+=2SKm
+-----END PGP SIGNATURE-----
 
+--Sig_/IU0DTIM77L__jCCUkbZl/b6--
