@@ -1,187 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243AbaJ1Mbk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:31:40 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:32845 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406AbaJ1Mbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:31:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <1410857931-4980-2-git-send-email-ch.naveen@samsung.com>
-References: <1410857931-4980-1-git-send-email-ch.naveen@samsung.com>
-	<1410857931-4980-2-git-send-email-ch.naveen@samsung.com>
-Date: Tue, 28 Oct 2014 18:01:36 +0530
-X-Google-Sender-Auth: iicLNqbUnlwJTeMrGlf4jPOAJuA
-Message-ID: <CAFp+6iH77ToXfOG1bXpCi60JpuzhhxOqaz99=9v4_9DppkSCNw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] iio: exyno-adc: use syscon for PMU register access
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-iio@vger.kernel.org
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cw00.choi@samsung.com, Greg KH <gregkh@linuxfoundation.org>,
-        naveenkrishna.ch@gmail.com, lars@metafoo.de, CPGS <cpgs@samsung.com>,
-        grundler@chromium.org, jic23@kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1754167AbaJ1Mcq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:32:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59443 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722AbaJ1Mcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:32:43 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, jbaron@akamai.com,
+        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
+        linux-api@vger.kernel.org
+Subject: [PATCH V5] kernel, add panic_on_warn
+Date: Tue, 28 Oct 2014 08:31:39 -0400
+Message-Id: <1414499499-21952-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+There have been several times where I have had to rebuild a kernel to
+cause a panic when hitting a WARN() in the code in order to get a crash
+dump from a system.  Sometimes this is easy to do, other times (such as
+in the case of a remote admin) it is not trivial to send new images to the
+user.
 
+A much easier method would be a switch to change the WARN() over to a
+panic.  This makes debugging easier in that I can now test the actual
+image the WARN() was seen on and I do not have to engage in remote
+debugging.
 
-CC'ing Naveen's gmail id, since the Samsung id is invalid now.
+This patch adds a panic_on_warn kernel parameter and
+/proc/sys/kernel/panic_on_warn calls panic() in the warn_slowpath_common()
+path.  The function will still print out the location of the warning.
 
+An example of the panic_on_warn output:
 
-On Tue, Sep 16, 2014 at 2:28 PM, Naveen Krishna Chatradhi
-<ch.naveen@samsung.com> wrote:
-> This patch updates the IIO based ADC driver to use syscon and regmap
-> APIs to access and use PMU registers instead of remapping the PMU
-> registers in the driver.
->
-> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> To: linux-iio@vger.kernel.org
-> ---
-> Changes since v1:
-> Rebased on top of togreg branch of IIO git
+The first line below is from the WARN_ON() to output the WARN_ON()'s location.
+After that the panic() output is displayed.
 
-If the changes look good, then first two patches of this series can be
-picked up ?
-The last dt patch then belongs to samsung tree.
+WARNING: CPU: 30 PID: 11698 at /home/prarit/dummy_module/dummy-module.c:25 init_dummy+0x1f/0x30 [dummy_module]()
+Kernel panic - not syncing: panic_on_warn set ...
 
->
->  drivers/iio/adc/exynos_adc.c |   30 +++++++++++++++++++++---------
->  1 file changed, 21 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-> index 43620fd..fe03177 100644
-> --- a/drivers/iio/adc/exynos_adc.c
-> +++ b/drivers/iio/adc/exynos_adc.c
-> @@ -39,6 +39,8 @@
->  #include <linux/iio/iio.h>
->  #include <linux/iio/machine.h>
->  #include <linux/iio/driver.h>
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/regmap.h>
->
->  /* S3C/EXYNOS4412/5250 ADC_V1 registers definitions */
->  #define ADC_V1_CON(x)          ((x) + 0x00)
-> @@ -90,11 +92,14 @@
->
->  #define EXYNOS_ADC_TIMEOUT     (msecs_to_jiffies(100))
->
-> +#define EXYNOS_ADCV1_PHY_OFFSET        0x0718
-> +#define EXYNOS_ADCV2_PHY_OFFSET        0x0720
-> +
->  struct exynos_adc {
->         struct exynos_adc_data  *data;
->         struct device           *dev;
->         void __iomem            *regs;
-> -       void __iomem            *enable_reg;
-> +       struct regmap           *pmu_map;
->         struct clk              *clk;
->         struct clk              *sclk;
->         unsigned int            irq;
-> @@ -110,6 +115,7 @@ struct exynos_adc_data {
->         int num_channels;
->         bool needs_sclk;
->         bool needs_adc_phy;
-> +       int phy_offset;
->         u32 mask;
->
->         void (*init_hw)(struct exynos_adc *info);
-> @@ -183,7 +189,7 @@ static void exynos_adc_v1_init_hw(struct exynos_adc *info)
->         u32 con1;
->
->         if (info->data->needs_adc_phy)
-> -               writel(1, info->enable_reg);
-> +               regmap_write(info->pmu_map, info->data->phy_offset, 1);
->
->         /* set default prescaler values and Enable prescaler */
->         con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
-> @@ -198,7 +204,7 @@ static void exynos_adc_v1_exit_hw(struct exynos_adc *info)
->         u32 con;
->
->         if (info->data->needs_adc_phy)
-> -               writel(0, info->enable_reg);
-> +               regmap_write(info->pmu_map, info->data->phy_offset, 0);
->
->         con = readl(ADC_V1_CON(info->regs));
->         con |= ADC_V1_CON_STANDBY;
-> @@ -225,6 +231,7 @@ static const struct exynos_adc_data exynos_adc_v1_data = {
->         .num_channels   = MAX_ADC_V1_CHANNELS,
->         .mask           = ADC_DATX_MASK,        /* 12 bit ADC resolution */
->         .needs_adc_phy  = true,
-> +       .phy_offset     = EXYNOS_ADCV1_PHY_OFFSET,
->
->         .init_hw        = exynos_adc_v1_init_hw,
->         .exit_hw        = exynos_adc_v1_exit_hw,
-> @@ -314,7 +321,7 @@ static void exynos_adc_v2_init_hw(struct exynos_adc *info)
->         u32 con1, con2;
->
->         if (info->data->needs_adc_phy)
-> -               writel(1, info->enable_reg);
-> +               regmap_write(info->pmu_map, info->data->phy_offset, 1);
->
->         con1 = ADC_V2_CON1_SOFT_RESET;
->         writel(con1, ADC_V2_CON1(info->regs));
-> @@ -332,7 +339,7 @@ static void exynos_adc_v2_exit_hw(struct exynos_adc *info)
->         u32 con;
->
->         if (info->data->needs_adc_phy)
-> -               writel(0, info->enable_reg);
-> +               regmap_write(info->pmu_map, info->data->phy_offset, 0);
->
->         con = readl(ADC_V2_CON1(info->regs));
->         con &= ~ADC_CON_EN_START;
-> @@ -362,6 +369,7 @@ static const struct exynos_adc_data exynos_adc_v2_data = {
->         .num_channels   = MAX_ADC_V2_CHANNELS,
->         .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
->         .needs_adc_phy  = true,
-> +       .phy_offset     = EXYNOS_ADCV2_PHY_OFFSET,
->
->         .init_hw        = exynos_adc_v2_init_hw,
->         .exit_hw        = exynos_adc_v2_exit_hw,
-> @@ -374,6 +382,7 @@ static const struct exynos_adc_data exynos3250_adc_data = {
->         .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
->         .needs_sclk     = true,
->         .needs_adc_phy  = true,
-> +       .phy_offset     = EXYNOS_ADCV1_PHY_OFFSET,
->
->         .init_hw        = exynos_adc_v2_init_hw,
->         .exit_hw        = exynos_adc_v2_exit_hw,
-> @@ -558,10 +567,13 @@ static int exynos_adc_probe(struct platform_device *pdev)
->
->
->         if (info->data->needs_adc_phy) {
-> -               mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> -               info->enable_reg = devm_ioremap_resource(&pdev->dev, mem);
-> -               if (IS_ERR(info->enable_reg))
-> -                       return PTR_ERR(info->enable_reg);
-> +               info->pmu_map = syscon_regmap_lookup_by_phandle(
-> +                                       pdev->dev.of_node,
-> +                                       "samsung,syscon-phandle");
-> +               if (IS_ERR(info->pmu_map)) {
-> +                       dev_err(&pdev->dev, "syscon regmap lookup failed.\n");
-> +                       return PTR_ERR(info->pmu_map);
-> +               }
->         }
->
->         irq = platform_get_irq(pdev, 0);
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+CPU: 30 PID: 11698 Comm: insmod Tainted: G        W  OE  3.17.0+ #57
+Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.00.29.D696.1311111329 11/11/2013
+ 0000000000000000 000000008e3f87df ffff88080f093c38 ffffffff81665190
+ 0000000000000000 ffffffff818aea3d ffff88080f093cb8 ffffffff8165e2ec
+ ffffffff00000008 ffff88080f093cc8 ffff88080f093c68 000000008e3f87df
+Call Trace:
+ [<ffffffff81665190>] dump_stack+0x46/0x58
+ [<ffffffff8165e2ec>] panic+0xd0/0x204
+ [<ffffffffa038e05f>] ? init_dummy+0x1f/0x30 [dummy_module]
+ [<ffffffff81076b90>] warn_slowpath_common+0xd0/0xd0
+ [<ffffffffa038e040>] ? dummy_greetings+0x40/0x40 [dummy_module]
+ [<ffffffff81076c8a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffffa038e05f>] init_dummy+0x1f/0x30 [dummy_module]
+ [<ffffffff81002144>] do_one_initcall+0xd4/0x210
+ [<ffffffff811b52c2>] ? __vunmap+0xc2/0x110
+ [<ffffffff810f8889>] load_module+0x16a9/0x1b30
+ [<ffffffff810f3d30>] ? store_uevent+0x70/0x70
+ [<ffffffff810f49b9>] ? copy_module_from_fd.isra.44+0x129/0x180
+ [<ffffffff810f8ec6>] SyS_finit_module+0xa6/0xd0
+ [<ffffffff8166cf29>] system_call_fastpath+0x12/0x17
 
+Successfully tested by me.
 
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Fabian Frederick <fabf@skynet.be>
+Cc: vgoyal@redhat.com
+Cc: isimatu.yasuaki@jp.fujitsu.com
+Cc: jbaron@akamai.com
+Cc: linux-doc@vger.kernel.org
+Cc: kexec@lists.infradead.org
+Cc: linux-api@vger.kernel.org
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 
+[v2]: add /proc/sys/kernel/panic_on_warn, additional documentation, modify
+      !slowpath cases
+[v3]: use proc_dointvec_minmax() in sysctl handler
+[v4]: remove !slowpath cases, and add __read_mostly
+[v5]: change to panic_on_warn, re-alphabetize Documentation/sysctl/kernel.txt
+---
+ Documentation/kdump/kdump.txt       |    7 ++++++
+ Documentation/kernel-parameters.txt |    3 +++
+ Documentation/sysctl/kernel.txt     |   40 +++++++++++++++++++++++------------
+ include/linux/kernel.h              |    1 +
+ include/uapi/linux/sysctl.h         |    1 +
+ kernel/panic.c                      |   20 +++++++++++++++++-
+ kernel/sysctl.c                     |    9 ++++++++
+ kernel/sysctl_binary.c              |    1 +
+ 8 files changed, 67 insertions(+), 15 deletions(-)
+
+diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
+index 6c0b9f2..bc4bd5a 100644
+--- a/Documentation/kdump/kdump.txt
++++ b/Documentation/kdump/kdump.txt
+@@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
+ 
+    http://people.redhat.com/~anderson/
+ 
++Trigger Kdump on WARN()
++=======================
++
++The kernel parameter, panic_on_warn, calls panic() in all WARN() paths.  This
++will cause a kdump to occur at the panic() call.  In cases where a user wants
++to specify this during runtime, /proc/sys/kernel/panic_on_warn can be set to 1
++to achieve the same behaviour.
+ 
+ Contact
+ =======
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 74339c5..262ff3b 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2495,6 +2495,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			timeout < 0: reboot immediately
+ 			Format: <timeout>
+ 
++	panic_on_warn	panic() instead of WARN().  Useful to cause kdump
++			on a WARN().
++
+ 	crash_kexec_post_notifiers
+ 			Run kdump after running panic-notifiers and dumping
+ 			kmsg. This only for the users who doubt kdump always
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 57baff5..b5d0c85 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -54,8 +54,9 @@ show up in /proc/sys/kernel:
+ - overflowuid
+ - panic
+ - panic_on_oops
+-- panic_on_unrecovered_nmi
+ - panic_on_stackoverflow
++- panic_on_unrecovered_nmi
++- panic_on_warn
+ - pid_max
+ - powersave-nap               [ PPC only ]
+ - printk
+@@ -527,19 +528,6 @@ the recommended setting is 60.
+ 
+ ==============================================================
+ 
+-panic_on_unrecovered_nmi:
+-
+-The default Linux behaviour on an NMI of either memory or unknown is
+-to continue operation. For many environments such as scientific
+-computing it is preferable that the box is taken out and the error
+-dealt with than an uncorrected parity/ECC error get propagated.
+-
+-A small number of systems do generate NMI's for bizarre random reasons
+-such as power management so the default is off. That sysctl works like
+-the existing panic controls already in that directory.
+-
+-==============================================================
+-
+ panic_on_oops:
+ 
+ Controls the kernel's behaviour when an oops or BUG is encountered.
+@@ -563,6 +551,30 @@ This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
+ 
+ ==============================================================
+ 
++panic_on_unrecovered_nmi:
++
++The default Linux behaviour on an NMI of either memory or unknown is
++to continue operation. For many environments such as scientific
++computing it is preferable that the box is taken out and the error
++dealt with than an uncorrected parity/ECC error get propagated.
++
++A small number of systems do generate NMI's for bizarre random reasons
++such as power management so the default is off. That sysctl works like
++the existing panic controls already in that directory.
++
++==============================================================
++
++panic_on_warn:
++
++Calls panic() in the WARN() path when set to 1.  This is useful to avoid
++a kernel rebuild when attempting to kdump at the location of a WARN().
++
++0: only WARN(), default behaviour.
++
++1: call panic() after printing out WARN() location.
++
++==============================================================
++
+ perf_cpu_time_max_percent:
+ 
+ Hints to the kernel how much CPU time it should be allowed to
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 3d770f55..d60d31d 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -422,6 +422,7 @@ extern int panic_timeout;
+ extern int panic_on_oops;
+ extern int panic_on_unrecovered_nmi;
+ extern int panic_on_io_nmi;
++extern int panic_on_warn;
+ extern int sysctl_panic_on_stackoverflow;
+ /*
+  * Only to be used by arch init code. If the user over-wrote the default
+diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
+index 43aaba1..0956373 100644
+--- a/include/uapi/linux/sysctl.h
++++ b/include/uapi/linux/sysctl.h
+@@ -153,6 +153,7 @@ enum
+ 	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
+ 	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
+ 	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
++	KERN_PANIC_ON_WARN=77, /* int: call panic() in WARN() functions */
+ };
+ 
+ 
+diff --git a/kernel/panic.c b/kernel/panic.c
+index d09dc5c..2ab2168 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -33,6 +33,7 @@ static int pause_on_oops;
+ static int pause_on_oops_flag;
+ static DEFINE_SPINLOCK(pause_on_oops_lock);
+ static bool crash_kexec_post_notifiers;
++int panic_on_warn __read_mostly;
+ 
+ int panic_timeout = CONFIG_PANIC_TIMEOUT;
+ EXPORT_SYMBOL_GPL(panic_timeout);
+@@ -420,13 +421,23 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
+ {
+ 	disable_trace_on_warning();
+ 
+-	pr_warn("------------[ cut here ]------------\n");
++	if (!panic_on_warn)
++		pr_warn("------------[ cut here ]------------\n");
+ 	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
+ 		raw_smp_processor_id(), current->pid, file, line, caller);
+ 
+ 	if (args)
+ 		vprintk(args->fmt, args->args);
+ 
++	if (panic_on_warn) {
++		/*
++		 * A flood of WARN()s may occur.  Prevent further WARN()s
++		 * from panicking the system.
++		 */
++		panic_on_warn = 0;
++		panic("panic_on_warn set ... \n");
++	}
++
+ 	print_modules();
+ 	dump_stack();
+ 	print_oops_end_marker();
+@@ -501,3 +512,10 @@ static int __init oops_setup(char *s)
+ 	return 0;
+ }
+ early_param("oops", oops_setup);
++
++static int __init panic_on_warn_setup(char *s)
++{
++	panic_on_warn = 1;
++	return 0;
++}
++early_param("panic_on_warn", panic_on_warn_setup);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4aada6d..38deafa 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1103,6 +1103,15 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ #endif
++	{
++		.procname	= "panic_on_warn",
++		.data		= &panic_on_warn,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
+ 	{ }
+ };
+ 
+diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
+index 9a4f750..c62d421 100644
+--- a/kernel/sysctl_binary.c
++++ b/kernel/sysctl_binary.c
+@@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
+ 	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
+ 	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
+ 	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
++	{ CTL_INT,	KERN_BUG_ON_WARN,		"panic_on_warn" },
+ 	{}
+ };
+ 
 -- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+1.7.9.3
+
