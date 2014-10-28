@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671AbaJ1Gjt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:39:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45945 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755308AbaJ1DuS (ORCPT
+	id S933866AbaJ1GkL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:40:11 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52391 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846AbaJ1GkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:18 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 060/100] ALSA: emu10k1: Fix deadlock in synth voice lookup
-Date: Tue, 28 Oct 2014 11:35:45 +0800
-Message-Id: <20141028033503.290879104@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
-References: <20141028033500.670583608@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 02:40:07 -0400
 MIME-Version: 1.0
+In-Reply-To: <1413822343-1972-2-git-send-email-daniel.lezcano@linaro.org>
+References: <1413822343-1972-1-git-send-email-daniel.lezcano@linaro.org>
+	<1413822343-1972-2-git-send-email-daniel.lezcano@linaro.org>
+Date: Tue, 28 Oct 2014 12:10:06 +0530
+Message-ID: <CAM4v1pOzC2riePt4sfsdG=SLYvZmhMc4KgT-hfq6XkjF2Mce7g@mail.gmail.com>
+Subject: Re: [PATCH 2/5] sched: idle: Get the next timer event and pass it the
+ cpuidle framework
+From: Preeti Murthy <preeti.lkml@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Hi Daniel,
 
-------------------
+On Mon, Oct 20, 2014 at 9:55 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> Following the logic of the previous patch, retrieve from the idle task the
+> expected timer sleep duration and pass it to the cpuidle framework.
+>
+> Take the opportunity to remove the unused headers in the menu.c file.
+>
+> This patch does not change the current behavior.
+>
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+>  drivers/cpuidle/cpuidle.c          | 11 +++++------
+>  drivers/cpuidle/governors/ladder.c |  3 ++-
+>  drivers/cpuidle/governors/menu.c   |  8 ++------
+>  include/linux/cpuidle.h            |  8 +++++---
+>  kernel/sched/idle.c                | 16 ++++++++++++----
+>  5 files changed, 26 insertions(+), 20 deletions(-)
+>
+> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> index 372c36f..64f5800 100644
+> --- a/drivers/cpuidle/cpuidle.c
+> +++ b/drivers/cpuidle/cpuidle.c
+> @@ -8,16 +8,12 @@
+>   * This code is licenced under the GPL.
+>   */
+>
+> -#include <linux/clockchips.h>
+>  #include <linux/kernel.h>
+>  #include <linux/mutex.h>
+> -#include <linux/sched.h>
+>  #include <linux/notifier.h>
+>  #include <linux/pm_qos.h>
+>  #include <linux/cpu.h>
+>  #include <linux/cpuidle.h>
+> -#include <linux/ktime.h>
+> -#include <linux/hrtimer.h>
+>  #include <linux/module.h>
+>  #include <trace/events/power.h>
+>
+> @@ -155,11 +151,13 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+>   *
+>   * @drv: the cpuidle driver
+>   * @dev: the cpuidle device
+> + * @latency_req: the latency constraint when choosing an idle state
 
-From: Takashi Iwai <tiwai@suse.de>
+You might want to include this change in the previous patch itself.
 
-commit 95926035b187cc9fee6fb61385b7da9c28123f74 upstream.
+> + * @next_timer_event: the duration until the timer expires
+>   *
+>   * Returns the index of the idle state.
+>   */
 
-The emu10k1 voice allocator takes voice_lock spinlock.  When there is
-no empty stream available, it tries to release a voice used by synth,
-and calls get_synth_voice.  The callback function,
-snd_emu10k1_synth_get_voice(), however, also takes the voice_lock,
-thus it deadlocks.
-
-The fix is simply removing the voice_lock holds in
-snd_emu10k1_synth_get_voice(), as this is always called in the
-spinlock context.
-
-Reported-and-tested-by: Arthur Marsh <arthur.marsh@internode.on.net>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/emu10k1/emu10k1_callback.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
---- a/sound/pci/emu10k1/emu10k1_callback.c
-+++ b/sound/pci/emu10k1/emu10k1_callback.c
-@@ -85,6 +85,8 @@ snd_emu10k1_ops_setup(struct snd_emux *e
-  * get more voice for pcm
-  *
-  * terminate most inactive voice and give it as a pcm voice.
-+ *
-+ * voice_lock is already held.
-  */
- int
- snd_emu10k1_synth_get_voice(struct snd_emu10k1 *hw)
-@@ -92,12 +94,10 @@ snd_emu10k1_synth_get_voice(struct snd_e
- 	struct snd_emux *emu;
- 	struct snd_emux_voice *vp;
- 	struct best_voice best[V_END];
--	unsigned long flags;
- 	int i;
- 
- 	emu = hw->synth;
- 
--	spin_lock_irqsave(&emu->voice_lock, flags);
- 	lookup_voices(emu, hw, best, 1); /* no OFF voices */
- 	for (i = 0; i < V_END; i++) {
- 		if (best[i].voice >= 0) {
-@@ -113,11 +113,9 @@ snd_emu10k1_synth_get_voice(struct snd_e
- 			vp->emu->num_voices--;
- 			vp->ch = -1;
- 			vp->state = SNDRV_EMUX_ST_OFF;
--			spin_unlock_irqrestore(&emu->voice_lock, flags);
- 			return ch;
- 		}
- 	}
--	spin_unlock_irqrestore(&emu->voice_lock, flags);
- 
- 	/* not found */
- 	return -ENOMEM;
-
-
+Regards
+Preeti U Murthy
