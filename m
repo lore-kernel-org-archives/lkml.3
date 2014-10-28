@@ -1,89 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340AbaJ1NdU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:33:20 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51253 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754300AbaJ1NdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:33:16 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 07/32] perf tests: Use thread->mg->machine
-Date: Tue, 28 Oct 2014 11:32:01 -0200
-Message-Id: <1414503146-22789-8-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
-References: <1414503146-22789-1-git-send-email-acme@kernel.org>
+	id S1753950AbaJ1Nc3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:32:29 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:57640 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878AbaJ1Nc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:32:26 -0400
+From: Xia Kaixu <kaixu.xia@linaro.org>
+To: rmk+kernel@arm.linux.org.uk, arm@kernel.org
+Cc: kaixu.xia@linaro.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 4/5] ARM: allow errata and XIP options to be enabled without ARCH_MULTIPLATFORM_STRICT
+Date: Tue, 28 Oct 2014 21:31:34 +0800
+Message-Id: <1414503095-25986-5-git-send-email-kaixu.xia@linaro.org>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org>
+References: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+With the ARCH_MULTIPLATFORM_STRICT option, it becomes much easier to
+enable the ERRATA options when we know at configuration time that we
+don't care about the generic case. The previous configuration makes
+XIP_KERNEL option fundamentally non-MULTIPLATFORM, but it's still
+valid to select it when building for !ARCH_MULTIPLATFORM_STRICT and
+selecting only the one machine that you want to run on.
 
-Instead of passing both thread and machine.
+So allow ARM_ERRATA and XIP_KERNEL options to be enabled without
+ARCH_MULTIPLATFORM_STRICT.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-y2nl2v7p7of0dzuyc3tppxoo@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Xia Kaixu <kaixu.xia@linaro.org>
 ---
- tools/perf/tests/code-reading.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ arch/arm/Kconfig | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index 144a41236456..f671ec37a7c4 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -133,8 +133,7 @@ static int read_via_objdump(const char *filename, u64 addr, void *buf,
- }
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 50762cc..14d0dce 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1091,7 +1091,7 @@ config ARM_ERRATA_430973
+ config ARM_ERRATA_458693
+ 	bool "ARM errata: Processor deadlock when a false hazard is created"
+ 	depends on CPU_V7
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 458693 Cortex-A8 (r2p0)
+ 	  erratum. For very specific sequences of memory operations, it is
+@@ -1105,7 +1105,7 @@ config ARM_ERRATA_458693
+ config ARM_ERRATA_460075
+ 	bool "ARM errata: Data written to the L2 cache can be overwritten with stale data"
+ 	depends on CPU_V7
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 460075 Cortex-A8 (r2p0)
+ 	  erratum. Any asynchronous access to the L2 cache may encounter a
+@@ -1118,7 +1118,7 @@ config ARM_ERRATA_460075
+ config ARM_ERRATA_742230
+ 	bool "ARM errata: DMB operation may be faulty"
+ 	depends on CPU_V7 && SMP
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 742230 Cortex-A9
+ 	  (r1p0..r2p2) erratum. Under rare circumstances, a DMB instruction
+@@ -1131,7 +1131,7 @@ config ARM_ERRATA_742230
+ config ARM_ERRATA_742231
+ 	bool "ARM errata: Incorrect hazard handling in the SCU may lead to data corruption"
+ 	depends on CPU_V7 && SMP
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 742231 Cortex-A9
+ 	  (r2p0..r2p2) erratum. Under certain conditions, specific to the
+@@ -1168,7 +1168,7 @@ config ARM_ERRATA_720789
+ config ARM_ERRATA_743622
+ 	bool "ARM errata: Faulty hazard checking in the Store Buffer may lead to data corruption"
+ 	depends on CPU_V7
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 743622 Cortex-A9
+ 	  (r2p*) erratum. Under very rare conditions, a faulty
+@@ -1182,7 +1182,7 @@ config ARM_ERRATA_743622
+ config ARM_ERRATA_751472
+ 	bool "ARM errata: Interrupted ICIALLUIS may prevent completion of broadcasted operation"
+ 	depends on CPU_V7
+-	depends on !ARCH_MULTIPLATFORM
++	depends on !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  This option enables the workaround for the 751472 Cortex-A9 (prior
+ 	  to r3p0) erratum. An interrupted ICIALLUIS operation may prevent the
+@@ -1987,7 +1987,7 @@ endchoice
  
- static int read_object_code(u64 addr, size_t len, u8 cpumode,
--			    struct thread *thread, struct machine *machine,
--			    struct state *state)
-+			    struct thread *thread, struct state *state)
- {
- 	struct addr_location al;
- 	unsigned char buf1[BUFSZ];
-@@ -169,8 +168,8 @@ static int read_object_code(u64 addr, size_t len, u8 cpumode,
- 		len = al.map->end - addr;
- 
- 	/* Read the object code using perf */
--	ret_len = dso__data_read_offset(al.map->dso, machine, al.addr, buf1,
--					len);
-+	ret_len = dso__data_read_offset(al.map->dso, thread->mg->machine,
-+					al.addr, buf1, len);
- 	if (ret_len != len) {
- 		pr_debug("dso__data_read_offset failed\n");
- 		return -1;
-@@ -263,8 +262,7 @@ static int process_sample_event(struct machine *machine,
- 
- 	cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
- 
--	return read_object_code(sample.ip, READLEN, cpumode, thread, machine,
--				state);
-+	return read_object_code(sample.ip, READLEN, cpumode, thread, state);
- }
- 
- static int process_event(struct machine *machine, struct perf_evlist *evlist,
+ config XIP_KERNEL
+ 	bool "Kernel Execute-In-Place from ROM"
+-	depends on !ARM_LPAE && !ARCH_MULTIPLATFORM
++	depends on !ARM_LPAE && !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  Execute-In-Place allows the kernel to run from non-volatile storage
+ 	  directly addressable by the CPU, such as NOR flash. This saves RAM
 -- 
-1.9.3
+2.1.1
 
