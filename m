@@ -1,108 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622AbaJ1Kpj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 06:45:39 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:35723 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016AbaJ1Kph (ORCPT
+	id S1753755AbaJ1KsQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 06:48:16 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:52780 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752800AbaJ1KsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 06:45:37 -0400
-Message-ID: <544F73CD.1010409@imgtec.com>
-Date: Tue, 28 Oct 2014 10:45:33 +0000
-From: Markos Chandras <Markos.Chandras@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 28 Oct 2014 06:48:15 -0400
+Date: Tue, 28 Oct 2014 10:47:42 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <nicoleotsuka@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        alsa-devel@alsa-project.org
+Message-ID: <20141028104742.GP18557@sirena.org.uk>
+References: <1414202637-18929-1-git-send-email-nicoleotsuka@gmail.com>
+ <20141028001904.GH18557@sirena.org.uk>
+ <20141028042603.GA5548@Asurada>
 MIME-Version: 1.0
-To: <iamjoonsoo.kim@lge.com>
-CC: <cl@linux.com>, <penberg@kernel.org>, <rientjes@google.com>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mips@linux-mips.org>
-Subject: Boot problems on Malta with EVA (bisected to 12220dea07f1 "mm/slab:
- support slab merge")
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.149]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="scYsJfBjqkrBfg1Z"
+Content-Disposition: inline
+In-Reply-To: <20141028042603.GA5548@Asurada>
+X-Cookie: FORCE YOURSELF TO RELAX!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: fsl_asrc: Add reg_defaults for regmap to fix
+ kernel dump
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-It seems I am unable to boot my Malta with EVA. The problem appeared in
-the 3.18 merge window. I bisected the problem (between v3.17 and
-v3.18-rc1) and I found the following commit responsible for the broken boot.
+--scYsJfBjqkrBfg1Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-commit 12220dea07f1ac6ac717707104773d771c3f3077
-Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Date:   Thu Oct 9 15:26:24 2014 -0700
+On Mon, Oct 27, 2014 at 09:26:26PM -0700, Nicolin Chen wrote:
+> On Tue, Oct 28, 2014 at 12:19:04AM +0000, Mark Brown wrote:
 
-    mm/slab: support slab merge
+> > It's not a bug, it's not reasonable to default allocations to atomic and
+> > we can't really tell what context we're in.  Anything used inside a
+> > heavily locked path should either have a default provided or arrange for
+> > a prior write to set up the cache.
 
+> I've a little trouble to understand the prior write over here. Inside my
+> probe() there's a register_init() call which has a set of regmap_write().
+> And then the first regmap_write() results the dump. Does that mean this
+> regmap_write() isn't prior write? If so, how should I do if not setting
 
-Reverting my tree back to the parent of that commit
-423c929cbbecc60e9c407f9048e58f5422f7995d ("
-mm/slab_common: commonize slab merge logic")
+Oh, bother.  We fixed things so that we're now always running with the
+spinlock held...  never mind.
 
-restores the boot for me.
+> default values here -- Some IPs may have default value 0 for registers.
+> And this would make reg_defaults tedious since there's nothing special
+> to assign.
 
-I don't quite understand the commit yet so let me know if you need more
-information to debug this problem
+Write a small script then, or a little bit of code to create the
+defaults dynamically.
 
-Here is the kernel log of the failed boot.
+> And actually I remember I haven't seen any dump when I sent the initial
+> patch for the whole ASRC driver but it manifested last month. I thought
+> it might be a partially-merging issue and it would be fixed after merge
+> window's done.....
 
-Calibrating delay loop... 19.86 BogoMIPS (lpj=99328)
-pid_max: default: 32768 minimum: 301
-Mount-cache hash table entries: 4096 (order: 0, 16384 bytes)
-Mountpoint-cache hash table entries: 4096 (order: 0, 16384 bytes)
-Kernel bug detected[#1]:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-05639-g12220dea07f1 #1631
-task: 1f04f5d8 ti: 1f050000 task.ti: 1f050000
-$ 0   : 00000000 806c0000 00000080 00000000
-$ 4   : 1f048080 00000001 00000001 00000000
-$ 8   : 1f04f5d8 00000001 fffffffc 00000000
-$12   : 00000000 ffffffff fffef7b7 00000000
-$16   : 1f048080 1f00ec00 1f048180 806ba998
-$20   : 1f00ec00 80660000 1f03b780 806ad380
-$24   : 00000000 80154d70
-$28   : 1f050000 1f053d48 806ba8ec 80141184
-Hi    : 00000000
-Lo    : 0b532b80
-epc   : 80141190 alloc_unbound_pwq+0x234/0x304
-    Not tainted
-ra    : 80141184 alloc_unbound_pwq+0x228/0x304
-Status: 1000dc03        KERNEL EXL IE
-Cause : 00800034
-PrId  : 0001a82d (MIPS P5600)
-Modules linked in:
-Process swapper/0 (pid: 1, threadinfo=1f050000, task=1f04f5d8, tls=00000000)
-Stack : 1f03b880 00000002 1f03b800 80140d90 1f048180 1f03b880 00000002
-1f03b800
-          1f03bb80 801417a4 1f0481e0 0000000e 1f048180 00000200 1f048180
-1f048190
-          00000002 1f048188 80660000 80660000 8065af94 80141dc0 0110d710
-00000100
-          8065af94 806ad380 8065b200 8013ea70 1f048280 1f053e0c 8065af98
-1f0481e0
-          00000000 00000004 80660000 80660000 80660000 80660000 80660000
-80660000
-          ...
-Call Trace:
-[<80141190>] alloc_unbound_pwq+0x234/0x304
-[<801417a4>] apply_workqueue_attrs+0x11c/0x294
-[<80141dc0>] __alloc_workqueue_key+0x23c/0x470
-[<80683de4>] init_workqueues+0x320/0x400
-[<8010058c>] do_one_initcall+0xe8/0x23c
-[<8067cbec>] kernel_init_freeable+0x9c/0x224
-[<80565fd8>] kernel_init+0x10/0x100
-[<80104e38>] ret_from_kernel_thread+0x14/0x1c
+Nothing has changed here for a while as far as I remember.
 
+--scYsJfBjqkrBfg1Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Code: 10400032  00408021  320200ff <00020336> 00002821  02002021
-0c0defb0  24060100  26020074
----[ end trace cb88537fdc8fa200 ]---
-Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
----[ end Kernel panic - not syncing: Attempted to kill init!
-exitcode=0x0000000b
+iQEcBAEBAgAGBQJUT3RNAAoJECTWi3JdVIfQ6dgH/31xUY+Mj0t8ZJ640hvt2+hz
+02CP6IhL9gVdQ0/K6+AupVIIln9sbR5Ys9PWnZShGmcULb99c4wcwuo0pQhI3He8
+00TCixzko3Q3rFo3Hbs5GaxlmUpUOlki3n5O34rZ4whOHqWuBk7MVEB/crrJHANS
+M3FzS0IB5wymEWPnr2PYXwQi52JNcSYhXOHVqmhnJJJPiFut1otsqo4qAaSjLmxz
+MRw0qSFWwuT0YdRK8ku0jvpZgOsyC2uyRR9ZIRvX4sufNDXgv18spfATbk5DtxSy
+1vbZETpugd6Bu/B3Tn97rv/M2NIDEtNN5txJEZpmG277LPjiq1ujx1vuGpUogVs=
+=YnuJ
+-----END PGP SIGNATURE-----
 
--- 
-markos
+--scYsJfBjqkrBfg1Z--
