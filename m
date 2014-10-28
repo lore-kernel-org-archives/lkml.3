@@ -1,236 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139AbaJ1Niy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:38:54 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51448 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753266AbaJ1NeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:34:03 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Wang Nan <wangnan0@huawei.com>,
-        Li Zefan <lizefan@huawei.com>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 19/32] perf tools: Make CPUINFO_PROC an array to support different kernel versions
-Date: Tue, 28 Oct 2014 11:32:13 -0200
-Message-Id: <1414503146-22789-20-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
-References: <1414503146-22789-1-git-send-email-acme@kernel.org>
+	id S1755163AbaJ1NjE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:39:04 -0400
+Received: from mail.mandriva.com.br ([177.220.134.171]:51398 "EHLO
+	mail.mandriva.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266AbaJ1NjC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:39:02 -0400
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 09:39:02 EDT
+Date: Tue, 28 Oct 2014 11:31:31 -0200
+From: Marco A Benatto <marco.benatto@mandriva.com.br>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Timofey Titovets <nefelim4ag@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: UKSM: What's maintainers think about it?
+Message-ID: <20141028133131.GA1445@sirus.conectiva>
+References: <CAGqmi77uR2Nems6fE_XM1t3a06OwuqJP-0yOMOQh7KH13vzdzw@mail.gmail.com>
+ <20141025213201.005762f9.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141025213201.005762f9.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Nan <wangnan0@huawei.com>
+Hi All,
 
-After kernel 3.7 (commit b4b8f770eb10a1bccaf8aa0ec1956e2dd7ed1e0a),
-/proc/cpuinfo replaces 'Processor' to 'model name'.
+I'm not mantainer at all, but I've being using UKSM for a long time and remember
+to port it to 3.16 family once.
+UKSM seems good and stable and, at least for me, doesn't raised any errors.
+AFAIK the only limitation I know (maybe I has been fixed already) it isn't able
+to work together with zram stuff due to some race-conditions.
 
-This patch makes CPUINFO_PROC to an array and provides two choices for
-ARM, makes it compatible for different kernel version.
+Cheers,
 
-v1 -> v2: minor changes as suggested by Namhyung Kim:
+Marco A Benatto
+Mandriva OEM Developer
 
- - Doesn't pass @h and @evlist to __write_cpudesc;
- - Coding style fix.
 
-v2 -> v3:
-  - Rebase:
-    git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git perf/core
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1414115126-7479-1-git-send-email-wangnan0@huawei.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/perf-sys.h    | 30 +++++++++++++++---------------
- tools/perf/util/header.c | 27 +++++++++++++++++++++------
- 2 files changed, 36 insertions(+), 21 deletions(-)
-
-diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
-index 937e4324ad94..a3b13d7dc1d4 100644
---- a/tools/perf/perf-sys.h
-+++ b/tools/perf/perf-sys.h
-@@ -13,7 +13,7 @@
- #define wmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
- #define rmb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
- #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
--#define CPUINFO_PROC	"model name"
-+#define CPUINFO_PROC	{"model name"}
- #ifndef __NR_perf_event_open
- # define __NR_perf_event_open 336
- #endif
-@@ -30,7 +30,7 @@
- #define wmb()		asm volatile("sfence" ::: "memory")
- #define rmb()		asm volatile("lfence" ::: "memory")
- #define cpu_relax()	asm volatile("rep; nop" ::: "memory");
--#define CPUINFO_PROC	"model name"
-+#define CPUINFO_PROC	{"model name"}
- #ifndef __NR_perf_event_open
- # define __NR_perf_event_open 298
- #endif
-@@ -47,14 +47,14 @@
- #define mb()		asm volatile ("sync" ::: "memory")
- #define wmb()		asm volatile ("sync" ::: "memory")
- #define rmb()		asm volatile ("sync" ::: "memory")
--#define CPUINFO_PROC	"cpu"
-+#define CPUINFO_PROC	{"cpu"}
- #endif
- 
- #ifdef __s390__
- #define mb()		asm volatile("bcr 15,0" ::: "memory")
- #define wmb()		asm volatile("bcr 15,0" ::: "memory")
- #define rmb()		asm volatile("bcr 15,0" ::: "memory")
--#define CPUINFO_PROC	"vendor_id"
-+#define CPUINFO_PROC	{"vendor_id"}
- #endif
- 
- #ifdef __sh__
-@@ -67,14 +67,14 @@
- # define wmb()		asm volatile("" ::: "memory")
- # define rmb()		asm volatile("" ::: "memory")
- #endif
--#define CPUINFO_PROC	"cpu type"
-+#define CPUINFO_PROC	{"cpu type"}
- #endif
- 
- #ifdef __hppa__
- #define mb()		asm volatile("" ::: "memory")
- #define wmb()		asm volatile("" ::: "memory")
- #define rmb()		asm volatile("" ::: "memory")
--#define CPUINFO_PROC	"cpu"
-+#define CPUINFO_PROC	{"cpu"}
- #endif
- 
- #ifdef __sparc__
-@@ -87,14 +87,14 @@
- #endif
- #define wmb()		asm volatile("":::"memory")
- #define rmb()		asm volatile("":::"memory")
--#define CPUINFO_PROC	"cpu"
-+#define CPUINFO_PROC	{"cpu"}
- #endif
- 
- #ifdef __alpha__
- #define mb()		asm volatile("mb" ::: "memory")
- #define wmb()		asm volatile("wmb" ::: "memory")
- #define rmb()		asm volatile("mb" ::: "memory")
--#define CPUINFO_PROC	"cpu model"
-+#define CPUINFO_PROC	{"cpu model"}
- #endif
- 
- #ifdef __ia64__
-@@ -102,7 +102,7 @@
- #define wmb()		asm volatile ("mf" ::: "memory")
- #define rmb()		asm volatile ("mf" ::: "memory")
- #define cpu_relax()	asm volatile ("hint @pause" ::: "memory")
--#define CPUINFO_PROC	"model name"
-+#define CPUINFO_PROC	{"model name"}
- #endif
- 
- #ifdef __arm__
-@@ -113,7 +113,7 @@
- #define mb()		((void(*)(void))0xffff0fa0)()
- #define wmb()		((void(*)(void))0xffff0fa0)()
- #define rmb()		((void(*)(void))0xffff0fa0)()
--#define CPUINFO_PROC	"Processor"
-+#define CPUINFO_PROC	{"model name", "Processor"}
- #endif
- 
- #ifdef __aarch64__
-@@ -133,28 +133,28 @@
- 				: "memory")
- #define wmb()	mb()
- #define rmb()	mb()
--#define CPUINFO_PROC	"cpu model"
-+#define CPUINFO_PROC	{"cpu model"}
- #endif
- 
- #ifdef __arc__
- #define mb()		asm volatile("" ::: "memory")
- #define wmb()		asm volatile("" ::: "memory")
- #define rmb()		asm volatile("" ::: "memory")
--#define CPUINFO_PROC	"Processor"
-+#define CPUINFO_PROC	{"Processor"}
- #endif
- 
- #ifdef __metag__
- #define mb()		asm volatile("" ::: "memory")
- #define wmb()		asm volatile("" ::: "memory")
- #define rmb()		asm volatile("" ::: "memory")
--#define CPUINFO_PROC	"CPU"
-+#define CPUINFO_PROC	{"CPU"}
- #endif
- 
- #ifdef __xtensa__
- #define mb()		asm volatile("memw" ::: "memory")
- #define wmb()		asm volatile("memw" ::: "memory")
- #define rmb()		asm volatile("" ::: "memory")
--#define CPUINFO_PROC	"core ID"
-+#define CPUINFO_PROC	{"core ID"}
- #endif
- 
- #ifdef __tile__
-@@ -162,7 +162,7 @@
- #define wmb()		asm volatile ("mf" ::: "memory")
- #define rmb()		asm volatile ("mf" ::: "memory")
- #define cpu_relax()	asm volatile ("mfspr zero, PASS" ::: "memory")
--#define CPUINFO_PROC    "model name"
-+#define CPUINFO_PROC    {"model name"}
- #endif
- 
- #define barrier() asm volatile ("" ::: "memory")
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 39b80ac9f698..0ecf4a304cbc 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -579,16 +579,12 @@ static int write_version(int fd, struct perf_header *h __maybe_unused,
- 	return do_write_string(fd, perf_version_string);
- }
- 
--static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
--		       struct perf_evlist *evlist __maybe_unused)
-+static int __write_cpudesc(int fd, const char *cpuinfo_proc)
- {
--#ifndef CPUINFO_PROC
--#define CPUINFO_PROC NULL
--#endif
- 	FILE *file;
- 	char *buf = NULL;
- 	char *s, *p;
--	const char *search = CPUINFO_PROC;
-+	const char *search = cpuinfo_proc;
- 	size_t len = 0;
- 	int ret = -1;
- 
-@@ -640,6 +636,25 @@ done:
- 	return ret;
- }
- 
-+static int write_cpudesc(int fd, struct perf_header *h __maybe_unused,
-+		       struct perf_evlist *evlist __maybe_unused)
-+{
-+#ifndef CPUINFO_PROC
-+#define CPUINFO_PROC {"model name", }
-+#endif
-+	const char *cpuinfo_procs[] = CPUINFO_PROC;
-+	unsigned int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(cpuinfo_procs); i++) {
-+		int ret;
-+		ret = __write_cpudesc(fd, cpuinfo_procs[i]);
-+		if (ret >= 0)
-+			return ret;
-+	}
-+	return -1;
-+}
-+
-+
- static int write_nrcpus(int fd, struct perf_header *h __maybe_unused,
- 			struct perf_evlist *evlist __maybe_unused)
- {
--- 
-1.9.3
-
+On Sat, Oct 25, 2014 at 09:32:01PM -0700, Andrew Morton wrote:
+> On Sat, 25 Oct 2014 22:25:56 +0300 Timofey Titovets <nefelim4ag@gmail.com> wrote:
+> 
+> > Good time of day, people.
+> > I try to find 'mm' subsystem specific people and lists, but list
+> > linux-mm looks dead and mail archive look like deprecated.
+> > If i must to sent this message to another list or add CC people, let me know.
+> 
+> linux-mm@kvack.org is alive and well.
+> 
+> > If questions are already asked (i can't find activity before), feel
+> > free to kick me.
+> > 
+> > The main questions:
+> > 1. Somebody test it? I see many reviews about it.
+> > I already port it to latest linux-next-git kernel and its work without issues.
+> > http://pastebin.com/6FMuKagS
+> > (if it matter, i can describe use cases and results, if somebody ask it)
+> > 
+> > 2. Developers of UKSM already tried to merge it? Somebody talked with uksm devs?
+> > offtop: now i try to communicate with dev's on kerneldedup.org forum,
+> > but i have problems with email verification and wait admin
+> > registration approval.
+> > (i already sent questions to
+> > http://kerneldedup.org/forum/home.php?mod=space&username=xianai ,
+> > because him looks like team leader)
+> > 
+> > 3. I just want collect feedbacks from linux maintainers team, if you
+> > decide what UKSM not needed in kernel, all other comments (as i
+> > understand) not matter.
+> > 
+> > Like KSM, but better.
+> > UKSM - Ultra Kernel Samepage Merging
+> > http://kerneldedup.org/en/projects/uksm/introduction/
+> 
+> It's the first I've heard of it.  No, as far as I know there has been
+> no attempt to upstream UKSM.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
