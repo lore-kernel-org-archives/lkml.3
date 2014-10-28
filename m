@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaJ1Smq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:42:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39246 "EHLO
+	id S1752599AbaJ1Snd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:43:33 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39295 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaJ1Smp (ORCPT
+	with ESMTP id S1751081AbaJ1Snc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:42:45 -0400
-Date: Tue, 28 Oct 2014 13:42:13 -0500
+	Tue, 28 Oct 2014 14:43:32 -0400
+Date: Tue, 28 Oct 2014 13:43:03 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
@@ -19,65 +19,59 @@ CC: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
         Tony Li <tony.li@amd.com>, USB list <linux-usb@vger.kernel.org>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 04/19] usb: dwc3: add disscramble quirk
-Message-ID: <20141028184213.GC25735@saruman>
+Subject: Re: [PATCH v3 13/19] usb: dwc3: add tx demphasis quirk
+Message-ID: <20141028184303.GD25735@saruman>
 Reply-To: <balbi@ti.com>
 References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
- <1414497280-3126-5-git-send-email-ray.huang@amd.com>
- <CAErSpo5vRcGxu=e61tCEwNVL913_Lxne=1KW+JtQVpc6jgCaHg@mail.gmail.com>
+ <1414497280-3126-14-git-send-email-ray.huang@amd.com>
+ <CAErSpo6ouE7AZi8ysTFnTNtKc8R9w-71AhXe6b-_0g_yeR-=Ag@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yLVHuoLXiP9kZBkt"
+	protocol="application/pgp-signature"; boundary="SO98HVl1bnMOfKZd"
 Content-Disposition: inline
-In-Reply-To: <CAErSpo5vRcGxu=e61tCEwNVL913_Lxne=1KW+JtQVpc6jgCaHg@mail.gmail.com>
+In-Reply-To: <CAErSpo6ouE7AZi8ysTFnTNtKc8R9w-71AhXe6b-_0g_yeR-=Ag@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---yLVHuoLXiP9kZBkt
+--SO98HVl1bnMOfKZd
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
-
-On Tue, Oct 28, 2014 at 10:39:26AM -0600, Bjorn Helgaas wrote:
+On Tue, Oct 28, 2014 at 10:27:27AM -0600, Bjorn Helgaas wrote:
 > On Tue, Oct 28, 2014 at 5:54 AM, Huang Rui <ray.huang@amd.com> wrote:
-> > This patch adds disscramble quirk, and it only needs to be enabled at f=
-pga
+> > This patch adds Tx demphasis quirk, and the Tx demphasis value is
 >=20
-> "disscramble" (in subject and above) is not a real word.
->=20
-> I see that DWC3_GCTL_DISSCRAMBLE is already defined in
-> drivers/usb/dwc3/core.h even before your patches, so I suppose it's
-> something the hardware designers made up.
+> "demphasis" (above and in subject) should be "de-emphasis" as used in
+> the code and comments below.
 
-hehe, disable scramble :-)
++1
 
 --=20
 balbi
 
---yLVHuoLXiP9kZBkt
+--SO98HVl1bnMOfKZd
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJUT+OFAAoJEIaOsuA1yqREl9oP/1R2h7m49fmZriFB6u9g8bpS
-qTazfs/gKQC+8rXTCuKyQI1xLC2BxMNhmlbbndoTrQ4v+zV3RpBQ12tkq89fI7QW
-rjK7wNOcPiqxSgwur/teRbTY/XKPU3IFDeG1Oe5c5N5h8/nCw8xcj3ncUzAfILDz
-dE/jTyjTMczOMBoLzIr6TUb1Cc3L3Tir50iN7BI1iYjCYCasWkt7cnweqs6scr6d
-HTahz6xrek+7cAVdcywzQQNPzs5fo7ogeAgr3Z6d8cUGY4qHUEqhHPIcuC5xooxS
-UHFpo2P+J7BzzECfTh4ubo6iVX9TlKc2GY5bth6hagG/+tr/BPCjTZjtYzX6kZPX
-iej5ia4hlOydAdxV2SjdCODdRzEX0qeqoYHSK3WYi8eooV9LBPu1FlevdZKPOlsO
-RFUYeIu3d63UDjIAJQ5+fujnQkEqbqjcfCXtoH+ABsD2c6C3ce2Xlq9XBTV55OFh
-X+a125Eb3QAiTfKTS8JuIfeTM4/Zs0W01JV+CZox1T8DoZdnAk8VtiLVk+vEg0z8
-u61SUCwqei47T8JP7bU+QX6hrLTq3UjLx5JzEwlfxC/Ui4oq33xnyqWDq56tYoHo
-l5SUTTORi53JYutL5Z+G/644yzFeRMhZR5zHgtah+TZanstT3iFKDpSi/f1i4PJo
-IlhGi0wSDgQ5gKjDLHLA
-=wKXT
+iQIcBAEBAgAGBQJUT+O3AAoJEIaOsuA1yqREQ7cP/1n5lPcUZgKDXYQqRrnzJC8U
+vmq/0HGHGZAeXGGoIoHI2vk2d8FrWXxRFeks2PQaBZHSJJMGNp7U0Zm4dC6x95qm
+5G3ydfsLWNlJV0nJZdMLycwgeO38xekWJQbb8eq2cpvqfl9BHDkaurgIg8Z/3y7X
+MYuyiLkunxbzf9hmv66Mt5/BynIsy8sTnRmzEELnwxQKPKwavU8RhVNiUQn9p+mb
++WJYv4hhviGU+yo7fmTbh+Eu54HB0qOsm9n7bI6bMOyfyzvVF5fOvX+YGHN4oK7g
+7ds+DwtEVz5r/NeDl7q0iVXtLMytwmF1sPcKX24xcpvFhWDl/Z6KR4KZX3WRXZze
+hc6uxcbw2M2YHvxTOWDLscOqq242Wxm4g1FEL0uxZpCotkJzvuEB+0is4w9udN9R
+D6RRenvr/lMpp1eVKU1GQ2YzOTZkEVl7UOQfS7WbdLwYI2qTYOcZ3WEbIbgo3J5h
+i5rrQSlb9K2nlbARqrNmW93c/szoa9+BtWGv+70ibSADdeI3CGJd6kH3eDXC3SD5
+SmBaERLCp4Gc5cJAAiCv4napevISyI583Zvh/Z5PmlIfHBwR6ehUM4iJH7vj6lBX
+tkNno8OYWz1VotAra0gm/VKEB7NfqKmkNWhiiSiwU7syhnW4kWG+cXmWrAwoReKb
+qNaER2KTifbmj/l2WEs7
+=2nfR
 -----END PGP SIGNATURE-----
 
---yLVHuoLXiP9kZBkt--
+--SO98HVl1bnMOfKZd--
