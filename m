@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965AbaJ1DvB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:51:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46009 "EHLO
+	id S1755983AbaJ1DvF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:51:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46016 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913AbaJ1Du6 (ORCPT
+	with ESMTP id S1755913AbaJ1DvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:58 -0400
+	Mon, 27 Oct 2014 23:51:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.14 095/100] sparc64: Adjust vmalloc region size based upon available virtual address bits.
-Date: Tue, 28 Oct 2014 11:36:20 +0800
-Message-Id: <20141028033504.814438849@linuxfoundation.org>
+        Andreas Larsson <andreas@gaisler.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 079/100] sparc: Let memset return the address argument
+Date: Tue, 28 Oct 2014 11:36:04 +0800
+Message-Id: <20141028033504.098614661@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,152 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Andreas Larsson <andreas@gaisler.com>
 
-[ Upstream commit bb4e6e85daa52a9f6210fa06a5ec6269598a202b ]
+[ Upstream commit 74cad25c076a2f5253312c2fe82d1a4daecc1323 ]
 
-In order to accomodate embedded per-cpu allocation with large numbers
-of cpus and numa nodes, we have to use as much virtual address space
-as possible for the vmalloc region.  Otherwise we can get things like:
+This makes memset follow the standard (instead of returning 0 on success). This
+is needed when certain versions of gcc optimizes around memset calls and assume
+that the address argument is preserved in %o0.
 
-PERCPU: max_distance=0x380001c10000 too large for vmalloc space 0xff00000000
-
-So, once we select a value for PAGE_OFFSET, derive the size of the
-vmalloc region based upon that.
-
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/page_64.h    |    1 -
- arch/sparc/include/asm/pgtable_64.h |    9 +++++----
- arch/sparc/kernel/ktlb.S            |    8 ++++----
- arch/sparc/mm/init_64.c             |   30 +++++++++++++++++++-----------
- 4 files changed, 28 insertions(+), 20 deletions(-)
+ arch/sparc/lib/memset.S |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
---- a/arch/sparc/include/asm/page_64.h
-+++ b/arch/sparc/include/asm/page_64.h
-@@ -117,7 +117,6 @@ extern unsigned long sparc64_va_hole_bot
+--- a/arch/sparc/lib/memset.S
++++ b/arch/sparc/lib/memset.S
+@@ -3,8 +3,9 @@
+  * Copyright (C) 1996,1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
+  * Copyright (C) 1996 David S. Miller (davem@caip.rutgers.edu)
+  *
+- * Returns 0, if ok, and number of bytes not yet set if exception
+- * occurs and we were called as clear_user.
++ * Calls to memset returns initial %o0. Calls to bzero returns 0, if ok, and
++ * number of bytes not yet set if exception occurs and we were called as
++ * clear_user.
+  */
  
- #include <asm-generic/memory_model.h>
+ #include <asm/ptrace.h>
+@@ -65,6 +66,8 @@ __bzero_begin:
+ 	.globl	__memset_start, __memset_end
+ __memset_start:
+ memset:
++	mov	%o0, %g1
++	mov	1, %g4
+ 	and	%o1, 0xff, %g3
+ 	sll	%g3, 8, %g2
+ 	or	%g3, %g2, %g3
+@@ -89,6 +92,7 @@ memset:
+ 	 sub	%o0, %o2, %o0
  
--#define PAGE_OFFSET_BY_BITS(X)	(-(_AC(1,UL) << (X)))
- extern unsigned long PAGE_OFFSET;
- 
- #endif /* !(__ASSEMBLY__) */
---- a/arch/sparc/include/asm/pgtable_64.h
-+++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -40,10 +40,7 @@
- #define LOW_OBP_ADDRESS		_AC(0x00000000f0000000,UL)
- #define HI_OBP_ADDRESS		_AC(0x0000000100000000,UL)
- #define VMALLOC_START		_AC(0x0000000100000000,UL)
--#define VMALLOC_END		_AC(0x0000010000000000,UL)
--#define VMEMMAP_BASE		_AC(0x0000010000000000,UL)
--
--#define vmemmap			((struct page *)VMEMMAP_BASE)
-+#define VMEMMAP_BASE		VMALLOC_END
- 
- /* PMD_SHIFT determines the size of the area a second-level page
-  * table can map
-@@ -81,6 +78,10 @@
- 
- #ifndef __ASSEMBLY__
- 
-+extern unsigned long VMALLOC_END;
-+
-+#define vmemmap			((struct page *)VMEMMAP_BASE)
-+
- #include <linux/sched.h>
- 
- bool kern_addr_valid(unsigned long addr);
---- a/arch/sparc/kernel/ktlb.S
-+++ b/arch/sparc/kernel/ktlb.S
-@@ -199,8 +199,8 @@ kvmap_dtlb_nonlinear:
- 
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- 	/* Do not use the TSB for vmemmap.  */
--	mov		(VMEMMAP_BASE >> 40), %g5
--	sllx		%g5, 40, %g5
-+	sethi		%hi(VMEMMAP_BASE), %g5
-+	ldx		[%g5 + %lo(VMEMMAP_BASE)], %g5
- 	cmp		%g4,%g5
- 	bgeu,pn		%xcc, kvmap_vmemmap
- 	 nop
-@@ -212,8 +212,8 @@ kvmap_dtlb_tsbmiss:
- 	sethi		%hi(MODULES_VADDR), %g5
- 	cmp		%g4, %g5
- 	blu,pn		%xcc, kvmap_dtlb_longpath
--	 mov		(VMALLOC_END >> 40), %g5
--	sllx		%g5, 40, %g5
-+	 sethi		%hi(VMALLOC_END), %g5
-+	ldx		[%g5 + %lo(VMALLOC_END)], %g5
- 	cmp		%g4, %g5
- 	bgeu,pn		%xcc, kvmap_dtlb_longpath
- 	 nop
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -1363,25 +1363,24 @@ static unsigned long max_phys_bits = 40;
- 
- bool kern_addr_valid(unsigned long addr)
- {
--	unsigned long above = ((long)addr) >> max_phys_bits;
- 	pgd_t *pgd;
- 	pud_t *pud;
- 	pmd_t *pmd;
- 	pte_t *pte;
- 
--	if (above != 0 && above != -1UL)
--		return false;
--
--	if (addr >= (unsigned long) KERNBASE &&
--	    addr < (unsigned long)&_end)
--		return true;
--
--	if (addr >= PAGE_OFFSET) {
-+	if ((long)addr < 0L) {
- 		unsigned long pa = __pa(addr);
- 
-+		if ((addr >> max_phys_bits) != 0UL)
-+			return false;
-+
- 		return pfn_valid(pa >> PAGE_SHIFT);
- 	}
- 
-+	if (addr >= (unsigned long) KERNBASE &&
-+	    addr < (unsigned long)&_end)
-+		return true;
-+
- 	pgd = pgd_offset_k(addr);
- 	if (pgd_none(*pgd))
- 		return 0;
-@@ -1650,6 +1649,9 @@ unsigned long __init find_ecache_flush_s
- unsigned long PAGE_OFFSET;
- EXPORT_SYMBOL(PAGE_OFFSET);
- 
-+unsigned long VMALLOC_END   = 0x0000010000000000UL;
-+EXPORT_SYMBOL(VMALLOC_END);
-+
- unsigned long sparc64_va_hole_top =    0xfffff80000000000UL;
- unsigned long sparc64_va_hole_bottom = 0x0000080000000000UL;
- 
-@@ -1706,10 +1708,16 @@ static void __init setup_page_offset(voi
- 		prom_halt();
- 	}
- 
--	PAGE_OFFSET = PAGE_OFFSET_BY_BITS(max_phys_bits);
-+	PAGE_OFFSET = sparc64_va_hole_top;
-+	VMALLOC_END = ((sparc64_va_hole_bottom >> 1) +
-+		       (sparc64_va_hole_bottom >> 2));
- 
--	pr_info("PAGE_OFFSET is 0x%016lx (max_phys_bits == %lu)\n",
-+	pr_info("MM: PAGE_OFFSET is 0x%016lx (max_phys_bits == %lu)\n",
- 		PAGE_OFFSET, max_phys_bits);
-+	pr_info("MM: VMALLOC [0x%016lx --> 0x%016lx]\n",
-+		VMALLOC_START, VMALLOC_END);
-+	pr_info("MM: VMEMMAP [0x%016lx --> 0x%016lx]\n",
-+		VMEMMAP_BASE, VMEMMAP_BASE << 1);
- }
- 
- static void __init tsb_phys_patch(void)
+ __bzero:
++	clr	%g4
+ 	mov	%g0, %g3
+ 1:
+ 	cmp	%o1, 7
+@@ -151,8 +155,8 @@ __bzero:
+ 	bne,a	8f
+ 	 EX(stb	%g3, [%o0], and %o1, 1)
+ 8:
+-	retl
+-	 clr	%o0
++	b	0f
++	 nop
+ 7:
+ 	be	13b
+ 	 orcc	%o1, 0, %g0
+@@ -164,6 +168,12 @@ __bzero:
+ 	bne	8b
+ 	 EX(stb	%g3, [%o0 - 1], add %o1, 1)
+ 0:
++	andcc	%g4, 1, %g0
++	be	5f
++	 nop
++	retl
++	 mov	%g1, %o0
++5:
+ 	retl
+ 	 clr	%o0
+ __memset_end:
 
 
