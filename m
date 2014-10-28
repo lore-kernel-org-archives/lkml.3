@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760153AbaJ1GsP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:48:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45773 "EHLO
+	id S1760174AbaJ1Gso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:48:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45765 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933071AbaJ1Dsy (ORCPT
+	with ESMTP id S933047AbaJ1Dsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:48:54 -0400
+	Mon, 27 Oct 2014 23:48:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.14 046/100] PCI: Generate uppercase hex for modalias interface class
-Date: Tue, 28 Oct 2014 11:35:31 +0800
-Message-Id: <20141028033502.688951350@linuxfoundation.org>
+Subject: [PATCH 3.14 044/100] PCI: mvebu: Fix uninitialized variable in mvebu_get_tgt_attr()
+Date: Tue, 28 Oct 2014 11:35:29 +0800
+Message-Id: <20141028033502.592569870@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,42 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 89ec3dcf17fd3fa009ecf8faaba36828dd6bc416 upstream.
+commit 56fab6e189441d714a2bfc8a64f3df9c0749dff7 upstream.
 
-Some implementations of modprobe fail to load the driver for a PCI device
-automatically because the "interface" part of the modalias from the kernel
-is lowercase, and the modalias from file2alias is uppercase.
+Geert Uytterhoeven reported a warning when building pci-mvebu:
 
-The "interface" is the low-order byte of the Class Code, defined in PCI
-r3.0, Appendix D.  Most interface types defined in the spec do not use
-alpha characters, so they won't be affected.  For example, 00h, 01h, 10h,
-20h, etc. are unaffected.
+  drivers/pci/host/pci-mvebu.c: In function 'mvebu_get_tgt_attr':
+  drivers/pci/host/pci-mvebu.c:887:39: warning: 'rtype' may be used uninitialized in this function [-Wmaybe-uninitialized]
+     if (slot == PCI_SLOT(devfn) && type == rtype) {
+					 ^
 
-Print the "interface" byte of the Class Code in uppercase hex, as we
-already do for the Vendor ID, Device ID, Class, etc.
+And indeed, the code of mvebu_get_tgt_attr() may lead to the usage of rtype
+when being uninitialized, even though it would only happen if we had
+entries other than I/O space and 32 bits memory space.
 
-[bhelgaas: changelog]
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+This commit fixes that by simply skipping the current DT range being
+considered, if it doesn't match the resource type we're looking for.
+
+Reported-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci-sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/pci/host/pci-mvebu.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -178,7 +178,7 @@ static ssize_t modalias_show(struct devi
- {
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -855,7 +855,7 @@ static int mvebu_get_tgt_attr(struct dev
+ 	rangesz = pna + na + ns;
+ 	nranges = rlen / sizeof(__be32) / rangesz;
  
--	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
-+	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X\n",
- 		       pci_dev->vendor, pci_dev->device,
- 		       pci_dev->subsystem_vendor, pci_dev->subsystem_device,
- 		       (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
+-	for (i = 0; i < nranges; i++) {
++	for (i = 0; i < nranges; i++, range += rangesz) {
+ 		u32 flags = of_read_number(range, 1);
+ 		u32 slot = of_read_number(range + 1, 1);
+ 		u64 cpuaddr = of_read_number(range + na, pna);
+@@ -865,14 +865,14 @@ static int mvebu_get_tgt_attr(struct dev
+ 			rtype = IORESOURCE_IO;
+ 		else if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_MEM32)
+ 			rtype = IORESOURCE_MEM;
++		else
++			continue;
+ 
+ 		if (slot == PCI_SLOT(devfn) && type == rtype) {
+ 			*tgt = DT_CPUADDR_TO_TARGET(cpuaddr);
+ 			*attr = DT_CPUADDR_TO_ATTR(cpuaddr);
+ 			return 0;
+ 		}
+-
+-		range += rangesz;
+ 	}
+ 
+ 	return -ENOENT;
 
 
