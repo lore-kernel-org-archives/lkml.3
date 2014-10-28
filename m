@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaJ1NsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:48:09 -0400
-Received: from mail.emea.novell.com ([130.57.118.101]:49409 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958AbaJ1NsH (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Tue, 28 Oct 2014 09:48:07 -0400
-Message-Id: <544FAC9F0200007800042CA6@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Tue, 28 Oct 2014 13:47:59 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <mingo@kernel.org>
-Cc: <tglx@linutronix.de>, <jiang.liu@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [tip:x86/urgent] ix86: Fix build failure when
- !CONFIG_X86_IO_APIC
-References: <54184CC802000078000355EE@mail.emea.novell.com>
- <tip-a425cf83e39f99a70168c184e79cea8c67ba7c12@git.kernel.org>
-In-Reply-To: <tip-a425cf83e39f99a70168c184e79cea8c67ba7c12@git.kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1753380AbaJ1Nsc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:48:32 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:36700 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752404AbaJ1Nsb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:48:31 -0400
+Message-ID: <544F9EAA.5010404@hurleysoftware.com>
+Date: Tue, 28 Oct 2014 09:48:26 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Michal Nazarewicz <mina86@mina86.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: CMA: test_pages_isolated failures in alloc_contig_range
+References: <2457604.k03RC2Mv4q@avalon> <xa1tsii8l683.fsf@mina86.com>
+In-Reply-To: <xa1tsii8l683.fsf@mina86.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 28.10.14 at 12:18, <tipbot@zytor.com> wrote:
-> Commit-ID:  a425cf83e39f99a70168c184e79cea8c67ba7c12
-> Gitweb:     http://git.kernel.org/tip/a425cf83e39f99a70168c184e79cea8c67ba7c12 
-> Author:     Jan Beulich <JBeulich@suse.com>
-> AuthorDate: Tue, 16 Sep 2014 13:44:24 +0100
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Tue, 28 Oct 2014 12:01:09 +0100
-> 
-> ix86: Fix build failure when !CONFIG_X86_IO_APIC
-> 
-> mp_should_keep_irq() isn't really IO-APIC related, and
-> considering that it's being used solely in arch/x86/pci/ likely
-> both declaration and definition got misplaced even without
-> considering the resulting build failure:
-> 
->   .../arch/x86/pci/irq.c: In function ‘pirq_disable_irq’:
->   .../arch/x86/pci/irq.c:1259: error: implicit declaration of function 
-> ‘mp_should_keep_irq’
->   make[3]: *** [arch/x86/pci/irq.o] Error 1
-> 
-> Move them to better places.
+[ +cc Andrew Morton ]
 
-Ingo,
+On 10/28/2014 08:38 AM, Michal Nazarewicz wrote:
+> On Sun, Oct 26 2014, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+>> Hello,
+>>
+>> I've run into a CMA-related issue while testing a DMA engine driver with 
+>> dmatest on a Renesas R-Car ARM platform. 
+>>
+>> When allocating contiguous memory through CMA the kernel prints the following 
+>> messages to the kernel log.
+>>
+>> [   99.770000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
+>> [  124.220000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
+>> [  127.550000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
+>> [  132.850000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
+>> [  151.390000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
+>> [  166.490000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
+>> [  181.450000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
+>>
+>> I've stripped the dmatest module down as much as possible to remove any 
+>> hardware dependencies and came up with the following implementation.
+> 
+> Like Laura wrote, the message is not (should not be) a problem in
+> itself:
 
-the build failure had got addressed by a different patch already,
-albeit that patch seems far from ideal to me. I.e. I still think cleanup
-along the lines of the patch here is desirable, but I need to submit
-one that actually builds (the build failure the test robot encountered
-is a direct result of the clash between the two patches). I have that
-patch ready, but didn't want to submit before I got around to test it
-with 3.18-rc.
+[...]
 
-Jan
+> So as you can see cma_alloc will try another part of the cma region if
+> test_pages_isolated fails.
+> 
+> Obviously, if CMA region is fragmented or there's enough space for only
+> one allocation of required size isolation failures will cause allocation
+> failures, so it's best to avoid them, but they are not always avoidable.
+> 
+> To debug you would probably want to add more debug information about the
+> page (i.e. data from struct page) that failed isolation after the
+> pr_warn in alloc_contig_range.
+
+If the message does not indicate an actual problem, then its printk level is
+too high. These messages have been reported when using 3.16+ distro kernels.
+
+Regards,
+Peter Hurley
