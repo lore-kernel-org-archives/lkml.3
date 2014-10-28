@@ -1,44 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534AbaJ1I0A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 04:26:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56611 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756564AbaJ1IZw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 04:25:52 -0400
-Date: Tue, 28 Oct 2014 09:25:47 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Li, Aubrey" <aubrey.li@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Brown, Len" <len.brown@intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-pm@vger.kernel.org >> Linux PM list" 
-	<linux-pm@vger.kernel.org>
-Subject: Re: [RFC/PATCH] PM / Sleep: Timer quiesce in freeze state
-Message-ID: <20141028082547.GO3337@twins.programming.kicks-ass.net>
-References: <5446787E.60202@linux.intel.com>
- <20141024153656.GM12706@worktop.programming.kicks-ass.net>
- <544F1E19.5030606@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544F1E19.5030606@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1758555AbaJ1I0L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:26:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54113 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758519AbaJ1IZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 04:25:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,801,1406617200"; 
+   d="scan'208";a="597494093"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        iommu@lists.linux-foundation.org
+Subject: [Patch Part2 v3 09/24] x86, dmar: Use new irqdomain interfaces to allocate/free IRQ
+Date: Tue, 28 Oct 2014 16:26:27 +0800
+Message-Id: <1414484803-10311-10-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1414484803-10311-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1414484803-10311-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 12:39:53PM +0800, Li, Aubrey wrote:
+Use new irqdomain interfaces to allocate/free IRQ for DMAR and interrupt
+remapping, so we could kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ later.
 
-> > Now I suppose the problem is with cpu_pause() which needs IPIs to
-> > complete? 
-> 
-> Yes, cpu_pause() will invoke smp IPI functions which need interrupt is
-> enabled. So I changed irq ops like above. Actually, I have an early
-> version to move cpuidle_pause()/cpuidle_resume() out of stop_machine(),
-> that might be a better solution?
+The private definition of irq_alloc_hwirqs()/irq_free_hwirqs() are
+temporary solution, it will be removed once we have converted interrupt
+remapping driver to use irqdomain framework.
 
-I think you can simply remove them altogether, they're nonsense.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/irq_remapping.h |    4 ++--
+ arch/x86/kernel/apic/msi.c           |   10 ++++++++++
+ drivers/iommu/irq_remapping.c        |   17 +++++++++++++++--
+ 3 files changed, 27 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index b7747c4c2cf2..230dde9b695e 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -103,7 +103,7 @@ static inline bool setup_remapped_irq(int irq,
+ }
+ #endif /* CONFIG_IRQ_REMAP */
+ 
+-#define dmar_alloc_hwirq()	irq_alloc_hwirq(-1)
+-#define dmar_free_hwirq		irq_free_hwirq
++extern int dmar_alloc_hwirq(void);
++extern void dmar_free_hwirq(int irq);
+ 
+ #endif /* __X86_IRQ_REMAPPING_H */
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index 7e45991c0e79..4bb2b583be7f 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
+@@ -223,6 +223,16 @@ int arch_setup_dmar_msi(unsigned int irq)
+ 				      "edge");
+ 	return 0;
+ }
++
++int dmar_alloc_hwirq(void)
++{
++	return irq_domain_alloc_irqs(NULL, 1, NUMA_NO_NODE, NULL);
++}
++
++void dmar_free_hwirq(int irq)
++{
++	irq_domain_free_irqs(irq, 1);
++}
+ #endif
+ 
+ /*
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index e9fbd68db96e..63886bafed9f 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -6,6 +6,7 @@
+ #include <linux/msi.h>
+ #include <linux/irq.h>
+ #include <linux/pci.h>
++#include <linux/irqdomain.h>
+ 
+ #include <asm/hw_irq.h>
+ #include <asm/irq_remapping.h>
+@@ -50,6 +51,18 @@ static void irq_remapping_disable_io_apic(void)
+ 		disconnect_bsp_APIC(0);
+ }
+ 
++#ifndef CONFIG_GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
++static unsigned int irq_alloc_hwirqs(int cnt, int node)
++{
++	return irq_domain_alloc_irqs(NULL, -1, cnt, node, NULL);
++}
++
++static void irq_free_hwirqs(unsigned int from, int cnt)
++{
++	irq_domain_free_irqs(from, cnt);
++}
++#endif
++
+ static int do_setup_msi_irqs(struct pci_dev *dev, int nvec)
+ {
+ 	int ret, sub_handle, nvec_pow2, index = 0;
+@@ -113,7 +126,7 @@ static int do_setup_msix_irqs(struct pci_dev *dev, int nvec)
+ 
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 
+-		irq = irq_alloc_hwirq(node);
++		irq = irq_alloc_hwirqs(1, node);
+ 		if (irq == 0)
+ 			return -1;
+ 
+@@ -136,7 +149,7 @@ static int do_setup_msix_irqs(struct pci_dev *dev, int nvec)
+ 	return 0;
+ 
+ error:
+-	irq_free_hwirq(irq);
++	irq_free_hwirqs(irq, 1);
+ 	return ret;
+ }
+ 
+-- 
+1.7.10.4
+
