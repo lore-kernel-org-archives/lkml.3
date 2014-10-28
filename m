@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522AbaJ1DqA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:46:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45456 "EHLO
+	id S932583AbaJ1DqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:46:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45482 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755037AbaJ1Dp6 (ORCPT
+	with ESMTP id S932162AbaJ1DqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:45:58 -0400
+	Mon, 27 Oct 2014 23:46:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Catoi <vladcatoi@gmail.com>, Clemens Ladisch <clemens@ladisch.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 083/127] ALSA: usb-audio: Add support for Steinberg UR22 USB interface
-Date: Tue, 28 Oct 2014 11:35:18 +0800
-Message-Id: <20141028033424.495168455@linuxfoundation.org>
+        Daniel Hellstrom <daniel@gaisler.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 099/127] sparc32: dma_alloc_coherent must honour gfp flags
+Date: Tue, 28 Oct 2014 11:35:34 +0800
+Message-Id: <20141028033425.166586628@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,70 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Catoi <vladcatoi@gmail.com>
+From: Daniel Hellstrom <daniel@gaisler.com>
 
-commit f0b127fbfdc8756eba7437ab668f3169280bd358 upstream.
+[ Upstream commit d1105287aabe88dbb3af825140badaa05cf0442c ]
 
-Adding support for Steinberg UR22 USB interface via quirks table patch
+dma_zalloc_coherent() calls dma_alloc_coherent(__GFP_ZERO)
+but the sparc32 implementations sbus_alloc_coherent() and
+pci32_alloc_coherent() doesn't take the gfp flags into
+account.
 
-See Ubuntu bug report:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1317244
-Also see threads:
-http://linux-audio.4202.n7.nabble.com/Support-for-Steinberg-UR22-Yamaha-USB-chipset-0499-1509-tc82888.html#a82917
-http://www.steinberg.net/forums/viewtopic.php?t=62290
+Tested on the SPARC32/LEON GRETH Ethernet driver which fails
+due to dma_alloc_coherent(__GFP_ZERO) returns non zeroed
+pages.
 
-Tested by at least 4 people judging by the threads.
-Did not test MIDI interface, but audio output and capture both are
-functional. Built 3.17 kernel with this driver on Ubuntu 14.04 & tested with mpg123
-Patch applied to 3.13 Ubuntu kernel works well enough for daily use.
-
-Signed-off-by: Vlad Catoi <vladcatoi@gmail.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/usb/quirks-table.h |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ arch/sparc/kernel/ioport.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -385,6 +385,36 @@ YAMAHA_DEVICE(0x105d, NULL),
+--- a/arch/sparc/kernel/ioport.c
++++ b/arch/sparc/kernel/ioport.c
+@@ -278,7 +278,8 @@ static void *sbus_alloc_coherent(struct
  	}
- },
- {
-+	USB_DEVICE(0x0499, 0x1509),
-+	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
-+		/* .vendor_name = "Yamaha", */
-+		/* .product_name = "Steinberg UR22", */
-+		.ifnum = QUIRK_ANY_INTERFACE,
-+		.type = QUIRK_COMPOSITE,
-+		.data = (const struct snd_usb_audio_quirk[]) {
-+			{
-+				.ifnum = 1,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 2,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 3,
-+				.type = QUIRK_MIDI_YAMAHA
-+			},
-+			{
-+				.ifnum = 4,
-+				.type = QUIRK_IGNORE_INTERFACE
-+			},
-+			{
-+				.ifnum = -1
-+			}
-+		}
-+	}
-+},
-+{
- 	USB_DEVICE(0x0499, 0x150a),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
- 		/* .vendor_name = "Yamaha", */
+ 
+ 	order = get_order(len_total);
+-	if ((va = __get_free_pages(GFP_KERNEL|__GFP_COMP, order)) == 0)
++	va = __get_free_pages(gfp, order);
++	if (va == 0)
+ 		goto err_nopages;
+ 
+ 	if ((res = kzalloc(sizeof(struct resource), GFP_KERNEL)) == NULL)
+@@ -443,7 +444,7 @@ static void *pci32_alloc_coherent(struct
+ 	}
+ 
+ 	order = get_order(len_total);
+-	va = (void *) __get_free_pages(GFP_KERNEL, order);
++	va = (void *) __get_free_pages(gfp, order);
+ 	if (va == NULL) {
+ 		printk("pci_alloc_consistent: no %ld pages\n", len_total>>PAGE_SHIFT);
+ 		goto err_nopages;
 
 
