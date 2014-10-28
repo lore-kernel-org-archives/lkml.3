@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896AbaJ1M1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:27:50 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:44489 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390AbaJ1M1t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:27:49 -0400
-Date: Tue, 28 Oct 2014 14:27:44 +0200
-From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-To: perex@perex.cz, tiwai@suse.de, bhelgaas@google.com, benoit.taine@lip6.fr
-Cc: arnd@arndb.de, opw-kernel@googlegroups.com, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] sound: pci: pcxhr: convert timeval to ktime_t
-Message-ID: <20141028122744.GA3772@localhost.localdomain>
+	id S1753986AbaJ1M2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:28:00 -0400
+Received: from ozlabs.org ([103.22.144.67]:38999 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753918AbaJ1M16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:27:58 -0400
+Date: Tue, 28 Oct 2014 23:27:48 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Jesper Nilsson <jespern@axis.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: error fetching the cris tree
+Message-ID: <20141028232748.5503b635@canb.auug.org.au>
+In-Reply-To: <20141028083002.GK30087@axis.com>
+References: <20141028110857.06bfae62@canb.auug.org.au>
+	<20141028083002.GK30087@axis.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/8TsfFQ=zHzRWd0VrUmAv_Hz"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is concerned with migrating the time variables in the pcxhr
-module found in the sound driver. The changes are concerend with the
-y2038 problem where timeval will overflow in the year 2038. ktime_t
-was used instead of timeval to get the wall time. The difference
-is displayed now in nanoseconds instead of microseconds.
+--Sig_/8TsfFQ=zHzRWd0VrUmAv_Hz
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
----
-v2: changed variables names to avoid redeclaration conflicts.
+Hi Jesper,
 
- sound/pci/pcxhr/pcxhr.c      | 10 ++++++----
- sound/pci/pcxhr/pcxhr_core.c | 10 ++++++----
- 2 files changed, 12 insertions(+), 8 deletions(-)
+On Tue, 28 Oct 2014 09:30:03 +0100 Jesper Nilsson <jesper.nilsson@axis.com>=
+ wrote:
+>
+> However, it might be better to switch over linux-next for cris
+> to use the for-next branch of this tree:
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/jesper/cris.git
 
-diff --git a/sound/pci/pcxhr/pcxhr.c b/sound/pci/pcxhr/pcxhr.c
-index b854fc5..7c33c97 100644
---- a/sound/pci/pcxhr/pcxhr.c
-+++ b/sound/pci/pcxhr/pcxhr.c
-@@ -711,8 +711,9 @@ static void pcxhr_start_linked_stream(struct pcxhr_mgr *mgr)
- 	int playback_mask = 0;
- 
- #ifdef CONFIG_SND_DEBUG_VERBOSE
--	struct timeval my_tv1, my_tv2;
--	do_gettimeofday(&my_tv1);
-+	ktime_t start_time, stop_time, diff_time;
-+
-+	start_time = ktime_get();
- #endif
- 	mutex_lock(&mgr->setup_mutex);
- 
-@@ -823,9 +824,10 @@ static void pcxhr_start_linked_stream(struct pcxhr_mgr *mgr)
- 	mutex_unlock(&mgr->setup_mutex);
- 
- #ifdef CONFIG_SND_DEBUG_VERBOSE
--	do_gettimeofday(&my_tv2);
-+	stop_time = ktime_get();
-+	diff_time = ktime_sub(stop_time, start_time);
- 	dev_dbg(&mgr->pci->dev, "***TRIGGER START*** TIME = %ld (err = %x)\n",
--		    (long)(my_tv2.tv_usec - my_tv1.tv_usec), err);
-+		    (long)(ktime_to_ns(diff_time)), err);
- #endif
- }
- 
-diff --git a/sound/pci/pcxhr/pcxhr_core.c b/sound/pci/pcxhr/pcxhr_core.c
-index a584acb..181f772 100644
---- a/sound/pci/pcxhr/pcxhr_core.c
-+++ b/sound/pci/pcxhr/pcxhr_core.c
-@@ -910,8 +910,9 @@ int pcxhr_set_pipe_state(struct pcxhr_mgr *mgr, int playback_mask,
- 	int audio_mask;
- 
- #ifdef CONFIG_SND_DEBUG_VERBOSE
--	struct timeval my_tv1, my_tv2;
--	do_gettimeofday(&my_tv1);
-+	ktime_t start_time, stop_time, diff_time;
-+
-+	start_time = ktime_get();
- #endif
- 	audio_mask = (playback_mask |
- 		      (capture_mask << PCXHR_PIPE_STATE_CAPTURE_OFFSET));
-@@ -960,9 +961,10 @@ int pcxhr_set_pipe_state(struct pcxhr_mgr *mgr, int playback_mask,
- 			return err;
- 	}
- #ifdef CONFIG_SND_DEBUG_VERBOSE
--	do_gettimeofday(&my_tv2);
-+	stop_time = ktime_get();
-+	diff_time = ktime_sub(stop_time, start_time);
- 	dev_dbg(&mgr->pci->dev, "***SET PIPE STATE*** TIME = %ld (err = %x)\n",
--		    (long)(my_tv2.tv_usec - my_tv1.tv_usec), err);
-+			(long)(ktime_to_ns(diff_time)), err);
- #endif
- 	return 0;
- }
--- 
-1.9.3
+I have changed to use that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/8TsfFQ=zHzRWd0VrUmAv_Hz
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUT4vJAAoJEMDTa8Ir7ZwVtWUP/0uDjYxv8VTkh434JVjLw2Ec
+op/1hlUONEpiXxSROAMxAQqxBUG8rE1civcuQeyQ1yfU/oj/Sp3l5x11FDIK+y4B
+bV4ss+kzW7fD2dJWnTQxyvxYG5YUKHvTJLKY7dF3P49iEjZRo+mZbENiZ/+A/2F2
+Plpeg1XGOij26+3C7j9X6jCE5hg4hRzNDQ9+GHWndSJdRQS2zOyR1qjERoOWKATv
++7u8FCo1bRasXIG2FR0dcEdjQLrbYv0wdH4UiYKUVXZVhZI9zHGIERxSB1NWDz2+
+/RsLY+U4NjysOqhm6NanwCNJlZ05lO2XqdgD6Is06KYeD35/huurUsj/TDDAdIXj
+G0xXNuggofH8PL3RL+qJwIy8tHHKUxg7m6G2+HNjEKKCdj8UmdF4rocOYQwE1AyL
+6MOo64aMBpXRrNxqcsOFUXrgZvrpKWqRXr8bKR9KrCN5x3kU2OgFN394nro85msD
+A5hY0VoMNFoBZxE/ANquEqaoRKzsmLgyimrgBJm9zolnd8ph44DsUoCkZKk2NKpx
+gA0+P1EsBcrHwhMt4UAeWJCU71G4fHt/X7KlWBMBdSW1SC9XFXdvLTQu12cHoOkj
+yBuYoBUbutkNRCsAEnGnIdwg/O92cZdkoZnu/npSLwZgqAQGUf57F1rbxnNkChW8
+vua64iS0pGKTyV7Kf/wt
+=UWSc
+-----END PGP SIGNATURE-----
+
+--Sig_/8TsfFQ=zHzRWd0VrUmAv_Hz--
