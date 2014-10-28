@@ -1,107 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392AbaJ1D0g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:26:36 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:53206 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753369AbaJ1D0f (ORCPT
+	id S1753485AbaJ1D2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:28:17 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:50183 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461AbaJ1D2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:26:35 -0400
-From: "Ian Munsie" <imunsie@au1.ibm.com>
-To: mpe <mpe@ellerman.id.au>
-Cc: greg <greg@kroah.com>, arnd <arnd@arndb.de>,
-        benh <benh@kernel.crashing.org>, mikey <mikey@neuling.org>,
-        anton <anton@samba.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>, jk <jk@ozlabs.org>,
-        imunsie <imunsie@au1.ibm.com>,
-        cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH v2 2/4] CXL: Refactor cxl_load_segment and find_free_sste
-Date: Tue, 28 Oct 2014 14:25:28 +1100
-Message-Id: <1414466730-15591-3-git-send-email-imunsie@au.ibm.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414466730-15591-1-git-send-email-imunsie@au.ibm.com>
-References: <1414466730-15591-1-git-send-email-imunsie@au.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102803-0033-0000-0000-000000664EAB
+	Mon, 27 Oct 2014 23:28:15 -0400
+From: "billbonaparte" <programme110@gmail.com>
+To: <linux-kernel@vger.kernel.org>,
+        "Netfilter Developer Mailing List" <netfilter-devel@vger.kernel.org>,
+        "'Pablo Neira Ayuso'" <pablo@netfilter.org>,
+        "'Patrick McHardy'" <kaber@trash.net>, <kadlec@blackhole.kfki.hu>,
+        <davem@davemloft.net>
+Cc: "'Changli Gao'" <xiaosuo@gmail.com>,
+        "'Jozsef Kadlecsik'" <kadlec@blackhole.kfki.hu>,
+        "'Jesper Dangaard Brouer'" <brouer@redhat.com>,
+        "'Andrey Vagin'" <avagin@openvz.org>
+Subject: netfilter: nf_conntrack: there maybe a bug in __nf_conntrack_confirm, when it race against get_next_corpse
+Date: Tue, 28 Oct 2014 11:27:43 +0800
+Message-ID: <02ee01cff25f$28808540$79818fc0$@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: Ac/yXyF1brr4J258ScKVbIQiIUY2UQ==
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au1.ibm.com>
+Hi, all:
+	In function __nf_conntrack_confirm, we check the conntrack if it was
+alreay dead, before insert it into hash-table. 
+	we do this because if we insert an already 'dead' hash,  it will
+block further use of that particular connection.
+	but we don't do that right.
+    let's consider the following case:
+	
+	cpu1
+cpu2
+	__nf_conntrack_confirm
+get_next_corpse
+   		lock corresponding hash-list
+....
+		check nf_ct_is_dying(ct)
+for_each_possible_cpu(cpu) {
+		......
+spin_lock_bh(&pcpu->lock);
+		......
+set_bit(IPS_DYING_BIT, &ct->status);
+		nf_ct_del_from_dying_or_unconfirmed_list(ct);
+spin_unlock_bh(&pcpu_lock);
+		add_timer(&ct->timeout);
+}	
+		ct->status |= IPS_CONFIRMD;
+		__nf_conntrack_hash_insert(ct);
 
-This moves the segment table hash calculation from cxl_load_segment into
-find_free_sste since that is the only place it is actually used.
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
----
- drivers/misc/cxl/fault.c | 34 ++++++++++++++++++----------------
- 1 file changed, 18 insertions(+), 16 deletions(-)
+	
+	The above case reveal two problems:
+	1. we may insert a dead conntrack to hash-table, it will block
+further use of that particular connection.
+	2. operation on ct->status should be atomic, because it race aginst
+get_next_corpse.
+	  due to this reason, the operation on ct->status in
+nf_nat_setup_info should be atomic as well.
 
-diff --git a/drivers/misc/cxl/fault.c b/drivers/misc/cxl/fault.c
-index d0e97fd..cb4f323 100644
---- a/drivers/misc/cxl/fault.c
-+++ b/drivers/misc/cxl/fault.c
-@@ -21,20 +21,30 @@
- 
- #include "cxl.h"
- 
--static struct cxl_sste* find_free_sste(struct cxl_sste *primary_group,
--				       unsigned int *lru)
-+/* This finds a free SSTE for the given SLB */
-+static struct cxl_sste* find_free_sste(struct cxl_context *ctx,
-+				       struct copro_slb *slb)
- {
-+	struct cxl_sste *primary, *sste;
-+	unsigned int mask = (ctx->sst_size >> 7) - 1; /* SSTP0[SegTableSize] */
- 	unsigned int entry;
--	struct cxl_sste *sste, *group = primary_group;
-+	unsigned int hash;
-+
-+	if (slb->vsid & SLB_VSID_B_1T)
-+		hash = (slb->esid >> SID_SHIFT_1T) & mask;
-+	else /* 256M */
-+		hash = (slb->esid >> SID_SHIFT) & mask;
- 
--	for (entry = 0; entry < 8; entry++) {
--		sste = group + entry;
-+	primary = ctx->sstp + (hash << 3);
-+
-+	for (entry = 0, sste = primary; entry < 8; entry++, sste++) {
- 		if (!(be64_to_cpu(sste->esid_data) & SLB_ESID_V))
- 			return sste;
- 	}
-+
- 	/* Nothing free, select an entry to cast out */
--	sste = primary_group + *lru;
--	*lru = (*lru + 1) & 0x7;
-+	sste = primary + ctx->sst_lru;
-+	ctx->sst_lru = (ctx->sst_lru + 1) & 0x7;
- 
- 	return sste;
- }
-@@ -42,19 +52,11 @@ static struct cxl_sste* find_free_sste(struct cxl_sste *primary_group,
- static void cxl_load_segment(struct cxl_context *ctx, struct copro_slb *slb)
- {
- 	/* mask is the group index, we search primary and secondary here. */
--	unsigned int mask = (ctx->sst_size >> 7)-1; /* SSTP0[SegTableSize] */
- 	struct cxl_sste *sste;
--	unsigned int hash;
- 	unsigned long flags;
- 
--
--	if (slb->vsid & SLB_VSID_B_1T)
--		hash = (slb->esid >> SID_SHIFT_1T) & mask;
--	else /* 256M */
--		hash = (slb->esid >> SID_SHIFT) & mask;
--
- 	spin_lock_irqsave(&ctx->sste_lock, flags);
--	sste = find_free_sste(ctx->sstp + (hash << 3), &ctx->sst_lru);
-+	sste = find_free_sste(ctx, slb);
- 
- 	pr_devel("CXL Populating SST[%li]: %#llx %#llx\n",
- 			sste - ctx->sstp, slb->vsid, slb->esid);
--- 
-2.1.1
+	if we want to resolve the first problem, we must delete the
+unconfirmed conntrack from unconfirmed-list first, then check if it is
+already dead.
+	Am I right to do this ?
+	Appreciate any comments and reply.
 
