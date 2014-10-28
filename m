@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012AbaJ1Vq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:46:57 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:36986 "EHLO
+	id S1754789AbaJ1VaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:30:14 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:36959 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751872AbaJ1VaP (ORCPT
+	with ESMTP id S1751872AbaJ1VaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:30:15 -0400
+	Tue, 28 Oct 2014 17:30:10 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 17/58] dmaengine: dw: Split device_control
-Date: Tue, 28 Oct 2014 22:25:32 +0100
-Message-Id: <1414531573-18807-18-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 16/58] dmaengine: jz4740: Split device_control
+Date: Tue, 28 Oct 2014 22:25:31 +0100
+Message-Id: <1414531573-18807-17-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,151 +24,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the DesignWare DMA driver to make use
-of the newly introduced callbacks, that will eventually be used to retrieve
-slave capabilities.
+Split the device_control callback of the JZ4740 DMA driver to make use of the
+newly introduced callbacks, that will eventually be used to retrieve slave
+capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/dw/core.c | 82 +++++++++++++++++++++++++++------------------------
- 1 file changed, 44 insertions(+), 38 deletions(-)
+ drivers/dma/dma-jz4740.c | 20 +++-----------------
+ 1 file changed, 3 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
-index 244722170410..0bcf3f37fd5d 100644
---- a/drivers/dma/dw/core.c
-+++ b/drivers/dma/dw/core.c
-@@ -954,8 +954,7 @@ static inline void convert_burst(u32 *maxburst)
- 		*maxburst = 0;
+diff --git a/drivers/dma/dma-jz4740.c b/drivers/dma/dma-jz4740.c
+index ae2ab14e64b3..c25fc0aa7776 100644
+--- a/drivers/dma/dma-jz4740.c
++++ b/drivers/dma/dma-jz4740.c
+@@ -210,7 +210,7 @@ static enum jz4740_dma_transfer_size jz4740_dma_maxburst(u32 maxburst)
  }
  
--static int
--set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
-+static int dwc_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+ static int jz4740_dma_slave_config(struct dma_chan *c,
+-	const struct dma_slave_config *config)
++				   struct dma_slave_config *config)
  {
- 	struct dw_dma_chan *dwc = to_dw_dma_chan(chan);
- 
-@@ -972,16 +971,25 @@ set_runtime_config(struct dma_chan *chan, struct dma_slave_config *sconfig)
+ 	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
+ 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
+@@ -290,21 +290,6 @@ static int jz4740_dma_terminate_all(struct dma_chan *c)
  	return 0;
  }
  
--static inline void dwc_chan_pause(struct dw_dma_chan *dwc)
-+static int dwc_pause(struct dma_chan *chan)
- {
--	u32 cfglo = channel_readl(dwc, CFG_LO);
--	unsigned int count = 20;	/* timeout iterations */
-+	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
-+	unsigned long		flags;
-+	unsigned int		count = 20;	/* timeout iterations */
-+	u32			cfglo;
-+
-+	spin_lock_irqsave(&dwc->lock, flags);
- 
-+	cfglo = channel_readl(dwc, CFG_LO);
- 	channel_writel(dwc, CFG_LO, cfglo | DWC_CFGL_CH_SUSP);
- 	while (!(channel_readl(dwc, CFG_LO) & DWC_CFGL_FIFO_EMPTY) && count--)
- 		udelay(2);
- 
- 	dwc->paused = true;
-+
-+	spin_unlock_irqrestore(&dwc->lock, flags);
-+
-+	return 0;
- }
- 
- static inline void dwc_chan_resume(struct dw_dma_chan *dwc)
-@@ -993,53 +1001,48 @@ static inline void dwc_chan_resume(struct dw_dma_chan *dwc)
- 	dwc->paused = false;
- }
- 
--static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--		       unsigned long arg)
-+static int dwc_resume(struct dma_chan *chan)
- {
- 	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
--	struct dw_dma		*dw = to_dw_dma(chan->device);
--	struct dw_desc		*desc, *_desc;
- 	unsigned long		flags;
--	LIST_HEAD(list);
- 
--	if (cmd == DMA_PAUSE) {
--		spin_lock_irqsave(&dwc->lock, flags);
-+	if (!dwc->paused)
-+		return 0;
- 
--		dwc_chan_pause(dwc);
-+	spin_lock_irqsave(&dwc->lock, flags);
- 
--		spin_unlock_irqrestore(&dwc->lock, flags);
--	} else if (cmd == DMA_RESUME) {
--		if (!dwc->paused)
--			return 0;
-+	dwc_chan_resume(dwc);
- 
--		spin_lock_irqsave(&dwc->lock, flags);
-+	spin_unlock_irqrestore(&dwc->lock, flags);
- 
--		dwc_chan_resume(dwc);
-+	return 0;
-+}
- 
--		spin_unlock_irqrestore(&dwc->lock, flags);
--	} else if (cmd == DMA_TERMINATE_ALL) {
--		spin_lock_irqsave(&dwc->lock, flags);
-+static int dwc_terminate_all(struct dma_chan *chan)
-+{
-+	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
-+	struct dw_dma		*dw = to_dw_dma(chan->device);
-+	struct dw_desc		*desc, *_desc;
-+	unsigned long		flags;
-+	LIST_HEAD(list);
-+
-+	spin_lock_irqsave(&dwc->lock, flags);
- 
--		clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
-+	clear_bit(DW_DMA_IS_SOFT_LLP, &dwc->flags);
- 
--		dwc_chan_disable(dw, dwc);
-+	dwc_chan_disable(dw, dwc);
- 
--		dwc_chan_resume(dwc);
-+	dwc_chan_resume(dwc);
- 
--		/* active_list entries will end up before queued entries */
--		list_splice_init(&dwc->queue, &list);
--		list_splice_init(&dwc->active_list, &list);
-+	/* active_list entries will end up before queued entries */
-+	list_splice_init(&dwc->queue, &list);
-+	list_splice_init(&dwc->active_list, &list);
- 
--		spin_unlock_irqrestore(&dwc->lock, flags);
-+	spin_unlock_irqrestore(&dwc->lock, flags);
- 
--		/* Flush all pending and queued descriptors */
--		list_for_each_entry_safe(desc, _desc, &list, desc_node)
--			dwc_descriptor_complete(dwc, desc, false);
--	} else if (cmd == DMA_SLAVE_CONFIG) {
--		return set_runtime_config(chan, (struct dma_slave_config *)arg);
--	} else {
--		return -ENXIO;
+-static int jz4740_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-	unsigned long arg)
+-{
+-	struct dma_slave_config *config = (struct dma_slave_config *)arg;
+-
+-	switch (cmd) {
+-	case DMA_SLAVE_CONFIG:
+-		return jz4740_dma_slave_config(chan, config);
+-	case DMA_TERMINATE_ALL:
+-		return jz4740_dma_terminate_all(chan);
+-	default:
+-		return -ENOSYS;
 -	}
-+	/* Flush all pending and queued descriptors */
-+	list_for_each_entry_safe(desc, _desc, &list, desc_node)
-+		dwc_descriptor_complete(dwc, desc, false);
- 
- 	return 0;
- }
-@@ -1655,7 +1658,10 @@ int dw_dma_probe(struct dw_dma_chip *chip, struct dw_dma_platform_data *pdata)
- 	dw->dma.device_prep_dma_memcpy = dwc_prep_dma_memcpy;
- 
- 	dw->dma.device_prep_slave_sg = dwc_prep_slave_sg;
--	dw->dma.device_control = dwc_control;
-+	dw->dma.device_config = dwc_config;
-+	dw->dma.device_pause = dwc_pause;
-+	dw->dma.device_resume = dwc_resume;
-+	dw->dma.device_terminate_all = dwc_terminate_all;
- 
- 	dw->dma.device_tx_status = dwc_tx_status;
- 	dw->dma.device_issue_pending = dwc_issue_pending;
+-}
+-
+ static int jz4740_dma_start_transfer(struct jz4740_dmaengine_chan *chan)
+ {
+ 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
+@@ -561,7 +546,8 @@ static int jz4740_dma_probe(struct platform_device *pdev)
+ 	dd->device_issue_pending = jz4740_dma_issue_pending;
+ 	dd->device_prep_slave_sg = jz4740_dma_prep_slave_sg;
+ 	dd->device_prep_dma_cyclic = jz4740_dma_prep_dma_cyclic;
+-	dd->device_control = jz4740_dma_control;
++	dd->device_config = jz4740_dma_slave_config;
++	dd->device_terminate_all = jz4740_dma_terminate_all;
+ 	dd->dev = &pdev->dev;
+ 	dd->chancnt = JZ_DMA_NR_CHANS;
+ 	INIT_LIST_HEAD(&dd->channels);
 -- 
 2.1.1
 
