@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561AbaJ1DjN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:39:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44588 "EHLO
+	id S1759600AbaJ1Hq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:46:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44598 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539AbaJ1DjI (ORCPT
+	with ESMTP id S1754552AbaJ1DjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:08 -0400
+	Mon, 27 Oct 2014 23:39:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Catoi <vladcatoi@gmail.com>, Clemens Ladisch <clemens@ladisch.de>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 075/146] ALSA: usb-audio: Add support for Steinberg UR22 USB interface
-Date: Tue, 28 Oct 2014 11:33:37 +0800
-Message-Id: <20141028033346.636487791@linuxfoundation.org>
+Subject: [PATCH 3.17 077/146] ALSA: hda - Fix inverted LED gpio setup for Lenovo Ideapad
+Date: Tue, 28 Oct 2014 11:33:39 +0800
+Message-Id: <20141028033346.731584978@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,70 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Catoi <vladcatoi@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f0b127fbfdc8756eba7437ab668f3169280bd358 upstream.
+commit b1974f965a506c131b60cd3e483340884e831920 upstream.
 
-Adding support for Steinberg UR22 USB interface via quirks table patch
+We implemented in a wrong way for mute LED on Lenovo Ideapad; the bit
+must be flipped.
 
-See Ubuntu bug report:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1317244
-Also see threads:
-http://linux-audio.4202.n7.nabble.com/Support-for-Steinberg-UR22-Yamaha-USB-chipset-0499-1509-tc82888.html#a82917
-http://www.steinberg.net/forums/viewtopic.php?t=62290
-
-Tested by at least 4 people judging by the threads.
-Did not test MIDI interface, but audio output and capture both are
-functional. Built 3.17 kernel with this driver on Ubuntu 14.04 & tested with mpg123
-Patch applied to 3.13 Ubuntu kernel works well enough for daily use.
-
-Signed-off-by: Vlad Catoi <vladcatoi@gmail.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=16373
+Fixes: 3e887f379d8a ('ALSA: hda - Add mute LED support to Lenovo Ideapad')
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/quirks-table.h |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ sound/pci/hda/patch_realtek.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -385,6 +385,36 @@ YAMAHA_DEVICE(0x105d, NULL),
- 	}
- },
- {
-+	USB_DEVICE(0x0499, 0x1509),
-+	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
-+		/* .vendor_name = "Yamaha", */
-+		/* .product_name = "Steinberg UR22", */
-+		.ifnum = QUIRK_ANY_INTERFACE,
-+		.type = QUIRK_COMPOSITE,
-+		.data = (const struct snd_usb_audio_quirk[]) {
-+			{
-+				.ifnum = 1,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 2,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 3,
-+				.type = QUIRK_MIDI_YAMAHA
-+			},
-+			{
-+				.ifnum = 4,
-+				.type = QUIRK_IGNORE_INTERFACE
-+			},
-+			{
-+				.ifnum = -1
-+			}
-+		}
-+	}
-+},
-+{
- 	USB_DEVICE(0x0499, 0x150a),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
- 		/* .vendor_name = "Yamaha", */
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5786,9 +5786,9 @@ static void alc662_led_gpio1_mute_hook(v
+ 	unsigned int oldval = spec->gpio_led;
+ 
+ 	if (enabled)
+-		spec->gpio_led &= ~0x01;
+-	else
+ 		spec->gpio_led |= 0x01;
++	else
++		spec->gpio_led &= ~0x01;
+ 	if (spec->gpio_led != oldval)
+ 		snd_hda_codec_write(codec, 0x01, 0, AC_VERB_SET_GPIO_DATA,
+ 				    spec->gpio_led);
 
 
