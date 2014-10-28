@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760344AbaJ1Gz4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:55:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45633 "EHLO
+	id S1760351AbaJ1G41 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:56:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831AbaJ1Dro (ORCPT
+	with ESMTP id S932808AbaJ1Drj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:44 -0400
+	Mon, 27 Oct 2014 23:47:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <bryan.odonoghue@intel.com>,
-        Bing Niu <bing.niu@intel.com>,
-        "Alvin (Weike) Chen" <alvin.chen@intel.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Subject: [PATCH 3.14 009/100] usb: pch_udc: usb gadget device support for Intel Quark X1000
-Date: Tue, 28 Oct 2014 11:34:54 +0800
-Message-Id: <20141028033501.066637361@linuxfoundation.org>
+        Sage Weil <sage@redhat.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 007/100] Btrfs: fix race in WAIT_SYNC ioctl
+Date: Tue, 28 Oct 2014 11:34:52 +0800
+Message-Id: <20141028033500.977040987@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -32,110 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+From: Sage Weil <sage@redhat.com>
 
-commit a68df7066a6f974db6069e0b93c498775660a114 upstream.
+commit 42383020beb1cfb05f5d330cc311931bc4917a97 upstream.
 
-This patch is to enable the USB gadget device for Intel Quark X1000
+We check whether transid is already committed via last_trans_committed and
+then search through trans_list for pending transactions.  If
+last_trans_committed is updated by btrfs_commit_transaction after we check
+it (there is no locking), we will fail to find the committed transaction
+and return EINVAL to the caller.  This has been observed occasionally by
+ceph-osd (which uses this ioctl heavily).
 
-Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
-Signed-off-by: Bing Niu <bing.niu@intel.com>
-Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Fix by rechecking whether the provided transid <= last_trans_committed
+after the search fails, and if so return 0.
+
+Signed-off-by: Sage Weil <sage@redhat.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/Kconfig   |    3 ++-
- drivers/usb/gadget/pch_udc.c |   22 +++++++++++++++++++---
- 2 files changed, 21 insertions(+), 4 deletions(-)
+ fs/btrfs/transaction.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -445,7 +445,7 @@ config USB_GOKU
- 	   gadget drivers to also be dynamically linked.
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -592,7 +592,6 @@ int btrfs_wait_for_commit(struct btrfs_r
+ 		if (transid <= root->fs_info->last_trans_committed)
+ 			goto out;
  
- config USB_EG20T
--	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831) UDC"
-+	tristate "Intel QUARK X1000/EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831) UDC"
- 	depends on PCI
- 	help
- 	  This is a USB device driver for EG20T PCH.
-@@ -466,6 +466,7 @@ config USB_EG20T
- 	  ML7213/ML7831 is companion chip for Intel Atom E6xx series.
- 	  ML7213/ML7831 is completely compatible for Intel EG20T PCH.
- 
-+	  This driver can be used with Intel's Quark X1000 SOC platform
- #
- # LAST -- dummy/emulated controller
- #
---- a/drivers/usb/gadget/pch_udc.c
-+++ b/drivers/usb/gadget/pch_udc.c
-@@ -343,6 +343,7 @@ struct pch_vbus_gpio_data {
-  * @setup_data:		Received setup data
-  * @phys_addr:		of device memory
-  * @base_addr:		for mapped device memory
-+ * @bar:		Indicates which PCI BAR for USB regs
-  * @irq:		IRQ line for the device
-  * @cfg_data:		current cfg, intf, and alt in use
-  * @vbus_gpio:		GPIO informaton for detecting VBUS
-@@ -370,14 +371,17 @@ struct pch_udc_dev {
- 	struct usb_ctrlrequest		setup_data;
- 	unsigned long			phys_addr;
- 	void __iomem			*base_addr;
-+	unsigned			bar;
- 	unsigned			irq;
- 	struct pch_udc_cfg_data		cfg_data;
- 	struct pch_vbus_gpio_data	vbus_gpio;
- };
- #define to_pch_udc(g)	(container_of((g), struct pch_udc_dev, gadget))
- 
-+#define PCH_UDC_PCI_BAR_QUARK_X1000	0
- #define PCH_UDC_PCI_BAR			1
- #define PCI_DEVICE_ID_INTEL_EG20T_UDC	0x8808
-+#define PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC	0x0939
- #define PCI_VENDOR_ID_ROHM		0x10DB
- #define PCI_DEVICE_ID_ML7213_IOH_UDC	0x801D
- #define PCI_DEVICE_ID_ML7831_IOH_UDC	0x8808
-@@ -3076,7 +3080,7 @@ static void pch_udc_remove(struct pci_de
- 		iounmap(dev->base_addr);
- 	if (dev->mem_region)
- 		release_mem_region(dev->phys_addr,
--				   pci_resource_len(pdev, PCH_UDC_PCI_BAR));
-+				   pci_resource_len(pdev, dev->bar));
- 	if (dev->active)
- 		pci_disable_device(pdev);
- 	kfree(dev);
-@@ -3144,9 +3148,15 @@ static int pch_udc_probe(struct pci_dev
- 	dev->active = 1;
- 	pci_set_drvdata(pdev, dev);
- 
-+	/* Determine BAR based on PCI ID */
-+	if (id->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC)
-+		dev->bar = PCH_UDC_PCI_BAR_QUARK_X1000;
-+	else
-+		dev->bar = PCH_UDC_PCI_BAR;
+-		ret = -EINVAL;
+ 		/* find specified transaction */
+ 		spin_lock(&root->fs_info->trans_lock);
+ 		list_for_each_entry(t, &root->fs_info->trans_list, list) {
+@@ -608,9 +607,16 @@ int btrfs_wait_for_commit(struct btrfs_r
+ 			}
+ 		}
+ 		spin_unlock(&root->fs_info->trans_lock);
+-		/* The specified transaction doesn't exist */
+-		if (!cur_trans)
 +
- 	/* PCI resource allocation */
--	resource = pci_resource_start(pdev, 1);
--	len = pci_resource_len(pdev, 1);
-+	resource = pci_resource_start(pdev, dev->bar);
-+	len = pci_resource_len(pdev, dev->bar);
- 
- 	if (!request_mem_region(resource, len, KBUILD_MODNAME)) {
- 		dev_err(&pdev->dev, "%s: pci device used already\n", __func__);
-@@ -3212,6 +3222,12 @@ finished:
- 
- static const struct pci_device_id pch_udc_pcidev_id[] = {
- 	{
-+		PCI_DEVICE(PCI_VENDOR_ID_INTEL,
-+			   PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC),
-+		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
-+		.class_mask = 0xffffffff,
-+	},
-+	{
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_EG20T_UDC),
- 		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
- 		.class_mask = 0xffffffff,
++		/*
++		 * The specified transaction doesn't exist, or we
++		 * raced with btrfs_commit_transaction
++		 */
++		if (!cur_trans) {
++			if (transid > root->fs_info->last_trans_committed)
++				ret = -EINVAL;
+ 			goto out;
++		}
+ 	} else {
+ 		/* find newest transaction that is committing | committed */
+ 		spin_lock(&root->fs_info->trans_lock);
 
 
