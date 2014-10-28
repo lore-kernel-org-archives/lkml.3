@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294AbaJ1DmA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:42:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44993 "EHLO
+	id S932308AbaJ1DmM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:42:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45013 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932226AbaJ1Dl4 (ORCPT
+	with ESMTP id S1755123AbaJ1DmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:56 -0400
+	Mon, 27 Oct 2014 23:42:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Allen Pais <allen.pais@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 132/146] sparc64: support M6 and M7 for building CPU distribution map
-Date: Tue, 28 Oct 2014 11:34:34 +0800
-Message-Id: <20141028033349.158984877@linuxfoundation.org>
+        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.16 001/127] btrfs: wake up transaction thread from SYNC_FS ioctl
+Date: Tue, 28 Oct 2014 11:33:56 +0800
+Message-Id: <20141028033420.987070549@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
-References: <20141028033343.441992423@linuxfoundation.org>
+In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
+References: <20141028033420.925922046@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,31 +24,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Allen Pais <allen.pais@oracle.com>
+From: David Sterba <dsterba@suse.cz>
 
-Add M6 and M7 chip type in cpumap.c to correctly build CPU distribution map that spans all online CPUs.
+commit 2fad4e83e12591eb3bd213875b9edc2d18e93383 upstream.
 
-Signed-off-by: Allen Pais <allen.pais@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The transaction thread may want to do more work, namely it pokes the
+cleaner ktread that will start processing uncleaned subvols.
+
+This can be triggered by user via the 'btrfs fi sync' command, otherwise
+there was a delay up to 30 seconds before the cleaner started to clean
+old snapshots.
+
+Signed-off-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/cpumap.c |    2 ++
- 1 file changed, 2 insertions(+)
 
---- a/arch/sparc/kernel/cpumap.c
-+++ b/arch/sparc/kernel/cpumap.c
-@@ -326,6 +326,8 @@ static int iterate_cpu(struct cpuinfo_tr
- 	case SUN4V_CHIP_NIAGARA3:
- 	case SUN4V_CHIP_NIAGARA4:
- 	case SUN4V_CHIP_NIAGARA5:
-+	case SUN4V_CHIP_SPARC_M6:
-+	case SUN4V_CHIP_SPARC_M7:
- 	case SUN4V_CHIP_SPARC64X:
- 		rover_inc_table = niagara_iterate_method;
- 		break;
+---
+ fs/btrfs/ioctl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -5309,6 +5309,12 @@ long btrfs_ioctl(struct file *file, unsi
+ 		if (ret)
+ 			return ret;
+ 		ret = btrfs_sync_fs(file->f_dentry->d_sb, 1);
++		/*
++		 * The transaction thread may want to do more work,
++		 * namely it pokes the cleaner ktread that will start
++		 * processing uncleaned subvols.
++		 */
++		wake_up_process(root->fs_info->transaction_kthread);
+ 		return ret;
+ 	}
+ 	case BTRFS_IOC_START_SYNC:
 
 
