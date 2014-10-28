@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321AbaJ1Ql3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:41:29 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:33989 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057AbaJ1Ql1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:41:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <1411997137-13034-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1411997137-13034-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Tue, 28 Oct 2014 22:11:24 +0530
-Message-ID: <CAMf-jSn7=AkQqWCHuNyXg7aEUq6WAE6S+Vr-s8+ye0TQqFbxfw@mail.gmail.com>
-Subject: Re: [PATCH] mmc: sdhci-pxav3: Fix Sparse warning of duplicate
- set_uhs_signaling entry
-From: Pramod Gurav <pramod.gurav.etc@gmail.com>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>,
-        linux-mmc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1754389AbaJ1Ql7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:41:59 -0400
+Received: from sauhun.de ([89.238.76.85]:46888 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751648AbaJ1Qk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 12:40:29 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH RESEND 2/4] core: platform: let platform_driver_probe initialize module owner
+Date: Tue, 28 Oct 2014 17:40:41 +0100
+Message-Id: <1414514443-28943-3-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1414514443-28943-1-git-send-email-wsa@the-dreams.de>
+References: <1414514443-28943-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
+Since commit 9447057eaff8 ("platform_device: use a macro instead of
+platform_driver_register"), platform_driver_register() always overwrites
+the .owner field of a platform_driver with THIS_MODULE. This breaks
+platform_driver_probe() which uses it from within the platform core
+instead of the module init. Fix it by using a similar #define construct
+to obtain THIS_MODULE and pass it on later.
 
-Is this good to go?
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+---
+ drivers/base/platform.c         | 11 ++++++-----
+ include/linux/platform_device.h |  6 ++++--
+ 2 files changed, 10 insertions(+), 7 deletions(-)
 
-On Mon, Sep 29, 2014 at 6:55 PM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
-> This fixes below sparse warning:
-> drivers/mmc/host/sdhci-pxav3.c:227:10: warning: Initializer entry defined twice
-> drivers/mmc/host/sdhci-pxav3.c:232:10:   also defined here
->
-> by removing duplicate initialization of .set_uhs_signaling in
-> struct sdhci_ops. Also does away with duplcated function.
->
-> Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> Cc: Ulf Hansson <ulf.hansson@linaro.org>
-> Cc: Chris Ball <chris@printf.net>
-> Cc: linux-mmc@vger.kernel.org
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> ---
->  drivers/mmc/host/sdhci-pxav3.c |   37 -------------------------------------
->  1 file changed, 37 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-> index 6f842fb..fd93e60 100644
-> --- a/drivers/mmc/host/sdhci-pxav3.c
-> +++ b/drivers/mmc/host/sdhci-pxav3.c
-> @@ -186,45 +186,8 @@ static void pxav3_gen_init_74_clocks(struct sdhci_host *host, u8 power_mode)
->         pxa->power_mode = power_mode;
->  }
->
-> -static void pxav3_set_uhs_signaling(struct sdhci_host *host, unsigned int uhs)
-> -{
-> -       u16 ctrl_2;
-> -
-> -       /*
-> -        * Set V18_EN -- UHS modes do not work without this.
-> -        * does not change signaling voltage
-> -        */
-> -       ctrl_2 = sdhci_readw(host, SDHCI_HOST_CONTROL2);
-> -
-> -       /* Select Bus Speed Mode for host */
-> -       ctrl_2 &= ~SDHCI_CTRL_UHS_MASK;
-> -       switch (uhs) {
-> -       case MMC_TIMING_UHS_SDR12:
-> -               ctrl_2 |= SDHCI_CTRL_UHS_SDR12;
-> -               break;
-> -       case MMC_TIMING_UHS_SDR25:
-> -               ctrl_2 |= SDHCI_CTRL_UHS_SDR25;
-> -               break;
-> -       case MMC_TIMING_UHS_SDR50:
-> -               ctrl_2 |= SDHCI_CTRL_UHS_SDR50 | SDHCI_CTRL_VDD_180;
-> -               break;
-> -       case MMC_TIMING_UHS_SDR104:
-> -               ctrl_2 |= SDHCI_CTRL_UHS_SDR104 | SDHCI_CTRL_VDD_180;
-> -               break;
-> -       case MMC_TIMING_UHS_DDR50:
-> -               ctrl_2 |= SDHCI_CTRL_UHS_DDR50 | SDHCI_CTRL_VDD_180;
-> -               break;
-> -       }
-> -
-> -       sdhci_writew(host, ctrl_2, SDHCI_HOST_CONTROL2);
-> -       dev_dbg(mmc_dev(host->mmc),
-> -               "%s uhs = %d, ctrl_2 = %04X\n",
-> -               __func__, uhs, ctrl_2);
-> -}
-> -
->  static const struct sdhci_ops pxav3_sdhci_ops = {
->         .set_clock = sdhci_set_clock,
-> -       .set_uhs_signaling = pxav3_set_uhs_signaling,
->         .platform_send_init_74_clocks = pxav3_gen_init_74_clocks,
->         .get_max_clock = sdhci_pltfm_clk_get_max_clock,
->         .set_bus_width = sdhci_set_bus_width,
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index b2afc29403f9..c87a63326871 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -580,9 +580,10 @@ void platform_driver_unregister(struct platform_driver *drv)
+ EXPORT_SYMBOL_GPL(platform_driver_unregister);
+ 
+ /**
+- * platform_driver_probe - register driver for non-hotpluggable device
++ * __platform_driver_probe - register driver for non-hotpluggable device
+  * @drv: platform driver structure
+  * @probe: the driver probe routine, probably from an __init section
++ * @module: module which will be the owner of the driver
+  *
+  * Use this instead of platform_driver_register() when you know the device
+  * is not hotpluggable and has already been registered, and you want to
+@@ -598,8 +599,8 @@ EXPORT_SYMBOL_GPL(platform_driver_unregister);
+  * Returns zero if the driver registered and bound to a device, else returns
+  * a negative error code and with the driver not registered.
+  */
+-int __init_or_module platform_driver_probe(struct platform_driver *drv,
+-		int (*probe)(struct platform_device *))
++int __init_or_module __platform_driver_probe(struct platform_driver *drv,
++		int (*probe)(struct platform_device *), struct module *module)
+ {
+ 	int retval, code;
+ 
+@@ -614,7 +615,7 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
+ 
+ 	/* temporary section violation during probe() */
+ 	drv->probe = probe;
+-	retval = code = platform_driver_register(drv);
++	retval = code = __platform_driver_register(drv, module);
+ 
+ 	/*
+ 	 * Fixup that section violation, being paranoid about code scanning
+@@ -633,7 +634,7 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
+ 		platform_driver_unregister(drv);
+ 	return retval;
+ }
+-EXPORT_SYMBOL_GPL(platform_driver_probe);
++EXPORT_SYMBOL_GPL(__platform_driver_probe);
+ 
+ /**
+  * platform_create_bundle - register driver and create corresponding device
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index 153d303af7eb..c8d95c60da19 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -197,8 +197,10 @@ extern void platform_driver_unregister(struct platform_driver *);
+ /* non-hotpluggable platform devices may use this so that probe() and
+  * its support may live in __init sections, conserving runtime memory.
+  */
+-extern int platform_driver_probe(struct platform_driver *driver,
+-		int (*probe)(struct platform_device *));
++#define platform_driver_probe(drv, probe) \
++	__platform_driver_probe(drv, probe, THIS_MODULE)
++extern int __platform_driver_probe(struct platform_driver *driver,
++		int (*probe)(struct platform_device *), struct module *module);
+ 
+ static inline void *platform_get_drvdata(const struct platform_device *pdev)
+ {
 -- 
-Thanks and Regards
-Pramod
+2.0.0
+
