@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046AbaJ1Dlm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:41:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44968 "EHLO
+	id S932233AbaJ1Dlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:41:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44976 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168AbaJ1Dli (ORCPT
+	with ESMTP id S932168AbaJ1Dln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:38 -0400
+	Mon, 27 Oct 2014 23:41:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Bob Picco <bob.picco@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH 3.17 144/146] sparc64: Increase size of boot string to 1024 bytes
-Date: Tue, 28 Oct 2014 11:34:46 +0800
-Message-Id: <20141028033349.710052855@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 128/146] sparc64: Fix FPU register corruption with AES crypto offload.
+Date: Tue, 28 Oct 2014 11:34:30 +0800
+Message-Id: <20141028033348.989749236@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,35 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 1cef94c36bd4d79b5ae3a3df99ee0d76d6a4a6dc ]
+[ Upstream commit f4da3628dc7c32a59d1fb7116bb042e6f436d611 ]
 
-This is the longest boot string that silo supports.
+The AES loops in arch/sparc/crypto/aes_glue.c use a scheme where the
+key material is preloaded into the FPU registers, and then we loop
+over and over doing the crypt operation, reusing those pre-cooked key
+registers.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Bob Picco <bob.picco@oracle.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+There are intervening blkcipher*() calls between the crypt operation
+calls.  And those might perform memcpy() and thus also try to use the
+FPU.
+
+The sparc64 kernel FPU usage mechanism is designed to allow such
+recursive uses, but with a catch.
+
+There has to be a trap between the two FPU using threads of control.
+
+The mechanism works by, when the FPU is already in use by the kernel,
+allocating a slot for FPU saving at trap time.  Then if, within the
+trap handler, we try to use the FPU registers, the pre-trap FPU
+register state is saved into the slot.  Then at trap return time we
+notice this and restore the pre-trap FPU state.
+
+Over the long term there are various more involved ways we can make
+this work, but for a quick fix let's take advantage of the fact that
+the situation where this happens is very limited.
+
+All sparc64 chips that support the crypto instructiosn also are using
+the Niagara4 memcpy routine, and that routine only uses the FPU for
+large copies where we can't get the source aligned properly to a
+multiple of 8 bytes.
+
+We look to see if the FPU is already in use in this context, and if so
+we use the non-large copy path which only uses integer registers.
+
+Furthermore, we also limit this special logic to when we are doing
+kernel copy, rather than a user copy.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/prom/bootstr_64.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/sparc/include/asm/visasm.h |    8 ++++++++
+ arch/sparc/lib/NG4memcpy.S      |   14 +++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
---- a/arch/sparc/prom/bootstr_64.c
-+++ b/arch/sparc/prom/bootstr_64.c
-@@ -14,7 +14,10 @@
-  *          the .bss section or it will break things.
-  */
+--- a/arch/sparc/include/asm/visasm.h
++++ b/arch/sparc/include/asm/visasm.h
+@@ -39,6 +39,14 @@
+ 297:	wr		%o5, FPRS_FEF, %fprs;		\
+ 298:
  
--#define BARG_LEN  256
-+/* We limit BARG_LEN to 1024 because this is the size of the
-+ * 'barg_out' command line buffer in the SILO bootloader.
-+ */
-+#define BARG_LEN 1024
- struct {
- 	int bootstr_len;
- 	int bootstr_valid;
++#define VISEntryHalfFast(fail_label)			\
++	rd		%fprs, %o5;			\
++	andcc		%o5, FPRS_FEF, %g0;		\
++	be,pt		%icc, 297f;			\
++	 nop;						\
++	ba,a,pt		%xcc, fail_label;		\
++297:	wr		%o5, FPRS_FEF, %fprs;
++
+ #define VISExitHalf					\
+ 	wr		%o5, 0, %fprs;
+ 
+--- a/arch/sparc/lib/NG4memcpy.S
++++ b/arch/sparc/lib/NG4memcpy.S
+@@ -41,6 +41,10 @@
+ #endif
+ #endif
+ 
++#if !defined(EX_LD) && !defined(EX_ST)
++#define NON_USER_COPY
++#endif
++
+ #ifndef EX_LD
+ #define EX_LD(x)	x
+ #endif
+@@ -197,9 +201,13 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
+ 	 mov		EX_RETVAL(%o3), %o0
+ 
+ .Llarge_src_unaligned:
++#ifdef NON_USER_COPY
++	VISEntryHalfFast(.Lmedium_vis_entry_fail)
++#else
++	VISEntryHalf
++#endif
+ 	andn		%o2, 0x3f, %o4
+ 	sub		%o2, %o4, %o2
+-	VISEntryHalf
+ 	alignaddr	%o1, %g0, %g1
+ 	add		%o1, %o4, %o1
+ 	EX_LD(LOAD(ldd, %g1 + 0x00, %f0))
+@@ -240,6 +248,10 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
+ 	 nop
+ 	ba,a,pt		%icc, .Lmedium_unaligned
+ 
++#ifdef NON_USER_COPY
++.Lmedium_vis_entry_fail:
++	 or		%o0, %o1, %g2
++#endif
+ .Lmedium:
+ 	LOAD(prefetch, %o1 + 0x40, #n_reads_strong)
+ 	andcc		%g2, 0x7, %g0
 
 
