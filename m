@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759982AbaJ1Glq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:41:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45917 "EHLO
+	id S1759996AbaJ1GmJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:42:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45912 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933314AbaJ1DuD (ORCPT
+	with ESMTP id S933305AbaJ1DuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:03 -0400
+	Mon, 27 Oct 2014 23:50:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Alexander Tobias Schulze 
-	<cat.schulze@alice-dsl.net>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 073/100] sparc64: Fix pcr_ops initialization and usage bugs.
-Date: Tue, 28 Oct 2014 11:35:58 +0800
-Message-Id: <20141028033503.842818026@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Anton Blanchard <anton@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 3.14 055/100] powerpc/iommu/ddw: Fix endianness
+Date: Tue, 28 Oct 2014 11:35:40 +0800
+Message-Id: <20141028033503.063434264@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -30,85 +31,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
 
-[ Upstream commit 8bccf5b313180faefce38e0d1140f76e0f327d28 ]
+commit 9410e0185e65394c0c6d046033904b53b97a9423 upstream.
 
-Christopher reports that perf_event_print_debug() can crash in uniprocessor
-builds.  The crash is due to pcr_ops being NULL.
+rtas_call() accepts and returns values in CPU endianness.
+The ddw_query_response and ddw_create_response structs members are
+defined and treated as BE but as they are passed to rtas_call() as
+(u32 *) and they get byteswapped automatically, the data is CPU-endian.
+This fixes ddw_query_response and ddw_create_response definitions and use.
 
-This happens because pcr_arch_init() is only invoked by smp_cpus_done() which
-only executes in SMP builds.
+of_read_number() is designed to work with device tree cells - it assumes
+the input is big-endian and returns data in CPU-endian. However due
+to the ddw_create_response struct fix, create.addr_hi/lo are already
+CPU-endian so do not byteswap them.
 
-init_hw_perf_events() is closely intertwined with pcr_ops being setup properly,
-therefore:
+ddw_avail is a pointer to the "ibm,ddw-applicable" property which contains
+3 cells which are big-endian as it is a device tree. rtas_call() accepts
+a RTAS token in CPU-endian. This makes use of of_property_read_u32_array
+to byte swap and avoid the need for a number of be32_to_cpu calls.
 
-1) Call pcr_arch_init() early on from init_hw_perf_events(), instead of
-   from smp_cpus_done().
-
-2) Do not hook up a PMU type if pcr_ops is NULL after pcr_arch_init().
-
-3) Move init_hw_perf_events to a later initcall so that it we will be
-   sure to invoke pcr_arch_init() after all cpus are brought up.
-
-Finally, guard the one naked sequence of pcr_ops dereferences in
-__global_pmu_self() with an appropriate NULL check.
-
-Reported-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[aik: folded Anton's patch with of_property_read_u32_array]
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Acked-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/perf_event.c |    7 +++++--
- arch/sparc/kernel/process_64.c |    3 +++
- arch/sparc/kernel/smp_64.c     |    1 -
- 3 files changed, 8 insertions(+), 3 deletions(-)
 
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1671,9 +1671,12 @@ static bool __init supported_pmu(void)
+---
+ arch/powerpc/platforms/pseries/iommu.c |   51 ++++++++++++++++++---------------
+ 1 file changed, 28 insertions(+), 23 deletions(-)
+
+--- a/arch/powerpc/platforms/pseries/iommu.c
++++ b/arch/powerpc/platforms/pseries/iommu.c
+@@ -329,16 +329,16 @@ struct direct_window {
  
- int __init init_hw_perf_events(void)
+ /* Dynamic DMA Window support */
+ struct ddw_query_response {
+-	__be32 windows_available;
+-	__be32 largest_available_block;
+-	__be32 page_size;
+-	__be32 migration_capable;
++	u32 windows_available;
++	u32 largest_available_block;
++	u32 page_size;
++	u32 migration_capable;
+ };
+ 
+ struct ddw_create_response {
+-	__be32 liobn;
+-	__be32 addr_hi;
+-	__be32 addr_lo;
++	u32 liobn;
++	u32 addr_hi;
++	u32 addr_lo;
+ };
+ 
+ static LIST_HEAD(direct_window_list);
+@@ -725,16 +725,18 @@ static void remove_ddw(struct device_nod
  {
-+	int err;
+ 	struct dynamic_dma_window_prop *dwp;
+ 	struct property *win64;
+-	const u32 *ddw_avail;
++	u32 ddw_avail[3];
+ 	u64 liobn;
+-	int len, ret = 0;
++	int ret = 0;
 +
- 	pr_info("Performance events: ");
++	ret = of_property_read_u32_array(np, "ibm,ddw-applicable",
++					 &ddw_avail[0], 3);
  
--	if (!supported_pmu()) {
-+	err = pcr_arch_init();
-+	if (err || !supported_pmu()) {
- 		pr_cont("No support for PMU type '%s'\n", sparc_pmu_type);
- 		return 0;
+-	ddw_avail = of_get_property(np, "ibm,ddw-applicable", &len);
+ 	win64 = of_find_property(np, DIRECT64_PROPNAME, NULL);
+ 	if (!win64)
+ 		return;
+ 
+-	if (!ddw_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
++	if (ret || win64->length < sizeof(*dwp))
+ 		goto delprop;
+ 
+ 	dwp = win64->value;
+@@ -872,8 +874,9 @@ static int create_ddw(struct pci_dev *de
+ 
+ 	do {
+ 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
+-		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create, cfg_addr,
+-				BUID_HI(buid), BUID_LO(buid), page_shift, window_shift);
++		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create,
++				cfg_addr, BUID_HI(buid), BUID_LO(buid),
++				page_shift, window_shift);
+ 	} while (rtas_busy_delay(ret));
+ 	dev_info(&dev->dev,
+ 		"ibm,create-pe-dma-window(%x) %x %x %x %x %x returned %d "
+@@ -910,7 +913,7 @@ static u64 enable_ddw(struct pci_dev *de
+ 	int page_shift;
+ 	u64 dma_addr, max_addr;
+ 	struct device_node *dn;
+-	const u32 *uninitialized_var(ddw_avail);
++	u32 ddw_avail[3];
+ 	struct direct_window *window;
+ 	struct property *win64;
+ 	struct dynamic_dma_window_prop *ddwprop;
+@@ -942,8 +945,9 @@ static u64 enable_ddw(struct pci_dev *de
+ 	 * for the given node in that order.
+ 	 * the property is actually in the parent, not the PE
+ 	 */
+-	ddw_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
+-	if (!ddw_avail || len < 3 * sizeof(u32))
++	ret = of_property_read_u32_array(pdn, "ibm,ddw-applicable",
++					 &ddw_avail[0], 3);
++	if (ret)
+ 		goto out_failed;
+ 
+        /*
+@@ -966,11 +970,11 @@ static u64 enable_ddw(struct pci_dev *de
+ 		dev_dbg(&dev->dev, "no free dynamic windows");
+ 		goto out_failed;
  	}
-@@ -1685,7 +1688,7 @@ int __init init_hw_perf_events(void)
+-	if (be32_to_cpu(query.page_size) & 4) {
++	if (query.page_size & 4) {
+ 		page_shift = 24; /* 16MB */
+-	} else if (be32_to_cpu(query.page_size) & 2) {
++	} else if (query.page_size & 2) {
+ 		page_shift = 16; /* 64kB */
+-	} else if (be32_to_cpu(query.page_size) & 1) {
++	} else if (query.page_size & 1) {
+ 		page_shift = 12; /* 4kB */
+ 	} else {
+ 		dev_dbg(&dev->dev, "no supported direct page size in mask %x",
+@@ -980,7 +984,7 @@ static u64 enable_ddw(struct pci_dev *de
+ 	/* verify the window * number of ptes will map the partition */
+ 	/* check largest block * page size > max memory hotplug addr */
+ 	max_addr = memory_hotplug_max();
+-	if (be32_to_cpu(query.largest_available_block) < (max_addr >> page_shift)) {
++	if (query.largest_available_block < (max_addr >> page_shift)) {
+ 		dev_dbg(&dev->dev, "can't map partiton max 0x%llx with %u "
+ 			  "%llu-sized pages\n", max_addr,  query.largest_available_block,
+ 			  1ULL << page_shift);
+@@ -1006,8 +1010,9 @@ static u64 enable_ddw(struct pci_dev *de
+ 	if (ret != 0)
+ 		goto out_free_prop;
  
- 	return 0;
- }
--early_initcall(init_hw_perf_events);
-+pure_initcall(init_hw_perf_events);
+-	ddwprop->liobn = create.liobn;
+-	ddwprop->dma_base = cpu_to_be64(of_read_number(&create.addr_hi, 2));
++	ddwprop->liobn = cpu_to_be32(create.liobn);
++	ddwprop->dma_base = cpu_to_be64(((u64)create.addr_hi << 32) |
++			create.addr_lo);
+ 	ddwprop->tce_shift = cpu_to_be32(page_shift);
+ 	ddwprop->window_shift = cpu_to_be32(len);
  
- void perf_callchain_kernel(struct perf_callchain_entry *entry,
- 			   struct pt_regs *regs)
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -306,6 +306,9 @@ static void __global_pmu_self(int this_c
- 	struct global_pmu_snapshot *pp;
- 	int i, num;
+@@ -1039,7 +1044,7 @@ static u64 enable_ddw(struct pci_dev *de
+ 	list_add(&window->list, &direct_window_list);
+ 	spin_unlock(&direct_window_list_lock);
  
-+	if (!pcr_ops)
-+		return;
-+
- 	pp = &global_cpu_snapshot[this_cpu].pmu;
+-	dma_addr = of_read_number(&create.addr_hi, 2);
++	dma_addr = be64_to_cpu(ddwprop->dma_base);
+ 	goto out_unlock;
  
- 	num = 1;
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -1395,7 +1395,6 @@ void __cpu_die(unsigned int cpu)
- 
- void __init smp_cpus_done(unsigned int max_cpus)
- {
--	pcr_arch_init();
- }
- 
- void smp_send_reschedule(int cpu)
+ out_free_window:
 
 
