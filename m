@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752930AbaJ1LpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:45:10 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33023 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750900AbaJ1LpI (ORCPT
+	id S1753440AbaJ1LwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:52:10 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:59676 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaJ1LwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:45:08 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: torvalds@linux-foundation.org, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        benh@kernel.crashing.org, Will Deacon <will.deacon@arm.com>
-Subject: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush after TLB batching faiure
-Date: Tue, 28 Oct 2014 11:44:21 +0000
-Message-Id: <1414496662-25202-2-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
-References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
+	Tue, 28 Oct 2014 07:52:07 -0400
+From: Zhen Lei <thunder.leizhen@huawei.com>
+To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
+        "Kefeng Wang" <wangkefeng.wang@huawei.com>,
+        Zhen Lei <thunder.leizhen@huawei.com>
+Subject: [PATCH 1/1] of/fdt: simplify early_init_dt_verify
+Date: Tue, 28 Oct 2014 19:51:05 +0800
+Message-ID: <1414497065-9808-1-git-send-email-thunder.leizhen@huawei.com>
+X-Mailer: git-send-email 1.8.4.msysgit.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.177.27.142]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When unmapping a range of pages in zap_pte_range, the page being
-unmapped is added to an mmu_gather_batch structure for asynchronous
-freeing. If we run out of space in the batch structure before the range
-has been completely unmapped, then we break out of the loop, force a
-TLB flush and free the pages that we have batched so far. If there are
-further pages to unmap, then we resume the loop where we left off.
+put off initial_boot_params = params; until all checks finished. If any check
+failed, initial_boot_params is equal NULL, base upon bss segment initial value.
 
-Unfortunately, we forget to update addr when we break out of the loop,
-which causes us to truncate the range being invalidated as the end
-address is exclusive. When we re-enter the loop at the same address, the
-page has already been freed and the pte_present test will fail, meaning
-that we do not reconsider the address for invalidation.
-
-This patch fixes the problem by incrementing addr by the PAGE_SIZE
-before breaking out of the loop on batch failure.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Zhen Lei <thunder.leizhen@huawei.com>
 ---
- mm/memory.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/of/fdt.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 1cc6bfbd872e..3e503831e042 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1147,6 +1147,7 @@ again:
- 				print_bad_pte(vma, addr, ptent, page);
- 			if (unlikely(!__tlb_remove_page(tlb, page))) {
- 				force_flush = 1;
-+				addr += PAGE_SIZE;
- 				break;
- 			}
- 			continue;
--- 
-2.1.1
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index d1ffca8..325c638 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -994,14 +994,12 @@ bool __init early_init_dt_verify(void *params)
+ 	if (!params)
+ 		return false;
+
+-	/* Setup flat device-tree pointer */
+-	initial_boot_params = params;
+-
+ 	/* check device tree validity */
+-	if (fdt_check_header(params)) {
+-		initial_boot_params = NULL;
++	if (fdt_check_header(params))
+ 		return false;
+-	}
++
++	/* Setup flat device-tree pointer */
++	initial_boot_params = params;
+
+ 	return true;
+ }
+--
+1.8.0
+
 
