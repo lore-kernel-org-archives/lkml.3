@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbaJ1AUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 20:20:22 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:39933 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692AbaJ1AUV (ORCPT
+	id S1753004AbaJ1AX2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 20:23:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32014 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406AbaJ1AX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 20:20:21 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Ian Munsie <imunsie@au1.ibm.com>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: mpe <mpe@ellerman.id.au>, cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>,
-        mikey <mikey@neuling.org>, arnd <arnd@arndb.de>, greg <greg@kroah.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@ozlabs.org>, anton <anton@samba.org>,
-        jk <jk@ozlabs.org>
-Subject: Re: [PATCH] CXL: Fix PSL error due to duplicate segment table entries
-In-reply-to: <87oasxy3v2.fsf@linux.vnet.ibm.com>
-References: <1414383875-20835-1-git-send-email-imunsie@au.ibm.com> <87oasxy3v2.fsf@linux.vnet.ibm.com>
-Date: Tue, 28 Oct 2014 11:20:20 +1100
-Message-Id: <1414455469-sup-9840@delenn.ozlabs.ibm.com>
-User-Agent: Sup/0.20.0
-Content-Transfer-Encoding: 8bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102800-0025-0000-0000-00000063EE4A
+	Mon, 27 Oct 2014 20:23:26 -0400
+To: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>, Meelis Roos <mroos@linux.ee>,
+        David Miller <davem@davemloft.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] Revert "block: all blk-mq requests are tagged"
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle Corporation
+References: <1413731638-28305-1-git-send-email-hch@lst.de>
+	<1413731638-28305-2-git-send-email-hch@lst.de>
+Date: Mon, 27 Oct 2014 20:23:13 -0400
+In-Reply-To: <1413731638-28305-2-git-send-email-hch@lst.de> (Christoph
+	Hellwig's message of "Sun, 19 Oct 2014 17:13:57 +0200")
+Message-ID: <yq1wq7loxe6.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Aneesh Kumar K.V's message of 2014-10-28 01:38:41 +1100:
-> I guess you are missing too many fixes in one patch.
-> 
-> 1) One cleanup
-> 2) Fix for masking ea correctly
-> 3) And fix for not erroring out when a slb is already in the slb cache.
+>>>>> "Christoph" == Christoph Hellwig <hch@lst.de> writes:
 
-ok, I'll split it up
+Christoph> This reverts commit fb3ccb5da71273e7f0d50b50bc879e50cedd60e7.
+Christoph> SCSI-2/SPI actually needs the tagged/untagged flag in the
+Christoph> request to work properly.  Revert this patch and add a follow
+Christoph> on to set it in the right place.
 
-> > +/* This finds a free SSTE and checks to see if it's already in table */
-> > +static struct cxl_sste* find_free_sste(struct cxl_context *ctx,
-> > +                       struct copro_slb *slb)
-> 
-> the name is confusing. If you want to keep the name, can you also
-> specify that it return NULL, if it finds a matching entry. IIUC that
-> is the real part of the fix for the problem mentioned ?
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
 
-Good point.
-
-> > -    sr = CXL_PSL_SR_An_SC;
-> > +    sr = 0;
-> 
-> What is this change about ?
-
-That tells the PSL not to use the secondary hash since we are no longer
-filling out any entries using it. I'll clarify that in the commit
-message when I split this out.
-
-Cheers,
--Ian
-
+-- 
+Martin K. Petersen	Oracle Linux Engineering
