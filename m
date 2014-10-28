@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759978AbaJ1Gl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:41:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45928 "EHLO
+	id S1759982AbaJ1Glq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:41:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422AbaJ1DuJ (ORCPT
+	with ESMTP id S933314AbaJ1DuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:09 -0400
+	Mon, 27 Oct 2014 23:50:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 3.14 056/100] ima: provide flag to identify new empty files
-Date: Tue, 28 Oct 2014 11:35:41 +0800
-Message-Id: <20141028033503.105596371@linuxfoundation.org>
+        Christopher Alexander Tobias Schulze 
+	<cat.schulze@alice-dsl.net>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 073/100] sparc64: Fix pcr_ops initialization and usage bugs.
+Date: Tue, 28 Oct 2014 11:35:58 +0800
+Message-Id: <20141028033503.842818026@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,79 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit b151d6b00bbb798c58f2f21305e7d43fa763f34f upstream.
+[ Upstream commit 8bccf5b313180faefce38e0d1140f76e0f327d28 ]
 
-On ima_file_free(), newly created empty files are not labeled with
-an initial security.ima value, because the iversion did not change.
-Commit dff6efc "fs: fix iversion handling" introduced a change in
-iversion behavior.  To verify this change use the shell command:
+Christopher reports that perf_event_print_debug() can crash in uniprocessor
+builds.  The crash is due to pcr_ops being NULL.
 
-  $ (exec >foo)
-  $ getfattr -h -e hex -d -m security foo
+This happens because pcr_arch_init() is only invoked by smp_cpus_done() which
+only executes in SMP builds.
 
-This patch defines the IMA_NEW_FILE flag.  The flag is initially
-set, when IMA detects that a new file is created, and subsequently
-checked on the ima_file_free() hook to set the initial security.ima
-value.
+init_hw_perf_events() is closely intertwined with pcr_ops being setup properly,
+therefore:
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+1) Call pcr_arch_init() early on from init_hw_perf_events(), instead of
+   from smp_cpus_done().
+
+2) Do not hook up a PMU type if pcr_ops is NULL after pcr_arch_init().
+
+3) Move init_hw_perf_events to a later initcall so that it we will be
+   sure to invoke pcr_arch_init() after all cpus are brought up.
+
+Finally, guard the one naked sequence of pcr_ops dereferences in
+__global_pmu_self() with an appropriate NULL check.
+
+Reported-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- security/integrity/ima/ima_appraise.c |    7 +++++--
- security/integrity/ima/ima_main.c     |   12 +++++++-----
- security/integrity/integrity.h        |    1 +
- 3 files changed, 13 insertions(+), 7 deletions(-)
+ arch/sparc/kernel/perf_event.c |    7 +++++--
+ arch/sparc/kernel/process_64.c |    3 +++
+ arch/sparc/kernel/smp_64.c     |    1 -
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -194,8 +194,11 @@ int ima_appraise_measurement(int func, s
- 			goto out;
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1671,9 +1671,12 @@ static bool __init supported_pmu(void)
  
- 		cause = "missing-hash";
--		status =
--		    (inode->i_size == 0) ? INTEGRITY_PASS : INTEGRITY_NOLABEL;
-+		status = INTEGRITY_NOLABEL;
-+		if (inode->i_size == 0) {
-+			iint->flags |= IMA_NEW_FILE;
-+			status = INTEGRITY_PASS;
-+		}
- 		goto out;
+ int __init init_hw_perf_events(void)
+ {
++	int err;
++
+ 	pr_info("Performance events: ");
+ 
+-	if (!supported_pmu()) {
++	err = pcr_arch_init();
++	if (err || !supported_pmu()) {
+ 		pr_cont("No support for PMU type '%s'\n", sparc_pmu_type);
+ 		return 0;
  	}
+@@ -1685,7 +1688,7 @@ int __init init_hw_perf_events(void)
  
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -131,11 +131,13 @@ static void ima_check_last_writer(struct
- 		return;
- 
- 	mutex_lock(&inode->i_mutex);
--	if (atomic_read(&inode->i_writecount) == 1 &&
--	    iint->version != inode->i_version) {
--		iint->flags &= ~IMA_DONE_MASK;
--		if (iint->flags & IMA_APPRAISE)
--			ima_update_xattr(iint, file);
-+	if (atomic_read(&inode->i_writecount) == 1) {
-+		if ((iint->version != inode->i_version) ||
-+		    (iint->flags & IMA_NEW_FILE)) {
-+			iint->flags &= ~(IMA_DONE_MASK | IMA_NEW_FILE);
-+			if (iint->flags & IMA_APPRAISE)
-+				ima_update_xattr(iint, file);
-+		}
- 	}
- 	mutex_unlock(&inode->i_mutex);
+ 	return 0;
  }
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -31,6 +31,7 @@
- #define IMA_DIGSIG		0x01000000
- #define IMA_DIGSIG_REQUIRED	0x02000000
- #define IMA_PERMIT_DIRECTIO	0x04000000
-+#define IMA_NEW_FILE		0x08000000
+-early_initcall(init_hw_perf_events);
++pure_initcall(init_hw_perf_events);
  
- #define IMA_DO_MASK		(IMA_MEASURE | IMA_APPRAISE | IMA_AUDIT | \
- 				 IMA_APPRAISE_SUBMASK)
+ void perf_callchain_kernel(struct perf_callchain_entry *entry,
+ 			   struct pt_regs *regs)
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -306,6 +306,9 @@ static void __global_pmu_self(int this_c
+ 	struct global_pmu_snapshot *pp;
+ 	int i, num;
+ 
++	if (!pcr_ops)
++		return;
++
+ 	pp = &global_cpu_snapshot[this_cpu].pmu;
+ 
+ 	num = 1;
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -1395,7 +1395,6 @@ void __cpu_die(unsigned int cpu)
+ 
+ void __init smp_cpus_done(unsigned int max_cpus)
+ {
+-	pcr_arch_init();
+ }
+ 
+ void smp_send_reschedule(int cpu)
 
 
