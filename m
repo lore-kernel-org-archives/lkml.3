@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792AbaJ1Pnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:43:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49571 "EHLO
+	id S1753501AbaJ1PpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:45:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49596 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbaJ1Pnp (ORCPT
+	with ESMTP id S1750925AbaJ1PpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:43:45 -0400
-Date: Tue, 28 Oct 2014 16:43:42 +0100 (CET)
+	Tue, 28 Oct 2014 11:45:04 -0400
+Date: Tue, 28 Oct 2014 16:45:00 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Heena Sirwani <heenasirwani@gmail.com>
-cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, arnd@arndb.de
-Subject: Re: [PATCH v2] timekeeping: Added a function to return tv_sec portion
- of ktime_get_real_ts64()
-In-Reply-To: <20141027050804.GA8550@heena-HP-Compaq-8200-Elite-MT-PC>
-Message-ID: <alpine.DEB.2.11.1410281641350.5308@nanos>
-References: <20141027050804.GA8550@heena-HP-Compaq-8200-Elite-MT-PC>
+To: =?ISO-8859-15?Q?P=E1draig_Brady?= <P@draigBrady.com>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Paul Eggert <eggert@cs.ucla.edu>, bug-gnulib <bug-gnulib@gnu.org>
+Subject: Re: nanosleep truncated on 64 bit Linux by 292 billion years
+In-Reply-To: <544DC3A8.1060103@draigBrady.com>
+Message-ID: <alpine.DEB.2.11.1410281644070.5308@nanos>
+References: <53E0FF15.4090808@draigBrady.com> <53E13F04.70609@cs.ucla.edu> <alpine.DEB.2.10.1408060017090.3323@nanos> <544DC3A8.1060103@draigBrady.com>
 User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-748278803-1414511101=:5308"
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
@@ -26,69 +26,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, Heena Sirwani wrote:
-> The following patch adds a function to return tv_sec portion of
-> ktime_get_real_ts64() function in order to have a function that returns
-> seconds as 64-bit integers instead of 32-bit integers to address the
-> y2038 problem.
-> 
-> The function is similar to get_seconds() function except that it
-> includes read_seqcount_retry loop which is required for 32-bit
-> architectures. This is because 32-bit machines cannot access 64-bit
-> tk->xtime_sec variable atomically, requiring two 32-bit register loads.
->  
-> Signed-off-by: Heena Sirwani <heenasirwani@gmail.com>
-> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-> ---
-> Changes in v2:
->         - Removed the local variable nsecs as it was not required.
-> 
->  include/linux/timekeeping.h |  1 +
->  kernel/time/timekeeping.c   | 19 +++++++++++++++++++
->  2 files changed, 20 insertions(+)
-> 
-> diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
-> index 115d55e..91454de 100644
-> --- a/include/linux/timekeeping.h
-> +++ b/include/linux/timekeeping.h
-> @@ -29,6 +29,7 @@ struct timespec get_monotonic_coarse(void);
->  extern void getrawmonotonic(struct timespec *ts);
->  extern void ktime_get_ts64(struct timespec64 *ts);
->  extern time64_t ktime_get_seconds(void);
-> +extern time64_t ktime_get_real_seconds(void);
->  
->  extern int __getnstimeofday64(struct timespec64 *tv);
->  extern void getnstimeofday64(struct timespec64 *tv);
-> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> index 93fc596..c17c620 100644
-> --- a/kernel/time/timekeeping.c
-> +++ b/kernel/time/timekeeping.c
-> @@ -673,6 +673,25 @@ time64_t ktime_get_seconds(void)
->  }
->  EXPORT_SYMBOL_GPL(ktime_get_seconds);
->  
-> +time64_t ktime_get_real_seconds(void)
-> +{
-> +	time64_t seconds;
-> +	struct timekeeper *tk = &tk_core.timekeeper;
-> +	unsigned int seq;
-> +
-> +	if (IS_ENABLED(CONFIG_64BIT))
-> +		return tk->xtime_sec;
-> +
-> +	do {
-> +		seq = read_seqcount_begin(&tk_core.seq);
-> +		seconds = tk->xtime_sec;
-> +
-> +	} while (read_seqcount_retry(&tk_core.seq, seq));
-> +
-> +	return seconds;
-> +}
-> +EXPORT_SYMBOL_GPL(ktime_get_real_seconds);
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Nice and clean implementation! Though I wonder whether we should just
-name it get_seconds64().
+--8323329-748278803-1414511101=:5308
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Mon, 27 Oct 2014, Pádraig Brady wrote:
+> I noticed that nanosleep() on 64 bit, "only" supports 292 years,
+> rather than the full potential 292 billion years with 64 bit time_t, due to:
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/include/linux/time.h?id=refs/tags/v3.16#n87
+> 
+> Attached is a program from Paul Eggert that illustrates the bug.
+> Running this program on a buggy host outputs something like this:
+> 
+>   Setting alarm for 1 second from now ...
+>   Sleeping for 9223372036854775807.999999999 seconds...
+>   After alarm sent off, remaining time is 9223357678.462306617 seconds;
+>   i.e., nanosleep claimed that it slept for about 293079448610.606445 years.
+
+I'm aware of the issue. It's on my ever growing todo list.
 
 Thanks,
 
 	tglx
+--8323329-748278803-1414511101=:5308--
