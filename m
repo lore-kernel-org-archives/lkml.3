@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489AbaJ1Rqj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:46:39 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46799 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855AbaJ1Rqi (ORCPT
+	id S1754525AbaJ1Rq4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:46:56 -0400
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:55983 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338AbaJ1Rqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:46:38 -0400
-Date: Tue, 28 Oct 2014 10:46:33 -0700
-From: josh@joshtriplett.org
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, mingo@kernel.org
-Subject: Re: [PATCH 0/3] x86_64: Tidy up vsyscall emulation and make it
- optional
-Message-ID: <20141028174633.GB12195@cloud>
-References: <cover.1414516558.git.luto@amacapital.net>
+	Tue, 28 Oct 2014 13:46:54 -0400
+Date: Tue, 28 Oct 2014 15:46:49 -0200
+From: "Leonidas S. Barbosa" <leosilva@linux.vnet.ibm.com>
+To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org,
+        Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>,
+        Fionnuala Gunter <fin@linux.vnet.ibm.com>
+Subject: [PATCH 4/9] Moving NX-AES-ECB to be processed logic
+Message-ID: <20141028174647.GA17416@bluepex.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <cover.1414516558.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102817-0017-0000-0000-000000D902CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 10:22:25AM -0700, Andy Lutomirski wrote:
-> Now that arch/x86/kernel/vsyscall_64.c contains only vsyscall
-> emulation code, clean it up and make it optional.
-> 
-> Patch 1 makes vsyscall=none work be a bit more self-consistent: it
-> actually removes the fake vsyscall page instead of just segfaulting
-> anyone who tries to use it.
-> 
-> Patch 2 is pure cosmetic cleanup.
-> 
-> Patch 3 is the meat: it lets vsyscall emulation be configured out.
-> The config option to disable it is hidden under CONFIG_EXPERT, since
-> it will break legacy code.
-> 
-> Note that, last I checked, current userspace is unlikely to work if
-> the vDSO *and* vsyscalls are off.  Take it up with the glibc
-> maintainers.
-> 
-> This applies on top of tip/x86/vdso.
-> 
-> Andy Lutomirski (3):
->   x86_64,vsyscall: Turn vsyscalls all the way off when vsyscall=none
->   x86_64,vsyscall: Rewrite comment and clean up headers in vsyscall code
->   x86_64,vsyscall: Make vsyscall emulation configurable
+The previous limits were estimated locally in a single step
+basead on bound values, however it was not correct since
+when given certain scatterlist the function nx_build_sg_lists
+was consuming more sg entries than allocated causing a
+memory corruption and crashes.
 
-Nice!
+This patch removes the old logic and replaces it into nx_sg_build_lists 
+in order to build a correct nx_sg list using the correct sg_max limit 
+and bounds.
 
-For patches 1 and 2:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Leonidas S. Barbosa <leosilva@linux.vnet.ibm.com>
+---
+ drivers/crypto/nx/nx-aes-ecb.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-For patch 3, I responded with a possible minor improvement, but with or
-without that:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+diff --git a/drivers/crypto/nx/nx-aes-ecb.c b/drivers/crypto/nx/nx-aes-ecb.c
+index 85a8d23..cfdde8b 100644
+--- a/drivers/crypto/nx/nx-aes-ecb.c
++++ b/drivers/crypto/nx/nx-aes-ecb.c
+@@ -72,27 +72,19 @@ static int ecb_aes_nx_crypt(struct blkcipher_desc *desc,
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	unsigned long irq_flags;
+ 	unsigned int processed = 0, to_process;
+-	u32 max_sg_len;
+ 	int rc;
+ 
+ 	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
+ 
+-	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
+-			   nx_ctx->ap->sglen);
+-
+ 	if (enc)
+ 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
+ 	else
+ 		NX_CPB_FDM(csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
+ 
+ 	do {
+-		to_process = min_t(u64, nbytes - processed,
+-				   nx_ctx->ap->databytelen);
+-		to_process = min_t(u64, to_process,
+-				   NX_PAGE_SIZE * (max_sg_len - 1));
+-		to_process = to_process & ~(AES_BLOCK_SIZE - 1);
++		to_process = nbytes - processed;
+ 
+-		rc = nx_build_sg_lists(nx_ctx, desc, dst, src, to_process,
++		rc = nx_build_sg_lists(nx_ctx, desc, dst, src, &to_process,
+ 				processed, NULL);
+ 		if (rc)
+ 			goto out;
+-- 
+1.7.1
 
-I assume these should go through tip/x86/vdso as well?
-
-Also, any plans to do something similar for vsyscall_gtod.c?
-
-- Josh Triplett
