@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800AbaJ1HzZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:55:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44449 "EHLO
+	id S1759918AbaJ1Hzx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:55:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44442 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107AbaJ1Dht (ORCPT
+	with ESMTP id S1754030AbaJ1Dho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:49 -0400
+	Mon, 27 Oct 2014 23:37:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 3.17 052/146] m68k: Disable/restore interrupts in hwreg_present()/hwreg_write()
-Date: Tue, 28 Oct 2014 11:33:14 +0800
-Message-Id: <20141028033345.664767517@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: [PATCH 3.17 050/146] Drivers: hv: vmbus: Cleanup hv_post_message()
+Date: Tue, 28 Oct 2014 11:33:12 +0800
+Message-Id: <20141028033345.583682494@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,77 +29,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit e4dc601bf99ccd1c95b7e6eef1d3cf3c4b0d4961 upstream.
+commit b29ef3546aecb253a5552b198cef23750d56e1e4 upstream.
 
-hwreg_present() and hwreg_write() temporarily change the VBR register to
-another vector table. This table contains a valid bus error handler
-only, all other entries point to arbitrary addresses.
+Minimize failures in this function by pre-allocating the buffer
+for posting messages. The hypercall for posting the message can fail
+for a number of reasons:
 
-If an interrupt comes in while the temporary table is active, the
-processor will start executing at such an arbitrary address, and the
-kernel will crash.
+        1. Transient resource related issues
+        2. Buffer alignment
+        3. Buffer cannot span a page boundry
 
-While most callers run early, before interrupts are enabled, or
-explicitly disable interrupts, Finn Thain pointed out that macsonic has
-one callsite that doesn't, causing intermittent boot crashes.
-There's another unsafe callsite in hilkbd.
+We address issues 2 and 3 by preallocating a per-cpu page for the buffer.
+Transient resource related failures are handled by retrying by the callers
+of this function.
 
-Fix this for good by disabling and restoring interrupts inside
-hwreg_present() and hwreg_write().
+This patch is based on the investigation
+done by Dexuan Cui <decui@microsoft.com>.
 
-Explicitly disabling interrupts can be removed from the callsites later.
+I would like to thank Sitsofe Wheeler <sitsofe@yahoo.com>
+for reporting the issue and helping in debuggging.
 
-Reported-by: Finn Thain <fthain@telegraphics.com.au>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/mm/hwtest.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/hv/hv.c           |   27 +++++++++++++++------------
+ drivers/hv/hyperv_vmbus.h |    4 ++++
+ 2 files changed, 19 insertions(+), 12 deletions(-)
 
---- a/arch/m68k/mm/hwtest.c
-+++ b/arch/m68k/mm/hwtest.c
-@@ -28,9 +28,11 @@
- int hwreg_present( volatile void *regp )
+--- a/drivers/hv/hv.c
++++ b/drivers/hv/hv.c
+@@ -138,6 +138,8 @@ int hv_init(void)
+ 	memset(hv_context.synic_event_page, 0, sizeof(void *) * NR_CPUS);
+ 	memset(hv_context.synic_message_page, 0,
+ 	       sizeof(void *) * NR_CPUS);
++	memset(hv_context.post_msg_page, 0,
++	       sizeof(void *) * NR_CPUS);
+ 	memset(hv_context.vp_index, 0,
+ 	       sizeof(int) * NR_CPUS);
+ 	memset(hv_context.event_dpc, 0,
+@@ -217,26 +219,18 @@ int hv_post_message(union hv_connection_
+ 		  enum hv_message_type message_type,
+ 		  void *payload, size_t payload_size)
  {
-     int	ret = 0;
-+    unsigned long flags;
-     long	save_sp, save_vbr;
-     long	tmp_vectors[3];
+-	struct aligned_input {
+-		u64 alignment8;
+-		struct hv_input_post_message msg;
+-	};
  
-+    local_irq_save(flags);
-     __asm__ __volatile__
- 	(	"movec	%/vbr,%2\n\t"
- 		"movel	#Lberr1,%4@(8)\n\t"
-@@ -46,6 +48,7 @@ int hwreg_present( volatile void *regp )
- 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
- 		: "a" (regp), "a" (tmp_vectors)
-                 );
-+    local_irq_restore(flags);
+ 	struct hv_input_post_message *aligned_msg;
+ 	u16 status;
+-	unsigned long addr;
  
-     return( ret );
+ 	if (payload_size > HV_MESSAGE_PAYLOAD_BYTE_COUNT)
+ 		return -EMSGSIZE;
+ 
+-	addr = (unsigned long)kmalloc(sizeof(struct aligned_input), GFP_ATOMIC);
+-	if (!addr)
+-		return -ENOMEM;
+-
+ 	aligned_msg = (struct hv_input_post_message *)
+-			(ALIGN(addr, HV_HYPERCALL_PARAM_ALIGN));
++			hv_context.post_msg_page[get_cpu()];
+ 
+ 	aligned_msg->connectionid = connection_id;
++	aligned_msg->reserved = 0;
+ 	aligned_msg->message_type = message_type;
+ 	aligned_msg->payload_size = payload_size;
+ 	memcpy((void *)aligned_msg->payload, payload, payload_size);
+@@ -244,8 +238,7 @@ int hv_post_message(union hv_connection_
+ 	status = do_hypercall(HVCALL_POST_MESSAGE, aligned_msg, NULL)
+ 		& 0xFFFF;
+ 
+-	kfree((void *)addr);
+-
++	put_cpu();
+ 	return status;
  }
-@@ -58,9 +61,11 @@ EXPORT_SYMBOL(hwreg_present);
- int hwreg_write( volatile void *regp, unsigned short val )
- {
- 	int		ret;
-+	unsigned long flags;
- 	long	save_sp, save_vbr;
- 	long	tmp_vectors[3];
  
-+	local_irq_save(flags);
- 	__asm__ __volatile__
- 	(	"movec	%/vbr,%2\n\t"
- 		"movel	#Lberr2,%4@(8)\n\t"
-@@ -78,6 +83,7 @@ int hwreg_write( volatile void *regp, un
- 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
- 		: "a" (regp), "a" (tmp_vectors), "g" (val)
- 	);
-+	local_irq_restore(flags);
+@@ -294,6 +287,14 @@ int hv_synic_alloc(void)
+ 			pr_err("Unable to allocate SYNIC event page\n");
+ 			goto err;
+ 		}
++
++		hv_context.post_msg_page[cpu] =
++			(void *)get_zeroed_page(GFP_ATOMIC);
++
++		if (hv_context.post_msg_page[cpu] == NULL) {
++			pr_err("Unable to allocate post msg page\n");
++			goto err;
++		}
+ 	}
  
- 	return( ret );
+ 	return 0;
+@@ -308,6 +309,8 @@ static void hv_synic_free_cpu(int cpu)
+ 		free_page((unsigned long)hv_context.synic_event_page[cpu]);
+ 	if (hv_context.synic_message_page[cpu])
+ 		free_page((unsigned long)hv_context.synic_message_page[cpu]);
++	if (hv_context.post_msg_page[cpu])
++		free_page((unsigned long)hv_context.post_msg_page[cpu]);
  }
+ 
+ void hv_synic_free(void)
+--- a/drivers/hv/hyperv_vmbus.h
++++ b/drivers/hv/hyperv_vmbus.h
+@@ -515,6 +515,10 @@ struct hv_context {
+ 	 * per-cpu list of the channels based on their CPU affinity.
+ 	 */
+ 	struct list_head percpu_list[NR_CPUS];
++	/*
++	 * buffer to post messages to the host.
++	 */
++	void *post_msg_page[NR_CPUS];
+ };
+ 
+ extern struct hv_context hv_context;
 
 
