@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108AbaJ1LK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:10:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51238 "EHLO
+	id S1756175AbaJ1LLj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:11:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51264 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903AbaJ1LK4 (ORCPT
+	with ESMTP id S1756129AbaJ1LLh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:10:56 -0400
-Date: Tue, 28 Oct 2014 04:09:59 -0700
+	Tue, 28 Oct 2014 07:11:37 -0400
+Date: Tue, 28 Oct 2014 04:10:33 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-e22b886a8a43b147e1994a9f970f678fc0df2033@git.kernel.org>
-Cc: tglx@linutronix.de, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, mingo@kernel.org, torvalds@linux-foundation.org,
-        oleg@redhat.com
-Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, oleg@redhat.com
-In-Reply-To: <20140924082242.119255706@infradead.org>
-References: <20140924082242.119255706@infradead.org>
+Message-ID: <tip-e23738a7300a7591a57a22f47b813fd1b53ec404@git.kernel.org>
+Cc: torvalds@linux-foundation.org, peterz@infradead.org, hpa@zytor.com,
+        john@johnmccutchan.com, eparis@parisplace.org, rlove@rlove.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@kernel.org,
+        oleg@redhat.com, viro@zeniv.linux.org.uk
+Reply-To: viro@zeniv.linux.org.uk, oleg@redhat.com, mingo@kernel.org,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, rlove@rlove.org,
+        eparis@parisplace.org, john@johnmccutchan.com, hpa@zytor.com,
+        peterz@infradead.org, torvalds@linux-foundation.org
+In-Reply-To: <20140924082242.254858080@infradead.org>
+References: <20140924082242.254858080@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/wait: Add might_sleep() checks
-Git-Commit-ID: e22b886a8a43b147e1994a9f970f678fc0df2033
+Subject: [tip:sched/core] sched, inotify: Deal with nested sleeps
+Git-Commit-ID: e23738a7300a7591a57a22f47b813fd1b53ec404
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,162 +35,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e22b886a8a43b147e1994a9f970f678fc0df2033
-Gitweb:     http://git.kernel.org/tip/e22b886a8a43b147e1994a9f970f678fc0df2033
+Commit-ID:  e23738a7300a7591a57a22f47b813fd1b53ec404
+Gitweb:     http://git.kernel.org/tip/e23738a7300a7591a57a22f47b813fd1b53ec404
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 24 Sep 2014 10:18:48 +0200
+AuthorDate: Wed, 24 Sep 2014 10:18:50 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:55:23 +0100
+CommitDate: Tue, 28 Oct 2014 10:55:37 +0100
 
-sched/wait: Add might_sleep() checks
+sched, inotify: Deal with nested sleeps
 
-Add more might_sleep() checks, suppose someone put a wait_event() like
-thing in a wait loop..
+inotify_read is a wait loop with sleeps in. Wait loops rely on
+task_struct::state and sleeps do too, since that's the only means of
+actually sleeping. Therefore the nested sleeps destroy the wait loop
+state and the wait loop breaks the sleep functions that assume
+TASK_RUNNING (mutex_lock).
 
-Can't put might_sleep() in ___wait_event() because there's the locked
-primitives which call ___wait_event() with locks held.
+Fix this by using the new woken_wake_function and wait_woken() stuff,
+which registers wakeups in wait and thereby allows shrinking the
+task_state::state changes to the actual sleep part.
 
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: tglx@linutronix.de
 Cc: ilya.dryomov@inktank.com
 Cc: umgwanakikbuti@gmail.com
+Cc: Robert Love <rlove@rlove.org>
+Cc: Eric Paris <eparis@parisplace.org>
+Cc: John McCutchan <john@johnmccutchan.com>
+Cc: Robert Love <rlove@rlove.org>
 Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140924082242.119255706@infradead.org
+Link: http://lkml.kernel.org/r/20140924082242.254858080@infradead.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/wait.h | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ fs/notify/inotify/inotify_user.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index fc0e993..0421775 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -261,6 +261,7 @@ __out:	__ret;								\
-  */
- #define wait_event(wq, condition)					\
- do {									\
-+	might_sleep();							\
- 	if (condition)							\
- 		break;							\
- 	__wait_event(wq, condition);					\
-@@ -293,6 +294,7 @@ do {									\
- #define wait_event_timeout(wq, condition, timeout)			\
- ({									\
- 	long __ret = timeout;						\
-+	might_sleep();							\
- 	if (!___wait_cond_timeout(condition))				\
- 		__ret = __wait_event_timeout(wq, condition, timeout);	\
- 	__ret;								\
-@@ -318,6 +320,7 @@ do {									\
-  */
- #define wait_event_cmd(wq, condition, cmd1, cmd2)			\
- do {									\
-+	might_sleep();							\
- 	if (condition)							\
- 		break;							\
- 	__wait_event_cmd(wq, condition, cmd1, cmd2);			\
-@@ -345,6 +348,7 @@ do {									\
- #define wait_event_interruptible(wq, condition)				\
- ({									\
- 	int __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_interruptible(wq, condition);	\
- 	__ret;								\
-@@ -378,6 +382,7 @@ do {									\
- #define wait_event_interruptible_timeout(wq, condition, timeout)	\
- ({									\
- 	long __ret = timeout;						\
-+	might_sleep();							\
- 	if (!___wait_cond_timeout(condition))				\
- 		__ret = __wait_event_interruptible_timeout(wq,		\
- 						condition, timeout);	\
-@@ -428,6 +433,7 @@ do {									\
- #define wait_event_hrtimeout(wq, condition, timeout)			\
- ({									\
- 	int __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_hrtimeout(wq, condition, timeout,	\
- 					       TASK_UNINTERRUPTIBLE);	\
-@@ -453,6 +459,7 @@ do {									\
- #define wait_event_interruptible_hrtimeout(wq, condition, timeout)	\
- ({									\
- 	long __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_hrtimeout(wq, condition, timeout,	\
- 					       TASK_INTERRUPTIBLE);	\
-@@ -466,6 +473,7 @@ do {									\
- #define wait_event_interruptible_exclusive(wq, condition)		\
- ({									\
- 	int __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_interruptible_exclusive(wq, condition);\
- 	__ret;								\
-@@ -640,6 +648,7 @@ do {									\
- #define wait_event_killable(wq, condition)				\
- ({									\
- 	int __ret = 0;							\
-+	might_sleep();							\
- 	if (!(condition))						\
- 		__ret = __wait_event_killable(wq, condition);		\
- 	__ret;								\
-@@ -891,6 +900,7 @@ extern int bit_wait_io_timeout(struct wait_bit_key *);
- static inline int
- wait_on_bit(void *word, int bit, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit(word, bit,
-@@ -915,6 +925,7 @@ wait_on_bit(void *word, int bit, unsigned mode)
- static inline int
- wait_on_bit_io(void *word, int bit, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit(word, bit,
-@@ -941,6 +952,7 @@ wait_on_bit_io(void *word, int bit, unsigned mode)
- static inline int
- wait_on_bit_action(void *word, int bit, wait_bit_action_f *action, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit(word, bit, action, mode);
-@@ -968,6 +980,7 @@ wait_on_bit_action(void *word, int bit, wait_bit_action_f *action, unsigned mode
- static inline int
- wait_on_bit_lock(void *word, int bit, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_and_set_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit_lock(word, bit, bit_wait, mode);
-@@ -991,6 +1004,7 @@ wait_on_bit_lock(void *word, int bit, unsigned mode)
- static inline int
- wait_on_bit_lock_io(void *word, int bit, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_and_set_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit_lock(word, bit, bit_wait_io, mode);
-@@ -1016,6 +1030,7 @@ wait_on_bit_lock_io(void *word, int bit, unsigned mode)
- static inline int
- wait_on_bit_lock_action(void *word, int bit, wait_bit_action_f *action, unsigned mode)
- {
-+	might_sleep();
- 	if (!test_and_set_bit(bit, word))
- 		return 0;
- 	return out_of_line_wait_on_bit_lock(word, bit, action, mode);
-@@ -1034,6 +1049,7 @@ wait_on_bit_lock_action(void *word, int bit, wait_bit_action_f *action, unsigned
- static inline
- int wait_on_atomic_t(atomic_t *val, int (*action)(atomic_t *), unsigned mode)
- {
-+	might_sleep();
- 	if (atomic_read(val) == 0)
- 		return 0;
- 	return out_of_line_wait_on_atomic_t(val, action, mode);
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index daf7665..283aa31 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -227,14 +227,13 @@ static ssize_t inotify_read(struct file *file, char __user *buf,
+ 	struct fsnotify_event *kevent;
+ 	char __user *start;
+ 	int ret;
+-	DEFINE_WAIT(wait);
++	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+ 
+ 	start = buf;
+ 	group = file->private_data;
+ 
++	add_wait_queue(&group->notification_waitq, &wait);
+ 	while (1) {
+-		prepare_to_wait(&group->notification_waitq, &wait, TASK_INTERRUPTIBLE);
+-
+ 		mutex_lock(&group->notification_mutex);
+ 		kevent = get_one_event(group, count);
+ 		mutex_unlock(&group->notification_mutex);
+@@ -264,10 +263,10 @@ static ssize_t inotify_read(struct file *file, char __user *buf,
+ 		if (start != buf)
+ 			break;
+ 
+-		schedule();
++		wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+ 	}
++	remove_wait_queue(&group->notification_waitq, &wait);
+ 
+-	finish_wait(&group->notification_waitq, &wait);
+ 	if (start != buf && ret != -EFAULT)
+ 		ret = buf - start;
+ 	return ret;
