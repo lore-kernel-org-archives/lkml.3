@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753509AbaJ1R06 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:26:58 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:56795 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750925AbaJ1R04 (ORCPT
+	id S1753111AbaJ1R1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:27:46 -0400
+Received: from smtprelay0247.hostedemail.com ([216.40.44.247]:44955 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750925AbaJ1R1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:26:56 -0400
-Date: Tue, 28 Oct 2014 13:26:54 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Petr Mladek <pmladek@suse.cz>,
+	Tue, 28 Oct 2014 13:27:44 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6119:6261:7903:7974:10004:10400:10848:10967:11026:11232:11658:11914:12296:12517:12519:12663:12740:13018:13019:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: dirt19_261d42703771d
+X-Filterd-Recvd-Size: 2380
+Message-ID: <1414517260.6643.21.camel@perches.com>
+Subject: Re: [PATCH 7/7] docg3: Fix miuse of seq_printf return value
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] docg3: Fix miuse of seq_printf return value
-Message-ID: <20141028132654.7d020288@gandalf.local.home>
-In-Reply-To: <20141028171409.GH1193@ld-irv-0074>
+Date: Tue, 28 Oct 2014 10:27:40 -0700
+In-Reply-To: <20141028120552.63c2324c@gandalf.local.home>
 References: <20140929124246.3e39dac8@gandalf.local.home>
-	<cover.1412031505.git.joe@perches.com>
-	<c1a1138f1b05e87a3fbd8737af2f2c0be6e2724b.1412031505.git.joe@perches.com>
-	<20141022082916.GD16128@brian-ubuntu>
-	<20141028111301.22481f2a@gandalf.local.home>
-	<1414511877.6643.12.camel@perches.com>
-	<20141028120552.63c2324c@gandalf.local.home>
-	<20141028171409.GH1193@ld-irv-0074>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	 <cover.1412031505.git.joe@perches.com>
+	 <c1a1138f1b05e87a3fbd8737af2f2c0be6e2724b.1412031505.git.joe@perches.com>
+	 <20141022082916.GD16128@brian-ubuntu>
+	 <20141028111301.22481f2a@gandalf.local.home>
+	 <1414511877.6643.12.camel@perches.com>
+	 <20141028120552.63c2324c@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014 10:14:09 -0700
-Brian Norris <computersforpeace@gmail.com> wrote:
-
-> On Tue, Oct 28, 2014 at 12:05:52PM -0400, Steven Rostedt wrote:
-> > On Tue, 28 Oct 2014 08:57:57 -0700
-> > Joe Perches <joe@perches.com> wrote:
-> > 
-> > > On Tue, 2014-10-28 at 11:13 -0400, Steven Rostedt wrote:
-> > > > I'm going to be working on changes to remove the return value of
-> > > > seq_printf() and friends.
-> > > 
-> > > I'm sure you know all of this, but for anyone else:
-> > > 
-> > > This doesn't need to be done in a single pass.
-> > 
-> > Yeah, I took a look at all the places, and I've decided to take it off
-> > in chunks. I'm starting with the ones you posted, and will try to get
-> > acks for them. And then go after other chunks as I have time.
+On Tue, 2014-10-28 at 12:05 -0400, Steven Rostedt wrote:
+> On Tue, 28 Oct 2014 08:57:57 -0700
+> Joe Perches <joe@perches.com> wrote:
 > 
-> I'll keep this in my tree as-is for now. Let me know if you still need
-> something changed. I can give my 'Ack' if you really want to pull this
-> into a separate branch.
-
-If I get to a point where I can change the seq_printf() to return void,
-then I'll want it, otherwise without it, it will cause my branch to fail
-to compile on that code.
-
-That's why I would like it. If we keep it in your tree and have that for
-the next release, it will matter which tree goes into Linus's tree
-first. If mine goes in first, then it will break his build.
-
-Now, that's assuming I get this ready for 3.19, as I'll need quite a
-few Acked-by's for the changes that I'll be making. If I don't get it
-by 3.19, then it wont be an issue if that change goes in with your tree.
-
--- Steve
-
+> > On Tue, 2014-10-28 at 11:13 -0400, Steven Rostedt wrote:
+> > > I'm going to be working on changes to remove the return value of
+> > > seq_printf() and friends.
+> > 
+> > I'm sure you know all of this, but for anyone else:
+> > 
+> > This doesn't need to be done in a single pass.
 > 
-> BTW, I just noticed the $subject has a typo: s/miuse/misuse/
+> Yeah, I took a look at all the places, and I've decided to take it off
+> in chunks. I'm starting with the ones you posted, and will try to get
+> acks for them. And then go after other chunks as I have time.
+> 
+> I would like to get this done before I do my merge of trace_seq and
+> seq_file, but I'm thinking I may have to do that in parallel.
+
+I think the most important thing is to get the
+seq_is_overflown (or seq_has_overflowed or whatever
+other name is chosen) function added then the rest
+of the patches can be applied whenever maintainers
+(or Andrew or trivial or ...) pick them up.
+
+
+
+
