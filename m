@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760351AbaJ1G41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:56:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45627 "EHLO
+	id S1755788AbaJ1Dri (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:47:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45617 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932808AbaJ1Drj (ORCPT
+	with ESMTP id S932808AbaJ1Drc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:39 -0400
+	Mon, 27 Oct 2014 23:47:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@redhat.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 007/100] Btrfs: fix race in WAIT_SYNC ioctl
-Date: Tue, 28 Oct 2014 11:34:52 +0800
-Message-Id: <20141028033500.977040987@linuxfoundation.org>
+        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 004/100] Btrfs: try not to ENOSPC on log replay
+Date: Tue, 28 Oct 2014 11:34:49 +0800
+Message-Id: <20141028033500.855735056@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -28,56 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@redhat.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit 42383020beb1cfb05f5d330cc311931bc4917a97 upstream.
+commit 1d52c78afbbf80b58299e076a159617d6b42fe3c upstream.
 
-We check whether transid is already committed via last_trans_committed and
-then search through trans_list for pending transactions.  If
-last_trans_committed is updated by btrfs_commit_transaction after we check
-it (there is no locking), we will fail to find the committed transaction
-and return EINVAL to the caller.  This has been observed occasionally by
-ceph-osd (which uses this ioctl heavily).
+When doing log replay we may have to update inodes, which traditionally goes
+through our delayed inode stuff.  This will try to move space over from the
+trans handle, but we don't reserve space in our trans handle on replay since we
+don't know how much we will need, so instead we try to flush.  But because we
+have a trans handle open we won't flush anything, so if we are out of reserve
+space we will simply return ENOSPC.  Since we know that if an operation made it
+into the log then we definitely had space before the box bought the farm then we
+don't need to worry about doing this space reservation.  Use the
+fs_info->log_root_recovering flag to skip the delayed inode stuff and update the
+item directly.  Thanks,
 
-Fix by rechecking whether the provided transid <= last_trans_committed
-after the search fails, and if so return 0.
-
-Signed-off-by: Sage Weil <sage@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/transaction.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ fs/btrfs/inode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -592,7 +592,6 @@ int btrfs_wait_for_commit(struct btrfs_r
- 		if (transid <= root->fs_info->last_trans_committed)
- 			goto out;
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -3596,7 +3596,8 @@ noinline int btrfs_update_inode(struct b
+ 	 * without delay
+ 	 */
+ 	if (!btrfs_is_free_space_inode(inode)
+-	    && root->root_key.objectid != BTRFS_DATA_RELOC_TREE_OBJECTID) {
++	    && root->root_key.objectid != BTRFS_DATA_RELOC_TREE_OBJECTID
++	    && !root->fs_info->log_root_recovering) {
+ 		btrfs_update_root_times(trans, root);
  
--		ret = -EINVAL;
- 		/* find specified transaction */
- 		spin_lock(&root->fs_info->trans_lock);
- 		list_for_each_entry(t, &root->fs_info->trans_list, list) {
-@@ -608,9 +607,16 @@ int btrfs_wait_for_commit(struct btrfs_r
- 			}
- 		}
- 		spin_unlock(&root->fs_info->trans_lock);
--		/* The specified transaction doesn't exist */
--		if (!cur_trans)
-+
-+		/*
-+		 * The specified transaction doesn't exist, or we
-+		 * raced with btrfs_commit_transaction
-+		 */
-+		if (!cur_trans) {
-+			if (transid > root->fs_info->last_trans_committed)
-+				ret = -EINVAL;
- 			goto out;
-+		}
- 	} else {
- 		/* find newest transaction that is committing | committed */
- 		spin_lock(&root->fs_info->trans_lock);
+ 		ret = btrfs_delayed_update_inode(trans, root, inode);
 
 
