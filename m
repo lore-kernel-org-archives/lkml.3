@@ -1,128 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505AbaJ1Hga (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:36:30 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46970 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386AbaJ1Hg1 (ORCPT
+	id S933526AbaJ1Hgp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:36:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44865 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932101AbaJ1Dkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 03:36:27 -0400
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 28 Oct 2014 16:37:45 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Rik van Riel <riel@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Ritesh Harjani <ritesh.list@gmail.com>, t.stanislaws@samsung.com,
-        Gioh Kim <gioh.kim@lge.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH v4 3/4] mm/page_alloc: move migratetype recheck logic to
- __free_one_page()
-Message-ID: <20141028073745.GD27813@js1304-P5Q-DELUXE>
-References: <1414051821-12769-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1414051821-12769-4-git-send-email-iamjoonsoo.kim@lge.com>
- <544E2117.9000809@suse.cz>
+	Mon, 27 Oct 2014 23:40:53 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andreas Larsson <andreas@gaisler.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 125/146] sparc: Let memset return the address argument
+Date: Tue, 28 Oct 2014 11:34:27 +0800
+Message-Id: <20141028033348.866983895@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
+References: <20141028033343.441992423@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544E2117.9000809@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 11:40:23AM +0100, Vlastimil Babka wrote:
-> On 10/23/2014 10:10 AM, Joonsoo Kim wrote:
-> > All the caller of __free_one_page() has similar migratetype recheck logic,
-> > so we can move it to __free_one_page(). This reduce line of code and help
-> > future maintenance. This is also preparation step for "mm/page_alloc:
-> > restrict max order of merging on isolated pageblock" which fix the
-> > freepage accouting problem on freepage with more than pageblock order.
-> > 
-> > Cc: <stable@vger.kernel.org>
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > ---
-> >  mm/page_alloc.c |   24 ++++++++----------------
-> >  1 file changed, 8 insertions(+), 16 deletions(-)
-> > 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index 5d2f807..433f92c 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -579,7 +579,15 @@ static inline void __free_one_page(struct page *page,
-> >  			return;
-> >  
-> >  	VM_BUG_ON(migratetype == -1);
-> > +	if (unlikely(has_isolate_pageblock(zone) ||
-> > +		is_migrate_isolate(migratetype))) {
-> 
-> Since the v4 change of patch 1, this now adds
-> is_migrate_isolate(migratetype) also for the free_pcppages_bulk path,
-> where it's not needed?
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, you are right. But, patch 4 needs is_migrate_isolate() check
-in __free_one_page().
+------------------
 
-> 
-> > +		migratetype = get_pfnblock_migratetype(page, pfn);
-> > +		if (is_migrate_isolate(migratetype))
-> > +			goto skip_counting;
-> > +	}
-> > +	__mod_zone_freepage_state(zone, 1 << order, migratetype);
-> >  
-> > +skip_counting:
-> >  	page_idx = pfn & ((1 << MAX_ORDER) - 1);
-> >  
-> >  	VM_BUG_ON_PAGE(page_idx & ((1 << order) - 1), page);
-> > @@ -725,14 +733,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
-> >  			/* must delete as __free_one_page list manipulates */
-> >  			list_del(&page->lru);
-> >  			mt = get_freepage_migratetype(page);
-> > -			if (unlikely(has_isolate_pageblock(zone))) {
-> > -				mt = get_pageblock_migratetype(page);
-> > -				if (is_migrate_isolate(mt))
-> > -					goto skip_counting;
-> > -			}
-> > -			__mod_zone_freepage_state(zone, 1, mt);
-> >  
-> > -skip_counting:
-> >  			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
-> >  			__free_one_page(page, page_to_pfn(page), zone, 0, mt);
-> >  			trace_mm_page_pcpu_drain(page, 0, mt);
-> 
-> The 'mt' here for the tracepoint is now different. I know it's the same
-> as before patch 2, but the value introduced by patch 2 is more correct
-> than the reverting to pre-patch 2 done here.
+From: Andreas Larsson <andreas@gaisler.com>
 
-Yes, you are right. I didn't notice that.
+[ Upstream commit 74cad25c076a2f5253312c2fe82d1a4daecc1323 ]
 
-> This and the introduced check above are maybe minor things, but it makes
-> me question the value of unifying the check when the conditions in the
-> two call paths are not completely the same...
-> 
-> I understand this is also prerequisity for patch 4 in some sense, but if
-> you are reworking it anyway, then maybe this won't be needed in the end?
+This makes memset follow the standard (instead of returning 0 on success). This
+is needed when certain versions of gcc optimizes around memset calls and assume
+that the address argument is preserved in %o0.
 
-As mentioned above, is_migrate_isolate() check is needed in __free_one_page()
-in any case. Reworked patch also needs this.
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ arch/sparc/lib/memset.S |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-Hmm... I'd like to check isolate migratetype in just one place, but, it
-seems to be impossible. To correct tracepoint, I will remain the check
-in each functions. :/
+--- a/arch/sparc/lib/memset.S
++++ b/arch/sparc/lib/memset.S
+@@ -3,8 +3,9 @@
+  * Copyright (C) 1996,1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
+  * Copyright (C) 1996 David S. Miller (davem@caip.rutgers.edu)
+  *
+- * Returns 0, if ok, and number of bytes not yet set if exception
+- * occurs and we were called as clear_user.
++ * Calls to memset returns initial %o0. Calls to bzero returns 0, if ok, and
++ * number of bytes not yet set if exception occurs and we were called as
++ * clear_user.
+  */
+ 
+ #include <asm/ptrace.h>
+@@ -65,6 +66,8 @@ __bzero_begin:
+ 	.globl	__memset_start, __memset_end
+ __memset_start:
+ memset:
++	mov	%o0, %g1
++	mov	1, %g4
+ 	and	%o1, 0xff, %g3
+ 	sll	%g3, 8, %g2
+ 	or	%g3, %g2, %g3
+@@ -89,6 +92,7 @@ memset:
+ 	 sub	%o0, %o2, %o0
+ 
+ __bzero:
++	clr	%g4
+ 	mov	%g0, %g3
+ 1:
+ 	cmp	%o1, 7
+@@ -151,8 +155,8 @@ __bzero:
+ 	bne,a	8f
+ 	 EX(stb	%g3, [%o0], and %o1, 1)
+ 8:
+-	retl
+-	 clr	%o0
++	b	0f
++	 nop
+ 7:
+ 	be	13b
+ 	 orcc	%o1, 0, %g0
+@@ -164,6 +168,12 @@ __bzero:
+ 	bne	8b
+ 	 EX(stb	%g3, [%o0 - 1], add %o1, 1)
+ 0:
++	andcc	%g4, 1, %g0
++	be	5f
++	 nop
++	retl
++	 mov	%g1, %o0
++5:
+ 	retl
+ 	 clr	%o0
+ __memset_end:
 
-Thanks.
+
