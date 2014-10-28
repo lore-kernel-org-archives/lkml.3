@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528AbaJ1JLR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 05:11:17 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:14748 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591AbaJ1JLN (ORCPT
+	id S1753870AbaJ1JPI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 05:15:08 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:59170 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751973AbaJ1JPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 05:11:13 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-ee-544f5daec9a6
-Message-id: <1414487468.24949.21.camel@AMDC1943>
-Subject: Re: [PATCH 3/8] mfd: max77686/802: Remove support for board files
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Date: Tue, 28 Oct 2014 10:11:08 +0100
-In-reply-to: <544EA178.3090506@collabora.co.uk>
-References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com>
- <1414422226-10948-4-git-send-email-k.kozlowski@samsung.com>
- <544EA178.3090506@collabora.co.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Vd11sf4hBucuy1psnLGe1WLSugNM
-	FlMfPmGzuP7lOavF/CPnWC2O/i6w6F1wlc3ibNMbdov7X48yWny70sFksenxNVaLy7vmsFnM
-	OL+PyeL2ZV6LtUfusluc7mZ1EPBoae5h8/j7/DqLx99VL5g9ds66y+6xaVUnm8eda3vYPOad
-	DPTYvKTeo2/LKkaPz5vkAriiuGxSUnMyy1KL9O0SuDIar/cwFuzjqXjUe4atgfE9ZxcjJ4eE
-	gInE56V32SBsMYkL99YD2VwcQgJLGSXe929hhXA+M0oc3T6HFaSKV8BA4tXjRYwgtrCAl8Sn
-	SUvZQWw2AWOJzcuXgE0SEbCTuLH6ITNIM7PAYRaJRQ+ugyVYBFQlPv/cC9bMKaAv0XquC2rd
-	KkaJiztXg21gFlCXmDRvEVA3B9BNyhKN/W4QiwUlfky+xwJRIi+xec1b5gmMArOQdMxCUjYL
-	SdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCGx9nUH49JjVocYBTgYlXh4I1j8Q4RY
-	E8uKK3MPMUpwMCuJ8EbEAIV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwCu4yCk2f/LDEy+Dy8jRt
-	o6kvJib8+rKHpYL56lV/9WPSTBsluxMuil3uNahQmPyg3Td4y1SWghudEfe2Nj+1lJub5nzp
-	qw6DRZXcRwlhSbHA1qpf78t51bZlxd2O8OFLrlUO3Smn8uDNvUIZJfvD27x2da+YtDPhZGH7
-	4f+vmiRb9l5LWvVAiaU4I9FQi7moOBEAnwpxQZMCAAA=
+	Tue, 28 Oct 2014 05:15:05 -0400
+Date: Tue, 28 Oct 2014 10:11:24 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Sebastian Reichel <sre@kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v2 0/8] ARM: at91: Remove mach/ includes from the reset
+ driver
+Message-ID: <20141028091124.GC31979@lukather>
+References: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <20141028085053.41c6ce46@bbrezillon>
+ <20141028085202.GC722@piout.net>
+ <20141028085908.GB31979@lukather>
+ <20141028090454.GD722@piout.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Izn7cH1Com+I3R9J"
+Content-Disposition: inline
+In-Reply-To: <20141028090454.GD722@piout.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2014-10-27 at 20:48 +0100, Javier Martinez Canillas wrote:
-> Hello Krzysztof,
-> 
-> On 10/27/2014 04:03 PM, Krzysztof Kozlowski wrote:
-> > The driver is used only on Exynos based boards with DTS support.
-> > Convert the driver to DTS-only version. This simplifies a little the
-> > code:
-> > 1. No dead (unused) entries in platform_data structure.
-> > 2. More code removed (from all three patches: 34 insertions(+), 107
-> >    deletions).
-> > 3. Regulator driver does not depend on allocated memory
-> >    from MFD driver.
-> > 4. It makes also easier extending the regulator driver
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > ---
-> >  drivers/mfd/max77686.c               | 23 -----------------------
-> >  include/linux/mfd/max77686-private.h |  1 -
-> >  include/linux/mfd/max77686.h         | 22 ----------------------
-> >  3 files changed, 46 deletions(-)
-> > 
-> > diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-> > index 929795eae9fc..3da237afacde 100644
-> > --- a/drivers/mfd/max77686.c
-> > +++ b/drivers/mfd/max77686.c
-> 
-> As I said in Patch 2/8, I think this driver should depend on OF since
-> is now DT-only. Regulator drivers don't need to do this since they
-> already depend on MFD_MAX77686. With that change feel free to add:
-> 
-> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> 
-> Please also add my Reviewed-by tag to Patch 2/8 since I just noticed
-> that I forgot to add it.
 
-Thank you, I'll add depends on OF.
+--Izn7cH1Com+I3R9J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Best regards,
-Krzysztof
-> 
-> Best regards,
-> Javier
+On Tue, Oct 28, 2014 at 10:04:55AM +0100, Alexandre Belloni wrote:
+> > > > I'd rather keep the reset driver as is and move SDRAM related macros
+> > > > into a specific header (include/linux/memory/atmel-sdram.h or
+> > > > include/soc/atmel/memory.h as you proposed) so that the reset driver
+> > > > can reference them without including mach headers.
+> > > >=20
+> > >=20
+> > > My personal opinion is that it is better to hide the registers/bits f=
+rom
+> > > the reset driver right now as we have two different IPs and the sdram
+> > > driver already knows how to make the difference between them.
+> >=20
+> > The reset driver doesn't do anything anymore with these patches. Why
+> > not just remove it altogether?
+> >=20
+>=20
+> It does, the reset driver knows about the reset registers.
 
+So the only thing it does it to define a few register and that's it?
+It looks like it's a case for a header, not a driver.
+
+> The plan is to move the actual reset back to that driver when the
+> kernel will be able to easily execute code from sram.
+
+Why not go directly for the plan then?
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Izn7cH1Com+I3R9J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUT128AAoJEBx+YmzsjxAggvQQALXGYY5+ILSWaRXq0b8mqC6Y
+e1vM4HP76ryJ/+pjcu4cFy5Sc2JZcXriEAV1EDaSGZulfys2beWjHock8V5E6tZl
+zwVRGmxF+TLKVB3R6Em2pTiwlq52z+tL24zfvORap/rm1NMjAYGvytzwy982hV+X
+aaRTI82Eekwl5UyAOxpMfrFe3JJr5k/IuEPtPKjX9SgR4q4BJ8xgSiBF/Q8s7KqP
+J9Hv1mjpUI4JUTfh1g55rqwt6dkc2dXGWtgICSBN23bOLrEVMotHWttIVkTvNzZQ
+g0aOQgLbdG5yl0t4f7TqFHVB0XWuYfagbsydlvOkdW1jKF69ZwZJ/cAZZkWi5Zip
+doyLcEGafHjARaF0goYoy6jtnq7h//qCgnMj71jsMHGv8ZIHsKrXwsXhAfpeHq2w
+G7JJBwMRUmVQxi9b2j9rCTrfRnf5/iu4IEQ7c7Koh2dwhX+YctyZkEayPDPEfYcu
+WUvM7EQHQ0oUetta9d4bYY/+/Vxe0iDLwFogx4RetMFdQhETIIFtgHDo10SUC1E6
+s9JpEYAl6mpAxQHM1yiUSJl/FZJgUy3hWa0lcUksAg6q6H6dKmS5yb4mndweFYDo
+/E2mlyrxGBterJTxhNjN+IK/cOtwfRIflpDG1aAcF00xUFZtH3fw7I+3wPT/5R4w
+5UCyGzS0vTF1QRLE3B7H
+=u12G
+-----END PGP SIGNATURE-----
+
+--Izn7cH1Com+I3R9J--
