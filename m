@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760456AbaJ1G6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:58:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45589 "EHLO
+	id S932520AbaJ1G64 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:58:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45584 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932768AbaJ1DrO (ORCPT
+	with ESMTP id S932753AbaJ1DrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:14 -0400
+	Mon, 27 Oct 2014 23:47:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Bob Picco <bob.picco@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH 3.16 125/127] sparc64: Increase size of boot string to 1024 bytes
-Date: Tue, 28 Oct 2014 11:36:00 +0800
-Message-Id: <20141028033426.313737784@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        Bob Picco <bob.picco@oracle.com>
+Subject: [PATCH 3.16 124/127] sparc64: Kill unnecessary tables and increase MAX_BANKS.
+Date: Tue, 28 Oct 2014 11:35:59 +0800
+Message-Id: <20141028033426.260285721@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -30,35 +29,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 1cef94c36bd4d79b5ae3a3df99ee0d76d6a4a6dc ]
+[ Upstream commit d195b71bad4347d2df51072a537f922546a904f1 ]
 
-This is the longest boot string that silo supports.
+swapper_low_pmd_dir and swapper_pud_dir are actually completely
+useless and unnecessary.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Bob Picco <bob.picco@oracle.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
+We just need swapper_pg_dir[].  Naturally the other page table chunks
+will be allocated on an as-needed basis.  Since the kernel actually
+accesses these tables in the PAGE_OFFSET view, there is not even a TLB
+locality advantage of placing them in the kernel image.
+
+Use the hard coded vmlinux.ld.S slot for swapper_pg_dir which is
+naturally page aligned.
+
+Increase MAX_BANKS to 1024 in order to handle heavily fragmented
+virtual guests.
+
+Even with this MAX_BANKS increase, the kernel is 20K+ smaller.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/prom/bootstr_64.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/sparc/include/asm/pgtable_64.h |    1 -
+ arch/sparc/kernel/vmlinux.lds.S     |    5 +++--
+ arch/sparc/mm/init_64.c             |   25 ++-----------------------
+ 3 files changed, 5 insertions(+), 26 deletions(-)
 
---- a/arch/sparc/prom/bootstr_64.c
-+++ b/arch/sparc/prom/bootstr_64.c
-@@ -14,7 +14,10 @@
-  *          the .bss section or it will break things.
-  */
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -927,7 +927,6 @@ static inline void __set_pte_at(struct m
+ #endif
  
--#define BARG_LEN  256
-+/* We limit BARG_LEN to 1024 because this is the size of the
-+ * 'barg_out' command line buffer in the SILO bootloader.
-+ */
-+#define BARG_LEN 1024
- struct {
- 	int bootstr_len;
- 	int bootstr_valid;
+ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+-extern pmd_t swapper_low_pmd_dir[PTRS_PER_PMD];
+ 
+ void paging_init(void);
+ unsigned long find_ecache_flush_span(unsigned long size);
+--- a/arch/sparc/kernel/vmlinux.lds.S
++++ b/arch/sparc/kernel/vmlinux.lds.S
+@@ -35,8 +35,9 @@ jiffies = jiffies_64;
+ 
+ SECTIONS
+ {
+-	/* swapper_low_pmd_dir is sparc64 only */
+-	swapper_low_pmd_dir = 0x0000000000402000;
++#ifdef CONFIG_SPARC64
++	swapper_pg_dir = 0x0000000000402000;
++#endif
+ 	. = INITIAL_ADDRESS;
+ 	.text TEXTSTART :
+ 	{
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -86,7 +86,7 @@ extern struct tsb swapper_tsb[KERNEL_TSB
+ 
+ static unsigned long cpu_pgsz_mask;
+ 
+-#define MAX_BANKS	32
++#define MAX_BANKS	1024
+ 
+ static struct linux_prom64_registers pavail[MAX_BANKS];
+ static int pavail_ents;
+@@ -1942,12 +1942,6 @@ static void __init sun4v_linear_pte_xor_
+ 
+ static unsigned long last_valid_pfn;
+ 
+-/* These must be page aligned in order to not trigger the
+- * alignment tests of pgd_bad() and pud_bad().
+- */
+-pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__ ((aligned (PAGE_SIZE)));
+-static pud_t swapper_pud_dir[PTRS_PER_PUD] __attribute__ ((aligned (PAGE_SIZE)));
+-
+ static void sun4u_pgprot_init(void);
+ static void sun4v_pgprot_init(void);
+ 
+@@ -1955,8 +1949,6 @@ void __init paging_init(void)
+ {
+ 	unsigned long end_pfn, shift, phys_base;
+ 	unsigned long real_end, i;
+-	pud_t *pud;
+-	pmd_t *pmd;
+ 	int node;
+ 
+ 	setup_page_offset();
+@@ -2051,20 +2043,7 @@ void __init paging_init(void)
+ 	 */
+ 	init_mm.pgd += ((shift) / (sizeof(pgd_t)));
+ 	
+-	memset(swapper_low_pmd_dir, 0, sizeof(swapper_low_pmd_dir));
+-
+-	/* The kernel page tables we publish into what the rest of the
+-	 * world sees must be adjusted so that they see the PAGE_OFFSET
+-	 * address of these in-kerenel data structures.  However right
+-	 * here we must access them from the kernel image side, because
+-	 * the trap tables haven't been taken over and therefore we cannot
+-	 * take TLB misses in the PAGE_OFFSET linear mappings yet.
+-	 */
+-	pud = swapper_pud_dir + (shift / sizeof(pud_t));
+-	pgd_set(&swapper_pg_dir[0], pud);
+-
+-	pmd = swapper_low_pmd_dir + (shift / sizeof(pmd_t));
+-	pud_set(&swapper_pud_dir[0], pmd);
++	memset(swapper_pg_dir, 0, sizeof(swapper_pg_dir));
+ 
+ 	inherit_prom_mappings();
+ 	
 
 
