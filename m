@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760285AbaJ1Gvr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:51:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45722 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932957AbaJ1Ds0 (ORCPT
+	id S1760299AbaJ1Gvy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:51:54 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42369 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695AbaJ1Gvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:48:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Thomas Huth <thuth@linux.vnet.ibm.com>
-Subject: [PATCH 3.14 014/100] KVM: s390: unintended fallthrough for external call
-Date: Tue, 28 Oct 2014 11:34:59 +0800
-Message-Id: <20141028033501.290280787@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
-References: <20141028033500.670583608@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 02:51:52 -0400
+Date: Tue, 28 Oct 2014 09:50:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mikael Svantesson <mikael@distopic.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jason Cooper <jason@lakedaemon.net>, Jake Edge <jake@lwn.net>,
+        Anton Saraev <antonysaraev@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: skein: skein_api.c: removed space before ','
+Message-ID: <20141028065031.GH6879@mwanda>
+References: <544EC45E.3030906@distopic.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544EC45E.3030906@distopic.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Oct 27, 2014 at 11:17:02PM +0100, Mikael Svantesson wrote:
+> Signed-off-by: Mikael Svantesson <mikael@distopic.net>
 
-------------------
+The patch is corrupt (and in a totally weird way as well).  Please read
+the first paragraph for Documentation/email-clients.txt.
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-
-commit f346026e55f1efd3949a67ddd1dcea7c1b9a615e upstream.
-
-We must not fallthrough if the conditions for external call are not met.
-
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Thomas Huth <thuth@linux.vnet.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/s390/kvm/interrupt.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/arch/s390/kvm/interrupt.c
-+++ b/arch/s390/kvm/interrupt.c
-@@ -71,6 +71,7 @@ static int __interrupt_is_deliverable(st
- 			return 0;
- 		if (vcpu->arch.sie_block->gcr[0] & 0x2000ul)
- 			return 1;
-+		return 0;
- 	case KVM_S390_INT_EMERGENCY:
- 		if (psw_extint_disabled(vcpu))
- 			return 0;
-
+regards,
+dan carpenter
 
