@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760640AbaJ1HJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:09:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45414 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755632AbaJ1Dpe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:45:34 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnaud Ebalard <arno@natisbad.org>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.16 092/127] ARM: mvebu: Netgear RN2120: Use Hardware BCH ECC
-Date: Tue, 28 Oct 2014 11:35:27 +0800
-Message-Id: <20141028033424.877195891@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
-References: <20141028033420.925922046@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1760648AbaJ1HJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:09:33 -0400
+Received: from vif1-retry101.mer-nm.internl.net ([217.149.192.107]:53306 "EHLO
+	retry101.mer-nm.internl.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758747AbaJ1HJQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 03:09:16 -0400
+X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 03:09:16 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -2.899
+X-Spam-Languages: en
+Message-ID: <544F3FC3.3040106@topic.nl>
+Date: Tue, 28 Oct 2014 08:03:31 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Sebastian Reichel <sre@kernel.org>
+CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <dbaryshkov@gmail.com>, <dwmw2@infradead.org>
+Subject: Re: [PATCH v4] Add LTC2941/LTC2943 Battery Gauge Driver
+References: <1412748300-3915-1-git-send-email-mike.looijmans@topic.nl> <1414067918-6688-1-git-send-email-mike.looijmans@topic.nl> <20141027163842.GB20765@earth.universe>
+In-Reply-To: <20141027163842.GB20765@earth.universe>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+﻿On 10/27/2014 05:38 PM, Sebastian Reichel wrote:
+> Hi,
+>
+> On Thu, Oct 23, 2014 at 02:38:38PM +0200, Mike Looijmans wrote:
+>> Both the LTC2941 and LTC2943 measure battery capacity.
+>> The LTC2943 is compatible with the LTC2941, it adds voltage and
+>> temperature monitoring, and uses a slightly different conversion
+>> formula for the charge counter.
+>>
+>> To avoid confusion with e.g. the LTC2945, the driver is called
+>> LTC2941 instead of LTC294X.
+>>
+>> v2: Fix units of measurement: uV, uA and centidegrees.
+>> v3: Correctly set configuration register. Allow negative values
+>>      for the sense resistor.
+>> v4: Run checkpatch.pl and fix all errors and warnings.
+>>
+>> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+>> ---
+>> [...]
+>>
+>> +	np = of_node_get(client->dev.of_node);
+>> +
+>> +	/* r_sense can be negative, when sense+ is connected to the battery
+>> +	 * instead of the sense-. This results in reversed measurements. */
+>> +	ret = of_property_read_u32(np, "resistor-sense", &r_sense);
+>> +	if (ret < 0) {
+>> +		dev_err(&client->dev,
+>> +			"Could not find resistor-sense in devicetree\n");
+>> +		goto fail_name;
+>> +	}
+>> +	info->r_sense = r_sense;
+>> +
+>> +	ret = of_property_read_u32(np, "prescaler-exponent", &prescaler_exp);
+>> +	if (ret < 0) {
+>> +		dev_err(&client->dev,
+>> +			"PrescalerExponent not in devicetree, assume max\n");
+>> +		prescaler_exp = LTC2941_MAX_PRESCALER_EXP;
+>> +	}
+>
+> The device tree properties are not documented. Please document them
+> in a separate patch and Cc devicetree binding maintainers.
+>
+> Apart from that the properties should be vendor prefixed (e.g.
+> "lltc,resistor-sense").
 
-------------------
+Thanks for your feedback. I will post the requested changes asap.
 
-From: Arnaud Ebalard <arno@natisbad.org>
 
-commit 500abb6ccb9e3f8d638a7f422443a8549245ef90 upstream.
 
-The bootloader on the Netgear ReadyNAS RN2120 uses Hardware BCH
-ECC (strength = 4), while the pxa3xx NAND driver by default uses
-Hamming ECC (strength = 1).
 
-This patch changes the ECC mode on these machines to match that
-of the bootloader and of the stock firmware. That way, it is
-now possible to update the kernel from userland (e.g. using
-standard tools from mtd-utils package); u-boot will happily
-load and boot it.
 
-The issue was initially reported and fixed by Ben Pedell for
-RN102. The RN2120 shares the same Hynix H27U1G8F2BTR NAND
-flash and setup. This patch is based on Ben's fix for RN102.
+Met vriendelijke groet / kind regards,
 
-Fixes: ad51eddd95ad ("ARM: mvebu: Enable NAND controller in ReadyNAS 2120 .dts file")
-Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
-Link: https://lkml.kernel.org/r/61f6a1b7ad0adc57a0e201b9680bc2e5f214a317.1410035142.git.arno@natisbad.org
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Mike Looijmans
+System Expert
 
----
- arch/arm/boot/dts/armada-xp-netgear-rn2120.dts |    4 ++++
- 1 file changed, 4 insertions(+)
 
---- a/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
-+++ b/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
-@@ -223,6 +223,10 @@
- 				marvell,nand-enable-arbiter;
- 				nand-on-flash-bbt;
- 
-+				/* Use Hardware BCH ECC */
-+				nand-ecc-strength = <4>;
-+				nand-ecc-step-size = <512>;
-+
- 				partition@0 {
- 					label = "u-boot";
- 					reg = <0x0000000 0x180000>;  /* 1.5MB */
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
 
+Please consider the environment before printing this e-mail
+
+Topic zoekt gedreven (embedded) software specialisten!
+http://topic.nl/vacatures/topic-zoekt-software-engineers/
 
