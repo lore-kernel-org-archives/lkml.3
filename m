@@ -1,143 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbaJ1GMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:12:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:18415 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755984AbaJ1GMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 02:12:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,801,1406617200"; 
-   d="scan'208";a="621857938"
-Message-ID: <544F33AF.1000704@intel.com>
-Date: Tue, 28 Oct 2014 14:11:59 +0800
-From: Aaron Lu <aaron.lu@intel.com>
+	id S1759749AbaJ1GXK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:23:10 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55405 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759732AbaJ1GXF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 02:23:05 -0400
+Message-ID: <1414477378.8574.11.camel@tkhai>
+Subject: Re: [PATCH 3/3] introduce task_rcu_dereference()
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>, Christoph Lameter <cl@linux.com>
+Date: Tue, 28 Oct 2014 09:22:58 +0300
+In-Reply-To: <20141027195446.GD11736@redhat.com>
+References: <1413962231.19914.130.camel@tkhai>
+	 <20141027195339.GA11736@redhat.com> <20141027195446.GD11736@redhat.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-To: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, rui.zhang@intel.com,
-        edubezval@gmail.com, linux-pm@vger.kernel.org
-Subject: [PATCH v4] Thermal: int3406_thermal: solve the dependency build error
-References: <CA+r1ZhhoskOXaRSmcrnbdgapi-FsaKf+dnPHTXGkDvkYbvwQ8Q@mail.gmail.com> <543F88BE.4090307@intel.com> <20141017070620.GA1538@aaronlu.sh.intel.com> <20141017072236.GA12504@aaronlu.sh.intel.com>
-In-Reply-To: <20141017072236.GA12504@aaronlu.sh.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jim found that the current kernel may trigger a build error with some
-config: drivers/built-in.o: In function `int3406_thermal_probe':
-int3406_thermal.c:(.text+0x1d10b8): undefined reference to
-`acpi_video_get_levels'. The problem happens when CONFIG_THERMAL=y and
-CONFIG_ACPI_VIDEO=m. Solve the problem by separating a kernel config for
-int3406 thermal driver and add dependency on ACPI video for it.
+В Пн, 27/10/2014 в 20:54 +0100, Oleg Nesterov пишет:
+> task_struct is only protected by RCU if it was found on a RCU protected
+> list (say, for_each_process() or find_task_by_vpid()).
+> 
+> And as Kirill pointed out rq->curr isn't protected by RCU, the scheduler
+> drops the (potentially) last reference without RCU gp, this means that we
+> need to fix the code which uses foreign_rq->curr under rcu_read_lock().
+> 
+> Add a new helper which can be used to dereferene rq->curr or any other
+> pointer to task_struct assuming that it should be cleared or updated
+> before the final put_task_struct(). It returns non-NULL only if this
+> task can't go away before rcu_read_unlock().
+> 
+> Suggested-by: Kirill Tkhai <ktkhai@parallels.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  include/linux/sched.h |    1 +
+>  kernel/exit.c         |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 50 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 857ba40..0ba420e 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2300,6 +2300,7 @@ extern void block_all_signals(int (*notifier)(void *priv), void *priv,
+>  			      sigset_t *mask);
+>  extern void unblock_all_signals(void);
+>  extern void release_task(struct task_struct * p);
+> +extern struct task_struct *task_rcu_dereference(struct task_struct **ptask);
+>  extern int send_sig_info(int, struct siginfo *, struct task_struct *);
+>  extern int force_sigsegv(int, struct task_struct *);
+>  extern int force_sig_info(int, struct siginfo *, struct task_struct *);
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 32c58f7..d8b95c2 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -213,6 +213,55 @@ repeat:
+>  		goto repeat;
+>  }
+>  
+> +struct task_struct *task_rcu_dereference(struct task_struct **ptask)
+> +{
+> +	struct task_struct *task;
+> +	struct sighand_struct *sighand;
+> +
+> +	/*
+> +	 * We need to verify that release_task() was not called and thus
+> +	 * delayed_put_task_struct() can't run and drop the last reference
+> +	 * before rcu_read_unlock(). We check task->sighand != NULL, but
+> +	 * we can read the already freed and reused memory.
+> +	 */
+> + retry:
+> +	task = rcu_dereference(*ptask);
+> +	if (!task)
+> +		return NULL;
+> +
+> +	probe_slab_address(&task->sighand, sighand);
+> +	/*
+> +	 * Pairs with atomic_dec_and_test(usage) in put_task_struct(task).
+> +	 * If this task was already freed we can not miss the preceding
+> +	 * update of this pointer.
+> +	 */
+> +	smp_rmb();
+> +	if (unlikely(task != ACCESS_ONCE(*ptask)))
+> +		goto retry;
+> +
+> +	/*
+> +	 * Either this is the same task and we can trust sighand != NULL, or
+> +	 * its memory was re-instantiated as another instance of task_struct.
+> +	 * In the latter case the new task can not go away until another rcu
+> +	 * gp pass, so the only problem is that sighand == NULL can be false
+> +	 * positive but we can pretend we got this NULL before it was freed.
+> +	 */
+> +	if (sighand)
+> +		return task;
+> +
+> +	/*
+> +	 * We could even eliminate the false positive mentioned above:
+> +	 *
+> +	 *	probe_slab_address(&task->sighand, sighand);
+> +	 *	if (sighand)
+> +	 *		goto retry;
+> +	 *
+> +	 * if sighand != NULL because we read the freed memory we should
+> +	 * see the new pointer, otherwise we will likely return this task.
+> +	 */
+> +	return NULL;
+> +}
+> +
+>  /*
+>   * This checks not only the pgrp, but falls back on the pid if no
+>   * satisfactory pgrp is found. I dunno - gdb doesn't work correctly
 
-Reported-by: Jim Davis <jim.epost@gmail.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
----
-v4: rebased on v3.18-rc2.
-
- drivers/thermal/Kconfig                  | 26 +++-----------------
- drivers/thermal/int340x_thermal/Kconfig  | 41 ++++++++++++++++++++++++++++++++
- drivers/thermal/int340x_thermal/Makefile |  1 +
- 3 files changed, 45 insertions(+), 23 deletions(-)
- create mode 100644 drivers/thermal/int340x_thermal/Kconfig
-
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index f554d25b4399..ac391d8d76b4 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -229,29 +229,9 @@ config INTEL_SOC_DTS_THERMAL
- 	  notification methods.The other trip is a critical trip point, which
- 	  was set by the driver based on the TJ MAX temperature.
- 
--config INT340X_THERMAL
--	tristate "ACPI INT340X thermal drivers"
--	depends on X86 && ACPI
--	select THERMAL_GOV_USER_SPACE
--	select ACPI_THERMAL_REL
--	select ACPI_FAN
--	help
--	  Newer laptops and tablets that use ACPI may have thermal sensors and
--	  other devices with thermal control capabilities outside the core
--	  CPU/SOC, for thermal safety reasons.
--	  They are exposed for the OS to use via the INT3400 ACPI device object
--	  as the master, and INT3401~INT340B ACPI device objects as the slaves.
--	  Enable this to expose the temperature information and cooling ability
--	  from these objects to userspace via the normal thermal framework.
--	  This means that a wide range of applications and GUI widgets can show
--	  the information to the user or use this information for making
--	  decisions. For example, the Intel Thermal Daemon can use this
--	  information to allow the user to select his laptop to run without
--	  turning on the fans.
--
--config ACPI_THERMAL_REL
--	tristate
--	depends on ACPI
-+menu "ACPI INT340X thermal drivers"
-+source drivers/thermal/int340x_thermal/Kconfig
-+endmenu
- 
- menu "Texas Instruments thermal drivers"
- source "drivers/thermal/ti-soc-thermal/Kconfig"
-diff --git a/drivers/thermal/int340x_thermal/Kconfig b/drivers/thermal/int340x_thermal/Kconfig
-new file mode 100644
-index 000000000000..b92892a6afe0
---- /dev/null
-+++ b/drivers/thermal/int340x_thermal/Kconfig
-@@ -0,0 +1,41 @@
-+#
-+# ACPI INT340x thermal drivers configuration
-+#
-+
-+config INT340X_THERMAL
-+	tristate "ACPI INT340X thermal drivers"
-+	depends on X86 && ACPI
-+	select THERMAL_GOV_USER_SPACE
-+	select ACPI_THERMAL_REL
-+	select ACPI_FAN
-+	help
-+	  Newer laptops and tablets that use ACPI may have thermal sensors and
-+	  other devices with thermal control capabilities outside the core
-+	  CPU/SOC, for thermal safety reasons.
-+	  They are exposed for the OS to use via the INT3400 ACPI device object
-+	  as the master, and INT3401~INT340B ACPI device objects as the slaves.
-+	  Enable this to expose the temperature information and cooling ability
-+	  from these objects to userspace via the normal thermal framework.
-+	  This means that a wide range of applications and GUI widgets can show
-+	  the information to the user or use this information for making
-+	  decisions. For example, the Intel Thermal Daemon can use this
-+	  information to allow the user to select his laptop to run without
-+	  turning on the fans.
-+
-+if INT340X_THERMAL
-+
-+config ACPI_THERMAL_REL
-+	tristate
-+	depends on ACPI
-+
-+config INT3406_THERMAL
-+	tristate "ACPI INT3406 display thermal driver"
-+	depends on ACPI_VIDEO
-+	help
-+	  The display thermal device represents the LED/LCD display panel
-+	  that may or may not include touch support. The main function of
-+	  the display thermal device is to allow control of the display
-+	  brightness in order to address a thermal condition or to reduce
-+	  power consumed by display device.
-+
-+endif
-diff --git a/drivers/thermal/int340x_thermal/Makefile b/drivers/thermal/int340x_thermal/Makefile
-index ffe40bffaf1a..a9d0429be412 100644
---- a/drivers/thermal/int340x_thermal/Makefile
-+++ b/drivers/thermal/int340x_thermal/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_INT340X_THERMAL)	+= int3400_thermal.o
- obj-$(CONFIG_INT340X_THERMAL)	+= int3402_thermal.o
- obj-$(CONFIG_INT340X_THERMAL)	+= int3403_thermal.o
-+obj-$(CONFIG_INT3406_THERMAL)	+= int3406_thermal.o
- obj-$(CONFIG_ACPI_THERMAL_REL)	+= acpi_thermal_rel.o
--- 
-1.9.3
+Reviewed-by: Kirill Tkhai <ktkhai@parallels.com>
 
