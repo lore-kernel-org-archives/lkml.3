@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355AbaJ1TqE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 15:46:04 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41862 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786AbaJ1TqD (ORCPT
+	id S1752201AbaJ1Ts2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 15:48:28 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:63107 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaJ1TsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 15:46:03 -0400
-Date: Tue, 28 Oct 2014 14:45:32 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Albino Biasutti Neto <bino@riseup.net>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: Errors: Compiling 3.18-rc2
-Message-ID: <20141028194532.GK25735@saruman>
-Reply-To: <balbi@ti.com>
-References: <CA+bYFQZ2T4XPVhnZzfB5yWt6J11SDWf_5KzguEX0VZqmkVxYhQ@mail.gmail.com>
+	Tue, 28 Oct 2014 15:48:25 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HBg0C3yr6HVa1ZCc"
-Content-Disposition: inline
-In-Reply-To: <CA+bYFQZ2T4XPVhnZzfB5yWt6J11SDWf_5KzguEX0VZqmkVxYhQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141028185756.GD10873@pd.tnic>
+References: <1411313216-2641-1-git-send-email-minipli@googlemail.com>
+	<1411313216-2641-2-git-send-email-minipli@googlemail.com>
+	<20141003134707.GJ14343@console-pimps.org>
+	<20141007150132.GA7307@nazgul.tnic>
+	<20141007170748.GA25767@jig.fritz.box>
+	<20141008151730.GB16892@pd.tnic>
+	<CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
+	<20141008222619.GG16892@pd.tnic>
+	<20141012125515.GA32045@jig.fritz.box>
+	<20141028185756.GD10873@pd.tnic>
+Date: Tue, 28 Oct 2014 20:48:23 +0100
+Message-ID: <CA+rthh9qePkJogFDT+ttSLvYPvJrAM6CXMJ407Hq3PjcRw9WTw@mail.gmail.com>
+Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
+From: Mathias Krause <minipli@googlemail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86-ml <x86@kernel.org>, Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---HBg0C3yr6HVa1ZCc
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 28 October 2014 19:57, Borislav Petkov <bp@alien8.de> wrote:
+> [...]
+>
+> Ok, thanks for refreshing this for me, your patch is good, so
+>
+> Acked-by: Borislav Petkov <bp@suse.de>
 
-On Tue, Oct 28, 2014 at 05:41:53PM -0200, Albino Biasutti Neto wrote:
-> Hi
->=20
-> I was compile kernel version 3.18-rc2, very errors:
->=20
-> # make -j2
->=20
-> fs/open.c:822:1: error: expected identifier or =E2=80=98(=E2=80=99 before=
- =E2=80=98<<=E2=80=99 token
->  <<<<<<< HEAD
+Thanks. But as you said, the EFI mappings shouldn't be in the kernel's
+page table in the first place, so I'd rather see a patch doing that
+instead. But, in the meantime, this patch is valid, as it shows the
+"status quo".
 
-looks like a merge conflict annotation. Are you sure you didn't have
-merge conflicts ? What does 'git show' return ?
+> What this whole story shows, however, is that the EFI mappings are in
+> fact in the kernel page table and this shouldn't be IMO - I'd like to
+> very much have them split because otherwise there's no need to switch
+> page tables at all.
 
---=20
-balbi
+Indeed.
 
---HBg0C3yr6HVa1ZCc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> And besides, having UEFI in its own address space is
+> a good thing in itself anyway.
+>
+> So, I've already hacked up something to have a completely separate EFI
+> page table - need to find out why it doesn't work yet
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+I tried so too but failed early as well. I tried putting the EFI
+virtual mappings not in trampoline_pgd[511] but trampoline_pgd[510].
+However, that didn't work out. I got page faults when trying to invoke
+EFI functions, as, apparently, efi.systab was only mapped in the EFI
+page table but not the kernel's page table -- at least not at the same
+address. So when efi_call_virt() tries to dereference
+efi.systab->runtime->f, it just traps.
+I tried to hack around that by fiddling with get_systab_virt_addr() to
+make it point to the direct mapping for the phys_addr but failed on
+the first few attempts to get the math right. Then I noticed it was
+way to late to hack EFI code and fell asleep. Next day I just gave up
+and 'git reset --hard HEAD'. :(
 
-iQIcBAEBAgAGBQJUT/JcAAoJEIaOsuA1yqREbLIP/3S8OdVdhdTQxTMjJGrkSb7S
-P0nWSEPnJ/a6c0QCSdMYlLyNZ0CElBwrlV0ldNn4GvlRyAZ/9Y2NXae/bmNXESlI
-GeJdgBomslLYYVEEgAjWPuEV9X5JBVXAmPOGxwPHPu74eDO4qGeGHSNrcaLWzkOK
-EJ6SAnZvfrzeSZtqY/RNOH01Y+v676jV4J+AaJxzoZFz5ZwwFEuqq1XcFNHRS8vX
-VggawDOf97t/7aneJdMQCoHBsHfHEFqHvEO/L2HzXP1W8KN/kCmku6nDsrc6reSX
-XXUQ/OrkI6ZhCSMfSmcQVb8o6Wftx4ic5a5gJCYhD928+pikzoIU9wBUCA+3+5Tw
-jYPpNI5tDKpCeIOTivIMVdct5m5y+aabUue6Nv1K7GneQO8xRDScl/a93oA6VT02
-QjpJLfkXyuZ3/BY3HaiVDAFDxrB6z/Xp4sXis062oAosfWegSKeMilyf/MMbthfd
-DWsi1flhgGiKTICdVpCHhgM/qojIESYfLuH2CNEpbIM9XrnZbhImM06smE2keEM5
-P1fFpqECKO9gChHbXPjkjUyMJ6l4gLyh1f9juMZBut6izUIIJs3I5kloFJMRmo5u
-bCBRvqK/VgMfKDfukvwZKdr0pVMqaB3ca68e4wiiF9J90t3PC/KMxwxPDdSBp8g3
-mksJSOSbT8KghiEpV9Ak
-=Fmj6
------END PGP SIGNATURE-----
+> but qemu was
+> b0rked until recently so we had to deal with that first... bla bla.
 
---HBg0C3yr6HVa1ZCc--
+Debian's version of qemu + OVMF works fine here. Probably slightly
+outdated but still good enough for testing EFI stuff ;)
+
+
+Regards,
+Mathias
