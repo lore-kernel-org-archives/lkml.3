@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578AbaJ1HlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:41:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44758 "EHLO
+	id S934022AbaJ1Hlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:41:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44738 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753610AbaJ1DkL (ORCPT
+	with ESMTP id S1754790AbaJ1DkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:11 -0400
+	Mon, 27 Oct 2014 23:40:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.17 091/146] xfs: ensure WB_SYNC_ALL writeback handles partial pages correctly
-Date: Tue, 28 Oct 2014 11:33:53 +0800
-Message-Id: <20141028033347.338732689@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.17 089/146] udf: Fix loading of special inodes
+Date: Tue, 28 Oct 2014 11:33:51 +0800
+Message-Id: <20141028033347.246853836@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,74 +28,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 0d085a529b427d97710e6a41f8a4f23e1757cd12 upstream.
+commit 6174c2eb8ecef271159bdcde460ce8af54d8f72f upstream.
 
-XFS has been having trouble with stray delayed allocation extents
-beyond EOF for a long time. Recent changes to the collapse range
-code has triggered erroneous EBUSY errors on page invalidtion for
-block size smaller than page size filesystems. These
-have been caused by dirty buffers beyond EOF on a partial page which
-do not get written to disk during a sync.
+Some UDF media have special inodes (like VAT or metadata partition
+inodes) whose link_count is 0. Thus commit 4071b9136223 (udf: Properly
+detect stale inodes) broke loading these inodes because udf_iget()
+started returning -ESTALE for them. Since we still need to properly
+detect stale inodes queried by NFS, create two variants of udf_iget() -
+one which is used for looking up special inodes (which ignores
+link_count == 0) and one which is used for other cases which return
+ESTALE when link_count == 0.
 
-The issue is that write-ahead in xfs_cluster_write() finds such a
-partial page and handles it by leaving the page dirty but pushing it
-into a writeback state. This used to work just fine, as the
-write_cache_pages() code would then find the dirty partial page in
-the next mapping tree lookup as the dirty tag is still set.
-
-Unfortunately, when we moved to a mark and sweep approach to
-writeback to fix other writeback sync issues, we broken this. THe
-act of marking the page as under writeback now clears the TOWRITE
-tag in the radix tree, even though the page is still dirty. This
-causes the TOWRITE tag to be cleared, and hence the next lookup on
-the mapping tree does not find the dirty partial page and so doesn't
-try to write it again.
-
-This same writeback bug was found recently in ext4 and fixed in
-commit 1c8349a ("ext4: fix data integrity sync in ordered mode")
-without communication to the wider filesystem community. We can use
-exactly the same fix here so the TOWRITE flag is not cleared on
-partial page writes.
-
-cc: stable@vger.kernel.org # dependent on 1c8349a17137b93f0a83f276c764a6df1b9a116e
-Root-cause-found-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Fixes: 4071b913622316970d0e1919f7d82b4403fec5f2
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_aops.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ fs/udf/inode.c   |   14 +++++++++-----
+ fs/udf/super.c   |   10 +++++-----
+ fs/udf/udfdecl.h |   13 ++++++++++++-
+ 3 files changed, 26 insertions(+), 11 deletions(-)
 
---- a/fs/xfs/xfs_aops.c
-+++ b/fs/xfs/xfs_aops.c
-@@ -434,10 +434,22 @@ xfs_start_page_writeback(
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -1277,7 +1277,7 @@ update_time:
+  */
+ #define UDF_MAX_ICB_NESTING 1024
+ 
+-static int udf_read_inode(struct inode *inode)
++static int udf_read_inode(struct inode *inode, bool hidden_inode)
  {
- 	ASSERT(PageLocked(page));
- 	ASSERT(!PageWriteback(page));
--	if (clear_dirty)
-+
-+	/*
-+	 * if the page was not fully cleaned, we need to ensure that the higher
-+	 * layers come back to it correctly. That means we need to keep the page
-+	 * dirty, and for WB_SYNC_ALL writeback we need to ensure the
-+	 * PAGECACHE_TAG_TOWRITE index mark is not removed so another attempt to
-+	 * write this page in this writeback sweep will be made.
-+	 */
-+	if (clear_dirty) {
- 		clear_page_dirty_for_io(page);
--	set_page_writeback(page);
-+		set_page_writeback(page);
-+	} else
-+		set_page_writeback_keepwrite(page);
-+
- 	unlock_page(page);
-+
- 	/* If no buffers on the page are to be written, finish it here */
- 	if (!buffers)
- 		end_page_writeback(page);
+ 	struct buffer_head *bh = NULL;
+ 	struct fileEntry *fe;
+@@ -1436,8 +1436,11 @@ reread:
+ 
+ 	link_count = le16_to_cpu(fe->fileLinkCount);
+ 	if (!link_count) {
+-		ret = -ESTALE;
+-		goto out;
++		if (!hidden_inode) {
++			ret = -ESTALE;
++			goto out;
++		}
++		link_count = 1;
+ 	}
+ 	set_nlink(inode, link_count);
+ 
+@@ -1826,7 +1829,8 @@ out:
+ 	return err;
+ }
+ 
+-struct inode *udf_iget(struct super_block *sb, struct kernel_lb_addr *ino)
++struct inode *__udf_iget(struct super_block *sb, struct kernel_lb_addr *ino,
++			 bool hidden_inode)
+ {
+ 	unsigned long block = udf_get_lb_pblock(sb, ino, 0);
+ 	struct inode *inode = iget_locked(sb, block);
+@@ -1839,7 +1843,7 @@ struct inode *udf_iget(struct super_bloc
+ 		return inode;
+ 
+ 	memcpy(&UDF_I(inode)->i_location, ino, sizeof(struct kernel_lb_addr));
+-	err = udf_read_inode(inode);
++	err = udf_read_inode(inode, hidden_inode);
+ 	if (err < 0) {
+ 		iget_failed(inode);
+ 		return ERR_PTR(err);
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -959,7 +959,7 @@ struct inode *udf_find_metadata_inode_ef
+ 	addr.logicalBlockNum = meta_file_loc;
+ 	addr.partitionReferenceNum = partition_num;
+ 
+-	metadata_fe = udf_iget(sb, &addr);
++	metadata_fe = udf_iget_special(sb, &addr);
+ 
+ 	if (IS_ERR(metadata_fe)) {
+ 		udf_warn(sb, "metadata inode efe not found\n");
+@@ -1020,7 +1020,7 @@ static int udf_load_metadata_files(struc
+ 		udf_debug("Bitmap file location: block = %d part = %d\n",
+ 			  addr.logicalBlockNum, addr.partitionReferenceNum);
+ 
+-		fe = udf_iget(sb, &addr);
++		fe = udf_iget_special(sb, &addr);
+ 		if (IS_ERR(fe)) {
+ 			if (sb->s_flags & MS_RDONLY)
+ 				udf_warn(sb, "bitmap inode efe not found but it's ok since the disc is mounted read-only\n");
+@@ -1119,7 +1119,7 @@ static int udf_fill_partdesc_info(struct
+ 		};
+ 		struct inode *inode;
+ 
+-		inode = udf_iget(sb, &loc);
++		inode = udf_iget_special(sb, &loc);
+ 		if (IS_ERR(inode)) {
+ 			udf_debug("cannot load unallocSpaceTable (part %d)\n",
+ 				  p_index);
+@@ -1154,7 +1154,7 @@ static int udf_fill_partdesc_info(struct
+ 		};
+ 		struct inode *inode;
+ 
+-		inode = udf_iget(sb, &loc);
++		inode = udf_iget_special(sb, &loc);
+ 		if (IS_ERR(inode)) {
+ 			udf_debug("cannot load freedSpaceTable (part %d)\n",
+ 				  p_index);
+@@ -1198,7 +1198,7 @@ static void udf_find_vat_block(struct su
+ 	     vat_block >= map->s_partition_root &&
+ 	     vat_block >= start_block - 3; vat_block--) {
+ 		ino.logicalBlockNum = vat_block - map->s_partition_root;
+-		inode = udf_iget(sb, &ino);
++		inode = udf_iget_special(sb, &ino);
+ 		if (!IS_ERR(inode)) {
+ 			sbi->s_vat_inode = inode;
+ 			break;
+--- a/fs/udf/udfdecl.h
++++ b/fs/udf/udfdecl.h
+@@ -138,7 +138,18 @@ extern int udf_write_fi(struct inode *in
+ /* file.c */
+ extern long udf_ioctl(struct file *, unsigned int, unsigned long);
+ /* inode.c */
+-extern struct inode *udf_iget(struct super_block *, struct kernel_lb_addr *);
++extern struct inode *__udf_iget(struct super_block *, struct kernel_lb_addr *,
++				bool hidden_inode);
++static inline struct inode *udf_iget_special(struct super_block *sb,
++					     struct kernel_lb_addr *ino)
++{
++	return __udf_iget(sb, ino, true);
++}
++static inline struct inode *udf_iget(struct super_block *sb,
++				     struct kernel_lb_addr *ino)
++{
++	return __udf_iget(sb, ino, false);
++}
+ extern int udf_expand_file_adinicb(struct inode *);
+ extern struct buffer_head *udf_expand_dir_adinicb(struct inode *, int *, int *);
+ extern struct buffer_head *udf_bread(struct inode *, int, int, int *);
 
 
