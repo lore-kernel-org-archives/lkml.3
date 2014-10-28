@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbaJ1Q1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:27:49 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:48130 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751254AbaJ1Q1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:27:47 -0400
-Date: Tue, 28 Oct 2014 05:49:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: hung tasks in 3.18.0-rc1-00221-gc3351df
-Message-ID: <20141028124942.GN5718@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LRH.2.11.1410231619340.11555@adalberg.ut.ee>
- <20141024001822.GK4977@linux.vnet.ibm.com>
- <alpine.LRH.2.11.1410241057270.15464@adalberg.ut.ee>
- <20141024145509.GO4977@linux.vnet.ibm.com>
- <20141027174424.GB27568@linux.vnet.ibm.com>
- <alpine.LRH.2.11.1410281014530.6536@adalberg.ut.ee>
+	id S1752600AbaJ1Q3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:29:13 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:37812 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695AbaJ1Q3L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 12:29:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1410281014530.6536@adalberg.ut.ee>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102816-0029-0000-0000-000000F33BB1
+In-Reply-To: <1413971927-9168-1-git-send-email-iivanov@mm-sol.com>
+References: <1413971927-9168-1-git-send-email-iivanov@mm-sol.com>
+Date: Tue, 28 Oct 2014 17:29:10 +0100
+Message-ID: <CACRpkdaq8Y_+JHTjZWmWQUh9xnSSGOd+-XVpZeutfwRaZXTQxQ@mail.gmail.com>
+Subject: Re: [PATCH v6 0/4] Qualcomm SPMI PMIC pin controller drivers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Georgi Djakov <gdjakov@mm-sol.com>, Andy Gross <agross@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 10:16:43AM +0200, Meelis Roos wrote:
-> > rcu: Make rcu_barrier() understand about missing rcuo kthreads
-> 
-> I can not trigger the previous problem at will so my testing is not very 
-> useful. I tested the previous patch that you sent but the problem did 
-> not trigger, and yesterday applied this one and it still does not 
-> trigger, but I an using remote sessions only for now (no desktop).
-> 
-> At least it's not clearly broken :)
+On Wed, Oct 22, 2014 at 11:58 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
 
-A couple of other people had more reproducible test setups and confirmed
-that it fixed them.
+> Changes since v4:
+>
+> - Rebased on v3.18-rc1:
+>   pinmux_ops.enable is now pinmux_ops.set_mux
+>   gpiochip_remove() did not return a value.
+> - Added Ack's from Bjorn
 
-But yes, there are no doubt other RCU bugs waiting to be found.  ;-)
+Thanks guys, I have applied the latest version of the v6 patch series,
+including the v6-prim version of 3/4 that fixed the compile error...
 
-							Thanx, Paul
+Unless something radically bad happens it goes into v3.19.
 
+Yours,
+Linus Walleij
