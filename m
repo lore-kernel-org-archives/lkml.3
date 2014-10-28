@@ -1,51 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702AbaJ1Ujl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:39:41 -0400
-Received: from mx1.riseup.net ([198.252.153.129]:49703 "EHLO mx1.riseup.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810AbaJ1Ujk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:39:40 -0400
+	id S1754744AbaJ1UkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:40:18 -0400
+Received: from mail-bl2on0076.outbound.protection.outlook.com ([65.55.169.76]:29654
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751190AbaJ1UkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 16:40:16 -0400
+Date: Tue, 28 Oct 2014 13:40:11 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH RESEND] PM / sleep: Fix racing timers
+References: <1411405623-7869-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1860362.OyoLA3GxVJ@vostro.rjw.lan>
+ <fadb1f7b-82bf-4dbd-bfd4-ca24daca0a8f@BN1AFFO11FD060.protection.gbl>
 MIME-Version: 1.0
-In-Reply-To: <20141028194532.GK25735@saruman>
-References: <CA+bYFQZ2T4XPVhnZzfB5yWt6J11SDWf_5KzguEX0VZqmkVxYhQ@mail.gmail.com>
-	<20141028194532.GK25735@saruman>
-Date: Tue, 28 Oct 2014 18:39:39 -0200
-Message-ID: <CA+bYFQbr4RB6XcZYD5b9W_kG6h+kvhGna0e2we67hA+Yr13wdw@mail.gmail.com>
-Subject: Re: Errors: Compiling 3.18-rc2
-From: Albino Biasutti Neto <bino@riseup.net>
-To: balbi@ti.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <fadb1f7b-82bf-4dbd-bfd4-ca24daca0a8f@BN1AFFO11FD060.protection.gbl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21058.005
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <83c78fd2985d4530a48a5947caef21be@BL2FFO11FD052.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(164054003)(199003)(377454003)(377424004)(189002)(51704005)(54356999)(64706001)(575784001)(87936001)(77096002)(15975445006)(44976005)(86362001)(92566001)(47776003)(31966008)(95666004)(6806004)(85852003)(15202345003)(19580405001)(4396001)(21056001)(76176999)(85182001)(83506001)(106466001)(20776003)(80022003)(107046002)(50986999)(74316001)(46102003)(120916001)(76482002)(102836001)(50466002)(99396003)(53416004)(19580395003)(108616004)(85202003)(110136001)(23676002)(85306004)(104016003)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB025;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB025;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0378F1E47A
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-28 17:45 GMT-02:00 Felipe Balbi <balbi@ti.com>:
-> On Tue, Oct 28, 2014 at 05:41:53PM -0200, Albino Biasutti Neto wrote:
->> Hi
->>
->> I was compile kernel version 3.18-rc2, very errors:
->>
->> # make -j2
->>
->> fs/open.c:822:1: error: expected identifier or ‘(’ before ‘<<’ token
->>  <<<<<<< HEAD
->
-> looks like a merge conflict annotation. Are you sure you didn't have
-> merge conflicts ? What does 'git show' return ?
+Hi Rafael,
 
-$ git show
-commit e29bfaac2d572915513c1ec78c61a93373967251
-Merge: 536a517 f7e87a4
-Author: XXXX <xxx@xxx>
-Date:   Tue Oct 28 17:29:46 2014 -0200
+any opinion on this?
 
-    Merge branch 'master' of
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux
+	Thanks,
+	Sören
 
-
-                          Albino
-                          binoanb.eti.br
+On Thu, 2014-10-02 at 09:01AM -0700, Sören Brinkmann wrote:
+> Hi Rafael,
+> 
+> On Tue, 2014-09-23 at 01:01AM +0200, Rafael J. Wysocki wrote:
+> > On Monday, September 22, 2014 10:07:03 AM Soren Brinkmann wrote:
+> > > On platforms that do not power off during suspend, successfully entering
+> > > suspend races with timers.
+> > > 
+> > > The race happening in a couple of location is:
+> > > 
+> > >   1. disable IRQs   		(e.g. arch_suspend_disable_irqs())
+> > >      ...
+> > >   2. syscore_suspend()
+> > >       -> timekeeping_suspend()
+> > >        -> clockevents_notify(SUSPEND)
+> > >         -> tick_suspend()   	(timers are turned off here)
+> > >      ...
+> > >   3. wfi            		(wait for wake-IRQ here)
+> > > 
+> > > Between steps 1 and 2 the timers can still generate interrupts that are
+> > > not handled and stay pending until step 3. That pending IRQ causes an
+> > > immediate - spurious - wake.
+> > > 
+> > > The solution is to move the clockevents suspend/resume notification
+> > > out of the syscore_suspend step and explictly call them at the appropriate
+> > > time in the suspend/hibernation paths. I.e. timers are suspend _before_
+> > > IRQs get disabled. And accordingly in the resume path.
+> > > 
+> > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > > ---
+> > > Hi,
+> > > 
+> > > there was not a lot of discussion on the last submission. Just one comment from
+> > > Rafael (https://lkml.org/lkml/2014/8/26/780), which - as I outlined in my
+> > > response, does not apply, IMHO, since the platform does not re-enable
+> > > interrupts.
+> > 
+> > Well, you just don't agree with it.
+> > 
+> > The problem with your approach is that timer interrupts aren't actually as
+> > special as you think and any other IRQF_NO_SUSPEND interrupts would have caused
+> > similar issues to appear under specific conditions.
+> > 
+> > The solution I would suggest and that actually covers all IRQF_NO_SUSPEND
+> > interrupts would be to use a wait_event() loop like the one in freeze_enter()
+> > (on top of the current linux-next or the pm-genirq branch of linux-pm.git),
+> > but wait for pm_abort_suspend to become true, to implement system suspend.
+> 
+> sorry, it took me a while since I needed to get some dependencies ported
+> to the pm-genirq base. Once I had that, it reproduced my original issue.
+> So far so good. I then looked into finding a solution following your
+> guidance. I'm not sure I really found what you had in mind, but below is
+> what I came up with, which seems to do it.
+> Please let me know how far off I am.
+> 
+> 	Thanks,
+> 	Sören
+> 
+> -------8<------------------8<----------------8<----------------8<---------------
+> diff --git a/drivers/base/power/wakeup.c b/drivers/base/power/wakeup.c
+> index c2744b30d5d9..a4f9914571f1 100644
+> --- a/drivers/base/power/wakeup.c
+> +++ b/drivers/base/power/wakeup.c
+> @@ -25,7 +25,7 @@
+>  bool events_check_enabled __read_mostly;
+>  
+>  /* If set and the system is suspending, terminate the suspend. */
+> -static bool pm_abort_suspend __read_mostly;
+> +bool pm_abort_suspend __read_mostly;
+>  
+>  /*
+>   * Combined counters of registered wakeup events and wakeup events in progress.
+> diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> index 6dadb25cb0d8..e6a6de8f76d0 100644
+> --- a/kernel/power/suspend.c
+> +++ b/kernel/power/suspend.c
+> @@ -33,6 +33,7 @@
+>  
+>  static const char *pm_labels[] = { "mem", "standby", "freeze", };
+>  const char *pm_states[PM_SUSPEND_MAX];
+> +extern bool pm_abort_suspend;
+>  
+>  static const struct platform_suspend_ops *suspend_ops;
+>  static const struct platform_freeze_ops *freeze_ops;
+> @@ -294,25 +295,27 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
+>  	if (error || suspend_test(TEST_CPUS))
+>  		goto Enable_cpus;
+>  
+> -	arch_suspend_disable_irqs();
+> -	BUG_ON(!irqs_disabled());
+> -
+> -	error = syscore_suspend();
+> -	if (!error) {
+> -		*wakeup = pm_wakeup_pending();
+> -		if (!(suspend_test(TEST_CORE) || *wakeup)) {
+> -			trace_suspend_resume(TPS("machine_suspend"),
+> -				state, true);
+> -			error = suspend_ops->enter(state);
+> -			trace_suspend_resume(TPS("machine_suspend"),
+> -				state, false);
+> -			events_check_enabled = false;
+> +	while (!pm_abort_suspend) {
+> +		arch_suspend_disable_irqs();
+> +		BUG_ON(!irqs_disabled());
+> +
+> +		error = syscore_suspend();
+> +		if (!error) {
+> +			*wakeup = pm_wakeup_pending();
+> +			if (!(suspend_test(TEST_CORE) || *wakeup)) {
+> +				trace_suspend_resume(TPS("machine_suspend"),
+> +					state, true);
+> +				error = suspend_ops->enter(state);
+> +				trace_suspend_resume(TPS("machine_suspend"),
+> +					state, false);
+> +				events_check_enabled = false;
+> +			}
+> +			syscore_resume();
+>  		}
+> -		syscore_resume();
+> -	}
+>  
+> -	arch_suspend_enable_irqs();
+> -	BUG_ON(irqs_disabled());
+> +		arch_suspend_enable_irqs();
+> +		BUG_ON(irqs_disabled());
+> +	}
+>  
+>   Enable_cpus:
+>  	enable_nonboot_cpus();
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
