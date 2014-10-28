@@ -1,201 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325AbaJ1Rog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:44:36 -0400
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:59116 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741AbaJ1Rof (ORCPT
+	id S1754402AbaJ1RpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:45:01 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42048 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792AbaJ1Ro7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:44:35 -0400
-Date: Tue, 28 Oct 2014 15:44:30 -0200
-From: "Leonidas S. Barbosa" <leosilva@linux.vnet.ibm.com>
-To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org,
-        Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>,
-        Fionnuala Gunter <fin@linux.vnet.ibm.com>
-Subject: [PATCH 2/9] Moving NX-AES-CCM to be processed logic and sg_list
- bounds
-Message-ID: <20141028174427.GA16919@bluepex.com>
+	Tue, 28 Oct 2014 13:44:59 -0400
+Date: Tue, 28 Oct 2014 18:44:56 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Len Brown <len.brown@intel.com>,
+        x86@kernel.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, rui.zhang@intel.com,
+        linux-pm@vger.kernel.org
+Subject: Re: [Patch v7 01/18] ACPI, irq: fix regression casued by 6b9fb7082409
+Message-ID: <20141028174456.GA9134@amd>
+References: <1414387308-27148-1-git-send-email-jiang.liu@linux.intel.com>
+ <1414387308-27148-2-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102817-0005-0000-0000-000000E80925
+In-Reply-To: <1414387308-27148-2-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous limits were estimated locally in a single step
-basead on bound values, however it was not correct since
-when given certain scatterlist the function nx_build_sg_lists
-was consuming more sg entries than allocated causing a
-memory corruption and crashes.
+Hi!
 
-This patch removes the old logic and replaces it into nx_sg_build_lists in
-order to build a correct nx_sg list using the correct sg_max limit and
-bounds.
+> When IOAPIC is disabled, acpi_gsi_to_irq() should return gsi directly
+> instead of calling mp_map_gsi_to_irq() to translate gsi to IRQ by IOAPIC.
+> It fixes https://bugzilla.kernel.org/show_bug.cgi?id=84381.
+> 
+> Reported-by: Thomas Richter <thor@math.tu-berlin.de>
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> Cc: rui.zhang@intel.com
+> Cc: <stable@vger.kernel.org> # 3.17
+> ---
+>  arch/x86/kernel/acpi/boot.c |   13 +++++++++----
+>  1 file changed, 9 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+> index b436fc735aa4..eceba9d9e116 100644
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -604,14 +604,19 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
+>  
+>  int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
+>  {
+> -	int irq = mp_map_gsi_to_irq(gsi, IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
+> +	int irq;
+>  
+> -	if (irq >= 0) {
+> +	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
+> +		*irqp = gsi;
 
-Signed-off-by: Leonidas S. Barbosa <leosilva@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx-aes-ccm.c |   61 +++++++++++++++++----------------------
- 1 files changed, 27 insertions(+), 34 deletions(-)
+As you have multiple return points, anyway, I'd do return 0; here
 
-diff --git a/drivers/crypto/nx/nx-aes-ccm.c b/drivers/crypto/nx/nx-aes-ccm.c
-index 5ecd4c2..67f8081 100644
---- a/drivers/crypto/nx/nx-aes-ccm.c
-+++ b/drivers/crypto/nx/nx-aes-ccm.c
-@@ -181,6 +181,7 @@ static int generate_pat(u8                   *iv,
- 	unsigned int iauth_len = 0;
- 	u8 tmp[16], *b1 = NULL, *b0 = NULL, *result = NULL;
- 	int rc;
-+	unsigned int max_sg_len;
- 
- 	/* zero the ctr value */
- 	memset(iv + 15 - iv[0], 0, iv[0] + 1);
-@@ -248,10 +249,19 @@ static int generate_pat(u8                   *iv,
- 	if (!req->assoclen) {
- 		return rc;
- 	} else if (req->assoclen <= 14) {
--		nx_insg = nx_build_sg_list(nx_insg, b1, 16, nx_ctx->ap->sglen);
--		nx_outsg = nx_build_sg_list(nx_outsg, tmp, 16,
-+		unsigned int len = 16;
-+
-+		nx_insg = nx_build_sg_list(nx_insg, b1, &len, nx_ctx->ap->sglen);
-+
-+		if (len != 16)
-+			return -EINVAL;
-+
-+		nx_outsg = nx_build_sg_list(nx_outsg, tmp, &len,
- 					    nx_ctx->ap->sglen);
- 
-+		if (len != 16)
-+			return -EINVAL;
-+
- 		/* inlen should be negative, indicating to phyp that its a
- 		 * pointer to an sg list */
- 		nx_ctx->op.inlen = (nx_ctx->in_sg - nx_insg) *
-@@ -273,21 +283,24 @@ static int generate_pat(u8                   *iv,
- 		atomic64_add(req->assoclen, &(nx_ctx->stats->aes_bytes));
- 
- 	} else {
--		u32 max_sg_len;
- 		unsigned int processed = 0, to_process;
- 
--		/* page_limit: number of sg entries that fit on one page */
--		max_sg_len = min_t(u32,
--				   nx_driver.of.max_sg_len/sizeof(struct nx_sg),
--				   nx_ctx->ap->sglen);
--
- 		processed += iauth_len;
- 
-+		/* page_limit: number of sg entries that fit on one page */
-+		max_sg_len = min_t(u64, nx_ctx->ap->sglen,
-+				nx_driver.of.max_sg_len/sizeof(struct nx_sg));
-+		max_sg_len = min_t(u64, max_sg_len,
-+				nx_ctx->ap->databytelen/NX_PAGE_SIZE);
-+
- 		do {
- 			to_process = min_t(u32, req->assoclen - processed,
- 					   nx_ctx->ap->databytelen);
--			to_process = min_t(u64, to_process,
--					   NX_PAGE_SIZE * (max_sg_len - 1));
-+
-+			nx_insg = nx_walk_and_build(nx_ctx->in_sg,
-+						    nx_ctx->ap->sglen,
-+						    req->assoc, processed,
-+						    &to_process);
- 
- 			if ((to_process + processed) < req->assoclen) {
- 				NX_CPB_FDM(nx_ctx->csbcpb_aead) |=
-@@ -297,10 +310,6 @@ static int generate_pat(u8                   *iv,
- 					~NX_FDM_INTERMEDIATE;
- 			}
- 
--			nx_insg = nx_walk_and_build(nx_ctx->in_sg,
--						    nx_ctx->ap->sglen,
--						    req->assoc, processed,
--						    to_process);
- 
- 			nx_ctx->op_aead.inlen = (nx_ctx->in_sg - nx_insg) *
- 						sizeof(struct nx_sg);
-@@ -343,7 +352,6 @@ static int ccm_nx_decrypt(struct aead_request   *req,
- 	struct nx_ccm_priv *priv = &nx_ctx->priv.ccm;
- 	unsigned long irq_flags;
- 	unsigned int processed = 0, to_process;
--	u32 max_sg_len;
- 	int rc = -1;
- 
- 	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
-@@ -360,19 +368,12 @@ static int ccm_nx_decrypt(struct aead_request   *req,
- 	if (rc)
- 		goto out;
- 
--	/* page_limit: number of sg entries that fit on one page */
--	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
--			   nx_ctx->ap->sglen);
--
- 	do {
- 
- 		/* to_process: the AES_BLOCK_SIZE data chunk to process in this
- 		 * update. This value is bound by sg list limits.
- 		 */
--		to_process = min_t(u64, nbytes - processed,
--				   nx_ctx->ap->databytelen);
--		to_process = min_t(u64, to_process,
--				   NX_PAGE_SIZE * (max_sg_len - 1));
-+		to_process = nbytes - processed;
- 
- 		if ((to_process + processed) < nbytes)
- 			NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-@@ -382,7 +383,7 @@ static int ccm_nx_decrypt(struct aead_request   *req,
- 		NX_CPB_FDM(nx_ctx->csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
- 
- 		rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src,
--					to_process, processed,
-+					&to_process, processed,
- 					csbcpb->cpb.aes_ccm.iv_or_ctr);
- 		if (rc)
- 			goto out;
-@@ -427,7 +428,6 @@ static int ccm_nx_encrypt(struct aead_request   *req,
- 	unsigned int authsize = crypto_aead_authsize(crypto_aead_reqtfm(req));
- 	unsigned long irq_flags;
- 	unsigned int processed = 0, to_process;
--	u32 max_sg_len;
- 	int rc = -1;
- 
- 	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
-@@ -437,18 +437,11 @@ static int ccm_nx_encrypt(struct aead_request   *req,
- 	if (rc)
- 		goto out;
- 
--	/* page_limit: number of sg entries that fit on one page */
--	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
--			   nx_ctx->ap->sglen);
--
- 	do {
- 		/* to process: the AES_BLOCK_SIZE data chunk to process in this
- 		 * update. This value is bound by sg list limits.
- 		 */
--		to_process = min_t(u64, nbytes - processed,
--				   nx_ctx->ap->databytelen);
--		to_process = min_t(u64, to_process,
--				   NX_PAGE_SIZE * (max_sg_len - 1));
-+		to_process = nbytes - processed;
- 
- 		if ((to_process + processed) < nbytes)
- 			NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-@@ -458,7 +451,7 @@ static int ccm_nx_encrypt(struct aead_request   *req,
- 		NX_CPB_FDM(csbcpb) |= NX_FDM_ENDE_ENCRYPT;
- 
- 		rc = nx_build_sg_lists(nx_ctx, desc, req->dst, req->src,
--					to_process, processed,
-+					&to_process, processed,
- 				       csbcpb->cpb.aes_ccm.iv_or_ctr);
- 		if (rc)
- 			goto out;
+> +	} else {
+> +		irq = mp_map_gsi_to_irq(gsi,
+> +					IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
+> +		if (irq < 0)
+> +			return -1;
+>  		*irqp = irq;
+> -		return 0;
+>  	}
+
+...so that one level of nesting is avoided, and there are no problems
+with fiting to 80 colums.
+
+With that,
+
+Acked-by: Pavel Machek <pavel@ucw.cz>
+
 -- 
-1.7.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
