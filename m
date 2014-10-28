@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968AbaJ1XPm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 19:15:42 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:33791 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754345AbaJ1XPj (ORCPT
+	id S1754851AbaJ1XPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 19:15:34 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:13651 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbaJ1XP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 19:15:39 -0400
+	Tue, 28 Oct 2014 19:15:28 -0400
+X-IronPort-AV: E=Sophos;i="5.04,805,1406617200"; 
+   d="scan'208";a="49359394"
+From: Scott Branden <sbranden@broadcom.com>
+To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>
+CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Scott Branden <sbranden@broadcom.com>
+Subject: [PATCH v9 5/8] MAINTAINERS: Entry for Cygnus/iproc arm architecture
+Date: Tue, 28 Oct 2014 16:15:08 -0700
+Message-ID: <1414538111-11668-6-git-send-email-sbranden@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1414538111-11668-1-git-send-email-sbranden@broadcom.com>
+References: <Scott Branden <sbranden@broadcom.com>
+ <1414538111-11668-1-git-send-email-sbranden@broadcom.com>
 MIME-Version: 1.0
-Date: Tue, 28 Oct 2014 16:15:38 -0700
-Message-ID: <CAADnVQL3X_UqA1Oz1msuz8LyP0CTGG5iy16YwjdPUhoNTk31yQ@mail.gmail.com>
-Subject: Re: [PATCH 2/5] perf, x86, uncore: Add Haswell-EP uncore support
-From: Alexei Starovoitov <alexei.starovoitov@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 8:30 AM, Andi Kleen <andi@firstfloor.org> wrote:
->> snbep_uncore_msr_init_box() is called with:
->> [    1.055678] msr 0
->> [    1.056027] msr 3584
->> [    1.056376] msr 3600
->> [    1.056725] msr 3616
->> [    1.057074] msr 3632
->> [    1.057424] msr 1824
->
-> So it would normally crash here, right? That's the SBOX.
->
-> When you remove the sbox in hswep_msr_uncores the crash goes away,
-> correct?
+Acked-by: Jonathan Richardson <jonathar@broadcom.com>
+Signed-off-by: Scott Branden <sbranden@broadcom.com>
+---
+ MAINTAINERS |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-yes. removing line 'hswep_uncore_sbox' also worked as workaround.
-You have an idea what's going on?
-I suspect other folks will see the same crash when E5 v3
-become more widespread.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index dab92a7..15a3d89 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2129,6 +2129,20 @@ L:	linux-scsi@vger.kernel.org
+ S:	Supported
+ F:	drivers/scsi/bnx2i/
+ 
++BROADCOM CYGNUS/IPROC ARM ARCHITECTURE
++M:	Ray Jui <rjui@broadcom.com>
++M:	Scott Branden <sbranden@broadcom.com>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++L:	bcm-kernel-feedback-list@broadcom.com
++T:	git git://git.github.com/brcm/linux.git
++S:	Maintained
++N:	iproc
++N:	cygnus
++N:	bcm9113*
++N:	bcm9583*
++N:	bcm583*
++N:	bcm113*
++
+ BROADCOM KONA GPIO DRIVER
+ M:	Ray Jui <rjui@broadcom.com>
+ L:	bcm-kernel-feedback-list@broadcom.com
+-- 
+1.7.9.5
+
