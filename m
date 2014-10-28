@@ -1,49 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641AbaJ1MkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:40:13 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:30831 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873AbaJ1MkL (ORCPT
+	id S1752129AbaJ1MlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:41:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58242 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaJ1MlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:40:11 -0400
-X-IronPort-AV: E=Sophos;i="5.04,802,1406592000"; 
-   d="scan'208";a="186834840"
-Message-ID: <544F8E89.6070006@citrix.com>
-Date: Tue, 28 Oct 2014 12:39:37 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Tue, 28 Oct 2014 08:41:10 -0400
+Message-Id: <20141028123352.632326435@infradead.org>
+User-Agent: quilt/0.61-1
+Date: Tue, 28 Oct 2014 13:30:46 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org, tglx@linutronix.de, ak@linux.intel.com,
+        eranian@google.com, dzickus@redhat.com, andi@firstfloor.org,
+        jmario@redhat.com, acme@kernel.org
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 3/3] perf,x86: Add HSW offcore NUMA events
+References: <20141028123043.257488788@infradead.org>
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, Andrew Cooper <andrew.cooper3@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-CC: <boris.ostrovsky@oracle.com>, <xen-devel@lists.xensource.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 0/2] xen: Switch to virtual mapped linear
- p2m list
-References: <1414421551-31555-1-git-send-email-jgross@suse.com>	<544E61DD.8050305@citrix.com>	<544F22E4.9040706@suse.com> <1414489898.23883.25.camel@citrix.com> <544F83C1.3010402@citrix.com> <544F8713.9040803@suse.com>
-In-Reply-To: <544F8713.9040803@suse.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=peterz-hsw-offcore-node.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/10/14 12:07, Juergen Gross wrote:
-> 
-> Okay, back to the original question: is the (up to) 64 MB virtual
-> mapping of the p2m list on 32-bit pv domains a problem or not?
+Based on the actual HSW offcore bits, we can construct the full NODE
+event set in a similar manner to the other uarchs (NHM/SNB).
 
-I think up-to 64 MiB of vmalloc area is fine.  The vmalloc space can be
-increased with a command line option in the unlikely event that there
-are domUs that would be affected.
+Fixes: 86a349a28b24 ("perf/x86/intel: Add Broadwell core support")
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |   33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-> If yes, the virtual mapped linear p2m list could still be used on
-> 64 bit domains, paving the way for support of more than 512 GB of
-> domain memory. OTOH having to keep the p2m tree coding alive isn't
-> my favorite solution...
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -513,6 +513,20 @@ static __initconst const u64 hsw_hw_cach
+ 		[ C(RESULT_MISS)   ] = -1,
+ 	},
+  },
++ [ C(NODE) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = 0x01b7,
++		[ C(RESULT_MISS)   ] = 0x01b7,
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = 0x01b7,
++		[ C(RESULT_MISS)   ] = 0x01b7,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = 0x01b7,
++		[ C(RESULT_MISS)   ] = 0x01b7,
++	},
++ },
+ };
+ 
+ #define HSW_DEMAND_DATA_RD		BIT_ULL(0)
+@@ -588,6 +602,11 @@ static __initconst const u64 hsw_hw_cach
+ #define HSW_DMND_WRITE			(HSW_ALL_RFO)
+ #define HSW_DMND_PREFETCH		(HSW_ALL_PF_DATA|HSW_ALL_PF_RFO)
+ 
++#define HSW_DRAM_ANY			(HSW_L3_MISS)
++#define HSW_DRAM_REMOTE			(HSW_L3_MISS_REMOTE_HOP0_DRAM|		\
++					 HSW_L3_MISS_REMOTE_HOP1_DRAM|		\
++					 HSW_L3_MISS_REMOTE_HOP2P_DRAM)
++
+ #define HSW_LLC_ACCESS			(HSW_ANY_RESPONSE)
+ #define HSW_LLC_MISS			(HSW_L3_MISS)
+ 
+@@ -610,6 +629,20 @@ static __initconst const u64 hsw_hw_cach
+ 		[ C(RESULT_MISS)   ] = HSW_DMND_PREFETCH|HSW_LLC_MISS
+ 	},
+  },
++ [ C(NODE) ] = {
++	[ C(OP_READ) ] = {
++		[ C(RESULT_ACCESS) ] = HSW_DMND_READ|HSW_DRAM_ANY,
++		[ C(RESULT_MISS)   ] = HSW_DMND_READ|HSW_DRAM_REMOTE,
++	},
++	[ C(OP_WRITE) ] = {
++		[ C(RESULT_ACCESS) ] = HSW_DMND_WRITE|HSW_DRAM_ANY,
++		[ C(RESULT_MISS)   ] = HSW_DMND_WRITE|HSW_DRAM_REMOTE,
++	},
++	[ C(OP_PREFETCH) ] = {
++		[ C(RESULT_ACCESS) ] = HSW_DMND_PREFETCH|HSW_DRAM_ANY,
++		[ C(RESULT_MISS)   ] = HSW_DMND_PREFETCH|HSW_DRAM_REMOTE,
++	},
++ },
+ };
+ 
+ static __initconst const u64 westmere_hw_cache_event_ids
 
-Having to keep both the tree and linear p2m code would be awful.  Let's
-not do this!
 
-David
