@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaJ1FM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:12:28 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:39605 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442AbaJ1FM0 (ORCPT
+	id S1757884AbaJ1FR2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:17:28 -0400
+Received: from mga03.intel.com ([134.134.136.65]:50963 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933731AbaJ1FRY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 01:12:26 -0400
-Date: Mon, 27 Oct 2014 22:12:20 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] eeepc-laptop: define rfkill notifier nodes only once
-Message-ID: <20141028051220.GE60814@vmdeb7>
-References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
- <1414005163-3461-4-git-send-email-fransklaver@gmail.com>
+	Tue, 28 Oct 2014 01:17:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,801,1406617200"; 
+   d="scan'208";a="626690435"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>
+CC: Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Yang, Fei" <fei.yang@intel.com>
+Subject: RE: [PATCH 0/6] ACPI/OSL: Rework of ACPICA memory OSLs to improve
+ performance.
+Thread-Topic: [PATCH 0/6] ACPI/OSL: Rework of ACPICA memory OSLs to improve
+ performance.
+Thread-Index: AQHP7ma/AcSnTFQvPU6SYqCtW9XFSpxE/zzA
+Date: Tue, 28 Oct 2014 05:15:51 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88026885AD@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1414029477.git.lv.zheng@intel.com>
+In-Reply-To: <cover.1414029477.git.lv.zheng@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414005163-3461-4-git-send-email-fransklaver@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:12:38PM +0200, Frans Klaver wrote:
-> The rfkill notifier node names are used in three different places. As a
-> matter of style, it is better to store them somewhere and have the
-> compiler warn us about typos in the function arguments.
+There are reasons for why RCU is used here.
+Using spinlock here will break specific acpi_os_read_memory()/acpi_os_write_memory() users.
+So this patchset is not correct, please ignore.
+
+Thanks
+-Lv
+
+> From: Zheng, Lv
+> Sent: Thursday, October 23, 2014 10:12 AM
 > 
-> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
-> ---
->  drivers/platform/x86/eeepc-laptop.c | 22 +++++++++++++---------
->  1 file changed, 13 insertions(+), 9 deletions(-)
+> It is reported that there is a performance issue in the ACPICA OSL
+> implementation around memory mappings.
 > 
-> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> index 6e3be01..e92ea41 100644
-> --- a/drivers/platform/x86/eeepc-laptop.c
-> +++ b/drivers/platform/x86/eeepc-laptop.c
-> @@ -819,11 +819,15 @@ static int eeepc_new_rfkill(struct eeepc_laptop *eeepc,
->  	return 0;
->  }
->  
-> +static char EEEPC_RFKILL_NODE_1[] = "\\_SB.PCI0.P0P5";
-> +static char EEEPC_RFKILL_NODE_2[] = "\\_SB.PCI0.P0P6";
-> +static char EEEPC_RFKILL_NODE_3[] = "\\_SB.PCI0.P0P7";
+> On the reported platforms, there is a debugging facility implemented in the
+> ACPI namespace using circular logging buffer:
+>         Name (DPTR, 0x3AFEB000)
+>         Name (EPTR, 0x3AFFB000)
+>         Name (CPTR, 0x3AFEB010)
+>         Mutex (MMUT, 0x00)
+>         Method (MDBG, 1, Serialized)
+>         {
+>             Store (Acquire (MMUT, 0x03E8), Local0)
+>             If (Local0 == Zero)
+>             {
+>                 OperationRegion (ABLK, SystemMemory, CPTR, 0x10)
+>                 Field (ABLK, ByteAcc, NoLock, Preserve)
+>                 {
+>                     AAAA,   128
+>                 }
+>                 Store (Arg0, AAAA) /* \MDBG.AAAA */
+>                 CPTR = (CPTR + 0x10) /* \CPTR */
+>                 If (CPTR >= EPTR)
+>                 {
+>                     CPTR = (DPTR + 0x10) /* \CPTR */
+>                 }
+>                 Release (MMUT)
+>             }
+>             Return (Local0)
+>         }
+> This function is heavily invoked by other ACPI control methods.
+> The reported platforms suffer from 2-5 minutes kernel stuck in the end of
+> accessing the mapped circular buffer system memory region. By
+> instrumentation, the 2-5 minutes time consumption overhead can be seen to
+> happen on the synchronize_rcu() invoked in the acpi_os_unmap_memory().
+> 
+> This patchset removes the synchronize_rcu() from the hot path to improve
+> the performance.
+> 
+> Lv Zheng (6):
+>   ACPI/OSL: Split memory operation region implementations to a seperate
+>     file.
+>   ACPI/OSL: Rename system memory functions.
+>   ACPI/OSL: Cleanup memory access functions by merging duplicate code.
+>   ACPI/OSL: Add acpi_map2virt() to merge duplicate code.
+>   ACPI/OSL: Cleanup branch logics.
+>   ACPI/OSL: Fix performance issue in system memory lockings.
+> 
+>  drivers/acpi/Makefile |    2 +-
+>  drivers/acpi/mem.c    |  414 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/acpi/osl.c    |  381 ---------------------------------------------
+>  3 files changed, 415 insertions(+), 382 deletions(-)
+>  create mode 100644 drivers/acpi/mem.c
+> 
+> --
+> 1.7.10
 
-So, out of curiosity, any particular reason for static char[] instead of
-#define? I see both used frequently and didn't see any advice in CodingStyle.
-
-Regardless, Queued and thanks,
-
--- 
-Darren Hart
-Intel Open Source Technology Center
