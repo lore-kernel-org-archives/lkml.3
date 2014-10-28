@@ -1,209 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680AbaJ1DwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:52:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46540 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933615AbaJ1DwO (ORCPT
+	id S1758264AbaJ1Fbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:31:46 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40193 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbaJ1Fbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:14 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Willem Pinckaers <willem@lekkertech.net>,
-        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
-Subject: [PATCH 3.10 23/43] Revert "lzo: properly check for overruns"
-Date: Tue, 28 Oct 2014 11:36:21 +0800
-Message-Id: <20141028033524.397952152@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 01:31:44 -0400
+Date: Mon, 27 Oct 2014 22:31:40 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] eeepc-laptop: document fan_pwm conversions
+Message-ID: <20141028053134.GH60814@vmdeb7>
+References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+ <1414005163-3461-8-git-send-email-fransklaver@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414005163-3461-8-git-send-email-fransklaver@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 22, 2014 at 09:12:42PM +0200, Frans Klaver wrote:
+> eeepc_get_fan_pwm and eeepc_set_fan_pwm convert the PWM value read from
+> the fan to a range lmsensors understands. Unfortunately this is only
+> clear if you are familiar with how lmsensors handles duty cycles.
+> 
+> Introduce two conversion functions that document the goal of these
+> conversions.
+> 
+> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+> ---
+>  drivers/platform/x86/eeepc-laptop.c | 16 +++++++++++++---
+>  1 file changed, 13 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> index f820bb3..275a239 100644
+> --- a/drivers/platform/x86/eeepc-laptop.c
+> +++ b/drivers/platform/x86/eeepc-laptop.c
+> @@ -974,18 +974,28 @@ static struct platform_driver platform_driver = {
+>  #define EEEPC_EC_SFB0      0xD0
+>  #define EEEPC_EC_FAN_CTRL  (EEEPC_EC_SFB0 + 3) /* Byte containing SF25  */
+>  
+> +static inline int eeepc_pwm_to_lmsensors(int value)
+> +{
+> +	return value * 255 / 100;
+> +}
+> +
+> +static inline int eeepc_lmsensors_to_pwm(int value)
+> +{
+> +	value = clamp_val(value, 0, 255);
+> +	return value * 100 / 255;
 
-------------------
+Says the guy cleaning up all the magic numbers.... ;-)
 
-From: Willy Tarreau <w@1wt.eu>
+But yeah, this is fine IMO. Applied.
 
-commit af958a38a60c7ca3d8a39c918c1baa2ff7b6b233 upstream.
-
-This reverts commit 206a81c ("lzo: properly check for overruns").
-
-As analysed by Willem Pinckaers, this fix is still incomplete on
-certain rare corner cases, and it is easier to restart from the
-original code.
-
-Reported-by: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- lib/lzo/lzo1x_decompress_safe.c |   62 +++++++++++++---------------------------
- 1 file changed, 21 insertions(+), 41 deletions(-)
-
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -19,31 +19,11 @@
- #include <linux/lzo.h>
- #include "lzodefs.h"
- 
--#define HAVE_IP(t, x)					\
--	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
--	 (((t + x) >= t) && ((t + x) >= x)))
--
--#define HAVE_OP(t, x)					\
--	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
--	 (((t + x) >= t) && ((t + x) >= x)))
--
--#define NEED_IP(t, x)					\
--	do {						\
--		if (!HAVE_IP(t, x))			\
--			goto input_overrun;		\
--	} while (0)
--
--#define NEED_OP(t, x)					\
--	do {						\
--		if (!HAVE_OP(t, x))			\
--			goto output_overrun;		\
--	} while (0)
--
--#define TEST_LB(m_pos)					\
--	do {						\
--		if ((m_pos) < out)			\
--			goto lookbehind_overrun;	\
--	} while (0)
-+#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
-+#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
-+#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
-+#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
-+#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
- 
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
-@@ -78,14 +58,14 @@ int lzo1x_decompress_safe(const unsigned
- 					while (unlikely(*ip == 0)) {
- 						t += 255;
- 						ip++;
--						NEED_IP(1, 0);
-+						NEED_IP(1);
- 					}
- 					t += 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
-+				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
- 					const unsigned char *ie = ip + t;
- 					unsigned char *oe = op + t;
- 					do {
-@@ -101,8 +81,8 @@ copy_literal_run:
- 				} else
- #endif
- 				{
--					NEED_OP(t, 0);
--					NEED_IP(t, 3);
-+					NEED_OP(t);
-+					NEED_IP(t + 3);
- 					do {
- 						*op++ = *ip++;
- 					} while (--t > 0);
-@@ -115,7 +95,7 @@ copy_literal_run:
- 				m_pos -= t >> 2;
- 				m_pos -= *ip++ << 2;
- 				TEST_LB(m_pos);
--				NEED_OP(2, 0);
-+				NEED_OP(2);
- 				op[0] = m_pos[0];
- 				op[1] = m_pos[1];
- 				op += 2;
-@@ -139,10 +119,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1, 0);
-+					NEED_IP(1);
- 				}
- 				t += 31 + *ip++;
--				NEED_IP(2, 0);
-+				NEED_IP(2);
- 			}
- 			m_pos = op - 1;
- 			next = get_unaligned_le16(ip);
-@@ -157,10 +137,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1, 0);
-+					NEED_IP(1);
- 				}
- 				t += 7 + *ip++;
--				NEED_IP(2, 0);
-+				NEED_IP(2);
- 			}
- 			next = get_unaligned_le16(ip);
- 			ip += 2;
-@@ -174,7 +154,7 @@ copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (op - m_pos >= 8) {
- 			unsigned char *oe = op + t;
--			if (likely(HAVE_OP(t, 15))) {
-+			if (likely(HAVE_OP(t + 15))) {
- 				do {
- 					COPY8(op, m_pos);
- 					op += 8;
-@@ -184,7 +164,7 @@ copy_literal_run:
- 					m_pos += 8;
- 				} while (op < oe);
- 				op = oe;
--				if (HAVE_IP(6, 0)) {
-+				if (HAVE_IP(6)) {
- 					state = next;
- 					COPY4(op, ip);
- 					op += next;
-@@ -192,7 +172,7 @@ copy_literal_run:
- 					continue;
- 				}
- 			} else {
--				NEED_OP(t, 0);
-+				NEED_OP(t);
- 				do {
- 					*op++ = *m_pos++;
- 				} while (op < oe);
-@@ -201,7 +181,7 @@ copy_literal_run:
- #endif
- 		{
- 			unsigned char *oe = op + t;
--			NEED_OP(t, 0);
-+			NEED_OP(t);
- 			op[0] = m_pos[0];
- 			op[1] = m_pos[1];
- 			op += 2;
-@@ -214,15 +194,15 @@ match_next:
- 		state = next;
- 		t = next;
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
-+		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
- 			COPY4(op, ip);
- 			op += t;
- 			ip += t;
- 		} else
- #endif
- 		{
--			NEED_IP(t, 3);
--			NEED_OP(t, 0);
-+			NEED_IP(t + 3);
-+			NEED_OP(t);
- 			while (t > 0) {
- 				*op++ = *ip++;
- 				t--;
-
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
