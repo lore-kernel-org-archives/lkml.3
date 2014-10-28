@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996AbaJ1DlD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:41:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44891 "EHLO
+	id S1753618AbaJ1DlH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:41:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44894 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975AbaJ1DlA (ORCPT
+	with ESMTP id S1754992AbaJ1DlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:00 -0400
+	Mon, 27 Oct 2014 23:41:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 108/146] mm/cma: fix cma bitmap aligned mask computing
-Date: Tue, 28 Oct 2014 11:34:10 +0800
-Message-Id: <20141028033348.134575468@linuxfoundation.org>
+Subject: [PATCH 3.17 109/146] kernel: add support for gcc 5
+Date: Tue, 28 Oct 2014 11:34:11 +0800
+Message-Id: <20141028033348.176253019@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -33,46 +30,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weijie Yang <weijie.yang@samsung.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 68faed630fc151a7a1c4853df00fb3dcacf782b4 upstream.
+commit 71458cfc782eafe4b27656e078d379a34e472adf upstream.
 
-The current cma bitmap aligned mask computation is incorrect.  It could
-cause an unexpected alignment when using cma_alloc() if the wanted align
-order is larger than cma->order_per_bit.
+We're missing include/linux/compiler-gcc5.h which is required now
+because gcc branched off to v5 in trunk.
 
-Take kvm for example (PAGE_SHIFT = 12), kvm_cma->order_per_bit is set to
-6.  When kvm_alloc_rma() tries to alloc kvm_rma_pages, it will use 15 as
-the expected align value.  After using the current implementation however,
-we get 0 as cma bitmap aligned mask other than 511.
+Just copy the relevant bits out of include/linux/compiler-gcc4.h,
+no new code is added as of now.
 
-This patch fixes the cma bitmap aligned mask calculation.
+This fixes a build error when using gcc 5.
 
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/cma.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/compiler-gcc5.h |   66 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
---- a/mm/cma.c
-+++ b/mm/cma.c
-@@ -57,7 +57,9 @@ unsigned long cma_get_size(struct cma *c
- 
- static unsigned long cma_bitmap_aligned_mask(struct cma *cma, int align_order)
- {
--	return (1UL << (align_order >> cma->order_per_bit)) - 1;
-+	if (align_order <= cma->order_per_bit)
-+		return 0;
-+	return (1UL << (align_order - cma->order_per_bit)) - 1;
- }
- 
- static unsigned long cma_bitmap_maxno(struct cma *cma)
+--- /dev/null
++++ b/include/linux/compiler-gcc5.h
+@@ -0,0 +1,66 @@
++#ifndef __LINUX_COMPILER_H
++#error "Please don't include <linux/compiler-gcc5.h> directly, include <linux/compiler.h> instead."
++#endif
++
++#define __used				__attribute__((__used__))
++#define __must_check			__attribute__((warn_unused_result))
++#define __compiler_offsetof(a, b)	__builtin_offsetof(a, b)
++
++/* Mark functions as cold. gcc will assume any path leading to a call
++   to them will be unlikely.  This means a lot of manual unlikely()s
++   are unnecessary now for any paths leading to the usual suspects
++   like BUG(), printk(), panic() etc. [but let's keep them for now for
++   older compilers]
++
++   Early snapshots of gcc 4.3 don't support this and we can't detect this
++   in the preprocessor, but we can live with this because they're unreleased.
++   Maketime probing would be overkill here.
++
++   gcc also has a __attribute__((__hot__)) to move hot functions into
++   a special section, but I don't see any sense in this right now in
++   the kernel context */
++#define __cold			__attribute__((__cold__))
++
++#define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
++
++#ifndef __CHECKER__
++# define __compiletime_warning(message) __attribute__((warning(message)))
++# define __compiletime_error(message) __attribute__((error(message)))
++#endif /* __CHECKER__ */
++
++/*
++ * Mark a position in code as unreachable.  This can be used to
++ * suppress control flow warnings after asm blocks that transfer
++ * control elsewhere.
++ *
++ * Early snapshots of gcc 4.5 don't support this and we can't detect
++ * this in the preprocessor, but we can live with this because they're
++ * unreleased.  Really, we need to have autoconf for the kernel.
++ */
++#define unreachable() __builtin_unreachable()
++
++/* Mark a function definition as prohibited from being cloned. */
++#define __noclone	__attribute__((__noclone__))
++
++/*
++ * Tell the optimizer that something else uses this function or variable.
++ */
++#define __visible __attribute__((externally_visible))
++
++/*
++ * GCC 'asm goto' miscompiles certain code sequences:
++ *
++ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
++ *
++ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
++ * Fixed in GCC 4.8.2 and later versions.
++ *
++ * (asm goto is automatically volatile - the naming reflects this.)
++ */
++#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
++
++#ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
++#define __HAVE_BUILTIN_BSWAP32__
++#define __HAVE_BUILTIN_BSWAP64__
++#define __HAVE_BUILTIN_BSWAP16__
++#endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
 
 
