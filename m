@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaJ1MNE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:13:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47493 "EHLO mga09.intel.com"
+	id S1753279AbaJ1MQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:16:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54808 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700AbaJ1MNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:13:02 -0400
+	id S1751650AbaJ1MQi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:16:38 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,802,1406617200"; 
-   d="scan'208";a="597602675"
-From: Andi Kleen <andi@firstfloor.org>
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <lliubbo@gmail.com>, David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
-References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
-Date: Tue, 28 Oct 2014 05:12:26 -0700
-In-Reply-To: <1414032567-109765-1-git-send-email-athorlton@sgi.com> (Alex
-	Thorlton's message of "Wed, 22 Oct 2014 21:49:23 -0500")
-Message-ID: <87lho0pf4l.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+   d="scan'208";a="626874821"
+Date: Tue, 28 Oct 2014 05:16:36 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-api@vger.kernel.org,
+        jason.wessel@windriver.com
+Subject: Re: [PATCH V4] kernel, add bug_on_warn
+Message-ID: <20141028121636.GC3274@tassilo.jf.intel.com>
+References: <1414155207-29839-1-git-send-email-prarit@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414155207-29839-1-git-send-email-prarit@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex Thorlton <athorlton@sgi.com> writes:
+On Fri, Oct 24, 2014 at 08:53:27AM -0400, Prarit Bhargava wrote:
+> There have been several times where I have had to rebuild a kernel to
+> cause a panic when hitting a WARN() in the code in order to get a crash
+> dump from a system.  Sometimes this is easy to do, other times (such as
+> in the case of a remote admin) it is not trivial to send new images to the
+> user.
+> 
+> A much easier method would be a switch to change the WARN() over to a
+> BUG().  This makes debugging easier in that I can now test the actual
+> image the WARN() was seen on and I do not have to engage in remote
+> debugging.
 
-> Last week, while discussing possible fixes for some unexpected/unwanted behavior
-> from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
-> mentioned possibly changing changing khugepaged to work as a task_work function
-> instead of a kernel thread.  This will give us finer grained control over the
-> page collapse scans, eliminate some unnecessary scans since tasks that are
-> relatively inactive will not be scanned often, and eliminate the unwanted
-> behavior described in the email thread I mentioned.
+IMHO this would be better and far more generically done with kdb. 
+You would need two things:
 
-With your change, what would happen in a single threaded case?
+- Extend the break point command to run another command on a break point.
+- Add a command line (or possibly /proc) option to execute some kdb commands at
+kernel boot.
 
-Previously one core would scan and another would run the workload.
-With your change both scanning and running would be on the same
-core.
-
-Would seem like a step backwards to me.
+Then just set a break point on the warn function and execute magic sysrq c
+from kdb.
 
 -Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
