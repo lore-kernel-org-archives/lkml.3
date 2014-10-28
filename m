@@ -1,124 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934322AbaJ1Dxp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:53:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47683 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934252AbaJ1Dxi (ORCPT
+	id S934476AbaJ1Dzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:55:42 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:34375 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932743AbaJ1Dzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:53:38 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 36/43] kernel: add support for gcc 5
-Date: Tue, 28 Oct 2014 11:36:34 +0800
-Message-Id: <20141028033524.946621258@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Mon, 27 Oct 2014 23:55:39 -0400
+From: Yao Dongdong <yaodongdong@huawei.com>
+To: <peterz@infradead.org>, <mingo@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, <srikar@linux.vnet.ibm.com>,
+        <yaodongdong@huawei.com>
+Subject: [PATCH resend] sched:check if got a shallowest_idle_cpu before search for least_loaded_cpu
+Date: Tue, 28 Oct 2014 04:08:06 +0000
+Message-ID: <1414469286-6023-1-git-send-email-yaodongdong@huawei.com>
+X-Mailer: git-send-email 1.8.3.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.189]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.544F1308.00B1,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 6b8cb5b1e0010824164ca1a1987f65a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Idle cpu is idler than non-idle cpu, so we needn't search for least_loaded_cpu
+after we have found an idle cpu.
 
-------------------
-
-From: Sasha Levin <sasha.levin@oracle.com>
-
-commit 71458cfc782eafe4b27656e078d379a34e472adf upstream.
-
-We're missing include/linux/compiler-gcc5.h which is required now
-because gcc branched off to v5 in trunk.
-
-Just copy the relevant bits out of include/linux/compiler-gcc4.h,
-no new code is added as of now.
-
-This fixes a build error when using gcc 5.
-
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Yao Dongdong <yaodongdong@huawei.com>
+Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- include/linux/compiler-gcc5.h |   66 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- /dev/null
-+++ b/include/linux/compiler-gcc5.h
-@@ -0,0 +1,66 @@
-+#ifndef __LINUX_COMPILER_H
-+#error "Please don't include <linux/compiler-gcc5.h> directly, include <linux/compiler.h> instead."
-+#endif
-+
-+#define __used				__attribute__((__used__))
-+#define __must_check			__attribute__((warn_unused_result))
-+#define __compiler_offsetof(a, b)	__builtin_offsetof(a, b)
-+
-+/* Mark functions as cold. gcc will assume any path leading to a call
-+   to them will be unlikely.  This means a lot of manual unlikely()s
-+   are unnecessary now for any paths leading to the usual suspects
-+   like BUG(), printk(), panic() etc. [but let's keep them for now for
-+   older compilers]
-+
-+   Early snapshots of gcc 4.3 don't support this and we can't detect this
-+   in the preprocessor, but we can live with this because they're unreleased.
-+   Maketime probing would be overkill here.
-+
-+   gcc also has a __attribute__((__hot__)) to move hot functions into
-+   a special section, but I don't see any sense in this right now in
-+   the kernel context */
-+#define __cold			__attribute__((__cold__))
-+
-+#define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
-+
-+#ifndef __CHECKER__
-+# define __compiletime_warning(message) __attribute__((warning(message)))
-+# define __compiletime_error(message) __attribute__((error(message)))
-+#endif /* __CHECKER__ */
-+
-+/*
-+ * Mark a position in code as unreachable.  This can be used to
-+ * suppress control flow warnings after asm blocks that transfer
-+ * control elsewhere.
-+ *
-+ * Early snapshots of gcc 4.5 don't support this and we can't detect
-+ * this in the preprocessor, but we can live with this because they're
-+ * unreleased.  Really, we need to have autoconf for the kernel.
-+ */
-+#define unreachable() __builtin_unreachable()
-+
-+/* Mark a function definition as prohibited from being cloned. */
-+#define __noclone	__attribute__((__noclone__))
-+
-+/*
-+ * Tell the optimizer that something else uses this function or variable.
-+ */
-+#define __visible __attribute__((externally_visible))
-+
-+/*
-+ * GCC 'asm goto' miscompiles certain code sequences:
-+ *
-+ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-+ *
-+ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
-+ * Fixed in GCC 4.8.2 and later versions.
-+ *
-+ * (asm goto is automatically volatile - the naming reflects this.)
-+ */
-+#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
-+
-+#ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
-+#define __HAVE_BUILTIN_BSWAP32__
-+#define __HAVE_BUILTIN_BSWAP64__
-+#define __HAVE_BUILTIN_BSWAP16__
-+#endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 0b069bf..2445a23 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4446,7 +4446,7 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+ 				latest_idle_timestamp = rq->idle_stamp;
+ 				shallowest_idle_cpu = i;
+ 			}
+-		} else {
++		} else if (shallowest_idle_cpu == -1) {
+ 			load = weighted_cpuload(i);
+ 			if (load < min_load || (load == min_load && i == this_cpu)) {
+ 				min_load = load;
+-- 
+1.8.3.4
 
