@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758984AbaJ1HVo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:21:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45165 "EHLO
+	id S1759014AbaJ1HWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:22:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45158 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214AbaJ1Dn3 (ORCPT
+	with ESMTP id S1753415AbaJ1DnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:29 -0400
+	Mon, 27 Oct 2014 23:43:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xuelin Shi <xuelin.shi@freescale.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH 3.16 033/127] dmaengine: fix xor sources continuation
-Date: Tue, 28 Oct 2014 11:34:28 +0800
-Message-Id: <20141028033422.370313590@linuxfoundation.org>
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.16 020/127] spi: dw-mid: respect 8 bit mode
+Date: Tue, 28 Oct 2014 11:34:15 +0800
+Message-Id: <20141028033421.808946089@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,39 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xuelin Shi <xuelin.shi@freescale.com>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 87cea76384257e6ac3fa4791b6a6b9d0335f7457 upstream.
+commit b41583e7299046abdc578c33f25ed83ee95b9b31 upstream.
 
-the partial xor result must be kept until the next
-tx is generated.
+In case of 8 bit mode and DMA usage we end up with every second byte written as
+0. We have to respect bits_per_word settings what this patch actually does.
 
-Signed-off-by: Xuelin Shi <xuelin.shi@freescale.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/async_tx/async_xor.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/spi/spi-dw-mid.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/crypto/async_tx/async_xor.c
-+++ b/crypto/async_tx/async_xor.c
-@@ -78,8 +78,6 @@ do_async_xor(struct dma_chan *chan, stru
- 		tx = dma->device_prep_dma_xor(chan, dma_dest, src_list,
- 					      xor_src_cnt, unmap->len,
- 					      dma_flags);
--		src_list[0] = tmp;
--
+--- a/drivers/spi/spi-dw-mid.c
++++ b/drivers/spi/spi-dw-mid.c
+@@ -136,7 +136,7 @@ static int mid_spi_dma_transfer(struct d
+ 	txconf.dst_addr = dws->dma_addr;
+ 	txconf.dst_maxburst = LNW_DMA_MSIZE_16;
+ 	txconf.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	txconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	txconf.dst_addr_width = dws->dma_width;
+ 	txconf.device_fc = false;
  
- 		if (unlikely(!tx))
- 			async_tx_quiesce(&submit->depend_tx);
-@@ -92,6 +90,7 @@ do_async_xor(struct dma_chan *chan, stru
- 						      xor_src_cnt, unmap->len,
- 						      dma_flags);
- 		}
-+		src_list[0] = tmp;
+ 	txchan->device->device_control(txchan, DMA_SLAVE_CONFIG,
+@@ -159,7 +159,7 @@ static int mid_spi_dma_transfer(struct d
+ 	rxconf.src_addr = dws->dma_addr;
+ 	rxconf.src_maxburst = LNW_DMA_MSIZE_16;
+ 	rxconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	rxconf.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	rxconf.src_addr_width = dws->dma_width;
+ 	rxconf.device_fc = false;
  
- 		dma_set_unmap(tx, unmap);
- 		async_tx_submit(chan, tx, submit);
+ 	rxchan->device->device_control(rxchan, DMA_SLAVE_CONFIG,
 
 
