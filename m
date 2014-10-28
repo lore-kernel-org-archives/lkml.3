@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759918AbaJ1Hzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:55:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44442 "EHLO
+	id S1754084AbaJ1Dhn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:37:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44425 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaJ1Dho (ORCPT
+	with ESMTP id S1754030AbaJ1Dhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:44 -0400
+	Mon, 27 Oct 2014 23:37:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: [PATCH 3.17 050/146] Drivers: hv: vmbus: Cleanup hv_post_message()
-Date: Tue, 28 Oct 2014 11:33:12 +0800
-Message-Id: <20141028033345.583682494@linuxfoundation.org>
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.17 038/146] qla2xxx: Fix shost use-after-free on device removal
+Date: Tue, 28 Oct 2014 11:33:00 +0800
+Message-Id: <20141028033345.068752469@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,124 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Joe Lawrence <joe.lawrence@stratus.com>
 
-commit b29ef3546aecb253a5552b198cef23750d56e1e4 upstream.
+commit db7157d4cfce6edf052452fb1d327d4d11b67f4c upstream.
 
-Minimize failures in this function by pre-allocating the buffer
-for posting messages. The hypercall for posting the message can fail
-for a number of reasons:
+Once calling scsi_host_put, be careful to not access qla_hw_data through
+the Scsi_Host private data (ie, scsi_qla_host base_vha).
 
-        1. Transient resource related issues
-        2. Buffer alignment
-        3. Buffer cannot span a page boundry
-
-We address issues 2 and 3 by preallocating a per-cpu page for the buffer.
-Transient resource related failures are handled by retrying by the callers
-of this function.
-
-This patch is based on the investigation
-done by Dexuan Cui <decui@microsoft.com>.
-
-I would like to thank Sitsofe Wheeler <sitsofe@yahoo.com>
-for reporting the issue and helping in debuggging.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Fixes: fe1b806f4f71 ("qla2xxx: Refactor shutdown code so some functionality can be reused")
+Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/hv.c           |   27 +++++++++++++++------------
- drivers/hv/hyperv_vmbus.h |    4 ++++
- 2 files changed, 19 insertions(+), 12 deletions(-)
+ drivers/scsi/qla2xxx/qla_os.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/drivers/hv/hv.c
-+++ b/drivers/hv/hv.c
-@@ -138,6 +138,8 @@ int hv_init(void)
- 	memset(hv_context.synic_event_page, 0, sizeof(void *) * NR_CPUS);
- 	memset(hv_context.synic_message_page, 0,
- 	       sizeof(void *) * NR_CPUS);
-+	memset(hv_context.post_msg_page, 0,
-+	       sizeof(void *) * NR_CPUS);
- 	memset(hv_context.vp_index, 0,
- 	       sizeof(int) * NR_CPUS);
- 	memset(hv_context.event_dpc, 0,
-@@ -217,26 +219,18 @@ int hv_post_message(union hv_connection_
- 		  enum hv_message_type message_type,
- 		  void *payload, size_t payload_size)
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -3119,10 +3119,8 @@ qla2x00_unmap_iobases(struct qla_hw_data
+ }
+ 
+ static void
+-qla2x00_clear_drv_active(scsi_qla_host_t *vha)
++qla2x00_clear_drv_active(struct qla_hw_data *ha)
  {
--	struct aligned_input {
--		u64 alignment8;
--		struct hv_input_post_message msg;
--	};
- 
- 	struct hv_input_post_message *aligned_msg;
- 	u16 status;
--	unsigned long addr;
- 
- 	if (payload_size > HV_MESSAGE_PAYLOAD_BYTE_COUNT)
- 		return -EMSGSIZE;
- 
--	addr = (unsigned long)kmalloc(sizeof(struct aligned_input), GFP_ATOMIC);
--	if (!addr)
--		return -ENOMEM;
+-	struct qla_hw_data *ha = vha->hw;
 -
- 	aligned_msg = (struct hv_input_post_message *)
--			(ALIGN(addr, HV_HYPERCALL_PARAM_ALIGN));
-+			hv_context.post_msg_page[get_cpu()];
+ 	if (IS_QLA8044(ha)) {
+ 		qla8044_idc_lock(ha);
+ 		qla8044_clear_drv_active(ha);
+@@ -3193,7 +3191,7 @@ qla2x00_remove_one(struct pci_dev *pdev)
  
- 	aligned_msg->connectionid = connection_id;
-+	aligned_msg->reserved = 0;
- 	aligned_msg->message_type = message_type;
- 	aligned_msg->payload_size = payload_size;
- 	memcpy((void *)aligned_msg->payload, payload, payload_size);
-@@ -244,8 +238,7 @@ int hv_post_message(union hv_connection_
- 	status = do_hypercall(HVCALL_POST_MESSAGE, aligned_msg, NULL)
- 		& 0xFFFF;
+ 	scsi_host_put(base_vha->host);
  
--	kfree((void *)addr);
--
-+	put_cpu();
- 	return status;
- }
+-	qla2x00_clear_drv_active(base_vha);
++	qla2x00_clear_drv_active(ha);
  
-@@ -294,6 +287,14 @@ int hv_synic_alloc(void)
- 			pr_err("Unable to allocate SYNIC event page\n");
- 			goto err;
- 		}
-+
-+		hv_context.post_msg_page[cpu] =
-+			(void *)get_zeroed_page(GFP_ATOMIC);
-+
-+		if (hv_context.post_msg_page[cpu] == NULL) {
-+			pr_err("Unable to allocate post msg page\n");
-+			goto err;
-+		}
- 	}
+ 	qla2x00_unmap_iobases(ha);
  
- 	return 0;
-@@ -308,6 +309,8 @@ static void hv_synic_free_cpu(int cpu)
- 		free_page((unsigned long)hv_context.synic_event_page[cpu]);
- 	if (hv_context.synic_message_page[cpu])
- 		free_page((unsigned long)hv_context.synic_message_page[cpu]);
-+	if (hv_context.post_msg_page[cpu])
-+		free_page((unsigned long)hv_context.post_msg_page[cpu]);
- }
- 
- void hv_synic_free(void)
---- a/drivers/hv/hyperv_vmbus.h
-+++ b/drivers/hv/hyperv_vmbus.h
-@@ -515,6 +515,10 @@ struct hv_context {
- 	 * per-cpu list of the channels based on their CPU affinity.
- 	 */
- 	struct list_head percpu_list[NR_CPUS];
-+	/*
-+	 * buffer to post messages to the host.
-+	 */
-+	void *post_msg_page[NR_CPUS];
- };
- 
- extern struct hv_context hv_context;
 
 
