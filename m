@@ -1,74 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758452AbaJ1Fgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:36:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46314 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756073AbaJ1DwS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:18 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Matlack <dmatlack@google.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 07/43] kvm: dont take vcpu mutex for obviously invalid vcpu ioctls
-Date: Tue, 28 Oct 2014 11:36:05 +0800
-Message-Id: <20141028033523.723554669@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1751933AbaJ1FkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:40:24 -0400
+Received: from mga03.intel.com ([134.134.136.65]:27787 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756525AbaJ1FkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 01:40:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,801,1406617200"; 
+   d="scan'208";a="626697056"
+Message-ID: <1414474824.4246.6.camel@rzhang1-toshiba>
+Subject: Re: [GIT PULL] thermal-soc changes
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 28 Oct 2014 13:40:24 +0800
+In-Reply-To: <20141027195346.GB6088@developer>
+References: <20141021134941.GA4937@developer>
+	 <1414041345.2380.3.camel@rzhang1-toshiba> <20141023112721.GA5683@developer>
+	 <20141027195346.GB6088@developer>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hi, Eduardo,
 
-------------------
+On 一, 2014-10-27 at 15:53 -0400, Eduardo Valentin wrote:
+> Hello Rui,
+> 
+> On Thu, Oct 23, 2014 at 07:27:24AM -0400, Eduardo Valentin wrote:
+> > Hello Rui,
+> > 
+> > On Thu, Oct 23, 2014 at 01:15:45PM +0800, Zhang Rui wrote:
+> > > On 二, 2014-10-21 at 09:49 -0400, Eduardo Valentin wrote:
+> > > > Hello Rui,
+> > > > 
+> > > > Here are a couple of changes that are in my tree. They include:
+> > > > - a few code refactoring improving the Exynos code base;
+> > > > - new feature on the Exynos code base (TRIMINFO and TRIMRELOAD);
+> > > > - a documentation of RCAR thermal; and
+> > > > - a fix in the of-thermal, regarding the proper usage of of APIs.
+> > > > 
+> > > what's their target?
+> > > please send me separate pull requests for different targets.
+> > > 
+> > 
+> > All are for 3.18, I forgot to mention. 
+> 
+> Any updates?
+> 
+Well, I'm on a trip, and unfortunately, my Linux laptop is broken for
+the moment. so I think first we should keep all the patches for 3.18-rc
+in your tree to get tested, and then either I can send out the pull
+request at around 20th Nov, after coming back from travel, or you can
+help me send the pull request for 3.18-rc.
 
-From: David Matlack <dmatlack@google.com>
-
-commit 2ea75be3219571d0ec009ce20d9971e54af96e09 upstream.
-
-vcpu ioctls can hang the calling thread if issued while a vcpu is running.
-However, invalid ioctls can happen when userspace tries to probe the kind
-of file descriptors (e.g. isatty() calls ioctl(TCGETS)); in that case,
-we know the ioctl is going to be rejected as invalid anyway and we can
-fail before trying to take the vcpu mutex.
-
-This patch does not change functionality, it just makes invalid ioctls
-fail faster.
-
-Signed-off-by: David Matlack <dmatlack@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- virt/kvm/kvm_main.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -52,6 +52,7 @@
- 
- #include <asm/processor.h>
- #include <asm/io.h>
-+#include <asm/ioctl.h>
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
- 
-@@ -1981,6 +1982,9 @@ static long kvm_vcpu_ioctl(struct file *
- 	if (vcpu->kvm->mm != current->mm)
- 		return -EIO;
- 
-+	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
-+		return -EINVAL;
-+
- #if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS)
- 	/*
- 	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
+thanks,
+rui
+> > 
+> > BR,
+> > 
+> > Eduardo Valentin
+> > 
+> > > thanks,
+> > > rui
+> > > > They are based on your next branch.
+> > > > 
+> > > > BR,
+> > > > 
+> > > > Eduardo Valentin
+> > > > 
+> > > > The following changes since commit 6ceaf58abe25e86292152005c51169796bad3407:
+> > > > 
+> > > >   Merge branch 'int340x-thermal' of .git into next (2014-10-17 14:30:58 +0800)
+> > > > 
+> > > > are available in the git repository at:
+> > > > 
+> > > > 
+> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git next
+> > > > 
+> > > > for you to fetch changes up to df67e40f51398fef8dd705dfe4e287ad9b10ba4b:
+> > > > 
+> > > >   thermal: fix multiple disbalanced device node counters (2014-10-21 08:05:50 -0400)
+> > > > 
+> > > > ----------------------------------------------------------------
+> > > > Bartlomiej Zolnierkiewicz (9):
+> > > >       thermal: exynos: remove unused struct exynos_tmu_registers entries
+> > > >       thermal: exynos: remove dead code for HW_MODE calibration
+> > > >       thermal: exynos: remove redundant pdata checks from exynos_tmu_initialize()
+> > > >       thermal: exynos: remove redundant threshold_code checks from exynos_tmu_initialize()
+> > > >       thermal: exynos: simplify temp_to_code() and code_to_temp()
+> > > >       thermal: exynos: cache non_hw_trigger_levels in pdata
+> > > >       thermal: exynos: remove redundant pdata checks from exynos_tmu_control()
+> > > >       thermal: exynos: remove identical values from exynos*_tmu_registers structures
+> > > >       thermal: samsung: Exynos5260 and Exynos5420 should not use TRIM_RELOAD flag
+> > > > 
+> > > > Chanwoo Choi (2):
+> > > >       thermal: exynos: Add support for many TRIMINFO_CTRL registers
+> > > >       thermal: exynos: Add support for TRIM_RELOAD feature at Exynos3250
+> > > > 
+> > > > Geert Uytterhoeven (1):
+> > > >       thermal: rcar: Add binding docs for new R-Car Gen2 SoCs
+> > > > 
+> > > > Vladimir Zapolskiy (1):
+> > > >       thermal: fix multiple disbalanced device node counters
+> > > > 
+> > > >  .../devicetree/bindings/thermal/rcar-thermal.txt   |   5 +-
+> > > >  drivers/thermal/of-thermal.c                       |  40 ++++--
+> > > >  drivers/thermal/samsung/exynos_thermal_common.h    |   2 +-
+> > > >  drivers/thermal/samsung/exynos_tmu.c               | 141 ++++++---------------
+> > > >  drivers/thermal/samsung/exynos_tmu.h               |  81 ++----------
+> > > >  drivers/thermal/samsung/exynos_tmu_data.c          |  83 ++++--------
+> > > >  drivers/thermal/samsung/exynos_tmu_data.h          |  39 +-----
+> > > >  7 files changed, 111 insertions(+), 280 deletions(-)
+> > > 
+> > > 
+> 
+> 
 
 
