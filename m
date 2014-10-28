@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566AbaJ1Pl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:41:29 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:39048 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099AbaJ1Pl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:41:28 -0400
+	id S1754526AbaJ1Ply (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:41:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52207 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753968AbaJ1Plw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 11:41:52 -0400
+Message-ID: <544FB8A8.1090402@redhat.com>
+Date: Tue, 28 Oct 2014 11:39:20 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-In-Reply-To: <1413792260-4265-5-git-send-email-antoine.tenart@free-electrons.com>
-References: <1413792260-4265-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1413792260-4265-5-git-send-email-antoine.tenart@free-electrons.com>
-Date: Tue, 28 Oct 2014 16:41:27 +0100
-Message-ID: <CACRpkdYQbz8ZSe-Rt8DfpNnJNbJYONcmxx6M3c5MrYvvNOygOw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] pinctrl: berlin: use the generic node to map function
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andi Kleen <andi@firstfloor.org>, Alex Thorlton <athorlton@sgi.com>
+CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <lliubbo@gmail.com>, David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
+References: <1414032567-109765-1-git-send-email-athorlton@sgi.com> <87lho0pf4l.fsf@tassilo.jf.intel.com> <544F9302.4010001@redhat.com>
+In-Reply-To: <544F9302.4010001@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 20, 2014 at 10:04 AM, Antoine Tenart
-<antoine.tenart@free-electrons.com> wrote:
-
-> A generic node to map function has been added into the pinctrl
-> framework. It is provieded by GENERIC_PINCONF. Use it in the Berlin
-> pinctrl driver as it fits the needs.
+On 10/28/2014 08:58 AM, Rik van Riel wrote:
+> On 10/28/2014 08:12 AM, Andi Kleen wrote:
+>> Alex Thorlton <athorlton@sgi.com> writes:
+>>
+>>> Last week, while discussing possible fixes for some unexpected/unwanted behavior
+>>> from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
+>>> mentioned possibly changing changing khugepaged to work as a task_work function
+>>> instead of a kernel thread.  This will give us finer grained control over the
+>>> page collapse scans, eliminate some unnecessary scans since tasks that are
+>>> relatively inactive will not be scanned often, and eliminate the unwanted
+>>> behavior described in the email thread I mentioned.
+>>
+>> With your change, what would happen in a single threaded case?
+>>
+>> Previously one core would scan and another would run the workload.
+>> With your change both scanning and running would be on the same
+>> core.
+>>
+>> Would seem like a step backwards to me.
 >
-> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+> It's not just scanning, either.
+>
+> Memory compaction can spend a lot of time waiting on
+> locks. Not consuming CPU or anything, but just waiting.
+>
+> I am not convinced that moving all that waiting to task
+> context is a good idea.
 
-Really nice. Will just apply this with the other stuff in the revised version.
+It may be worth investigating how the hugepage code calls
+the memory allocation & compaction code.
 
-Yours,
-Linus Walleij
+Doing only async compaction from task_work context should
+probably be ok.
+
