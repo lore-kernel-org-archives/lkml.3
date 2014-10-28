@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751024AbaJ1E1C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:27:02 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51478 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756170AbaJ1E06 (ORCPT
+	id S1756262AbaJ1E1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:27:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47074 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933980AbaJ1Dw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 00:26:58 -0400
-Date: Mon, 27 Oct 2014 21:11:27 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-unionfs@vger.kernel.org
-Subject: Re: [GIT PULL] overlay filesystem v25
-Message-ID: <20141028041127.GM5718@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141024032422.GI7996@ZenIV.linux.org.uk>
- <CAJfpegt-X_Cd8B5H65keshhhuwH2-HPpaBC30atKeS3QjaariA@mail.gmail.com>
- <20141025081845.GJ7996@ZenIV.linux.org.uk>
- <CAJfpegvM8d-cizf=3KmTSFVgAYPBDp_0fQAh+G2Q87u=taXm3A@mail.gmail.com>
- <20141025170609.GK7996@ZenIV.linux.org.uk>
- <CAJfpegucroRzo0NHTz=4N0WcrB2oDC0eDiZXk=aKSjc8vdYDjw@mail.gmail.com>
- <20141027155901.GE5718@linux.vnet.ibm.com>
- <20141027172800.GW7996@ZenIV.linux.org.uk>
- <20141027173621.GG5718@linux.vnet.ibm.com>
- <20141028011214.GZ7996@ZenIV.linux.org.uk>
+	Mon, 27 Oct 2014 23:52:58 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Douglas Lehr <dllehr@us.ibm.com>, Anton Blanchard <anton@samba.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Milton Miller <miltonm@us.ibm.com>
+Subject: [PATCH 3.10 29/43] PCI: Increase IBM ipr SAS Crocodile BARs to at least system page size
+Date: Tue, 28 Oct 2014 11:36:27 +0800
+Message-Id: <20141028033524.655940944@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028011214.GZ7996@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102804-0033-0000-0000-0000027C56B5
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 01:12:14AM +0000, Al Viro wrote:
-> On Mon, Oct 27, 2014 at 10:36:21AM -0700, Paul E. McKenney wrote:
-> > Code making direct use of smp_read_barrier_depends() is harder to read,
-> > in my experience, but good point on the sparse noise.  Maybe a new
-> > lockless_dereference() primitive?  Maybe something like the following?
-> > (Untested, probably does not even build.)
-> > 
-> > #define lockless_dereference(p) \
-> > ({ \
-> > 	typeof(*p) *_________p1 = ACCESS_ONCE(p); \
-> > 	smp_read_barrier_depends(); /* Dependency order vs. p above. */ \
-> > 	_________p1; \
-> > })
-> 
-> Hmm...  Where would you prefer to put it?  rcupdate.h?
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Good a place as any, I guess.  Please see patch below.  Left to myself,
-I would send this along for the next merge window, but please let me
-know if you would like it sooner.
+------------------
 
-							Thanx, Paul
+From: Douglas Lehr <dllehr@us.ibm.com>
 
-------------------------------------------------------------------------
+commit 9fe373f9997b48fcd6222b95baf4a20c134b587a upstream.
 
-rcu: Provide counterpart to rcu_dereference() for non-RCU situations
+The Crocodile chip occasionally comes up with 4k and 8k BAR sizes.  Due to
+an erratum, setting the SR-IOV page size causes the physical function BARs
+to expand to the system page size.  Since ppc64 uses 64k pages, when Linux
+tries to assign the smaller resource sizes to the now 64k BARs the address
+will be truncated and the BARs will overlap.
 
-Although rcu_dereference() and friends can be used in situations where
-object lifetimes are being managed by something other than RCU, the
-resulting sparse and lockdep-RCU noise can be annoying.  This commit
-therefore supplies a lockless_dereference(), which provides the
-protection for dereferences without the RCU-related debugging noise.
+Force Linux to allocate the resource as a full page, which avoids the
+overlap.
 
-Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+[bhelgaas: print expanded resource, too]
+Signed-off-by: Douglas Lehr <dllehr@us.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Milton Miller <miltonm@us.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 9575c2d403b5..ed4f5939a452 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -617,6 +617,21 @@ static inline void rcu_preempt_sleep_check(void)
- #define RCU_INITIALIZER(v) (typeof(*(v)) __force __rcu *)(v)
+---
+ drivers/pci/quirks.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -28,6 +28,7 @@
+ #include <linux/ioport.h>
+ #include <linux/sched.h>
+ #include <linux/ktime.h>
++#include <linux/mm.h>
+ #include <asm/dma.h>	/* isa_dma_bridge_buggy */
+ #include "pci.h"
  
- /**
-+ * lockless_dereference() - safely load a pointer for later dereference
-+ * @p: The pointer to load
-+ *
-+ * Similar to rcu_dereference(), but for situations where the pointed-to
-+ * object's lifetime is managed by something other than RCU.  That
-+ * "something other" might be reference counting or simple immortality.
-+ */
-+#define lockless_dereference(p) \
-+({ \
-+	typeof(p) _________p1 = ACCESS_ONCE(p); \
-+	smp_read_barrier_depends(); /* Dependency order vs. p above. */ \
-+	(_________p1); \
-+})
+@@ -291,6 +292,25 @@ static void quirk_citrine(struct pci_dev
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM,	PCI_DEVICE_ID_IBM_CITRINE,	quirk_citrine);
+ 
++/*  On IBM Crocodile ipr SAS adapters, expand BAR to system page size */
++static void quirk_extend_bar_to_page(struct pci_dev *dev)
++{
++	int i;
 +
-+/**
-  * rcu_assign_pointer() - assign to RCU-protected pointer
-  * @p: pointer to assign to
-  * @v: value to assign (publish)
++	for (i = 0; i < PCI_STD_RESOURCE_END; i++) {
++		struct resource *r = &dev->resource[i];
++
++		if (r->flags & IORESOURCE_MEM && resource_size(r) < PAGE_SIZE) {
++			r->end = PAGE_SIZE - 1;
++			r->start = 0;
++			r->flags |= IORESOURCE_UNSET;
++			dev_info(&dev->dev, "expanded BAR %d to page size: %pR\n",
++				 i, r);
++		}
++	}
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM, 0x034a, quirk_extend_bar_to_page);
++
+ /*
+  *  S3 868 and 968 chips report region size equal to 32M, but they decode 64M.
+  *  If it's needed, re-allocate the region.
+
 
