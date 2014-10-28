@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759847AbaJ1HvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:51:00 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:58254 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759774AbaJ1Hu5 (ORCPT
+	id S1760868AbaJ1HvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:51:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44510 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754295AbaJ1DiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 03:50:57 -0400
-Date: Tue, 28 Oct 2014 08:50:53 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Sebastian Reichel <sre@kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 0/8] ARM: at91: Remove mach/ includes from the reset
- driver
-Message-ID: <20141028085053.41c6ce46@bbrezillon>
-In-Reply-To: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Mon, 27 Oct 2014 23:38:21 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Long <dave.long@linaro.org>,
+        AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.17 043/146] arm64: debug: dont re-enable debug exceptions on return from el1_dbg
+Date: Tue, 28 Oct 2014 11:33:05 +0800
+Message-Id: <20141028033345.286244023@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
+References: <20141028033343.441992423@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-On Tue, 28 Oct 2014 00:09:29 +0100
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+------------------
 
-> This series removes the mach/ headers dependency from the reset driver. It is
-> also laying some groundwork for the necessary power management support rework.
-> 
-> The first patch adds and export a function to shutdown the sdram from the sdramc
-> driver. That function also take the RSTC CR register and a value as parameters
-> to be able to reset the chip. This is a hackish way of doing it but it ensures
-> that all the code fits in one cache line. We already have plan to start using
-> the sram to have a cleaner way to execute that code safely as soon as that
-> series goes in:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2013-September/198778.html
-> 
-> The second patch makes the sdramc driver usable from the board files.
-> 
-> The third patch actually registers the sdramc driver from the boards files.
-> The fourth patch does the same, only for sam9g45 and sam9rl to simplify future
-> merging as the board files have been removed. Simply drop that patch.
-> 
-> The fifth patch makes the at91-reset driver use the newly created
-> at91_ramc_shutdown() function and removes the mach/ headers inclusion.
+From: Will Deacon <will.deacon@arm.com>
 
-I'm not a big fan of this approach.
+commit 1059c6bf8534acda249e7e65c81e7696fb074dc1 upstream.
 
-I definitely think each step of the reset process should be handled in
-the appropriate block (and the patch series you pointed out would
-definitely help in achieving this goal), but you're just moving all the
-stuff done in the reset driver into the SDRAM one, which means you're
-solving one design issue by introducing a new one.
+When returning from a debug exception taken from EL1, we unmask debug
+exceptions after handling the exception. This is crucial for debug
+exceptions taken from EL0, so that any kernel work on the ret_to_user
+path can be debugged by kgdb.
 
-Moreover, the errata at the origin of this hack is attached to the RSTC
-(Rest Controller) block in the datasheets.
+However, when returning back to EL1 the only thing left to do is to
+restore the original register state before the exception return. If
+single-step has been enabled by the debug exception handler, we will
+get stuck in an infinite debug exception loop, since we will take the
+step exception as soon as we unmask debug exceptions.
 
-I'd rather keep the reset driver as is and move SDRAM related macros
-into a specific header (include/linux/memory/atmel-sdram.h or
-include/soc/atmel/memory.h as you proposed) so that the reset driver
-can reference them without including mach headers.
+This patch avoids unmasking debug exceptions on the debug exception
+return path when the exception was taken from EL1.
+
+Fixes: 2a2830703a23 (arm64: debug: avoid accessing mdscr_el1 on fault paths where possible)
+Reported-by: David Long <dave.long@linaro.org>
+Reported-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm64/kernel/entry.S |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/arch/arm64/kernel/entry.S
++++ b/arch/arm64/kernel/entry.S
+@@ -324,7 +324,6 @@ el1_dbg:
+ 	mrs	x0, far_el1
+ 	mov	x2, sp				// struct pt_regs
+ 	bl	do_debug_exception
+-	enable_dbg
+ 	kernel_exit 1
+ el1_inv:
+ 	// TODO: add support for undefined instructions in kernel mode
 
 
-Best Regards,
-
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
