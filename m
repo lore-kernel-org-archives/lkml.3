@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934354AbaJ1Dxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:53:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47683 "EHLO
+	id S934108AbaJ1DxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:53:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47021 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934323AbaJ1Dxq (ORCPT
+	with ESMTP id S933986AbaJ1Dw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:53:46 -0400
-Date: Tue, 28 Oct 2014 11:51:01 +0800
+	Mon, 27 Oct 2014 23:52:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.16 000/127] 3.16.7-stable review
-Message-ID: <20141028035101.GA20053@kroah.com>
-References: <20141028033420.925922046@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Loic Poulain <loic.poulain@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.10 32/43] Bluetooth: Fix HCI H5 corrupted ack value
+Date: Tue, 28 Oct 2014 11:36:30 +0800
+Message-Id: <20141028033524.777843874@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 11:33:55AM +0800, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.16.7 release.
-> There are 127 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Thu Oct 30 03:33:57 UTC 2014.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.16.7-rc1.gz
-> and the diffstat can be found below.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Please note, this is going to be the LAST 3.16-stable release from me,
-after this one, it's end-of-life.
+------------------
 
-thanks,
+From: Loic Poulain <loic.poulain@intel.com>
 
-greg k-h
+commit 4807b51895dce8aa650ebebc51fa4a795ed6b8b8 upstream.
+
+In this expression: seq = (seq - 1) % 8
+seq (u8) is implicitly converted to an int in the arithmetic operation.
+So if seq value is 0, operation is ((0 - 1) % 8) => (-1 % 8) => -1.
+The new seq value is 0xff which is an invalid ACK value, we expect 0x07.
+It leads to frequent dropped ACK and retransmission.
+Fix this by using '&' binary operator instead of '%'.
+
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/bluetooth/hci_h5.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/bluetooth/hci_h5.c
++++ b/drivers/bluetooth/hci_h5.c
+@@ -237,7 +237,7 @@ static void h5_pkt_cull(struct h5 *h5)
+ 			break;
+ 
+ 		to_remove--;
+-		seq = (seq - 1) % 8;
++		seq = (seq - 1) & 0x07;
+ 	}
+ 
+ 	if (seq != h5->rx_ack)
+
+
