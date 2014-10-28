@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581AbaJ1DjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:39:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44602 "EHLO
+	id S1754599AbaJ1DjV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:39:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44605 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439AbaJ1DjP (ORCPT
+	with ESMTP id S1754582AbaJ1DjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:15 -0400
+	Mon, 27 Oct 2014 23:39:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 078/146] ALSA: hda - Add missing terminating entry to SND_HDA_PIN_QUIRK macro
-Date: Tue, 28 Oct 2014 11:33:40 +0800
-Message-Id: <20141028033346.779556219@linuxfoundation.org>
+        Andy Gross <agross@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH 3.17 079/146] clk: qcom: Add IPQ8064 PLL required for USB
+Date: Tue, 28 Oct 2014 11:33:41 +0800
+Message-Id: <20141028033346.827889365@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,43 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Andy Gross <agross@codeaurora.org>
 
-commit fb54a645b2739fb196446ffbbbe3f3589d117b55 upstream.
+commit dc1b3f657f25798b2dc9ed8928b80eb3183019a2 upstream.
 
-Without this terminating entry, the pin matching would continue
-across random memory until a zero or a non-matching entry was found.
+This patch adds the PLL0 that is required for the USB clocks to
+work properly.
 
-The result being that in some cases, the pin quirk would not be
-applied correctly.
-
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Andy Gross <agross@codeaurora.org>
+Fixes: 24d8fba44af3 "clk: qcom: Add support for IPQ8064's global clock controller (GCC)"
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_local.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/clk/qcom/gcc-ipq806x.c |   31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/hda_local.h
-+++ b/sound/pci/hda/hda_local.h
-@@ -425,7 +425,7 @@ struct snd_hda_pin_quirk {
- 	  .subvendor = _subvendor,\
- 	  .name = _name,\
- 	  .value = _value,\
--	  .pins = (const struct hda_pintbl[]) { _pins } \
-+	  .pins = (const struct hda_pintbl[]) { _pins, {0, 0}} \
- 	}
- #else
+--- a/drivers/clk/qcom/gcc-ipq806x.c
++++ b/drivers/clk/qcom/gcc-ipq806x.c
+@@ -32,6 +32,33 @@
+ #include "clk-branch.h"
+ #include "reset.h"
  
-@@ -433,7 +433,7 @@ struct snd_hda_pin_quirk {
- 	{ .codec = _codec,\
- 	  .subvendor = _subvendor,\
- 	  .value = _value,\
--	  .pins = (const struct hda_pintbl[]) { _pins } \
-+	  .pins = (const struct hda_pintbl[]) { _pins, {0, 0}} \
- 	}
++static struct clk_pll pll0 = {
++	.l_reg = 0x30c4,
++	.m_reg = 0x30c8,
++	.n_reg = 0x30cc,
++	.config_reg = 0x30d4,
++	.mode_reg = 0x30c0,
++	.status_reg = 0x30d8,
++	.status_bit = 16,
++	.clkr.hw.init = &(struct clk_init_data){
++		.name = "pll0",
++		.parent_names = (const char *[]){ "pxo" },
++		.num_parents = 1,
++		.ops = &clk_pll_ops,
++	},
++};
++
++static struct clk_regmap pll0_vote = {
++	.enable_reg = 0x34c0,
++	.enable_mask = BIT(0),
++	.hw.init = &(struct clk_init_data){
++		.name = "pll0_vote",
++		.parent_names = (const char *[]){ "pll0" },
++		.num_parents = 1,
++		.ops = &clk_pll_vote_ops,
++	},
++};
++
+ static struct clk_pll pll3 = {
+ 	.l_reg = 0x3164,
+ 	.m_reg = 0x3168,
+@@ -154,7 +181,7 @@ static const u8 gcc_pxo_pll8_pll0[] = {
+ static const char *gcc_pxo_pll8_pll0_map[] = {
+ 	"pxo",
+ 	"pll8_vote",
+-	"pll0",
++	"pll0_vote",
+ };
  
- #endif
+ static struct freq_tbl clk_tbl_gsbi_uart[] = {
+@@ -2133,6 +2160,8 @@ static struct clk_branch usb_fs1_h_clk =
+ };
+ 
+ static struct clk_regmap *gcc_ipq806x_clks[] = {
++	[PLL0] = &pll0.clkr,
++	[PLL0_VOTE] = &pll0_vote,
+ 	[PLL3] = &pll3.clkr,
+ 	[PLL8] = &pll8.clkr,
+ 	[PLL8_VOTE] = &pll8_vote,
 
 
