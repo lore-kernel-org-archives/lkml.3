@@ -1,87 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227AbaJ1XaN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 19:30:13 -0400
-Received: from mail-bn1bon0091.outbound.protection.outlook.com ([157.56.111.91]:26835
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755130AbaJ1X35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 19:29:57 -0400
-From: <dinguyen@opensource.altera.com>
-To: <paulz@synopsys.com>, <balbi@ti.com>
-CC: <dinh.linux@gmail.com>, <swarren@wwwdotorg.org>,
-        <b.zolnierkie@samsung.com>, <matthijs@stdin.nl>,
-        <r.baldyga@samsung.com>, <jg1.han@samsung.com>,
-        <sachin.kamat@linaro.org>, <ben-linux@fluff.org>,
-        <dianders@chromium.org>, <kever.yang@rock-chips.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>
-Subject: [PATCHv6 8/8] usb: dwc2: move usb_disabled() call to host driver only
-Date: Tue, 28 Oct 2014 18:25:49 -0500
-Message-ID: <1414538749-14735-9-git-send-email-dinguyen@opensource.altera.com>
-X-Mailer: git-send-email 2.0.3
-In-Reply-To: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com>
-References: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com>
+	id S1755270AbaJ1XaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 19:30:19 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:61421 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaJ1XaP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 19:30:15 -0400
+X-Original-SENDERIP: 10.178.30.169
+X-Original-MAILFROM: hankyung.yu@lge.com
+From: =?ks_c_5601-1987?B?wK/H0bDm?= <hankyung.yu@lge.com>
+To: "'Adrian Hunter'" <adrian.hunter@intel.com>,
+        "'Chanho Min'" <chanho.min@lge.com>
+Cc: "'Chris Ball'" <chris@printf.net>,
+        "'Ulf Hansson'" <ulf.hansson@linaro.org>,
+        "'Seungwon Jeon'" <tgih.jun@samsung.com>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
+        <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "'HyoJun Im'" <hyojun.im@lge.com>, <gunho.lee@lge.com>
+References: <1413946555-1266-1-git-send-email-chanho.min@lge.com> <544F98DD.6040605@intel.com>
+In-Reply-To: <544F98DD.6040605@intel.com>
+Subject: RE: [PATCH] mmc:core: fix hs400 timing selection
+Date: Wed, 29 Oct 2014 08:30:00 +0900
+Message-ID: <00b501cff307$1de03fb0$59a0bf10$@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: CY1PR12CA0019.namprd12.prod.outlook.com (25.160.137.29) To
- DM2PR0301MB1198.namprd03.prod.outlook.com (25.160.217.148)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1198;
-X-Forefront-PRVS: 0378F1E47A
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(122386002)(105586002)(33646002)(95666004)(102836001)(101416001)(53416004)(77156001)(77096002)(50226001)(120916001)(106356001)(229853001)(104166001)(107046002)(80022003)(50986999)(81156004)(69596002)(76176999)(46102003)(92566001)(85852003)(99396003)(4396001)(50466002)(19580405001)(19580395003)(76482002)(62966002)(85306004)(66066001)(97736003)(86362001)(89996001)(48376002)(86152002)(87286001)(20776003)(87976001)(21056001)(88136002)(40100003)(93916002)(92726001)(47776003)(42186005)(64706001)(31966008);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1198;H:linux-builds1.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain;
+	charset="ks_c_5601-1987"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQJgI7CSBWg4GKXd5yLJVzam1HpizQI/Ap4FmxPOSjA=
+Content-Language: ko
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
+Hi I'm Hankyung Yu
 
-Now that platform.c will get built for both Host and Gadget, if we leave the
-usb_disabled() call in platform.c, it results in the following build error
-when (!USB && USB_GADGET) condition is met.
+I will answer instead Chanho Min
 
-ERROR: "usb_disabled" [drivers/usb/dwc2/dwc2_platform.ko] undefined!
+HS200 mode right thing to support less than 52Mhz
 
-Since usb_disabled() is mostly used to disable USB host functionality, move
-the call the host portion for the DWC2 driver.
+However CLK <-> DATA delay timing is dependent on the clock.
 
-Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
----
- drivers/usb/dwc2/hcd.c      | 3 +++
- drivers/usb/dwc2/platform.c | 3 ---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+So only lower clock without adjusting the timing and mode of a control h/w
+ever the problem may occur.
 
-diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
-index fa49c72..b741997 100644
---- a/drivers/usb/dwc2/hcd.c
-+++ b/drivers/usb/dwc2/hcd.c
-@@ -2780,6 +2780,9 @@ int dwc2_hcd_init(struct dwc2_hsotg *hsotg, int irq,
- 	int i, num_channels;
- 	int retval;
- 
-+	if (usb_disabled())
-+		return -ENODEV;
-+
- 	dev_dbg(hsotg->dev, "DWC OTG HCD INIT\n");
- 
- 	/* Detect config values from hardware */
-diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index 77c8417..123cf54 100644
---- a/drivers/usb/dwc2/platform.c
-+++ b/drivers/usb/dwc2/platform.c
-@@ -157,9 +157,6 @@ static int dwc2_driver_probe(struct platform_device *dev)
- 	int retval;
- 	int irq;
- 
--	if (usb_disabled())
--		return -ENODEV;
--
- 	match = of_match_device(dwc2_of_match_table, &dev->dev);
- 	if (match && match->data) {
- 		params = match->data;
--- 
-2.0.3
+So change the operating mode and to lower the clock.
+
+
+-----Original Message-----
+From: Adrian Hunter [mailto:adrian.hunter@intel.com] 
+Sent: Tuesday, October 28, 2014 10:24 PM
+To: Chanho Min
+Cc: Chris Ball; Ulf Hansson; Seungwon Jeon; Jaehoon Chung; linux-
+mmc@vger.kernel.org; linux-kernel@vger.kernel.org; HyoJun Im; gunho.lee@lge.
+com; Hankyung Yu
+Subject: Re: [PATCH] mmc:core: fix hs400 timing selection
+
+On 22/10/14 05:55, Chanho Min wrote:
+> According to JEDEC v5.01 spec (6.6.5), In order to switch to HS400 
+> mode, host should perform the following steps.
+> 
+>  1. HS200 mode selection completed
+>  2. Set HS_TIMING to 0x01(High Speed)
+>  3. Host changes frequency to =< 52MHz  4. Set the bus width to DDR 
+> 8bit (CMD6)  5. Host may read Driver Strength (CMD8)  6. Set HS_TIMING 
+> to 0x03 (HS400)
+> 
+> In current implementation, the order of 2 and 3 is reversed.
+
+But HS200 mode supports running at speeds less than 52 MHz whereas High
+Speed mode does not support running at speeds greater than
+52 MHz.
+
+So the switch command might succeed, but the subsequent send_status command
+(see __mmc_switch) could be expected to fail unless the frequency is
+changed first.
+
+> The HS_TIMING field should be set to 0x1 before the clock frequency is 
+> set to a value not greater than 52 MHz. Otherwise, Initialization of 
+> timing can be failed. Also, the host contoller's UHS timing mode 
+> should be set to DDR50 after the bus width is set to DDR 8bit.
+> 
+> Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
+> Signed-off-by: Chanho Min <chanho.min@lge.com>
+> ---
+>  drivers/mmc/core/mmc.c |   13 ++++++++++---
+>  1 file changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c index 
+> a301a78..52f78e0 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -1061,9 +1061,6 @@ static int mmc_select_hs400(struct mmc_card *card)
+>  	 * Before switching to dual data rate operation for HS400,
+>  	 * it is required to convert from HS200 mode to HS mode.
+>  	 */
+> -	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
+> -	mmc_set_bus_speed(card);
+> -
+>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS,
+>  			   card->ext_csd.generic_cmd6_time, @@ -1074,6
++1071,14 @@ static 
+> int mmc_select_hs400(struct mmc_card *card)
+>  		return err;
+>  	}
+>  
+> +	/*
+> +	 * According to JEDEC v5.01 spec (6.6.5), Clock frequency should
+> +	 * be set to a value not greater than 52MHz after the HS_TIMING
+> +	 * field is set to 0x1.
+> +	 */
+> +	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
+> +	mmc_set_bus_speed(card);
+> +
+>  	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>  			 EXT_CSD_BUS_WIDTH,
+>  			 EXT_CSD_DDR_BUS_WIDTH_8,
+> @@ -1084,6 +1089,8 @@ static int mmc_select_hs400(struct mmc_card *card)
+>  		return err;
+>  	}
+>  
+> +	mmc_set_timing(card->host, MMC_TIMING_MMC_DDR52);
+> +
+>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS400,
+>  			   card->ext_csd.generic_cmd6_time,
+> 
 
