@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865AbaJ1ElU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:41:20 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:47899 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465AbaJ1ElR (ORCPT
+	id S932981AbaJ1Ena (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:43:30 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:47217 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932869AbaJ1En0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 00:41:17 -0400
-Date: Tue, 28 Oct 2014 10:11:12 +0530
-From: Heena Sirwani <heenasirwani@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: john.stultz@linaro.org, tglx@linutronix.de, arnd@arndb.de
-Subject: [PATCH v6] cpuset: Replace all instances of time_t with time64_t
-Message-ID: <20141028044112.GA27078@heena-HP-Compaq-8200-Elite-MT-PC>
+	Tue, 28 Oct 2014 00:43:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1414159000-27059-1-git-send-email-mark.rutland@arm.com>
+References: <1414159000-27059-1-git-send-email-mark.rutland@arm.com>
+Date: Mon, 27 Oct 2014 21:43:25 -0700
+Message-ID: <CAJKQeMZu+E_j-O3+bAhQ2oN-9iuAe9RwfRAy87EiHzF0MVTEXA@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/1] arm64: Fix /proc/cpuinfo
+From: Greg Hackmann <ghackmann@google.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, catalin.marinas@arm.com,
+        ijc@hellion.org.uk,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        will.deacon@arm.com, cross-distro@lists.linaro.org,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch replaces all instances of time_t with time64_t i.e.
-change the type used for representing time from 32-bit to 64-bit. All
-32-bit kernels to date use a signed 32-bit time_t type, which can only
-represent time until January 2038. Since embedded systems running 32-bit
-Linux are going to survive beyond that date, we have to change all
-current uses, in a backwards compatible way.
+On Fri, Oct 24, 2014 at 6:56 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> [c] Print different hwcaps for compat tasks
+>
+>     This would allow for 32-bit and 64-bit applications to function
+>     correctly. Having the format differ depending on the instruction set
+>     of the application reading /proc/cpuinfo may be misleading in some
+>     cases (e.g. a human using a 32-bit cat to read /proc/cpuinfo on a
+>     64-bit system).
 
-The patch also changes the function get_seconds() that returns a 32-bit
-integer to ktime_get_seconds() that returns seconds as 64-bit integer.
+FWIW we have an Nvidia-contributed patch in the android-3.10 kernel
+tree that basically does this.  It works well in almost all cases.
 
-The patch changes the type of ticks from time_t to u32. We keep ticks as
-32-bits as the function uses 32-bit arithmetic which would prove less
-expensive than 64-bit arithmetic and the function is expected to be
-called atleast once every 32 seconds.
+We've only found one situation so far where this approach falls apart.
+One specific Android NDK app detects NEON support by running
+"/system/bin/cat /proc/cpuinfo" in another process and searching for
+the string "neon" in the output.  Even though the app itself is
+32-bit, /system/bin/cat is 64-bit, so it reads the "wrong"
+/proc/cpuinfo and decides the CPU doesn't support NEON.
 
-Signed-off-by: Heena Sirwani <heenasirwani@gmail.com>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
----
-Changes in v6:
-	- Changed the function ktime_get_ts64() to ktime_get_seconds().
+>From Android's perspective, the only downside of using personalities
+instead is that our runtime will need to ensure 32-bit apps have the
+right personality.  Our runtime team has said they're fine with doing
+this, if that's the direction the upstream kernel wants to go.
 
- kernel/cpuset.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+> Are there applications for which any of these strategies will not work?
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 1f107c7..65c7b20 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -51,6 +51,7 @@
- #include <linux/stat.h>
- #include <linux/string.h>
- #include <linux/time.h>
-+#include <linux/time64.h>
- #include <linux/backing-dev.h>
- #include <linux/sort.h>
- 
-@@ -68,7 +69,7 @@ struct static_key cpusets_enabled_key __read_mostly = STATIC_KEY_INIT_FALSE;
- struct fmeter {
- 	int cnt;		/* unprocessed events count */
- 	int val;		/* most recent output value */
--	time_t time;		/* clock (secs) when val computed */
-+	time64_t time;		/* clock (secs) when val computed */
- 	spinlock_t lock;	/* guards read or write of above */
- };
- 
-@@ -1355,7 +1356,7 @@ out:
-  */
- 
- #define FM_COEF 933		/* coefficient for half-life of 10 secs */
--#define FM_MAXTICKS ((time_t)99) /* useless computing more ticks than this */
-+#define FM_MAXTICKS ((u32)99)   /* useless computing more ticks than this */
- #define FM_MAXCNT 1000000	/* limit cnt to avoid overflow */
- #define FM_SCALE 1000		/* faux fixed point scale */
- 
-@@ -1371,8 +1372,11 @@ static void fmeter_init(struct fmeter *fmp)
- /* Internal meter update - process cnt events and update value */
- static void fmeter_update(struct fmeter *fmp)
- {
--	time_t now = get_seconds();
--	time_t ticks = now - fmp->time;
-+	time64_t now;
-+	u32 ticks;
-+
-+	now = ktime_get_seconds();
-+	ticks = now - fmp->time;
- 
- 	if (ticks == 0)
- 		return;
--- 
-1.9.1
-
+We've found a handful of Android apps that expect the "CPU
+architecture" field to be "7" specifically and get confused by the
+existence of ARMv8.  There's not much you can do on the kernel side to
+support those apps, other than lying about the CPU architecture to
+32-bit apps (and we drew the line at doing that).
