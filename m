@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162AbaJ1DtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:49:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45807 "EHLO
+	id S933199AbaJ1Dtc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:49:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45842 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933126AbaJ1DtK (ORCPT
+	with ESMTP id S933126AbaJ1Dt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:49:10 -0400
+	Mon, 27 Oct 2014 23:49:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 3.14 034/100] m68k: Disable/restore interrupts in hwreg_present()/hwreg_write()
-Date: Tue, 28 Oct 2014 11:35:19 +0800
-Message-Id: <20141028033502.128815160@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.14 040/100] NFSv4: Fix lock recovery when CREATE_SESSION/SETCLIENTID_CONFIRM fails
+Date: Tue, 28 Oct 2014 11:35:25 +0800
+Message-Id: <20141028033502.419168683@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,77 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit e4dc601bf99ccd1c95b7e6eef1d3cf3c4b0d4961 upstream.
+commit a4339b7b686b4acc8b6de2b07d7bacbe3ae44b83 upstream.
 
-hwreg_present() and hwreg_write() temporarily change the VBR register to
-another vector table. This table contains a valid bus error handler
-only, all other entries point to arbitrary addresses.
+If a NFSv4.x server returns NFS4ERR_STALE_CLIENTID in response to a
+CREATE_SESSION or SETCLIENTID_CONFIRM in order to tell us that it rebooted
+a second time, then the client will currently take this to mean that it must
+declare all locks to be stale, and hence ineligible for reboot recovery.
 
-If an interrupt comes in while the temporary table is active, the
-processor will start executing at such an arbitrary address, and the
-kernel will crash.
+RFC3530 and RFC5661 both suggest that the client should instead rely on the
+server to respond to inelegible open share, lock and delegation reclaim
+requests with NFS4ERR_NO_GRACE in this situation.
 
-While most callers run early, before interrupts are enabled, or
-explicitly disable interrupts, Finn Thain pointed out that macsonic has
-one callsite that doesn't, causing intermittent boot crashes.
-There's another unsafe callsite in hilkbd.
-
-Fix this for good by disabling and restoring interrupts inside
-hwreg_present() and hwreg_write().
-
-Explicitly disabling interrupts can be removed from the callsites later.
-
-Reported-by: Finn Thain <fthain@telegraphics.com.au>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/mm/hwtest.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/nfs/nfs4state.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/arch/m68k/mm/hwtest.c
-+++ b/arch/m68k/mm/hwtest.c
-@@ -28,9 +28,11 @@
- int hwreg_present( volatile void *regp )
- {
-     int	ret = 0;
-+    unsigned long flags;
-     long	save_sp, save_vbr;
-     long	tmp_vectors[3];
- 
-+    local_irq_save(flags);
-     __asm__ __volatile__
- 	(	"movec	%/vbr,%2\n\t"
- 		"movel	#Lberr1,%4@(8)\n\t"
-@@ -46,6 +48,7 @@ int hwreg_present( volatile void *regp )
- 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
- 		: "a" (regp), "a" (tmp_vectors)
-                 );
-+    local_irq_restore(flags);
- 
-     return( ret );
- }
-@@ -58,9 +61,11 @@ EXPORT_SYMBOL(hwreg_present);
- int hwreg_write( volatile void *regp, unsigned short val )
- {
- 	int		ret;
-+	unsigned long flags;
- 	long	save_sp, save_vbr;
- 	long	tmp_vectors[3];
- 
-+	local_irq_save(flags);
- 	__asm__ __volatile__
- 	(	"movec	%/vbr,%2\n\t"
- 		"movel	#Lberr2,%4@(8)\n\t"
-@@ -78,6 +83,7 @@ int hwreg_write( volatile void *regp, un
- 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
- 		: "a" (regp), "a" (tmp_vectors), "g" (val)
- 	);
-+	local_irq_restore(flags);
- 
- 	return( ret );
- }
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1788,7 +1788,6 @@ static int nfs4_handle_reclaim_lease_err
+ 		break;
+ 	case -NFS4ERR_STALE_CLIENTID:
+ 		clear_bit(NFS4CLNT_LEASE_CONFIRM, &clp->cl_state);
+-		nfs4_state_clear_reclaim_reboot(clp);
+ 		nfs4_state_start_reclaim_reboot(clp);
+ 		break;
+ 	case -NFS4ERR_CLID_INUSE:
 
 
