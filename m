@@ -1,162 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256AbaJ1G1c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:27:32 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:37327 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702AbaJ1G13 (ORCPT
+	id S1759928AbaJ1G24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:28:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49128 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757510AbaJ1G2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 02:27:29 -0400
-Message-ID: <544F3746.5030507@linux.vnet.ibm.com>
-Date: Tue, 28 Oct 2014 11:57:18 +0530
-From: Hemant Kumar <hemant@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-CC: srikar@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        namhyung@kernel.org, Ingo Molnar <mingo@kernel.org>
-Subject: Re: (ltc-kernel 10243) [PATCH perf/core 2/2] perf-probe: Add --quiet
- option to suppress output result message
-References: <20141027203124.21219.68278.stgit@localhost.localdomain> <20141027203131.21219.35170.stgit@localhost.localdomain> <544E3CF2.80901@hitachi.com>
-In-Reply-To: <544E3CF2.80901@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 28 Oct 2014 02:28:53 -0400
+Date: Mon, 27 Oct 2014 23:29:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Thierry Reding <treding@nvidia.com>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the
+ dma-mapping tree
+Message-Id: <20141027232910.952850f8.akpm@linux-foundation.org>
+In-Reply-To: <20141028152444.79bd9fe9@canb.auug.org.au>
+References: <20141028152444.79bd9fe9@canb.auug.org.au>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102806-0013-0000-0000-000001E99806
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+On Tue, 28 Oct 2014 15:24:44 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-On 10/27/2014 06:09 PM, Masami Hiramatsu wrote:
-> Hi Hermant,
->
-> This patch is actually what you need for suppressing the result
-> messages when adding/removing probe events from sdt event tracing.
-> You just need to set "verbose=-1" around adding/removing probes.
+> Today's linux-next merge of the akpm-current tree got a conflict in
+> mm/cma.c between commit 16195ddd4ebc ("mm: cma: Ensure that
+> reservations never cross the low/high mem boundary") from the
+> dma-mapping tree and commit 2a70e5a78672 ("mm/cma: ake kmemleak ignore
+> CMA regions") from the akpm-current tree.
 
-Thank you for working on this. :)
+hm, we have multiple trees altering mm/cma.c?
 
-> Thank you,
->
-> (2014/10/28 5:31), Masami Hiramatsu wrote:
->> Add --quiet(-q) option to suppress output result message
->> for --add, and --del options (Note that --lines/funcs/vars are
->> not affected). This option is useful if you run the perf
->> probe inside your scripts.
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> ---
->>   tools/perf/builtin-probe.c    |   11 +++++++++++
->>   tools/perf/util/probe-event.c |   18 +++++++++---------
->>   2 files changed, 20 insertions(+), 9 deletions(-)
->>
->> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
->> index 2d3577d..921bb69 100644
->> --- a/tools/perf/builtin-probe.c
->> +++ b/tools/perf/builtin-probe.c
->> @@ -55,6 +55,7 @@ static struct {
->>   	bool show_funcs;
->>   	bool mod_events;
->>   	bool uprobes;
->> +	bool quiet;
->>   	int nevents;
->>   	struct perf_probe_event events[MAX_PROBES];
->>   	struct strlist *dellist;
->> @@ -315,6 +316,8 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
->>   	struct option options[] = {
->>   	OPT_INCR('v', "verbose", &verbose,
->>   		    "be more verbose (show parsed arguments, etc)"),
->> +	OPT_BOOLEAN('q', "quiet", &params.quiet,
->> +		    "be quiet (do not show any mesages)"),
->>   	OPT_BOOLEAN('l', "list", &params.list_events,
->>   		    "list up current probe events"),
->>   	OPT_CALLBACK('d', "del", NULL, "[GROUP:]EVENT", "delete a probe event.",
->> @@ -404,6 +407,14 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
->>   		}
->>   	}
->>   
->> +	if (params.quiet) {
->> +		if (verbose != 0) {
->> +			pr_err("  Error: -v and -q are exclusive.\n");
->> +			return -EINVAL;
->> +		}
->> +		verbose = -1;
->> +	}
->> +
->>   	if (params.max_probe_points == 0)
->>   		params.max_probe_points = MAX_PROBES;
->>   
->> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
->> index c150ca4..28eb141 100644
->> --- a/tools/perf/util/probe-event.c
->> +++ b/tools/perf/util/probe-event.c
->> @@ -1910,21 +1910,21 @@ static int show_perf_probe_event(struct perf_probe_event *pev,
->>   	if (ret < 0)
->>   		return ret;
->>   
->> -	printf("  %-20s (on %s", buf, place);
->> +	pr_info("  %-20s (on %s", buf, place);
->>   	if (module)
->> -		printf(" in %s", module);
->> +		pr_info(" in %s", module);
->>   
->>   	if (pev->nargs > 0) {
->> -		printf(" with");
->> +		pr_info(" with");
->>   		for (i = 0; i < pev->nargs; i++) {
->>   			ret = synthesize_perf_probe_arg(&pev->args[i],
->>   							buf, 128);
->>   			if (ret < 0)
->>   				break;
->> -			printf(" %s", buf);
->> +			pr_info(" %s", buf);
->>   		}
->>   	}
->> -	printf(")\n");
->> +	pr_info(")\n");
->>   	free(place);
->>   	return ret;
->>   }
->> @@ -2124,7 +2124,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
->>   	}
->>   
->>   	ret = 0;
->> -	printf("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
->> +	pr_info("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
->>   	for (i = 0; i < ntevs; i++) {
->>   		tev = &tevs[i];
->>   		if (pev->event)
->> @@ -2179,8 +2179,8 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
->>   
->>   	if (ret >= 0) {
->>   		/* Show how to use the event. */
->> -		printf("\nYou can now use it in all perf tools, such as:\n\n");
->> -		printf("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
->> +		pr_info("\nYou can now use it in all perf tools, such as:\n\n");
->> +		pr_info("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
->>   			 tev->event);
->>   	}
->>   
->> @@ -2444,7 +2444,7 @@ static int __del_trace_probe_event(int fd, struct str_node *ent)
->>   		goto error;
->>   	}
->>   
->> -	printf("Removed event: %s\n", ent->s);
->> +	pr_info("Removed event: %s\n", ent->s);
->>   	return 0;
->>   error:
->>   	pr_warning("Failed to delete event: %s\n",
->>
->>
->>
->
-
--- 
-Thanks,
-Hemant Kumar
-
+I'm a bit surprised that this series was merged, given that Laurent
+said he would be sending out a v2...
