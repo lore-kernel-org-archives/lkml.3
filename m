@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759249AbaJ1H0v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:26:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45073 "EHLO
+	id S1754161AbaJ1Dmg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:42:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753436AbaJ1Dmk (ORCPT
+	with ESMTP id S1755149AbaJ1Dma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:40 -0400
+	Mon, 27 Oct 2014 23:42:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.16 022/127] HID: rmi: check sanity of the incoming report
-Date: Tue, 28 Oct 2014 11:34:17 +0800
-Message-Id: <20141028033421.893876559@linuxfoundation.org>
+        Sage Weil <sage@redhat.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.16 009/127] Btrfs: fix race in WAIT_SYNC ioctl
+Date: Tue, 28 Oct 2014 11:34:04 +0800
+Message-Id: <20141028033421.331098196@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,109 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Sage Weil <sage@redhat.com>
 
-commit 5b65c2a0296644dd3dbdd590d6f00174d18c96b3 upstream.
+commit 42383020beb1cfb05f5d330cc311931bc4917a97 upstream.
 
-In the Dell XPS 13 9333, it appears that sometimes the bus get confused
-and corrupts the incoming data. It fills the input report with the
-sentinel value "ff". Synaptics told us that such behavior does not comes
-from the touchpad itself, so we filter out such reports here.
+We check whether transid is already committed via last_trans_committed and
+then search through trans_list for pending transactions.  If
+last_trans_committed is updated by btrfs_commit_transaction after we check
+it (there is no locking), we will fail to find the committed transaction
+and return EINVAL to the caller.  This has been observed occasionally by
+ceph-osd (which uses this ioctl heavily).
 
-Unfortunately, we can not simply discard the incoming data because they
-may contain useful information. Most of the time, the misbehavior is
-quite near the end of the report, so we can still use the valid part of
-it.
+Fix by rechecking whether the provided transid <= last_trans_committed
+after the search fails, and if so return 0.
 
-Fixes:
-https://bugzilla.redhat.com/show_bug.cgi?id=1123584
-
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Sage Weil <sage@redhat.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-rmi.c |   44 ++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 38 insertions(+), 6 deletions(-)
+ fs/btrfs/transaction.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hid-rmi.c
-+++ b/drivers/hid/hid-rmi.c
-@@ -320,10 +320,7 @@ static int rmi_f11_input_event(struct hi
- 	int offset;
- 	int i;
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -609,7 +609,6 @@ int btrfs_wait_for_commit(struct btrfs_r
+ 		if (transid <= root->fs_info->last_trans_committed)
+ 			goto out;
  
--	if (size < hdata->f11.report_size)
--		return 0;
--
--	if (!(irq & hdata->f11.irq_mask))
-+	if (!(irq & hdata->f11.irq_mask) || size <= 0)
- 		return 0;
- 
- 	offset = (hdata->max_fingers >> 2) + 1;
-@@ -332,9 +329,19 @@ static int rmi_f11_input_event(struct hi
- 		int fs_bit_position = (i & 0x3) << 1;
- 		int finger_state = (data[fs_byte_position] >> fs_bit_position) &
- 					0x03;
-+		int position = offset + 5 * i;
+-		ret = -EINVAL;
+ 		/* find specified transaction */
+ 		spin_lock(&root->fs_info->trans_lock);
+ 		list_for_each_entry(t, &root->fs_info->trans_list, list) {
+@@ -625,9 +624,16 @@ int btrfs_wait_for_commit(struct btrfs_r
+ 			}
+ 		}
+ 		spin_unlock(&root->fs_info->trans_lock);
+-		/* The specified transaction doesn't exist */
+-		if (!cur_trans)
 +
-+		if (position + 5 > size) {
-+			/* partial report, go on with what we received */
-+			printk_once(KERN_WARNING
-+				"%s %s: Detected incomplete finger report. Finger reports may occasionally get dropped on this platform.\n",
-+				 dev_driver_string(&hdev->dev),
-+				 dev_name(&hdev->dev));
-+			hid_dbg(hdev, "Incomplete finger report\n");
-+			break;
++		/*
++		 * The specified transaction doesn't exist, or we
++		 * raced with btrfs_commit_transaction
++		 */
++		if (!cur_trans) {
++			if (transid > root->fs_info->last_trans_committed)
++				ret = -EINVAL;
+ 			goto out;
 +		}
- 
--		rmi_f11_process_touch(hdata, i, finger_state,
--				&data[offset + 5 * i]);
-+		rmi_f11_process_touch(hdata, i, finger_state, &data[position]);
- 	}
- 	input_mt_sync_frame(hdata->input);
- 	input_sync(hdata->input);
-@@ -352,6 +359,11 @@ static int rmi_f30_input_event(struct hi
- 	if (!(irq & hdata->f30.irq_mask))
- 		return 0;
- 
-+	if (size < (int)hdata->f30.report_size) {
-+		hid_warn(hdev, "Click Button pressed, but the click data is missing\n");
-+		return 0;
-+	}
-+
- 	for (i = 0; i < hdata->gpio_led_count; i++) {
- 		if (test_bit(i, &hdata->button_mask)) {
- 			value = (data[i / 8] >> (i & 0x07)) & BIT(0);
-@@ -412,9 +424,29 @@ static int rmi_read_data_event(struct hi
- 	return 1;
- }
- 
-+static int rmi_check_sanity(struct hid_device *hdev, u8 *data, int size)
-+{
-+	int valid_size = size;
-+	/*
-+	 * On the Dell XPS 13 9333, the bus sometimes get confused and fills
-+	 * the report with a sentinel value "ff". Synaptics told us that such
-+	 * behavior does not comes from the touchpad itself, so we filter out
-+	 * such reports here.
-+	 */
-+
-+	while ((data[valid_size - 1] == 0xff) && valid_size > 0)
-+		valid_size--;
-+
-+	return valid_size;
-+}
-+
- static int rmi_raw_event(struct hid_device *hdev,
- 		struct hid_report *report, u8 *data, int size)
- {
-+	size = rmi_check_sanity(hdev, data, size);
-+	if (size < 2)
-+		return 0;
-+
- 	switch (data[0]) {
- 	case RMI_READ_DATA_REPORT_ID:
- 		return rmi_read_data_event(hdev, data, size);
+ 	} else {
+ 		/* find newest transaction that is committing | committed */
+ 		spin_lock(&root->fs_info->trans_lock);
 
 
