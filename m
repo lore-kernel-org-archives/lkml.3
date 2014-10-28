@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829AbaJ1DsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:48:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45689 "EHLO
+	id S1755809AbaJ1DsI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:48:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45669 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755811AbaJ1DsJ (ORCPT
+	with ESMTP id S932894AbaJ1Dr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:48:09 -0400
+	Mon, 27 Oct 2014 23:47:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3.14 027/100] firmware_class: make sure fw requests contain a name
-Date: Tue, 28 Oct 2014 11:35:12 +0800
-Message-Id: <20141028033501.831447628@linuxfoundation.org>
+        Bruce Lucas <bruce.lucas@mongodb.com>,
+        Chris J Arges <chris.j.arges@canonical.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.14 023/100] mptfusion: enable no_write_same for vmware scsi disks
+Date: Tue, 28 Oct 2014 11:35:08 +0800
+Message-Id: <20141028033501.673356131@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,37 +31,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Chris J Arges <chris.j.arges@canonical.com>
 
-commit 471b095dfe0d693a8d624cbc716d1ee4d74eb437 upstream.
+commit 4089b71cc820a426d601283c92fcd4ffeb5139c2 upstream.
 
-An empty firmware request name will trigger warnings when building
-device names. Make sure this is caught earlier and rejected.
+When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
+data can be improperly zeroed out using the mptfusion driver. This patch
+disables write_same for this driver and the vmware subsystem_vendor which
+ensures that manual zeroing out is used instead.
 
-The warning was visible via the test_firmware.ko module interface:
-
-echo -ne "\x00" > /sys/devices/virtual/misc/test_firmware/trigger_request
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
+BugLink: http://bugs.launchpad.net/bugs/1371591
+Reported-by: Bruce Lucas <bruce.lucas@mongodb.com>
+Tested-by: Chris J Arges <chris.j.arges@canonical.com>
+Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/firmware_class.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/message/fusion/mptspi.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1081,6 +1081,9 @@ _request_firmware(const struct firmware
- 	if (!firmware_p)
- 		return -EINVAL;
+--- a/drivers/message/fusion/mptspi.c
++++ b/drivers/message/fusion/mptspi.c
+@@ -1422,6 +1422,11 @@ mptspi_probe(struct pci_dev *pdev, const
+ 		goto out_mptspi_probe;
+         }
  
-+	if (!name || name[0] == '\0')
-+		return -EINVAL;
++	/* VMWare emulation doesn't properly implement WRITE_SAME
++	 */
++	if (pdev->subsystem_vendor == 0x15AD)
++		sh->no_write_same = 1;
 +
- 	ret = _request_firmware_prepare(&fw, name, device);
- 	if (ret <= 0) /* error or already assigned */
- 		goto out;
+ 	spin_lock_irqsave(&ioc->FreeQlock, flags);
+ 
+ 	/* Attach the SCSI Host to the IOC structure
 
 
