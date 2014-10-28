@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360AbaJ1Dic (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:38:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44523 "EHLO
+	id S1754385AbaJ1Dih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:38:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44531 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332AbaJ1Di3 (ORCPT
+	with ESMTP id S1754334AbaJ1Die (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:29 -0400
+	Mon, 27 Oct 2014 23:38:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: [PATCH 3.17 046/146] Drivers: hv: vmbus: Cleanup vmbus_teardown_gpadl()
-Date: Tue, 28 Oct 2014 11:33:08 +0800
-Message-Id: <20141028033345.409287538@linuxfoundation.org>
+        Kinglong Mee <kinglongmee@gmail.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.17 062/146] nfsd4: reserve adequate space for LOCK op
+Date: Tue, 28 Oct 2014 11:33:24 +0800
+Message-Id: <20141028033346.066617067@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,51 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 66be653083057358724d56d817e870e53fb81ca7 upstream.
+commit f7b43d0c992c3ec3e8d9285c3fb5e1e0eb0d031a upstream.
 
-Eliminate calls to BUG_ON() by properly handling errors. In cases where
-rollback is possible, we will return the appropriate error to have the
-calling code decide how to rollback state. In the case where we are
-transferring ownership of the guest physical pages to the host,
-we will wait for the host to respond.
+As of  8c7424cff6 "nfsd4: don't try to encode conflicting owner if low
+on space", we permit the server to process a LOCK operation even if
+there might not be space to return the conflicting lockowner, because
+we've made returning the conflicting lockowner optional.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+However, the rpc server still wants to know the most we might possibly
+return, so we need to take into account the possible conflicting
+lockowner in the svc_reserve_space() call here.
+
+Symptoms were log messages like "RPC request reserved 88 but used 108".
+
+Fixes: 8c7424cff6 "nfsd4: don't try to encode conflicting owner if low on space"
+Reported-by: Kinglong Mee <kinglongmee@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/channel.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ fs/nfsd/nfs4xdr.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -435,7 +435,7 @@ int vmbus_teardown_gpadl(struct vmbus_ch
- 	struct vmbus_channel_gpadl_teardown *msg;
- 	struct vmbus_channel_msginfo *info;
- 	unsigned long flags;
--	int ret, t;
-+	int ret;
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -1670,6 +1670,14 @@ nfsd4_decode_compound(struct nfsd4_compo
+ 			readbytes += nfsd4_max_reply(argp->rqstp, op);
+ 		} else
+ 			max_reply += nfsd4_max_reply(argp->rqstp, op);
++		/*
++		 * OP_LOCK may return a conflicting lock.  (Special case
++		 * because it will just skip encoding this if it runs
++		 * out of xdr buffer space, and it is the only operation
++		 * that behaves this way.)
++		 */
++		if (op->opnum == OP_LOCK)
++			max_reply += NFS4_OPAQUE_LIMIT;
  
- 	info = kmalloc(sizeof(*info) +
- 		       sizeof(struct vmbus_channel_gpadl_teardown), GFP_KERNEL);
-@@ -457,11 +457,12 @@ int vmbus_teardown_gpadl(struct vmbus_ch
- 	ret = vmbus_post_msg(msg,
- 			       sizeof(struct vmbus_channel_gpadl_teardown));
- 
--	BUG_ON(ret != 0);
--	t = wait_for_completion_timeout(&info->waitevent, 5*HZ);
--	BUG_ON(t == 0);
-+	if (ret)
-+		goto post_msg_err;
- 
--	/* Received a torndown response */
-+	wait_for_completion(&info->waitevent);
-+
-+post_msg_err:
- 	spin_lock_irqsave(&vmbus_connection.channelmsg_lock, flags);
- 	list_del(&info->msglistentry);
- 	spin_unlock_irqrestore(&vmbus_connection.channelmsg_lock, flags);
+ 		if (op->status) {
+ 			argp->opcnt = i+1;
 
 
