@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133AbaJ1LQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:16:37 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:45741 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932092AbaJ1LQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:16:35 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: =?utf-8?B?J0xvdGhhciBXYcOfbWFubic=?= <LW@KARO-electronics.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Frank Li <Frank.Li@freescale.com>,
-        "Fabio Estevam" <fabio.estevam@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCHv2 6/6] net: fec: fix regression on i.MX28 introduced by
- rx_copybreak support
-Thread-Topic: [PATCHv2 6/6] net: fec: fix regression on i.MX28 introduced by
- rx_copybreak support
-Thread-Index: AQHP8p5eP0jGHGIUnUypcxZpFUTH1pxFWz/g
-Date: Tue, 28 Oct 2014 11:14:15 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1C9E04DB@AcuExch.aculab.com>
-References: <1414494104-27943-1-git-send-email-LW@KARO-electronics.de>
- <1414494104-27943-7-git-send-email-LW@KARO-electronics.de>
-In-Reply-To: <1414494104-27943-7-git-send-email-LW@KARO-electronics.de>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1756848AbaJ1LQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:16:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51416 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751741AbaJ1LQy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 07:16:54 -0400
+Date: Tue, 28 Oct 2014 04:16:32 -0700
+From: tip-bot for Nicholas Mc Guire <tipbot@zytor.com>
+Message-ID: <tip-a1a5831d295f34eceec3ba12c199c2c070e1aaed@git.kernel.org>
+Cc: JBeulich@suse.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        der.herr@hofr.at, hpa@zytor.com, torvalds@linux-foundation.org,
+        luto@amacapital.net, mingo@kernel.org
+Reply-To: der.herr@hofr.at, hpa@zytor.com, luto@amacapital.net,
+        torvalds@linux-foundation.org, mingo@kernel.org, JBeulich@suse.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org
+In-Reply-To: <20141027172805.GA19760@opentech.at>
+References: <20141027172805.GA19760@opentech.at>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] x86/asm: Fix typo in arch/x86/kernel/
+ asm_offset_64.c
+Git-Commit-ID: a1a5831d295f34eceec3ba12c199c2c070e1aaed
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9SBGgva024320
 
-From:  Lothar WaÃŸmann
-> commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
-> introduced a regression for i.MX28. The swap_buffer() function doing
-> the endian conversion of the received data on i.MX28 may access memory
-> beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
-> does not copy those bytes, so that the last bytes of a packet may be
-> filled with invalid data after swapping.
-> This will likely lead to checksum errors on received packets.
-> E.g. when trying to mount an NFS rootfs:
-> UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
-> 
-> Do the byte swapping and copying to the new skb in one go if
-> necessary.
-> 
-> Signed-off-by: Lothar Wamann <LW@KARO-electronics.de>
-> ---
->  drivers/net/ethernet/freescale/fec_main.c |   25 +++++++++++++++++++++----
->  1 file changed, 21 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-> index 404fb9d..b92324c 100644
-> --- a/drivers/net/ethernet/freescale/fec_main.c
-> +++ b/drivers/net/ethernet/freescale/fec_main.c
-> @@ -339,6 +339,18 @@ static void *swap_buffer(void *bufaddr, int len)
->  	return bufaddr;
->  }
-> 
-> +static void *swap_buffer2(void *dst_buf, void *src_buf, int len)
-> +{
-> +	int i;
-> +	unsigned int *src = src_buf;
-> +	unsigned int *dst = dst_buf;
-> +
-> +	for (i = 0; i < len; i += 4, src++, dst++)
-> +		swab32s(src);
-> +
-> +	return dst_buf;
-> +}
-> +
+Commit-ID:  a1a5831d295f34eceec3ba12c199c2c070e1aaed
+Gitweb:     http://git.kernel.org/tip/a1a5831d295f34eceec3ba12c199c2c070e1aaed
+Author:     Nicholas Mc Guire <der.herr@hofr.at>
+AuthorDate: Mon, 27 Oct 2014 18:28:05 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 28 Oct 2014 11:24:17 +0100
 
-Actually that is completely f*cked....
+x86/asm: Fix typo in arch/x86/kernel/asm_offset_64.c
 
-	David
+Drop double entry for pt_regs_bx.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This seems to be a typo - resulting in a double entry in the
+generated include/generated/asm-offsets.h, which is not necessary.
+
+Build-tested and booted on x86 64 box to make sure it was not
+doing any strange magic.... after all it was in the kernel in
+this form for almost 10 years.
+
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Jan Beulich <JBeulich@suse.com>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20141027172805.GA19760@opentech.at
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/asm-offsets_64.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/x86/kernel/asm-offsets_64.c b/arch/x86/kernel/asm-offsets_64.c
+index e7c798b..4f9359f 100644
+--- a/arch/x86/kernel/asm-offsets_64.c
++++ b/arch/x86/kernel/asm-offsets_64.c
+@@ -48,7 +48,6 @@ int main(void)
+ 
+ #define ENTRY(entry) OFFSET(pt_regs_ ## entry, pt_regs, entry)
+ 	ENTRY(bx);
+-	ENTRY(bx);
+ 	ENTRY(cx);
+ 	ENTRY(dx);
+ 	ENTRY(sp);
