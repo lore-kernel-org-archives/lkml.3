@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913AbaJ1DhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:37:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44377 "EHLO
+	id S1753996AbaJ1Dh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:37:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44403 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766AbaJ1DhJ (ORCPT
+	with ESMTP id S1753766AbaJ1DhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:09 -0400
+	Mon, 27 Oct 2014 23:37:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Lucas Stach <l.stach@pengutronix.de>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 035/146] regulator: ltc3589: fix broken voltage transitions
-Date: Tue, 28 Oct 2014 11:32:57 +0800
-Message-Id: <20141028033344.950022964@linuxfoundation.org>
+        David Matlack <dmatlack@google.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.17 020/146] kvm: dont take vcpu mutex for obviously invalid vcpu ioctls
+Date: Tue, 28 Oct 2014 11:32:42 +0800
+Message-Id: <20141028033344.300833735@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,36 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+From: David Matlack <dmatlack@google.com>
 
-commit c5bb725ac2d1a13e9e766bf9a16bac986ade17cd upstream.
+commit 2ea75be3219571d0ec009ce20d9971e54af96e09 upstream.
 
-VCCR is used as a trigger to start voltage transitions, so
-we need to mark it volatile in order to make sure it gets
-written to hardware every time we set a new voltage.
+vcpu ioctls can hang the calling thread if issued while a vcpu is running.
+However, invalid ioctls can happen when userspace tries to probe the kind
+of file descriptors (e.g. isatty() calls ioctl(TCGETS)); in that case,
+we know the ioctl is going to be rejected as invalid anyway and we can
+fail before trying to take the vcpu mutex.
 
-Fixes regulator voltage being stuck at the first voltage
-set after driver load.
+This patch does not change functionality, it just makes invalid ioctls
+fail faster.
 
-[lst: reworded commit message]
-Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: David Matlack <dmatlack@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/ltc3589.c |    1 +
- 1 file changed, 1 insertion(+)
+ virt/kvm/kvm_main.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/regulator/ltc3589.c
-+++ b/drivers/regulator/ltc3589.c
-@@ -372,6 +372,7 @@ static bool ltc3589_volatile_reg(struct
- 	switch (reg) {
- 	case LTC3589_IRQSTAT:
- 	case LTC3589_PGSTAT:
-+	case LTC3589_VCCR:
- 		return true;
- 	}
- 	return false;
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -52,6 +52,7 @@
+ 
+ #include <asm/processor.h>
+ #include <asm/io.h>
++#include <asm/ioctl.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ 
+@@ -1991,6 +1992,9 @@ static long kvm_vcpu_ioctl(struct file *
+ 	if (vcpu->kvm->mm != current->mm)
+ 		return -EIO;
+ 
++	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
++		return -EINVAL;
++
+ #if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS)
+ 	/*
+ 	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
 
 
