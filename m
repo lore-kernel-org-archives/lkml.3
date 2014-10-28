@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760015AbaJ1Gmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:42:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45906 "EHLO
+	id S1760024AbaJ1Gm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:42:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45896 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291AbaJ1Dt4 (ORCPT
+	with ESMTP id S933276AbaJ1Dtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:49:56 -0400
+	Mon, 27 Oct 2014 23:49:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
-        Dave Chinner <david@fromorbit.com>
-Subject: [PATCH 3.14 071/100] xfs: ensure WB_SYNC_ALL writeback handles partial pages correctly
-Date: Tue, 28 Oct 2014 11:35:56 +0800
-Message-Id: <20141028033503.753959859@linuxfoundation.org>
+        Ben Peddell <klightspeed@killerwolves.net>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Arnaud Ebalard <arno@natisbad.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 069/100] ARM: mvebu: Netgear RN102: Use Hardware BCH ECC
+Date: Tue, 28 Oct 2014 11:35:54 +0800
+Message-Id: <20141028033503.665709568@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,74 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: "klightspeed@killerwolves.net" <klightspeed@killerwolves.net>
 
-commit 0d085a529b427d97710e6a41f8a4f23e1757cd12 upstream.
+commit ace8578182dc347b043c0825b9873f62fdaa5b77 upstream.
 
-XFS has been having trouble with stray delayed allocation extents
-beyond EOF for a long time. Recent changes to the collapse range
-code has triggered erroneous EBUSY errors on page invalidtion for
-block size smaller than page size filesystems. These
-have been caused by dirty buffers beyond EOF on a partial page which
-do not get written to disk during a sync.
+The bootloader on the Netgear ReadyNAS RN102 uses Hardware BCH ECC
+(strength = 4), while the pxa3xx NAND driver by default uses
+Hamming ECC (strength = 1).
 
-The issue is that write-ahead in xfs_cluster_write() finds such a
-partial page and handles it by leaving the page dirty but pushing it
-into a writeback state. This used to work just fine, as the
-write_cache_pages() code would then find the dirty partial page in
-the next mapping tree lookup as the dirty tag is still set.
+This patch changes the ECC mode on these machines to match that
+of the bootloader and of the stock firmware. That way, it is
+now possible to update the kernel from userland (e.g. using
+standard tools from mtd-utils package); u-boot will happily
+load and boot it.
 
-Unfortunately, when we moved to a mark and sweep approach to
-writeback to fix other writeback sync issues, we broken this. THe
-act of marking the page as under writeback now clears the TOWRITE
-tag in the radix tree, even though the page is still dirty. This
-causes the TOWRITE tag to be cleared, and hence the next lookup on
-the mapping tree does not find the dirty partial page and so doesn't
-try to write it again.
-
-This same writeback bug was found recently in ext4 and fixed in
-commit 1c8349a ("ext4: fix data integrity sync in ordered mode")
-without communication to the wider filesystem community. We can use
-exactly the same fix here so the TOWRITE flag is not cleared on
-partial page writes.
-
-cc: stable@vger.kernel.org # dependent on 1c8349a17137b93f0a83f276c764a6df1b9a116e
-Root-cause-found-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Dave Chinner <david@fromorbit.com>
+Fixes: 92beaccd8b49 ("ARM: mvebu: Enable NAND controller in ReadyNAS 102 .dts file")
+Signed-off-by: Ben Peddell <klightspeed@killerwolves.net>
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Tested-by: Arnaud Ebalard <arno@natisbad.org>
+Link: https://lkml.kernel.org/r/1410339341-3372-1-git-send-email-klightspeed@killerwolves.net
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_aops.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/armada-370-netgear-rn102.dts |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/xfs/xfs_aops.c
-+++ b/fs/xfs/xfs_aops.c
-@@ -434,10 +434,22 @@ xfs_start_page_writeback(
- {
- 	ASSERT(PageLocked(page));
- 	ASSERT(!PageWriteback(page));
--	if (clear_dirty)
+--- a/arch/arm/boot/dts/armada-370-netgear-rn102.dts
++++ b/arch/arm/boot/dts/armada-370-netgear-rn102.dts
+@@ -144,6 +144,10 @@
+ 				marvell,nand-enable-arbiter;
+ 				nand-on-flash-bbt;
+ 
++				/* Use Hardware BCH ECC */
++				nand-ecc-strength = <4>;
++				nand-ecc-step-size = <512>;
 +
-+	/*
-+	 * if the page was not fully cleaned, we need to ensure that the higher
-+	 * layers come back to it correctly. That means we need to keep the page
-+	 * dirty, and for WB_SYNC_ALL writeback we need to ensure the
-+	 * PAGECACHE_TAG_TOWRITE index mark is not removed so another attempt to
-+	 * write this page in this writeback sweep will be made.
-+	 */
-+	if (clear_dirty) {
- 		clear_page_dirty_for_io(page);
--	set_page_writeback(page);
-+		set_page_writeback(page);
-+	} else
-+		set_page_writeback_keepwrite(page);
-+
- 	unlock_page(page);
-+
- 	/* If no buffers on the page are to be written, finish it here */
- 	if (!buffers)
- 		end_page_writeback(page);
+ 				partition@0 {
+ 					label = "u-boot";
+ 					reg = <0x0000000 0x180000>;  /* 1.5MB */
 
 
