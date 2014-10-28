@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262AbaJ1E1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:27:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47074 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933980AbaJ1Dw6 (ORCPT
+	id S1752232AbaJ1E2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:28:22 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:44202 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541AbaJ1E2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:58 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Douglas Lehr <dllehr@us.ibm.com>, Anton Blanchard <anton@samba.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Milton Miller <miltonm@us.ibm.com>
-Subject: [PATCH 3.10 29/43] PCI: Increase IBM ipr SAS Crocodile BARs to at least system page size
-Date: Tue, 28 Oct 2014 11:36:27 +0800
-Message-Id: <20141028033524.655940944@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 00:28:18 -0400
 MIME-Version: 1.0
+In-Reply-To: <007e01cff264$bce6afc0$36b40f40$@alibaba-inc.com>
+References: <00cd01cff1b5$fda5a660$f8f0f320$@alibaba-inc.com>
+ <CALCETrX7-OzQrOr3+TXy8NB8LS8aYwLN_A-vAeicwoQHsUH_yw@mail.gmail.com>
+ <007d01cff260$3c69e9b0$b53dbd10$@alibaba-inc.com> <CALCETrW5iJWd65Ems6F3RZL+CxYrQ75nDyFFmgA52ky--pzwTQ@mail.gmail.com>
+ <007e01cff264$bce6afc0$36b40f40$@alibaba-inc.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 27 Oct 2014 21:27:56 -0700
+Message-ID: <CALCETrUPMSPdf_AwhskirnKkED4NcbJ+Lxw+Fdq6ZTxUEUcVxw@mail.gmail.com>
+Subject: Re: [PATCH v2 7/8] x86, perf: Only allow rdpmc if a perf_event is mapped
+To: Hillf Danton <hillf.zj@alibaba-inc.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Vince Weaver <vince@deater.net>, Paul Mackerras <paulus@samba.org>,
+        Kees Cook <keescook@chromium.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Oct 27, 2014 at 9:07 PM, Hillf Danton <hillf.zj@alibaba-inc.com> wrote:
+>> >> Subject: Re: [PATCH v2 7/8] x86, perf: Only allow rdpmc if a perf_event is mapped
+>> >>
+>> > CPU D                   CPU A
+>> > switch_mm
+>> > load_mm_cr4
+>> >                         x86_pmu_event_unmapped
+>> >
+>> > I wonder if the X86_CR4_PCE set on CPU D is
+>> > cleared by CPU A by broadcasting IPI.
+>> >
+>>
+>> It should be okay.  The IPI does:
+>>
+>> +       if (current->mm)
+>> +               load_mm_cr4(current->mm);
+>>
+>> which refers to the current task running on the targetted CPU, not to
+>> the IPI sender's task.  So, if it happens after a context switch, it
+>> will harmlessly reload the new task's cr4.
+>>
+> Right, but prev != next is checked in switch_mm.
 
-------------------
+If that happens and !cpumask_test_cpu(cpu, mm_cpumask(next)), then cr4
+will be reloaded.  So, in the case you described, we should still be
+okay.
 
-From: Douglas Lehr <dllehr@us.ibm.com>
+It's worth checking whether a more complicated race could be a
+problem.  I think it's okay.  Here's my argument.
 
-commit 9fe373f9997b48fcd6222b95baf4a20c134b587a upstream.
+In x86_pmu_event_mapped / x86_pmu_event_unmapped, for each cpu, either
+that cpu is set in mm_cpumask or it's clear.  If it's set, then we'll
+send the IPI and that cpu is guaranteed to be updated.  If it's clear,
+then it must become set before any user code in this mm can be
+executed.  There are no paths through switch_mm that set the bit in
+mm_cpumask without reloading cr4, so we should be safe.
 
-The Crocodile chip occasionally comes up with 4k and 8k BAR sizes.  Due to
-an erratum, setting the SR-IOV page size causes the physical function BARs
-to expand to the system page size.  Since ppc64 uses 64k pages, when Linux
-tries to assign the smaller resource sizes to the now 64k BARs the address
-will be truncated and the BARs will overlap.
+Is that convincing?
 
-Force Linux to allocate the resource as a full page, which avoids the
-overlap.
+--Andy
 
-[bhelgaas: print expanded resource, too]
-Signed-off-by: Douglas Lehr <dllehr@us.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Milton Miller <miltonm@us.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/pci/quirks.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
-
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -28,6 +28,7 @@
- #include <linux/ioport.h>
- #include <linux/sched.h>
- #include <linux/ktime.h>
-+#include <linux/mm.h>
- #include <asm/dma.h>	/* isa_dma_bridge_buggy */
- #include "pci.h"
- 
-@@ -291,6 +292,25 @@ static void quirk_citrine(struct pci_dev
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM,	PCI_DEVICE_ID_IBM_CITRINE,	quirk_citrine);
- 
-+/*  On IBM Crocodile ipr SAS adapters, expand BAR to system page size */
-+static void quirk_extend_bar_to_page(struct pci_dev *dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < PCI_STD_RESOURCE_END; i++) {
-+		struct resource *r = &dev->resource[i];
-+
-+		if (r->flags & IORESOURCE_MEM && resource_size(r) < PAGE_SIZE) {
-+			r->end = PAGE_SIZE - 1;
-+			r->start = 0;
-+			r->flags |= IORESOURCE_UNSET;
-+			dev_info(&dev->dev, "expanded BAR %d to page size: %pR\n",
-+				 i, r);
-+		}
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM, 0x034a, quirk_extend_bar_to_page);
-+
- /*
-  *  S3 868 and 968 chips report region size equal to 32M, but they decode 64M.
-  *  If it's needed, re-allocate the region.
+>
+> Hillf
+>
+>
 
 
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
