@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925AbaJ1NfD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:35:03 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51947 "EHLO mail.kernel.org"
+	id S1754812AbaJ1Nef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:34:35 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51738 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062AbaJ1Ne6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:34:58 -0400
+	id S1754591AbaJ1Nec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:34:32 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 32/32] perf probe: Add --quiet option to suppress output result message
-Date: Tue, 28 Oct 2014 11:32:26 -0200
-Message-Id: <1414503146-22789-33-git-send-email-acme@kernel.org>
+Subject: [PATCH 26/32] perf tools: Fix report -F dso_to for data without branch info
+Date: Tue, 28 Oct 2014 11:32:20 -0200
+Message-Id: <1414503146-22789-27-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
 References: <1414503146-22789-1-git-send-email-acme@kernel.org>
@@ -25,121 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
-Add --quiet(-q) option to suppress output result message for --add, and
---del options (Note that --lines/funcs/vars are not affected). This
-option is useful if you run the perf probe inside your scripts.
+The branch field sorting code assumes hist_entry::branch_info is
+allocated, which is wrong and following perf session ends up with report
+segfault.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
+  $ perf record ls
+  $ perf report -F dso_to
+  perf: Segmentation fault
+
+Checking that hist_entry::branch_info is valid and display "N/A" string
+in snprint callback if it's not.
+
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/20141027203131.21219.35170.stgit@localhost.localdomain
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1413468427-31049-7-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-probe.c    | 11 +++++++++++
- tools/perf/util/probe-event.c | 18 +++++++++---------
- 2 files changed, 20 insertions(+), 9 deletions(-)
+ tools/perf/util/sort.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 2d3577d1009d..921bb6942503 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -55,6 +55,7 @@ static struct {
- 	bool show_funcs;
- 	bool mod_events;
- 	bool uprobes;
-+	bool quiet;
- 	int nevents;
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
-@@ -315,6 +316,8 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 	struct option options[] = {
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show parsed arguments, etc)"),
-+	OPT_BOOLEAN('q', "quiet", &params.quiet,
-+		    "be quiet (do not show any mesages)"),
- 	OPT_BOOLEAN('l', "list", &params.list_events,
- 		    "list up current probe events"),
- 	OPT_CALLBACK('d', "del", NULL, "[GROUP:]EVENT", "delete a probe event.",
-@@ -404,6 +407,14 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
- 		}
- 	}
- 
-+	if (params.quiet) {
-+		if (verbose != 0) {
-+			pr_err("  Error: -v and -q are exclusive.\n");
-+			return -EINVAL;
-+		}
-+		verbose = -1;
-+	}
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index fc4ff2a96616..7a9054a23c36 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -387,6 +387,9 @@ static int hist_entry__dso_from_snprintf(struct hist_entry *he, char *bf,
+ static int64_t
+ sort__dso_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ {
++	if (!left->branch_info || !right->branch_info)
++		return cmp_null(left->branch_info, right->branch_info);
 +
- 	if (params.max_probe_points == 0)
- 		params.max_probe_points = MAX_PROBES;
- 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index c150ca4343eb..28eb1417cb2a 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -1910,21 +1910,21 @@ static int show_perf_probe_event(struct perf_probe_event *pev,
- 	if (ret < 0)
- 		return ret;
- 
--	printf("  %-20s (on %s", buf, place);
-+	pr_info("  %-20s (on %s", buf, place);
- 	if (module)
--		printf(" in %s", module);
-+		pr_info(" in %s", module);
- 
- 	if (pev->nargs > 0) {
--		printf(" with");
-+		pr_info(" with");
- 		for (i = 0; i < pev->nargs; i++) {
- 			ret = synthesize_perf_probe_arg(&pev->args[i],
- 							buf, 128);
- 			if (ret < 0)
- 				break;
--			printf(" %s", buf);
-+			pr_info(" %s", buf);
- 		}
- 	}
--	printf(")\n");
-+	pr_info(")\n");
- 	free(place);
- 	return ret;
+ 	return _sort__dso_cmp(left->branch_info->to.map,
+ 			      right->branch_info->to.map);
  }
-@@ -2124,7 +2124,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
- 	}
+@@ -394,8 +397,11 @@ sort__dso_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ static int hist_entry__dso_to_snprintf(struct hist_entry *he, char *bf,
+ 				       size_t size, unsigned int width)
+ {
+-	return _hist_entry__dso_snprintf(he->branch_info->to.map,
+-					 bf, size, width);
++	if (he->branch_info)
++		return _hist_entry__dso_snprintf(he->branch_info->to.map,
++						 bf, size, width);
++	else
++		return repsep_snprintf(bf, size, "%-*.*s", width, width, "N/A");
+ }
  
- 	ret = 0;
--	printf("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
-+	pr_info("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
- 	for (i = 0; i < ntevs; i++) {
- 		tev = &tevs[i];
- 		if (pev->event)
-@@ -2179,8 +2179,8 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
- 
- 	if (ret >= 0) {
- 		/* Show how to use the event. */
--		printf("\nYou can now use it in all perf tools, such as:\n\n");
--		printf("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
-+		pr_info("\nYou can now use it in all perf tools, such as:\n\n");
-+		pr_info("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
- 			 tev->event);
- 	}
- 
-@@ -2444,7 +2444,7 @@ static int __del_trace_probe_event(int fd, struct str_node *ent)
- 		goto error;
- 	}
- 
--	printf("Removed event: %s\n", ent->s);
-+	pr_info("Removed event: %s\n", ent->s);
- 	return 0;
- error:
- 	pr_warning("Failed to delete event: %s\n",
+ static int64_t
 -- 
 1.9.3
 
