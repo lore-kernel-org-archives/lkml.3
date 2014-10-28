@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760477AbaJ1G7d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:59:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45564 "EHLO
+	id S932245AbaJ1Dq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:46:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45554 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932721AbaJ1DrA (ORCPT
+	with ESMTP id S932695AbaJ1Dqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:00 -0400
+	Mon, 27 Oct 2014 23:46:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.16 120/127] sparc64: Use kernel page tables for vmemmap.
-Date: Tue, 28 Oct 2014 11:35:55 +0800
-Message-Id: <20141028033426.082305701@linuxfoundation.org>
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 106/127] sparc: bpf_jit: fix loads from negative offsets
+Date: Tue, 28 Oct 2014 11:35:41 +0800
+Message-Id: <20141028033425.480964559@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,166 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-[ Upstream commit c06240c7f5c39c83dfd7849c0770775562441b96 ]
+[ Upstream commit 35607b02dbef304fa5037236a3b43c1d8ab2aa52 ]
 
-For sparse memory configurations, the vmemmap array behaves terribly
-and it takes up an inordinate amount of space in the BSS section of
-the kernel image unconditionally.
+- fix BPF_LD|ABS|IND from negative offsets:
+  make sure to sign extend lower 32 bits in 64-bit register
+  before calling C helpers from JITed code, otherwise 'int k'
+  argument of bpf_internal_load_pointer_neg_helper() function
+  will be added as large unsigned integer, causing packet size
+  check to trigger and abort the program.
 
-Just build huge PMDs and look them up just like we do for TLB misses
-in the vmalloc area.
+  It's worth noting that JITed code for 'A = A op K' will affect
+  upper 32 bits differently depending whether K is simm13 or not.
+  Since small constants are sign extended, whereas large constants
+  are stored in temp register and zero extended.
+  That is ok and we don't have to pay a penalty of sign extension
+  for every sethi, since all classic BPF instructions have 32-bit
+  semantics and we only need to set correct upper bits when
+  transitioning from JITed code into C.
 
-Kernel BSS shrinks by about 2MB.
+- though instructions 'A &= 0' and 'A *= 0' are odd, JIT compiler
+  should not optimize them out
 
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/ktlb.S |    9 +----
- arch/sparc/mm/init_64.c  |   72 ++++++++++++++++++++++-------------------------
- arch/sparc/mm/init_64.h  |   11 -------
- 3 files changed, 36 insertions(+), 56 deletions(-)
+ arch/sparc/net/bpf_jit_asm.S  |    3 +++
+ arch/sparc/net/bpf_jit_comp.c |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/ktlb.S
-+++ b/arch/sparc/kernel/ktlb.S
-@@ -186,13 +186,8 @@ kvmap_dtlb_load:
- 
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- kvmap_vmemmap:
--	sub		%g4, %g5, %g5
--	srlx		%g5, ILOG2_4MB, %g5
--	sethi		%hi(vmemmap_table), %g1
--	sllx		%g5, 3, %g5
--	or		%g1, %lo(vmemmap_table), %g1
--	ba,pt		%xcc, kvmap_dtlb_load
--	 ldx		[%g1 + %g5], %g5
-+	KERN_PGTABLE_WALK(%g4, %g5, %g2, kvmap_dtlb_longpath)
-+	ba,a,pt		%xcc, kvmap_dtlb_load
+--- a/arch/sparc/net/bpf_jit_asm.S
++++ b/arch/sparc/net/bpf_jit_asm.S
+@@ -6,10 +6,12 @@
+ #define SAVE_SZ		176
+ #define SCRATCH_OFF	STACK_BIAS + 128
+ #define BE_PTR(label)	be,pn %xcc, label
++#define SIGN_EXTEND(reg)	sra reg, 0, reg
+ #else
+ #define SAVE_SZ		96
+ #define SCRATCH_OFF	72
+ #define BE_PTR(label)	be label
++#define SIGN_EXTEND(reg)
  #endif
  
- kvmap_dtlb_nonlinear:
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2260,18 +2260,9 @@ unsigned long _PAGE_CACHE __read_mostly;
- EXPORT_SYMBOL(_PAGE_CACHE);
- 
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
--unsigned long vmemmap_table[VMEMMAP_SIZE];
--
--static long __meminitdata addr_start, addr_end;
--static int __meminitdata node_start;
--
- int __meminit vmemmap_populate(unsigned long vstart, unsigned long vend,
- 			       int node)
- {
--	unsigned long phys_start = (vstart - VMEMMAP_BASE);
--	unsigned long phys_end = (vend - VMEMMAP_BASE);
--	unsigned long addr = phys_start & VMEMMAP_CHUNK_MASK;
--	unsigned long end = VMEMMAP_ALIGN(phys_end);
- 	unsigned long pte_base;
- 
- 	pte_base = (_PAGE_VALID | _PAGE_SZ4MB_4U |
-@@ -2282,47 +2273,52 @@ int __meminit vmemmap_populate(unsigned
- 			    _PAGE_CP_4V | _PAGE_CV_4V |
- 			    _PAGE_P_4V | _PAGE_W_4V);
- 
--	for (; addr < end; addr += VMEMMAP_CHUNK) {
--		unsigned long *vmem_pp =
--			vmemmap_table + (addr >> VMEMMAP_CHUNK_SHIFT);
--		void *block;
-+	pte_base |= _PAGE_PMD_HUGE;
- 
--		if (!(*vmem_pp & _PAGE_VALID)) {
--			block = vmemmap_alloc_block(1UL << ILOG2_4MB, node);
--			if (!block)
-+	vstart = vstart & PMD_MASK;
-+	vend = ALIGN(vend, PMD_SIZE);
-+	for (; vstart < vend; vstart += PMD_SIZE) {
-+		pgd_t *pgd = pgd_offset_k(vstart);
-+		unsigned long pte;
-+		pud_t *pud;
-+		pmd_t *pmd;
-+
-+		if (pgd_none(*pgd)) {
-+			pud_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
-+
-+			if (!new)
- 				return -ENOMEM;
-+			pgd_populate(&init_mm, pgd, new);
-+		}
- 
--			*vmem_pp = pte_base | __pa(block);
-+		pud = pud_offset(pgd, vstart);
-+		if (pud_none(*pud)) {
-+			pmd_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
- 
--			/* check to see if we have contiguous blocks */
--			if (addr_end != addr || node_start != node) {
--				if (addr_start)
--					printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
--					       addr_start, addr_end-1, node_start);
--				addr_start = addr;
--				node_start = node;
--			}
--			addr_end = addr + VMEMMAP_CHUNK;
-+			if (!new)
-+				return -ENOMEM;
-+			pud_populate(&init_mm, pud, new);
- 		}
--	}
--	return 0;
--}
- 
--void __meminit vmemmap_populate_print_last(void)
--{
--	if (addr_start) {
--		printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
--		       addr_start, addr_end-1, node_start);
--		addr_start = 0;
--		addr_end = 0;
--		node_start = 0;
-+		pmd = pmd_offset(pud, vstart);
-+
-+		pte = pmd_val(*pmd);
-+		if (!(pte & _PAGE_VALID)) {
-+			void *block = vmemmap_alloc_block(PMD_SIZE, node);
-+
-+			if (!block)
-+				return -ENOMEM;
-+
-+			pmd_val(*pmd) = pte_base | __pa(block);
-+		}
- 	}
-+
-+	return 0;
- }
- 
- void vmemmap_free(unsigned long start, unsigned long end)
- {
- }
--
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
- 
- static void prot_init_common(unsigned long page_none,
---- a/arch/sparc/mm/init_64.h
-+++ b/arch/sparc/mm/init_64.h
-@@ -31,15 +31,4 @@ extern unsigned long kern_locked_tte_dat
- 
- void prom_world(int enter);
- 
--#ifdef CONFIG_SPARSEMEM_VMEMMAP
--#define VMEMMAP_CHUNK_SHIFT	22
--#define VMEMMAP_CHUNK		(1UL << VMEMMAP_CHUNK_SHIFT)
--#define VMEMMAP_CHUNK_MASK	~(VMEMMAP_CHUNK - 1UL)
--#define VMEMMAP_ALIGN(x)	(((x)+VMEMMAP_CHUNK-1UL)&VMEMMAP_CHUNK_MASK)
--
--#define VMEMMAP_SIZE	((((1UL << MAX_PHYSADDR_BITS) >> PAGE_SHIFT) * \
--			  sizeof(struct page)) >> VMEMMAP_CHUNK_SHIFT)
--extern unsigned long vmemmap_table[VMEMMAP_SIZE];
--#endif
--
- #endif /* _SPARC64_MM_INIT_H */
+ #define SKF_MAX_NEG_OFF	(-0x200000) /* SKF_LL_OFF from filter.h */
+@@ -135,6 +137,7 @@ bpf_slow_path_byte_msh:
+ 	save	%sp, -SAVE_SZ, %sp;			\
+ 	mov	%i0, %o0;				\
+ 	mov	r_OFF, %o1;				\
++	SIGN_EXTEND(%o1);				\
+ 	call	bpf_internal_load_pointer_neg_helper;	\
+ 	 mov	(LEN), %o2;				\
+ 	mov	%o0, r_TMP;				\
+--- a/arch/sparc/net/bpf_jit_comp.c
++++ b/arch/sparc/net/bpf_jit_comp.c
+@@ -184,7 +184,7 @@ do {								\
+ 	 */
+ #define emit_alu_K(OPCODE, K)					\
+ do {								\
+-	if (K) {						\
++	if (K || OPCODE == AND || OPCODE == MUL) {		\
+ 		unsigned int _insn = OPCODE;			\
+ 		_insn |= RS1(r_A) | RD(r_A);			\
+ 		if (is_simm13(K)) {				\
 
 
