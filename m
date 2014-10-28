@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbaJ1POV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:14:21 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56242 "EHLO
+	id S1754568AbaJ1PPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:15:11 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56311 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087AbaJ1POU (ORCPT
+	with ESMTP id S1753451AbaJ1PPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:14:20 -0400
-Date: Tue, 28 Oct 2014 08:14:16 -0700
+	Tue, 28 Oct 2014 11:15:09 -0400
+Date: Tue, 28 Oct 2014 08:15:05 -0700
 From: Guenter Roeck <linux@roeck-us.net>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
         shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.16 000/127] 3.16.7-stable review
-Message-ID: <20141028151416.GB4452@roeck-us.net>
-References: <20141028033420.925922046@linuxfoundation.org>
+Subject: Re: [PATCH 3.17 000/146] 3.17.2-stable review
+Message-ID: <20141028151505.GC4452@roeck-us.net>
+References: <20141028033343.441992423@linuxfoundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
+In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Authenticated_sender: guenter@roeck-us.net
 X-OutGoing-Spam-Status: No, score=-1.0
@@ -27,13 +27,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.544FB2CB.0205,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020203.544FB2FC.033C,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.000
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 9
+X-CTCH-SenderID-TotalMessages: 16
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -53,17 +53,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 11:33:55AM +0800, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.16.7 release.
-> There are 127 patches in this series, all will be posted as a response
+On Tue, Oct 28, 2014 at 11:32:22AM +0800, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.17.2 release.
+> There are 146 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 > 
-> Responses should be made by Thu Oct 30 03:33:57 UTC 2014.
+> Responses should be made by Thu Oct 30 03:32:38 UTC 2014.
 > Anything received after that time might be too late.
 > 
 Build results:
-	total: 136 pass: 136 fail: 0
+	total: 133 pass: 133 fail: 0
 Qemu test results:
 	total: 30 pass: 30 fail: 0
 
