@@ -1,112 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505AbaJ1SBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:01:52 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:61527 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaJ1SBR (ORCPT
+	id S1754542AbaJ1SCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:02:07 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:42671 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648AbaJ1SCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:01:17 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: backports@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, yann.morin.1998@free.fr, mmarek@suse.cz,
-        "Luis R. Rodriguez" <mcgrof@suse.com>
-Subject: [RFC v1 2/3] backports: replace BACKPORT_PWD with BACKPORT_DIR
-Date: Tue, 28 Oct 2014 11:00:59 -0700
-Message-Id: <1414519260-4780-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1414519260-4780-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1414519260-4780-1-git-send-email-mcgrof@do-not-panic.com>
+	Tue, 28 Oct 2014 14:02:04 -0400
+Message-ID: <544FDA19.4070705@linaro.org>
+Date: Tue, 28 Oct 2014 19:02:01 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Preeti Murthy <preeti.lkml@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/5] sched: idle: Get the next timer event and pass it
+ the cpuidle framework
+References: <1413822343-1972-1-git-send-email-daniel.lezcano@linaro.org>	<1413822343-1972-2-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pOzC2riePt4sfsdG=SLYvZmhMc4KgT-hfq6XkjF2Mce7g@mail.gmail.com>
+In-Reply-To: <CAM4v1pOzC2riePt4sfsdG=SLYvZmhMc4KgT-hfq6XkjF2Mce7g@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On 10/28/2014 07:40 AM, Preeti Murthy wrote:
+> Hi Daniel,
+>
+> On Mon, Oct 20, 2014 at 9:55 PM, Daniel Lezcano
+> <daniel.lezcano@linaro.org> wrote:
+>> Following the logic of the previous patch, retrieve from the idle task the
+>> expected timer sleep duration and pass it to the cpuidle framework.
+>>
+>> Take the opportunity to remove the unused headers in the menu.c file.
+>>
+>> This patch does not change the current behavior.
+>>
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> ---
+>>   drivers/cpuidle/cpuidle.c          | 11 +++++------
+>>   drivers/cpuidle/governors/ladder.c |  3 ++-
+>>   drivers/cpuidle/governors/menu.c   |  8 ++------
+>>   include/linux/cpuidle.h            |  8 +++++---
+>>   kernel/sched/idle.c                | 16 ++++++++++++----
+>>   5 files changed, 26 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+>> index 372c36f..64f5800 100644
+>> --- a/drivers/cpuidle/cpuidle.c
+>> +++ b/drivers/cpuidle/cpuidle.c
+>> @@ -8,16 +8,12 @@
+>>    * This code is licenced under the GPL.
+>>    */
+>>
+>> -#include <linux/clockchips.h>
+>>   #include <linux/kernel.h>
+>>   #include <linux/mutex.h>
+>> -#include <linux/sched.h>
+>>   #include <linux/notifier.h>
+>>   #include <linux/pm_qos.h>
+>>   #include <linux/cpu.h>
+>>   #include <linux/cpuidle.h>
+>> -#include <linux/ktime.h>
+>> -#include <linux/hrtimer.h>
+>>   #include <linux/module.h>
+>>   #include <trace/events/power.h>
+>>
+>> @@ -155,11 +151,13 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+>>    *
+>>    * @drv: the cpuidle driver
+>>    * @dev: the cpuidle device
+>> + * @latency_req: the latency constraint when choosing an idle state
+>
+> You might want to include this change in the previous patch itself.
 
-This will also be used for built-in kernel integration, by
-using this we can share more code with the built-in kernel
-approach.
+Ah, yes. Thanks.
 
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- backport/Makefile             | 6 +++---
- backport/Makefile.build       | 4 ++--
- backport/Makefile.real        | 2 +-
- backport/scripts/uninstall.sh | 4 ++--
- 4 files changed, 8 insertions(+), 8 deletions(-)
+>> + * @next_timer_event: the duration until the timer expires
+>>    *
+>>    * Returns the index of the idle state.
+>>    */
+>
+> Regards
+> Preeti U Murthy
+>
 
-diff --git a/backport/Makefile b/backport/Makefile
-index ea3982b..fcf2f01 100644
---- a/backport/Makefile
-+++ b/backport/Makefile
-@@ -6,7 +6,7 @@ ifeq ($(KERNELRELEASE),)
- 
- MAKEFLAGS += --no-print-directory
- SHELL := /bin/bash
--BACKPORT_PWD := $(shell pwd)
-+BACKPORT_DIR := $(shell pwd)
- 
- KMODDIR ?= updates
- ifneq ($(origin KLIB), undefined)
-@@ -20,7 +20,7 @@ KERNEL_CONFIG := $(KLIB_BUILD)/.config
- KERNEL_MAKEFILE := $(KLIB_BUILD)/Makefile
- CONFIG_MD5 := $(shell md5sum $(KERNEL_CONFIG) 2>/dev/null | sed 's/\s.*//')
- 
--export KLIB KLIB_BUILD BACKPORT_PWD KMODDIR KMODPATH_ARG
-+export KLIB KLIB_BUILD BACKPORT_DIR KMODDIR KMODPATH_ARG
- 
- # disable built-in rules for this file
- .SUFFIXES:
-@@ -159,5 +159,5 @@ help: defconfig-help
- 	@echo ""
- 	@echo "Execute "make" or "make all" to build all targets marked with [*]"
- else
--include $(BACKPORT_PWD)/Makefile.kernel
-+include $(BACKPORT_DIR)/Makefile.kernel
- endif
-diff --git a/backport/Makefile.build b/backport/Makefile.build
-index d209041..a848b37 100644
---- a/backport/Makefile.build
-+++ b/backport/Makefile.build
-@@ -3,8 +3,8 @@ export
- 
- .PHONY: modules
- modules:
--	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD) modules
-+	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_DIR) modules
- 
- .PHONY: clean
- clean:
--	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD) clean
-+	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_DIR) clean
-diff --git a/backport/Makefile.real b/backport/Makefile.real
-index 4475570..1a55ce5 100644
---- a/backport/Makefile.real
-+++ b/backport/Makefile.real
-@@ -89,7 +89,7 @@ modules: backport-include/backport/autoconf.h
- 
- .PHONY: install
- install: modules
--	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_PWD)			\
-+	@$(MAKE) -C $(KLIB_BUILD) M=$(BACKPORT_DIR)			\
- 		INSTALL_MOD_DIR=$(KMODDIR) $(KMODPATH_ARG)		\
- 		modules_install
- 	@./scripts/blacklist.sh $(KLIB)/ $(KLIB)/$(KMODDIR)
-diff --git a/backport/scripts/uninstall.sh b/backport/scripts/uninstall.sh
-index 1eb42b0..b46d3fe 100755
---- a/backport/scripts/uninstall.sh
-+++ b/backport/scripts/uninstall.sh
-@@ -10,8 +10,8 @@ else
- 	compr=""
- fi
- 
--for driver in $(find ${BACKPORT_PWD} -type f -name *.ko); do
--	mod_name=${driver/${BACKPORT_PWD}/${KLIB}${KMODDIR}}${compr}
-+for driver in $(find ${BACKPORT_DIR} -type f -name *.ko); do
-+	mod_name=${driver/${BACKPORT_DIR}/${KLIB}${KMODDIR}}${compr}
- 	echo "  uninstall" $mod_name
- 	rm -f $mod_name
- done
+
 -- 
-2.1.1
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
