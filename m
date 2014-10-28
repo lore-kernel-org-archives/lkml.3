@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760099AbaJ1Gq5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:46:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45804 "EHLO
+	id S933112AbaJ1DtH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:49:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45786 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933114AbaJ1DtI (ORCPT
+	with ESMTP id S933098AbaJ1DtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:49:08 -0400
+	Mon, 27 Oct 2014 23:49:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>, Dave Chinner <david@fromorbit.com>,
-        "joyce.xue" <xuejiufei@huawei.com>, Ming Lei <ming.lei@canonical.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 051/100] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-Date: Tue, 28 Oct 2014 11:35:36 +0800
-Message-Id: <20141028033502.893267564@linuxfoundation.org>
+        Johan Hedberg <johan.hedberg@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.14 049/100] Bluetooth: Fix incorrect LE CoC PDU length restriction based on HCI MTU
+Date: Tue, 28 Oct 2014 11:35:34 +0800
+Message-Id: <20141028033502.814131823@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -32,65 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Johan Hedberg <johan.hedberg@intel.com>
 
-commit 934f3072c17cc8886f4c043b47eeeb1b12f8de33 upstream.
+commit 72c6fb915ff2d30ae14053edee4f0d30019bad76 upstream.
 
-commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O
-during memory allocation") introduces PF_MEMALLOC_NOIO flag to avoid doing
-I/O inside memory allocation, __GFP_IO is cleared when this flag is set,
-but __GFP_FS implies __GFP_IO, it should also be cleared.  Or it may still
-run into I/O, like in superblock shrinker.  And this will make the kernel
-run into the deadlock case described in that commit.
+The l2cap_create_le_flowctl_pdu() function that l2cap_segment_le_sdu()
+calls is perfectly capable of doing packet fragmentation if given bigger
+PDUs than the HCI buffers allow. Forcing the PDU length based on the HCI
+MTU (conn->mtu) would therefore needlessly strict operation on hardware
+with limited LE buffers (e.g. both Intel and Broadcom seem to have this
+set to just 27 bytes).
 
-See Dave Chinner's comment about io in superblock shrinker:
+This patch removes the restriction and makes it possible to send PDUs of
+the full length that the remote MPS value allows.
 
-Filesystem shrinkers do indeed perform IO from the superblock shrinker and
-have for years.  Even clean inodes can require IO before they can be freed
-- e.g.  on an orphan list, need truncation of post-eof blocks, need to
-wait for ordered operations to complete before it can be freed, etc.
-
-IOWs, Ext4, btrfs and XFS all can issue and/or block on arbitrary amounts
-of IO in the superblock shrinker context.  XFS, in particular, has been
-doing transactions and IO from the VFS inode cache shrinker since it was
-first introduced....
-
-Fix this by clearing __GFP_FS in memalloc_noio_flags(), this function has
-masked all the gfp_mask that will be passed into fs for the processes
-setting PF_MEMALLOC_NOIO in the direct reclaim path.
-
-v1 thread at: https://lkml.org/lkml/2014/9/3/32
-
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Cc: joyce.xue <xuejiufei@huawei.com>
-Cc: Ming Lei <ming.lei@canonical.com>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/sched.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ net/bluetooth/l2cap_core.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1876,11 +1876,13 @@ extern void thread_group_cputime_adjuste
- #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
- #define used_math() tsk_used_math(current)
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -2608,12 +2608,8 @@ static int l2cap_segment_le_sdu(struct l
  
--/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
-+/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
-+ * __GFP_FS is also cleared as it implies __GFP_IO.
-+ */
- static inline gfp_t memalloc_noio_flags(gfp_t flags)
- {
- 	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
--		flags &= ~__GFP_IO;
-+		flags &= ~(__GFP_IO | __GFP_FS);
- 	return flags;
- }
+ 	BT_DBG("chan %p, msg %p, len %zu", chan, msg, len);
  
+-	pdu_len = chan->conn->mtu - L2CAP_HDR_SIZE;
+-
+-	pdu_len = min_t(size_t, pdu_len, chan->remote_mps);
+-
+ 	sdu_len = len;
+-	pdu_len -= L2CAP_SDULEN_SIZE;
++	pdu_len = chan->remote_mps - L2CAP_SDULEN_SIZE;
+ 
+ 	while (len > 0) {
+ 		if (len <= pdu_len)
 
 
