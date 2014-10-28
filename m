@@ -1,103 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511AbaJ1JKB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 05:10:01 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:42255 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752491AbaJ1JJ6 (ORCPT
+	id S1755528AbaJ1JLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 05:11:17 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:14748 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591AbaJ1JLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 05:09:58 -0400
-X-IronPort-AV: E=Sophos;i="5.04,801,1406563200"; 
-   d="scan'208";a="42464763"
-From: "Chen, Hanxiao" <chenhanxiao@cn.fujitsu.com>
-To: "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Richard Weinberger <richard.weinberger@gmail.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mateusz Guzik <mguzik@redhat.com>,
-        David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: RE: [RESEND][PATCH 0/2v5] ns,	procfs: pid conversion between ns and
- showing pidns hierarchy
-Thread-Topic: [RESEND][PATCH 0/2v5] ns,	procfs: pid conversion between ns
- and showing pidns hierarchy
-Thread-Index: AQHP73OQgpl3rs/bFU6R2pG4xmbLX5xFNz1Q
-Date: Tue, 28 Oct 2014 09:10:00 +0000
-Message-ID: <5871495633F38949900D2BF2DC04883E606120@G08CNEXMBPEKD02.g08.fujitsu.local>
-References: <1414145745-30293-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-In-Reply-To: <1414145745-30293-1-git-send-email-chenhanxiao@cn.fujitsu.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.167.226.240]
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
+	Tue, 28 Oct 2014 05:11:13 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-ee-544f5daec9a6
+Message-id: <1414487468.24949.21.camel@AMDC1943>
+Subject: Re: [PATCH 3/8] mfd: max77686/802: Remove support for board files
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Date: Tue, 28 Oct 2014 10:11:08 +0100
+In-reply-to: <544EA178.3090506@collabora.co.uk>
+References: <1414422226-10948-1-git-send-email-k.kozlowski@samsung.com>
+ <1414422226-10948-4-git-send-email-k.kozlowski@samsung.com>
+ <544EA178.3090506@collabora.co.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Vd11sf4hBucuy1psnLGe1WLSugNM
+	FlMfPmGzuP7lOavF/CPnWC2O/i6w6F1wlc3ibNMbdov7X48yWny70sFksenxNVaLy7vmsFnM
+	OL+PyeL2ZV6LtUfusluc7mZ1EPBoae5h8/j7/DqLx99VL5g9ds66y+6xaVUnm8eda3vYPOad
+	DPTYvKTeo2/LKkaPz5vkAriiuGxSUnMyy1KL9O0SuDIar/cwFuzjqXjUe4atgfE9ZxcjJ4eE
+	gInE56V32SBsMYkL99YD2VwcQgJLGSXe929hhXA+M0oc3T6HFaSKV8BA4tXjRYwgtrCAl8Sn
+	SUvZQWw2AWOJzcuXgE0SEbCTuLH6ITNIM7PAYRaJRQ+ugyVYBFQlPv/cC9bMKaAv0XquC2rd
+	KkaJiztXg21gFlCXmDRvEVA3B9BNyhKN/W4QiwUlfky+xwJRIi+xec1b5gmMArOQdMxCUjYL
+	SdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCGx9nUH49JjVocYBTgYlXh4I1j8Q4RY
+	E8uKK3MPMUpwMCuJ8EbEAIV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwCu4yCk2f/LDEy+Dy8jRt
+	o6kvJib8+rKHpYL56lV/9WPSTBsluxMuil3uNahQmPyg3Td4y1SWghudEfe2Nj+1lJub5nzp
+	qw6DRZXcRwlhSbHA1qpf78t51bZlxd2O8OFLrlUO3Smn8uDNvUIZJfvD27x2da+YtDPhZGH7
+	4f+vmiRb9l5LWvVAiaU4I9FQi7moOBEAnwpxQZMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9S9A8AN023380
 
+On pon, 2014-10-27 at 20:48 +0100, Javier Martinez Canillas wrote:
+> Hello Krzysztof,
+> 
+> On 10/27/2014 04:03 PM, Krzysztof Kozlowski wrote:
+> > The driver is used only on Exynos based boards with DTS support.
+> > Convert the driver to DTS-only version. This simplifies a little the
+> > code:
+> > 1. No dead (unused) entries in platform_data structure.
+> > 2. More code removed (from all three patches: 34 insertions(+), 107
+> >    deletions).
+> > 3. Regulator driver does not depend on allocated memory
+> >    from MFD driver.
+> > 4. It makes also easier extending the regulator driver
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >  drivers/mfd/max77686.c               | 23 -----------------------
+> >  include/linux/mfd/max77686-private.h |  1 -
+> >  include/linux/mfd/max77686.h         | 22 ----------------------
+> >  3 files changed, 46 deletions(-)
+> > 
+> > diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+> > index 929795eae9fc..3da237afacde 100644
+> > --- a/drivers/mfd/max77686.c
+> > +++ b/drivers/mfd/max77686.c
+> 
+> As I said in Patch 2/8, I think this driver should depend on OF since
+> is now DT-only. Regulator drivers don't need to do this since they
+> already depend on MFD_MAX77686. With that change feel free to add:
+> 
+> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> 
+> Please also add my Reviewed-by tag to Patch 2/8 since I just noticed
+> that I forgot to add it.
 
+Thank you, I'll add depends on OF.
 
-> -----Original Message-----
-> From: containers-bounces@lists.linux-foundation.org
-> [mailto:containers-bounces@lists.linux-foundation.org] On Behalf Of Chen
-> Hanxiao
-> Sent: Friday, October 24, 2014 6:16 PM
-> To: containers@lists.linux-foundation.org; linux-kernel@vger.kernel.org
-> Cc: Richard Weinberger; Serge Hallyn; Oleg Nesterov; Mateusz Guzik; David Howells;
-> Eric W. Biederman
-> Subject: [RESEND][PATCH 0/2v5] ns, procfs: pid conversion between ns and showing
-> pidns hierarchy
+Best regards,
+Krzysztof
 > 
-> This series will expose pid inside containers
-> via procfs.
-> Also show the hierarchy of pid namespcae.
-> Then we could know how pid looks inside a container
-> and their ns relationships.
-> 
-> 1. helpful for nested container check/restore
-> From /proc/PID/ns/pid, we could know whether two pid lived
-> in the same ns.
-> From this patch, we could know whether two pid had relationship
-> between each other.
-> 
-> 2. used for pid translation from container
-> Ex:
->      init_pid_ns    ns1         ns2
->  t1  2
->  t2   `- 3          1
->  t3   `- 4          3
->  t4       `- 5      `- 5        1
->  t5       `- 6      `- 8        3
-> 
-> It could solve problems like: we see a pid 3 goes wrong
-> in container's log, what is its pid on hosts:
-> a) inside container:
-> # readlink /proc/3/ns/pid
-> pid:[4026532388]
-> 
-> b) on host:
-> # cat /proc/pidns_hierarchy
-> 14918 16263
-> 16581
-> Then we could easily find /proc/16263/ns/pid->4026532388.
-> On host, we knew that reported pid 3 is in level 2,
->    and its parental pid ns is from pid 14918.
-> 
-> c) on host, check child of 16263, grep it from status:
-> NSpid:  16268   8       3
-> 
-> We knew that pid 16268 is pid 3 reported by container.
-> 
+> Best regards,
+> Javier
 
-Hi,
-
-Any comments?
-
-Thanks,
-- Chen
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
