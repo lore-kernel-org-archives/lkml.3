@@ -1,39 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbaJ1Wml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:42:41 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:46423 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858AbaJ1Wmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:42:40 -0400
-Date: Tue, 28 Oct 2014 22:42:24 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Bastien Nocera <hadess@hadess.net>, John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: A desktop environment[1] kernel wishlist
-Message-ID: <20141028224224.6141d033@alan.etchedpixels.co.uk>
-In-Reply-To: <20141027092804.GB9807@amd>
-References: <1413881397.30379.7.camel@hadess.net>
-	<CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	<1413911644.30379.12.camel@hadess.net>
-	<CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	<1413914978.30379.14.camel@hadess.net>
-	<20141027092804.GB9807@amd>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1754080AbaJ1WqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:46:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:35477 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858AbaJ1WqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:46:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,805,1406617200"; 
+   d="scan'208";a="627243937"
+Message-ID: <54501CAB.8040503@linux.intel.com>
+Date: Wed, 29 Oct 2014 06:46:03 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-pm@vger.kernel.org >> Linux PM list" 
+	<linux-pm@vger.kernel.org>
+Subject: Re: [RFC/PATCH] PM / Sleep: Timer quiesce in freeze state
+References: <5446787E.60202@linux.intel.com> <20141024153656.GM12706@worktop.programming.kicks-ass.net> <544DE5CF.9040501@linux.intel.com> <20141027072816.GD10501@worktop.programming.kicks-ass.net> <544F1C50.8010505@linux.intel.com> <20141028082900.GP3337@twins.programming.kicks-ass.net>
+In-Reply-To: <20141028082900.GP3337@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I believe you should really use "is lid opened or AC or dock
-> connected" to determine if it was automatic resume or not. It should
-> work better and you can actually do it today.
+On 2014/10/28 16:29, Peter Zijlstra wrote:
+> On Tue, Oct 28, 2014 at 12:32:16PM +0800, Li, Aubrey wrote:
+>> On 2014/10/27 15:28, Peter Zijlstra wrote:
+>>> On Mon, Oct 27, 2014 at 02:27:27PM +0800, Li, Aubrey wrote:
+>>>>> Now I suppose the problem is with cpu_pause() which needs IPIs to
+>>>>> complete? Do we really need cpuidle_pause() there?
+>>>>> cpuidle_uninstall_handlers() seems like a daft thing to call just about
+>>>>> there.
+>>>>
+>>>> Please check the log of 8651f97bd951d0bb1c10fa24e3fa3455193f3548.
+>>>> Rafael should know more this question than me.
+>>>
+>>> That changelog explains its complete bollocks to do it here. We _want_
+>>> to enter and/or remain in deep idle states.
+>>
+>> cpuidle_resume() will be called at the end of dpm_resume_noirq(). So we
+>> still are able to enter deep idle states after resume.
+> 
+> cpuidle_resume is absolute crap, as is cpuidle_suspend for that matter
+> -- in this case.
+> 
+> The only reason we needed cpuidle_suspend is because some BIOS shat its
+> pants when some CPUs were in higher C states while trying to do the S3
+> thing. We're not going to use S states or BIOS calls _at_all_, so no
+> point in kicking CPUs out of their deep C states.
 
-There is no useful LID information on anything else either.
+We already kicked CPUs out of their deep C states in dpm_suspend_noirq().
 
-Alan
+We pause cpuidle in dpm_suspend_noirq() and resume cpuidle in
+dpm_resume_noirq(), so currently we can't enter deep c-state during S
+states. That's an intention for some buggy BIOS.
+
+However, for freeze state, there is another intention that we want
+always to enter the *deepest* c-state every time we enter freeze.
+So we need cpuidle_resume() to make sure we have deep cstate  in freeze.
+
+So back to your question in another email,
+
+> I think you can simply remove them altogether, they're nonsense.
+
+We need them to resume cpuidle in freeze.
+
+Thanks,
+-Aubrey
+
+> 
+> Read that changelog you referred me to again.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
