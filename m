@@ -1,122 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003AbaJ1NHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:07:48 -0400
-Received: from smtp73.iad3a.emailsrvr.com ([173.203.187.73]:51526 "EHLO
-	smtp73.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751840AbaJ1NHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:07:45 -0400
-X-Sender-Id: abbotti@mev.co.uk
-From: Ian Abbott <abbotti@mev.co.uk>
-To: <driverdev-devel@linuxdriverproject.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ian Abbott <abbotti@mev.co.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: comedi_test: fix timer lock-up
-Date: Tue, 28 Oct 2014 13:07:22 +0000
-Message-Id: <1414501642-14261-1-git-send-email-abbotti@mev.co.uk>
-X-Mailer: git-send-email 2.1.1
+	id S1753103AbaJ1NIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:08:10 -0400
+Received: from mail-bl2on0122.outbound.protection.outlook.com ([65.55.169.122]:61948
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751846AbaJ1NIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:08:07 -0400
+X-WSS-ID: 0NE5OHC-07-GAV-02
+X-M-MSG: 
+Message-ID: <544F9525.80304@amd.com>
+Date: Tue, 28 Oct 2014 08:07:49 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Alexander Graf <agraf@suse.de>,
+        =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
+CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        Thomas Lendacky <Thomas.Lendacky@amd.com>,
+        Joel Schopp <Joel.Schopp@amd.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
+        "liviu.dudau@arm.com" <liviu.dudau@arm.com>,
+        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm64: amd-seattle: Adding device tree for AMD Seattle
+ platform
+References: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <544C2D67.8000405@suse.de> <544CEC5B.4020104@suse.de>
+ <A1BC53C1-A78E-4B0C-879B-F6A462E58C72@suse.de> <544E56DB.7020305@amd.com>
+ <544ED462.20601@suse.de>
+In-Reply-To: <544ED462.20601@suse.de>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(51704005)(199003)(479174003)(377454003)(189002)(86362001)(36756003)(76482002)(92566001)(76176999)(120916001)(120886001)(85852003)(44976005)(46102003)(31966008)(93886004)(92726001)(87936001)(80022003)(85306004)(65816999)(20776003)(54356999)(50466002)(21056001)(83506001)(68736004)(106466001)(101416001)(4396001)(97736003)(84676001)(64126003)(95666004)(64706001)(50986999)(107046002)(47776003)(105586002)(33656002)(65956001)(65806001)(23676002)(102836001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB193;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB193;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0378F1E47A
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB017;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 240512474424 ("staging: comedi: comedi_test: use
-comedi_handle_events()") resulted in the timer routine
-`waveform_ai_interrupt()` calling `comedi_handle_events()` instead of
-`comedi_events()`.  That had the advantage of automatically stopping the
-acquisition on overflow/error/end-of-acquisition conditions (by calling
-the comedi subdevice's "cancel" handler), but currently results in the
-timer routine locking when one of those conditions occur.  This is
-because the "cancel" handler `waveform_ai_cancel()` calls
-`del_timer_sync()`.
+On 10/27/2014 6:25 PM, Alexander Graf wrote:
+>
+>
+> On 27.10.14 15:29, Suravee Suthikulanit wrote:
+>> On 10/26/2014 9:08 AM, Alexander Graf wrote:
+>>>>> This option doesn't exist in upstream kernels, does it? Why not just
+>>>>>>> make it dtb-y?
+>>>>>
+>>>>> CONFIG_ARCH_SEATTLE is being added one hunk above.:)
+>>> Oops:).
+>>>
+>>> I'm not convinced we need a config option just for the sake of
+>>> compiling a device tree though.
+>>>
+>>>
+>>> Alex
+>>>
+>>
+>> Eventually, we would add other device driver selections when
+>> CONFIG_ARCH_SEATTLE=y. At this point, those drivers are still not ready.
+>
+> Could you please give me some examples of drivers that would depend on
+> CONFIG_ARCH_SEATTLE? I like the current way things work without the need
+> for such an option, where everything's implemented purely as drivers you
+> can opt in our out of.
+>
+> You don't have a CONFIG_ARCH_SB7XX on x86 either, right? ;)
+>
+>
+> Alex
+>
 
-Fix it by adding a bit to the device private data that indicates whether
-the acquisition is active or not, and changing the "cancel" handler to
-use `del_timer()` instead of `del_timer_sync()`.  The bit is set when
-starting the acquisition, cleared when ending the acquisition (in the
-"cancel" handler), and tested in the timer routine, which will do
-nothing if the acquisition is inactive.  Also, make sure any scheduled
-timeout event gets cancelled when the low-level device gets "detached"
-from the comedi core by calling `del_timer_sync()` in the "detach"
-handler `waveform_detach()`.
+I am not saying that device drivers need to depend on 
+CONFIG_ARCH_SEATTLE. I am thinking along the line of an easy way to 
+enable SOC without having to manually select each of the required 
+drivers to support the SOC. An example is the "ARCH_VEXPRESS".
 
-Fixes: 240512474424 ("staging: comedi: comedi_test: use comedi_handle_events()")
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
----
-Greg, this fix is for "linux-next" and "staging-next".
----
- drivers/staging/comedi/drivers/comedi_test.c | 21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/comedi_test.c b/drivers/staging/comedi/drivers/comedi_test.c
-index 8845075..d4fa855 100644
---- a/drivers/staging/comedi/drivers/comedi_test.c
-+++ b/drivers/staging/comedi/drivers/comedi_test.c
-@@ -55,6 +55,10 @@ zero volts).
- 
- #define N_CHANS 8
- 
-+enum waveform_state_bits {
-+	WAVEFORM_AI_RUNNING = 0
-+};
-+
- /* Data unique to this driver */
- struct waveform_private {
- 	struct timer_list timer;
-@@ -64,6 +68,7 @@ struct waveform_private {
- 	unsigned long usec_current;	/* current time (mod waveform period) */
- 	unsigned long usec_remainder;	/* usec since last scan */
- 	unsigned long ai_count;		/* number of conversions remaining */
-+	unsigned long state_bits;
- 	unsigned int scan_period;	/* scan period in usec */
- 	unsigned int convert_period;	/* conversion period in usec */
- 	unsigned int ao_loopbacks[N_CHANS];
-@@ -174,6 +179,10 @@ static void waveform_ai_interrupt(unsigned long arg)
- 	struct timeval now;
- 	bool stopping = false;
- 
-+	/* check command is still active */
-+	if (!test_bit(WAVEFORM_AI_RUNNING, &devpriv->state_bits))
-+		return;
-+
- 	do_gettimeofday(&now);
- 
- 	elapsed_time =
-@@ -322,6 +331,10 @@ static int waveform_ai_cmd(struct comedi_device *dev,
- 	devpriv->usec_remainder = 0;
- 
- 	devpriv->timer.expires = jiffies + 1;
-+	/* mark command as active */
-+	smp_mb__before_atomic();
-+	set_bit(WAVEFORM_AI_RUNNING, &devpriv->state_bits);
-+	smp_mb__after_atomic();
- 	add_timer(&devpriv->timer);
- 	return 0;
- }
-@@ -331,7 +344,11 @@ static int waveform_ai_cancel(struct comedi_device *dev,
- {
- 	struct waveform_private *devpriv = dev->private;
- 
--	del_timer_sync(&devpriv->timer);
-+	/* mark command as no longer active */
-+	clear_bit(WAVEFORM_AI_RUNNING, &devpriv->state_bits);
-+	smp_mb__after_atomic();
-+	/* cannot call del_timer_sync() as may be called from timer routine */
-+	del_timer(&devpriv->timer);
- 	return 0;
- }
- 
-@@ -433,7 +450,7 @@ static void waveform_detach(struct comedi_device *dev)
- 	struct waveform_private *devpriv = dev->private;
- 
- 	if (devpriv)
--		waveform_ai_cancel(dev, dev->read_subdev);
-+		del_timer_sync(&devpriv->timer);
- }
- 
- static struct comedi_driver waveform_driver = {
--- 
-2.1.1
+Suravee
 
