@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163AbaJ1NjE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:39:04 -0400
-Received: from mail.mandriva.com.br ([177.220.134.171]:51398 "EHLO
-	mail.mandriva.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266AbaJ1NjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:39:02 -0400
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 09:39:02 EDT
-Date: Tue, 28 Oct 2014 11:31:31 -0200
-From: Marco A Benatto <marco.benatto@mandriva.com.br>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Timofey Titovets <nefelim4ag@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: UKSM: What's maintainers think about it?
-Message-ID: <20141028133131.GA1445@sirus.conectiva>
-References: <CAGqmi77uR2Nems6fE_XM1t3a06OwuqJP-0yOMOQh7KH13vzdzw@mail.gmail.com>
- <20141025213201.005762f9.akpm@linux-foundation.org>
+	id S1755170AbaJ1Njb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:39:31 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39709 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753516AbaJ1Nj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:39:28 -0400
+Date: Tue, 28 Oct 2014 08:38:56 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Huang Rui <ray.huang@amd.com>
+CC: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Jason Chang <jason.chang@amd.com>, Vincent Wan <vincent.wan@amd.com>,
+        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 19/19] usb: dwc3: add support for AMD NL platform
+Message-ID: <20141028133856.GB8123@saruman>
+Reply-To: <balbi@ti.com>
+References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
+ <1414497280-3126-20-git-send-email-ray.huang@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MfFXiAuoTsnnDAfZ"
 Content-Disposition: inline
-In-Reply-To: <20141025213201.005762f9.akpm@linux-foundation.org>
+In-Reply-To: <1414497280-3126-20-git-send-email-ray.huang@amd.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+--MfFXiAuoTsnnDAfZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not mantainer at all, but I've being using UKSM for a long time and remember
-to port it to 3.16 family once.
-UKSM seems good and stable and, at least for me, doesn't raised any errors.
-AFAIK the only limitation I know (maybe I has been fixed already) it isn't able
-to work together with zram stuff due to some race-conditions.
+Hi,
 
-Cheers,
+almost there...
 
-Marco A Benatto
-Mandriva OEM Developer
+On Tue, Oct 28, 2014 at 07:54:40PM +0800, Huang Rui wrote:
+> diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+> index 8b94ad5..b08a2f9 100644
+> --- a/drivers/usb/dwc3/core.h
+> +++ b/drivers/usb/dwc3/core.h
+> @@ -699,6 +699,7 @@ struct dwc3_scratchpad_array {
+>   * @rx_detect_poll_quirk: set if we enable rx_detect to polling lfps qui=
+rk
+>   * @dis_u3_susphy_quirk: set if we disable usb3 suspend phy
+>   * @dis_u2_susphy_quirk: set if we disable usb2 suspend phy
+> + * @amd_nl_plat: set if we use AMD NL platform
 
+however, as I mentioned before, the core shouldn't have to know that
+it's running on an AMD platform. We already support several different
+platforms (OMAP5, AM437x, DRA7xx, Exynos5, Exynos7, Qcom, Merrifield,
+Baytrail, Braswell, HAPS PCIe, and STiH407) and none of them get their
+$my_awesome_platform flag in dwc3, why should AMD be any different ?
 
-On Sat, Oct 25, 2014 at 09:32:01PM -0700, Andrew Morton wrote:
-> On Sat, 25 Oct 2014 22:25:56 +0300 Timofey Titovets <nefelim4ag@gmail.com> wrote:
-> 
-> > Good time of day, people.
-> > I try to find 'mm' subsystem specific people and lists, but list
-> > linux-mm looks dead and mail archive look like deprecated.
-> > If i must to sent this message to another list or add CC people, let me know.
-> 
-> linux-mm@kvack.org is alive and well.
-> 
-> > If questions are already asked (i can't find activity before), feel
-> > free to kick me.
-> > 
-> > The main questions:
-> > 1. Somebody test it? I see many reviews about it.
-> > I already port it to latest linux-next-git kernel and its work without issues.
-> > http://pastebin.com/6FMuKagS
-> > (if it matter, i can describe use cases and results, if somebody ask it)
-> > 
-> > 2. Developers of UKSM already tried to merge it? Somebody talked with uksm devs?
-> > offtop: now i try to communicate with dev's on kerneldedup.org forum,
-> > but i have problems with email verification and wait admin
-> > registration approval.
-> > (i already sent questions to
-> > http://kerneldedup.org/forum/home.php?mod=space&username=xianai ,
-> > because him looks like team leader)
-> > 
-> > 3. I just want collect feedbacks from linux maintainers team, if you
-> > decide what UKSM not needed in kernel, all other comments (as i
-> > understand) not matter.
-> > 
-> > Like KSM, but better.
-> > UKSM - Ultra Kernel Samepage Merging
-> > http://kerneldedup.org/en/projects/uksm/introduction/
-> 
-> It's the first I've heard of it.  No, as far as I know there has been
-> no attempt to upstream UKSM.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+This is the only part of $subject that I cannot accept because it would
+mean we would be giving AMD a special treatment when there shouldn't be
+any, for anybody.
+
+--=20
+balbi
+
+--MfFXiAuoTsnnDAfZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUT5xwAAoJEIaOsuA1yqREZfYQAI5U9ijR0KTKUttzUJljLti/
+t+E23iLt9B0HSP1nw8XzI3KSTL/Gny1c0qXijxLGJLcmVr61XSINUao0nx6Y1J+r
+EnSHsJTqjVqPnaDcA7uuOg608x14ii4qJZIbKTOIh9TYsg1PtOMl3dpdkGrCFmgL
+Ma/H9tPUEyfuzTa9ZraWJKioHnXIfgedQPUNZKHCnZ3woi6D4k4WTbmNsHR+P/ot
+1Jf91tcd/jMorBPcWnOM6hX0rde6mNQoITUzljYD2OW4Qc9osvtsIBMIt4oANwv7
+4d1ng4a/uUtQAdxYac2B2eJchhEtqzptwxYqMOsmFDNlWqQ5F6KMSKNJPNwKt6Sf
+QkaBFUPzWOmCJ9n2YG6rMpGK5IEXJvrYGU8CiUCYmKNsl/sx6Rb2deqR2/7zPkGq
+yLQVuOXOJ0dEK6xIiXrXjl7vkwBPZrzTUVxcoIDZwzamre5ZUxftpROului8XxIT
+UGXw9v6pXDZc4eOE2BicRrq5ckCeUQfwKCsDIZO7ozV87AfPskjf2L6JiWIAQbpa
+7VFuA2jz6DZATWpK6pPJTVk+VeECW8xv/PJvl+Bj2vWmN2NI9x++964/SyJyEZoN
+I2j+S341vLnjft/pL3ybLZcHr0KvirNrfBPL6xRUspvFBjA2zdlvssnjR27w5+i/
+Ih/YI5YAVG93gWyShM7z
+=MYrO
+-----END PGP SIGNATURE-----
+
+--MfFXiAuoTsnnDAfZ--
