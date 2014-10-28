@@ -1,86 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755AbaJ1PQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:16:36 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47378 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751877AbaJ1PQe (ORCPT
+	id S1754770AbaJ1PRj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:17:39 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:65222 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386AbaJ1PRi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:16:34 -0400
-Date: Tue, 28 Oct 2014 15:16:10 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Johan Hovold <johan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
-Message-ID: <20141028151610.GA12379@n2100.arm.linux.org.uk>
-References: <20141024192540.GD11455@saruman> <20141024192948.GE11455@saruman> <20141024193655.GD19377@localhost> <20141024194442.GG11455@saruman> <20141024195532.GF19377@localhost> <20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org> <20141028002552.GX12379@n2100.arm.linux.org.uk> <20141028081616.GL2006@localhost> <20141028084745.GY12379@n2100.arm.linux.org.uk> <20141028131257.GS2006@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028131257.GS2006@localhost>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 28 Oct 2014 11:17:38 -0400
+Date: Tue, 28 Oct 2014 16:16:56 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v2 1/8] pinctrl: Add driver for Zynq
+Message-ID: <20141028161656.6fb55199@ipc1.ka-ro>
+In-Reply-To: <1413479495-14206-2-git-send-email-soren.brinkmann@xilinx.com>
+References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
+	<1413479495-14206-2-git-send-email-soren.brinkmann@xilinx.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 02:12:57PM +0100, Johan Hovold wrote:
-> That's not what I was trying to refer to. But the patch set explicitly
-> allows for multiple, prioritised power-off handlers, which can power
-> off a board in different ways and with various degrees of success.
-> Specifically, it allows for fallback handlers in case one or more
-> power-off handlers fail.
+Hi,
+
+Soren Brinkmann wrote:
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+> changes since RFC:
+>  - use syscon/regmap to access registers in SLCR space
+>  - add pinctrl to zc702 DT
+>  - rebase to 3.18: rename enable -> set_mux
+>  - add kernel-doc
+>  - support pinconf
+>    - supported attributes
+>      - pin-bias: pull up, tristate, disable
+>      - slew-rate: 0 == slow, 1 == fast; generic pinconf does not display
+>        argument
 > 
-> So if we allow for that, what is to prevent the final power-off handler
-> from failing? And should this not be logged by arch code in the same way
-> as failure to restart is?
+[...]
+> +struct zynq_pctrl_group zynq_pctrl_groups[] = {
+> +	DEFINE_ZYNQ_PINCTRL_GRP(ethernet0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(ethernet1_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(mdio0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(mdio1_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(qspi0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(qspi1_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(qspi_fbclk),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(qspi_cs1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(spi0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(spi0_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(spi0_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_emio_wp),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_emio_cd),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_emio_wp),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_emio_cd),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nor),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nor_cs1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nor_addr25),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nand),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_4),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_5),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_6),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_7),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_8),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_9),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can0_10),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_4),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_5),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_6),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_7),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_8),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_9),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_10),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(can1_11),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_4),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_5),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_6),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_7),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_8),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_9),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_10),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_4),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_5),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_6),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_7),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_8),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_9),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_10),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_11),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_4),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_5),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_6),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_7),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_8),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_9),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_10),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_4),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_5),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_6),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_7),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_8),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_9),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_10),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(ttc0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(ttc0_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(ttc0_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(ttc1_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(ttc1_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(ttc1_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_4),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_0),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_1),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_2),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_3),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_4),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_5),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_6),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_7),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_8),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_9),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_10),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_11),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_12),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_13),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_14),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_15),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_16),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_17),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_18),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_19),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_20),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_21),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_22),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_23),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_24),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_25),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_26),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_27),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_28),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_29),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_30),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_31),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_32),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_33),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_34),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_35),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_36),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_37),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_38),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_39),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_40),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_41),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_42),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_43),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_44),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_45),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_46),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_47),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_48),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_49),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_50),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_51),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_52),
+> +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_53)
+dto.
 
-And how is that different from having a set of power-off handlers, and
-reporting when each individual one fails?  Don't you want to know if
-your primary high priority reboot handler fails, just as much as you
-want to know if your final last-resort power-off handler fails?
+[...]
+> +#define DEFINE_ZYNQ_PINMUX_FUNCTION(fname, mval)	\
+> +	[ZYNQ_PMUX_##fname] = {				\
+> +		.name = #fname,				\
+> +		.groups = fname##_groups,		\
+> +		.ngroups = ARRAY_SIZE(fname##_groups),	\
+> +		.mux_val = mval				\
+> +	}
+> +
+dto.
 
-Or different from having no power-off handlers.
+[...]
+> +#define DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(fname, mval, mux, mask, shift)	\
+> +	[ZYNQ_PMUX_##fname] = {				\
+> +		.name = #fname,				\
+> +		.groups = fname##_groups,		\
+> +		.ngroups = ARRAY_SIZE(fname##_groups),	\
+> +		.mux_val = mval,			\
+> +		.mux_mask = mask,			\
+> +		.mux_shift = shift			\
+dto.
 
-Here's the x86 code:
+[...]
+> +static const struct zynq_pinmux_function zynq_pmux_functions[] = {
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(ethernet0, 1),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(ethernet1, 1),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(mdio0, 0x40),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(mdio1, 0x50),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi0, 1),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi1, 1),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi_fbclk, 1),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi_cs1, 1),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(spi0, 0x50),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(spi1, 0x50),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio0, 0x40),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio0_pc, 0xc),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio0_wp, 0, 130, ZYNQ_SDIO_WP_MASK,
+> +					ZYNQ_SDIO_WP_SHIFT),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio0_cd, 0, 130, ZYNQ_SDIO_CD_MASK,
+> +					ZYNQ_SDIO_CD_SHIFT),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio1, 0x40),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio1_pc, 0xc),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio1_wp, 0, 134, ZYNQ_SDIO_WP_MASK,
+> +					ZYNQ_SDIO_WP_SHIFT),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio1_cd, 0, 134, ZYNQ_SDIO_CD_MASK,
+> +					ZYNQ_SDIO_CD_SHIFT),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nor, 4),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nor_cs1, 8),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nor_addr25, 4),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nand, 8),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(can0, 0x10),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(can1, 0x10),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(uart0, 0x70),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(uart1, 0x70),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(i2c0, 0x20),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(i2c1, 0x20),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(ttc0, 0x60),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(ttc1, 0x60),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(swdt0, 0x30),
+> +	DEFINE_ZYNQ_PINMUX_FUNCTION(gpio0, 0)
+dto.
 
-void machine_power_off(void)
-{
-        machine_ops.power_off();
-}
+[...]
+> +static const struct pinctrl_ops zynq_pctrl_ops = {
+> +	.get_groups_count = zynq_pctrl_get_groups_count,
+> +	.get_group_name = zynq_pctrl_get_group_name,
+> +	.get_group_pins = zynq_pctrl_get_group_pins,
+> +	.dt_node_to_map = pinconf_generic_dt_node_to_map_group,
+> +	.dt_free_map = pinctrl_utils_dt_free_map
+dto.
 
-struct machine_ops machine_ops = {
-        .power_off = native_machine_power_off,
-...
 
-static void native_machine_power_off(void)
-{
-        if (pm_power_off) {
-                if (!reboot_force)
-                        machine_shutdown();
-                pm_power_off();
-        }
-        /* A fallback in case there is no PM info available */
-        tboot_shutdown(TB_SHUTDOWN_HALT);
-}
-
-void tboot_shutdown(u32 shutdown_type)
-{
-        void (*shutdown)(void);
-
-        if (!tboot_enabled())
-                return;
-
-See - x86 can very well just fall straight back out of machine_power_off()
-if there's no pm_power_off() hook and tboot is not enabled.
-
+Lothar Waßmann
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
