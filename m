@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878AbaJ1Vj0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:39:26 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64975 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755208AbaJ1VjX (ORCPT
+	id S932222AbaJ1Vjw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:39:52 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:37133 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755206AbaJ1Vat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:39:23 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: Darren Hart <dvhart@linux.intel.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index() when using properties
-Date: Tue, 28 Oct 2014 22:59:57 +0100
-Message-ID: <2740724.5yjNTKs1RY@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Tue, 28 Oct 2014 17:30:49 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 43/58] dmaengine: xilinx: Split device_control
+Date: Tue, 28 Oct 2014 22:25:58 +0100
+Message-Id: <1414531573-18807-44-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
-> acpi_dev_add_driver_gpios() makes it possible to set up mapping between
-> properties and ACPI GpioIo resources in a driver, so we can take index
-> parameter in acpi_find_gpio() into use with _DSD device properties now.
-> 
-> This index can be used to select a GPIO from a property with multiple
-> GPIOs:
-> 
->   Package () {
->   	"data-gpios",
->   	Package () {
->   		\_SB.GPIO, 0, 0, 0,
->   		\_SB.GPIO, 1, 0, 0,
->   		\_SB.GPIO, 2, 0, 1,
->   	}
->   }
-> 
-> In order to retrieve the last GPIO from a driver we can simply do:
-> 
->   desc = devm_gpiod_get_index(dev, "data", 2);
-> 
-> and so on.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Split the device_control callback of the Xilinx VDMA driver to make use of the
+newly introduced callbacks, that will eventually be used to retrieve slave
+capabilities.
 
-Cool. :-)
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+---
+ drivers/dma/xilinx/xilinx_vdma.c | 29 ++++++-----------------------
+ 1 file changed, 6 insertions(+), 23 deletions(-)
 
-Any objections anyone?
-
-> ---
-> This is on top of latest linux-pm/device-properties.
-> 
->  drivers/gpio/gpiolib.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-> index fbf717a56b0a..58659dbe702a 100644
-> --- a/drivers/gpio/gpiolib.c
-> +++ b/drivers/gpio/gpiolib.c
-> @@ -1522,7 +1522,7 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
->  				 suffixes[i]);
->  		}
->  
-> -		desc = acpi_get_gpiod_by_index(adev, propname, 0, &info);
-> +		desc = acpi_get_gpiod_by_index(adev, propname, idx, &info);
->  		if (!IS_ERR(desc) || (PTR_ERR(desc) == -EPROBE_DEFER))
->  			break;
->  	}
-> 
-
+diff --git a/drivers/dma/xilinx/xilinx_vdma.c b/drivers/dma/xilinx/xilinx_vdma.c
+index a6e64767186e..1df06b45c798 100644
+--- a/drivers/dma/xilinx/xilinx_vdma.c
++++ b/drivers/dma/xilinx/xilinx_vdma.c
+@@ -996,13 +996,17 @@ error:
+  * xilinx_vdma_terminate_all - Halt the channel and free descriptors
+  * @chan: Driver specific VDMA Channel pointer
+  */
+-static void xilinx_vdma_terminate_all(struct xilinx_vdma_chan *chan)
++static int xilinx_vdma_terminate_all(struct dma_chan *dchan)
+ {
++	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
++
+ 	/* Halt the DMA engine */
+ 	xilinx_vdma_halt(chan);
+ 
+ 	/* Remove and free all of the descriptors in the lists */
+ 	xilinx_vdma_free_descriptors(chan);
++
++	return 0;
+ }
+ 
+ /**
+@@ -1070,27 +1074,6 @@ int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
+ }
+ EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
+ 
+-/**
+- * xilinx_vdma_device_control - Configure DMA channel of the device
+- * @dchan: DMA Channel pointer
+- * @cmd: DMA control command
+- * @arg: Channel configuration
+- *
+- * Return: '0' on success and failure value on error
+- */
+-static int xilinx_vdma_device_control(struct dma_chan *dchan,
+-				      enum dma_ctrl_cmd cmd, unsigned long arg)
+-{
+-	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+-
+-	if (cmd != DMA_TERMINATE_ALL)
+-		return -ENXIO;
+-
+-	xilinx_vdma_terminate_all(chan);
+-
+-	return 0;
+-}
+-
+ /* -----------------------------------------------------------------------------
+  * Probe and remove
+  */
+@@ -1295,7 +1278,7 @@ static int xilinx_vdma_probe(struct platform_device *pdev)
+ 				xilinx_vdma_free_chan_resources;
+ 	xdev->common.device_prep_interleaved_dma =
+ 				xilinx_vdma_dma_prep_interleaved;
+-	xdev->common.device_control = xilinx_vdma_device_control;
++	xdev->common.device_terminate_all = xilinx_vdma_terminate_all;
+ 	xdev->common.device_tx_status = xilinx_vdma_tx_status;
+ 	xdev->common.device_issue_pending = xilinx_vdma_issue_pending;
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+2.1.1
+
