@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307AbaJ1Ewr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:52:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47007 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122AbaJ1Dwo (ORCPT
+	id S1756286AbaJ1E4j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:56:39 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:36679 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562AbaJ1E4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:44 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 37/43] spi: dw-mid: terminate ongoing transfers at exit
-Date: Tue, 28 Oct 2014 11:36:35 +0800
-Message-Id: <20141028033524.994657051@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 00:56:35 -0400
+Date: Mon, 27 Oct 2014 21:56:31 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] eeepc-laptop: flatten control flow
+Message-ID: <20141028045631.GD60814@vmdeb7>
+References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+ <1414005163-3461-2-git-send-email-fransklaver@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414005163-3461-2-git-send-email-fransklaver@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 22, 2014 at 09:12:36PM +0200, Frans Klaver wrote:
+> In eeepc_rfkill_hotplug there's an if statement with a big tail that
+> ends right before the out_unlock label. We might as well invert the
+> condition and jump to out_unlock in that case, pretty much like the rest
+> of the code does. This removes an indentation level for a large chunk of
+> code and also stops suggesting there might be an else clause.
+> 
+> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
 
-------------------
+Queued for 3.19, thanks Frans.
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-
-commit 8e45ef682cb31fda62ed4eeede5d9745a0a1b1e2 upstream.
-
-Do full clean up at exit, means terminate all ongoing DMA transfers.
-
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/spi/spi-dw-mid.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -91,7 +91,11 @@ static void mid_spi_dma_exit(struct dw_s
- {
- 	if (!dws->dma_inited)
- 		return;
-+
-+	dmaengine_terminate_all(dws->txchan);
- 	dma_release_channel(dws->txchan);
-+
-+	dmaengine_terminate_all(dws->rxchan);
- 	dma_release_channel(dws->rxchan);
- }
- 
-
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
