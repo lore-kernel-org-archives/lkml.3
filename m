@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556AbaJ1UFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:05:46 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:36550 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaJ1UFo (ORCPT
+	id S1753884AbaJ1UGh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:06:37 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:24017 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141AbaJ1UGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:05:44 -0400
+	Tue, 28 Oct 2014 16:06:35 -0400
+X-IronPort-AV: E=Sophos;i="5.04,804,1406617200"; 
+   d="scan'208";a="49188369"
+Message-ID: <544FF744.5020707@broadcom.com>
+Date: Tue, 28 Oct 2014 13:06:28 -0700
+From: Scott Branden <sbranden@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1410031308360.14259@pobox.suse.cz>
-References: <1412097515-17241-1-git-send-email-benjamin.tissoires@redhat.com>
-	<alpine.LNX.2.00.1410011016160.26311@pobox.suse.cz>
-	<20141001131008.GB18756@mail.corp.redhat.com>
-	<CAG_cf+fYGATBL9Sgvvp7CaScP112fiqiyuR0gBdkS-424S3Kog@mail.gmail.com>
-	<alpine.LNX.2.00.1410031308360.14259@pobox.suse.cz>
-Date: Tue, 28 Oct 2014 16:05:43 -0400
-Message-ID: <CAN+gG=GET=FLmte9kQOtS+x=HPaTdgEu4HxuydHXBx1GZksNRw@mail.gmail.com>
-Subject: Re: [PATCH 00/13] HID: add support of Logitech touchpads and special devices
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew de los Reyes <andrew-vger@gizmolabs.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        Mike Turquette <mturquette@linaro.org>, Alex Elder <elder@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>,
+        Antti Palosaari <crope@iki.fi>, JD Zheng <jdzheng@broadcom.com>,
+        Ray Jui <rjui@broadcom.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v8 8/8] ARM: multi_v7_defconfig: Enable Broadcom Cygnus
+References: <1414525992-3678-9-git-send-email-sbranden@broadcom.com> <5089697.D8odgNlVtY@wuerfel>
+In-Reply-To: <5089697.D8odgNlVtY@wuerfel>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 3, 2014 at 7:09 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Thu, 2 Oct 2014, Andrew de los Reyes wrote:
->
->> I've tested these patches successfully on a Chromebook Pixel with the
->> following devices:
+On 14-10-28 01:01 PM, Arnd Bergmann wrote:
+> On Tuesday 28 October 2014 12:53:12 Scott Branden wrote:
+>> From: Ray Jui <rjui@broadcom.com>
 >>
->> - T650 touchpad
->> - TK820 keyboard/touchpad
->> - Original WTP touchpad
+>> Enable Broadcom Cygnus platform support in multi_v7_defconfig
 >>
->> I also tested a touch mouse and as expected it continued to function
->> as a plain USB mouse. The TK820 was indeed broken into two devices,
->> with autorepeat enabled for the keyboard only. The other two devices
->> behaved as expected with no perceived regressions.
+>> Signed-off-by: Ray Jui <rjui@broadcom.com>
+>> Signed-off-by: Scott Branden <sbranden@broadcom.com>
 >>
->> In short, from a functionality perspective I'm happy with these
->> patches. I will let others discuss code structure.
 >
-> Thank you. Can I use
+> Just to be sure: did you check that multi_v7_defconfig contains
+> all the drivers you need that you enable in your other defconfig?
+No - the other defconfig has more that have not been tested on the 
+device.  The defconfig builds, but the other drivers haven't been 
+tested.  I guess we can try adding them to the multi_defconfig right now 
+as well or wait until we have tested them?  There will need to be 
+addition dts changes in the future after we have tested the other drivers.
+
+Can we wait to add them to multi_v7_defconfig or do you want them in 
+this patchset?
 >
->         Tested-by: Andrew de los Reyes <andrew-vger@gizmolabs.org>
->
-> once / if I am merging this patchset?
+> 	Arnd
 >
 
-I am pretty sure this is not required too, but I am raising this one
-again in Jiri's pile of things to review.
-Sorry Jiri, I did not forget about it :)
-
-Cheers,
-Benjamin
