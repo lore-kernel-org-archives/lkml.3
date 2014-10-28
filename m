@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaJ1DvQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:51:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46029 "EHLO
+	id S1756001AbaJ1DvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:51:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46022 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913AbaJ1DvL (ORCPT
+	with ESMTP id S1755913AbaJ1DvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:51:11 -0400
+	Mon, 27 Oct 2014 23:51:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 082/100] sparc64: Fix FPU register corruption with AES crypto offload.
-Date: Tue, 28 Oct 2014 11:36:07 +0800
-Message-Id: <20141028033504.229760764@linuxfoundation.org>
+Subject: [PATCH 3.14 080/100] sparc64: Fix reversed start/end in flush_tlb_kernel_range()
+Date: Tue, 28 Oct 2014 11:36:05 +0800
+Message-Id: <20141028033504.145025603@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -30,105 +30,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit f4da3628dc7c32a59d1fb7116bb042e6f436d611 ]
+[ Upstream commit 473ad7f4fb005d1bb727e4ef27d370d28703a062 ]
 
-The AES loops in arch/sparc/crypto/aes_glue.c use a scheme where the
-key material is preloaded into the FPU registers, and then we loop
-over and over doing the crypt operation, reusing those pre-cooked key
-registers.
+When we have to split up a flush request into multiple pieces
+(in order to avoid the firmware range) we don't specify the
+arguments in the right order for the second piece.
 
-There are intervening blkcipher*() calls between the crypt operation
-calls.  And those might perform memcpy() and thus also try to use the
-FPU.
+Fix the order, or else we get hangs as the code tries to
+flush "a lot" of entries and we get lockups like this:
 
-The sparc64 kernel FPU usage mechanism is designed to allow such
-recursive uses, but with a catch.
+[ 4422.981276] NMI watchdog: BUG: soft lockup - CPU#12 stuck for 23s! [expect:117032]
+[ 4422.996130] Modules linked in: ipv6 loop usb_storage igb ptp sg sr_mod ehci_pci ehci_hcd pps_core n2_rng rng_core
+[ 4423.016617] CPU: 12 PID: 117032 Comm: expect Not tainted 3.17.0-rc4+ #1608
+[ 4423.030331] task: fff8003cc730e220 ti: fff8003d99d54000 task.ti: fff8003d99d54000
+[ 4423.045282] TSTATE: 0000000011001602 TPC: 00000000004521e8 TNPC: 00000000004521ec Y: 00000000    Not tainted
+[ 4423.064905] TPC: <__flush_tlb_kernel_range+0x28/0x40>
+[ 4423.074964] g0: 000000000052fd10 g1: 00000001295a8000 g2: ffffff7176ffc000 g3: 0000000000002000
+[ 4423.092324] g4: fff8003cc730e220 g5: fff8003dfedcc000 g6: fff8003d99d54000 g7: 0000000000000006
+[ 4423.109687] o0: 0000000000000000 o1: 0000000000000000 o2: 0000000000000003 o3: 00000000f0000000
+[ 4423.127058] o4: 0000000000000080 o5: 00000001295a8000 sp: fff8003d99d56d01 ret_pc: 000000000052ff54
+[ 4423.145121] RPC: <__purge_vmap_area_lazy+0x314/0x3a0>
+[ 4423.155185] l0: 0000000000000000 l1: 0000000000000000 l2: 0000000000a38040 l3: 0000000000000000
+[ 4423.172559] l4: fff8003dae8965e0 l5: ffffffffffffffff l6: 0000000000000000 l7: 00000000f7e2b138
+[ 4423.189913] i0: fff8003d99d576a0 i1: fff8003d99d576a8 i2: fff8003d99d575e8 i3: 0000000000000000
+[ 4423.207284] i4: 0000000000008008 i5: fff8003d99d575c8 i6: fff8003d99d56df1 i7: 0000000000530c24
+[ 4423.224640] I7: <free_vmap_area_noflush+0x64/0x80>
+[ 4423.234193] Call Trace:
+[ 4423.239051]  [0000000000530c24] free_vmap_area_noflush+0x64/0x80
+[ 4423.251029]  [0000000000531a7c] remove_vm_area+0x5c/0x80
+[ 4423.261628]  [0000000000531b80] __vunmap+0x20/0x120
+[ 4423.271352]  [000000000071cf18] n_tty_close+0x18/0x40
+[ 4423.281423]  [00000000007222b0] tty_ldisc_close+0x30/0x60
+[ 4423.292183]  [00000000007225a4] tty_ldisc_reinit+0x24/0xa0
+[ 4423.303120]  [0000000000722ab4] tty_ldisc_hangup+0xd4/0x1e0
+[ 4423.314232]  [0000000000719aa0] __tty_hangup+0x280/0x3c0
+[ 4423.324835]  [0000000000724cb4] pty_close+0x134/0x1a0
+[ 4423.334905]  [000000000071aa24] tty_release+0x104/0x500
+[ 4423.345316]  [00000000005511d0] __fput+0x90/0x1e0
+[ 4423.354701]  [000000000047fa54] task_work_run+0x94/0xe0
+[ 4423.365126]  [0000000000404b44] __handle_signal+0xc/0x2c
 
-There has to be a trap between the two FPU using threads of control.
-
-The mechanism works by, when the FPU is already in use by the kernel,
-allocating a slot for FPU saving at trap time.  Then if, within the
-trap handler, we try to use the FPU registers, the pre-trap FPU
-register state is saved into the slot.  Then at trap return time we
-notice this and restore the pre-trap FPU state.
-
-Over the long term there are various more involved ways we can make
-this work, but for a quick fix let's take advantage of the fact that
-the situation where this happens is very limited.
-
-All sparc64 chips that support the crypto instructiosn also are using
-the Niagara4 memcpy routine, and that routine only uses the FPU for
-large copies where we can't get the source aligned properly to a
-multiple of 8 bytes.
-
-We look to see if the FPU is already in use in this context, and if so
-we use the non-large copy path which only uses integer registers.
-
-Furthermore, we also limit this special logic to when we are doing
-kernel copy, rather than a user copy.
-
+Fixes: 4ca9a23765da ("sparc64: Guard against flushing openfirmware mappings.")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/visasm.h |    8 ++++++++
- arch/sparc/lib/NG4memcpy.S      |   14 +++++++++++++-
- 2 files changed, 21 insertions(+), 1 deletion(-)
+ arch/sparc/mm/init_64.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/include/asm/visasm.h
-+++ b/arch/sparc/include/asm/visasm.h
-@@ -39,6 +39,14 @@
- 297:	wr		%o5, FPRS_FEF, %fprs;		\
- 298:
- 
-+#define VISEntryHalfFast(fail_label)			\
-+	rd		%fprs, %o5;			\
-+	andcc		%o5, FPRS_FEF, %g0;		\
-+	be,pt		%icc, 297f;			\
-+	 nop;						\
-+	ba,a,pt		%xcc, fail_label;		\
-+297:	wr		%o5, FPRS_FEF, %fprs;
-+
- #define VISExitHalf					\
- 	wr		%o5, 0, %fprs;
- 
---- a/arch/sparc/lib/NG4memcpy.S
-+++ b/arch/sparc/lib/NG4memcpy.S
-@@ -41,6 +41,10 @@
- #endif
- #endif
- 
-+#if !defined(EX_LD) && !defined(EX_ST)
-+#define NON_USER_COPY
-+#endif
-+
- #ifndef EX_LD
- #define EX_LD(x)	x
- #endif
-@@ -197,9 +201,13 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
- 	 mov		EX_RETVAL(%o3), %o0
- 
- .Llarge_src_unaligned:
-+#ifdef NON_USER_COPY
-+	VISEntryHalfFast(.Lmedium_vis_entry_fail)
-+#else
-+	VISEntryHalf
-+#endif
- 	andn		%o2, 0x3f, %o4
- 	sub		%o2, %o4, %o2
--	VISEntryHalf
- 	alignaddr	%o1, %g0, %g1
- 	add		%o1, %o4, %o1
- 	EX_LD(LOAD(ldd, %g1 + 0x00, %f0))
-@@ -240,6 +248,10 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
- 	 nop
- 	ba,a,pt		%icc, .Lmedium_unaligned
- 
-+#ifdef NON_USER_COPY
-+.Lmedium_vis_entry_fail:
-+	 or		%o0, %o1, %g2
-+#endif
- .Lmedium:
- 	LOAD(prefetch, %o1 + 0x40, #n_reads_strong)
- 	andcc		%g2, 0x7, %g0
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -2720,8 +2720,8 @@ void flush_tlb_kernel_range(unsigned lon
+ 			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
+ 		}
+ 		if (end > HI_OBP_ADDRESS) {
+-			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
+-			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
++			flush_tsb_kernel_range(HI_OBP_ADDRESS, end);
++			do_flush_tlb_kernel_range(HI_OBP_ADDRESS, end);
+ 		}
+ 	} else {
+ 		flush_tsb_kernel_range(start, end);
 
 
