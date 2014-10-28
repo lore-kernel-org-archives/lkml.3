@@ -1,34 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580AbaJ1IQt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 04:16:49 -0400
-Received: from smtp1.it.da.ut.ee ([193.40.5.66]:35152 "EHLO smtp1.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778AbaJ1IQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 04:16:46 -0400
-Date: Tue, 28 Oct 2014 10:16:43 +0200 (EET)
-From: Meelis Roos <mroos@linux.ee>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: hung tasks in 3.18.0-rc1-00221-gc3351df
-In-Reply-To: <20141027174424.GB27568@linux.vnet.ibm.com>
-Message-ID: <alpine.LRH.2.11.1410281014530.6536@adalberg.ut.ee>
-References: <alpine.LRH.2.11.1410231619340.11555@adalberg.ut.ee> <20141024001822.GK4977@linux.vnet.ibm.com> <alpine.LRH.2.11.1410241057270.15464@adalberg.ut.ee> <20141024145509.GO4977@linux.vnet.ibm.com> <20141027174424.GB27568@linux.vnet.ibm.com>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+	id S1756128AbaJ1IRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:17:05 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:52872 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755842AbaJ1IQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 04:16:59 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20141028051935.GF60814@vmdeb7>
+References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+	<1414005163-3461-5-git-send-email-fransklaver@gmail.com>
+	<20141028051935.GF60814@vmdeb7>
+Date: Tue, 28 Oct 2014 09:16:57 +0100
+Message-ID: <CAH6sp9N3_XZPrZvw25XrkyvCm5HccMmkgFiPrJgCnBqVhjLYjw@mail.gmail.com>
+Subject: Re: [PATCH 4/8] eeepc-laptop: pull out eeepc_destroy_rfkill
+From: Frans Klaver <fransklaver@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> rcu: Make rcu_barrier() understand about missing rcuo kthreads
+On Tue, Oct 28, 2014 at 6:19 AM, Darren Hart <dvhart@infradead.org> wrote:
+> On Wed, Oct 22, 2014 at 09:12:39PM +0200, Frans Klaver wrote:
+>> In eeepc_rfkill_exit, we implement the same code four times. Pull out a
+>> function that cleans up an rfkill object to get rid of the duplication.
+>>
+>> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+>> ---
+>>  drivers/platform/x86/eeepc-laptop.c | 34 ++++++++++++++--------------------
+>>  1 file changed, 14 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+>> index e92ea41..73e8d39 100644
+>> --- a/drivers/platform/x86/eeepc-laptop.c
+>> +++ b/drivers/platform/x86/eeepc-laptop.c
+>> @@ -823,35 +823,29 @@ static char EEEPC_RFKILL_NODE_1[] = "\\_SB.PCI0.P0P5";
+>>  static char EEEPC_RFKILL_NODE_2[] = "\\_SB.PCI0.P0P6";
+>>  static char EEEPC_RFKILL_NODE_3[] = "\\_SB.PCI0.P0P7";
+>>
+>> +static inline void eeepc_destroy_rfkill(struct rfkill **rfkill)
+>> +{
+>> +     if (!*rfkill)
+>> +             return;
+>> +     rfkill_unregister(*rfkill);
+>> +     rfkill_destroy(*rfkill);
+>> +     *rfkill = NULL;
+>> +}
+>
+> In this case the savings is 6 lines at the cost of some legibility as double
+> pointers are arguably harder to read, and definitely easier to screw up ;-)
+>
+> I appreciate the goal, but I'm not convinced it is worth it.
 
-I can not trigger the previous problem at will so my testing is not very 
-useful. I tested the previous patch that you sent but the problem did 
-not trigger, and yesterday applied this one and it still does not 
-trigger, but I an using remote sessions only for now (no desktop).
+Fair enough. If anything the following would be slightly less complicated:
 
-At least it's not clearly broken :)
+#define eeepc_destroy_rfkill(rfkill) \
+do { \
+        if (rfkill) { \
+                 rfkill_unregister(rfkill); \
+                 rfkill_destroy(rfkill); \
+                 rkfill = NULL; \
+        } \
+} while (0);
 
--- 
-Meelis Roos (mroos@linux.ee)
+I don't think any new eeepc's are being produced, so this code is
+unlikely to change anyway. Let's leave it as is.
+
+Thanks,
+Frans
