@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760918AbaJ1Hwt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:52:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44478 "EHLO
+	id S1754218AbaJ1DiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:38:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162AbaJ1DiG (ORCPT
+	with ESMTP id S1754162AbaJ1Dh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:06 -0400
+	Mon, 27 Oct 2014 23:37:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabian Frederick <fabf@skynet.be>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.17 058/146] nfs: fix duplicate proc entries
-Date: Tue, 28 Oct 2014 11:33:20 +0800
-Message-Id: <20141028033345.906079197@linuxfoundation.org>
+        Willem Pinckaers <willem@lekkertech.net>,
+        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
+Subject: [PATCH 3.17 055/146] Revert "lzo: properly check for overruns"
+Date: Tue, 28 Oct 2014 11:33:17 +0800
+Message-Id: <20141028033345.790957477@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,38 +29,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabian Frederick <fabf@skynet.be>
+From: Willy Tarreau <w@1wt.eu>
 
-commit 2f3169fb18f4643ac9a6a097a6a6c71f0b2cef75 upstream.
+commit af958a38a60c7ca3d8a39c918c1baa2ff7b6b233 upstream.
 
-Commit 65b38851a174
-("NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes")
+This reverts commit 206a81c ("lzo: properly check for overruns").
 
-updated the following function:
-static int nfs_volume_list_open(struct inode *inode, struct file *file)
+As analysed by Willem Pinckaers, this fix is still incomplete on
+certain rare corner cases, and it is easier to restart from the
+original code.
 
-it used &nfs_server_list_ops instead of &nfs_volume_list_ops
-which means cat /proc/fs/nfsfs/volumes = /proc/fs/nfsfs/servers
-
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
-Fixes: 65b38851a174 (NFS: Fix /proc/fs/nfsfs/servers and...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Reported-by: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/client.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/lzo/lzo1x_decompress_safe.c |   62 +++++++++++++---------------------------
+ 1 file changed, 21 insertions(+), 41 deletions(-)
 
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -1318,7 +1318,7 @@ static int nfs_server_list_show(struct s
-  */
- static int nfs_volume_list_open(struct inode *inode, struct file *file)
- {
--	return seq_open_net(inode, file, &nfs_server_list_ops,
-+	return seq_open_net(inode, file, &nfs_volume_list_ops,
- 			   sizeof(struct seq_net_private));
- }
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -19,31 +19,11 @@
+ #include <linux/lzo.h>
+ #include "lzodefs.h"
  
+-#define HAVE_IP(t, x)					\
+-	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
+-
+-#define HAVE_OP(t, x)					\
+-	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
+-
+-#define NEED_IP(t, x)					\
+-	do {						\
+-		if (!HAVE_IP(t, x))			\
+-			goto input_overrun;		\
+-	} while (0)
+-
+-#define NEED_OP(t, x)					\
+-	do {						\
+-		if (!HAVE_OP(t, x))			\
+-			goto output_overrun;		\
+-	} while (0)
+-
+-#define TEST_LB(m_pos)					\
+-	do {						\
+-		if ((m_pos) < out)			\
+-			goto lookbehind_overrun;	\
+-	} while (0)
++#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
++#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
++#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
++#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
++#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+ 
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+@@ -78,14 +58,14 @@ int lzo1x_decompress_safe(const unsigned
+ 					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						NEED_IP(1, 0);
++						NEED_IP(1);
+ 					}
+ 					t += 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
++				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
+ 					const unsigned char *ie = ip + t;
+ 					unsigned char *oe = op + t;
+ 					do {
+@@ -101,8 +81,8 @@ copy_literal_run:
+ 				} else
+ #endif
+ 				{
+-					NEED_OP(t, 0);
+-					NEED_IP(t, 3);
++					NEED_OP(t);
++					NEED_IP(t + 3);
+ 					do {
+ 						*op++ = *ip++;
+ 					} while (--t > 0);
+@@ -115,7 +95,7 @@ copy_literal_run:
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+ 				TEST_LB(m_pos);
+-				NEED_OP(2, 0);
++				NEED_OP(2);
+ 				op[0] = m_pos[0];
+ 				op[1] = m_pos[1];
+ 				op += 2;
+@@ -139,10 +119,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 31 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			m_pos = op - 1;
+ 			next = get_unaligned_le16(ip);
+@@ -157,10 +137,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 7 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			next = get_unaligned_le16(ip);
+ 			ip += 2;
+@@ -174,7 +154,7 @@ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 		if (op - m_pos >= 8) {
+ 			unsigned char *oe = op + t;
+-			if (likely(HAVE_OP(t, 15))) {
++			if (likely(HAVE_OP(t + 15))) {
+ 				do {
+ 					COPY8(op, m_pos);
+ 					op += 8;
+@@ -184,7 +164,7 @@ copy_literal_run:
+ 					m_pos += 8;
+ 				} while (op < oe);
+ 				op = oe;
+-				if (HAVE_IP(6, 0)) {
++				if (HAVE_IP(6)) {
+ 					state = next;
+ 					COPY4(op, ip);
+ 					op += next;
+@@ -192,7 +172,7 @@ copy_literal_run:
+ 					continue;
+ 				}
+ 			} else {
+-				NEED_OP(t, 0);
++				NEED_OP(t);
+ 				do {
+ 					*op++ = *m_pos++;
+ 				} while (op < oe);
+@@ -201,7 +181,7 @@ copy_literal_run:
+ #endif
+ 		{
+ 			unsigned char *oe = op + t;
+-			NEED_OP(t, 0);
++			NEED_OP(t);
+ 			op[0] = m_pos[0];
+ 			op[1] = m_pos[1];
+ 			op += 2;
+@@ -214,15 +194,15 @@ match_next:
+ 		state = next;
+ 		t = next;
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
++		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
+ 			COPY4(op, ip);
+ 			op += t;
+ 			ip += t;
+ 		} else
+ #endif
+ 		{
+-			NEED_IP(t, 3);
+-			NEED_OP(t, 0);
++			NEED_IP(t + 3);
++			NEED_OP(t);
+ 			while (t > 0) {
+ 				*op++ = *ip++;
+ 				t--;
 
 
