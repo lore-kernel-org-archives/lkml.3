@@ -1,124 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaJ1Rad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:30:33 -0400
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:45080 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaJ1Raa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:30:30 -0400
+	id S1753831AbaJ1RbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:31:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37957 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972AbaJ1RbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 13:31:13 -0400
+Date: Tue, 28 Oct 2014 18:31:09 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: linux-kernel@vger.kernel.org, H Peter Anvin <hpa@zytor.com>
+Subject: Re: [PATCH 2/8] x86, microcode, intel: don't update each HT core
+ twice
+Message-ID: <20141028173109.GB10873@pd.tnic>
+References: <1410197875-19252-1-git-send-email-hmh@hmh.eng.br>
+ <1410197875-19252-3-git-send-email-hmh@hmh.eng.br>
+ <20141020133252.GC3524@pd.tnic>
+ <20141020182427.GB19306@khazad-dum.debian.net>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWN+bKj_PPRJy2pNDVCRd3xyd-=w7P+9khhd-XuJRXCyA@mail.gmail.com>
-References: <1413978269-17274-1-git-send-email-drysdale@google.com>
- <1413978269-17274-2-git-send-email-drysdale@google.com> <CALCETrWbj=BTDyKqtbSKteANj3J3UFZnrvWv9DMosCoEZaSoeA@mail.gmail.com>
- <CAHse=S-x6NKEn9EGFos6bS=asK-1mWCr0r9aji2a97_fgxU+Sg@mail.gmail.com> <CALCETrWN+bKj_PPRJy2pNDVCRd3xyd-=w7P+9khhd-XuJRXCyA@mail.gmail.com>
-From: David Drysdale <drysdale@google.com>
-Date: Tue, 28 Oct 2014 17:30:08 +0000
-Message-ID: <CAHse=S8KpmA6X9S11JG=_y7sqgit_S26uC6=NCk742nKRRP=0w@mail.gmail.com>
-Subject: Re: [PATCHv5 1/3] syscalls,x86: implement execveat() system call
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141020182427.GB19306@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Oops, re-send remembering to turn on plaintext mode -- sorry]
+On Mon, Oct 20, 2014 at 04:24:27PM -0200, Henrique de Moraes Holschuh wrote:
+> Over time, grepping for that information on reports and logs all over the
+> net has helped me a great deal.
 
-On Mon, Oct 27, 2014 at 6:47 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Mon, Oct 27, 2014 at 11:03 AM, David Drysdale <drysdale@google.com> wrote:
->> On Wed, Oct 22, 2014 at 7:44 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>> On Wed, Oct 22, 2014 at 4:44 AM, David Drysdale <drysdale@google.com> wrote:
->>>> Add a new system execveat(2) syscall. execveat() is to execve() as
->>>> openat() is to open(): it takes a file descriptor that refers to a
->>>> directory, and resolves the filename relative to that.
->>>>
->>>
->>>>         bprm->file = file;
->>>> -       bprm->filename = bprm->interp = filename->name;
->>>> +       if (fd == AT_FDCWD || filename->name[0] == '/') {
->>>> +               bprm->filename = filename->name;
->>>> +       } else {
->>>> +               /*
->>>> +                * Build a pathname that reflects how we got to the file,
->>>> +                * either "/dev/fd/<fd>" (for an empty filename) or
->>>> +                * "/dev/fd/<fd>/<filename>".
->>>> +                */
->>>> +               pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
->>>> +               if (!pathbuf) {
->>>> +                       retval = -ENOMEM;
->>>> +                       goto out_unmark;
->>>> +               }
->>>> +               bprm->filename = pathbuf;
->>>> +               if (filename->name[0] == '\0')
->>>> +                       sprintf(pathbuf, "/dev/fd/%d", fd);
->>>
->>> If the fd is O_CLOEXEC, then this will result in a confused child
->>> process.  Should we fail exec attempts like that for non-static
->>> programs?  (E.g. set filename to "" or something and fix up the binfmt
->>> drivers to handle that?)
->>
->> Isn't it just scripts that get confused here (as normal executables don't
->> get to see brpm->filename)?
->>
->> Given that we don't know which we have at this point, I'd suggest
->> carrying on regardless.  Or we could fall back to use the previous
->> best-effort d_path() code for O_CLOEXEC fds.  Thoughts?
->
-> How hard would it be to mark the bprm as not having a path for the
-> binary?  Then we could fail later on if and when we actually need the
-> path.
+Helped you how, for what? I still am searching for a justification to
+bother the user with the fact that her microcode just got upgraded. I
+mean, she can simply do:
 
-Adding a flag to bprm->interp_flags to indicate that the bprm->filename
-will be inaccessible after exec is straightforward.  But I'm not sure who
-should/could make use of the flag...
+$ grep microcode /proc/cpuinfo | head -1
+microcode       : 0x6000822
 
-> I don't really have a strong opinion here, though.  I do prefer
-> actually failing the execveat call over succeeding but invoking a
-> script interpreter than can't possibly work.
+if needed.
 
-Yeah, but that involves the kernel code (e.g. fs/binfmt_script.c) making
-an assumption about what the interpreter is going to do -- specifically
-that it's going to try to open its argv[1].  Admittedly, that's a very likely
-assumption, but I'm not sure it's one the kernel should make -- a script
-like "#!/bin/echo" wouldn't be very useful, but fexecve()ing it would still
-work OK on a name like "/dev/fd/7" after fd 7 is closed.
+Now, the error cases where the upgrade fails for some unexpected reason
+is what we want to know.
 
-(Also, we need some kind of non-empty name in bprm->filename,
-even if it's going to be inaccessible later, so that any LSM processing
-off of the bprm_set_creds()/bprm_check_security() hooks has something
-to work with; those hooks are pre-exec so the "/dev/fd/<fd>" part should
-still be OK at that point.)
+> I really miss the full microcode ID information in /proc/cpuinfo, in fact.
 
-So I guess I lean towards keeping "/dev/fd/<fd>/<path>" regardless.
+Full ID, you mean all fields of struct cpu_signature on Intel?
 
->>
->>>> +               else
->>>> +                       snprintf(pathbuf, PATH_MAX,
->>>> +                                "/dev/fd/%d/%s", fd, filename->name);
->>>
->>> Does this need to handle the case where the result exceeds PATH_MAX?
->>
->> I guess we could kmalloc(strlen(filename->name) + 19) to avoid the
->> possibility of failure, but that just defers the inevitable -- the interpreter
->> won't be able to open the script file anyway.  But it would at least then
->> generate the appropriate error (ENAMETOOLONG rather than ENOENT).
->
-> Depends whether anyone cares about bprm->filename.  But I think the
-> code should either return an error or allocate enough space.
+If so,
 
-I'll allocate enough space.
+   ->sig - CPUID_EAX(1) which is in /proc/cpuinfo
 
->
-> --
-> Andy Lutomirski
-> AMA Capital Management, LLC
+   ->pf - processor flags in MSR_0x17[52:50] - I guess you can read that
+   out with rdmsr 0x17. Why do we need to know that one except maybe to
+   verify why a patch doesn't get accepted by the loader?
+
+   -> rev - that's in MSR_IA32_UCODE_REV
+
+I'm not really sure we absolutely need those except for debugging. Thus
+the pr_debug() suggestion from my side.
+
+> MSR 79H writes are on a class of their own as far as "expensive" goes... On
+> a modern i3/i5/i7, it will take approximately one million cycles to complete
+> (the larger the microcode update, the longer it takes).
+> 
+> I don't think people usually associate MSR write with "takes one million
+> cycles to complete"...
+
+So? You don't do microcode updates all the time - it is done once during
+boot and when cores come back online.
+
+> This is old code, I guess it predates wrmsrl()...
+> 
+> Should I replace the old split version with wrmsrl() in this patch, or as a
+> separate patch?
+
+Yes please. And then add to the commit message something of the sorts
+"While at it, ..."
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
