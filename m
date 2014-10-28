@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609AbaJ1KVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 06:21:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60184 "EHLO mga11.intel.com"
+	id S1754572AbaJ1KU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 06:20:59 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40761 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754119AbaJ1KTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754117AbaJ1KTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 06:19:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,802,1406617200"; 
-   d="scan'208";a="621979817"
+   d="scan'208";a="621979800"
 From: Daniel Baluta <daniel.baluta@intel.com>
 To: jic23@kernel.org, linux-iio@vger.kernel.org
 Cc: daniel.baluta@intel.com, knaack.h@gmx.de, linux-kernel@vger.kernel.org,
         irina.tirdea@intel.com
-Subject: [PATCH v3 4/7] iio: core: Introduce STEPS channel, ENABLE mask and INSTANCE event
-Date: Tue, 28 Oct 2014 12:19:28 +0200
-Message-Id: <1414491571-11672-5-git-send-email-daniel.baluta@intel.com>
+Subject: [PATCH v3 3/7] iio: core: Introduce IIO_EV_DIR_NONE
+Date: Tue, 28 Oct 2014 12:19:27 +0200
+Message-Id: <1414491571-11672-4-git-send-email-daniel.baluta@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414491571-11672-1-git-send-email-daniel.baluta@intel.com>
 References: <1414491571-11672-1-git-send-email-daniel.baluta@intel.com>
@@ -25,139 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Irina Tirdea <irina.tirdea@intel.com>
 
-These changes are needed to support the functionality of a pedometer.
-A pedometer has two basic functionalities: step counter and step detector.
+For some events (e.g.: step detector) a direction does not make sense.
 
-The step counter needs to be enabled and then it will count the steps
-in its hardware register. Whenever the application needs to check
-the step count, it will read the step counter register. To support the
-step counter a new channel type STEPS is added. Since the pedometer needs
-to be enabled first so that the hardware can count and store the steps,
-we need a specific ENABLE channel info mask.
-
-The step detector will generate an interrupt each time a step is detected.
-To support this functionality we add a new event type INSTANCE.
-
-For more information on the Android requirements for step counter and step
-detector see:
-http://source.android.com/devices/sensors/composite_sensors.html#counter
-and http://source.android.com/devices/sensors/composite_sensors.html#detector.
-
-A device that has the pedometer functionality this interface needs to
-support is Freescale's MMA9553L:
-http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+Add IIO_EV_DIR_NONE to be used with such events and generate sysfs event
+attributes that do not contain direction.
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
 ---
- Documentation/ABI/testing/sysfs-bus-iio | 22 ++++++++++++++++++++++
- drivers/iio/industrialio-core.c         |  2 ++
- drivers/iio/industrialio-event.c        |  1 +
- include/linux/iio/iio.h                 |  1 +
- include/linux/iio/types.h               |  2 ++
- 5 files changed, 28 insertions(+)
+ drivers/iio/industrialio-event.c | 12 +++++++++---
+ include/linux/iio/types.h        |  1 +
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-index c3a1fd3..337ed0c 100644
---- a/Documentation/ABI/testing/sysfs-bus-iio
-+++ b/Documentation/ABI/testing/sysfs-bus-iio
-@@ -849,6 +849,13 @@ Description:
- 		number or direction is not specified, applies to all channels of
- 		this type.
- 
-+What:		/sys/.../events/in_steps_instance_en
-+KernelVersion:	3.19
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		Enables or disables step detection. Each time the user takes a step an
-+		event of this type will be generated.
-+
- What:		/sys/bus/iio/devices/iio:deviceX/trigger/current_trigger
- KernelVersion:	2.6.35
- Contact:	linux-iio@vger.kernel.org
-@@ -1088,3 +1095,18 @@ Description:
- 		after application of scale and offset. If no offset or scale is
- 		present, output should be considered as processed with the
- 		unit in milliamps.
-+
-+What:		/sys/.../iio:deviceX/in_steps_en
-+KernelVersion:	3.19
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		Activates the step counter. After activation, the number of steps
-+		taken by the user will be counted in hardware and exported through
-+		in_steps_input.
-+
-+What:		/sys/.../iio:deviceX/in_steps_input
-+KernelVersion:	3.19
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		This attribute is used to read the number of steps taken by the user
-+		since the last reboot while activated.
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index e453ef9..1e060f3 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -71,6 +71,7 @@ static const char * const iio_chan_type_name_spec[] = {
- 	[IIO_PRESSURE] = "pressure",
- 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
- 	[IIO_ACTIVITY] = "activity",
-+	[IIO_STEPS] = "steps",
- };
- 
- static const char * const iio_modifier_names[] = {
-@@ -118,6 +119,7 @@ static const char * const iio_chan_info_postfix[] = {
- 	[IIO_CHAN_INFO_HARDWAREGAIN] = "hardwaregain",
- 	[IIO_CHAN_INFO_HYSTERESIS] = "hysteresis",
- 	[IIO_CHAN_INFO_INT_TIME] = "integration_time",
-+	[IIO_CHAN_INFO_ENABLE] = "en",
- };
- 
- /**
 diff --git a/drivers/iio/industrialio-event.c b/drivers/iio/industrialio-event.c
-index 1290290..3f5cee0 100644
+index 0c1e37e..1290290 100644
 --- a/drivers/iio/industrialio-event.c
 +++ b/drivers/iio/industrialio-event.c
-@@ -197,6 +197,7 @@ static const char * const iio_ev_type_text[] = {
- 	[IIO_EV_TYPE_ROC] = "roc",
- 	[IIO_EV_TYPE_THRESH_ADAPTIVE] = "thresh_adaptive",
- 	[IIO_EV_TYPE_MAG_ADAPTIVE] = "mag_adaptive",
-+	[IIO_EV_TYPE_INSTANCE] = "instance",
- };
+@@ -327,9 +327,15 @@ static int iio_device_add_event(struct iio_dev *indio_dev,
+ 	for_each_set_bit(i, mask, sizeof(*mask)*8) {
+ 		if (i >= ARRAY_SIZE(iio_ev_info_text))
+ 			return -EINVAL;
+-		postfix = kasprintf(GFP_KERNEL, "%s_%s_%s",
+-				iio_ev_type_text[type], iio_ev_dir_text[dir],
+-				iio_ev_info_text[i]);
++		if (dir != IIO_EV_DIR_NONE)
++			postfix = kasprintf(GFP_KERNEL, "%s_%s_%s",
++					iio_ev_type_text[type],
++					iio_ev_dir_text[dir],
++					iio_ev_info_text[i]);
++		else
++			postfix = kasprintf(GFP_KERNEL, "%s_%s",
++					iio_ev_type_text[type],
++					iio_ev_info_text[i]);
+ 		if (postfix == NULL)
+ 			return -ENOMEM;
  
- static const char * const iio_ev_dir_text[] = {
-diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-index 15dc6bc..3d3f06f 100644
---- a/include/linux/iio/iio.h
-+++ b/include/linux/iio/iio.h
-@@ -37,6 +37,7 @@ enum iio_chan_info_enum {
- 	IIO_CHAN_INFO_HARDWAREGAIN,
- 	IIO_CHAN_INFO_HYSTERESIS,
- 	IIO_CHAN_INFO_INT_TIME,
-+	IIO_CHAN_INFO_ENABLE,
- };
- 
- enum iio_shared_by {
 diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
-index 52cb532..904dcbb 100644
+index b3a241d..52cb532 100644
 --- a/include/linux/iio/types.h
 +++ b/include/linux/iio/types.h
-@@ -31,6 +31,7 @@ enum iio_chan_type {
- 	IIO_PRESSURE,
- 	IIO_HUMIDITYRELATIVE,
- 	IIO_ACTIVITY,
-+	IIO_STEPS,
+@@ -86,6 +86,7 @@ enum iio_event_direction {
+ 	IIO_EV_DIR_EITHER,
+ 	IIO_EV_DIR_RISING,
+ 	IIO_EV_DIR_FALLING,
++	IIO_EV_DIR_NONE,
  };
  
- enum iio_modifier {
-@@ -73,6 +74,7 @@ enum iio_event_type {
- 	IIO_EV_TYPE_ROC,
- 	IIO_EV_TYPE_THRESH_ADAPTIVE,
- 	IIO_EV_TYPE_MAG_ADAPTIVE,
-+	IIO_EV_TYPE_INSTANCE,
- };
- 
- enum iio_event_info {
+ #define IIO_VAL_INT 1
 -- 
 1.9.1
 
