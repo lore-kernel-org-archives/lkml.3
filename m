@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056AbaJ1UQC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:16:02 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:36270 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751914AbaJ1UQA (ORCPT
+	id S1752840AbaJ1UVD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:21:03 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:46830 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067AbaJ1UVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:16:00 -0400
-Date: Tue, 28 Oct 2014 21:15:55 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Yassin Jaffer <yassinjaffer@gmail.com>
-Subject: Re: [PATCH v7 1/2] mtd: nand: add sunxi NAND flash controller
- support
-Message-ID: <20141028211555.5b6bb2d6@bbrezillon>
-In-Reply-To: <20141028181310.GA23619@ld-irv-0074>
-References: <1413896922-11680-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1413896922-11680-2-git-send-email-boris.brezillon@free-electrons.com>
-	<20141028181310.GA23619@ld-irv-0074>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Tue, 28 Oct 2014 16:21:00 -0400
+Message-ID: <544FFAA7.1060705@de.ibm.com>
+Date: Tue, 28 Oct 2014 21:20:55 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Tejun Heo <tj@kernel.org>
+CC: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
+	<linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Subject: Re: blk-mq vs cpu hotplug performance (due to percpu_ref_put performance)
+References: <544FF00B.8050403@de.ibm.com> <20141028200055.GA8205@htj.dyndns.org>
+In-Reply-To: <20141028200055.GA8205@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102820-0029-0000-0000-0000016667CB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brian,
-
-On Tue, 28 Oct 2014 11:13:11 -0700
-Brian Norris <computersforpeace@gmail.com> wrote:
-
-> Hi Boris,
+Am 28.10.2014 21:00, schrieb Tejun Heo:
+> Hello,
 > 
-> On Tue, Oct 21, 2014 at 03:08:41PM +0200, Boris Brezillon wrote:
-> > +static int sunxi_nand_hw_ecc_ctrl_init(struct mtd_info *mtd,
-> > +				       struct nand_ecc_ctrl *ecc,
-> > +				       struct device_node *np)
-> > +{
-> > +	struct nand_ecclayout *layout;
-> > +	int i, j;
-> > +	int ret;
-> > +
-> > +	ret = sunxi_nand_hw_common_ecc_ctrl_init(mtd, ecc, np);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	ecc->read_page = sunxi_nfc_hw_ecc_read_page;
-> > +	ecc->write_page = sunxi_nfc_hw_ecc_write_page;
-> > +	layout = ecc->layout;
-> > +
-> > +	for (i = 0; i < ecc->steps; i++) {
+> On Tue, Oct 28, 2014 at 08:35:39PM +0100, Christian Borntraeger wrote:
+>> when going from 3.17 to 3.18-rc2 cpu hotplug become horrible slow on some KVM guests on s390
+>>
+>> I was able to bisect this to
+>>
+>> commit 9eca80461a45177e456219a9cd944c27675d6512
+>> ("Revert "blk-mq, percpu_ref: implement a kludge for SCSI blk-mq stall during probe")
 > 
-> Hmm, did you retest this since changing this to ecc->steps? I think this
-> won't work, since ecc->steps is only initialized in nand_scan_tail(),
-> which comes after this. I only recommended the change for the
-> {read,write}_page() type of functions, not the initialization functions.
-
-Oh, crap!
-Indeed, I only checked that the NAND was properly detected, but didn't
-test all the features.
-Anyway, I'm glad you found this issue before applying the series.
-
+> That removes the earlier kludge to avoid the RCU delay so RCU
+> latencies are expected to show up right after; however, the following
+> patches implement proper fix for the problem and the latencies
+> shouldn't be visible afterwards.
 > 
-> [snip the rest]
-> 
-> So I'd suggest the following additional patch, and otherwise, the series
-> is fine with me. If you give your ack, I can just squash this in and
-> apply it to my tree:
+> So, 17497acbdce9 ("blk-mq, percpu_ref: start q->mq_usage_counter in
+> atomic mode") should remove the latencies again.  It doesn't?
 
-I'll test it tomorrow (and this time I'll test everything ;-)).
+I have not verified this, but I guess what happens is:
+hotplug
+-> notify
+-> blk_mq_queue_reinit_notify
+-> blk_mq_queue_reinit
+-> blk_mq_freeze_queue
+-> percpu_ref_kill
+-> percpu_ref_kill_and_confirm
+-> __percpu_ref_switch_to_atomic
+-> call_rcu_sched  
 
-Thanks,
+for every request queue.
+Christian
 
-Boris
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
