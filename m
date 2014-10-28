@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324AbaJ1DmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:42:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45021 "EHLO
+	id S932346AbaJ1DmY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:42:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932310AbaJ1DmN (ORCPT
+	with ESMTP id S932310AbaJ1DmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:13 -0400
+	Mon, 27 Oct 2014 23:42:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhao Lei <zhaolei@cn.fujitsu.com>, Qu Wenruo <quwenruo@cn.fujitsu.com>,
-        Stefan Behrens <sbehrens@giantdisaster.de>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.16 002/127] btrfs: Fix a deadlock in btrfs_dev_replace_finishing()
-Date: Tue, 28 Oct 2014 11:33:57 +0800
-Message-Id: <20141028033421.033999343@linuxfoundation.org>
+        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.16 005/127] Btrfs: dont do async reclaim during log replay
+Date: Tue, 28 Oct 2014 11:34:00 +0800
+Message-Id: <20141028033421.163297378@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,67 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Qu Wenruo <quwenruo@cn.fujitsu.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit 12b894cb288d57292b01cf158177b6d5c89a6272 upstream.
+commit f6acfd50110b335c7af636cf1fc8e55319cae5fc upstream.
 
-btrfs-transacion:5657
-[stack snip]
-btrfs_bio_map()
-    btrfs_bio_counter_inc_blocked()
-        percpu_counter_inc(&fs_info->bio_counter)  ###bio_counter > 0(A)
-        __btrfs_bio_map()
-            btrfs_dev_replace_lock()
-                mutex_lock(dev_replace->lock)	   ###wait mutex(B)
+Trying to reproduce a log enospc bug I hit a panic in the async reclaim code
+during log replay.  This is because we use fs_info->fs_root as our root for
+shrinking and such.  Technically we can use whatever root we want, but let's
+just not allow async reclaim while we're doing log replay.  Thanks,
 
-btrfs:32612
-[stack snip]
-btrfs_dev_replace_start()
-    btrfs_dev_replace_lock()
-	mutex_lock(dev_replace->lock)		   ###hold mutex(B)
-    btrfs_dev_replace_finishing()
-        btrfs_rm_dev_replace_blocked()
-            wait until percpu_counter_sum == 0	   ###wait on bio_counter(A)
-
-This bug can be triggered quite easily by the following test script:
-http://pastebin.com/MQmb37Cy
-
-This patch will fix the ABBA problem by calling
-btrfs_dev_replace_unlock() before btrfs_rm_dev_replace_blocked().
-
-The consistency of btrfs devices list and their superblocks is protected
-by device_list_mutex, not btrfs_dev_replace_lock/unlock().
-So it is safe the move btrfs_dev_replace_unlock() before
-btrfs_rm_dev_replace_blocked().
-
-Reported-by: Zhao Lei <zhaolei@cn.fujitsu.com>
-Signed-off-by: Qu Wenruo <quwenruo@cn.fujitsu.com>
-Cc: Stefan Behrens <sbehrens@giantdisaster.de>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/dev-replace.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/btrfs/extent-tree.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/dev-replace.c
-+++ b/fs/btrfs/dev-replace.c
-@@ -567,6 +567,8 @@ static int btrfs_dev_replace_finishing(s
- 	btrfs_kobj_rm_device(fs_info, src_device);
- 	btrfs_kobj_add_device(fs_info, tgt_device);
- 
-+	btrfs_dev_replace_unlock(dev_replace);
-+
- 	btrfs_rm_dev_replace_blocked(fs_info);
- 
- 	btrfs_rm_dev_replace_srcdev(fs_info, src_device);
-@@ -580,7 +582,6 @@ static int btrfs_dev_replace_finishing(s
- 	 * superblock is scratched out so that it is no longer marked to
- 	 * belong to this filesystem.
- 	 */
--	btrfs_dev_replace_unlock(dev_replace);
- 	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
- 	mutex_unlock(&root->fs_info->chunk_mutex);
- 
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -4508,7 +4508,13 @@ again:
+ 		space_info->flush = 1;
+ 	} else if (!ret && space_info->flags & BTRFS_BLOCK_GROUP_METADATA) {
+ 		used += orig_bytes;
+-		if (need_do_async_reclaim(space_info, root->fs_info, used) &&
++		/*
++		 * We will do the space reservation dance during log replay,
++		 * which means we won't have fs_info->fs_root set, so don't do
++		 * the async reclaim as we will panic.
++		 */
++		if (!root->fs_info->log_root_recovering &&
++		    need_do_async_reclaim(space_info, root->fs_info, used) &&
+ 		    !work_busy(&root->fs_info->async_reclaim_work))
+ 			queue_work(system_unbound_wq,
+ 				   &root->fs_info->async_reclaim_work);
 
 
