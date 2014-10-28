@@ -1,90 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077AbaJ1QdH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:33:07 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:48892 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391AbaJ1QdF (ORCPT
+	id S1752077AbaJ1Qfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:35:46 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:34743 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750939AbaJ1Qfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:33:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <1412184482-2603-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1412184482-2603-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Tue, 28 Oct 2014 22:03:02 +0530
-Message-ID: <CAMf-jSk4GH=8+Cpk4dCzUhbwoKxMOsJPPrURP5-ktAvqXfhsjw@mail.gmail.com>
-Subject: Re: [PATCH v2] ssb: Fix Sparse error in main
-From: Pramod Gurav <pramod.gurav.etc@gmail.com>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Buesch <m@bues.ch>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 28 Oct 2014 12:35:45 -0400
+From: Antoine Tenart <antoine.tenart@free-electrons.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
+        kishon@ti.com, stern@rowland.harvard.edu
+Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com,
+        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v7 0/7] usb: add support for the generic PHY framework
+Date: Tue, 28 Oct 2014 17:35:34 +0100
+Message-Id: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael had suggested to do away with this function if not being used.
-Good to go?
+The series can be found at:
+git://git.free-electrons.com:users/antoine-tenart/linux.git usb-phy
 
-Michale can you provide acked-by?
+Changes since v6:
+	- rebased on top of v3.18-rc2
 
-On Wed, Oct 1, 2014 at 10:58 PM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
-> This change fixes below sparse error:
-> drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
-> was not declared. Should it be static?
->
-> Cc: Michael Buesch <m@bues.ch>
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> ---
-> Changes since v1:
-> Removed the function as it is not called anywhere in the kernel
-> as per suggestion from Michael Buesch.
->
->  drivers/ssb/main.c | 19 -------------------
->  1 file changed, 19 deletions(-)
->
-> diff --git a/drivers/ssb/main.c b/drivers/ssb/main.c
-> index 2fead38..1e180c4 100644
-> --- a/drivers/ssb/main.c
-> +++ b/drivers/ssb/main.c
-> @@ -90,25 +90,6 @@ found:
->  }
->  #endif /* CONFIG_SSB_PCMCIAHOST */
->
-> -#ifdef CONFIG_SSB_SDIOHOST
-> -struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func)
-> -{
-> -       struct ssb_bus *bus;
-> -
-> -       ssb_buses_lock();
-> -       list_for_each_entry(bus, &buses, list) {
-> -               if (bus->bustype == SSB_BUSTYPE_SDIO &&
-> -                   bus->host_sdio == func)
-> -                       goto found;
-> -       }
-> -       bus = NULL;
-> -found:
-> -       ssb_buses_unlock();
-> -
-> -       return bus;
-> -}
-> -#endif /* CONFIG_SSB_SDIOHOST */
-> -
->  int ssb_for_each_bus_call(unsigned long data,
->                           int (*func)(struct ssb_bus *bus, unsigned long data))
->  {
-> --
-> 1.8.3.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Changes since v5:
+        - rebased on the latest version of Sergei's series[1]
+        - fixed one modifiaction made in the wrong patch
 
+Changes since v4:
+        - reworked the PHY handling in ci_hdrc_probe()
+        - fixed a rebase error
 
+Changes since v3:
+        - moved phy_exit() after phy_power_on()
+        - fixed the PHY handling in ci_hdrc_probe()
+        - some little fixes
+
+Changes since v2:
+        - rebased the series on top of v3.17-rc1
+        - switched to devm_phy_get() to handle non DT cases
+        - moved usb_otg into the ci_hdrc structure
+
+Changes since v1:
+        - rebased the series on top of [2] (generic PHY support for HCD)
+        - split s/phy/usb_phy/ renaming and generic PHY support in separate
+          patches
+
+[1] https://www.mail-archive.com/linux-usb%40vger.kernel.org/msg48068.html
+
+Antoine Tenart (7):
+  usb: move the OTG state from the USB PHY to the OTG structure
+  usb: rename phy to usb_phy in OTG
+  usb: add support to the generic PHY framework in OTG
+  usb: allow to supply the PHY in the drivers when using HCD
+  usb: rename transceiver and phy to usb_phy in ChipIdea
+  usb: chipidea: move usb_otg into struct ci_hdrc
+  usb: chipidea: add support to the generic PHY framework in ChipIdea
+
+ drivers/phy/phy-omap-usb2.c         | 14 ++----
+ drivers/usb/chipidea/ci.h           |  8 +++-
+ drivers/usb/chipidea/ci_hdrc_imx.c  |  2 +-
+ drivers/usb/chipidea/ci_hdrc_msm.c  |  8 ++--
+ drivers/usb/chipidea/core.c         | 89 ++++++++++++++++++++++++++--------
+ drivers/usb/chipidea/debug.c        |  2 +-
+ drivers/usb/chipidea/host.c         | 10 ++--
+ drivers/usb/chipidea/otg_fsm.c      | 30 +++++-------
+ drivers/usb/chipidea/udc.c          |  4 +-
+ drivers/usb/common/usb-otg-fsm.c    |  8 ++--
+ drivers/usb/core/hcd.c              |  7 +--
+ drivers/usb/host/ohci-omap.c        |  2 +-
+ drivers/usb/musb/am35x.c            | 28 +++++------
+ drivers/usb/musb/blackfin.c         | 18 +++----
+ drivers/usb/musb/da8xx.c            | 28 +++++------
+ drivers/usb/musb/davinci.c          | 18 +++----
+ drivers/usb/musb/musb_core.c        | 94 ++++++++++++++++++------------------
+ drivers/usb/musb/musb_dsps.c        | 26 +++++-----
+ drivers/usb/musb/musb_gadget.c      | 36 +++++++-------
+ drivers/usb/musb/musb_host.c        |  8 ++--
+ drivers/usb/musb/musb_virthub.c     | 22 ++++-----
+ drivers/usb/musb/omap2430.c         | 30 ++++++------
+ drivers/usb/musb/tusb6010.c         | 40 ++++++++--------
+ drivers/usb/musb/ux500.c            | 10 ++--
+ drivers/usb/phy/phy-ab8500-usb.c    | 16 +++----
+ drivers/usb/phy/phy-fsl-usb.c       | 23 ++++-----
+ drivers/usb/phy/phy-generic.c       |  6 +--
+ drivers/usb/phy/phy-gpio-vbus-usb.c | 14 +++---
+ drivers/usb/phy/phy-isp1301-omap.c  | 10 ++--
+ drivers/usb/phy/phy-msm-usb.c       | 95 +++++++++++++++++++------------------
+ drivers/usb/phy/phy-mv-usb.c        | 50 +++++++++----------
+ drivers/usb/phy/phy-tahvo.c         |  8 ++--
+ drivers/usb/phy/phy-ulpi.c          |  6 +--
+ include/linux/usb/chipidea.h        |  4 +-
+ include/linux/usb/otg.h             |  7 ++-
+ include/linux/usb/phy.h             |  1 -
+ 36 files changed, 420 insertions(+), 362 deletions(-)
 
 -- 
-Thanks and Regards
-Pramod
+1.9.1
+
