@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212AbaJ1Nbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:31:46 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:43936 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074AbaJ1Nbp (ORCPT
+	id S1753647AbaJ1NcK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:32:10 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:61393 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067AbaJ1NcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:31:45 -0400
-Message-ID: <544F9ABC.4010306@roeck-us.net>
-Date: Tue, 28 Oct 2014 06:31:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: netdev@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 09/15] net: dsa: Add support for switch EEPROM access
-References: <1414342365-27191-1-git-send-email-linux@roeck-us.net> <1414342365-27191-10-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1414342365-27191-10-git-send-email-linux@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.544F9AC0.0003,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 1
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 28 Oct 2014 09:32:08 -0400
+From: Xia Kaixu <kaixu.xia@linaro.org>
+To: rmk+kernel@arm.linux.org.uk, arm@kernel.org
+Cc: kaixu.xia@linaro.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 0/5] ARM: get a strict multiplatform kernel that can run on any hardware
+Date: Tue, 28 Oct 2014 21:31:30 +0800
+Message-Id: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/26/2014 09:52 AM, Guenter Roeck wrote:
-> On some chips it is possible to access the switch eeprom.
-> Add infrastructure support for it.
->
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
+The current allmodconfig kernel boot fails on OMAP4460. There
+are several configuration options that can only work on a subset
+of the available machines, and enabling them will break other
+machines that may be enabled in a multiplatform kernel.
 
-[ ... ]
+Now we introduce a CONFIG_ARCH_MULTIPLATFORM_STRICT Kconfig
+option that prevent those other options from getting enabled
+and get a strict multiplatform kernel.
 
-> @@ -603,6 +604,9 @@ static int dsa_of_probe(struct platform_device *pdev)
->   	if (pd->nr_chips > DSA_MAX_SWITCHES)
->   		pd->nr_chips = DSA_MAX_SWITCHES;
->
-> +	if (!of_property_read_u32(np, "eeprom-length", &eeprom_length))
-> +		pd->eeprom_length = eeprom_length;
+I am not sure who will pick up this patch set, so I just send
+it to arm@kernel.org and rmk.
 
-This is buggy; please don't apply. Variable is named eeprom_len, and it is
-per switch.
+Xia Kaixu (5):
+  ARM: introduce a CONFIG_ARCH_MULTIPLATFORM_STRICT Kconfig option
+  ARM: change the corresponding arm/mach defconfigs
+  ARM: restrict CPU_BIG_ENDIAN configuration option
+  ARM: allow errata and XIP options to be enabled without ARCH_MULTIPLATFORM_STRICT
+  ARM: use early console instead of early debug in allmodconfig kernels
 
-Lesson to self: When writing devicetree code, compile it with devicetree enabled.
+ arch/arm/Kconfig                   | 28 +++++++++++++++++++++-------
+ arch/arm/Kconfig.debug             | 25 ++++++++++++++++++++++++-
+ arch/arm/configs/bcm2835_defconfig |  1 +
+ arch/arm/configs/moxart_defconfig  |  1 +
+ arch/arm/configs/s5pv210_defconfig |  1 +
+ arch/arm/configs/tegra_defconfig   |  1 +
+ arch/arm/mm/Kconfig                |  1 +
+ 7 files changed, 50 insertions(+), 8 deletions(-)
 
-Guenter
+-- 
+2.1.1
 
