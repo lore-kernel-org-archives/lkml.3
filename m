@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaJ1RwB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:52:01 -0400
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:60967 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbaJ1Rv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:51:59 -0400
-Date: Tue, 28 Oct 2014 15:51:54 -0200
-From: "Leonidas S. Barbosa" <leosilva@linux.vnet.ibm.com>
-To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org,
-        Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>,
-        Fionnuala Gunter <fin@linux.vnet.ibm.com>
-Subject: [PATCH 9/9] Disable ccm and ccm4309 in fips mod
-Message-ID: <20141028175146.GA18467@bluepex.com>
+	id S1753927AbaJ1RxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:53:17 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:57909 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751067AbaJ1RxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 13:53:16 -0400
+Message-ID: <544FD7FC.8070005@cs.wisc.edu>
+Date: Tue, 28 Oct 2014 12:53:00 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102817-0005-0000-0000-000000E80EBB
+To: Christoph Hellwig <hch@lst.de>, Chandra Seetharaman <sekharan@us.ibm.com>,
+        Hannes Reinecke <hare@suse.de>
+CC: Sean Stewart <Sean.Stewart@netapp.com>,
+        Bart Van Assche <bvanassche@acm.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] scsi: handle more device handler setup/teardown in
+ common code
+References: <1413734404-1426-1-git-send-email-hch@lst.de> <1413734404-1426-7-git-send-email-hch@lst.de>
+In-Reply-To: <1413734404-1426-7-git-send-email-hch@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NX CCM has not support to keys larger than 128 neither our hardware.
-In cases where a system is running in fips mode enabled a tcrypt test will
-crash the system in a kernel panic call.
-This patch disable, for now, CCM's algorithms in fips mode to avoid this.
+On 10/19/2014 11:00 AM, Christoph Hellwig wrote:
+> -static int rdac_bus_attach(struct scsi_device *sdev)
+> +static struct scsi_dh_data *rdac_bus_attach(struct scsi_device *sdev)
+>  {
+>  	struct rdac_dh_data *h;
+> -	unsigned long flags;
+>  	int err;
+>  	char array_name[ARRAY_LABEL_LEN];
+>  	char array_id[UNIQUE_ID_LEN];
+>  
+>  	h = kzalloc(sizeof(*h) , GFP_KERNEL);
+> -	if (!h) {
+> -		sdev_printk(KERN_ERR, sdev, "%s: Attach failed\n",
+> -			    RDAC_NAME);
+> -		return -ENOMEM;
+> -	}
+> -
+> -	h->dh_data.scsi_dh = &rdac_dh;
+> +	if (!h)
+> +		return ERR_PTR(-ENOMEM);
+>  	h->lun = UNINITIALIZED_LUN;
+>  	h->state = RDAC_STATE_ACTIVE;
+>  
+> @@ -876,15 +856,10 @@ static int rdac_bus_attach(struct scsi_device *sdev)
+>  	if (err != SCSI_DH_OK)
+>  		goto clean_ctlr;
+>  
+> -	spin_lock_irqsave(sdev->request_queue->queue_lock, flags);
+> -	sdev->scsi_dh_data = &h->dh_data;
+> -	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
+> -
+>  	sdev_printk(KERN_NOTICE, sdev,
+>  		    "%s: LUN %d (%s) (%s)\n",
+>  		    RDAC_NAME, h->lun, mode[(int)h->mode],
+>  		    lun_state[(int)h->lun_state]);
+> -
+>  	return 0;
 
-Signed-off-by: Leonidas S. Barbosa <leosilva@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx.c |   32 ++++++++++++++++++++++----------
- 1 files changed, 22 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/crypto/nx/nx.c b/drivers/crypto/nx/nx.c
-index aa8c38d..a32239c 100644
---- a/drivers/crypto/nx/nx.c
-+++ b/drivers/crypto/nx/nx.c
-@@ -35,6 +35,7 @@
- #include <linux/of.h>
- #include <asm/hvcall.h>
- #include <asm/vio.h>
-+#include <linux/fips.h>
- 
- #include "nx_csbcpb.h"
- #include "nx.h"
-@@ -566,13 +567,15 @@ static int nx_register_algs(void)
- 	if (rc)
- 		goto out_unreg_gcm;
- 
--	rc = crypto_register_alg(&nx_ccm_aes_alg);
--	if (rc)
--		goto out_unreg_gcm4106;
-+	if (!fips_enabled) {
-+		rc = crypto_register_alg(&nx_ccm_aes_alg);
-+		if (rc)
-+			goto out_unreg_gcm4106;
- 
--	rc = crypto_register_alg(&nx_ccm4309_aes_alg);
--	if (rc)
--		goto out_unreg_ccm;
-+		rc = crypto_register_alg(&nx_ccm4309_aes_alg);
-+		if (rc)
-+			goto out_unreg_ccm;
-+	}
- 
- 	rc = crypto_register_shash(&nx_shash_sha256_alg);
- 	if (rc)
-@@ -593,9 +596,11 @@ out_unreg_s512:
- out_unreg_s256:
- 	crypto_unregister_shash(&nx_shash_sha256_alg);
- out_unreg_ccm4309:
--	crypto_unregister_alg(&nx_ccm4309_aes_alg);
-+	if (!fips_enabled)
-+		crypto_unregister_alg(&nx_ccm4309_aes_alg);
- out_unreg_ccm:
--	crypto_unregister_alg(&nx_ccm_aes_alg);
-+	if (fips_enabled)
-+		crypto_unregister_alg(&nx_ccm_aes_alg);
- out_unreg_gcm4106:
- 	crypto_unregister_alg(&nx_gcm4106_aes_alg);
- out_unreg_gcm:
-@@ -746,8 +751,15 @@ static int nx_remove(struct vio_dev *viodev)
- 	if (nx_driver.of.status == NX_OKAY) {
- 		NX_DEBUGFS_FINI(&nx_driver);
- 
--		crypto_unregister_alg(&nx_ccm_aes_alg);
--		crypto_unregister_alg(&nx_ccm4309_aes_alg);
-+		/* CCM algorithm has not support to keys larger than 128
-+		 * however tcrypt test uses key larger than. If a system
-+		 * runs with fips enabled it'll crash. For now we need to
-+		 * disable this two algorithms in fips mode.
-+		 */
-+		if (!fips_enabled) {
-+			crypto_unregister_alg(&nx_ccm_aes_alg);
-+			crypto_unregister_alg(&nx_ccm4309_aes_alg);
-+		}
- 		crypto_unregister_alg(&nx_gcm_aes_alg);
- 		crypto_unregister_alg(&nx_gcm4106_aes_alg);
- 		crypto_unregister_alg(&nx_ctr_aes_alg);
--- 
-1.7.1
-
+Was this supposed to return a "struct scsi_dh_data *" instead of zero here?
