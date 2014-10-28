@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265AbaJ1NQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:16:10 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:59173 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410AbaJ1NQI (ORCPT
+	id S1752705AbaJ1NSd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:18:33 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:50000 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575AbaJ1NSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:16:08 -0400
-Date: Tue, 28 Oct 2014 14:12:57 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Johan Hovold <johan@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Felipe Balbi <balbi@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        Tony Lindgren <tony@atomide.com>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
-Message-ID: <20141028131257.GS2006@localhost>
-References: <20141024190251.GB19377@localhost>
- <20141024192540.GD11455@saruman>
- <20141024192948.GE11455@saruman>
- <20141024193655.GD19377@localhost>
- <20141024194442.GG11455@saruman>
- <20141024195532.GF19377@localhost>
- <20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org>
- <20141028002552.GX12379@n2100.arm.linux.org.uk>
- <20141028081616.GL2006@localhost>
- <20141028084745.GY12379@n2100.arm.linux.org.uk>
+	Tue, 28 Oct 2014 09:18:32 -0400
+Message-ID: <544F97A4.7080209@imgtec.com>
+Date: Tue, 28 Oct 2014 13:18:28 +0000
+From: Qais Yousef <qais.yousef@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028084745.GY12379@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Clemens Ladisch <clemens@ladisch.de>, <linux-kernel@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        Neil Jones <neil.jones@imgtec.com>
+Subject: Re: [PATCH 00/11] Add AXD Audio Processing IP driver
+References: <1414495589-8579-1-git-send-email-qais.yousef@imgtec.com> <544F8439.4080402@ladisch.de>
+In-Reply-To: <544F8439.4080402@ladisch.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 08:47:46AM +0000, Russell King - ARM Linux wrote:
-> On Tue, Oct 28, 2014 at 09:16:16AM +0100, Johan Hovold wrote:
-> > It looks like we're soon to be having power-off call chains, with
-> > configurable priorities, to shut of various parts of the hardware
-> 
-> I really hope that they *don't* get used like that.  I guess this is
-> what happens when people don't read the code before they decide to
-> implement something.
-> 
-> All the reboot/power off/halt methods already call into the driver model,
-> and the driver model then iterates over all bound drivers calling their
-> "shutdown" method.  So, today, as it has been for years, all device
-> drivers are notified of system power off.
-> 
-> That's where most device drivers should be cleanly stopping their
-> hardware.
-> 
-> The only thing which is left is the actual hardware triggering of the
-> action, and that should be what's done via the notifier.
+On 10/28/2014 11:55 AM, Clemens Ladisch wrote:
+> Qais Yousef wrote:
+>> AXD Audio Processing IP performs audio decoding, encoding, mixing, equalisation,
+>> synchronisation and playback.
+> What exactly do you mean with "synchronisation" and "playback"?
 
-That's not what I was trying to refer to. But the patch set explicitly
-allows for multiple, prioritised power-off handlers, which can power
-off a board in different ways and with various degrees of success.
-Specifically, it allows for fallback handlers in case one or more
-power-off handlers fail.
+Synchronisation refers to accurate audio playout relative to a master
+clock source including compensation of drift between the master clock
+source and the playout clock of the audio hardware. Hence allowing
+synchronised audio playout across multiple independent devices.
 
-So if we allow for that, what is to prevent the final power-off handler
-from failing? And should this not be logged by arch code in the same way
-as failure to restart is?
+Playback simple refers to the fact that AXD is capable of managing audio
+playout hardware like I2S and SPDIF interfaces.
 
-Johan
+
+>> It doesn't fit in alsa subsystem but I Cced them to confirm.
+> ... because those two words sound like something that a sound card could do.
+
+The problem mainly stems from the fact that we take a variety of
+compressed audio as input and we could perform audio encoding. The
+problem with the compressed audio is that the range of decoders and
+configuration supported in alsa is limited and there's no support for
+taking raw pcm and producing compressed output. I'm not an expert on
+alsa but when I looked it looked like there's more infra structure
+required.
+
+The following not supported points from Documentation/sound/alsa/compress_offload.txt affect us:
+
+- Volume control/routing is not handled by this API. Devices exposing a
+   compressed data interface will be considered as regular ALSA devices;
+   volume changes and routing information will be provided with regular
+   ALSA kcontrols.
+
+- Embedded audio effects. Such effects should be enabled in the same
+   manner, no matter if the input was PCM or compressed.
+
+- Encoding/decoding acceleration is not supported as mentioned
+   above. It is possible to route the output of a decoder to a capture
+   stream, or even implement transcoding capabilities. This routing
+   would be enabled with ALSA kcontrols.
+
+
+
+
+>> I added it to drivers/char as this is the best location I could think of at the
+>> moment.
+> drivers/misc?
+
+Yeah could do if there's consensus.
+
+Thanks,
+Qais
+
+>
+> Regards,
+> Clemens
+
