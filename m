@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518AbaJ1Ndn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:33:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51357 "EHLO mail.kernel.org"
+	id S1754589AbaJ1NeA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:34:00 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51422 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463AbaJ1Ndl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:33:41 -0400
+	id S1753266AbaJ1Nd5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:33:57 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Arun Sharma <asharma@fb.com>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 13/32] perf callchain: Use global caching provided by libunwind
-Date: Tue, 28 Oct 2014 11:32:07 -0200
-Message-Id: <1414503146-22789-14-git-send-email-acme@kernel.org>
+Subject: [PATCH 17/32] perf tools: Add support for 32-bit compatibility VDSOs
+Date: Tue, 28 Oct 2014 11:32:11 -0200
+Message-Id: <1414503146-22789-18-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
 References: <1414503146-22789-1-git-send-email-acme@kernel.org>
@@ -25,105 +25,288 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-The libunwind provides two caching policy which are global and
-per-thread.  As perf unwinds callchains in a single thread, it'd
-sufficient to use global caching.
+'perf record' post-processes the event stream  to create a list of
+build-ids for object files for which sample events have been recorded.
+That results in those object files being recorded in the build-id cache.
 
-This speeds up my perf report from 14s to 7s on a ~260MB data file.
-Although the output sometimes contains a slight difference (~0.01% in
-terms of number of lines printed) on callchains which were not resolved.
+In the case of VDSO, perf tools reads it from memory and copies it into
+a temporary file, which as decribed above, gets added to the build-id
+cache.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Arun Sharma <asharma@fb.com>
+Then when the perf.data file is processed by other tools, the build-id
+of VDSO is listed in the perf.data file and the VDSO can be read from
+the build-id cache.  In that case the name of the map, the short name of
+the DSO, and the entry in the build-id cache are all "[vdso]".
+
+However, in the 64-bit case, there also can be 32-bit compatibility
+VDSOs.
+
+A previous patch added programs "perf-read-vdso32" and "perf
+read-vdsox32".
+
+This patch uses those programs to read the correct VDSO for a thread and
+create a temporary file just as for the 64-bit VDSO.
+
+The map name and the entry in the build-id cache are still "[vdso]" but
+the DSO short name becomes "[vdso32]" and "[vdsox32]" respectively.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1412556363-26229-4-git-send-email-namhyung@kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1414061124-26830-16-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/thread.c           |  3 +++
- tools/perf/util/unwind-libunwind.c | 12 ++++++++++++
- tools/perf/util/unwind.h           |  3 +++
- 3 files changed, 18 insertions(+)
+ tools/perf/util/vdso.c | 170 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ tools/perf/util/vdso.h |   4 +-
+ 2 files changed, 172 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 855cbfc3725c..bf5bf858b7f6 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -117,6 +117,9 @@ int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
- 		if (!new)
- 			return -ENOMEM;
- 		list_add(&new->list, &thread->comm_list);
-+
-+		if (exec)
-+			unwind__flush_access(thread);
- 	}
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+index f51390a1ed51..69daef6a17d5 100644
+--- a/tools/perf/util/vdso.c
++++ b/tools/perf/util/vdso.c
+@@ -12,6 +12,7 @@
+ #include "util.h"
+ #include "symbol.h"
+ #include "machine.h"
++#include "thread.h"
+ #include "linux/string.h"
+ #include "debug.h"
  
- 	thread->comm_set = true;
-diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
-index 3e1fa7f8776c..371219a6daf1 100644
---- a/tools/perf/util/unwind-libunwind.c
-+++ b/tools/perf/util/unwind-libunwind.c
-@@ -538,11 +538,23 @@ int unwind__prepare_access(struct thread *thread)
- 		return -ENOMEM;
- 	}
+@@ -28,10 +29,15 @@ struct vdso_file {
+ 	bool error;
+ 	char temp_file_name[sizeof(VDSO__TEMP_FILE_NAME)];
+ 	const char *dso_name;
++	const char *read_prog;
+ };
  
-+	unw_set_caching_policy(addr_space, UNW_CACHE_GLOBAL);
- 	thread__set_priv(thread, addr_space);
+ struct vdso_info {
+ 	struct vdso_file vdso;
++#if BITS_PER_LONG == 64
++	struct vdso_file vdso32;
++	struct vdso_file vdsox32;
++#endif
+ };
  
- 	return 0;
+ static struct vdso_info *vdso_info__new(void)
+@@ -41,6 +47,18 @@ static struct vdso_info *vdso_info__new(void)
+ 			.temp_file_name = VDSO__TEMP_FILE_NAME,
+ 			.dso_name = DSO__NAME_VDSO,
+ 		},
++#if BITS_PER_LONG == 64
++		.vdso32  = {
++			.temp_file_name = VDSO__TEMP_FILE_NAME,
++			.dso_name = DSO__NAME_VDSO32,
++			.read_prog = "perf-read-vdso32",
++		},
++		.vdsox32  = {
++			.temp_file_name = VDSO__TEMP_FILE_NAME,
++			.dso_name = DSO__NAME_VDSOX32,
++			.read_prog = "perf-read-vdsox32",
++		},
++#endif
+ 	};
+ 
+ 	return memdup(&vdso_info_init, sizeof(vdso_info_init));
+@@ -92,6 +110,12 @@ void vdso__exit(struct machine *machine)
+ 
+ 	if (vdso_info->vdso.found)
+ 		unlink(vdso_info->vdso.temp_file_name);
++#if BITS_PER_LONG == 64
++	if (vdso_info->vdso32.found)
++		unlink(vdso_info->vdso32.temp_file_name);
++	if (vdso_info->vdsox32.found)
++		unlink(vdso_info->vdsox32.temp_file_name);
++#endif
+ 
+ 	zfree(&machine->vdso_info);
+ }
+@@ -110,6 +134,143 @@ static struct dso *vdso__new(struct machine *machine, const char *short_name,
+ 	return dso;
  }
  
-+void unwind__flush_access(struct thread *thread)
++#if BITS_PER_LONG == 64
++
++static enum dso_type machine__thread_dso_type(struct machine *machine,
++					      struct thread *thread)
 +{
-+	unw_addr_space_t addr_space;
++	enum dso_type dso_type = DSO__TYPE_UNKNOWN;
++	struct map *map;
++	struct dso *dso;
 +
-+	if (callchain_param.record_mode != CALLCHAIN_DWARF)
-+		return;
++	map = map_groups__first(thread->mg, MAP__FUNCTION);
++	for (; map ; map = map_groups__next(map)) {
++		dso = map->dso;
++		if (!dso || dso->long_name[0] != '/')
++			continue;
++		dso_type = dso__type(dso, machine);
++		if (dso_type != DSO__TYPE_UNKNOWN)
++			break;
++	}
 +
-+	addr_space = thread__priv(thread);
-+	unw_flush_cache(addr_space, 0, 0);
++	return dso_type;
 +}
 +
- void unwind__finish_access(struct thread *thread)
++static int vdso__do_copy_compat(FILE *f, int fd)
++{
++	char buf[4096];
++	size_t count;
++
++	while (1) {
++		count = fread(buf, 1, sizeof(buf), f);
++		if (ferror(f))
++			return -errno;
++		if (feof(f))
++			break;
++		if (count && writen(fd, buf, count) != (ssize_t)count)
++			return -errno;
++	}
++
++	return 0;
++}
++
++static int vdso__copy_compat(const char *prog, int fd)
++{
++	FILE *f;
++	int err;
++
++	f = popen(prog, "r");
++	if (!f)
++		return -errno;
++
++	err = vdso__do_copy_compat(f, fd);
++
++	if (pclose(f) == -1)
++		return -errno;
++
++	return err;
++}
++
++static int vdso__create_compat_file(const char *prog, char *temp_name)
++{
++	int fd, err;
++
++	fd = mkstemp(temp_name);
++	if (fd < 0)
++		return -errno;
++
++	err = vdso__copy_compat(prog, fd);
++
++	if (close(fd) == -1)
++		return -errno;
++
++	return err;
++}
++
++static const char *vdso__get_compat_file(struct vdso_file *vdso_file)
++{
++	int err;
++
++	if (vdso_file->found)
++		return vdso_file->temp_file_name;
++
++	if (vdso_file->error)
++		return NULL;
++
++	err = vdso__create_compat_file(vdso_file->read_prog,
++				       vdso_file->temp_file_name);
++	if (err) {
++		pr_err("%s failed, error %d\n", vdso_file->read_prog, err);
++		vdso_file->error = true;
++		return NULL;
++	}
++
++	vdso_file->found = true;
++
++	return vdso_file->temp_file_name;
++}
++
++static struct dso *vdso__findnew_compat(struct machine *machine,
++					struct vdso_file *vdso_file)
++{
++	const char *file_name;
++	struct dso *dso;
++
++	dso = dsos__find(&machine->user_dsos, vdso_file->dso_name, true);
++	if (dso)
++		return dso;
++
++	file_name = vdso__get_compat_file(vdso_file);
++	if (!file_name)
++		return NULL;
++
++	return vdso__new(machine, vdso_file->dso_name, file_name);
++}
++
++static int vdso__dso_findnew_compat(struct machine *machine,
++				    struct thread *thread,
++				    struct vdso_info *vdso_info,
++				    struct dso **dso)
++{
++	enum dso_type dso_type;
++
++	dso_type = machine__thread_dso_type(machine, thread);
++	switch (dso_type) {
++	case DSO__TYPE_32BIT:
++		*dso = vdso__findnew_compat(machine, &vdso_info->vdso32);
++		return 1;
++	case DSO__TYPE_X32BIT:
++		*dso = vdso__findnew_compat(machine, &vdso_info->vdsox32);
++		return 1;
++	case DSO__TYPE_UNKNOWN:
++	case DSO__TYPE_64BIT:
++	default:
++		return 0;
++	}
++}
++
++#endif
++
+ struct dso *vdso__dso_findnew(struct machine *machine,
+ 			      struct thread *thread __maybe_unused)
  {
- 	unw_addr_space_t addr_space;
-diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
-index 412fd7975bdc..12790cf94618 100644
---- a/tools/perf/util/unwind.h
-+++ b/tools/perf/util/unwind.h
-@@ -22,6 +22,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
- #ifdef HAVE_LIBUNWIND_SUPPORT
- int libunwind__arch_reg_id(int regnum);
- int unwind__prepare_access(struct thread *thread);
-+void unwind__flush_access(struct thread *thread);
- void unwind__finish_access(struct thread *thread);
- #else
- static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
-@@ -29,6 +30,7 @@ static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
- 	return 0;
- }
+@@ -123,6 +284,11 @@ struct dso *vdso__dso_findnew(struct machine *machine,
+ 	if (!vdso_info)
+ 		return NULL;
  
-+static inline void unwind__flush_access(struct thread *thread __maybe_unused) {}
- static inline void unwind__finish_access(struct thread *thread __maybe_unused) {}
- #endif
- #else
-@@ -47,6 +49,7 @@ static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
- 	return 0;
- }
++#if BITS_PER_LONG == 64
++	if (vdso__dso_findnew_compat(machine, thread, vdso_info, &dso))
++		return dso;
++#endif
++
+ 	dso = dsos__find(&machine->user_dsos, DSO__NAME_VDSO, true);
+ 	if (!dso) {
+ 		char *file;
+@@ -139,5 +305,7 @@ struct dso *vdso__dso_findnew(struct machine *machine,
  
-+static inline void unwind__flush_access(struct thread *thread __maybe_unused) {}
- static inline void unwind__finish_access(struct thread *thread __maybe_unused) {}
- #endif /* HAVE_DWARF_UNWIND_SUPPORT */
- #endif /* __UNWIND_H */
+ bool dso__is_vdso(struct dso *dso)
+ {
+-	return !strcmp(dso->short_name, DSO__NAME_VDSO);
++	return !strcmp(dso->short_name, DSO__NAME_VDSO) ||
++	       !strcmp(dso->short_name, DSO__NAME_VDSO32) ||
++	       !strcmp(dso->short_name, DSO__NAME_VDSOX32);
+ }
+diff --git a/tools/perf/util/vdso.h b/tools/perf/util/vdso.h
+index af9d6929a215..d97da1616f0c 100644
+--- a/tools/perf/util/vdso.h
++++ b/tools/perf/util/vdso.h
+@@ -7,7 +7,9 @@
+ 
+ #define VDSO__MAP_NAME "[vdso]"
+ 
+-#define DSO__NAME_VDSO "[vdso]"
++#define DSO__NAME_VDSO    "[vdso]"
++#define DSO__NAME_VDSO32  "[vdso32]"
++#define DSO__NAME_VDSOX32 "[vdsox32]"
+ 
+ static inline bool is_vdso_map(const char *filename)
+ {
 -- 
 1.9.3
 
