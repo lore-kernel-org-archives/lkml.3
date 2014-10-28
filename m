@@ -1,52 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028AbaJ1R3T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:29:19 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51388 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbaJ1R3S (ORCPT
+	id S1753480AbaJ1Rad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:30:33 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:45080 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356AbaJ1Raa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:29:18 -0400
-Date: Tue, 28 Oct 2014 18:29:07 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Minfei Huang <mnfhuang@gmail.com>, mingo@redhat.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: Avoid overlap the fixmap area on i386
-In-Reply-To: <544FD138.3030305@zytor.com>
-Message-ID: <alpine.DEB.2.11.1410281828340.5308@nanos>
-References: <6B680A9E-6CE9-4C96-934B-CB01DCB58278@gmail.com> <alpine.DEB.2.11.1410281159590.5308@nanos> <544FD138.3030305@zytor.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 28 Oct 2014 13:30:30 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <CALCETrWN+bKj_PPRJy2pNDVCRd3xyd-=w7P+9khhd-XuJRXCyA@mail.gmail.com>
+References: <1413978269-17274-1-git-send-email-drysdale@google.com>
+ <1413978269-17274-2-git-send-email-drysdale@google.com> <CALCETrWbj=BTDyKqtbSKteANj3J3UFZnrvWv9DMosCoEZaSoeA@mail.gmail.com>
+ <CAHse=S-x6NKEn9EGFos6bS=asK-1mWCr0r9aji2a97_fgxU+Sg@mail.gmail.com> <CALCETrWN+bKj_PPRJy2pNDVCRd3xyd-=w7P+9khhd-XuJRXCyA@mail.gmail.com>
+From: David Drysdale <drysdale@google.com>
+Date: Tue, 28 Oct 2014 17:30:08 +0000
+Message-ID: <CAHse=S8KpmA6X9S11JG=_y7sqgit_S26uC6=NCk742nKRRP=0w@mail.gmail.com>
+Subject: Re: [PATCHv5 1/3] syscalls,x86: implement execveat() system call
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014, H. Peter Anvin wrote:
-> On 10/28/2014 04:06 AM, Thomas Gleixner wrote:
-> >>
-> >> The available address we can use is lower than FIXADDR_BOOT_START. So
-> >> We will set the kmap boundary below the FIXADDR_BOOT_START, if configure
-> >> the high memory.
-> >>
-> >> If we configure the high memory, the vmalloc reserve area should end
-> >> up to PKMAP_BASE, otherwise should end up to FIXADDR_BOOT_START.
-> > 
-> > Which is not really a problem, because the FIXADDR_BOOT area is only
-> > used during boot for early_ioremap() and it's unused when ioremap() is
-> > functional. vmalloc becomes available after early boot so the
-> > FIXADDR_BOOT area is available for reuse.
-> > 
-> 
-> Given the very limited address space available on i386, it would be
-> extremely undesirable to not reuse address space when possible.
+[Oops, re-send remembering to turn on plaintext mode -- sorry]
 
-Fair enough. Then we should do that for the highmem=y case as well.
+On Mon, Oct 27, 2014 at 6:47 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Oct 27, 2014 at 11:03 AM, David Drysdale <drysdale@google.com> wrote:
+>> On Wed, Oct 22, 2014 at 7:44 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Wed, Oct 22, 2014 at 4:44 AM, David Drysdale <drysdale@google.com> wrote:
+>>>> Add a new system execveat(2) syscall. execveat() is to execve() as
+>>>> openat() is to open(): it takes a file descriptor that refers to a
+>>>> directory, and resolves the filename relative to that.
+>>>>
+>>>
+>>>>         bprm->file = file;
+>>>> -       bprm->filename = bprm->interp = filename->name;
+>>>> +       if (fd == AT_FDCWD || filename->name[0] == '/') {
+>>>> +               bprm->filename = filename->name;
+>>>> +       } else {
+>>>> +               /*
+>>>> +                * Build a pathname that reflects how we got to the file,
+>>>> +                * either "/dev/fd/<fd>" (for an empty filename) or
+>>>> +                * "/dev/fd/<fd>/<filename>".
+>>>> +                */
+>>>> +               pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+>>>> +               if (!pathbuf) {
+>>>> +                       retval = -ENOMEM;
+>>>> +                       goto out_unmark;
+>>>> +               }
+>>>> +               bprm->filename = pathbuf;
+>>>> +               if (filename->name[0] == '\0')
+>>>> +                       sprintf(pathbuf, "/dev/fd/%d", fd);
+>>>
+>>> If the fd is O_CLOEXEC, then this will result in a confused child
+>>> process.  Should we fail exec attempts like that for non-static
+>>> programs?  (E.g. set filename to "" or something and fix up the binfmt
+>>> drivers to handle that?)
+>>
+>> Isn't it just scripts that get confused here (as normal executables don't
+>> get to see brpm->filename)?
+>>
+>> Given that we don't know which we have at this point, I'd suggest
+>> carrying on regardless.  Or we could fall back to use the previous
+>> best-effort d_path() code for O_CLOEXEC fds.  Thoughts?
+>
+> How hard would it be to mark the bprm as not having a path for the
+> binary?  Then we could fail later on if and when we actually need the
+> path.
 
-Thanks,
+Adding a flag to bprm->interp_flags to indicate that the bprm->filename
+will be inaccessible after exec is straightforward.  But I'm not sure who
+should/could make use of the flag...
 
-	tglx
+> I don't really have a strong opinion here, though.  I do prefer
+> actually failing the execveat call over succeeding but invoking a
+> script interpreter than can't possibly work.
+
+Yeah, but that involves the kernel code (e.g. fs/binfmt_script.c) making
+an assumption about what the interpreter is going to do -- specifically
+that it's going to try to open its argv[1].  Admittedly, that's a very likely
+assumption, but I'm not sure it's one the kernel should make -- a script
+like "#!/bin/echo" wouldn't be very useful, but fexecve()ing it would still
+work OK on a name like "/dev/fd/7" after fd 7 is closed.
+
+(Also, we need some kind of non-empty name in bprm->filename,
+even if it's going to be inaccessible later, so that any LSM processing
+off of the bprm_set_creds()/bprm_check_security() hooks has something
+to work with; those hooks are pre-exec so the "/dev/fd/<fd>" part should
+still be OK at that point.)
+
+So I guess I lean towards keeping "/dev/fd/<fd>/<path>" regardless.
+
+>>
+>>>> +               else
+>>>> +                       snprintf(pathbuf, PATH_MAX,
+>>>> +                                "/dev/fd/%d/%s", fd, filename->name);
+>>>
+>>> Does this need to handle the case where the result exceeds PATH_MAX?
+>>
+>> I guess we could kmalloc(strlen(filename->name) + 19) to avoid the
+>> possibility of failure, but that just defers the inevitable -- the interpreter
+>> won't be able to open the script file anyway.  But it would at least then
+>> generate the appropriate error (ENAMETOOLONG rather than ENOENT).
+>
+> Depends whether anyone cares about bprm->filename.  But I think the
+> code should either return an error or allocate enough space.
+
+I'll allocate enough space.
+
+>
+> --
+> Andy Lutomirski
+> AMA Capital Management, LLC
