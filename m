@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853AbaJ1VjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:39:16 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:37149 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755208AbaJ1Vax (ORCPT
+	id S1755878AbaJ1Vj0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:39:26 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64975 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755208AbaJ1VjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:30:53 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 48/58] dmaengine: rapidio: tsi721: Rename device_control
-Date: Tue, 28 Oct 2014 22:26:03 +0100
-Message-Id: <1414531573-18807-49-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 28 Oct 2014 17:39:23 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: Darren Hart <dvhart@linux.intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index() when using properties
+Date: Tue, 28 Oct 2014 22:59:57 +0100
+Message-ID: <2740724.5yjNTKs1RY@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the device_control callback of the TXX9 DMA driver to terminate_all
-since it's all it's really doing. That will eventually be used to retrieve
-slave capabilities.
+On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
+> acpi_dev_add_driver_gpios() makes it possible to set up mapping between
+> properties and ACPI GpioIo resources in a driver, so we can take index
+> parameter in acpi_find_gpio() into use with _DSD device properties now.
+> 
+> This index can be used to select a GPIO from a property with multiple
+> GPIOs:
+> 
+>   Package () {
+>   	"data-gpios",
+>   	Package () {
+>   		\_SB.GPIO, 0, 0, 0,
+>   		\_SB.GPIO, 1, 0, 0,
+>   		\_SB.GPIO, 2, 0, 1,
+>   	}
+>   }
+> 
+> In order to retrieve the last GPIO from a driver we can simply do:
+> 
+>   desc = devm_gpiod_get_index(dev, "data", 2);
+> 
+> and so on.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/rapidio/devices/tsi721_dma.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+Cool. :-)
 
-diff --git a/drivers/rapidio/devices/tsi721_dma.c b/drivers/rapidio/devices/tsi721_dma.c
-index f64c5decb747..47295940a868 100644
---- a/drivers/rapidio/devices/tsi721_dma.c
-+++ b/drivers/rapidio/devices/tsi721_dma.c
-@@ -815,8 +815,7 @@ struct dma_async_tx_descriptor *tsi721_prep_rio_sg(struct dma_chan *dchan,
- 	return txd;
- }
- 
--static int tsi721_device_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
--			     unsigned long arg)
-+static int tsi721_terminate_all(struct dma_chan *dchan)
- {
- 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
- 	struct tsi721_tx_desc *desc, *_d;
-@@ -825,9 +824,6 @@ static int tsi721_device_control(struct dma_chan *dchan, enum dma_ctrl_cmd cmd,
- 
- 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
- 
--	if (cmd != DMA_TERMINATE_ALL)
--		return -ENOSYS;
--
- 	spin_lock_bh(&bdma_chan->lock);
- 
- 	bdma_chan->active = false;
-@@ -901,7 +897,7 @@ int tsi721_register_dma(struct tsi721_device *priv)
- 	mport->dma.device_tx_status = tsi721_tx_status;
- 	mport->dma.device_issue_pending = tsi721_issue_pending;
- 	mport->dma.device_prep_slave_sg = tsi721_prep_rio_sg;
--	mport->dma.device_control = tsi721_device_control;
-+	mport->dma.device_terminate_all = tsi721_terminate_all;
- 
- 	err = dma_async_device_register(&mport->dma);
- 	if (err)
+Any objections anyone?
+
+> ---
+> This is on top of latest linux-pm/device-properties.
+> 
+>  drivers/gpio/gpiolib.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+> index fbf717a56b0a..58659dbe702a 100644
+> --- a/drivers/gpio/gpiolib.c
+> +++ b/drivers/gpio/gpiolib.c
+> @@ -1522,7 +1522,7 @@ static struct gpio_desc *acpi_find_gpio(struct device *dev, const char *con_id,
+>  				 suffixes[i]);
+>  		}
+>  
+> -		desc = acpi_get_gpiod_by_index(adev, propname, 0, &info);
+> +		desc = acpi_get_gpiod_by_index(adev, propname, idx, &info);
+>  		if (!IS_ERR(desc) || (PTR_ERR(desc) == -EPROBE_DEFER))
+>  			break;
+>  	}
+> 
+
 -- 
-2.1.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
