@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983AbaJ1DvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:51:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46016 "EHLO
+	id S1756020AbaJ1DvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:51:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46029 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913AbaJ1DvC (ORCPT
+	with ESMTP id S1755913AbaJ1DvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:51:02 -0400
+	Mon, 27 Oct 2014 23:51:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Larsson <andreas@gaisler.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 079/100] sparc: Let memset return the address argument
-Date: Tue, 28 Oct 2014 11:36:04 +0800
-Message-Id: <20141028033504.098614661@linuxfoundation.org>
+Subject: [PATCH 3.14 082/100] sparc64: Fix FPU register corruption with AES crypto offload.
+Date: Tue, 28 Oct 2014 11:36:07 +0800
+Message-Id: <20141028033504.229760764@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,75 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Larsson <andreas@gaisler.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 74cad25c076a2f5253312c2fe82d1a4daecc1323 ]
+[ Upstream commit f4da3628dc7c32a59d1fb7116bb042e6f436d611 ]
 
-This makes memset follow the standard (instead of returning 0 on success). This
-is needed when certain versions of gcc optimizes around memset calls and assume
-that the address argument is preserved in %o0.
+The AES loops in arch/sparc/crypto/aes_glue.c use a scheme where the
+key material is preloaded into the FPU registers, and then we loop
+over and over doing the crypt operation, reusing those pre-cooked key
+registers.
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+There are intervening blkcipher*() calls between the crypt operation
+calls.  And those might perform memcpy() and thus also try to use the
+FPU.
+
+The sparc64 kernel FPU usage mechanism is designed to allow such
+recursive uses, but with a catch.
+
+There has to be a trap between the two FPU using threads of control.
+
+The mechanism works by, when the FPU is already in use by the kernel,
+allocating a slot for FPU saving at trap time.  Then if, within the
+trap handler, we try to use the FPU registers, the pre-trap FPU
+register state is saved into the slot.  Then at trap return time we
+notice this and restore the pre-trap FPU state.
+
+Over the long term there are various more involved ways we can make
+this work, but for a quick fix let's take advantage of the fact that
+the situation where this happens is very limited.
+
+All sparc64 chips that support the crypto instructiosn also are using
+the Niagara4 memcpy routine, and that routine only uses the FPU for
+large copies where we can't get the source aligned properly to a
+multiple of 8 bytes.
+
+We look to see if the FPU is already in use in this context, and if so
+we use the non-large copy path which only uses integer registers.
+
+Furthermore, we also limit this special logic to when we are doing
+kernel copy, rather than a user copy.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/lib/memset.S |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ arch/sparc/include/asm/visasm.h |    8 ++++++++
+ arch/sparc/lib/NG4memcpy.S      |   14 +++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
---- a/arch/sparc/lib/memset.S
-+++ b/arch/sparc/lib/memset.S
-@@ -3,8 +3,9 @@
-  * Copyright (C) 1996,1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
-  * Copyright (C) 1996 David S. Miller (davem@caip.rutgers.edu)
-  *
-- * Returns 0, if ok, and number of bytes not yet set if exception
-- * occurs and we were called as clear_user.
-+ * Calls to memset returns initial %o0. Calls to bzero returns 0, if ok, and
-+ * number of bytes not yet set if exception occurs and we were called as
-+ * clear_user.
-  */
+--- a/arch/sparc/include/asm/visasm.h
++++ b/arch/sparc/include/asm/visasm.h
+@@ -39,6 +39,14 @@
+ 297:	wr		%o5, FPRS_FEF, %fprs;		\
+ 298:
  
- #include <asm/ptrace.h>
-@@ -65,6 +66,8 @@ __bzero_begin:
- 	.globl	__memset_start, __memset_end
- __memset_start:
- memset:
-+	mov	%o0, %g1
-+	mov	1, %g4
- 	and	%o1, 0xff, %g3
- 	sll	%g3, 8, %g2
- 	or	%g3, %g2, %g3
-@@ -89,6 +92,7 @@ memset:
- 	 sub	%o0, %o2, %o0
++#define VISEntryHalfFast(fail_label)			\
++	rd		%fprs, %o5;			\
++	andcc		%o5, FPRS_FEF, %g0;		\
++	be,pt		%icc, 297f;			\
++	 nop;						\
++	ba,a,pt		%xcc, fail_label;		\
++297:	wr		%o5, FPRS_FEF, %fprs;
++
+ #define VISExitHalf					\
+ 	wr		%o5, 0, %fprs;
  
- __bzero:
-+	clr	%g4
- 	mov	%g0, %g3
- 1:
- 	cmp	%o1, 7
-@@ -151,8 +155,8 @@ __bzero:
- 	bne,a	8f
- 	 EX(stb	%g3, [%o0], and %o1, 1)
- 8:
--	retl
--	 clr	%o0
-+	b	0f
-+	 nop
- 7:
- 	be	13b
- 	 orcc	%o1, 0, %g0
-@@ -164,6 +168,12 @@ __bzero:
- 	bne	8b
- 	 EX(stb	%g3, [%o0 - 1], add %o1, 1)
- 0:
-+	andcc	%g4, 1, %g0
-+	be	5f
-+	 nop
-+	retl
-+	 mov	%g1, %o0
-+5:
- 	retl
- 	 clr	%o0
- __memset_end:
+--- a/arch/sparc/lib/NG4memcpy.S
++++ b/arch/sparc/lib/NG4memcpy.S
+@@ -41,6 +41,10 @@
+ #endif
+ #endif
+ 
++#if !defined(EX_LD) && !defined(EX_ST)
++#define NON_USER_COPY
++#endif
++
+ #ifndef EX_LD
+ #define EX_LD(x)	x
+ #endif
+@@ -197,9 +201,13 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
+ 	 mov		EX_RETVAL(%o3), %o0
+ 
+ .Llarge_src_unaligned:
++#ifdef NON_USER_COPY
++	VISEntryHalfFast(.Lmedium_vis_entry_fail)
++#else
++	VISEntryHalf
++#endif
+ 	andn		%o2, 0x3f, %o4
+ 	sub		%o2, %o4, %o2
+-	VISEntryHalf
+ 	alignaddr	%o1, %g0, %g1
+ 	add		%o1, %o4, %o1
+ 	EX_LD(LOAD(ldd, %g1 + 0x00, %f0))
+@@ -240,6 +248,10 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
+ 	 nop
+ 	ba,a,pt		%icc, .Lmedium_unaligned
+ 
++#ifdef NON_USER_COPY
++.Lmedium_vis_entry_fail:
++	 or		%o0, %o1, %g2
++#endif
+ .Lmedium:
+ 	LOAD(prefetch, %o1 + 0x40, #n_reads_strong)
+ 	andcc		%g2, 0x7, %g0
 
 
