@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685AbaJ1V7w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:59:52 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43320 "EHLO e9.ny.us.ibm.com"
+	id S1755871AbaJ1WAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:00:18 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43315 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755335AbaJ1V5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:57:34 -0400
+	id S1754614AbaJ1V5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 17:57:33 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,163 +14,86 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 06/10] rcu: Remove "cpu" argument to rcu_note_context_switch()
-Date: Tue, 28 Oct 2014 14:53:33 -0700
-Message-Id: <1414533217-24910-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 10/10] cpu: Avoid puts_pending overflow
+Date: Tue, 28 Oct 2014 14:53:37 -0700
+Message-Id: <1414533217-24910-10-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20141028215140.GA23970@linux.vnet.ibm.com>
  <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102821-0033-0000-0000-000000E3EBB1
+x-cbid: 14102821-0033-0000-0000-000000E3EBB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The "cpu" argument to rcu_note_context_switch() is always the current
-CPU, so drop it.  This in turn allows the "cpu" argument to
-rcu_preempt_note_context_switch() to be removed, which allows the sole
-use of "cpu" in both functions to be replaced with a this_cpu_ptr().
-Again, the anticipated cross-CPU uses of these functions has been
-replaced by NO_HZ_FULL.
+A long string of get_online_cpus() with each followed by a
+put_online_cpu() that fails to acquire cpu_hotplug.lock can result in
+overflow of the cpu_hotplug.puts_pending counter.  Although this is
+perhaps improbably, a system with absolutely no CPU-hotplug operations
+will have an arbitrarily long time in which this overflow could occur.
+This commit therefore adds overflow checks to get_online_cpus() and
+try_get_online_cpus().
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcutiny.h  | 2 +-
- include/linux/rcutree.h  | 4 ++--
- kernel/rcu/tree.c        | 4 ++--
- kernel/rcu/tree.h        | 2 +-
- kernel/rcu/tree_plugin.h | 6 +++---
- kernel/sched/core.c      | 2 +-
- kernel/softirq.c         | 2 +-
- 7 files changed, 11 insertions(+), 11 deletions(-)
+ kernel/cpu.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index 38cc5b1e252d..0e5366200154 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -78,7 +78,7 @@ static inline void kfree_call_rcu(struct rcu_head *head,
- 	call_rcu(head, func);
- }
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 90a3d017b90c..5d220234b3ca 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -86,6 +86,16 @@ static struct {
+ #define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
+ #define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
  
--static inline void rcu_note_context_switch(int cpu)
-+static inline void rcu_note_context_switch(void)
++static void apply_puts_pending(int max)
++{
++	int delta;
++
++	if (atomic_read(&cpu_hotplug.puts_pending) >= max) {
++		delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
++		cpu_hotplug.refcount -= delta;
++	}
++}
++
+ void get_online_cpus(void)
  {
- 	rcu_sched_qs();
- }
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 3e2f5d432743..7b5484db1857 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -30,7 +30,7 @@
- #ifndef __LINUX_RCUTREE_H
- #define __LINUX_RCUTREE_H
- 
--void rcu_note_context_switch(int cpu);
-+void rcu_note_context_switch(void);
- #ifndef CONFIG_RCU_NOCB_CPU_ALL
- int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies);
- #endif /* #ifndef CONFIG_RCU_NOCB_CPU_ALL */
-@@ -43,7 +43,7 @@ void rcu_cpu_stall_reset(void);
-  */
- static inline void rcu_virt_note_context_switch(int cpu)
- {
--	rcu_note_context_switch(cpu);
-+	rcu_note_context_switch();
- }
- 
- void synchronize_rcu_bh(void);
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 1af5e2cdcbeb..b591f1459240 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -286,11 +286,11 @@ static void rcu_momentary_dyntick_idle(void)
-  * and requires special handling for preemptible RCU.
-  * The caller must have disabled preemption.
-  */
--void rcu_note_context_switch(int cpu)
-+void rcu_note_context_switch(void)
- {
- 	trace_rcu_utilization(TPS("Start context switch"));
- 	rcu_sched_qs();
--	rcu_preempt_note_context_switch(cpu);
-+	rcu_preempt_note_context_switch();
- 	if (unlikely(raw_cpu_read(rcu_sched_qs_mask)))
- 		rcu_momentary_dyntick_idle();
- 	trace_rcu_utilization(TPS("End context switch"));
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index 94a26e330c1b..238ac39053fc 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -547,7 +547,7 @@ DECLARE_PER_CPU(char, rcu_cpu_has_work);
- /* Forward declarations for rcutree_plugin.h */
- static void rcu_bootup_announce(void);
- long rcu_batches_completed(void);
--static void rcu_preempt_note_context_switch(int cpu);
-+static void rcu_preempt_note_context_switch(void);
- static int rcu_preempt_blocked_readers_cgp(struct rcu_node *rnp);
- #ifdef CONFIG_HOTPLUG_CPU
- static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp,
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 7158814b7b4a..495d4cce47a7 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -156,7 +156,7 @@ static void rcu_preempt_qs(void)
-  *
-  * Caller must disable preemption.
-  */
--static void rcu_preempt_note_context_switch(int cpu)
-+static void rcu_preempt_note_context_switch(void)
- {
- 	struct task_struct *t = current;
- 	unsigned long flags;
-@@ -167,7 +167,7 @@ static void rcu_preempt_note_context_switch(int cpu)
- 	    !t->rcu_read_unlock_special.b.blocked) {
- 
- 		/* Possibly blocking in an RCU read-side critical section. */
--		rdp = per_cpu_ptr(rcu_preempt_state.rda, cpu);
-+		rdp = this_cpu_ptr(rcu_preempt_state.rda);
- 		rnp = rdp->mynode;
- 		raw_spin_lock_irqsave(&rnp->lock, flags);
- 		smp_mb__after_unlock_lock();
-@@ -945,7 +945,7 @@ EXPORT_SYMBOL_GPL(rcu_batches_completed);
-  * Because preemptible RCU does not exist, we never have to check for
-  * CPUs being in quiescent states.
-  */
--static void rcu_preempt_note_context_switch(int cpu)
-+static void rcu_preempt_note_context_switch(void)
- {
- }
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 44999505e1bf..cc186945296d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2802,7 +2802,7 @@ need_resched:
- 	preempt_disable();
- 	cpu = smp_processor_id();
- 	rq = cpu_rq(cpu);
--	rcu_note_context_switch(cpu);
-+	rcu_note_context_switch();
- 	prev = rq->curr;
- 
- 	schedule_debug(prev);
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 0699add19164..501baa9ac1be 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -656,7 +656,7 @@ static void run_ksoftirqd(unsigned int cpu)
- 		 * in the task stack here.
- 		 */
- 		__do_softirq();
--		rcu_note_context_switch(cpu);
-+		rcu_note_context_switch();
- 		local_irq_enable();
- 		cond_resched();
+ 	might_sleep();
+@@ -93,6 +103,7 @@ void get_online_cpus(void)
  		return;
+ 	cpuhp_lock_acquire_read();
+ 	mutex_lock(&cpu_hotplug.lock);
++	apply_puts_pending(65536);
+ 	cpu_hotplug.refcount++;
+ 	mutex_unlock(&cpu_hotplug.lock);
+ }
+@@ -105,6 +116,7 @@ bool try_get_online_cpus(void)
+ 	if (!mutex_trylock(&cpu_hotplug.lock))
+ 		return false;
+ 	cpuhp_lock_acquire_tryread();
++	apply_puts_pending(65536);
+ 	cpu_hotplug.refcount++;
+ 	mutex_unlock(&cpu_hotplug.lock);
+ 	return true;
+@@ -161,12 +173,7 @@ void cpu_hotplug_begin(void)
+ 	cpuhp_lock_acquire();
+ 	for (;;) {
+ 		mutex_lock(&cpu_hotplug.lock);
+-		if (atomic_read(&cpu_hotplug.puts_pending)) {
+-			int delta;
+-
+-			delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
+-			cpu_hotplug.refcount -= delta;
+-		}
++		apply_puts_pending(1);
+ 		if (likely(!cpu_hotplug.refcount))
+ 			break;
+ 		__set_current_state(TASK_UNINTERRUPTIBLE);
 -- 
 1.8.1.5
 
