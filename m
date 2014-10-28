@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758257AbaJ1Gav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:30:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46082 "EHLO
+	id S933349AbaJ1Dvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:51:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46072 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932475AbaJ1Dvp (ORCPT
+	with ESMTP id S932475AbaJ1Dvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:51:45 -0400
+	Mon, 27 Oct 2014 23:51:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Thomas Huth <thuth@linux.vnet.ibm.com>
-Subject: [PATCH 3.10 06/43] KVM: s390: unintended fallthrough for external call
-Date: Tue, 28 Oct 2014 11:36:04 +0800
-Message-Id: <20141028033523.680792675@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 3.10 04/43] fs: Add a missing permission check to do_umount
+Date: Tue, 28 Oct 2014 11:36:02 +0800
+Message-Id: <20141028033523.590411234@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
 References: <20141028033523.407092670@linuxfoundation.org>
@@ -29,29 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit f346026e55f1efd3949a67ddd1dcea7c1b9a615e upstream.
+commit a1480dcc3c706e309a88884723446f2e84fedd5b upstream.
 
-We must not fallthrough if the conditions for external call are not met.
+Accessing do_remount_sb should require global CAP_SYS_ADMIN, but
+only one of the two call sites was appropriately protected.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Thomas Huth <thuth@linux.vnet.ibm.com>
+Fixes CVE-2014-7975.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kvm/interrupt.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/namespace.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/s390/kvm/interrupt.c
-+++ b/arch/s390/kvm/interrupt.c
-@@ -71,6 +71,7 @@ static int __interrupt_is_deliverable(st
- 			return 0;
- 		if (vcpu->arch.sie_block->gcr[0] & 0x2000ul)
- 			return 1;
-+		return 0;
- 	case KVM_S390_INT_EMERGENCY:
- 		if (psw_extint_disabled(vcpu))
- 			return 0;
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1274,6 +1274,8 @@ static int do_umount(struct mount *mnt,
+ 		 * Special case for "unmounting" root ...
+ 		 * we just try to remount it readonly.
+ 		 */
++		if (!capable(CAP_SYS_ADMIN))
++			return -EPERM;
+ 		down_write(&sb->s_umount);
+ 		if (!(sb->s_flags & MS_RDONLY))
+ 			retval = do_remount_sb(sb, MS_RDONLY, NULL, 0);
 
 
