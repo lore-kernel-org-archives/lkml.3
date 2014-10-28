@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933841AbaJ1Gef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:34:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46024 "EHLO
+	id S1756453AbaJ1GfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:35:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46013 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986AbaJ1DvJ (ORCPT
+	with ESMTP id S1755949AbaJ1Du7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:51:09 -0400
+	Mon, 27 Oct 2014 23:50:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 081/100] sparc64: Fix lockdep warnings on reboot on Ultra-5
-Date: Tue, 28 Oct 2014 11:36:06 +0800
-Message-Id: <20141028033504.184773917@linuxfoundation.org>
+        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        Dwight Engen <dwight.engen@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 078/100] sparc64: Move request_irq() from ldc_bind() to ldc_alloc()
+Date: Tue, 28 Oct 2014 11:36:03 +0800
+Message-Id: <20141028033504.059549611@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -28,90 +30,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
-[ Upstream commit bdcf81b658ebc4c2640c3c2c55c8b31c601b6996 ]
+[ Upstream commit c21c4ab0d6921f7160a43216fa6973b5924de561 ]
 
-Inconsistently, the raw_* IRQ routines do not interact with and update
-the irqflags tracing and lockdep state, whereas the raw_* spinlock
-interfaces do.
+The request_irq() needs to be done from ldc_alloc()
+to avoid the following (caught by lockdep)
 
-This causes problems in p1275_cmd_direct() because we disable hardirqs
-by hand using raw_local_irq_restore() and then do a raw_spin_lock()
-which triggers a lockdep trace because the CPU's hw IRQ state doesn't
-match IRQ tracing's internal software copy of that state.
+ [00000000004a0738] __might_sleep+0xf8/0x120
+ [000000000058bea4] kmem_cache_alloc_trace+0x184/0x2c0
+ [00000000004faf80] request_threaded_irq+0x80/0x160
+ [000000000044f71c] ldc_bind+0x7c/0x220
+ [0000000000452454] vio_port_up+0x54/0xe0
+ [00000000101f6778] probe_disk+0x38/0x220 [sunvdc]
+ [00000000101f6b8c] vdc_port_probe+0x22c/0x300 [sunvdc]
+ [0000000000451a88] vio_device_probe+0x48/0x60
+ [000000000074c56c] really_probe+0x6c/0x300
+ [000000000074c83c] driver_probe_device+0x3c/0xa0
+ [000000000074c92c] __driver_attach+0x8c/0xa0
+ [000000000074a6ec] bus_for_each_dev+0x6c/0xa0
+ [000000000074c1dc] driver_attach+0x1c/0x40
+ [000000000074b0fc] bus_add_driver+0xbc/0x280
 
-The CPU's irqs are disabled, yet current->hardirqs_enabled is true.
-
-====================
-reboot: Restarting system
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 1 at kernel/locking/lockdep.c:3536 check_flags+0x7c/0x240()
-DEBUG_LOCKS_WARN_ON(current->hardirqs_enabled)
-Modules linked in: openpromfs
-CPU: 0 PID: 1 Comm: systemd-shutdow Tainted: G        W      3.17.0-dirty #145
-Call Trace:
- [000000000045919c] warn_slowpath_common+0x5c/0xa0
- [0000000000459210] warn_slowpath_fmt+0x30/0x40
- [000000000048f41c] check_flags+0x7c/0x240
- [0000000000493280] lock_acquire+0x20/0x1c0
- [0000000000832b70] _raw_spin_lock+0x30/0x60
- [000000000068f2fc] p1275_cmd_direct+0x1c/0x60
- [000000000068ed28] prom_reboot+0x28/0x40
- [000000000043610c] machine_restart+0x4c/0x80
- [000000000047d2d4] kernel_restart+0x54/0x80
- [000000000047d618] SyS_reboot+0x138/0x200
- [00000000004060b4] linux_sparc_syscall32+0x34/0x60
----[ end trace 5c439fe81c05a100 ]---
-possible reason: unannotated irqs-off.
-irq event stamp: 2010267
-hardirqs last  enabled at (2010267): [<000000000049a358>] vprintk_emit+0x4b8/0x580
-hardirqs last disabled at (2010266): [<0000000000499f08>] vprintk_emit+0x68/0x580
-softirqs last  enabled at (2010046): [<000000000045d278>] __do_softirq+0x378/0x4a0
-softirqs last disabled at (2010039): [<000000000042bf08>] do_softirq_own_stack+0x28/0x40
-Resetting ...
-====================
-
-Use local_* variables of the hw IRQ interfaces so that IRQ tracing sees
-all of our changes.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Dwight Engen <dwight.engen@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/prom/p1275.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/sparc/include/asm/ldc.h |    5 +++--
+ arch/sparc/kernel/ds.c       |    4 ++--
+ arch/sparc/kernel/ldc.c      |   41 +++++++++++++++++++++--------------------
+ arch/sparc/kernel/viohs.c    |    4 ++--
+ 4 files changed, 28 insertions(+), 26 deletions(-)
 
---- a/arch/sparc/prom/p1275.c
-+++ b/arch/sparc/prom/p1275.c
-@@ -9,6 +9,7 @@
- #include <linux/smp.h>
- #include <linux/string.h>
- #include <linux/spinlock.h>
-+#include <linux/irqflags.h>
+--- a/arch/sparc/include/asm/ldc.h
++++ b/arch/sparc/include/asm/ldc.h
+@@ -53,13 +53,14 @@ struct ldc_channel;
+ /* Allocate state for a channel.  */
+ extern struct ldc_channel *ldc_alloc(unsigned long id,
+ 				     const struct ldc_channel_config *cfgp,
+-				     void *event_arg);
++				     void *event_arg,
++				     const char *name);
  
- #include <asm/openprom.h>
- #include <asm/oplib.h>
-@@ -36,8 +37,8 @@ void p1275_cmd_direct(unsigned long *arg
+ /* Shut down and free state for a channel.  */
+ extern void ldc_free(struct ldc_channel *lp);
+ 
+ /* Register TX and RX queues of the link with the hypervisor.  */
+-extern int ldc_bind(struct ldc_channel *lp, const char *name);
++extern int ldc_bind(struct ldc_channel *lp);
+ 
+ /* For non-RAW protocols we need to complete a handshake before
+  * communication can proceed.  ldc_connect() does that, if the
+--- a/arch/sparc/kernel/ds.c
++++ b/arch/sparc/kernel/ds.c
+@@ -1200,14 +1200,14 @@ static int ds_probe(struct vio_dev *vdev
+ 	ds_cfg.tx_irq = vdev->tx_irq;
+ 	ds_cfg.rx_irq = vdev->rx_irq;
+ 
+-	lp = ldc_alloc(vdev->channel_id, &ds_cfg, dp);
++	lp = ldc_alloc(vdev->channel_id, &ds_cfg, dp, "DS");
+ 	if (IS_ERR(lp)) {
+ 		err = PTR_ERR(lp);
+ 		goto out_free_ds_states;
+ 	}
+ 	dp->lp = lp;
+ 
+-	err = ldc_bind(lp, "DS");
++	err = ldc_bind(lp);
+ 	if (err)
+ 		goto out_free_ldc;
+ 
+--- a/arch/sparc/kernel/ldc.c
++++ b/arch/sparc/kernel/ldc.c
+@@ -1078,7 +1078,8 @@ static void ldc_iommu_release(struct ldc
+ 
+ struct ldc_channel *ldc_alloc(unsigned long id,
+ 			      const struct ldc_channel_config *cfgp,
+-			      void *event_arg)
++			      void *event_arg,
++			      const char *name)
  {
- 	unsigned long flags;
+ 	struct ldc_channel *lp;
+ 	const struct ldc_mode_ops *mops;
+@@ -1093,6 +1094,8 @@ struct ldc_channel *ldc_alloc(unsigned l
+ 	err = -EINVAL;
+ 	if (!cfgp)
+ 		goto out_err;
++	if (!name)
++		goto out_err;
  
--	raw_local_save_flags(flags);
--	raw_local_irq_restore((unsigned long)PIL_NMI);
-+	local_save_flags(flags);
-+	local_irq_restore((unsigned long)PIL_NMI);
- 	raw_spin_lock(&prom_entry_lock);
+ 	switch (cfgp->mode) {
+ 	case LDC_MODE_RAW:
+@@ -1185,6 +1188,21 @@ struct ldc_channel *ldc_alloc(unsigned l
  
- 	prom_world(1);
-@@ -45,7 +46,7 @@ void p1275_cmd_direct(unsigned long *arg
- 	prom_world(0);
+ 	INIT_HLIST_HEAD(&lp->mh_list);
  
- 	raw_spin_unlock(&prom_entry_lock);
--	raw_local_irq_restore(flags);
-+	local_irq_restore(flags);
- }
++	snprintf(lp->rx_irq_name, LDC_IRQ_NAME_MAX, "%s RX", name);
++	snprintf(lp->tx_irq_name, LDC_IRQ_NAME_MAX, "%s TX", name);
++
++	err = request_irq(lp->cfg.rx_irq, ldc_rx, 0,
++			  lp->rx_irq_name, lp);
++	if (err)
++		goto out_free_txq;
++
++	err = request_irq(lp->cfg.tx_irq, ldc_tx, 0,
++			  lp->tx_irq_name, lp);
++	if (err) {
++		free_irq(lp->cfg.rx_irq, lp);
++		goto out_free_txq;
++	}
++
+ 	return lp;
  
- void prom_cif_init(void *cif_handler, void *cif_stack)
+ out_free_txq:
+@@ -1237,31 +1255,14 @@ EXPORT_SYMBOL(ldc_free);
+  * state.  This does not initiate a handshake, ldc_connect() does
+  * that.
+  */
+-int ldc_bind(struct ldc_channel *lp, const char *name)
++int ldc_bind(struct ldc_channel *lp)
+ {
+ 	unsigned long hv_err, flags;
+ 	int err = -EINVAL;
+ 
+-	if (!name ||
+-	    (lp->state != LDC_STATE_INIT))
++	if (lp->state != LDC_STATE_INIT)
+ 		return -EINVAL;
+ 
+-	snprintf(lp->rx_irq_name, LDC_IRQ_NAME_MAX, "%s RX", name);
+-	snprintf(lp->tx_irq_name, LDC_IRQ_NAME_MAX, "%s TX", name);
+-
+-	err = request_irq(lp->cfg.rx_irq, ldc_rx, 0,
+-			  lp->rx_irq_name, lp);
+-	if (err)
+-		return err;
+-
+-	err = request_irq(lp->cfg.tx_irq, ldc_tx, 0,
+-			  lp->tx_irq_name, lp);
+-	if (err) {
+-		free_irq(lp->cfg.rx_irq, lp);
+-		return err;
+-	}
+-
+-
+ 	spin_lock_irqsave(&lp->lock, flags);
+ 
+ 	enable_irq(lp->cfg.rx_irq);
+--- a/arch/sparc/kernel/viohs.c
++++ b/arch/sparc/kernel/viohs.c
+@@ -714,7 +714,7 @@ int vio_ldc_alloc(struct vio_driver_stat
+ 	cfg.tx_irq = vio->vdev->tx_irq;
+ 	cfg.rx_irq = vio->vdev->rx_irq;
+ 
+-	lp = ldc_alloc(vio->vdev->channel_id, &cfg, event_arg);
++	lp = ldc_alloc(vio->vdev->channel_id, &cfg, event_arg, vio->name);
+ 	if (IS_ERR(lp))
+ 		return PTR_ERR(lp);
+ 
+@@ -746,7 +746,7 @@ void vio_port_up(struct vio_driver_state
+ 
+ 	err = 0;
+ 	if (state == LDC_STATE_INIT) {
+-		err = ldc_bind(vio->lp, vio->name);
++		err = ldc_bind(vio->lp);
+ 		if (err)
+ 			printk(KERN_WARNING "%s: Port %lu bind failed, "
+ 			       "err=%d\n",
 
 
