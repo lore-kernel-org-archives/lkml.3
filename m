@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341AbaJ1IGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 04:06:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44286 "EHLO
+	id S1753513AbaJ1IGz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:06:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44278 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585AbaJ1DgU (ORCPT
+	with ESMTP id S1753565AbaJ1DgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:36:20 -0400
+	Mon, 27 Oct 2014 23:36:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Schneider <asn@cryptomilk.org>,
-        Filipe Manana <fdmanana@suse.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.17 004/146] Btrfs: add missing compression property remove in btrfs_ioctl_setflags
-Date: Tue, 28 Oct 2014 11:32:26 +0800
-Message-Id: <20141028033343.631036397@linuxfoundation.org>
+        Mark Fasheh <mfasheh@suse.de>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.17 002/146] btrfs: dont go readonly on existing qgroup items
+Date: Tue, 28 Oct 2014 11:32:24 +0800
+Message-Id: <20141028033343.549838507@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,53 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filipe Manana <fdmanana@suse.com>
+From: Mark Fasheh <mfasheh@suse.de>
 
-commit 78a017a2c92df9b571db0a55a016280f9019c65e upstream.
+commit 0b4699dcb65c2cff793210b07f40b98c2d423a43 upstream.
 
-The behaviour of a 'chattr -c' consists of getting the current flags,
-clearing the FS_COMPR_FL bit and then sending the result to the set
-flags ioctl - this means the bit FS_NOCOMP_FL isn't set in the flags
-passed to the ioctl. This results in the compression property not being
-cleared from the inode - it was cleared only if the bit FS_NOCOMP_FL
-was set in the received flags.
+btrfs_drop_snapshot() leaves subvolume qgroup items on disk after
+completion. This can cause problems with snapshot creation. If a new
+snapshot tries to claim the deleted subvolumes id, btrfs will get -EEXIST
+from add_qgroup_item() and go read-only. The following commands will
+reproduce this problem (assume btrfs is on /dev/sda and is mounted at
+/btrfs)
 
-Reproducer:
+mkfs.btrfs -f /dev/sda
+mount -t btrfs /dev/sda /btrfs/
+btrfs quota enable /btrfs/
+btrfs su sna /btrfs/ /btrfs/snap
+btrfs su de /btrfs/snap
+sleep 45
+umount /btrfs/
+mount -t btrfs /dev/sda /btrfs/
 
-    $ mkfs.btrfs -f /dev/sdd
-    $ mount /dev/sdd /mnt && cd /mnt
-    $ mkdir a
-    $ chattr +c a
-    $ touch a/file
-    $ lsattr a/file
-    --------c------- a/file
-    $ chattr -c a
-    $ touch a/file2
-    $ lsattr a/file2
-    --------c------- a/file2
-    $ lsattr -d a
-    ---------------- a
+We can fix this by catching -EEXIST in add_qgroup_item() and
+initializing the existing items. We have the problem of orphaned
+relation items being on disk from an old snapshot but that is outside
+the scope of this patch.
 
-Reported-by: Andreas Schneider <asn@cryptomilk.org>
-Signed-off-by: Filipe Manana <fdmanana@suse.com>
+Signed-off-by: Mark Fasheh <mfasheh@suse.de>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ioctl.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/btrfs/qgroup.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -332,6 +332,9 @@ static int btrfs_ioctl_setflags(struct f
- 			goto out_drop;
+--- a/fs/btrfs/qgroup.c
++++ b/fs/btrfs/qgroup.c
+@@ -551,9 +551,15 @@ static int add_qgroup_item(struct btrfs_
+ 	key.type = BTRFS_QGROUP_INFO_KEY;
+ 	key.offset = qgroupid;
  
- 	} else {
-+		ret = btrfs_set_prop(inode, "btrfs.compression", NULL, 0, 0);
-+		if (ret && ret != -ENODATA)
-+			goto out_drop;
- 		ip->flags &= ~(BTRFS_INODE_COMPRESS | BTRFS_INODE_NOCOMPRESS);
- 	}
++	/*
++	 * Avoid a transaction abort by catching -EEXIST here. In that
++	 * case, we proceed by re-initializing the existing structure
++	 * on disk.
++	 */
++
+ 	ret = btrfs_insert_empty_item(trans, quota_root, path, &key,
+ 				      sizeof(*qgroup_info));
+-	if (ret)
++	if (ret && ret != -EEXIST)
+ 		goto out;
  
+ 	leaf = path->nodes[0];
+@@ -572,7 +578,7 @@ static int add_qgroup_item(struct btrfs_
+ 	key.type = BTRFS_QGROUP_LIMIT_KEY;
+ 	ret = btrfs_insert_empty_item(trans, quota_root, path, &key,
+ 				      sizeof(*qgroup_limit));
+-	if (ret)
++	if (ret && ret != -EEXIST)
+ 		goto out;
+ 
+ 	leaf = path->nodes[0];
 
 
