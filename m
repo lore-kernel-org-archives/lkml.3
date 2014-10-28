@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278AbaJ1LDU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:03:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50909 "EHLO
+	id S1755329AbaJ1LDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:03:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50920 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191AbaJ1LDQ (ORCPT
+	with ESMTP id S1755288AbaJ1LDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:03:16 -0400
-Date: Tue, 28 Oct 2014 04:02:22 -0700
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-1effd9f19324efb05fccc7421530e11a52db0278@git.kernel.org>
-Cc: ktkhai@parallels.com, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@zytor.com, oleg@redhat.com, mingo@kernel.org,
-        torvalds@linux-foundation.org
-Reply-To: linux-kernel@vger.kernel.org, peterz@infradead.org,
-        ktkhai@parallels.com, torvalds@linux-foundation.org, mingo@kernel.org,
-        oleg@redhat.com, hpa@zytor.com, tglx@linutronix.de
-In-Reply-To: <1413962231.19914.130.camel@tkhai>
-References: <1413962231.19914.130.camel@tkhai>
+	Tue, 28 Oct 2014 07:03:30 -0400
+Date: Tue, 28 Oct 2014 04:02:38 -0700
+From: tip-bot for Yasuaki Ishimatsu <tipbot@zytor.com>
+Message-ID: <tip-2847c90e1b3ae95379af24894fc4f98e7f2fd705@git.kernel.org>
+Cc: peterz@infradead.org, hpa@zytor.com, torvalds@linux-foundation.org,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, mingo@kernel.org
+Reply-To: mingo@kernel.org, isimatu.yasuaki@jp.fujitsu.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        hpa@zytor.com, peterz@infradead.org
+In-Reply-To: <54475703.8000505@jp.fujitsu.com>
+References: <54475703.8000505@jp.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/numa: Fix unsafe get_task_struct()
-  in task_numa_assign()
-Git-Commit-ID: 1effd9f19324efb05fccc7421530e11a52db0278
+Subject: [tip:sched/core] sched/fair:
+  Care divide error in update_task_scan_period()
+Git-Commit-ID: 2847c90e1b3ae95379af24894fc4f98e7f2fd705
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,91 +34,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1effd9f19324efb05fccc7421530e11a52db0278
-Gitweb:     http://git.kernel.org/tip/1effd9f19324efb05fccc7421530e11a52db0278
-Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Wed, 22 Oct 2014 11:17:11 +0400
+Commit-ID:  2847c90e1b3ae95379af24894fc4f98e7f2fd705
+Gitweb:     http://git.kernel.org/tip/2847c90e1b3ae95379af24894fc4f98e7f2fd705
+Author:     Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+AuthorDate: Wed, 22 Oct 2014 16:04:35 +0900
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:46:02 +0100
+CommitDate: Tue, 28 Oct 2014 10:46:03 +0100
 
-sched/numa: Fix unsafe get_task_struct() in task_numa_assign()
+sched/fair: Care divide error in update_task_scan_period()
 
-Unlocked access to dst_rq->curr in task_numa_compare() is racy.
-If curr task is exiting this may be a reason of use-after-free:
+While offling node by hot removing memory, the following divide error
+occurs:
 
-task_numa_compare()                    do_exit()
-    ...                                        current->flags |= PF_EXITING;
-    ...                                    release_task()
-    ...                                        ~~delayed_put_task_struct()~~
-    ...                                    schedule()
-    rcu_read_lock()                        ...
-    cur = ACCESS_ONCE(dst_rq->curr)        ...
-        ...                                rq->curr = next;
-        ...                                    context_switch()
-        ...                                        finish_task_switch()
-        ...                                            put_task_struct()
-        ...                                                __put_task_struct()
-        ...                                                    free_task_struct()
-        task_numa_assign()                                     ...
-            get_task_struct()                                  ...
+  divide error: 0000 [#1] SMP
+  [...]
+  Call Trace:
+   [...] handle_mm_fault
+   [...] ? try_to_wake_up
+   [...] ? wake_up_state
+   [...] __do_page_fault
+   [...] ? do_futex
+   [...] ? put_prev_entity
+   [...] ? __switch_to
+   [...] do_page_fault
+   [...] page_fault
+  [...]
+  RIP  [<ffffffff810a7081>] task_numa_fault
+   RSP <ffff88084eb2bcb0>
 
-As noted by Oleg:
+The issue occurs as follows:
+  1. When page fault occurs and page is allocated from node 1,
+     task_struct->numa_faults_buffer_memory[] of node 1 is
+     incremented and p->numa_faults_locality[] is also incremented
+     as follows:
 
-  <<The lockless get_task_struct(tsk) is only safe if tsk == current
-    and didn't pass exit_notify(), or if this tsk was found on a rcu
-    protected list (say, for_each_process() or find_task_by_vpid()).
-    IOW, it is only safe if release_task() was not called before we
-    take rcu_read_lock(), in this case we can rely on the fact that
-    delayed_put_pid() can not drop the (potentially) last reference
-    until rcu_read_unlock().
+     o numa_faults_buffer_memory[]       o numa_faults_locality[]
+              NR_NUMA_HINT_FAULT_TYPES
+             |      0     |     1     |
+     ----------------------------------  ----------------------
+      node 0 |      0     |     0     |   remote |      0     |
+      node 1 |      0     |     1     |   locale |      1     |
+     ----------------------------------  ----------------------
 
-    And as Kirill pointed out task_numa_compare()->task_numa_assign()
-    path does get_task_struct(dst_rq->curr) and this is not safe. The
-    task_struct itself can't go away, but rcu_read_lock() can't save
-    us from the final put_task_struct() in finish_task_switch(); this
-    reference goes away without rcu gp>>
+  2. node 1 is offlined by hot removing memory.
 
-The patch provides simple check of PF_EXITING flag. If it's not set,
-this guarantees that call_rcu() of delayed_put_task_struct() callback
-hasn't happened yet, so we can safely do get_task_struct() in
-task_numa_assign().
+  3. When page fault occurs, fault_types[] is calculated by using
+     p->numa_faults_buffer_memory[] of all online nodes in
+     task_numa_placement(). But node 1 was offline by step 2. So
+     the fault_types[] is calculated by using only
+     p->numa_faults_buffer_memory[] of node 0. So both of fault_types[]
+     are set to 0.
 
-Locked dst_rq->lock protects from concurrency with the last schedule().
-Reusing or unmapping of cur's memory may happen without it.
+  4. The values(0) of fault_types[] pass to update_task_scan_period().
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+  5. numa_faults_locality[1] is set to 1. So the following division is
+     calculated.
+
+        static void update_task_scan_period(struct task_struct *p,
+                                unsigned long shared, unsigned long private){
+        ...
+                ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
+        }
+
+  6. But both of private and shared are set to 0. So divide error
+     occurs here.
+
+The divide error is rare case because the trigger is node offline.
+This patch always increments denominator for avoiding divide error.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1413962231.19914.130.camel@tkhai
+Link: http://lkml.kernel.org/r/54475703.8000505@jp.fujitsu.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0b069bf..fbc0b82 100644
+index fbc0b82..e9abd4e 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1164,9 +1164,19 @@ static void task_numa_compare(struct task_numa_env *env,
- 	long moveimp = imp;
+@@ -1530,7 +1530,7 @@ static void update_task_scan_period(struct task_struct *p,
+ 		 * scanning faster if shared accesses dominate as it may
+ 		 * simply bounce migrations uselessly
+ 		 */
+-		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared));
++		ratio = DIV_ROUND_UP(private * NUMA_PERIOD_SLOTS, (private + shared + 1));
+ 		diff = (diff * ratio) / NUMA_PERIOD_SLOTS;
+ 	}
  
- 	rcu_read_lock();
--	cur = ACCESS_ONCE(dst_rq->curr);
--	if (cur->pid == 0) /* idle */
-+
-+	raw_spin_lock_irq(&dst_rq->lock);
-+	cur = dst_rq->curr;
-+	/*
-+	 * No need to move the exiting task, and this ensures that ->curr
-+	 * wasn't reaped and thus get_task_struct() in task_numa_assign()
-+	 * is safe under RCU read lock.
-+	 * Note that rcu_read_lock() itself can't protect from the final
-+	 * put_task_struct() after the last schedule().
-+	 */
-+	if ((cur->flags & PF_EXITING) || is_idle_task(cur))
- 		cur = NULL;
-+	raw_spin_unlock_irq(&dst_rq->lock);
- 
- 	/*
- 	 * "imp" is the fault differential for the source task between the
