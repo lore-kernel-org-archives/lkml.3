@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576AbaJ1Szx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:55:53 -0400
-Received: from smtprelay.synopsys.com ([198.182.60.111]:53912 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaJ1Szw convert rfc822-to-8bit (ORCPT
+	id S1753587AbaJ1S4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:56:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54270 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752904AbaJ1S4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:55:52 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: Huang Rui <ray.huang@amd.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Jason Chang <jason.chang@amd.com>, "Vincent Wan" <vincent.wan@amd.com>,
-        Tony Li <tony.li@amd.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3 01/19] usb: dwc3: enable hibernation if to be
- supported
-Thread-Topic: [PATCH v3 01/19] usb: dwc3: enable hibernation if to be
- supported
-Thread-Index: AQHP8qYgj9F4B7TzsUusYGn8s5197ZxF2FcQgAB374D//4rigA==
-Date: Tue, 28 Oct 2014 18:55:50 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304844E68E4@US01WEMBX2.internal.synopsys.com>
-References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
- <1414497280-3126-2-git-send-email-ray.huang@amd.com>
- <A2CA0424C0A6F04399FB9E1CD98E0304844E68B7@US01WEMBX2.internal.synopsys.com>
- <20141028185059.GE25735@saruman>
-In-Reply-To: <20141028185059.GE25735@saruman>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.241]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 Oct 2014 14:56:04 -0400
+Date: Tue, 28 Oct 2014 11:54:26 -0700
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-287d0625f072e78bb438e6a5f0cf106f9aa03d60@git.kernel.org>
+Cc: yinghai@kernel.org, konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
+        david.a.cohen@linux.intel.com, hpa@zytor.com, bhelgaas@google.com,
+        jiang.liu@linux.intel.com, benh@kernel.crashing.org, rjw@rjwysocki.net,
+        bp@alien8.de, mingo@kernel.org, joro@8bytes.org, rdunlap@infradead.org,
+        tglx@linutronix.de, andriy.shevchenko@linux.intel.com,
+        tony.luck@intel.com, hpa@linux.intel.com, gregkh@linuxfoundation.org
+Reply-To: yinghai@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, david.a.cohen@linux.intel.com,
+        bhelgaas@google.com, jiang.liu@linux.intel.com,
+        benh@kernel.crashing.org, rjw@rjwysocki.net, bp@alien8.de,
+        mingo@kernel.org, joro@8bytes.org, rdunlap@infradead.org,
+        tglx@linutronix.de, andriy.shevchenko@linux.intel.com,
+        tony.luck@intel.com, hpa@linux.intel.com, gregkh@linuxfoundation.org
+In-Reply-To: <1414387308-27148-3-git-send-email-jiang.liu@linux.intel.com>
+References: <1414387308-27148-3-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, intel-mid:
+  Create IRQs for APB timers and RTC timers
+Git-Commit-ID: 287d0625f072e78bb438e6a5f0cf106f9aa03d60
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Tuesday, October 28, 2014 11:51 AM
-> 
-> On Tue, Oct 28, 2014 at 06:47:08PM +0000, Paul Zimmerman wrote:
-> > > From: Huang Rui [mailto:ray.huang@amd.com]
-> > > Sent: Tuesday, October 28, 2014 4:54 AM
-> > >
-> > > It enables hibernation if the function is set in coreConsultant.
-> > >
-> > > Suggested-by: Felipe Balbi <balbi@ti.com>
-> > > Signed-off-by: Huang Rui <ray.huang@amd.com>
-> > > ---
-> > >  drivers/usb/dwc3/core.c | 1 +
-> > >  1 file changed, 1 insertion(+)
-> > >
-> > > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> > > index fa396fc..bf77509 100644
-> > > --- a/drivers/usb/dwc3/core.c
-> > > +++ b/drivers/usb/dwc3/core.c
-> > > @@ -449,6 +449,7 @@ static int dwc3_core_init(struct dwc3 *dwc)
-> > >  	case DWC3_GHWPARAMS1_EN_PWROPT_HIB:
-> > >  		/* enable hibernation here */
-> > >  		dwc->nr_scratch = DWC3_GHWPARAMS4_HIBER_SCRATCHBUFS(hwparams4);
-> > > +		reg |= DWC3_GCTL_GBLHIBERNATIONEN;
-> > >  		break;
-> > >  	default:
-> > >  		dev_dbg(dwc->dev, "No power optimization available\n");
-> >
-> > What effect does this have when the controller is in device mode? I
-> > expect it will start generating DWC3_DEVICE_EVENT_HIBER_REQ interrupt
-> > events when this register bit is set. So the dev_WARN_ONCE in
-> > dwc3_gadget_interrupt() will start firing, I think.
-> 
-> Ok, so this *has* to wait for proper hibernation support ?
+Commit-ID:  287d0625f072e78bb438e6a5f0cf106f9aa03d60
+Gitweb:     http://git.kernel.org/tip/287d0625f072e78bb438e6a5f0cf106f9aa03d60
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 13:21:32 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 28 Oct 2014 19:50:50 +0100
 
-Ah, never mind. Since the hibernation event is not enabled in the
-DEVTEN register, the controller shouldn't generate that event after
-all. So I think it should be OK. Sorry for the noise.
+x86, intel-mid: Create IRQs for APB timers and RTC timers
 
--- 
-Paul
+Intel MID platforms has no legacy interrupts, so no IRQ descriptors
+preallocated. We need to call mp_map_gsi_to_irq() to create IRQ
+descriptors for APB timers and RTC timers, otherwise it may cause
+invalid memory access as:
+[    0.116839] BUG: unable to handle kernel NULL pointer dereference at
+0000003a
+[    0.123803] IP: [<c1071c0e>] setup_irq+0xf/0x4d
 
+Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Cohen <david.a.cohen@linux.intel.com>
+Cc: <stable@vger.kernel.org> # 3.17
+Link: http://lkml.kernel.org/r/1414387308-27148-3-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/apb_timer.c       | 2 --
+ arch/x86/platform/intel-mid/sfi.c | 2 ++
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index 5972b10..b708738 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -185,8 +185,6 @@ static void apbt_setup_irq(struct apbt_dev *adev)
+ 
+ 	irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
+ 	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+-	/* APB timer irqs are set up as mp_irqs, timer is edge type */
+-	__irq_set_handler(adev->irq, handle_edge_irq, 0, "edge");
+ }
+ 
+ /* Should be called with per cpu */
+diff --git a/arch/x86/platform/intel-mid/sfi.c b/arch/x86/platform/intel-mid/sfi.c
+index 3c53a90..c14ad34 100644
+--- a/arch/x86/platform/intel-mid/sfi.c
++++ b/arch/x86/platform/intel-mid/sfi.c
+@@ -106,6 +106,7 @@ int __init sfi_parse_mtmr(struct sfi_table_header *table)
+ 			mp_irq.dstapic = MP_APIC_ALL;
+ 			mp_irq.dstirq = pentry->irq;
+ 			mp_save_irq(&mp_irq);
++			mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
+ 	}
+ 
+ 	return 0;
+@@ -176,6 +177,7 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
+ 		mp_irq.dstapic = MP_APIC_ALL;
+ 		mp_irq.dstirq = pentry->irq;
+ 		mp_save_irq(&mp_irq);
++		mp_map_gsi_to_irq(pentry->irq, IOAPIC_MAP_ALLOC);
+ 	}
+ 	return 0;
+ }
