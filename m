@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103AbaJ1NIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:08:10 -0400
-Received: from mail-bl2on0122.outbound.protection.outlook.com ([65.55.169.122]:61948
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751846AbaJ1NIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:08:07 -0400
-X-WSS-ID: 0NE5OHC-07-GAV-02
-X-M-MSG: 
-Message-ID: <544F9525.80304@amd.com>
-Date: Tue, 28 Oct 2014 08:07:49 -0500
-From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>,
-        =?UTF-8?B?QW5kcmVhcyBGw6RyYmVy?= <afaerber@suse.de>
-CC: "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        Thomas Lendacky <Thomas.Lendacky@amd.com>,
-        Joel Schopp <Joel.Schopp@amd.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "liviu.dudau@arm.com" <liviu.dudau@arm.com>,
-        "<linux-kernel@vger.kernel.org>" <linux-kernel@vger.kernel.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm64: amd-seattle: Adding device tree for AMD Seattle
- platform
-References: <1414153221-13104-1-git-send-email-suravee.suthikulpanit@amd.com>
- <544C2D67.8000405@suse.de> <544CEC5B.4020104@suse.de>
- <A1BC53C1-A78E-4B0C-879B-F6A462E58C72@suse.de> <544E56DB.7020305@amd.com>
- <544ED462.20601@suse.de>
-In-Reply-To: <544ED462.20601@suse.de>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(51704005)(199003)(479174003)(377454003)(189002)(86362001)(36756003)(76482002)(92566001)(76176999)(120916001)(120886001)(85852003)(44976005)(46102003)(31966008)(93886004)(92726001)(87936001)(80022003)(85306004)(65816999)(20776003)(54356999)(50466002)(21056001)(83506001)(68736004)(106466001)(101416001)(4396001)(97736003)(84676001)(64126003)(95666004)(64706001)(50986999)(107046002)(47776003)(105586002)(33656002)(65956001)(65806001)(23676002)(102836001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB193;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB193;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Forefront-PRVS: 0378F1E47A
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB017;
-X-OriginatorOrg: amd4.onmicrosoft.com
+	id S1752650AbaJ1NKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:10:41 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:51752 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623AbaJ1NKj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:10:39 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-3e-544f95cc53e8
+Message-id: <544F95C3.2080306@samsung.com>
+Date: Tue, 28 Oct 2014 14:10:27 +0100
+From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Neil Zhang <zhangwm@marvell.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: balbi@ti.com, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] usb: gadget: don't create new string_container if already
+ exist
+References: <1414496039-5655-1-git-send-email-zhangwm@marvell.com>
+In-reply-to: <1414496039-5655-1-git-send-email-zhangwm@marvell.com>
+Content-type: text/plain; charset=iso-8859-2; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t/xy7pnpvqHGKy+w2Nx8H69RfPi9WwW
+	l3fNYbNYtKyV2WL1xSXsDqwe++euYfeYvPAis8fxG9uZPD5vkgtgieKySUnNySxLLdK3S+DK
+	+Nq+m61gJ2/F66ZXLA2M/dxdjBwcEgImEnsXe3UxcgKZYhIX7q1n62Lk4hASWMoo0X6jFcr5
+	zChxqOUbM0gVr4CWxN2VLSwgNouAqsSjpmZGEJtNwFhi78EOMFtUIEzi9vr7LBD1ghI/Jt8D
+	s0UE4iXu3u5nA7GZBXQkOo9uB7OFgeobtk4Amy8k4CTx9fg0VhCbU8BZ4viKK8wQ9dYSz448
+	ZIWw5SU2r3nLPIFRYBaSFbOQlM1CUraAkXkVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkgQ
+	f93BuPSY1SFGAQ5GJR7eCBb/ECHWxLLiytxDjBIczEoivBExQCHelMTKqtSi/Pii0pzU4kOM
+	TBycUg2M8xeZGMg+2mC575PJlGuP0lUlXjid9jvDIjlf+J+wws9tbY2LnhxlSw0Oj/knsVf5
+	defshAqzkOjk6Z27VrzQeXL92Iwnv1U4zjXK/WFWkftycOVJ8w3hsZ8nWzsm7ZyySNFunQbL
+	in35S9sc74vuW7UjKKR7o/kK1+Iss/b7/4tWOcSEB6xdqcRSnJFoqMVcVJwIAJsizJ9AAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 6:25 PM, Alexander Graf wrote:
->
->
-> On 27.10.14 15:29, Suravee Suthikulanit wrote:
->> On 10/26/2014 9:08 AM, Alexander Graf wrote:
->>>>> This option doesn't exist in upstream kernels, does it? Why not just
->>>>>>> make it dtb-y?
->>>>>
->>>>> CONFIG_ARCH_SEATTLE is being added one hunk above.:)
->>> Oops:).
->>>
->>> I'm not convinced we need a config option just for the sake of
->>> compiling a device tree though.
->>>
->>>
->>> Alex
->>>
->>
->> Eventually, we would add other device driver selections when
->> CONFIG_ARCH_SEATTLE=y. At this point, those drivers are still not ready.
->
-> Could you please give me some examples of drivers that would depend on
-> CONFIG_ARCH_SEATTLE? I like the current way things work without the need
-> for such an option, where everything's implemented purely as drivers you
-> can opt in our out of.
->
-> You don't have a CONFIG_ARCH_SB7XX on x86 either, right? ;)
->
->
-> Alex
->
+Hi,
 
-I am not saying that device drivers need to depend on 
-CONFIG_ARCH_SEATTLE. I am thinking along the line of an easy way to 
-enable SOC without having to manually select each of the required 
-drivers to support the SOC. An example is the "ARCH_VEXPRESS".
+W dniu 28.10.2014 o 12:33, Neil Zhang pisze:
+> Don't create new usb_gadget_string_container if the current strings are
+> already exist in the usb_composite_dev.
+> Otherwise the ids_tab will overflow soon if we bind / unbind usb
+> functions frequently like android does.
 
-Suravee
+The problem you are describing does not exist in mainline kernel,
+where functions are always unbound as part of the whole gadget's
+unbind - regardless of whether it is a legacy gadget or configfs-composed
+gadget. When the whole gadget is unbound, composite_dev_cleanup()
+is called which zeroes cdev->next_string_id and frees all gadget
+strings containers.
+
+>
+> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> ---
+>   drivers/usb/gadget/composite.c |    6 ++++++
+>   1 file changed, 6 insertions(+)
+>
+> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+> index a8c18df..6fe3c6b 100644
+> --- a/drivers/usb/gadget/composite.c
+> +++ b/drivers/usb/gadget/composite.c
+> @@ -1183,6 +1183,12 @@ struct usb_string *usb_gstrings_attach(struct usb_composite_dev *cdev,
+>   	if (!n_gstrings)
+>   		return ERR_PTR(-EINVAL);
+>
+> +	list_for_each_entry(uc, &cdev->gstrings, list) {
+> +		n_gs = get_containers_gs(uc);
+> +		if (!strcmp(n_gs[0]->strings[0].s, sp[0]->strings[0].s))
+
+To me it looks like it is a big assumption that if the first string matches,
+the rest are the same, too. Isn't it?
+
+Anyway, this solution looks more like pushing the moment when cdev->next_string_id
+becomes 254 to a later time rather than preventing such a situation.
+
+If usb_gstrings_attach() happens at function bind time, perhaps there
+should be some usb_gstrings_detach() called at function unbind?
+
+AP
 
