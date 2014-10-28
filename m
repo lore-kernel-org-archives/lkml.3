@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756983AbaJ1Gzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:55:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45645 "EHLO
+	id S1760344AbaJ1Gz4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:55:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45633 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312AbaJ1Drt (ORCPT
+	with ESMTP id S932831AbaJ1Dro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:49 -0400
+	Mon, 27 Oct 2014 23:47:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Filipe David Borba Manana <fdmanana@gmail.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 011/100] Btrfs: send, fix data corruption due to incorrect hole detection
-Date: Tue, 28 Oct 2014 11:34:56 +0800
-Message-Id: <20141028033501.147189964@linuxfoundation.org>
+        Bryan ODonoghue <bryan.odonoghue@intel.com>,
+        Bing Niu <bing.niu@intel.com>,
+        "Alvin (Weike) Chen" <alvin.chen@intel.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Subject: [PATCH 3.14 009/100] usb: pch_udc: usb gadget device support for Intel Quark X1000
+Date: Tue, 28 Oct 2014 11:34:54 +0800
+Message-Id: <20141028033501.066637361@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,170 +32,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filipe Manana <fdmanana@gmail.com>
+From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
 
-commit 766b5e5ae78dd04a93a275690a49e23d7dcb1f39 upstream.
+commit a68df7066a6f974db6069e0b93c498775660a114 upstream.
 
-During an incremental send, when we finish processing an inode (corresponding to
-a regular file) we would assume the gap between the end of the last processed file
-extent and the file's size corresponded to a file hole, and therefore incorrectly
-send a bunch of zero bytes to overwrite that region in the file.
+This patch is to enable the USB gadget device for Intel Quark X1000
 
-This affects only kernel 3.14.
-
-Reproducer:
-
-    mkfs.btrfs -f /dev/sdc
-    mount /dev/sdc /mnt
-
-    xfs_io -f -c "falloc -k 0 268435456" /mnt/foo
-
-    btrfs subvolume snapshot -r /mnt /mnt/mysnap0
-
-    xfs_io -c "pwrite -S 0x01 -b 9216 16190218 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x02 -b 1121 198720104 1121" /mnt/foo
-    xfs_io -c "pwrite -S 0x05 -b 9216 107887439 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x06 -b 9216 225520207 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x07 -b 67584 102138300 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x08 -b 7000 94897484 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0x09 -b 113664 245083212 113664" /mnt/foo
-    xfs_io -c "pwrite -S 0x10 -b 123 17937788 123" /mnt/foo
-    xfs_io -c "pwrite -S 0x11 -b 39936 229573311 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x12 -b 67584 174792222 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x13 -b 9216 249253213 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x16 -b 67584 150046083 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x17 -b 39936 118246040 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x18 -b 67584 215965442 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x19 -b 33792 97096725 33792" /mnt/foo
-    xfs_io -c "pwrite -S 0x20 -b 125952 166300596 125952" /mnt/foo
-    xfs_io -c "pwrite -S 0x21 -b 123 1078957 123" /mnt/foo
-    xfs_io -c "pwrite -S 0x25 -b 9216 212044492 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x26 -b 7000 265037146 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0x27 -b 42757 215922685 42757" /mnt/foo
-    xfs_io -c "pwrite -S 0x28 -b 7000 69865411 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0x29 -b 67584 67948958 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x30 -b 39936 266967019 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x31 -b 1121 19582453 1121" /mnt/foo
-    xfs_io -c "pwrite -S 0x32 -b 17408 257710255 17408" /mnt/foo
-    xfs_io -c "pwrite -S 0x33 -b 39936 3895518 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x34 -b 125952 12045847 125952" /mnt/foo
-    xfs_io -c "pwrite -S 0x35 -b 17408 19156379 17408" /mnt/foo
-    xfs_io -c "pwrite -S 0x36 -b 39936 50160066 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x37 -b 113664 9549793 113664" /mnt/foo
-    xfs_io -c "pwrite -S 0x38 -b 105472 94391506 105472" /mnt/foo
-    xfs_io -c "pwrite -S 0x39 -b 23552 143632863 23552" /mnt/foo
-    xfs_io -c "pwrite -S 0x40 -b 39936 241283845 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x41 -b 113664 199937606 113664" /mnt/foo
-    xfs_io -c "pwrite -S 0x42 -b 67584 67380093 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x43 -b 67584 26793129 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x44 -b 39936 14421913 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x45 -b 123 253097405 123" /mnt/foo
-    xfs_io -c "pwrite -S 0x46 -b 1121 128233424 1121" /mnt/foo
-    xfs_io -c "pwrite -S 0x47 -b 105472 91577959 105472" /mnt/foo
-    xfs_io -c "pwrite -S 0x48 -b 1121 7245381 1121" /mnt/foo
-    xfs_io -c "pwrite -S 0x49 -b 113664 182414694 113664" /mnt/foo
-    xfs_io -c "pwrite -S 0x50 -b 9216 32750608 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x51 -b 67584 266546049 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x52 -b 67584 87969398 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x53 -b 9216 260848797 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x54 -b 39936 119461243 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x55 -b 7000 200178693 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0x56 -b 9216 243316029 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x57 -b 7000 209658229 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0x58 -b 101376 179745192 101376" /mnt/foo
-    xfs_io -c "pwrite -S 0x59 -b 9216 64012300 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x60 -b 125952 181705139 125952" /mnt/foo
-    xfs_io -c "pwrite -S 0x61 -b 23552 235737348 23552" /mnt/foo
-    xfs_io -c "pwrite -S 0x62 -b 113664 106021355 113664" /mnt/foo
-    xfs_io -c "pwrite -S 0x63 -b 67584 135753552 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x64 -b 23552 95730888 23552" /mnt/foo
-    xfs_io -c "pwrite -S 0x65 -b 11 17311415 11" /mnt/foo
-    xfs_io -c "pwrite -S 0x66 -b 33792 120695553 33792" /mnt/foo
-    xfs_io -c "pwrite -S 0x67 -b 9216 17164631 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x68 -b 9216 136065853 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x69 -b 67584 37752198 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x70 -b 101376 189717473 101376" /mnt/foo
-    xfs_io -c "pwrite -S 0x71 -b 7000 227463698 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0x72 -b 9216 12655137 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0x73 -b 7000 7488866 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0x74 -b 113664 87813649 113664" /mnt/foo
-    xfs_io -c "pwrite -S 0x75 -b 33792 25802183 33792" /mnt/foo
-    xfs_io -c "pwrite -S 0x76 -b 39936 93524024 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x77 -b 33792 113336388 33792" /mnt/foo
-    xfs_io -c "pwrite -S 0x78 -b 105472 184955320 105472" /mnt/foo
-    xfs_io -c "pwrite -S 0x79 -b 101376 225691598 101376" /mnt/foo
-    xfs_io -c "pwrite -S 0x80 -b 23552 77023155 23552" /mnt/foo
-    xfs_io -c "pwrite -S 0x81 -b 11 201888192 11" /mnt/foo
-    xfs_io -c "pwrite -S 0x82 -b 11 115332492 11" /mnt/foo
-    xfs_io -c "pwrite -S 0x83 -b 67584 230278015 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x84 -b 11 120589073 11" /mnt/foo
-    xfs_io -c "pwrite -S 0x85 -b 125952 202207819 125952" /mnt/foo
-    xfs_io -c "pwrite -S 0x86 -b 113664 86672080 113664" /mnt/foo
-    xfs_io -c "pwrite -S 0x87 -b 17408 208459603 17408" /mnt/foo
-    xfs_io -c "pwrite -S 0x88 -b 7000 73372211 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0x89 -b 7000 42252122 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0x90 -b 23552 46784881 23552" /mnt/foo
-    xfs_io -c "pwrite -S 0x91 -b 101376 63172351 101376" /mnt/foo
-    xfs_io -c "pwrite -S 0x92 -b 23552 59341931 23552" /mnt/foo
-    xfs_io -c "pwrite -S 0x93 -b 39936 239599283 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0x94 -b 67584 175643105 67584" /mnt/foo
-    xfs_io -c "pwrite -S 0x97 -b 23552 105534880 23552" /mnt/foo
-    xfs_io -c "pwrite -S 0x98 -b 113664 8236844 113664" /mnt/foo
-    xfs_io -c "pwrite -S 0x99 -b 125952 144489686 125952" /mnt/foo
-    xfs_io -c "pwrite -S 0xa0 -b 7000 73273112 7000" /mnt/foo
-    xfs_io -c "pwrite -S 0xa1 -b 125952 194580243 125952" /mnt/foo
-    xfs_io -c "pwrite -S 0xa2 -b 123 56296779 123" /mnt/foo
-    xfs_io -c "pwrite -S 0xa3 -b 11 233066845 11" /mnt/foo
-    xfs_io -c "pwrite -S 0xa4 -b 39936 197727090 39936" /mnt/foo
-    xfs_io -c "pwrite -S 0xa5 -b 101376 53579812 101376" /mnt/foo
-    xfs_io -c "pwrite -S 0xa6 -b 9216 85669738 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0xa7 -b 125952 21266322 125952" /mnt/foo
-    xfs_io -c "pwrite -S 0xa8 -b 23552 125726568 23552" /mnt/foo
-    xfs_io -c "pwrite -S 0xa9 -b 9216 18423680 9216" /mnt/foo
-    xfs_io -c "pwrite -S 0xb0 -b 1121 165901483 1121" /mnt/foo
-
-    btrfs subvolume snapshot -r /mnt /mnt/mysnap1
-
-    xfs_io -c "pwrite -S 0xff -b 10 16190218 10" /mnt/foo
-
-    btrfs subvolume snapshot -r /mnt /mnt/mysnap2
-
-    md5sum /mnt/foo          # returns 79e53f1466bfc09fd82b450689e6119e
-    md5sum /mnt/mysnap2/foo  # returns 79e53f1466bfc09fd82b450689e6119e too
-
-    btrfs send /mnt/mysnap1 -f /tmp/1.snap
-    btrfs send -p /mnt/mysnap1 /mnt/mysnap2 -f /tmp/2.snap
-
-    mkfs.btrfs -f /dev/sdc
-    mount /dev/sdc /mnt
-
-    btrfs receive /mnt -f /tmp/1.snap
-    btrfs receive /mnt -f /tmp/2.snap
-
-    md5sum /mnt/mysnap2/foo  # returns 2bb414c5155767cedccd7063e51beabd !!
-
-A testcase for xfstests follows soon too.
-
-Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+Signed-off-by: Bing Niu <bing.niu@intel.com>
+Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/send.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/usb/gadget/Kconfig   |    3 ++-
+ drivers/usb/gadget/pch_udc.c |   22 +++++++++++++++++++---
+ 2 files changed, 21 insertions(+), 4 deletions(-)
 
---- a/fs/btrfs/send.c
-+++ b/fs/btrfs/send.c
-@@ -4728,7 +4728,9 @@ static int finish_inode_if_needed(struct
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -445,7 +445,7 @@ config USB_GOKU
+ 	   gadget drivers to also be dynamically linked.
  
- 	if (S_ISREG(sctx->cur_inode_mode)) {
- 		if (need_send_hole(sctx)) {
--			if (sctx->cur_inode_last_extent == (u64)-1) {
-+			if (sctx->cur_inode_last_extent == (u64)-1 ||
-+			    sctx->cur_inode_last_extent <
-+			    sctx->cur_inode_size) {
- 				ret = get_last_extent(sctx, (u64)-1);
- 				if (ret)
- 					goto out;
+ config USB_EG20T
+-	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831) UDC"
++	tristate "Intel QUARK X1000/EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831) UDC"
+ 	depends on PCI
+ 	help
+ 	  This is a USB device driver for EG20T PCH.
+@@ -466,6 +466,7 @@ config USB_EG20T
+ 	  ML7213/ML7831 is companion chip for Intel Atom E6xx series.
+ 	  ML7213/ML7831 is completely compatible for Intel EG20T PCH.
+ 
++	  This driver can be used with Intel's Quark X1000 SOC platform
+ #
+ # LAST -- dummy/emulated controller
+ #
+--- a/drivers/usb/gadget/pch_udc.c
++++ b/drivers/usb/gadget/pch_udc.c
+@@ -343,6 +343,7 @@ struct pch_vbus_gpio_data {
+  * @setup_data:		Received setup data
+  * @phys_addr:		of device memory
+  * @base_addr:		for mapped device memory
++ * @bar:		Indicates which PCI BAR for USB regs
+  * @irq:		IRQ line for the device
+  * @cfg_data:		current cfg, intf, and alt in use
+  * @vbus_gpio:		GPIO informaton for detecting VBUS
+@@ -370,14 +371,17 @@ struct pch_udc_dev {
+ 	struct usb_ctrlrequest		setup_data;
+ 	unsigned long			phys_addr;
+ 	void __iomem			*base_addr;
++	unsigned			bar;
+ 	unsigned			irq;
+ 	struct pch_udc_cfg_data		cfg_data;
+ 	struct pch_vbus_gpio_data	vbus_gpio;
+ };
+ #define to_pch_udc(g)	(container_of((g), struct pch_udc_dev, gadget))
+ 
++#define PCH_UDC_PCI_BAR_QUARK_X1000	0
+ #define PCH_UDC_PCI_BAR			1
+ #define PCI_DEVICE_ID_INTEL_EG20T_UDC	0x8808
++#define PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC	0x0939
+ #define PCI_VENDOR_ID_ROHM		0x10DB
+ #define PCI_DEVICE_ID_ML7213_IOH_UDC	0x801D
+ #define PCI_DEVICE_ID_ML7831_IOH_UDC	0x8808
+@@ -3076,7 +3080,7 @@ static void pch_udc_remove(struct pci_de
+ 		iounmap(dev->base_addr);
+ 	if (dev->mem_region)
+ 		release_mem_region(dev->phys_addr,
+-				   pci_resource_len(pdev, PCH_UDC_PCI_BAR));
++				   pci_resource_len(pdev, dev->bar));
+ 	if (dev->active)
+ 		pci_disable_device(pdev);
+ 	kfree(dev);
+@@ -3144,9 +3148,15 @@ static int pch_udc_probe(struct pci_dev
+ 	dev->active = 1;
+ 	pci_set_drvdata(pdev, dev);
+ 
++	/* Determine BAR based on PCI ID */
++	if (id->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC)
++		dev->bar = PCH_UDC_PCI_BAR_QUARK_X1000;
++	else
++		dev->bar = PCH_UDC_PCI_BAR;
++
+ 	/* PCI resource allocation */
+-	resource = pci_resource_start(pdev, 1);
+-	len = pci_resource_len(pdev, 1);
++	resource = pci_resource_start(pdev, dev->bar);
++	len = pci_resource_len(pdev, dev->bar);
+ 
+ 	if (!request_mem_region(resource, len, KBUILD_MODNAME)) {
+ 		dev_err(&pdev->dev, "%s: pci device used already\n", __func__);
+@@ -3212,6 +3222,12 @@ finished:
+ 
+ static const struct pci_device_id pch_udc_pcidev_id[] = {
+ 	{
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL,
++			   PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC),
++		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
++		.class_mask = 0xffffffff,
++	},
++	{
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_EG20T_UDC),
+ 		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
+ 		.class_mask = 0xffffffff,
 
 
