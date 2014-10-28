@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615AbaJ1DgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:36:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44282 "EHLO
+	id S1753671AbaJ1Dgf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:36:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44304 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753581AbaJ1DgS (ORCPT
+	with ESMTP id S1753646AbaJ1Dga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:36:18 -0400
+	Mon, 27 Oct 2014 23:36:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhao Lei <zhaolei@cn.fujitsu.com>, Qu Wenruo <quwenruo@cn.fujitsu.com>,
-        Stefan Behrens <sbehrens@giantdisaster.de>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.17 003/146] btrfs: Fix a deadlock in btrfs_dev_replace_finishing()
-Date: Tue, 28 Oct 2014 11:32:25 +0800
-Message-Id: <20141028033343.593796488@linuxfoundation.org>
+        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.17 008/146] Btrfs: try not to ENOSPC on log replay
+Date: Tue, 28 Oct 2014 11:32:30 +0800
+Message-Id: <20141028033343.801080176@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,67 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Qu Wenruo <quwenruo@cn.fujitsu.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit 12b894cb288d57292b01cf158177b6d5c89a6272 upstream.
+commit 1d52c78afbbf80b58299e076a159617d6b42fe3c upstream.
 
-btrfs-transacion:5657
-[stack snip]
-btrfs_bio_map()
-    btrfs_bio_counter_inc_blocked()
-        percpu_counter_inc(&fs_info->bio_counter)  ###bio_counter > 0(A)
-        __btrfs_bio_map()
-            btrfs_dev_replace_lock()
-                mutex_lock(dev_replace->lock)	   ###wait mutex(B)
+When doing log replay we may have to update inodes, which traditionally goes
+through our delayed inode stuff.  This will try to move space over from the
+trans handle, but we don't reserve space in our trans handle on replay since we
+don't know how much we will need, so instead we try to flush.  But because we
+have a trans handle open we won't flush anything, so if we are out of reserve
+space we will simply return ENOSPC.  Since we know that if an operation made it
+into the log then we definitely had space before the box bought the farm then we
+don't need to worry about doing this space reservation.  Use the
+fs_info->log_root_recovering flag to skip the delayed inode stuff and update the
+item directly.  Thanks,
 
-btrfs:32612
-[stack snip]
-btrfs_dev_replace_start()
-    btrfs_dev_replace_lock()
-	mutex_lock(dev_replace->lock)		   ###hold mutex(B)
-    btrfs_dev_replace_finishing()
-        btrfs_rm_dev_replace_blocked()
-            wait until percpu_counter_sum == 0	   ###wait on bio_counter(A)
-
-This bug can be triggered quite easily by the following test script:
-http://pastebin.com/MQmb37Cy
-
-This patch will fix the ABBA problem by calling
-btrfs_dev_replace_unlock() before btrfs_rm_dev_replace_blocked().
-
-The consistency of btrfs devices list and their superblocks is protected
-by device_list_mutex, not btrfs_dev_replace_lock/unlock().
-So it is safe the move btrfs_dev_replace_unlock() before
-btrfs_rm_dev_replace_blocked().
-
-Reported-by: Zhao Lei <zhaolei@cn.fujitsu.com>
-Signed-off-by: Qu Wenruo <quwenruo@cn.fujitsu.com>
-Cc: Stefan Behrens <sbehrens@giantdisaster.de>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/dev-replace.c |    3 ++-
+ fs/btrfs/inode.c |    3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/dev-replace.c
-+++ b/fs/btrfs/dev-replace.c
-@@ -567,6 +567,8 @@ static int btrfs_dev_replace_finishing(s
- 	btrfs_kobj_rm_device(fs_info, src_device);
- 	btrfs_kobj_add_device(fs_info, tgt_device);
- 
-+	btrfs_dev_replace_unlock(dev_replace);
-+
- 	btrfs_rm_dev_replace_blocked(fs_info);
- 
- 	btrfs_rm_dev_replace_srcdev(fs_info, src_device);
-@@ -580,7 +582,6 @@ static int btrfs_dev_replace_finishing(s
- 	 * superblock is scratched out so that it is no longer marked to
- 	 * belong to this filesystem.
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -3662,7 +3662,8 @@ noinline int btrfs_update_inode(struct b
+ 	 * without delay
  	 */
--	btrfs_dev_replace_unlock(dev_replace);
- 	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
- 	mutex_unlock(&root->fs_info->chunk_mutex);
+ 	if (!btrfs_is_free_space_inode(inode)
+-	    && root->root_key.objectid != BTRFS_DATA_RELOC_TREE_OBJECTID) {
++	    && root->root_key.objectid != BTRFS_DATA_RELOC_TREE_OBJECTID
++	    && !root->fs_info->log_root_recovering) {
+ 		btrfs_update_root_times(trans, root);
  
+ 		ret = btrfs_delayed_update_inode(trans, root, inode);
 
 
