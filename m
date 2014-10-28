@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583AbaJ1DqP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:46:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45482 "EHLO
+	id S932621AbaJ1DqX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:46:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45496 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932162AbaJ1DqJ (ORCPT
+	with ESMTP id S932587AbaJ1DqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:46:09 -0400
+	Mon, 27 Oct 2014 23:46:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Hellstrom <daniel@gaisler.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 099/127] sparc32: dma_alloc_coherent must honour gfp flags
-Date: Tue, 28 Oct 2014 11:35:34 +0800
-Message-Id: <20141028033425.166586628@linuxfoundation.org>
+Subject: [PATCH 3.16 111/127] sparc64: Fix hibernation code refrence to PAGE_OFFSET.
+Date: Tue, 28 Oct 2014 11:35:46 +0800
+Message-Id: <20141028033425.699017200@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,46 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Hellstrom <daniel@gaisler.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit d1105287aabe88dbb3af825140badaa05cf0442c ]
+We changed PAGE_OFFSET to be a variable rather than a constant,
+but this reference here in the hibernate assembler got missed.
 
-dma_zalloc_coherent() calls dma_alloc_coherent(__GFP_ZERO)
-but the sparc32 implementations sbus_alloc_coherent() and
-pci32_alloc_coherent() doesn't take the gfp flags into
-account.
-
-Tested on the SPARC32/LEON GRETH Ethernet driver which fails
-due to dma_alloc_coherent(__GFP_ZERO) returns non zeroed
-pages.
-
-Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/ioport.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/sparc/power/hibernate_asm.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/kernel/ioport.c
-+++ b/arch/sparc/kernel/ioport.c
-@@ -278,7 +278,8 @@ static void *sbus_alloc_coherent(struct
- 	}
+--- a/arch/sparc/power/hibernate_asm.S
++++ b/arch/sparc/power/hibernate_asm.S
+@@ -54,8 +54,8 @@ ENTRY(swsusp_arch_resume)
+ 	 nop
  
- 	order = get_order(len_total);
--	if ((va = __get_free_pages(GFP_KERNEL|__GFP_COMP, order)) == 0)
-+	va = __get_free_pages(gfp, order);
-+	if (va == 0)
- 		goto err_nopages;
+ 	/* Write PAGE_OFFSET to %g7 */
+-	sethi	%uhi(PAGE_OFFSET), %g7
+-	sllx	%g7, 32, %g7
++	sethi	%hi(PAGE_OFFSET), %g7
++	ldx	[%g7 + %lo(PAGE_OFFSET)], %g7
  
- 	if ((res = kzalloc(sizeof(struct resource), GFP_KERNEL)) == NULL)
-@@ -443,7 +444,7 @@ static void *pci32_alloc_coherent(struct
- 	}
+ 	setuw	(PAGE_SIZE-8), %g3
  
- 	order = get_order(len_total);
--	va = (void *) __get_free_pages(GFP_KERNEL, order);
-+	va = (void *) __get_free_pages(gfp, order);
- 	if (va == NULL) {
- 		printk("pci_alloc_consistent: no %ld pages\n", len_total>>PAGE_SHIFT);
- 		goto err_nopages;
 
 
