@@ -1,41 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758375AbaJ1Ffj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:35:39 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40319 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755322AbaJ1Ffg (ORCPT
+	id S1758452AbaJ1Fgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:36:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46314 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756073AbaJ1DwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 01:35:36 -0400
-Date: Mon, 27 Oct 2014 22:35:32 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] More eeepc-laptop cleanup
-Message-ID: <20141028053532.GJ60814@vmdeb7>
-References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+	Mon, 27 Oct 2014 23:52:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Matlack <dmatlack@google.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.10 07/43] kvm: dont take vcpu mutex for obviously invalid vcpu ioctls
+Date: Tue, 28 Oct 2014 11:36:05 +0800
+Message-Id: <20141028033523.723554669@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:12:35PM +0200, Frans Klaver wrote:
-> Hi,
-> 
-> This is another round of cleanups in eeepc-laptop. It's mostly shuffling around
-> stuff, no big things. It's been running on my eeepc for two or three weeks now
-> without any apparent problems. Comments appreciated.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks Frans,
+------------------
 
-Queued for 3.19 except where explicitly noted.
+From: David Matlack <dmatlack@google.com>
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+commit 2ea75be3219571d0ec009ce20d9971e54af96e09 upstream.
+
+vcpu ioctls can hang the calling thread if issued while a vcpu is running.
+However, invalid ioctls can happen when userspace tries to probe the kind
+of file descriptors (e.g. isatty() calls ioctl(TCGETS)); in that case,
+we know the ioctl is going to be rejected as invalid anyway and we can
+fail before trying to take the vcpu mutex.
+
+This patch does not change functionality, it just makes invalid ioctls
+fail faster.
+
+Signed-off-by: David Matlack <dmatlack@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ virt/kvm/kvm_main.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -52,6 +52,7 @@
+ 
+ #include <asm/processor.h>
+ #include <asm/io.h>
++#include <asm/ioctl.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ 
+@@ -1981,6 +1982,9 @@ static long kvm_vcpu_ioctl(struct file *
+ 	if (vcpu->kvm->mm != current->mm)
+ 		return -EIO;
+ 
++	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
++		return -EINVAL;
++
+ #if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS)
+ 	/*
+ 	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
+
+
