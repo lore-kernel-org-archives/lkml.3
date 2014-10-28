@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919AbaJ1UwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:52:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52296 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaJ1UwF (ORCPT
+	id S1752860AbaJ1Uzp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:55:45 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:39575 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750857AbaJ1Uzn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:52:05 -0400
-Date: Tue, 28 Oct 2014 21:52:02 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: Heena Sirwani <heenasirwani@gmail.com>, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org
-Subject: Re: [PATCH v2] timekeeping: Added a function to return tv_sec portion
- of ktime_get_real_ts64()
-In-Reply-To: <1825407.TtFpTslzjC@wuerfel>
-Message-ID: <alpine.DEB.2.11.1410282150270.5308@nanos>
-References: <20141027050804.GA8550@heena-HP-Compaq-8200-Elite-MT-PC> <9160485.26T1OFaUNG@wuerfel> <alpine.DEB.2.11.1410282123450.5308@nanos> <1825407.TtFpTslzjC@wuerfel>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 28 Oct 2014 16:55:43 -0400
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Lee Jones <lee.jones@linaro.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        Philippe =?ISO-8859-1?Q?R=E9tornaz?= 
+	<philippe.retornaz@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: Re: [PATCH v4] kernel: Add support for power-off handler call chain
+Date: Tue, 28 Oct 2014 21:58:53 +0100
+Message-ID: <5361222.IVraj5jbi5@diego>
+User-Agent: KMail/4.12.4 (Linux/3.13-1-amd64; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <1414516266-4965-1-git-send-email-linux@roeck-us.net>
+References: <1414516266-4965-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014, Arnd Bergmann wrote:
-
-> On Tuesday 28 October 2014 21:31:32 Thomas Gleixner wrote:
-> > On Tue, 28 Oct 2014, Arnd Bergmann wrote:
-> > > On Tuesday 28 October 2014 18:13:09 Thomas Gleixner wrote:
-> > > I'd like to apply this patch to my y2038 branch and apply the
-> > > other patches that need it on top, unless you want to still submit
-> > > it for 3.18.
-> > 
-> > I think I should take these patches for 3.18. We do not create users
-> > yet, but it makes it easier for submaintaners to apply stuff which you
-> > convert. And it lets me have the whole core lot together with other
-> > changes in that area. I create a seperate branch which you can pull
-> > from.
+Am Dienstag, 28. Oktober 2014, 10:11:06 schrieb Guenter Roeck:
+> Various drivers implement architecture and/or device specific means to
+> power off the system.  For the most part, those drivers set the global
+> variable pm_power_off to point to a function within the driver.
 > 
-> Ok, sounds good.
+> This mechanism has a number of drawbacks.  Typically only one scheme
+> to remove power is supported (at least if pm_power_off is used).
+> At least in theory there can be multiple means remove power, some of
+> which may be less desirable. For example, some mechanisms may only
+> power off the CPU or the CPU card, while another may power off the
+> entire system.  Others may really just execute a restart sequence
+> or drop into the ROM monitor. Using pm_power_off can also be racy
+> if the function pointer is set from a driver built as module, as the
+> driver may be in the process of being unloaded when pm_power_off is
+> called. If there are multiple power-off handlers in the system, removing
+> a module with such a handler may inadvertently reset the pointer to
+> pm_power_off to NULL, leaving the system with no means to remove power.
 > 
-> > > Regarding the names, should we then have
-> > > 
-> > > time64_t ktime_get_real_seconds(void);
-> > > time64_t ktime_get_seconds(void);
-> > 
-> > I like that one. Moving all the time interfaces to a ktime_ prefix and
-> > let the default implementation as CLOCK_MONOTONIC and the others with
-> > the added '_real', '_boot' ... describe their CLOCK_WHATEVER property
-> > makes it pretty clear.
+> Introduce a system power-off handler call chain to solve the described
+> problems.  This call chain is expected to be executed from the architecture
+> specific machine_power_off() function.  Drivers and architeceture code
+> providing system power-off functionality are expected to register with
+> this call chain.  When registering a power-off handler, callers can
+> provide a priority to control power-off handler execution sequence
+> and thus ensure that the power-off handler with the optimal capabilities
+> to remove power for a given system is called first.
 > 
-> Good. So you can apply this patch as-is and Heena will get you the
-> other one.
+> Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+> Cc: Alexander Graf <agraf@suse.de>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> cc: Heiko Stuebner <heiko@sntech.de>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Philippe Rétornaz <philippe.retornaz@gmail.com>
+> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> Cc: Romain Perier <romain.perier@gmail.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
 
-Not so much.
+Similarly to the restart handlers, I really like the concept.
 
-Applying patch timekeeping-added-a-function-to-return-tv_sec-portion-of-ktime_get_real_ts64.patch
-patching file include/linux/timekeeping.h
-Hunk #1 FAILED at 29.
-1 out of 1 hunk FAILED -- rejects in file include/linux/timekeeping.h
-patching file kernel/time/timekeeping.c
-Hunk #1 FAILED at 673.
-1 out of 1 hunk FAILED -- rejects in file kernel/time/timekeeping.c
-
-That one depends on the other one. So I wait for a combo of both from
-Heena.
-
-Thanks,
-
-	tglx
-
+Acked-by: Heiko Stuebner <heiko@sntech.de>
 
