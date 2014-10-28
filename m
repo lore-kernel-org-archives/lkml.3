@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198AbaJ1Dmr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:42:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45075 "EHLO
+	id S1755247AbaJ1DnB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:43:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45104 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922AbaJ1Dmn (ORCPT
+	with ESMTP id S1752922AbaJ1Dm5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:43 -0400
+	Mon, 27 Oct 2014 23:42:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Thumshirn <johannes.thumshirn@men.de>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.16 023/127] mpc85xx_edac: Make L2 interrupt shared too
-Date: Tue, 28 Oct 2014 11:34:18 +0800
-Message-Id: <20141028033421.935538444@linuxfoundation.org>
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Lucas Stach <l.stach@pengutronix.de>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.16 029/127] regulator: ltc3589: fix broken voltage transitions
+Date: Tue, 28 Oct 2014 11:34:24 +0800
+Message-Id: <20141028033422.194890962@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,74 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@suse.de>
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
 
-commit a18c3f16a907b8977ef65fc8dd71ed3f7b751748 upstream.
+commit c5bb725ac2d1a13e9e766bf9a16bac986ade17cd upstream.
 
-The other two interrupt handlers in this driver are shared, except this
-one. When loading the driver, it fails like this.
+VCCR is used as a trigger to start voltage transitions, so
+we need to mark it volatile in order to make sure it gets
+written to hardware every time we set a new voltage.
 
-So make the IRQ line shared.
+Fixes regulator voltage being stuck at the first voltage
+set after driver load.
 
-Freescale(R) MPC85xx EDAC driver, (C) 2006 Montavista Software
-mpc85xx_mc_err_probe: No ECC DIMMs discovered
-EDAC DEVICE0: Giving out device to module MPC85xx_edac controller mpc85xx_l2_err: DEV mpc85xx_l2_err (INTERRUPT)
-genirq: Flags mismatch irq 16. 00000000 ([EDAC] L2 err) vs. 00000080 ([EDAC] PCI err)
-mpc85xx_l2_err_probe: Unable to request irq 16 for MPC85xx L2 err
-remove_proc_entry: removing non-empty directory 'irq/16', leaking at least 'aerdrv'
-------------[ cut here ]------------
-WARNING: at fs/proc/generic.c:521
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc5-dirty #1
-task: ee058000 ti: ee046000 task.ti: ee046000
-NIP: c016c0c4 LR: c016c0c4 CTR: c037b51c
-REGS: ee047c10 TRAP: 0700 Not tainted (3.17.0-rc5-dirty)
-MSR: 00029000 <CE,EE,ME> CR: 22008022 XER: 20000000
-
-GPR00: c016c0c4 ee047cc0 ee058000 00000053 00029000 00000000 c037c744 00000003
-GPR08: c09aab28 c09aab24 c09aab28 00000156 20008028 00000000 c0002ac8 00000000
-GPR16: 00000000 00000000 00000000 00000000 00000000 00000000 00000139 c0950394
-GPR24: c09f0000 ee5585b0 ee047d08 c0a10000 ee047d08 ee15f808 00000002 ee03f660
-NIP [c016c0c4] remove_proc_entry
-LR [c016c0c4] remove_proc_entry
-Call Trace:
-remove_proc_entry (unreliable)
-unregister_irq_proc
-free_desc
-irq_free_descs
-mpc85xx_l2_err_probe
-platform_drv_probe
-really_probe
-__driver_attach
-bus_for_each_dev
-bus_add_driver
-driver_register
-mpc85xx_mc_init
-do_one_initcall
-kernel_init_freeable
-kernel_init
-ret_from_kernel_thread
-Instruction dump: ...
-
-Reported-and-tested-by: <lpb_098@163.com>
-Acked-by: Johannes Thumshirn <johannes.thumshirn@men.de>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+[lst: reworded commit message]
+Signed-off-by: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/mpc85xx_edac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/ltc3589.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -633,7 +633,7 @@ static int mpc85xx_l2_err_probe(struct p
- 	if (edac_op_state == EDAC_OPSTATE_INT) {
- 		pdata->irq = irq_of_parse_and_map(op->dev.of_node, 0);
- 		res = devm_request_irq(&op->dev, pdata->irq,
--				       mpc85xx_l2_isr, 0,
-+				       mpc85xx_l2_isr, IRQF_SHARED,
- 				       "[EDAC] L2 err", edac_dev);
- 		if (res < 0) {
- 			printk(KERN_ERR
+--- a/drivers/regulator/ltc3589.c
++++ b/drivers/regulator/ltc3589.c
+@@ -372,6 +372,7 @@ static bool ltc3589_volatile_reg(struct
+ 	switch (reg) {
+ 	case LTC3589_IRQSTAT:
+ 	case LTC3589_PGSTAT:
++	case LTC3589_VCCR:
+ 		return true;
+ 	}
+ 	return false;
 
 
