@@ -1,106 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845AbaJ1WAQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:00:16 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50006 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951AbaJ1V5d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:57:33 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 05/10] rcu: Remove "cpu" argument to rcu_preempt_check_callbacks()
-Date: Tue, 28 Oct 2014 14:53:32 -0700
-Message-Id: <1414533217-24910-5-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20141028215140.GA23970@linux.vnet.ibm.com>
- <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102821-0033-0000-0000-000002803DA8
+	id S1755397AbaJ1WBV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:01:21 -0400
+Received: from [157.56.110.65] ([157.56.110.65]:43472 "EHLO
+	na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754519AbaJ1WBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:01:19 -0400
+X-Greylist: delayed 2121 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 18:01:19 EDT
+Date: Tue, 28 Oct 2014 16:53:47 -0500
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@atx-linux-37
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+CC: <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
+        <michal.simek@xilinx.com>, <rdunlap@infradead.org>,
+        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <pantelis.antoniou@konsulko.com>,
+        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
+        <iws@ovro.caltech.edu>, <linux-doc@vger.kernel.org>, <pavel@denx.de>,
+        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <mgerlach@opensource.altera.com>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
+In-Reply-To: <alpine.DEB.2.02.1410281601570.11910@atx-linux-37>
+Message-ID: <alpine.DEB.2.02.1410281651490.11910@atx-linux-37>
+References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com> <1414108267-22058-3-git-send-email-atull@opensource.altera.com> <20141024070042.GL10262@pengutronix.de> <alpine.DEB.2.02.1410281601570.11910@atx-linux-37>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BY2PR04CA033.namprd04.prod.outlook.com (10.141.249.151) To
+ BL2PR03MB307.namprd03.prod.outlook.com (10.141.68.21)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB307;
+X-Forefront-PRVS: 0378F1E47A
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(24454002)(189002)(199003)(51704005)(64706001)(106356001)(46406003)(81156004)(21056001)(20776003)(47776003)(66066001)(95666004)(107046002)(50466002)(105586002)(33716001)(23726002)(40100003)(31966008)(102836001)(77096002)(92726001)(53416004)(85306004)(93886004)(110136001)(87976001)(122386002)(80022003)(86362001)(92566001)(86152002)(4396001)(46102003)(97736003)(83506001)(76482002)(101416001)(42186005)(85852003)(54356999)(99396003)(76176999)(50986999)(69596002)(120916001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB307;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Tue, 28 Oct 2014, atull wrote:
 
-Because rcu_preempt_check_callbacks()'s argument is guaranteed to
-always be the current CPU, drop the argument and replace per_cpu()
-with __this_cpu_read().
+> On Fri, 24 Oct 2014, Steffen Trumtrar wrote:
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcu/tree.c        | 2 +-
- kernel/rcu/tree.h        | 2 +-
- kernel/rcu/tree_plugin.h | 8 ++++----
- 3 files changed, 6 insertions(+), 6 deletions(-)
+> > 
+> > > + - init-val       : 0 if driver should disable bridge at startup
+> > > +                    1 if driver should enable bridge at startup
+> > > +                    driver leaves bridge in current state if property not
+> > > +                    specified.
+> > > +
+> > 
+> > Configuration in the DT? Really?
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 0670ba3a65d3..1af5e2cdcbeb 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -2420,7 +2420,7 @@ void rcu_check_callbacks(int user)
- 
- 		rcu_bh_qs();
- 	}
--	rcu_preempt_check_callbacks(smp_processor_id());
-+	rcu_preempt_check_callbacks();
- 	if (rcu_pending())
- 		invoke_rcu_core();
- 	if (user)
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index 8e90562010ec..94a26e330c1b 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -561,7 +561,7 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
- 				     struct rcu_node *rnp,
- 				     struct rcu_data *rdp);
- #endif /* #ifdef CONFIG_HOTPLUG_CPU */
--static void rcu_preempt_check_callbacks(int cpu);
-+static void rcu_preempt_check_callbacks(void);
- void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu));
- #if defined(CONFIG_HOTPLUG_CPU) || defined(CONFIG_TREE_PREEMPT_RCU)
- static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp,
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 09547143628a..7158814b7b4a 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -621,7 +621,7 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
-  *
-  * Caller must disable hard irqs.
-  */
--static void rcu_preempt_check_callbacks(int cpu)
-+static void rcu_preempt_check_callbacks(void)
- {
- 	struct task_struct *t = current;
- 
-@@ -630,8 +630,8 @@ static void rcu_preempt_check_callbacks(int cpu)
- 		return;
- 	}
- 	if (t->rcu_read_lock_nesting > 0 &&
--	    per_cpu(rcu_preempt_data, cpu).qs_pending &&
--	    !per_cpu(rcu_preempt_data, cpu).passed_quiesce)
-+	    __this_cpu_read(rcu_preempt_data.qs_pending) &&
-+	    !__this_cpu_read(rcu_preempt_data.passed_quiesce))
- 		t->rcu_read_unlock_special.b.need_qs = true;
- }
- 
-@@ -1017,7 +1017,7 @@ static int rcu_preempt_offline_tasks(struct rcu_state *rsp,
-  * Because preemptible RCU does not exist, it never has any callbacks
-  * to check.
-  */
--static void rcu_preempt_check_callbacks(int cpu)
-+static void rcu_preempt_check_callbacks(void)
- {
- }
- 
--- 
-1.8.1.5
+The FPGA can be programmed by several different methods (eeprom, jtag,
+preloader, Linux).  The guiding principle is: whoever programmed the
+FPGA should release the bridge.  At one point, we thought 'init-val'
+would be needed, but I think it can be taken out and we won't miss it.
 
+Alan
