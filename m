@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934007AbaJ1HjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:39:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44817 "EHLO
+	id S1754875AbaJ1DkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:40:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44799 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893AbaJ1Dk3 (ORCPT
+	with ESMTP id S1754836AbaJ1DkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:29 -0400
+	Mon, 27 Oct 2014 23:40:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Carol L. Soto" <clsoto@us.ibm.com>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
         Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.17 116/146] powerpc/eeh: Clear frozen device state in time
-Date: Tue, 28 Oct 2014 11:34:18 +0800
-Message-Id: <20141028033348.474567593@linuxfoundation.org>
+Subject: [PATCH 3.17 113/146] powerpc: Fix warning reported by verify_cpu_node_mapping()
+Date: Tue, 28 Oct 2014 11:34:15 +0800
+Message-Id: <20141028033348.351071950@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,66 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <gwshan@linux.vnet.ibm.com>
+From: Li Zhong <zhong@linux.vnet.ibm.com>
 
-commit 22fca17924094113fe79c1db5135290e1a84ad4b upstream.
+commit 70ad237515d99595ed03848bd8e549e50e83c4f2 upstream.
 
-The problem was reported by Carol: In the scenario of passing mlx4
-adapter to guest, EEH error could be recovered successfully. When
-returning the device back to host, the driver (mlx4_core.ko)
-couldn't be loaded successfully because of error number -5 (-EIO)
-returned from mlx4_get_ownership(), which hits offlined PCI device.
-The root cause is that we missed to put the affected devices into
-normal state on clearing PE isolated state right after PE reset.
+With commit 2fabf084b6ad ("powerpc: reorder per-cpu NUMA information's
+initialization"), during boottime, cpu_numa_callback() is called
+earlier(before their online) for each cpu, and verify_cpu_node_mapping()
+uses cpu_to_node() to check whether siblings are in the same node.
 
-The patch fixes above issue by putting the affected devices to
-normal state when clearing PE isolated state in eeh_pe_state_clear().
+It skips the checking for siblings that are not online yet. So the only
+check done here is for the bootcpu, which is online at that time. But
+the per-cpu numa_node cpu_to_node() uses hasn't been set up yet (which
+will be set up in smp_prepare_cpus()).
 
-Reported-by: Carol L. Soto <clsoto@us.ibm.com>
-Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+So I saw something like following reported:
+[    0.000000] CPU thread siblings 1/2/3 and 0 don't belong to the same
+node!
+
+As we don't actually do the checking during this early stage, so maybe
+we could directly call numa_setup_cpu() in do_init_bootmem().
+
+Cc: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Acked-by: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
 Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/eeh_pe.c |   21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ arch/powerpc/mm/numa.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/powerpc/kernel/eeh_pe.c
-+++ b/arch/powerpc/kernel/eeh_pe.c
-@@ -584,6 +584,8 @@ static void *__eeh_pe_state_clear(void *
- {
- 	struct eeh_pe *pe = (struct eeh_pe *)data;
- 	int state = *((int *)flag);
-+	struct eeh_dev *edev, *tmp;
-+	struct pci_dev *pdev;
- 
- 	/* Keep the state of permanently removed PE intact */
- 	if ((pe->freeze_count > EEH_MAX_ALLOWED_FREEZES) &&
-@@ -592,9 +594,22 @@ static void *__eeh_pe_state_clear(void *
- 
- 	pe->state &= ~state;
- 
--	/* Clear check count since last isolation */
--	if (state & EEH_PE_ISOLATED)
--		pe->check_count = 0;
-+	/*
-+	 * Special treatment on clearing isolated state. Clear
-+	 * check count since last isolation and put all affected
-+	 * devices to normal state.
-+	 */
-+	if (!(state & EEH_PE_ISOLATED))
-+		return NULL;
-+
-+	pe->check_count = 0;
-+	eeh_pe_for_each_dev(pe, edev, tmp) {
-+		pdev = eeh_dev_to_pci_dev(edev);
-+		if (!pdev)
-+			continue;
-+
-+		pdev->error_state = pci_channel_io_normal;
-+	}
- 
- 	return NULL;
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -1128,8 +1128,7 @@ void __init do_init_bootmem(void)
+ 	 * early in boot, cf. smp_prepare_cpus().
+ 	 */
+ 	for_each_possible_cpu(cpu) {
+-		cpu_numa_callback(&ppc64_numa_nb, CPU_UP_PREPARE,
+-				  (void *)(unsigned long)cpu);
++		numa_setup_cpu((unsigned long)cpu);
+ 	}
  }
+ 
 
 
