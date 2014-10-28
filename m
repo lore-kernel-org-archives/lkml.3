@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809AbaJ1DsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:48:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45669 "EHLO
+	id S932918AbaJ1DsG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:48:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45675 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932894AbaJ1Dr7 (ORCPT
+	with ESMTP id S1753430AbaJ1DsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:59 -0400
+	Mon, 27 Oct 2014 23:48:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bruce Lucas <bruce.lucas@mongodb.com>,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Arun Easi <arun.easi@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
         Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 023/100] mptfusion: enable no_write_same for vmware scsi disks
-Date: Tue, 28 Oct 2014 11:35:08 +0800
-Message-Id: <20141028033501.673356131@linuxfoundation.org>
+Subject: [PATCH 3.14 024/100] qla2xxx: Use correct offset to req-q-out for reserve calculation
+Date: Tue, 28 Oct 2014 11:35:09 +0800
+Message-Id: <20141028033501.713911848@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -31,40 +30,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris J Arges <chris.j.arges@canonical.com>
+From: Arun Easi <arun.easi@qlogic.com>
 
-commit 4089b71cc820a426d601283c92fcd4ffeb5139c2 upstream.
+commit 75554b68ac1e018bca00d68a430b92ada8ab52dd upstream.
 
-When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
-data can be improperly zeroed out using the mptfusion driver. This patch
-disables write_same for this driver and the vmware subsystem_vendor which
-ensures that manual zeroing out is used instead.
-
-BugLink: http://bugs.launchpad.net/bugs/1371591
-Reported-by: Bruce Lucas <bruce.lucas@mongodb.com>
-Tested-by: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Arun Easi <arun.easi@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/message/fusion/mptspi.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/scsi/qla2xxx/qla_target.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/message/fusion/mptspi.c
-+++ b/drivers/message/fusion/mptspi.c
-@@ -1422,6 +1422,11 @@ mptspi_probe(struct pci_dev *pdev, const
- 		goto out_mptspi_probe;
-         }
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -1382,12 +1382,10 @@ static inline void qlt_unmap_sg(struct s
+ static int qlt_check_reserve_free_req(struct scsi_qla_host *vha,
+ 	uint32_t req_cnt)
+ {
+-	struct qla_hw_data *ha = vha->hw;
+-	device_reg_t __iomem *reg = ha->iobase;
+ 	uint32_t cnt;
  
-+	/* VMWare emulation doesn't properly implement WRITE_SAME
-+	 */
-+	if (pdev->subsystem_vendor == 0x15AD)
-+		sh->no_write_same = 1;
-+
- 	spin_lock_irqsave(&ioc->FreeQlock, flags);
+ 	if (vha->req->cnt < (req_cnt + 2)) {
+-		cnt = (uint16_t)RD_REG_DWORD(&reg->isp24.req_q_out);
++		cnt = (uint16_t)RD_REG_DWORD(vha->req->req_q_out);
  
- 	/* Attach the SCSI Host to the IOC structure
+ 		ql_dbg(ql_dbg_tgt, vha, 0xe00a,
+ 		    "Request ring circled: cnt=%d, vha->->ring_index=%d, "
 
 
