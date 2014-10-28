@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251AbaJ1Dtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:49:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45862 "EHLO
+	id S933285AbaJ1Dtw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:49:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45890 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933212AbaJ1Dtf (ORCPT
+	with ESMTP id S933247AbaJ1Dtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:49:35 -0400
+	Mon, 27 Oct 2014 23:49:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Matteo Franchin <Matteo.Franchin@arm.com>,
-        Davidlohr Bueso <dave@stgolabs.net>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 054/100] futex: Ensure get_futex_key_refs() always implies a barrier
-Date: Tue, 28 Oct 2014 11:35:39 +0800
-Message-Id: <20141028033503.022764937@linuxfoundation.org>
+        Arnaud Ebalard <arno@natisbad.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.14 068/100] ARM: mvebu: Netgear RN2120: Use Hardware BCH ECC
+Date: Tue, 28 Oct 2014 11:35:53 +0800
+Message-Id: <20141028033503.625056016@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -36,55 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Arnaud Ebalard <arno@natisbad.org>
 
-commit 76835b0ebf8a7fe85beb03c75121419a7dec52f0 upstream.
+commit 500abb6ccb9e3f8d638a7f422443a8549245ef90 upstream.
 
-Commit b0c29f79ecea (futexes: Avoid taking the hb->lock if there's
-nothing to wake up) changes the futex code to avoid taking a lock when
-there are no waiters. This code has been subsequently fixed in commit
-11d4616bd07f (futex: revert back to the explicit waiter counting code).
-Both the original commit and the fix-up rely on get_futex_key_refs() to
-always imply a barrier.
+The bootloader on the Netgear ReadyNAS RN2120 uses Hardware BCH
+ECC (strength = 4), while the pxa3xx NAND driver by default uses
+Hamming ECC (strength = 1).
 
-However, for private futexes, none of the cases in the switch statement
-of get_futex_key_refs() would be hit and the function completes without
-a memory barrier as required before checking the "waiters" in
-futex_wake() -> hb_waiters_pending(). The consequence is a race with a
-thread waiting on a futex on another CPU, allowing the waker thread to
-read "waiters == 0" while the waiter thread to have read "futex_val ==
-locked" (in kernel).
+This patch changes the ECC mode on these machines to match that
+of the bootloader and of the stock firmware. That way, it is
+now possible to update the kernel from userland (e.g. using
+standard tools from mtd-utils package); u-boot will happily
+load and boot it.
 
-Without this fix, the problem (user space deadlocks) can be seen with
-Android bionic's mutex implementation on an arm64 multi-cluster system.
+The issue was initially reported and fixed by Ben Pedell for
+RN102. The RN2120 shares the same Hynix H27U1G8F2BTR NAND
+flash and setup. This patch is based on Ben's fix for RN102.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-by: Matteo Franchin <Matteo.Franchin@arm.com>
-Fixes: b0c29f79ecea (futexes: Avoid taking the hb->lock if there's nothing to wake up)
-Acked-by: Davidlohr Bueso <dave@stgolabs.net>
-Tested-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: ad51eddd95ad ("ARM: mvebu: Enable NAND controller in ReadyNAS 2120 .dts file")
+Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
+Link: https://lkml.kernel.org/r/61f6a1b7ad0adc57a0e201b9680bc2e5f214a317.1410035142.git.arno@natisbad.org
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/futex.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/boot/dts/armada-xp-netgear-rn2120.dts |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -329,6 +329,8 @@ static void get_futex_key_refs(union fut
- 	case FUT_OFF_MMSHARED:
- 		futex_get_mm(key); /* implies MB (B) */
- 		break;
-+	default:
-+		smp_mb(); /* explicit MB (B) */
- 	}
- }
+--- a/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
++++ b/arch/arm/boot/dts/armada-xp-netgear-rn2120.dts
+@@ -224,6 +224,10 @@
+ 				marvell,nand-enable-arbiter;
+ 				nand-on-flash-bbt;
  
++				/* Use Hardware BCH ECC */
++				nand-ecc-strength = <4>;
++				nand-ecc-step-size = <512>;
++
+ 				partition@0 {
+ 					label = "u-boot";
+ 					reg = <0x0000000 0x180000>;  /* 1.5MB */
 
 
