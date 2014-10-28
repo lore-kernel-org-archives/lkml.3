@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933657AbaJ1HMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:12:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45349 "EHLO
+	id S1755567AbaJ1Doz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:44:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753727AbaJ1DpB (ORCPT
+	with ESMTP id S1753281AbaJ1Dov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:45:01 -0400
+	Mon, 27 Oct 2014 23:44:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.16 059/127] PCI: mvebu: Fix uninitialized variable in mvebu_get_tgt_attr()
-Date: Tue, 28 Oct 2014 11:34:54 +0800
-Message-Id: <20141028033423.452644850@linuxfoundation.org>
+        Oren Givon <oren.givon@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.16 057/127] iwlwifi: Add missing PCI IDs for the 7260 series
+Date: Tue, 28 Oct 2014 11:34:52 +0800
+Message-Id: <20141028033423.370174325@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -30,60 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Oren Givon <oren.givon@intel.com>
 
-commit 56fab6e189441d714a2bfc8a64f3df9c0749dff7 upstream.
+commit 4f08970f5284dce486f0e2290834aefb2a262189 upstream.
 
-Geert Uytterhoeven reported a warning when building pci-mvebu:
+Add 4 missing PCI IDs for the 7260 series.
 
-  drivers/pci/host/pci-mvebu.c: In function 'mvebu_get_tgt_attr':
-  drivers/pci/host/pci-mvebu.c:887:39: warning: 'rtype' may be used uninitialized in this function [-Wmaybe-uninitialized]
-     if (slot == PCI_SLOT(devfn) && type == rtype) {
-					 ^
-
-And indeed, the code of mvebu_get_tgt_attr() may lead to the usage of rtype
-when being uninitialized, even though it would only happen if we had
-entries other than I/O space and 32 bits memory space.
-
-This commit fixes that by simply skipping the current DT range being
-considered, if it doesn't match the resource type we're looking for.
-
-Reported-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Oren Givon <oren.givon@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/host/pci-mvebu.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/iwlwifi/pcie/drv.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/pci/host/pci-mvebu.c
-+++ b/drivers/pci/host/pci-mvebu.c
-@@ -873,7 +873,7 @@ static int mvebu_get_tgt_attr(struct dev
- 	rangesz = pna + na + ns;
- 	nranges = rlen / sizeof(__be32) / rangesz;
- 
--	for (i = 0; i < nranges; i++) {
-+	for (i = 0; i < nranges; i++, range += rangesz) {
- 		u32 flags = of_read_number(range, 1);
- 		u32 slot = of_read_number(range + 1, 1);
- 		u64 cpuaddr = of_read_number(range + na, pna);
-@@ -883,14 +883,14 @@ static int mvebu_get_tgt_attr(struct dev
- 			rtype = IORESOURCE_IO;
- 		else if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_MEM32)
- 			rtype = IORESOURCE_MEM;
-+		else
-+			continue;
- 
- 		if (slot == PCI_SLOT(devfn) && type == rtype) {
- 			*tgt = DT_CPUADDR_TO_TARGET(cpuaddr);
- 			*attr = DT_CPUADDR_TO_ATTR(cpuaddr);
- 			return 0;
- 		}
--
--		range += rangesz;
- 	}
- 
- 	return -ENOENT;
+--- a/drivers/net/wireless/iwlwifi/pcie/drv.c
++++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
+@@ -273,6 +273,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4070, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4072, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4170, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0x4C60, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0x4C70, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4060, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x406A, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4160, iwl7260_2n_cfg)},
+@@ -316,6 +318,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 	{IWL_PCI_DEVICE(0x08B1, 0xC770, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0xC760, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC270, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0xCC70, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0xCC60, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC272, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC260, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC26A, iwl7260_n_cfg)},
 
 
