@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174AbaJ1Vxc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:53:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52762 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177AbaJ1Vxa (ORCPT
+	id S1755175AbaJ1VzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:55:05 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:37838 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751602AbaJ1VzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:53:30 -0400
-Date: Tue, 28 Oct 2014 22:53:08 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <ak@linux.intel.com>
-cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-        mingo@kernel.org, eranian@google.com, dzickus@redhat.com,
-        jmario@redhat.com, acme@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Attempt to cleanup the HSW offcore bits
-In-Reply-To: <20141027142818.GA3041@tassilo.jf.intel.com>
-Message-ID: <alpine.DEB.2.11.1410282243510.5308@nanos>
-References: <20141023105119.173457103@infradead.org> <20141027122340.GU12538@two.firstfloor.org> <20141027130712.GF3337@twins.programming.kicks-ass.net> <20141027142818.GA3041@tassilo.jf.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 28 Oct 2014 17:55:03 -0400
+Date: Tue, 28 Oct 2014 22:51:37 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Roman Byshko <rbyshko@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH 2/5] ARM: dtsi: sunxi: add common VBUS regulator
+Message-ID: <20141028215137.GG9255@lukather>
+References: <cover.1414444953.git.rbyshko@gmail.com>
+ <210cc2a03d43e3d65b08f302b3b32663044ad94f.1414444953.git.rbyshko@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="reI/iBAAp9kzkmX4"
+Content-Disposition: inline
+In-Reply-To: <210cc2a03d43e3d65b08f302b3b32663044ad94f.1414444953.git.rbyshko@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi,
 
-On Mon, 27 Oct 2014, Andi Kleen wrote:
-> On Mon, Oct 27, 2014 at 02:07:12PM +0100, Peter Zijlstra wrote:
-> > On Mon, Oct 27, 2014 at 01:23:40PM +0100, Andi Kleen wrote:
-> > > On Thu, Oct 23, 2014 at 12:51:19PM +0200, Peter Zijlstra wrote:
-> > > > So Don asked about offcore and because I forgot I looked at the code and found
-> > > > the terrible mess Andi created with the HSW/BDW bits.
-> > > > 
-> > > > This series attempts to clean some of that up but seeing how it was all magic
-> > > > numbers 
-> > > 
-> > > All the bits are documented. The actual definitions are available
-> > > in the JSON offcore definitions at https://download.01.org/perfmon/
-> > 
-> > Yeah, no. That's not how we write code. Also, there's no actual JSON
-> > offcore file for HSW only some TSV file, and I've no mind to go decode
-> 
-> https://download.01.org/perfmon/HSW/Haswell_matrix_V14.json
-> https://download.01.org/perfmon/HSW/Haswell_matrix_bit_definitions_V14.json
+--reI/iBAAp9kzkmX4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Of course you did not answer any of the other legitimate questions
-Peter brought up.
+On Mon, Oct 27, 2014 at 10:43:02PM +0100, Roman Byshko wrote:
+> Until now the regulator nodes for powering USB VBUS
+> existed only for the two host controllers. Now the regulator
+> is added for USB OTG too.
+> ---
+>  arch/arm/boot/dts/sunxi-common-regulators.dtsi | 19 +++++++++++++++++++
+>  1 file changed, 19 insertions(+)
+>=20
+> diff --git a/arch/arm/boot/dts/sunxi-common-regulators.dtsi b/arch/arm/bo=
+ot/dts/sunxi-common-regulators.dtsi
+> index c9c5b10..f521672 100644
+> --- a/arch/arm/boot/dts/sunxi-common-regulators.dtsi
+> +++ b/arch/arm/boot/dts/sunxi-common-regulators.dtsi
+> @@ -21,6 +21,13 @@
+>  				allwinner,pull =3D <0>;
+>  			};
+> =20
+> +			usb0_vbus_pin_a: usb0_vbus_pin@0 {
+> +				allwinner,pins =3D "PB9";
+> +				allwinner,function =3D "gpio_out";
+> +				allwinner,drive =3D <0>;
+> +				allwinner,pull =3D <0>;
+> +			};
+> +
+>  			usb1_vbus_pin_a: usb1_vbus_pin@0 {
+>  				allwinner,pins =3D "PH6";
+>  				allwinner,function =3D "gpio_out";
+> @@ -49,6 +56,18 @@
+>  		status =3D "disabled";
+>  	};
+> =20
+> +	reg_usb0_vbus: usb0-vbus {
+> +		compatible =3D "regulator-fixed";
+> +		pinctrl-names =3D "default";
+> +		pinctrl-0 =3D <&usb0_vbus_pin_a>;
+> +		regulator-name =3D "usb0-vbus";
+> +		regulator-min-microvolt =3D <5000000>;
+> +		regulator-max-microvolt =3D <5000000>;
+> +		enable-active-high;
+> +		gpio =3D <&pio 1 9 0>;
+> +		status =3D "disabled";
+> +	};
 
-Care to answer them w/o pointing to magic json files which lack ANY
-useful information about the magic bits they provide? And why they are
-not consistent with the SDM?
-
-Either you come forth with reasonable explanations or I'm going to rip
-out the mess you created even before Peter can persuade himself to do
-so. 
+We're using these regulators because a huuuge majority of the boards
+out there, regardless of their SoC, are using the same GPIO to drive
+the same regulator. Is this the case here? What board have you looked
+at?
 
 Thanks,
+Maxime
 
-	tglx
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
+--reI/iBAAp9kzkmX4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUUA/pAAoJEBx+YmzsjxAgBFQP/R0/geH9Ku9G/DQlOQ0a8wFN
+MwRDpmp49F5QSQuTJv+/4XQJwwvLvAdB9JWAGZ54TLiE7O6i3PepWlqS+BpvFznp
+IkPVWe2egZ1dN2tSvhbmIvFeenkJMb99aK4HwmjGOBlpuzOoUxuDng58ZufS49Or
+tghCYnVrJ81WhZw3KRQ7/eLHc7Nvl5wt3iKxHljEsiE2wDtnBLwDBIdDeVKsE222
+it/cMWHXhC6hTwBEHp0q5ZgAB5/RHnW98xM0REANEUJFesthFEDlZA9fYEPAnLjY
+GZsnuW4+YLAA8C4yMWzT+OdHndJtIabb9rOy/1cTi+OUTicMxM+zuxRnVaRlNt8+
+n5+Ft/QYcn8FDJG9/2dBqrkfrz9RdscRgMAkai5F/NMg+fEcTKSygFYQiQJNv45c
+JBRzt9mnp9bVxwTGk8aIBonS2qE/xWWs2rbprtGCKjv08jJQ1uCsneD+iqQZlDyv
+kW8+X9e4z3gQjejHa/FLrBy4wtcAMf0tqoR5Iuq1SZX0ryZWR3BsGmqo405HPXYS
+tqpMZ1eB6K7rb2ACd/2CT+Bfy6epyx2Q+31uFrWLFGm+1OazAKSZ8XgBh+ttVh5X
+nq8s8gRu66+/OMZwFF9XA63nM3e5pC6RmKz/sx6WObDY0wLjsH3PnGG5SFsM68JZ
+Um1RmLCQU1UCxfYjEU17
+=dBpE
+-----END PGP SIGNATURE-----
+
+--reI/iBAAp9kzkmX4--
