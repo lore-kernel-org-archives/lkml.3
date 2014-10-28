@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964AbaJ1EoI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:44:08 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:52771 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaJ1EoE (ORCPT
+	id S1753188AbaJ1EnQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:43:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47063 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933889AbaJ1Dwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 00:44:04 -0400
-Message-ID: <544F1F0A.3040207@roeck-us.net>
-Date: Mon, 27 Oct 2014 21:43:54 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/43] 3.10.59-stable review
-References: <20141028033523.407092670@linuxfoundation.org>
+	Mon, 27 Oct 2014 23:52:49 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 40/43] ALSA: emu10k1: Fix deadlock in synth voice lookup
+Date: Tue, 28 Oct 2014 11:36:38 +0800
+Message-Id: <20141028033525.118081931@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.544F1F14.00D4,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 6
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2014 08:35 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.59 release.
-> There are 43 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Oct 30 03:35:12 UTC 2014.
-> Anything received after that time might be too late.
->
-Build results:
-	total: 137 pass: 137 fail: 0
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Qemu test results:
-	total: 27 pass: 27 fail: 0
+------------------
 
-Details are available at http://server.roeck-us.net:8010/builders.
+From: Takashi Iwai <tiwai@suse.de>
 
-Guenter
+commit 95926035b187cc9fee6fb61385b7da9c28123f74 upstream.
+
+The emu10k1 voice allocator takes voice_lock spinlock.  When there is
+no empty stream available, it tries to release a voice used by synth,
+and calls get_synth_voice.  The callback function,
+snd_emu10k1_synth_get_voice(), however, also takes the voice_lock,
+thus it deadlocks.
+
+The fix is simply removing the voice_lock holds in
+snd_emu10k1_synth_get_voice(), as this is always called in the
+spinlock context.
+
+Reported-and-tested-by: Arthur Marsh <arthur.marsh@internode.on.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/emu10k1/emu10k1_callback.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+--- a/sound/pci/emu10k1/emu10k1_callback.c
++++ b/sound/pci/emu10k1/emu10k1_callback.c
+@@ -85,6 +85,8 @@ snd_emu10k1_ops_setup(struct snd_emux *e
+  * get more voice for pcm
+  *
+  * terminate most inactive voice and give it as a pcm voice.
++ *
++ * voice_lock is already held.
+  */
+ int
+ snd_emu10k1_synth_get_voice(struct snd_emu10k1 *hw)
+@@ -92,12 +94,10 @@ snd_emu10k1_synth_get_voice(struct snd_e
+ 	struct snd_emux *emu;
+ 	struct snd_emux_voice *vp;
+ 	struct best_voice best[V_END];
+-	unsigned long flags;
+ 	int i;
+ 
+ 	emu = hw->synth;
+ 
+-	spin_lock_irqsave(&emu->voice_lock, flags);
+ 	lookup_voices(emu, hw, best, 1); /* no OFF voices */
+ 	for (i = 0; i < V_END; i++) {
+ 		if (best[i].voice >= 0) {
+@@ -113,11 +113,9 @@ snd_emu10k1_synth_get_voice(struct snd_e
+ 			vp->emu->num_voices--;
+ 			vp->ch = -1;
+ 			vp->state = SNDRV_EMUX_ST_OFF;
+-			spin_unlock_irqrestore(&emu->voice_lock, flags);
+ 			return ch;
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&emu->voice_lock, flags);
+ 
+ 	/* not found */
+ 	return -ENOMEM;
+
 
