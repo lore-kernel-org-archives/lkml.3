@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732AbaJ1DrD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:47:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45561 "EHLO
+	id S932680AbaJ1Dqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:46:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45542 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932695AbaJ1Dq6 (ORCPT
+	with ESMTP id S932658AbaJ1Dqq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:46:58 -0400
+	Mon, 27 Oct 2014 23:46:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Alexander Tobias Schulze 
-	<cat.schulze@alice-dsl.net>,
+        Sowmini Varadhan <sowmini.varadhan@oracle.com>,
+        Dwight Engen <dwight.engen@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 098/127] sparc64: Fix pcr_ops initialization and usage bugs.
-Date: Tue, 28 Oct 2014 11:35:33 +0800
-Message-Id: <20141028033425.127052005@linuxfoundation.org>
+Subject: [PATCH 3.16 103/127] sparc64: Move request_irq() from ldc_bind() to ldc_alloc()
+Date: Tue, 28 Oct 2014 11:35:38 +0800
+Message-Id: <20141028033425.340898451@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -30,85 +30,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
 
-[ Upstream commit 8bccf5b313180faefce38e0d1140f76e0f327d28 ]
+[ Upstream commit c21c4ab0d6921f7160a43216fa6973b5924de561 ]
 
-Christopher reports that perf_event_print_debug() can crash in uniprocessor
-builds.  The crash is due to pcr_ops being NULL.
+The request_irq() needs to be done from ldc_alloc()
+to avoid the following (caught by lockdep)
 
-This happens because pcr_arch_init() is only invoked by smp_cpus_done() which
-only executes in SMP builds.
+ [00000000004a0738] __might_sleep+0xf8/0x120
+ [000000000058bea4] kmem_cache_alloc_trace+0x184/0x2c0
+ [00000000004faf80] request_threaded_irq+0x80/0x160
+ [000000000044f71c] ldc_bind+0x7c/0x220
+ [0000000000452454] vio_port_up+0x54/0xe0
+ [00000000101f6778] probe_disk+0x38/0x220 [sunvdc]
+ [00000000101f6b8c] vdc_port_probe+0x22c/0x300 [sunvdc]
+ [0000000000451a88] vio_device_probe+0x48/0x60
+ [000000000074c56c] really_probe+0x6c/0x300
+ [000000000074c83c] driver_probe_device+0x3c/0xa0
+ [000000000074c92c] __driver_attach+0x8c/0xa0
+ [000000000074a6ec] bus_for_each_dev+0x6c/0xa0
+ [000000000074c1dc] driver_attach+0x1c/0x40
+ [000000000074b0fc] bus_add_driver+0xbc/0x280
 
-init_hw_perf_events() is closely intertwined with pcr_ops being setup properly,
-therefore:
-
-1) Call pcr_arch_init() early on from init_hw_perf_events(), instead of
-   from smp_cpus_done().
-
-2) Do not hook up a PMU type if pcr_ops is NULL after pcr_arch_init().
-
-3) Move init_hw_perf_events to a later initcall so that it we will be
-   sure to invoke pcr_arch_init() after all cpus are brought up.
-
-Finally, guard the one naked sequence of pcr_ops dereferences in
-__global_pmu_self() with an appropriate NULL check.
-
-Reported-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
+Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Acked-by: Dwight Engen <dwight.engen@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/perf_event.c |    7 +++++--
- arch/sparc/kernel/process_64.c |    3 +++
- arch/sparc/kernel/smp_64.c     |    1 -
- 3 files changed, 8 insertions(+), 3 deletions(-)
+ arch/sparc/include/asm/ldc.h |    5 +++--
+ arch/sparc/kernel/ds.c       |    4 ++--
+ arch/sparc/kernel/ldc.c      |   41 +++++++++++++++++++++--------------------
+ arch/sparc/kernel/viohs.c    |    4 ++--
+ 4 files changed, 28 insertions(+), 26 deletions(-)
 
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1671,9 +1671,12 @@ static bool __init supported_pmu(void)
+--- a/arch/sparc/include/asm/ldc.h
++++ b/arch/sparc/include/asm/ldc.h
+@@ -53,13 +53,14 @@ struct ldc_channel;
+ /* Allocate state for a channel.  */
+ struct ldc_channel *ldc_alloc(unsigned long id,
+ 			      const struct ldc_channel_config *cfgp,
+-			      void *event_arg);
++			      void *event_arg,
++			      const char *name);
  
- static int __init init_hw_perf_events(void)
- {
-+	int err;
-+
- 	pr_info("Performance events: ");
+ /* Shut down and free state for a channel.  */
+ void ldc_free(struct ldc_channel *lp);
  
--	if (!supported_pmu()) {
-+	err = pcr_arch_init();
-+	if (err || !supported_pmu()) {
- 		pr_cont("No support for PMU type '%s'\n", sparc_pmu_type);
- 		return 0;
+ /* Register TX and RX queues of the link with the hypervisor.  */
+-int ldc_bind(struct ldc_channel *lp, const char *name);
++int ldc_bind(struct ldc_channel *lp);
+ 
+ /* For non-RAW protocols we need to complete a handshake before
+  * communication can proceed.  ldc_connect() does that, if the
+--- a/arch/sparc/kernel/ds.c
++++ b/arch/sparc/kernel/ds.c
+@@ -1200,14 +1200,14 @@ static int ds_probe(struct vio_dev *vdev
+ 	ds_cfg.tx_irq = vdev->tx_irq;
+ 	ds_cfg.rx_irq = vdev->rx_irq;
+ 
+-	lp = ldc_alloc(vdev->channel_id, &ds_cfg, dp);
++	lp = ldc_alloc(vdev->channel_id, &ds_cfg, dp, "DS");
+ 	if (IS_ERR(lp)) {
+ 		err = PTR_ERR(lp);
+ 		goto out_free_ds_states;
  	}
-@@ -1685,7 +1688,7 @@ static int __init init_hw_perf_events(vo
+ 	dp->lp = lp;
  
- 	return 0;
- }
--early_initcall(init_hw_perf_events);
-+pure_initcall(init_hw_perf_events);
+-	err = ldc_bind(lp, "DS");
++	err = ldc_bind(lp);
+ 	if (err)
+ 		goto out_free_ldc;
  
- void perf_callchain_kernel(struct perf_callchain_entry *entry,
- 			   struct pt_regs *regs)
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -312,6 +312,9 @@ static void __global_pmu_self(int this_c
- 	struct global_pmu_snapshot *pp;
- 	int i, num;
+--- a/arch/sparc/kernel/ldc.c
++++ b/arch/sparc/kernel/ldc.c
+@@ -1078,7 +1078,8 @@ static void ldc_iommu_release(struct ldc
  
-+	if (!pcr_ops)
-+		return;
-+
- 	pp = &global_cpu_snapshot[this_cpu].pmu;
- 
- 	num = 1;
---- a/arch/sparc/kernel/smp_64.c
-+++ b/arch/sparc/kernel/smp_64.c
-@@ -1383,7 +1383,6 @@ void __cpu_die(unsigned int cpu)
- 
- void __init smp_cpus_done(unsigned int max_cpus)
+ struct ldc_channel *ldc_alloc(unsigned long id,
+ 			      const struct ldc_channel_config *cfgp,
+-			      void *event_arg)
++			      void *event_arg,
++			      const char *name)
  {
--	pcr_arch_init();
- }
+ 	struct ldc_channel *lp;
+ 	const struct ldc_mode_ops *mops;
+@@ -1093,6 +1094,8 @@ struct ldc_channel *ldc_alloc(unsigned l
+ 	err = -EINVAL;
+ 	if (!cfgp)
+ 		goto out_err;
++	if (!name)
++		goto out_err;
  
- void smp_send_reschedule(int cpu)
+ 	switch (cfgp->mode) {
+ 	case LDC_MODE_RAW:
+@@ -1185,6 +1188,21 @@ struct ldc_channel *ldc_alloc(unsigned l
+ 
+ 	INIT_HLIST_HEAD(&lp->mh_list);
+ 
++	snprintf(lp->rx_irq_name, LDC_IRQ_NAME_MAX, "%s RX", name);
++	snprintf(lp->tx_irq_name, LDC_IRQ_NAME_MAX, "%s TX", name);
++
++	err = request_irq(lp->cfg.rx_irq, ldc_rx, 0,
++			  lp->rx_irq_name, lp);
++	if (err)
++		goto out_free_txq;
++
++	err = request_irq(lp->cfg.tx_irq, ldc_tx, 0,
++			  lp->tx_irq_name, lp);
++	if (err) {
++		free_irq(lp->cfg.rx_irq, lp);
++		goto out_free_txq;
++	}
++
+ 	return lp;
+ 
+ out_free_txq:
+@@ -1237,31 +1255,14 @@ EXPORT_SYMBOL(ldc_free);
+  * state.  This does not initiate a handshake, ldc_connect() does
+  * that.
+  */
+-int ldc_bind(struct ldc_channel *lp, const char *name)
++int ldc_bind(struct ldc_channel *lp)
+ {
+ 	unsigned long hv_err, flags;
+ 	int err = -EINVAL;
+ 
+-	if (!name ||
+-	    (lp->state != LDC_STATE_INIT))
++	if (lp->state != LDC_STATE_INIT)
+ 		return -EINVAL;
+ 
+-	snprintf(lp->rx_irq_name, LDC_IRQ_NAME_MAX, "%s RX", name);
+-	snprintf(lp->tx_irq_name, LDC_IRQ_NAME_MAX, "%s TX", name);
+-
+-	err = request_irq(lp->cfg.rx_irq, ldc_rx, 0,
+-			  lp->rx_irq_name, lp);
+-	if (err)
+-		return err;
+-
+-	err = request_irq(lp->cfg.tx_irq, ldc_tx, 0,
+-			  lp->tx_irq_name, lp);
+-	if (err) {
+-		free_irq(lp->cfg.rx_irq, lp);
+-		return err;
+-	}
+-
+-
+ 	spin_lock_irqsave(&lp->lock, flags);
+ 
+ 	enable_irq(lp->cfg.rx_irq);
+--- a/arch/sparc/kernel/viohs.c
++++ b/arch/sparc/kernel/viohs.c
+@@ -714,7 +714,7 @@ int vio_ldc_alloc(struct vio_driver_stat
+ 	cfg.tx_irq = vio->vdev->tx_irq;
+ 	cfg.rx_irq = vio->vdev->rx_irq;
+ 
+-	lp = ldc_alloc(vio->vdev->channel_id, &cfg, event_arg);
++	lp = ldc_alloc(vio->vdev->channel_id, &cfg, event_arg, vio->name);
+ 	if (IS_ERR(lp))
+ 		return PTR_ERR(lp);
+ 
+@@ -746,7 +746,7 @@ void vio_port_up(struct vio_driver_state
+ 
+ 	err = 0;
+ 	if (state == LDC_STATE_INIT) {
+-		err = ldc_bind(vio->lp, vio->name);
++		err = ldc_bind(vio->lp);
+ 		if (err)
+ 			printk(KERN_WARNING "%s: Port %lu bind failed, "
+ 			       "err=%d\n",
 
 
