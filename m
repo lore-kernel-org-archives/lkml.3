@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460AbaJ1Dit (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:38:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44550 "EHLO
+	id S1754502AbaJ1Di5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:38:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44562 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754413AbaJ1Diq (ORCPT
+	with ESMTP id S1754439AbaJ1Dix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:46 -0400
+	Mon, 27 Oct 2014 23:38:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oren Givon <oren.givon@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.17 067/146] iwlwifi: Add missing PCI IDs for the 7260 series
-Date: Tue, 28 Oct 2014 11:33:29 +0800
-Message-Id: <20141028033346.293454515@linuxfoundation.org>
+        Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.17 061/146] NFSv4.1: Fix an NFSv4.1 state renewal regression
+Date: Tue, 28 Oct 2014 11:33:23 +0800
+Message-Id: <20141028033346.026807847@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,39 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oren Givon <oren.givon@intel.com>
+From: Andy Adamson <andros@netapp.com>
 
-commit 4f08970f5284dce486f0e2290834aefb2a262189 upstream.
+commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
 
-Add 4 missing PCI IDs for the 7260 series.
+Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
+not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
+call, on the wire to renew the NFSv4.1 state if the flag was not set.
 
-Signed-off-by: Oren Givon <oren.givon@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
+(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
+sometimes does the following:
+
+In normal operation, the only way a future state renewal call is put on the
+wire is via a call to nfs4_schedule_state_renewal, which schedules a
+nfs4_renew_state workqueue task. nfs4_renew_state determines if the
+NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
+which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
+Then the nfs41_proc_async_sequence rpc_release function schedules
+another state remewal via nfs4_schedule_state_renewal.
+
+Without this change we can get into a state where an application stops
+accessing the NFSv4.1 share, state renewal calls stop due to the
+NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
+from this situation is with a clientid re-establishment, once the application
+resumes and the server has timed out the lease and so returns
+NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
+
+An example application:
+open, lock, write a file.
+
+sleep for 6 * lease (could be less)
+
+ulock, close.
+
+In the above example with NFSv4.1 delegations enabled, without this change,
+there are no OP_SEQUENCE state renewal calls during the sleep, and the
+clientid is recovered due to lease expiration on the close.
+
+This issue does not occur with NFSv4.1 delegations disabled, nor with
+NFSv4.0, with or without delegations enabled.
+
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
+Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/pcie/drv.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/nfs/nfs4proc.c   |    2 +-
+ fs/nfs/nfs4renewd.c |   12 ++++++++++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/pcie/drv.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
-@@ -273,6 +273,8 @@ static const struct pci_device_id iwl_hw
- 	{IWL_PCI_DEVICE(0x08B1, 0x4070, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4072, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4170, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0x4C60, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0x4C70, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4060, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x406A, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4160, iwl7260_2n_cfg)},
-@@ -316,6 +318,8 @@ static const struct pci_device_id iwl_hw
- 	{IWL_PCI_DEVICE(0x08B1, 0xC770, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0xC760, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC270, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0xCC70, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0xCC60, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC272, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC260, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC26A, iwl7260_n_cfg)},
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7353,7 +7353,7 @@ static int nfs41_proc_async_sequence(str
+ 	int ret = 0;
+ 
+ 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
+-		return 0;
++		return -EAGAIN;
+ 	task = _nfs41_proc_sequence(clp, cred, false);
+ 	if (IS_ERR(task))
+ 		ret = PTR_ERR(task);
+--- a/fs/nfs/nfs4renewd.c
++++ b/fs/nfs/nfs4renewd.c
+@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *wor
+ 			}
+ 			nfs_expire_all_delegations(clp);
+ 		} else {
++			int ret;
++
+ 			/* Queue an asynchronous RENEW. */
+-			ops->sched_state_renewal(clp, cred, renew_flags);
++			ret = ops->sched_state_renewal(clp, cred, renew_flags);
+ 			put_rpccred(cred);
+-			goto out_exp;
++			switch (ret) {
++			default:
++				goto out_exp;
++			case -EAGAIN:
++			case -ENOMEM:
++				break;
++			}
+ 		}
+ 	} else {
+ 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
 
 
