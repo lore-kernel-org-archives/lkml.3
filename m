@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704AbaJ1UdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:33:21 -0400
-Received: from smtprelay0198.hostedemail.com ([216.40.44.198]:37661 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751027AbaJ1UdU (ORCPT
+	id S1754475AbaJ1UeE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:34:04 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:45933 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaJ1UeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:33:20 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:960:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2691:2828:3138:3139:3140:3141:3142:3865:3866:3867:3868:3870:3871:3872:3874:4321:4423:5007:6120:6261:10004:10400:10848:11658:11914:12517:12519:12555:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: blow21_397b8dce6b450
-X-Filterd-Recvd-Size: 1138
-Message-ID: <1414528393.10912.6.camel@perches.com>
-Subject: RFC -next: Converting dev_<level> function to return void
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 28 Oct 2014 13:33:13 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Oct 2014 16:34:01 -0400
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH 0/5] of: Resolver and dynamic updates
+Date: Tue, 28 Oct 2014 22:33:48 +0200
+Message-Id: <1414528433-9650-1-git-send-email-pantelis.antoniou@konsulko.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I believe -next currently has no more uses of the dev_<level>
-return value, so it's possible to make these return void.
+The following patch-series implements a number of fixes to the
+dynamic DT handling of the kernel, and provides infrastructure that
+the upcoming Device Tree Overlay patchset will use.
 
-There are dependencies on changes in drivers/net/wireless/ath
-that have just been pulled into next-20141028 but not earlier.
+Pantelis Antoniou (5):
+  of: resolver: Switch to new local fixups format.
+  of: testcases: Update with new local fixups format
+  of: Only call notifiers when node is attached
+  of: Add old prop argument on OF_RECONFIG_UPDATE_PROPERTY
+  of: of_reconfig_get_state_change() of notifier helper.
 
-Given the dependencies, when would be a good time to submit
-changes to these dev_<level> declarations and uses?
+ drivers/of/base.c                      |   9 +-
+ drivers/of/dynamic.c                   | 119 ++++++++++++++++++--
+ drivers/of/resolver.c                  | 191 ++++++++++++++++++++++++++++-----
+ drivers/of/selftest.c                  |   2 +-
+ drivers/of/testcase-data/testcases.dts |  61 ++++++-----
+ include/linux/of.h                     |  21 ++--
+ 6 files changed, 334 insertions(+), 69 deletions(-)
 
-It's not urgent, it could wait until 3.19, but maybe sooner
-is better.
-
+-- 
+1.7.12
 
