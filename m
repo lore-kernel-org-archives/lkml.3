@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091AbaJ1Qxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:53:43 -0400
-Received: from mga14.intel.com ([192.55.52.115]:14377 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081AbaJ1Qxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:53:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,803,1406617200"; 
-   d="scan'208";a="612875471"
-Date: Tue, 28 Oct 2014 09:42:59 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH] gpio/pinctrl: baytrail: move gpio driver from
- pinctrl to gpio directory
-Message-ID: <20141028164259.GA16355@psi-dev26.jf.intel.com>
-References: <1413227857-555-1-git-send-email-david.a.cohen@linux.intel.com>
- <543CFC7F.2070607@linux.intel.com>
- <20141014174535.GA6516@psi-dev26.jf.intel.com>
- <20141015070812.GM2255@lahna.fi.intel.com>
- <20141015165542.GA4529@psi-dev26.jf.intel.com>
- <20141016080123.GW2255@lahna.fi.intel.com>
- <20141017015322.GB4513@psi-dev26.jf.intel.com>
- <CACRpkdafsd3VDiEKbdooXx+mdAtf-3B6QBOEGeHgyJf9GKHqhQ@mail.gmail.com>
+	id S1751751AbaJ1Q5w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:57:52 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:41984 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaJ1Q5u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 12:57:50 -0400
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Peter Hurley <peter@hurleysoftware.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: CMA: test_pages_isolated failures in alloc_contig_range
+In-Reply-To: <544F9EAA.5010404@hurleysoftware.com>
+Organization: http://mina86.com/
+References: <2457604.k03RC2Mv4q@avalon> <xa1tsii8l683.fsf@mina86.com> <544F9EAA.5010404@hurleysoftware.com>
+User-Agent: Notmuch/0.17+15~gb65ca8e (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:141028:linux-mm@kvack.org::DC7M+V4GTtYgbEc3:0000000000000000000000000000000000000000000035O
+X-Hashcash: 1:20:141028:linux-sh@vger.kernel.org::+dHiJeWxQ1u+5Rnl:00000000000000000000000000000000000000Dqv
+X-Hashcash: 1:20:141028:laurent.pinchart@ideasonboard.com::iSvm4om1uFyTA9/Z:00000000000000000000000000000GgA
+X-Hashcash: 1:20:141028:b.zolnierkie@samsung.com::yoJXhw/wogkjvjnN:00000000000000000000000000000000000000tbP
+X-Hashcash: 1:20:141028:linux-kernel@vger.kernel.org::x9ZBZKk2P5pjSBkP:0000000000000000000000000000000001L9H
+X-Hashcash: 1:20:141028:peter@hurleysoftware.com::FS1vAPB+d45ENuKb:00000000000000000000000000000000000001OZF
+X-Hashcash: 1:20:141028:minchan@kernel.org::btY0K2z/ZEz33LBS:00000000000000000000000000000000000000000004jSI
+X-Hashcash: 1:20:141028:akpm@linux-foundation.org::d9ou9KgxG+YQqA/l:0000000000000000000000000000000000007Spa
+Date: Tue, 28 Oct 2014 17:57:45 +0100
+Message-ID: <xa1tfve8ku7q.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdafsd3VDiEKbdooXx+mdAtf-3B6QBOEGeHgyJf9GKHqhQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 04:10:26PM +0100, Linus Walleij wrote:
-> On Fri, Oct 17, 2014 at 3:53 AM, David Cohen
-> <david.a.cohen@linux.intel.com> wrote:
-> > On Thu, Oct 16, 2014 at 11:01:23AM +0300, Mika Westerberg wrote:
-> 
-> >> In an ideal world, yes. However, the reality has shown that BIOS/FW gets
-> >> these wrong and we need to work it around in the OS.
-> >
-> > But we never upstream these workarounds, right? :)
-> 
-> Unless you discover it after it hits the market, right?
+> On 10/28/2014 08:38 AM, Michal Nazarewicz wrote:
+>> Like Laura wrote, the message is not (should not be) a problem in
+>> itself:
+>
+> [...]
+>
+>> So as you can see cma_alloc will try another part of the cma region if
+>> test_pages_isolated fails.
+>> 
+>> Obviously, if CMA region is fragmented or there's enough space for only
+>> one allocation of required size isolation failures will cause allocation
+>> failures, so it's best to avoid them, but they are not always avoidable.
+>> 
+>> To debug you would probably want to add more debug information about the
+>> page (i.e. data from struct page) that failed isolation after the
+>> pr_warn in alloc_contig_range.
 
-This is quite unlikely to happen. A pin mux misconfigured would have
-quite bad side effects. But considering it happens, IMHO not even this
-case would make an upstreamed baytrail pinctrl API consumer correct. The
-FW should get updated instead. But...
+On Tue, Oct 28 2014, Peter Hurley <peter@hurleysoftware.com> wrote:
+> If the message does not indicate an actual problem, then its printk level is
+> too high. These messages have been reported when using 3.16+ distro kernels.
 
-> 
-> I think this driver is just fine exactly where it is. Besides, the driver
-> is fully aware of all its pins, and just look at all the pull up etc
-> information displayed by byt_gpio_dbg_show(), it doesn't get more
-> pin control than that even if you don't implement the pin control
-> API.
+I think it could be argued both ways.  The condition is not an error,
+since in many cases cma_alloc will be able to continue, but it *is* an
+undesired state.  As such it's not an error but feels to me a bit more
+then just information, hence a warning.  I don't care either way, though.
 
-... considering the development boards + the case you mentioned above,
-my RFC got more buried than it already was :)
-
-Br, David
-
-> 
-> Yours,
-> Linus Walleij
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
