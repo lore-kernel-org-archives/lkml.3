@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752919AbaJ1Qce (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:32:34 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:36286 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803AbaJ1Qcd (ORCPT
+	id S1753077AbaJ1QdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:33:07 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:48892 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaJ1QdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:32:33 -0400
-Message-ID: <544FC540.1050501@gmail.com>
-Date: Tue, 28 Oct 2014 09:33:04 -0700
-From: Santosh Shilimkar <santosh.shilimkar@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	Tue, 28 Oct 2014 12:33:05 -0400
 MIME-Version: 1.0
-To: Murali Karicheri <m-karicheri2@ti.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Enable PCI controller for Keystone SoCs
-References: <1414173095-32511-1-git-send-email-m-karicheri2@ti.com> <544FBF1C.80305@ti.com> <544FBF4D.6000502@ti.com>
-In-Reply-To: <544FBF4D.6000502@ti.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1412184482-2603-1-git-send-email-pramod.gurav@smartplayin.com>
+References: <1412184482-2603-1-git-send-email-pramod.gurav@smartplayin.com>
+Date: Tue, 28 Oct 2014 22:03:02 +0530
+Message-ID: <CAMf-jSk4GH=8+Cpk4dCzUhbwoKxMOsJPPrURP5-ktAvqXfhsjw@mail.gmail.com>
+Subject: Re: [PATCH v2] ssb: Fix Sparse error in main
+From: Pramod Gurav <pramod.gurav.etc@gmail.com>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Buesch <m@bues.ch>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Michael had suggested to do away with this function if not being used.
+Good to go?
 
+Michale can you provide acked-by?
 
-On 10/28/2014 09:07 AM, Murali Karicheri wrote:
-> On 10/28/2014 12:06 PM, Murali Karicheri wrote:
->> On 10/24/2014 01:51 PM, Murali Karicheri wrote:
->>> Now that Keystone PCI driver is merged to v3.18, this patch series
->>> add build options and DTS bindings to enable the driver for Keystone
->>> SoCs.
->>>
->>> CC : Santosh Shilimkar<santosh.shilimkar@gmail.com>
->>> CC : Greg Kroah-Hartman<gregkh@linuxfoundation.org>
->>> CC : Rob Herring<robh+dt@kernel.org>
->>> CC : Pawel Moll<pawel.moll@arm.com>
->>> CC : Mark Rutland<mark.rutland@arm.com>
->>> CC : Ian Campbell<ijc+devicetree@hellion.org.uk>
->>> CC : Kumar Gala<galak@codeaurora.org>
->>> CC : Russell King<linux@arm.linux.org.uk>
->>> CC : devicetree@vger.kernel.org
->>>
->>> Murali Karicheri (4):
->>> ARM: keystone: add pcie related options
->>> ARM: keystone: defconfig: add options to enable PCI controller
->>> ARM: keystone: dts: add DT bindings for PCI controller for port 0
->>> ARM: keystone: dts: add DT bindings for PCI controller for port 1
->>>
->>> arch/arm/boot/dts/k2e.dtsi | 45 +++++++++++++++++++++++++++++++++++
->>> arch/arm/boot/dts/keystone.dtsi | 45 +++++++++++++++++++++++++++++++++++
->>> arch/arm/configs/keystone_defconfig | 3 +++
->>> arch/arm/mach-keystone/Kconfig | 2 ++
->>> 4 files changed, 95 insertions(+)
->>>
->> Santosh,
->>
->> Could you review this and apply to your tree for merge by end of this
->> week if this looks good and there are no comments?
->>
-> Adding Santosh's personal email ID
+On Wed, Oct 1, 2014 at 10:58 PM, Pramod Gurav
+<pramod.gurav@smartplayin.com> wrote:
+> This change fixes below sparse error:
+> drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
+> was not declared. Should it be static?
 >
-Just use the listed kernel.org id while posting patches which needs
-my attention. Please repost the series again so that I have all the
-patches.
+> Cc: Michael Buesch <m@bues.ch>
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+> ---
+> Changes since v1:
+> Removed the function as it is not called anywhere in the kernel
+> as per suggestion from Michael Buesch.
+>
+>  drivers/ssb/main.c | 19 -------------------
+>  1 file changed, 19 deletions(-)
+>
+> diff --git a/drivers/ssb/main.c b/drivers/ssb/main.c
+> index 2fead38..1e180c4 100644
+> --- a/drivers/ssb/main.c
+> +++ b/drivers/ssb/main.c
+> @@ -90,25 +90,6 @@ found:
+>  }
+>  #endif /* CONFIG_SSB_PCMCIAHOST */
+>
+> -#ifdef CONFIG_SSB_SDIOHOST
+> -struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func)
+> -{
+> -       struct ssb_bus *bus;
+> -
+> -       ssb_buses_lock();
+> -       list_for_each_entry(bus, &buses, list) {
+> -               if (bus->bustype == SSB_BUSTYPE_SDIO &&
+> -                   bus->host_sdio == func)
+> -                       goto found;
+> -       }
+> -       bus = NULL;
+> -found:
+> -       ssb_buses_unlock();
+> -
+> -       return bus;
+> -}
+> -#endif /* CONFIG_SSB_SDIOHOST */
+> -
+>  int ssb_for_each_bus_call(unsigned long data,
+>                           int (*func)(struct ssb_bus *bus, unsigned long data))
+>  {
+> --
+> 1.8.3.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Also what happened with the PCIE notifier related series ?
-If you have already proposed something, please loop me on the thread.
 
-Thanks and Regards,
-Santosh
+
+-- 
+Thanks and Regards
+Pramod
