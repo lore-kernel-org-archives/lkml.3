@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331AbaJ1VbN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:31:13 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:37133 "EHLO
+	id S1755346AbaJ1Vbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:31:35 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:37219 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755252AbaJ1VbH (ORCPT
+	with ESMTP id S1755311AbaJ1VbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:31:07 -0400
+	Tue, 28 Oct 2014 17:31:12 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 36/58] dmaengine: s3c24xx: Split device_control
-Date: Tue, 28 Oct 2014 22:25:51 +0100
-Message-Id: <1414531573-18807-37-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 31/58] dmaengine: mxs: Split device_control
+Date: Tue, 28 Oct 2014 22:25:46 +0100
+Message-Id: <1414531573-18807-32-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,146 +24,159 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Samsung S3C24xxx DMA driver to make
-use of the newly introduced callbacks, that will eventually be used to retrieve
+Split the device_control callback of the Freescale MXS DMA driver to make use
+of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/s3c24xx-dma.c | 75 +++++++++++++++++++++++------------------------
- 1 file changed, 36 insertions(+), 39 deletions(-)
+ drivers/dma/mxs-dma.c | 59 ++++++++++++++++++++-------------------------------
+ 1 file changed, 23 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/dma/s3c24xx-dma.c b/drivers/dma/s3c24xx-dma.c
-index 7416572d1e40..2177bf5a742c 100644
---- a/drivers/dma/s3c24xx-dma.c
-+++ b/drivers/dma/s3c24xx-dma.c
-@@ -384,20 +384,30 @@ static u32 s3c24xx_dma_getbytes_chan(struct s3c24xx_dma_chan *s3cchan)
- 	return tc * txd->width;
+diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
+index 5ea61201dbf0..834041e5a769 100644
+--- a/drivers/dma/mxs-dma.c
++++ b/drivers/dma/mxs-dma.c
+@@ -202,8 +202,9 @@ static struct mxs_dma_chan *to_mxs_dma_chan(struct dma_chan *chan)
+ 	return container_of(chan, struct mxs_dma_chan, chan);
  }
  
--static int s3c24xx_dma_set_runtime_config(struct s3c24xx_dma_chan *s3cchan,
-+static int s3c24xx_dma_set_runtime_config(struct dma_chan *chan,
- 				  struct dma_slave_config *config)
+-static void mxs_dma_reset_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_reset_chan(struct dma_chan *chan)
  {
--	if (!s3cchan->slave)
--		return -EINVAL;
-+	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
-+	unsigned long flags;
-+	int ret = 0;
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 	int chan_id = mxs_chan->chan.chan_id;
  
- 	/* Reject definitely invalid configurations */
- 	if (config->src_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES ||
- 	    config->dst_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES)
- 		return -EINVAL;
- 
-+	spin_lock_irqsave(&s3cchan->vc.lock, flags);
-+
-+	if (!s3cchan->slave) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
- 	s3cchan->cfg = *config;
- 
--	return 0;
-+out:
-+	spin_lock_irqrestore(&s3cchan->vc.lock, flags);
-+	return ret;
+@@ -250,8 +251,9 @@ static void mxs_dma_reset_chan(struct mxs_dma_chan *mxs_chan)
+ 	mxs_chan->status = DMA_COMPLETE;
  }
  
- /*
-@@ -703,53 +713,38 @@ static irqreturn_t s3c24xx_dma_irq(int irq, void *data)
-  * The DMA ENGINE API
-  */
- 
--static int s3c24xx_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			 unsigned long arg)
-+static int s3c24xx_dma_terminate_all(struct dma_chan *chan)
+-static void mxs_dma_enable_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_enable_chan(struct dma_chan *chan)
  {
- 	struct s3c24xx_dma_chan *s3cchan = to_s3c24xx_dma_chan(chan);
- 	struct s3c24xx_dma_engine *s3cdma = s3cchan->host;
- 	unsigned long flags;
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 	int chan_id = mxs_chan->chan.chan_id;
+ 
+@@ -272,13 +274,16 @@ static void mxs_dma_enable_chan(struct mxs_dma_chan *mxs_chan)
+ 	mxs_chan->reset = false;
+ }
+ 
+-static void mxs_dma_disable_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_disable_chan(struct dma_chan *chan)
+ {
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
++
+ 	mxs_chan->status = DMA_COMPLETE;
+ }
+ 
+-static void mxs_dma_pause_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_pause_chan(struct dma_chan *chan)
+ {
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 	int chan_id = mxs_chan->chan.chan_id;
+ 
+@@ -293,8 +298,9 @@ static void mxs_dma_pause_chan(struct mxs_dma_chan *mxs_chan)
+ 	mxs_chan->status = DMA_PAUSED;
+ }
+ 
+-static void mxs_dma_resume_chan(struct mxs_dma_chan *mxs_chan)
++static void mxs_dma_resume_chan(struct dma_chan *chan)
+ {
++	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 	int chan_id = mxs_chan->chan.chan_id;
+ 
+@@ -383,7 +389,7 @@ static irqreturn_t mxs_dma_int_handler(int irq, void *dev_id)
+ 			"%s: error in channel %d\n", __func__,
+ 			chan);
+ 		mxs_chan->status = DMA_ERROR;
+-		mxs_dma_reset_chan(mxs_chan);
++		mxs_dma_reset_chan(mxs_chan->chan);
+ 	} else if (mxs_chan->status != DMA_COMPLETE) {
+ 		if (mxs_chan->flags & MXS_DMA_SG_LOOP) {
+ 			mxs_chan->status = DMA_IN_PROGRESS;
+@@ -432,7 +438,7 @@ static int mxs_dma_alloc_chan_resources(struct dma_chan *chan)
+ 	if (ret)
+ 		goto err_clk;
+ 
+-	mxs_dma_reset_chan(mxs_chan);
++	mxs_dma_reset_chan(chan);
+ 
+ 	dma_async_tx_descriptor_init(&mxs_chan->desc, chan);
+ 	mxs_chan->desc.tx_submit = mxs_dma_tx_submit;
+@@ -456,7 +462,7 @@ static void mxs_dma_free_chan_resources(struct dma_chan *chan)
+ 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+ 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
+ 
+-	mxs_dma_disable_chan(mxs_chan);
++	mxs_dma_disable_chan(chan);
+ 
+ 	free_irq(mxs_chan->chan_irq, mxs_dma);
+ 
+@@ -651,28 +657,14 @@ err_out:
+ 	return NULL;
+ }
+ 
+-static int mxs_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		unsigned long arg)
++static int mxs_dma_terminate_all(struct dma_chan *chan)
+ {
+ 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
 -	int ret = 0;
- 
- 	spin_lock_irqsave(&s3cchan->vc.lock, flags);
- 
--	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		ret = s3c24xx_dma_set_runtime_config(s3cchan,
--					      (struct dma_slave_config *)arg);
--		break;
--	case DMA_TERMINATE_ALL:
--		if (!s3cchan->phy && !s3cchan->at) {
--			dev_err(&s3cdma->pdev->dev, "trying to terminate already stopped channel %d\n",
--				s3cchan->id);
--			ret = -EINVAL;
--			break;
--		}
 -
--		s3cchan->state = S3C24XX_DMA_CHAN_IDLE;
-+	if (!s3cchan->phy && !s3cchan->at) {
-+		dev_err(&s3cdma->pdev->dev, "trying to terminate already stopped channel %d\n",
-+			s3cchan->id);
-+		return -EINVAL;
-+	}
- 
--		 /* Mark physical channel as free */
--		if (s3cchan->phy)
--			s3c24xx_dma_phy_free(s3cchan);
-+	s3cchan->state = S3C24XX_DMA_CHAN_IDLE;
- 
--		/* Dequeue current job */
--		if (s3cchan->at) {
--			s3c24xx_dma_desc_free(&s3cchan->at->vd);
--			s3cchan->at = NULL;
--		}
-+	/* Mark physical channel as free */
-+	if (s3cchan->phy)
-+		s3c24xx_dma_phy_free(s3cchan);
- 
--		/* Dequeue jobs not yet fired as well */
--		s3c24xx_dma_free_txd_list(s3cdma, s3cchan);
+-	switch (cmd) {
+-	case DMA_TERMINATE_ALL:
+-		mxs_dma_reset_chan(mxs_chan);
+-		mxs_dma_disable_chan(mxs_chan);
+-		break;
+-	case DMA_PAUSE:
+-		mxs_dma_pause_chan(mxs_chan);
+-		break;
+-	case DMA_RESUME:
+-		mxs_dma_resume_chan(mxs_chan);
 -		break;
 -	default:
--		/* Unknown command */
--		ret = -ENXIO;
--		break;
-+	/* Dequeue current job */
-+	if (s3cchan->at) {
-+		s3c24xx_dma_desc_free(&s3cchan->at->vd);
-+		s3cchan->at = NULL;
- 	}
- 
-+	/* Dequeue jobs not yet fired as well */
-+	s3c24xx_dma_free_txd_list(s3cdma, s3cchan);
-+
- 	spin_unlock_irqrestore(&s3cchan->vc.lock, flags);
+-		ret = -ENOSYS;
+-	}
  
 -	return ret;
++	mxs_dma_reset_chan(chan);
++	mxs_dma_disable_chan(chan);
++
 +	return 0;
  }
  
- static int s3c24xx_dma_alloc_chan_resources(struct dma_chan *chan)
-@@ -1300,7 +1295,8 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
- 	s3cdma->memcpy.device_prep_dma_memcpy = s3c24xx_dma_prep_memcpy;
- 	s3cdma->memcpy.device_tx_status = s3c24xx_dma_tx_status;
- 	s3cdma->memcpy.device_issue_pending = s3c24xx_dma_issue_pending;
--	s3cdma->memcpy.device_control = s3c24xx_dma_control;
-+	s3cdma->memcpy.device_config = s3c24xx_dma_set_runtime_config;
-+	s3cdma->memcpy.device_terminate_all = s3c24xx_dma_terminate_all;
+ static enum dma_status mxs_dma_tx_status(struct dma_chan *chan,
+@@ -701,13 +693,6 @@ static enum dma_status mxs_dma_tx_status(struct dma_chan *chan,
+ 	return mxs_chan->status;
+ }
  
- 	/* Initialize slave engine for SoC internal dedicated peripherals */
- 	dma_cap_set(DMA_SLAVE, s3cdma->slave.cap_mask);
-@@ -1315,7 +1311,8 @@ static int s3c24xx_dma_probe(struct platform_device *pdev)
- 	s3cdma->slave.device_issue_pending = s3c24xx_dma_issue_pending;
- 	s3cdma->slave.device_prep_slave_sg = s3c24xx_dma_prep_slave_sg;
- 	s3cdma->slave.device_prep_dma_cyclic = s3c24xx_dma_prep_dma_cyclic;
--	s3cdma->slave.device_control = s3c24xx_dma_control;
-+	s3cdma->slave.device_config = s3c24xx_dma_set_runtime_config;
-+	s3cdma->slave.device_terminate_all = s3c24xx_dma_terminate_all;
+-static void mxs_dma_issue_pending(struct dma_chan *chan)
+-{
+-	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
+-
+-	mxs_dma_enable_chan(mxs_chan);
+-}
+-
+ static int __init mxs_dma_init(struct mxs_dma_engine *mxs_dma)
+ {
+ 	int ret;
+@@ -860,8 +845,10 @@ static int __init mxs_dma_probe(struct platform_device *pdev)
+ 	mxs_dma->dma_device.device_tx_status = mxs_dma_tx_status;
+ 	mxs_dma->dma_device.device_prep_slave_sg = mxs_dma_prep_slave_sg;
+ 	mxs_dma->dma_device.device_prep_dma_cyclic = mxs_dma_prep_dma_cyclic;
+-	mxs_dma->dma_device.device_control = mxs_dma_control;
+-	mxs_dma->dma_device.device_issue_pending = mxs_dma_issue_pending;
++	mxs_dma->dma_device.device_pause = mxs_dma_pause_chan;
++	mxs_dma->dma_device.device_resume = mxs_dma_resume_chan;
++	mxs_dma->dma_device.device_terminate_all = mxs_dma_terminate_all;
++	mxs_dma->dma_device.device_issue_pending = mxs_dma_enable_chan;
  
- 	/* Register as many memcpy channels as there are physical channels */
- 	ret = s3c24xx_dma_init_virtual_channels(s3cdma, &s3cdma->memcpy,
+ 	ret = dma_async_device_register(&mxs_dma->dma_device);
+ 	if (ret) {
 -- 
 2.1.1
 
