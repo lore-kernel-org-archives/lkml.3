@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759886AbaJ1HxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:53:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44475 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202AbaJ1DiD (ORCPT
+	id S1760955AbaJ1Hxe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:53:34 -0400
+Received: from atl4mhob15.myregisteredsite.com ([209.17.115.53]:44429 "EHLO
+	atl4mhob15.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760921AbaJ1Hx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:03 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frans Klaver <frans.klaver@xsens.com>
-Subject: [PATCH 3.17 057/146] tty: omap-serial: fix division by zero
-Date: Tue, 28 Oct 2014 11:33:19 +0800
-Message-Id: <20141028033345.865717545@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
-References: <20141028033343.441992423@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 28 Oct 2014 03:53:29 -0400
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+From: Mike Looijmans <mike.looijmans@topic.nl>
+To: linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, michal.simek@xilinx.com, chris@printf.net,
+        ulf.hansson@linaro.org, Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH] mmc/host/sdhci-of-arasan.c: Omit superfluous error messages
+Date: Tue, 28 Oct 2014 08:53:21 +0100
+Message-Id: <1414482801-3773-2-git-send-email-mike.looijmans@topic.nl>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1414482801-3773-1-git-send-email-mike.looijmans@topic.nl>
+References: <CAPDyKFpuiPqZ+5h-SS2-7XeVVh4J2v3SQr=RtjaTZw=0=bXABw@mail.gmail.com>
+ <1414482801-3773-1-git-send-email-mike.looijmans@topic.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+sdhci_add_host and sdhci_platfm_init already report failure,
+so don't emit error messages when a failure occurs. This prevents
+occurences of "deferred" messages when required power supplies
+are not ready for operation yet.
 
-------------------
-
-From: Frans Klaver <frans.klaver@xsens.com>
-
-commit dc3187564e61260f49eceb21a4e7eb5e4428e90a upstream.
-
-If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
-calculated n values in serial_omap_is_baud_mode16() may become 0. This
-causes a division by zero when calculating the difference between
-calculated and desired baud rates. To prevent this, cap the n13 and n16
-values on 1.
-
-Division by zero in kernel.
-[<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
-[<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
-[<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
-[<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
-[<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
-[<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
-[<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
-[<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
-[<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
-[<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
-[<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
-[<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
-[<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
-
-Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
 ---
- drivers/tty/serial/omap-serial.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/mmc/host/sdhci-of-arasan.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -254,8 +254,16 @@ serial_omap_baud_is_mode16(struct uart_p
- {
- 	unsigned int n13 = port->uartclk / (13 * baud);
- 	unsigned int n16 = port->uartclk / (16 * baud);
--	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
--	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
-+	int baudAbsDiff13;
-+	int baudAbsDiff16;
-+
-+	if (n13 == 0)
-+		n13 = 1;
-+	if (n16 == 0)
-+		n16 = 1;
-+
-+	baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
-+	baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
- 	if (baudAbsDiff13 < 0)
- 		baudAbsDiff13 = -baudAbsDiff13;
- 	if (baudAbsDiff16 < 0)
-
+diff --git a/drivers/mmc/host/sdhci-of-arasan.c b/drivers/mmc/host/sdhci-of-arasan.c
+index 7ac6718..75bea2e 100644
+--- a/drivers/mmc/host/sdhci-of-arasan.c
++++ b/drivers/mmc/host/sdhci-of-arasan.c
+@@ -161,7 +161,6 @@ static int sdhci_arasan_probe(struct platform_device *pdev)
+ 	host = sdhci_pltfm_init(pdev, &sdhci_arasan_pdata, 0);
+ 	if (IS_ERR(host)) {
+ 		ret = PTR_ERR(host);
+-		dev_err(&pdev->dev, "platform init failed (%d)\n", ret);
+ 		goto clk_disable_all;
+ 	}
+ 
+@@ -171,10 +170,8 @@ static int sdhci_arasan_probe(struct platform_device *pdev)
+ 	pltfm_host->clk = clk_xin;
+ 
+ 	ret = sdhci_add_host(host);
+-	if (ret) {
+-		dev_err(&pdev->dev, "platform register failed (%d)\n", ret);
++	if (ret)
+ 		goto err_pltfm_free;
+-	}
+ 
+ 	return 0;
+ 
+-- 
+1.7.9.5
 
