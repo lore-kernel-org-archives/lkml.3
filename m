@@ -1,51 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226AbaJ1S71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:59:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46427 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753967AbaJ1S7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:59:25 -0400
-Date: Tue, 28 Oct 2014 20:55:42 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 2/3] introduce probe_slab_address()
-Message-ID: <20141028195542.GA1352@redhat.com>
-References: <1413962231.19914.130.camel@tkhai> <20141027195339.GA11736@redhat.com> <20141027195425.GC11736@redhat.com> <1414475091.8574.6.camel@tkhai> <20141028150102.GP3219@twins.programming.kicks-ass.net> <544FD8C6.5020606@yandex.ru>
+	id S1754393AbaJ1S7y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:59:54 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:48870 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373AbaJ1S7x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 14:59:53 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: CMA: test_pages_isolated failures in alloc_contig_range
+Date: Tue, 28 Oct 2014 20:59:58 +0200
+Message-ID: <1703418.04z9xDaRPF@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <544F9EAA.5010404@hurleysoftware.com>
+References: <2457604.k03RC2Mv4q@avalon> <xa1tsii8l683.fsf@mina86.com> <544F9EAA.5010404@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544FD8C6.5020606@yandex.ru>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28, Kirill Tkhai wrote:
->
-> Yes, probe_kernel_read() is in [1/3], but it's not the same as
-> __probe_kernel_read() for blackfin, for example.
->
-> It's defined as
->
-> long __weak probe_kernel_read(void *dst, const void *src, size_t size)
->     __attribute__((alias("__probe_kernel_read")));
->
-> But blackfin's probe_kernel_read() redefines this __weak function,
-> isn't it? Didn't get_freepointer_safe() use to call architecture's
-> probe_kernel_read() before?
+Hello,
 
-I _think_ that __probe_kernel_read(slab_ddr) should be fine.
+On Tuesday 28 October 2014 09:48:26 Peter Hurley wrote:
+> [ +cc Andrew Morton ]
+> 
+> On 10/28/2014 08:38 AM, Michal Nazarewicz wrote:
+> > On Sun, Oct 26 2014, Laurent Pinchart wrote:
+> >> Hello,
+> >> 
+> >> I've run into a CMA-related issue while testing a DMA engine driver with
+> >> dmatest on a Renesas R-Car ARM platform.
+> >> 
+> >> When allocating contiguous memory through CMA the kernel prints the
+> >> following messages to the kernel log.
+> >> 
+> >> [   99.770000] alloc_contig_range test_pages_isolated(6b843, 6b844)
+> >> failed
+> >> [  124.220000] alloc_contig_range test_pages_isolated(6b843, 6b844)
+> >> failed
+> >> [  127.550000] alloc_contig_range test_pages_isolated(6b845, 6b846)
+> >> failed
+> >> [  132.850000] alloc_contig_range test_pages_isolated(6b845, 6b846)
+> >> failed
+> >> [  151.390000] alloc_contig_range test_pages_isolated(6b843, 6b844)
+> >> failed
+> >> [  166.490000] alloc_contig_range test_pages_isolated(6b843, 6b844)
+> >> failed
+> >> [  181.450000] alloc_contig_range test_pages_isolated(6b845, 6b846)
+> >> failed
+> >> 
+> >> I've stripped the dmatest module down as much as possible to remove any
+> >> hardware dependencies and came up with the following implementation.
+> > 
+> > Like Laura wrote, the message is not (should not be) a problem in
+> > itself:
+>
+> [...]
+> 
+> > So as you can see cma_alloc will try another part of the cma region if
+> > test_pages_isolated fails.
+> > 
+> > Obviously, if CMA region is fragmented or there's enough space for only
+> > one allocation of required size isolation failures will cause allocation
+> > failures, so it's best to avoid them, but they are not always avoidable.
+> > 
+> > To debug you would probably want to add more debug information about the
+> > page (i.e. data from struct page) that failed isolation after the
+> > pr_warn in alloc_contig_range.
 
-Yes, an architecture may want to reimplement probe_kernel_read() to
-allow to safely access the special areas, or special addresses.
+[   94.730000] __test_page_isolated_in_pageblock: failed at pfn 6b845: buddy 0 
+count 0 migratetype 4 poison 0
+[   94.740000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed 
+(-16)
+[  202.140000] __test_page_isolated_in_pageblock: failed at pfn 6b843: buddy 0 
+count 0 migratetype 4 poison 0
+[  202.150000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed 
+(-16)
 
-But again, in this case we know that this address points to the
-"normal" kernel memory, __copy_from_user_inatomic() should work fine.
+(4 is MIGRATE_CMA)
 
-Oleg.
+> If the message does not indicate an actual problem, then its printk level is
+> too high. These messages have been reported when using 3.16+ distro kernels.
+
+The messages got me worried, and if there's nothing to worry about, that's bad 
+:-)
+
+-- 
+Regards,
+
+Laurent Pinchart
 
