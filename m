@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760893AbaJ1Hvy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:51:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44506 "EHLO
+	id S1760909AbaJ1Hwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:52:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754269AbaJ1DiT (ORCPT
+	with ESMTP id S1754242AbaJ1DiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:19 -0400
+	Mon, 27 Oct 2014 23:38:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3.17 042/146] firmware_class: make sure fw requests contain a name
-Date: Tue, 28 Oct 2014 11:33:04 +0800
-Message-Id: <20141028033345.240022859@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.17 060/146] NFSv4: fix open/lock state recovery error handling
+Date: Tue, 28 Oct 2014 11:33:22 +0800
+Message-Id: <20141028033345.985994037@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,37 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 471b095dfe0d693a8d624cbc716d1ee4d74eb437 upstream.
+commit df817ba35736db2d62b07de6f050a4db53492ad8 upstream.
 
-An empty firmware request name will trigger warnings when building
-device names. Make sure this is caught earlier and rejected.
+The current open/lock state recovery unfortunately does not handle errors
+such as NFS4ERR_CONN_NOT_BOUND_TO_SESSION correctly. Instead of looping,
+just proceeds as if the state manager is finished recovering.
+This patch ensures that we loop back, handle higher priority errors
+and complete the open/lock state recovery.
 
-The warning was visible via the test_firmware.ko module interface:
-
-echo -ne "\x00" > /sys/devices/virtual/misc/test_firmware/trigger_request
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/firmware_class.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nfs/nfs4state.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1105,6 +1105,9 @@ _request_firmware(const struct firmware
- 	if (!firmware_p)
- 		return -EINVAL;
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1705,7 +1705,8 @@ restart:
+ 			if (status < 0) {
+ 				set_bit(ops->owner_flag_bit, &sp->so_flags);
+ 				nfs4_put_state_owner(sp);
+-				return nfs4_recovery_handle_error(clp, status);
++				status = nfs4_recovery_handle_error(clp, status);
++				return (status != 0) ? status : -EAGAIN;
+ 			}
  
-+	if (!name || name[0] == '\0')
-+		return -EINVAL;
-+
- 	ret = _request_firmware_prepare(&fw, name, device);
- 	if (ret <= 0) /* error or already assigned */
- 		goto out;
+ 			nfs4_put_state_owner(sp);
+@@ -1714,7 +1715,7 @@ restart:
+ 		spin_unlock(&clp->cl_lock);
+ 	}
+ 	rcu_read_unlock();
+-	return status;
++	return 0;
+ }
+ 
+ static int nfs4_check_lease(struct nfs_client *clp)
+@@ -2366,14 +2367,11 @@ static void nfs4_state_manager(struct nf
+ 			section = "reclaim reboot";
+ 			status = nfs4_do_reclaim(clp,
+ 				clp->cl_mvops->reboot_recovery_ops);
+-			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
+-			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state))
+-				continue;
+-			nfs4_state_end_reclaim_reboot(clp);
+-			if (test_bit(NFS4CLNT_RECLAIM_NOGRACE, &clp->cl_state))
++			if (status == -EAGAIN)
+ 				continue;
+ 			if (status < 0)
+ 				goto out_error;
++			nfs4_state_end_reclaim_reboot(clp);
+ 		}
+ 
+ 		/* Now recover expired state... */
+@@ -2381,9 +2379,7 @@ static void nfs4_state_manager(struct nf
+ 			section = "reclaim nograce";
+ 			status = nfs4_do_reclaim(clp,
+ 				clp->cl_mvops->nograce_recovery_ops);
+-			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
+-			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state) ||
+-			    test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state))
++			if (status == -EAGAIN)
+ 				continue;
+ 			if (status < 0)
+ 				goto out_error;
 
 
