@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997AbaJ1R57 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:57:59 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51518 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904AbaJ1R55 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:57:57 -0400
-Date: Tue, 28 Oct 2014 18:57:46 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH v9 05/12] x86, mpx: on-demand kernel allocation of bounds
- tables
-In-Reply-To: <544FD5D4.4090404@intel.com>
-Message-ID: <alpine.DEB.2.11.1410281851390.5308@nanos>
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-6-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241257300.5308@nanos> <544FD5D4.4090404@intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1754094AbaJ1R6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:58:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45165 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752904AbaJ1R6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 13:58:07 -0400
+Date: Tue, 28 Oct 2014 13:57:53 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: x86@kernel.org, "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Subject: [PATCH] Don't enable F00F workaround on Intel Quark processors.
+Message-ID: <20141028175753.GA12743@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+	Bryan O'Donoghue <pure.logic@nexus-software.ie>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014, Dave Hansen wrote:
+The Intel Quark processor is a part of family 5, but does not have the
+F00F bug present in Pentiums of the same family.
 
-> On 10/24/2014 05:08 AM, Thomas Gleixner wrote:
-> > On Sun, 12 Oct 2014, Qiaowei Ren wrote:
-> >> +	/*
-> >> +	 * Go poke the address of the new bounds table in to the
-> >> +	 * bounds directory entry out in userspace memory.  Note:
-> >> +	 * we may race with another CPU instantiating the same table.
-> >> +	 * In that case the cmpxchg will see an unexpected
-> >> +	 * 'actual_old_val'.
-> >> +	 */
-> >> +	ret = user_atomic_cmpxchg_inatomic(&actual_old_val, bd_entry,
-> >> +					   expected_old_val, bt_addr);
-> > 
-> > This is fully preemptible non-atomic context, right?
-> > 
-> > So this wants a proper comment, why using
-> > user_atomic_cmpxchg_inatomic() is the right thing to do here.
-> 
-> Hey Thomas,
-> 
-> How's this for a new comment?  Does this cover the points you think need
-> clarified?
-> 
-> ====
-> 
-> The kernel has allocated a bounds table and needs to point the
-> (userspace-allocated) directory to it.  The directory entry is the
-> *only* place we track that this table was allocated, so we essentially
-> use it instead of an kernel data structure for synchronization.  A
-> copy_to_user()-style function would not give us the atomicity that we need.
-> 
-> If two threads race to instantiate a table, the cmpxchg ensures we know
-> which one lost the race and that the loser frees the table that they
-> just allocated.
+Pentiums were models 0 through 8, Quark is model 9.
 
-Yup. That explains the cmpxchg.
+Cc: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-The other thing which puzzled me was that it calls
-user_atomic_cmpxchg_inatomic() but the context is not atomic at
-all. Its fully preemptible and actually we want it to be able to
-handle the fault. The implementation does that, just the function
-itself suggest something different.
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1ef456273172..9cc6b6f25f42 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -213,12 +213,13 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_X86_F00F_BUG
+ 	/*
+-	 * All current models of Pentium and Pentium with MMX technology CPUs
++	 * All models of Pentium and Pentium with MMX technology CPUs
+ 	 * have the F0 0F bug, which lets nonprivileged users lock up the
+ 	 * system. Announce that the fault handler will be checking for it.
++	 * The Quark is also family 5, but does not have the same bug.
+ 	 */
+ 	clear_cpu_bug(c, X86_BUG_F00F);
+-	if (!paravirt_enabled() && c->x86 == 5) {
++	if (!paravirt_enabled() && c->x86 == 5 && c->x86_model < 9) {
+ 		static int f00f_workaround_enabled;
  
-Thanks,
-
-	tglx
+ 		set_cpu_bug(c, X86_BUG_F00F);
