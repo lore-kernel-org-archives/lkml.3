@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaJ1QcQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:32:16 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:38749 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaJ1QcO (ORCPT
+	id S1752919AbaJ1Qce (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:32:34 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:36286 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803AbaJ1Qcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:32:14 -0400
+	Tue, 28 Oct 2014 12:32:33 -0400
+Message-ID: <544FC540.1050501@gmail.com>
+Date: Tue, 28 Oct 2014 09:33:04 -0700
+From: Santosh Shilimkar <santosh.shilimkar@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-In-Reply-To: <1414052827-21942-1-git-send-email-acourbot@nvidia.com>
-References: <1414052827-21942-1-git-send-email-acourbot@nvidia.com>
-Date: Tue, 28 Oct 2014 17:32:14 +0100
-Message-ID: <CACRpkdbFYi3O7ONeo-Z1iA_ZkL-YSekL7hDz9Dj1eHdKe5y8Tg@mail.gmail.com>
-Subject: Re: [PATCH] gpio: rename gpio_lock_as_irq to gpiochip_lock_as_irq
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Murali Karicheri <m-karicheri2@ti.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Enable PCI controller for Keystone SoCs
+References: <1414173095-32511-1-git-send-email-m-karicheri2@ti.com> <544FBF1C.80305@ti.com> <544FBF4D.6000502@ti.com>
+In-Reply-To: <544FBF4D.6000502@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 10:27 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-> This function actually operates on a gpio_chip, so its prefix should
-> reflect that fact for consistency with other functions defined in
-> gpio/driver.h.
+
+On 10/28/2014 09:07 AM, Murali Karicheri wrote:
+> On 10/28/2014 12:06 PM, Murali Karicheri wrote:
+>> On 10/24/2014 01:51 PM, Murali Karicheri wrote:
+>>> Now that Keystone PCI driver is merged to v3.18, this patch series
+>>> add build options and DTS bindings to enable the driver for Keystone
+>>> SoCs.
+>>>
+>>> CC : Santosh Shilimkar<santosh.shilimkar@gmail.com>
+>>> CC : Greg Kroah-Hartman<gregkh@linuxfoundation.org>
+>>> CC : Rob Herring<robh+dt@kernel.org>
+>>> CC : Pawel Moll<pawel.moll@arm.com>
+>>> CC : Mark Rutland<mark.rutland@arm.com>
+>>> CC : Ian Campbell<ijc+devicetree@hellion.org.uk>
+>>> CC : Kumar Gala<galak@codeaurora.org>
+>>> CC : Russell King<linux@arm.linux.org.uk>
+>>> CC : devicetree@vger.kernel.org
+>>>
+>>> Murali Karicheri (4):
+>>> ARM: keystone: add pcie related options
+>>> ARM: keystone: defconfig: add options to enable PCI controller
+>>> ARM: keystone: dts: add DT bindings for PCI controller for port 0
+>>> ARM: keystone: dts: add DT bindings for PCI controller for port 1
+>>>
+>>> arch/arm/boot/dts/k2e.dtsi | 45 +++++++++++++++++++++++++++++++++++
+>>> arch/arm/boot/dts/keystone.dtsi | 45 +++++++++++++++++++++++++++++++++++
+>>> arch/arm/configs/keystone_defconfig | 3 +++
+>>> arch/arm/mach-keystone/Kconfig | 2 ++
+>>> 4 files changed, 95 insertions(+)
+>>>
+>> Santosh,
+>>
+>> Could you review this and apply to your tree for merge by end of this
+>> week if this looks good and there are no comments?
+>>
+> Adding Santosh's personal email ID
 >
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-> Just a consistency change ; hopefully we can slip this under the GPIO
-> tree without getting acked-bys from each subsystem.
+Just use the listed kernel.org id while posting patches which needs
+my attention. Please repost the series again so that I have all the
+patches.
 
-OK patch applied, hope I don't get too much breakage from new
-drivers using the call. Maybe I'll have to apply the patch to
-both the GPIO and pin control subsystem :-P
+Also what happened with the PCIE notifier related series ?
+If you have already proposed something, please loop me on the thread.
 
-Yours,
-Linus Walleij
+Thanks and Regards,
+Santosh
