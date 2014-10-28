@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330AbaJ1PK3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:10:29 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:56905 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901AbaJ1PK1 (ORCPT
+	id S1753580AbaJ1PMK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:12:10 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:48692 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390AbaJ1PMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:10:27 -0400
+	Tue, 28 Oct 2014 11:12:08 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: CMA: test_pages_isolated failures in alloc_contig_range
+Date: Tue, 28 Oct 2014 17:12:14 +0200
+Message-ID: <8295446.YZpkE7ns4p@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <544EAD3B.6070102@codeaurora.org>
+References: <2457604.k03RC2Mv4q@avalon> <544EAD3B.6070102@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <20141017015322.GB4513@psi-dev26.jf.intel.com>
-References: <1413227857-555-1-git-send-email-david.a.cohen@linux.intel.com>
-	<543CFC7F.2070607@linux.intel.com>
-	<20141014174535.GA6516@psi-dev26.jf.intel.com>
-	<20141015070812.GM2255@lahna.fi.intel.com>
-	<20141015165542.GA4529@psi-dev26.jf.intel.com>
-	<20141016080123.GW2255@lahna.fi.intel.com>
-	<20141017015322.GB4513@psi-dev26.jf.intel.com>
-Date: Tue, 28 Oct 2014 16:10:26 +0100
-Message-ID: <CACRpkdafsd3VDiEKbdooXx+mdAtf-3B6QBOEGeHgyJf9GKHqhQ@mail.gmail.com>
-Subject: Re: [RFC/PATCH] gpio/pinctrl: baytrail: move gpio driver from pinctrl
- to gpio directory
-From: Linus Walleij <linus.walleij@linaro.org>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 17, 2014 at 3:53 AM, David Cohen
-<david.a.cohen@linux.intel.com> wrote:
-> On Thu, Oct 16, 2014 at 11:01:23AM +0300, Mika Westerberg wrote:
+Hi Laura,
 
->> In an ideal world, yes. However, the reality has shown that BIOS/FW gets
->> these wrong and we need to work it around in the OS.
->
-> But we never upstream these workarounds, right? :)
+On Monday 27 October 2014 13:38:19 Laura Abbott wrote:
+> On 10/26/2014 2:09 PM, Laurent Pinchart wrote:
+> > Hello,
+> > 
+> > I've run into a CMA-related issue while testing a DMA engine driver with
+> > dmatest on a Renesas R-Car ARM platform.
+> > 
+> > When allocating contiguous memory through CMA the kernel prints the
+> > following messages to the kernel log.
+> > 
+> > [   99.770000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
+> > [  124.220000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
+> > [  127.550000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
+> > [  132.850000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
+> > [  151.390000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
+> > [  166.490000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
+> > [  181.450000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
+> > 
+> > I've stripped the dmatest module down as much as possible to remove any
+> > hardware dependencies and came up with the following implementation.
+> 
+> ...
+> 
+> > Loading the module will start 4 threads that will allocate and free DMA
+> > coherent memory in a tight loop and eventually produce the error. It seems
+> > like the probability of occurrence grows with the number of threads, which
+> > could indicate a race condition.
+> > 
+> > The tests have been run on 3.18-rc1, but previous tests on 3.16 did
+> > exhibit the same behaviour.
+> > 
+> > I'm not that familiar with the CMA internals, help would be appreciated to
+> > debug the problem.
+> 
+> Are you actually seeing allocation failures or is it just the messages?
 
-Unless you discover it after it hits the market, right?
+It's just the messages, I haven't noticed allocation failures.
 
-I think this driver is just fine exactly where it is. Besides, the driver
-is fully aware of all its pins, and just look at all the pull up etc
-information displayed by byt_gpio_dbg_show(), it doesn't get more
-pin control than that even if you don't implement the pin control
-API.
+> The messages themselves may be harmless if the allocation is succeeding.
+> It's an indication that the particular range could not be isolated and
+> therefore another range should be used for the CMA allocation. Joonsoo
+> Kim had a patch series[1] that was designed to correct some problems with
+> isolation and from my testing it helps fix some CMA related errors. You
+> might try picking that up to see if it helps.
+> 
+> Thanks,
+> Laura
+> 
+> [1] https://lkml.org/lkml/2014/10/23/90
 
-Yours,
-Linus Walleij
+I've tested the patches but they don't seem to have any influence on the 
+isolation test failures.
+
+-- 
+Regards,
+
+Laurent Pinchart
