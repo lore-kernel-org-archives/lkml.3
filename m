@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974AbaJ1DhX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:37:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44382 "EHLO
+	id S1753954AbaJ1DhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:37:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44393 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908AbaJ1DhM (ORCPT
+	with ESMTP id S1753766AbaJ1DhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:12 -0400
+	Mon, 27 Oct 2014 23:37:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Himanshu Madhani <himanshu.madhani@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.17 036/146] qla2xxx: fix kernel NULL pointer access
-Date: Tue, 28 Oct 2014 11:32:58 +0800
-Message-Id: <20141028033344.989067684@linuxfoundation.org>
+        David Matlack <dmatlack@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.17 018/146] KVM: do not bias the generation number in kvm_current_mmio_generation
+Date: Tue, 28 Oct 2014 11:32:40 +0800
+Message-Id: <20141028033344.207889533@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,35 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Himanshu Madhani <himanshu.madhani@qlogic.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 78c2106a50e067f7168ee8c0944baaeb0e988272 upstream.
+commit 00f034a12fdd81210d58116326d92780aac5c238 upstream.
 
-This patch is to fix regression added by commit id
-51a07f84649d2be206c4c2ad9a612956db0c2f8c.
+The next patch will give a meaning (a la seqcount) to the low bit of the
+generation number.  Ensure that it matches between kvm->memslots->generation
+and kvm_current_mmio_generation().
 
-When allocating memory for new session original patch does
-not assign vha to op->vha resulting into NULL pointer
-access during qlt_create_sess_from_atio().
-
-Signed-off-by: Himanshu Madhani <himanshu.madhani@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: David Matlack <dmatlack@google.com>
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_target.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kvm/mmu.c  |    7 +------
+ virt/kvm/kvm_main.c |    7 +++++++
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -3277,6 +3277,7 @@ static int qlt_handle_cmd_for_atio(struc
- 			return -ENOMEM;
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -240,12 +240,7 @@ static unsigned int get_mmio_spte_genera
  
- 		memcpy(&op->atio, atio, sizeof(*atio));
-+		op->vha = vha;
- 		INIT_WORK(&op->work, qlt_create_sess_from_atio);
- 		queue_work(qla_tgt_wq, &op->work);
- 		return 0;
+ static unsigned int kvm_current_mmio_generation(struct kvm *kvm)
+ {
+-	/*
+-	 * Init kvm generation close to MMIO_MAX_GEN to easily test the
+-	 * code of handling generation number wrap-around.
+-	 */
+-	return (kvm_memslots(kvm)->generation +
+-		      MMIO_MAX_GEN - 150) & MMIO_GEN_MASK;
++	return kvm_memslots(kvm)->generation & MMIO_GEN_MASK;
+ }
+ 
+ static void mark_mmio_spte(struct kvm *kvm, u64 *sptep, u64 gfn,
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -474,6 +474,13 @@ static struct kvm *kvm_create_vm(unsigne
+ 	kvm->memslots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
+ 	if (!kvm->memslots)
+ 		goto out_err_no_srcu;
++
++	/*
++	 * Init kvm generation close to the maximum to easily test the
++	 * code of handling generation number wrap-around.
++	 */
++	kvm->memslots->generation = -150;
++
+ 	kvm_init_memslots_id(kvm);
+ 	if (init_srcu_struct(&kvm->srcu))
+ 		goto out_err_no_srcu;
 
 
