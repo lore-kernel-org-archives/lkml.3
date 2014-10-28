@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760511AbaJ1HBw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:01:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45528 "EHLO
+	id S1757828AbaJ1HCV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:02:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45519 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755731AbaJ1Dqj (ORCPT
+	with ESMTP id S932641AbaJ1Dqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:46:39 -0400
+	Mon, 27 Oct 2014 23:46:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.16 118/127] sparc64: Adjust KTSB assembler to support larger physical addresses.
-Date: Tue, 28 Oct 2014 11:35:53 +0800
-Message-Id: <20141028033426.000177696@linuxfoundation.org>
+Subject: [PATCH 3.16 117/127] sparc64: Define VA hole at run time, rather than at compile time.
+Date: Tue, 28 Oct 2014 11:35:52 +0800
+Message-Id: <20141028033425.963645506@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -31,127 +31,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 8c82dc0e883821c098c8b0b130ffebabf9aab5df ]
+[ Upstream commit 4397bed080598001e88f612deb8b080bb1cc2322 ]
 
-As currently coded the KTSB accesses in the kernel only support up to
-47 bits of physical addressing.
+Now that we use 4-level page tables, we can provide up to 53-bits of
+virtual address space to the user.
 
-Adjust the instruction and patching sequence in order to support
-arbitrary 64 bits addresses.
+Adjust the VA hole based upon the capabilities of the cpu type probed.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/tsb.h |   30 ++++++++++++------------------
- arch/sparc/mm/init_64.c      |   28 +++++++++++++++++++++++++---
- 2 files changed, 37 insertions(+), 21 deletions(-)
+ arch/sparc/include/asm/page_64.h |   15 ++++-----------
+ arch/sparc/mm/init_64.c          |   21 +++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 11 deletions(-)
 
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -256,8 +256,6 @@ extern struct tsb_phys_patch_entry __tsb
- 	(KERNEL_TSB_SIZE_BYTES / 16)
- #define KERNEL_TSB4M_NENTRIES	4096
+--- a/arch/sparc/include/asm/page_64.h
++++ b/arch/sparc/include/asm/page_64.h
+@@ -102,21 +102,14 @@ typedef unsigned long pgprot_t;
  
--#define KTSB_PHYS_SHIFT		15
--
- 	/* Do a kernel TSB lookup at tl>0 on VADDR+TAG, branch to OK_LABEL
- 	 * on TSB hit.  REG1, REG2, REG3, and REG4 are used as temporaries
- 	 * and the found TTE will be left in REG1.  REG3 and REG4 must
-@@ -266,17 +264,15 @@ extern struct tsb_phys_patch_entry __tsb
- 	 * VADDR and TAG will be preserved and not clobbered by this macro.
- 	 */
- #define KERN_TSB_LOOKUP_TL1(VADDR, TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
--661:	sethi		%hi(swapper_tsb), REG1;			\
--	or		REG1, %lo(swapper_tsb), REG1; \
-+661:	sethi		%uhi(swapper_tsb), REG1; \
-+	sethi		%hi(swapper_tsb), REG2; \
-+	or		REG1, %ulo(swapper_tsb), REG1; \
-+	or		REG2, %lo(swapper_tsb), REG2; \
- 	.section	.swapper_tsb_phys_patch, "ax"; \
- 	.word		661b; \
- 	.previous; \
--661:	nop; \
--	.section	.tsb_ldquad_phys_patch, "ax"; \
--	.word		661b; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	.previous; \
-+	sllx		REG1, 32, REG1; \
-+	or		REG1, REG2, REG1; \
- 	srlx		VADDR, PAGE_SHIFT, REG2; \
- 	and		REG2, (KERNEL_TSB_NENTRIES - 1), REG2; \
- 	sllx		REG2, 4, REG2; \
-@@ -291,17 +287,15 @@ extern struct tsb_phys_patch_entry __tsb
- 	 * we can make use of that for the index computation.
- 	 */
- #define KERN_TSB4M_LOOKUP_TL1(TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
--661:	sethi		%hi(swapper_4m_tsb), REG1;	     \
--	or		REG1, %lo(swapper_4m_tsb), REG1; \
-+661:	sethi		%uhi(swapper_4m_tsb), REG1; \
-+	sethi		%hi(swapper_4m_tsb), REG2; \
-+	or		REG1, %ulo(swapper_4m_tsb), REG1; \
-+	or		REG2, %lo(swapper_4m_tsb), REG2; \
- 	.section	.swapper_4m_tsb_phys_patch, "ax"; \
- 	.word		661b; \
- 	.previous; \
--661:	nop; \
--	.section	.tsb_ldquad_phys_patch, "ax"; \
--	.word		661b; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	.previous; \
-+	sllx		REG1, 32, REG1; \
-+	or		REG1, REG2, REG1; \
- 	and		TAG, (KERNEL_TSB4M_NENTRIES - 1), REG2; \
- 	sllx		REG2, 4, REG2; \
- 	add		REG1, REG2, REG2; \
+ typedef pte_t *pgtable_t;
+ 
+-/* These two values define the virtual address space range in which we
+- * must forbid 64-bit user processes from making mappings.  It used to
+- * represent precisely the virtual address space hole present in most
+- * early sparc64 chips including UltraSPARC-I.  But now it also is
+- * further constrained by the limits of our page tables, which is
+- * 43-bits of virtual address.
+- */
+-#define SPARC64_VA_HOLE_TOP	_AC(0xfffffc0000000000,UL)
+-#define SPARC64_VA_HOLE_BOTTOM	_AC(0x0000040000000000,UL)
++extern unsigned long sparc64_va_hole_top;
++extern unsigned long sparc64_va_hole_bottom;
+ 
+ /* The next two defines specify the actual exclusion region we
+  * enforce, wherein we use a 4GB red zone on each side of the VA hole.
+  */
+-#define VA_EXCLUDE_START (SPARC64_VA_HOLE_BOTTOM - (1UL << 32UL))
+-#define VA_EXCLUDE_END   (SPARC64_VA_HOLE_TOP + (1UL << 32UL))
++#define VA_EXCLUDE_START (sparc64_va_hole_bottom - (1UL << 32UL))
++#define VA_EXCLUDE_END   (sparc64_va_hole_top + (1UL << 32UL))
+ 
+ #define TASK_UNMAPPED_BASE	(test_thread_flag(TIF_32BIT) ? \
+ 				 _AC(0x0000000070000000,UL) : \
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -1732,19 +1732,41 @@ static void __init tsb_phys_patch(void)
- static struct hv_tsb_descr ktsb_descr[NUM_KTSB_DESCR];
- extern struct tsb swapper_tsb[KERNEL_TSB_NENTRIES];
- 
-+/* The swapper TSBs are loaded with a base sequence of:
-+ *
-+ *	sethi	%uhi(SYMBOL), REG1
-+ *	sethi	%hi(SYMBOL), REG2
-+ *	or	REG1, %ulo(SYMBOL), REG1
-+ *	or	REG2, %lo(SYMBOL), REG2
-+ *	sllx	REG1, 32, REG1
-+ *	or	REG1, REG2, REG1
-+ *
-+ * When we use physical addressing for the TSB accesses, we patch the
-+ * first four instructions in the above sequence.
-+ */
-+
- static void patch_one_ktsb_phys(unsigned int *start, unsigned int *end, unsigned long pa)
- {
--	pa >>= KTSB_PHYS_SHIFT;
-+	unsigned long high_bits, low_bits;
-+
-+	high_bits = (pa >> 32) & 0xffffffff;
-+	low_bits = (pa >> 0) & 0xffffffff;
- 
- 	while (start < end) {
- 		unsigned int *ia = (unsigned int *)(unsigned long)*start;
- 
--		ia[0] = (ia[0] & ~0x3fffff) | (pa >> 10);
-+		ia[0] = (ia[0] & ~0x3fffff) | (high_bits >> 10);
- 		__asm__ __volatile__("flush	%0" : : "r" (ia));
- 
--		ia[1] = (ia[1] & ~0x3ff) | (pa & 0x3ff);
-+		ia[1] = (ia[1] & ~0x3fffff) | (low_bits >> 10);
- 		__asm__ __volatile__("flush	%0" : : "r" (ia + 1));
- 
-+		ia[2] = (ia[2] & ~0x1fff) | (high_bits & 0x3ff);
-+		__asm__ __volatile__("flush	%0" : : "r" (ia + 2));
-+
-+		ia[3] = (ia[3] & ~0x1fff) | (low_bits & 0x3ff);
-+		__asm__ __volatile__("flush	%0" : : "r" (ia + 3));
-+
- 		start++;
+@@ -1629,25 +1629,46 @@ static void __init page_offset_shift_pat
  	}
  }
+ 
++unsigned long sparc64_va_hole_top =    0xfffff80000000000UL;
++unsigned long sparc64_va_hole_bottom = 0x0000080000000000UL;
++
+ static void __init setup_page_offset(void)
+ {
+ 	unsigned long max_phys_bits = 40;
+ 
+ 	if (tlb_type == cheetah || tlb_type == cheetah_plus) {
++		/* Cheetah/Panther support a full 64-bit virtual
++		 * address, so we can use all that our page tables
++		 * support.
++		 */
++		sparc64_va_hole_top =    0xfff0000000000000UL;
++		sparc64_va_hole_bottom = 0x0010000000000000UL;
++
+ 		max_phys_bits = 42;
+ 	} else if (tlb_type == hypervisor) {
+ 		switch (sun4v_chip_type) {
+ 		case SUN4V_CHIP_NIAGARA1:
+ 		case SUN4V_CHIP_NIAGARA2:
++			/* T1 and T2 support 48-bit virtual addresses.  */
++			sparc64_va_hole_top =    0xffff800000000000UL;
++			sparc64_va_hole_bottom = 0x0000800000000000UL;
++
+ 			max_phys_bits = 39;
+ 			break;
+ 		case SUN4V_CHIP_NIAGARA3:
++			/* T3 supports 48-bit virtual addresses.  */
++			sparc64_va_hole_top =    0xffff800000000000UL;
++			sparc64_va_hole_bottom = 0x0000800000000000UL;
++
+ 			max_phys_bits = 43;
+ 			break;
+ 		case SUN4V_CHIP_NIAGARA4:
+ 		case SUN4V_CHIP_NIAGARA5:
+ 		case SUN4V_CHIP_SPARC64X:
+ 		default:
++			/* T4 and later support 52-bit virtual addresses.  */
++			sparc64_va_hole_top =    0xfff8000000000000UL;
++			sparc64_va_hole_bottom = 0x0008000000000000UL;
+ 			max_phys_bits = 47;
+ 			break;
+ 		}
 
 
