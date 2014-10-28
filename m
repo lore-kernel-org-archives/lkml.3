@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891AbaJ1Lxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:53:41 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:40071 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaJ1Lxk convert rfc822-to-8bit (ORCPT
+	id S1754865AbaJ1Ly6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:54:58 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:51675 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752960AbaJ1Ly5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:53:40 -0400
-X-IronPort-AV: E=Sophos;i="5.04,802,1406592000"; 
-   d="scan'208";a="186819706"
-Message-ID: <544F83C1.3010402@citrix.com>
-Date: Tue, 28 Oct 2014 11:53:37 +0000
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.1
-MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>, Juergen Gross <jgross@suse.com>
-CC: <boris.ostrovsky@oracle.com>, <xen-devel@lists.xensource.com>,
-        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 0/2] xen: Switch to virtual mapped linear
- p2m list
-References: <1414421551-31555-1-git-send-email-jgross@suse.com>	<544E61DD.8050305@citrix.com> <544F22E4.9040706@suse.com> <1414489898.23883.25.camel@citrix.com>
-In-Reply-To: <1414489898.23883.25.camel@citrix.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-DLP: MIA2
+	Tue, 28 Oct 2014 07:54:57 -0400
+From: Juri Lelli <juri.lelli@arm.com>
+To: peterz@infradead.org
+Cc: juri.lelli@gmail.com, linux-kernel@vger.kernel.org,
+        Juri Lelli <juri.lelli@arm.com>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] sched/core: dl_bw_of() has to be used under rcu_read_lock_sched()
+Date: Tue, 28 Oct 2014 11:54:46 +0000
+Message-Id: <1414497286-28824-1-git-send-email-juri.lelli@arm.com>
+X-Mailer: git-send-email 2.1.2
+X-OriginalArrivalTime: 28 Oct 2014 11:54:54.0317 (UTC) FILETIME=[FCE119D0:01CFF2A5]
+X-MC-Unique: 114102811545500201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id s9SBt55k024618
 
-On 28/10/14 09:51, Ian Campbell wrote:
-> On Tue, 2014-10-28 at 06:00 +0100, Juergen Gross wrote:
->> On 10/27/2014 04:16 PM, David Vrabel wrote:
->>> On 27/10/14 14:52, Juergen Gross wrote:
->>>> Paravirtualized kernels running on Xen use a three level tree for
->>>> translation of guest specific physical addresses to machine global
->>>> addresses. This p2m tree is used for construction of page table
->>>> entries, so the p2m tree walk is performance critical.
->>>>
->>>> By using a linear virtual mapped p2m list accesses to p2m elements
->>>> can be sped up while even simplifying code. To achieve this goal
->>>> some p2m related initializations have to be performed later in the
->>>> boot process, as the final p2m list can be set up only after basic
->>>> memory management functions are available.
->>> What impact does this have on 32-bit guests which don't have huge amount
->>> of virtual address space?
->>>
->>> I think a 32-bit guest could have up to 64 GiB of PFNs, which would
->>> require a 128 MiB p2m array, which is too large?
->> It is 64 MB (one entry on 32 bit is 32 bits :-) ).
->>
->> With a m2p array of only 16 MB size I doubt a 32 bit guest can be larger
->> than 16 GB, or am I wrong here?
-> I think they can be bigger, the compat r/o m2p is 168MB, since Xen
-> doesn't need to be in the hole as well (like it was with a real 32-bit
-> Xen). There is also some scope for dynamic sizing of the hole (queried
-> via XENMEM_machphys_mapping), I'm not sure if pvops makes use of that
-> though.
->
-> In practice a 32-bit kernel starts to get pretty unhappy somewhere
-> between 32 and 64GB because it runs out of low memory for various
-> structures which are sized according to the amount of RAM. Or it did,
-> it's been years since I've tried, maybe things are more able to use
-> highmem now. In any case if you have such large amounts of RAM using a
-> 64-bit kernel would be advisable.
+As per commit f10e00f4bf36 ("sched/dl: Use dl_bw_of() under
+rcu_read_lock_sched()"), dl_bw_of() has to be protected by
+rcu_read_lock_sched().
 
-It is XenServers experience that something (I presume a
-power-of-two-aligned mapping) cuts off at 128MB of the compat m2p,
-allowing for 32bit guest pages to exist in the first 128GB of host RAM.
+Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+---
+ kernel/sched/core.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Technically speaking, there is nothing preventing a 32bit PV guest being
-that large.  The traditional issues with 32bit PAE kernels do not apply
-as Xen is running in long mode, but kernel lowmem will be the limiting
-factor.  Switching to a 2/2 split will help, but it is a loosing battle.
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b9f78f1..b9fb426 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -4657,6 +4657,7 @@ int cpuset_cpumask_can_shrink(const struct cpumask *cur,
+ 	struct dl_bw *cur_dl_b;
+ 	unsigned long flags;
+ 
++	rcu_read_lock_sched();
+ 	cur_dl_b = dl_bw_of(cpumask_any(cur));
+ 	trial_cpus = cpumask_weight(trial);
+ 
+@@ -4665,6 +4666,7 @@ int cpuset_cpumask_can_shrink(const struct cpumask *cur,
+ 	    cur_dl_b->bw * trial_cpus < cur_dl_b->total_bw)
+ 		ret = 0;
+ 	raw_spin_unlock_irqrestore(&cur_dl_b->lock, flags);
++	rcu_read_unlock_sched();
+ 
+ 	return ret;
+ }
+@@ -4693,11 +4695,13 @@ int task_can_attach(struct task_struct *p,
+ 					      cs_cpus_allowed)) {
+ 		unsigned int dest_cpu = cpumask_any_and(cpu_active_mask,
+ 							cs_cpus_allowed);
+-		struct dl_bw *dl_b = dl_bw_of(dest_cpu);
++		struct dl_bw *dl_b;
+ 		bool overflow;
+ 		int cpus;
+ 		unsigned long flags;
+ 
++		rcu_read_lock_sched();
++		dl_b = dl_bw_of(dest_cpu);
+ 		raw_spin_lock_irqsave(&dl_b->lock, flags);
+ 		cpus = dl_bw_cpus(dest_cpu);
+ 		overflow = __dl_overflow(dl_b, cpus, 0, p->dl.dl_bw);
+@@ -4713,6 +4717,7 @@ int task_can_attach(struct task_struct *p,
+ 			__dl_add(dl_b, p->dl.dl_bw);
+ 		}
+ 		raw_spin_unlock_irqrestore(&dl_b->lock, flags);
++		rcu_read_unlock_sched();
+ 
+ 	}
+ #endif
+-- 
+2.1.2
 
-It should be noted that OEL formally supports 64GB 32bit PV VMs, and as
-a result, the XenServer VM lifecycle tests do test it, and it works.
-
-~Andrew
 
