@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010AbaJ1Nnj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:43:39 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:34617 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754395AbaJ1Nnf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:43:35 -0400
-Message-ID: <544F9D7D.40301@gmail.com>
-Date: Tue, 28 Oct 2014 14:43:25 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Andy Lutomirski <luto@amacapital.net>, mtk.manpages@gmail.com,
-        Andrey Wagin <avagin@gmail.com>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] umount.2: Correct the description of MNT_DETACH
-References: <87lhp12a2i.fsf@x220.int.ebiederm.org> <CALCETrXGojRGtT1B2Aib7m54j8T+LsnCOin_GL93-BWf-eSPkA@mail.gmail.com> <87oatxzwex.fsf@x220.int.ebiederm.org> <CALCETrUOeCrjAy---FM-8ovU1FD372ShgBeS5_1LUkgRWMQ4gQ@mail.gmail.com>
-In-Reply-To: <CALCETrUOeCrjAy---FM-8ovU1FD372ShgBeS5_1LUkgRWMQ4gQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1752631AbaJ1NsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:48:09 -0400
+Received: from mail.emea.novell.com ([130.57.118.101]:49409 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaJ1NsH (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 28 Oct 2014 09:48:07 -0400
+Message-Id: <544FAC9F0200007800042CA6@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Tue, 28 Oct 2014 13:47:59 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@kernel.org>
+Cc: <tglx@linutronix.de>, <jiang.liu@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [tip:x86/urgent] ix86: Fix build failure when
+ !CONFIG_X86_IO_APIC
+References: <54184CC802000078000355EE@mail.emea.novell.com>
+ <tip-a425cf83e39f99a70168c184e79cea8c67ba7c12@git.kernel.org>
+In-Reply-To: <tip-a425cf83e39f99a70168c184e79cea8c67ba7c12@git.kernel.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
-
-I'm still hoping for a revised patch from you in the light
-of Andy's comments and question.
-
-Thanks,
-
-Michael
-
-
-On 09/30/2014 04:16 AM, Andy Lutomirski wrote:
-> On Mon, Sep 29, 2014 at 7:15 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Andy Lutomirski <luto@amacapital.net> writes:
->>
->>> On Mon, Sep 29, 2014 at 6:04 PM, Eric W. Biederman
->>> <ebiederm@xmission.com> wrote:
->>>>
->>>> I recently realized that I had been reasoning improperly about what
->>>> umount(MNT_DETACH) did based on an insufficient description in
->>>> the umount.2 man page, that matched my intuition but not the
->>>> implementation.
->>>>
->>>> When there are no submounts MNT_DETACH is essentially harmless to
->>>> applications.  Where there are submounts MNT_DETACH changes what
->>>> is visible to applications using the detach directories.
->>>>
->>>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->>>> ---
->>>>  man2/umount.2 | 7 ++++---
->>>>  1 file changed, 4 insertions(+), 3 deletions(-)
->>>>
->>>> diff --git a/man2/umount.2 b/man2/umount.2
->>>> index 5ff88152c738..aea39d8306fe 100644
->>>> --- a/man2/umount.2
->>>> +++ b/man2/umount.2
->>>> @@ -66,9 +66,10 @@ This can cause data loss.
->>>>  (Only for NFS mounts.)
->>>>  .TP
->>>>  .BR MNT_DETACH " (since Linux 2.4.11)"
->>>> -Perform a lazy unmount: make the mount point unavailable for
->>>> -new accesses, and actually perform the unmount when the mount point
->>>> -ceases to be busy.
->>>> +Perform a lazy unmount: make the mount point unavailable for new
->>>> +accesses, immediately disconnect the filesystem and all filesystems
->>>> +mounted below it from each other and from the mount table, and
->>>> +actually perform the unmount when the mount point ceases to be busy.
->>>
->>> Want to add something like:
->>>
->>> MNT_DETACH on a shared mount will propagate unmount events to its peer
->>> group.  That means that recursively bind mounting a shared mount and
->>> then unmounting that recursive bind mount will unmount all submounts
->>> of the original mount.  This behavior can be avoided by remounting a
->>> directory with MS_REC | MS_PRIVATE before unmounting it.
->>
->> Make that any unmount on a shared mount that will propogate unmount
->> events to it's peer group.
+>>> On 28.10.14 at 12:18, <tipbot@zytor.com> wrote:
+> Commit-ID:  a425cf83e39f99a70168c184e79cea8c67ba7c12
+> Gitweb:     http://git.kernel.org/tip/a425cf83e39f99a70168c184e79cea8c67ba7c12 
+> Author:     Jan Beulich <JBeulich@suse.com>
+> AuthorDate: Tue, 16 Sep 2014 13:44:24 +0100
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Tue, 28 Oct 2014 12:01:09 +0100
 > 
-> I don't understand your proposed edit.  Can you type it out explicitly?
+> ix86: Fix build failure when !CONFIG_X86_IO_APIC
 > 
-> --Andy
+> mp_should_keep_irq() isn't really IO-APIC related, and
+> considering that it's being used solely in arch/x86/pci/ likely
+> both declaration and definition got misplaced even without
+> considering the resulting build failure:
 > 
->>
->> Eric
->>
+>   .../arch/x86/pci/irq.c: In function ‘pirq_disable_irq’:
+>   .../arch/x86/pci/irq.c:1259: error: implicit declaration of function 
+> ‘mp_should_keep_irq’
+>   make[3]: *** [arch/x86/pci/irq.o] Error 1
 > 
-> 
-> 
+> Move them to better places.
 
+Ingo,
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+the build failure had got addressed by a different patch already,
+albeit that patch seems far from ideal to me. I.e. I still think cleanup
+along the lines of the patch here is desirable, but I need to submit
+one that actually builds (the build failure the test robot encountered
+is a direct result of the clash between the two patches). I have that
+patch ready, but didn't want to submit before I got around to test it
+with 3.18-rc.
+
+Jan
