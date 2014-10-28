@@ -1,91 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440AbaJ1Ogl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 10:36:41 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:62569 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136AbaJ1Og0 (ORCPT
+	id S1754474AbaJ1Ogq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 10:36:46 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:24498 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136AbaJ1Ogn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 10:36:26 -0400
-Date: Tue, 28 Oct 2014 10:36:08 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] thermal-soc changes
-Message-ID: <20141028143606.GA3936@developer>
-References: <20141021134941.GA4937@developer>
- <1414041345.2380.3.camel@rzhang1-toshiba>
- <20141023112721.GA5683@developer>
- <20141027195346.GB6088@developer>
- <1414474824.4246.6.camel@rzhang1-toshiba>
+	Tue, 28 Oct 2014 10:36:43 -0400
+Message-ID: <544FA9F7.1020101@imgtec.com>
+Date: Tue, 28 Oct 2014 14:36:39 +0000
+From: Qais Yousef <qais.yousef@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YiEDa0DAkWCtVeE4"
-Content-Disposition: inline
-In-Reply-To: <1414474824.4246.6.camel@rzhang1-toshiba>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH 03/11] drivers: char: add AXD Audio Processing IP driver
+References: <1414495589-8579-1-git-send-email-qais.yousef@imgtec.com> <1414495589-8579-4-git-send-email-qais.yousef@imgtec.com> <20141028141038.GA18384@kroah.com>
+In-Reply-To: <20141028141038.GA18384@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/28/2014 02:10 PM, Greg Kroah-Hartman wrote:
+> On Tue, Oct 28, 2014 at 11:26:21AM +0000, Qais Yousef wrote:
+>> AXD is Audio Processing IP by Imagination Technologies that can
+>> perform decoding, encoding, equalisation, resampling, mixing,
+>> synchronisation and audio playback.
+> Isn't that a codec?  Why is this a "char" driver and not one that fits
+> into our existing audio subsystem?
 
---YiEDa0DAkWCtVeE4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+As far as I understand it doesn't fit into current alsa framework 
+because of a number of unsupported features that we need. Specifically 
+the range of compressed decoders we support and their configurations and 
+encoding. I might have gotten it wrong though so I'll wait to see what 
+alsa people say.
+
+>> this patch adds defs and initialisation files
+> Spell check :)
+
+Hmm UK spelling vs US spelling :) Unless you mean the defs then I'll 
+expand it.
 
 
-Hi Rui,
+>> Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
+>> Cc: Arnd Bergmann <arnd@arndb.de>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Cc: Grant Likely <grant.likely@linaro.org>
+>> Cc: Rob Herring <robh+dt@kernel.org>
+>> Cc: <devicetree@vger.kernel.org>
+>> Cc: <alsa-devel@alsa-project.org>
+>> ---
+>>   drivers/char/axd/axd_api.h    |  641 +++++++++++++++++++++++++
+>>   drivers/char/axd/axd_module.c | 1064 +++++++++++++++++++++++++++++++++++++++++
+>>   drivers/char/axd/axd_module.h |   99 ++++
+>>   include/linux/axd.h           |   32 ++
+>>   4 files changed, 1836 insertions(+)
+>>   create mode 100644 drivers/char/axd/axd_api.h
+>>   create mode 100644 drivers/char/axd/axd_module.c
+>>   create mode 100644 drivers/char/axd/axd_module.h
+>>   create mode 100644 include/linux/axd.h
+>>
+>> diff --git a/drivers/char/axd/axd_api.h b/drivers/char/axd/axd_api.h
+>> new file mode 100644
+>> index 000000000000..0d732f173f55
+>> --- /dev/null
+>> +++ b/drivers/char/axd/axd_api.h
+>> @@ -0,0 +1,641 @@
+>> +/*
+>> + *  Copyright (C) 2011-2014 Imagination Technologies Ltd.
+>> + *
+>> + * This program is free software; you can redistribute it and/or
+>> + * modify it under the terms of the GNU General Public License
+>> + * as published by the Free Software Foundation; either version 2
+>> + * of the License, or (at your option) any later version.
+> Do you really mean "any later version"?
+>
 
-On Tue, Oct 28, 2014 at 01:40:24PM +0800, Zhang Rui wrote:
-> Hi, Eduardo,
->=20
+Nope. I probably copied that from the wrong source.
 
-<cut>
+>> + *
+>> + *  Main API to the AXD for access from the host.
+>> + */
+>> +#ifndef AXD_API_H_
+>> +#define AXD_API_H_
+>> +
+>> +#include <linux/types.h>
+>> +
+>> +
+>> +#define THREAD_COUNT 4
+>> +#define AXD_MAX_PIPES 3
+>> +
+>> +
+>> +#define AXD_DESCRIPTOR_READY_BIT	0x80000000
+>> +#define AXD_DESCRIPTOR_INUSE_BIT	0x40000000
+>> +#define AXD_DESCRIPTOR_EOS_BIT		0x20000000
+>> +#define AXD_DESCRIPTOR_SIZE_MASK	0x0000FFFF
+>> +
+>> +struct axd_buffer_desc {
+>> +	uint32_t status_size;
+>> +	uint32_t data_ptr;
+>> +	uint32_t pts_high;
+>> +	uint32_t pts_low;
+> Please always use standard Linux kernel types, "u32" in this case.
 
-> >=20
-> > Any updates?
-> >=20
-> Well, I'm on a trip, and unfortunately, my Linux laptop is broken for
-> the moment. so I think first we should keep all the patches for 3.18-rc
+OK.
 
-Oh.. I hope you get things sorted out.
-
-> in your tree to get tested, and then either I can send out the pull
-
-These have been in my tree for a while. I added my tree also to
-linux-next and they have gone through linux-next builds already.=20
-
-> request at around 20th Nov, after coming back from travel, or you can
-> help me send the pull request for 3.18-rc.
->=20
-
-I would be glad to help you sending out what ever patches are pending.
-Do you have 3.18-rc outstanding patches or are all of them in tree for
-now?
+Thanks,
+Qais
 
 > thanks,
-> rui
+>
+> greg k-h
 
-
-All the best,
-
-Eduardo Valentin
-
---YiEDa0DAkWCtVeE4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUT6nJAAoJEMLUO4d9pOJWObEH/3JZfjt3CBfLWk5rJsnhbSLy
-prljLwLPAneqiIkqdxHzNR05MVCfP+I3qRTS1Hyb74owk9MnuT3dbNZu9XxFEn5N
-l0FKkij7ccq0gppgHCRakh+Rffca7LsMnOVAvlRNtbUIkegq2HXM2UfOye3njZ8s
-I+2dlX3Onf8cr1R0tqfYjHnSQx5L9RW3HPOcl4NFEJii31+dpJXdvLAdgRzUleO3
-gNrvhWhJau9TNGsCOyHuH8H/laTe+cPYL4Zyi4jaMXCQKKSJbfml4x5CvRKIuZeq
-mxmksk+zhR1H/uVvkz66uWVC7NZVm+fRN5I+fUZfeTlLyP8jy5VCzsA0iWeq/8Y=
-=oAjd
------END PGP SIGNATURE-----
-
---YiEDa0DAkWCtVeE4--
