@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaJ1U5i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:57:38 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:42544 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbaJ1U5g (ORCPT
+	id S1754509AbaJ1U5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:57:50 -0400
+Received: from mout.kundenserver.de ([212.227.17.10]:53171 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754378AbaJ1U5r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:57:36 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>, Heiko Stuebner <heiko@sntech.de>
-Cc: Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 2/2] pinctrl: rockchip: Implement PIN_CONFIG_OUTPUT_DISABLE
-Date: Tue, 28 Oct 2014 13:57:15 -0700
-Message-Id: <1414529835-16207-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1414529835-16207-1-git-send-email-dianders@chromium.org>
-References: <1414529835-16207-1-git-send-email-dianders@chromium.org>
+	Tue, 28 Oct 2014 16:57:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: =?ISO-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+Subject: Re: [PATCH v2] MAINTAINERS: Add myself as reviewer for Zynq
+Date: Tue, 28 Oct 2014 21:57:39 +0100
+Message-ID: <31125258.WF8sFMxyCQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <f506a31d4f3b47f7aa3d08cc653a0de5@BY2FFO11FD041.protection.gbl>
+References: <1414081762-28886-1-git-send-email-soren.brinkmann@xilinx.com> <2e0177fec3e14239ba979cbc5e924a73@BN1BFFO11FD026.protection.gbl> <f506a31d4f3b47f7aa3d08cc653a0de5@BY2FFO11FD041.protection.gbl>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:MoGB0wP35SMhm+GEiG5gcaiyVcySU1Wv7IPI+BIje1y
+ Ex943IJEbJ742/3iC/QnKmC6E+UTvgCcJOg5SqfouBrZzSPYRh
+ M2R3z6J/40sa9pma4hhvtlJetRh3M1q+P/7nPLBoWqj5uxgqbU
+ f2xOgN+S/76r9HFXKDrtGy70zNzA+l8Wy4ldtcdC2JmG9HRl7T
+ 901+n8Ens6nk17XSjznbWOaKLQIhcUUnJrDnshrQmSuhd2skCi
+ 1N4gpmCtUoOs+PHm3UStRgC7XRE6Mc0qeCbRPWXXvjICXx9jrA
+ O9QMxfLBoJnUQK5koUV4ScEFNgYJGO6nII1rkqqYj4V2DM5j2p
+ gNaqLnE44zgjMp4EjR1Q=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If someone requests us to disable output for a pin, we'll configure it
-as an input.
+On Monday 27 October 2014 10:49:50 Sören Brinkmann wrote:
+> On Fri, 2014-10-24 at 10:45AM +0200, Michal Simek wrote:
+> > On 10/24/2014 10:30 AM, Arnd Bergmann wrote:
+> > > On Friday 24 October 2014 08:08:15 Michal Simek wrote:
+> > >> On 10/23/2014 06:29 PM, Soren Brinkmann wrote:
+> > >>> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > >>> ---
+> > >>> v2:
+> > >>>  - I removed the additional 'F' entries
+> > >>>
+> > >>>  MAINTAINERS | 1 +
+> > >>>  1 file changed, 1 insertion(+)
+> > >>>
+> > >>> diff --git a/MAINTAINERS b/MAINTAINERS
+> > >>> index 0484f2c526f0..8b49eeee5a27 100644
+> > >>> --- a/MAINTAINERS
+> > >>> +++ b/MAINTAINERS
+> > >>> @@ -1543,6 +1543,7 @@ F:      arch/arm/mach-pxa/include/mach/z2.h
+> > >>>  
+> > >>>  ARM/ZYNQ ARCHITECTURE
+> > >>>  M:   Michal Simek <michal.simek@xilinx.com>
+> > >>> +R:   Sören Brinkmann <soren.brinkmann@xilinx.com>
+> > >>>  L:   linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+> > >>>  W:   http://wiki.xilinx.com
+> > >>>  T:   git git://git.xilinx.com/linux-xlnx.git
+> > >>>
+> > >>
+> > >> Applied.
+> > >> IMHO: This can go through arm-soc tree.
+> > > 
+> > > Yes, a simple patch like this, you can forward to use with your
+> > > Signed-off-by, or add an Ack and ask us to pick it up directly.
+> > > 
+> > > With the current timing, I can still pick it up as a fix for 3.18 if you
+> > > like.
+> > > 
+> > 
+> > Ok here is my
+> > Acked-by: Michal Simek <michal.simek@xilinx.com>
+> > 
+> > and please pick it up as fix directly to 3.18.
+> 
+> Thanks!
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/pinctrl/pinctrl-rockchip.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Added to fixes branch.
 
-diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-index 40970c3..c1ac14c 100644
---- a/drivers/pinctrl/pinctrl-rockchip.c
-+++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -971,6 +971,12 @@ static int rockchip_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
- 			if (rc)
- 				return rc;
- 			break;
-+		case PIN_CONFIG_OUTPUT_DISABLE:
-+			rc = _rockchip_pmx_gpio_set_direction(&bank->gpio_chip,
-+					  pin - bank->pin_base, true);
-+			if (rc)
-+				return rc;
-+			break;
- 		case PIN_CONFIG_OUTPUT:
- 			rockchip_gpio_set(&bank->gpio_chip,
- 					  pin - bank->pin_base, arg);
--- 
-2.1.0.rc2.206.gedb03e5
+I've changed the subject line to "Add Soren as reviewer for Zynq",
+since even though you are the author of the patch, that is a more
+useful shortlog message.
 
+	Arnd
