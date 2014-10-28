@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaJ1KT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 06:19:57 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60184 "EHLO mga11.intel.com"
+	id S1754493AbaJ1KT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 06:19:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:45530 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338AbaJ1KTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754160AbaJ1KTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 06:19:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,802,1406617200"; 
-   d="scan'208";a="621979836"
+   d="scan'208";a="621979857"
 From: Daniel Baluta <daniel.baluta@intel.com>
 To: jic23@kernel.org, linux-iio@vger.kernel.org
 Cc: daniel.baluta@intel.com, knaack.h@gmx.de, linux-kernel@vger.kernel.org,
         irina.tirdea@intel.com
-Subject: [PATCH v3 5/7] iio: core: Introduce IIO_CHAN_INFO_CALIBHEIGHT
-Date: Tue, 28 Oct 2014 12:19:29 +0200
-Message-Id: <1414491571-11672-6-git-send-email-daniel.baluta@intel.com>
+Subject: [PATCH v3 7/7] iio: event_monitor: Add support for new channel types
+Date: Tue, 28 Oct 2014 12:19:31 +0200
+Message-Id: <1414491571-11672-8-git-send-email-daniel.baluta@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414491571-11672-1-git-send-email-daniel.baluta@intel.com>
 References: <1414491571-11672-1-git-send-email-daniel.baluta@intel.com>
@@ -23,65 +23,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Irina Tirdea <irina.tirdea@intel.com>
+We have the following testing scenario:
 
-Some devices need the height of the user to compute various
-parameters. One of this devices is Freescale's MMA9553L
-(http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf)
-that needs the height of the user to compute the stride length which
-is used further to determine distance, speed and activity type.
+$ insmod iio_dummy_evgen.ko
+$ insmod iio_dummy.ko
+
+./iio_event_monitor /dev/iio:device0
+Event: time: 1412786467971335337, type: activity(running), channel: 0,
+evtype: thresh, direction: rising
+Event: time: 1412786530792974091, type: activity(walking), channel: 0,
+evtype: thresh, direction: falling
+Event: time: 1412764319184761765, type: steps, channel: 0, evtype: instance
+
+$ echo 1 > /sys/bus/iio/devices/iio_evgen/poke_ev0
+$ echo 2 > /sys/bus/iio/devices/iio_evgen/poke_ev0
+$ echo 3 > /sys/bus/iio/devices/iio_evgen/poke_ev0
 
 Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
 Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
 ---
- Documentation/ABI/testing/sysfs-bus-iio | 8 ++++++++
- drivers/iio/industrialio-core.c         | 1 +
- include/linux/iio/iio.h                 | 1 +
- 3 files changed, 10 insertions(+)
+ .../staging/iio/Documentation/iio_event_monitor.c  | 23 +++++++++++++++++++---
+ 1 file changed, 20 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-index 337ed0c..61d6603 100644
---- a/Documentation/ABI/testing/sysfs-bus-iio
-+++ b/Documentation/ABI/testing/sysfs-bus-iio
-@@ -320,6 +320,14 @@ Description:
- 		production inaccuracies).  If shared across all channels,
- 		<type>_calibscale is used.
+diff --git a/drivers/staging/iio/Documentation/iio_event_monitor.c b/drivers/staging/iio/Documentation/iio_event_monitor.c
+index 569d6f8..aee9b13 100644
+--- a/drivers/staging/iio/Documentation/iio_event_monitor.c
++++ b/drivers/staging/iio/Documentation/iio_event_monitor.c
+@@ -49,6 +49,8 @@ static const char * const iio_chan_type_name_spec[] = {
+ 	[IIO_CCT] = "cct",
+ 	[IIO_PRESSURE] = "pressure",
+ 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
++	[IIO_ACTIVITY] = "activity",
++	[IIO_STEPS] = "steps",
+ };
  
-+What:		/sys/bus/iio/devices/iio:deviceX/in_steps_calibheight
-+KernelVersion:	3.19
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		Height of the user (in centimeters) used by some pedometers
-+		to compute the stride length, distance, speed and activity
-+		type.
+ static const char * const iio_ev_type_text[] = {
+@@ -57,6 +59,7 @@ static const char * const iio_ev_type_text[] = {
+ 	[IIO_EV_TYPE_ROC] = "roc",
+ 	[IIO_EV_TYPE_THRESH_ADAPTIVE] = "thresh_adaptive",
+ 	[IIO_EV_TYPE_MAG_ADAPTIVE] = "mag_adaptive",
++	[IIO_EV_TYPE_INSTANCE] = "instance",
+ };
+ 
+ static const char * const iio_ev_dir_text[] = {
+@@ -79,6 +82,10 @@ static const char * const iio_modifier_names[] = {
+ 	[IIO_MOD_LIGHT_RED] = "red",
+ 	[IIO_MOD_LIGHT_GREEN] = "green",
+ 	[IIO_MOD_LIGHT_BLUE] = "blue",
++	[IIO_MOD_RUNNING] = "running",
++	[IIO_MOD_JOGGING] = "jogging",
++	[IIO_MOD_WALKING] = "walking",
++	[IIO_MOD_STILL] = "still",
+ };
+ 
+ static bool event_is_known(struct iio_event_data *event)
+@@ -108,6 +115,8 @@ static bool event_is_known(struct iio_event_data *event)
+ 	case IIO_CCT:
+ 	case IIO_PRESSURE:
+ 	case IIO_HUMIDITYRELATIVE:
++	case IIO_ACTIVITY:
++	case IIO_STEPS:
+ 		break;
+ 	default:
+ 		return false;
+@@ -126,6 +135,10 @@ static bool event_is_known(struct iio_event_data *event)
+ 	case IIO_MOD_LIGHT_RED:
+ 	case IIO_MOD_LIGHT_GREEN:
+ 	case IIO_MOD_LIGHT_BLUE:
++	case IIO_MOD_RUNNING:
++	case IIO_MOD_JOGGING:
++	case IIO_MOD_WALKING:
++	case IIO_MOD_STILL:
+ 		break;
+ 	default:
+ 		return false;
+@@ -137,6 +150,7 @@ static bool event_is_known(struct iio_event_data *event)
+ 	case IIO_EV_TYPE_ROC:
+ 	case IIO_EV_TYPE_THRESH_ADAPTIVE:
+ 	case IIO_EV_TYPE_MAG_ADAPTIVE:
++	case IIO_EV_TYPE_INSTANCE:
+ 		break;
+ 	default:
+ 		return false;
+@@ -146,6 +160,7 @@ static bool event_is_known(struct iio_event_data *event)
+ 	case IIO_EV_DIR_EITHER:
+ 	case IIO_EV_DIR_RISING:
+ 	case IIO_EV_DIR_FALLING:
++	case IIO_EV_DIR_NONE:
+ 		break;
+ 	default:
+ 		return false;
+@@ -186,9 +201,11 @@ static void print_event(struct iio_event_data *event)
+ 	else if (chan >= 0)
+ 		printf("channel: %d, ", chan);
+ 
+-	printf("evtype: %s, direction: %s\n",
+-		iio_ev_type_text[ev_type],
+-		iio_ev_dir_text[dir]);
++	printf("evtype: %s", iio_ev_type_text[ev_type]);
 +
- What:		/sys/bus/iio/devices/iio:deviceX/in_accel_scale_available
- What:		/sys/.../iio:deviceX/in_voltageX_scale_available
- What:		/sys/.../iio:deviceX/in_voltage-voltage_scale_available
-diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-index 1e060f3..45bb3a4 100644
---- a/drivers/iio/industrialio-core.c
-+++ b/drivers/iio/industrialio-core.c
-@@ -120,6 +120,7 @@ static const char * const iio_chan_info_postfix[] = {
- 	[IIO_CHAN_INFO_HYSTERESIS] = "hysteresis",
- 	[IIO_CHAN_INFO_INT_TIME] = "integration_time",
- 	[IIO_CHAN_INFO_ENABLE] = "en",
-+	[IIO_CHAN_INFO_CALIBHEIGHT] = "calibheight",
- };
++	if (dir != IIO_EV_DIR_NONE)
++		printf(", direction: %s", iio_ev_dir_text[dir]);
++	printf("\n");
+ }
  
- /**
-diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-index 3d3f06f..057d8ce7 100644
---- a/include/linux/iio/iio.h
-+++ b/include/linux/iio/iio.h
-@@ -38,6 +38,7 @@ enum iio_chan_info_enum {
- 	IIO_CHAN_INFO_HYSTERESIS,
- 	IIO_CHAN_INFO_INT_TIME,
- 	IIO_CHAN_INFO_ENABLE,
-+	IIO_CHAN_INFO_CALIBHEIGHT,
- };
- 
- enum iio_shared_by {
+ int main(int argc, char **argv)
 -- 
 1.9.1
 
