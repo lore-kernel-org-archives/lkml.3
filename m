@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891AbaJ1Dub (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:50:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45960 "EHLO
+	id S1755905AbaJ1Duj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:50:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45969 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755881AbaJ1Du2 (ORCPT
+	with ESMTP id S1753852AbaJ1Duc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:28 -0400
+	Mon, 27 Oct 2014 23:50:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 076/100] sparc64: Fix corrupted thread fault code.
-Date: Tue, 28 Oct 2014 11:36:01 +0800
-Message-Id: <20141028033503.968182831@linuxfoundation.org>
+        Allen Pais <allen.pais@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 086/100] sparc64: support M6 and M7 for building CPU distribution map
+Date: Tue, 28 Oct 2014 11:36:11 +0800
+Message-Id: <20141028033504.423277512@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -28,76 +29,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Allen Pais <allen.pais@oracle.com>
 
-[ Upstream commit 84bd6d8b9c0f06b3f188efb479c77e20f05e9a8a ]
+Add M6 and M7 chip type in cpumap.c to correctly build CPU distribution map that spans all online CPUs.
 
-Every path that ends up at do_sparc64_fault() must install a valid
-FAULT_CODE_* bitmask in the per-thread fault code byte.
-
-Two paths leading to the label winfix_trampoline (which expects the
-FAULT_CODE_* mask in register %g4) were not doing so:
-
-1) For pre-hypervisor TLB protection violation traps, if we took
-   the 'winfix_trampoline' path we wouldn't have %g4 initialized
-   with the FAULT_CODE_* value yet.  Resulting in using the
-   TLB_TAG_ACCESS register address value instead.
-
-2) In the TSB miss path, when we notice that we are going to use a
-   hugepage mapping, but we haven't allocated the hugepage TSB yet, we
-   still have to take the window fixup case into consideration and
-   in that particular path we leave %g4 not setup properly.
-
-Errors on this sort were largely invisible previously, but after
-commit 4ccb9272892c33ef1c19a783cfa87103b30c2784 ("sparc64: sun4v TLB
-error power off events") we now have a fault_code mask bit
-(FAULT_CODE_BAD_RA) that triggers due to this bug.
-
-FAULT_CODE_BAD_RA triggers because this bit is set in TLB_TAG_ACCESS
-(see #1 above) and thus we get seemingly random bus errors triggered
-for user processes.
-
-Fixes: 4ccb9272892c ("sparc64: sun4v TLB error power off events")
-Reported-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: Allen Pais <allen.pais@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/dtlb_prot.S |    6 +++---
- arch/sparc/kernel/tsb.S       |    6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/sparc/kernel/cpumap.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/sparc/kernel/dtlb_prot.S
-+++ b/arch/sparc/kernel/dtlb_prot.S
-@@ -24,11 +24,11 @@
- 	mov		TLB_TAG_ACCESS, %g4		! For reload of vaddr
- 
- /* PROT ** ICACHE line 2: More real fault processing */
-+	ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
- 	bgu,pn		%xcc, winfix_trampoline		! Yes, perform winfixup
--	 ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
--	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
- 	 mov		FAULT_CODE_DTLB | FAULT_CODE_WRITE, %g4
--	nop
-+	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
-+	 nop
- 	nop
- 	nop
- 	nop
---- a/arch/sparc/kernel/tsb.S
-+++ b/arch/sparc/kernel/tsb.S
-@@ -162,10 +162,10 @@ tsb_miss_page_table_walk_sun4v_fastpath:
- 	nop
- 	.previous
- 
--	rdpr	%tl, %g3
--	cmp	%g3, 1
-+	rdpr	%tl, %g7
-+	cmp	%g7, 1
- 	bne,pn	%xcc, winfix_trampoline
--	 nop
-+	 mov	%g3, %g4
- 	ba,pt	%xcc, etrap
- 	 rd	%pc, %g7
- 	call	hugetlb_setup
+--- a/arch/sparc/kernel/cpumap.c
++++ b/arch/sparc/kernel/cpumap.c
+@@ -326,6 +326,8 @@ static int iterate_cpu(struct cpuinfo_tr
+ 	case SUN4V_CHIP_NIAGARA3:
+ 	case SUN4V_CHIP_NIAGARA4:
+ 	case SUN4V_CHIP_NIAGARA5:
++	case SUN4V_CHIP_SPARC_M6:
++	case SUN4V_CHIP_SPARC_M7:
+ 	case SUN4V_CHIP_SPARC64X:
+ 		rover_inc_table = niagara_iterate_method;
+ 		break;
 
 
