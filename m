@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaJ1RXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:23:06 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:58436 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753750AbaJ1RWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:22:47 -0400
-Date: Tue, 28 Oct 2014 22:52:34 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] block: wrong return value
-Message-ID: <20141028172234.GA12775@sudip-PC>
-References: <1414082808-7484-1-git-send-email-sudipm.mukherjee@gmail.com>
+	id S1751858AbaJ1RYY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:24:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53589 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751407AbaJ1RYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 13:24:23 -0400
+Message-ID: <544FD138.3030305@zytor.com>
+Date: Tue, 28 Oct 2014 10:24:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414082808-7484-1-git-send-email-sudipm.mukherjee@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>, Minfei Huang <mnfhuang@gmail.com>
+CC: mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: Avoid overlap the fixmap area on i386
+References: <6B680A9E-6CE9-4C96-934B-CB01DCB58278@gmail.com> <alpine.DEB.2.11.1410281159590.5308@nanos>
+In-Reply-To: <alpine.DEB.2.11.1410281159590.5308@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 10:16:48PM +0530, Sudip Mukherjee wrote:
-> while compiling integer err was showing as a set but unused variable.
-> elevator_init_fn can be either cfq_init_queue or deadline_init_queue
-> or noop_init_queue.
-> all three of these functions are returning -ENOMEM if they fail to
-> allocate the queue.
-> so we should actually be returning the error code rather than
-> returning 0 always.
-i have one doubt. shouldn't this patch be marked for stable also?
+On 10/28/2014 04:06 AM, Thomas Gleixner wrote:
+>>
+>> The available address we can use is lower than FIXADDR_BOOT_START. So
+>> We will set the kmap boundary below the FIXADDR_BOOT_START, if configure
+>> the high memory.
+>>
+>> If we configure the high memory, the vmalloc reserve area should end
+>> up to PKMAP_BASE, otherwise should end up to FIXADDR_BOOT_START.
+> 
+> Which is not really a problem, because the FIXADDR_BOOT area is only
+> used during boot for early_ioremap() and it's unused when ioremap() is
+> functional. vmalloc becomes available after early boot so the
+> FIXADDR_BOOT area is available for reuse.
+> 
 
-thanks
-sudip
-> 
-> Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
-> ---
-> 
-> change in v2: added elevator_put
-> change in v3: remove unneeded initialization of err
-> 
->  block/elevator.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/block/elevator.c b/block/elevator.c
-> index 24c28b6..afa3b03 100644
-> --- a/block/elevator.c
-> +++ b/block/elevator.c
-> @@ -229,7 +229,9 @@ int elevator_init(struct request_queue *q, char *name)
->  	}
->  
->  	err = e->ops.elevator_init_fn(q, e);
-> -	return 0;
-> +	if (err)
-> +		elevator_put(e);
-> +	return err;
->  }
->  EXPORT_SYMBOL(elevator_init);
->  
-> -- 
-> 1.8.1.2
-> 
+Given the very limited address space available on i386, it would be
+extremely undesirable to not reuse address space when possible.
+
+	-hpa
+
