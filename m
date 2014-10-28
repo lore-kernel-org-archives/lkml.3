@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759572AbaJ1Hph (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:45:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44618 "EHLO
+	id S1759575AbaJ1HqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:46:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44607 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611AbaJ1DjZ (ORCPT
+	with ESMTP id S1754439AbaJ1DjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:25 -0400
+	Mon, 27 Oct 2014 23:39:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathalie Cyrille <nathalie.cyrille@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        David Dueck <davidcdueck@googlemail.com>,
+        Anthony Harivel <anthony.harivel@emtrion.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
         Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3.17 082/146] ARM: at91/PMC: dont forget to write PMC_PCDR register to disable clocks
-Date: Tue, 28 Oct 2014 11:33:44 +0800
-Message-Id: <20141028033346.954686297@linuxfoundation.org>
+Subject: [PATCH 3.17 080/146] ARM: at91/dt: Fix typo regarding can0_clk
+Date: Tue, 28 Oct 2014 11:33:42 +0800
+Message-Id: <20141028033346.867456510@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,31 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ludovic Desroches <ludovic.desroches@atmel.com>
+From: David Dueck <davidcdueck@googlemail.com>
 
-commit cfa1950e6c6b72251e80adc736af3c3d2907ab0e upstream.
+commit 0a51d644c20f5c88fd3a659119d1903f74927082 upstream.
 
-When introducing support for sama5d3, the write to PMC_PCDR register has
-been accidentally removed.
+Otherwise the clock for can0 will never get enabled.
 
-Reported-by: Nathalie Cyrille <nathalie.cyrille@atmel.com>
-Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: David Dueck <davidcdueck@googlemail.com>
+Signed-off-by: Anthony Harivel <anthony.harivel@emtrion.de>
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-at91/clock.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/boot/dts/sama5d3_can.dtsi |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-at91/clock.c
-+++ b/arch/arm/mach-at91/clock.c
-@@ -962,6 +962,7 @@ static int __init at91_clock_reset(void)
- 	}
+--- a/arch/arm/boot/dts/sama5d3_can.dtsi
++++ b/arch/arm/boot/dts/sama5d3_can.dtsi
+@@ -40,7 +40,7 @@
+ 						atmel,clk-output-range = <0 66000000>;
+ 					};
  
- 	at91_pmc_write(AT91_PMC_SCDR, scdr);
-+	at91_pmc_write(AT91_PMC_PCDR, pcdr);
- 	if (cpu_is_sama5d3())
- 		at91_pmc_write(AT91_PMC_PCDR1, pcdr1);
- 
+-					can1_clk: can0_clk {
++					can1_clk: can1_clk {
+ 						#clock-cells = <0>;
+ 						reg = <41>;
+ 						atmel,clk-output-range = <0 66000000>;
 
 
