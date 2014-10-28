@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629AbaJ1DpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:45:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45377 "EHLO
+	id S1755653AbaJ1DpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:45:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45385 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258AbaJ1DpP (ORCPT
+	with ESMTP id S1755625AbaJ1DpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:45:15 -0400
+	Mon, 27 Oct 2014 23:45:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.16 064/127] Revert "ath9k_hw: reduce ANI firstep range for older chips"
-Date: Tue, 28 Oct 2014 11:34:59 +0800
-Message-Id: <20141028033423.659868837@linuxfoundation.org>
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.16 078/127] arm64: compat: fix compat types affecting struct compat_elf_prpsinfo
+Date: Tue, 28 Oct 2014 11:35:13 +0800
+Message-Id: <20141028033424.270152403@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,37 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Victor Kamensky <victor.kamensky@linaro.org>
 
-commit 171cdab8c78bb169d9693d587e1d02d2dd5a0274 upstream.
+commit 971a5b6fe634bb7b617d8c5f25b6a3ddbc600194 upstream.
 
-This reverts commit 09efc56345be4146ab9fc87a55c837ed5d6ea1ab
+The compat_elf_prpsinfo structure does not match the arch/arm struct
+elf_pspsinfo definition. As result NT_PRPSINFO note in core file
+created by arm64 kernel for aarch32 (compat) process has wrong size.
+So gdb cannot display command that caused process crash.
 
-I've received reports that this change is decreasing throughput in some
-rare conditions on an AR9280 based device
+Fix is to change size of __compat_uid_t, __compat_gid_t so it would
+match size of similar fields in arch/arm case.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar5008_phy.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/arm64/include/asm/compat.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar5008_phy.c
-+++ b/drivers/net/wireless/ath/ath9k/ar5008_phy.c
-@@ -1004,9 +1004,11 @@ static bool ar5008_hw_ani_control_new(st
- 	case ATH9K_ANI_FIRSTEP_LEVEL:{
- 		u32 level = param;
- 
--		value = level;
-+		value = level * 2;
- 		REG_RMW_FIELD(ah, AR_PHY_FIND_SIG,
- 			      AR_PHY_FIND_SIG_FIRSTEP, value);
-+		REG_RMW_FIELD(ah, AR_PHY_FIND_SIG_LOW,
-+			      AR_PHY_FIND_SIG_FIRSTEP_LOW, value);
- 
- 		if (level != aniState->firstepLevel) {
- 			ath_dbg(common, ANI,
+--- a/arch/arm64/include/asm/compat.h
++++ b/arch/arm64/include/asm/compat.h
+@@ -37,8 +37,8 @@ typedef s32		compat_ssize_t;
+ typedef s32		compat_time_t;
+ typedef s32		compat_clock_t;
+ typedef s32		compat_pid_t;
+-typedef u32		__compat_uid_t;
+-typedef u32		__compat_gid_t;
++typedef u16		__compat_uid_t;
++typedef u16		__compat_gid_t;
+ typedef u16		__compat_uid16_t;
+ typedef u16		__compat_gid16_t;
+ typedef u32		__compat_uid32_t;
 
 
