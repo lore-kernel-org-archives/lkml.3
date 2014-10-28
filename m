@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899AbaJ1VaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:30:19 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:37004 "EHLO
+	id S1755535AbaJ1VqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:46:23 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:37010 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754837AbaJ1VaQ (ORCPT
+	with ESMTP id S1754502AbaJ1VaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:30:16 -0400
+	Tue, 28 Oct 2014 17:30:18 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 01/58] crypto: ux500: Use dmaengine_terminate_all API
-Date: Tue, 28 Oct 2014 22:25:16 +0100
-Message-Id: <1414531573-18807-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 20/58] dmaengine: fsl-edma: Split device_control
+Date: Tue, 28 Oct 2014 22:25:35 +0100
+Message-Id: <1414531573-18807-21-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,47 +24,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are removing the dmaengine_device_control API, that shouldn't even have been
-exposed in the first place. Change the callers to use the proper API.
+Split the device_control callback of the Freescale EDMA driver to make use
+of the newly introduced callbacks, that will eventually be used to retrieve
+slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/crypto/ux500/cryp/cryp_core.c | 4 ++--
- drivers/crypto/ux500/hash/hash_core.c | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/dma/fsl-edma.c | 106 +++++++++++++++++++++++++++----------------------
+ 1 file changed, 58 insertions(+), 48 deletions(-)
 
-diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
-index 92105f3dc8e0..75bd0f1e9a94 100644
---- a/drivers/crypto/ux500/cryp/cryp_core.c
-+++ b/drivers/crypto/ux500/cryp/cryp_core.c
-@@ -606,12 +606,12 @@ static void cryp_dma_done(struct cryp_ctx *ctx)
- 	dev_dbg(ctx->device->dev, "[%s]: ", __func__);
- 
- 	chan = ctx->device->dma.chan_mem2cryp;
--	dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
-+	dmaengine_terminate_all(chan);
- 	dma_unmap_sg(chan->device->dev, ctx->device->dma.sg_src,
- 		     ctx->device->dma.sg_src_len, DMA_TO_DEVICE);
- 
- 	chan = ctx->device->dma.chan_cryp2mem;
--	dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
-+	dmaengine_terminate_all(chan);
- 	dma_unmap_sg(chan->device->dev, ctx->device->dma.sg_dst,
- 		     ctx->device->dma.sg_dst_len, DMA_FROM_DEVICE);
+diff --git a/drivers/dma/fsl-edma.c b/drivers/dma/fsl-edma.c
+index 13df85a16438..b5b7474f8859 100644
+--- a/drivers/dma/fsl-edma.c
++++ b/drivers/dma/fsl-edma.c
+@@ -292,62 +292,69 @@ static void fsl_edma_free_desc(struct virt_dma_desc *vdesc)
+ 	kfree(fsl_desc);
  }
-diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
-index 1c73f4fbc252..48bdc5df7b3b 100644
---- a/drivers/crypto/ux500/hash/hash_core.c
-+++ b/drivers/crypto/ux500/hash/hash_core.c
-@@ -202,7 +202,7 @@ static void hash_dma_done(struct hash_ctx *ctx)
- 	struct dma_chan *chan;
  
- 	chan = ctx->device->dma.chan_mem2hash;
--	dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
-+	dmaengine_terminate_all(chan);
- 	dma_unmap_sg(chan->device->dev, ctx->device->dma.sg,
- 		     ctx->device->dma.sg_len, DMA_TO_DEVICE);
+-static int fsl_edma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		unsigned long arg)
++static int fsl_edma_terminate_all(struct dma_chan *chan)
+ {
+ 	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
+-	struct dma_slave_config *cfg = (void *)arg;
+ 	unsigned long flags;
+ 	LIST_HEAD(head);
+ 
+-	switch (cmd) {
+-	case DMA_TERMINATE_ALL:
+-		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	fsl_edma_disable_request(fsl_chan);
++	fsl_chan->edesc = NULL;
++	vchan_get_all_descriptors(&fsl_chan->vchan, &head);
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++	vchan_dma_desc_free_list(&fsl_chan->vchan, &head);
++	return 0;
++}
++
++static int fsl_edma_pause(struct dma_chan *chan)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	unsigned long flags;
++
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	if (fsl_chan->edesc) {
+ 		fsl_edma_disable_request(fsl_chan);
+-		fsl_chan->edesc = NULL;
+-		vchan_get_all_descriptors(&fsl_chan->vchan, &head);
+-		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
+-		vchan_dma_desc_free_list(&fsl_chan->vchan, &head);
+-		return 0;
+-
+-	case DMA_SLAVE_CONFIG:
+-		fsl_chan->fsc.dir = cfg->direction;
+-		if (cfg->direction == DMA_DEV_TO_MEM) {
+-			fsl_chan->fsc.dev_addr = cfg->src_addr;
+-			fsl_chan->fsc.addr_width = cfg->src_addr_width;
+-			fsl_chan->fsc.burst = cfg->src_maxburst;
+-			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->src_addr_width);
+-		} else if (cfg->direction == DMA_MEM_TO_DEV) {
+-			fsl_chan->fsc.dev_addr = cfg->dst_addr;
+-			fsl_chan->fsc.addr_width = cfg->dst_addr_width;
+-			fsl_chan->fsc.burst = cfg->dst_maxburst;
+-			fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->dst_addr_width);
+-		} else {
+-			return -EINVAL;
+-		}
+-		return 0;
++		fsl_chan->status = DMA_PAUSED;
++	}
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++	return 0;
++}
+ 
+-	case DMA_PAUSE:
+-		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
+-		if (fsl_chan->edesc) {
+-			fsl_edma_disable_request(fsl_chan);
+-			fsl_chan->status = DMA_PAUSED;
+-		}
+-		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
+-		return 0;
+-
+-	case DMA_RESUME:
+-		spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
+-		if (fsl_chan->edesc) {
+-			fsl_edma_enable_request(fsl_chan);
+-			fsl_chan->status = DMA_IN_PROGRESS;
+-		}
+-		spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
+-		return 0;
++static int fsl_edma_resume(struct dma_chan *chan)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++	unsigned long flags;
+ 
+-	default:
+-		return -ENXIO;
++	spin_lock_irqsave(&fsl_chan->vchan.lock, flags);
++	if (fsl_chan->edesc) {
++		fsl_edma_enable_request(fsl_chan);
++		fsl_chan->status = DMA_IN_PROGRESS;
+ 	}
++	spin_unlock_irqrestore(&fsl_chan->vchan.lock, flags);
++	return 0;
++}
++
++static int fsl_edma_slave_config(struct dma_chan *chan,
++				 struct dma_slave_config *cfg)
++{
++	struct fsl_edma_chan *fsl_chan = to_fsl_edma_chan(chan);
++
++	fsl_chan->fsc.dir = cfg->direction;
++	if (cfg->direction == DMA_DEV_TO_MEM) {
++		fsl_chan->fsc.dev_addr = cfg->src_addr;
++		fsl_chan->fsc.addr_width = cfg->src_addr_width;
++		fsl_chan->fsc.burst = cfg->src_maxburst;
++		fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->src_addr_width);
++	} else if (cfg->direction == DMA_MEM_TO_DEV) {
++		fsl_chan->fsc.dev_addr = cfg->dst_addr;
++		fsl_chan->fsc.addr_width = cfg->dst_addr_width;
++		fsl_chan->fsc.burst = cfg->dst_maxburst;
++		fsl_chan->fsc.attr = fsl_edma_get_tcd_attr(cfg->dst_addr_width);
++	} else {
++			return -EINVAL;
++	}
++	return 0;
  }
+ 
+ static size_t fsl_edma_desc_residue(struct fsl_edma_chan *fsl_chan,
+@@ -914,7 +921,10 @@ static int fsl_edma_probe(struct platform_device *pdev)
+ 	fsl_edma->dma_dev.device_tx_status = fsl_edma_tx_status;
+ 	fsl_edma->dma_dev.device_prep_slave_sg = fsl_edma_prep_slave_sg;
+ 	fsl_edma->dma_dev.device_prep_dma_cyclic = fsl_edma_prep_dma_cyclic;
+-	fsl_edma->dma_dev.device_control = fsl_edma_control;
++	fsl_edma->dma_dev.device_config = fsl_edma_slave_config;
++	fsl_edma->dma_dev.device_pause = fsl_edma_pause;
++	fsl_edma->dma_dev.device_resume = fsl_edma_resume;
++	fsl_edma->dma_dev.device_terminate_all = fsl_edma_terminate_all;
+ 	fsl_edma->dma_dev.device_issue_pending = fsl_edma_issue_pending;
+ 	fsl_edma->dma_dev.device_slave_caps = fsl_dma_device_slave_caps;
+ 
 -- 
 2.1.1
 
