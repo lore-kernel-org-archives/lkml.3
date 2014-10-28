@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759996AbaJ1GmJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:42:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45912 "EHLO
+	id S1760015AbaJ1Gmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:42:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45906 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933305AbaJ1DuB (ORCPT
+	with ESMTP id S933291AbaJ1Dt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:01 -0400
+	Mon, 27 Oct 2014 23:49:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Anton Blanchard <anton@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.14 055/100] powerpc/iommu/ddw: Fix endianness
-Date: Tue, 28 Oct 2014 11:35:40 +0800
-Message-Id: <20141028033503.063434264@linuxfoundation.org>
+        Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.14 071/100] xfs: ensure WB_SYNC_ALL writeback handles partial pages correctly
+Date: Tue, 28 Oct 2014 11:35:56 +0800
+Message-Id: <20141028033503.753959859@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -31,163 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
+From: Dave Chinner <dchinner@redhat.com>
 
-commit 9410e0185e65394c0c6d046033904b53b97a9423 upstream.
+commit 0d085a529b427d97710e6a41f8a4f23e1757cd12 upstream.
 
-rtas_call() accepts and returns values in CPU endianness.
-The ddw_query_response and ddw_create_response structs members are
-defined and treated as BE but as they are passed to rtas_call() as
-(u32 *) and they get byteswapped automatically, the data is CPU-endian.
-This fixes ddw_query_response and ddw_create_response definitions and use.
+XFS has been having trouble with stray delayed allocation extents
+beyond EOF for a long time. Recent changes to the collapse range
+code has triggered erroneous EBUSY errors on page invalidtion for
+block size smaller than page size filesystems. These
+have been caused by dirty buffers beyond EOF on a partial page which
+do not get written to disk during a sync.
 
-of_read_number() is designed to work with device tree cells - it assumes
-the input is big-endian and returns data in CPU-endian. However due
-to the ddw_create_response struct fix, create.addr_hi/lo are already
-CPU-endian so do not byteswap them.
+The issue is that write-ahead in xfs_cluster_write() finds such a
+partial page and handles it by leaving the page dirty but pushing it
+into a writeback state. This used to work just fine, as the
+write_cache_pages() code would then find the dirty partial page in
+the next mapping tree lookup as the dirty tag is still set.
 
-ddw_avail is a pointer to the "ibm,ddw-applicable" property which contains
-3 cells which are big-endian as it is a device tree. rtas_call() accepts
-a RTAS token in CPU-endian. This makes use of of_property_read_u32_array
-to byte swap and avoid the need for a number of be32_to_cpu calls.
+Unfortunately, when we moved to a mark and sweep approach to
+writeback to fix other writeback sync issues, we broken this. THe
+act of marking the page as under writeback now clears the TOWRITE
+tag in the radix tree, even though the page is still dirty. This
+causes the TOWRITE tag to be cleared, and hence the next lookup on
+the mapping tree does not find the dirty partial page and so doesn't
+try to write it again.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[aik: folded Anton's patch with of_property_read_u32_array]
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-Acked-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+This same writeback bug was found recently in ext4 and fixed in
+commit 1c8349a ("ext4: fix data integrity sync in ordered mode")
+without communication to the wider filesystem community. We can use
+exactly the same fix here so the TOWRITE flag is not cleared on
+partial page writes.
+
+cc: stable@vger.kernel.org # dependent on 1c8349a17137b93f0a83f276c764a6df1b9a116e
+Root-cause-found-by: Brian Foster <bfoster@redhat.com>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/iommu.c |   51 ++++++++++++++++++---------------
- 1 file changed, 28 insertions(+), 23 deletions(-)
+ fs/xfs/xfs_aops.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/iommu.c
-+++ b/arch/powerpc/platforms/pseries/iommu.c
-@@ -329,16 +329,16 @@ struct direct_window {
- 
- /* Dynamic DMA Window support */
- struct ddw_query_response {
--	__be32 windows_available;
--	__be32 largest_available_block;
--	__be32 page_size;
--	__be32 migration_capable;
-+	u32 windows_available;
-+	u32 largest_available_block;
-+	u32 page_size;
-+	u32 migration_capable;
- };
- 
- struct ddw_create_response {
--	__be32 liobn;
--	__be32 addr_hi;
--	__be32 addr_lo;
-+	u32 liobn;
-+	u32 addr_hi;
-+	u32 addr_lo;
- };
- 
- static LIST_HEAD(direct_window_list);
-@@ -725,16 +725,18 @@ static void remove_ddw(struct device_nod
+--- a/fs/xfs/xfs_aops.c
++++ b/fs/xfs/xfs_aops.c
+@@ -434,10 +434,22 @@ xfs_start_page_writeback(
  {
- 	struct dynamic_dma_window_prop *dwp;
- 	struct property *win64;
--	const u32 *ddw_avail;
-+	u32 ddw_avail[3];
- 	u64 liobn;
--	int len, ret = 0;
-+	int ret = 0;
+ 	ASSERT(PageLocked(page));
+ 	ASSERT(!PageWriteback(page));
+-	if (clear_dirty)
 +
-+	ret = of_property_read_u32_array(np, "ibm,ddw-applicable",
-+					 &ddw_avail[0], 3);
- 
--	ddw_avail = of_get_property(np, "ibm,ddw-applicable", &len);
- 	win64 = of_find_property(np, DIRECT64_PROPNAME, NULL);
- 	if (!win64)
- 		return;
- 
--	if (!ddw_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
-+	if (ret || win64->length < sizeof(*dwp))
- 		goto delprop;
- 
- 	dwp = win64->value;
-@@ -872,8 +874,9 @@ static int create_ddw(struct pci_dev *de
- 
- 	do {
- 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
--		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create, cfg_addr,
--				BUID_HI(buid), BUID_LO(buid), page_shift, window_shift);
-+		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create,
-+				cfg_addr, BUID_HI(buid), BUID_LO(buid),
-+				page_shift, window_shift);
- 	} while (rtas_busy_delay(ret));
- 	dev_info(&dev->dev,
- 		"ibm,create-pe-dma-window(%x) %x %x %x %x %x returned %d "
-@@ -910,7 +913,7 @@ static u64 enable_ddw(struct pci_dev *de
- 	int page_shift;
- 	u64 dma_addr, max_addr;
- 	struct device_node *dn;
--	const u32 *uninitialized_var(ddw_avail);
-+	u32 ddw_avail[3];
- 	struct direct_window *window;
- 	struct property *win64;
- 	struct dynamic_dma_window_prop *ddwprop;
-@@ -942,8 +945,9 @@ static u64 enable_ddw(struct pci_dev *de
- 	 * for the given node in that order.
- 	 * the property is actually in the parent, not the PE
- 	 */
--	ddw_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
--	if (!ddw_avail || len < 3 * sizeof(u32))
-+	ret = of_property_read_u32_array(pdn, "ibm,ddw-applicable",
-+					 &ddw_avail[0], 3);
-+	if (ret)
- 		goto out_failed;
- 
-        /*
-@@ -966,11 +970,11 @@ static u64 enable_ddw(struct pci_dev *de
- 		dev_dbg(&dev->dev, "no free dynamic windows");
- 		goto out_failed;
- 	}
--	if (be32_to_cpu(query.page_size) & 4) {
-+	if (query.page_size & 4) {
- 		page_shift = 24; /* 16MB */
--	} else if (be32_to_cpu(query.page_size) & 2) {
-+	} else if (query.page_size & 2) {
- 		page_shift = 16; /* 64kB */
--	} else if (be32_to_cpu(query.page_size) & 1) {
-+	} else if (query.page_size & 1) {
- 		page_shift = 12; /* 4kB */
- 	} else {
- 		dev_dbg(&dev->dev, "no supported direct page size in mask %x",
-@@ -980,7 +984,7 @@ static u64 enable_ddw(struct pci_dev *de
- 	/* verify the window * number of ptes will map the partition */
- 	/* check largest block * page size > max memory hotplug addr */
- 	max_addr = memory_hotplug_max();
--	if (be32_to_cpu(query.largest_available_block) < (max_addr >> page_shift)) {
-+	if (query.largest_available_block < (max_addr >> page_shift)) {
- 		dev_dbg(&dev->dev, "can't map partiton max 0x%llx with %u "
- 			  "%llu-sized pages\n", max_addr,  query.largest_available_block,
- 			  1ULL << page_shift);
-@@ -1006,8 +1010,9 @@ static u64 enable_ddw(struct pci_dev *de
- 	if (ret != 0)
- 		goto out_free_prop;
- 
--	ddwprop->liobn = create.liobn;
--	ddwprop->dma_base = cpu_to_be64(of_read_number(&create.addr_hi, 2));
-+	ddwprop->liobn = cpu_to_be32(create.liobn);
-+	ddwprop->dma_base = cpu_to_be64(((u64)create.addr_hi << 32) |
-+			create.addr_lo);
- 	ddwprop->tce_shift = cpu_to_be32(page_shift);
- 	ddwprop->window_shift = cpu_to_be32(len);
- 
-@@ -1039,7 +1044,7 @@ static u64 enable_ddw(struct pci_dev *de
- 	list_add(&window->list, &direct_window_list);
- 	spin_unlock(&direct_window_list_lock);
- 
--	dma_addr = of_read_number(&create.addr_hi, 2);
-+	dma_addr = be64_to_cpu(ddwprop->dma_base);
- 	goto out_unlock;
- 
- out_free_window:
++	/*
++	 * if the page was not fully cleaned, we need to ensure that the higher
++	 * layers come back to it correctly. That means we need to keep the page
++	 * dirty, and for WB_SYNC_ALL writeback we need to ensure the
++	 * PAGECACHE_TAG_TOWRITE index mark is not removed so another attempt to
++	 * write this page in this writeback sweep will be made.
++	 */
++	if (clear_dirty) {
+ 		clear_page_dirty_for_io(page);
+-	set_page_writeback(page);
++		set_page_writeback(page);
++	} else
++		set_page_writeback_keepwrite(page);
++
+ 	unlock_page(page);
++
+ 	/* If no buffers on the page are to be written, finish it here */
+ 	if (!buffers)
+ 		end_page_writeback(page);
 
 
