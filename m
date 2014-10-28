@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512AbaJ1XIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 19:08:46 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:37777 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaJ1XIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 19:08:45 -0400
-Date: Tue, 28 Oct 2014 16:08:41 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Input: i8042 - add mux quirk for HP EliteBook
-Message-ID: <20141028230841.GB19675@dtor-ws>
-References: <1414535232-4780-1-git-send-email-luis.henriques@canonical.com>
+	id S1754433AbaJ1XK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 19:10:26 -0400
+Received: from [103.239.73.48] ([103.239.73.48]:34842 "EHLO a.1-hour-pay.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750858AbaJ1XKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 19:10:25 -0400
+Date: Wed, 29 Oct 2014 07:11:55 +0800
+From: "LED Light" <hw5@a.1-hour-pay.com>
+Reply-To: shadow@JRS-Tech.net
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: LED MINING LIGHTS  GARDEN LIGHT  CANDLE LIGHT
+Message-ID: <201410290711550629369@a.1-hour-pay.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414535232-4780-1-git-send-email-luis.henriques@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id s9SNAVDq030480
 
-On Tue, Oct 28, 2014 at 10:27:12PM +0000, Luis Henriques wrote:
-> This laptop requires active multiplexing to be enabled in order to be able
-> to separate the PS/2 mouse and the touchpad.
-> 
-> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Dear Sir,
 
-Applied, thank you.
+How are you?
 
-> ---
->  drivers/input/serio/i8042-x86ia64io.h | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-> index a0bcbb64d06d..2bd486e83b43 100644
-> --- a/drivers/input/serio/i8042-x86ia64io.h
-> +++ b/drivers/input/serio/i8042-x86ia64io.h
-> @@ -220,6 +220,13 @@ static const struct dmi_system_id __initconst i8042_dmi_mux_table[] = {
->  			DMI_MATCH(DMI_PRODUCT_NAME, "CF-18"),
->  		},
->  	},
-> +	{
-> +		/* HP EliteBook */
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook"),
-> +		},
-> +	},
->  	{ }
->  };
->  
-> -- 
-> 2.1.0
+We are the professional China Supplier of LED products, LED LED spot lights, LED down lights, Par38, T-8...
+We are glad to know that you are in the market for LED products lights.
+There are some of this kind as attached for your reference.
 
--- 
-Dmitry
+ 
+Are you interested in it?
+
+Or you can visit our website or contact us for more details: www.jrs-LED.net
+
+We are looking forward to establish business relationship with you in this field.
+
+We have new catalogue, if you are interesting, we can send to you, pls contact with me by email, thanks.
+
+
+I¡äm looking forward to your response.
+
+Sincerely
+JRS Technology Co.,Ltd
+Shadow
+
+Email£º  shadow@JRS-Tech.net
+Skype£º  techjrsb
+MSN£º    techjrsb@msn.cn
+Websit£º www.jrs-LED.net
+
+
+we would be grateful if you will be our led lamps catalogue reserved for your supervisor.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
