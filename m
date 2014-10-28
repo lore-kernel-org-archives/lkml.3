@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757055AbaJ1EqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:46:21 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:49187 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757020AbaJ1EqO (ORCPT
+	id S1757038AbaJ1EqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:46:19 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:33597 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130AbaJ1EqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 00:46:14 -0400
-X-AuditID: cbfee68f-f791c6d000004834-e6-544f1f9454c2
+X-AuditID: cbfee68d-f79296d000004278-5a-544f1f94bbc1
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: kgene.kim@samsung.com
 Cc: mark.rutland@arm.com, arnd@arndb.de, olof@lixom.net, tomasz.figa@gmail.com,
@@ -17,36 +17,38 @@ Cc: mark.rutland@arm.com, arnd@arndb.de, olof@lixom.net, tomasz.figa@gmail.com,
         jaewon02.kim@samsung.com, ideal.song@samsung.com,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv3 0/2] ARM: EXYNOS: Support new Exynos4415 SoC based on
- Cortex-A9 quad cores
-Date: Tue, 28 Oct 2014 13:46:08 +0900
-Message-id: <1414471570-5135-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv3 1/2] ARM: EXYNOS: Add EXYNOS4415 SoC
+Date: Tue, 28 Oct 2014 13:46:09 +0900
+Message-id: <1414471570-5135-2-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsWyRsSkQHeKvH+IQdMSdYu/k46xW1z/8pzV
-	Ytff+4wWk+5PYLHY0XCE1aJ3wVU2i7NNb9gtNj2+xmpxedccNosZ5/cxWaw9cpfdYun1i0wW
-	p65/BopNfslmsWrXH0aLvTsnMzoIeKyZt4bR4/evSYweO2fdZffYvKTe48qJJlaPvi2rGD0+
-	b5ILYI/isklJzcksSy3St0vgyvh66ARrwXmein/PH7A3MK7h6mLk5JAQMJFY8/E9O4QtJnHh
-	3nq2LkYuDiGBpYwSd+7PYIIpWr51KQtEYjqjxOK+E+wQThOTxI6119lAqtgEtCT2v7gBZosI
-	SEo0NfxhBrGZBRqZJRrahUFsYYE4ibf/DjCC2CwCqhKNN3azdjFycPAKuEg8Ws4JsUxBYtny
-	mawg8yUEzrFLzJzawAZRLyDxbfIhFpB6CQFZiU0HmCHqJSUOrrjBMoFRcAEjwypG0dSC5ILi
-	pPQiY73ixNzi0rx0veT83E2MwBg5/e9Z/w7GuwesDzEKcDAq8fAaPPQLEWJNLCuuzD3EaAq0
-	YSKzlGhyPjAS80riDY3NjCxMTUyNjcwtzZTEeRdK/QwWEkhPLEnNTk0tSC2KLyrNSS0+xMjE
-	wSnVwLj04m/jl6/yH79T3HNvp4nK5pfNB7tvVKSaHutPXLDuo8sy64R9l1aUcr7xEEpxfmc+
-	RTUiS/NswJEbm//U20ac4ONktWLQfSlrFM7KGjpHPU5v1uff5eks624+cjQJ3bf8X9Y7m7qd
-	s4VezVBbqHannueX3Fdx3+OeW/dzXn20tM/V0X/FnU9KLMUZiYZazEXFiQC22NnqjAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMIsWRmVeSWpSXmKPExsVy+t9jQd0p8v4hBlvWyln8nXSM3eL6l+es
+In-reply-to: <1414471570-5135-1-git-send-email-cw00.choi@samsung.com>
+References: <1414471570-5135-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkRHeKvH+IwbUNehZ/Jx1jt7j+5Tmr
+	xa6/9xktJt2fwGKxo+EIq0XvgqtsFmeb3rBbbHp8jdXi8q45bBYzzu9jslh75C67xdLrF5ks
+	Tl3/DBSb/JLNYtWuP4wWe3dOZnQQ8Fgzbw2jx+9fkxg9ds66y+6xeUm9x5UTTawefVtWMXp8
+	3iQXwB7FZZOSmpNZllqkb5fAlfH29hzGgnu8FRNbTrA2MJ7h7mLk5JAQMJE48OUIG4QtJnHh
+	3nogm4tDSGApo8Sv5c0sMEW7v05jh0hMZ5SY8GU5M4TTxCSxY+11sHY2AS2J/S9ugNkiApIS
+	TQ1/mEFsZoFGZomGdmEQW1jATKJj/QOwqSwCqhIb7zcwgdi8Ai4SX+5eY4fYpiCxbPlMVhCb
+	U8BVYvOZiWBzhIBq3izfAbZYQuAlu8TUw5/YIAYJSHybfAhoKAdQQlZi0wFmiDmSEgdX3GCZ
+	wCi8gJFhFaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZgVJ3+96x3B+PtA9aHGAU4GJV4eA0e
+	+oUIsSaWFVfmHmI0BdowkVlKNDkfGLt5JfGGxmZGFqYmpsZG5pZmSuK8ilI/g4UE0hNLUrNT
+	UwtSi+KLSnNSiw8xMnFwSjUwzu9f02fe57fvsa7VoSj+YyI37k3ID3HsmTd9U4pJ6R3msyIM
+	vmd4TjwxrDjbuE7ru7ecwd+YhbPnZ6z1XH7jXMp3QbfDYf21zowq3tOfCpYpJR6onKy7usWS
+	/19n1uVfi/Yc3yfg0H1RrWnjmXxj50/hiyf6fSxL2bStr7zindWcpqJYrShhJZbijERDLeai
+	4kQAhSHCWaUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd0p8v4hBitPqlr8nXSM3eL6l+es
 	Frv+3me0mHR/AovFjoYjrBa9C66yWZxtesNusenxNVaLy7vmsFnMOL+PyWLtkbvsFkuvX2Sy
 	OHX9M1Bs8ks2i1W7/jBa7N05mdFBwGPNvDWMHr9/TWL02DnrLrvH5iX1HldONLF69G1Zxejx
 	eZNcAHtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+Arltm
-	DtD1SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMr4dOsBac56n49/wB
-	ewPjGq4uRk4OCQETieVbl7JA2GISF+6tZ+ti5OIQEpjOKLG47wQ7hNPEJLFj7XU2kCo2AS2J
-	/S9ugNkiApISTQ1/mEFsZoFGZomGdmEQW1ggTuLtvwOMIDaLgKpE443drF2MHBy8Ai4Sj5Zz
-	QixTkFi2fCbrBEbuBYwMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCI/CZ9A7GVQ0WhxgF
-	OBiVeHgNH/qFCLEmlhVX5h5ilOBgVhLh9doBFOJNSaysSi3Kjy8qzUktPsRoCrR8IrOUaHI+
-	MDnklcQbGpuYGVkamRtaGBmbK4nzHmy1DhQSSE8sSc1OTS1ILYLpY+LglGpgVAjJWcl5oMr/
-	+0OPz19yj//X+/tDqf/UzNUt8hm/zor/1UnSYV7nLGdwRTTxZ/t3vZkTvj9nNnlXzmEw+1Li
-	+3eHT1hvkt74anmxhLzPA09hmU+5G3Yq1pSISUbeTz0uw/p647vPHNaLLl0/cMlCLOX+u6nm
-	xxjTVxf3X12R/Ub+QuKL/qV2mkosxRmJhlrMRcWJAK2vZBLWAgAA
+	DtD1SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMt7fnMBbc462Y2HKC
+	tYHxDHcXIyeHhICJxO6v09ghbDGJC/fWs3UxcnEICUxnlJjwZTkzhNPEJLFj7XU2kCo2AS2J
+	/S9ugNkiApISTQ1/mEFsZoFGZomGdmEQW1jATKJj/QMWEJtFQFVi4/0GJhCbV8BF4svda1Db
+	FCSWLZ/JCmJzCrhKbD4zEWyOEFDNm+U7mCcw8i5gZFjFKJpakFxQnJSea6RXnJhbXJqXrpec
+	n7uJERyzz6R3MK5qsDjEKMDBqMTDa/jQL0SINbGsuDL3EKMEB7OSCK/XDqAQb0piZVVqUX58
+	UWlOavEhRlOgqyYyS4km5wPTSV5JvKGxiZmRpZG5oYWRsbmSOO/BVutAIYH0xJLU7NTUgtQi
+	mD4mDk6pBkbbw/e31WZzHtD8xBJaz/RQbv1SWQH+5+yL5u16Jvb1jnv7sQ7Hae6t16/xfuiZ
+	/ed/3olp06ONm0XVlc2eynh9b+etdMrZUKW248jkjy6P5LP1OxVEFm+4tOeFkXHrE94egZat
+	OQtNbkfXP5pcopKy6m3hg/q7NzfE/Xt44oCH+I3ffkdCtpsqsRRnJBpqMRcVJwIA5oYFVO8C	AAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,42 +56,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset support new Exynos4415 Samsung SoC based on Cortex-A9 quad cores.
-Exynos4415 is a System-On-Chip (SoC) that is based on 32-bit RISC processor
-for Smartphone. It is desigend with the 28nm low-power high-K metal gate
-process
-and provides the best performance features.
+This patch add Exynos4415's SoC. Exynos4415 is based on the 32-bit RISC
+processor for Smartphone. Exynos4415 uses Cortex A9 quad-cores and has a target
+speed of 1.6GHz and provides 8.5GB/s memory bandwidth.
 
-This patchset include some patches such as:
-- Support booting of Exynos4415
-- Supoort uart/mct/adc/gic/i2c/spi/power-domain/pmu/mshc/ehci/ohci/pwm/amba
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/mach-exynos/Kconfig  | 5 +++++
+ arch/arm/mach-exynos/exynos.c | 2 ++
+ 2 files changed, 7 insertions(+)
 
-Changes from v2:
-- Modify the name of first patch
-
-Changes from v1:
-- Remove legacy helper function to identify SoC
-- Separate out the clock patches[2] from Exynos4415 patchset[1] and sent it [2]
-- Separate out the pinctrl patch[3] from Exynos4415 patchset[1] and sent it [3]
- [1] [PATCH 0/5] Support new Exynos4415 SoC based on Cortex-A9 quad cores
- : https://lkml.org/lkml/2014/10/19/253
- [2] [PATCHv3 1/2] clk: samsung: exynos4415: Add clocks using common clock framework
- : https://lkml.org/lkml/2014/10/26/159
- [3] [PATCHv2] pinctrl: exynos: Add support for Exynos4415
- : https://lkml.org/lkml/2014/10/26/160
-
-Chanwoo Choi (2):
-  ARM: EXYNOS: Add EXYNOS4415 SoC
-  ARM: dts: Add dts files for Exynos4415 SoC
-
- arch/arm/boot/dts/exynos4415-pinctrl.dtsi | 613 +++++++++++++++++++++++++++++
- arch/arm/boot/dts/exynos4415.dtsi         | 627 ++++++++++++++++++++++++++++++
- arch/arm/mach-exynos/Kconfig              |   5 +
- arch/arm/mach-exynos/exynos.c             |   2 +
- 4 files changed, 1247 insertions(+)
- create mode 100644 arch/arm/boot/dts/exynos4415-pinctrl.dtsi
- create mode 100644 arch/arm/boot/dts/exynos4415.dtsi
-
+diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+index 46f3c0d..349c867 100644
+--- a/arch/arm/mach-exynos/Kconfig
++++ b/arch/arm/mach-exynos/Kconfig
+@@ -75,6 +75,11 @@ config SOC_EXYNOS4412
+ 	default y
+ 	depends on ARCH_EXYNOS4
+ 
++config SOC_EXYNOS4415
++	bool "SAMSUNG EXYNOS4415"
++	default y
++	depends on ARCH_EXYNOS4
++
+ config SOC_EXYNOS5250
+ 	bool "SAMSUNG EXYNOS5250"
+ 	default y
+diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+index 1b46460..1da531f 100644
+--- a/arch/arm/mach-exynos/exynos.c
++++ b/arch/arm/mach-exynos/exynos.c
+@@ -252,6 +252,7 @@ static const struct of_device_id exynos_dt_pmu_match[] = {
+ 	{ .compatible = "samsung,exynos4210-pmu" },
+ 	{ .compatible = "samsung,exynos4212-pmu" },
+ 	{ .compatible = "samsung,exynos4412-pmu" },
++	{ .compatible = "samsung,exynos4415-pmu" },
+ 	{ .compatible = "samsung,exynos5250-pmu" },
+ 	{ .compatible = "samsung,exynos5260-pmu" },
+ 	{ .compatible = "samsung,exynos5410-pmu" },
+@@ -359,6 +360,7 @@ static char const *exynos_dt_compat[] __initconst = {
+ 	"samsung,exynos4210",
+ 	"samsung,exynos4212",
+ 	"samsung,exynos4412",
++	"samsung,exynos4415",
+ 	"samsung,exynos5",
+ 	"samsung,exynos5250",
+ 	"samsung,exynos5260",
 -- 
 1.8.5.5
 
