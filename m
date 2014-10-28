@@ -1,161 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025AbaJ1UEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:04:06 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:46803 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaJ1UEE (ORCPT
+	id S1753435AbaJ1UEc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:04:32 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:32835 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191AbaJ1UEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:04:04 -0400
+	Tue, 28 Oct 2014 16:04:30 -0400
+Date: Tue, 28 Oct 2014 13:04:24 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>,
+        Philippe =?iso-8859-1?Q?R=E9tornaz?= 
+	<philippe.retornaz@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: Re: [PATCH v4] kernel: Add support for power-off handler call chain
+Message-ID: <20141028200424.GA20617@roeck-us.net>
+References: <1414516266-4965-1-git-send-email-linux@roeck-us.net>
+ <20141028182312.GA13636@amd>
 MIME-Version: 1.0
-In-Reply-To: <1412101702-2752-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1412101702-2752-1-git-send-email-benjamin.tissoires@redhat.com>
-Date: Tue, 28 Oct 2014 16:04:02 -0400
-Message-ID: <CAN+gG=F6HSXmYb9umO4ZT5hbGy=dL4ncgm4nTe1bL86meZHL3w@mail.gmail.com>
-Subject: Re: [PATCH] HID: usbhid: prevent unwanted events to be sent when
- re-opening the device
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Hans de Goede <hdegoede@redhat.com>,
-        Bastien Nocera <hadess@hadess.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028182312.GA13636@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A02020A.544FF6CE.00AF,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 2:28 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> When events occurs while no one is listening to the node (hid->open == 0
-> and usb_kill_urb() called) some events are still stacked somewhere in
-> the USB (kernel or device?) stack. When the node gets reopened, these
-> events are drained, and this results in spurious touch down/up, or mouse
-> button clicks.
->
-> The problem was spotted with touchscreens in fdo bug #81781 [1], but it
-> actually occurs with any mouse using hid-generic or touchscreen.
->
-> A way to reproduce it is to call:
->
-> $ xinput disable 9 ; sleep 5 ; xinput enable 9
->
-> With 9 being the device ID for the touchscreen/mouse. During the "sleep",
-> produce some touch events or click events. When "xinput enable" is called,
-> at least one click is generated.
->
-> This patch tries to fix this by draining the queue for 50 msec and
-> during this time frame, not forwarding these old events to the hid layer.
->
-> Hans completed the explanation:
-> """
-> Devices like mice (basically any hid device) will have a fifo
-> on the device side, when we stop submitting urbs to get hid reports from
-> it, that fifo will fill up, and when we resume we will get whatever
-> is there in that fifo.
-> """
->
-> [1] https://bugs.freedesktop.org/show_bug.cgi?id=81781
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
+On Tue, Oct 28, 2014 at 07:23:12PM +0100, Pavel Machek wrote:
+> On Tue 2014-10-28 10:11:06, Guenter Roeck wrote:
+> > Various drivers implement architecture and/or device specific means to
+> > power off the system.  For the most part, those drivers set the global
+> > variable pm_power_off to point to a function within the driver.
+> > 
+> > This mechanism has a number of drawbacks.  Typically only one scheme
+> > to remove power is supported (at least if pm_power_off is used).
+> > At least in theory there can be multiple means remove power, some of
+> > which may be less desirable. For example, some mechanisms may only
+> > power off the CPU or the CPU card, while another may power off the
+> > entire system.  Others may really just execute a restart sequence
+> > or drop into the ROM monitor. Using pm_power_off can also be racy
+> > if the function pointer is set from a driver built as module, as the
+> > driver may be in the process of being unloaded when pm_power_off is
+> > called. If there are multiple power-off handlers in the system, removing
+> > a module with such a handler may inadvertently reset the pointer to
+> > pm_power_off to NULL, leaving the system with no means to remove power.
+> > 
+> > Introduce a system power-off handler call chain to solve the described
+> > problems.  This call chain is expected to be executed from the architecture
+> > specific machine_power_off() function.  Drivers and architeceture code
+> > providing system power-off functionality are expected to register with
+> > this call chain.  When registering a power-off handler, callers can
+> > provide a priority to control power-off handler execution sequence
+> > and thus ensure that the power-off handler with the optimal capabilities
+> > to remove power for a given system is called first.
+> > 
+> > Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+> > Cc: Alexander Graf <agraf@suse.de>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> > cc: Heiko Stuebner <heiko@sntech.de>
+> > Cc: Lee Jones <lee.jones@linaro.org>
+> > Cc: Len Brown <len.brown@intel.com>
+> 
+> Acked-by: Pavel Machek <pavel@ucw.cz>
+> 
+Thanks!
 
-My turn to raise patches lost in the mailboxes during the merge window....
-
-Jiri, can you re-add this one to the pile of "things that you don't
-want to do but some people are really relying on it so somebody still
-needs to review it, sigh" list?
-
-Cheers,
-Benjamin
-
->
-> OK, I know this is uggly, but I could not find a better way :(
->
-> Cheers,
-> Benjamin
->
->  drivers/hid/usbhid/hid-core.c | 36 ++++++++++++++++++++++++------------
->  drivers/hid/usbhid/usbhid.h   |  1 +
->  2 files changed, 25 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-> index ca6849a..04e34b9 100644
-> --- a/drivers/hid/usbhid/hid-core.c
-> +++ b/drivers/hid/usbhid/hid-core.c
-> @@ -278,18 +278,20 @@ static void hid_irq_in(struct urb *urb)
->                 usbhid->retry_delay = 0;
->                 if ((hid->quirks & HID_QUIRK_ALWAYS_POLL) && !hid->open)
->                         break;
-> -               hid_input_report(urb->context, HID_INPUT_REPORT,
-> -                                urb->transfer_buffer,
-> -                                urb->actual_length, 1);
-> -               /*
-> -                * autosuspend refused while keys are pressed
-> -                * because most keyboards don't wake up when
-> -                * a key is released
-> -                */
-> -               if (hid_check_keys_pressed(hid))
-> -                       set_bit(HID_KEYS_PRESSED, &usbhid->iofl);
-> -               else
-> -                       clear_bit(HID_KEYS_PRESSED, &usbhid->iofl);
-> +               if (!test_bit(HID_RESUME_RUNNING, &usbhid->iofl)) {
-> +                       hid_input_report(urb->context, HID_INPUT_REPORT,
-> +                                        urb->transfer_buffer,
-> +                                        urb->actual_length, 1);
-> +                       /*
-> +                        * autosuspend refused while keys are pressed
-> +                        * because most keyboards don't wake up when
-> +                        * a key is released
-> +                        */
-> +                       if (hid_check_keys_pressed(hid))
-> +                               set_bit(HID_KEYS_PRESSED, &usbhid->iofl);
-> +                       else
-> +                               clear_bit(HID_KEYS_PRESSED, &usbhid->iofl);
-> +               }
->                 break;
->         case -EPIPE:            /* stall */
->                 usbhid_mark_busy(usbhid);
-> @@ -688,6 +690,7 @@ int usbhid_open(struct hid_device *hid)
->                         goto done;
->                 }
->                 usbhid->intf->needs_remote_wakeup = 1;
-> +               set_bit(HID_RESUME_RUNNING, &usbhid->iofl);
->                 res = hid_start_in(hid);
->                 if (res) {
->                         if (res != -ENOSPC) {
-> @@ -701,6 +704,15 @@ int usbhid_open(struct hid_device *hid)
->                         }
->                 }
->                 usb_autopm_put_interface(usbhid->intf);
-> +
-> +               /*
-> +                * In case events are generated while nobody was listening,
-> +                * some are released when the device is re-opened.
-> +                * Wait 50 msec for the queue to empty before allowing events
-> +                * to go through hid.
-> +                */
-> +               msleep(50);
-> +               clear_bit(HID_RESUME_RUNNING, &usbhid->iofl);
->         }
->  done:
->         mutex_unlock(&hid_open_mut);
-> diff --git a/drivers/hid/usbhid/usbhid.h b/drivers/hid/usbhid/usbhid.h
-> index f633c24..807922b 100644
-> --- a/drivers/hid/usbhid/usbhid.h
-> +++ b/drivers/hid/usbhid/usbhid.h
-> @@ -52,6 +52,7 @@ struct usb_interface *usbhid_find_interface(int minor);
->  #define HID_STARTED            8
->  #define HID_KEYS_PRESSED       10
->  #define HID_NO_BANDWIDTH       11
-> +#define HID_RESUME_RUNNING     12
->
->  /*
->   * USB-specific HID struct, to be pointed to
-> --
-> 2.1.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Guenter
