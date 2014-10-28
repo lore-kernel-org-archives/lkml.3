@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933934AbaJ1F15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:27:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46510 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933675AbaJ1DwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933680AbaJ1DwW (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 27 Oct 2014 23:52:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46540 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933615AbaJ1DwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 23:52:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 25/43] NFSv4: Fix lock recovery when CREATE_SESSION/SETCLIENTID_CONFIRM fails
-Date: Tue, 28 Oct 2014 11:36:23 +0800
-Message-Id: <20141028033524.484467270@linuxfoundation.org>
+        Willem Pinckaers <willem@lekkertech.net>,
+        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
+Subject: [PATCH 3.10 23/43] Revert "lzo: properly check for overruns"
+Date: Tue, 28 Oct 2014 11:36:21 +0800
+Message-Id: <20141028033524.397952152@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
 References: <20141028033523.407092670@linuxfoundation.org>
@@ -28,35 +29,181 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Willy Tarreau <w@1wt.eu>
 
-commit a4339b7b686b4acc8b6de2b07d7bacbe3ae44b83 upstream.
+commit af958a38a60c7ca3d8a39c918c1baa2ff7b6b233 upstream.
 
-If a NFSv4.x server returns NFS4ERR_STALE_CLIENTID in response to a
-CREATE_SESSION or SETCLIENTID_CONFIRM in order to tell us that it rebooted
-a second time, then the client will currently take this to mean that it must
-declare all locks to be stale, and hence ineligible for reboot recovery.
+This reverts commit 206a81c ("lzo: properly check for overruns").
 
-RFC3530 and RFC5661 both suggest that the client should instead rely on the
-server to respond to inelegible open share, lock and delegation reclaim
-requests with NFS4ERR_NO_GRACE in this situation.
+As analysed by Willem Pinckaers, this fix is still incomplete on
+certain rare corner cases, and it is easier to restart from the
+original code.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Reported-by: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4state.c |    1 -
- 1 file changed, 1 deletion(-)
+ lib/lzo/lzo1x_decompress_safe.c |   62 +++++++++++++---------------------------
+ 1 file changed, 21 insertions(+), 41 deletions(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1755,7 +1755,6 @@ static int nfs4_handle_reclaim_lease_err
- 		break;
- 	case -NFS4ERR_STALE_CLIENTID:
- 		clear_bit(NFS4CLNT_LEASE_CONFIRM, &clp->cl_state);
--		nfs4_state_clear_reclaim_reboot(clp);
- 		nfs4_state_start_reclaim_reboot(clp);
- 		break;
- 	case -NFS4ERR_CLID_INUSE:
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -19,31 +19,11 @@
+ #include <linux/lzo.h>
+ #include "lzodefs.h"
+ 
+-#define HAVE_IP(t, x)					\
+-	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
+-
+-#define HAVE_OP(t, x)					\
+-	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
+-
+-#define NEED_IP(t, x)					\
+-	do {						\
+-		if (!HAVE_IP(t, x))			\
+-			goto input_overrun;		\
+-	} while (0)
+-
+-#define NEED_OP(t, x)					\
+-	do {						\
+-		if (!HAVE_OP(t, x))			\
+-			goto output_overrun;		\
+-	} while (0)
+-
+-#define TEST_LB(m_pos)					\
+-	do {						\
+-		if ((m_pos) < out)			\
+-			goto lookbehind_overrun;	\
+-	} while (0)
++#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
++#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
++#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
++#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
++#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+ 
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+@@ -78,14 +58,14 @@ int lzo1x_decompress_safe(const unsigned
+ 					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						NEED_IP(1, 0);
++						NEED_IP(1);
+ 					}
+ 					t += 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
++				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
+ 					const unsigned char *ie = ip + t;
+ 					unsigned char *oe = op + t;
+ 					do {
+@@ -101,8 +81,8 @@ copy_literal_run:
+ 				} else
+ #endif
+ 				{
+-					NEED_OP(t, 0);
+-					NEED_IP(t, 3);
++					NEED_OP(t);
++					NEED_IP(t + 3);
+ 					do {
+ 						*op++ = *ip++;
+ 					} while (--t > 0);
+@@ -115,7 +95,7 @@ copy_literal_run:
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+ 				TEST_LB(m_pos);
+-				NEED_OP(2, 0);
++				NEED_OP(2);
+ 				op[0] = m_pos[0];
+ 				op[1] = m_pos[1];
+ 				op += 2;
+@@ -139,10 +119,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 31 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			m_pos = op - 1;
+ 			next = get_unaligned_le16(ip);
+@@ -157,10 +137,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 7 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			next = get_unaligned_le16(ip);
+ 			ip += 2;
+@@ -174,7 +154,7 @@ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 		if (op - m_pos >= 8) {
+ 			unsigned char *oe = op + t;
+-			if (likely(HAVE_OP(t, 15))) {
++			if (likely(HAVE_OP(t + 15))) {
+ 				do {
+ 					COPY8(op, m_pos);
+ 					op += 8;
+@@ -184,7 +164,7 @@ copy_literal_run:
+ 					m_pos += 8;
+ 				} while (op < oe);
+ 				op = oe;
+-				if (HAVE_IP(6, 0)) {
++				if (HAVE_IP(6)) {
+ 					state = next;
+ 					COPY4(op, ip);
+ 					op += next;
+@@ -192,7 +172,7 @@ copy_literal_run:
+ 					continue;
+ 				}
+ 			} else {
+-				NEED_OP(t, 0);
++				NEED_OP(t);
+ 				do {
+ 					*op++ = *m_pos++;
+ 				} while (op < oe);
+@@ -201,7 +181,7 @@ copy_literal_run:
+ #endif
+ 		{
+ 			unsigned char *oe = op + t;
+-			NEED_OP(t, 0);
++			NEED_OP(t);
+ 			op[0] = m_pos[0];
+ 			op[1] = m_pos[1];
+ 			op += 2;
+@@ -214,15 +194,15 @@ match_next:
+ 		state = next;
+ 		t = next;
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
++		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
+ 			COPY4(op, ip);
+ 			op += t;
+ 			ip += t;
+ 		} else
+ #endif
+ 		{
+-			NEED_IP(t, 3);
+-			NEED_OP(t, 0);
++			NEED_IP(t + 3);
++			NEED_OP(t);
+ 			while (t > 0) {
+ 				*op++ = *ip++;
+ 				t--;
 
 
