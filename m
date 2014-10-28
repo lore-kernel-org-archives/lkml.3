@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414AbaJ1Lak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:30:40 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:30771 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691AbaJ1Lah (ORCPT
+	id S1753778AbaJ1LcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:32:16 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:28708 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701AbaJ1LcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:30:37 -0400
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-To: <ralf@linux-mips.org>, <Zubair.Kakakhel@imgtec.com>
-CC: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mips: cma: Do not reserve memory if not required
-Date: Tue, 28 Oct 2014 11:28:34 +0000
-Message-ID: <1414495714-40815-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+	Tue, 28 Oct 2014 07:32:13 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-77-544f7eba6af1
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+To: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org,
+        linux-ima-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz, jmorris@namei.org,
+        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
+Subject: [PATCH v3 0/3] integrity: NULL pointer dereference fixes
+Date: Tue, 28 Oct 2014 13:31:21 +0200
+Message-id: <cover.1414494901.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.89]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFJMWRmVeSWpSXmKPExsVy+t/xy7q76vxDDA63qFnc+ruX2eLL0jqL
+	2dObmSzWrV/MZPFyxjx2i8u75rBZfOh5xGbxacUkZgcOj52z7rJ7PDi0mcVj94LPTB4935M9
+	+rasYvQ4s+AIu8fnTXIB7FFcNimpOZllqUX6dglcGdtm7WMs2MBe0bP7AlsD40fWLkZODgkB
+	E4m7U5tYIGwxiQv31rN1MXJxCAksZZT4/2MnM0hCSKCTSaJ1QjGIzSagJ7Gh+Qc7iC0ikCPx
+	6M9rdpAGZoEORomNP64zgSSEBRwlTs+8DdTMwcEioCrRtkwJJMwrYCkxe802JohlchInj01m
+	ncDIvYCRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSPh82cG4+JjVIUYBDkYlHt4d03xD
+	hFgTy4orcw8xSnAwK4nwRsT4hwjxpiRWVqUW5ccXleakFh9iZOLglGpgnDEp4EFnwdsX/DEN
+	XmoTTm7bzM4tqKkysXujzcT7M9I1D7beW8ljmVbv3DC/efuJOdK918+vC3z55ZNv2ebz740t
+	eGOY5x3bzfvrgFK8wuYjrwtnLAo1DfOeVSX68Y513Jv/R40981mDHMXmvDlWcNtFl83AnPOa
+	rOyMo95XZS+I1/55oJcno8RSnJFoqMVcVJwIAFjpR4L9AQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if CMA is disabled, the for_each_memblock macro expands
-to run reserve_bootmem once. Hence, reserve_bootmem attempts to
-reserve location 0 of size 0.
+Hi,
 
-Add a check to avoid that.
+Recently Jan Kara reported about possible NULL pointer dereference
+in IMA and EVM setxattr hooks. This patchset fixes the problem.
 
-Issue was highlighted during testing with EVA enabled.
-resrve_bootmem used to exit gracefully when passed arguments to
-reserve 0 size location at 0 without EVA.
+http://sourceforge.net/p/linux-ima/mailman/message/32957578
 
-But with EVA enabled, macros would point to different addresses
-and the code would trigger a BUG.
+In this version of the patchset we agreed with Mimi to split IMA
+patch into two, where the first patch fixes the oops and must go to
+the stable and the second patch limits setting of file hash to fix
+and log modes and may go to the next kernel version via normal process.
 
-Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-Tested-by: Markos Chandras <markos.chandras@imgtec.com>
----
- arch/mips/kernel/setup.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+- Dmitry
 
-diff --git a/arch/mips/kernel/setup.c b/arch/mips/kernel/setup.c
-index 938f157..eacfd7d 100644
---- a/arch/mips/kernel/setup.c
-+++ b/arch/mips/kernel/setup.c
-@@ -683,7 +683,8 @@ static void __init arch_mem_init(char **cmdline_p)
- 	dma_contiguous_reserve(PFN_PHYS(max_low_pfn));
- 	/* Tell bootmem about cma reserved memblock section */
- 	for_each_memblock(reserved, reg)
--		reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
-+		if (reg->size != 0)
-+			reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
- }
- 
- static void __init resource_init(void)
+Dmitry Kasatkin (3):
+  ima: check xattr value length and type in the ima_inode_setxattr()
+  ima: limit file hash setting by user to fix and log modes
+  evm: check xattr value length and type in evm_inode_setxattr()
+
+ security/integrity/evm/evm_main.c     | 11 ++++++++---
+ security/integrity/ima/ima_appraise.c | 10 ++++++++--
+ security/integrity/integrity.h        |  1 +
+ 3 files changed, 17 insertions(+), 5 deletions(-)
+
 -- 
 1.9.1
 
