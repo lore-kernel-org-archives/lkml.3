@@ -1,175 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870AbaJ1QAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:00:39 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:59049 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740AbaJ1QAg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:00:36 -0400
+	id S1753416AbaJ1QDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:03:14 -0400
+Received: from mail-bn1bon0082.outbound.protection.outlook.com ([157.56.111.82]:3697
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750855AbaJ1QDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 12:03:13 -0400
+Date: Tue, 28 Oct 2014 09:03:06 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Subject: Re: [PATCH RFC v2 8/8] ARM: zynq: DT: Add pinctrl information
+References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1413479495-14206-9-git-send-email-soren.brinkmann@xilinx.com>
+ <CACRpkda9v=H9rQBq484c+UCwEKeca9qOE_78Wf+STB4rDwhuyA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <544FBA0D.4010707@imgtec.com>
-References: <544F73CD.1010409@imgtec.com>
-	<CAAmzW4NdBNhsPtx1yw+drN+J=a23SS3yLkgQdvQx-Giokwxu-Q@mail.gmail.com>
-	<544F97D4.4030408@imgtec.com>
-	<544F991E.3070500@imgtec.com>
-	<CAAmzW4O6EFq-aaAi5gNFng1dhyXJdUmEMTR8meJfir=47iwmZw@mail.gmail.com>
-	<CAAmzW4M0Ca3iQni-RRVuh152bjA=oezTrK+OE6qjaNqmG0q9nA@mail.gmail.com>
-	<544FA8E2.3050404@imgtec.com>
-	<CAAmzW4OGLgneoccpP1=H4XA0_eL0vtwPvWh49J9TnV1=FL-3jw@mail.gmail.com>
-	<544FBA0D.4010707@imgtec.com>
-Date: Wed, 29 Oct 2014 01:00:36 +0900
-Message-ID: <CAAmzW4OGBBz5jOCuLOPt1fzMXi9JMxYQYRUOiE0483kWufp34Q@mail.gmail.com>
-Subject: Re: Boot problems on Malta with EVA (bisected to 12220dea07f1
- "mm/slab: support slab merge")
-From: Joonsoo Kim <js1304@gmail.com>
-To: Markos Chandras <Markos.Chandras@imgtec.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mips@linux-mips.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkda9v=H9rQBq484c+UCwEKeca9qOE_78Wf+STB4rDwhuyA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21058.005
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <5cf5e2e5cd154992b2896b98988a409a@BN1BFFO11FD007.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(199003)(189002)(377424004)(24454002)(377454003)(95666004)(50986999)(120916001)(76176999)(50466002)(85202003)(53416004)(33646002)(6806004)(108616004)(104016003)(19580405001)(77096002)(107046002)(54356999)(110136001)(85182001)(31966008)(21056001)(47776003)(86362001)(64706001)(4396001)(19580395003)(85306004)(20776003)(44976005)(102836001)(76482002)(87936001)(46102003)(23676002)(80022003)(74316001)(106466001)(85852003)(83506001)(92566001)(107986001)(24736002)(217873001)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB050;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB050;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0378F1E47A
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-29 0:45 GMT+09:00 Markos Chandras <Markos.Chandras@imgtec.com>:
-> On 10/28/2014 03:00 PM, Joonsoo Kim wrote:
->> 2014-10-28 23:32 GMT+09:00 Markos Chandras <Markos.Chandras@imgtec.com>:
->>> On 10/28/2014 02:21 PM, Joonsoo Kim wrote:
->>>> 2014-10-28 22:48 GMT+09:00 Joonsoo Kim <js1304@gmail.com>:
->>>>> 2014-10-28 22:24 GMT+09:00 Markos Chandras <Markos.Chandras@imgtec.com>:
->>>>>> On 10/28/2014 01:19 PM, Markos Chandras wrote:
->>>>>>> On 10/28/2014 01:01 PM, Joonsoo Kim wrote:
->>>>>>>> 2014-10-28 19:45 GMT+09:00 Markos Chandras <Markos.Chandras@imgtec.com>:
->>>>>>>>> Hi,
->>>>>>>>>
->>>>>>>>> It seems I am unable to boot my Malta with EVA. The problem appeared in
->>>>>>>>> the 3.18 merge window. I bisected the problem (between v3.17 and
->>>>>>>>> v3.18-rc1) and I found the following commit responsible for the broken boot.
->>>>>>>>
->>>>>>>> Hello,
->>>>>>>>
->>>>>>>> Did you start to bisect from v3.18-rc1?
->>>>>>>> I'd like to be sure that this is another bug which is fixed by following commit.
->>>>>>>>
->>>>>>>> commit 85c9f4b04a08f6bc770b77530c22d04103468b8f
->>>>>>>> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>>>>>>> Date:   Mon Oct 13 15:51:01 2014 -0700
->>>>>>>>
->>>>>>>>     mm/slab: fix unaligned access on sparc64
->>>>>>>>
->>>>>>>> This fix is merged into v3.18-rc1 sometime later that
->>>>>>>> 'support slab merge' is merged.
->>>>>>>>
->>>>>>>> Thanks.
->>>>>>>>
->>>>>>> Hi,
->>>>>>>
->>>>>>> I bisected from v3.17 until 3.18-rc1. But 3.18-rc2 and the latest
->>>>>>> mainline (f7e87a44ef60ad379e39b45437604141453bf0ec) still have the same
->>>>>>> problem
->>>>>>>
->>>>>>> btw i did more tests and this is not EVA specific. A maltaup_defconfig
->>>>>>> fails in the same way. I suspect all malta*_defconfigs will fail in a
->>>>>>> similar way which makes it probably easier for you to reproduce it on a
->>>>>>> QEMU.
->>>>>>>
->>>>>>
->>>>>> sorry maltaup_defconfig does not fail. maltasmvp_defconfig does. So it
->>>>>> might be a similar problem like the one fixed in
->>>>>> 85c9f4b04a08f6bc770b77530c22d04103468b8f
->>>>>
->>>>> Oops. Sorry. Above commit ('mm/slab: fix unaligned access on sparc64')
->>>>> is irrelevant to this problem.
->>>>>
->>>>> Anyway, your problem would be related to merging with incompatible slab cache.
->>>>> Best way to debug is printing source/target slab cache's object size and
->>>>> alignment and find the problem. I will try to reproduce it using QEMU.
->>>>
->>>> I found that cross compile for MIPS isn't easy job. :)
->>>
->>> You could grab the following toolchain
->>>
->>> https://sourcery.mentor.com/GNUToolchain/release2791
->>>
->>> (get the IA32 linux tar)
->>>
->>> unpack it somewhere (eg /tmp) and then
->>>
->>> make ARCH=mips maltasmvp_defconfig
->>> make ARCH=mips CROSS_COMPILE=/tmp/mips-2014.05/bin/mips-linux-gnu- -j8
->>> or something :)
->>
->> Wow!! Really Thanks!
->> I will try it.
->>
->>>> Could you help me to debug the problem with below patch?
->>>
->>> (there are a few build warnings with your patch
->>> mm/slab.c:2065:4: warning: format '%lu' expects argument of type 'long
->>> unsigned int', but argument 5 has type 'size_t' [-Wformat=]
->>> mm/slab.c:2065:4: warning: format '%lu' expects argument of type 'long
->>> unsigned int', but argument 7 has type 'unsigned int' [-Wformat=]
->>> mm/slab.c:2065:4: warning: format '%lu' expects argument of type 'long
->>> unsigned int', but argument 8 has type 'int' [-Wformat=]
->>> mm/slab.c:2065:4: warning: format '%lu' expects argument of type 'long
->>> unsigned int', but argument 9 has type 'int' [-Wformat=]
->>> )
->>>
->>> but here is the output from a QEMU boot right before the crash
->>>
->>> CPU frequency 200.00 MHz
->>> Calibrating delay loop... 1087.89 BogoMIPS (lpj=5439488)
->>> pid_max: default: 32768 minimum: 301
->>> __kmem_cache_alias: (cred_jar 92 0) to (kmalloc-128 128 128 128)
->>> __kmem_cache_alias: (files_cache 256 0) to (kmalloc-256 256 128 256)
->>> __kmem_cache_alias: (fs_cache 36 0) to (pid 64 64 44)
->>> __kmem_cache_alias: (names_cache 4096 0) to (kmalloc-4096 4096 128 4096)
->>> __kmem_cache_alias: (mnt_cache 160 0) to (filp 192 64 160)
->>> Mount-cache hash table entries: 4096 (order: 0, 16384 bytes)
->>> Mountpoint-cache hash table entries: 4096 (order: 0, 16384 bytes)
->>> __kmem_cache_alias: (pool_workqueue 256 256) to (kmalloc-256 256 128 256)
->>
->> alignment is mismatch between pool_workqueue and kmalloc-256,
->> but, slab caches are merged, because they have same object size.
->> Perhaps, slab cache for pool_workqueue returns 128 byte aligned memory
->> and workqueue can't work well with it.
->>
->> Quick fix may be something like below, but, I will try it on QEMU MIPS.
->>
->> Thanks.
->>
->> diff --git a/mm/slab_common.c b/mm/slab_common.c
->> index 3a6e0cf..d57b1a2 100644
->> --- a/mm/slab_common.c
->> +++ b/mm/slab_common.c
->> @@ -269,6 +269,9 @@ struct kmem_cache *find_mergeable(size_t size, size_t align,
->>                 if (s->size - size >= sizeof(void *))
->>                         continue;
->>
->> +               if (align > s->align)
->> +                       continue;
->> +
->>                 return s;
->>         }
->>         return NULL;
->>
-> Hi,
->
-> Yeah this makes the kernel boot again.
+On Tue, 2014-10-28 at 04:05PM +0100, Linus Walleij wrote:
+> On Thu, Oct 16, 2014 at 7:11 PM, Soren Brinkmann
+> <soren.brinkmann@xilinx.com> wrote:
+> 
+> > Add pinctrl descriptions to the zc702 and zc706 device trees.
+> >
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> 
+> (...)
+> > +&pinctrl0 {
+> > +       pinctrl_can0_default: pinctrl-can0-default {
+> > +               common {
+> > +                       function = "can0";
+> > +                       groups = "can0_9_grp";
+> > +                       bias-pull-up = <0>;
+> 
+> No. If you want pull-up, just use
+> bias-pull-up;
+> 
+> If you want to disable pull-up, use
+> bias-disable;
 
-(Just resend due to missing cc list)
+But bias-disable also disables high-impedance. That doesn't work for me,
+I think.
 
-Thanks for testing!
+> 
+> > +                       slew-rate = <0>;
+> 
+> If this measure is any kind of time unit, this is against the laws of nature.
 
-I tried boot on QEMU MIPS and can reproduce this problem.
-I found that my assumption is correct.
-128 byte aligned memory is returned for pool_workqueue.
+It's not. As the bindings say, the argument is driver specific. In the
+Zynq case you can simply choose fast or slow - whatever that means -
+which maps to 0 or 1 in the DT. This though raises the question where
+that documentation lives. Since this is a driver specific
+interpretation, it should not be in the binding docs, IMHO. So, some
+other place might need to be found to document the implementation
+specifics.
 
-I need some time to think better way to fix this problem.
-I will send it in a few days.
+> 
+> > +                       io-standard = <1>;
+> > +               };
+> > +
+> > +               rx {
+> > +                       pins = "MIO46";
+> > +                       bias-high-impedance = <1>;
+> 
+> Just
+> bias-high-impedance;
 
-Really thanks for your help.
-Thanks.
+Same problem as I have above. To allow all permutations of pull-up and
+tri-state I can't just have a single disable-bias property.
+
+> 
+> > +               };
+> > +
+> > +               tx {
+> > +                       pins = "MIO47";
+> > +                       bias-high-impedance = <0>;
+> 
+> Just
+> bias-disable;
+
+That would also disable the pull-up.
+
+	Sören
