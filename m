@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933959AbaJ1D6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:58:00 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:49478 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118AbaJ1D56 (ORCPT
+	id S1755665AbaJ1EDP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:03:15 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:35918 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754334AbaJ1EDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:57:58 -0400
+	Tue, 28 Oct 2014 00:03:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <007d01cff260$3c69e9b0$b53dbd10$@alibaba-inc.com>
-References: <00cd01cff1b5$fda5a660$f8f0f320$@alibaba-inc.com>
- <CALCETrX7-OzQrOr3+TXy8NB8LS8aYwLN_A-vAeicwoQHsUH_yw@mail.gmail.com> <007d01cff260$3c69e9b0$b53dbd10$@alibaba-inc.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 27 Oct 2014 20:57:36 -0700
-Message-ID: <CALCETrW5iJWd65Ems6F3RZL+CxYrQ75nDyFFmgA52ky--pzwTQ@mail.gmail.com>
-Subject: Re: [PATCH v2 7/8] x86, perf: Only allow rdpmc if a perf_event is mapped
-To: Hillf Danton <hillf.zj@alibaba-inc.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Vince Weaver <vince@deater.net>, Paul Mackerras <paulus@samba.org>,
-        Kees Cook <keescook@chromium.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com>
+References: <543F049F.5090605@gaast.net>
+	<CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com>
+	<543F9182.9000004@gaast.net>
+	<CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com>
+	<544033CF.3080104@gaast.net>
+	<CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com>
+	<5442FE58.5020700@gaast.net>
+	<CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com>
+	<5446D2D8.2090203@gaast.net>
+	<CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com>
+	<20141022125354.GA3832@gaast.net>
+	<CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com>
+	<544E235C.5010908@gaast.net>
+	<CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com>
+	<544EC59D.9080303@gaast.net>
+	<CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com>
+	<544EDD40.1040107@gaast.net>
+	<CAE9FiQWfV+h5YGxKEg7kSdhD7_OVoEqNyZZqYr=vpDwz1Lnb_g@mail.gmail.com>
+Date: Mon, 27 Oct 2014 21:03:11 -0700
+X-Google-Sender-Auth: 1OgVQo3CFQAyigfsIDwiepXC0vQ
+Message-ID: <CAE9FiQWi_fRssxm_0i9wK79diKY_YYThmgQx7ZgmY7YWf6s=Qw@mail.gmail.com>
+Subject: Re: Machine crashes right *after* ~successful resume
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wilmer van der Gaast <wilmer@gaast.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001a113ff7a4c704d3050673b995
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 8:35 PM, Hillf Danton <hillf.zj@alibaba-inc.com> wrote:
->> -----Original Message-----
->> From: Andy Lutomirski [mailto:luto@amacapital.net]
->> Sent: Monday, October 27, 2014 11:45 PM
->> To: Hillf Danton
->> Cc: Peter Zijlstra; Ingo Molnar; Vince Weaver; Paul Mackerras; Kees Cook; Arnaldo Carvalho de Melo; Andrea Arcangeli; linux-
->> kernel@vger.kernel.org; Valdis Kletnieks
->> Subject: Re: [PATCH v2 7/8] x86, perf: Only allow rdpmc if a perf_event is mapped
+--001a113ff7a4c704d3050673b995
+Content-Type: text/plain; charset=UTF-8
+
+On Mon, Oct 27, 2014 at 6:12 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Oct 27, 2014 at 5:03 PM, Wilmer van der Gaast <wilmer@gaast.net> wrote:
+>> I was curious about that already, did that with a 3.16.6 that I think just
+>> had your revert applied (and using lspci -xxxx to get the dump which I
+>> assumed would be the same): No changes to 04:00 at all.
 >>
-> CPU D                   CPU A
-> switch_mm
-> load_mm_cr4
->                         x86_pmu_event_unmapped
+>> Confirmed that this is the case with 3.17 + those patches as well, it's
+>> showing this at all times:
 >
-> I wonder if the X86_CR4_PCE set on CPU D is
-> cleared by CPU A by broadcasting IPI.
->
+> can you post
+> lspci -vvxxxx -s 00:1c.3
+> lspci -vvxxxx -s 04:00.0
+> before reverting enable bridge early patch
+> and after reverting on 3.17+?
 
-It should be okay.  The IPI does:
+Please check if attached patch could fix the problem on your setup.
 
-+       if (current->mm)
-+               load_mm_cr4(current->mm);
+Thanks
 
-which refers to the current task running on the targetted CPU, not to
-the IPI sender's task.  So, if it happens after a context switch, it
-will harmlessly reload the new task's cr4.
+Yinghai
 
-refresh_pce can't happen in between switch_mm and updating current,
-since irqs are off for the entire duration of the context switch.
+--001a113ff7a4c704d3050673b995
+Content-Type: text/x-patch; charset=US-ASCII; name="pci_set_bridge_d0.patch"
+Content-Disposition: attachment; filename="pci_set_bridge_d0.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i1sqc3560
 
---Andy
+LS0tCiBkcml2ZXJzL3BjaS9xdWlya3MuYyB8ICAgIDYgKysrKysrCiAxIGZpbGUgY2hhbmdlZCwg
+NiBpbnNlcnRpb25zKCspCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL3F1aXJrcy5jCj09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNpL3F1aXJrcy5jCisrKyBsaW51
+eC0yLjYvZHJpdmVycy9wY2kvcXVpcmtzLmMKQEAgLTMwOTgsNiArMzA5OCwxMiBAQCBERUNMQVJF
+X1BDSV9GSVhVUF9GSU5BTChQQ0lfVkVORE9SX0lEX0lOCiBERUNMQVJFX1BDSV9GSVhVUF9GSU5B
+TChQQ0lfVkVORE9SX0lEX0lOVEVMLCAweDhjMDIsIHF1aXJrX3JlbW92ZV9kM19kZWxheSk7CiBE
+RUNMQVJFX1BDSV9GSVhVUF9GSU5BTChQQ0lfVkVORE9SX0lEX0lOVEVMLCAweDhjMjIsIHF1aXJr
+X3JlbW92ZV9kM19kZWxheSk7CiAKK3N0YXRpYyB2b2lkIGVuYWJsZV9wY2lfYnJpZGdlX2QwKHN0
+cnVjdCBwY2lfZGV2ICpkZXYpCit7CisJcGNpX3NldF9wb3dlcl9zdGF0ZShkZXYsIFBDSV9EMCk7
+Cit9CitERUNMQVJFX1BDSV9GSVhVUF9GSU5BTChQQ0lfVkVORE9SX0lEX0lURSwgMHg4ODkyLCBl
+bmFibGVfcGNpX2JyaWRnZV9kMCk7CisKIC8qCiAgKiBTb21lIGRldmljZXMgbWF5IHBhc3Mgb3Vy
+IGNoZWNrIGluIHBjaV9pbnR4X21hc2tfc3VwcG9ydGVkIGlmCiAgKiBQQ0lfQ09NTUFORF9JTlRY
+X0RJU0FCTEUgd29ya3MgdGhvdWdoIHRoZXkgYWN0dWFsbHkgZG8gbm90IHByb3Blcmx5Cg==
+--001a113ff7a4c704d3050673b995--
