@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759724AbaJ1Ht7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:49:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44527 "EHLO
+	id S1759773AbaJ1Hud (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:50:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44519 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340AbaJ1Dib (ORCPT
+	with ESMTP id S1754323AbaJ1Di0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:31 -0400
+	Mon, 27 Oct 2014 23:38:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arun Easi <arun.easi@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.17 037/146] qla2xxx: Use correct offset to req-q-out for reserve calculation
-Date: Tue, 28 Oct 2014 11:32:59 +0800
-Message-Id: <20141028033345.030973148@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: [PATCH 3.17 045/146] Drivers: hv: vmbus: Cleanup vmbus_post_msg()
+Date: Tue, 28 Oct 2014 11:33:07 +0800
+Message-Id: <20141028033345.370772933@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,34 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arun Easi <arun.easi@qlogic.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 75554b68ac1e018bca00d68a430b92ada8ab52dd upstream.
+commit fdeebcc62279119dbeafbc1a2e39e773839025fd upstream.
 
-Signed-off-by: Arun Easi <arun.easi@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Posting messages to the host can fail because of transient resource
+related failures. Correctly deal with these failures and increase the
+number of attempts to post the message before giving up.
+
+In this version of the patch, I have normalized the error code to
+Linux error code.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_target.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/hv/connection.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -1431,12 +1431,10 @@ static inline void qlt_unmap_sg(struct s
- static int qlt_check_reserve_free_req(struct scsi_qla_host *vha,
- 	uint32_t req_cnt)
- {
--	struct qla_hw_data *ha = vha->hw;
--	device_reg_t __iomem *reg = ha->iobase;
- 	uint32_t cnt;
- 
- 	if (vha->req->cnt < (req_cnt + 2)) {
--		cnt = (uint16_t)RD_REG_DWORD(&reg->isp24.req_q_out);
-+		cnt = (uint16_t)RD_REG_DWORD(vha->req->req_q_out);
- 
- 		ql_dbg(ql_dbg_tgt, vha, 0xe00a,
- 		    "Request ring circled: cnt=%d, vha->->ring_index=%d, "
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -427,10 +427,21 @@ int vmbus_post_msg(void *buffer, size_t
+ 	 * insufficient resources. Retry the operation a couple of
+ 	 * times before giving up.
+ 	 */
+-	while (retries < 3) {
+-		ret =  hv_post_message(conn_id, 1, buffer, buflen);
+-		if (ret != HV_STATUS_INSUFFICIENT_BUFFERS)
++	while (retries < 10) {
++		ret = hv_post_message(conn_id, 1, buffer, buflen);
++
++		switch (ret) {
++		case HV_STATUS_INSUFFICIENT_BUFFERS:
++			ret = -ENOMEM;
++		case -ENOMEM:
++			break;
++		case HV_STATUS_SUCCESS:
+ 			return ret;
++		default:
++			pr_err("hv_post_msg() failed; error code:%d\n", ret);
++			return -EINVAL;
++		}
++
+ 		retries++;
+ 		msleep(100);
+ 	}
 
 
