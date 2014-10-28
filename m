@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213AbaJ1NdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:33:05 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51159 "EHLO mail.kernel.org"
+	id S1754299AbaJ1NdQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:33:16 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51231 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752654AbaJ1NdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:33:02 -0400
+	id S1753330AbaJ1NdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:33:12 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 04/32] perf thread: Adopt resolve_callchain method from machine
-Date: Tue, 28 Oct 2014 11:31:58 -0200
-Message-Id: <1414503146-22789-5-git-send-email-acme@kernel.org>
+Subject: [PATCH 06/32] perf tests: Remove misplaced __maybe_unused
+Date: Tue, 28 Oct 2014 11:32:00 -0200
+Message-Id: <1414503146-22789-7-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
 References: <1414503146-22789-1-git-send-email-acme@kernel.org>
@@ -29,8 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Shortening function signature lenght too, since a thread's machine can be
-obtained from thread->mg->machine, no need to pass thread, machine.
+The 'machine' parameter is used in this function, ditch the
+__maybe_unused annotation, not needed.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -44,122 +44,25 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-5wb6css280ty0cel5p0zo2b1@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-dme1nsu07a0spkmcl401srec@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/callchain.c                            |  4 ++--
- tools/perf/util/machine.c                              | 15 +++++++--------
- tools/perf/util/machine.h                              | 13 ++++++-------
- tools/perf/util/scripting-engines/trace-event-python.c |  6 +++---
- tools/perf/util/session.c                              |  6 +++---
- 5 files changed, 21 insertions(+), 23 deletions(-)
+ tools/perf/tests/hists_filter.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index c84d3f8dcb75..00229809a904 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -754,8 +754,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
+diff --git a/tools/perf/tests/hists_filter.c b/tools/perf/tests/hists_filter.c
+index 5a31787cc6b9..74f257a81265 100644
+--- a/tools/perf/tests/hists_filter.c
++++ b/tools/perf/tests/hists_filter.c
+@@ -43,7 +43,7 @@ static struct sample fake_samples[] = {
+ };
  
- 	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain ||
- 	    sort__has_parent) {
--		return machine__resolve_callchain(al->machine, evsel, al->thread,
--						  sample, parent, al, max_stack);
-+		return thread__resolve_callchain(al->thread, evsel, sample,
-+						 parent, al, max_stack);
- 	}
- 	return 0;
- }
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 08e63fdbd14f..fd192e4885cc 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1464,13 +1464,12 @@ static int unwind_entry(struct unwind_entry *entry, void *arg)
- 				       entry->map, entry->sym);
- }
- 
--int machine__resolve_callchain(struct machine *machine,
--			       struct perf_evsel *evsel,
--			       struct thread *thread,
--			       struct perf_sample *sample,
--			       struct symbol **parent,
--			       struct addr_location *root_al,
--			       int max_stack)
-+int thread__resolve_callchain(struct thread *thread,
-+			      struct perf_evsel *evsel,
-+			      struct perf_sample *sample,
-+			      struct symbol **parent,
-+			      struct addr_location *root_al,
-+			      int max_stack)
+ static int add_hist_entries(struct perf_evlist *evlist,
+-			    struct machine *machine __maybe_unused)
++			    struct machine *machine)
  {
- 	int ret = thread__resolve_callchain_sample(thread, sample->callchain,
- 						   parent, root_al, max_stack);
-@@ -1487,7 +1486,7 @@ int machine__resolve_callchain(struct machine *machine,
- 	    (!sample->user_stack.size))
- 		return 0;
- 
--	return unwind__get_entries(unwind_entry, &callchain_cursor, machine,
-+	return unwind__get_entries(unwind_entry, &callchain_cursor, thread->mg->machine,
- 				   thread, sample, max_stack);
- 
- }
-diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
-index 2b651a7f5d0d..88ec74e18cbf 100644
---- a/tools/perf/util/machine.h
-+++ b/tools/perf/util/machine.h
-@@ -122,13 +122,12 @@ struct branch_info *sample__resolve_bstack(struct perf_sample *sample,
- 					   struct addr_location *al);
- struct mem_info *sample__resolve_mem(struct perf_sample *sample,
- 				     struct addr_location *al);
--int machine__resolve_callchain(struct machine *machine,
--			       struct perf_evsel *evsel,
--			       struct thread *thread,
--			       struct perf_sample *sample,
--			       struct symbol **parent,
--			       struct addr_location *root_al,
--			       int max_stack);
-+int thread__resolve_callchain(struct thread *thread,
-+			      struct perf_evsel *evsel,
-+			      struct perf_sample *sample,
-+			      struct symbol **parent,
-+			      struct addr_location *root_al,
-+			      int max_stack);
- 
- /*
-  * Default guest kernel is defined by parameter --guestkallsyms
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 496f21cadd97..25e5a238f1cb 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -312,9 +312,9 @@ static PyObject *python_process_callchain(struct perf_sample *sample,
- 	if (!symbol_conf.use_callchain || !sample->callchain)
- 		goto exit;
- 
--	if (machine__resolve_callchain(al->machine, evsel, al->thread,
--					   sample, NULL, NULL,
--					   PERF_MAX_STACK_DEPTH) != 0) {
-+	if (thread__resolve_callchain(al->thread, evsel,
-+				      sample, NULL, NULL,
-+				      PERF_MAX_STACK_DEPTH) != 0) {
- 		pr_err("Failed to resolve callchain. Skipping\n");
- 		goto exit;
- 	}
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 6702ac28754b..776010844cdc 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1417,9 +1417,9 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
- 	if (symbol_conf.use_callchain && sample->callchain) {
- 		struct addr_location node_al;
- 
--		if (machine__resolve_callchain(al->machine, evsel, al->thread,
--					       sample, NULL, NULL,
--					       PERF_MAX_STACK_DEPTH) != 0) {
-+		if (thread__resolve_callchain(al->thread, evsel,
-+					      sample, NULL, NULL,
-+					      PERF_MAX_STACK_DEPTH) != 0) {
- 			if (verbose)
- 				error("Failed to resolve callchain. Skipping\n");
- 			return;
+ 	struct perf_evsel *evsel;
+ 	struct addr_location al;
 -- 
 1.9.3
 
