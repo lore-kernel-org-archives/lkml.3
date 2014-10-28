@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760810AbaJ1Hda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:33:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44956 "EHLO
+	id S1755068AbaJ1Dl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:41:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44939 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755092AbaJ1Dlb (ORCPT
+	with ESMTP id S1755015AbaJ1DlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:31 -0400
+	Mon, 27 Oct 2014 23:41:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.17 141/146] sparc64: Adjust vmalloc region size based upon available virtual address bits.
-Date: Tue, 28 Oct 2014 11:34:43 +0800
-Message-Id: <20141028033349.578405420@linuxfoundation.org>
+Subject: [PATCH 3.17 137/146] sparc64: Adjust KTSB assembler to support larger physical addresses.
+Date: Tue, 28 Oct 2014 11:34:39 +0800
+Message-Id: <20141028033349.400418813@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -31,150 +31,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit bb4e6e85daa52a9f6210fa06a5ec6269598a202b ]
+[ Upstream commit 8c82dc0e883821c098c8b0b130ffebabf9aab5df ]
 
-In order to accomodate embedded per-cpu allocation with large numbers
-of cpus and numa nodes, we have to use as much virtual address space
-as possible for the vmalloc region.  Otherwise we can get things like:
+As currently coded the KTSB accesses in the kernel only support up to
+47 bits of physical addressing.
 
-PERCPU: max_distance=0x380001c10000 too large for vmalloc space 0xff00000000
-
-So, once we select a value for PAGE_OFFSET, derive the size of the
-vmalloc region based upon that.
+Adjust the instruction and patching sequence in order to support
+arbitrary 64 bits addresses.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/page_64.h    |    1 -
- arch/sparc/include/asm/pgtable_64.h |    9 +++++----
- arch/sparc/kernel/ktlb.S            |    8 ++++----
- arch/sparc/mm/init_64.c             |   30 +++++++++++++++++++-----------
- 4 files changed, 28 insertions(+), 20 deletions(-)
+ arch/sparc/include/asm/tsb.h |   30 ++++++++++++------------------
+ arch/sparc/mm/init_64.c      |   28 +++++++++++++++++++++++++---
+ 2 files changed, 37 insertions(+), 21 deletions(-)
 
---- a/arch/sparc/include/asm/page_64.h
-+++ b/arch/sparc/include/asm/page_64.h
-@@ -117,7 +117,6 @@ extern unsigned long sparc64_va_hole_bot
+--- a/arch/sparc/include/asm/tsb.h
++++ b/arch/sparc/include/asm/tsb.h
+@@ -256,8 +256,6 @@ extern struct tsb_phys_patch_entry __tsb
+ 	(KERNEL_TSB_SIZE_BYTES / 16)
+ #define KERNEL_TSB4M_NENTRIES	4096
  
- #include <asm-generic/memory_model.h>
- 
--#define PAGE_OFFSET_BY_BITS(X)	(-(_AC(1,UL) << (X)))
- extern unsigned long PAGE_OFFSET;
- 
- #endif /* !(__ASSEMBLY__) */
---- a/arch/sparc/include/asm/pgtable_64.h
-+++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -40,10 +40,7 @@
- #define LOW_OBP_ADDRESS		_AC(0x00000000f0000000,UL)
- #define HI_OBP_ADDRESS		_AC(0x0000000100000000,UL)
- #define VMALLOC_START		_AC(0x0000000100000000,UL)
--#define VMALLOC_END		_AC(0x0000010000000000,UL)
--#define VMEMMAP_BASE		_AC(0x0000010000000000,UL)
+-#define KTSB_PHYS_SHIFT		15
 -
--#define vmemmap			((struct page *)VMEMMAP_BASE)
-+#define VMEMMAP_BASE		VMALLOC_END
- 
- /* PMD_SHIFT determines the size of the area a second-level page
-  * table can map
-@@ -81,6 +78,10 @@
- 
- #ifndef __ASSEMBLY__
- 
-+extern unsigned long VMALLOC_END;
-+
-+#define vmemmap			((struct page *)VMEMMAP_BASE)
-+
- #include <linux/sched.h>
- 
- bool kern_addr_valid(unsigned long addr);
---- a/arch/sparc/kernel/ktlb.S
-+++ b/arch/sparc/kernel/ktlb.S
-@@ -199,8 +199,8 @@ kvmap_dtlb_nonlinear:
- 
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- 	/* Do not use the TSB for vmemmap.  */
--	mov		(VMEMMAP_BASE >> 40), %g5
--	sllx		%g5, 40, %g5
-+	sethi		%hi(VMEMMAP_BASE), %g5
-+	ldx		[%g5 + %lo(VMEMMAP_BASE)], %g5
- 	cmp		%g4,%g5
- 	bgeu,pn		%xcc, kvmap_vmemmap
- 	 nop
-@@ -212,8 +212,8 @@ kvmap_dtlb_tsbmiss:
- 	sethi		%hi(MODULES_VADDR), %g5
- 	cmp		%g4, %g5
- 	blu,pn		%xcc, kvmap_dtlb_longpath
--	 mov		(VMALLOC_END >> 40), %g5
--	sllx		%g5, 40, %g5
-+	 sethi		%hi(VMALLOC_END), %g5
-+	ldx		[%g5 + %lo(VMALLOC_END)], %g5
- 	cmp		%g4, %g5
- 	bgeu,pn		%xcc, kvmap_dtlb_longpath
- 	 nop
+ 	/* Do a kernel TSB lookup at tl>0 on VADDR+TAG, branch to OK_LABEL
+ 	 * on TSB hit.  REG1, REG2, REG3, and REG4 are used as temporaries
+ 	 * and the found TTE will be left in REG1.  REG3 and REG4 must
+@@ -266,17 +264,15 @@ extern struct tsb_phys_patch_entry __tsb
+ 	 * VADDR and TAG will be preserved and not clobbered by this macro.
+ 	 */
+ #define KERN_TSB_LOOKUP_TL1(VADDR, TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
+-661:	sethi		%hi(swapper_tsb), REG1;			\
+-	or		REG1, %lo(swapper_tsb), REG1; \
++661:	sethi		%uhi(swapper_tsb), REG1; \
++	sethi		%hi(swapper_tsb), REG2; \
++	or		REG1, %ulo(swapper_tsb), REG1; \
++	or		REG2, %lo(swapper_tsb), REG2; \
+ 	.section	.swapper_tsb_phys_patch, "ax"; \
+ 	.word		661b; \
+ 	.previous; \
+-661:	nop; \
+-	.section	.tsb_ldquad_phys_patch, "ax"; \
+-	.word		661b; \
+-	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
+-	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
+-	.previous; \
++	sllx		REG1, 32, REG1; \
++	or		REG1, REG2, REG1; \
+ 	srlx		VADDR, PAGE_SHIFT, REG2; \
+ 	and		REG2, (KERNEL_TSB_NENTRIES - 1), REG2; \
+ 	sllx		REG2, 4, REG2; \
+@@ -291,17 +287,15 @@ extern struct tsb_phys_patch_entry __tsb
+ 	 * we can make use of that for the index computation.
+ 	 */
+ #define KERN_TSB4M_LOOKUP_TL1(TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
+-661:	sethi		%hi(swapper_4m_tsb), REG1;	     \
+-	or		REG1, %lo(swapper_4m_tsb), REG1; \
++661:	sethi		%uhi(swapper_4m_tsb), REG1; \
++	sethi		%hi(swapper_4m_tsb), REG2; \
++	or		REG1, %ulo(swapper_4m_tsb), REG1; \
++	or		REG2, %lo(swapper_4m_tsb), REG2; \
+ 	.section	.swapper_4m_tsb_phys_patch, "ax"; \
+ 	.word		661b; \
+ 	.previous; \
+-661:	nop; \
+-	.section	.tsb_ldquad_phys_patch, "ax"; \
+-	.word		661b; \
+-	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
+-	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
+-	.previous; \
++	sllx		REG1, 32, REG1; \
++	or		REG1, REG2, REG1; \
+ 	and		TAG, (KERNEL_TSB4M_NENTRIES - 1), REG2; \
+ 	sllx		REG2, 4, REG2; \
+ 	add		REG1, REG2, REG2; \
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -1369,25 +1369,24 @@ static unsigned long max_phys_bits = 40;
+@@ -1733,19 +1733,41 @@ static void __init tsb_phys_patch(void)
+ static struct hv_tsb_descr ktsb_descr[NUM_KTSB_DESCR];
+ extern struct tsb swapper_tsb[KERNEL_TSB_NENTRIES];
  
- bool kern_addr_valid(unsigned long addr)
++/* The swapper TSBs are loaded with a base sequence of:
++ *
++ *	sethi	%uhi(SYMBOL), REG1
++ *	sethi	%hi(SYMBOL), REG2
++ *	or	REG1, %ulo(SYMBOL), REG1
++ *	or	REG2, %lo(SYMBOL), REG2
++ *	sllx	REG1, 32, REG1
++ *	or	REG1, REG2, REG1
++ *
++ * When we use physical addressing for the TSB accesses, we patch the
++ * first four instructions in the above sequence.
++ */
++
+ static void patch_one_ktsb_phys(unsigned int *start, unsigned int *end, unsigned long pa)
  {
--	unsigned long above = ((long)addr) >> max_phys_bits;
- 	pgd_t *pgd;
- 	pud_t *pud;
- 	pmd_t *pmd;
- 	pte_t *pte;
- 
--	if (above != 0 && above != -1UL)
--		return false;
--
--	if (addr >= (unsigned long) KERNBASE &&
--	    addr < (unsigned long)&_end)
--		return true;
--
--	if (addr >= PAGE_OFFSET) {
-+	if ((long)addr < 0L) {
- 		unsigned long pa = __pa(addr);
- 
-+		if ((addr >> max_phys_bits) != 0UL)
-+			return false;
+-	pa >>= KTSB_PHYS_SHIFT;
++	unsigned long high_bits, low_bits;
 +
- 		return pfn_valid(pa >> PAGE_SHIFT);
++	high_bits = (pa >> 32) & 0xffffffff;
++	low_bits = (pa >> 0) & 0xffffffff;
+ 
+ 	while (start < end) {
+ 		unsigned int *ia = (unsigned int *)(unsigned long)*start;
+ 
+-		ia[0] = (ia[0] & ~0x3fffff) | (pa >> 10);
++		ia[0] = (ia[0] & ~0x3fffff) | (high_bits >> 10);
+ 		__asm__ __volatile__("flush	%0" : : "r" (ia));
+ 
+-		ia[1] = (ia[1] & ~0x3ff) | (pa & 0x3ff);
++		ia[1] = (ia[1] & ~0x3fffff) | (low_bits >> 10);
+ 		__asm__ __volatile__("flush	%0" : : "r" (ia + 1));
+ 
++		ia[2] = (ia[2] & ~0x1fff) | (high_bits & 0x3ff);
++		__asm__ __volatile__("flush	%0" : : "r" (ia + 2));
++
++		ia[3] = (ia[3] & ~0x1fff) | (low_bits & 0x3ff);
++		__asm__ __volatile__("flush	%0" : : "r" (ia + 3));
++
+ 		start++;
  	}
- 
-+	if (addr >= (unsigned long) KERNBASE &&
-+	    addr < (unsigned long)&_end)
-+		return true;
-+
- 	pgd = pgd_offset_k(addr);
- 	if (pgd_none(*pgd))
- 		return 0;
-@@ -1656,6 +1655,9 @@ unsigned long __init find_ecache_flush_s
- unsigned long PAGE_OFFSET;
- EXPORT_SYMBOL(PAGE_OFFSET);
- 
-+unsigned long VMALLOC_END   = 0x0000010000000000UL;
-+EXPORT_SYMBOL(VMALLOC_END);
-+
- unsigned long sparc64_va_hole_top =    0xfffff80000000000UL;
- unsigned long sparc64_va_hole_bottom = 0x0000080000000000UL;
- 
-@@ -1712,10 +1714,16 @@ static void __init setup_page_offset(voi
- 		prom_halt();
- 	}
- 
--	PAGE_OFFSET = PAGE_OFFSET_BY_BITS(max_phys_bits);
-+	PAGE_OFFSET = sparc64_va_hole_top;
-+	VMALLOC_END = ((sparc64_va_hole_bottom >> 1) +
-+		       (sparc64_va_hole_bottom >> 2));
- 
--	pr_info("PAGE_OFFSET is 0x%016lx (max_phys_bits == %lu)\n",
-+	pr_info("MM: PAGE_OFFSET is 0x%016lx (max_phys_bits == %lu)\n",
- 		PAGE_OFFSET, max_phys_bits);
-+	pr_info("MM: VMALLOC [0x%016lx --> 0x%016lx]\n",
-+		VMALLOC_START, VMALLOC_END);
-+	pr_info("MM: VMEMMAP [0x%016lx --> 0x%016lx]\n",
-+		VMEMMAP_BASE, VMEMMAP_BASE << 1);
  }
- 
- static void __init tsb_phys_patch(void)
 
 
