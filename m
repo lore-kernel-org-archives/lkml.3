@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757383AbaJ1IAW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 04:00:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44363 "EHLO
+	id S1753841AbaJ1Dg6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:36:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44348 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864AbaJ1DhD (ORCPT
+	with ESMTP id S1753766AbaJ1Dgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:03 -0400
+	Mon, 27 Oct 2014 23:36:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Matlack <dmatlack@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.17 016/146] kvm: x86: fix stale mmio cache bug
-Date: Tue, 28 Oct 2014 11:32:38 +0800
-Message-Id: <20141028033344.128442228@linuxfoundation.org>
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 031/146] regmap: fix NULL pointer dereference in _regmap_write/read
+Date: Tue, 28 Oct 2014 11:32:53 +0800
+Message-Id: <20141028033344.790371251@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,115 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Matlack <dmatlack@google.com>
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
 
-commit 56f17dd3fbc44adcdbc3340fe3988ddb833a47a7 upstream.
+commit 5336be8416a71b5568d2cf54a2f2066abe9f2a53 upstream.
 
-The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
-up to userspace:
+If LOG_DEVICE is defined and map->dev is NULL it will lead to NULL
+pointer dereference. This patch fixes this issue by adding check for
+dev->NULL in all such places in regmap.c
 
-(1) Guest accesses gpa X without a memory slot. The gfn is cached in
-struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
-the SPTE write-execute-noread so that future accesses cause
-EPT_MISCONFIGs.
-
-(2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
-covering the page just accessed.
-
-(3) Guest attempts to read or write to gpa X again. On Intel, this
-generates an EPT_MISCONFIG. The memory slot generation number that
-was incremented in (2) would normally take care of this but we fast
-path mmio faults through quickly_check_mmio_pf(), which only checks
-the per-vcpu mmio cache. Since we hit the cache, KVM passes a
-KVM_EXIT_MMIO up to userspace.
-
-This patch fixes the issue by using the memslot generation number
-to validate the mmio cache.
-
-Signed-off-by: David Matlack <dmatlack@google.com>
-[xiaoguangrong: adjust the code to make it simpler for stable-tree fix.]
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Reviewed-by: David Matlack <dmatlack@google.com>
-Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Tested-by: David Matlack <dmatlack@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/mmu.c              |    2 +-
- arch/x86/kvm/x86.h              |   20 +++++++++++++++-----
- 3 files changed, 17 insertions(+), 6 deletions(-)
+ drivers/base/regmap/regmap.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -481,6 +481,7 @@ struct kvm_vcpu_arch {
- 	u64 mmio_gva;
- 	unsigned access;
- 	gfn_t mmio_gfn;
-+	u64 mmio_gen;
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1408,7 +1408,7 @@ int _regmap_write(struct regmap *map, un
+ 	}
  
- 	struct kvm_pmu pmu;
+ #ifdef LOG_DEVICE
+-	if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
++	if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
+ 		dev_info(map->dev, "%x <= %x\n", reg, val);
+ #endif
  
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -3163,7 +3163,7 @@ static void mmu_sync_roots(struct kvm_vc
- 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
- 		return;
+@@ -2058,7 +2058,7 @@ static int _regmap_read(struct regmap *m
+ 	ret = map->reg_read(context, reg, val);
+ 	if (ret == 0) {
+ #ifdef LOG_DEVICE
+-		if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
++		if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
+ 			dev_info(map->dev, "%x => %x\n", reg, *val);
+ #endif
  
--	vcpu_clear_mmio_info(vcpu, ~0ul);
-+	vcpu_clear_mmio_info(vcpu, MMIO_GVA_ANY);
- 	kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
- 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -88,15 +88,23 @@ static inline void vcpu_cache_mmio_info(
- 	vcpu->arch.mmio_gva = gva & PAGE_MASK;
- 	vcpu->arch.access = access;
- 	vcpu->arch.mmio_gfn = gfn;
-+	vcpu->arch.mmio_gen = kvm_memslots(vcpu->kvm)->generation;
-+}
-+
-+static inline bool vcpu_match_mmio_gen(struct kvm_vcpu *vcpu)
-+{
-+	return vcpu->arch.mmio_gen == kvm_memslots(vcpu->kvm)->generation;
- }
- 
- /*
-- * Clear the mmio cache info for the given gva,
-- * specially, if gva is ~0ul, we clear all mmio cache info.
-+ * Clear the mmio cache info for the given gva. If gva is MMIO_GVA_ANY, we
-+ * clear all mmio cache info.
-  */
-+#define MMIO_GVA_ANY (~(gva_t)0)
-+
- static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
- {
--	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
-+	if (gva != MMIO_GVA_ANY && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
- 		return;
- 
- 	vcpu->arch.mmio_gva = 0;
-@@ -104,7 +112,8 @@ static inline void vcpu_clear_mmio_info(
- 
- static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
- {
--	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
-+	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gva &&
-+	      vcpu->arch.mmio_gva == (gva & PAGE_MASK))
- 		return true;
- 
- 	return false;
-@@ -112,7 +121,8 @@ static inline bool vcpu_match_mmio_gva(s
- 
- static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
- {
--	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
-+	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gfn &&
-+	      vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
- 		return true;
- 
- 	return false;
 
 
