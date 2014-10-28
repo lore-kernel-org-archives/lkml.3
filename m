@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185AbaJ1Dmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:42:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45065 "EHLO
+	id S1755214AbaJ1Dmv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:42:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45084 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932355AbaJ1Dmi (ORCPT
+	with ESMTP id S1752922AbaJ1Dmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:38 -0400
+	Mon, 27 Oct 2014 23:42:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
         Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.16 021/127] spi: dw-mid: check that DMA was inited before exit
-Date: Tue, 28 Oct 2014 11:34:16 +0800
-Message-Id: <20141028033421.856925076@linuxfoundation.org>
+Subject: [PATCH 3.16 025/127] regmap: fix NULL pointer dereference in _regmap_write/read
+Date: Tue, 28 Oct 2014 11:34:20 +0800
+Message-Id: <20141028033422.023278235@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,32 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
 
-commit fb57862ead652454ceeb659617404c5f13bc34b5 upstream.
+commit 5336be8416a71b5568d2cf54a2f2066abe9f2a53 upstream.
 
-If the driver was compiled with DMA support, but DMA channels weren't acquired
-by some reason, mid_spi_dma_exit() will crash the kernel.
+If LOG_DEVICE is defined and map->dev is NULL it will lead to NULL
+pointer dereference. This patch fixes this issue by adding check for
+dev->NULL in all such places in regmap.c
 
-Fixes: 7063c0d942a1 (spi/dw_spi: add DMA support)
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-dw-mid.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/base/regmap/regmap.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -89,6 +89,8 @@ err_exit:
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1395,7 +1395,7 @@ int _regmap_write(struct regmap *map, un
+ 	}
  
- static void mid_spi_dma_exit(struct dw_spi *dws)
- {
-+	if (!dws->dma_inited)
-+		return;
- 	dma_release_channel(dws->txchan);
- 	dma_release_channel(dws->rxchan);
- }
+ #ifdef LOG_DEVICE
+-	if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
++	if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
+ 		dev_info(map->dev, "%x <= %x\n", reg, val);
+ #endif
+ 
+@@ -2045,7 +2045,7 @@ static int _regmap_read(struct regmap *m
+ 	ret = map->reg_read(context, reg, val);
+ 	if (ret == 0) {
+ #ifdef LOG_DEVICE
+-		if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
++		if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
+ 			dev_info(map->dev, "%x => %x\n", reg, *val);
+ #endif
+ 
 
 
