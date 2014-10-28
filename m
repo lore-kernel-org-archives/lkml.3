@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759089AbaJ1HXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:23:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45136 "EHLO
+	id S1759133AbaJ1HYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:24:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45109 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754203AbaJ1DnO (ORCPT
+	with ESMTP id S1753187AbaJ1DnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:14 -0400
+	Mon, 27 Oct 2014 23:43:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Thomas Huth <thuth@linux.vnet.ibm.com>
-Subject: [PATCH 3.16 016/127] KVM: s390: unintended fallthrough for external call
-Date: Tue, 28 Oct 2014 11:34:11 +0800
-Message-Id: <20141028033421.633338561@linuxfoundation.org>
+        Himanshu Madhani <himanshu.madhani@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.16 030/127] qla2xxx: fix kernel NULL pointer access
+Date: Tue, 28 Oct 2014 11:34:25 +0800
+Message-Id: <20141028033422.234665359@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,29 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Himanshu Madhani <himanshu.madhani@qlogic.com>
 
-commit f346026e55f1efd3949a67ddd1dcea7c1b9a615e upstream.
+commit 78c2106a50e067f7168ee8c0944baaeb0e988272 upstream.
 
-We must not fallthrough if the conditions for external call are not met.
+This patch is to fix regression added by commit id
+51a07f84649d2be206c4c2ad9a612956db0c2f8c.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: Thomas Huth <thuth@linux.vnet.ibm.com>
+When allocating memory for new session original patch does
+not assign vha to op->vha resulting into NULL pointer
+access during qlt_create_sess_from_atio().
+
+Signed-off-by: Himanshu Madhani <himanshu.madhani@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kvm/interrupt.c |    1 +
+ drivers/scsi/qla2xxx/qla_target.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/arch/s390/kvm/interrupt.c
-+++ b/arch/s390/kvm/interrupt.c
-@@ -85,6 +85,7 @@ static int __interrupt_is_deliverable(st
- 			return 0;
- 		if (vcpu->arch.sie_block->gcr[0] & 0x2000ul)
- 			return 1;
-+		return 0;
- 	case KVM_S390_INT_EMERGENCY:
- 		if (psw_extint_disabled(vcpu))
- 			return 0;
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -3277,6 +3277,7 @@ static int qlt_handle_cmd_for_atio(struc
+ 			return -ENOMEM;
+ 
+ 		memcpy(&op->atio, atio, sizeof(*atio));
++		op->vha = vha;
+ 		INIT_WORK(&op->work, qlt_create_sess_from_atio);
+ 		queue_work(qla_tgt_wq, &op->work);
+ 		return 0;
 
 
