@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776AbaJ1VuH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:50:07 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:37746 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755193AbaJ1VuF (ORCPT
+	id S1755174AbaJ1Vxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:53:32 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52762 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754177AbaJ1Vxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:50:05 -0400
-Date: Tue, 28 Oct 2014 22:47:56 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Roman Byshko <rbyshko@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH 1/5] phy: sun4i: add support for USB phy0
-Message-ID: <20141028214756.GF9255@lukather>
-References: <cover.1414444953.git.rbyshko@gmail.com>
- <668c1b5541fc0175957573bd5f8d40dd2eaccae1.1414444953.git.rbyshko@gmail.com>
+	Tue, 28 Oct 2014 17:53:30 -0400
+Date: Tue, 28 Oct 2014 22:53:08 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <ak@linux.intel.com>
+cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+        mingo@kernel.org, eranian@google.com, dzickus@redhat.com,
+        jmario@redhat.com, acme@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Attempt to cleanup the HSW offcore bits
+In-Reply-To: <20141027142818.GA3041@tassilo.jf.intel.com>
+Message-ID: <alpine.DEB.2.11.1410282243510.5308@nanos>
+References: <20141023105119.173457103@infradead.org> <20141027122340.GU12538@two.firstfloor.org> <20141027130712.GF3337@twins.programming.kicks-ass.net> <20141027142818.GA3041@tassilo.jf.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L2Brqb15TUChFOBK"
-Content-Disposition: inline
-In-Reply-To: <668c1b5541fc0175957573bd5f8d40dd2eaccae1.1414444953.git.rbyshko@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Andi,
 
---L2Brqb15TUChFOBK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 27 Oct 2014, Andi Kleen wrote:
+> On Mon, Oct 27, 2014 at 02:07:12PM +0100, Peter Zijlstra wrote:
+> > On Mon, Oct 27, 2014 at 01:23:40PM +0100, Andi Kleen wrote:
+> > > On Thu, Oct 23, 2014 at 12:51:19PM +0200, Peter Zijlstra wrote:
+> > > > So Don asked about offcore and because I forgot I looked at the code and found
+> > > > the terrible mess Andi created with the HSW/BDW bits.
+> > > > 
+> > > > This series attempts to clean some of that up but seeing how it was all magic
+> > > > numbers 
+> > > 
+> > > All the bits are documented. The actual definitions are available
+> > > in the JSON offcore definitions at https://download.01.org/perfmon/
+> > 
+> > Yeah, no. That's not how we write code. Also, there's no actual JSON
+> > offcore file for HSW only some TSV file, and I've no mind to go decode
+> 
+> https://download.01.org/perfmon/HSW/Haswell_matrix_V14.json
+> https://download.01.org/perfmon/HSW/Haswell_matrix_bit_definitions_V14.json
 
-Hi Roman,
+Of course you did not answer any of the other legitimate questions
+Peter brought up.
 
-Thanks for your patches
+Care to answer them w/o pointing to magic json files which lack ANY
+useful information about the magic bits they provide? And why they are
+not consistent with the SDM?
 
-On Mon, Oct 27, 2014 at 10:43:01PM +0100, Roman Byshko wrote:
-> The driver for sun4i USB phys currently supports
-> only phy1 and phy2 which are used for USB host
-> controllers. This patch adds support for USB phy0,
-> which is used by the musb hdrc USB controller.
+Either you come forth with reasonable explanations or I'm going to rip
+out the mess you created even before Peter can persuade himself to do
+so. 
 
-Like Andreas already pointed out, your signed-off-by is missing from
-all your patches.
+Thanks,
 
-> ---
->  drivers/phy/phy-sun4i-usb.c | 9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/phy/phy-sun4i-usb.c b/drivers/phy/phy-sun4i-usb.c
-> index 0baf5ef..a24728b 100644
-> --- a/drivers/phy/phy-sun4i-usb.c
-> +++ b/drivers/phy/phy-sun4i-usb.c
-> @@ -157,6 +157,10 @@ static int sun4i_usb_phy_init(struct phy *_phy)
->  		return ret;
->  	}
-> =20
-> +	/* Regulation 45 ohms */
-> +	if (phy->index =3D=3D 0)
-> +		sun4i_usb_phy_write(phy, PHY_RES45_CAL_EN, 0x01, 1);
+	tglx
 
-What is this code supposed to do?
-
-Some define for this bit and/or a better comment would be nice.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---L2Brqb15TUChFOBK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUUA8MAAoJEBx+YmzsjxAgM0QP/2ZXa7TA8q6vNv1+wTapPFg0
-2CD6nTL+KDzDceNqm3U58dH0qjNqOXxKcEgoaxDD69FE/HJn4F7y1JHDHMSrNJDd
-B/26qHFA2UYqAEltVpVGQRhz5zolKZmpiQ2w4vADiA2z+UYVbkqu7oDKuaKu7otH
-Wb/eedjYXWHf9+WTWA1K0sdbBUz605L7+i71AUQx5A8IiPzIb8hfLRW0gO6iJCr4
-4QUHKGr102rQK3jJ7vcaFN+Wc3rxvP4+Ge3HLTB6v05j6e8jnqHG2NwNkwY8wbbp
-ICKRoORFe7XubVsyOsNx74bJdS8fMGHP34Ia77oetXmPc75LuiIZ3UV3hbV8PmAG
-4vrcKO3Dctdhgm+jlgc4YM6nbvR2lCCd3Y0lmFrv9WhcTjE+8qr0h6k2M5CURSRk
-Zt9DDwbF4l1WytS0gwJkfRbNj7X1TPoIu6fuv6rvQiskQTlPcCFYy2DXtNLd8WLJ
-vehqTYVozqxGPmUPxMLvp7Q4wfZ19Vs/IGD4S3mrkHuI7oJVsCJxb8M1HPG67sUT
-QlzeA7/4DlPOAGDKObiquJwvipWVO+Zamq37C9iYnNXeXBpU8ZrNu1RLr7Bm5SDe
-4ZxLmztQvqFSiomAXc2u3iDnhEMlW4/7PXrqXl8HDuyV0AgDiR07hzS14AsblRaV
-MaxK2lL/MownZOuibJCV
-=HpcL
------END PGP SIGNATURE-----
-
---L2Brqb15TUChFOBK--
