@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaJ1LpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:45:11 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33024 "EHLO
+	id S1753859AbaJ1LpQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:45:16 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33025 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751591AbaJ1LpI (ORCPT
+	by vger.kernel.org with ESMTP id S1752129AbaJ1LpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:45:08 -0400
+	Tue, 28 Oct 2014 07:45:12 -0400
 From: Will Deacon <will.deacon@arm.com>
 To: torvalds@linux-foundation.org, peterz@infradead.org
 Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
         benh@kernel.crashing.org, Will Deacon <will.deacon@arm.com>
-Subject: [RFC PATCH 0/2] Fix a couple of issues with zap_pte_range and MMU gather
-Date: Tue, 28 Oct 2014 11:44:20 +0000
-Message-Id: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
+Subject: [RFC PATCH 2/2] zap_pte_range: fix partial TLB flushing in response to a dirty pte
+Date: Tue, 28 Oct 2014 11:44:22 +0000
+Message-Id: <1414496662-25202-3-git-send-email-will.deacon@arm.com>
 X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
+References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+When we encounter a dirty page during unmap, we force a TLB invalidation
+to avoid a race with pte_mkclean and stale, dirty TLB entries in the
+CPU.
 
-This patch series attempts to fix a couple of issues I've noticed with
-zap_pte_range and the MMU gather code on arm64.
+This uses the same force_flush logic as the batch failure code, but
+since we don't break out of the loop when finding a dirty pte, tlb->end
+can be < addr as we only batch for present ptes. This can result in a
+negative range being passed to subsequent TLB invalidation calls,
+potentially leading to massive over-invalidation of the TLB (observed
+in practice running firefox on arm64).
 
-Ths first fix resolves a TLB range truncation, which I found by code
-inspection (this is on the batch failure path, which doesn't appear to
-be regularly exercised on my system).
+This patch fixes the issue by restricting the use of addr in the TLB
+range calculations. The first range then ends up covering tlb->start to
+min(tlb->end, addr), which corresponds to the currently batched range.
+The second range then covers anything remaining, which may still lead to
+a (much reduced) over-invalidation of the TLB.
 
-For the second fix, I'd really appreciate some comments. The problem is
-that the architecture TLB batching implementation may update the start
-and end fields of the gather structure, so that they actually cover only
-a subset of the initial range set up by tlb_gather_mmu (based on calls
-to tlb_remove_tlb_entry). In the force_flush case, zap_pte_range sets
-these fields directly, which can result in a negative range if the
-architecture has also updated the end address. The patch here uses
-min(end, addr) as the end of the first range, which creates a second
-range from that address to the end of the region. This results in a
-potential over-invalidation on arm64, but I can't think of anything
-better without updating (at least) the x86 tlb.h implementation.
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ mm/memory.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-Ideally, we'd let the architecture set start/end during the call to
-tlb_flush_mmu_tlbonly (arm64 does this already in tlb_flush).
-
-Thoughts?
-
-Will
-
-
-Will Deacon (2):
-  zap_pte_range: update addr when forcing flush after TLB batching
-    faiure
-  zap_pte_range: fix partial TLB flushing in response to a dirty pte
-
- mm/memory.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
+diff --git a/mm/memory.c b/mm/memory.c
+index 3e503831e042..ea41508d41f3 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1194,11 +1194,10 @@ again:
+ 		 * then update the range to be the remaining
+ 		 * TLB range.
+ 		 */
+-		old_end = tlb->end;
+-		tlb->end = addr;
++		tlb->end = old_end = min(tlb->end, addr);
+ 		tlb_flush_mmu_tlbonly(tlb);
+-		tlb->start = addr;
+-		tlb->end = old_end;
++		tlb->start = old_end;
++		tlb->end = end;
+ 	}
+ 	pte_unmap_unlock(start_pte, ptl);
+ 
 -- 
 2.1.1
 
