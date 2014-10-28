@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932543AbaJ1DqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:46:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45462 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513AbaJ1DqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932522AbaJ1DqA (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 27 Oct 2014 23:46:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45456 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037AbaJ1Dp6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 23:45:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anssi Hannula <anssi.hannula@iki.fi>,
-        David Henningsson <david.henningsson@canonical.com>,
+        Vlad Catoi <vladcatoi@gmail.com>, Clemens Ladisch <clemens@ladisch.de>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 084/127] ALSA: hda - hdmi: Fix missing ELD change event on plug/unplug
-Date: Tue, 28 Oct 2014 11:35:19 +0800
-Message-Id: <20141028033424.540631259@linuxfoundation.org>
+Subject: [PATCH 3.16 083/127] ALSA: usb-audio: Add support for Steinberg UR22 USB interface
+Date: Tue, 28 Oct 2014 11:35:18 +0800
+Message-Id: <20141028033424.495168455@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -30,62 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Vlad Catoi <vladcatoi@gmail.com>
 
-commit 6acce400d9daf1353fbf497302670c90a3205e1d upstream.
+commit f0b127fbfdc8756eba7437ab668f3169280bd358 upstream.
 
-The ELD ALSA control change event is sent by hdmi_present_sense() when
-eld_changed is true.
+Adding support for Steinberg UR22 USB interface via quirks table patch
 
-Currently, it is only true when the ELD buffer contents have been
-modified. However, the user-visible ELD controls also change to a
-zero-length value and back when eld_valid is unset/set, and no event is
-currently sent in such cases (such as when unplugging or replugging a
-sink).
+See Ubuntu bug report:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1317244
+Also see threads:
+http://linux-audio.4202.n7.nabble.com/Support-for-Steinberg-UR22-Yamaha-USB-chipset-0499-1509-tc82888.html#a82917
+http://www.steinberg.net/forums/viewtopic.php?t=62290
 
-Fix the code to always set eld_changed if eld_valid value is changed,
-and therefore to always send the change event when the user-visible
-value changes.
+Tested by at least 4 people judging by the threads.
+Did not test MIDI interface, but audio output and capture both are
+functional. Built 3.17 kernel with this driver on Ubuntu 14.04 & tested with mpg123
+Patch applied to 3.13 Ubuntu kernel works well enough for daily use.
 
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Vlad Catoi <vladcatoi@gmail.com>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ sound/usb/quirks-table.h |   30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1574,19 +1574,22 @@ static bool hdmi_present_sense(struct hd
- 		}
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -385,6 +385,36 @@ YAMAHA_DEVICE(0x105d, NULL),
  	}
- 
--	if (pin_eld->eld_valid && !eld->eld_valid) {
--		update_eld = true;
-+	if (pin_eld->eld_valid != eld->eld_valid)
- 		eld_changed = true;
--	}
-+
-+	if (pin_eld->eld_valid && !eld->eld_valid)
-+		update_eld = true;
-+
- 	if (update_eld) {
- 		bool old_eld_valid = pin_eld->eld_valid;
- 		pin_eld->eld_valid = eld->eld_valid;
--		eld_changed = pin_eld->eld_size != eld->eld_size ||
-+		if (pin_eld->eld_size != eld->eld_size ||
- 			      memcmp(pin_eld->eld_buffer, eld->eld_buffer,
--				     eld->eld_size) != 0;
--		if (eld_changed)
-+				     eld->eld_size) != 0) {
- 			memcpy(pin_eld->eld_buffer, eld->eld_buffer,
- 			       eld->eld_size);
-+			eld_changed = true;
+ },
+ {
++	USB_DEVICE(0x0499, 0x1509),
++	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
++		/* .vendor_name = "Yamaha", */
++		/* .product_name = "Steinberg UR22", */
++		.ifnum = QUIRK_ANY_INTERFACE,
++		.type = QUIRK_COMPOSITE,
++		.data = (const struct snd_usb_audio_quirk[]) {
++			{
++				.ifnum = 1,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 2,
++				.type = QUIRK_AUDIO_STANDARD_INTERFACE
++			},
++			{
++				.ifnum = 3,
++				.type = QUIRK_MIDI_YAMAHA
++			},
++			{
++				.ifnum = 4,
++				.type = QUIRK_IGNORE_INTERFACE
++			},
++			{
++				.ifnum = -1
++			}
 +		}
- 		pin_eld->eld_size = eld->eld_size;
- 		pin_eld->info = eld->info;
- 
++	}
++},
++{
+ 	USB_DEVICE(0x0499, 0x150a),
+ 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
+ 		/* .vendor_name = "Yamaha", */
 
 
