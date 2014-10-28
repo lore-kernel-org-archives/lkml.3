@@ -1,203 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570AbaJ1WbX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:31:23 -0400
-Received: from mail-pa0-f74.google.com ([209.85.220.74]:56379 "EHLO
-	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268AbaJ1W2D (ORCPT
+	id S1755702AbaJ1Wbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:31:44 -0400
+Received: from galahad.ideasonboard.com ([185.26.127.97]:49060 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755669AbaJ1Wbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:28:03 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+	Tue, 28 Oct 2014 18:31:42 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH RESEND V4 3/9] of: Update Tegra XUSB pad controller binding for USB
-Date: Tue, 28 Oct 2014 15:27:50 -0700
-Message-Id: <1414535277-15645-4-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
-References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
+        Antoine =?ISO-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
+Subject: Re: [PATCH v4 10/58] dmaengine: Create a generic dma_slave_caps callback
+Date: Wed, 29 Oct 2014 00:31:50 +0200
+Message-ID: <2404835.bBK1tFY7m2@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <1414531573-18807-11-git-send-email-maxime.ripard@free-electrons.com>
+References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com> <1414531573-18807-11-git-send-email-maxime.ripard@free-electrons.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new bindings used for USB support by the Tegra XUSB pad controller.
-This includes additional PHY types, USB-specific pinconfig properties, etc.
+Hi Maxime,
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
----
-Changes from v2:
- - Added nvidia,otg-hs-curr-level-offset property.
- - Dropped "-otg" from VBUS supplies.
- - Added mbox-names property.
- - Removed extra whitespace.
-Changes from v1:
- - Updated to use common mailbox bindings.
- - Made USB3 port-to-lane mappins a top-level binding rather than a pinconfig
-   binding.
- - Add #defines for the padctl lanes.
----
- .../pinctrl/nvidia,tegra124-xusb-padctl.txt        | 56 ++++++++++++++++++++--
- include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h   | 20 ++++++++
- 2 files changed, 72 insertions(+), 4 deletions(-)
+Thank you for the patch.
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-index 2f9c0bd..4a1b9475 100644
---- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-@@ -21,6 +21,18 @@ Required properties:
-   - padctl
- - #phy-cells: Should be 1. The specifier is the index of the PHY to reference.
-   See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list of valid values.
-+- mboxes: Must contain an entry for the XUSB mailbox channel.
-+  See ../mailbox/mailbox.txt for details.
-+- mbox-names: Must include the following entries:
-+  - xusb
-+
-+Optional properties:
-+-------------------
-+- vbus-{0,1,2}-supply: VBUS regulator for the corresponding UTMI pad.
-+- vddio-hsic-supply: VDDIO regulator for the HSIC pads.
-+- nvidia,usb3-port-{0,1}-lane: PCIe/SATA lane to which the corresponding USB3
-+  port is mapped.  See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list
-+  of valid values.
- 
- Lane muxing:
- ------------
-@@ -50,6 +62,17 @@ Optional properties:
-   pin or group should be assigned to. Valid values for function names are
-   listed below.
- - nvidia,iddq: Enables IDDQ mode of the lane. (0: no, 1: yes)
-+- nvidia,usb2-port-num: USB2 port (0, 1, or 2) to which the lane is mapped.
-+- nvidia,hsic-strobe-trim: HSIC strobe trimmer value.
-+- nvidia,hsic-rx-strobe-trim: HSIC RX strobe trimmer value.
-+- nvidia,hsic-rx-data-trim: HSIC RX data trimmer value.
-+- nvidia,hsic-tx-rtune-n: HSIC TX RTUNEN value.
-+- nvidia,hsic-tx-rtune-p: HSIC TX RTUNEP value.
-+- nvidia,hsic-tx-slew-n: HSIC TX SLEWN value.
-+- nvidia,hsic-tx-slew-p: HSIC TX SLEWP value.
-+- nvidia,hsic-auto-term: Enables HSIC AUTO_TERM. (0: no, 1: yes)
-+- nvidia,otg-hs-curr-level-offset: Offset to be applied to the pad's fused
-+  HS_CURR_LEVEL value.
- 
- Note that not all of these properties are valid for all lanes. Lanes can be
- divided into three groups:
-@@ -58,18 +81,21 @@ divided into three groups:
- 
-     Valid functions for this group are: "snps", "xusb", "uart", "rsvd".
- 
--    The nvidia,iddq property does not apply to this group.
-+    The nvidia,otg-hs-curr-level-offset property only applies.
- 
-   - ulpi-0, hsic-0, hsic-1:
- 
-     Valid functions for this group are: "snps", "xusb".
- 
--    The nvidia,iddq property does not apply to this group.
-+    The nvidia,hsic-* properties apply only to the pins hsic-{0,1} when
-+    the function is xusb.
- 
-   - pcie-0, pcie-1, pcie-2, pcie-3, pcie-4, sata-0:
- 
-     Valid functions for this group are: "pcie", "usb3", "sata", "rsvd".
- 
-+    The nvidia,usb2-port-num property only applies and is required when
-+    the function is usb3.
- 
- Example:
- ========
-@@ -82,6 +108,8 @@ SoC file extract:
- 		reg = <0x0 0x7009f000 0x0 0x1000>;
- 		resets = <&tegra_car 142>;
- 		reset-names = "padctl";
-+		mboxes = <&xusb_mbox>;
-+		mbox-names = "xusb";
- 
- 		#phy-cells = <1>;
- 	};
-@@ -100,15 +128,35 @@ Board file extract:
- 
- 	...
- 
-+	usb@0,70090000 {
-+		...
-+
-+		phys = <&padctl 5>, <&padctl 6>, <&padctl 7>;
-+		phy-names = "utmi-1", "utmi-2", "usb3-0";
-+
-+		...
-+	}
-+
-+	...
-+
- 	padctl: padctl@0,7009f000 {
- 		pinctrl-0 = <&padctl_default>;
- 		pinctrl-names = "default";
- 
-+		nvidia,usb3-port-0-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_0>;
-+		vbus-2-supply = <&vdd_usb3_vbus>;
-+
- 		padctl_default: pinmux {
--			usb3 {
--				nvidia,lanes = "pcie-0", "pcie-1";
-+			otg {
-+				nvidia,lanes = "otg-1", "otg-2";
-+				nvidia,function = "xusb";
-+			};
-+
-+			usb3p0 {
-+				nvidia,lanes = "pcie-0";
- 				nvidia,function = "usb3";
- 				nvidia,iddq = <0>;
-+				nvidia,usb2-port-num = <2>;
- 			};
- 
- 			pcie {
-diff --git a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
-index 914d56d..17b1aab 100644
---- a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
-+++ b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
-@@ -3,5 +3,25 @@
- 
- #define TEGRA_XUSB_PADCTL_PCIE 0
- #define TEGRA_XUSB_PADCTL_SATA 1
-+#define TEGRA_XUSB_PADCTL_USB3_P0 2
-+#define TEGRA_XUSB_PADCTL_USB3_P1 3
-+#define TEGRA_XUSB_PADCTL_UTMI_P0 4
-+#define TEGRA_XUSB_PADCTL_UTMI_P1 5
-+#define TEGRA_XUSB_PADCTL_UTMI_P2 6
-+#define TEGRA_XUSB_PADCTL_HSIC_P0 7
-+#define TEGRA_XUSB_PADCTL_HSIC_P1 8
-+
-+#define TEGRA_XUSB_PADCTL_PIN_OTG_0   0
-+#define TEGRA_XUSB_PADCTL_PIN_OTG_1   1
-+#define TEGRA_XUSB_PADCTL_PIN_OTG_2   2
-+#define TEGRA_XUSB_PADCTL_PIN_ULPI_0  3
-+#define TEGRA_XUSB_PADCTL_PIN_HSIC_0  4
-+#define TEGRA_XUSB_PADCTL_PIN_HSIC_1  5
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_0  6
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_1  7
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_2  8
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_3  9
-+#define TEGRA_XUSB_PADCTL_PIN_PCIE_4 10
-+#define TEGRA_XUSB_PADCTL_PIN_SATA_0 11
- 
- #endif /* _DT_BINDINGS_PINCTRL_TEGRA_XUSB_H */
+On Tuesday 28 October 2014 22:25:25 Maxime Ripard wrote:
+> dma_slave_caps is very important to the generic layers that might interact
+> with dmaengine, such as ASoC. Unfortunately, it has been added as yet
+> another dma_device callback, and most of the existing drivers haven't
+> implemented it, reducing its reliability.
+> 
+> Introduce a generic behaviour to implement this, that rely on both the split
+> of device_control to derive which functions are supported and on new
+> variables to be set in the dma_device structure.
+> 
+> These variables holds what used to be the capabilities, that were set
+> per-channel. However, this proved to be a bit overkill, since every driver
+> filling these so far were hardcoding it, disregarding which channel was
+> actually given.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+You might want to consider adding "dmaengine: Move dma_get_slave_caps() 
+implementation to dmaengine.c" to this series.
+
+> ---
+>  include/linux/dmaengine.h | 41 +++++++++++++++++++++++++++++++++++++----
+>  1 file changed, 37 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+> index b0efc805937a..be9e60aa8f5e 100644
+> --- a/include/linux/dmaengine.h
+> +++ b/include/linux/dmaengine.h
+> @@ -593,6 +593,14 @@ struct dma_tx_state {
+>   * @fill_align: alignment shift for memset operations
+>   * @dev_id: unique device ID
+>   * @dev: struct device reference for dma mapping api
+> + * @src_addr_widths: bit mask of src addr widths the device supports
+> + * @dst_addr_widths: bit mask of dst addr widths the device supports
+> + * @directions: bit mask of slave direction the device supports since
+> + * 	the enum dma_transfer_direction is not defined as bits for
+> + * 	each type of direction, the dma controller should fill (1 <<
+> + * 	<TYPE>) and same should be checked by controller as well
+> + * @residue_granularity: granularity of the transfer residue reported
+> + *	by tx_status
+>   * @device_alloc_chan_resources: allocate resources and return the
+>   *	number of allocated descriptors
+>   * @device_free_chan_resources: release DMA channel's resources
+> @@ -642,6 +650,11 @@ struct dma_device {
+>  	int dev_id;
+>  	struct device *dev;
+> 
+> +	u32 src_addr_widths;
+> +	u32 dst_addr_widths;
+> +	u32 directions;
+> +	enum dma_residue_granularity residue_granularity;
+> +
+>  	int (*device_alloc_chan_resources)(struct dma_chan *chan);
+>  	void (*device_free_chan_resources)(struct dma_chan *chan);
+> 
+> @@ -783,17 +796,37 @@ static inline struct dma_async_tx_descriptor
+> *dmaengine_prep_dma_sg(
+> 
+>  static inline int dma_get_slave_caps(struct dma_chan *chan, struct
+> dma_slave_caps *caps) {
+> +	struct dma_device *device;
+> +
+>  	if (!chan || !caps)
+>  		return -EINVAL;
+> 
+> +	device = chan->device;
+> +
+>  	/* check if the channel supports slave transactions */
+> -	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
+> +	if (!test_bit(DMA_SLAVE, device->cap_mask.bits))
+> +		return -ENXIO;
+> +
+> +	if (device->device_slave_caps)
+> +		return device->device_slave_caps(chan, caps);
+> +
+> +	/*
+> +	 * Check whether it reports it uses the generic slave
+> +	 * capabilities, if not, that means it doesn't support any
+> +	 * kind of slave capabilities reporting.
+> +	 */
+> +	if (!device->directions)
+>  		return -ENXIO;
+> 
+> -	if (chan->device->device_slave_caps)
+> -		return chan->device->device_slave_caps(chan, caps);
+> +	caps->src_addr_widths = device->src_addr_widths;
+> +	caps->dst_addr_widths = device->dst_addr_widths;
+> +	caps->directions = device->directions;
+> +	caps->residue_granularity = device->residue_granularity;
+> +
+> +	caps->cmd_pause = !!device->device_pause;
+> +	caps->cmd_terminate = !!device->device_terminate_all;
+> 
+> -	return -ENXIO;
+> +	return 0;
+>  }
+> 
+>  static inline int dmaengine_terminate_all(struct dma_chan *chan)
+
 -- 
-2.1.0.rc2.206.gedb03e5
+Regards,
+
+Laurent Pinchart
 
