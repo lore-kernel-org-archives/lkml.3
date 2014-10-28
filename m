@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850AbaJ1CSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 22:18:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:52863 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751829AbaJ1CSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 22:18:42 -0400
-Date: Tue, 28 Oct 2014 03:18:35 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v2 5/8] power: reset: at91-reset: use at91_ramc_shutdown
-Message-ID: <20141028021834.GA5739@earth.universe>
-References: <1414451377-11053-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1414451377-11053-6-git-send-email-alexandre.belloni@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-In-Reply-To: <1414451377-11053-6-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753087AbaJ1CWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 22:22:12 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:62976 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827AbaJ1CWK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 22:22:10 -0400
+Message-ID: <1414462887.20336.10.camel@debian>
+Subject: Re: [PATCH 2/2] x86, mce: support memory error recovery for both
+ UCNA and Deferred error in machine_check_poll
+From: Chen Yucong <slaoub@gmail.com>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "bp@alien8.de" <bp@alien8.de>, "ak@linux.intel.com" <ak@linux.intel.com>,
+        "aravind.gopalakrishnan@amd.com" <aravind.gopalakrishnan@amd.com>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 28 Oct 2014 10:21:27 +0800
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F32917841@ORSMSX114.amr.corp.intel.com>
+References: <1414371382-15491-1-git-send-email-slaoub@gmail.com>
+	 <1414371382-15491-3-git-send-email-slaoub@gmail.com>
+	 <3908561D78D1C84285E8C5FCA982C28F32917841@ORSMSX114.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2014-10-27 at 23:10 +0000, Luck, Tony wrote:
+> +	m->mcgstatus |= (MCG_STATUS_MCIP|MCG_STATUS_RIPV);
+> +	severity = mce_severity(m, mca_cfg.tolerant, NULL);
+> 
+> This seems a big hack to make mce_severity() work when called from
+> CMCI context (when MCG_STATUS register is not set).  It would also
+> be confusing as the subsequent logged entries would show MCIP and RIPV
+> bits set in the mcg_status.
+> 
+In fact, I have already noticed this issue from the start. But the 
+Intel SDM document that MCIP/RIPV/EIPV are specific to machine check
+exception. And I don't know if the above flag bits will be checked in
+CMCI context by error log/decode handlers. 
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> If someone can think of a less hacky way to do this, that would be good. Otherwise
+> the code needs a comment, and should reset m->mcg_status to avoid making logs
+> that have incorrect data.
+> 
+Yes! the above code snippet should be commented. And another method 
+that can be used for restoring m->mcgstatus is shown below.
 
-Hi,
++        u8 mcgs = m->mcgstatus & 0xff;
++
++        m->mcgstatus |= (MCG_STATUS_MCIP|MCG_STATUS_RIPV);
++        severity = mce_severity(m, mca_cfg.tolerant, NULL);
++        m->mcgstatus = (m->mcgstatus & ~0xff) | mcgs;
 
-On Tue, Oct 28, 2014 at 12:09:34AM +0100, Alexandre Belloni wrote:
-> Now that all SoCs are registering the atmel-sdramc driver, use the
-> at91_ramc_shutdown() function to shutdown the sdram.
->=20
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+thx!
+cyc
 
-Acked-By: Sebastian Reichel <sre@kernel.org>
-
--- Sebastian
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUTvz6AAoJENju1/PIO/qaWdsP/AtuUzTI4Chfv/0N9kqOJt1O
-gmTUimN+iImXKO03k4vF9lR49/anhgvIY8HfZlA76JQCGpDP30jaEiE4T4q+/DRS
-1JA/oTmvZVUooy32zU7EO/ZOVaKEvCercGRlQHays5EDLGFkRIacsvL07St0zTZR
-dpapnOX5Zr7Jmu94iQh09mYGoFUNSLfqThaVA0rV1I8W8+gPi1N57nZiR2MQp7HS
-4F1ySzEu/5SD7hsJ/XhqIyeXZ0HBnj5UMJarVvCAc1JL2/bGaKAU8cYN7BJxm5pM
-LLHkushn9zSJzFf3aJ+6UQ8O3HA8zEIiAra1AhucnzxmpYNW0l9VLHJVzFJS7LIT
-HOKxhrCL3sHqtGsKKeVSjaK3MWFYHswwnpCTpccJ6ZVundBG2ywp5KxTOn/u9r7s
-Z/cN1398KCE0efz2A4XrdtQg+g4gxb5cAZcUjoTrLA+MaGUXfyLohqpEnuT3eyAn
-/8+gfVvBv8TYqIbq1AipfhGXhiFh0krGehMmb+AonY1HgW3wMWIwiJ+vdEIdnk4l
-p1bHa/JGgyVB6hoFMtq3NOqIlxngUmSCGTa6Xl4NxeB9vbXjJILJ4IIonvaEwsUM
-yrKaQkKTYmwbqAC84AqlawoRTWzHYN9NzQu7sFf/cjP+ZBF7gcfQv3q9I+R2kzEe
-zacNqsCzdS8aKUANE1yB
-=sckH
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
