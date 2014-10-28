@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129AbaJ1DtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:49:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45793 "EHLO
+	id S933162AbaJ1DtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:49:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45807 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933108AbaJ1DtG (ORCPT
+	with ESMTP id S933126AbaJ1DtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:49:06 -0400
+	Mon, 27 Oct 2014 23:49:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Champion Chen <champion_chen@realsil.com.cn>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.14 050/100] Bluetooth: Fix issue with USB suspend in btusb driver
-Date: Tue, 28 Oct 2014 11:35:35 +0800
-Message-Id: <20141028033502.853340976@linuxfoundation.org>
+        Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 3.14 034/100] m68k: Disable/restore interrupts in hwreg_present()/hwreg_write()
+Date: Tue, 28 Oct 2014 11:35:19 +0800
+Message-Id: <20141028033502.128815160@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -30,56 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Champion Chen <champion_chen@realsil.com.cn>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 85560c4a828ec9c8573840c9b66487b6ae584768 upstream.
+commit e4dc601bf99ccd1c95b7e6eef1d3cf3c4b0d4961 upstream.
 
-Suspend could fail for some platforms because
-btusb_suspend==> btusb_stop_traffic ==> usb_kill_anchored_urbs.
+hwreg_present() and hwreg_write() temporarily change the VBR register to
+another vector table. This table contains a valid bus error handler
+only, all other entries point to arbitrary addresses.
 
-When btusb_bulk_complete returns before system suspend and resubmits
-an URB, the system cannot enter suspend state.
+If an interrupt comes in while the temporary table is active, the
+processor will start executing at such an arbitrary address, and the
+kernel will crash.
 
-Signed-off-by: Champion Chen <champion_chen@realsil.com.cn>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+While most callers run early, before interrupts are enabled, or
+explicitly disable interrupts, Finn Thain pointed out that macsonic has
+one callsite that doesn't, causing intermittent boot crashes.
+There's another unsafe callsite in hilkbd.
+
+Fix this for good by disabling and restoring interrupts inside
+hwreg_present() and hwreg_write().
+
+Explicitly disabling interrupts can be removed from the callsites later.
+
+Reported-by: Finn Thain <fthain@telegraphics.com.au>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/btusb.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ arch/m68k/mm/hwtest.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -309,6 +309,9 @@ static void btusb_intr_complete(struct u
- 			BT_ERR("%s corrupted event packet", hdev->name);
- 			hdev->stat.err_rx++;
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
+--- a/arch/m68k/mm/hwtest.c
++++ b/arch/m68k/mm/hwtest.c
+@@ -28,9 +28,11 @@
+ int hwreg_present( volatile void *regp )
+ {
+     int	ret = 0;
++    unsigned long flags;
+     long	save_sp, save_vbr;
+     long	tmp_vectors[3];
  
- 	if (!test_bit(BTUSB_INTR_RUNNING, &data->flags))
-@@ -397,6 +400,9 @@ static void btusb_bulk_complete(struct u
- 			BT_ERR("%s corrupted ACL packet", hdev->name);
- 			hdev->stat.err_rx++;
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
++    local_irq_save(flags);
+     __asm__ __volatile__
+ 	(	"movec	%/vbr,%2\n\t"
+ 		"movel	#Lberr1,%4@(8)\n\t"
+@@ -46,6 +48,7 @@ int hwreg_present( volatile void *regp )
+ 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
+ 		: "a" (regp), "a" (tmp_vectors)
+                 );
++    local_irq_restore(flags);
  
- 	if (!test_bit(BTUSB_BULK_RUNNING, &data->flags))
-@@ -491,6 +497,9 @@ static void btusb_isoc_complete(struct u
- 				hdev->stat.err_rx++;
- 			}
- 		}
-+	} else if (urb->status == -ENOENT) {
-+		/* Avoid suspend failed when usb_kill_urb */
-+		return;
- 	}
+     return( ret );
+ }
+@@ -58,9 +61,11 @@ EXPORT_SYMBOL(hwreg_present);
+ int hwreg_write( volatile void *regp, unsigned short val )
+ {
+ 	int		ret;
++	unsigned long flags;
+ 	long	save_sp, save_vbr;
+ 	long	tmp_vectors[3];
  
- 	if (!test_bit(BTUSB_ISOC_RUNNING, &data->flags))
++	local_irq_save(flags);
+ 	__asm__ __volatile__
+ 	(	"movec	%/vbr,%2\n\t"
+ 		"movel	#Lberr2,%4@(8)\n\t"
+@@ -78,6 +83,7 @@ int hwreg_write( volatile void *regp, un
+ 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
+ 		: "a" (regp), "a" (tmp_vectors), "g" (val)
+ 	);
++	local_irq_restore(flags);
+ 
+ 	return( ret );
+ }
 
 
