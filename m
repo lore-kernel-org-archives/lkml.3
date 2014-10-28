@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbaJ1G35 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:29:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46090 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933370AbaJ1Dvu (ORCPT
+	id S933808AbaJ1GaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:30:10 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:60262 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbaJ1GaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:51:50 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 3.10 16/43] firmware_class: make sure fw requests contain a name
-Date: Tue, 28 Oct 2014 11:36:14 +0800
-Message-Id: <20141028033524.097268322@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 02:30:06 -0400
+Date: Tue, 28 Oct 2014 07:30:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Guy Briggs <rgb@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        przanoni@gmail.com, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org, linux-audit@redhat.com
+Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
+Message-ID: <20141028063001.GA24672@gmail.com>
+References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
+ <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
+ <alpine.DEB.2.11.1410251034320.5308@nanos>
+ <20141027023457.GY15532@madcap2.tricolour.ca>
+ <1414418157.24347.1.camel@redhat.com>
+ <544E7A8D.1030909@zytor.com>
+ <1414430984.24347.6.camel@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414430984.24347.6.camel@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+* Eric Paris <eparis@redhat.com> wrote:
 
-From: Kees Cook <keescook@chromium.org>
+> On Mon, 2014-10-27 at 10:02 -0700, H. Peter Anvin wrote:
+> > On 10/27/2014 06:55 AM, Eric Paris wrote:
+> > > My patch was already committed to the -tip urgent branch.  I believe any
+> > > optimization should be based on that branch, Richard.  If you are trying
+> > > to wrangle every bit of speed out of this, should you
+> > > 
+> > > push %esi;
+> > > push %edi;
+> > > CFI_ADJUST_CFA_OFFSET 8
+> > > call __audit_syscall_entry
+> > > pop;
+> > > pop;
+> > > CFI_ADJUST_CFA_OFFSET -8
+> > > 
+> > > Instead of using the pushl_cfi and popl_cfi macros?
+> > > 
+> > > I wrote my patch to be obviously correct, but agree there are certainly
+> > > some speedups possible.
+> > > 
+> > 
+> > Uh... not only is that plain wrong (the CFI should be adjusted after
+> > each instruction that changes the stack pointer),
+> 
+> Sure, things would be screwed up between the two push's
+> 
+> >  but what the heck is
+> > wrong with using the macros?
+> 
+> I was asking if that would save an instruction or two by 
+> consolidating the CFI update and if so would that tradeoff be 
+> worth it, given the regularity of this code being run.
 
-commit 471b095dfe0d693a8d624cbc716d1ee4d74eb437 upstream.
+CFI updates have no effect on runtime behavior whatsoever (they 
+don't emit any instructions), they only affect the debug info 
+being constructed.
 
-An empty firmware request name will trigger warnings when building
-device names. Make sure this is caught earlier and rejected.
+Thanks,
 
-The warning was visible via the test_firmware.ko module interface:
-
-echo -ne "\x00" > /sys/devices/virtual/misc/test_firmware/trigger_request
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/base/firmware_class.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -1021,6 +1021,9 @@ _request_firmware(const struct firmware
- 	if (!firmware_p)
- 		return -EINVAL;
- 
-+	if (!name || name[0] == '\0')
-+		return -EINVAL;
-+
- 	ret = _request_firmware_prepare(&fw, name, device);
- 	if (ret <= 0) /* error or already assigned */
- 		goto out;
-
-
+	Ingo
