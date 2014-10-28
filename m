@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414AbaJ1DgG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:36:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44254 "EHLO
+	id S1753576AbaJ1DgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:36:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44270 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239AbaJ1DgD (ORCPT
+	with ESMTP id S1753416AbaJ1DgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:36:03 -0400
+	Mon, 27 Oct 2014 23:36:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.17 001/146] btrfs: wake up transaction thread from SYNC_FS ioctl
-Date: Tue, 28 Oct 2014 11:32:23 +0800
-Message-Id: <20141028033343.501310192@linuxfoundation.org>
+        Sage Weil <sage@redhat.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.17 012/146] Btrfs: fix race in WAIT_SYNC ioctl
+Date: Tue, 28 Oct 2014 11:32:34 +0800
+Message-Id: <20141028033343.964734954@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -28,39 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Sterba <dsterba@suse.cz>
+From: Sage Weil <sage@redhat.com>
 
-commit 2fad4e83e12591eb3bd213875b9edc2d18e93383 upstream.
+commit 42383020beb1cfb05f5d330cc311931bc4917a97 upstream.
 
-The transaction thread may want to do more work, namely it pokes the
-cleaner ktread that will start processing uncleaned subvols.
+We check whether transid is already committed via last_trans_committed and
+then search through trans_list for pending transactions.  If
+last_trans_committed is updated by btrfs_commit_transaction after we check
+it (there is no locking), we will fail to find the committed transaction
+and return EINVAL to the caller.  This has been observed occasionally by
+ceph-osd (which uses this ioctl heavily).
 
-This can be triggered by user via the 'btrfs fi sync' command, otherwise
-there was a delay up to 30 seconds before the cleaner started to clean
-old snapshots.
+Fix by rechecking whether the provided transid <= last_trans_committed
+after the search fails, and if so return 0.
 
-Signed-off-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Sage Weil <sage@redhat.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/ioctl.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/btrfs/transaction.c |   12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -5283,6 +5283,12 @@ long btrfs_ioctl(struct file *file, unsi
- 		if (ret)
- 			return ret;
- 		ret = btrfs_sync_fs(file->f_dentry->d_sb, 1);
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -609,7 +609,6 @@ int btrfs_wait_for_commit(struct btrfs_r
+ 		if (transid <= root->fs_info->last_trans_committed)
+ 			goto out;
+ 
+-		ret = -EINVAL;
+ 		/* find specified transaction */
+ 		spin_lock(&root->fs_info->trans_lock);
+ 		list_for_each_entry(t, &root->fs_info->trans_list, list) {
+@@ -625,9 +624,16 @@ int btrfs_wait_for_commit(struct btrfs_r
+ 			}
+ 		}
+ 		spin_unlock(&root->fs_info->trans_lock);
+-		/* The specified transaction doesn't exist */
+-		if (!cur_trans)
++
 +		/*
-+		 * The transaction thread may want to do more work,
-+		 * namely it pokes the cleaner ktread that will start
-+		 * processing uncleaned subvols.
++		 * The specified transaction doesn't exist, or we
++		 * raced with btrfs_commit_transaction
 +		 */
-+		wake_up_process(root->fs_info->transaction_kthread);
- 		return ret;
- 	}
- 	case BTRFS_IOC_START_SYNC:
++		if (!cur_trans) {
++			if (transid > root->fs_info->last_trans_committed)
++				ret = -EINVAL;
+ 			goto out;
++		}
+ 	} else {
+ 		/* find newest transaction that is committing | committed */
+ 		spin_lock(&root->fs_info->trans_lock);
 
 
