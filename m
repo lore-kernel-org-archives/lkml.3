@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181AbaJ1Jwn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 05:52:43 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:44175 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982AbaJ1Jwk convert rfc822-to-8bit (ORCPT
+	id S1754919AbaJ1JxG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 05:53:06 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:34518 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709AbaJ1JxD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 05:52:40 -0400
+	Tue, 28 Oct 2014 05:53:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <1413883364-681-7-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1413883364-681-8-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1413883364-681-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1413883364-681-7-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Tue, 28 Oct 2014 10:52:35 +0100
-Message-ID: <CAPDyKFpGoa13JuodY3iKt38BBy_WP0qmCsr4yRyuJq0hmTizHQ@mail.gmail.com>
-Subject: Re: [PATCH RESEND 06/12] mmc: sdhci-pxav3: Move I/O clock to private data
+	<1413883364-681-8-git-send-email-sebastian.hesselbarth@gmail.com>
+Date: Tue, 28 Oct 2014 10:53:01 +0100
+Message-ID: <CAPDyKFqZKLXcaDx3gAiEe=mjEP4hemKoMwc1Y4_SDLDwKM8Mfg@mail.gmail.com>
+Subject: Re: [PATCH RESEND 07/12] mmc: sdhci-pxav3: Try to get named I/O clock first
 From: Ulf Hansson <ulf.hansson@linaro.org>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Chris Ball <chris@printf.net>,
@@ -31,11 +31,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 21 October 2014 11:22, Sebastian Hesselbarth
 <sebastian.hesselbarth@gmail.com> wrote:
-> As we are using references to the I/O clock throughout the driver,
-> move it to the private data. Also, in preparation for core clock,
-> rename it to clk_io.
+> With support for more than one clock, we'll need to distinguish between
+> the clock by name. Change clock probing to first try to get "io" clock
+> before falling back to unnamed clock.
 >
 > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+
+Thanks! Applied for next!
+
+Kind regards
+Uffe
+
+
 > ---
 > Cc: Chris Ball <chris@printf.net>
 > Cc: Ulf Hansson <ulf.hansson@linaro.org>
@@ -44,110 +51,25 @@ On 21 October 2014 11:22, Sebastian Hesselbarth
 > Cc: devicetree@vger.kernel.org
 > Cc: linux-arm-kernel@lists.infradead.org
 > Cc: linux-kernel@vger.kernel.org
-
-Thanks! Applied for next!
-
-Kind regards
-Uffe
-
 > ---
->  drivers/mmc/host/sdhci-pxav3.c | 24 +++++++++++++-----------
->  1 file changed, 13 insertions(+), 11 deletions(-)
+>  drivers/mmc/host/sdhci-pxav3.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
 >
 > diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
-> index e52bbbb09d88..a34a589670e6 100644
+> index a34a589670e6..3dfd97977515 100644
 > --- a/drivers/mmc/host/sdhci-pxav3.c
 > +++ b/drivers/mmc/host/sdhci-pxav3.c
-> @@ -59,6 +59,7 @@
->  #define SDCE_MISC_INT_EN       (1<<1)
->
->  struct sdhci_pxa {
-> +       struct clk *clk_io;
->         u8      power_mode;
->  };
->
-> @@ -288,9 +289,7 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
->         struct sdhci_host *host = NULL;
->         struct sdhci_pxa *pxa = NULL;
->         const struct of_device_id *match;
-> -
->         int ret;
-> -       struct clk *clk;
->
->         pxa = devm_kzalloc(&pdev->dev, sizeof(struct sdhci_pxa), GFP_KERNEL);
->         if (!pxa)
-> @@ -310,14 +309,14 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
+> @@ -309,7 +309,9 @@ static int sdhci_pxav3_probe(struct platform_device *pdev)
 >         pltfm_host = sdhci_priv(host);
 >         pltfm_host->priv = pxa;
 >
-> -       clk = devm_clk_get(dev, NULL);
-> -       if (IS_ERR(clk)) {
-> +       pxa->clk_io = devm_clk_get(dev, NULL);
-> +       if (IS_ERR(pxa->clk_io)) {
+> -       pxa->clk_io = devm_clk_get(dev, NULL);
+> +       pxa->clk_io = devm_clk_get(dev, "io");
+> +       if (IS_ERR(pxa->clk_io))
+> +               pxa->clk_io = devm_clk_get(dev, NULL);
+>         if (IS_ERR(pxa->clk_io)) {
 >                 dev_err(dev, "failed to get io clock\n");
-> -               ret = PTR_ERR(clk);
-> +               ret = PTR_ERR(pxa->clk_io);
->                 goto err_clk_get;
->         }
-> -       pltfm_host->clk = clk;
-> -       clk_prepare_enable(clk);
-> +       pltfm_host->clk = pxa->clk_io;
-> +       clk_prepare_enable(pxa->clk_io);
->
->         /* enable 1/8V DDR capable */
->         host->mmc->caps |= MMC_CAP_1_8V_DDR;
-> @@ -390,7 +389,7 @@ err_add_host:
->         pm_runtime_disable(&pdev->dev);
->  err_of_parse:
->  err_cd_req:
-> -       clk_disable_unprepare(clk);
-> +       clk_disable_unprepare(pxa->clk_io);
->  err_clk_get:
->  err_mbus_win:
->         sdhci_pltfm_free(pdev);
-> @@ -401,12 +400,13 @@ static int sdhci_pxav3_remove(struct platform_device *pdev)
->  {
->         struct sdhci_host *host = platform_get_drvdata(pdev);
->         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> +       struct sdhci_pxa *pxa = pltfm_host->priv;
->
->         pm_runtime_get_sync(&pdev->dev);
->         sdhci_remove_host(host, 1);
->         pm_runtime_disable(&pdev->dev);
->
-> -       clk_disable_unprepare(pltfm_host->clk);
-> +       clk_disable_unprepare(pxa->clk_io);
->
->         sdhci_pltfm_free(pdev);
->
-> @@ -446,13 +446,14 @@ static int sdhci_pxav3_runtime_suspend(struct device *dev)
->  {
->         struct sdhci_host *host = dev_get_drvdata(dev);
->         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> +       struct sdhci_pxa *pxa = pltfm_host->priv;
->         unsigned long flags;
->
->         spin_lock_irqsave(&host->lock, flags);
->         host->runtime_suspended = true;
->         spin_unlock_irqrestore(&host->lock, flags);
->
-> -       clk_disable_unprepare(pltfm_host->clk);
-> +       clk_disable_unprepare(pxa->clk_io);
->
->         return 0;
->  }
-> @@ -461,9 +462,10 @@ static int sdhci_pxav3_runtime_resume(struct device *dev)
->  {
->         struct sdhci_host *host = dev_get_drvdata(dev);
->         struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
-> +       struct sdhci_pxa *pxa = pltfm_host->priv;
->         unsigned long flags;
->
-> -       clk_prepare_enable(pltfm_host->clk);
-> +       clk_prepare_enable(pxa->clk_io);
->
->         spin_lock_irqsave(&host->lock, flags);
->         host->runtime_suspended = false;
+>                 ret = PTR_ERR(pxa->clk_io);
 > --
 > 2.1.1
 >
