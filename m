@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695AbaJ1LOc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:14:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51357 "EHLO
+	id S1756746AbaJ1LOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:14:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51365 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696AbaJ1LOa (ORCPT
+	with ESMTP id S1754308AbaJ1LOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:14:30 -0400
-Date: Tue, 28 Oct 2014 04:14:18 -0700
+	Tue, 28 Oct 2014 07:14:45 -0400
+Date: Tue, 28 Oct 2014 04:14:34 -0700
 From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-c4a7bba29bc6d9fcd5842d712b6b3d493b682b17@git.kernel.org>
-Cc: mingo@kernel.org, torvalds@linux-foundation.org, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com
-Reply-To: luto@amacapital.net, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        tglx@linutronix.de, torvalds@linux-foundation.org, mingo@kernel.org
-In-Reply-To: <36275c99801a87d8dcf0502a41cf4e2ad81aae46.1412623954.git.luto@amacapital.net>
-References: <36275c99801a87d8dcf0502a41cf4e2ad81aae46.1412623954.git.luto@amacapital.net>
+Message-ID: <tip-b93590901a01a6d036b3b7c856bcc5724fdb9911@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, mingo@kernel.org,
+        tglx@linutronix.de, hpa@zytor.com
+Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        luto@amacapital.net, mingo@kernel.org, hpa@zytor.com
+In-Reply-To: <a7ee266773671a05f00b7175ca65a0dd812d2e4b.1411494540.git.luto@amacapital.net>
+References: <a7ee266773671a05f00b7175ca65a0dd812d2e4b.1411494540.git.luto@amacapital.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] sched/x86:
-  Add a comment clarifying LDT context switching
-Git-Commit-ID: c4a7bba29bc6d9fcd5842d712b6b3d493b682b17
+Subject: [tip:x86/vdso] x86_64/vsyscall:
+  Move all of the gate_area code to vsyscall_64.c
+Git-Commit-ID: b93590901a01a6d036b3b7c856bcc5724fdb9911
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,55 +32,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c4a7bba29bc6d9fcd5842d712b6b3d493b682b17
-Gitweb:     http://git.kernel.org/tip/c4a7bba29bc6d9fcd5842d712b6b3d493b682b17
+Commit-ID:  b93590901a01a6d036b3b7c856bcc5724fdb9911
+Gitweb:     http://git.kernel.org/tip/b93590901a01a6d036b3b7c856bcc5724fdb9911
 Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Mon, 6 Oct 2014 12:36:47 -0700
+AuthorDate: Tue, 23 Sep 2014 10:50:51 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 11:11:57 +0100
+CommitDate: Tue, 28 Oct 2014 11:22:08 +0100
 
-sched/x86: Add a comment clarifying LDT context switching
+x86_64/vsyscall: Move all of the gate_area code to vsyscall_64.c
 
-The code is correct, but only for a rather subtle reason.  This
-confused me for quite a while when I read switch_mm, so clarify
-the code to avoid confusing other people, too.
-
-TBH, I wouldn't be surprised if this code was only correct by
-accident.
-
-[ I wouldn't normally send a comment-only patch, but it took me a long
-  time to first figure out wtf was going on here, and then to figure
-  out why this wasn't exploitable by malicious code, and then to
-  figure out why this oddity had no user-visible effect at all.  Let's
-  spare future readers the same confusion. ]
+This code exists for the sole purpose of making the vsyscall
+page look sort of like real userspace memory.  Move it so that
+it lives with the rest of the vsyscall code.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/36275c99801a87d8dcf0502a41cf4e2ad81aae46.1412623954.git.luto@amacapital.net
+Link: http://lkml.kernel.org/r/a7ee266773671a05f00b7175ca65a0dd812d2e4b.1411494540.git.luto@amacapital.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/mmu_context.h | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/x86/kernel/vsyscall_64.c | 49 +++++++++++++++++++++++++++++++++++++++++++
+ arch/x86/mm/init_64.c         | 49 -------------------------------------------
+ 2 files changed, 49 insertions(+), 49 deletions(-)
 
-diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
-index 166af2a..0447810 100644
---- a/arch/x86/include/asm/mmu_context.h
-+++ b/arch/x86/include/asm/mmu_context.h
-@@ -53,7 +53,16 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
- 		/* Stop flush ipis for the previous mm */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 957779f..521d5ed 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -284,6 +284,55 @@ sigsegv:
+ }
  
--		/* Load the LDT, if the LDT is different: */
-+		/*
-+		 * Load the LDT, if the LDT is different.
-+		 *
-+		 * It's possible leave_mm(prev) has been called.  If so,
-+		 * then prev->context.ldt could be out of sync with the
-+		 * LDT descriptor or the LDT register.  This can only happen
-+		 * if prev->context.ldt is non-null, since we never free
-+		 * an LDT.  But LDTs can't be shared across mms, so
-+		 * prev->context.ldt won't be equal to next->context.ldt.
-+		 */
- 		if (unlikely(prev->context.ldt != next->context.ldt))
- 			load_LDT_nolock(&next->context);
- 	}
+ /*
++ * A pseudo VMA to allow ptrace access for the vsyscall page.  This only
++ * covers the 64bit vsyscall page now. 32bit has a real VMA now and does
++ * not need special handling anymore:
++ */
++static const char *gate_vma_name(struct vm_area_struct *vma)
++{
++	return "[vsyscall]";
++}
++static struct vm_operations_struct gate_vma_ops = {
++	.name = gate_vma_name,
++};
++static struct vm_area_struct gate_vma = {
++	.vm_start	= VSYSCALL_ADDR,
++	.vm_end		= VSYSCALL_ADDR + PAGE_SIZE,
++	.vm_page_prot	= PAGE_READONLY_EXEC,
++	.vm_flags	= VM_READ | VM_EXEC,
++	.vm_ops		= &gate_vma_ops,
++};
++
++struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
++{
++#ifdef CONFIG_IA32_EMULATION
++	if (!mm || mm->context.ia32_compat)
++		return NULL;
++#endif
++	return &gate_vma;
++}
++
++int in_gate_area(struct mm_struct *mm, unsigned long addr)
++{
++	struct vm_area_struct *vma = get_gate_vma(mm);
++
++	if (!vma)
++		return 0;
++
++	return (addr >= vma->vm_start) && (addr < vma->vm_end);
++}
++
++/*
++ * Use this when you have no reliable mm, typically from interrupt
++ * context. It is less reliable than using a task's mm and may give
++ * false positives.
++ */
++int in_gate_area_no_mm(unsigned long addr)
++{
++	return (addr & PAGE_MASK) == VSYSCALL_ADDR;
++}
++
++/*
+  * Assume __initcall executes before all user space. Hopefully kmod
+  * doesn't violate that. We'll find out if it does.
+  */
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 4cb8763..dd9ca9b 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1193,55 +1193,6 @@ int kern_addr_valid(unsigned long addr)
+ 	return pfn_valid(pte_pfn(*pte));
+ }
+ 
+-/*
+- * A pseudo VMA to allow ptrace access for the vsyscall page.  This only
+- * covers the 64bit vsyscall page now. 32bit has a real VMA now and does
+- * not need special handling anymore:
+- */
+-static const char *gate_vma_name(struct vm_area_struct *vma)
+-{
+-	return "[vsyscall]";
+-}
+-static struct vm_operations_struct gate_vma_ops = {
+-	.name = gate_vma_name,
+-};
+-static struct vm_area_struct gate_vma = {
+-	.vm_start	= VSYSCALL_ADDR,
+-	.vm_end		= VSYSCALL_ADDR + PAGE_SIZE,
+-	.vm_page_prot	= PAGE_READONLY_EXEC,
+-	.vm_flags	= VM_READ | VM_EXEC,
+-	.vm_ops		= &gate_vma_ops,
+-};
+-
+-struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
+-{
+-#ifdef CONFIG_IA32_EMULATION
+-	if (!mm || mm->context.ia32_compat)
+-		return NULL;
+-#endif
+-	return &gate_vma;
+-}
+-
+-int in_gate_area(struct mm_struct *mm, unsigned long addr)
+-{
+-	struct vm_area_struct *vma = get_gate_vma(mm);
+-
+-	if (!vma)
+-		return 0;
+-
+-	return (addr >= vma->vm_start) && (addr < vma->vm_end);
+-}
+-
+-/*
+- * Use this when you have no reliable mm, typically from interrupt
+- * context. It is less reliable than using a task's mm and may give
+- * false positives.
+- */
+-int in_gate_area_no_mm(unsigned long addr)
+-{
+-	return (addr & PAGE_MASK) == VSYSCALL_ADDR;
+-}
+-
+ static unsigned long probe_memory_block_size(void)
+ {
+ 	/* start from 2g */
