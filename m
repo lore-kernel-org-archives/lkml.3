@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479AbaJ1Do3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:44:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45264 "EHLO
+	id S1755532AbaJ1Doj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:44:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45284 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539AbaJ1Do0 (ORCPT
+	with ESMTP id S1755511AbaJ1Dog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:44:26 -0400
+	Mon, 27 Oct 2014 23:44:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Loic Poulain <loic.poulain@intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [PATCH 3.16 065/127] Bluetooth: Fix HCI H5 corrupted ack value
-Date: Tue, 28 Oct 2014 11:35:00 +0800
-Message-Id: <20141028033423.706998983@linuxfoundation.org>
+        Junxiao Bi <junxiao.bi@oracle.com>, Dave Chinner <david@fromorbit.com>,
+        "joyce.xue" <xuejiufei@huawei.com>, Ming Lei <ming.lei@canonical.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 069/127] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
+Date: Tue, 28 Oct 2014 11:35:04 +0800
+Message-Id: <20141028033423.870460996@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,35 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Loic Poulain <loic.poulain@intel.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 4807b51895dce8aa650ebebc51fa4a795ed6b8b8 upstream.
+commit 934f3072c17cc8886f4c043b47eeeb1b12f8de33 upstream.
 
-In this expression: seq = (seq - 1) % 8
-seq (u8) is implicitly converted to an int in the arithmetic operation.
-So if seq value is 0, operation is ((0 - 1) % 8) => (-1 % 8) => -1.
-The new seq value is 0xff which is an invalid ACK value, we expect 0x07.
-It leads to frequent dropped ACK and retransmission.
-Fix this by using '&' binary operator instead of '%'.
+commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O
+during memory allocation") introduces PF_MEMALLOC_NOIO flag to avoid doing
+I/O inside memory allocation, __GFP_IO is cleared when this flag is set,
+but __GFP_FS implies __GFP_IO, it should also be cleared.  Or it may still
+run into I/O, like in superblock shrinker.  And this will make the kernel
+run into the deadlock case described in that commit.
 
-Signed-off-by: Loic Poulain <loic.poulain@intel.com>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+See Dave Chinner's comment about io in superblock shrinker:
+
+Filesystem shrinkers do indeed perform IO from the superblock shrinker and
+have for years.  Even clean inodes can require IO before they can be freed
+- e.g.  on an orphan list, need truncation of post-eof blocks, need to
+wait for ordered operations to complete before it can be freed, etc.
+
+IOWs, Ext4, btrfs and XFS all can issue and/or block on arbitrary amounts
+of IO in the superblock shrinker context.  XFS, in particular, has been
+doing transactions and IO from the VFS inode cache shrinker since it was
+first introduced....
+
+Fix this by clearing __GFP_FS in memalloc_noio_flags(), this function has
+masked all the gfp_mask that will be passed into fs for the processes
+setting PF_MEMALLOC_NOIO in the direct reclaim path.
+
+v1 thread at: https://lkml.org/lkml/2014/9/3/32
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: joyce.xue <xuejiufei@huawei.com>
+Cc: Ming Lei <ming.lei@canonical.com>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/bluetooth/hci_h5.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/sched.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/bluetooth/hci_h5.c
-+++ b/drivers/bluetooth/hci_h5.c
-@@ -237,7 +237,7 @@ static void h5_pkt_cull(struct h5 *h5)
- 			break;
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1947,11 +1947,13 @@ extern void thread_group_cputime_adjuste
+ #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+ #define used_math() tsk_used_math(current)
  
- 		to_remove--;
--		seq = (seq - 1) % 8;
-+		seq = (seq - 1) & 0x07;
- 	}
+-/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
++/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
++ * __GFP_FS is also cleared as it implies __GFP_IO.
++ */
+ static inline gfp_t memalloc_noio_flags(gfp_t flags)
+ {
+ 	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
+-		flags &= ~__GFP_IO;
++		flags &= ~(__GFP_IO | __GFP_FS);
+ 	return flags;
+ }
  
- 	if (seq != h5->rx_ack)
 
 
