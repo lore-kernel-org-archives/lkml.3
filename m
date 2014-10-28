@@ -1,127 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486AbaJ1KHM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 06:07:12 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:64228 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141AbaJ1KHK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 06:07:10 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] mfd: tc3589x: get rid of static base
-Date: Tue, 28 Oct 2014 11:06:56 +0100
-Message-Id: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S1754406AbaJ1KLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 06:11:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38914 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751266AbaJ1KLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 06:11:38 -0400
+Date: Tue, 28 Oct 2014 11:11:09 +0100
+From: Jesper Dangaard Brouer <brouer@redhat.com>
+To: "billbonaparte" <programme110@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>,
+        "'Netfilter Developer Mailing List'" 
+	<netfilter-devel@vger.kernel.org>,
+        "'Pablo Neira Ayuso'" <pablo@netfilter.org>,
+        "'Patrick McHardy'" <kaber@trash.net>, <kadlec@blackhole.kfki.hu>,
+        <davem@davemloft.net>, "'Changli Gao'" <xiaosuo@gmail.com>,
+        "'Andrey Vagin'" <avagin@openvz.org>, brouer@redhat.com,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: netfilter: nf_conntrack: there maybe a bug in
+ __nf_conntrack_confirm, when it race against get_next_corpse
+Message-ID: <20141028111109.1f64f76e@redhat.com>
+In-Reply-To: <02f201cff260$8622e610$9268b230$@gmail.com>
+References: <02ef01cff25f$29887f60$7c997e20$@gmail.com>
+	<02f201cff260$8622e610$9268b230$@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TC3589x driver is now a device tree-only driver, so we want
-only dynamic IRQs and GPIO numbers from the tc3589x, no static
-assignments.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpio-tc3589x.c | 2 +-
- drivers/mfd/tc3589x.c       | 9 +++------
- include/linux/mfd/tc3589x.h | 8 --------
- 3 files changed, 4 insertions(+), 15 deletions(-)
+On Tue, 28 Oct 2014 11:37:31 +0800 "billbonaparte" <programme110@gmail.com> wrote:
 
-diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
-index ae0f6466eb09..abdcf58935f5 100644
---- a/drivers/gpio/gpio-tc3589x.c
-+++ b/drivers/gpio/gpio-tc3589x.c
-@@ -262,7 +262,7 @@ static int tc3589x_gpio_probe(struct platform_device *pdev)
- 	tc3589x_gpio->chip = template_chip;
- 	tc3589x_gpio->chip.ngpio = tc3589x->num_gpio;
- 	tc3589x_gpio->chip.dev = &pdev->dev;
--	tc3589x_gpio->chip.base = (pdata) ? pdata->gpio_base : -1;
-+	tc3589x_gpio->chip.base = -1;
- 
- #ifdef CONFIG_OF_GPIO
- 	tc3589x_gpio->chip.of_node = np;
-diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-index 0072e668c208..aacb3720065c 100644
---- a/drivers/mfd/tc3589x.c
-+++ b/drivers/mfd/tc3589x.c
-@@ -241,10 +241,8 @@ static struct irq_domain_ops tc3589x_irq_ops = {
- 
- static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
- {
--	int base = tc3589x->irq_base;
--
- 	tc3589x->domain = irq_domain_add_simple(
--		np, TC3589x_NR_INTERNAL_IRQS, base,
-+		np, TC3589x_NR_INTERNAL_IRQS, 0,
- 		&tc3589x_irq_ops, tc3589x);
- 
- 	if (!tc3589x->domain) {
-@@ -298,7 +296,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
- 	if (blocks & TC3589x_BLOCK_GPIO) {
- 		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_gpio,
- 				      ARRAY_SIZE(tc3589x_dev_gpio), NULL,
--				      tc3589x->irq_base, tc3589x->domain);
-+				      0, tc3589x->domain);
- 		if (ret) {
- 			dev_err(tc3589x->dev, "failed to add gpio child\n");
- 			return ret;
-@@ -309,7 +307,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
- 	if (blocks & TC3589x_BLOCK_KEYPAD) {
- 		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_keypad,
- 				      ARRAY_SIZE(tc3589x_dev_keypad), NULL,
--				      tc3589x->irq_base, tc3589x->domain);
-+				      0, tc3589x->domain);
- 		if (ret) {
- 			dev_err(tc3589x->dev, "failed to keypad child\n");
- 			return ret;
-@@ -404,7 +402,6 @@ static int tc3589x_probe(struct i2c_client *i2c,
- 	tc3589x->dev = &i2c->dev;
- 	tc3589x->i2c = i2c;
- 	tc3589x->pdata = pdata;
--	tc3589x->irq_base = pdata->irq_base;
- 
- 	switch (version) {
- 	case TC3589X_TC35893:
-diff --git a/include/linux/mfd/tc3589x.h b/include/linux/mfd/tc3589x.h
-index e6088c2e2092..e1c12d84c26a 100644
---- a/include/linux/mfd/tc3589x.h
-+++ b/include/linux/mfd/tc3589x.h
-@@ -164,13 +164,10 @@ struct tc3589x_keypad_platform_data {
- 
- /**
-  * struct tc3589x_gpio_platform_data - TC3589x GPIO platform data
-- * @gpio_base: first gpio number assigned to TC3589x.  A maximum of
-- *	       %TC3589x_NR_GPIOS GPIOs will be allocated.
-  * @setup: callback for board-specific initialization
-  * @remove: callback for board-specific teardown
-  */
- struct tc3589x_gpio_platform_data {
--	int gpio_base;
- 	void (*setup)(struct tc3589x *tc3589x, unsigned gpio_base);
- 	void (*remove)(struct tc3589x *tc3589x, unsigned gpio_base);
- };
-@@ -178,18 +175,13 @@ struct tc3589x_gpio_platform_data {
- /**
-  * struct tc3589x_platform_data - TC3589x platform data
-  * @block: bitmask of blocks to enable (use TC3589x_BLOCK_*)
-- * @irq_base: base IRQ number.  %TC3589x_NR_IRQS irqs will be used.
-  * @gpio: GPIO-specific platform data
-  * @keypad: keypad-specific platform data
-  */
- struct tc3589x_platform_data {
- 	unsigned int block;
--	int irq_base;
- 	struct tc3589x_gpio_platform_data *gpio;
- 	const struct tc3589x_keypad_platform_data *keypad;
- };
- 
--#define TC3589x_NR_GPIOS	24
--#define TC3589x_NR_IRQS		TC3589x_INT_GPIO(TC3589x_NR_GPIOS)
--
- #endif
+> Hi, all:
+> sorry for sending this mail again, the last mail doesn't show text
+> clearly.
+
+This one also mangles the text, so I cannot follow the race you are
+describing.  I'll try to reconstruct...
+
+> In function __nf_conntrack_confirm, we check the conntrack if it was
+> already dead, before insert it into hash-table. 
+> We do this because if we insert an already 'dead' hash,  it will
+> block further use of that particular connection.
+
+Have you run into this problem in practice, or is this based on a
+theory?
+
+> but we don't do that right.
+> let's consider the following case:
+> 
+[tried to reconstruct]
+
+> 	cpu1                             cpu2
+> __nf_conntrack_confirm             get_next_corpse
+>   lock corresponding hash-list      ....
+>   check nf_ct_is_dying(ct)          ....
+>    .....                           for_each_possible_cpu(cpu) {
+>    .....                           (processing &pcpu->unconfirmed)
+>    .....                           spin_lock_bh(&pcpu->lock);
+>    .....                           set_bit(IPS_DYING_BIT, &ct->status);
+>    .....                           spin_unlock_bh(&pcpu_lock);
+>  spin_lock_bh(&pcpu->lock);
+>  nf_ct_del_from_dying_or_unconfirmed_list(ct);
+>  spin_unlock_bh(&pcpu_lock);
+>
+>  add_timer(&ct->timeout);
+>  ct->status |= IPS_CONFIRMED;
+>  __nf_conntrack_hash_insert(ct);
+>   /* the conntrack has been seted as dying*/
+
+Yes, I think you are correct.  There is a race.  As we are modifying
+the ct->status, without holding the hash bucket lock.
+
+
+> The above case reveal two problems:
+> 	1. we may insert a dead conntrack to hash-table, it will block
+> further use of that particular connection.
+> 	2. operation on ct->status should be atomic, because it race aginst
+> get_next_corpse.
+> 	  due to this reason, the operation on ct->status in
+> nf_nat_setup_info should be atomic as well.
+> 
+> 	if we want to resolve the first problem, we must delete the
+> unconfirmed conntrack from unconfirmed-list first, then check if it is
+> already dead.
+
+Guess that would be one approach.
+
+> 	Am I right to do this ?
+> 	Appreciate any comments and reply.
+
+Perhaps we could get rid of unconfirmed list handling in get_next_corpse?
+
 -- 
-1.9.3
-
+Best regards,
+  Jesper Dangaard Brouer
+  MSc.CS, Sr. Network Kernel Developer at Red Hat
+  Author of http://www.iptv-analyzer.org
+  LinkedIn: http://www.linkedin.com/in/brouer
