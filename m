@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356AbaJ1LMf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:12:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51305 "EHLO
+	id S1756426AbaJ1LMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:12:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51319 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755008AbaJ1LMb (ORCPT
+	with ESMTP id S1756365AbaJ1LMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:12:31 -0400
-Date: Tue, 28 Oct 2014 04:11:40 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-26cabd31259ba43f68026ce3f62b78094124333f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        davem@davemloft.net, ilya.dryomov@inktank.com, peterz@infradead.org,
-        tglx@linutronix.de, mingo@kernel.org, hpa@zytor.com
-Reply-To: torvalds@linux-foundation.org, davem@davemloft.net,
-        ilya.dryomov@inktank.com, peterz@infradead.org, mingo@kernel.org,
-        tglx@linutronix.de, hpa@zytor.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20140924082242.524407432@infradead.org>
-References: <20140924082242.524407432@infradead.org>
+	Tue, 28 Oct 2014 07:12:50 -0400
+Date: Tue, 28 Oct 2014 04:12:31 -0700
+From: tip-bot for Steven Noonan <tipbot@zytor.com>
+Message-ID: <tip-5631b8fba640a4ab2f8a954f63a603fa34eda96b@git.kernel.org>
+Cc: mingo@kernel.org, steven@uplinklabs.net, rostedt@goodmis.org,
+        hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, rth@twiddle.net, tglx@linutronix.de,
+        jakub@redhat.com
+Reply-To: mingo@kernel.org, rostedt@goodmis.org, steven@uplinklabs.net,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, rth@twiddle.net,
+        tglx@linutronix.de, torvalds@linux-foundation.org, jakub@redhat.com
+In-Reply-To: <1414274982-14040-1-git-send-email-steven@uplinklabs.net>
+References: <1414274982-14040-1-git-send-email-steven@uplinklabs.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched, net: Clean up sk_wait_event()
-  vs. might_sleep()
-Git-Commit-ID: 26cabd31259ba43f68026ce3f62b78094124333f
+Subject: [tip:core/urgent] compiler/gcc4+:
+  Remove inaccurate comment about 'asm goto' miscompiles
+Git-Commit-ID: 5631b8fba640a4ab2f8a954f63a603fa34eda96b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,52 +35,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  26cabd31259ba43f68026ce3f62b78094124333f
-Gitweb:     http://git.kernel.org/tip/26cabd31259ba43f68026ce3f62b78094124333f
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 24 Sep 2014 10:18:54 +0200
+Commit-ID:  5631b8fba640a4ab2f8a954f63a603fa34eda96b
+Gitweb:     http://git.kernel.org/tip/5631b8fba640a4ab2f8a954f63a603fa34eda96b
+Author:     Steven Noonan <steven@uplinklabs.net>
+AuthorDate: Sat, 25 Oct 2014 15:09:42 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:56:37 +0100
+CommitDate: Tue, 28 Oct 2014 11:03:40 +0100
 
-sched, net: Clean up sk_wait_event() vs. might_sleep()
+compiler/gcc4+: Remove inaccurate comment about 'asm goto' miscompiles
 
-WARNING: CPU: 1 PID: 1744 at kernel/sched/core.c:7104 __might_sleep+0x58/0x90()
-do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff81070e10>] prepare_to_wait+0x50 /0xa0
+The bug referenced by the comment in this commit was not
+completely fixed in GCC 4.8.2, as I mentioned in a thread back
+in February:
 
- [<ffffffff8105bc38>] __might_sleep+0x58/0x90
- [<ffffffff8148c671>] lock_sock_nested+0x31/0xb0
- [<ffffffff81498aaa>] sk_stream_wait_memory+0x18a/0x2d0
+   https://lkml.org/lkml/2014/2/12/797
 
-Which is a false positive because sk_wait_event() will already have
-TASK_RUNNING at that point if it would've gone through
-schedule_timeout().
+The conclusion at that time was to make the quirk unconditional
+until the bug could be found and fixed in GCC. Unfortunately,
+when I submitted the patch (commit a9f18034) I left a comment
+in that claimed the bug was fixed in GCC 4.8.2+.
 
-So annotate with sched_annotate_sleep(); which goes away on !DEBUG builds.
+This comment is inaccurate, and should be removed.
 
-Reported-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140924082242.524407432@infradead.org
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: netdev@vger.kernel.org
-Cc: tglx@linutronix.de
-Cc: ilya.dryomov@inktank.com
-Cc: umgwanakikbuti@gmail.com
-Cc: oleg@redhat.com
+Signed-off-by: Steven Noonan <steven@uplinklabs.net>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1414274982-14040-1-git-send-email-steven@uplinklabs.net
+Cc: Ingo Molnar <mingo@kernel.org>
 ---
- include/net/sock.h | 1 +
- 1 file changed, 1 insertion(+)
+ include/linux/compiler-gcc4.h | 1 -
+ include/linux/compiler-gcc5.h | 1 -
+ 2 files changed, 2 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 7db3db1..e6f235e 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -897,6 +897,7 @@ static inline void sock_rps_reset_rxhash(struct sock *sk)
- 		if (!__rc) {						\
- 			*(__timeo) = schedule_timeout(*(__timeo));	\
- 		}							\
-+		sched_annotate_sleep();						\
- 		lock_sock(__sk);					\
- 		__rc = __condition;					\
- 		__rc;							\
+diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
+index 2507fd2..d1a5582 100644
+--- a/include/linux/compiler-gcc4.h
++++ b/include/linux/compiler-gcc4.h
+@@ -71,7 +71,6 @@
+  *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+  *
+  * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
+- * Fixed in GCC 4.8.2 and later versions.
+  *
+  * (asm goto is automatically volatile - the naming reflects this.)
+  */
+diff --git a/include/linux/compiler-gcc5.h b/include/linux/compiler-gcc5.h
+index cdd1cc2..c8c5659 100644
+--- a/include/linux/compiler-gcc5.h
++++ b/include/linux/compiler-gcc5.h
+@@ -53,7 +53,6 @@
+  *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+  *
+  * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
+- * Fixed in GCC 4.8.2 and later versions.
+  *
+  * (asm goto is automatically volatile - the naming reflects this.)
+  */
