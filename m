@@ -1,89 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343AbaJ1U5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:57:42 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:41356 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaJ1U5j (ORCPT
+	id S1754611AbaJ1U6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:58:09 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:62161 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754520AbaJ1U6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:57:39 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Linus Walleij <linus.walleij@linaro.org>, Heiko Stuebner <heiko@sntech.de>
-Cc: Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        iivanov@mm-sol.com, syin@broadcom.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org
-Subject: [RFC PATCH 1/2] pinctrl: Add output-disable
-Date: Tue, 28 Oct 2014 13:57:14 -0700
-Message-Id: <1414529835-16207-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+	Tue, 28 Oct 2014 16:58:07 -0400
+X-IronPort-AV: E=Sophos;i="5.04,805,1406584800"; 
+   d="scan'208";a="103438219"
+Date: Tue, 28 Oct 2014 21:58:05 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Wolfram Sang <wsa@the-dreams.de>
+cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 4/4] coccinelle: api: add spatch to prevent
+ unnecessary .owner
+In-Reply-To: <1414514443-28943-5-git-send-email-wsa@the-dreams.de>
+Message-ID: <alpine.DEB.2.02.1410282157510.2090@localhost6.localdomain6>
+References: <1414514443-28943-1-git-send-email-wsa@the-dreams.de> <1414514443-28943-5-git-send-email-wsa@the-dreams.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pinctrl bindings / API allow you to specify that:
-- a pin should be an output
-- a pin should have its input path enabled / disabled
+Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
-...but they don't allow you to tell a pin to stop outputting.  Lets
-add a new setting for that just in case the bootloader (or the default
-state) left a pin as an output and we don't want it that way anymore.
+On Tue, 28 Oct 2014, Wolfram Sang wrote:
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt | 1 +
- drivers/pinctrl/pinconf-generic.c                              | 1 +
- include/linux/pinctrl/pinconf-generic.h                        | 3 +++
- 3 files changed, 5 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-index 98eb94d..9ac8591 100644
---- a/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-bindings.txt
-@@ -183,6 +183,7 @@ low-power-enable	- enable low power mode
- low-power-disable	- disable low power mode
- output-low		- set the pin to output mode with low level
- output-high		- set the pin to output mode with high level
-+output-disable		- disable output to the pin
- slew-rate		- set the slew rate
- 
- For example:
-diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
-index 29ff77f..ec4d95f 100644
---- a/drivers/pinctrl/pinconf-generic.c
-+++ b/drivers/pinctrl/pinconf-generic.c
-@@ -171,6 +171,7 @@ static struct pinconf_generic_dt_params dt_params[] = {
- 	{ "low-power-disable", PIN_CONFIG_LOW_POWER_MODE, 0 },
- 	{ "output-low", PIN_CONFIG_OUTPUT, 0, },
- 	{ "output-high", PIN_CONFIG_OUTPUT, 1, },
-+	{ "output-disable", PIN_CONFIG_OUTPUT_DISABLE, 1, },
- 	{ "slew-rate", PIN_CONFIG_SLEW_RATE, 0},
- };
- 
-diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
-index d578a60..52b0429 100644
---- a/include/linux/pinctrl/pinconf-generic.h
-+++ b/include/linux/pinctrl/pinconf-generic.h
-@@ -89,6 +89,8 @@
-  *	1 to indicate high level, argument 0 to indicate low level. (Please
-  *	see Documentation/pinctrl.txt, section "GPIO mode pitfalls" for a
-  *	discussion around this parameter.)
-+ * @PIN_CONFIG_OUTPUT_DISABLE: this will configure the pin _not_ to output.
-+ *	Parameter should be 1.
-  * @PIN_CONFIG_END: this is the last enumerator for pin configurations, if
-  *	you need to pass in custom configurations to the pin controller, use
-  *	PIN_CONFIG_END+1 as the base offset.
-@@ -112,6 +114,7 @@ enum pin_config_param {
- 	PIN_CONFIG_SLEW_RATE,
- 	PIN_CONFIG_LOW_POWER_MODE,
- 	PIN_CONFIG_OUTPUT,
-+	PIN_CONFIG_OUTPUT_DISABLE,
- 	PIN_CONFIG_END = 0x7FFF,
- };
- 
--- 
-2.1.0.rc2.206.gedb03e5
-
+> There are calls which silently set the owner of a module. This is the
+> preferred way [1], so avoid setting it manually. Currently, we only care
+> about platform drivers, but there might be more calls to be added later.
+> 
+> [1] https://lkml.org/lkml/2014/10/12/87
+> 
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ---
+>  scripts/coccinelle/api/platform_no_drv_owner.cocci | 106 +++++++++++++++++++++
+>  1 file changed, 106 insertions(+)
+>  create mode 100644 scripts/coccinelle/api/platform_no_drv_owner.cocci
+> 
+> diff --git a/scripts/coccinelle/api/platform_no_drv_owner.cocci b/scripts/coccinelle/api/platform_no_drv_owner.cocci
+> new file mode 100644
+> index 000000000000..e065b9e714fc
+> --- /dev/null
+> +++ b/scripts/coccinelle/api/platform_no_drv_owner.cocci
+> @@ -0,0 +1,106 @@
+> +/// Remove .owner field if calls are used which set it automatically
+> +///
+> +// Confidence: High
+> +// Copyright: (C) 2014 Wolfram Sang. GPL v2.
+> +
+> +virtual patch
+> +virtual context
+> +virtual org
+> +virtual report
+> +
+> +@match1@
+> +declarer name module_platform_driver;
+> +declarer name module_platform_driver_probe;
+> +identifier __driver;
+> +@@
+> +(
+> +	module_platform_driver(__driver);
+> +|
+> +	module_platform_driver_probe(__driver, ...);
+> +)
+> +
+> +@fix1 depends on match1 && patch && !context && !org && !report@
+> +identifier match1.__driver;
+> +@@
+> +	static struct platform_driver __driver = {
+> +		.driver = {
+> +-			.owner = THIS_MODULE,
+> +		}
+> +	};
+> +
+> +@match2@
+> +identifier __driver;
+> +@@
+> +(
+> +	platform_driver_register(&__driver)
+> +|
+> +	platform_driver_probe(&__driver, ...)
+> +|
+> +	platform_create_bundle(&__driver, ...)
+> +)
+> +
+> +@fix2 depends on match2 && patch && !context && !org && !report@
+> +identifier match2.__driver;
+> +@@
+> +	static struct platform_driver __driver = {
+> +		.driver = {
+> +-			.owner = THIS_MODULE,
+> +		}
+> +	};
+> +
+> +// ----------------------------------------------------------------------------
+> +
+> +@fix1_context depends on match1 && !patch && (context || org || report)@
+> +identifier match1.__driver;
+> +position j0;
+> +@@
+> +
+> + 	static struct platform_driver __driver = {
+> +		.driver = {
+> +*			.owner@j0 = THIS_MODULE,
+> +		}
+> +	};
+> +
+> +@fix2_context depends on match2 && !patch && (context || org || report)@
+> +identifier match2.__driver;
+> +position j0;
+> +@@
+> +
+> + 	static struct platform_driver __driver = {
+> +		.driver = {
+> +*			.owner@j0 = THIS_MODULE,
+> +		}
+> +	};
+> +
+> +// ----------------------------------------------------------------------------
+> +
+> +@script:python fix1_org depends on org@
+> +j0 << fix1_context.j0;
+> +@@
+> +
+> +msg = "No need to set .owner here. The core will do it."
+> +coccilib.org.print_todo(j0[0], msg)
+> +
+> +@script:python fix2_org depends on org@
+> +j0 << fix2_context.j0;
+> +@@
+> +
+> +msg = "No need to set .owner here. The core will do it."
+> +coccilib.org.print_todo(j0[0], msg)
+> +
+> +// ----------------------------------------------------------------------------
+> +
+> +@script:python fix1_report depends on report@
+> +j0 << fix1_context.j0;
+> +@@
+> +
+> +msg = "No need to set .owner here. The core will do it."
+> +coccilib.report.print_report(j0[0], msg)
+> +
+> +@script:python fix2_report depends on report@
+> +j0 << fix2_context.j0;
+> +@@
+> +
+> +msg = "No need to set .owner here. The core will do it."
+> +coccilib.report.print_report(j0[0], msg)
+> +
+> -- 
+> 2.0.0
+> 
+> 
