@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698AbaJ1Dqx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:46:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45549 "EHLO
+	id S932732AbaJ1DrD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:47:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45561 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932658AbaJ1Dqv (ORCPT
+	with ESMTP id S932695AbaJ1Dq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:46:51 -0400
+	Mon, 27 Oct 2014 23:46:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>,
+        Christopher Alexander Tobias Schulze 
+	<cat.schulze@alice-dsl.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 105/127] sparc: bpf_jit: fix support for ldx/stx mem and SKF_AD_VLAN_TAG
-Date: Tue, 28 Oct 2014 11:35:40 +0800
-Message-Id: <20141028033425.436657684@linuxfoundation.org>
+Subject: [PATCH 3.16 098/127] sparc64: Fix pcr_ops initialization and usage bugs.
+Date: Tue, 28 Oct 2014 11:35:33 +0800
+Message-Id: <20141028033425.127052005@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,103 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit f6f2332dce0efeea8c5653b6e9d1e8c379ace65c ]
+[ Upstream commit 8bccf5b313180faefce38e0d1140f76e0f327d28 ]
 
-fix several issues in sparc BPF JIT compiler.
+Christopher reports that perf_event_print_debug() can crash in uniprocessor
+builds.  The crash is due to pcr_ops being NULL.
 
-ldx/stx related:
-. classic BPF instructions that access mem[] slots were not setting
-  SEEN_MEM flag, so stack wasn't allocated. Fix that by advertising
-  correct flags
+This happens because pcr_arch_init() is only invoked by smp_cpus_done() which
+only executes in SMP builds.
 
-. LDX/STX instructions were missing SEEN_XREG, so register value
-  could have leaked to user space. Fix it.
+init_hw_perf_events() is closely intertwined with pcr_ops being setup properly,
+therefore:
 
-. since stack for mem[] slots is allocated with 'sub %sp' instead
-  of 'save %sp', use %sp as base register instead of %fp.
+1) Call pcr_arch_init() early on from init_hw_perf_events(), instead of
+   from smp_cpus_done().
 
-. ldx mem[0] means first slot in classic BPF which should have
-  -4 offset instead of 0.
+2) Do not hook up a PMU type if pcr_ops is NULL after pcr_arch_init().
 
-. sparc64 needs 2047 stack bias as per ABI to access stack
+3) Move init_hw_perf_events to a later initcall so that it we will be
+   sure to invoke pcr_arch_init() after all cpus are brought up.
 
-. emit_stmem() was using LD32I macro instead of ST32I
+Finally, guard the one naked sequence of pcr_ops dereferences in
+__global_pmu_self() with an appropriate NULL check.
 
-SKF_AD_VLAN_TAG* related:
-. SKF_AD_VLAN_TAG_PRESENT must return 1 or 0 instead of '> 0' or 0
-  as per classic BPF de facto standard
-
-. SKF_AD_VLAN_TAG needs to mask the field correctly
-
-Fixes: 2809a2087cc4 ("net: filter: Just In Time compiler for sparc")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Reported-by: Christopher Alexander Tobias Schulze <cat.schulze@alice-dsl.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/net/bpf_jit_comp.c |   25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ arch/sparc/kernel/perf_event.c |    7 +++++--
+ arch/sparc/kernel/process_64.c |    3 +++
+ arch/sparc/kernel/smp_64.c     |    1 -
+ 3 files changed, 8 insertions(+), 3 deletions(-)
 
---- a/arch/sparc/net/bpf_jit_comp.c
-+++ b/arch/sparc/net/bpf_jit_comp.c
-@@ -234,12 +234,18 @@ do {	BUILD_BUG_ON(FIELD_SIZEOF(STRUCT, F
- 	__emit_load8(BASE, STRUCT, FIELD, DEST);			\
- } while (0)
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1671,9 +1671,12 @@ static bool __init supported_pmu(void)
  
--#define emit_ldmem(OFF, DEST)					\
--do {	*prog++ = LD32I | RS1(FP) | S13(-(OFF)) | RD(DEST);	\
-+#ifdef CONFIG_SPARC64
-+#define BIAS (STACK_BIAS - 4)
-+#else
-+#define BIAS (-4)
-+#endif
+ static int __init init_hw_perf_events(void)
+ {
++	int err;
 +
-+#define emit_ldmem(OFF, DEST)						\
-+do {	*prog++ = LD32I | RS1(SP) | S13(BIAS - (OFF)) | RD(DEST);	\
- } while (0)
+ 	pr_info("Performance events: ");
  
--#define emit_stmem(OFF, SRC)					\
--do {	*prog++ = LD32I | RS1(FP) | S13(-(OFF)) | RD(SRC);	\
-+#define emit_stmem(OFF, SRC)						\
-+do {	*prog++ = ST32I | RS1(SP) | S13(BIAS - (OFF)) | RD(SRC);	\
- } while (0)
+-	if (!supported_pmu()) {
++	err = pcr_arch_init();
++	if (err || !supported_pmu()) {
+ 		pr_cont("No support for PMU type '%s'\n", sparc_pmu_type);
+ 		return 0;
+ 	}
+@@ -1685,7 +1688,7 @@ static int __init init_hw_perf_events(vo
  
- #ifdef CONFIG_SMP
-@@ -615,10 +621,11 @@ void bpf_jit_compile(struct sk_filter *f
- 			case BPF_ANC | SKF_AD_VLAN_TAG:
- 			case BPF_ANC | SKF_AD_VLAN_TAG_PRESENT:
- 				emit_skb_load16(vlan_tci, r_A);
--				if (code == (BPF_ANC | SKF_AD_VLAN_TAG)) {
--					emit_andi(r_A, VLAN_VID_MASK, r_A);
-+				if (code != (BPF_ANC | SKF_AD_VLAN_TAG)) {
-+					emit_alu_K(SRL, 12);
-+					emit_andi(r_A, 1, r_A);
- 				} else {
--					emit_loadimm(VLAN_TAG_PRESENT, r_TMP);
-+					emit_loadimm(~VLAN_TAG_PRESENT, r_TMP);
- 					emit_and(r_A, r_TMP, r_A);
- 				}
- 				break;
-@@ -630,15 +637,19 @@ void bpf_jit_compile(struct sk_filter *f
- 				emit_loadimm(K, r_X);
- 				break;
- 			case BPF_LD | BPF_MEM:
-+				seen |= SEEN_MEM;
- 				emit_ldmem(K * 4, r_A);
- 				break;
- 			case BPF_LDX | BPF_MEM:
-+				seen |= SEEN_MEM | SEEN_XREG;
- 				emit_ldmem(K * 4, r_X);
- 				break;
- 			case BPF_ST:
-+				seen |= SEEN_MEM;
- 				emit_stmem(K * 4, r_A);
- 				break;
- 			case BPF_STX:
-+				seen |= SEEN_MEM | SEEN_XREG;
- 				emit_stmem(K * 4, r_X);
- 				break;
+ 	return 0;
+ }
+-early_initcall(init_hw_perf_events);
++pure_initcall(init_hw_perf_events);
  
+ void perf_callchain_kernel(struct perf_callchain_entry *entry,
+ 			   struct pt_regs *regs)
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -312,6 +312,9 @@ static void __global_pmu_self(int this_c
+ 	struct global_pmu_snapshot *pp;
+ 	int i, num;
+ 
++	if (!pcr_ops)
++		return;
++
+ 	pp = &global_cpu_snapshot[this_cpu].pmu;
+ 
+ 	num = 1;
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -1383,7 +1383,6 @@ void __cpu_die(unsigned int cpu)
+ 
+ void __init smp_cpus_done(unsigned int max_cpus)
+ {
+-	pcr_arch_init();
+ }
+ 
+ void smp_send_reschedule(int cpu)
 
 
