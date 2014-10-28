@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760562AbaJ1HDb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:03:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45498 "EHLO
+	id S1758736AbaJ1HEA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:04:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45489 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932602AbaJ1DqV (ORCPT
+	with ESMTP id S932572AbaJ1DqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:46:21 -0400
+	Mon, 27 Oct 2014 23:46:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Allen Pais <allen.pais@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 112/127] sparc64: correctly recognise M6 and M7 cpu type
-Date: Tue, 28 Oct 2014 11:35:47 +0800
-Message-Id: <20141028033425.740580049@linuxfoundation.org>
+Subject: [PATCH 3.16 109/127] sparc64: Fix FPU register corruption with AES crypto offload.
+Date: Tue, 28 Oct 2014 11:35:44 +0800
+Message-Id: <20141028033425.607472266@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,79 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Allen Pais <allen.pais@oracle.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-The following patch adds support for correctly
-recognising M6 and M7 cpu type.
+[ Upstream commit f4da3628dc7c32a59d1fb7116bb042e6f436d611 ]
 
-Signed-off-by: Allen Pais <allen.pais@oracle.com>
+The AES loops in arch/sparc/crypto/aes_glue.c use a scheme where the
+key material is preloaded into the FPU registers, and then we loop
+over and over doing the crypt operation, reusing those pre-cooked key
+registers.
+
+There are intervening blkcipher*() calls between the crypt operation
+calls.  And those might perform memcpy() and thus also try to use the
+FPU.
+
+The sparc64 kernel FPU usage mechanism is designed to allow such
+recursive uses, but with a catch.
+
+There has to be a trap between the two FPU using threads of control.
+
+The mechanism works by, when the FPU is already in use by the kernel,
+allocating a slot for FPU saving at trap time.  Then if, within the
+trap handler, we try to use the FPU registers, the pre-trap FPU
+register state is saved into the slot.  Then at trap return time we
+notice this and restore the pre-trap FPU state.
+
+Over the long term there are various more involved ways we can make
+this work, but for a quick fix let's take advantage of the fact that
+the situation where this happens is very limited.
+
+All sparc64 chips that support the crypto instructiosn also are using
+the Niagara4 memcpy routine, and that routine only uses the FPU for
+large copies where we can't get the source aligned properly to a
+multiple of 8 bytes.
+
+We look to see if the FPU is already in use in this context, and if so
+we use the non-large copy path which only uses integer registers.
+
+Furthermore, we also limit this special logic to when we are doing
+kernel copy, rather than a user copy.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/spitfire.h |    2 ++
- arch/sparc/kernel/cpu.c           |   12 ++++++++++++
- arch/sparc/kernel/head_64.S       |   12 ++++++++++++
- 3 files changed, 26 insertions(+)
+ arch/sparc/include/asm/visasm.h |    8 ++++++++
+ arch/sparc/lib/NG4memcpy.S      |   14 +++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
---- a/arch/sparc/include/asm/spitfire.h
-+++ b/arch/sparc/include/asm/spitfire.h
-@@ -45,6 +45,8 @@
- #define SUN4V_CHIP_NIAGARA3	0x03
- #define SUN4V_CHIP_NIAGARA4	0x04
- #define SUN4V_CHIP_NIAGARA5	0x05
-+#define SUN4V_CHIP_SPARC_M6	0x06
-+#define SUN4V_CHIP_SPARC_M7	0x07
- #define SUN4V_CHIP_SPARC64X	0x8a
- #define SUN4V_CHIP_UNKNOWN	0xff
+--- a/arch/sparc/include/asm/visasm.h
++++ b/arch/sparc/include/asm/visasm.h
+@@ -39,6 +39,14 @@
+ 297:	wr		%o5, FPRS_FEF, %fprs;		\
+ 298:
  
---- a/arch/sparc/kernel/cpu.c
-+++ b/arch/sparc/kernel/cpu.c
-@@ -494,6 +494,18 @@ static void __init sun4v_cpu_probe(void)
- 		sparc_pmu_type = "niagara5";
- 		break;
- 
-+	case SUN4V_CHIP_SPARC_M6:
-+		sparc_cpu_type = "SPARC-M6";
-+		sparc_fpu_type = "SPARC-M6 integrated FPU";
-+		sparc_pmu_type = "sparc-m6";
-+		break;
++#define VISEntryHalfFast(fail_label)			\
++	rd		%fprs, %o5;			\
++	andcc		%o5, FPRS_FEF, %g0;		\
++	be,pt		%icc, 297f;			\
++	 nop;						\
++	ba,a,pt		%xcc, fail_label;		\
++297:	wr		%o5, FPRS_FEF, %fprs;
 +
-+	case SUN4V_CHIP_SPARC_M7:
-+		sparc_cpu_type = "SPARC-M7";
-+		sparc_fpu_type = "SPARC-M7 integrated FPU";
-+		sparc_pmu_type = "sparc-m7";
-+		break;
+ #define VISExitHalf					\
+ 	wr		%o5, 0, %fprs;
+ 
+--- a/arch/sparc/lib/NG4memcpy.S
++++ b/arch/sparc/lib/NG4memcpy.S
+@@ -41,6 +41,10 @@
+ #endif
+ #endif
+ 
++#if !defined(EX_LD) && !defined(EX_ST)
++#define NON_USER_COPY
++#endif
 +
- 	case SUN4V_CHIP_SPARC64X:
- 		sparc_cpu_type = "SPARC64-X";
- 		sparc_fpu_type = "SPARC64-X integrated FPU";
---- a/arch/sparc/kernel/head_64.S
-+++ b/arch/sparc/kernel/head_64.S
-@@ -427,6 +427,12 @@ sun4v_chip_type:
- 	cmp	%g2, '5'
- 	be,pt	%xcc, 5f
- 	 mov	SUN4V_CHIP_NIAGARA5, %g4
-+	cmp	%g2, '6'
-+	be,pt	%xcc, 5f
-+	 mov	SUN4V_CHIP_SPARC_M6, %g4
-+	cmp	%g2, '7'
-+	be,pt	%xcc, 5f
-+	 mov	SUN4V_CHIP_SPARC_M7, %g4
- 	ba,pt	%xcc, 49f
- 	 nop
+ #ifndef EX_LD
+ #define EX_LD(x)	x
+ #endif
+@@ -197,9 +201,13 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
+ 	 mov		EX_RETVAL(%o3), %o0
  
-@@ -585,6 +591,12 @@ niagara_tlb_fixup:
- 	cmp	%g1, SUN4V_CHIP_NIAGARA5
- 	be,pt	%xcc, niagara4_patch
+ .Llarge_src_unaligned:
++#ifdef NON_USER_COPY
++	VISEntryHalfFast(.Lmedium_vis_entry_fail)
++#else
++	VISEntryHalf
++#endif
+ 	andn		%o2, 0x3f, %o4
+ 	sub		%o2, %o4, %o2
+-	VISEntryHalf
+ 	alignaddr	%o1, %g0, %g1
+ 	add		%o1, %o4, %o1
+ 	EX_LD(LOAD(ldd, %g1 + 0x00, %f0))
+@@ -240,6 +248,10 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
  	 nop
-+	cmp	%g1, SUN4V_CHIP_SPARC_M6
-+	be,pt	%xcc, niagara4_patch
-+	 nop
-+	cmp	%g1, SUN4V_CHIP_SPARC_M7
-+	be,pt	%xcc, niagara4_patch
-+	 nop
+ 	ba,a,pt		%icc, .Lmedium_unaligned
  
- 	call	generic_patch_copyops
- 	 nop
++#ifdef NON_USER_COPY
++.Lmedium_vis_entry_fail:
++	 or		%o0, %o1, %g2
++#endif
+ .Lmedium:
+ 	LOAD(prefetch, %o1 + 0x40, #n_reads_strong)
+ 	andcc		%g2, 0x7, %g0
 
 
