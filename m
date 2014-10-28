@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218AbaJ1DiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:38:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44462 "EHLO
+	id S1759886AbaJ1HxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:53:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44475 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162AbaJ1Dh4 (ORCPT
+	with ESMTP id S1754202AbaJ1DiD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:56 -0400
+	Mon, 27 Oct 2014 23:38:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Willem Pinckaers <willem@lekkertech.net>,
-        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
-Subject: [PATCH 3.17 055/146] Revert "lzo: properly check for overruns"
-Date: Tue, 28 Oct 2014 11:33:17 +0800
-Message-Id: <20141028033345.790957477@linuxfoundation.org>
+        Frans Klaver <frans.klaver@xsens.com>
+Subject: [PATCH 3.17 057/146] tty: omap-serial: fix division by zero
+Date: Tue, 28 Oct 2014 11:33:19 +0800
+Message-Id: <20141028033345.865717545@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,181 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Willy Tarreau <w@1wt.eu>
+From: Frans Klaver <frans.klaver@xsens.com>
 
-commit af958a38a60c7ca3d8a39c918c1baa2ff7b6b233 upstream.
+commit dc3187564e61260f49eceb21a4e7eb5e4428e90a upstream.
 
-This reverts commit 206a81c ("lzo: properly check for overruns").
+If the chosen baud rate is large enough (e.g. 3.5 megabaud), the
+calculated n values in serial_omap_is_baud_mode16() may become 0. This
+causes a division by zero when calculating the difference between
+calculated and desired baud rates. To prevent this, cap the n13 and n16
+values on 1.
 
-As analysed by Willem Pinckaers, this fix is still incomplete on
-certain rare corner cases, and it is easier to restart from the
-original code.
+Division by zero in kernel.
+[<c00132e0>] (unwind_backtrace) from [<c00112ec>] (show_stack+0x10/0x14)
+[<c00112ec>] (show_stack) from [<c01ed7bc>] (Ldiv0+0x8/0x10)
+[<c01ed7bc>] (Ldiv0) from [<c023805c>] (serial_omap_baud_is_mode16+0x4c/0x68)
+[<c023805c>] (serial_omap_baud_is_mode16) from [<c02396b4>] (serial_omap_set_termios+0x90/0x8d8)
+[<c02396b4>] (serial_omap_set_termios) from [<c0230a0c>] (uart_change_speed+0xa4/0xa8)
+[<c0230a0c>] (uart_change_speed) from [<c0231798>] (uart_set_termios+0xa0/0x1fc)
+[<c0231798>] (uart_set_termios) from [<c022bb44>] (tty_set_termios+0x248/0x2c0)
+[<c022bb44>] (tty_set_termios) from [<c022c17c>] (set_termios+0x248/0x29c)
+[<c022c17c>] (set_termios) from [<c022c3e4>] (tty_mode_ioctl+0x1c8/0x4e8)
+[<c022c3e4>] (tty_mode_ioctl) from [<c0227e70>] (tty_ioctl+0xa94/0xb18)
+[<c0227e70>] (tty_ioctl) from [<c00cf45c>] (do_vfs_ioctl+0x4a0/0x560)
+[<c00cf45c>] (do_vfs_ioctl) from [<c00cf568>] (SyS_ioctl+0x4c/0x74)
+[<c00cf568>] (SyS_ioctl) from [<c000e480>] (ret_fast_syscall+0x0/0x30)
 
-Reported-by: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/lzo/lzo1x_decompress_safe.c |   62 +++++++++++++---------------------------
- 1 file changed, 21 insertions(+), 41 deletions(-)
+ drivers/tty/serial/omap-serial.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -19,31 +19,11 @@
- #include <linux/lzo.h>
- #include "lzodefs.h"
- 
--#define HAVE_IP(t, x)					\
--	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
--	 (((t + x) >= t) && ((t + x) >= x)))
--
--#define HAVE_OP(t, x)					\
--	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
--	 (((t + x) >= t) && ((t + x) >= x)))
--
--#define NEED_IP(t, x)					\
--	do {						\
--		if (!HAVE_IP(t, x))			\
--			goto input_overrun;		\
--	} while (0)
--
--#define NEED_OP(t, x)					\
--	do {						\
--		if (!HAVE_OP(t, x))			\
--			goto output_overrun;		\
--	} while (0)
--
--#define TEST_LB(m_pos)					\
--	do {						\
--		if ((m_pos) < out)			\
--			goto lookbehind_overrun;	\
--	} while (0)
-+#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
-+#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
-+#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
-+#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
-+#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
- 
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
-@@ -78,14 +58,14 @@ int lzo1x_decompress_safe(const unsigned
- 					while (unlikely(*ip == 0)) {
- 						t += 255;
- 						ip++;
--						NEED_IP(1, 0);
-+						NEED_IP(1);
- 					}
- 					t += 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
-+				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
- 					const unsigned char *ie = ip + t;
- 					unsigned char *oe = op + t;
- 					do {
-@@ -101,8 +81,8 @@ copy_literal_run:
- 				} else
- #endif
- 				{
--					NEED_OP(t, 0);
--					NEED_IP(t, 3);
-+					NEED_OP(t);
-+					NEED_IP(t + 3);
- 					do {
- 						*op++ = *ip++;
- 					} while (--t > 0);
-@@ -115,7 +95,7 @@ copy_literal_run:
- 				m_pos -= t >> 2;
- 				m_pos -= *ip++ << 2;
- 				TEST_LB(m_pos);
--				NEED_OP(2, 0);
-+				NEED_OP(2);
- 				op[0] = m_pos[0];
- 				op[1] = m_pos[1];
- 				op += 2;
-@@ -139,10 +119,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1, 0);
-+					NEED_IP(1);
- 				}
- 				t += 31 + *ip++;
--				NEED_IP(2, 0);
-+				NEED_IP(2);
- 			}
- 			m_pos = op - 1;
- 			next = get_unaligned_le16(ip);
-@@ -157,10 +137,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1, 0);
-+					NEED_IP(1);
- 				}
- 				t += 7 + *ip++;
--				NEED_IP(2, 0);
-+				NEED_IP(2);
- 			}
- 			next = get_unaligned_le16(ip);
- 			ip += 2;
-@@ -174,7 +154,7 @@ copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (op - m_pos >= 8) {
- 			unsigned char *oe = op + t;
--			if (likely(HAVE_OP(t, 15))) {
-+			if (likely(HAVE_OP(t + 15))) {
- 				do {
- 					COPY8(op, m_pos);
- 					op += 8;
-@@ -184,7 +164,7 @@ copy_literal_run:
- 					m_pos += 8;
- 				} while (op < oe);
- 				op = oe;
--				if (HAVE_IP(6, 0)) {
-+				if (HAVE_IP(6)) {
- 					state = next;
- 					COPY4(op, ip);
- 					op += next;
-@@ -192,7 +172,7 @@ copy_literal_run:
- 					continue;
- 				}
- 			} else {
--				NEED_OP(t, 0);
-+				NEED_OP(t);
- 				do {
- 					*op++ = *m_pos++;
- 				} while (op < oe);
-@@ -201,7 +181,7 @@ copy_literal_run:
- #endif
- 		{
- 			unsigned char *oe = op + t;
--			NEED_OP(t, 0);
-+			NEED_OP(t);
- 			op[0] = m_pos[0];
- 			op[1] = m_pos[1];
- 			op += 2;
-@@ -214,15 +194,15 @@ match_next:
- 		state = next;
- 		t = next;
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
-+		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
- 			COPY4(op, ip);
- 			op += t;
- 			ip += t;
- 		} else
- #endif
- 		{
--			NEED_IP(t, 3);
--			NEED_OP(t, 0);
-+			NEED_IP(t + 3);
-+			NEED_OP(t);
- 			while (t > 0) {
- 				*op++ = *ip++;
- 				t--;
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -254,8 +254,16 @@ serial_omap_baud_is_mode16(struct uart_p
+ {
+ 	unsigned int n13 = port->uartclk / (13 * baud);
+ 	unsigned int n16 = port->uartclk / (16 * baud);
+-	int baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
+-	int baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
++	int baudAbsDiff13;
++	int baudAbsDiff16;
++
++	if (n13 == 0)
++		n13 = 1;
++	if (n16 == 0)
++		n16 = 1;
++
++	baudAbsDiff13 = baud - (port->uartclk / (13 * n13));
++	baudAbsDiff16 = baud - (port->uartclk / (16 * n16));
+ 	if (baudAbsDiff13 < 0)
+ 		baudAbsDiff13 = -baudAbsDiff13;
+ 	if (baudAbsDiff16 < 0)
 
 
