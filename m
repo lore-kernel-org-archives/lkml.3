@@ -1,168 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541AbaJ1WbU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:31:20 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:47792 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755289AbaJ1W2D (ORCPT
+	id S1755421AbaJ1Wcr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:32:47 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54012 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754649AbaJ1Wcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:28:03 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
-Cc: Andrew Bresticker <abrestic@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
+	Tue, 28 Oct 2014 18:32:45 -0400
+Date: Tue, 28 Oct 2014 22:31:21 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Subject: [PATCH RESEND V4 5/9] of: Add NVIDIA Tegra xHCI controller binding
-Date: Tue, 28 Oct 2014 15:27:52 -0700
-Message-Id: <1414535277-15645-6-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
-In-Reply-To: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
-References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Message-ID: <20141028223121.GH18557@sirena.org.uk>
+References: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com>
+ <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="waAWgznbqtWOzvJZ"
+Content-Disposition: inline
+In-Reply-To: <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: FORCE YOURSELF TO RELAX!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5 3/4] regulator: max77686: Add suspend disable for some
+ LDOs
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device-tree binding documentation for the xHCI controller present
-on Tegra124 and later SoCs.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
----
-No changes from v3.
-Changes from v2:
- - Added mbox-names property.
-Changes from v1:
- - Updated to use common mailbox bindings.
- - Added remaining XUSB-related clocks and resets.
- - Updated list of power supplies to be more accurate wrt to the hardware.
----
- .../bindings/usb/nvidia,tegra124-xhci.txt          | 104 +++++++++++++++++++++
- 1 file changed, 104 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
+--waAWgznbqtWOzvJZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
-new file mode 100644
-index 0000000..51a7751
---- /dev/null
-+++ b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
-@@ -0,0 +1,104 @@
-+NVIDIA Tegra xHCI controller
-+============================
-+
-+The Tegra xHCI controller supports both USB2 and USB3 interfaces exposed
-+by the Tegra XUSB pad controller.
-+
-+Required properties:
-+--------------------
-+ - compatible: Should be "nvidia,tegra124-xhci".
-+ - reg: Address and length of the register sets.  There should be three
-+   entries in the following order: xHCI host registers, FPCI registers, and
-+   IPFS registers.
-+ - interrupts: xHCI host interrupt.
-+ - clocks: Must contain an entry for each entry in clock-names.
-+   See ../clock/clock-bindings.txt for details.
-+ - clock-names: Must include the following entries:
-+    - xusb_host
-+    - xusb_host_src
-+    - xusb_dev
-+    - xusb_dev_src
-+    - xusb_falcon_src
-+    - xusb_ss
-+    - xusb_ss_src
-+    - xusb_ss_div2
-+    - xusb_hs_src
-+    - xusb_fs_src
-+    - pll_u_480m
-+    - clk_m
-+    - pll_e
-+ - resets: Must contain an entry for each entry in reset-names.
-+   See ../reset/reset.txt for details.
-+ - reset-names: Must include the following entries:
-+   - xusb_host
-+   - xusb_dev
-+   - xusb_ss
-+   - xusb
-+   Note that xusb_dev is the shared reset for xusb_dev and xusb_dev_src and
-+   that xusb is the shared reset for xusb_{ss,hs,fs,falcon,host}_src.
-+ - mboxes: Must contain an entry for the XUSB mailbox channel.
-+   See ../mailbox/mailbox.txt for details.
-+ - mbox-names: Must include the following entries:
-+   - xusb
-+
-+Optional properties:
-+--------------------
-+ - phys: Must contain an entry for each entry in phy-names.
-+   See ../phy/phy-bindings.txt for details.
-+ - phy-names: Should include an entry for each PHY used by the controller.
-+   May be a subset of the following:
-+    - utmi-{0,1,2}
-+    - hsic-{0,1}
-+    - usb3-{0,1}
-+ - avddio-pex-supply: PCIe/USB3 analog logic power supply.  Must supply 1.05V.
-+ - dvddio-pex-supply: PCIe/USB3 digital logic power supply.  Must supply 1.05V.
-+ - avdd-usb-supply: USB controller power supply.  Must supply 3.3V.
-+ - avdd-pll-utmip-supply: UTMI PLL power supply.  Must supply 1.8V.
-+ - avdd-pll-erefe-supply: PLLE reference PLL power supply.  Must supply 1.05V.
-+ - avdd-pex-pll-supply: PCIe/USB3 PLL power supply.  Must supply 1.05V.
-+ - hvdd-pex-supply: High-voltage PCIe/USB3 power supply.  Must supply 3.3V.
-+ - hvdd-pex-plle-supply: High-voltage PLLE power supply.  Must supply 3.3V.
-+
-+Example:
-+--------
-+	usb@0,70090000 {
-+		compatible = "nvidia,tegra124-xhci";
-+		reg = <0x0 0x70090000 0x0 0x8000>,
-+		      <0x0 0x70098000 0x0 0x1000>,
-+		      <0x0 0x70099000 0x0 0x1000>;
-+		interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&tegra_car TEGRA124_CLK_XUSB_HOST>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_HOST_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_DEV>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_DEV_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_FALCON_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_SS>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_SS_DIV2>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_SS_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_HS_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_FS_SRC>,
-+			 <&tegra_car TEGRA124_CLK_PLL_U_480M>,
-+			 <&tegra_car TEGRA124_CLK_CLK_M>,
-+			 <&tegra_car TEGRA124_CLK_PLL_E>;
-+		clock-names = "xusb_host", "xusb_host_src", "xusb_dev",
-+			      "xusb_dev_src", "xusb_falcon_src", "xusb_ss",
-+			      "xusb_ss_div2", "xusb_ss_src", "xusb_hs_src",
-+			      "xusb_fs_src", "pll_u_480m", "clk_m", "pll_e";
-+		resets = <&tegra_car 89>, <&tegra_car 95>, <&tegra_car 156>,
-+			 <&tegra_car 143>;
-+		reset-names = "xusb_host", "xusb_dev", "xusb_ss", "xusb";
-+		mboxes = <&xusb_mbox>;
-+		mbox-names = "xusb";
-+		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* mini-PCIe USB */
-+		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* USB A */
-+		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>; /* USB A */
-+		phy-names = "utmi-1", "utmi-2", "usb3-0";
-+		avddio-pex-supply = <&vdd_1v05_run>;
-+		dvddio-pex-supply = <&vdd_1v05_run>;
-+		avdd-usb-supply = <&vdd_3v3_lp0>;
-+		avdd-pll-utmip-supply = <&vddio_1v8>;
-+		avdd-pll-erefe-supply = <&avdd_1v05_run>;
-+		avdd-pex-pll-supply = <&vdd_1v05_run>;
-+		hvdd-pex-supply = <&vdd_3v3_lp0>;
-+		hvdd-pex-plle-supply = <&vdd_3v3_lp0>;
-+	};
--- 
-2.1.0.rc2.206.gedb03e5
+On Mon, Oct 27, 2014 at 01:11:49PM +0100, Krzysztof Kozlowski wrote:
 
+> @@ -247,6 +250,8 @@ static struct regulator_ops max77686_ldo_ops = {
+>  	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+>  	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
+>  	.set_suspend_mode	= max77686_ldo_set_suspend_mode,
+> +	.set_suspend_disable	= max77686_set_suspend_disable,
+> +	.set_suspend_enable	= max77686_enable,
+
+This looks wrong, you're using the regular enable operation as suspend
+enable.  How does that work without disrupting the current runtime
+state?
+
+--waAWgznbqtWOzvJZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUUBk4AAoJECTWi3JdVIfQSJYH/RTYhHzyf/43tuvH9ge6Zqhr
+8D17nEvNtEt6aaRrQ27Xn4eWcghsnCGIHVfm7T5zQRxQZTaK2p6eiHYnO51N86cg
+orx2lmaIhvQvnW2aTFJFMlcc17buBmyT7sNBOUuZA6kHN1eu/IzJL2f62+aspp79
+6gnfejrhgvDNkdCRYpLSJDuBWQCJTVTs/IzBHAfDw+yNvk5PsbKwrU9sXSx2/1+p
+y6q7IWnqDTH6OW/5FSx8pIKQMiY6jLbaZZCl8X/aGk+5UFwo9Qr27q15DkhtGKwI
+FMcatv+CZTtkCn+bG/V9pRbqu2KaY+osBsLP4TTfdXVkTlaTuoW7aGyLYoQj/vk=
+=zgZa
+-----END PGP SIGNATURE-----
+
+--waAWgznbqtWOzvJZ--
