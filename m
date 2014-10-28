@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233AbaJ1Dlq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:41:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44976 "EHLO
+	id S932273AbaJ1Dlz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:41:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44980 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168AbaJ1Dln (ORCPT
+	with ESMTP id S932226AbaJ1Dlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:43 -0400
+	Mon, 27 Oct 2014 23:41:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 128/146] sparc64: Fix FPU register corruption with AES crypto offload.
-Date: Tue, 28 Oct 2014 11:34:30 +0800
-Message-Id: <20141028033348.989749236@linuxfoundation.org>
+Subject: [PATCH 3.17 146/146] sparc64: Implement __get_user_pages_fast().
+Date: Tue, 28 Oct 2014 11:34:48 +0800
+Message-Id: <20141028033349.802373125@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,105 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit f4da3628dc7c32a59d1fb7116bb042e6f436d611 ]
+[ Upstream commit 06090e8ed89ea2113a236befb41f71d51f100e60 ]
 
-The AES loops in arch/sparc/crypto/aes_glue.c use a scheme where the
-key material is preloaded into the FPU registers, and then we loop
-over and over doing the crypt operation, reusing those pre-cooked key
-registers.
+It is not sufficient to only implement get_user_pages_fast(), you
+must also implement the atomic version __get_user_pages_fast()
+otherwise you end up using the weak symbol fallback implementation
+which simply returns zero.
 
-There are intervening blkcipher*() calls between the crypt operation
-calls.  And those might perform memcpy() and thus also try to use the
-FPU.
-
-The sparc64 kernel FPU usage mechanism is designed to allow such
-recursive uses, but with a catch.
-
-There has to be a trap between the two FPU using threads of control.
-
-The mechanism works by, when the FPU is already in use by the kernel,
-allocating a slot for FPU saving at trap time.  Then if, within the
-trap handler, we try to use the FPU registers, the pre-trap FPU
-register state is saved into the slot.  Then at trap return time we
-notice this and restore the pre-trap FPU state.
-
-Over the long term there are various more involved ways we can make
-this work, but for a quick fix let's take advantage of the fact that
-the situation where this happens is very limited.
-
-All sparc64 chips that support the crypto instructiosn also are using
-the Niagara4 memcpy routine, and that routine only uses the FPU for
-large copies where we can't get the source aligned properly to a
-multiple of 8 bytes.
-
-We look to see if the FPU is already in use in this context, and if so
-we use the non-large copy path which only uses integer registers.
-
-Furthermore, we also limit this special logic to when we are doing
-kernel copy, rather than a user copy.
+This is dangerous, because it causes the futex code to loop forever
+if transparent hugepages are supported (see get_futex_key()).
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/visasm.h |    8 ++++++++
- arch/sparc/lib/NG4memcpy.S      |   14 +++++++++++++-
- 2 files changed, 21 insertions(+), 1 deletion(-)
+ arch/sparc/mm/gup.c |   30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
---- a/arch/sparc/include/asm/visasm.h
-+++ b/arch/sparc/include/asm/visasm.h
-@@ -39,6 +39,14 @@
- 297:	wr		%o5, FPRS_FEF, %fprs;		\
- 298:
+--- a/arch/sparc/mm/gup.c
++++ b/arch/sparc/mm/gup.c
+@@ -160,6 +160,36 @@ static int gup_pud_range(pgd_t pgd, unsi
+ 	return 1;
+ }
  
-+#define VISEntryHalfFast(fail_label)			\
-+	rd		%fprs, %o5;			\
-+	andcc		%o5, FPRS_FEF, %g0;		\
-+	be,pt		%icc, 297f;			\
-+	 nop;						\
-+	ba,a,pt		%xcc, fail_label;		\
-+297:	wr		%o5, FPRS_FEF, %fprs;
++int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
++			  struct page **pages)
++{
++	struct mm_struct *mm = current->mm;
++	unsigned long addr, len, end;
++	unsigned long next, flags;
++	pgd_t *pgdp;
++	int nr = 0;
 +
- #define VISExitHalf					\
- 	wr		%o5, 0, %fprs;
- 
---- a/arch/sparc/lib/NG4memcpy.S
-+++ b/arch/sparc/lib/NG4memcpy.S
-@@ -41,6 +41,10 @@
- #endif
- #endif
- 
-+#if !defined(EX_LD) && !defined(EX_ST)
-+#define NON_USER_COPY
-+#endif
++	start &= PAGE_MASK;
++	addr = start;
++	len = (unsigned long) nr_pages << PAGE_SHIFT;
++	end = start + len;
 +
- #ifndef EX_LD
- #define EX_LD(x)	x
- #endif
-@@ -197,9 +201,13 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
- 	 mov		EX_RETVAL(%o3), %o0
- 
- .Llarge_src_unaligned:
-+#ifdef NON_USER_COPY
-+	VISEntryHalfFast(.Lmedium_vis_entry_fail)
-+#else
-+	VISEntryHalf
-+#endif
- 	andn		%o2, 0x3f, %o4
- 	sub		%o2, %o4, %o2
--	VISEntryHalf
- 	alignaddr	%o1, %g0, %g1
- 	add		%o1, %o4, %o1
- 	EX_LD(LOAD(ldd, %g1 + 0x00, %f0))
-@@ -240,6 +248,10 @@ FUNC_NAME:	/* %o0=dst, %o1=src, %o2=len
- 	 nop
- 	ba,a,pt		%icc, .Lmedium_unaligned
- 
-+#ifdef NON_USER_COPY
-+.Lmedium_vis_entry_fail:
-+	 or		%o0, %o1, %g2
-+#endif
- .Lmedium:
- 	LOAD(prefetch, %o1 + 0x40, #n_reads_strong)
- 	andcc		%g2, 0x7, %g0
++	local_irq_save(flags);
++	pgdp = pgd_offset(mm, addr);
++	do {
++		pgd_t pgd = *pgdp;
++
++		next = pgd_addr_end(addr, end);
++		if (pgd_none(pgd))
++			break;
++		if (!gup_pud_range(pgd, addr, next, write, pages, &nr))
++			break;
++	} while (pgdp++, addr = next, addr != end);
++	local_irq_restore(flags);
++
++	return nr;
++}
++
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages)
+ {
 
 
