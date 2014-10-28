@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233AbaJ1WPp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:15:45 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:58410 "EHLO e7.ny.us.ibm.com"
+	id S1755689AbaJ1WPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:15:46 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:56035 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755933AbaJ1WN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755920AbaJ1WN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 18:13:58 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,53 +14,257 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 7/9] rcu: More info about potential deadlocks with rcu_read_unlock()
-Date: Tue, 28 Oct 2014 15:10:00 -0700
-Message-Id: <1414534202-27312-7-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/9] rcu: Remove CONFIG_RCU_CPU_STALL_VERBOSE
+Date: Tue, 28 Oct 2014 15:09:54 -0700
+Message-Id: <1414534202-27312-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1414534202-27312-1-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20141028220944.GA26114@linux.vnet.ibm.com>
 References: <20141028220944.GA26114@linux.vnet.ibm.com>
- <1414534202-27312-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102822-0025-0000-0000-000000F05F70
+x-cbid: 14102822-0029-0000-0000-000000F4FA29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-The comment above rcu_read_unlock() explains the potential deadlock
-if the caller holds one of the locks taken by rt_mutex_unlock() paths,
-but it is not clear from this documentation that any lock which can
-be taken from interrupt can lead to deadlock as well and we need to
-take rt_mutex_lock() into account too.
+The CONFIG_RCU_CPU_STALL_VERBOSE Kconfig parameter causes preemptible
+RCU's CPU stall warnings to dump out any preempted tasks that are blocking
+the current RCU grace period.  This information is useful, and the default
+has been CONFIG_RCU_CPU_STALL_VERBOSE=y for some years.  It is therefore
+time for this commit to remove this Kconfig parameter, so that future
+kernel builds will always act as if CONFIG_RCU_CPU_STALL_VERBOSE=y.
 
-The problem is that rt_mutex_lock() takes wait_lock without disabling
-irqs, and thus an interrupt taking some LOCK can obviously race with
-rcu_read_unlock_special() called with the same LOCK held.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/linux/rcupdate.h | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ Documentation/RCU/stallwarn.txt                             |  6 ------
+ kernel/rcu/tree_plugin.h                                    | 13 -------------
+ lib/Kconfig.debug                                           | 12 ------------
+ tools/testing/selftests/rcutorture/configs/rcu/TREE01       |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE02       |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE02-T     |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE03       |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE04       |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE05       |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE06       |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE07       |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE08       |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE08-T     |  1 -
+ tools/testing/selftests/rcutorture/configs/rcu/TREE09       |  1 -
+ tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt |  3 +--
+ 15 files changed, 1 insertion(+), 44 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 36ea3ba5c516..ae6942a84a0d 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -887,7 +887,9 @@ static inline void rcu_read_lock(void)
-  * Unfortunately, this function acquires the scheduler's runqueue and
-  * priority-inheritance spinlocks.  This means that deadlock could result
-  * if the caller of rcu_read_unlock() already holds one of these locks or
-- * any lock that is ever acquired while holding them.
-+ * any lock that is ever acquired while holding them; or any lock which
-+ * can be taken from interrupt context because rcu_boost()->rt_mutex_lock()
-+ * does not disable irqs while taking ->wait_lock.
-  *
-  * That said, RCU readers are never priority boosted unless they were
-  * preempted.  Therefore, one way to avoid deadlock is to make sure
+diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
+index ef5a2fd4ff70..1560efbcc759 100644
+--- a/Documentation/RCU/stallwarn.txt
++++ b/Documentation/RCU/stallwarn.txt
+@@ -26,12 +26,6 @@ CONFIG_RCU_CPU_STALL_TIMEOUT
+ 	Stall-warning messages may be enabled and disabled completely via
+ 	/sys/module/rcupdate/parameters/rcu_cpu_stall_suppress.
+ 
+-CONFIG_RCU_CPU_STALL_VERBOSE
+-
+-	This kernel configuration parameter causes the stall warning to
+-	also dump the stacks of any tasks that are blocking the current
+-	RCU-preempt grace period.
+-
+ CONFIG_RCU_CPU_STALL_INFO
+ 
+ 	This kernel configuration parameter causes the stall warning to
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index c1d7f27bd38f..d062f4d6f037 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -72,9 +72,6 @@ static void __init rcu_bootup_announce_oddness(void)
+ #ifdef CONFIG_RCU_TORTURE_TEST_RUNNABLE
+ 	pr_info("\tRCU torture testing starts during boot.\n");
+ #endif
+-#if defined(CONFIG_TREE_PREEMPT_RCU) && !defined(CONFIG_RCU_CPU_STALL_VERBOSE)
+-	pr_info("\tDump stacks of tasks blocking RCU-preempt GP.\n");
+-#endif
+ #if defined(CONFIG_RCU_CPU_STALL_INFO)
+ 	pr_info("\tAdditional per-CPU info printed with stalls.\n");
+ #endif
+@@ -415,8 +412,6 @@ void rcu_read_unlock_special(struct task_struct *t)
+ 	}
+ }
+ 
+-#ifdef CONFIG_RCU_CPU_STALL_VERBOSE
+-
+ /*
+  * Dump detailed information for all tasks blocking the current RCU
+  * grace period on the specified rcu_node structure.
+@@ -451,14 +446,6 @@ static void rcu_print_detail_task_stall(struct rcu_state *rsp)
+ 		rcu_print_detail_task_stall_rnp(rnp);
+ }
+ 
+-#else /* #ifdef CONFIG_RCU_CPU_STALL_VERBOSE */
+-
+-static void rcu_print_detail_task_stall(struct rcu_state *rsp)
+-{
+-}
+-
+-#endif /* #else #ifdef CONFIG_RCU_CPU_STALL_VERBOSE */
+-
+ #ifdef CONFIG_RCU_CPU_STALL_INFO
+ 
+ static void rcu_print_task_stall_begin(struct rcu_node *rnp)
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 4e35a5d767ed..04e54cd3e948 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1238,18 +1238,6 @@ config RCU_CPU_STALL_TIMEOUT
+ 	  RCU grace period persists, additional CPU stall warnings are
+ 	  printed at more widely spaced intervals.
+ 
+-config RCU_CPU_STALL_VERBOSE
+-	bool "Print additional per-task information for RCU_CPU_STALL_DETECTOR"
+-	depends on TREE_PREEMPT_RCU
+-	default y
+-	help
+-	  This option causes RCU to printk detailed per-task information
+-	  for any tasks that are stalling the current RCU grace period.
+-
+-	  Say N if you are unsure.
+-
+-	  Say Y if you want to enable such checks.
+-
+ config RCU_CPU_STALL_INFO
+ 	bool "Print additional diagnostics on RCU CPU stall"
+ 	depends on (TREE_RCU || TREE_PREEMPT_RCU) && DEBUG_KERNEL
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE01 b/tools/testing/selftests/rcutorture/configs/rcu/TREE01
+index 38e3895759dd..a04420e7ac9b 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE01
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE01
+@@ -14,6 +14,5 @@ CONFIG_RCU_NOCB_CPU=y
+ CONFIG_RCU_NOCB_CPU_ZERO=y
+ CONFIG_DEBUG_LOCK_ALLOC=n
+ CONFIG_RCU_CPU_STALL_INFO=n
+-CONFIG_RCU_CPU_STALL_VERBOSE=n
+ CONFIG_RCU_BOOST=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE02 b/tools/testing/selftests/rcutorture/configs/rcu/TREE02
+index ea119ba2f7d4..a4f8bfbdd71d 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE02
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE02
+@@ -19,6 +19,5 @@ CONFIG_RCU_NOCB_CPU=n
+ CONFIG_DEBUG_LOCK_ALLOC=y
+ CONFIG_PROVE_LOCKING=n
+ CONFIG_RCU_CPU_STALL_INFO=n
+-CONFIG_RCU_CPU_STALL_VERBOSE=y
+ CONFIG_RCU_BOOST=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE02-T b/tools/testing/selftests/rcutorture/configs/rcu/TREE02-T
+index 19cf9485f48a..fe19aaf8f20c 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE02-T
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE02-T
+@@ -19,6 +19,5 @@ CONFIG_RCU_NOCB_CPU=n
+ CONFIG_DEBUG_LOCK_ALLOC=y
+ CONFIG_PROVE_LOCKING=n
+ CONFIG_RCU_CPU_STALL_INFO=n
+-CONFIG_RCU_CPU_STALL_VERBOSE=y
+ CONFIG_RCU_BOOST=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE03 b/tools/testing/selftests/rcutorture/configs/rcu/TREE03
+index f4567fb3e332..a2a9a9bcd1cd 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE03
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE03
+@@ -15,7 +15,6 @@ CONFIG_RCU_FANOUT_EXACT=n
+ CONFIG_RCU_NOCB_CPU=n
+ CONFIG_DEBUG_LOCK_ALLOC=n
+ CONFIG_RCU_CPU_STALL_INFO=n
+-CONFIG_RCU_CPU_STALL_VERBOSE=n
+ CONFIG_RCU_BOOST=y
+ CONFIG_RCU_BOOST_PRIO=2
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE04 b/tools/testing/selftests/rcutorture/configs/rcu/TREE04
+index 0a262fbb0c12..0f84db35b36d 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE04
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE04
+@@ -19,5 +19,4 @@ CONFIG_RCU_FANOUT_EXACT=n
+ CONFIG_RCU_NOCB_CPU=n
+ CONFIG_DEBUG_LOCK_ALLOC=n
+ CONFIG_RCU_CPU_STALL_INFO=y
+-CONFIG_RCU_CPU_STALL_VERBOSE=y
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE05 b/tools/testing/selftests/rcutorture/configs/rcu/TREE05
+index 3a06b97e9a73..212e3bfd2b2a 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE05
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE05
+@@ -19,5 +19,4 @@ CONFIG_DEBUG_LOCK_ALLOC=y
+ CONFIG_PROVE_LOCKING=y
+ CONFIG_PROVE_RCU=y
+ CONFIG_RCU_CPU_STALL_INFO=n
+-CONFIG_RCU_CPU_STALL_VERBOSE=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE06 b/tools/testing/selftests/rcutorture/configs/rcu/TREE06
+index 8f084cca91bf..7eee63b44218 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE06
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE06
+@@ -20,5 +20,4 @@ CONFIG_DEBUG_LOCK_ALLOC=y
+ CONFIG_PROVE_LOCKING=y
+ CONFIG_PROVE_RCU=y
+ CONFIG_RCU_CPU_STALL_INFO=n
+-CONFIG_RCU_CPU_STALL_VERBOSE=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE07 b/tools/testing/selftests/rcutorture/configs/rcu/TREE07
+index 8f1017666aa7..92a97fa97dec 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE07
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE07
+@@ -19,5 +19,4 @@ CONFIG_RCU_FANOUT_EXACT=n
+ CONFIG_RCU_NOCB_CPU=n
+ CONFIG_DEBUG_LOCK_ALLOC=n
+ CONFIG_RCU_CPU_STALL_INFO=y
+-CONFIG_RCU_CPU_STALL_VERBOSE=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE08 b/tools/testing/selftests/rcutorture/configs/rcu/TREE08
+index 69a2e255bf98..316aa6cedce5 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE08
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08
+@@ -19,6 +19,5 @@ CONFIG_RCU_NOCB_CPU=y
+ CONFIG_RCU_NOCB_CPU_ALL=y
+ CONFIG_DEBUG_LOCK_ALLOC=n
+ CONFIG_RCU_CPU_STALL_INFO=n
+-CONFIG_RCU_CPU_STALL_VERBOSE=n
+ CONFIG_RCU_BOOST=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE08-T b/tools/testing/selftests/rcutorture/configs/rcu/TREE08-T
+index a0f32fb8f17e..55daf08038e8 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE08-T
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08-T
+@@ -19,6 +19,5 @@ CONFIG_RCU_NOCB_CPU=y
+ CONFIG_RCU_NOCB_CPU_ALL=y
+ CONFIG_DEBUG_LOCK_ALLOC=n
+ CONFIG_RCU_CPU_STALL_INFO=n
+-CONFIG_RCU_CPU_STALL_VERBOSE=n
+ CONFIG_RCU_BOOST=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE09 b/tools/testing/selftests/rcutorture/configs/rcu/TREE09
+index b7a62a540ad1..13081a87586c 100644
+--- a/tools/testing/selftests/rcutorture/configs/rcu/TREE09
++++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE09
+@@ -14,6 +14,5 @@ CONFIG_HIBERNATION=n
+ CONFIG_RCU_NOCB_CPU=n
+ CONFIG_DEBUG_LOCK_ALLOC=n
+ CONFIG_RCU_CPU_STALL_INFO=n
+-CONFIG_RCU_CPU_STALL_VERBOSE=n
+ CONFIG_RCU_BOOST=n
+ CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
+diff --git a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
+index 3e588db86a17..0dcde4c70945 100644
+--- a/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
++++ b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt
+@@ -16,8 +16,7 @@ CONFIG_PROVE_LOCKING -- Do all but two, covering CONFIG_PROVE_RCU and not.
+ CONFIG_PROVE_RCU -- Do all but one under CONFIG_PROVE_LOCKING.
+ CONFIG_RCU_BOOST -- one of TREE_PREEMPT_RCU.
+ CONFIG_RCU_BOOST_PRIO -- set to 2 for _BOOST testing.
+-CONFIG_RCU_CPU_STALL_INFO -- do one with and without _VERBOSE.
+-CONFIG_RCU_CPU_STALL_VERBOSE -- do one with and without _INFO.
++CONFIG_RCU_CPU_STALL_INFO -- Do one.
+ CONFIG_RCU_FANOUT -- Cover hierarchy as currently, but overlap with others.
+ CONFIG_RCU_FANOUT_EXACT -- Do one.
+ CONFIG_RCU_FANOUT_LEAF -- Do one non-default.
 -- 
 1.8.1.5
 
