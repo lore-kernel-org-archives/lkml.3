@@ -1,80 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003AbaJ1Ncc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:32:32 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:36685 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878AbaJ1Nca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:32:30 -0400
-From: Xia Kaixu <kaixu.xia@linaro.org>
-To: rmk+kernel@arm.linux.org.uk, arm@kernel.org
-Cc: kaixu.xia@linaro.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 5/5] ARM: use early console instead of early debug in allmodconfig kernels
-Date: Tue, 28 Oct 2014 21:31:35 +0800
-Message-Id: <1414503095-25986-6-git-send-email-kaixu.xia@linaro.org>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org>
-References: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org>
+	id S1754076AbaJ1Ncs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:32:48 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51012 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752654AbaJ1Ncq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:32:46 -0400
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@au1.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 01/32] perf tools powerpc: Cache the DWARF debug info
+Date: Tue, 28 Oct 2014 11:31:55 -0200
+Message-Id: <1414503146-22789-2-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
+References: <1414503146-22789-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The early debug could break something when booting 'allmodconfig'
-kernels. So we use early console instead of early debug.
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-The early console didn't work yet on OMAP4460 because of missing
-earlycon support and I am working on that.
+Cache the DWARF debug info for DSO so we don't have to rebuild it for each
+address in the DSO.
 
-Signed-off-by: Xia Kaixu <kaixu.xia@linaro.org>
+Note that dso__new() uses calloc() so don't need to set dso->dwfl to NULL.
+
+	$ /tmp/perf.orig --version
+	perf version 3.18.rc1.gc2661b8
+	$ /tmp/perf.new --version
+	perf version 3.18.rc1.g402d62
+	$ perf stat -e cycles,instructions /tmp/perf.orig report -g > orig
+
+	 Performance counter stats for '/tmp/perf.orig report -g':
+
+	     6,428,177,183 cycles                    #    0.000 GHz
+	     4,176,288,391 instructions              #    0.65  insns per cycle
+
+	       1.840666132 seconds time elapsed
+
+	$ perf stat -e cycles,instructions /tmp/perf.new report -g > new
+
+	 Performance counter stats for '/tmp/perf.new report -g':
+
+	       305,773,142 cycles                    #    0.000 GHz
+	       276,048,272 instructions              #    0.90  insns per cycle
+
+	       0.087693543 seconds time elapsed
+	$ diff orig new
+	$
+
+Changelog[v2]:
+
+[Arnaldo Carvalho] Cache in existing global objects rather than create
+                   new static/globals in functions.
+
+Reported-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/20141022000958.GB2228@us.ibm.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/arm/Kconfig.debug | 25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ tools/perf/arch/powerpc/util/skip-callchain-idx.c | 33 +++++++++++++++--------
+ tools/perf/util/dso.h                             |  1 +
+ 2 files changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 03dc4c1..897e4ab 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -78,7 +78,7 @@ config DEBUG_USER
- # These options are only for real kernel hackers who want to get their hands dirty.
- config DEBUG_LL
- 	bool "Kernel low-level debugging functions (read help!)"
--	depends on DEBUG_KERNEL
-+	depends on DEBUG_KERNEL && !ARCH_MULTIPLATFORM_STRICT
- 	help
- 	  Say Y here to include definitions of printascii, printch, printhex
- 	  in the kernel.  This is helpful if you are debugging code that
-@@ -1297,6 +1297,29 @@ config EARLY_PRINTK
- 	  kernel low-level debugging functions. Add earlyprintk to your
- 	  kernel parameters to enable this console.
+diff --git a/tools/perf/arch/powerpc/util/skip-callchain-idx.c b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+index d73ef8bb08c7..9892b0f0bec4 100644
+--- a/tools/perf/arch/powerpc/util/skip-callchain-idx.c
++++ b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
+@@ -145,7 +145,7 @@ static Dwarf_Frame *get_dwarf_frame(Dwfl_Module *mod, Dwarf_Addr pc)
+  *		yet used)
+  *	-1 in case of errors
+  */
+-static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
++static int check_return_addr(struct dso *dso, Dwarf_Addr pc)
+ {
+ 	int		rc = -1;
+ 	Dwfl		*dwfl;
+@@ -156,15 +156,27 @@ static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
+ 	Dwarf_Addr	end = pc;
+ 	bool		signalp;
  
-+config FORCE_EARLY_CONSOLE
-+	bool "Enable all early console drivers"
-+	depends on DEBUG_KERNEL && ARCH_MULTIPLATFORM_STRICT
-+	select TTY
-+	select SERIAL_8250
-+	select SERIAL_8250_CONSOLE
-+	select SERIAL_AMBA_PL011
-+	select SERIAL_AMBA_PL011_CONSOLE
-+	select SERIAL_EARLYCON_ARM_SEMIHOST
-+	select SERIAL_MSM
-+	select SERIAL_MSM_CONSOLE
-+	select SERIAL_XILINX_PS_UART
-+	select SERIAL_XILINX_PS_UART_CONSOLE
-+	help
-+	  On strict multiplatform configurations, the early debug code
-+	  is not available, so the early console code should be used
-+	  for debugging the startup code.
-+	  This option ensures that all of the earlycon drivers are enabled,
-+	  which is mainly useful for booting 'allmodconfig' kernels.
+-	dwfl = dwfl_begin(&offline_callbacks);
+-	if (!dwfl) {
+-		pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
+-		return -1;
+-	}
++	dwfl = dso->dwfl;
+ 
+-	if (dwfl_report_offline(dwfl, "",  exec_file, -1) == NULL) {
+-		pr_debug("dwfl_report_offline() failed %s\n", dwarf_errmsg(-1));
+-		goto out;
++	if (!dwfl) {
++		dwfl = dwfl_begin(&offline_callbacks);
++		if (!dwfl) {
++			pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
++			return -1;
++		}
 +
-+	  It is always safe to say 'N' here for a smaller kernel and to
-+	  select the required options individually.
-+
- config OC_ETM
- 	bool "On-chip ETM and ETB"
- 	depends on ARM_AMBA
++		if (dwfl_report_offline(dwfl, "", dso->long_name, -1) == NULL) {
++			pr_debug("dwfl_report_offline() failed %s\n",
++						dwarf_errmsg(-1));
++			/*
++			 * We normally cache the DWARF debug info and never
++			 * call dwfl_end(). But to prevent fd leak, free in
++			 * case of error.
++			 */
++			dwfl_end(dwfl);
++			goto out;
++		}
++		dso->dwfl = dwfl;
+ 	}
+ 
+ 	mod = dwfl_addrmodule(dwfl, pc);
+@@ -194,7 +206,6 @@ static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
+ 	rc = check_return_reg(ra_regno, frame);
+ 
+ out:
+-	dwfl_end(dwfl);
+ 	return rc;
+ }
+ 
+@@ -246,7 +257,7 @@ int arch_skip_callchain_idx(struct machine *machine, struct thread *thread,
+ 		return skip_slot;
+ 	}
+ 
+-	rc = check_return_addr(dso->long_name, ip);
++	rc = check_return_addr(dso, ip);
+ 
+ 	pr_debug("DSO %s, nr %" PRIx64 ", ip 0x%" PRIx64 "rc %d\n",
+ 				dso->long_name, chain->nr, ip, rc);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index acb651acc7fd..3c9b391493f9 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -127,6 +127,7 @@ struct dso {
+ 	const char	 *long_name;
+ 	u16		 long_name_len;
+ 	u16		 short_name_len;
++	void		*dwfl;			/* DWARF debug info */
+ 
+ 	/* dso data file */
+ 	struct {
 -- 
-2.1.1
+1.9.3
 
