@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021AbaJ1Ugt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:36:49 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:51588 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754927AbaJ1Ugo (ORCPT
+	id S1755086AbaJ1Ug6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:36:58 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:61484 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755044AbaJ1Ugy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:36:44 -0400
+	Tue, 28 Oct 2014 16:36:54 -0400
 From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: Rob Herring <robherring2@gmail.com>,
@@ -32,9 +32,9 @@ Cc: Rob Herring <robherring2@gmail.com>,
         Georgi Vlaev <georgi.vlaev@konsulko.com>,
         Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH v8 6/8] OF: i2c: Add OF notifier handler
-Date: Tue, 28 Oct 2014 22:36:03 +0200
-Message-Id: <1414528565-10907-7-git-send-email-pantelis.antoniou@konsulko.com>
+Subject: [PATCH v8 8/8] OF: spi: Add OF notifier handler
+Date: Tue, 28 Oct 2014 22:36:05 +0200
+Message-Id: <1414528565-10907-9-git-send-email-pantelis.antoniou@konsulko.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1414528565-10907-1-git-send-email-pantelis.antoniou@konsulko.com>
 References: <1414528565-10907-1-git-send-email-pantelis.antoniou@konsulko.com>
@@ -42,38 +42,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add OF notifier handler needed for creating/destroying i2c devices
+Add OF notifier handler needed for creating/destroying spi devices
 according to dynamic runtime changes in the DT live tree.
 
 Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 ---
- drivers/i2c/i2c-core.c | 79 +++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 78 insertions(+), 1 deletion(-)
+ drivers/spi/spi.c | 78 ++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 77 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index e6da9d3..e751b78 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1470,6 +1470,7 @@ struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node *node)
- 	return i2c_verify_adapter(dev);
- }
- EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
-+
- #else
- static void of_i2c_register_devices(struct i2c_adapter *adap) { }
- #endif /* CONFIG_OF */
-@@ -1955,6 +1956,71 @@ void i2c_clients_command(struct i2c_adapter *adap, unsigned int cmd, void *arg)
- }
- EXPORT_SYMBOL(i2c_clients_command);
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index f81d799..f62a3e4 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -2363,6 +2363,71 @@ EXPORT_SYMBOL_GPL(spi_write_then_read);
+ 
+ /*-------------------------------------------------------------------------*/
  
 +#if IS_ENABLED(CONFIG_OF)
 +
-+static int of_i2c_notify(struct notifier_block *nb,
++static int of_spi_notify(struct notifier_block *nb,
 +				unsigned long action, void *arg)
 +{
 +	struct device_node *dn;
-+	struct i2c_adapter *adap;
-+	struct i2c_client *client;
++	struct spi_master *master;
++	struct spi_device *spi;
 +	int state;
 +
 +	state = of_reconfig_get_state_change(action, arg);
@@ -96,65 +88,65 @@ index e6da9d3..e751b78 100644
 +
 +	if (state) {
 +
-+		adap = of_find_i2c_adapter_by_node(dn->parent);
-+		if (adap == NULL)
++		master = of_find_spi_master_by_node(dn->parent);
++		if (master == NULL)
 +			return NOTIFY_OK;	/* not for us */
 +
-+		client = of_i2c_register_device(adap, dn);
-+		put_device(&adap->dev);
++		spi = of_register_spi_device(master, dn);
++		put_device(&master->dev);
 +
-+		if (IS_ERR(client)) {
++		if (IS_ERR(spi)) {
 +			pr_err("%s: failed to create for '%s'\n",
 +					__func__, dn->full_name);
-+			return notifier_from_errno(PTR_ERR(client));
++			return notifier_from_errno(PTR_ERR(spi));
 +		}
 +
 +	} else {
 +
 +		/* find our device by node */
-+		client = of_find_i2c_device_by_node(dn);
-+		if (client == NULL)
++		spi = of_find_spi_device_by_node(dn);
++		if (spi == NULL)
 +			return NOTIFY_OK;	/* no? not meant for us */
 +
 +		/* unregister takes one ref away */
-+		i2c_unregister_device(client);
++		spi_unregister_device(spi);
 +
 +		/* and put the reference of the find */
-+		put_device(&client->dev);
++		put_device(&spi->dev);
 +
 +	}
 +
 +	return NOTIFY_OK;
 +}
 +
-+static struct notifier_block i2c_of_notifier;
++static struct notifier_block spi_of_notifier;
 +
 +#endif
 +
- static int __init i2c_init(void)
+ static int __init spi_init(void)
  {
- 	int retval;
-@@ -1972,8 +2038,19 @@ static int __init i2c_init(void)
- 	retval = i2c_add_driver(&dummy_driver);
- 	if (retval)
- 		goto class_err;
+ 	int	status;
+@@ -2380,8 +2445,19 @@ static int __init spi_init(void)
+ 	status = class_register(&spi_master_class);
+ 	if (status < 0)
+ 		goto err2;
 -	return 0;
  
 +#if IS_ENABLED(CONFIG_OF)
-+	i2c_of_notifier.notifier_call = of_i2c_notify;
-+	retval = of_reconfig_notifier_register(&i2c_of_notifier);
-+	if (retval)
-+		goto notifier_err;
++	spi_of_notifier.notifier_call = of_spi_notify;
++	status = of_reconfig_notifier_register(&spi_of_notifier);
++	if (status)
++		goto err3;
 +#endif
 +
 +	return 0;
 +#if IS_ENABLED(CONFIG_OF)
-+notifier_err:
-+	i2c_del_driver(&dummy_driver);
++err3:
++	class_unregister(&spi_master_class);
 +#endif
- class_err:
- #ifdef CONFIG_I2C_COMPAT
- 	class_compat_unregister(i2c_adapter_compat_class);
+ err2:
+ 	bus_unregister(&spi_bus_type);
+ err1:
 -- 
 1.7.12
 
