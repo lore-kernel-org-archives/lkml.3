@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaJ1PQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:16:19 -0400
-Received: from mail-bn1on0142.outbound.protection.outlook.com ([157.56.110.142]:56416
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751155AbaJ1PQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:16:17 -0400
-X-WSS-ID: 0NE5UEW-08-64T-02
-X-M-MSG: 
-Date: Tue, 28 Oct 2014 23:17:16 +0800
-From: Huang Rui <ray.huang@amd.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Paul Zimmerman" <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Jason Chang <jason.chang@amd.com>, "Vincent Wan" <vincent.wan@amd.com>,
-        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 00/19] usb: dwc3: add support for AMD Nolan SoC
-Message-ID: <20141028151715.GB4519@hr-slim.amd.com>
-References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
- <20141028144156.GC8123@saruman>
+	id S1754755AbaJ1PQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:16:36 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47378 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751877AbaJ1PQe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 11:16:34 -0400
+Date: Tue, 28 Oct 2014 15:16:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Johan Hovold <johan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Felipe Balbi <balbi@ti.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Tony Lindgren <tony@atomide.com>,
+        =?iso-8859-1?Q?Beno=EEt?= Cousson <bcousson@baylibre.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        nsekhar@ti.com, t-kristo@ti.com, j-keerthy@ti.com,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/20] rtc: omap: fixes and power-off feature
+Message-ID: <20141028151610.GA12379@n2100.arm.linux.org.uk>
+References: <20141024192540.GD11455@saruman> <20141024192948.GE11455@saruman> <20141024193655.GD19377@localhost> <20141024194442.GG11455@saruman> <20141024195532.GF19377@localhost> <20141027162251.d7ff2a5f31917c638d4e47f7@linux-foundation.org> <20141028002552.GX12379@n2100.arm.linux.org.uk> <20141028081616.GL2006@localhost> <20141028084745.GY12379@n2100.arm.linux.org.uk> <20141028131257.GS2006@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141028144156.GC8123@saruman>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(51704005)(164054003)(24454002)(4396001)(54356999)(76176999)(50986999)(85852003)(92726001)(92566001)(97756001)(86362001)(97736003)(77096002)(31966008)(53416004)(20776003)(47776003)(64706001)(46406003)(87936001)(68736004)(44976005)(19580395003)(106466001)(120916001)(50466002)(84676001)(83506001)(107046002)(76482002)(23726002)(21056001)(85306004)(102836001)(46102003)(80022003)(105586002)(95666004)(33656002)(110136001)(101416001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB195;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB195;
-X-Forefront-PRVS: 0378F1E47A
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Ray.Huang@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <20141028131257.GS2006@localhost>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 09:41:56AM -0500, Felipe Balbi wrote:
-> Hi,
+On Tue, Oct 28, 2014 at 02:12:57PM +0100, Johan Hovold wrote:
+> That's not what I was trying to refer to. But the patch set explicitly
+> allows for multiple, prioritised power-off handlers, which can power
+> off a board in different ways and with various degrees of success.
+> Specifically, it allows for fallback handlers in case one or more
+> power-off handlers fail.
 > 
-> On Tue, Oct 28, 2014 at 07:54:21PM +0800, Huang Rui wrote:
-> > Hi,
-> > 
-> > The series of patches add AMD Nolan (NL) SoC support for DesignWare USB3
-> > OTG IP with PCI bus glue layer. This controller supported hibernation, LPM
-> > erratum and used the 2.80a IP version and amd own phy. Current
-> > implementation support both simulation and SoC platform. And already tested
-> > with gadget zero and msc tool. It works well on file storage gadget.
-> > 
-> > 
-> > These patches are generated on balbi/testing/next
-> > 
-> > Changes from v2 -> v3
-> > - Confirmed these quirks will be needed in product level
-> > - Move AMD configuration patch to the last one with all quirk flags
-> > - Make all quirks as 1-bit field instead of single-bits on a 32-bit
-> >   variable
-> > - Add all quirks DeviceTree counterparts
-> > - Make LPM erratum configurable
-> > - Add PCI ID into pci_ids.h because it will be used both on PCI and DWC3
-> >   device driver.
-> > 
-> > Changes from v1 -> v2
-> > - Remove dual role function temporarily
-> > - Add pci quirk to avoid to bind with xhci driver
-> > - Distinguish between simulation board and soc
-> > - Break down all the special quirks
-> 
-> In all patches touching DeviceTree, you should add the matching binding
-> documentation under Documentation/devicetree/bindings/usb/dwc3.txt
-> 
+> So if we allow for that, what is to prevent the final power-off handler
+> from failing? And should this not be logged by arch code in the same way
+> as failure to restart is?
 
-OK, will add this documentation.
+And how is that different from having a set of power-off handlers, and
+reporting when each individual one fails?  Don't you want to know if
+your primary high priority reboot handler fails, just as much as you
+want to know if your final last-resort power-off handler fails?
 
-> There are still a few cases where you're clipping words too harshly, for
-> example tx_deemph doesn't look very intuitive, if you spell it out as
-> tx_deemphasis, it's easier to read. Remember that humans will be the
-> ones fiddling with those quirks.
-> 
-> A few of your patches I have fixed myself and they now sit on
-> testing/next, please rebase your remaining changes there and make sure
-> to add DeviceTree documentation.
-> 
-> When resending, please resend the entire series (even the ones I have
-> already taken) because you also didn't Cc devicetree mailing list.
-> 
+Or different from having no power-off handlers.
 
-Got it, could I also Cc stable mailing list and make them back port to
-stable trees?
+Here's the x86 code:
 
-Thanks,
-Rui
+void machine_power_off(void)
+{
+        machine_ops.power_off();
+}
+
+struct machine_ops machine_ops = {
+        .power_off = native_machine_power_off,
+...
+
+static void native_machine_power_off(void)
+{
+        if (pm_power_off) {
+                if (!reboot_force)
+                        machine_shutdown();
+                pm_power_off();
+        }
+        /* A fallback in case there is no PM info available */
+        tboot_shutdown(TB_SHUTDOWN_HALT);
+}
+
+void tboot_shutdown(u32 shutdown_type)
+{
+        void (*shutdown)(void);
+
+        if (!tboot_enabled())
+                return;
+
+See - x86 can very well just fall straight back out of machine_power_off()
+if there's no pm_power_off() hook and tboot is not enabled.
+
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
