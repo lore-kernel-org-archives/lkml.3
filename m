@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767AbaJ1Quy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:50:54 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:40322 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005AbaJ1Quw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:50:52 -0400
-Date: Tue, 28 Oct 2014 09:50:40 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>, Ku@roeck-us.net
-Subject: [PATCH v3 10/15] dsa: Add new optional devicetree property to
- describe EEPROM size
-Message-ID: <20141028165040.GA3383@roeck-us.net>
-References: <1414342365-27191-1-git-send-email-linux@roeck-us.net>
- <1414342365-27191-11-git-send-email-linux@roeck-us.net>
+	id S1752091AbaJ1Qxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:53:43 -0400
+Received: from mga14.intel.com ([192.55.52.115]:14377 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751081AbaJ1Qxl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 12:53:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,803,1406617200"; 
+   d="scan'208";a="612875471"
+Date: Tue, 28 Oct 2014 09:42:59 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/PATCH] gpio/pinctrl: baytrail: move gpio driver from
+ pinctrl to gpio directory
+Message-ID: <20141028164259.GA16355@psi-dev26.jf.intel.com>
+References: <1413227857-555-1-git-send-email-david.a.cohen@linux.intel.com>
+ <543CFC7F.2070607@linux.intel.com>
+ <20141014174535.GA6516@psi-dev26.jf.intel.com>
+ <20141015070812.GM2255@lahna.fi.intel.com>
+ <20141015165542.GA4529@psi-dev26.jf.intel.com>
+ <20141016080123.GW2255@lahna.fi.intel.com>
+ <20141017015322.GB4513@psi-dev26.jf.intel.com>
+ <CACRpkdafsd3VDiEKbdooXx+mdAtf-3B6QBOEGeHgyJf9GKHqhQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414342365-27191-11-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020202.544FC96C.0145,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 9
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <CACRpkdafsd3VDiEKbdooXx+mdAtf-3B6QBOEGeHgyJf9GKHqhQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dsa core now supports reading from and writing to a switch EEPROM
-if connected. Describe optional devicetree property indicating that
-an EEPROM is present and its size.
+On Tue, Oct 28, 2014 at 04:10:26PM +0100, Linus Walleij wrote:
+> On Fri, Oct 17, 2014 at 3:53 AM, David Cohen
+> <david.a.cohen@linux.intel.com> wrote:
+> > On Thu, Oct 16, 2014 at 11:01:23AM +0300, Mika Westerberg wrote:
+> 
+> >> In an ideal world, yes. However, the reality has shown that BIOS/FW gets
+> >> these wrong and we need to work it around in the OS.
+> >
+> > But we never upstream these workarounds, right? :)
+> 
+> Unless you discover it after it hits the market, right?
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v3:
-- eeprom-length property is attached to switch devicetree node,
-  not to dsa node.
-v2:
-- Added patch
+This is quite unlikely to happen. A pin mux misconfigured would have
+quite bad side effects. But considering it happens, IMHO not even this
+case would make an upstreamed baytrail pinctrl API consumer correct. The
+FW should get updated instead. But...
 
- Documentation/devicetree/bindings/net/dsa/dsa.txt | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+> 
+> I think this driver is just fine exactly where it is. Besides, the driver
+> is fully aware of all its pins, and just look at all the pull up etc
+> information displayed by byt_gpio_dbg_show(), it doesn't get more
+> pin control than that even if you don't implement the pin control
+> API.
 
-diff --git a/Documentation/devicetree/bindings/net/dsa/dsa.txt b/Documentation/devicetree/bindings/net/dsa/dsa.txt
-index a62c889..e124847 100644
---- a/Documentation/devicetree/bindings/net/dsa/dsa.txt
-+++ b/Documentation/devicetree/bindings/net/dsa/dsa.txt
-@@ -10,7 +10,7 @@ Required properties:
- - dsa,ethernet		: Should be a phandle to a valid Ethernet device node
- - dsa,mii-bus		: Should be a phandle to a valid MDIO bus device node
- 
--Optionnal properties:
-+Optional properties:
- - interrupts		: property with a value describing the switch
- 			  interrupt number (not supported by the driver)
- 
-@@ -23,6 +23,13 @@ Each of these switch child nodes should have the following required properties:
- - #address-cells	: Must be 1
- - #size-cells		: Must be 0
- 
-+A switch child node has the following optional property:
-+
-+- eeprom-length		: Set to the length of an EEPROM connected to the
-+			  switch. Must be set if the switch can not detect
-+			  the presence and/or size of a connected EEPROM,
-+			  otherwise optional.
-+
- A switch may have multiple "port" children nodes
- 
- Each port children node must have the following mandatory properties:
--- 
-1.9.1
+... considering the development boards + the case you mentioned above,
+my RFC got more buried than it already was :)
 
+Br, David
+
+> 
+> Yours,
+> Linus Walleij
