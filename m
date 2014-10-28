@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635AbaJ1Dja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:39:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44621 "EHLO
+	id S1754655AbaJ1Djf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:39:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44632 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582AbaJ1Dj1 (ORCPT
+	with ESMTP id S1754582AbaJ1Djc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:27 -0400
+	Mon, 27 Oct 2014 23:39:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.17 070/146] arm64: compat: fix compat types affecting struct compat_elf_prpsinfo
-Date: Tue, 28 Oct 2014 11:33:32 +0800
-Message-Id: <20141028033346.415682359@linuxfoundation.org>
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.17 093/146] PCI: mvebu: Fix uninitialized variable in mvebu_get_tgt_attr()
+Date: Tue, 28 Oct 2014 11:33:55 +0800
+Message-Id: <20141028033347.461840790@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,39 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Victor Kamensky <victor.kamensky@linaro.org>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 971a5b6fe634bb7b617d8c5f25b6a3ddbc600194 upstream.
+commit 56fab6e189441d714a2bfc8a64f3df9c0749dff7 upstream.
 
-The compat_elf_prpsinfo structure does not match the arch/arm struct
-elf_pspsinfo definition. As result NT_PRPSINFO note in core file
-created by arm64 kernel for aarch32 (compat) process has wrong size.
-So gdb cannot display command that caused process crash.
+Geert Uytterhoeven reported a warning when building pci-mvebu:
 
-Fix is to change size of __compat_uid_t, __compat_gid_t so it would
-match size of similar fields in arch/arm case.
+  drivers/pci/host/pci-mvebu.c: In function 'mvebu_get_tgt_attr':
+  drivers/pci/host/pci-mvebu.c:887:39: warning: 'rtype' may be used uninitialized in this function [-Wmaybe-uninitialized]
+     if (slot == PCI_SLOT(devfn) && type == rtype) {
+					 ^
 
-Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+And indeed, the code of mvebu_get_tgt_attr() may lead to the usage of rtype
+when being uninitialized, even though it would only happen if we had
+entries other than I/O space and 32 bits memory space.
+
+This commit fixes that by simply skipping the current DT range being
+considered, if it doesn't match the resource type we're looking for.
+
+Reported-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/compat.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/pci/host/pci-mvebu.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/arch/arm64/include/asm/compat.h
-+++ b/arch/arm64/include/asm/compat.h
-@@ -37,8 +37,8 @@ typedef s32		compat_ssize_t;
- typedef s32		compat_time_t;
- typedef s32		compat_clock_t;
- typedef s32		compat_pid_t;
--typedef u32		__compat_uid_t;
--typedef u32		__compat_gid_t;
-+typedef u16		__compat_uid_t;
-+typedef u16		__compat_gid_t;
- typedef u16		__compat_uid16_t;
- typedef u16		__compat_gid16_t;
- typedef u32		__compat_uid32_t;
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -873,7 +873,7 @@ static int mvebu_get_tgt_attr(struct dev
+ 	rangesz = pna + na + ns;
+ 	nranges = rlen / sizeof(__be32) / rangesz;
+ 
+-	for (i = 0; i < nranges; i++) {
++	for (i = 0; i < nranges; i++, range += rangesz) {
+ 		u32 flags = of_read_number(range, 1);
+ 		u32 slot = of_read_number(range + 1, 1);
+ 		u64 cpuaddr = of_read_number(range + na, pna);
+@@ -883,14 +883,14 @@ static int mvebu_get_tgt_attr(struct dev
+ 			rtype = IORESOURCE_IO;
+ 		else if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_MEM32)
+ 			rtype = IORESOURCE_MEM;
++		else
++			continue;
+ 
+ 		if (slot == PCI_SLOT(devfn) && type == rtype) {
+ 			*tgt = DT_CPUADDR_TO_TARGET(cpuaddr);
+ 			*attr = DT_CPUADDR_TO_ATTR(cpuaddr);
+ 			return 0;
+ 		}
+-
+-		range += rangesz;
+ 	}
+ 
+ 	return -ENOENT;
 
 
