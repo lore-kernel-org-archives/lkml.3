@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908AbaJ1LHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:07:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51065 "EHLO
+	id S1755925AbaJ1LHZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:07:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51075 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752399AbaJ1LHD (ORCPT
+	with ESMTP id S1751949AbaJ1LHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:07:03 -0400
-Date: Tue, 28 Oct 2014 04:05:45 -0700
+	Tue, 28 Oct 2014 07:07:20 -0400
+Date: Tue, 28 Oct 2014 04:06:19 -0700
 From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-8f9fbf092cd0ae31722b42c9abb427a87d55c18a@git.kernel.org>
-Cc: mingo@kernel.org, hpa@zytor.com, akpm@linux-foundation.org,
-        oleg@redhat.com, rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org, mgorman@suse.de,
-        tglx@linutronix.de, luto@amacapital.net
-Reply-To: hpa@zytor.com, mingo@kernel.org, oleg@redhat.com,
-        rostedt@goodmis.org, akpm@linux-foundation.org,
+Message-ID: <tip-dfa50b605c2a933b7bb1c1d575a0da4e897e3c7d@git.kernel.org>
+Cc: torvalds@linux-foundation.org, mingo@kernel.org, tkhai@yandex.ru,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, rostedt@goodmis.org,
+        oleg@redhat.com, hpa@zytor.com, peterz@infradead.org
+Reply-To: tkhai@yandex.ru, linux-kernel@vger.kernel.org, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, luto@amacapital.net, mgorman@suse.de,
-        tglx@linutronix.de
-In-Reply-To: <20141007195108.GB28002@redhat.com>
-References: <20141007195108.GB28002@redhat.com>
+        rostedt@goodmis.org, tglx@linutronix.de, oleg@redhat.com,
+        hpa@zytor.com
+In-Reply-To: <20141009193232.GB5408@redhat.com>
+References: <20141009193232.GB5408@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched:
-  Fix the PREEMPT_ACTIVE check in __trace_sched_switch_state()
-Git-Commit-ID: 8f9fbf092cd0ae31722b42c9abb427a87d55c18a
+Subject: [tip:sched/core] sched: Make finish_task_switch() return '
+ struct rq *'
+Git-Commit-ID: dfa50b605c2a933b7bb1c1d575a0da4e897e3c7d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,60 +35,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8f9fbf092cd0ae31722b42c9abb427a87d55c18a
-Gitweb:     http://git.kernel.org/tip/8f9fbf092cd0ae31722b42c9abb427a87d55c18a
+Commit-ID:  dfa50b605c2a933b7bb1c1d575a0da4e897e3c7d
+Gitweb:     http://git.kernel.org/tip/dfa50b605c2a933b7bb1c1d575a0da4e897e3c7d
 Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Tue, 7 Oct 2014 21:51:08 +0200
+AuthorDate: Thu, 9 Oct 2014 21:32:32 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:47:53 +0100
+CommitDate: Tue, 28 Oct 2014 10:47:55 +0100
 
-sched: Fix the PREEMPT_ACTIVE check in __trace_sched_switch_state()
+sched: Make finish_task_switch() return 'struct rq *'
 
-task_preempt_count() has nothing to do with the actual preempt counter,
-thread_info->saved_preempt_count is only valid right after switch_to().
+Both callers of finish_task_switch() need to recalculate this_rq()
+and pass it as an argument, plus __schedule() does this again after
+context_switch().
 
-__trace_sched_switch_state() can use preempt_count(), prev is still the
-current task when trace_sched_switch() is called.
+It would be simpler to call this_rq() once in finish_task_switch()
+and return the this rq to the callers.
+
+Note: probably "int cpu" in __schedule() should die; it is not used
+and both rcu_note_context_switch() and wq_worker_sleeping() do not
+really need this argument.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-[ Added BUG_ON(). ]
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Kirill Tkhai <tkhai@yandex.ru>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20141007195108.GB28002@redhat.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/20141009193232.GB5408@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/trace/events/sched.h | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ kernel/sched/core.c | 38 +++++++++++++++-----------------------
+ 1 file changed, 15 insertions(+), 23 deletions(-)
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 0a68d5a..30fedaf 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -97,16 +97,19 @@ static inline long __trace_sched_switch_state(struct task_struct *p)
- 	long state = p->state;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b493560..1b69603 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2220,7 +2220,6 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
  
- #ifdef CONFIG_PREEMPT
-+#ifdef CONFIG_SCHED_DEBUG
-+	BUG_ON(p != current);
-+#endif /* CONFIG_SCHED_DEBUG */
- 	/*
- 	 * For all intents and purposes a preempted task is a running task.
- 	 */
--	if (task_preempt_count(p) & PREEMPT_ACTIVE)
-+	if (preempt_count() & PREEMPT_ACTIVE)
- 		state = TASK_RUNNING | TASK_STATE_MAX;
--#endif
-+#endif /* CONFIG_PREEMPT */
+ /**
+  * finish_task_switch - clean up after a task-switch
+- * @rq: runqueue associated with task-switch
+  * @prev: the thread we just switched away from.
+  *
+  * finish_task_switch must be called after the context switch, paired
+@@ -2232,10 +2231,16 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+  * so, we finish that here outside of the runqueue lock. (Doing it
+  * with the lock held can cause deadlocks; see schedule() for
+  * details.)
++ *
++ * The context switch have flipped the stack from under us and restored the
++ * local variables which were saved when this task called schedule() in the
++ * past. prev == current is still correct but we need to recalculate this_rq
++ * because prev may have moved to another CPU.
+  */
+-static void finish_task_switch(struct rq *rq, struct task_struct *prev)
++static struct rq *finish_task_switch(struct task_struct *prev)
+ 	__releases(rq->lock)
+ {
++	struct rq *rq = this_rq();
+ 	struct mm_struct *mm = rq->prev_mm;
+ 	long prev_state;
  
- 	return state;
+@@ -2275,6 +2280,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+ 	}
+ 
+ 	tick_nohz_task_switch(current);
++	return rq;
  }
--#endif
-+#endif /* CREATE_TRACE_POINTS */
+ 
+ #ifdef CONFIG_SMP
+@@ -2313,8 +2319,7 @@ asmlinkage __visible void schedule_tail(struct task_struct *prev)
+ 
+ 	/* finish_task_switch() drops rq->lock and enables preemtion */
+ 	preempt_disable();
+-	rq = this_rq();
+-	finish_task_switch(rq, prev);
++	rq = finish_task_switch(prev);
+ 	post_schedule(rq);
+ 	preempt_enable();
+ 
+@@ -2323,10 +2328,9 @@ asmlinkage __visible void schedule_tail(struct task_struct *prev)
+ }
  
  /*
-  * Tracepoint for task switches, performed by the scheduler:
+- * context_switch - switch to the new MM and the new
+- * thread's register state.
++ * context_switch - switch to the new MM and the new thread's register state.
+  */
+-static inline void
++static inline struct rq *
+ context_switch(struct rq *rq, struct task_struct *prev,
+ 	       struct task_struct *next)
+ {
+@@ -2365,14 +2369,9 @@ context_switch(struct rq *rq, struct task_struct *prev,
+ 	context_tracking_task_switch(prev, next);
+ 	/* Here we just switch the register state and the stack. */
+ 	switch_to(prev, next, prev);
+-
+ 	barrier();
+-	/*
+-	 * this_rq must be evaluated again because prev may have moved
+-	 * CPUs since it called schedule(), thus the 'rq' on its stack
+-	 * frame will be invalid.
+-	 */
+-	finish_task_switch(this_rq(), prev);
++
++	return finish_task_switch(prev);
+ }
+ 
+ /*
+@@ -2854,15 +2853,8 @@ need_resched:
+ 		rq->curr = next;
+ 		++*switch_count;
+ 
+-		context_switch(rq, prev, next); /* unlocks the rq */
+-		/*
+-		 * The context switch have flipped the stack from under us
+-		 * and restored the local variables which were saved when
+-		 * this task called schedule() in the past. prev == current
+-		 * is still correct, but it can be moved to another cpu/rq.
+-		 */
+-		cpu = smp_processor_id();
+-		rq = cpu_rq(cpu);
++		rq = context_switch(rq, prev, next); /* unlocks the rq */
++		cpu = cpu_of(rq);
+ 	} else
+ 		raw_spin_unlock_irq(&rq->lock);
+ 
