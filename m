@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001AbaJ1DvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:51:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46022 "EHLO
+	id S1756067AbaJ1Dv3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:51:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46052 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913AbaJ1DvG (ORCPT
+	with ESMTP id S1756049AbaJ1Dv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:51:06 -0400
+	Mon, 27 Oct 2014 23:51:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 080/100] sparc64: Fix reversed start/end in flush_tlb_kernel_range()
-Date: Tue, 28 Oct 2014 11:36:05 +0800
-Message-Id: <20141028033504.145025603@linuxfoundation.org>
+        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 099/100] sparc64: Fix register corruption in top-most kernel stack frame during boot.
+Date: Tue, 28 Oct 2014 11:36:24 +0800
+Message-Id: <20141028033504.975894825@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -30,65 +30,318 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 473ad7f4fb005d1bb727e4ef27d370d28703a062 ]
+[ Upstream commit ef3e035c3a9b81da8a778bc333d10637acf6c199 ]
 
-When we have to split up a flush request into multiple pieces
-(in order to avoid the firmware range) we don't specify the
-arguments in the right order for the second piece.
+Meelis Roos reported that kernels built with gcc-4.9 do not boot, we
+eventually narrowed this down to only impacting machines using
+UltraSPARC-III and derivitive cpus.
 
-Fix the order, or else we get hangs as the code tries to
-flush "a lot" of entries and we get lockups like this:
+The crash happens right when the first user process is spawned:
 
-[ 4422.981276] NMI watchdog: BUG: soft lockup - CPU#12 stuck for 23s! [expect:117032]
-[ 4422.996130] Modules linked in: ipv6 loop usb_storage igb ptp sg sr_mod ehci_pci ehci_hcd pps_core n2_rng rng_core
-[ 4423.016617] CPU: 12 PID: 117032 Comm: expect Not tainted 3.17.0-rc4+ #1608
-[ 4423.030331] task: fff8003cc730e220 ti: fff8003d99d54000 task.ti: fff8003d99d54000
-[ 4423.045282] TSTATE: 0000000011001602 TPC: 00000000004521e8 TNPC: 00000000004521ec Y: 00000000    Not tainted
-[ 4423.064905] TPC: <__flush_tlb_kernel_range+0x28/0x40>
-[ 4423.074964] g0: 000000000052fd10 g1: 00000001295a8000 g2: ffffff7176ffc000 g3: 0000000000002000
-[ 4423.092324] g4: fff8003cc730e220 g5: fff8003dfedcc000 g6: fff8003d99d54000 g7: 0000000000000006
-[ 4423.109687] o0: 0000000000000000 o1: 0000000000000000 o2: 0000000000000003 o3: 00000000f0000000
-[ 4423.127058] o4: 0000000000000080 o5: 00000001295a8000 sp: fff8003d99d56d01 ret_pc: 000000000052ff54
-[ 4423.145121] RPC: <__purge_vmap_area_lazy+0x314/0x3a0>
-[ 4423.155185] l0: 0000000000000000 l1: 0000000000000000 l2: 0000000000a38040 l3: 0000000000000000
-[ 4423.172559] l4: fff8003dae8965e0 l5: ffffffffffffffff l6: 0000000000000000 l7: 00000000f7e2b138
-[ 4423.189913] i0: fff8003d99d576a0 i1: fff8003d99d576a8 i2: fff8003d99d575e8 i3: 0000000000000000
-[ 4423.207284] i4: 0000000000008008 i5: fff8003d99d575c8 i6: fff8003d99d56df1 i7: 0000000000530c24
-[ 4423.224640] I7: <free_vmap_area_noflush+0x64/0x80>
-[ 4423.234193] Call Trace:
-[ 4423.239051]  [0000000000530c24] free_vmap_area_noflush+0x64/0x80
-[ 4423.251029]  [0000000000531a7c] remove_vm_area+0x5c/0x80
-[ 4423.261628]  [0000000000531b80] __vunmap+0x20/0x120
-[ 4423.271352]  [000000000071cf18] n_tty_close+0x18/0x40
-[ 4423.281423]  [00000000007222b0] tty_ldisc_close+0x30/0x60
-[ 4423.292183]  [00000000007225a4] tty_ldisc_reinit+0x24/0xa0
-[ 4423.303120]  [0000000000722ab4] tty_ldisc_hangup+0xd4/0x1e0
-[ 4423.314232]  [0000000000719aa0] __tty_hangup+0x280/0x3c0
-[ 4423.324835]  [0000000000724cb4] pty_close+0x134/0x1a0
-[ 4423.334905]  [000000000071aa24] tty_release+0x104/0x500
-[ 4423.345316]  [00000000005511d0] __fput+0x90/0x1e0
-[ 4423.354701]  [000000000047fa54] task_work_run+0x94/0xe0
-[ 4423.365126]  [0000000000404b44] __handle_signal+0xc/0x2c
+[   54.451346] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000004
+[   54.451346]
+[   54.571516] CPU: 1 PID: 1 Comm: init Not tainted 3.16.0-rc2-00211-gd7933ab #96
+[   54.666431] Call Trace:
+[   54.698453]  [0000000000762f8c] panic+0xb0/0x224
+[   54.759071]  [000000000045cf68] do_exit+0x948/0x960
+[   54.823123]  [000000000042cbc0] fault_in_user_windows+0xe0/0x100
+[   54.902036]  [0000000000404ad0] __handle_user_windows+0x0/0x10
+[   54.978662] Press Stop-A (L1-A) to return to the boot prom
+[   55.050713] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000004
 
-Fixes: 4ca9a23765da ("sparc64: Guard against flushing openfirmware mappings.")
+Further investigation showed that compiling only per_cpu_patch() with
+an older compiler fixes the boot.
+
+Detailed analysis showed that the function is not being miscompiled by
+gcc-4.9, but it is using a different register allocation ordering.
+
+With the gcc-4.9 compiled function, something during the code patching
+causes some of the %i* input registers to get corrupted.  Perhaps
+we have a TLB miss path into the firmware that is deep enough to
+cause a register window spill and subsequent restore when we get
+back from the TLB miss trap.
+
+Let's plug this up by doing two things:
+
+1) Stop using the firmware stack for client interface calls into
+   the firmware.  Just use the kernel's stack.
+
+2) As soon as we can, call into a new function "start_early_boot()"
+   to put a one-register-window buffer between the firmware's
+   deepest stack frame and the top-most initial kernel one.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/mm/init_64.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/sparc/include/asm/oplib_64.h |    3 +-
+ arch/sparc/include/asm/setup.h    |    4 +++
+ arch/sparc/kernel/entry.h         |    3 --
+ arch/sparc/kernel/head_64.S       |   40 +++-----------------------------------
+ arch/sparc/kernel/hvtramp.S       |    1 
+ arch/sparc/kernel/setup_64.c      |   28 +++++++++++++++++++-------
+ arch/sparc/kernel/trampoline_64.S |   12 ++++++-----
+ arch/sparc/prom/cif.S             |    5 +---
+ arch/sparc/prom/init_64.c         |    6 ++---
+ arch/sparc/prom/p1275.c           |    2 -
+ 10 files changed, 42 insertions(+), 62 deletions(-)
 
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2720,8 +2720,8 @@ void flush_tlb_kernel_range(unsigned lon
- 			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
- 		}
- 		if (end > HI_OBP_ADDRESS) {
--			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
--			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
-+			flush_tsb_kernel_range(HI_OBP_ADDRESS, end);
-+			do_flush_tlb_kernel_range(HI_OBP_ADDRESS, end);
- 		}
- 	} else {
- 		flush_tsb_kernel_range(start, end);
+--- a/arch/sparc/include/asm/oplib_64.h
++++ b/arch/sparc/include/asm/oplib_64.h
+@@ -62,7 +62,8 @@ struct linux_mem_p1275 {
+ /* You must call prom_init() before using any of the library services,
+  * preferably as early as possible.  Pass it the romvec pointer.
+  */
+-extern void prom_init(void *cif_handler, void *cif_stack);
++extern void prom_init(void *cif_handler);
++extern void prom_init_report(void);
+ 
+ /* Boot argument acquisition, returns the boot command line string. */
+ extern char *prom_getbootargs(void);
+--- a/arch/sparc/include/asm/setup.h
++++ b/arch/sparc/include/asm/setup.h
+@@ -24,6 +24,10 @@ static inline int con_is_present(void)
+ }
+ #endif
+ 
++#ifdef CONFIG_SPARC64
++extern void __init start_early_boot(void);
++#endif
++
+ extern void sun_do_break(void);
+ extern int stop_a_enabled;
+ extern int scons_pwroff;
+--- a/arch/sparc/kernel/entry.h
++++ b/arch/sparc/kernel/entry.h
+@@ -66,13 +66,10 @@ struct pause_patch_entry {
+ extern struct pause_patch_entry __pause_3insn_patch,
+ 	__pause_3insn_patch_end;
+ 
+-extern void __init per_cpu_patch(void);
+ extern void sun4v_patch_1insn_range(struct sun4v_1insn_patch_entry *,
+ 				    struct sun4v_1insn_patch_entry *);
+ extern void sun4v_patch_2insn_range(struct sun4v_2insn_patch_entry *,
+ 				    struct sun4v_2insn_patch_entry *);
+-extern void __init sun4v_patch(void);
+-extern void __init boot_cpu_id_too_large(int cpu);
+ extern unsigned int dcache_parity_tl1_occurred;
+ extern unsigned int icache_parity_tl1_occurred;
+ 
+--- a/arch/sparc/kernel/head_64.S
++++ b/arch/sparc/kernel/head_64.S
+@@ -672,14 +672,12 @@ tlb_fixup_done:
+ 	sethi	%hi(init_thread_union), %g6
+ 	or	%g6, %lo(init_thread_union), %g6
+ 	ldx	[%g6 + TI_TASK], %g4
+-	mov	%sp, %l6
+ 
+ 	wr	%g0, ASI_P, %asi
+ 	mov	1, %g1
+ 	sllx	%g1, THREAD_SHIFT, %g1
+ 	sub	%g1, (STACKFRAME_SZ + STACK_BIAS), %g1
+ 	add	%g6, %g1, %sp
+-	mov	0, %fp
+ 
+ 	/* Set per-cpu pointer initially to zero, this makes
+ 	 * the boot-cpu use the in-kernel-image per-cpu areas
+@@ -706,44 +704,14 @@ tlb_fixup_done:
+ 	 nop
+ #endif
+ 
+-	mov	%l6, %o1			! OpenPROM stack
+ 	call	prom_init
+ 	 mov	%l7, %o0			! OpenPROM cif handler
+ 
+-	/* Initialize current_thread_info()->cpu as early as possible.
+-	 * In order to do that accurately we have to patch up the get_cpuid()
+-	 * assembler sequences.  And that, in turn, requires that we know
+-	 * if we are on a Starfire box or not.  While we're here, patch up
+-	 * the sun4v sequences as well.
++	/* To create a one-register-window buffer between the kernel's
++	 * initial stack and the last stack frame we use from the firmware,
++	 * do the rest of the boot from a C helper function.
+ 	 */
+-	call	check_if_starfire
+-	 nop
+-	call	per_cpu_patch
+-	 nop
+-	call	sun4v_patch
+-	 nop
+-
+-#ifdef CONFIG_SMP
+-	call	hard_smp_processor_id
+-	 nop
+-	cmp	%o0, NR_CPUS
+-	blu,pt	%xcc, 1f
+-	 nop
+-	call	boot_cpu_id_too_large
+-	 nop
+-	/* Not reached... */
+-
+-1:
+-#else
+-	mov	0, %o0
+-#endif
+-	sth	%o0, [%g6 + TI_CPU]
+-
+-	call	prom_init_report
+-	 nop
+-
+-	/* Off we go.... */
+-	call	start_kernel
++	call	start_early_boot
+ 	 nop
+ 	/* Not reached... */
+ 
+--- a/arch/sparc/kernel/hvtramp.S
++++ b/arch/sparc/kernel/hvtramp.S
+@@ -109,7 +109,6 @@ hv_cpu_startup:
+ 	sllx		%g5, THREAD_SHIFT, %g5
+ 	sub		%g5, (STACKFRAME_SZ + STACK_BIAS), %g5
+ 	add		%g6, %g5, %sp
+-	mov		0, %fp
+ 
+ 	call		init_irqwork_curcpu
+ 	 nop
+--- a/arch/sparc/kernel/setup_64.c
++++ b/arch/sparc/kernel/setup_64.c
+@@ -30,6 +30,7 @@
+ #include <linux/cpu.h>
+ #include <linux/initrd.h>
+ #include <linux/module.h>
++#include <linux/start_kernel.h>
+ 
+ #include <asm/io.h>
+ #include <asm/processor.h>
+@@ -174,7 +175,7 @@ char reboot_command[COMMAND_LINE_SIZE];
+ 
+ static struct pt_regs fake_swapper_regs = { { 0, }, 0, 0, 0, 0 };
+ 
+-void __init per_cpu_patch(void)
++static void __init per_cpu_patch(void)
+ {
+ 	struct cpuid_patch_entry *p;
+ 	unsigned long ver;
+@@ -266,7 +267,7 @@ void sun4v_patch_2insn_range(struct sun4
+ 	}
+ }
+ 
+-void __init sun4v_patch(void)
++static void __init sun4v_patch(void)
+ {
+ 	extern void sun4v_hvapi_init(void);
+ 
+@@ -335,14 +336,25 @@ static void __init pause_patch(void)
+ 	}
+ }
+ 
+-#ifdef CONFIG_SMP
+-void __init boot_cpu_id_too_large(int cpu)
++void __init start_early_boot(void)
+ {
+-	prom_printf("Serious problem, boot cpu id (%d) >= NR_CPUS (%d)\n",
+-		    cpu, NR_CPUS);
+-	prom_halt();
++	int cpu;
++
++	check_if_starfire();
++	per_cpu_patch();
++	sun4v_patch();
++
++	cpu = hard_smp_processor_id();
++	if (cpu >= NR_CPUS) {
++		prom_printf("Serious problem, boot cpu id (%d) >= NR_CPUS (%d)\n",
++			    cpu, NR_CPUS);
++		prom_halt();
++	}
++	current_thread_info()->cpu = cpu;
++
++	prom_init_report();
++	start_kernel();
+ }
+-#endif
+ 
+ /* On Ultra, we support all of the v8 capabilities. */
+ unsigned long sparc64_elf_hwcap = (HWCAP_SPARC_FLUSH | HWCAP_SPARC_STBAR |
+--- a/arch/sparc/kernel/trampoline_64.S
++++ b/arch/sparc/kernel/trampoline_64.S
+@@ -109,10 +109,13 @@ startup_continue:
+ 	brnz,pn		%g1, 1b
+ 	 nop
+ 
+-	sethi		%hi(p1275buf), %g2
+-	or		%g2, %lo(p1275buf), %g2
+-	ldx		[%g2 + 0x10], %l2
+-	add		%l2, -(192 + 128), %sp
++	/* Get onto temporary stack which will be in the locked
++	 * kernel image.
++	 */
++	sethi		%hi(tramp_stack), %g1
++	or		%g1, %lo(tramp_stack), %g1
++	add		%g1, TRAMP_STACK_SIZE, %g1
++	sub		%g1, STACKFRAME_SZ + STACK_BIAS + 256, %sp
+ 	flushw
+ 
+ 	/* Setup the loop variables:
+@@ -394,7 +397,6 @@ after_lock_tlb:
+ 	sllx		%g5, THREAD_SHIFT, %g5
+ 	sub		%g5, (STACKFRAME_SZ + STACK_BIAS), %g5
+ 	add		%g6, %g5, %sp
+-	mov		0, %fp
+ 
+ 	rdpr		%pstate, %o1
+ 	or		%o1, PSTATE_IE, %o1
+--- a/arch/sparc/prom/cif.S
++++ b/arch/sparc/prom/cif.S
+@@ -11,11 +11,10 @@
+ 	.text
+ 	.globl	prom_cif_direct
+ prom_cif_direct:
++	save	%sp, -192, %sp
+ 	sethi	%hi(p1275buf), %o1
+ 	or	%o1, %lo(p1275buf), %o1
+-	ldx	[%o1 + 0x0010], %o2	! prom_cif_stack
+-	save	%o2, -192, %sp
+-	ldx	[%i1 + 0x0008], %l2	! prom_cif_handler
++	ldx	[%o1 + 0x0008], %l2	! prom_cif_handler
+ 	mov	%g4, %l0
+ 	mov	%g5, %l1
+ 	mov	%g6, %l3
+--- a/arch/sparc/prom/init_64.c
++++ b/arch/sparc/prom/init_64.c
+@@ -26,13 +26,13 @@ phandle prom_chosen_node;
+  * It gets passed the pointer to the PROM vector.
+  */
+ 
+-extern void prom_cif_init(void *, void *);
++extern void prom_cif_init(void *);
+ 
+-void __init prom_init(void *cif_handler, void *cif_stack)
++void __init prom_init(void *cif_handler)
+ {
+ 	phandle node;
+ 
+-	prom_cif_init(cif_handler, cif_stack);
++	prom_cif_init(cif_handler);
+ 
+ 	prom_chosen_node = prom_finddevice(prom_chosen_path);
+ 	if (!prom_chosen_node || (s32)prom_chosen_node == -1)
+--- a/arch/sparc/prom/p1275.c
++++ b/arch/sparc/prom/p1275.c
+@@ -20,7 +20,6 @@
+ struct {
+ 	long prom_callback;			/* 0x00 */
+ 	void (*prom_cif_handler)(long *);	/* 0x08 */
+-	unsigned long prom_cif_stack;		/* 0x10 */
+ } p1275buf;
+ 
+ extern void prom_world(int);
+@@ -52,5 +51,4 @@ void p1275_cmd_direct(unsigned long *arg
+ void prom_cif_init(void *cif_handler, void *cif_stack)
+ {
+ 	p1275buf.prom_cif_handler = (void (*)(long *))cif_handler;
+-	p1275buf.prom_cif_stack = (unsigned long)cif_stack;
+ }
 
 
