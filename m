@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbaJ1QGH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:06:07 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:54730 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752376AbaJ1QGE (ORCPT
+	id S1753488AbaJ1QGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:06:38 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:50254 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617AbaJ1QGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:06:04 -0400
-Date: Tue, 28 Oct 2014 12:05:52 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Joe Perches <joe@perches.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] docg3: Fix miuse of seq_printf return value
-Message-ID: <20141028120552.63c2324c@gandalf.local.home>
-In-Reply-To: <1414511877.6643.12.camel@perches.com>
-References: <20140929124246.3e39dac8@gandalf.local.home>
-	<cover.1412031505.git.joe@perches.com>
-	<c1a1138f1b05e87a3fbd8737af2f2c0be6e2724b.1412031505.git.joe@perches.com>
-	<20141022082916.GD16128@brian-ubuntu>
-	<20141028111301.22481f2a@gandalf.local.home>
-	<1414511877.6643.12.camel@perches.com>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 28 Oct 2014 12:06:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <CACRpkdZO+TuCodDzLZ2evRc0ak+4of38aKNqCiC5cMkm++keHw@mail.gmail.com>
+References: <1413847670-12245-1-git-send-email-dianders@chromium.org>
+	<CACRpkdZO+TuCodDzLZ2evRc0ak+4of38aKNqCiC5cMkm++keHw@mail.gmail.com>
+Date: Tue, 28 Oct 2014 09:06:35 -0700
+X-Google-Sender-Auth: jVXsaOURHeVsFZXTCMKQFEZ7-Z8
+Message-ID: <CAD=FV=UFRPDtKpgpbnMf4U33C0VVP+BzZRj4rsN_D3OGxJwfzA@mail.gmail.com>
+Subject: Re: [PATCH 1/4] pinctrl: rockchip: Set wake_enabled
+From: Doug Anderson <dianders@chromium.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Heiko Stuebner <heiko@sntech.de>, Chris Zhong <zyw@rock-chips.com>,
+        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014 08:57:57 -0700
-Joe Perches <joe@perches.com> wrote:
+Linus,
 
-> On Tue, 2014-10-28 at 11:13 -0400, Steven Rostedt wrote:
-> > I'm going to be working on changes to remove the return value of
-> > seq_printf() and friends.
-> 
-> I'm sure you know all of this, but for anyone else:
-> 
-> This doesn't need to be done in a single pass.
+On Tue, Oct 28, 2014 at 8:51 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, Oct 21, 2014 at 1:27 AM, Doug Anderson <dianders@chromium.org> wrote:
+>
+>> The rockchip pinctrl driver uses irq_gc_set_wake() but doesn't setup
+>> the .wake_enabled member.  That means that we can never actually use a
+>> pin for wakeup.  When "irq_set_irq_wake()" tries to call through it
+>> will always get a failure from set_irq_wake_real() and will then set
+>> wake_depth to 0.  Assuming you can resume you'll later get an error
+>> message about "Unbalanced IRQ x wake disable".
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>
+> Heiko, are you looking at this patch series? Need you Reviewed-by
+> to merge this stuff.
 
-Yeah, I took a look at all the places, and I've decided to take it off
-in chunks. I'm starting with the ones you posted, and will try to get
-acks for them. And then go after other chunks as I have time.
+See Heiko's review on the latest version of this series (v2).
 
-I would like to get this done before I do my merge of trace_seq and
-seq_file, but I'm thinking I may have to do that in parallel.
+https://patchwork.kernel.org/patch/5126811/
+https://patchwork.kernel.org/patch/5126941/
+https://patchwork.kernel.org/patch/5126971/
+https://patchwork.kernel.org/patch/5126801/
 
--- Steve
-
+-Doug
