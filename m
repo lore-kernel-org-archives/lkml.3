@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089AbaJ1Dl2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:41:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44935 "EHLO
+	id S932165AbaJ1Dlc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:41:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44952 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755035AbaJ1DlT (ORCPT
+	with ESMTP id S1755091AbaJ1Dl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:19 -0400
+	Mon, 27 Oct 2014 23:41:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.17 136/146] sparc64: Define VA hole at run time, rather than at compile time.
-Date: Tue, 28 Oct 2014 11:34:38 +0800
-Message-Id: <20141028033349.351937972@linuxfoundation.org>
+Subject: [PATCH 3.17 140/146] sparc64: Increase MAX_PHYS_ADDRESS_BITS to 53.
+Date: Tue, 28 Oct 2014 11:34:42 +0800
+Message-Id: <20141028033349.529948894@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -31,97 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 4397bed080598001e88f612deb8b080bb1cc2322 ]
+Make sure, at compile time, that the kernel can properly support
+whatever MAX_PHYS_ADDRESS_BITS is defined to.
 
-Now that we use 4-level page tables, we can provide up to 53-bits of
-virtual address space to the user.
+On M7 chips, use a max_phys_bits value of 49.
 
-Adjust the VA hole based upon the capabilities of the cpu type probed.
+Based upon a patch by Bob Picco.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/page_64.h |   15 ++++-----------
- arch/sparc/mm/init_64.c          |   21 +++++++++++++++++++++
- 2 files changed, 25 insertions(+), 11 deletions(-)
+ arch/sparc/include/asm/page_64.h    |    8 ++++----
+ arch/sparc/include/asm/pgtable_64.h |    4 ++++
+ arch/sparc/mm/init_64.c             |    9 ++++++++-
+ 3 files changed, 16 insertions(+), 5 deletions(-)
 
 --- a/arch/sparc/include/asm/page_64.h
 +++ b/arch/sparc/include/asm/page_64.h
-@@ -102,21 +102,14 @@ typedef unsigned long pgprot_t;
+@@ -122,11 +122,11 @@ extern unsigned long PAGE_OFFSET;
  
- typedef pte_t *pgtable_t;
+ #endif /* !(__ASSEMBLY__) */
  
--/* These two values define the virtual address space range in which we
-- * must forbid 64-bit user processes from making mappings.  It used to
-- * represent precisely the virtual address space hole present in most
-- * early sparc64 chips including UltraSPARC-I.  But now it also is
-- * further constrained by the limits of our page tables, which is
-- * 43-bits of virtual address.
-- */
--#define SPARC64_VA_HOLE_TOP	_AC(0xfffffc0000000000,UL)
--#define SPARC64_VA_HOLE_BOTTOM	_AC(0x0000040000000000,UL)
-+extern unsigned long sparc64_va_hole_top;
-+extern unsigned long sparc64_va_hole_bottom;
- 
- /* The next two defines specify the actual exclusion region we
-  * enforce, wherein we use a 4GB red zone on each side of the VA hole.
+-/* The maximum number of physical memory address bits we support, this
+- * is used to size various tables used to manage kernel TLB misses and
+- * also the sparsemem code.
++/* The maximum number of physical memory address bits we support.  The
++ * largest value we can support is whatever "KPGD_SHIFT + KPTE_BITS"
++ * evaluates to.
   */
--#define VA_EXCLUDE_START (SPARC64_VA_HOLE_BOTTOM - (1UL << 32UL))
--#define VA_EXCLUDE_END   (SPARC64_VA_HOLE_TOP + (1UL << 32UL))
-+#define VA_EXCLUDE_START (sparc64_va_hole_bottom - (1UL << 32UL))
-+#define VA_EXCLUDE_END   (sparc64_va_hole_top + (1UL << 32UL))
+-#define MAX_PHYS_ADDRESS_BITS	47
++#define MAX_PHYS_ADDRESS_BITS	53
  
- #define TASK_UNMAPPED_BASE	(test_thread_flag(TIF_32BIT) ? \
- 				 _AC(0x0000000070000000,UL) : \
+ #define ILOG2_4MB		22
+ #define ILOG2_256MB		28
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -67,6 +67,10 @@
+ #define PGDIR_MASK	(~(PGDIR_SIZE-1))
+ #define PGDIR_BITS	(PAGE_SHIFT - 3)
+ 
++#if (MAX_PHYS_ADDRESS_BITS > PGDIR_SHIFT + PGDIR_BITS)
++#error MAX_PHYS_ADDRESS_BITS exceeds what kernel page tables can support
++#endif
++
+ #if (PGDIR_SHIFT + PGDIR_BITS) != 53
+ #error Page table parameters do not cover virtual address space properly.
+ #endif
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -1630,25 +1630,46 @@ static void __init page_offset_shift_pat
- 	}
- }
- 
-+unsigned long sparc64_va_hole_top =    0xfffff80000000000UL;
-+unsigned long sparc64_va_hole_bottom = 0x0000080000000000UL;
-+
- static void __init setup_page_offset(void)
- {
- 	unsigned long max_phys_bits = 40;
- 
- 	if (tlb_type == cheetah || tlb_type == cheetah_plus) {
-+		/* Cheetah/Panther support a full 64-bit virtual
-+		 * address, so we can use all that our page tables
-+		 * support.
-+		 */
-+		sparc64_va_hole_top =    0xfff0000000000000UL;
-+		sparc64_va_hole_bottom = 0x0010000000000000UL;
-+
- 		max_phys_bits = 42;
- 	} else if (tlb_type == hypervisor) {
- 		switch (sun4v_chip_type) {
- 		case SUN4V_CHIP_NIAGARA1:
- 		case SUN4V_CHIP_NIAGARA2:
-+			/* T1 and T2 support 48-bit virtual addresses.  */
-+			sparc64_va_hole_top =    0xffff800000000000UL;
-+			sparc64_va_hole_bottom = 0x0000800000000000UL;
-+
- 			max_phys_bits = 39;
- 			break;
- 		case SUN4V_CHIP_NIAGARA3:
-+			/* T3 supports 48-bit virtual addresses.  */
-+			sparc64_va_hole_top =    0xffff800000000000UL;
-+			sparc64_va_hole_bottom = 0x0000800000000000UL;
-+
- 			max_phys_bits = 43;
- 			break;
+@@ -1690,12 +1690,19 @@ static void __init setup_page_offset(voi
  		case SUN4V_CHIP_NIAGARA4:
  		case SUN4V_CHIP_NIAGARA5:
  		case SUN4V_CHIP_SPARC64X:
- 		default:
-+			/* T4 and later support 52-bit virtual addresses.  */
-+			sparc64_va_hole_top =    0xfff8000000000000UL;
-+			sparc64_va_hole_bottom = 0x0008000000000000UL;
+-		default:
++		case SUN4V_CHIP_SPARC_M6:
+ 			/* T4 and later support 52-bit virtual addresses.  */
+ 			sparc64_va_hole_top =    0xfff8000000000000UL;
+ 			sparc64_va_hole_bottom = 0x0008000000000000UL;
  			max_phys_bits = 47;
  			break;
++		case SUN4V_CHIP_SPARC_M7:
++		default:
++			/* M7 and later support 52-bit virtual addresses.  */
++			sparc64_va_hole_top =    0xfff8000000000000UL;
++			sparc64_va_hole_bottom = 0x0008000000000000UL;
++			max_phys_bits = 49;
++			break;
  		}
+ 	}
+ 
 
 
