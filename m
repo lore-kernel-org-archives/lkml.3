@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346AbaJ1Vbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:31:35 -0400
+	id S1755315AbaJ1VbL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:31:11 -0400
 Received: from down.free-electrons.com ([37.187.137.238]:37219 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755311AbaJ1VbM (ORCPT
+	with ESMTP id S1755235AbaJ1VbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:31:12 -0400
+	Tue, 28 Oct 2014 17:31:04 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 31/58] dmaengine: mxs: Split device_control
-Date: Tue, 28 Oct 2014 22:25:46 +0100
-Message-Id: <1414531573-18807-32-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 33/58] dmaengine: omap: Split device_control
+Date: Tue, 28 Oct 2014 22:25:48 +0100
+Message-Id: <1414531573-18807-34-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,159 +24,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Freescale MXS DMA driver to make use
+Split the device_control callback of the TI OMAP DMA driver to make use
 of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/mxs-dma.c | 59 ++++++++++++++++++++-------------------------------
- 1 file changed, 23 insertions(+), 36 deletions(-)
+ drivers/dma/omap-dma.c | 51 +++++++++++++++-----------------------------------
+ 1 file changed, 15 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/dma/mxs-dma.c b/drivers/dma/mxs-dma.c
-index 5ea61201dbf0..834041e5a769 100644
---- a/drivers/dma/mxs-dma.c
-+++ b/drivers/dma/mxs-dma.c
-@@ -202,8 +202,9 @@ static struct mxs_dma_chan *to_mxs_dma_chan(struct dma_chan *chan)
- 	return container_of(chan, struct mxs_dma_chan, chan);
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 8035b8c33cfd..90c0bdd53bb0 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -948,8 +948,10 @@ static struct dma_async_tx_descriptor *omap_dma_prep_dma_cyclic(
+ 	return vchan_tx_prep(&c->vc, &d->vd, flags);
  }
  
--static void mxs_dma_reset_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_reset_chan(struct dma_chan *chan)
+-static int omap_dma_slave_config(struct omap_chan *c, struct dma_slave_config *cfg)
++static int omap_dma_slave_config(struct dma_chan *chan, struct dma_slave_config *cfg)
  {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 	int chan_id = mxs_chan->chan.chan_id;
- 
-@@ -250,8 +251,9 @@ static void mxs_dma_reset_chan(struct mxs_dma_chan *mxs_chan)
- 	mxs_chan->status = DMA_COMPLETE;
- }
- 
--static void mxs_dma_enable_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_enable_chan(struct dma_chan *chan)
- {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 	int chan_id = mxs_chan->chan.chan_id;
- 
-@@ -272,13 +274,16 @@ static void mxs_dma_enable_chan(struct mxs_dma_chan *mxs_chan)
- 	mxs_chan->reset = false;
- }
- 
--static void mxs_dma_disable_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_disable_chan(struct dma_chan *chan)
- {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
++	struct omap_chan *c = to_omap_dma_chan(chan);
 +
- 	mxs_chan->status = DMA_COMPLETE;
+ 	if (cfg->src_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES ||
+ 	    cfg->dst_addr_width == DMA_SLAVE_BUSWIDTH_8_BYTES)
+ 		return -EINVAL;
+@@ -959,8 +961,9 @@ static int omap_dma_slave_config(struct omap_chan *c, struct dma_slave_config *c
+ 	return 0;
  }
  
--static void mxs_dma_pause_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_pause_chan(struct dma_chan *chan)
+-static int omap_dma_terminate_all(struct omap_chan *c)
++static int omap_dma_terminate_all(struct dma_chan *chan)
  {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 	int chan_id = mxs_chan->chan.chan_id;
- 
-@@ -293,8 +298,9 @@ static void mxs_dma_pause_chan(struct mxs_dma_chan *mxs_chan)
- 	mxs_chan->status = DMA_PAUSED;
++	struct omap_chan *c = to_omap_dma_chan(chan);
+ 	struct omap_dmadev *d = to_omap_dma_dev(c->vc.chan.device);
+ 	unsigned long flags;
+ 	LIST_HEAD(head);
+@@ -996,8 +999,10 @@ static int omap_dma_terminate_all(struct omap_chan *c)
+ 	return 0;
  }
  
--static void mxs_dma_resume_chan(struct mxs_dma_chan *mxs_chan)
-+static void mxs_dma_resume_chan(struct dma_chan *chan)
+-static int omap_dma_pause(struct omap_chan *c)
++static int omap_dma_pause(struct dma_chan *chan)
  {
-+	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 	int chan_id = mxs_chan->chan.chan_id;
- 
-@@ -383,7 +389,7 @@ static irqreturn_t mxs_dma_int_handler(int irq, void *dev_id)
- 			"%s: error in channel %d\n", __func__,
- 			chan);
- 		mxs_chan->status = DMA_ERROR;
--		mxs_dma_reset_chan(mxs_chan);
-+		mxs_dma_reset_chan(mxs_chan->chan);
- 	} else if (mxs_chan->status != DMA_COMPLETE) {
- 		if (mxs_chan->flags & MXS_DMA_SG_LOOP) {
- 			mxs_chan->status = DMA_IN_PROGRESS;
-@@ -432,7 +438,7 @@ static int mxs_dma_alloc_chan_resources(struct dma_chan *chan)
- 	if (ret)
- 		goto err_clk;
- 
--	mxs_dma_reset_chan(mxs_chan);
-+	mxs_dma_reset_chan(chan);
- 
- 	dma_async_tx_descriptor_init(&mxs_chan->desc, chan);
- 	mxs_chan->desc.tx_submit = mxs_dma_tx_submit;
-@@ -456,7 +462,7 @@ static void mxs_dma_free_chan_resources(struct dma_chan *chan)
- 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
- 	struct mxs_dma_engine *mxs_dma = mxs_chan->mxs_dma;
- 
--	mxs_dma_disable_chan(mxs_chan);
-+	mxs_dma_disable_chan(chan);
- 
- 	free_irq(mxs_chan->chan_irq, mxs_dma);
- 
-@@ -651,28 +657,14 @@ err_out:
- 	return NULL;
++	struct omap_chan *c = to_omap_dma_chan(chan);
++
+ 	/* Pause/Resume only allowed with cyclic mode */
+ 	if (!c->cyclic)
+ 		return -EINVAL;
+@@ -1010,8 +1015,10 @@ static int omap_dma_pause(struct omap_chan *c)
+ 	return 0;
  }
  
--static int mxs_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--		unsigned long arg)
-+static int mxs_dma_terminate_all(struct dma_chan *chan)
+-static int omap_dma_resume(struct omap_chan *c)
++static int omap_dma_resume(struct dma_chan *chan)
  {
- 	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
--	int ret = 0;
++	struct omap_chan *c = to_omap_dma_chan(chan);
++
+ 	/* Pause/Resume only allowed with cyclic mode */
+ 	if (!c->cyclic)
+ 		return -EINVAL;
+@@ -1029,37 +1036,6 @@ static int omap_dma_resume(struct omap_chan *c)
+ 	return 0;
+ }
+ 
+-static int omap_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-	unsigned long arg)
+-{
+-	struct omap_chan *c = to_omap_dma_chan(chan);
+-	int ret;
 -
 -	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		mxs_dma_reset_chan(mxs_chan);
--		mxs_dma_disable_chan(mxs_chan);
+-	case DMA_SLAVE_CONFIG:
+-		ret = omap_dma_slave_config(c, (struct dma_slave_config *)arg);
 -		break;
--	case DMA_PAUSE:
--		mxs_dma_pause_chan(mxs_chan);
--		break;
--	case DMA_RESUME:
--		mxs_dma_resume_chan(mxs_chan);
--		break;
--	default:
--		ret = -ENOSYS;
--	}
- 
--	return ret;
-+	mxs_dma_reset_chan(chan);
-+	mxs_dma_disable_chan(chan);
-+
-+	return 0;
- }
- 
- static enum dma_status mxs_dma_tx_status(struct dma_chan *chan,
-@@ -701,13 +693,6 @@ static enum dma_status mxs_dma_tx_status(struct dma_chan *chan,
- 	return mxs_chan->status;
- }
- 
--static void mxs_dma_issue_pending(struct dma_chan *chan)
--{
--	struct mxs_dma_chan *mxs_chan = to_mxs_dma_chan(chan);
 -
--	mxs_dma_enable_chan(mxs_chan);
+-	case DMA_TERMINATE_ALL:
+-		ret = omap_dma_terminate_all(c);
+-		break;
+-
+-	case DMA_PAUSE:
+-		ret = omap_dma_pause(c);
+-		break;
+-
+-	case DMA_RESUME:
+-		ret = omap_dma_resume(c);
+-		break;
+-
+-	default:
+-		ret = -ENXIO;
+-		break;
+-	}
+-
+-	return ret;
 -}
 -
- static int __init mxs_dma_init(struct mxs_dma_engine *mxs_dma)
+ static int omap_dma_chan_init(struct omap_dmadev *od, int dma_sig)
  {
- 	int ret;
-@@ -860,8 +845,10 @@ static int __init mxs_dma_probe(struct platform_device *pdev)
- 	mxs_dma->dma_device.device_tx_status = mxs_dma_tx_status;
- 	mxs_dma->dma_device.device_prep_slave_sg = mxs_dma_prep_slave_sg;
- 	mxs_dma->dma_device.device_prep_dma_cyclic = mxs_dma_prep_dma_cyclic;
--	mxs_dma->dma_device.device_control = mxs_dma_control;
--	mxs_dma->dma_device.device_issue_pending = mxs_dma_issue_pending;
-+	mxs_dma->dma_device.device_pause = mxs_dma_pause_chan;
-+	mxs_dma->dma_device.device_resume = mxs_dma_resume_chan;
-+	mxs_dma->dma_device.device_terminate_all = mxs_dma_terminate_all;
-+	mxs_dma->dma_device.device_issue_pending = mxs_dma_enable_chan;
- 
- 	ret = dma_async_device_register(&mxs_dma->dma_device);
- 	if (ret) {
+ 	struct omap_chan *c;
+@@ -1138,7 +1114,10 @@ static int omap_dma_probe(struct platform_device *pdev)
+ 	od->ddev.device_issue_pending = omap_dma_issue_pending;
+ 	od->ddev.device_prep_slave_sg = omap_dma_prep_slave_sg;
+ 	od->ddev.device_prep_dma_cyclic = omap_dma_prep_dma_cyclic;
+-	od->ddev.device_control = omap_dma_control;
++	od->ddev.device_config = omap_dma_config;
++	od->ddev.device_pause = omap_dma_pause;
++	od->ddev.device_resume = omap_dma_resume;
++	od->ddev.device_terminate_all = omap_dma_terminate_all;
+ 	od->ddev.device_slave_caps = omap_dma_device_slave_caps;
+ 	od->ddev.dev = &pdev->dev;
+ 	INIT_LIST_HEAD(&od->ddev.channels);
 -- 
 2.1.1
 
