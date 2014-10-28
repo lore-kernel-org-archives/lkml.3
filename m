@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758055AbaJ1FZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:25:23 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40014 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206AbaJ1FZW (ORCPT
+	id S933934AbaJ1F15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:27:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46510 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933675AbaJ1DwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 01:25:22 -0400
-Date: Mon, 27 Oct 2014 22:25:17 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] eeepc-laptop: clean up control flow in
- eeepc_acpi_notify
-Message-ID: <20141028052517.GG60814@vmdeb7>
-References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
- <1414005163-3461-6-git-send-email-fransklaver@gmail.com>
+	Mon, 27 Oct 2014 23:52:22 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 25/43] NFSv4: Fix lock recovery when CREATE_SESSION/SETCLIENTID_CONFIRM fails
+Date: Tue, 28 Oct 2014 11:36:23 +0800
+Message-Id: <20141028033524.484467270@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414005163-3461-6-git-send-email-fransklaver@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:12:40PM +0200, Frans Klaver wrote:
-> eeepc_acpi_notify increases the indentation level to a whopping four. If
-> we revise the conditions a bit, we can reduce that to a more soothing
-> two and satisfy the indentation guidelines in Documentation/CodingStyle.
-> 
-> Remove an unwanted space while we're in the neighbourhood.
-> 
-> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
-> ---
->  drivers/platform/x86/eeepc-laptop.c | 53 ++++++++++++++++++-------------------
->  1 file changed, 26 insertions(+), 27 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
-> index 73e8d39..21ffe1f 100644
-> --- a/drivers/platform/x86/eeepc-laptop.c
-> +++ b/drivers/platform/x86/eeepc-laptop.c
-> @@ -1213,7 +1213,7 @@ static void eeepc_input_exit(struct eeepc_laptop *eeepc)
->  static void eeepc_input_notify(struct eeepc_laptop *eeepc, int event)
->  {
->  	if (!eeepc->inputdev)
-> -		return ;
-> +		return;
->  	if (!sparse_keymap_report_event(eeepc->inputdev, event, 1, true))
->  		pr_info("Unknown key %x pressed\n", event);
->  }
-> @@ -1222,6 +1222,7 @@ static void eeepc_acpi_notify(struct acpi_device *device, u32 event)
->  {
->  	struct eeepc_laptop *eeepc = acpi_driver_data(device);
->  	u16 count;
-> +	int old_brightness, new_brightness;
+3.10-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+
+commit a4339b7b686b4acc8b6de2b07d7bacbe3ae44b83 upstream.
+
+If a NFSv4.x server returns NFS4ERR_STALE_CLIENTID in response to a
+CREATE_SESSION or SETCLIENTID_CONFIRM in order to tell us that it rebooted
+a second time, then the client will currently take this to mean that it must
+declare all locks to be stale, and hence ineligible for reboot recovery.
+
+RFC3530 and RFC5661 both suggest that the client should instead rely on the
+server to respond to inelegible open share, lock and delegation reclaim
+requests with NFS4ERR_NO_GRACE in this situation.
+
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/nfs/nfs4state.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1755,7 +1755,6 @@ static int nfs4_handle_reclaim_lease_err
+ 		break;
+ 	case -NFS4ERR_STALE_CLIENTID:
+ 		clear_bit(NFS4CLNT_LEASE_CONFIRM, &clp->cl_state);
+-		nfs4_state_clear_reclaim_reboot(clp);
+ 		nfs4_state_start_reclaim_reboot(clp);
+ 		break;
+ 	case -NFS4ERR_CLID_INUSE:
 
 
-Variable declarations in order of decreasing line length please.
-
-Otherwise, looks good. Mind sending an update of this one?
-
--- 
-Darren Hart
-Intel Open Source Technology Center
