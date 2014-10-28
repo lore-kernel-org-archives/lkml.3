@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502AbaJ1Di5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:38:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44562 "EHLO
+	id S1754438AbaJ1Diq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:38:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44547 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754439AbaJ1Dix (ORCPT
+	with ESMTP id S1754416AbaJ1Din (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:53 -0400
+	Mon, 27 Oct 2014 23:38:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.17 061/146] NFSv4.1: Fix an NFSv4.1 state renewal regression
-Date: Tue, 28 Oct 2014 11:33:23 +0800
-Message-Id: <20141028033346.026807847@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.17 066/146] iwlwifi: mvm: disable BT Co-running by default
+Date: Tue, 28 Oct 2014 11:33:28 +0800
+Message-Id: <20141028033346.232767128@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,91 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
+commit 9b60bb6d86496af1adc753795de2c12c4499868a upstream.
 
-Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
-not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
-call, on the wire to renew the NFSv4.1 state if the flag was not set.
+The tables still contain dummy values.
 
-The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
-(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
-sometimes does the following:
-
-In normal operation, the only way a future state renewal call is put on the
-wire is via a call to nfs4_schedule_state_renewal, which schedules a
-nfs4_renew_state workqueue task. nfs4_renew_state determines if the
-NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
-which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
-Then the nfs41_proc_async_sequence rpc_release function schedules
-another state remewal via nfs4_schedule_state_renewal.
-
-Without this change we can get into a state where an application stops
-accessing the NFSv4.1 share, state renewal calls stop due to the
-NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
-from this situation is with a clientid re-establishment, once the application
-resumes and the server has timed out the lease and so returns
-NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
-
-An example application:
-open, lock, write a file.
-
-sleep for 6 * lease (could be less)
-
-ulock, close.
-
-In the above example with NFSv4.1 delegations enabled, without this change,
-there are no OP_SEQUENCE state renewal calls during the sleep, and the
-clientid is recovered due to lease expiration on the close.
-
-This issue does not occur with NFSv4.1 delegations disabled, nor with
-NFSv4.0, with or without delegations enabled.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
-Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c   |    2 +-
- fs/nfs/nfs4renewd.c |   12 ++++++++++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/constants.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -7353,7 +7353,7 @@ static int nfs41_proc_async_sequence(str
- 	int ret = 0;
+--- a/drivers/net/wireless/iwlwifi/mvm/constants.h
++++ b/drivers/net/wireless/iwlwifi/mvm/constants.h
+@@ -82,7 +82,7 @@
+ #define IWL_MVM_BT_COEX_EN_RED_TXP_THRESH	62
+ #define IWL_MVM_BT_COEX_DIS_RED_TXP_THRESH	65
+ #define IWL_MVM_BT_COEX_SYNC2SCO		1
+-#define IWL_MVM_BT_COEX_CORUNNING		1
++#define IWL_MVM_BT_COEX_CORUNNING		0
+ #define IWL_MVM_BT_COEX_MPLUT			1
  
- 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
--		return 0;
-+		return -EAGAIN;
- 	task = _nfs41_proc_sequence(clp, cred, false);
- 	if (IS_ERR(task))
- 		ret = PTR_ERR(task);
---- a/fs/nfs/nfs4renewd.c
-+++ b/fs/nfs/nfs4renewd.c
-@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *wor
- 			}
- 			nfs_expire_all_delegations(clp);
- 		} else {
-+			int ret;
-+
- 			/* Queue an asynchronous RENEW. */
--			ops->sched_state_renewal(clp, cred, renew_flags);
-+			ret = ops->sched_state_renewal(clp, cred, renew_flags);
- 			put_rpccred(cred);
--			goto out_exp;
-+			switch (ret) {
-+			default:
-+				goto out_exp;
-+			case -EAGAIN:
-+			case -ENOMEM:
-+				break;
-+			}
- 		}
- 	} else {
- 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
+ #endif /* __MVM_CONSTANTS_H */
 
 
