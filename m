@@ -1,163 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaJ1Nak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:30:40 -0400
-Received: from mout.kundenserver.de ([212.227.126.130]:50993 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752400AbaJ1Nah (ORCPT
+	id S1753492AbaJ1Nan (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:30:43 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:64901 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342AbaJ1Nak convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:30:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
-        cltang@codesourcery.com
-Subject: Re: [PATCH v5 07/29] nios2: I/O Mapping
-Date: Tue, 28 Oct 2014 14:30:25 +0100
-Message-ID: <3089586.phhm8NvmXk@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414139071-3818-8-git-send-email-lftan@altera.com>
-References: <1414139071-3818-1-git-send-email-lftan@altera.com> <1414139071-3818-8-git-send-email-lftan@altera.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:nDlx2LUIYdiEkXc1u/J1focww/i3YE18EIMdMBfKxEU
- sO1uTZwFC4SzvcNCwykTD43onTaqZXLR+cy2AhWYxOvuMlSkg5
- Vv3yW1l3ugG6r+QaIfmKNQfqq+q8WaSS5uNAVNp0GYtQv7THgA
- si1fOLtxprlqMFTHY86imCNEC5eTx8bl9+2ldtXp1gf1Xza8z4
- IKt3/7jCQlYm22H934nfpyVz+eWW3gpR+fkVZkym0V+ukUWFKX
- LNnMlpyf5onWCy+/foVfLblKCank5XZrYAEi2l0BZPGc987cth
- mzI5WzO2MFTVjnt7zgUEdUp05qF2zYHG2hT2yxeqYbC7b0MQyq
- 6l57WOU9QeWbxQoj+BFc=
-X-UI-Out-Filterresults: notjunk:1;
+	Tue, 28 Oct 2014 09:30:40 -0400
+Date: Tue, 28 Oct 2014 14:30:36 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Frank Li <Frank.Li@freescale.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv2 6/6] net: fec: fix regression on i.MX28 introduced by
+ rx_copybreak support
+Message-ID: <20141028143036.1eb417f3@ipc1.ka-ro>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1C9E06B0@AcuExch.aculab.com>
+References: <1414494104-27943-1-git-send-email-LW@KARO-electronics.de>
+	<1414494104-27943-7-git-send-email-LW@KARO-electronics.de>
+	<063D6719AE5E284EB5DD2968C1650D6D1C9E04C0@AcuExch.aculab.com>
+	<20141028133609.2bf6c745@ipc1.ka-ro>
+	<063D6719AE5E284EB5DD2968C1650D6D1C9E06B0@AcuExch.aculab.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 24 October 2014 16:24:09 Ley Foon Tan wrote:
+Hi,
 
-> +/* PCI is not supported in nios2, set this to 0. */
-> +#define IO_SPACE_LIMIT 0
-> +
-> +extern void outsb(unsigned long addr, const void *buf, int len);
-> +extern void outsw(unsigned long addr, const void *buf, int len);
-> +extern void outsl(unsigned long addr, const void *buf, int len);
-> +extern void insb(unsigned long addr, void *buf, int len);
-> +extern void insw(unsigned long addr, void *buf, int len);
-> +extern void insl(unsigned long addr, void *buf, int len);
-> +#define outsb outsb
-> +#define outsw outsw
-> +#define outsl outsl
-> +#define insb insb
-> +#define insw insw
-> +#define insl insl
-
-You don't have inb/outb, so you shouldn't have these either.
-
-> +/*
-> + * PCI is not enabled in nios2. Provide dummy implementation to get 'allyesconfig'
-> + * to build successfully.
-> + */
-> +#define inb(addr)	({ 0; })
-> +#define inw(addr)	({ 0; })
-> +#define inl(addr)	({ 0; })
-> +#define outb(x, addr)	do { } while (0)
-> +#define outw(x, addr)	do { } while (0)
-> +#define outl(x, addr)	do { } while (0)
-
-What fails if you take these out?
-
-> +
-> +/* Use "Duff's Device" to unroll the loops. */
-> +#define __IO_OUT_LOOP(a, b, l)				\
-> +	do {						\
-> +		if (l > 0) {				\
-> +			int _n = (l + 7) / 8;		\
-> +			switch (l % 8) {		\
-> +			case 0:				\
-> +				do {			\
-> +					*a = *b++;	\
-> +			case 7:				\
-> +					*a = *b++;	\
-> +			case 6:				\
-> +					*a = *b++;	\
-> +			case 5:				\
-> +					*a = *b++;	\
-> +			case 4:				\
-> +					*a = *b++;	\
-> +			case 3:				\
-> +					*a = *b++;	\
-> +			case 2:				\
-> +					*a = *b++;	\
-> +			case 1:				\
-> +					*a = *b++;	\
-> +				} while (--_n > 0);	\
-> +			}				\
-> +		}					\
-> +	} while (0)
-> +
-> +#define __IO_IN_LOOP(a, b, l)				\
-> +	do {						\
-> +		if (l > 0) {				\
-> +			int _n = (l + 7) / 8;		\
-> +			switch (l % 8) {		\
-> +			case 0:				\
-> +				do {			\
-> +					*b++ = *a;	\
-> +			case 7:				\
-> +					*b++ = *a;	\
-> +			case 6:				\
-> +					*b++ = *a;	\
-> +			case 5:				\
-> +					*b++ = *a;	\
-> +			case 4:				\
-> +					*b++ = *a;	\
-> +			case 3:				\
-> +					*b++ = *a;	\
-> +			case 2:				\
-> +					*b++ = *a;	\
-> +			case 1:				\
-> +					*b++ = *a;	\
-> +				} while (--_n > 0);	\
-> +			}				\
-> +		}					\
-> +	} while (0)
-> +
-> +#else /* __IO_USE_DUFFS */
-> +
-> +/* Use simple loops. */
-> +#define __IO_OUT_LOOP(a, b, l)				\
-> +	do {						\
-> +		while (l--)				\
-> +			*a = *b++;			\
-> +	} while (0)
-> +
-> +#define __IO_IN_LOOP(a, b, l)				\
-> +	do {						\
-> +		while (l--)				\
-> +			*b++ = *a;			\
-> +	} while (0)
-> +
-> +#endif /* __IO_USE_DUFFS */
-> +
-> +void outsb(unsigned long addr, const void *buf, int len)
-> +{
-> +	volatile unsigned char *ap = (volatile unsigned char *)addr;
-> +	unsigned char *bp = (unsigned char *)buf;
-> +	__IO_OUT_LOOP(ap, bp, len);
-> +}
-> +EXPORT_SYMBOL(outsb);
-> +
-> +void outsw(unsigned long addr, const void *buf, int len)
-> +{
-> +	volatile unsigned short *ap = (volatile unsigned short *)addr;
-> +	unsigned short *bp = (unsigned short *)buf;
-> +	__IO_OUT_LOOP(ap, bp, len);
-> +}
-> +EXPORT_SYMBOL(outsw);
-
-This implementation makes no sense, so definitely remove them.
+David Laight wrote:
+> From: Lothar Waßmann
+> > David Laight wrote:
+> > > From: Lothar Waßmann
+> > > > commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
+> > > > introduced a regression for i.MX28. The swap_buffer() function doing
+> > > > the endian conversion of the received data on i.MX28 may access memory
+> > > > beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
+> > > > does not copy those bytes, so that the last bytes of a packet may be
+> > > > filled with invalid data after swapping.
+> > > > This will likely lead to checksum errors on received packets.
+> > > > E.g. when trying to mount an NFS rootfs:
+> > > > UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
+> > > >
+> > > > Do the byte swapping and copying to the new skb in one go if
+> > > > necessary.
+> > > >
+> > > > Signed-off-by: Lothar Wamann <LW@KARO-electronics.de>
+> > > > ---
+> > > >  drivers/net/ethernet/freescale/fec_main.c |   25 +++++++++++++++++++++----
+> > > >  1 file changed, 21 insertions(+), 4 deletions(-)
+> > > >
+> > > > @@ -1455,7 +1472,7 @@ fec_enet_rx_queue(struct net_device *ndev, int budget, u16 queue_id)
+> > > >  		prefetch(skb->data - NET_IP_ALIGN);
+> > > >  		skb_put(skb, pkt_len - 4);
+> > > >  		data = skb->data;
+> > > > -		if (fep->quirks & FEC_QUIRK_SWAP_FRAME)
+> > > > +		if (!is_copybreak && need_swap)
+> > > >  			swap_buffer(data, pkt_len);
+> > >
+> > > It has to be better to set the 'copybreak' limit to be larger than the
+> > > maximum frame size and so always go through the 'copybreak' paths.
+> > >
+> > Since the copybreak support is all about performance optimistation, we
+> > should IMO buy the additional advantage for i.MX28 by not having to
+> > access the buffer twice (once for copying and once again for swapping).
+> 
+> You definitely want to do the byteswap at the same time as the copy.
+> 
+> The point I'm trying to make that if you need to do the byteswap you
+> probably might as well copy the data to an skb of the correct size at
+> the same time.
+> Certainly I'd expect the 'break even' length will be much higher.
+> 
+I didn't implement the copybreak support. I'm only trying to fix a bug
+it introduced for i.MX28. So, I won't mess with the copybreak
+parameters.
 
 
-	Arnd
+Lothar Waßmann
+-- 
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
