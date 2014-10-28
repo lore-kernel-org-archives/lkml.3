@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461AbaJ1W33 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:29:29 -0400
-Received: from mail-ob0-f201.google.com ([209.85.214.201]:34599 "EHLO
-	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755307AbaJ1W2E (ORCPT
+	id S1755316AbaJ1W30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:29:26 -0400
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:50880 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322AbaJ1W2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 18:28:04 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
@@ -25,9 +25,9 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org
-Subject: [PATCH RESEND V4 7/9] ARM: tegra: Add Tegra124 XUSB mailbox and xHCI controller
-Date: Tue, 28 Oct 2014 15:27:54 -0700
-Message-Id: <1414535277-15645-8-git-send-email-abrestic@chromium.org>
+Subject: [PATCH RESEND V4 8/9] ARM: tegra: jetson-tk1: Add xHCI support
+Date: Tue, 28 Oct 2014 15:27:55 -0700
+Message-Id: <1414535277-15645-9-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
 In-Reply-To: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
 References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
@@ -35,80 +35,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add nodes for the Tegra XUSB mailbox and Tegra xHCI controller and
-add the PHY mailbox channel to the XUSB padctl node.
+Assign USB ports previously owned by the EHCI controllers to the xHCI
+controller.  There is a mini-PCIe USB port (UTMI port 1) and a USB A
+connector (UTMI port 2, USB3 port 0).  PCIe lane 0 is used for USB3
+port 0.
 
 Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
 Reviewed-by: Stephen Warren <swarren@nvidia.com>
 ---
-No changes from v3.
+Changes from v3:
+ - Assigned otg-0 to XUSB to avoid USB2.0 flakiness.
 Changes from v2:
- - Dropped channel specifier from mailbox bindings.
- - Added mbox-names properties.
+ - Updated VBUS power supply names.
 Changes from v1:
- - Updated to use common mailbox bindings.
- - Added remaining clocks/resets.
+ - Updated USB power supplies.
 ---
- arch/arm/boot/dts/tegra124.dtsi | 41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ arch/arm/boot/dts/tegra124-jetson-tk1.dts | 46 +++++++++++++++++--------------
+ 1 file changed, 26 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra124.dtsi b/arch/arm/boot/dts/tegra124.dtsi
-index 478c555..73bc7a4 100644
---- a/arch/arm/boot/dts/tegra124.dtsi
-+++ b/arch/arm/boot/dts/tegra124.dtsi
-@@ -591,11 +591,52 @@
- 		status = "disabled";
+diff --git a/arch/arm/boot/dts/tegra124-jetson-tk1.dts b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+index 029c9a02..0dc1553 100644
+--- a/arch/arm/boot/dts/tegra124-jetson-tk1.dts
++++ b/arch/arm/boot/dts/tegra124-jetson-tk1.dts
+@@ -1686,15 +1686,40 @@
+ 		target-12v-supply = <&vdd_12v0_sata>;
  	};
  
 +	usb@0,70090000 {
-+		compatible = "nvidia,tegra124-xhci";
-+		reg = <0x0 0x70090000 0x0 0x8000>,
-+		      <0x0 0x70098000 0x0 0x1000>,
-+		      <0x0 0x70099000 0x0 0x1000>;
-+		interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&tegra_car TEGRA124_CLK_XUSB_HOST>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_HOST_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_DEV>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_DEV_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_FALCON_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_SS>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_SS_DIV2>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_SS_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_HS_SRC>,
-+			 <&tegra_car TEGRA124_CLK_XUSB_FS_SRC>,
-+			 <&tegra_car TEGRA124_CLK_PLL_U_480M>,
-+			 <&tegra_car TEGRA124_CLK_CLK_M>,
-+			 <&tegra_car TEGRA124_CLK_PLL_E>;
-+		clock-names = "xusb_host", "xusb_host_src", "xusb_dev",
-+			      "xusb_dev_src", "xusb_falcon_src", "xusb_ss",
-+			      "xusb_ss_div2", "xusb_ss_src", "xusb_hs_src",
-+			      "xusb_fs_src", "pll_u_480m", "clk_m", "pll_e";
-+		resets = <&tegra_car 89>, <&tegra_car 95>, <&tegra_car 156>,
-+			 <&tegra_car 143>;
-+		reset-names = "xusb_host", "xusb_dev", "xusb_ss", "xusb";
-+		mboxes = <&xusb_mbox>;
-+		mbox-names = "xusb";
-+		status = "disabled";
++		status = "okay";
++		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* mini-PCIe USB */
++		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>; /* USB A */
++		phy-names = "utmi-1", "utmi-2", "usb3-0";
++		avddio-pex-supply = <&vdd_1v05_run>;
++		dvddio-pex-supply = <&vdd_1v05_run>;
++		avdd-usb-supply = <&vdd_3v3_lp0>;
++		avdd-pll-utmip-supply = <&vddio_1v8>;
++		avdd-pll-erefe-supply = <&avdd_1v05_run>;
++		avdd-pex-pll-supply = <&vdd_1v05_run>;
++		hvdd-pex-supply = <&vdd_3v3_lp0>;
++		hvdd-pex-plle-supply = <&vdd_3v3_lp0>;
 +	};
 +
-+	xusb_mbox: mailbox@0,70098000 {
-+		compatible = "nvidia,tegra124-xusb-mbox";
-+		reg = <0x0 0x70098000 0x0 0x1000>;
-+		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
-+
-+		#mbox-cells = <0>;
-+	};
-+
- 	padctl: padctl@0,7009f000 {
- 		compatible = "nvidia,tegra124-xusb-padctl";
- 		reg = <0x0 0x7009f000 0x0 0x1000>;
- 		resets = <&tegra_car 142>;
- 		reset-names = "padctl";
-+		mboxes = <&xusb_mbox>;
-+		mbox-names = "xusb";
+ 	padctl@0,7009f000 {
+ 		pinctrl-0 = <&padctl_default>;
+ 		pinctrl-names = "default";
  
- 		#phy-cells = <1>;
++		vbus-2-supply = <&vdd_usb3_vbus>;
++		nvidia,usb3-port-0-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_0>;
++
+ 		padctl_default: pinmux {
++			otg {
++				nvidia,lanes = "otg-0", "otg-1", "otg-2";
++				nvidia,function = "xusb";
++			};
++
+ 			usb3 {
+-				nvidia,lanes = "pcie-0", "pcie-1";
++				nvidia,lanes = "pcie-0";
+ 				nvidia,function = "usb3";
+ 				nvidia,iddq = <0>;
++				nvidia,usb2-port-num = <2>;
+ 			};
+ 
+ 			pcie {
+@@ -1735,25 +1760,6 @@
+ 		};
  	};
+ 
+-	/* mini-PCIe USB */
+-	usb@0,7d004000 {
+-		status = "okay";
+-	};
+-
+-	usb-phy@0,7d004000 {
+-		status = "okay";
+-	};
+-
+-	/* USB A connector */
+-	usb@0,7d008000 {
+-		status = "okay";
+-	};
+-
+-	usb-phy@0,7d008000 {
+-		status = "okay";
+-		vbus-supply = <&vdd_usb3_vbus>;
+-	};
+-
+ 	clocks {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
 -- 
 2.1.0.rc2.206.gedb03e5
 
