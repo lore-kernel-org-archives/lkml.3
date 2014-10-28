@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599AbaJ1Snd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:43:33 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39295 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaJ1Snc (ORCPT
+	id S1753232AbaJ1Sno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:43:44 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:42065 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617AbaJ1Snl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:43:32 -0400
-Date: Tue, 28 Oct 2014 13:43:03 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Jason Chang <jason.chang@amd.com>, Vincent Wan <vincent.wan@amd.com>,
-        Tony Li <tony.li@amd.com>, USB list <linux-usb@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 13/19] usb: dwc3: add tx demphasis quirk
-Message-ID: <20141028184303.GD25735@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
- <1414497280-3126-14-git-send-email-ray.huang@amd.com>
- <CAErSpo6ouE7AZi8ysTFnTNtKc8R9w-71AhXe6b-_0g_yeR-=Ag@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SO98HVl1bnMOfKZd"
-Content-Disposition: inline
-In-Reply-To: <CAErSpo6ouE7AZi8ysTFnTNtKc8R9w-71AhXe6b-_0g_yeR-=Ag@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 28 Oct 2014 14:43:41 -0400
+From: Tomas Melin <tomas.melin@iki.fi>
+To: m.chehab@samsung.com
+Cc: david@hardeman.nu, james.hogan@imgtec.com, a.seppala@gmail.com,
+        bay@hackerdom.ru, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tomas Melin <tomas.melin@iki.fi>
+Subject: [PATCH v3] [media] rc-core: fix protocol_change regression in ir_raw_event_register
+Date: Tue, 28 Oct 2014 20:43:14 +0200
+Message-Id: <1414521794-7776-1-git-send-email-tomas.melin@iki.fi>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SO98HVl1bnMOfKZd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+IR receiver using nuvoton-cir and lirc required additional configuration
+steps after upgrade from kernel 3.16 to 3.17-rcX.
+Bisected regression to commit da6e162d6a4607362f8478c715c797d84d449f8b
+("[media] rc-core: simplify sysfs code").
 
-On Tue, Oct 28, 2014 at 10:27:27AM -0600, Bjorn Helgaas wrote:
-> On Tue, Oct 28, 2014 at 5:54 AM, Huang Rui <ray.huang@amd.com> wrote:
-> > This patch adds Tx demphasis quirk, and the Tx demphasis value is
->=20
-> "demphasis" (above and in subject) should be "de-emphasis" as used in
-> the code and comments below.
+The regression comes from adding function change_protocol in
+ir-raw.c. It changes behaviour so that only the protocol enabled by driver's
+map_name will be active after registration. This breaks user space behaviour,
+lirc does not get key press signals anymore.
 
-+1
+Enable lirc protocol by default for ir raw decoders to restore original behaviour.
 
---=20
-balbi
+Signed-off-by: Tomas Melin <tomas.melin@iki.fi>
+---
+ drivers/media/rc/rc-ir-raw.c |    1 -
+ drivers/media/rc/rc-main.c   |    2 ++
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---SO98HVl1bnMOfKZd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/media/rc/rc-ir-raw.c b/drivers/media/rc/rc-ir-raw.c
+index e8fff2a..b732ac6 100644
+--- a/drivers/media/rc/rc-ir-raw.c
++++ b/drivers/media/rc/rc-ir-raw.c
+@@ -262,7 +262,6 @@ int ir_raw_event_register(struct rc_dev *dev)
+ 		return -ENOMEM;
+ 
+ 	dev->raw->dev = dev;
+-	dev->enabled_protocols = ~0;
+ 	dev->change_protocol = change_protocol;
+ 	rc = kfifo_alloc(&dev->raw->kfifo,
+ 			 sizeof(struct ir_raw_event) * MAX_IR_EVENT_SIZE,
+diff --git a/drivers/media/rc/rc-main.c b/drivers/media/rc/rc-main.c
+index a7991c7..8d3b74c 100644
+--- a/drivers/media/rc/rc-main.c
++++ b/drivers/media/rc/rc-main.c
+@@ -1421,6 +1421,8 @@ int rc_register_device(struct rc_dev *dev)
+ 
+ 	if (dev->change_protocol) {
+ 		u64 rc_type = (1 << rc_map->rc_type);
++		if (dev->driver_type == RC_DRIVER_IR_RAW)
++			rc_type |= RC_BIT_LIRC;
+ 		rc = dev->change_protocol(dev, &rc_type);
+ 		if (rc < 0)
+ 			goto out_raw;
+-- 
+1.7.10.4
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUT+O3AAoJEIaOsuA1yqREQ7cP/1n5lPcUZgKDXYQqRrnzJC8U
-vmq/0HGHGZAeXGGoIoHI2vk2d8FrWXxRFeks2PQaBZHSJJMGNp7U0Zm4dC6x95qm
-5G3ydfsLWNlJV0nJZdMLycwgeO38xekWJQbb8eq2cpvqfl9BHDkaurgIg8Z/3y7X
-MYuyiLkunxbzf9hmv66Mt5/BynIsy8sTnRmzEELnwxQKPKwavU8RhVNiUQn9p+mb
-+WJYv4hhviGU+yo7fmTbh+Eu54HB0qOsm9n7bI6bMOyfyzvVF5fOvX+YGHN4oK7g
-7ds+DwtEVz5r/NeDl7q0iVXtLMytwmF1sPcKX24xcpvFhWDl/Z6KR4KZX3WRXZze
-hc6uxcbw2M2YHvxTOWDLscOqq242Wxm4g1FEL0uxZpCotkJzvuEB+0is4w9udN9R
-D6RRenvr/lMpp1eVKU1GQ2YzOTZkEVl7UOQfS7WbdLwYI2qTYOcZ3WEbIbgo3J5h
-i5rrQSlb9K2nlbARqrNmW93c/szoa9+BtWGv+70ibSADdeI3CGJd6kH3eDXC3SD5
-SmBaERLCp4Gc5cJAAiCv4napevISyI583Zvh/Z5PmlIfHBwR6ehUM4iJH7vj6lBX
-tkNno8OYWz1VotAra0gm/VKEB7NfqKmkNWhiiSiwU7syhnW4kWG+cXmWrAwoReKb
-qNaER2KTifbmj/l2WEs7
-=2nfR
------END PGP SIGNATURE-----
-
---SO98HVl1bnMOfKZd--
