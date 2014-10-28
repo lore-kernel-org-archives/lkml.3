@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086AbaJ1DwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:52:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46170 "EHLO
+	id S933716AbaJ1Dw0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:52:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46551 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933606AbaJ1DwO (ORCPT
+	with ESMTP id S933619AbaJ1DwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 23:52:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <pure.logic@nexus-software.ie>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 08/43] x86/intel/quark: Switch off CR4.PGE so TLB flush uses CR3 instead
-Date: Tue, 28 Oct 2014 11:36:06 +0800
-Message-Id: <20141028033523.763907075@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 26/43] NFSv4: fix open/lock state recovery error handling
+Date: Tue, 28 Oct 2014 11:36:24 +0800
+Message-Id: <20141028033524.524526315@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
 References: <20141028033523.407092670@linuxfoundation.org>
@@ -29,53 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit ee1b5b165c0a2f04d2107e634e51f05d0eb107de upstream.
+commit df817ba35736db2d62b07de6f050a4db53492ad8 upstream.
 
-Quark x1000 advertises PGE via the standard CPUID method
-PGE bits exist in Quark X1000's PTEs. In order to flush
-an individual PTE it is necessary to reload CR3 irrespective
-of the PTE.PGE bit.
+The current open/lock state recovery unfortunately does not handle errors
+such as NFS4ERR_CONN_NOT_BOUND_TO_SESSION correctly. Instead of looping,
+just proceeds as if the state manager is finished recovering.
+This patch ensures that we loop back, handle higher priority errors
+and complete the open/lock state recovery.
 
-See Quark Core_DevMan_001.pdf section 6.4.11
-
-This bug was fixed in Galileo kernels, unfixed vanilla kernels are expected to
-crash and burn on this platform.
-
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/intel.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ fs/nfs/nfs4state.c |   16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -154,6 +154,21 @@ static void __cpuinit early_init_intel(s
- 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
- 		}
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1699,7 +1699,8 @@ restart:
+ 			if (status < 0) {
+ 				set_bit(ops->owner_flag_bit, &sp->so_flags);
+ 				nfs4_put_state_owner(sp);
+-				return nfs4_recovery_handle_error(clp, status);
++				status = nfs4_recovery_handle_error(clp, status);
++				return (status != 0) ? status : -EAGAIN;
+ 			}
+ 
+ 			nfs4_put_state_owner(sp);
+@@ -1708,7 +1709,7 @@ restart:
+ 		spin_unlock(&clp->cl_lock);
  	}
-+
-+	/*
-+	 * Intel Quark Core DevMan_001.pdf section 6.4.11
-+	 * "The operating system also is required to invalidate (i.e., flush)
-+	 *  the TLB when any changes are made to any of the page table entries.
-+	 *  The operating system must reload CR3 to cause the TLB to be flushed"
-+	 *
-+	 * As a result cpu_has_pge() in arch/x86/include/asm/tlbflush.h should
-+	 * be false so that __flush_tlb_all() causes CR3 insted of CR4.PGE
-+	 * to be modified
-+	 */
-+	if (c->x86 == 5 && c->x86_model == 9) {
-+		pr_info("Disabling PGE capability bit\n");
-+		setup_clear_cpu_cap(X86_FEATURE_PGE);
-+	}
+ 	rcu_read_unlock();
+-	return status;
++	return 0;
  }
  
- #ifdef CONFIG_X86_32
+ static int nfs4_check_lease(struct nfs_client *clp)
+@@ -2173,14 +2174,11 @@ static void nfs4_state_manager(struct nf
+ 			section = "reclaim reboot";
+ 			status = nfs4_do_reclaim(clp,
+ 				clp->cl_mvops->reboot_recovery_ops);
+-			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
+-			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state))
+-				continue;
+-			nfs4_state_end_reclaim_reboot(clp);
+-			if (test_bit(NFS4CLNT_RECLAIM_NOGRACE, &clp->cl_state))
++			if (status == -EAGAIN)
+ 				continue;
+ 			if (status < 0)
+ 				goto out_error;
++			nfs4_state_end_reclaim_reboot(clp);
+ 		}
+ 
+ 		/* Now recover expired state... */
+@@ -2188,9 +2186,7 @@ static void nfs4_state_manager(struct nf
+ 			section = "reclaim nograce";
+ 			status = nfs4_do_reclaim(clp,
+ 				clp->cl_mvops->nograce_recovery_ops);
+-			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
+-			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state) ||
+-			    test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state))
++			if (status == -EAGAIN)
+ 				continue;
+ 			if (status < 0)
+ 				goto out_error;
 
 
