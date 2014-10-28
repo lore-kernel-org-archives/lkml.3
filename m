@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022AbaJ1WeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:34:13 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35021 "EHLO e8.ny.us.ibm.com"
+	id S1755999AbaJ1WeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:34:11 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37383 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755357AbaJ1WeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755266AbaJ1WeB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 18:34:01 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,95 +14,122 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 3/6] rcutorture: Enable RCU self test in configs
-Date: Tue, 28 Oct 2014 15:30:02 -0700
-Message-Id: <1414535405-30228-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 5/6] rcutorture: Remove obsolete kversion param in kvm.sh
+Date: Tue, 28 Oct 2014 15:30:04 -0700
+Message-Id: <1414535405-30228-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1414535405-30228-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20141028222929.GA29476@linux.vnet.ibm.com>
  <1414535405-30228-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102822-0029-0000-0000-000000F50B48
+x-cbid: 14102822-0025-0000-0000-000000F07241
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pranith Kumar <bobby.prani@gmail.com>
 
-Add config and boot parameters to enable the self tests in rcutorture testing.
+Now that we have removed configs based on kernel version, we can also remove the
+kversion parameter in kvm.sh.
 
 Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- tools/testing/selftests/rcutorture/configs/rcu/TINY02      | 2 ++
- tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot | 2 ++
- tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot | 1 +
- tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot | 3 +++
- tools/testing/selftests/rcutorture/configs/rcu/TREE08      | 2 ++
- tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot | 2 ++
- 6 files changed, 12 insertions(+)
- create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot
- create mode 100644 tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot
+ .../selftests/rcutorture/bin/kvm-test-1-run.sh        |  2 +-
+ tools/testing/selftests/rcutorture/bin/kvm.sh         | 19 +++++--------------
+ 2 files changed, 6 insertions(+), 15 deletions(-)
 
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TINY02 b/tools/testing/selftests/rcutorture/configs/rcu/TINY02
-index f4feaee40776..36e41df3d27a 100644
---- a/tools/testing/selftests/rcutorture/configs/rcu/TINY02
-+++ b/tools/testing/selftests/rcutorture/configs/rcu/TINY02
-@@ -7,6 +7,8 @@ CONFIG_HZ_PERIODIC=y
- CONFIG_NO_HZ_IDLE=n
- CONFIG_NO_HZ_FULL=n
- CONFIG_RCU_TRACE=y
-+CONFIG_PROVE_LOCKING=y
-+CONFIG_PROVE_RCU=y
- CONFIG_DEBUG_LOCK_ALLOC=y
- CONFIG_DEBUG_OBJECTS_RCU_HEAD=n
- CONFIG_PREEMPT_COUNT=y
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot b/tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot
-new file mode 100644
-index 000000000000..0f0802730014
---- /dev/null
-+++ b/tools/testing/selftests/rcutorture/configs/rcu/TINY02.boot
-@@ -0,0 +1,2 @@
-+rcupdate.rcu_self_test=1
-+rcupdate.rcu_self_test_bh=1
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot b/tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot
-index 3b42b8b033cd..15b3e1a86f74 100644
---- a/tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot
-+++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE05.boot
-@@ -1 +1,2 @@
- rcutorture.torture_type=sched
-+rcupdate.rcu_self_test_sched=1
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot b/tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot
-new file mode 100644
-index 000000000000..da9a03a398db
---- /dev/null
-+++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE06.boot
-@@ -0,0 +1,3 @@
-+rcupdate.rcu_self_test=1
-+rcupdate.rcu_self_test_bh=1
-+rcupdate.rcu_self_test_sched=1
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE08 b/tools/testing/selftests/rcutorture/configs/rcu/TREE08
-index 69a2e255bf98..80f79d465009 100644
---- a/tools/testing/selftests/rcutorture/configs/rcu/TREE08
-+++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08
-@@ -18,6 +18,8 @@ CONFIG_RCU_FANOUT_LEAF=2
- CONFIG_RCU_NOCB_CPU=y
- CONFIG_RCU_NOCB_CPU_ALL=y
- CONFIG_DEBUG_LOCK_ALLOC=n
-+CONFIG_PROVE_LOCKING=y
-+CONFIG_PROVE_RCU=y
- CONFIG_RCU_CPU_STALL_INFO=n
- CONFIG_RCU_CPU_STALL_VERBOSE=n
- CONFIG_RCU_BOOST=n
-diff --git a/tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot b/tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot
-index 3b42b8b033cd..2561daf605ad 100644
---- a/tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot
-+++ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08.boot
-@@ -1 +1,3 @@
- rcutorture.torture_type=sched
-+rcupdate.rcu_self_test=1
-+rcupdate.rcu_self_test_sched=1
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+index e0f896999d6b..8ca9f21f2efc 100755
+--- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+@@ -45,7 +45,7 @@ trap 'rm -rf $T' 0
+ touch $T
+ 
+ . $KVM/bin/functions.sh
+-. $KVPATH/ver_functions.sh
++. $CONFIGFRAG/ver_functions.sh
+ 
+ config_template=${1}
+ config_dir=`echo $config_template | sed -e 's,/[^/]*$,,'`
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm.sh b/tools/testing/selftests/rcutorture/bin/kvm.sh
+index e527dc952eb0..368d64ac779e 100755
+--- a/tools/testing/selftests/rcutorture/bin/kvm.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm.sh
+@@ -47,7 +47,6 @@ resdir=""
+ configs=""
+ cpus=0
+ ds=`date +%Y.%m.%d-%H:%M:%S`
+-kversion=""
+ 
+ . functions.sh
+ 
+@@ -64,7 +63,6 @@ usage () {
+ 	echo "       --duration minutes"
+ 	echo "       --interactive"
+ 	echo "       --kmake-arg kernel-make-arguments"
+-	echo "       --kversion vN.NN"
+ 	echo "       --mac nn:nn:nn:nn:nn:nn"
+ 	echo "       --no-initrd"
+ 	echo "       --qemu-args qemu-system-..."
+@@ -128,11 +126,6 @@ do
+ 		TORTURE_KMAKE_ARG="$2"
+ 		shift
+ 		;;
+-	--kversion)
+-		checkarg --kversion "(kernel version)" $# "$2" '^v[0-9.]*$' '^error'
+-		kversion=$2
+-		shift
+-		;;
+ 	--mac)
+ 		checkarg --mac "(MAC address)" $# "$2" '^\([0-9a-fA-F]\{2\}:\)\{5\}[0-9a-fA-F]\{2\}$' error
+ 		TORTURE_QEMU_MAC=$2
+@@ -170,11 +163,10 @@ do
+ done
+ 
+ CONFIGFRAG=${KVM}/configs/${TORTURE_SUITE}; export CONFIGFRAG
+-KVPATH=${CONFIGFRAG}/$kversion; export KVPATH
+ 
+ if test -z "$configs"
+ then
+-	configs="`cat $CONFIGFRAG/$kversion/CFLIST`"
++	configs="`cat $CONFIGFRAG/CFLIST`"
+ fi
+ 
+ if test -z "$resdir"
+@@ -186,10 +178,10 @@ fi
+ touch $T/cfgcpu
+ for CF in $configs
+ do
+-	if test -f "$CONFIGFRAG/$kversion/$CF"
++	if test -f "$CONFIGFRAG/$CF"
+ 	then
+-		cpu_count=`configNR_CPUS.sh $CONFIGFRAG/$kversion/$CF`
+-		cpu_count=`configfrag_boot_cpus "$TORTURE_BOOTARGS" "$CONFIGFRAG/$kversion/$CF" "$cpu_count"`
++		cpu_count=`configNR_CPUS.sh $CONFIGFRAG/$CF`
++		cpu_count=`configfrag_boot_cpus "$TORTURE_BOOTARGS" "$CONFIGFRAG/$CF" "$cpu_count"`
+ 		echo $CF $cpu_count >> $T/cfgcpu
+ 	else
+ 		echo "The --configs file $CF does not exist, terminating."
+@@ -252,7 +244,6 @@ END {
+ cat << ___EOF___ > $T/script
+ CONFIGFRAG="$CONFIGFRAG"; export CONFIGFRAG
+ KVM="$KVM"; export KVM
+-KVPATH="$KVPATH"; export KVPATH
+ PATH="$PATH"; export PATH
+ TORTURE_BOOT_IMAGE="$TORTURE_BOOT_IMAGE"; export TORTURE_BOOT_IMAGE
+ TORTURE_BUILDONLY="$TORTURE_BUILDONLY"; export TORTURE_BUILDONLY
+@@ -285,7 +276,7 @@ then
+ fi
+ ___EOF___
+ awk < $T/cfgcpu.pack \
+-	-v CONFIGDIR="$CONFIGFRAG/$kversion/" \
++	-v CONFIGDIR="$CONFIGFRAG/" \
+ 	-v KVM="$KVM" \
+ 	-v ncpus=$cpus \
+ 	-v rd=$resdir/$ds/ \
 -- 
 1.8.1.5
 
