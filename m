@@ -1,71 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119AbaJ1Lck (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:32:40 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:24440 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103AbaJ1LcP (ORCPT
+	id S1757254AbaJ1Lc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:32:57 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:65412 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738AbaJ1LcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:32:15 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-8a-544f7ebca1a4
+	Tue, 28 Oct 2014 07:32:14 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-78-544f7ebbd06f
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org,
         linux-ima-devel@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org, jack@suse.cz, jmorris@namei.org,
-        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH v3 2/3] ima: limit file hash setting by user to fix and log
- modes
-Date: Tue, 28 Oct 2014 13:31:23 +0200
-Message-id: <cbeced22716ee43c9381539ffe34b4f7ff037247.1414494901.git.d.kasatkin@samsung.com>
+        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        stable@vger.kernel.org
+Subject: [PATCH v3 1/3] ima: check xattr value length and type in the
+ ima_inode_setxattr()
+Date: Tue, 28 Oct 2014 13:31:22 +0200
+Message-id: <4768b2c1c8e9a5ec16cb1e58c493fac83940f24c.1414494901.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <cover.1414494901.git.d.kasatkin@samsung.com>
 References: <cover.1414494901.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1414494901.git.d.kasatkin@samsung.com>
 References: <cover.1414494901.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xy7p76vxDDHrOclnc+ruX2eLL0jqL
-	2dObmSzWrV/MZPFyxjx2i8u75rBZfOh5xGbxacUkZgcOj52z7rJ7PDi0mcVj94LPTB4935M9
-	+rasYvQ4s+AIu8fnTXIB7FFcNimpOZllqUX6dglcGd/2HWYpmMhZsfbnOtYGxjPsXYycHBIC
-	JhJ/L7xhg7DFJC7cWw9kc3EICSxllGj5sowVwulkkvj8+QYTSBWbgJ7EhuYfYN0iAjkSj/68
-	ZgcpYhboYJTY+OM6WJGwQLDE985HjF2MHBwsAqoSu355g4R5BeIkJv46zwSxTU7i5LHJrCA2
-	p4CVRNeUVkYQW0jAUmLqvR84xScw8i9gZFjFKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERKg
-	X3cwLj1mdYhRgINRiYc3gsU/RIg1say4MvcQowQHs5IIb0QMUIg3JbGyKrUoP76oNCe1+BAj
-	EwenVAOjecKjFHf9ZsWAmOSZStGtO/V3+95z2LphkvuuCYLVFy9P12j5LrBRi8fxwdInE5bw
-	JwZ2+20Xutu7YqPkhq0lDzod327Lq3ne5z3n+pzofuF97V8t5t3Zy71MnCtXPe/loqoUq7dz
-	SpUtQ8Ruzxa0/W38VP+WmfQ9Fqsvrsy3vvN+uVwlpLtLiaU4I9FQi7moOBEA4HJPDy4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrILMWRmVeSWpSXmKPExsVy+t/xy7q76/xDDOa9lLS49Xcvs8WXpXUW
+	s6c3M1msW7+YyeLljHnsFpd3zWGz+NDziM1iwcZHjBafVkxiduD02DnrLrvHg0ObWTx2L/jM
+	5NHzPdmjb8sqRo8zC46we3zeJBfAHsVlk5Kak1mWWqRvl8CVserHSsaCJqWKp1NPsTUwXpLp
+	YuTkkBAwkTi1ZQ0LhC0mceHeerYuRi4OIYGljBIXX11lh3A6mSQmNK9kA6liE9CT2ND8gx3E
+	FhHIkXj05zVYEbPAIkaJ3+97GUESwgIxEhtPrGEGsVkEVCVe/tsCtoJXIE7i4ZQFzBDr5CRO
+	HpvMCmJzClhJdE1pBesVErCUmHrvB07xCYz8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefn
+	bmKEBOuXHYyLj1kdYhTgYFTi4d0xzTdEiDWxrLgy9xCjBAezkghvRIx/iBBvSmJlVWpRfnxR
+	aU5q8SFGJg5OqQbG5R92vPOLmuvWnZjnt3L/GtnQt0+d9v63WXpiaokS18s4qYTN8ZNnRl+d
+	u22tc8rzjh3cX0Skclm8b/1cfWymqZ/RNOO0c9Mv33NUtQpKvzpZnDvg6EUW3xe2S25qCxjM
+	NuupDuk8c6/gy7Euu7LQ4IWr+l/xaH75ExjCbREWs+Px1PUhJsKmSizFGYmGWsxFxYkAGZ9G
+	ijQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File hashes are automatically set and updated and should not be
-manually set. This patch limits file hash setting to fix and log
-modes.
+ima_inode_setxattr() can be called with no value. Function does not
+check the length so that following command can be used to produce
+kernel oops: setfattr -n security.ima FOO. This patch fixes it.
 
+Changes in v3:
+* for stable reverted "allow setting hash only in fix or log mode"
+  It will be a separate patch.
+
+Changes in v2:
+* testing validity of xattr type
+* allow setting hash only in fix or log mode (Mimi)
+
+[  261.562522] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[  261.564109] IP: [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
+[  261.564109] PGD 3112f067 PUD 42965067 PMD 0
+[  261.564109] Oops: 0000 [#1] SMP
+[  261.564109] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
+[  261.564109] CPU: 0 PID: 3299 Comm: setxattr Not tainted 3.16.0-kds+ #2924
+[  261.564109] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  261.564109] task: ffff8800428c2430 ti: ffff880042be0000 task.ti: ffff880042be0000
+[  261.564109] RIP: 0010:[<ffffffff812af272>]  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
+[  261.564109] RSP: 0018:ffff880042be3d50  EFLAGS: 00010246
+[  261.564109] RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000015
+[  261.564109] RDX: 0000001500000000 RSI: 0000000000000000 RDI: ffff8800375cc600
+[  261.564109] RBP: ffff880042be3d68 R08: 0000000000000000 R09: 00000000004d6256
+[  261.564109] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88002149ba00
+[  261.564109] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+[  261.564109] FS:  00007f6c1e219740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
+[  261.564109] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  261.564109] CR2: 0000000000000000 CR3: 000000003b35a000 CR4: 00000000000006f0
+[  261.564109] Stack:
+[  261.564109]  ffff88002149ba00 ffff880042be3df8 0000000000000000 ffff880042be3d98
+[  261.564109]  ffffffff812a101b ffff88002149ba00 ffff880042be3df8 0000000000000000
+[  261.564109]  0000000000000000 ffff880042be3de0 ffffffff8116d08a ffff880042be3dc8
+[  261.564109] Call Trace:
+[  261.564109]  [<ffffffff812a101b>] security_inode_setxattr+0x48/0x6a
+[  261.564109]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
+[  261.564109]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
+[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+[  261.564109]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
+[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+[  261.564109]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
+[  261.564109]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
+[  261.564109]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
+[  261.564109] Code: 48 89 f7 48 c7 c6 58 36 81 81 53 31 db e8 73 27 04 00 85 c0 75 28 bf 15 00 00 00 e8 8a a5 d9 ff 84 c0 75 05 83 cb ff eb 15 31 f6 <41> 80 7d 00 03 49 8b 7c 24 68 40 0f 94 c6 e8 e1 f9 ff ff 89 d8
+[  261.564109] RIP  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
+[  261.564109]  RSP <ffff880042be3d50>
+[  261.564109] CR2: 0000000000000000
+[  261.599998] ---[ end trace 39a89a3fc267e652 ]---
+
+Reported-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: stable@vger.kernel.org
 ---
- security/integrity/ima/ima_appraise.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ security/integrity/ima/ima_appraise.c | 2 ++
+ security/integrity/integrity.h        | 1 +
+ 2 files changed, 3 insertions(+)
 
 diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 7c8f41e..8549787 100644
+index 9226854..7c8f41e 100644
 --- a/security/integrity/ima/ima_appraise.c
 +++ b/security/integrity/ima/ima_appraise.c
-@@ -378,10 +378,14 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+@@ -378,6 +378,8 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
  	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
  				   xattr_value_len);
  	if (result == 1) {
-+		bool digsig;
-+
- 		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
- 			return -EINVAL;
--		ima_reset_appraise_flags(dentry->d_inode,
--			 (xvalue->type == EVM_IMA_XATTR_DIGSIG) ? 1 : 0);
-+		digsig = (xvalue->type == EVM_IMA_XATTR_DIGSIG);
-+		if (!digsig && (ima_appraise & IMA_APPRAISE_ENFORCE))
-+			return -EPERM;
-+		ima_reset_appraise_flags(dentry->d_inode, digsig);
++		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
++			return -EINVAL;
+ 		ima_reset_appraise_flags(dentry->d_inode,
+ 			 (xvalue->type == EVM_IMA_XATTR_DIGSIG) ? 1 : 0);
  		result = 0;
- 	}
- 	return result;
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index caa1f6c..0fc9519 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -61,6 +61,7 @@ enum evm_ima_xattr_type {
+ 	EVM_XATTR_HMAC,
+ 	EVM_IMA_XATTR_DIGSIG,
+ 	IMA_XATTR_DIGEST_NG,
++	IMA_XATTR_LAST
+ };
+ 
+ struct evm_ima_xattr_data {
 -- 
 1.9.1
 
