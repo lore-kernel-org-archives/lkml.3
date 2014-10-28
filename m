@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805AbaJ1DkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:40:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44727 "EHLO
+	id S1754858AbaJ1DkT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:40:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44785 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754770AbaJ1DkE (ORCPT
+	with ESMTP id S1754836AbaJ1DkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:04 -0400
+	Mon, 27 Oct 2014 23:40:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chao Yu <chao2.yu@samsung.com>, Tyler Hicks <tyhicks@canonical.com>
-Subject: [PATCH 3.17 088/146] ecryptfs: avoid to access NULL pointer when write metadata in xattr
-Date: Tue, 28 Oct 2014 11:33:50 +0800
-Message-Id: <20141028033347.204660326@linuxfoundation.org>
+        Andrew Lunn <andrew@lunn.ch>, seugene@marvell.com,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.17 083/146] ARM: Kirkwood: Fix DT based DSA.
+Date: Tue, 28 Oct 2014 11:33:45 +0800
+Message-Id: <20141028033346.995849695@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -28,87 +29,325 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chao Yu <chao2.yu@samsung.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit 35425ea2492175fd39f6116481fe98b2b3ddd4ca upstream.
+commit 4f5e01e96d424b54f5f0e89ee1ba9ccca03a3941 upstream.
 
-Christopher Head 2014-06-28 05:26:20 UTC described:
-"I tried to reproduce this on 3.12.21. Instead, when I do "echo hello > foo"
-in an ecryptfs mount with ecryptfs_xattr specified, I get a kernel crash:
+During the conversion of boards to use DT to instantiate Distributed
+Switch Architecture, nobody volunteered to test. As to be expected,
+the conversion was flawed. Testers and access to hardware has now
+become available, and this patch hopefully fixes the problems.
 
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-PGD d7840067 PUD b2c3c067 PMD 0
-Oops: 0002 [#1] SMP
-Modules linked in: nvidia(PO)
-CPU: 3 PID: 3566 Comm: bash Tainted: P           O 3.12.21-gentoo-r1 #2
-Hardware name: ASUSTek Computer Inc. G60JX/G60JX, BIOS 206 03/15/2010
-task: ffff8801948944c0 ti: ffff8800bad70000 task.ti: ffff8800bad70000
-RIP: 0010:[<ffffffff8110eb39>]  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-RSP: 0018:ffff8800bad71c10  EFLAGS: 00010246
-RAX: 00000000000181a4 RBX: ffff880198648480 RCX: 0000000000000000
-RDX: 0000000000000004 RSI: ffff880172010450 RDI: 0000000000000000
-RBP: ffff880198490e40 R08: 0000000000000000 R09: 0000000000000000
-R10: ffff880172010450 R11: ffffea0002c51e80 R12: 0000000000002000
-R13: 000000000000001a R14: 0000000000000000 R15: ffff880198490e40
-FS:  00007ff224caa700(0000) GS:ffff88019fcc0000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000000bb07f000 CR4: 00000000000007e0
-Stack:
-ffffffff811826e8 ffff8800a39d8000 0000000000000000 000000000000001a
-ffff8800a01d0000 ffff8800a39d8000 ffffffff81185fd5 ffffffff81082c2c
-00000001a39d8000 53d0abbc98490e40 0000000000000037 ffff8800a39d8220
-Call Trace:
-[<ffffffff811826e8>] ? ecryptfs_setxattr+0x40/0x52
-[<ffffffff81185fd5>] ? ecryptfs_write_metadata+0x1b3/0x223
-[<ffffffff81082c2c>] ? should_resched+0x5/0x23
-[<ffffffff8118322b>] ? ecryptfs_initialize_file+0xaf/0xd4
-[<ffffffff81183344>] ? ecryptfs_create+0xf4/0x142
-[<ffffffff810f8c0d>] ? vfs_create+0x48/0x71
-[<ffffffff810f9c86>] ? do_last.isra.68+0x559/0x952
-[<ffffffff810f7ce7>] ? link_path_walk+0xbd/0x458
-[<ffffffff810fa2a3>] ? path_openat+0x224/0x472
-[<ffffffff810fa7bd>] ? do_filp_open+0x2b/0x6f
-[<ffffffff81103606>] ? __alloc_fd+0xd6/0xe7
-[<ffffffff810ee6ab>] ? do_sys_open+0x65/0xe9
-[<ffffffff8157d022>] ? system_call_fastpath+0x16/0x1b
-RIP  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-RSP <ffff8800bad71c10>
-CR2: 0000000000000000
----[ end trace df9dba5f1ddb8565 ]---"
+dsa,mii-bus must be a phandle to the top level mdio node, not the port
+specific subnode of the mdio device.
 
-If we create a file when we mount with ecryptfs_xattr_metadata option, we will
-encounter a crash in this path:
-->ecryptfs_create
-  ->ecryptfs_initialize_file
-    ->ecryptfs_write_metadata
-      ->ecryptfs_write_metadata_to_xattr
-        ->ecryptfs_setxattr
-          ->fsstack_copy_attr_all
-It's because our dentry->d_inode used in fsstack_copy_attr_all is NULL, and it
-will be initialized when ecryptfs_initialize_file finish.
+dsa,ethernet must be a phandle to the port subnode within the ethernet
+DT node, not the ethernet node.
 
-So we should skip copying attr from lower inode when the value of ->d_inode is
-invalid.
+Don't pinctrl hog the card detect gpio for mvsdio.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Rename the .dts files to make it clearer which file is for the Z0
+stepping and which for the A0 or later stepping.
+
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Cc: seugene@marvell.com
+Tested-by: Eugene Sanivsky <seugene@marvell.com>
+Fixes: e2eaa339af44: ("ARM: Kirkwood: convert rd88f6281-setup.c to DT.")
+Fixes: e7c8f3808be8: ("ARM: kirkwood: Convert mv88f6281gtw_ge switch setup to DT")
+Link: https://lkml.kernel.org/r/1409592941-22244-1-git-send-email-andrew@lunn.ch
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ecryptfs/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/Makefile                     |    4 +-
+ arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts |   16 +++------
+ arch/arm/boot/dts/kirkwood-rd88f6281-a.dts     |   43 +++++++++++++++++++++++++
+ arch/arm/boot/dts/kirkwood-rd88f6281-a0.dts    |   26 ---------------
+ arch/arm/boot/dts/kirkwood-rd88f6281-a1.dts    |   31 ------------------
+ arch/arm/boot/dts/kirkwood-rd88f6281-z0.dts    |   35 ++++++++++++++++++++
+ arch/arm/boot/dts/kirkwood-rd88f6281.dtsi      |   27 ++-------------
+ arch/arm/boot/dts/kirkwood.dtsi                |    4 +-
+ 8 files changed, 93 insertions(+), 93 deletions(-)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -1039,7 +1039,7 @@ ecryptfs_setxattr(struct dentry *dentry,
- 	}
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -144,8 +144,8 @@ dtb-$(CONFIG_MACH_KIRKWOOD) += kirkwood-
+ 	kirkwood-openrd-client.dtb \
+ 	kirkwood-openrd-ultimate.dtb \
+ 	kirkwood-rd88f6192.dtb \
+-	kirkwood-rd88f6281-a0.dtb \
+-	kirkwood-rd88f6281-a1.dtb \
++	kirkwood-rd88f6281-z0.dtb \
++	kirkwood-rd88f6281-a.dtb \
+ 	kirkwood-rs212.dtb \
+ 	kirkwood-rs409.dtb \
+ 	kirkwood-rs411.dtb \
+--- a/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
++++ b/arch/arm/boot/dts/kirkwood-mv88f6281gtw-ge.dts
+@@ -123,11 +123,11 @@
  
- 	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
--	if (!rc)
-+	if (!rc && dentry->d_inode)
- 		fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
- out:
- 	return rc;
+ 	dsa@0 {
+ 		compatible = "marvell,dsa";
+-		#address-cells = <2>;
++		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		dsa,ethernet = <&eth0>;
+-		dsa,mii-bus = <&ethphy0>;
++		dsa,ethernet = <&eth0port>;
++		dsa,mii-bus = <&mdio>;
+ 
+ 		switch@0 {
+ 			#address-cells = <1>;
+@@ -169,17 +169,13 @@
+ 
+ &mdio {
+ 	status = "okay";
+-
+-	ethphy0: ethernet-phy@ff {
+-		reg = <0xff>; 	/* No phy attached */
+-		speed = <1000>;
+-		duplex = <1>;
+-	};
+ };
+ 
+ &eth0 {
+ 	status = "okay";
++
+ 	ethernet0-port@0 {
+-		phy-handle = <&ethphy0>;
++		speed = <1000>;
++		duplex = <1>;
+ 	};
+ };
+--- /dev/null
++++ b/arch/arm/boot/dts/kirkwood-rd88f6281-a.dts
+@@ -0,0 +1,43 @@
++/*
++ * Marvell RD88F6181 A Board descrition
++ *
++ * Andrew Lunn <andrew@lunn.ch>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ *
++ * This file contains the definitions for the board with the A0 or
++ * higher stepping of the SoC. The ethernet switch does not have a
++ * "wan" port.
++ */
++
++/dts-v1/;
++#include "kirkwood-rd88f6281.dtsi"
++
++/ {
++	model = "Marvell RD88f6281 Reference design, with A0 or higher SoC";
++	compatible = "marvell,rd88f6281-a", "marvell,rd88f6281","marvell,kirkwood-88f6281", "marvell,kirkwood";
++
++	dsa@0 {
++		switch@0 {
++			reg = <10 0>;	 /* MDIO address 10, switch 0 in tree */
++		};
++	};
++};
++
++&mdio {
++	status = "okay";
++
++	ethphy1: ethernet-phy@11 {
++		 reg = <11>;
++	};
++};
++
++&eth1 {
++	status = "okay";
++
++	ethernet1-port@0 {
++		 phy-handle = <&ethphy1>;
++	};
++};
+--- a/arch/arm/boot/dts/kirkwood-rd88f6281-a0.dts
++++ /dev/null
+@@ -1,26 +0,0 @@
+-/*
+- * Marvell RD88F6181 A0 Board descrition
+- *
+- * Andrew Lunn <andrew@lunn.ch>
+- *
+- * This file is licensed under the terms of the GNU General Public
+- * License version 2.  This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- *
+- * This file contains the definitions for the board with the A0 variant of
+- * the SoC. The ethernet switch does not have a "wan" port.
+- */
+-
+-/dts-v1/;
+-#include "kirkwood-rd88f6281.dtsi"
+-
+-/ {
+-	model = "Marvell RD88f6281 Reference design, with A0 SoC";
+-	compatible = "marvell,rd88f6281-a0", "marvell,rd88f6281","marvell,kirkwood-88f6281", "marvell,kirkwood";
+-
+-	dsa@0 {
+-		switch@0 {
+-			reg = <10 0>;    /* MDIO address 10, switch 0 in tree */
+-		};
+-	};
+-};
+\ No newline at end of file
+--- a/arch/arm/boot/dts/kirkwood-rd88f6281-a1.dts
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/*
+- * Marvell RD88F6181 A1 Board descrition
+- *
+- * Andrew Lunn <andrew@lunn.ch>
+- *
+- * This file is licensed under the terms of the GNU General Public
+- * License version 2.  This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+- *
+- * This file contains the definitions for the board with the A1 variant of
+- * the SoC. The ethernet switch has a "wan" port.
+- */
+-
+-/dts-v1/;
+-
+-#include "kirkwood-rd88f6281.dtsi"
+-
+-/ {
+-	model = "Marvell RD88f6281 Reference design, with A1 SoC";
+-	compatible = "marvell,rd88f6281-a1", "marvell,rd88f6281","marvell,kirkwood-88f6281", "marvell,kirkwood";
+-
+-	dsa@0 {
+-		switch@0 {
+-			reg = <0 0>;    /* MDIO address 0, switch 0 in tree */
+-			port@4 {
+-				reg = <4>;
+-				label = "wan";
+-			};
+-		};
+-	};
+-};
+\ No newline at end of file
+--- /dev/null
++++ b/arch/arm/boot/dts/kirkwood-rd88f6281-z0.dts
+@@ -0,0 +1,35 @@
++/*
++ * Marvell RD88F6181 Z0 stepping descrition
++ *
++ * Andrew Lunn <andrew@lunn.ch>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ *
++ * This file contains the definitions for the board using the Z0
++ * stepping of the SoC. The ethernet switch has a "wan" port.
++*/
++
++/dts-v1/;
++
++#include "kirkwood-rd88f6281.dtsi"
++
++/ {
++	model = "Marvell RD88f6281 Reference design, with Z0 SoC";
++	compatible = "marvell,rd88f6281-z0", "marvell,rd88f6281","marvell,kirkwood-88f6281", "marvell,kirkwood";
++
++	dsa@0 {
++		switch@0 {
++			reg = <0 0>;    /* MDIO address 0, switch 0 in tree */
++			port@4 {
++				reg = <4>;
++				label = "wan";
++			};
++		};
++	};
++};
++
++&eth1 {
++      status = "disabled";
++};
+--- a/arch/arm/boot/dts/kirkwood-rd88f6281.dtsi
++++ b/arch/arm/boot/dts/kirkwood-rd88f6281.dtsi
+@@ -37,7 +37,6 @@
+ 
+ 	ocp@f1000000 {
+ 		pinctrl: pin-controller@10000 {
+-			pinctrl-0 = <&pmx_sdio_cd>;
+ 			pinctrl-names = "default";
+ 
+ 			pmx_sdio_cd: pmx-sdio-cd {
+@@ -69,8 +68,8 @@
+ 		#address-cells = <2>;
+ 		#size-cells = <0>;
+ 
+-		dsa,ethernet = <&eth0>;
+-		dsa,mii-bus = <&ethphy1>;
++		dsa,ethernet = <&eth0port>;
++		dsa,mii-bus = <&mdio>;
+ 
+ 		switch@0 {
+ 			#address-cells = <1>;
+@@ -119,35 +118,19 @@
+ 	};
+ 
+ 	partition@300000 {
+-		label = "data";
++		label = "rootfs";
+ 		reg = <0x0300000 0x500000>;
+ 	};
+ };
+ 
+ &mdio {
+ 	status = "okay";
+-
+-	ethphy0: ethernet-phy@0 {
+-		reg = <0>;
+-	};
+-
+-	ethphy1: ethernet-phy@ff {
+-		reg = <0xff>; /* No PHY attached */
+-		speed = <1000>;
+-		duple = <1>;
+-	};
+ };
+ 
+ &eth0 {
+ 	status = "okay";
+ 	ethernet0-port@0 {
+-		phy-handle = <&ethphy0>;
+-	};
+-};
+-
+-&eth1 {
+-	status = "okay";
+-	ethernet1-port@0 {
+-		phy-handle = <&ethphy1>;
++		speed = <1000>;
++		duplex = <1>;
+ 	};
+ };
+--- a/arch/arm/boot/dts/kirkwood.dtsi
++++ b/arch/arm/boot/dts/kirkwood.dtsi
+@@ -309,7 +309,7 @@
+ 			marvell,tx-checksum-limit = <1600>;
+ 			status = "disabled";
+ 
+-			ethernet0-port@0 {
++			eth0port: ethernet0-port@0 {
+ 				compatible = "marvell,kirkwood-eth-port";
+ 				reg = <0>;
+ 				interrupts = <11>;
+@@ -342,7 +342,7 @@
+ 			pinctrl-names = "default";
+ 			status = "disabled";
+ 
+-			ethernet1-port@0 {
++			eth1port: ethernet1-port@0 {
+ 				compatible = "marvell,kirkwood-eth-port";
+ 				reg = <0>;
+ 				interrupts = <15>;
 
 
