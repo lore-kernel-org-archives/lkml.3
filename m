@@ -1,66 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934033AbaJ1DxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:53:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46344 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933825AbaJ1Dwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 39/43] ALSA: pcm: use the same dma mmap codepath both for arm and arm64
-Date: Tue, 28 Oct 2014 11:36:37 +0800
-Message-Id: <20141028033525.079070027@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1756144AbaJ1EYy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:24:54 -0400
+Received: from ozlabs.org ([103.22.144.67]:38535 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750786AbaJ1EYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 00:24:52 -0400
+Date: Tue, 28 Oct 2014 15:24:44 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Thierry Reding <treding@nvidia.com>
+Subject: linux-next: manual merge of the akpm-current tree with the
+ dma-mapping tree
+Message-ID: <20141028152444.79bd9fe9@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Li=CG9qwWOUt1QgIjJ92DAE"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+--Sig_/Li=CG9qwWOUt1QgIjJ92DAE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Andrew,
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+Today's linux-next merge of the akpm-current tree got a conflict in
+mm/cma.c between commit 16195ddd4ebc ("mm: cma: Ensure that
+reservations never cross the low/high mem boundary") from the
+dma-mapping tree and commit 2a70e5a78672 ("mm/cma: ake kmemleak ignore
+CMA regions") from the akpm-current tree.
 
-commit a011e213f3700233ed2a676f1ef0a74a052d7162 upstream.
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
 
-This avoids following kernel crash when try to playback on arm64
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-[  107.497203] [<ffffffc00046b310>] snd_pcm_mmap_data_fault+0x90/0xd4
-[  107.503405] [<ffffffc0001541ac>] __do_fault+0xb0/0x498
-[  107.508565] [<ffffffc0001576a0>] handle_mm_fault+0x224/0x7b0
-[  107.514246] [<ffffffc000092640>] do_page_fault+0x11c/0x310
-[  107.519738] [<ffffffc000081100>] do_mem_abort+0x38/0x98
+diff --cc mm/cma.c
+index fde706e1284f,471fcfef043b..000000000000
+--- a/mm/cma.c
++++ b/mm/cma.c
+@@@ -278,30 -274,20 +278,35 @@@ int __init cma_declare_contiguous(phys_
+  			goto err;
+  		}
+  	} else {
+ -		phys_addr_t addr =3D memblock_alloc_range(size, alignment, base,
+ -							limit);
+ +		phys_addr_t addr =3D 0;
+ +
+ +		/*
+ +		 * All pages in the reserved area must come from the same zone.
+ +		 * If the requested region crosses the low/high memory boundary,
+ +		 * try allocating from high memory first and fall back to low
+ +		 * memory in case of failure.
+ +		 */
+ +		if (base < highmem_start && limit > highmem_start) {
+ +			addr =3D memblock_alloc_range(size, alignment,
+ +						    highmem_start, limit);
+ +			limit =3D highmem_start;
+ +		}
+ +
+  		if (!addr) {
+ -			ret =3D -ENOMEM;
+ -			goto err;
+ -		} else {
+ -			/*
+ -			 * kmemleak scans/reads tracked objects for pointers to
+ -			 * other objects but this address isn't mapped and
+ -			 * accessible
+ -			 */
+ -			kmemleak_ignore(phys_to_virt(addr));
+ -			base =3D addr;
+ +			addr =3D memblock_alloc_range(size, alignment, base,
+ +						    limit);
+ +			if (!addr) {
+ +				ret =3D -ENOMEM;
+ +				goto err;
+ +			}
+  		}
+-=20
+++		/*
+++		 * kmemleak scans/reads tracked objects for pointers to
+++		 * other objects but this address isn't mapped and
+++		 * accessible
+++		 */
+++		kmemleak_ignore(phys_to_virt(addr));
+ +		base =3D addr;
+  	}
+ =20
+  	ret =3D cma_init_reserved_mem(base, size, order_per_bit, res_cma);
 
-Tested: backported to 3.14 and tried to playback on arm64 machine
+--Sig_/Li=CG9qwWOUt1QgIjJ92DAE
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
----
- sound/core/pcm_native.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+iQIcBAEBCAAGBQJUTxqQAAoJEMDTa8Ir7ZwVQ50P/0EeT71xKRVoq/qwisqTd7Bg
+kCuRwRjk9rfE78V0gIwxNE11Z7SLvRMSZpeyYHMw3sMJuJetSI2qRgkscQqbsrtx
+JXQG6qOmsZQt9lhIBA1rUWGeICB+57BrqzfmgKJOSZQowxpTluD+cUUFvg6SYSco
+IH2eOvpbfGsMe17a8CE0QBSC87clD/M2Mx5amurLroeDTzw9Hiknw0MthRbsi+bv
+InRC6FiJVMApJpjLnXG1Xpf28zWTf0XoSg7CwfYxA7BQsil9EjOvOT04pRETGaVz
+PdhAW3eNNFnLnwiXI+7Lbd97eKZHL7ryElGGgb7U0p0D1nYq5ApaotxAs2RoHuF5
+27wgZd6wfIgj6+r+9mwPSD0FD32HWjgLulSvyXZlMiI7AzH8hkTgBIEowx7Bwy75
+w/zonF+MfBuTNc6WDuzRlo7dpfq5P+DpPVDHY60cnNtdul6TK0mk69bUxQDlQusw
++KbPO2TKdWERblE7fgkLF++j7bPojitvblPQrj/AfFJ9sonzj6xSerMaQW/yqQME
+fm3dCqdmTDCzBfxpF1oqGax50JuIpnFhYVW1VBi8wYHuD/vhN7F3LvFk1seL0ELE
+81sUTPG+ddjaK3nttlzwr/bKsUawFeVwvkk24Y4LXyiQS0LHizhiTe7lk0wizqK/
+jPtm1yblR1TWI1yd1D7z
+=0cNa
+-----END PGP SIGNATURE-----
 
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -3197,7 +3197,7 @@ static const struct vm_operations_struct
- 
- #ifndef ARCH_HAS_DMA_MMAP_COHERENT
- /* This should be defined / handled globally! */
--#ifdef CONFIG_ARM
-+#if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
- #define ARCH_HAS_DMA_MMAP_COHERENT
- #endif
- #endif
-
-
+--Sig_/Li=CG9qwWOUt1QgIjJ92DAE--
