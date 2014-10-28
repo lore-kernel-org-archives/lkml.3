@@ -1,42 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199AbaJ2BwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 21:52:04 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:33331 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773AbaJ2BwD (ORCPT
+	id S1753343AbaJ2ByH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 21:54:07 -0400
+Received: from srv2.interbourg.com.ar ([201.251.0.2]:41703 "EHLO
+	srv2.interbourg.com.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaJ2ByF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 21:52:03 -0400
-Date: Tue, 28 Oct 2014 18:51:58 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Sebastian Reichel <sre@kernel.org>, linux-pm@vger.kernel.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        linux-kernel@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
-Subject: Re: [PATCH v2 10/10] power/reset: brcmstb: Register with kernel
- restart handler
-Message-ID: <20141029015158.GC23619@ld-irv-0074>
-References: <1412099316-23167-1-git-send-email-linux@roeck-us.net>
- <1412099316-23167-11-git-send-email-linux@roeck-us.net>
+	Tue, 28 Oct 2014 21:54:05 -0400
+X-Greylist: delayed 33666 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 21:54:05 EDT
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1412099316-23167-11-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: Crude Oil Exploration  
+To: Recipients <evangelico@interbourg.com.ar>
+From: "Adel Salman" <evangelico@interbourg.com.ar>
+Date: Tue, 28 Oct 2014 14:33:07 +0100
+Reply-To: adel.salman01@aol.com
+Message-Id: <20141028133653.25EBD4610E2@srv2.interbourg.com.ar>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 30, 2014 at 10:48:36AM -0700, Guenter Roeck wrote:
-> Register with kernel restart handler instead of setting arm_pm_restart directly.
-> 
-> Cc: Marc Carino <marc.ceeeee@gmail.com>
-> Cc: Brian Norris <computersforpeace@gmail.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Good day,
+I have an oil exportation proposition contract for you.If you don't mind,
+reply my email for full details of contract proposal.
 
-Tested on top of linux-next:
-
-Tested-by: Brian Norris <computersforpeace@gmail.com>
-Acked-by: Brian Norris <computersforpeace@gmail.com>
+Sincerely,
+Adel Salman
