@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452AbaJ1Xl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 19:41:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34632 "EHLO
+	id S1754858AbaJ1Xlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 19:41:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbaJ1Xl0 (ORCPT
+	with ESMTP id S1754635AbaJ1Xlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 19:41:26 -0400
-Date: Wed, 29 Oct 2014 07:40:14 +0800
+	Tue, 28 Oct 2014 19:41:40 -0400
+Date: Wed, 29 Oct 2014 07:40:29 +0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuahkh@osg.samsung.com>
+To: Guenter Roeck <linux@roeck-us.net>
 Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux@roeck-us.net,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
 Subject: Re: [PATCH 3.17 000/146] 3.17.2-stable review
-Message-ID: <20141028234014.GC32639@kroah.com>
+Message-ID: <20141028234029.GD32639@kroah.com>
 References: <20141028033343.441992423@linuxfoundation.org>
- <544FC10C.30608@osg.samsung.com>
+ <20141028151505.GC4452@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <544FC10C.30608@osg.samsung.com>
+In-Reply-To: <20141028151505.GC4452@roeck-us.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 10:15:08AM -0600, Shuah Khan wrote:
-> On 10/27/2014 09:32 PM, Greg Kroah-Hartman wrote:
+On Tue, Oct 28, 2014 at 08:15:05AM -0700, Guenter Roeck wrote:
+> On Tue, Oct 28, 2014 at 11:32:22AM +0800, Greg Kroah-Hartman wrote:
 > > This is the start of the stable review cycle for the 3.17.2 release.
 > > There are 146 patches in this series, all will be posted as a response
 > > to this one.  If anyone has any issues with these being applied, please
@@ -37,17 +36,13 @@ On Tue, Oct 28, 2014 at 10:15:08AM -0600, Shuah Khan wrote:
 > > Responses should be made by Thu Oct 30 03:32:38 UTC 2014.
 > > Anything received after that time might be too late.
 > > 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.17.2-rc1.gz
-> > and the diffstat can be found below.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> > 
+> Build results:
+> 	total: 133 pass: 133 fail: 0
+> Qemu test results:
+> 	total: 30 pass: 30 fail: 0
 > 
-> Compiled and booted on my test system. No regressions in dmesg.
+> Details are available at http://server.roeck-us.net:8010/builders.
 
-Thanks for testing all of these and letting me know.
+Thanks for letting me know about all of these.
 
 greg k-h
