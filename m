@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaJ1VL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:11:59 -0400
-Received: from mout.kundenserver.de ([212.227.17.13]:54503 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753397AbaJ1VL6 (ORCPT
+	id S1754541AbaJ1VNQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:13:16 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46850 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067AbaJ1VNP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:11:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, olof@lixom.net,
-        khilman@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: multi_v7_defconfig: fix support for APQ8084
-Date: Tue, 28 Oct 2014 22:11:48 +0100
-Message-ID: <15749942.RHYUJy9s6B@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1413917720-17069-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1413917720-17069-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Tue, 28 Oct 2014 17:13:15 -0400
+Date: Tue, 28 Oct 2014 21:13:13 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tim Tassonis <stuff@decentral.ch>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: overlayfs: "filesystem of lowerdir is not supported" on cdrom
+Message-ID: <20141028211313.GB7996@ZenIV.linux.org.uk>
+References: <544FDC1C.9040908@decentral.ch>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:U70YzUkISxc6vIqeGmBx07+Rc3fAaZfqGBSVPkAoltW
- 1u0ckE6glcgOm5BNbz01Ahu40WkChYm4XWNVGG4GoG2ASfOpwT
- 1zSBtbDwRLKsw7uDYT5Q0AzcX4t/IcR1LdAY8b25Z2+CDJ/e64
- rA3pNM2fWH8/GaC5W0cwYPdouBS2DxFhAnwvIoOHTbCHg5xj8g
- 968N+P9gmR35UV8g4mjYr8xVCC2sNpzbUY13lDiw4xbDr2t8zk
- 1G2/onZmEEqC9xsCdOy5mYkI9UxArntxP7VHXZBLClO9nG0bZF
- SwrqqRxB5T6CszdpVtcwN0dgDzfJxVlcG23WGOrT5//2CictCm
- MeQDX9X3ROQeyHt/uV6M=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544FDC1C.9040908@decentral.ch>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 21 October 2014 19:55:20 Srinivas Kandagatla wrote:
-> This patch enables configs required to boot IFC6540 board with atleast a
-> serial console.
+On Tue, Oct 28, 2014 at 07:10:36PM +0100, Tim Tassonis wrote:
+> Hi
 > 
-> Without this patch there is no serial console.
+> Just installed 3.18-rc2 and tried to test the overlayfs stuff:
 > 
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+> $ mkdir /ovtmp
+> $ mount -t tmpfs tmpfs /ovtmp/
+> $ mkdir /ovtmp/work
+> $ mkdir /ovtmp/upper
+> $ mkdir /cdrw
+> $ mount /dev/sr0 /mnt
+> $ mount |egrep "ovtmp|sr0"
 > 
+> /dev/sr0 on /mnt type iso9660 (ro,relatime)
+> tmpfs on /ovtmp type tmpfs (rw,relatime)
+> 
+> $ mount -t overlayfs overlayfs \
+>  -olowerdir=/mnt,upperdir=/ovtmp/upper,workdir=/ovtmp/work /cdrw
 
-It wasn't really clear from your email what you expected to happen with this
-patch. I've picked it up in the fixes branch for 3.18 now, as it seemed
-to fit that category.
+> [ 3266.793218] overlayfs: filesystem of lowerdir is not supported
+> 
+> However, the doc in Documentation/filesystems/overlayfs.txt states:
+> 
+> "The lower filesystem can be any filesystem supported by Linux and does
+> not need to be writable.  The lower filesystem can even be another
+> overlayfs.  The upper filesystem will normally be writable and if it
+> is it must support the creation of trusted.* extended attributes, and
+> must provide valid d_type in readdir responses, so NFS is not suitable."
+> 
+> So: Is the documentation wrong, the error message in dmesg wrong, or
+> have missed something completely?
 
-	Arnd
+Documentation is wildly over-optimistic.  You are trying to use something
+with non-trivial ->d_hash and ->d_compare as lower layer.
+
+What should happen if you ask to mount an image with joliet extensions and
+ask to create foo.txt.... when foo.txt is there?  From the isofs POV those
+are the same; for overlayfs they are not (it's using default ->d_hash
+and ->d_compare).
+
+We probably ought to split the normal (case-sensitive, no joliet shite) case
+out and leave it with NULL ->s_d_op, but that'll need to be done carefully,
+or isofs_cmp() will blow up on us.
