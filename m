@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486AbaJ1II4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 04:08:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44260 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185AbaJ1DgF (ORCPT
+	id S1758319AbaJ1IJN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:09:13 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:64440 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756225AbaJ1IJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:36:05 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc MERLIN <marc@merlins.org>, Josef Bacik <jbacik@fb.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.17 010/146] Btrfs: fix build_backref_tree issue with multiple shared blocks
-Date: Tue, 28 Oct 2014 11:32:32 +0800
-Message-Id: <20141028033343.882400200@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
-References: <20141028033343.441992423@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 04:09:05 -0400
 MIME-Version: 1.0
+In-Reply-To: <20141028053429.GI60814@vmdeb7>
+References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+	<1414005163-3461-9-git-send-email-fransklaver@gmail.com>
+	<20141028053429.GI60814@vmdeb7>
+Date: Tue, 28 Oct 2014 09:09:03 +0100
+Message-ID: <CAH6sp9PUSbSj0jWNNv6q=rwqUnpkCoiUBxCUAHSVjP+qrUEa9g@mail.gmail.com>
+Subject: Re: [PATCH 8/8] eeepc-laptop: don't assume get_acpi succeeds
+From: Frans Klaver <fransklaver@gmail.com>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Oct 28, 2014 at 6:34 AM, Darren Hart <dvhart@infradead.org> wrote:
+> On Wed, Oct 22, 2014 at 09:12:43PM +0200, Frans Klaver wrote:
+>> In eeepc_hotk_thaw, we assume that get_acpi() will effectively return a
+>> bool. However, it is possible that get_acpi() returns an error instead.
+>> We should not be writing error values to the ACPI device, even though
+>> it's quite possible that we couldn't contact the ACPI device in the
+>> first place.
+>>
+>> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+>> ---
+>>  drivers/platform/x86/eeepc-laptop.c | 5 +++--
+>>  1 file changed, 3 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+>> index 275a239..14f79ef 100644
+>> --- a/drivers/platform/x86/eeepc-laptop.c
+>> +++ b/drivers/platform/x86/eeepc-laptop.c
+>> @@ -911,7 +911,7 @@ static int eeepc_hotk_thaw(struct device *device)
+>>       struct eeepc_laptop *eeepc = dev_get_drvdata(device);
+>>
+>>       if (eeepc->wlan_rfkill) {
+>> -             bool wlan;
+>> +             int wlan;
+>>
+>>               /*
+>>                * Work around bios bug - acpi _PTS turns off the wireless led
+>> @@ -919,7 +919,8 @@ static int eeepc_hotk_thaw(struct device *device)
+>>                * we should kick it ourselves in case hibernation is aborted.
+>>                */
+>>               wlan = get_acpi(eeepc, CM_ASL_WLAN);
+>> -             set_acpi(eeepc, CM_ASL_WLAN, wlan);
+>> +             if (wlan >= 0)
+>> +                     set_acpi(eeepc, CM_ASL_WLAN, wlan);
+>
+> And if not? Seems like we should be passing the error code along.
 
-------------------
+Wouldn't that mean that you cannot thaw the system if the wlan acpi call fails?
 
-From: Josef Bacik <jbacik@fb.com>
+I'd rather have my system up and running without wlan, than I'd have
+my system down because we couldn't start wlan. This is of course
+assuming that returning an error from eeepc_hotk_thaw means the
+thawing stops.
 
-commit bbe9051441effce51c9a533d2c56440df64db2d7 upstream.
-
-Marc Merlin sent me a broken fs image months ago where it would blow up in the
-upper->checked BUG_ON() in build_backref_tree.  This is because we had a
-scenario like this
-
-block a -- level 4 (not shared)
-   |
-block b -- level 3 (reloc block, shared)
-   |
-block c -- level 2 (not shared)
-   |
-block d -- level 1 (shared)
-   |
-block e -- level 0 (shared)
-
-We go to build a backref tree for block e, we notice block d is shared and add
-it to the list of blocks to lookup it's backrefs for.  Now when we loop around
-we will check edges for the block, so we will see we looked up block c last
-time.  So we lookup block d and then see that the block that points to it is
-block c and we can just skip that edge since we've already been up this path.
-The problem is because we clear need_check when we see block d (as it is shared)
-we never add block b as needing to be checked.  And because block c is in our
-path already we bail out before we walk up to block b and add it to the backref
-check list.
-
-To fix this we need to reset need_check if we trip over a block that doesn't
-need to be checked.  This will make sure that any subsequent blocks in the path
-as we're walking up afterwards are added to the list to be processed.  With this
-patch I can now mount Marc's fs image and it'll complete the balance without
-panicing.  Thanks,
-
-Reported-by: Marc MERLIN <marc@merlins.org>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/btrfs/relocation.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- a/fs/btrfs/relocation.c
-+++ b/fs/btrfs/relocation.c
-@@ -978,8 +978,11 @@ again:
- 					need_check = false;
- 					list_add_tail(&edge->list[UPPER],
- 						      &list);
--				} else
-+				} else {
-+					if (upper->checked)
-+						need_check = true;
- 					INIT_LIST_HEAD(&edge->list[UPPER]);
-+				}
- 			} else {
- 				upper = rb_entry(rb_node, struct backref_node,
- 						 rb_node);
-
-
+Thanks,
+Frans
