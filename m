@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096AbaJ1DtB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:49:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45778 "EHLO
+	id S933129AbaJ1DtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:49:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45793 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948AbaJ1Ds5 (ORCPT
+	with ESMTP id S933108AbaJ1DtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:48:57 -0400
+	Mon, 27 Oct 2014 23:49:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 047/100] rt2800: correct BBP1_TX_POWER_CTRL mask
-Date: Tue, 28 Oct 2014 11:35:32 +0800
-Message-Id: <20141028033502.734626089@linuxfoundation.org>
+        Champion Chen <champion_chen@realsil.com.cn>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.14 050/100] Bluetooth: Fix issue with USB suspend in btusb driver
+Date: Tue, 28 Oct 2014 11:35:35 +0800
+Message-Id: <20141028033502.853340976@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,32 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Champion Chen <champion_chen@realsil.com.cn>
 
-commit 01f7feeaf4528bec83798316b3c811701bac5d3e upstream.
+commit 85560c4a828ec9c8573840c9b66487b6ae584768 upstream.
 
-Two bits control TX power on BBP_R1 register. Correct the mask,
-otherwise we clear additional bit on BBP_R1 register, what can have
-unknown, possible negative effect.
+Suspend could fail for some platforms because
+btusb_suspend==> btusb_stop_traffic ==> usb_kill_anchored_urbs.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+When btusb_bulk_complete returns before system suspend and resubmits
+an URB, the system cannot enter suspend state.
+
+Signed-off-by: Champion Chen <champion_chen@realsil.com.cn>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2800.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/bluetooth/btusb.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/net/wireless/rt2x00/rt2800.h
-+++ b/drivers/net/wireless/rt2x00/rt2800.h
-@@ -2039,7 +2039,7 @@ struct mac_iveiv_entry {
-  * 2 - drop tx power by 12dBm,
-  * 3 - increase tx power by 6dBm
-  */
--#define BBP1_TX_POWER_CTRL		FIELD8(0x07)
-+#define BBP1_TX_POWER_CTRL		FIELD8(0x03)
- #define BBP1_TX_ANTENNA			FIELD8(0x18)
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -309,6 +309,9 @@ static void btusb_intr_complete(struct u
+ 			BT_ERR("%s corrupted event packet", hdev->name);
+ 			hdev->stat.err_rx++;
+ 		}
++	} else if (urb->status == -ENOENT) {
++		/* Avoid suspend failed when usb_kill_urb */
++		return;
+ 	}
  
- /*
+ 	if (!test_bit(BTUSB_INTR_RUNNING, &data->flags))
+@@ -397,6 +400,9 @@ static void btusb_bulk_complete(struct u
+ 			BT_ERR("%s corrupted ACL packet", hdev->name);
+ 			hdev->stat.err_rx++;
+ 		}
++	} else if (urb->status == -ENOENT) {
++		/* Avoid suspend failed when usb_kill_urb */
++		return;
+ 	}
+ 
+ 	if (!test_bit(BTUSB_BULK_RUNNING, &data->flags))
+@@ -491,6 +497,9 @@ static void btusb_isoc_complete(struct u
+ 				hdev->stat.err_rx++;
+ 			}
+ 		}
++	} else if (urb->status == -ENOENT) {
++		/* Avoid suspend failed when usb_kill_urb */
++		return;
+ 	}
+ 
+ 	if (!test_bit(BTUSB_ISOC_RUNNING, &data->flags))
 
 
