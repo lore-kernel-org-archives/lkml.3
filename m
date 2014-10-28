@@ -1,88 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657AbaJ1IXv (ORCPT <rfc822;w@1wt.eu>);
+	id S1756992AbaJ1IX6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:23:58 -0400
+Received: from mga03.intel.com ([134.134.136.65]:61509 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752904AbaJ1IXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 04:23:51 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51516 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaJ1IXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 04:23:47 -0400
-Date: Tue, 28 Oct 2014 09:23:35 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, mingo@kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        ilya.dryomov@inktank.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, rafael.j.wysocki@intel.com
-Subject: Re: [PATCH 00/11] nested sleeps, fixes and debug infrastructure
-Message-ID: <20141028082335.GM3337@twins.programming.kicks-ass.net>
-References: <20140924081845.572814794@infradead.org>
- <1411633803.15810.12.camel@marge.simpson.net>
- <20140925090619.GA5430@worktop>
- <20140925091556.GB5430@worktop>
- <20141002102251.GA6324@worktop.programming.kicks-ass.net>
- <20141002121553.GB6324@worktop.programming.kicks-ass.net>
- <20141027134103.GA10476@twins.programming.kicks-ass.net>
- <20141028000703.GA22964@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028000703.GA22964@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,801,1406617200"; 
+   d="scan'208";a="597492993"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [Patch Part2 v3 00/24] Enable hierarchy irqdomian on x86 platforms
+Date: Tue, 28 Oct 2014 16:26:18 +0800
+Message-Id: <1414484803-10311-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 01:07:03AM +0100, Oleg Nesterov wrote:
-> On 10/27, Peter Zijlstra wrote:
-> >
-> > On Thu, Oct 02, 2014 at 02:15:53PM +0200, Peter Zijlstra wrote:
-> > > On Thu, Oct 02, 2014 at 12:22:51PM +0200, Peter Zijlstra wrote:
-> >
-> > > > +#define __wait_event_freezable(wq, condition)				\
-> > > > +	(void)___wait_event(wq, condition, TASK_INTERRUPTIBLE, 0, 0,	\
-> > > > +			    schedule(); try_to_freeze())
->                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 
-> see below.
+We plan to restructure x86 interrupt code based on hierarchy irqdomain,
+that is to build irqdomains for CPU vector, interrupt remapping unit,
+IOAPIC, MSI and HPET etc and organize those irqdomains in hierarchy mode.
+Each irqdomain manages corresponding interrupt controller and talks to
+parent interrupt controller through public irqdomain interfaces. We also
+support stacked irq_chip based on hierarchy irqdomain. It will make the
+x86 interrupt architecture much more clear and more easy to maintain
+with hierarchy irqdomain and stacked irq_chip. It may also help ARM
+interrupt management architecture too.
 
-> I was going to say that wait_event_freezable() in kauditd_thread()
-> is not friendly wrt kthread_should_stop() and thus we we need
-> kthread_freezable_should_stop().
+This is the second patch set to enable support of hierarchy irqdomain
+on x86 platforms. It depends on the first part at:
+https://lkml.org/lkml/2014/10/27/122
+And you may access it at:
+https://github.com/jiangliu/linux.git irqdomain/p2v3
 
-I'm not sure those two would interact, yes, both would first set either
-the freezable or stop bit and then wake. If both were to race, all we
-need to ensure is to check both before calling schedule again.
+And there will be a third patch set to convert IOAPIC driver to support
+hierarchy irqdomain and clean up code.
 
-A loop like:
+The first patch extends irqdomain interfaces to support hierarchy
+irqdomain. Hope this interface could be used by other architectures too,
+such as ARM/ARM64.
+The second patch introduces two helper functions to support stacked
+irq_chip.
+Patch 3-9 implements an irqdomain to manange CPU interrupt vectors, and
+it's the root irqdomain for x86 platforms.
+Patch 10-13 converts Intel and AMD interrupt remapping drivers to
+support hierarchy irqdomain.
+Patch 14-16 converts HPET and MSI to support hierarchy irqdomain.
+Patch 17-20 cleans up unsued code in x86 arch and interrupt remapping
+drivers.
+Patch 21-24 converts DMAR, HTIRQ and UV to support hierarchy irqdomain.
 
-	while (!kthread_should_stop()) {
-		wait_event_freezable(wq, cond);
-	}
+We have tested this patchset on Intel 32-bit and 64-bit systems. And it
+also passes Fengguang's 0day tests. But helps are need for testing:
+1) AMD interrupt remapping 
+2) AMD HT_IRQ
+3) UV platform
 
-Would satisfy that, because even if kthread_should_stop() gets set first
-and then freezing happens and we get into try_to_freeze() first, we'd
-still to the kthread_should_stop() check right after we thaw.
+V2->V3:
+1) Fix bugs in handling OF irqdomain
+2) Add documentation
+3) Rebase to v3.18-rc2
+V1->V2
+1) Add hierarchy iredomain support of DMAR IRQ and UV IRQ.
+2) Fix bugs reported by Joe C.
+3) Address all review comments from Thomas
+4) Fix a bug found during tests
+5) Fix errors and warning found by 0day tests
 
-So I don't se a reason to collect both stop and freeze into a single
-thing.
+Jiang Liu (24):
+  irqdomain: Introduce new interfaces to support hierarchy irqdomains
+  genirq: Introduce helper functions to support stacked irq_chip
+  x86, irq: Save destination CPU ID in irq_cfg
+  x86, irq: Use hierarchy irqdomain to manage CPU interrupt vectors
+  x86, hpet: Use new irqdomain interfaces to allocate/free IRQ
+  x86, MSI: Use new irqdomain interfaces to allocate/free IRQ
+  x86, uv: Use new irqdomain interfaces to allocate/free IRQ
+  x86, htirq: Use new irqdomain interfaces to allocate/free IRQ
+  x86, dmar: Use new irqdomain interfaces to allocate/free IRQ
+  x86: irq_remapping: Introduce new interfaces to support hierarchy
+    irqdomain
+  iommu/vt-d: Change prototypes to prepare for enabling hierarchy
+    irqdomain
+  iommu/vt-d: Enhance Intel IR driver to suppport hierarchy irqdomain
+  iommu/amd: Enhance AMD IR driver to suppport hierarchy irqdomain
+  x86, hpet: Enhance HPET IRQ to support hierarchy irqdomain
+  x86, MSI: Use hierarchy irqdomain to manage MSI interrupts
+  x86, irq: Directly call native_compose_msi_msg() for DMAR IRQ
+  iommu/vt-d: Clean up unused MSI related code
+  iommu/amd: Clean up unused MSI related code
+  x86: irq_remapping: Clean up unused MSI related code
+  x86, irq: Clean up unused MSI related code and interfaces
+  iommu/vt-d: Refine the interfaces to create IRQ for DMAR unit
+  x86, irq: Use hierarchy irqdomain to manage DMAR interrupts
+  x86, htirq: Use hierarchy irqdomain to manage Hypertransport
+    interrupts
+  x86, uv: Use hierarchy irqdomain to manage UV interrupts
 
-> But in fact we never stop this kauditd_task, so I think we should
-> turn the main loop into "for (;;)" and change this code to use
-> wait_event_freezable() like your patch does.
+ Documentation/IRQ-domain.txt          |   71 +++++
+ arch/ia64/include/asm/irq_remapping.h |    2 -
+ arch/ia64/kernel/msi_ia64.c           |   30 +-
+ arch/x86/Kconfig                      |    3 +-
+ arch/x86/include/asm/hpet.h           |   16 +-
+ arch/x86/include/asm/hw_irq.h         |   82 +++++
+ arch/x86/include/asm/irq_remapping.h  |   85 ++++-
+ arch/x86/include/asm/pci.h            |    5 -
+ arch/x86/include/asm/x86_init.h       |    4 -
+ arch/x86/kernel/apic/htirq.c          |  178 ++++++++---
+ arch/x86/kernel/apic/io_apic.c        |    3 -
+ arch/x86/kernel/apic/msi.c            |  545 +++++++++++++++++++++++++--------
+ arch/x86/kernel/apic/vector.c         |  160 +++++++++-
+ arch/x86/kernel/hpet.c                |   57 +---
+ arch/x86/kernel/x86_init.c            |    2 -
+ arch/x86/platform/uv/uv_irq.c         |  301 +++++++-----------
+ drivers/iommu/amd_iommu.c             |  388 ++++++++++++++++++-----
+ drivers/iommu/amd_iommu_init.c        |    4 +
+ drivers/iommu/amd_iommu_proto.h       |    9 +
+ drivers/iommu/amd_iommu_types.h       |    5 +
+ drivers/iommu/dmar.c                  |   19 +-
+ drivers/iommu/intel_irq_remapping.c   |  470 +++++++++++++++++++---------
+ drivers/iommu/irq_remapping.c         |  227 +++++---------
+ drivers/iommu/irq_remapping.h         |   23 +-
+ drivers/pci/htirq.c                   |   48 +--
+ include/linux/dmar.h                  |    3 +-
+ include/linux/htirq.h                 |   22 +-
+ include/linux/intel-iommu.h           |    4 +
+ include/linux/irq.h                   |   10 +
+ include/linux/irqdomain.h             |   81 +++++
+ kernel/irq/Kconfig                    |    4 +
+ kernel/irq/chip.c                     |   20 ++
+ kernel/irq/irqdomain.c                |  373 +++++++++++++++++++++-
+ 33 files changed, 2319 insertions(+), 935 deletions(-)
 
-Right.
+-- 
+1.7.10.4
 
-> Perhaps it also makes sense to redefine wait_event_freezable.*()
-> via ___wait_event(cmd => freezable_schedule), but I think this needs
-> another patch.
-
-So I talked to Rafael yesterday and I'm going to replace all the
-wait_event*() stuff, and I suppose also freezable_schedule() because
-they're racy.
-
-The moment we call freezer_do_not_count() the freezer will ignore us,
-this means the thread could still be running (albeit not for long) when
-the freezer reports success.
-
-Ideally I'll be able to kill the entire freezer_do_not_count() stuff.
