@@ -1,129 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbaJ1DYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:24:55 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:9249 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883AbaJ1DYx (ORCPT
+	id S1753337AbaJ1DZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:25:42 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:33474 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271AbaJ1DZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:24:53 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 27 Oct 2014 20:20:12 -0700
-Message-ID: <544F0C8C.3090003@nvidia.com>
-Date: Tue, 28 Oct 2014 11:25:00 +0800
-From: Vince Hsu <vinceh@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Bill Huang <bilhuang@nvidia.com>, <dgreid@google.com>,
-        <olofj@chromium.org>
-Subject: Re: [PATCH] cpufreq: respect the min/max settings from user space
-References: <1412232900-11238-1-git-send-email-vinceh@nvidia.com> <CAKohpon=dwc--SSbwjREdrALfXH=7QCw8UJnyVX5x3TCKB=7Bw@mail.gmail.com> <54321F90.2010103@nvidia.com>
-In-Reply-To: <54321F90.2010103@nvidia.com>
-X-Originating-IP: [10.19.108.126]
-X-ClientProxiedBy: HKMAIL102.nvidia.com (10.18.16.11) To
- HKMAIL101.nvidia.com (10.18.16.10)
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 27 Oct 2014 23:25:40 -0400
+From: "Ian Munsie" <imunsie@au1.ibm.com>
+To: mpe <mpe@ellerman.id.au>
+Cc: greg <greg@kroah.com>, arnd <arnd@arndb.de>,
+        benh <benh@kernel.crashing.org>, mikey <mikey@neuling.org>,
+        anton <anton@samba.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@ozlabs.org>, jk <jk@ozlabs.org>,
+        imunsie <imunsie@au1.ibm.com>,
+        cbe-oss-dev <cbe-oss-dev@lists.ozlabs.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH v2] CXL: Fix PSL error due to duplicate segment table entries
+Date: Tue, 28 Oct 2014 14:25:26 +1100
+Message-Id: <1414466730-15591-1-git-send-email-imunsie@au.ibm.com>
+X-Mailer: git-send-email 2.1.1
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102803-0021-0000-0000-0000006A2B18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+In certain circumstances the PSL (Power Service Layer, which provides
+translation services for CXL hardware) can send an interrupt for a segment miss
+that the kernel has already handled. This can happen if multiple translations
+for the same segment are queued in the PSL before the kernel has restarted the
+first translation.
 
-Could you remind me where can I find this patch upstream? It seems this 
-was missed?
+The CXL driver does not expect this situation and does not check if a segment
+had already been handled. This could cause a duplicate segment table entry
+which in turn caused a PSL error taking down the card.
 
-Thanks,
-Vince
+This patch series fixes the issue by checking for existing entries in the
+segment table that match the segment it is trying to insert to avoid inserting
+duplicate entries.
 
-On 10/06/2014 12:50 PM, Vince Hsu wrote:
-> Hi Viresh,
->
-> On 10/06/2014 12:45 PM, Viresh Kumar wrote:
->> On 2 October 2014 12:25, Vince Hsu <vinceh@nvidia.com> wrote:
->>> When the user space tries to set scaling_(max|min)_freq through
->>> sysfs, the cpufreq_set_policy() asks other driver's opinions
->>> for the max/min frequencies. Some device drivers, like Tegra
->>> CPU EDP which is not upstreamed yet though, may constrain the
->>> CPU maximum frequency dynamically because of board design.
->>> So if the user space access happens and some driver is capping
->>> the cpu frequency at the same time, the user_policy->(max|min)
->>> is overridden by the capped value, and that's not expected by
->>> the user space. And if the user space is not invoked again,
->>> the CPU will always be capped by the user_policy->(max|min)
->>> even no drivers limit the CPU frequency any more.
->>>
->>> This patch preserves the user specified min/max settings, so that
->>> every time the cpufreq policy is updated, the new max/min can
->>> be re-evaluated correctly based on the user's expection and
->>> the present device drivers' status.
->>>
->>> Signed-off-by: Vince Hsu <vinceh@nvidia.com>
->>> ---
->>> Hi,
->>>
->>> I'm not sure if any platform that is supported mainlin might have this
->>> issue, and this patch is complie tested only.
->> Why only compiled tested? Why haven't you tested it on tegra?
-> I did test with Chrome kernel on Tegra platform. I can't do that with 
-> mainline kernel because we haven't had the CPU EDP driver upstream yet.
->
-> Thanks,
-> Vince
->
->>
->>>   drivers/cpufreq/cpufreq.c | 6 ++++--
->>>   1 file changed, 4 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->>> index 24bf76fba141..c007cf2a3d2a 100644
->>> --- a/drivers/cpufreq/cpufreq.c
->>> +++ b/drivers/cpufreq/cpufreq.c
->>> @@ -524,7 +524,7 @@ static int cpufreq_set_policy(struct 
->>> cpufreq_policy *policy,
->>>   static ssize_t 
->>> store_##file_name                                       \
->>>   (struct cpufreq_policy *policy, const char *buf, size_t 
->>> count)         \
->>> { \
->>> -       int 
->>> ret;                                                        \
->>> +       int ret, temp;                                          \
->>>          struct cpufreq_policy 
->>> new_policy;                               \
->>> \
->>>          ret = cpufreq_get_policy(&new_policy, 
->>> policy->cpu);             \
->>> @@ -535,8 +535,10 @@ static ssize_t 
->>> store_##file_name                                   \
->>>          if (ret != 
->>> 1)                                                   \
->>>                  return 
->>> -EINVAL;                                         \
->>> \
->>> +       temp = 
->>> new_policy.object;                                       \
->>>          ret = cpufreq_set_policy(policy, &new_policy);          \
->>> -       policy->user_policy.object = 
->>> policy->object;                    \
->>> +       if 
->>> (!ret)                                                       \
->>> +               policy->user_policy.object = 
->>> temp;                      \
->>> \
->>>          return ret ? ret : 
->>> count;                                       \
->>>   }
->> Looks fine otherwise.
->>
->> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
->
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Some of the code has been refactored to simplify it - the segment table
+hash has been moved from cxl_load_segment to find_free_sste where it is
+used and we have disabled the secondary hash in the segment table to
+reduce the number of entries that need to be tested from 16 to 8. Due to
+the large segment sizes we use it is extremely unlikely that the
+secondary hash would ever have been used in practice, so this should not
+have any negative impacts and may even improve performance.
+
+copro_calculate_slb didn't use the correct ESID mask for 1T vs 256M segments,
+which was not a problem as the extra bits were ignored. This series fixes it to
+use the correct mask to make debugging easier and so that we can directly
+compare the ESID values for duplicates without needing to worry about masking
+in the comparison.
+
+- Patch 1 disables the secondary hash in the segment table to simplify the code.
+
+- Patch 2 cleans up and refactors cxl_load_segment and find_free_sste to move
+  the hash calculation to where it is actually used.
+
+- Patch 3 fixes the ESID returned by copro_calculate_slb to be properly masked
+  based on the segment size.
+
+- Patch 4 prevents duplicate segment table entries from being inserted to fix
+  PSL errors resulting from this situation.
+
+Changes since v1:
+- Split patch out into separate patches for cleanups and bug fix
 
