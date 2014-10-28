@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938AbaJ1LHm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:07:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51091 "EHLO
+	id S1755955AbaJ1LHz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:07:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51098 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949AbaJ1LHj (ORCPT
+	with ESMTP id S1753182AbaJ1LHw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:07:39 -0400
-Date: Tue, 28 Oct 2014 04:06:34 -0700
-From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
-Message-ID: <tip-e2336f6e51edda875a49770b616ed5b02a74665b@git.kernel.org>
-Cc: mingo@kernel.org, arnd@arndb.de, hpa@zytor.com, rostedt@goodmis.org,
-        peterz@infradead.org, tglx@linutronix.de, cl@linux.com,
-        torvalds@linux-foundation.org, tkhai@yandex.ru,
-        akpm@linux-foundation.org, agraf@suse.de, oleg@redhat.com,
-        linux-kernel@vger.kernel.org
-Reply-To: akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tkhai@yandex.ru, cl@linux.com, tglx@linutronix.de,
-        peterz@infradead.org, arnd@arndb.de, mingo@kernel.org,
-        rostedt@goodmis.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        oleg@redhat.com, agraf@suse.de
-In-Reply-To: <20141008183348.GC17495@redhat.com>
-References: <20141008183348.GC17495@redhat.com>
+	Tue, 28 Oct 2014 07:07:52 -0400
+Date: Tue, 28 Oct 2014 04:06:50 -0700
+From: tip-bot for Wanpeng Li <tipbot@zytor.com>
+Message-ID: <tip-d9aade7ae1d283097a3f626790e7c325a5c69007@git.kernel.org>
+Cc: hpa@zytor.com, rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+        tkhai@yandex.ru, wanpeng.li@linux.intel.com, tglx@linutronix.de,
+        peterz@infradead.org, juri.lelli@arm.com, mingo@kernel.org,
+        torvalds@linux-foundation.org
+Reply-To: juri.lelli@arm.com, mingo@kernel.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, wanpeng.li@linux.intel.com,
+        tkhai@yandex.ru, hpa@zytor.com
+In-Reply-To: <1413938203-224610-1-git-send-email-wanpeng.li@linux.intel.com>
+References: <1413938203-224610-1-git-send-email-wanpeng.li@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Kill task_preempt_count()
-Git-Commit-ID: e2336f6e51edda875a49770b616ed5b02a74665b
+Subject: [tip:sched/core] sched/deadline:
+  Do not try to push tasks if pinned task switches to dl
+Git-Commit-ID: d9aade7ae1d283097a3f626790e7c325a5c69007
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,79 +36,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e2336f6e51edda875a49770b616ed5b02a74665b
-Gitweb:     http://git.kernel.org/tip/e2336f6e51edda875a49770b616ed5b02a74665b
-Author:     Oleg Nesterov <oleg@redhat.com>
-AuthorDate: Wed, 8 Oct 2014 20:33:48 +0200
+Commit-ID:  d9aade7ae1d283097a3f626790e7c325a5c69007
+Gitweb:     http://git.kernel.org/tip/d9aade7ae1d283097a3f626790e7c325a5c69007
+Author:     Wanpeng Li <wanpeng.li@linux.intel.com>
+AuthorDate: Wed, 22 Oct 2014 08:36:43 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:47:56 +0100
+CommitDate: Tue, 28 Oct 2014 10:47:57 +0100
 
-sched: Kill task_preempt_count()
+sched/deadline: Do not try to push tasks if pinned task switches to dl
 
-task_preempt_count() is pointless if preemption counter is per-cpu,
-currently this is x86 only. It is only valid if the task is not
-running, and even in this case the only info it can provide is the
-state of PREEMPT_ACTIVE bit.
+As Kirill mentioned (https://lkml.org/lkml/2013/1/29/118):
 
-Change its single caller to check p->on_rq instead, this should be
-the same if p->state != TASK_RUNNING, and kill this helper.
+ | If rq has already had 2 or more pushable tasks and we try to add a
+ | pinned task then call of push_rt_task will just waste a time.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Just switched pinned task is not able to be pushed. If the rq has had
+several dl tasks before they have already been considered as candidates
+to be pushed (or pulled). This patch implements the same behavior as rt
+class which introduced by commit 10447917551e ("sched/rt: Do not try to
+push tasks if pinned task switches to RT").
+
+Suggested-by: Kirill V Tkhai <tkhai@yandex.ru>
+Acked-by: Juri Lelli <juri.lelli@arm.com>
+Signed-off-by: Wanpeng Li <wanpeng.li@linux.intel.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Alexander Graf <agraf@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Christoph Lameter <cl@linux.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arch@vger.kernel.org
-Link: http://lkml.kernel.org/r/20141008183348.GC17495@redhat.com
+Link: http://lkml.kernel.org/r/1413938203-224610-1-git-send-email-wanpeng.li@linux.intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/preempt.h | 3 ---
- include/asm-generic/preempt.h  | 3 ---
- kernel/sched/core.c            | 2 +-
- 3 files changed, 1 insertion(+), 7 deletions(-)
+ kernel/sched/deadline.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/preempt.h b/arch/x86/include/asm/preempt.h
-index 4008734..8f327184 100644
---- a/arch/x86/include/asm/preempt.h
-+++ b/arch/x86/include/asm/preempt.h
-@@ -30,9 +30,6 @@ static __always_inline void preempt_count_set(int pc)
- /*
-  * must be macros to avoid header recursion hell
-  */
--#define task_preempt_count(p) \
--	(task_thread_info(p)->saved_preempt_count & ~PREEMPT_NEED_RESCHED)
--
- #define init_task_preempt_count(p) do { \
- 	task_thread_info(p)->saved_preempt_count = PREEMPT_DISABLED; \
- } while (0)
-diff --git a/include/asm-generic/preempt.h b/include/asm-generic/preempt.h
-index 1cd3f5d..eb6f9e6 100644
---- a/include/asm-generic/preempt.h
-+++ b/include/asm-generic/preempt.h
-@@ -23,9 +23,6 @@ static __always_inline void preempt_count_set(int pc)
- /*
-  * must be macros to avoid header recursion hell
-  */
--#define task_preempt_count(p) \
--	(task_thread_info(p)->preempt_count & ~PREEMPT_NEED_RESCHED)
--
- #define init_task_preempt_count(p) do { \
- 	task_thread_info(p)->preempt_count = PREEMPT_DISABLED; \
- } while (0)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1b69603..5c067fd 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1054,7 +1054,7 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
- 	 * ttwu() will sort out the placement.
- 	 */
- 	WARN_ON_ONCE(p->state != TASK_RUNNING && p->state != TASK_WAKING &&
--			!(task_preempt_count(p) & PREEMPT_ACTIVE));
-+			!p->on_rq);
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 5285332..9d1e76a 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1622,7 +1622,8 @@ static void switched_to_dl(struct rq *rq, struct task_struct *p)
  
- #ifdef CONFIG_LOCKDEP
- 	/*
+ 	if (task_on_rq_queued(p) && rq->curr != p) {
+ #ifdef CONFIG_SMP
+-		if (rq->dl.overloaded && push_dl_task(rq) && rq != task_rq(p))
++		if (p->nr_cpus_allowed > 1 && rq->dl.overloaded &&
++			push_dl_task(rq) && rq != task_rq(p))
+ 			/* Only reschedule if pushing failed */
+ 			check_resched = 0;
+ #endif /* CONFIG_SMP */
