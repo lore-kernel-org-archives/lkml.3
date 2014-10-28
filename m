@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108AbaJ1L4E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:56:04 -0400
-Received: from mail-bl2on0115.outbound.protection.outlook.com ([65.55.169.115]:21904
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755021AbaJ1L4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:56:00 -0400
-X-WSS-ID: 0NE5L55-07-BFX-02
-X-M-MSG: 
-From: Huang Rui <ray.huang@amd.com>
-To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Jason Chang <jason.chang@amd.com>, "Vincent Wan" <vincent.wan@amd.com>,
-        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Huang Rui <ray.huang@amd.com>
-Subject: [PATCH v3 02/19] usb: dwc3: add a flag to check if it is fpga board
-Date: Tue, 28 Oct 2014 19:54:23 +0800
-Message-ID: <1414497280-3126-3-git-send-email-ray.huang@amd.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
-References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
+	id S1755256AbaJ1L4P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:56:15 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:56475 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755021AbaJ1L4F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 07:56:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(104166001)(105586002)(31966008)(85306004)(95666004)(46102003)(80022003)(229853001)(107046002)(15202345003)(106466001)(68736004)(86362001)(87936001)(19580395003)(36756003)(87286001)(19580405001)(89996001)(85852003)(92566001)(21056001)(88136002)(2171001)(44976005)(15975445006)(84676001)(575784001)(93916002)(77156001)(76482002)(120916001)(33646002)(92726001)(50226001)(77096002)(101416001)(76176999)(15395725005)(50986999)(102836001)(53416004)(97736003)(64706001)(47776003)(20776003)(4396001)(48376002)(50466002)(62966002)(6606295002);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
-X-Forefront-PRVS: 0378F1E47A
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Ray.Huang@amd.com; 
-X-OriginatorOrg: amd4.onmicrosoft.com
+In-Reply-To: <20141028113531.GZ12379@n2100.arm.linux.org.uk>
+References: <1414407950-3029-1-git-send-email-m.szyprowski@samsung.com>
+	<1414407950-3029-5-git-send-email-m.szyprowski@samsung.com>
+	<20141027111404.GW12379@n2100.arm.linux.org.uk>
+	<544E2A46.7070106@samsung.com>
+	<20141028113531.GZ12379@n2100.arm.linux.org.uk>
+Date: Tue, 28 Oct 2014 09:50:13 -0200
+Message-ID: <CAOMZO5Ddp1=4K6qNmLxi-=TKmEFDm5B+7XRLkemrYMCPzZAjJw@mail.gmail.com>
+Subject: Re: [PATCH v6 4/7] ARM: l2c: Add support for overriding prefetch settings
+From: Fabio Estevam <festevam@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Laura Abbott <lauraa@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>, loeliger@gmail.com,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        drake@endlessm.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some chip vendor is on pre-silicon phase, which needs to use the simulation
-board. It should have the same product and vendor id with the true soc, but
-might have some minor different configurations.
+On Tue, Oct 28, 2014 at 9:35 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
 
-Below thread discussion proposes to find a method to distinguish between
-simulation board and soc.
+> Ok.
+>
+> I'd ask for one change.  Please make all these messages start with
+> "L2C-310 OF" not "PL310 OF:".  The device is described in ARM
+> documentation as a L2C-310 not PL310.  (Also note the : is dropped
+> too - most of the other messages don't have the : either.)
+>
+> The:
+>
+> "PL310 OF: cache setting yield illegal associativity
+> PL310 OF: -1073346556 calculated, only 8 and 16 legal"
 
-http://marc.info/?l=linux-usb&m=141194772206369&w=2
-
-In Andvanced Configuration of coreConsultant, there is the parameter of
-DWC_USB_EN_FPGA. This bit has the function we need. And it would response as 7
-bit of GHWPARAMS6 register. So it's able to check this functional bit to confirm
-if works on FPGA board.
-
-Reported-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Huang Rui <ray.huang@amd.com>
----
- drivers/usb/dwc3/core.c | 6 ++++++
- drivers/usb/dwc3/core.h | 5 +++++
- 2 files changed, 11 insertions(+)
-
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index bf77509..ddac372 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -455,6 +455,12 @@ static int dwc3_core_init(struct dwc3 *dwc)
- 		dev_dbg(dwc->dev, "No power optimization available\n");
- 	}
- 
-+	/* check if current dwc3 is on simulation board */
-+	if (dwc->hwparams.hwparams6 & DWC3_GHWPARAMS6_EN_FPGA) {
-+		dev_dbg(dwc->dev, "it is on FPGA board\n");
-+		dwc->is_fpga = true;
-+	}
-+
- 	/*
- 	 * WORKAROUND: DWC3 revisions <1.90a have a bug
- 	 * where the device can fail to connect at SuperSpeed
-diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-index a715ee1..f6ee623 100644
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -210,6 +210,9 @@
- #define DWC3_GHWPARAMS4_HIBER_SCRATCHBUFS(n)	(((n) & (0x0f << 13)) >> 13)
- #define DWC3_MAX_HIBER_SCRATCHBUFS		15
- 
-+/* Global HWPARAMS6 Register */
-+#define DWC3_GHWPARAMS6_EN_FPGA			(1 << 7)
-+
- /* Device Configuration Register */
- #define DWC3_DCFG_DEVADDR(addr)	((addr) << 3)
- #define DWC3_DCFG_DEVADDR_MASK	DWC3_DCFG_DEVADDR(0x7f)
-@@ -662,6 +665,7 @@ struct dwc3_scratchpad_array {
-  * @ep0_expect_in: true when we expect a DATA IN transfer
-  * @has_hibernation: true when dwc3 was configured with Hibernation
-  * @is_selfpowered: true when we are selfpowered
-+ * @is_fpga: true when we are using the FPGA board
-  * @needs_fifo_resize: not all users might want fifo resizing, flag it
-  * @pullups_connected: true when Run/Stop bit is set
-  * @resize_fifos: tells us it's ok to reconfigure our TxFIFO sizes.
-@@ -765,6 +769,7 @@ struct dwc3 {
- 	unsigned		ep0_expect_in:1;
- 	unsigned		has_hibernation:1;
- 	unsigned		is_selfpowered:1;
-+	unsigned		is_fpga:1;
- 	unsigned		needs_fifo_resize:1;
- 	unsigned		pullups_connected:1;
- 	unsigned		resize_fifos:1;
--- 
-1.9.1
-
+I have sent a patch to address this error message that happens when
+"cache-size" and "cache-sets" properties are not passed in DT:
+http://www.spinics.net/lists/arm-kernel/msg372094.html
