@@ -1,246 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933282AbaJ1I3E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 04:29:04 -0400
-Received: from mga03.intel.com ([134.134.136.65]:45973 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752540AbaJ1I27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 04:28:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,801,1406617200"; 
-   d="scan'208";a="597495181"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Grant Likely <grant.likely@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>, x86@kernel.org,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [Patch Part2 v3 22/24] x86, irq: Use hierarchy irqdomain to manage DMAR interrupts
-Date: Tue, 28 Oct 2014 16:26:40 +0800
-Message-Id: <1414484803-10311-23-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1414484803-10311-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1414484803-10311-1-git-send-email-jiang.liu@linux.intel.com>
+	id S933312AbaJ1I3L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:29:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56637 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933289AbaJ1I3F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 04:29:05 -0400
+Date: Tue, 28 Oct 2014 09:29:00 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-pm@vger.kernel.org >> Linux PM list" 
+	<linux-pm@vger.kernel.org>
+Subject: Re: [RFC/PATCH] PM / Sleep: Timer quiesce in freeze state
+Message-ID: <20141028082900.GP3337@twins.programming.kicks-ass.net>
+References: <5446787E.60202@linux.intel.com>
+ <20141024153656.GM12706@worktop.programming.kicks-ass.net>
+ <544DE5CF.9040501@linux.intel.com>
+ <20141027072816.GD10501@worktop.programming.kicks-ass.net>
+ <544F1C50.8010505@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544F1C50.8010505@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enhance DMAR code to support hierarchy irqdomain, it helps to make
-the architecture more clear.
+On Tue, Oct 28, 2014 at 12:32:16PM +0800, Li, Aubrey wrote:
+> On 2014/10/27 15:28, Peter Zijlstra wrote:
+> > On Mon, Oct 27, 2014 at 02:27:27PM +0800, Li, Aubrey wrote:
+> >>> Now I suppose the problem is with cpu_pause() which needs IPIs to
+> >>> complete? Do we really need cpuidle_pause() there?
+> >>> cpuidle_uninstall_handlers() seems like a daft thing to call just about
+> >>> there.
+> >>
+> >> Please check the log of 8651f97bd951d0bb1c10fa24e3fa3455193f3548.
+> >> Rafael should know more this question than me.
+> > 
+> > That changelog explains its complete bollocks to do it here. We _want_
+> > to enter and/or remain in deep idle states.
+> 
+> cpuidle_resume() will be called at the end of dpm_resume_noirq(). So we
+> still are able to enter deep idle states after resume.
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- arch/x86/include/asm/hw_irq.h |    7 +++
- arch/x86/kernel/apic/msi.c    |  129 +++++++++++++++++++++++++++++++----------
- 2 files changed, 106 insertions(+), 30 deletions(-)
+cpuidle_resume is absolute crap, as is cpuidle_suspend for that matter
+-- in this case.
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 1ff7a7f61bf9..176c624c9cc9 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -122,6 +122,7 @@ enum irq_alloc_type {
- 	X86_IRQ_ALLOC_TYPE_HPET,
- 	X86_IRQ_ALLOC_TYPE_MSI,
- 	X86_IRQ_ALLOC_TYPE_MSIX,
-+	X86_IRQ_ALLOC_TYPE_DMAR,
- };
- 
- struct irq_alloc_info {
-@@ -150,6 +151,12 @@ struct irq_alloc_info {
- 			u32		ioapic_polarity : 1;
- 		};
- #endif
-+#ifdef	CONFIG_DMAR_TABLE
-+		struct {
-+			int		dmar_id;
-+			void		*dmar_data;
-+		};
-+#endif
- 	};
- };
- 
-diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-index 11ced51d6ef2..bd4275038436 100644
---- a/arch/x86/kernel/apic/msi.c
-+++ b/arch/x86/kernel/apic/msi.c
-@@ -69,6 +69,9 @@ static void msi_update_msg(struct msi_msg *msg, struct irq_data *irq_data)
- 	msg->data |= MSI_DATA_VECTOR(cfg->vector);
- 	msg->address_lo &= ~MSI_ADDR_DEST_ID_MASK;
- 	msg->address_lo |= MSI_ADDR_DEST_ID(cfg->dest_apicid);
-+	if (x2apic_enabled())
-+		msg->address_hi = MSI_ADDR_BASE_HI |
-+				  MSI_ADDR_EXT_DEST_ID(cfg->dest_apicid);
- }
- 
- static bool msi_irq_remapped(struct irq_data *irq_data)
-@@ -302,59 +305,125 @@ static int
- dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
- 		      bool force)
- {
--	struct irq_cfg *cfg = irqd_cfg(data);
--	unsigned int dest, irq = data->irq;
-+	struct irq_data *parent = data->parent_data;
- 	struct msi_msg msg;
- 	int ret;
- 
--	ret = apic_set_affinity(data, mask, &dest);
--	if (ret)
--		return ret;
--
--	dmar_msi_read(irq, &msg);
--
--	msg.data &= ~MSI_DATA_VECTOR_MASK;
--	msg.data |= MSI_DATA_VECTOR(cfg->vector);
--	msg.address_lo &= ~MSI_ADDR_DEST_ID_MASK;
--	msg.address_lo |= MSI_ADDR_DEST_ID(dest);
--	msg.address_hi = MSI_ADDR_BASE_HI | MSI_ADDR_EXT_DEST_ID(dest);
--
--	dmar_msi_write(irq, &msg);
-+	ret = parent->chip->irq_set_affinity(parent, mask, force);
-+	if (ret >= 0) {
-+		dmar_msi_read(data->irq, &msg);
-+		msi_update_msg(&msg, data);
-+		dmar_msi_write(data->irq, &msg);
-+	}
- 
--	return IRQ_SET_MASK_OK_NOCOPY;
-+	return ret;
- }
- 
- static struct irq_chip dmar_msi_type = {
- 	.name			= "DMAR_MSI",
- 	.irq_unmask		= dmar_msi_unmask,
- 	.irq_mask		= dmar_msi_mask,
--	.irq_ack		= apic_ack_edge,
-+	.irq_ack		= irq_chip_ack_parent,
- 	.irq_set_affinity	= dmar_msi_set_affinity,
--	.irq_retrigger		= apic_retrigger_irq,
-+	.irq_retrigger		= irq_chip_retrigger_hierarchy,
-  	.flags			= IRQCHIP_SKIP_SET_WAKE,
- };
- 
--int dmar_alloc_hwirq(int id, int node, void *arg)
-+static int dmar_domain_alloc(struct irq_domain *domain, unsigned int virq,
-+			     unsigned int nr_irqs, void *arg)
-+{
-+	struct irq_alloc_info *info = arg;
-+	int ret;
-+
-+	if (nr_irqs > 1 || !info || info->type != X86_IRQ_ALLOC_TYPE_DMAR)
-+		return -EINVAL;
-+	if (irq_find_mapping(domain, info->dmar_id)) {
-+		pr_warn("IRQ for DMAR%d already exists.\n", info->dmar_id);
-+		return -EEXIST;
-+	}
-+
-+	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
-+	if (ret >= 0) {
-+		irq_domain_set_hwirq_and_chip(domain, virq, info->dmar_id,
-+					      &dmar_msi_type, NULL);
-+		irq_set_handler_data(virq, info->dmar_data);
-+		__irq_set_handler(virq, handle_edge_irq, 0, "edge");
-+	}
-+
-+	return ret;
-+}
-+
-+static void dmar_domain_free(struct irq_domain *domain, unsigned int virq,
-+			     unsigned int nr_irqs)
-+{
-+	BUG_ON(nr_irqs > 1);
-+	msi_reset_irq_data_and_handler(domain, virq);
-+	irq_domain_free_irqs_parent(domain, virq, nr_irqs);
-+}
-+
-+static int dmar_domain_activate(struct irq_domain *domain,
-+				struct irq_data *irq_data)
-+{
-+	struct msi_msg msg;
-+
-+	native_compose_msi_msg(irqd_cfg(irq_data), &msg);
-+	dmar_msi_write(irq_data->irq, &msg);
-+
-+	return 0;
-+}
-+
-+static int dmar_domain_deactivate(struct irq_domain *domain,
-+				  struct irq_data *irq_data)
- {
--	int irq;
- 	struct msi_msg msg;
- 
--	irq = irq_domain_alloc_irqs(NULL, 1, node, NULL);
--	if (irq > 0) {
--		irq_set_handler_data(irq, arg);
--		irq_set_chip_and_handler_name(irq, &dmar_msi_type,
--					      handle_edge_irq, "edge");
--		native_compose_msi_msg(irq_cfg(irq), &msg);
--		dmar_msi_write(irq, &msg);
-+	memset(&msg, 0, sizeof(msg));
-+	dmar_msi_write(irq_data->irq, &msg);
-+
-+	return 0;
-+}
-+
-+static struct irq_domain_ops dmar_domain_ops = {
-+	.alloc = dmar_domain_alloc,
-+	.free = dmar_domain_free,
-+	.activate = dmar_domain_activate,
-+	.deactivate = dmar_domain_deactivate,
-+};
-+
-+static struct irq_domain *dmar_get_irq_domain(void)
-+{
-+	static struct irq_domain *dmar_domain;
-+	static DEFINE_MUTEX(dmar_lock);
-+
-+	mutex_lock(&dmar_lock);
-+	if (dmar_domain == NULL) {
-+		dmar_domain = irq_domain_add_tree(NULL, &dmar_domain_ops, NULL);
-+		if (dmar_domain)
-+			dmar_domain->parent = x86_vector_domain;
- 	}
-+	mutex_unlock(&dmar_lock);
-+
-+	return dmar_domain;
-+}
-+
-+int dmar_alloc_hwirq(int id, int node, void *arg)
-+{
-+	struct irq_domain *domain = dmar_get_irq_domain();
-+	struct irq_alloc_info info;
-+
-+	if (!domain)
-+		return -1;
-+
-+	init_irq_alloc_info(&info, NULL);
-+	info.type = X86_IRQ_ALLOC_TYPE_DMAR;
-+	info.dmar_id = id;
-+	info.dmar_data = arg;
- 
--	return irq;
-+	return irq_domain_alloc_irqs(domain, 1, node, &info);
- }
- 
- void dmar_free_hwirq(int irq)
- {
--	irq_set_handler_data(irq, NULL);
--	irq_set_handler(irq, NULL);
- 	irq_domain_free_irqs(irq, 1);
- }
- #endif
--- 
-1.7.10.4
+The only reason we needed cpuidle_suspend is because some BIOS shat its
+pants when some CPUs were in higher C states while trying to do the S3
+thing. We're not going to use S states or BIOS calls _at_all_, so no
+point in kicking CPUs out of their deep C states.
 
+Read that changelog you referred me to again.
