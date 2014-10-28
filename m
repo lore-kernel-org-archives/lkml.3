@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760083AbaJ1Gqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:46:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45825 "EHLO
+	id S1760099AbaJ1Gq5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:46:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45804 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933135AbaJ1DtS (ORCPT
+	with ESMTP id S933114AbaJ1DtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:49:18 -0400
+	Mon, 27 Oct 2014 23:49:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Willem Pinckaers <willem@lekkertech.net>,
-        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
-Subject: [PATCH 3.14 036/100] Documentation: lzo: document part of the encoding
-Date: Tue, 28 Oct 2014 11:35:21 +0800
-Message-Id: <20141028033502.216346036@linuxfoundation.org>
+        Junxiao Bi <junxiao.bi@oracle.com>, Dave Chinner <david@fromorbit.com>,
+        "joyce.xue" <xuejiufei@huawei.com>, Ming Lei <ming.lei@canonical.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 051/100] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
+Date: Tue, 28 Oct 2014 11:35:36 +0800
+Message-Id: <20141028033502.893267564@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,189 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Willy Tarreau <w@1wt.eu>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit d98a0526434d27e261f622cf9d2e0028b5ff1a00 upstream.
+commit 934f3072c17cc8886f4c043b47eeeb1b12f8de33 upstream.
 
-Add a complete description of the LZO format as processed by the
-decompressor. I have not found a public specification of this format
-hence this analysis, which will be used to better understand the code.
+commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O
+during memory allocation") introduces PF_MEMALLOC_NOIO flag to avoid doing
+I/O inside memory allocation, __GFP_IO is cleared when this flag is set,
+but __GFP_FS implies __GFP_IO, it should also be cleared.  Or it may still
+run into I/O, like in superblock shrinker.  And this will make the kernel
+run into the deadlock case described in that commit.
 
-Cc: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
+See Dave Chinner's comment about io in superblock shrinker:
+
+Filesystem shrinkers do indeed perform IO from the superblock shrinker and
+have for years.  Even clean inodes can require IO before they can be freed
+- e.g.  on an orphan list, need truncation of post-eof blocks, need to
+wait for ordered operations to complete before it can be freed, etc.
+
+IOWs, Ext4, btrfs and XFS all can issue and/or block on arbitrary amounts
+of IO in the superblock shrinker context.  XFS, in particular, has been
+doing transactions and IO from the VFS inode cache shrinker since it was
+first introduced....
+
+Fix this by clearing __GFP_FS in memalloc_noio_flags(), this function has
+masked all the gfp_mask that will be passed into fs for the processes
+setting PF_MEMALLOC_NOIO in the direct reclaim path.
+
+v1 thread at: https://lkml.org/lkml/2014/9/3/32
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: joyce.xue <xuejiufei@huawei.com>
+Cc: Ming Lei <ming.lei@canonical.com>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/lzo.txt |  164 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 164 insertions(+)
+ include/linux/sched.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- /dev/null
-+++ b/Documentation/lzo.txt
-@@ -0,0 +1,164 @@
-+
-+LZO stream format as understood by Linux's LZO decompressor
-+===========================================================
-+
-+Introduction
-+
-+  This is not a specification. No specification seems to be publicly available
-+  for the LZO stream format. This document describes what input format the LZO
-+  decompressor as implemented in the Linux kernel understands. The file subject
-+  of this analysis is lib/lzo/lzo1x_decompress_safe.c. No analysis was made on
-+  the compressor nor on any other implementations though it seems likely that
-+  the format matches the standard one. The purpose of this document is to
-+  better understand what the code does in order to propose more efficient fixes
-+  for future bug reports.
-+
-+Description
-+
-+  The stream is composed of a series of instructions, operands, and data. The
-+  instructions consist in a few bits representing an opcode, and bits forming
-+  the operands for the instruction, whose size and position depend on the
-+  opcode and on the number of literals copied by previous instruction. The
-+  operands are used to indicate :
-+
-+    - a distance when copying data from the dictionary (past output buffer)
-+    - a length (number of bytes to copy from dictionary)
-+    - the number of literals to copy, which is retained in variable "state"
-+      as a piece of information for next instructions.
-+
-+  Optionally depending on the opcode and operands, extra data may follow. These
-+  extra data can be a complement for the operand (eg: a length or a distance
-+  encoded on larger values), or a literal to be copied to the output buffer.
-+
-+  The first byte of the block follows a different encoding from other bytes, it
-+  seems to be optimized for literal use only, since there is no dictionary yet
-+  prior to that byte.
-+
-+  Lengths are always encoded on a variable size starting with a small number
-+  of bits in the operand. If the number of bits isn't enough to represent the
-+  length, up to 255 may be added in increments by consuming more bytes with a
-+  rate of at most 255 per extra byte (thus the compression ratio cannot exceed
-+  around 255:1). The variable length encoding using #bits is always the same :
-+
-+       length = byte & ((1 << #bits) - 1)
-+       if (!length) {
-+               length = ((1 << #bits) - 1)
-+               length += 255*(number of zero bytes)
-+               length += first-non-zero-byte
-+       }
-+       length += constant (generally 2 or 3)
-+
-+  For references to the dictionary, distances are relative to the output
-+  pointer. Distances are encoded using very few bits belonging to certain
-+  ranges, resulting in multiple copy instructions using different encodings.
-+  Certain encodings involve one extra byte, others involve two extra bytes
-+  forming a little-endian 16-bit quantity (marked LE16 below).
-+
-+  After any instruction except the large literal copy, 0, 1, 2 or 3 literals
-+  are copied before starting the next instruction. The number of literals that
-+  were copied may change the meaning and behaviour of the next instruction. In
-+  practice, only one instruction needs to know whether 0, less than 4, or more
-+  literals were copied. This is the information stored in the <state> variable
-+  in this implementation. This number of immediate literals to be copied is
-+  generally encoded in the last two bits of the instruction but may also be
-+  taken from the last two bits of an extra operand (eg: distance).
-+
-+  End of stream is declared when a block copy of distance 0 is seen. Only one
-+  instruction may encode this distance (0001HLLL), it takes one LE16 operand
-+  for the distance, thus requiring 3 bytes.
-+
-+  IMPORTANT NOTE : in the code some length checks are missing because certain
-+  instructions are called under the assumption that a certain number of bytes
-+  follow because it has already been garanteed before parsing the instructions.
-+  They just have to "refill" this credit if they consume extra bytes. This is
-+  an implementation design choice independant on the algorithm or encoding.
-+
-+Byte sequences
-+
-+  First byte encoding :
-+
-+      0..17   : follow regular instruction encoding, see below. It is worth
-+                noting that codes 16 and 17 will represent a block copy from
-+                the dictionary which is empty, and that they will always be
-+                invalid at this place.
-+
-+      18..21  : copy 0..3 literals
-+                state = (byte - 17) = 0..3  [ copy <state> literals ]
-+                skip byte
-+
-+      22..255 : copy literal string
-+                length = (byte - 17) = 4..238
-+                state = 4 [ don't copy extra literals ]
-+                skip byte
-+
-+  Instruction encoding :
-+
-+      0 0 0 0 X X X X  (0..15)
-+        Depends on the number of literals copied by the last instruction.
-+        If last instruction did not copy any literal (state == 0), this
-+        encoding will be a copy of 4 or more literal, and must be interpreted
-+        like this :
-+
-+           0 0 0 0 L L L L  (0..15)  : copy long literal string
-+           length = 3 + (L ?: 15 + (zero_bytes * 255) + non_zero_byte)
-+           state = 4  (no extra literals are copied)
-+
-+        If last instruction used to copy between 1 to 3 literals (encoded in
-+        the instruction's opcode or distance), the instruction is a copy of a
-+        2-byte block from the dictionary within a 1kB distance. It is worth
-+        noting that this instruction provides little savings since it uses 2
-+        bytes to encode a copy of 2 other bytes but it encodes the number of
-+        following literals for free. It must be interpreted like this :
-+
-+           0 0 0 0 D D S S  (0..15)  : copy 2 bytes from <= 1kB distance
-+           length = 2
-+           state = S (copy S literals after this block)
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 2) + D + 1
-+
-+        If last instruction used to copy 4 or more literals (as detected by
-+        state == 4), the instruction becomes a copy of a 3-byte block from the
-+        dictionary from a 2..3kB distance, and must be interpreted like this :
-+
-+           0 0 0 0 D D S S  (0..15)  : copy 3 bytes from 2..3 kB distance
-+           length = 3
-+           state = S (copy S literals after this block)
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 2) + D + 2049
-+
-+      0 0 0 1 H L L L  (16..31)
-+           Copy of a block within 16..48kB distance (preferably less than 10B)
-+           length = 2 + (L ?: 7 + (zero_bytes * 255) + non_zero_byte)
-+        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
-+           distance = 16384 + (H << 14) + D
-+           state = S (copy S literals after this block)
-+           End of stream is reached if distance == 16384
-+
-+      0 0 1 L L L L L  (32..63)
-+           Copy of small block within 16kB distance (preferably less than 34B)
-+           length = 2 + (L ?: 31 + (zero_bytes * 255) + non_zero_byte)
-+        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
-+           distance = D + 1
-+           state = S (copy S literals after this block)
-+
-+      0 1 L D D D S S  (64..127)
-+           Copy 3-4 bytes from block within 2kB distance
-+           state = S (copy S literals after this block)
-+           length = 3 + L
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 3) + D + 1
-+
-+      1 L L D D D S S  (128..255)
-+           Copy 5-8 bytes from block within 2kB distance
-+           state = S (copy S literals after this block)
-+           length = 5 + L
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 3) + D + 1
-+
-+Authors
-+
-+  This document was written by Willy Tarreau <w@1wt.eu> on 2014/07/19 during an
-+  analysis of the decompression code available in Linux 3.16-rc5. The code is
-+  tricky, it is possible that this document contains mistakes or that a few
-+  corner cases were overlooked. In any case, please report any doubt, fix, or
-+  proposed updates to the author(s) so that the document can be updated.
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1876,11 +1876,13 @@ extern void thread_group_cputime_adjuste
+ #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+ #define used_math() tsk_used_math(current)
+ 
+-/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
++/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
++ * __GFP_FS is also cleared as it implies __GFP_IO.
++ */
+ static inline gfp_t memalloc_noio_flags(gfp_t flags)
+ {
+ 	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
+-		flags &= ~__GFP_IO;
++		flags &= ~(__GFP_IO | __GFP_FS);
+ 	return flags;
+ }
+ 
 
 
