@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077AbaJ1Dsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:48:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45769 "EHLO
+	id S933096AbaJ1DtB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:49:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45778 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948AbaJ1Dsw (ORCPT
+	with ESMTP id S932948AbaJ1Ds5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:48:52 -0400
+	Mon, 27 Oct 2014 23:48:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Douglas Lehr <dllehr@us.ibm.com>, Anton Blanchard <anton@samba.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Milton Miller <miltonm@us.ibm.com>
-Subject: [PATCH 3.14 045/100] PCI: Increase IBM ipr SAS Crocodile BARs to at least system page size
-Date: Tue, 28 Oct 2014 11:35:30 +0800
-Message-Id: <20141028033502.641786337@linuxfoundation.org>
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.14 047/100] rt2800: correct BBP1_TX_POWER_CTRL mask
+Date: Tue, 28 Oct 2014 11:35:32 +0800
+Message-Id: <20141028033502.734626089@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -30,65 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Lehr <dllehr@us.ibm.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 9fe373f9997b48fcd6222b95baf4a20c134b587a upstream.
+commit 01f7feeaf4528bec83798316b3c811701bac5d3e upstream.
 
-The Crocodile chip occasionally comes up with 4k and 8k BAR sizes.  Due to
-an erratum, setting the SR-IOV page size causes the physical function BARs
-to expand to the system page size.  Since ppc64 uses 64k pages, when Linux
-tries to assign the smaller resource sizes to the now 64k BARs the address
-will be truncated and the BARs will overlap.
+Two bits control TX power on BBP_R1 register. Correct the mask,
+otherwise we clear additional bit on BBP_R1 register, what can have
+unknown, possible negative effect.
 
-Force Linux to allocate the resource as a full page, which avoids the
-overlap.
-
-[bhelgaas: print expanded resource, too]
-Signed-off-by: Douglas Lehr <dllehr@us.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Milton Miller <miltonm@us.ibm.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/quirks.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/net/wireless/rt2x00/rt2800.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -24,6 +24,7 @@
- #include <linux/ioport.h>
- #include <linux/sched.h>
- #include <linux/ktime.h>
-+#include <linux/mm.h>
- #include <asm/dma.h>	/* isa_dma_bridge_buggy */
- #include "pci.h"
+--- a/drivers/net/wireless/rt2x00/rt2800.h
++++ b/drivers/net/wireless/rt2x00/rt2800.h
+@@ -2039,7 +2039,7 @@ struct mac_iveiv_entry {
+  * 2 - drop tx power by 12dBm,
+  * 3 - increase tx power by 6dBm
+  */
+-#define BBP1_TX_POWER_CTRL		FIELD8(0x07)
++#define BBP1_TX_POWER_CTRL		FIELD8(0x03)
+ #define BBP1_TX_ANTENNA			FIELD8(0x18)
  
-@@ -287,6 +288,25 @@ static void quirk_citrine(struct pci_dev
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM,	PCI_DEVICE_ID_IBM_CITRINE,	quirk_citrine);
- 
-+/*  On IBM Crocodile ipr SAS adapters, expand BAR to system page size */
-+static void quirk_extend_bar_to_page(struct pci_dev *dev)
-+{
-+	int i;
-+
-+	for (i = 0; i < PCI_STD_RESOURCE_END; i++) {
-+		struct resource *r = &dev->resource[i];
-+
-+		if (r->flags & IORESOURCE_MEM && resource_size(r) < PAGE_SIZE) {
-+			r->end = PAGE_SIZE - 1;
-+			r->start = 0;
-+			r->flags |= IORESOURCE_UNSET;
-+			dev_info(&dev->dev, "expanded BAR %d to page size: %pR\n",
-+				 i, r);
-+		}
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM, 0x034a, quirk_extend_bar_to_page);
-+
  /*
-  *  S3 868 and 968 chips report region size equal to 32M, but they decode 64M.
-  *  If it's needed, re-allocate the region.
 
 
