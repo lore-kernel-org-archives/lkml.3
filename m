@@ -1,83 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256AbaJ1Q6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:58:38 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16388 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaJ1Q6g (ORCPT
+	id S1752555AbaJ1RAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:00:06 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41686 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaJ1RAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:58:36 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/CSrwGEbk8DZIeqYR53akrtZbtNGMDRJo=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 83A5560ACC8
-Date: Tue, 28 Oct 2014 12:58:27 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [patch] Documentation/SubmittingPatches: Reported-by tags and
- permission
-Message-ID: <20141028165827.GG15252@titan.lakedaemon.net>
-References: <1392333751.29034.3.camel@x220>
- <20140214093001.GA15933@elgon.mountain>
- <20141028090451.41ed6aad@lwn.net>
+	Tue, 28 Oct 2014 13:00:04 -0400
+Date: Tue, 28 Oct 2014 09:49:55 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 09/15] net: dsa: Add support for switch EEPROM access
+Message-ID: <20141028164955.GA3220@roeck-us.net>
+References: <1414342365-27191-1-git-send-email-linux@roeck-us.net>
+ <1414342365-27191-10-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141028090451.41ed6aad@lwn.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1414342365-27191-10-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.544FCB93.03E5,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 09:04:51AM -0400, Jonathan Corbet wrote:
-> On Fri, 14 Feb 2014 12:30:01 +0300
-> Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> 
-> > -If this patch fixes a problem reported by somebody else, consider adding a
-> > -Reported-by: tag to credit the reporter for their contribution.  Please
-> > -note that this tag should not be added without the reporter's permission,
-> > -especially if the problem was not reported in a public forum.  That said,
-> > -if we diligently credit our bug reporters, they will, hopefully, be
-> > -inspired to help us again in the future.
-> > +The Reported-by tag is to give credit to people who find bugs and report them.
-> > +Please note that if the bug was reported in private, then ask for permission
-> > +first before using the Reported-by tag.
-> 
-> As the guy who wrote the original text, I think this is an
-> improvement...but can we get a version that retains the motivation for
-> crediting bug reporters in the first place?
+On some chips it is possible to access the switch eeprom.
+Add infrastructure support for it.
 
-At the risk of upsetting the apple cart, I'd prefer we downplay anything
-that walks down the path of gamification (by focusing on credit).
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v3:
+- Fix bug seen if devicetree is enabled; eeprom-length property is
+  attached to switch devicetree node, not to dsa node.
+v2:
+- Add support for configuring switch EEPROM size through platform data
+  or devicetree data
+- Do not compare new pointers against NULL
+- Check if get_eeprom pointer is set before calling it
 
-As best anyone has ever explained it to me, the Acked-by, Reviewed-by,
-etc are there to impart information regarding a specific commit.  In the
-event that a commit is fingered in a bisect, you have a much better list
-of names to Cc, instead of just the maintainer from MAINTAINERS and the
-author from the top of the offending file.  The author has often moved
-on, and the maintainer may not have been around for the bugfix.
+ include/net/dsa.h | 10 ++++++++++
+ net/dsa/dsa.c     |  4 ++++
+ net/dsa/slave.c   | 41 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 55 insertions(+)
 
-I know Greg has spoken out against gamification before, and I also
-understand the desire to encourage bug reporters.  Perhaps I should just
-suggest the following:
+diff --git a/include/net/dsa.h b/include/net/dsa.h
+index 55e75e7..37856a2 100644
+--- a/include/net/dsa.h
++++ b/include/net/dsa.h
+@@ -38,6 +38,9 @@ struct dsa_chip_data {
+ 	struct device	*host_dev;
+ 	int		sw_addr;
+ 
++	/* set to size of eeprom if supported by the switch */
++	int		eeprom_len;
++
+ 	/* Device tree node pointer for this specific switch chip
+ 	 * used during switch setup in case additional properties
+ 	 * and resources needs to be used
+@@ -258,6 +261,13 @@ struct dsa_switch_driver {
+ 	int	(*set_temp_limit)(struct dsa_switch *ds, int temp);
+ 	int	(*get_temp_alarm)(struct dsa_switch *ds, bool *alarm);
+ #endif
++
++	/* EEPROM access */
++	int	(*get_eeprom_len)(struct dsa_switch *ds);
++	int	(*get_eeprom)(struct dsa_switch *ds,
++			      struct ethtool_eeprom *eeprom, u8 *data);
++	int	(*set_eeprom)(struct dsa_switch *ds,
++			      struct ethtool_eeprom *eeprom, u8 *data);
+ };
+ 
+ void register_switch_driver(struct dsa_switch_driver *type);
+diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+index 5edbbca..b51ef592 100644
+--- a/net/dsa/dsa.c
++++ b/net/dsa/dsa.c
+@@ -575,6 +575,7 @@ static int dsa_of_probe(struct platform_device *pdev)
+ 	const char *port_name;
+ 	int chip_index, port_index;
+ 	const unsigned int *sw_addr, *port_reg;
++	u32 eeprom_len;
+ 	int ret;
+ 
+ 	mdio = of_parse_phandle(np, "dsa,mii-bus", 0);
+@@ -626,6 +627,9 @@ static int dsa_of_probe(struct platform_device *pdev)
+ 		if (cd->sw_addr > PHY_MAX_ADDR)
+ 			continue;
+ 
++		if (!of_property_read_u32(np, "eeprom-length", &eeprom_len))
++			cd->eeprom_len = eeprom_len;
++
+ 		for_each_available_child_of_node(child, port) {
+ 			port_reg = of_get_property(port, "reg", NULL);
+ 			if (!port_reg)
+diff --git a/net/dsa/slave.c b/net/dsa/slave.c
+index 6d18174..ff2fbe7 100644
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -271,6 +271,44 @@ static u32 dsa_slave_get_link(struct net_device *dev)
+ 	return -EOPNOTSUPP;
+ }
+ 
++static int dsa_slave_get_eeprom_len(struct net_device *dev)
++{
++	struct dsa_slave_priv *p = netdev_priv(dev);
++	struct dsa_switch *ds = p->parent;
++
++	if (ds->pd->eeprom_len)
++		return ds->pd->eeprom_len;
++
++	if (ds->drv->get_eeprom_len)
++		return ds->drv->get_eeprom_len(ds);
++
++	return 0;
++}
++
++static int dsa_slave_get_eeprom(struct net_device *dev,
++				struct ethtool_eeprom *eeprom, u8 *data)
++{
++	struct dsa_slave_priv *p = netdev_priv(dev);
++	struct dsa_switch *ds = p->parent;
++
++	if (ds->drv->get_eeprom)
++		return ds->drv->get_eeprom(ds, eeprom, data);
++
++	return -EOPNOTSUPP;
++}
++
++static int dsa_slave_set_eeprom(struct net_device *dev,
++				struct ethtool_eeprom *eeprom, u8 *data)
++{
++	struct dsa_slave_priv *p = netdev_priv(dev);
++	struct dsa_switch *ds = p->parent;
++
++	if (ds->drv->set_eeprom)
++		return ds->drv->set_eeprom(ds, eeprom, data);
++
++	return -EOPNOTSUPP;
++}
++
+ static void dsa_slave_get_strings(struct net_device *dev,
+ 				  uint32_t stringset, uint8_t *data)
+ {
+@@ -387,6 +425,9 @@ static const struct ethtool_ops dsa_slave_ethtool_ops = {
+ 	.get_drvinfo		= dsa_slave_get_drvinfo,
+ 	.nway_reset		= dsa_slave_nway_reset,
+ 	.get_link		= dsa_slave_get_link,
++	.get_eeprom_len		= dsa_slave_get_eeprom_len,
++	.get_eeprom		= dsa_slave_get_eeprom,
++	.set_eeprom		= dsa_slave_set_eeprom,
+ 	.get_strings		= dsa_slave_get_strings,
+ 	.get_ethtool_stats	= dsa_slave_get_ethtool_stats,
+ 	.get_sset_count		= dsa_slave_get_sset_count,
+-- 
+1.9.1
 
-"""
-The Reported-by tag helps us maintain contact info for people with
-intimate knowledge of a commit or a bug fix.  Please seek the reporter's
-permission before adding the tag to the commit.  That said, if we
-diligently credit our bug reporters, they will, hopefully, be inspired
-to help us again in the future.
-"""
-
-It's most likely ok here since it's rather hard to manufacture a list of
-bugs in order to inflate ones count of Reported-by's.  Unlike S-o-b,
-Ack's, etc.
-
-thx,
-
-Jason.
