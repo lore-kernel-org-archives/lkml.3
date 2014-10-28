@@ -1,215 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292AbaJ1XbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 19:31:00 -0400
-Received: from mail-bn1bon0091.outbound.protection.outlook.com ([157.56.111.91]:26835
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753917AbaJ1X34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 19:29:56 -0400
-From: <dinguyen@opensource.altera.com>
-To: <paulz@synopsys.com>, <balbi@ti.com>
-CC: <dinh.linux@gmail.com>, <swarren@wwwdotorg.org>,
-        <b.zolnierkie@samsung.com>, <matthijs@stdin.nl>,
-        <r.baldyga@samsung.com>, <jg1.han@samsung.com>,
-        <sachin.kamat@linaro.org>, <ben-linux@fluff.org>,
-        <dianders@chromium.org>, <kever.yang@rock-chips.com>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@opensource.altera.com>
-Subject: [PATCHv6 7/8] usb: dwc2: Update Kconfig to support dual-role
-Date: Tue, 28 Oct 2014 18:25:48 -0500
-Message-ID: <1414538749-14735-8-git-send-email-dinguyen@opensource.altera.com>
-X-Mailer: git-send-email 2.0.3
-In-Reply-To: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com>
-References: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com>
+	id S1755038AbaJ1X3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 19:29:52 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:54929 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754790AbaJ1X3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 19:29:49 -0400
+Date: Tue, 28 Oct 2014 16:25:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-unionfs@vger.kernel.org
+Subject: Re: [GIT PULL] overlay filesystem v25
+Message-ID: <20141028232557.GF5718@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141025081845.GJ7996@ZenIV.linux.org.uk>
+ <CAJfpegvM8d-cizf=3KmTSFVgAYPBDp_0fQAh+G2Q87u=taXm3A@mail.gmail.com>
+ <20141025170609.GK7996@ZenIV.linux.org.uk>
+ <CAJfpegucroRzo0NHTz=4N0WcrB2oDC0eDiZXk=aKSjc8vdYDjw@mail.gmail.com>
+ <20141027155901.GE5718@linux.vnet.ibm.com>
+ <20141027172800.GW7996@ZenIV.linux.org.uk>
+ <20141027173621.GG5718@linux.vnet.ibm.com>
+ <20141028011214.GZ7996@ZenIV.linux.org.uk>
+ <20141028041127.GM5718@linux.vnet.ibm.com>
+ <20141028225512.GD7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: CY1PR12CA0019.namprd12.prod.outlook.com (25.160.137.29) To
- DM2PR0301MB1198.namprd03.prod.outlook.com (25.160.217.148)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1198;
-X-Forefront-PRVS: 0378F1E47A
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(122386002)(105586002)(33646002)(95666004)(102836001)(101416001)(53416004)(77156001)(77096002)(50226001)(120916001)(106356001)(229853001)(104166001)(107046002)(80022003)(50986999)(81156004)(69596002)(76176999)(46102003)(92566001)(85852003)(99396003)(4396001)(50466002)(19580405001)(19580395003)(76482002)(62966002)(85306004)(66066001)(97736003)(86362001)(89996001)(48376002)(86152002)(87286001)(20776003)(87976001)(21056001)(88136002)(40100003)(93916002)(92726001)(47776003)(42186005)(64706001)(31966008);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1198;H:linux-builds1.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028225512.GD7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102823-0029-0000-0000-000000F53D54
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <dinguyen@opensource.altera.com>
+On Tue, Oct 28, 2014 at 10:55:13PM +0000, Al Viro wrote:
+> On Mon, Oct 27, 2014 at 09:11:27PM -0700, Paul E. McKenney wrote:
+> > On Tue, Oct 28, 2014 at 01:12:14AM +0000, Al Viro wrote:
+> > > On Mon, Oct 27, 2014 at 10:36:21AM -0700, Paul E. McKenney wrote:
+> > > > Code making direct use of smp_read_barrier_depends() is harder to read,
+> > > > in my experience, but good point on the sparse noise.  Maybe a new
+> > > > lockless_dereference() primitive?  Maybe something like the following?
+> > > > (Untested, probably does not even build.)
+> > > > 
+> > > > #define lockless_dereference(p) \
+> > > > ({ \
+> > > > 	typeof(*p) *_________p1 = ACCESS_ONCE(p); \
+> > > > 	smp_read_barrier_depends(); /* Dependency order vs. p above. */ \
+> > > > 	_________p1; \
+> > > > })
+> > > 
+> > > Hmm...  Where would you prefer to put it?  rcupdate.h?
+> > 
+> > Good a place as any, I guess.  Please see patch below.  Left to myself,
+> > I would send this along for the next merge window, but please let me
+> > know if you would like it sooner.
+> 
+> It's needed sooner, unfortunately.  Guys, could you take a look at
+> vfs.git#for-linus and comment?
 
-Update DWC2 kconfig and makefile to support dual-role mode. The platform
-file will always get compiled for the case where the controller is directly
-connected to the CPU. So for loadable modules, dwc2.ko is built for host,
-peripheral, and dual-role mode. The PCI bus interface will be called
-dwc2_pci.ko and the platform interface module will be called dwc2_platform.ko.
+The version in your tree looks good.  I will drop my commit in favor
+of yours.
 
-Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
----
-v6: Correct notes for USB_DWC2_DUAL_ROLE and USB_DWC2_PERIPHERAL
-    Remove extra default for USB_DWC2_PLATFORM and make it a condition for
-    building dwc2_platform.ko. In addition USB_DWC2_PLATFORM and USB_DWC2_PCI
-    are now tristate.
-v5: dwc2.ko for all modes along with dwc2_platform.ko and dwc2_pci.ko will
-    get built for kernel modules.
-v3: Add USB_GADGET=y and USB_GADGET=USB_DWC2 for peripheral and dual-role
-    config options.
-v2: Remove reference to dwc2_gadget
----
- drivers/usb/dwc2/Kconfig  | 66 ++++++++++++++++++++++++++++-------------------
- drivers/usb/dwc2/Makefile | 32 +++++++++++------------
- 2 files changed, 55 insertions(+), 43 deletions(-)
+The use of lockless_dereference() and smp_mb__before_spinlock() in
+d45f00ae43 (overlayfs: barriers for opening upper-layer directory)
+looks fine to me.  Only nit is lack of space between "=" and
+lockless_dereference().
 
-diff --git a/drivers/usb/dwc2/Kconfig b/drivers/usb/dwc2/Kconfig
-index 4d02718..b323c4c 100644
---- a/drivers/usb/dwc2/Kconfig
-+++ b/drivers/usb/dwc2/Kconfig
-@@ -1,5 +1,5 @@
- config USB_DWC2
--	bool "DesignWare USB2 DRD Core Support"
-+	tristate "DesignWare USB2 DRD Core Support"
- 	depends on USB || USB_GADGET
- 	help
- 	  Say Y here if your system has a Dual Role Hi-Speed USB
-@@ -10,49 +10,61 @@ config USB_DWC2
- 	  bus interface module (if you have a PCI bus system) will be
- 	  called dwc2_pci.ko, and the platform interface module (for
- 	  controllers directly connected to the CPU) will be called
--	  dwc2_platform.ko. For gadget mode, there will be a single
--	  module called dwc2_gadget.ko.
--
--	  NOTE: The s3c-hsotg driver is now renamed to dwc2_gadget. The
--	  host and gadget drivers are still currently separate drivers.
--	  There are plans to merge the dwc2_gadget driver with the dwc2
--	  host driver in the near future to create a dual-role driver.
-+	  dwc2_platform.ko. For all modes(host, gadget and dual-role), there
-+	  will be an additional module named dwc2.ko.
- 
- if USB_DWC2
- 
-+choice
-+	bool "DWC2 Mode Selection"
-+	default USB_DWC2_DUAL_ROLE if (USB && USB_GADGET)
-+	default USB_DWC2_HOST if (USB && !USB_GADGET)
-+	default USB_DWC2_PERIPHERAL if (!USB && USB_GADGET)
-+
- config USB_DWC2_HOST
--	tristate "Host only mode"
-+	bool "Host only mode"
- 	depends on USB
- 	help
- 	  The Designware USB2.0 high-speed host controller
--	  integrated into many SoCs.
-+	  integrated into many SoCs. Select this option if you want the
-+	  driver to operate in Host-only mode.
- 
--config USB_DWC2_PLATFORM
--	bool "DWC2 Platform"
--	depends on USB_DWC2_HOST
--	default USB_DWC2_HOST
-+comment "Gadget/Dual-role mode requires USB Gadget support to be enabled"
-+
-+config USB_DWC2_PERIPHERAL
-+	bool "Gadget only mode"
-+	depends on USB_GADGET=y || USB_GADGET=USB_DWC2
-+	help
-+	  The Designware USB2.0 high-speed gadget controller
-+	  integrated into many SoCs. Select this option if you want the
-+	  driver to operate in Peripheral-only mode. This option requires
-+	  USB_GADGET to be enabled.
-+
-+config USB_DWC2_DUAL_ROLE
-+	bool "Dual Role mode"
-+	depends on (USB=y || USB=USB_DWC2) && (USB_GADGET=y || USB_GADGET=USB_DWC2)
- 	help
--	  The Designware USB2.0 platform interface module for
--	  controllers directly connected to the CPU. This is only
--	  used for host mode.
-+	  Select this option if you want the driver to work in a dual-role
-+	  mode. In this mode both host and gadget features are enabled, and
-+	  the role will be determined by the cable that gets plugged-in. This
-+	  option requires USB_GADGET to be enabled.
-+endchoice
-+
-+config USB_DWC2_PLATFORM
-+	tristate "DWC2 Platform"
-+	default USB_DWC2_HOST || USB_DWC2_PERIPHERAL
-+        help
-+          The Designware USB2.0 platform interface module for
-+          controllers directly connected to the CPU.
- 
- config USB_DWC2_PCI
--	bool "DWC2 PCI"
-+	tristate "DWC2 PCI"
- 	depends on USB_DWC2_HOST && PCI
- 	default USB_DWC2_HOST
- 	help
- 	  The Designware USB2.0 PCI interface module for controllers
- 	  connected to a PCI bus. This is only used for host mode.
- 
--comment "Gadget mode requires USB Gadget support to be enabled"
--
--config USB_DWC2_PERIPHERAL
--	tristate "Gadget only mode"
--	depends on USB_GADGET
--	help
--	  The Designware USB2.0 high-speed gadget controller
--	  integrated into many SoCs.
--
- config USB_DWC2_DEBUG
- 	bool "Enable Debugging Messages"
- 	help
-diff --git a/drivers/usb/dwc2/Makefile b/drivers/usb/dwc2/Makefile
-index b73d2a5..8f75267 100644
---- a/drivers/usb/dwc2/Makefile
-+++ b/drivers/usb/dwc2/Makefile
-@@ -1,28 +1,28 @@
- ccflags-$(CONFIG_USB_DWC2_DEBUG)	+= -DDEBUG
- ccflags-$(CONFIG_USB_DWC2_VERBOSE)	+= -DVERBOSE_DEBUG
- 
--obj-$(CONFIG_USB_DWC2_HOST)		+= dwc2.o
-+obj-$(CONFIG_USB_DWC2)			+= dwc2.o
- dwc2-y					:= core.o core_intr.o
--dwc2-y					+= hcd.o hcd_intr.o
--dwc2-y					+= hcd_queue.o hcd_ddma.o
-+
-+ifneq ($(filter y,$(CONFIG_USB_DWC2_HOST) $(CONFIG_USB_DWC2_DUAL_ROLE)),)
-+	dwc2-y				+= hcd.o hcd_intr.o
-+	dwc2-y				+= hcd_queue.o hcd_ddma.o
-+endif
-+
-+ifneq ($(filter y,$(CONFIG_USB_DWC2_PERIPHERAL) $(CONFIG_USB_DWC2_DUAL_ROLE)),)
-+	dwc2-y       			+= gadget.o
-+endif
- 
- # NOTE: The previous s3c-hsotg peripheral mode only driver has been moved to
- # this location and renamed gadget.c. When building for dynamically linked
--# modules, dwc2_gadget.ko will get built for peripheral mode. For host mode,
--# the core module will be dwc2.ko, the PCI bus interface module will called
--# dwc2_pci.ko and the platform interface module will be called dwc2_platform.ko.
--# At present the host and gadget driver will be separate drivers, but there
--# are plans in the near future to create a dual-role driver.
-+# modules, dwc2.ko will get built for host mode, peripheral mode, and dual-role
-+# mode. The PCI bus interface module will called dwc2_pci.ko and the platform
-+# interface module will be called dwc2_platform.ko.
- 
- ifneq ($(CONFIG_USB_DWC2_PCI),)
--	obj-$(CONFIG_USB_DWC2_HOST)	+= dwc2_pci.o
-+	obj-$(CONFIG_USB_DWC2)		+= dwc2_pci.o
- 	dwc2_pci-y			:= pci.o
- endif
- 
--ifneq ($(CONFIG_USB_DWC2_PLATFORM),)
--	obj-$(CONFIG_USB_DWC2_HOST)	+= dwc2_platform.o
--	dwc2_platform-y			:= platform.o
--endif
--
--obj-$(CONFIG_USB_DWC2_PERIPHERAL)	+= dwc2_gadget.o
--dwc2_gadget-y				:= gadget.o
-+obj-$(CONFIG_USB_DWC2_PLATFORM)		+= dwc2_platform.o
-+dwc2_platform-y				:= platform.o
--- 
-2.0.3
+							Thanx, Paul
 
