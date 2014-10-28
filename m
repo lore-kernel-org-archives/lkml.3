@@ -1,89 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760174AbaJ1Gso (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:48:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45765 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933047AbaJ1Dsu (ORCPT
+	id S1760191AbaJ1GtF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:49:05 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:17693 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933041AbaJ1Dss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:48:50 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.14 044/100] PCI: mvebu: Fix uninitialized variable in mvebu_get_tgt_attr()
-Date: Tue, 28 Oct 2014 11:35:29 +0800
-Message-Id: <20141028033502.592569870@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
-References: <20141028033500.670583608@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Mon, 27 Oct 2014 23:48:48 -0400
+X-AuditID: cbfee68e-f79b46d000002b74-c3-544f121da84b
+From: Kukjin Kim <kgene@kernel.org>
+To: "'Chanwoo Choi'" <cw00.choi@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: mark.rutland@arm.com, arnd@arndb.de, olof@lixom.net, tomasz.figa@gmail.com,
+        inki.dae@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com, m.szyprowski@samsung.com,
+        yj44.cho@samsung.com, jaewon02.kim@samsung.com, ideal.song@samsung.com
+References: <1414373759-4362-1-git-send-email-cw00.choi@samsung.com>
+ <1414373759-4362-2-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1414373759-4362-2-git-send-email-cw00.choi@samsung.com>
+Subject: RE: [PATCHv2 1/2] ARM: EXYNOS: Add EXYNOS4415 SoC ID
+Date: Tue, 28 Oct 2014 12:48:44 +0900
+Message-id: <02b501cff262$127d44b0$3777ce10$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQI8RNIEvKbq0iSBkCqwA7nWAb+6GAE/eoRUm2I9d6A=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+Zsa6skH+IwaopahZ/Jx1jt7j+5Tmr
+	xa6/9xktJt2fwGKxo+EIq8XZpjfsFpseX2O1uLxrDpvFjPP7mCzWHrnLbrH0+kUmi1PXPwPF
+	Jr9ks1i16w+jxd6dkxkd+D3WzFvD6PH71yRGj52z7rJ7bF5S73HlRBOrR9+WVYwenzfJBbBH
+	cdmkpOZklqUW6dslcGWs2buJpaBdoOLWxmlsDYwTebsYOTkkBEwkns5dzAphi0lcuLeerYuR
+	i0NIYBmjRPvlc8xdjBxgRStmJ0HEFzFKXOw8yw7h/GWUaH09iwWkiE1AWaKxSR9kkLCAlsTC
+	LU0sIDUiApMZJZoPHmYGcZgF/jNK/Jm+C6xBSKBe4vNCLpAGTgFXiZ8fbjFBNNtKvHq1mBnE
+	ZhFQlZgw6RkbiM0rYCGxqn02M4QtKPFj8j0WEJsZaNn6nceZIGx5ic1r3jJDfKMgsePsa0YQ
+	W0TASuLbxdnsEDUiEvtevGMEuUdC4AiHRPetKywQywQkvk0+xALxsazEpgNQcyQlDq64wTKB
+	UXIWktWzkKyehWT1LCQrFjCyrGIUTS1ILihOSi8y0itOzC0uzUvXS87P3cQISRx9OxhvHrA+
+	xCjAwajEw2vw0C9EiDWxrLgy9xCjKdBFE5mlRJPzgekpryTe0NjMyMLUxNTYyNzSTEmcN0Hq
+	Z7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRuk/77MfuWhxhR1SW5+0ylLuxKkT7urLDwcu
+	z7oQcGlz7av+R+9aTX7ufaN0eGOe0ud7q+xk/rWnem1qW5lwUqNDaN0Nm8WBz75nyM3Un1G6
+	VUx8bkbykaX7o2c8f1q4aObkreutG+63Re92iXhRzekwTzLKLyX//4qMizJTHHIXTYnRkOT9
+	36jEUpyRaKjFXFScCAD+cbBhFwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHKsWRmVeSWpSXmKPExsVy+t9jAV1ZIf8Qg8dvFSz+TjrGbnH9y3NW
+	i11/7zNaTLo/gcViR8MRVouzTW/YLTY9vsZqcXnXHDaLGef3MVmsPXKX3WLp9YtMFqeufwaK
+	TX7JZrFq1x9Gi707JzM68HusmbeG0eP3r0mMHjtn3WX32Lyk3uPKiSZWj74tqxg9Pm+SC2CP
+	amC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6XEmh
+	LDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYsWbvJpaCdoGKWxunsTUwTuTt
+	YuTgkBAwkVgxO6mLkRPIFJO4cG89WxcjF4eQwCJGiYudZ9khnL+MEq2vZ7GANLAJKEs0NumD
+	NAgLaEks3NLEAlIjIjCZUaL54GFmEIdZ4D+jxJ/pu8AahATqJT4v5AJp4BRwlfj54RYTRLOt
+	xKtXi5lBbBYBVYkJk56xgdi8AhYSq9pnM0PYghI/Jt9jAbGZgZat33mcCcKWl9i85i0zxNUK
+	EjvOvmYEsUUErCS+XZzNDlEjIrHvxTvGCYzCs5CMmoVk1Cwko2YhaVnAyLKKUTS1ILmgOCk9
+	11CvODG3uDQvXS85P3cTIzgtPZPawbiyweIQowAHoxIPr8FDvxAh1sSy4srcQ4wSHMxKIrxe
+	O4BCvCmJlVWpRfnxRaU5qcWHGE2BPp3ILCWanA9MmXkl8YbGJmZGlkZmFkYm5uZK4rwHWq0D
+	hQTSE0tSs1NTC1KLYPqYODilGhjN3/BJbzv5a8e7k2oHz7w7lmvX5mWsup9n93bVtIgtwmFd
+	T4N/JtjWzWXceO4Ztw+zt6jLJrWHz257nFzENfFx+clKbV9eufYTAeEC+sznRc5pVHMf//bt
+	5TvGzwfuBD5hOPP1a01W4Q+VWSE+G1RZKo7N/57OV/Fe9KDqzaVHk0tZW04u4DFTYinOSDTU
+	Yi4qTgQAWMjFjGEDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Chanwoo Choi wrote:
+> 
+> This patch add Exynos4415's SoC ID.
+> 
+Since the CPU ID has been removed as per comments, need to update the commit
+message accordingly.
 
-------------------
+> Exynos4415 is based on the 32-bit RISC
+> processor for Smartphone. Exynos4415 uses Cortex A9 quad-cores and has a target
+> speed of 1.6GHz and provides 8.5GB/s memory bandwidth.
+> 
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/mach-exynos/Kconfig  | 5 +++++
+>  arch/arm/mach-exynos/exynos.c | 2 ++
+>  2 files changed, 7 insertions(+)
+> 
+> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+> index 46f3c0d..349c867 100644
+> --- a/arch/arm/mach-exynos/Kconfig
+> +++ b/arch/arm/mach-exynos/Kconfig
+> @@ -75,6 +75,11 @@ config SOC_EXYNOS4412
+>  	default y
+>  	depends on ARCH_EXYNOS4
+> 
+> +config SOC_EXYNOS4415
+> +	bool "SAMSUNG EXYNOS4415"
+> +	default y
+> +	depends on ARCH_EXYNOS4
+> +
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+I think, this is not required more...
 
-commit 56fab6e189441d714a2bfc8a64f3df9c0749dff7 upstream.
+Thanks,
+Kukjin
 
-Geert Uytterhoeven reported a warning when building pci-mvebu:
-
-  drivers/pci/host/pci-mvebu.c: In function 'mvebu_get_tgt_attr':
-  drivers/pci/host/pci-mvebu.c:887:39: warning: 'rtype' may be used uninitialized in this function [-Wmaybe-uninitialized]
-     if (slot == PCI_SLOT(devfn) && type == rtype) {
-					 ^
-
-And indeed, the code of mvebu_get_tgt_attr() may lead to the usage of rtype
-when being uninitialized, even though it would only happen if we had
-entries other than I/O space and 32 bits memory space.
-
-This commit fixes that by simply skipping the current DT range being
-considered, if it doesn't match the resource type we're looking for.
-
-Reported-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/pci/host/pci-mvebu.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- a/drivers/pci/host/pci-mvebu.c
-+++ b/drivers/pci/host/pci-mvebu.c
-@@ -855,7 +855,7 @@ static int mvebu_get_tgt_attr(struct dev
- 	rangesz = pna + na + ns;
- 	nranges = rlen / sizeof(__be32) / rangesz;
- 
--	for (i = 0; i < nranges; i++) {
-+	for (i = 0; i < nranges; i++, range += rangesz) {
- 		u32 flags = of_read_number(range, 1);
- 		u32 slot = of_read_number(range + 1, 1);
- 		u64 cpuaddr = of_read_number(range + na, pna);
-@@ -865,14 +865,14 @@ static int mvebu_get_tgt_attr(struct dev
- 			rtype = IORESOURCE_IO;
- 		else if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_MEM32)
- 			rtype = IORESOURCE_MEM;
-+		else
-+			continue;
- 
- 		if (slot == PCI_SLOT(devfn) && type == rtype) {
- 			*tgt = DT_CPUADDR_TO_TARGET(cpuaddr);
- 			*attr = DT_CPUADDR_TO_ATTR(cpuaddr);
- 			return 0;
- 		}
--
--		range += rangesz;
- 	}
- 
- 	return -ENOENT;
-
+>  config SOC_EXYNOS5250
+>  	bool "SAMSUNG EXYNOS5250"
+>  	default y
+> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+> index 1b46460..1da531f 100644
+> --- a/arch/arm/mach-exynos/exynos.c
+> +++ b/arch/arm/mach-exynos/exynos.c
+> @@ -252,6 +252,7 @@ static const struct of_device_id exynos_dt_pmu_match[] = {
+>  	{ .compatible = "samsung,exynos4210-pmu" },
+>  	{ .compatible = "samsung,exynos4212-pmu" },
+>  	{ .compatible = "samsung,exynos4412-pmu" },
+> +	{ .compatible = "samsung,exynos4415-pmu" },
+>  	{ .compatible = "samsung,exynos5250-pmu" },
+>  	{ .compatible = "samsung,exynos5260-pmu" },
+>  	{ .compatible = "samsung,exynos5410-pmu" },
+> @@ -359,6 +360,7 @@ static char const *exynos_dt_compat[] __initconst = {
+>  	"samsung,exynos4210",
+>  	"samsung,exynos4212",
+>  	"samsung,exynos4412",
+> +	"samsung,exynos4415",
+>  	"samsung,exynos5",
+>  	"samsung,exynos5250",
+>  	"samsung,exynos5260",
+> --
+> 1.8.5.5
 
