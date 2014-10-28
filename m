@@ -1,121 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527AbaJ1V6J (ORCPT <rfc822;w@1wt.eu>);
+	id S1755657AbaJ1V6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:58:52 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61115 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751390AbaJ1V6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 17:58:09 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43324 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755356AbaJ1V5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:57:34 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 08/10] rcu: Remove "cpu" argument to rcu_prepare_for_idle()
-Date: Tue, 28 Oct 2014 14:53:35 -0700
-Message-Id: <1414533217-24910-8-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20141028215140.GA23970@linux.vnet.ibm.com>
- <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102821-0033-0000-0000-000000E3EBB6
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH RESEND] net: rfkill: gpio: Add ACPI default GPIO driver mappings
+Date: Tue, 28 Oct 2014 23:18:44 +0100
+Message-ID: <1726782.TCzbPOGKzX@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414490628-107823-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1414490628-107823-1-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Tuesday, October 28, 2014 12:03:48 PM Mika Westerberg wrote:
+> The driver uses devm_gpiod_get_index(..., index) so that the index refers
+> directly to the GpioIo resource under the ACPI device. The problem with
+> this is that if the ordering changes we get wrong GPIOs.
+> 
+> With ACPI 5.1 _DSD we can now use names instead to reference GPIOs
+> analogous to Device Tree. However, we still have systems out there that do
+> not provide _DSD at all. These systems must be supported as well.
+> 
+> Luckily we now have acpi_dev_add_driver_gpios() that can be used to provide
+> mappings for systems where _DSD is not provided and still take advantage of
+> _DSD if it exists.
+> 
+> This patch converts the rfkill-gpio.c driver to create default GPIO
+> mappings to the two GPIOs in case we are running on ACPI system.
+> 
+> While there we can drop the indices completely.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+> Acked-by: Johannes Berg <johannes@sipsolutions.net>
+> Acked-by: John W. Linville <linville@tuxdriver.com>
 
-The "cpu" argument to rcu_prepare_for_idle() is always the current
-CPU, so drop it.  This in turn allows two of the uses of "cpu" in
-this function to be replaced with a this_cpu_ptr() and the third by
-smp_processor_id(), replacing that of the call to rcu_prepare_for_idle().
-Again, the anticipated cross-CPU uses of these functions has been replaced
-by NO_HZ_FULL.
+Applied, thanks!
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcu/tree.c        |  2 +-
- kernel/rcu/tree.h        |  2 +-
- kernel/rcu/tree_plugin.h | 10 +++++-----
- 3 files changed, 7 insertions(+), 7 deletions(-)
+> ---
+> Resending with linux-acpi included. I also added ACKs from Johannes and
+> John. The patch itself is intact.
+> 
+>  net/rfkill/rfkill-gpio.c | 18 +++++++++++++++---
+>  1 file changed, 15 insertions(+), 3 deletions(-)
+> 
+> diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
+> index 0f62326c0f5e..2a4717967502 100644
+> --- a/net/rfkill/rfkill-gpio.c
+> +++ b/net/rfkill/rfkill-gpio.c
+> @@ -63,6 +63,15 @@ static const struct rfkill_ops rfkill_gpio_ops = {
+>  	.set_block = rfkill_gpio_set_power,
+>  };
+>  
+> +static const struct acpi_gpio_params reset_gpios = { 0, 0, false };
+> +static const struct acpi_gpio_params shutdown_gpios = { 1, 0, false };
+> +
+> +static const struct acpi_gpio_mapping acpi_rfkill_default_gpios[] = {
+> +	{ "reset-gpios", &reset_gpios, 1 },
+> +	{ "shutdown-gpios", &shutdown_gpios, 1 },
+> +	{ },
+> +};
+> +
+>  static int rfkill_gpio_acpi_probe(struct device *dev,
+>  				  struct rfkill_gpio_data *rfkill)
+>  {
+> @@ -75,7 +84,8 @@ static int rfkill_gpio_acpi_probe(struct device *dev,
+>  	rfkill->name = dev_name(dev);
+>  	rfkill->type = (unsigned)id->driver_data;
+>  
+> -	return 0;
+> +	return acpi_dev_add_driver_gpios(ACPI_COMPANION(dev),
+> +					 acpi_rfkill_default_gpios);
+>  }
+>  
+>  static int rfkill_gpio_probe(struct platform_device *pdev)
+> @@ -102,7 +112,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+>  
+>  	rfkill->clk = devm_clk_get(&pdev->dev, NULL);
+>  
+> -	gpio = devm_gpiod_get_index(&pdev->dev, "reset", 0);
+> +	gpio = devm_gpiod_get(&pdev->dev, "reset");
+>  	if (!IS_ERR(gpio)) {
+>  		ret = gpiod_direction_output(gpio, 0);
+>  		if (ret)
+> @@ -110,7 +120,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
+>  		rfkill->reset_gpio = gpio;
+>  	}
+>  
+> -	gpio = devm_gpiod_get_index(&pdev->dev, "shutdown", 1);
+> +	gpio = devm_gpiod_get(&pdev->dev, "shutdown");
+>  	if (!IS_ERR(gpio)) {
+>  		ret = gpiod_direction_output(gpio, 0);
+>  		if (ret)
+> @@ -150,6 +160,8 @@ static int rfkill_gpio_remove(struct platform_device *pdev)
+>  	rfkill_unregister(rfkill->rfkill_dev);
+>  	rfkill_destroy(rfkill->rfkill_dev);
+>  
+> +	acpi_dev_remove_driver_gpios(ACPI_COMPANION(&pdev->dev));
+> +
+>  	return 0;
+>  }
+>  
+> 
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index d678a98caf1d..8251938fb4ae 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -531,7 +531,7 @@ static void rcu_eqs_enter_common(long long oldval, bool user)
- 		rdp = this_cpu_ptr(rsp->rda);
- 		do_nocb_deferred_wakeup(rdp);
- 	}
--	rcu_prepare_for_idle(smp_processor_id());
-+	rcu_prepare_for_idle();
- 	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
- 	smp_mb__before_atomic();  /* See above. */
- 	atomic_inc(&rdtp->dynticks);
-diff --git a/kernel/rcu/tree.h b/kernel/rcu/tree.h
-index 238ac39053fc..8bc3cacbe14a 100644
---- a/kernel/rcu/tree.h
-+++ b/kernel/rcu/tree.h
-@@ -580,7 +580,7 @@ static int rcu_spawn_one_boost_kthread(struct rcu_state *rsp,
- static void __init rcu_spawn_boost_kthreads(void);
- static void rcu_prepare_kthreads(int cpu);
- static void rcu_cleanup_after_idle(int cpu);
--static void rcu_prepare_for_idle(int cpu);
-+static void rcu_prepare_for_idle(void);
- static void rcu_idle_count_callbacks_posted(void);
- static void print_cpu_stall_info_begin(void);
- static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 1797b76cb3ff..5e68ab5fe317 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -1531,7 +1531,7 @@ static void rcu_cleanup_after_idle(int cpu)
-  * Do the idle-entry grace-period work, which, because CONFIG_RCU_FAST_NO_HZ=n,
-  * is nothing.
-  */
--static void rcu_prepare_for_idle(int cpu)
-+static void rcu_prepare_for_idle(void)
- {
- }
- 
-@@ -1666,12 +1666,12 @@ int rcu_needs_cpu(unsigned long *dj)
-  *
-  * The caller must have disabled interrupts.
-  */
--static void rcu_prepare_for_idle(int cpu)
-+static void rcu_prepare_for_idle(void)
- {
- #ifndef CONFIG_RCU_NOCB_CPU_ALL
- 	bool needwake;
- 	struct rcu_data *rdp;
--	struct rcu_dynticks *rdtp = &per_cpu(rcu_dynticks, cpu);
-+	struct rcu_dynticks *rdtp = this_cpu_ptr(&rcu_dynticks);
- 	struct rcu_node *rnp;
- 	struct rcu_state *rsp;
- 	int tne;
-@@ -1688,7 +1688,7 @@ static void rcu_prepare_for_idle(int cpu)
- 		return;
- 
- 	/* If this is a no-CBs CPU, no callbacks, just return. */
--	if (rcu_is_nocb_cpu(cpu))
-+	if (rcu_is_nocb_cpu(smp_processor_id()))
- 		return;
- 
- 	/*
-@@ -1712,7 +1712,7 @@ static void rcu_prepare_for_idle(int cpu)
- 		return;
- 	rdtp->last_accelerate = jiffies;
- 	for_each_rcu_flavor(rsp) {
--		rdp = per_cpu_ptr(rsp->rda, cpu);
-+		rdp = this_cpu_ptr(rsp->rda);
- 		if (!*rdp->nxttail[RCU_DONE_TAIL])
- 			continue;
- 		rnp = rdp->mynode;
 -- 
-1.8.1.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
