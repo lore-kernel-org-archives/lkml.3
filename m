@@ -1,98 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856AbaJ1ElD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:41:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47074 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933903AbaJ1Dwv (ORCPT
+	id S1756865AbaJ1ElU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:41:20 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:47899 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465AbaJ1ElR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:51 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Tue, 28 Oct 2014 00:41:17 -0400
+Date: Tue, 28 Oct 2014 10:11:12 +0530
+From: Heena Sirwani <heenasirwani@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vlad Catoi <vladcatoi@gmail.com>, Clemens Ladisch <clemens@ladisch.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 41/43] ALSA: usb-audio: Add support for Steinberg UR22 USB interface
-Date: Tue, 28 Oct 2014 11:36:39 +0800
-Message-Id: <20141028033525.168282038@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+Cc: john.stultz@linaro.org, tglx@linutronix.de, arnd@arndb.de
+Subject: [PATCH v6] cpuset: Replace all instances of time_t with time64_t
+Message-ID: <20141028044112.GA27078@heena-HP-Compaq-8200-Elite-MT-PC>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+The following patch replaces all instances of time_t with time64_t i.e.
+change the type used for representing time from 32-bit to 64-bit. All
+32-bit kernels to date use a signed 32-bit time_t type, which can only
+represent time until January 2038. Since embedded systems running 32-bit
+Linux are going to survive beyond that date, we have to change all
+current uses, in a backwards compatible way.
 
-------------------
+The patch also changes the function get_seconds() that returns a 32-bit
+integer to ktime_get_seconds() that returns seconds as 64-bit integer.
 
-From: Vlad Catoi <vladcatoi@gmail.com>
+The patch changes the type of ticks from time_t to u32. We keep ticks as
+32-bits as the function uses 32-bit arithmetic which would prove less
+expensive than 64-bit arithmetic and the function is expected to be
+called atleast once every 32 seconds.
 
-commit f0b127fbfdc8756eba7437ab668f3169280bd358 upstream.
-
-Adding support for Steinberg UR22 USB interface via quirks table patch
-
-See Ubuntu bug report:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1317244
-Also see threads:
-http://linux-audio.4202.n7.nabble.com/Support-for-Steinberg-UR22-Yamaha-USB-chipset-0499-1509-tc82888.html#a82917
-http://www.steinberg.net/forums/viewtopic.php?t=62290
-
-Tested by at least 4 people judging by the threads.
-Did not test MIDI interface, but audio output and capture both are
-functional. Built 3.17 kernel with this driver on Ubuntu 14.04 & tested with mpg123
-Patch applied to 3.13 Ubuntu kernel works well enough for daily use.
-
-Signed-off-by: Vlad Catoi <vladcatoi@gmail.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Heena Sirwani <heenasirwani@gmail.com>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- sound/usb/quirks-table.h |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+Changes in v6:
+	- Changed the function ktime_get_ts64() to ktime_get_seconds().
 
---- a/sound/usb/quirks-table.h
-+++ b/sound/usb/quirks-table.h
-@@ -386,6 +386,36 @@ YAMAHA_DEVICE(0x105d, NULL),
- 	}
- },
+ kernel/cpuset.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 1f107c7..65c7b20 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -51,6 +51,7 @@
+ #include <linux/stat.h>
+ #include <linux/string.h>
+ #include <linux/time.h>
++#include <linux/time64.h>
+ #include <linux/backing-dev.h>
+ #include <linux/sort.h>
+ 
+@@ -68,7 +69,7 @@ struct static_key cpusets_enabled_key __read_mostly = STATIC_KEY_INIT_FALSE;
+ struct fmeter {
+ 	int cnt;		/* unprocessed events count */
+ 	int val;		/* most recent output value */
+-	time_t time;		/* clock (secs) when val computed */
++	time64_t time;		/* clock (secs) when val computed */
+ 	spinlock_t lock;	/* guards read or write of above */
+ };
+ 
+@@ -1355,7 +1356,7 @@ out:
+  */
+ 
+ #define FM_COEF 933		/* coefficient for half-life of 10 secs */
+-#define FM_MAXTICKS ((time_t)99) /* useless computing more ticks than this */
++#define FM_MAXTICKS ((u32)99)   /* useless computing more ticks than this */
+ #define FM_MAXCNT 1000000	/* limit cnt to avoid overflow */
+ #define FM_SCALE 1000		/* faux fixed point scale */
+ 
+@@ -1371,8 +1372,11 @@ static void fmeter_init(struct fmeter *fmp)
+ /* Internal meter update - process cnt events and update value */
+ static void fmeter_update(struct fmeter *fmp)
  {
-+	USB_DEVICE(0x0499, 0x1509),
-+	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
-+		/* .vendor_name = "Yamaha", */
-+		/* .product_name = "Steinberg UR22", */
-+		.ifnum = QUIRK_ANY_INTERFACE,
-+		.type = QUIRK_COMPOSITE,
-+		.data = (const struct snd_usb_audio_quirk[]) {
-+			{
-+				.ifnum = 1,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 2,
-+				.type = QUIRK_AUDIO_STANDARD_INTERFACE
-+			},
-+			{
-+				.ifnum = 3,
-+				.type = QUIRK_MIDI_YAMAHA
-+			},
-+			{
-+				.ifnum = 4,
-+				.type = QUIRK_IGNORE_INTERFACE
-+			},
-+			{
-+				.ifnum = -1
-+			}
-+		}
-+	}
-+},
-+{
- 	USB_DEVICE(0x0499, 0x150a),
- 	.driver_info = (unsigned long) & (const struct snd_usb_audio_quirk) {
- 		/* .vendor_name = "Yamaha", */
-
+-	time_t now = get_seconds();
+-	time_t ticks = now - fmp->time;
++	time64_t now;
++	u32 ticks;
++
++	now = ktime_get_seconds();
++	ticks = now - fmp->time;
+ 
+ 	if (ticks == 0)
+ 		return;
+-- 
+1.9.1
 
