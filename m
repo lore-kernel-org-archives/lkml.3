@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758330AbaJ1H63 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:58:29 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:13784 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271AbaJ1H60 (ORCPT
+	id S933247AbaJ1H6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:58:43 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:9532 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759912AbaJ1H6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 03:58:26 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-24-544f4c9f438b
-Message-id: <1414483101.24949.1.camel@AMDC1943>
-Subject: Re: [PATCH 3.13 100/105] dmaengine: pl330: Fix NULL pointer
- dereference on driver unbind
+	Tue, 28 Oct 2014 03:58:41 -0400
+X-AuditID: cbfec7f5-b7f956d000005ed7-65-544f4cae664a
+Message-id: <1414483115.24949.2.camel@AMDC1943>
+Subject: Re: [PATCH 3.13 099/105] dmaengine: pl330: Fix NULL pointer
+ dereference on probe failure
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Kamal Mostafa <kamal@canonical.com>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com, Vinod Koul <vinod.koul@intel.com>
-Date: Tue, 28 Oct 2014 08:58:21 +0100
-In-reply-to: <1414436240-13879-101-git-send-email-kamal@canonical.com>
+Date: Tue, 28 Oct 2014 08:58:35 +0100
+In-reply-to: <1414436240-13879-100-git-send-email-kamal@canonical.com>
 References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
- <1414436240-13879-101-git-send-email-kamal@canonical.com>
+ <1414436240-13879-100-git-send-email-kamal@canonical.com>
 Content-type: text/plain; charset=UTF-8
 X-Mailer: Evolution 3.10.4-0ubuntu2
 MIME-version: 1.0
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHLMWRmVeSWpSXmKPExsVy+t/xa7rzffxDDCa2ylt8v7qbxWLOo03s
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xa7rrfPxDDNqXs1l8v7qbxWLOo03s
 	Fpd3zWGzWLDxEaPFy779LA6sHrMaetk8Fu95yeRx7cZ9Fo/Pm+QCWKK4bFJSczLLUov07RK4
-	Ms6umMtW8F2n4sK1CcwNjF9Vuhg5OSQETCQ631xjg7DFJC7cWw9kc3EICSxllFj4dhEThPOZ
-	UWL3h4NgVbwC+hI3t+1kArGFBZIl+lZPAYuzCRhLbF6+BMwWEVCXOHlkCguIzSxQLXH20yxG
-	EJtFQFXi68557CA2p4CbxOk9k8DmCAnUS+yfuJQdol5dYtK8RcxdjBxAFylLNPa7QawVlPgx
-	+R7USHmJzWveMk9gFJiFpGMWkrJZSMoWMDKvYhRNLU0uKE5KzzXSK07MLS7NS9dLzs/dxAgJ
-	4687GJceszrEKMDBqMTDG8HiHyLEmlhWXJl7iFGCg1lJhHe5ClCINyWxsiq1KD++qDQntfgQ
-	IxMHp1QD40xTK6enAW3+5WJGbPsMdhSmmTPaLPVpXylxodHIcrtqddZU7qUb486duytr0nI3
-	LMc+/riaweH1jY0mvwI2s3LYa2bY7mJI3lPHfT77hIGP4vK+r00SS353tG0rzP/ZuNb/iOqz
-	HSnZHpbrTk+MzC/isRLa+um55a0sR91ve0UvzfGyOnpViaU4I9FQi7moOBEAT0Lk50ECAAA=
+	Mj5M/cJasE6r4uvdI+wNjGuUuxg5OSQETCQmnt7FCmGLSVy4t56ti5GLQ0hgKaPEptvvoJzP
+	jBJ7P85kAaniFdCXePRnA1MXIweHsECyxPtGsEFsAsYSm5cvYQOxRQTUJU4emQJWzixQLXH2
+	0yxGkHIWAVWJ3RsTQcKcAm4S3Wd7wcqFBOolVjzdxQZRri4xad4iZpByCQFlicZ+N4ilghI/
+	Jt+DmigvsXnNW+YJjAKzkHTMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh
+	Ifx1B+PSY1aHGAU4GJV4eCNY/EOEWBPLiitzDzFKcDArifAuVwEK8aYkVlalFuXHF5XmpBYf
+	YmTi4JRqYDSd5MvW8cDGdt1byVcxEw7cCI/YoVS57ONqV79tPAos/k5fn/O1Tmac/u7kIl0z
+	3vcymtvPrwxYrHfk0Rwur208rzeZG/i+upUhLXFFUfpaZO3BymDznwyx0+9yXn0qs7/+65RP
+	FssfXln77+kRVpPrO9bskmBybJVfsuNIqs6RaykbzkkxzytRYinOSDTUYi4qTgQAoeWa0D8C	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -44,7 +44,11 @@ On pon, 2014-10-27 at 11:57 -0700, Kamal Mostafa wrote:
 > 
 > From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 > 
-> commit 6e4a2a83f95826201bbd89f55522537ea52d1d67 upstream.
+> commit 0f5ebabdd03b471da1906f7edddc61ceb35cee02 upstream.
+> 
+> If dma_async_device_register() returns error and probe should clean up
+> and return error, a NULL pointer exception happens because of
+> dereference of not allocated channel thread:
 
 Hi,
 
@@ -58,63 +62,66 @@ Best regards,
 Krzysztof
 
 > 
-> Fix a NULL pointer dereference after unbinding the driver, if channel
-> resources were not yet allocated (no call to
-> pl330_alloc_chan_resources()):
-> $ echo 12850000.mdma > /sys/bus/amba/drivers/dma-pl330/unbind
-> [   13.606533] DMA pl330_control: removing pch: eeab6800, chan: eeab6814, thread:   (null)
-> [   13.614472] Unable to handle kernel NULL pointer dereference at virtual address 0000000c
-> [   13.622537] pgd = ee284000
-> [   13.625228] [0000000c] *pgd=6e1e4831, *pte=00000000, *ppte=00000000
-> [   13.631482] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
-> [   13.636859] Modules linked in:
-> [   13.639903] CPU: 0 PID: 1 Comm: sh Not tainted 3.17.0-rc3-next-20140904-00004-g7020ffc33ca3-dirty #420
-> [   13.649187] task: ee80a800 ti: ee888000 task.ti: ee888000
-> [   13.654589] PC is at _stop+0x8/0x2c8
-> [   13.658131] LR is at pl330_control+0x70/0x2e8
-> [   13.662468] pc : [<c0206028>]    lr : [<c020649c>]    psr: 60000093
-> [   13.662468] sp : ee889e58  ip : 00000001  fp : 000bab70
-> [   13.673922] r10: eeab6814  r9 : ee16debc  r8 : 00000000
-> [   13.679131] r7 : eeab685c  r6 : 60000013  r5 : ee16de10  r4 : eeab6800
-> [   13.685641] r3 : 00000002  r2 : 00000000  r1 : 00010000  r0 : 00000000
-> [   13.692153] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> [   13.699357] Control: 10c5387d  Table: 6e28404a  DAC: 00000015
-> [   13.705085] Process sh (pid: 1, stack limit = 0xee888240)
-> [   13.710466] Stack: (0xee889e58 to 0xee88a000)
-> [   13.714808] 9e40:                                                       00000002 eeab6800
-> [   13.722969] 9e60: ee16de10 eeab6800 ee16de10 60000013 eeab685c c020649c 00000000 c040280c
-> [   13.731128] 9e80: ee889e80 ee889e80 ee16de18 ee16de10 eeab6880 eeab6814 00200200 eeab68a8
-> [   13.739287] 9ea0: 00100100 c0208048 00000000 c0409fc4 eea80800 eea808f8 c0605c44 0000000e
-> [   13.747446] 9ec0: 0000000e eeb3960c eeb39600 c0203c48 eea80800 c0605c44 c0605a8c c023f694
-> [   13.755605] 9ee0: ee80a800 eea80834 eea80800 c023f704 ee80a800 eea80800 c0605c44 c023e8ec
-> [   13.763764] 9f00: 0000000e ee149780 ee29e580 ee889f80 ee29e580 c023e19c 0000000e c01167e4
-> [   13.771923] 9f20: c01167a0 00000000 00000000 c0115e88 00000000 00000000 ee0b1a00 0000000e
-> [   13.780082] 9f40: b6f48000 ee889f80 0000000e ee888000 b6f48000 c00bfadc 00000000 00000003
-> [   13.788241] 9f60: 00000000 00000000 00000000 ee0b1a00 ee0b1a00 0000000e b6f48000 c00bfdf4
-> [   13.796401] 9f80: 00000000 00000000 ffffffff 0000000e b6f48000 b6edc5d0 00000004 c000e7a4
-> [   13.804560] 9fa0: 00000000 c000e620 0000000e b6f48000 00000001 b6f48000 0000000e 00000000
-> [   13.812719] 9fc0: 0000000e b6f48000 b6edc5d0 00000004 0000000e b6f4c8c0 000c3470 000bab70
-> [   13.820879] 9fe0: 00000000 bed2aa50 b6e18bdc b6e6b52c 60000010 00000001 c0c0c0c0 c0c0c0c0
-> [   13.829058] [<c0206028>] (_stop) from [<c020649c>] (pl330_control+0x70/0x2e8)
-> [   13.836165] [<c020649c>] (pl330_control) from [<c0208048>] (pl330_remove+0xb0/0xdc)
-> [   13.843800] [<c0208048>] (pl330_remove) from [<c0203c48>] (amba_remove+0x24/0xc0)
-> [   13.851272] [<c0203c48>] (amba_remove) from [<c023f694>] (__device_release_driver+0x70/0xc4)
-> [   13.859685] [<c023f694>] (__device_release_driver) from [<c023f704>] (device_release_driver+0x1c/0x28)
-> [   13.868971] [<c023f704>] (device_release_driver) from [<c023e8ec>] (unbind_store+0x58/0x90)
-> [   13.877303] [<c023e8ec>] (unbind_store) from [<c023e19c>] (drv_attr_store+0x20/0x2c)
-> [   13.885036] [<c023e19c>] (drv_attr_store) from [<c01167e4>] (sysfs_kf_write+0x44/0x48)
-> [   13.892928] [<c01167e4>] (sysfs_kf_write) from [<c0115e88>] (kernfs_fop_write+0xc0/0x17c)
-> [   13.901090] [<c0115e88>] (kernfs_fop_write) from [<c00bfadc>] (vfs_write+0xa0/0x1a8)
-> [   13.908812] [<c00bfadc>] (vfs_write) from [<c00bfdf4>] (SyS_write+0x40/0x8c)
-> [   13.915850] [<c00bfdf4>] (SyS_write) from [<c000e620>] (ret_fast_syscall+0x0/0x30)
-> [   13.923392] Code: e5813010 e12fff1e e92d40f0 e24dd00c (e590200c)
-> [   13.929467] ---[ end trace 10064e15a5929cf8 ]---
+> Dmesg log (from early printk):
+> dma-pl330 12680000.pdma: unable to register DMAC
+> DMA pl330_control: removing pch: eeac4000, chan: eeac4014, thread:   (null)
+> Unable to handle kernel NULL pointer dereference at virtual address 0000000c
+> pgd = c0004000
+> [0000000c] *pgd=00000000
+> Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+> Modules linked in:
+> CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc3-next-20140904-00005-g6cc4c1937d90-dirty #427
+> task: ee80a800 ti: ee888000 task.ti: ee888000
+> PC is at _stop+0x8/0x2c8
+> LR is at pl330_control+0x70/0x2e8
+> pc : [<c0205dc8>]    lr : [<c020623c>]    psr: 60000193
+> sp : ee889df8  ip : 00000002  fp : 00000000
+> r10: eeac4014  r9 : ee0e62bc  r8 : 00000000
+> r7 : eeac405c  r6 : 60000113  r5 : ee0e6210  r4 : eeac4000
+> r3 : 00000002  r2 : 00000002  r1 : 00010000  r0 : 00000000
+> Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> Control: 10c5387d  Table: 4000404a  DAC: 00000015
+> Process swapper/0 (pid: 1, stack limit = 0xee888240)
+> Stack: (0xee889df8 to 0xee88a000)
+> 9de0:                                                       00000002 eeac4000
+> 9e00: ee0e6210 eeac4000 ee0e6210 60000113 eeac405c c020623c 00000000 c020725c
+> 9e20: ee889e20 ee889e20 ee0e6210 eeac4080 00200200 00100100 eeac4014 00000020
+> 9e40: ee0e6218 c0208374 00000000 ee9bb340 ee0e6210 00000000 00000000 c0605cd8
+> 9e60: ee970000 c0605c84 ee9700f8 00000000 c05c4270 00000000 00000000 c0203b3c
+> 9e80: ee970000 c06624a8 00000000 c0605c84 00000000 c023f890 ee970000 c0605c84
+> 9ea0: ee970034 00000000 c05b23d0 c023fa3c 00000000 c0605c84 c023f9b0 c023e0d4
+> 9ec0: ee947e78 ee9b9440 c0605c84 eea1e780 c0605acc c023f094 c0513b50 c0605c84
+> 9ee0: c05ecbd8 c0605c84 c05ecbd8 ee11ba40 c0626500 c0240064 00000000 c05ecbd8
+> 9f00: c05ecbd8 c0008964 c040f13c 0000009f c0626500 c057465c ee80a800 60000113
+> 9f20: 00000000 c05efdb0 60000113 00000000 ef7fc89d c0421168 0000008f c003787c
+> 9f40: c0573d6c 00000006 ef7fc8bb 00000006 c05efd50 ef7fc800 c05dfbc4 00000006
+> 9f60: c05c4264 c0626500 0000008f c05c4270 c059b518 c059bcb4 00000006 00000006
+> 9f80: c059b518 c003c08c 00000000 c040091c 00000000 00000000 00000000 00000000
+> 9fa0: 00000000 c0400924 00000000 c000e7b8 00000000 00000000 00000000 00000000
+> 9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> 9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
+> [<c0205dc8>] (_stop) from [<c020623c>] (pl330_control+0x70/0x2e8)
+> [<c020623c>] (pl330_control) from [<c0208374>] (pl330_probe+0x594/0x75c)
+> [<c0208374>] (pl330_probe) from [<c0203b3c>] (amba_probe+0xb8/0x120)
+> [<c0203b3c>] (amba_probe) from [<c023f890>] (driver_probe_device+0x10c/0x22c)
+> [<c023f890>] (driver_probe_device) from [<c023fa3c>] (__driver_attach+0x8c/0x90)
+> [<c023fa3c>] (__driver_attach) from [<c023e0d4>] (bus_for_each_dev+0x54/0x88)
+> [<c023e0d4>] (bus_for_each_dev) from [<c023f094>] (bus_add_driver+0xd4/0x1d0)
+> [<c023f094>] (bus_add_driver) from [<c0240064>] (driver_register+0x78/0xf4)
+> [<c0240064>] (driver_register) from [<c0008964>] (do_one_initcall+0x80/0x1d0)
+> [<c0008964>] (do_one_initcall) from [<c059bcb4>] (kernel_init_freeable+0x108/0x1d4)
+> [<c059bcb4>] (kernel_init_freeable) from [<c0400924>] (kernel_init+0x8/0xec)
+> [<c0400924>] (kernel_init) from [<c000e7b8>] (ret_from_fork+0x14/0x3c)
+> Code: e5813010 e12fff1e e92d40f0 e24dd00c (e590200c)
+> ---[ end trace c94b2f4f38dff3bf ]---
 > 
-> Terminate the thread and free channel resource only if channel resources
-> were allocated (thread is not NULL).
+> This happens because the necessary resources were not yet allocated - no
+> call to pl330_alloc_chan_resources().
+> 
+> Terminate the thread and free channel resource only if channel thread is not NULL.
 > 
 > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Fixes: b3040e40675e ("DMA: PL330: Add dma api driver")
+> Fixes: 0b94c5771705 ("DMA: PL330: Add check if device tree compatible")
 > Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
 > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
@@ -123,10 +130,10 @@ Krzysztof
 >  1 file changed, 4 insertions(+), 2 deletions(-)
 > 
 > diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index df7fabb..5b03b4a 100644
+> index 536632f..df7fabb 100644
 > --- a/drivers/dma/pl330.c
 > +++ b/drivers/dma/pl330.c
-> @@ -3080,8 +3080,10 @@ static int pl330_remove(struct amba_device *adev)
+> @@ -3047,8 +3047,10 @@ probe_err3:
 >  		list_del(&pch->chan.device_node);
 >  
 >  		/* Flush the channel */
@@ -137,6 +144,6 @@ Krzysztof
 > +			pl330_free_chan_resources(&pch->chan);
 > +		}
 >  	}
->  
->  	pi = &pdmac->pif;
+>  probe_err2:
+>  	pl330_del(pi);
 
