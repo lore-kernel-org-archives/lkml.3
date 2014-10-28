@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901AbaJ1Dr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:47:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45662 "EHLO
+	id S932933AbaJ1DsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:48:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932863AbaJ1Dr4 (ORCPT
+	with ESMTP id S1755813AbaJ1DsL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:56 -0400
+	Mon, 27 Oct 2014 23:48:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Soni Jose <sony.john-n@emulex.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 022/100] be2iscsi: check ip buffer before copying
-Date: Tue, 28 Oct 2014 11:35:07 +0800
-Message-Id: <20141028033501.623635825@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: [PATCH 3.14 028/100] Drivers: hv: vmbus: Cleanup vmbus_post_msg()
+Date: Tue, 28 Oct 2014 11:35:13 +0800
+Message-Id: <20141028033501.871715903@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,62 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Christie <michaelc@cs.wisc.edu>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit a41a9ad3bbf61fae0b6bfb232153da60d14fdbd9 upstream.
+commit fdeebcc62279119dbeafbc1a2e39e773839025fd upstream.
 
-Dan Carpenter found a issue where be2iscsi would copy the ip
-from userspace to the driver buffer before checking the len
-of the data being copied:
-http://marc.info/?l=linux-scsi&m=140982651504251&w=2
+Posting messages to the host can fail because of transient resource
+related failures. Correctly deal with these failures and increase the
+number of attempts to post the message before giving up.
 
-This patch just has us only copy what we the driver buffer
-can support.
+In this version of the patch, I have normalized the error code to
+Linux error code.
 
-Tested-by: John Soni Jose <sony.john-n@emulex.com>
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/be2iscsi/be_mgmt.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/hv/connection.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/be2iscsi/be_mgmt.c
-+++ b/drivers/scsi/be2iscsi/be_mgmt.c
-@@ -897,17 +897,20 @@ mgmt_static_ip_modify(struct beiscsi_hba
- 
- 	if (ip_action == IP_ACTION_ADD) {
- 		memcpy(req->ip_params.ip_record.ip_addr.addr, ip_param->value,
--		       ip_param->len);
-+		       sizeof(req->ip_params.ip_record.ip_addr.addr));
- 
- 		if (subnet_param)
- 			memcpy(req->ip_params.ip_record.ip_addr.subnet_mask,
--			       subnet_param->value, subnet_param->len);
-+			       subnet_param->value,
-+			       sizeof(req->ip_params.ip_record.ip_addr.subnet_mask));
- 	} else {
- 		memcpy(req->ip_params.ip_record.ip_addr.addr,
--		       if_info->ip_addr.addr, ip_param->len);
-+		       if_info->ip_addr.addr,
-+		       sizeof(req->ip_params.ip_record.ip_addr.addr));
- 
- 		memcpy(req->ip_params.ip_record.ip_addr.subnet_mask,
--		       if_info->ip_addr.subnet_mask, ip_param->len);
-+		       if_info->ip_addr.subnet_mask,
-+		       sizeof(req->ip_params.ip_record.ip_addr.subnet_mask));
+--- a/drivers/hv/connection.c
++++ b/drivers/hv/connection.c
+@@ -408,10 +408,21 @@ int vmbus_post_msg(void *buffer, size_t
+ 	 * insufficient resources. Retry the operation a couple of
+ 	 * times before giving up.
+ 	 */
+-	while (retries < 3) {
+-		ret =  hv_post_message(conn_id, 1, buffer, buflen);
+-		if (ret != HV_STATUS_INSUFFICIENT_BUFFERS)
++	while (retries < 10) {
++		ret = hv_post_message(conn_id, 1, buffer, buflen);
++
++		switch (ret) {
++		case HV_STATUS_INSUFFICIENT_BUFFERS:
++			ret = -ENOMEM;
++		case -ENOMEM:
++			break;
++		case HV_STATUS_SUCCESS:
+ 			return ret;
++		default:
++			pr_err("hv_post_msg() failed; error code:%d\n", ret);
++			return -EINVAL;
++		}
++
+ 		retries++;
+ 		msleep(100);
  	}
- 
- 	rc = mgmt_exec_nonemb_cmd(phba, &nonemb_cmd, NULL, 0);
-@@ -935,7 +938,7 @@ static int mgmt_modify_gateway(struct be
- 	req->action = gtway_action;
- 	req->ip_addr.ip_type = BE2_IPV4;
- 
--	memcpy(req->ip_addr.addr, gt_addr, param_len);
-+	memcpy(req->ip_addr.addr, gt_addr, sizeof(req->ip_addr.addr));
- 
- 	return mgmt_exec_nonemb_cmd(phba, &nonemb_cmd, NULL, 0);
- }
 
 
