@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760794AbaJ1Hc1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:32:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44971 "EHLO
+	id S1760806AbaJ1Hc6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:32:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44963 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932209AbaJ1Dll (ORCPT
+	with ESMTP id S932172AbaJ1Dlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:41 -0400
+	Mon, 27 Oct 2014 23:41:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 145/146] sparc64: Fix register corruption in top-most kernel stack frame during boot.
-Date: Tue, 28 Oct 2014 11:34:47 +0800
-Message-Id: <20141028033349.754980933@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        Bob Picco <bob.picco@oracle.com>
+Subject: [PATCH 3.17 143/146] sparc64: Kill unnecessary tables and increase MAX_BANKS.
+Date: Tue, 28 Oct 2014 11:34:45 +0800
+Message-Id: <20141028033349.667875181@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,316 +31,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit ef3e035c3a9b81da8a778bc333d10637acf6c199 ]
+[ Upstream commit d195b71bad4347d2df51072a537f922546a904f1 ]
 
-Meelis Roos reported that kernels built with gcc-4.9 do not boot, we
-eventually narrowed this down to only impacting machines using
-UltraSPARC-III and derivitive cpus.
+swapper_low_pmd_dir and swapper_pud_dir are actually completely
+useless and unnecessary.
 
-The crash happens right when the first user process is spawned:
+We just need swapper_pg_dir[].  Naturally the other page table chunks
+will be allocated on an as-needed basis.  Since the kernel actually
+accesses these tables in the PAGE_OFFSET view, there is not even a TLB
+locality advantage of placing them in the kernel image.
 
-[   54.451346] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000004
-[   54.451346]
-[   54.571516] CPU: 1 PID: 1 Comm: init Not tainted 3.16.0-rc2-00211-gd7933ab #96
-[   54.666431] Call Trace:
-[   54.698453]  [0000000000762f8c] panic+0xb0/0x224
-[   54.759071]  [000000000045cf68] do_exit+0x948/0x960
-[   54.823123]  [000000000042cbc0] fault_in_user_windows+0xe0/0x100
-[   54.902036]  [0000000000404ad0] __handle_user_windows+0x0/0x10
-[   54.978662] Press Stop-A (L1-A) to return to the boot prom
-[   55.050713] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000004
+Use the hard coded vmlinux.ld.S slot for swapper_pg_dir which is
+naturally page aligned.
 
-Further investigation showed that compiling only per_cpu_patch() with
-an older compiler fixes the boot.
+Increase MAX_BANKS to 1024 in order to handle heavily fragmented
+virtual guests.
 
-Detailed analysis showed that the function is not being miscompiled by
-gcc-4.9, but it is using a different register allocation ordering.
+Even with this MAX_BANKS increase, the kernel is 20K+ smaller.
 
-With the gcc-4.9 compiled function, something during the code patching
-causes some of the %i* input registers to get corrupted.  Perhaps
-we have a TLB miss path into the firmware that is deep enough to
-cause a register window spill and subsequent restore when we get
-back from the TLB miss trap.
-
-Let's plug this up by doing two things:
-
-1) Stop using the firmware stack for client interface calls into
-   the firmware.  Just use the kernel's stack.
-
-2) As soon as we can, call into a new function "start_early_boot()"
-   to put a one-register-window buffer between the firmware's
-   deepest stack frame and the top-most initial kernel one.
-
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/oplib_64.h |    3 +-
- arch/sparc/include/asm/setup.h    |    2 +
- arch/sparc/kernel/entry.h         |    3 --
- arch/sparc/kernel/head_64.S       |   40 +++-----------------------------------
- arch/sparc/kernel/hvtramp.S       |    1 
- arch/sparc/kernel/setup_64.c      |   28 +++++++++++++++++++-------
- arch/sparc/kernel/trampoline_64.S |   12 ++++++-----
- arch/sparc/prom/cif.S             |    5 +---
- arch/sparc/prom/init_64.c         |    6 ++---
- arch/sparc/prom/p1275.c           |    2 -
- 10 files changed, 40 insertions(+), 62 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h |    1 -
+ arch/sparc/kernel/vmlinux.lds.S     |    5 +++--
+ arch/sparc/mm/init_64.c             |   25 ++-----------------------
+ 3 files changed, 5 insertions(+), 26 deletions(-)
 
---- a/arch/sparc/include/asm/oplib_64.h
-+++ b/arch/sparc/include/asm/oplib_64.h
-@@ -62,7 +62,8 @@ struct linux_mem_p1275 {
- /* You must call prom_init() before using any of the library services,
-  * preferably as early as possible.  Pass it the romvec pointer.
-  */
--void prom_init(void *cif_handler, void *cif_stack);
-+void prom_init(void *cif_handler);
-+void prom_init_report(void);
- 
- /* Boot argument acquisition, returns the boot command line string. */
- char *prom_getbootargs(void);
---- a/arch/sparc/include/asm/setup.h
-+++ b/arch/sparc/include/asm/setup.h
-@@ -48,6 +48,8 @@ unsigned long safe_compute_effective_add
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -927,7 +927,6 @@ static inline void __set_pte_at(struct m
  #endif
  
- #ifdef CONFIG_SPARC64
-+void __init start_early_boot(void);
-+
- /* unaligned_64.c */
- int handle_ldf_stq(u32 insn, struct pt_regs *regs);
- void handle_ld_nf(u32 insn, struct pt_regs *regs);
---- a/arch/sparc/kernel/entry.h
-+++ b/arch/sparc/kernel/entry.h
-@@ -65,13 +65,10 @@ struct pause_patch_entry {
- extern struct pause_patch_entry __pause_3insn_patch,
- 	__pause_3insn_patch_end;
+ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+-extern pmd_t swapper_low_pmd_dir[PTRS_PER_PMD];
  
--void __init per_cpu_patch(void);
- void sun4v_patch_1insn_range(struct sun4v_1insn_patch_entry *,
- 			     struct sun4v_1insn_patch_entry *);
- void sun4v_patch_2insn_range(struct sun4v_2insn_patch_entry *,
- 			     struct sun4v_2insn_patch_entry *);
--void __init sun4v_patch(void);
--void __init boot_cpu_id_too_large(int cpu);
- extern unsigned int dcache_parity_tl1_occurred;
- extern unsigned int icache_parity_tl1_occurred;
+ void paging_init(void);
+ unsigned long find_ecache_flush_span(unsigned long size);
+--- a/arch/sparc/kernel/vmlinux.lds.S
++++ b/arch/sparc/kernel/vmlinux.lds.S
+@@ -35,8 +35,9 @@ jiffies = jiffies_64;
  
---- a/arch/sparc/kernel/head_64.S
-+++ b/arch/sparc/kernel/head_64.S
-@@ -672,14 +672,12 @@ tlb_fixup_done:
- 	sethi	%hi(init_thread_union), %g6
- 	or	%g6, %lo(init_thread_union), %g6
- 	ldx	[%g6 + TI_TASK], %g4
--	mov	%sp, %l6
+ SECTIONS
+ {
+-	/* swapper_low_pmd_dir is sparc64 only */
+-	swapper_low_pmd_dir = 0x0000000000402000;
++#ifdef CONFIG_SPARC64
++	swapper_pg_dir = 0x0000000000402000;
++#endif
+ 	. = INITIAL_ADDRESS;
+ 	.text TEXTSTART :
+ 	{
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -87,7 +87,7 @@ extern struct tsb swapper_tsb[KERNEL_TSB
  
- 	wr	%g0, ASI_P, %asi
- 	mov	1, %g1
- 	sllx	%g1, THREAD_SHIFT, %g1
- 	sub	%g1, (STACKFRAME_SZ + STACK_BIAS), %g1
- 	add	%g6, %g1, %sp
--	mov	0, %fp
+ static unsigned long cpu_pgsz_mask;
  
- 	/* Set per-cpu pointer initially to zero, this makes
- 	 * the boot-cpu use the in-kernel-image per-cpu areas
-@@ -706,44 +704,14 @@ tlb_fixup_done:
- 	 nop
- #endif
+-#define MAX_BANKS	32
++#define MAX_BANKS	1024
  
--	mov	%l6, %o1			! OpenPROM stack
- 	call	prom_init
- 	 mov	%l7, %o0			! OpenPROM cif handler
+ static struct linux_prom64_registers pavail[MAX_BANKS];
+ static int pavail_ents;
+@@ -1943,12 +1943,6 @@ static void __init sun4v_linear_pte_xor_
  
--	/* Initialize current_thread_info()->cpu as early as possible.
--	 * In order to do that accurately we have to patch up the get_cpuid()
--	 * assembler sequences.  And that, in turn, requires that we know
--	 * if we are on a Starfire box or not.  While we're here, patch up
--	 * the sun4v sequences as well.
-+	/* To create a one-register-window buffer between the kernel's
-+	 * initial stack and the last stack frame we use from the firmware,
-+	 * do the rest of the boot from a C helper function.
+ static unsigned long last_valid_pfn;
+ 
+-/* These must be page aligned in order to not trigger the
+- * alignment tests of pgd_bad() and pud_bad().
+- */
+-pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__ ((aligned (PAGE_SIZE)));
+-static pud_t swapper_pud_dir[PTRS_PER_PUD] __attribute__ ((aligned (PAGE_SIZE)));
+-
+ static void sun4u_pgprot_init(void);
+ static void sun4v_pgprot_init(void);
+ 
+@@ -1956,8 +1950,6 @@ void __init paging_init(void)
+ {
+ 	unsigned long end_pfn, shift, phys_base;
+ 	unsigned long real_end, i;
+-	pud_t *pud;
+-	pmd_t *pmd;
+ 	int node;
+ 
+ 	setup_page_offset();
+@@ -2052,20 +2044,7 @@ void __init paging_init(void)
  	 */
--	call	check_if_starfire
--	 nop
--	call	per_cpu_patch
--	 nop
--	call	sun4v_patch
--	 nop
+ 	init_mm.pgd += ((shift) / (sizeof(pgd_t)));
+ 	
+-	memset(swapper_low_pmd_dir, 0, sizeof(swapper_low_pmd_dir));
 -
--#ifdef CONFIG_SMP
--	call	hard_smp_processor_id
--	 nop
--	cmp	%o0, NR_CPUS
--	blu,pt	%xcc, 1f
--	 nop
--	call	boot_cpu_id_too_large
--	 nop
--	/* Not reached... */
+-	/* The kernel page tables we publish into what the rest of the
+-	 * world sees must be adjusted so that they see the PAGE_OFFSET
+-	 * address of these in-kerenel data structures.  However right
+-	 * here we must access them from the kernel image side, because
+-	 * the trap tables haven't been taken over and therefore we cannot
+-	 * take TLB misses in the PAGE_OFFSET linear mappings yet.
+-	 */
+-	pud = swapper_pud_dir + (shift / sizeof(pud_t));
+-	pgd_set(&swapper_pg_dir[0], pud);
 -
--1:
--#else
--	mov	0, %o0
--#endif
--	sth	%o0, [%g6 + TI_CPU]
--
--	call	prom_init_report
--	 nop
--
--	/* Off we go.... */
--	call	start_kernel
-+	call	start_early_boot
- 	 nop
- 	/* Not reached... */
+-	pmd = swapper_low_pmd_dir + (shift / sizeof(pmd_t));
+-	pud_set(&swapper_pud_dir[0], pmd);
++	memset(swapper_pg_dir, 0, sizeof(swapper_pg_dir));
  
---- a/arch/sparc/kernel/hvtramp.S
-+++ b/arch/sparc/kernel/hvtramp.S
-@@ -109,7 +109,6 @@ hv_cpu_startup:
- 	sllx		%g5, THREAD_SHIFT, %g5
- 	sub		%g5, (STACKFRAME_SZ + STACK_BIAS), %g5
- 	add		%g6, %g5, %sp
--	mov		0, %fp
- 
- 	call		init_irqwork_curcpu
- 	 nop
---- a/arch/sparc/kernel/setup_64.c
-+++ b/arch/sparc/kernel/setup_64.c
-@@ -30,6 +30,7 @@
- #include <linux/cpu.h>
- #include <linux/initrd.h>
- #include <linux/module.h>
-+#include <linux/start_kernel.h>
- 
- #include <asm/io.h>
- #include <asm/processor.h>
-@@ -174,7 +175,7 @@ char reboot_command[COMMAND_LINE_SIZE];
- 
- static struct pt_regs fake_swapper_regs = { { 0, }, 0, 0, 0, 0 };
- 
--void __init per_cpu_patch(void)
-+static void __init per_cpu_patch(void)
- {
- 	struct cpuid_patch_entry *p;
- 	unsigned long ver;
-@@ -266,7 +267,7 @@ void sun4v_patch_2insn_range(struct sun4
- 	}
- }
- 
--void __init sun4v_patch(void)
-+static void __init sun4v_patch(void)
- {
- 	extern void sun4v_hvapi_init(void);
- 
-@@ -335,14 +336,25 @@ static void __init pause_patch(void)
- 	}
- }
- 
--#ifdef CONFIG_SMP
--void __init boot_cpu_id_too_large(int cpu)
-+void __init start_early_boot(void)
- {
--	prom_printf("Serious problem, boot cpu id (%d) >= NR_CPUS (%d)\n",
--		    cpu, NR_CPUS);
--	prom_halt();
-+	int cpu;
-+
-+	check_if_starfire();
-+	per_cpu_patch();
-+	sun4v_patch();
-+
-+	cpu = hard_smp_processor_id();
-+	if (cpu >= NR_CPUS) {
-+		prom_printf("Serious problem, boot cpu id (%d) >= NR_CPUS (%d)\n",
-+			    cpu, NR_CPUS);
-+		prom_halt();
-+	}
-+	current_thread_info()->cpu = cpu;
-+
-+	prom_init_report();
-+	start_kernel();
- }
--#endif
- 
- /* On Ultra, we support all of the v8 capabilities. */
- unsigned long sparc64_elf_hwcap = (HWCAP_SPARC_FLUSH | HWCAP_SPARC_STBAR |
---- a/arch/sparc/kernel/trampoline_64.S
-+++ b/arch/sparc/kernel/trampoline_64.S
-@@ -109,10 +109,13 @@ startup_continue:
- 	brnz,pn		%g1, 1b
- 	 nop
- 
--	sethi		%hi(p1275buf), %g2
--	or		%g2, %lo(p1275buf), %g2
--	ldx		[%g2 + 0x10], %l2
--	add		%l2, -(192 + 128), %sp
-+	/* Get onto temporary stack which will be in the locked
-+	 * kernel image.
-+	 */
-+	sethi		%hi(tramp_stack), %g1
-+	or		%g1, %lo(tramp_stack), %g1
-+	add		%g1, TRAMP_STACK_SIZE, %g1
-+	sub		%g1, STACKFRAME_SZ + STACK_BIAS + 256, %sp
- 	flushw
- 
- 	/* Setup the loop variables:
-@@ -394,7 +397,6 @@ after_lock_tlb:
- 	sllx		%g5, THREAD_SHIFT, %g5
- 	sub		%g5, (STACKFRAME_SZ + STACK_BIAS), %g5
- 	add		%g6, %g5, %sp
--	mov		0, %fp
- 
- 	rdpr		%pstate, %o1
- 	or		%o1, PSTATE_IE, %o1
---- a/arch/sparc/prom/cif.S
-+++ b/arch/sparc/prom/cif.S
-@@ -11,11 +11,10 @@
- 	.text
- 	.globl	prom_cif_direct
- prom_cif_direct:
-+	save	%sp, -192, %sp
- 	sethi	%hi(p1275buf), %o1
- 	or	%o1, %lo(p1275buf), %o1
--	ldx	[%o1 + 0x0010], %o2	! prom_cif_stack
--	save	%o2, -192, %sp
--	ldx	[%i1 + 0x0008], %l2	! prom_cif_handler
-+	ldx	[%o1 + 0x0008], %l2	! prom_cif_handler
- 	mov	%g4, %l0
- 	mov	%g5, %l1
- 	mov	%g6, %l3
---- a/arch/sparc/prom/init_64.c
-+++ b/arch/sparc/prom/init_64.c
-@@ -26,13 +26,13 @@ phandle prom_chosen_node;
-  * It gets passed the pointer to the PROM vector.
-  */
- 
--extern void prom_cif_init(void *, void *);
-+extern void prom_cif_init(void *);
- 
--void __init prom_init(void *cif_handler, void *cif_stack)
-+void __init prom_init(void *cif_handler)
- {
- 	phandle node;
- 
--	prom_cif_init(cif_handler, cif_stack);
-+	prom_cif_init(cif_handler);
- 
- 	prom_chosen_node = prom_finddevice(prom_chosen_path);
- 	if (!prom_chosen_node || (s32)prom_chosen_node == -1)
---- a/arch/sparc/prom/p1275.c
-+++ b/arch/sparc/prom/p1275.c
-@@ -20,7 +20,6 @@
- struct {
- 	long prom_callback;			/* 0x00 */
- 	void (*prom_cif_handler)(long *);	/* 0x08 */
--	unsigned long prom_cif_stack;		/* 0x10 */
- } p1275buf;
- 
- extern void prom_world(int);
-@@ -52,5 +51,4 @@ void p1275_cmd_direct(unsigned long *arg
- void prom_cif_init(void *cif_handler, void *cif_stack)
- {
- 	p1275buf.prom_cif_handler = (void (*)(long *))cif_handler;
--	p1275buf.prom_cif_stack = (unsigned long)cif_stack;
- }
+ 	inherit_prom_mappings();
+ 	
 
 
