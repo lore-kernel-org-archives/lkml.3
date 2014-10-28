@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaJ1Nsc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:48:32 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:36700 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752404AbaJ1Nsb (ORCPT
+	id S1753878AbaJ1Ns6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:48:58 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:64372 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347AbaJ1Ns4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:48:31 -0400
-Message-ID: <544F9EAA.5010404@hurleysoftware.com>
-Date: Tue, 28 Oct 2014 09:48:26 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 28 Oct 2014 09:48:56 -0400
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-mm@kvack.org
-CC: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: CMA: test_pages_isolated failures in alloc_contig_range
-References: <2457604.k03RC2Mv4q@avalon> <xa1tsii8l683.fsf@mina86.com>
-In-Reply-To: <xa1tsii8l683.fsf@mina86.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+In-Reply-To: <544F991E.3070500@imgtec.com>
+References: <544F73CD.1010409@imgtec.com>
+	<CAAmzW4NdBNhsPtx1yw+drN+J=a23SS3yLkgQdvQx-Giokwxu-Q@mail.gmail.com>
+	<544F97D4.4030408@imgtec.com>
+	<544F991E.3070500@imgtec.com>
+Date: Tue, 28 Oct 2014 22:48:55 +0900
+Message-ID: <CAAmzW4O6EFq-aaAi5gNFng1dhyXJdUmEMTR8meJfir=47iwmZw@mail.gmail.com>
+Subject: Re: Boot problems on Malta with EVA (bisected to 12220dea07f1
+ "mm/slab: support slab merge")
+From: Joonsoo Kim <js1304@gmail.com>
+To: Markos Chandras <Markos.Chandras@imgtec.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mips@linux-mips.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +cc Andrew Morton ]
-
-On 10/28/2014 08:38 AM, Michal Nazarewicz wrote:
-> On Sun, Oct 26 2014, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
->> Hello,
+2014-10-28 22:24 GMT+09:00 Markos Chandras <Markos.Chandras@imgtec.com>:
+> On 10/28/2014 01:19 PM, Markos Chandras wrote:
+>> On 10/28/2014 01:01 PM, Joonsoo Kim wrote:
+>>> 2014-10-28 19:45 GMT+09:00 Markos Chandras <Markos.Chandras@imgtec.com>:
+>>>> Hi,
+>>>>
+>>>> It seems I am unable to boot my Malta with EVA. The problem appeared in
+>>>> the 3.18 merge window. I bisected the problem (between v3.17 and
+>>>> v3.18-rc1) and I found the following commit responsible for the broken boot.
+>>>
+>>> Hello,
+>>>
+>>> Did you start to bisect from v3.18-rc1?
+>>> I'd like to be sure that this is another bug which is fixed by following commit.
+>>>
+>>> commit 85c9f4b04a08f6bc770b77530c22d04103468b8f
+>>> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>>> Date:   Mon Oct 13 15:51:01 2014 -0700
+>>>
+>>>     mm/slab: fix unaligned access on sparc64
+>>>
+>>> This fix is merged into v3.18-rc1 sometime later that
+>>> 'support slab merge' is merged.
+>>>
+>>> Thanks.
+>>>
+>> Hi,
 >>
->> I've run into a CMA-related issue while testing a DMA engine driver with 
->> dmatest on a Renesas R-Car ARM platform. 
+>> I bisected from v3.17 until 3.18-rc1. But 3.18-rc2 and the latest
+>> mainline (f7e87a44ef60ad379e39b45437604141453bf0ec) still have the same
+>> problem
 >>
->> When allocating contiguous memory through CMA the kernel prints the following 
->> messages to the kernel log.
+>> btw i did more tests and this is not EVA specific. A maltaup_defconfig
+>> fails in the same way. I suspect all malta*_defconfigs will fail in a
+>> similar way which makes it probably easier for you to reproduce it on a
+>> QEMU.
 >>
->> [   99.770000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
->> [  124.220000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
->> [  127.550000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
->> [  132.850000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
->> [  151.390000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
->> [  166.490000] alloc_contig_range test_pages_isolated(6b843, 6b844) failed
->> [  181.450000] alloc_contig_range test_pages_isolated(6b845, 6b846) failed
->>
->> I've stripped the dmatest module down as much as possible to remove any 
->> hardware dependencies and came up with the following implementation.
-> 
-> Like Laura wrote, the message is not (should not be) a problem in
-> itself:
+>
+> sorry maltaup_defconfig does not fail. maltasmvp_defconfig does. So it
+> might be a similar problem like the one fixed in
+> 85c9f4b04a08f6bc770b77530c22d04103468b8f
 
-[...]
+Oops. Sorry. Above commit ('mm/slab: fix unaligned access on sparc64')
+is irrelevant to this problem.
 
-> So as you can see cma_alloc will try another part of the cma region if
-> test_pages_isolated fails.
-> 
-> Obviously, if CMA region is fragmented or there's enough space for only
-> one allocation of required size isolation failures will cause allocation
-> failures, so it's best to avoid them, but they are not always avoidable.
-> 
-> To debug you would probably want to add more debug information about the
-> page (i.e. data from struct page) that failed isolation after the
-> pr_warn in alloc_contig_range.
+Anyway, your problem would be related to merging with incompatible slab cache.
+Best way to debug is printing source/target slab cache's object size and
+alignment and find the problem. I will try to reproduce it using QEMU.
 
-If the message does not indicate an actual problem, then its printk level is
-too high. These messages have been reported when using 3.16+ distro kernels.
-
-Regards,
-Peter Hurley
+Thanks.
