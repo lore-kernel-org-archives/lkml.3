@@ -1,126 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759749AbaJ1GXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:23:10 -0400
-Received: from relay.parallels.com ([195.214.232.42]:55405 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759732AbaJ1GXF (ORCPT
+	id S1758256AbaJ1G1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:27:32 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:37327 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702AbaJ1G13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 02:23:05 -0400
-Message-ID: <1414477378.8574.11.camel@tkhai>
-Subject: Re: [PATCH 3/3] introduce task_rcu_dereference()
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>, Christoph Lameter <cl@linux.com>
-Date: Tue, 28 Oct 2014 09:22:58 +0300
-In-Reply-To: <20141027195446.GD11736@redhat.com>
-References: <1413962231.19914.130.camel@tkhai>
-	 <20141027195339.GA11736@redhat.com> <20141027195446.GD11736@redhat.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Tue, 28 Oct 2014 02:27:29 -0400
+Message-ID: <544F3746.5030507@linux.vnet.ibm.com>
+Date: Tue, 28 Oct 2014 11:57:18 +0530
+From: Hemant Kumar <hemant@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+CC: srikar@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        namhyung@kernel.org, Ingo Molnar <mingo@kernel.org>
+Subject: Re: (ltc-kernel 10243) [PATCH perf/core 2/2] perf-probe: Add --quiet
+ option to suppress output result message
+References: <20141027203124.21219.68278.stgit@localhost.localdomain> <20141027203131.21219.35170.stgit@localhost.localdomain> <544E3CF2.80901@hitachi.com>
+In-Reply-To: <544E3CF2.80901@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102806-0013-0000-0000-000001E99806
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Пн, 27/10/2014 в 20:54 +0100, Oleg Nesterov пишет:
-> task_struct is only protected by RCU if it was found on a RCU protected
-> list (say, for_each_process() or find_task_by_vpid()).
-> 
-> And as Kirill pointed out rq->curr isn't protected by RCU, the scheduler
-> drops the (potentially) last reference without RCU gp, this means that we
-> need to fix the code which uses foreign_rq->curr under rcu_read_lock().
-> 
-> Add a new helper which can be used to dereferene rq->curr or any other
-> pointer to task_struct assuming that it should be cleared or updated
-> before the final put_task_struct(). It returns non-NULL only if this
-> task can't go away before rcu_read_unlock().
-> 
-> Suggested-by: Kirill Tkhai <ktkhai@parallels.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  include/linux/sched.h |    1 +
->  kernel/exit.c         |   49 +++++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 50 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 857ba40..0ba420e 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -2300,6 +2300,7 @@ extern void block_all_signals(int (*notifier)(void *priv), void *priv,
->  			      sigset_t *mask);
->  extern void unblock_all_signals(void);
->  extern void release_task(struct task_struct * p);
-> +extern struct task_struct *task_rcu_dereference(struct task_struct **ptask);
->  extern int send_sig_info(int, struct siginfo *, struct task_struct *);
->  extern int force_sigsegv(int, struct task_struct *);
->  extern int force_sig_info(int, struct siginfo *, struct task_struct *);
-> diff --git a/kernel/exit.c b/kernel/exit.c
-> index 32c58f7..d8b95c2 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -213,6 +213,55 @@ repeat:
->  		goto repeat;
->  }
->  
-> +struct task_struct *task_rcu_dereference(struct task_struct **ptask)
-> +{
-> +	struct task_struct *task;
-> +	struct sighand_struct *sighand;
-> +
-> +	/*
-> +	 * We need to verify that release_task() was not called and thus
-> +	 * delayed_put_task_struct() can't run and drop the last reference
-> +	 * before rcu_read_unlock(). We check task->sighand != NULL, but
-> +	 * we can read the already freed and reused memory.
-> +	 */
-> + retry:
-> +	task = rcu_dereference(*ptask);
-> +	if (!task)
-> +		return NULL;
-> +
-> +	probe_slab_address(&task->sighand, sighand);
-> +	/*
-> +	 * Pairs with atomic_dec_and_test(usage) in put_task_struct(task).
-> +	 * If this task was already freed we can not miss the preceding
-> +	 * update of this pointer.
-> +	 */
-> +	smp_rmb();
-> +	if (unlikely(task != ACCESS_ONCE(*ptask)))
-> +		goto retry;
-> +
-> +	/*
-> +	 * Either this is the same task and we can trust sighand != NULL, or
-> +	 * its memory was re-instantiated as another instance of task_struct.
-> +	 * In the latter case the new task can not go away until another rcu
-> +	 * gp pass, so the only problem is that sighand == NULL can be false
-> +	 * positive but we can pretend we got this NULL before it was freed.
-> +	 */
-> +	if (sighand)
-> +		return task;
-> +
-> +	/*
-> +	 * We could even eliminate the false positive mentioned above:
-> +	 *
-> +	 *	probe_slab_address(&task->sighand, sighand);
-> +	 *	if (sighand)
-> +	 *		goto retry;
-> +	 *
-> +	 * if sighand != NULL because we read the freed memory we should
-> +	 * see the new pointer, otherwise we will likely return this task.
-> +	 */
-> +	return NULL;
-> +}
-> +
->  /*
->   * This checks not only the pgrp, but falls back on the pid if no
->   * satisfactory pgrp is found. I dunno - gdb doesn't work correctly
+Hi Masami,
 
-Reviewed-by: Kirill Tkhai <ktkhai@parallels.com>
+On 10/27/2014 06:09 PM, Masami Hiramatsu wrote:
+> Hi Hermant,
+>
+> This patch is actually what you need for suppressing the result
+> messages when adding/removing probe events from sdt event tracing.
+> You just need to set "verbose=-1" around adding/removing probes.
+
+Thank you for working on this. :)
+
+> Thank you,
+>
+> (2014/10/28 5:31), Masami Hiramatsu wrote:
+>> Add --quiet(-q) option to suppress output result message
+>> for --add, and --del options (Note that --lines/funcs/vars are
+>> not affected). This option is useful if you run the perf
+>> probe inside your scripts.
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> ---
+>>   tools/perf/builtin-probe.c    |   11 +++++++++++
+>>   tools/perf/util/probe-event.c |   18 +++++++++---------
+>>   2 files changed, 20 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+>> index 2d3577d..921bb69 100644
+>> --- a/tools/perf/builtin-probe.c
+>> +++ b/tools/perf/builtin-probe.c
+>> @@ -55,6 +55,7 @@ static struct {
+>>   	bool show_funcs;
+>>   	bool mod_events;
+>>   	bool uprobes;
+>> +	bool quiet;
+>>   	int nevents;
+>>   	struct perf_probe_event events[MAX_PROBES];
+>>   	struct strlist *dellist;
+>> @@ -315,6 +316,8 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+>>   	struct option options[] = {
+>>   	OPT_INCR('v', "verbose", &verbose,
+>>   		    "be more verbose (show parsed arguments, etc)"),
+>> +	OPT_BOOLEAN('q', "quiet", &params.quiet,
+>> +		    "be quiet (do not show any mesages)"),
+>>   	OPT_BOOLEAN('l', "list", &params.list_events,
+>>   		    "list up current probe events"),
+>>   	OPT_CALLBACK('d', "del", NULL, "[GROUP:]EVENT", "delete a probe event.",
+>> @@ -404,6 +407,14 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+>>   		}
+>>   	}
+>>   
+>> +	if (params.quiet) {
+>> +		if (verbose != 0) {
+>> +			pr_err("  Error: -v and -q are exclusive.\n");
+>> +			return -EINVAL;
+>> +		}
+>> +		verbose = -1;
+>> +	}
+>> +
+>>   	if (params.max_probe_points == 0)
+>>   		params.max_probe_points = MAX_PROBES;
+>>   
+>> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+>> index c150ca4..28eb141 100644
+>> --- a/tools/perf/util/probe-event.c
+>> +++ b/tools/perf/util/probe-event.c
+>> @@ -1910,21 +1910,21 @@ static int show_perf_probe_event(struct perf_probe_event *pev,
+>>   	if (ret < 0)
+>>   		return ret;
+>>   
+>> -	printf("  %-20s (on %s", buf, place);
+>> +	pr_info("  %-20s (on %s", buf, place);
+>>   	if (module)
+>> -		printf(" in %s", module);
+>> +		pr_info(" in %s", module);
+>>   
+>>   	if (pev->nargs > 0) {
+>> -		printf(" with");
+>> +		pr_info(" with");
+>>   		for (i = 0; i < pev->nargs; i++) {
+>>   			ret = synthesize_perf_probe_arg(&pev->args[i],
+>>   							buf, 128);
+>>   			if (ret < 0)
+>>   				break;
+>> -			printf(" %s", buf);
+>> +			pr_info(" %s", buf);
+>>   		}
+>>   	}
+>> -	printf(")\n");
+>> +	pr_info(")\n");
+>>   	free(place);
+>>   	return ret;
+>>   }
+>> @@ -2124,7 +2124,7 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+>>   	}
+>>   
+>>   	ret = 0;
+>> -	printf("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
+>> +	pr_info("Added new event%s\n", (ntevs > 1) ? "s:" : ":");
+>>   	for (i = 0; i < ntevs; i++) {
+>>   		tev = &tevs[i];
+>>   		if (pev->event)
+>> @@ -2179,8 +2179,8 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+>>   
+>>   	if (ret >= 0) {
+>>   		/* Show how to use the event. */
+>> -		printf("\nYou can now use it in all perf tools, such as:\n\n");
+>> -		printf("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
+>> +		pr_info("\nYou can now use it in all perf tools, such as:\n\n");
+>> +		pr_info("\tperf record -e %s:%s -aR sleep 1\n\n", tev->group,
+>>   			 tev->event);
+>>   	}
+>>   
+>> @@ -2444,7 +2444,7 @@ static int __del_trace_probe_event(int fd, struct str_node *ent)
+>>   		goto error;
+>>   	}
+>>   
+>> -	printf("Removed event: %s\n", ent->s);
+>> +	pr_info("Removed event: %s\n", ent->s);
+>>   	return 0;
+>>   error:
+>>   	pr_warning("Failed to delete event: %s\n",
+>>
+>>
+>>
+>
+
+-- 
+Thanks,
+Hemant Kumar
 
