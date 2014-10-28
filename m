@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256AbaJ1Vck (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:32:40 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:37133 "EHLO
+	id S932277AbaJ1Vcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:32:54 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:37219 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755266AbaJ1VbJ (ORCPT
+	with ESMTP id S1755258AbaJ1VbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:31:09 -0400
+	Tue, 28 Oct 2014 17:31:08 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 38/58] dmaengine: sh: Split device_control
-Date: Tue, 28 Oct 2014 22:25:53 +0100
-Message-Id: <1414531573-18807-39-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 37/58] dmaengine: sa11x0: Split device_control
+Date: Tue, 28 Oct 2014 22:25:52 +0100
+Message-Id: <1414531573-18807-38-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,118 +24,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Super-H DMA driver to make use of the
+Split the device_control callback of the SA-11x0 DMA driver to make use of the
 newly introduced callbacks, that will eventually be used to retrieve slave
 capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/dma/sh/shdma-base.c | 72 +++++++++++++++++++++------------------------
- 1 file changed, 33 insertions(+), 39 deletions(-)
+ drivers/dma/sa11x0-dma.c | 158 +++++++++++++++++++++++++----------------------
+ 1 file changed, 84 insertions(+), 74 deletions(-)
 
-diff --git a/drivers/dma/sh/shdma-base.c b/drivers/dma/sh/shdma-base.c
-index 42d497416196..706cb2611e4d 100644
---- a/drivers/dma/sh/shdma-base.c
-+++ b/drivers/dma/sh/shdma-base.c
-@@ -727,57 +727,50 @@ static struct dma_async_tx_descriptor *shdma_prep_dma_cyclic(
- 	return desc;
+diff --git a/drivers/dma/sa11x0-dma.c b/drivers/dma/sa11x0-dma.c
+index 4b0ef043729a..432342459ab5 100644
+--- a/drivers/dma/sa11x0-dma.c
++++ b/drivers/dma/sa11x0-dma.c
+@@ -669,8 +669,10 @@ static struct dma_async_tx_descriptor *sa11x0_dma_prep_dma_cyclic(
+ 	return vchan_tx_prep(&c->vc, &txd->vd, DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
  }
  
--static int shdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--			  unsigned long arg)
-+static int shdma_terminate_all(struct dma_chan *chan)
+-static int sa11x0_dma_slave_config(struct sa11x0_dma_chan *c, struct dma_slave_config *cfg)
++static int sa11x0_dma_slave_config(struct dma_chan *chan,
++				   struct dma_slave_config *cfg)
  {
- 	struct shdma_chan *schan = to_shdma_chan(chan);
- 	struct shdma_dev *sdev = to_shdma_dev(chan->device);
- 	const struct shdma_ops *ops = sdev->ops;
--	struct dma_slave_config *config;
- 	unsigned long flags;
--	int ret;
- 
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		spin_lock_irqsave(&schan->chan_lock, flags);
--		ops->halt_channel(schan);
-+	spin_lock_irqsave(&schan->chan_lock, flags);
-+	ops->halt_channel(schan);
- 
--		if (ops->get_partial && !list_empty(&schan->ld_queue)) {
--			/* Record partial transfer */
--			struct shdma_desc *desc = list_first_entry(&schan->ld_queue,
--						struct shdma_desc, node);
--			desc->partial = ops->get_partial(schan, desc);
--		}
-+	if (ops->get_partial && !list_empty(&schan->ld_queue)) {
-+		/* Record partial transfer */
-+		struct shdma_desc *desc = list_first_entry(&schan->ld_queue,
-+							   struct shdma_desc, node);
-+		desc->partial = ops->get_partial(schan, desc);
-+	}
- 
--		spin_unlock_irqrestore(&schan->chan_lock, flags);
-+	spin_unlock_irqrestore(&schan->chan_lock, flags);
- 
--		shdma_chan_ld_cleanup(schan, true);
--		break;
--	case DMA_SLAVE_CONFIG:
--		/*
--		 * So far only .slave_id is used, but the slave drivers are
--		 * encouraged to also set a transfer direction and an address.
--		 */
--		if (!arg)
--			return -EINVAL;
--		/*
--		 * We could lock this, but you shouldn't be configuring the
--		 * channel, while using it...
--		 */
--		config = (struct dma_slave_config *)arg;
--		ret = shdma_setup_slave(schan, config->slave_id,
--					config->direction == DMA_DEV_TO_MEM ?
--					config->src_addr : config->dst_addr);
--		if (ret < 0)
--			return ret;
--		break;
--	default:
--		return -ENXIO;
--	}
-+	shdma_chan_ld_cleanup(schan, true);
- 
++	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
+ 	u32 ddar = c->ddar & ((0xf << 4) | DDAR_RW);
+ 	dma_addr_t addr;
+ 	enum dma_slave_buswidth width;
+@@ -704,8 +706,7 @@ static int sa11x0_dma_slave_config(struct sa11x0_dma_chan *c, struct dma_slave_c
  	return 0;
  }
  
-+static int shdma_config(struct dma_chan *chan,
-+			struct dma_slave_config *config)
+-static int sa11x0_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-	unsigned long arg)
++static int sa11x0_dma_pause(struct dma_chan *chan)
+ {
+ 	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
+ 	struct sa11x0_dma_dev *d = to_sa11x0_dma(chan->device);
+@@ -714,89 +715,95 @@ static int sa11x0_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	unsigned long flags;
+ 	int ret;
+ 
+-	switch (cmd) {
+-	case DMA_SLAVE_CONFIG:
+-		return sa11x0_dma_slave_config(c, (struct dma_slave_config *)arg);
+-
+-	case DMA_TERMINATE_ALL:
+-		dev_dbg(d->slave.dev, "vchan %p: terminate all\n", &c->vc);
+-		/* Clear the tx descriptor lists */
+-		spin_lock_irqsave(&c->vc.lock, flags);
+-		vchan_get_all_descriptors(&c->vc, &head);
++	dev_dbg(d->slave.dev, "vchan %p: pause\n", &c->vc);
++	spin_lock_irqsave(&c->vc.lock, flags);
++	if (c->status == DMA_IN_PROGRESS) {
++		c->status = DMA_PAUSED;
+ 
+ 		p = c->phy;
+ 		if (p) {
+-			dev_dbg(d->slave.dev, "pchan %u: terminating\n", p->num);
+-			/* vchan is assigned to a pchan - stop the channel */
+-			writel(DCSR_RUN | DCSR_IE |
+-				DCSR_STRTA | DCSR_DONEA |
+-				DCSR_STRTB | DCSR_DONEB,
+-				p->base + DMA_DCSR_C);
+-
+-			if (p->txd_load) {
+-				if (p->txd_load != p->txd_done)
+-					list_add_tail(&p->txd_load->vd.node, &head);
+-				p->txd_load = NULL;
+-			}
+-			if (p->txd_done) {
+-				list_add_tail(&p->txd_done->vd.node, &head);
+-				p->txd_done = NULL;
+-			}
+-			c->phy = NULL;
++			writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_C);
++		} else {
+ 			spin_lock(&d->lock);
+-			p->vchan = NULL;
++			list_del_init(&c->node);
+ 			spin_unlock(&d->lock);
+-			tasklet_schedule(&d->task);
+ 		}
+-		spin_unlock_irqrestore(&c->vc.lock, flags);
+-		vchan_dma_desc_free_list(&c->vc, &head);
+-		ret = 0;
+-		break;
++	}
++	spin_unlock_irqrestore(&c->vc.lock, flags);
+ 
+-	case DMA_PAUSE:
+-		dev_dbg(d->slave.dev, "vchan %p: pause\n", &c->vc);
+-		spin_lock_irqsave(&c->vc.lock, flags);
+-		if (c->status == DMA_IN_PROGRESS) {
+-			c->status = DMA_PAUSED;
++	return 0;
++}
+ 
+-			p = c->phy;
+-			if (p) {
+-				writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_C);
+-			} else {
+-				spin_lock(&d->lock);
+-				list_del_init(&c->node);
+-				spin_unlock(&d->lock);
+-			}
+-		}
+-		spin_unlock_irqrestore(&c->vc.lock, flags);
+-		ret = 0;
+-		break;
++static int sa11x0_dma_resume(struct dma_chan *chan)
 +{
-+	struct shdma_chan *schan = to_shdma_chan(chan);
++	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
++	struct sa11x0_dma_dev *d = to_sa11x0_dma(chan->device);
++	struct sa11x0_dma_phy *p;
++	LIST_HEAD(head);
++	unsigned long flags;
++	int ret;
+ 
+-	case DMA_RESUME:
+-		dev_dbg(d->slave.dev, "vchan %p: resume\n", &c->vc);
+-		spin_lock_irqsave(&c->vc.lock, flags);
+-		if (c->status == DMA_PAUSED) {
+-			c->status = DMA_IN_PROGRESS;
+-
+-			p = c->phy;
+-			if (p) {
+-				writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_S);
+-			} else if (!list_empty(&c->vc.desc_issued)) {
+-				spin_lock(&d->lock);
+-				list_add_tail(&c->node, &d->chan_pending);
+-				spin_unlock(&d->lock);
+-			}
++	dev_dbg(d->slave.dev, "vchan %p: resume\n", &c->vc);
++	spin_lock_irqsave(&c->vc.lock, flags);
++	if (c->status == DMA_PAUSED) {
++		c->status = DMA_IN_PROGRESS;
 +
-+	/*
-+	 * So far only .slave_id is used, but the slave drivers are
-+	 * encouraged to also set a transfer direction and an address.
-+	 */
-+	if (!config)
-+		return -EINVAL;
-+	/*
-+	 * We could lock this, but you shouldn't be configuring the
-+	 * channel, while using it...
-+	 */
-+	return shdma_setup_slave(schan, config->slave_id,
-+				 config->direction == DMA_DEV_TO_MEM ?
-+				 config->src_addr : config->dst_addr);
++		p = c->phy;
++		if (p) {
++			writel(DCSR_RUN | DCSR_IE, p->base + DMA_DCSR_S);
++		} else if (!list_empty(&c->vc.desc_issued)) {
++			spin_lock(&d->lock);
++			list_add_tail(&c->node, &d->chan_pending);
++			spin_unlock(&d->lock);
+ 		}
+-		spin_unlock_irqrestore(&c->vc.lock, flags);
+-		ret = 0;
+-		break;
++	}
++	spin_unlock_irqrestore(&c->vc.lock, flags);
+ 
+-	default:
+-		ret = -ENXIO;
+-		break;
++	return 0;
 +}
 +
- static void shdma_issue_pending(struct dma_chan *chan)
- {
- 	struct shdma_chan *schan = to_shdma_chan(chan);
-@@ -1000,7 +993,8 @@ int shdma_init(struct device *dev, struct shdma_dev *sdev,
- 	/* Compulsory for DMA_SLAVE fields */
- 	dma_dev->device_prep_slave_sg = shdma_prep_slave_sg;
- 	dma_dev->device_prep_dma_cyclic = shdma_prep_dma_cyclic;
--	dma_dev->device_control = shdma_control;
-+	dma_dev->device_config = shdma_config;
-+	dma_dev->device_terminate_all = shdma_terminate_all;
++static int sa11x0_dma_terminate_all(struct dma_chan *chan)
++{
++	struct sa11x0_dma_chan *c = to_sa11x0_dma_chan(chan);
++	struct sa11x0_dma_dev *d = to_sa11x0_dma(chan->device);
++	struct sa11x0_dma_phy *p;
++	LIST_HEAD(head);
++	unsigned long flags;
++	int ret;
++
++	dev_dbg(d->slave.dev, "vchan %p: terminate all\n", &c->vc);
++	/* Clear the tx descriptor lists */
++	spin_lock_irqsave(&c->vc.lock, flags);
++	vchan_get_all_descriptors(&c->vc, &head);
++
++	p = c->phy;
++	if (p) {
++		dev_dbg(d->slave.dev, "pchan %u: terminating\n", p->num);
++		/* vchan is assigned to a pchan - stop the channel */
++		writel(DCSR_RUN | DCSR_IE |
++		       DCSR_STRTA | DCSR_DONEA |
++		       DCSR_STRTB | DCSR_DONEB,
++		       p->base + DMA_DCSR_C);
++
++		if (p->txd_load) {
++			if (p->txd_load != p->txd_done)
++				list_add_tail(&p->txd_load->vd.node, &head);
++			p->txd_load = NULL;
++		}
++		if (p->txd_done) {
++			list_add_tail(&p->txd_done->vd.node, &head);
++			p->txd_done = NULL;
++		}
++		c->phy = NULL;
++		spin_lock(&d->lock);
++		p->vchan = NULL;
++		spin_unlock(&d->lock);
++		tasklet_schedule(&d->task);
+ 	}
++	spin_unlock_irqrestore(&c->vc.lock, flags);
++	vchan_dma_desc_free_list(&c->vc, &head);
  
- 	dma_dev->dev = dev;
+-	return ret;
++	return 0;
+ }
+ 
+ struct sa11x0_dma_channel_desc {
+@@ -834,7 +841,10 @@ static int sa11x0_dma_init_dmadev(struct dma_device *dmadev,
+ 	dmadev->dev = dev;
+ 	dmadev->device_alloc_chan_resources = sa11x0_dma_alloc_chan_resources;
+ 	dmadev->device_free_chan_resources = sa11x0_dma_free_chan_resources;
+-	dmadev->device_control = sa11x0_dma_control;
++	dmadev->device_config = sa11x0_dma_slave_config;
++	dmadev->device_pause = sa11x0_dma_pause;
++	dmadev->device_resume = sa11x0_dma_resume;
++	dmadev->device_terminate_all = sa11x0_dma_terminate_all;
+ 	dmadev->device_tx_status = sa11x0_dma_tx_status;
+ 	dmadev->device_issue_pending = sa11x0_dma_issue_pending;
  
 -- 
 2.1.1
