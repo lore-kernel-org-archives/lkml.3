@@ -1,117 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722AbaJ1Rla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:41:30 -0400
-Received: from bues.ch ([80.190.117.144]:46249 "EHLO bues.ch"
+	id S1754116AbaJ1Rlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:41:40 -0400
+Received: from tex.lwn.net ([70.33.254.29]:44447 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647AbaJ1Rl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:41:29 -0400
-Date: Tue, 28 Oct 2014 18:40:30 +0100
-From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
-To: Pramod Gurav <pramod.gurav.etc@gmail.com>
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2] ssb: Fix Sparse error in main
-Message-ID: <20141028184030.3b185979@wiggum>
-In-Reply-To: <CAMf-jSk4GH=8+Cpk4dCzUhbwoKxMOsJPPrURP5-ktAvqXfhsjw@mail.gmail.com>
-References: <1412184482-2603-1-git-send-email-pramod.gurav@smartplayin.com>
-	<CAMf-jSk4GH=8+Cpk4dCzUhbwoKxMOsJPPrURP5-ktAvqXfhsjw@mail.gmail.com>
-X-Mailer: Claws Mail 3.11.0 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1752103AbaJ1Rli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 13:41:38 -0400
+Date: Tue, 28 Oct 2014 13:41:35 -0400
+From: Jonathan Corbet <corbet@lwn.net>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Bolle <pebolle@tiscali.nl>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [patch] Documentation/SubmittingPatches: Reported-by tags and
+ permission
+Message-ID: <20141028134135.59dbc512@lwn.net>
+In-Reply-To: <20141028165827.GG15252@titan.lakedaemon.net>
+References: <1392333751.29034.3.camel@x220>
+	<20140214093001.GA15933@elgon.mountain>
+	<20141028090451.41ed6aad@lwn.net>
+	<20141028165827.GG15252@titan.lakedaemon.net>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/cVsyLqKlI1T7W3DZl4v2iVv"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cVsyLqKlI1T7W3DZl4v2iVv
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Tue, 28 Oct 2014 12:58:27 -0400
+Jason Cooper <jason@lakedaemon.net> wrote:
 
-On Tue, 28 Oct 2014 22:03:02 +0530
-Pramod Gurav <pramod.gurav.etc@gmail.com> wrote:
+> At the risk of upsetting the apple cart, I'd prefer we downplay anything
+> that walks down the path of gamification (by focusing on credit).
+> 
+> As best anyone has ever explained it to me, the Acked-by, Reviewed-by,
+> etc are there to impart information regarding a specific commit.  In the
+> event that a commit is fingered in a bisect, you have a much better list
+> of names to Cc, instead of just the maintainer from MAINTAINERS and the
+> author from the top of the offending file.  The author has often moved
+> on, and the maintainer may not have been around for the bugfix.
 
-> Michael had suggested to do away with this function if not being used.
-> Good to go?
->=20
-> Michale can you provide acked-by?
+As I understand it, having been in the room when these tags were
+developed and encouraged, was that credit was a big part of the initial
+motivation.  We need more testers and bug reporters; this was a way to
+give them credit for the valuable work that they do.  I still think
+that's important, for whatever that's worth.
 
-Yes, this looks good.
-Acked-by: Michael B=C3=BCsch <m@bues.ch>
+> I know Greg has spoken out against gamification before, and I also
+> understand the desire to encourage bug reporters.  Perhaps I should just
+> suggest the following:
+> 
+> """
+> The Reported-by tag helps us maintain contact info for people with
+> intimate knowledge of a commit or a bug fix.  Please seek the reporter's
+> permission before adding the tag to the commit.  That said, if we
+> diligently credit our bug reporters, they will, hopefully, be inspired
+> to help us again in the future.
+> """
 
-> On Wed, Oct 1, 2014 at 10:58 PM, Pramod Gurav
-> <pramod.gurav@smartplayin.com> wrote:
-> > This change fixes below sparse error:
-> > drivers/ssb/main.c:94:16: warning: symbol 'ssb_sdio_func_to_bus'
-> > was not declared. Should it be static?
-> >
-> > Cc: Michael Buesch <m@bues.ch>
-> > Cc: netdev@vger.kernel.org
-> > Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
-> > ---
-> > Changes since v1:
-> > Removed the function as it is not called anywhere in the kernel
-> > as per suggestion from Michael Buesch.
-> >
-> >  drivers/ssb/main.c | 19 -------------------
-> >  1 file changed, 19 deletions(-)
-> >
-> > diff --git a/drivers/ssb/main.c b/drivers/ssb/main.c
-> > index 2fead38..1e180c4 100644
-> > --- a/drivers/ssb/main.c
-> > +++ b/drivers/ssb/main.c
-> > @@ -90,25 +90,6 @@ found:
-> >  }
-> >  #endif /* CONFIG_SSB_PCMCIAHOST */
-> >
-> > -#ifdef CONFIG_SSB_SDIOHOST
-> > -struct ssb_bus *ssb_sdio_func_to_bus(struct sdio_func *func)
-> > -{
-> > -       struct ssb_bus *bus;
-> > -
-> > -       ssb_buses_lock();
-> > -       list_for_each_entry(bus, &buses, list) {
-> > -               if (bus->bustype =3D=3D SSB_BUSTYPE_SDIO &&
-> > -                   bus->host_sdio =3D=3D func)
-> > -                       goto found;
-> > -       }
-> > -       bus =3D NULL;
-> > -found:
-> > -       ssb_buses_unlock();
-> > -
-> > -       return bus;
-> > -}
-> > -#endif /* CONFIG_SSB_SDIOHOST */
-> > -
-> >  int ssb_for_each_bus_call(unsigned long data,
-> >                           int (*func)(struct ssb_bus *bus, unsigned lon=
-g data))
-> >  {
+That addresses my concern, but loses the point of the initial patch:
+publicly reporting a bug can be seen as implicit permission to credit the
+reporter.
 
---=20
-Michael
+Thanks,
 
---Sig_/cVsyLqKlI1T7W3DZl4v2iVv
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUT9UQAAoJEPUyvh2QjYsOpsUP/1n9tMj1birS8923yJFXc/8h
-UmoU2WkwEPGJSeI1GxniZTsuLf6VYrHTuQNTEKqbpANn85pU5cJDR2yMrxdiKgBS
-TJ2qel0d/zCbi5+LifbmgQjx6WL+JAYvHvSmnDslZB2SHz1dT0UlHxcgXLVxBDvG
-D5cZYQn59rZvL2bJBUByf/gsQTgz9GrQ3kR006ZwI1F2aMNB7JwRICbQj34mV8XS
-Von0tVKoJGombwiLDFf+r8y09TUuoAlIu4gpRXeOVW7tXbwgYR/B4x3ZSYL92l6F
-Th+g10UtCCowEe/xnEGBmaGVT/TVA2cniUQnzjO81j370OKLDnS/EPgZqb8XIXcv
-IwX4lv1Ht/iCiQ22vNWTiCqI4Qv0VrsfiRzrJSKGXYfg5j7834ack5Z8pwxFXfn0
-TF6zpZWz/S+G3eGPP6GNh/pwS5nNAWebIdoZ9TYJrkp+MrSLCekpQ5dboX/F1eaB
-mTNCy1G7nZ8186ulllxeGlNPelWCKmawvgeKkcnJKyQlOyiHFyHHKXat77XAnodO
-PmhRExlnEWNfn8J9vE1HZAyu7XLnle9SvOjrmSEiTOiuqNPAam9bQiq4b0sF6SYo
-dUAa2nlay+taYlQBksemkCG0NovCpdJTDOJETZ+vs9S2AnWN2NHB2xkic8K2erur
-y1PrU7BJkuQGnruUgfW6
-=R37R
------END PGP SIGNATURE-----
-
---Sig_/cVsyLqKlI1T7W3DZl4v2iVv--
+jon
