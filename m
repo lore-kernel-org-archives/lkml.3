@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987AbaJ1Va0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:30:26 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:37019 "EHLO
+	id S1755929AbaJ1VpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:45:17 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:37036 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754856AbaJ1VaT (ORCPT
+	with ESMTP id S1754976AbaJ1Va0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:30:19 -0400
+	Tue, 28 Oct 2014 17:30:26 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 21/58] dmaengine: imx: Split device_control
-Date: Tue, 28 Oct 2014 22:25:36 +0100
-Message-Id: <1414531573-18807-22-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 24/58] dmaengine: ipu-idmac: Split device_control
+Date: Tue, 28 Oct 2014 22:25:39 +0100
+Message-Id: <1414531573-18807-25-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,148 +24,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Freescale IMX DMA driver to make use
+Split the device_control callback of the IPU IDMAC driver to make use
 of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/imx-dma.c | 103 +++++++++++++++++++++++++-------------------------
- 1 file changed, 51 insertions(+), 52 deletions(-)
+ drivers/dma/ipu/ipu_idmac.c | 96 ++++++++++++++++++++++++---------------------
+ 1 file changed, 51 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-index 9d2c9e7374dc..dfd1557384ca 100644
---- a/drivers/dma/imx-dma.c
-+++ b/drivers/dma/imx-dma.c
-@@ -669,69 +669,67 @@ out:
- 
+diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
+index bbf62927bd72..b36f5a47578a 100644
+--- a/drivers/dma/ipu/ipu_idmac.c
++++ b/drivers/dma/ipu/ipu_idmac.c
+@@ -1398,76 +1398,81 @@ static void idmac_issue_pending(struct dma_chan *chan)
+ 	 */
  }
  
--static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--		unsigned long arg)
-+static int imxdma_terminate_all(struct dma_chan *chan)
+-static int __idmac_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-			   unsigned long arg)
++static int idmac_pause(struct dma_chan *chan)
  {
- 	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
--	struct dma_slave_config *dmaengine_cfg = (void *)arg;
- 	struct imxdma_engine *imxdma = imxdmac->imxdma;
+ 	struct idmac_channel *ichan = to_idmac_chan(chan);
+ 	struct idmac *idmac = to_idmac(chan->device);
+ 	struct ipu *ipu = to_ipu(idmac);
+ 	struct list_head *list, *tmp;
  	unsigned long flags;
--	unsigned int mode = 0;
--
+-	int i;
+ 
 -	switch (cmd) {
+-	case DMA_PAUSE:
+-		spin_lock_irqsave(&ipu->lock, flags);
+-		ipu_ic_disable_task(ipu, chan->chan_id);
++	mutex_lock(&ichan->chan_mutex);
+ 
+-		/* Return all descriptors into "prepared" state */
+-		list_for_each_safe(list, tmp, &ichan->queue)
+-			list_del_init(list);
++	spin_lock_irqsave(&ipu->lock, flags);
++	ipu_ic_disable_task(ipu, chan->chan_id);
+ 
+-		ichan->sg[0] = NULL;
+-		ichan->sg[1] = NULL;
++	/* Return all descriptors into "prepared" state */
++	list_for_each_safe(list, tmp, &ichan->queue)
++		list_del_init(list);
+ 
+-		spin_unlock_irqrestore(&ipu->lock, flags);
++	ichan->sg[0] = NULL;
++	ichan->sg[1] = NULL;
+ 
+-		ichan->status = IPU_CHANNEL_INITIALIZED;
+-		break;
 -	case DMA_TERMINATE_ALL:
--		imxdma_disable_hw(imxdmac);
+-		ipu_disable_channel(idmac, ichan,
+-				    ichan->status >= IPU_CHANNEL_ENABLED);
++	spin_unlock_irqrestore(&ipu->lock, flags);
  
--		spin_lock_irqsave(&imxdma->lock, flags);
--		list_splice_tail_init(&imxdmac->ld_active, &imxdmac->ld_free);
--		list_splice_tail_init(&imxdmac->ld_queue, &imxdmac->ld_free);
--		spin_unlock_irqrestore(&imxdma->lock, flags);
--		return 0;
--	case DMA_SLAVE_CONFIG:
--		if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
--			imxdmac->per_address = dmaengine_cfg->src_addr;
--			imxdmac->watermark_level = dmaengine_cfg->src_maxburst;
--			imxdmac->word_size = dmaengine_cfg->src_addr_width;
--		} else {
--			imxdmac->per_address = dmaengine_cfg->dst_addr;
--			imxdmac->watermark_level = dmaengine_cfg->dst_maxburst;
--			imxdmac->word_size = dmaengine_cfg->dst_addr_width;
--		}
--
--		switch (imxdmac->word_size) {
--		case DMA_SLAVE_BUSWIDTH_1_BYTE:
--			mode = IMX_DMA_MEMSIZE_8;
--			break;
--		case DMA_SLAVE_BUSWIDTH_2_BYTES:
--			mode = IMX_DMA_MEMSIZE_16;
--			break;
--		default:
--		case DMA_SLAVE_BUSWIDTH_4_BYTES:
--			mode = IMX_DMA_MEMSIZE_32;
--			break;
--		}
-+	imxdma_disable_hw(imxdmac);
+-		tasklet_disable(&ipu->tasklet);
++	ichan->status = IPU_CHANNEL_INITIALIZED;
  
--		imxdmac->hw_chaining = 0;
-+	spin_lock_irqsave(&imxdma->lock, flags);
-+	list_splice_tail_init(&imxdmac->ld_active, &imxdmac->ld_free);
-+	list_splice_tail_init(&imxdmac->ld_queue, &imxdmac->ld_free);
-+	spin_unlock_irqrestore(&imxdma->lock, flags);
+-		/* ichan->queue is modified in ISR, have to spinlock */
+-		spin_lock_irqsave(&ichan->lock, flags);
+-		list_splice_init(&ichan->queue, &ichan->free_list);
++	mutex_unlock(&ichan->chan_mutex);
+ 
+-		if (ichan->desc)
+-			for (i = 0; i < ichan->n_tx_desc; i++) {
+-				struct idmac_tx_desc *desc = ichan->desc + i;
+-				if (list_empty(&desc->list))
+-					/* Descriptor was prepared, but not submitted */
+-					list_add(&desc->list, &ichan->free_list);
 +	return 0;
 +}
  
--		imxdmac->ccr_from_device = (mode | IMX_DMA_TYPE_FIFO) |
--			((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
--			CCR_REN;
--		imxdmac->ccr_to_device =
--			(IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) |
--			((mode | IMX_DMA_TYPE_FIFO) << 2) | CCR_REN;
--		imx_dmav1_writel(imxdma, imxdmac->dma_request,
--				 DMA_RSSR(imxdmac->channel));
-+static int imxdma_config(struct dma_chan *chan,
-+			 struct dma_slave_config *dmaengine_cfg)
+-				async_tx_clear_ack(&desc->txd);
+-			}
++static int __idmac_terminate_all(struct dma_chan *chan)
 +{
-+	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-+	struct imxdma_engine *imxdma = imxdmac->imxdma;
-+	unsigned int mode = 0;
++	struct idmac_channel *ichan = to_idmac_chan(chan);
++	struct idmac *idmac = to_idmac(chan->device);
++	struct ipu *ipu = to_ipu(idmac);
++	unsigned long flags;
++	int i;
  
--		/* Set burst length */
--		imx_dmav1_writel(imxdma, imxdmac->watermark_level *
--				imxdmac->word_size, DMA_BLR(imxdmac->channel));
-+	if (dmaengine_cfg->direction == DMA_DEV_TO_MEM) {
-+		imxdmac->per_address = dmaengine_cfg->src_addr;
-+		imxdmac->watermark_level = dmaengine_cfg->src_maxburst;
-+		imxdmac->word_size = dmaengine_cfg->src_addr_width;
-+	} else {
-+		imxdmac->per_address = dmaengine_cfg->dst_addr;
-+		imxdmac->watermark_level = dmaengine_cfg->dst_maxburst;
-+		imxdmac->word_size = dmaengine_cfg->dst_addr_width;
-+	}
+-		ichan->sg[0] = NULL;
+-		ichan->sg[1] = NULL;
+-		spin_unlock_irqrestore(&ichan->lock, flags);
++	ipu_disable_channel(idmac, ichan,
++			    ichan->status >= IPU_CHANNEL_ENABLED);
  
--		return 0;
-+	switch (imxdmac->word_size) {
-+	case DMA_SLAVE_BUSWIDTH_1_BYTE:
-+		mode = IMX_DMA_MEMSIZE_8;
-+		break;
-+	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-+		mode = IMX_DMA_MEMSIZE_16;
-+		break;
- 	default:
+-		tasklet_enable(&ipu->tasklet);
++	tasklet_disable(&ipu->tasklet);
+ 
+-		ichan->status = IPU_CHANNEL_INITIALIZED;
+-		break;
+-	default:
 -		return -ENOSYS;
-+	case DMA_SLAVE_BUSWIDTH_4_BYTES:
-+		mode = IMX_DMA_MEMSIZE_32;
-+		break;
- 	}
+-	}
++	/* ichan->queue is modified in ISR, have to spinlock */
++	spin_lock_irqsave(&ichan->lock, flags);
++	list_splice_init(&ichan->queue, &ichan->free_list);
++
++	if (ichan->desc)
++		for (i = 0; i < ichan->n_tx_desc; i++) {
++			struct idmac_tx_desc *desc = ichan->desc + i;
++			if (list_empty(&desc->list))
++				/* Descriptor was prepared, but not submitted */
++				list_add(&desc->list, &ichan->free_list);
++
++			async_tx_clear_ack(&desc->txd);
++		}
++
++	ichan->sg[0] = NULL;
++	ichan->sg[1] = NULL;
++	spin_unlock_irqrestore(&ichan->lock, flags);
++
++	tasklet_enable(&ipu->tasklet);
++
++	ichan->status = IPU_CHANNEL_INITIALIZED;
  
--	return -EINVAL;
-+	imxdmac->hw_chaining = 0;
-+
-+	imxdmac->ccr_from_device = (mode | IMX_DMA_TYPE_FIFO) |
-+		((IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) << 2) |
-+		CCR_REN;
-+	imxdmac->ccr_to_device =
-+		(IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR) |
-+		((mode | IMX_DMA_TYPE_FIFO) << 2) | CCR_REN;
-+	imx_dmav1_writel(imxdma, imxdmac->dma_request,
-+			 DMA_RSSR(imxdmac->channel));
-+
-+	/* Set burst length */
-+	imx_dmav1_writel(imxdma, imxdmac->watermark_level *
-+			 imxdmac->word_size, DMA_BLR(imxdmac->channel));
-+
-+	return 0;
+ 	return 0;
  }
  
- static enum dma_status imxdma_tx_status(struct dma_chan *chan,
-@@ -1184,7 +1182,8 @@ static int __init imxdma_probe(struct platform_device *pdev)
- 	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
- 	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
- 	imxdma->dma_device.device_prep_interleaved_dma = imxdma_prep_dma_interleaved;
--	imxdma->dma_device.device_control = imxdma_control;
-+	imxdma->dma_device.device_config = imxdma_config;
-+	imxdma->dma_device.device_terminate_all = imxdma_terminate_all;
- 	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
+-static int idmac_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-			 unsigned long arg)
++static int idmac_terminate_all(struct dma_chan *chan)
+ {
+ 	struct idmac_channel *ichan = to_idmac_chan(chan);
+ 	int ret;
  
- 	platform_set_drvdata(pdev, imxdma);
+ 	mutex_lock(&ichan->chan_mutex);
+ 
+-	ret = __idmac_control(chan, cmd, arg);
++	ret = __idmac_terminate_all(chan);
+ 
+ 	mutex_unlock(&ichan->chan_mutex);
+ 
+@@ -1568,7 +1573,7 @@ static void idmac_free_chan_resources(struct dma_chan *chan)
+ 
+ 	mutex_lock(&ichan->chan_mutex);
+ 
+-	__idmac_control(chan, DMA_TERMINATE_ALL, 0);
++	__idmac_terminate_all(chan);
+ 
+ 	if (ichan->status > IPU_CHANNEL_FREE) {
+ #ifdef DEBUG
+@@ -1622,7 +1627,8 @@ static int __init ipu_idmac_init(struct ipu *ipu)
+ 
+ 	/* Compulsory for DMA_SLAVE fields */
+ 	dma->device_prep_slave_sg		= idmac_prep_slave_sg;
+-	dma->device_control			= idmac_control;
++	dma->device_pause			= idmac_pause;
++	dma->device_terminate_all		= idmac_terminate_all;
+ 
+ 	INIT_LIST_HEAD(&dma->channels);
+ 	for (i = 0; i < IPU_CHANNELS_NUM; i++) {
+@@ -1655,7 +1661,7 @@ static void ipu_idmac_exit(struct ipu *ipu)
+ 	for (i = 0; i < IPU_CHANNELS_NUM; i++) {
+ 		struct idmac_channel *ichan = ipu->channel + i;
+ 
+-		idmac_control(&ichan->dma_chan, DMA_TERMINATE_ALL, 0);
++		idmac_terminate_all(&ichan->dma_chan);
+ 	}
+ 
+ 	dma_async_device_unregister(&idmac->dma);
 -- 
 2.1.1
 
