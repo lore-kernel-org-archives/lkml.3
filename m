@@ -1,211 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604AbaJ1Rrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:47:55 -0400
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:42401 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaJ1Rrx (ORCPT
+	id S1753141AbaJ1Rs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:48:27 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:43623 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751500AbaJ1RsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:47:53 -0400
-Date: Tue, 28 Oct 2014 15:47:48 -0200
-From: "Leonidas S. Barbosa" <leosilva@linux.vnet.ibm.com>
-To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org,
-        Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>,
-        Fionnuala Gunter <fin@linux.vnet.ibm.com>
-Subject: [PATCH 5/9] Moving NX-AES-GCM to be processed logic
-Message-ID: <20141028174745.GA17638@bluepex.com>
+	Tue, 28 Oct 2014 13:48:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102817-0009-0000-0000-000002246721
+In-Reply-To: <CAHse=S8KpmA6X9S11JG=_y7sqgit_S26uC6=NCk742nKRRP=0w@mail.gmail.com>
+References: <1413978269-17274-1-git-send-email-drysdale@google.com>
+ <1413978269-17274-2-git-send-email-drysdale@google.com> <CALCETrWbj=BTDyKqtbSKteANj3J3UFZnrvWv9DMosCoEZaSoeA@mail.gmail.com>
+ <CAHse=S-x6NKEn9EGFos6bS=asK-1mWCr0r9aji2a97_fgxU+Sg@mail.gmail.com>
+ <CALCETrWN+bKj_PPRJy2pNDVCRd3xyd-=w7P+9khhd-XuJRXCyA@mail.gmail.com> <CAHse=S8KpmA6X9S11JG=_y7sqgit_S26uC6=NCk742nKRRP=0w@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 28 Oct 2014 10:48:02 -0700
+Message-ID: <CALCETrU61NCvE7N2TX9gy5R7T4VOwaau1q2Hspfb3Py2kW_jYw@mail.gmail.com>
+Subject: Re: [PATCHv5 1/3] syscalls,x86: implement execveat() system call
+To: David Drysdale <drysdale@google.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
+        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous limits were estimated locally in a single step
-basead on bound values, however it was not correct since
-when given certain scatterlist the function nx_build_sg_lists
-was consuming more sg entries than allocated causing a
-memory corruption and crashes.
+On Tue, Oct 28, 2014 at 10:30 AM, David Drysdale <drysdale@google.com> wrote:
+> [Oops, re-send remembering to turn on plaintext mode -- sorry]
+>
+> On Mon, Oct 27, 2014 at 6:47 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Mon, Oct 27, 2014 at 11:03 AM, David Drysdale <drysdale@google.com> wrote:
+>>> On Wed, Oct 22, 2014 at 7:44 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>> On Wed, Oct 22, 2014 at 4:44 AM, David Drysdale <drysdale@google.com> wrote:
+>>>>> Add a new system execveat(2) syscall. execveat() is to execve() as
+>>>>> openat() is to open(): it takes a file descriptor that refers to a
+>>>>> directory, and resolves the filename relative to that.
+>>>>>
+>>>>
+>>>>>         bprm->file = file;
+>>>>> -       bprm->filename = bprm->interp = filename->name;
+>>>>> +       if (fd == AT_FDCWD || filename->name[0] == '/') {
+>>>>> +               bprm->filename = filename->name;
+>>>>> +       } else {
+>>>>> +               /*
+>>>>> +                * Build a pathname that reflects how we got to the file,
+>>>>> +                * either "/dev/fd/<fd>" (for an empty filename) or
+>>>>> +                * "/dev/fd/<fd>/<filename>".
+>>>>> +                */
+>>>>> +               pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
+>>>>> +               if (!pathbuf) {
+>>>>> +                       retval = -ENOMEM;
+>>>>> +                       goto out_unmark;
+>>>>> +               }
+>>>>> +               bprm->filename = pathbuf;
+>>>>> +               if (filename->name[0] == '\0')
+>>>>> +                       sprintf(pathbuf, "/dev/fd/%d", fd);
+>>>>
+>>>> If the fd is O_CLOEXEC, then this will result in a confused child
+>>>> process.  Should we fail exec attempts like that for non-static
+>>>> programs?  (E.g. set filename to "" or something and fix up the binfmt
+>>>> drivers to handle that?)
+>>>
+>>> Isn't it just scripts that get confused here (as normal executables don't
+>>> get to see brpm->filename)?
+>>>
+>>> Given that we don't know which we have at this point, I'd suggest
+>>> carrying on regardless.  Or we could fall back to use the previous
+>>> best-effort d_path() code for O_CLOEXEC fds.  Thoughts?
+>>
+>> How hard would it be to mark the bprm as not having a path for the
+>> binary?  Then we could fail later on if and when we actually need the
+>> path.
+>
+> Adding a flag to bprm->interp_flags to indicate that the bprm->filename
+> will be inaccessible after exec is straightforward.  But I'm not sure who
+> should/could make use of the flag...
+>
+>> I don't really have a strong opinion here, though.  I do prefer
+>> actually failing the execveat call over succeeding but invoking a
+>> script interpreter than can't possibly work.
+>
+> Yeah, but that involves the kernel code (e.g. fs/binfmt_script.c) making
+> an assumption about what the interpreter is going to do -- specifically
+> that it's going to try to open its argv[1].  Admittedly, that's a very likely
+> assumption, but I'm not sure it's one the kernel should make -- a script
+> like "#!/bin/echo" wouldn't be very useful, but fexecve()ing it would still
+> work OK on a name like "/dev/fd/7" after fd 7 is closed.
 
-This patch removes the old logic and replace it into nx_sg_build_lists
-in order to build a correct nx_sg list using the correct sg_max limit
-and bounds.
+Hmm.  I'm unconvinced.  If an important part of executing the script
+is passing it an argv[0] that can be opened, then I think we shouldn't
+allow a known-bad argv[0].
 
-Signed-off-by: Leonidas S. Barbosa <leosilva@linux.vnet.ibm.com>
----
- drivers/crypto/nx/nx-aes-gcm.c |   66 ++++++++++++++++++++++-----------------
- 1 files changed, 37 insertions(+), 29 deletions(-)
+>
+> (Also, we need some kind of non-empty name in bprm->filename,
+> even if it's going to be inaccessible later, so that any LSM processing
+> off of the bprm_set_creds()/bprm_check_security() hooks has something
+> to work with; those hooks are pre-exec so the "/dev/fd/<fd>" part should
+> still be OK at that point.)
+>
+> So I guess I lean towards keeping "/dev/fd/<fd>/<path>" regardless.
+>
+>>>
+>>>>> +               else
+>>>>> +                       snprintf(pathbuf, PATH_MAX,
+>>>>> +                                "/dev/fd/%d/%s", fd, filename->name);
+>>>>
+>>>> Does this need to handle the case where the result exceeds PATH_MAX?
+>>>
+>>> I guess we could kmalloc(strlen(filename->name) + 19) to avoid the
+>>> possibility of failure, but that just defers the inevitable -- the interpreter
+>>> won't be able to open the script file anyway.  But it would at least then
+>>> generate the appropriate error (ENAMETOOLONG rather than ENOENT).
+>>
+>> Depends whether anyone cares about bprm->filename.  But I think the
+>> code should either return an error or allocate enough space.
+>
+> I'll allocate enough space.
+>
+>>
+>> --
+>> Andy Lutomirski
+>> AMA Capital Management, LLC
 
-diff --git a/drivers/crypto/nx/nx-aes-gcm.c b/drivers/crypto/nx/nx-aes-gcm.c
-index 025d9a8..88c5624 100644
---- a/drivers/crypto/nx/nx-aes-gcm.c
-+++ b/drivers/crypto/nx/nx-aes-gcm.c
-@@ -131,7 +131,7 @@ static int nx_gca(struct nx_crypto_ctx  *nx_ctx,
- 	struct nx_sg *nx_sg = nx_ctx->in_sg;
- 	unsigned int nbytes = req->assoclen;
- 	unsigned int processed = 0, to_process;
--	u32 max_sg_len;
-+	unsigned int max_sg_len;
- 
- 	if (nbytes <= AES_BLOCK_SIZE) {
- 		scatterwalk_start(&walk, req->assoc);
-@@ -143,8 +143,10 @@ static int nx_gca(struct nx_crypto_ctx  *nx_ctx,
- 	NX_CPB_FDM(csbcpb_aead) &= ~NX_FDM_CONTINUATION;
- 
- 	/* page_limit: number of sg entries that fit on one page */
--	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
-+	max_sg_len = min_t(u64, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
- 			   nx_ctx->ap->sglen);
-+	max_sg_len = min_t(u64, max_sg_len,
-+			   nx_ctx->ap->databytelen/NX_PAGE_SIZE);
- 
- 	do {
- 		/*
-@@ -156,13 +158,14 @@ static int nx_gca(struct nx_crypto_ctx  *nx_ctx,
- 		to_process = min_t(u64, to_process,
- 				   NX_PAGE_SIZE * (max_sg_len - 1));
- 
-+		nx_sg = nx_walk_and_build(nx_ctx->in_sg, max_sg_len,
-+					  req->assoc, processed, &to_process);
-+
- 		if ((to_process + processed) < nbytes)
- 			NX_CPB_FDM(csbcpb_aead) |= NX_FDM_INTERMEDIATE;
- 		else
- 			NX_CPB_FDM(csbcpb_aead) &= ~NX_FDM_INTERMEDIATE;
- 
--		nx_sg = nx_walk_and_build(nx_ctx->in_sg, nx_ctx->ap->sglen,
--					  req->assoc, processed, to_process);
- 		nx_ctx->op_aead.inlen = (nx_ctx->in_sg - nx_sg)
- 					* sizeof(struct nx_sg);
- 
-@@ -195,7 +198,7 @@ static int gmac(struct aead_request *req, struct blkcipher_desc *desc)
- 	struct nx_sg *nx_sg;
- 	unsigned int nbytes = req->assoclen;
- 	unsigned int processed = 0, to_process;
--	u32 max_sg_len;
-+	unsigned int max_sg_len;
- 
- 	/* Set GMAC mode */
- 	csbcpb->cpb.hdr.mode = NX_MODE_AES_GMAC;
-@@ -203,8 +206,10 @@ static int gmac(struct aead_request *req, struct blkcipher_desc *desc)
- 	NX_CPB_FDM(csbcpb) &= ~NX_FDM_CONTINUATION;
- 
- 	/* page_limit: number of sg entries that fit on one page */
--	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
-+	max_sg_len = min_t(u64, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
- 			   nx_ctx->ap->sglen);
-+	max_sg_len = min_t(u64, max_sg_len,
-+			   nx_ctx->ap->databytelen/NX_PAGE_SIZE);
- 
- 	/* Copy IV */
- 	memcpy(csbcpb->cpb.aes_gcm.iv_or_cnt, desc->info, AES_BLOCK_SIZE);
-@@ -219,13 +224,14 @@ static int gmac(struct aead_request *req, struct blkcipher_desc *desc)
- 		to_process = min_t(u64, to_process,
- 				   NX_PAGE_SIZE * (max_sg_len - 1));
- 
-+		nx_sg = nx_walk_and_build(nx_ctx->in_sg, max_sg_len,
-+					  req->assoc, processed, &to_process);
-+
- 		if ((to_process + processed) < nbytes)
- 			NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
- 		else
- 			NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
- 
--		nx_sg = nx_walk_and_build(nx_ctx->in_sg, nx_ctx->ap->sglen,
--					  req->assoc, processed, to_process);
- 		nx_ctx->op.inlen = (nx_ctx->in_sg - nx_sg)
- 					* sizeof(struct nx_sg);
- 
-@@ -264,6 +270,7 @@ static int gcm_empty(struct aead_request *req, struct blkcipher_desc *desc,
- 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
- 	char out[AES_BLOCK_SIZE];
- 	struct nx_sg *in_sg, *out_sg;
-+	int len;
- 
- 	/* For scenarios where the input message is zero length, AES CTR mode
- 	 * may be used. Set the source data to be a single block (16B) of all
-@@ -279,11 +286,22 @@ static int gcm_empty(struct aead_request *req, struct blkcipher_desc *desc,
- 	else
- 		NX_CPB_FDM(csbcpb) &= ~NX_FDM_ENDE_ENCRYPT;
- 
-+	len = AES_BLOCK_SIZE;
-+
- 	/* Encrypt the counter/IV */
- 	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *) desc->info,
--				 AES_BLOCK_SIZE, nx_ctx->ap->sglen);
--	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *) out, sizeof(out),
-+				 &len, nx_ctx->ap->sglen);
-+
-+	if (len != AES_BLOCK_SIZE)
-+		return -EINVAL;
-+
-+	len = sizeof(out);
-+	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *) out, &len,
- 				  nx_ctx->ap->sglen);
-+
-+	if (len != sizeof(out))
-+		return -EINVAL;
-+
- 	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
- 	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
- 
-@@ -317,7 +335,6 @@ static int gcm_aes_nx_crypt(struct aead_request *req, int enc)
- 	unsigned int nbytes = req->cryptlen;
- 	unsigned int processed = 0, to_process;
- 	unsigned long irq_flags;
--	u32 max_sg_len;
- 	int rc = -EINVAL;
- 
- 	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
-@@ -354,33 +371,24 @@ static int gcm_aes_nx_crypt(struct aead_request *req, int enc)
- 		nbytes -= crypto_aead_authsize(crypto_aead_reqtfm(req));
- 	}
- 
--	/* page_limit: number of sg entries that fit on one page */
--	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
--			   nx_ctx->ap->sglen);
--
- 	do {
--		/*
--		 * to_process: the data chunk to process in this update.
--		 * This value is bound by sg list limits.
--		 */
--		to_process = min_t(u64, nbytes - processed,
--				   nx_ctx->ap->databytelen);
--		to_process = min_t(u64, to_process,
--				   NX_PAGE_SIZE * (max_sg_len - 1));
--
--		if ((to_process + processed) < nbytes)
--			NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
--		else
--			NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+		to_process = nbytes - processed;
- 
- 		csbcpb->cpb.aes_gcm.bit_length_data = nbytes * 8;
- 		desc.tfm = (struct crypto_blkcipher *) req->base.tfm;
- 		rc = nx_build_sg_lists(nx_ctx, &desc, req->dst,
--				       req->src, to_process, processed,
-+				       req->src, &to_process, processed,
- 				       csbcpb->cpb.aes_gcm.iv_or_cnt);
-+
- 		if (rc)
- 			goto out;
- 
-+		if ((to_process + processed) < nbytes)
-+			NX_CPB_FDM(csbcpb) |= NX_FDM_INTERMEDIATE;
-+		else
-+			NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
-+
-+
- 		rc = nx_hcall_sync(nx_ctx, &nx_ctx->op,
- 				   req->base.flags & CRYPTO_TFM_REQ_MAY_SLEEP);
- 		if (rc)
+
+
 -- 
-1.7.1
-
+Andy Lutomirski
+AMA Capital Management, LLC
