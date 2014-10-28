@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759430AbaJ1HiH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:38:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44844 "EHLO
+	id S1754922AbaJ1Dkg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:40:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871AbaJ1Dkl (ORCPT
+	with ESMTP id S1754871AbaJ1Dkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:41 -0400
+	Mon, 27 Oct 2014 23:40:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        sparclinux@vger.kernel.org, Bob Picco <bob.picco@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 121/146] sparc64: sun4v TLB error power off events
-Date: Tue, 28 Oct 2014 11:34:23 +0800
-Message-Id: <20141028033348.694875459@linuxfoundation.org>
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 3.17 117/146] ima: fix fallback to use new_sync_read()
+Date: Tue, 28 Oct 2014 11:34:19 +0800
+Message-Id: <20141028033348.514713819@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,205 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: bob picco <bpicco@meloft.net>
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-[ Upstream commit 4ccb9272892c33ef1c19a783cfa87103b30c2784 ]
+commit 27cd1fc3ae5374a4a86662c67033f15ef27b2461 upstream.
 
-We've witnessed a few TLB events causing the machine to power off because
-of prom_halt. In one case it was some nfs related area during rmmod. Another
-was an mmapper of /dev/mem. A more recent one is an ITLB issue with
-a bad pagesize which could be a hardware bug. Bugs happen but we should
-attempt to not power off the machine and/or hang it when possible.
+3.16 commit aad4f8bb42af06371aa0e85bf0cd9d52c0494985
+'switch simple generic_file_aio_read() users to ->read_iter()'
+replaced ->aio_read with ->read_iter in most of the file systems
+and introduced new_sync_read() as a replacement for do_sync_read().
 
-This is a DTLB error from an mmapper of /dev/mem:
-[root@sparcie ~]# SUN4V-DTLB: Error at TPC[fffff80100903e6c], tl 1
-SUN4V-DTLB: TPC<0xfffff80100903e6c>
-SUN4V-DTLB: O7[fffff801081979d0]
-SUN4V-DTLB: O7<0xfffff801081979d0>
-SUN4V-DTLB: vaddr[fffff80100000000] ctx[1250] pte[98000000000f0610] error[2]
-.
+Most of file systems set '->read' and ima_kernel_read is not affected.
+When ->read is not set, this patch adopts fallback call changes from the
+vfs_read.
 
-This is recent mainline for ITLB:
-[ 3708.179864] SUN4V-ITLB: TPC<0xfffffc010071cefc>
-[ 3708.188866] SUN4V-ITLB: O7[fffffc010071cee8]
-[ 3708.197377] SUN4V-ITLB: O7<0xfffffc010071cee8>
-[ 3708.206539] SUN4V-ITLB: vaddr[e0003] ctx[1a3c] pte[2900000dcc800eeb] error[4]
-.
-
-Normally sun4v_itlb_error_report() and sun4v_dtlb_error_report() would call
-prom_halt() and drop us to OF command prompt "ok". This isn't the case for
-LDOMs and the machine powers off.
-
-For the HV reported error of HV_ENORADDR for HV HV_MMU_MAP_ADDR_TRAP we cause
-a SIGBUS error by qualifying it within do_sparc64_fault() for fault code mask
-of FAULT_CODE_BAD_RA. This is done when trap level (%tl) is less or equal
-one("1"). Otherwise, for %tl > 1,  we proceed eventually to die_if_kernel().
-
-The logic of this patch was partially inspired by David Miller's feedback.
-
-Power off of large sparc64 machines is painful. Plus die_if_kernel provides
-more context. A reset sequence isn't a brief period on large sparc64 but
-better than power-off/power-on sequence.
-
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: Bob Picco <bob.picco@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/include/asm/thread_info_64.h |    1 
- arch/sparc/kernel/sun4v_tlb_miss.S      |   35 +++++++++++++++++++-------------
- arch/sparc/kernel/traps_64.c            |   15 ++++++++-----
- arch/sparc/mm/fault_64.c                |    3 ++
- 4 files changed, 34 insertions(+), 20 deletions(-)
 
---- a/arch/sparc/include/asm/thread_info_64.h
-+++ b/arch/sparc/include/asm/thread_info_64.h
-@@ -102,6 +102,7 @@ struct thread_info {
- #define FAULT_CODE_ITLB		0x04	/* Miss happened in I-TLB	   */
- #define FAULT_CODE_WINFIXUP	0x08	/* Miss happened during spill/fill */
- #define FAULT_CODE_BLKCOMMIT	0x10	/* Use blk-commit ASI in copy_page */
-+#define	FAULT_CODE_BAD_RA	0x20	/* Bad RA for sun4v		   */
- 
- #if PAGE_SHIFT == 13
- #define THREAD_SIZE (2*PAGE_SIZE)
---- a/arch/sparc/kernel/sun4v_tlb_miss.S
-+++ b/arch/sparc/kernel/sun4v_tlb_miss.S
-@@ -195,6 +195,11 @@ sun4v_tsb_miss_common:
- 	 ldx	[%g2 + TRAP_PER_CPU_PGD_PADDR], %g7
- 
- sun4v_itlb_error:
-+	rdpr	%tl, %g1
-+	cmp	%g1, 1
-+	ble,pt	%icc, sun4v_bad_ra
-+	 or	%g0, FAULT_CODE_BAD_RA | FAULT_CODE_ITLB, %g1
-+
- 	sethi	%hi(sun4v_err_itlb_vaddr), %g1
- 	stx	%g4, [%g1 + %lo(sun4v_err_itlb_vaddr)]
- 	sethi	%hi(sun4v_err_itlb_ctx), %g1
-@@ -206,15 +211,10 @@ sun4v_itlb_error:
- 	sethi	%hi(sun4v_err_itlb_error), %g1
- 	stx	%o0, [%g1 + %lo(sun4v_err_itlb_error)]
- 
-+	sethi	%hi(1f), %g7
- 	rdpr	%tl, %g4
--	cmp	%g4, 1
--	ble,pt	%icc, 1f
--	 sethi	%hi(2f), %g7
- 	ba,pt	%xcc, etraptl1
--	 or	%g7, %lo(2f), %g7
--
--1:	ba,pt	%xcc, etrap
--2:	 or	%g7, %lo(2b), %g7
-+1:	 or	%g7, %lo(1f), %g7
- 	mov	%l4, %o1
- 	call	sun4v_itlb_error_report
- 	 add	%sp, PTREGS_OFF, %o0
-@@ -222,6 +222,11 @@ sun4v_itlb_error:
- 	/* NOTREACHED */
- 
- sun4v_dtlb_error:
-+	rdpr	%tl, %g1
-+	cmp	%g1, 1
-+	ble,pt	%icc, sun4v_bad_ra
-+	 or	%g0, FAULT_CODE_BAD_RA | FAULT_CODE_DTLB, %g1
-+
- 	sethi	%hi(sun4v_err_dtlb_vaddr), %g1
- 	stx	%g4, [%g1 + %lo(sun4v_err_dtlb_vaddr)]
- 	sethi	%hi(sun4v_err_dtlb_ctx), %g1
-@@ -233,21 +238,23 @@ sun4v_dtlb_error:
- 	sethi	%hi(sun4v_err_dtlb_error), %g1
- 	stx	%o0, [%g1 + %lo(sun4v_err_dtlb_error)]
- 
-+	sethi	%hi(1f), %g7
- 	rdpr	%tl, %g4
--	cmp	%g4, 1
--	ble,pt	%icc, 1f
--	 sethi	%hi(2f), %g7
- 	ba,pt	%xcc, etraptl1
--	 or	%g7, %lo(2f), %g7
--
--1:	ba,pt	%xcc, etrap
--2:	 or	%g7, %lo(2b), %g7
-+1:	 or	%g7, %lo(1f), %g7
- 	mov	%l4, %o1
- 	call	sun4v_dtlb_error_report
- 	 add	%sp, PTREGS_OFF, %o0
- 
- 	/* NOTREACHED */
- 
-+sun4v_bad_ra:
-+	or	%g0, %g4, %g5
-+	ba,pt	%xcc, sparc64_realfault_common
-+	 or	%g1, %g0, %g4
-+
-+	/* NOTREACHED */
-+
- 	/* Instruction Access Exception, tl0. */
- sun4v_iacc:
- 	ldxa	[%g0] ASI_SCRATCHPAD, %g2
---- a/arch/sparc/kernel/traps_64.c
-+++ b/arch/sparc/kernel/traps_64.c
-@@ -2104,6 +2104,11 @@ void sun4v_nonresum_overflow(struct pt_r
- 	atomic_inc(&sun4v_nonresum_oflow_cnt);
- }
- 
-+static void sun4v_tlb_error(struct pt_regs *regs)
-+{
-+	die_if_kernel("TLB/TSB error", regs);
-+}
-+
- unsigned long sun4v_err_itlb_vaddr;
- unsigned long sun4v_err_itlb_ctx;
- unsigned long sun4v_err_itlb_pte;
-@@ -2111,8 +2116,7 @@ unsigned long sun4v_err_itlb_error;
- 
- void sun4v_itlb_error_report(struct pt_regs *regs, int tl)
+---
+ security/integrity/ima/ima_crypto.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/security/integrity/ima/ima_crypto.c
++++ b/security/integrity/ima/ima_crypto.c
+@@ -80,19 +80,19 @@ static int ima_kernel_read(struct file *
  {
--	if (tl > 1)
--		dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
-+	dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
+ 	mm_segment_t old_fs;
+ 	char __user *buf = addr;
+-	ssize_t ret;
++	ssize_t ret = -EINVAL;
  
- 	printk(KERN_EMERG "SUN4V-ITLB: Error at TPC[%lx], tl %d\n",
- 	       regs->tpc, tl);
-@@ -2125,7 +2129,7 @@ void sun4v_itlb_error_report(struct pt_r
- 	       sun4v_err_itlb_vaddr, sun4v_err_itlb_ctx,
- 	       sun4v_err_itlb_pte, sun4v_err_itlb_error);
+ 	if (!(file->f_mode & FMODE_READ))
+ 		return -EBADF;
+-	if (!file->f_op->read && !file->f_op->aio_read)
+-		return -EINVAL;
  
--	prom_halt();
-+	sun4v_tlb_error(regs);
+ 	old_fs = get_fs();
+ 	set_fs(get_ds());
+ 	if (file->f_op->read)
+ 		ret = file->f_op->read(file, buf, count, &offset);
+-	else
++	else if (file->f_op->aio_read)
+ 		ret = do_sync_read(file, buf, count, &offset);
++	else if (file->f_op->read_iter)
++		ret = new_sync_read(file, buf, count, &offset);
+ 	set_fs(old_fs);
+ 	return ret;
  }
- 
- unsigned long sun4v_err_dtlb_vaddr;
-@@ -2135,8 +2139,7 @@ unsigned long sun4v_err_dtlb_error;
- 
- void sun4v_dtlb_error_report(struct pt_regs *regs, int tl)
- {
--	if (tl > 1)
--		dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
-+	dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
- 
- 	printk(KERN_EMERG "SUN4V-DTLB: Error at TPC[%lx], tl %d\n",
- 	       regs->tpc, tl);
-@@ -2149,7 +2152,7 @@ void sun4v_dtlb_error_report(struct pt_r
- 	       sun4v_err_dtlb_vaddr, sun4v_err_dtlb_ctx,
- 	       sun4v_err_dtlb_pte, sun4v_err_dtlb_error);
- 
--	prom_halt();
-+	sun4v_tlb_error(regs);
- }
- 
- void hypervisor_tlbop_error(unsigned long err, unsigned long op)
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -346,6 +346,9 @@ retry:
- 		down_read(&mm->mmap_sem);
- 	}
- 
-+	if (fault_code & FAULT_CODE_BAD_RA)
-+		goto do_sigbus;
-+
- 	vma = find_vma(mm, address);
- 	if (!vma)
- 		goto bad_area;
 
 
