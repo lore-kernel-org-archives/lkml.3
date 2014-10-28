@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584AbaJ1RD3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:03:29 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:40713 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaJ1RD2 convert rfc822-to-8bit (ORCPT
+	id S1752022AbaJ1RFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:05:52 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50847 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900AbaJ1RFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:03:28 -0400
+	Tue, 28 Oct 2014 13:05:51 -0400
+Date: Tue, 28 Oct 2014 18:05:34 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Juergen Gross <jgross@suse.com>
+cc: hpa@zytor.com, x86@kernel.org, mingo@redhat.com,
+        stefan.bader@canonical.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        ville.syrjala@linux.intel.com, david.vrabel@citrix.com,
+        jbeulich@suse.com, toshi.kani@hp.com
+Subject: Re: [PATCH V4 1/3] x86: Make page cache mode a real type
+In-Reply-To: <1414392513-24645-2-git-send-email-jgross@suse.com>
+Message-ID: <alpine.DEB.2.11.1410281536170.5308@nanos>
+References: <1414392513-24645-1-git-send-email-jgross@suse.com> <1414392513-24645-2-git-send-email-jgross@suse.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <2697554.Rv8qaADZsg@diego>
-References: <1413913655-22351-1-git-send-email-dianders@chromium.org>
-	<1413913655-22351-3-git-send-email-dianders@chromium.org>
-	<2697554.Rv8qaADZsg@diego>
-Date: Tue, 28 Oct 2014 18:03:27 +0100
-Message-ID: <CACRpkdas7K-JUZJSRsgmcBVdxK+mb3VV7TxFXYh91d4n7+eizQ@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] pinctrl: rockchip: Parse pin groups before calling pinctrl_register()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: Doug Anderson <dianders@chromium.org>, Chris Zhong <zyw@rock-chips.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-rockchip@lists.infradead.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 23, 2014 at 6:26 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> Am Dienstag, 21. Oktober 2014, 10:47:34 schrieb Doug Anderson:
->> Just like in (529301c pinctrl: samsung: Parse pin groups before
->> calling pinctrl_register()), Rockchip also needs to parse pin groups
->> earlier to make hogs work.
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> Tested-by: Chris Zhong <zyw@rock-chips.com>
->
-> Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+On Mon, 27 Oct 2014, Juergen Gross wrote:
+> At the moment there are a lot of places that handle setting or getting
+> the page cache mode by treating the pgprot bits equal to the cache mode.
+> This is only true because there are a lot of assumptions about the setup
+> of the PAT MSR. Otherwise the cache type needs to get translated into
+> pgprot bits and vice versa.
+> 
+> This patch tries to prepare for that by introducing a separate type
+> for the cache mode and adding functions to translate between those and
+> pgprot values.
+> 
+> To avoid too much performance penalty the translation between cache mode
+> and pgprot values is done via tables which contain the relevant
+> information.  Write-back cache mode is hard-wired to be 0, all other
+> modes are configurable via those tables. For large pages there are
+> translation functions as the PAT bit is located at different positions
+> in the ptes of 4k and large pages.
 
-Heiko, can you collect this for a pull request?
+I'm fine with the approach itself. Though I wish you had split this
+patch in several sanely to review pieces.
 
-Yours,
-Linus Walleij
+  - Introduce enums, helper functions etc. which basically reflect
+    the state of today
+
+  - Change the usage sites to use the enums and helpers
+
+  - Convert the enum/helper implementation to the new scheme
+
+  - Split out the printk change
+
+  ...
+
+Thanks,
+
+	tglx
