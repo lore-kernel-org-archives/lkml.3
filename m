@@ -1,93 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756805AbaJ1Eik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:38:40 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:32870 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497AbaJ1EhY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 00:37:24 -0400
-Date: Tue, 28 Oct 2014 10:07:18 +0530
-From: Heena Sirwani <heenasirwani@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: john.stultz@linaro.org, tglx@linutronix.de, arnd@arndb.de
-Subject: [PATCH v6] cpuset: Replace all instances of time_t with time64_t
-Message-ID: <20141028043718.GA27030@heena-HP-Compaq-8200-Elite-MT-PC>
+	id S1756845AbaJ1Ej7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:39:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:15939 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120AbaJ1Ej4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 00:39:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="407062624"
+Message-ID: <544F1E19.5030606@linux.intel.com>
+Date: Tue, 28 Oct 2014 12:39:53 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-pm@vger.kernel.org >> Linux PM list" 
+	<linux-pm@vger.kernel.org>
+Subject: Re: [RFC/PATCH] PM / Sleep: Timer quiesce in freeze state
+References: <5446787E.60202@linux.intel.com> <20141024153656.GM12706@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141024153656.GM12706@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch replaces all instances of time_t with time64_t i.e.
-change the type used for representing time from 32-bit to 64-bit. All
-32-bit kernels to date use a signed 32-bit time_t type, which can only
-represent time until January 2038. Since embedded systems running 32-bit
-Linux are going to survive beyond that date, we have to change all
-current uses, in a backwards compatible way.
+On 2014/10/24 23:36, Peter Zijlstra wrote:
+>> +
+>> +static void freezer_idle(int cpu)
+>> +{
+>> +	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>> +	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+>> +
+>> +	stop_critical_timings();
+>> +
+>> +	while (suspend_freeze_wake == -1) {
+>> +		int next_state;
+>> +
+>> +		/*
+>> +		 * interrupt must be disabled before cpu enters idle
+>> +		 */
+>> +		local_irq_disable();
+>> +
+>> +		next_state = cpuidle_select(drv, dev);
+>> +		if (next_state < 0) {
+>> +			arch_cpu_idle();
+>> +			continue;
+>> +		}
+>> +		/*
+>> +		 * cpuidle_enter will return with interrupt enabled
+>> +		 */
+>> +		cpuidle_enter(drv, dev, next_state);
+>> +	}
+>> +
+>> +	if (suspend_freeze_wake == cpu)
+>> +		kick_all_cpus_sync();
+>> +
+> 
+> So I disabled IRQs here
+> 
+>> +	start_critical_timings();
+>> +}
+>> +
+>> +static void freezer_resume_tk(int cpu)
+>> +{
+>> +	if (tick_do_timer_cpu != cpu)
+>> +		return;
+>> +
+>>  	cpuidle_pause();
+>>  	cpuidle_use_deepest_state(false);
+>> +
+> 
+> Such that they would still be disabled here
+> 
+>> +	local_irq_disable();
+>> +	timekeeping_resume();
+>> +	local_irq_enable();
+>> +}
+>> +
+>> +static void freezer_resume_clkevt(int cpu)
+>> +{
+>> +	if (tick_do_timer_cpu == cpu)
+>> +		return;
+>> +
+>> +	touch_softlockup_watchdog();
+>> +	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
+> 
+> And here.
+> 
+>> +	local_irq_disable();
+>> +	hrtimers_resume();
+>> +	local_irq_enable();
+>> +}
+>> +
+>> +typedef void (*freezer_fn)(int);
+>> +
+>> +static freezer_fn freezer_func[FREEZER_EXIT] = {
+>> +	NULL,
+>> +	freezer_pick_tk,
+>> +	freezer_suspend_clkevt,
+>> +	freezer_suspend_tk,
+>> +	freezer_idle,
+>> +	freezer_resume_tk,
+>> +	freezer_resume_clkevt,
+>> +};
+> 
+> Because this is a stop_machine callback, which are nominally run with
+> IRQs disabled.
+> 
+>> +static int freezer_stopper_fn(void *arg)
+>> +{
+>> +	struct freezer_data *fd = arg;
+>> +	enum freezer_state state = FREEZER_NONE;
+>> +	int cpu = smp_processor_id();
+>> +
+>> +	do {
+>> +		cpu_relax();
+>> +		if (fd->state != state) {
+>> +			state = fd->state;
+>> +			if (freezer_func[state])
+>> +				(*freezer_func[state])(cpu);
+>> +			ack_state(fd);
+>> +		}
+>> +	} while (fd->state != FREEZER_EXIT);
+>> +	return 0;
+>> +}
+> 
+> Now I suppose the problem is with cpu_pause() which needs IPIs to
+> complete? 
 
-The patch also changes the function get_seconds() that returns a 32-bit
-integer to ktime_get_seconds() that returns seconds as 64-bit integer.
+Yes, cpu_pause() will invoke smp IPI functions which need interrupt is
+enabled. So I changed irq ops like above. Actually, I have an early
+version to move cpuidle_pause()/cpuidle_resume() out of stop_machine(),
+that might be a better solution?
 
-The patch changes the type of ticks from time_t to u32. We keep ticks as
-32-bits as the function uses 32-bit arithmetic which would prove less
-expensive than 64-bit arithmetic and the function is expected to be
-called atleast once every 32 seconds.
-
-Signed-off-by: Heena Sirwani <heenasirwani@gmail.com>
----
-Changes in v6:
-	- Changed the function ktime_get_ts64() to ktime_get_seconds().
-
- kernel/cpuset.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 1f107c7..65c7b20 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -51,6 +51,7 @@
- #include <linux/stat.h>
- #include <linux/string.h>
- #include <linux/time.h>
-+#include <linux/time64.h>
- #include <linux/backing-dev.h>
- #include <linux/sort.h>
- 
-@@ -68,7 +69,7 @@ struct static_key cpusets_enabled_key __read_mostly = STATIC_KEY_INIT_FALSE;
- struct fmeter {
- 	int cnt;		/* unprocessed events count */
- 	int val;		/* most recent output value */
--	time_t time;		/* clock (secs) when val computed */
-+	time64_t time;		/* clock (secs) when val computed */
- 	spinlock_t lock;	/* guards read or write of above */
- };
- 
-@@ -1355,7 +1356,7 @@ out:
-  */
- 
- #define FM_COEF 933		/* coefficient for half-life of 10 secs */
--#define FM_MAXTICKS ((time_t)99) /* useless computing more ticks than this */
-+#define FM_MAXTICKS ((u32)99)   /* useless computing more ticks than this */
- #define FM_MAXCNT 1000000	/* limit cnt to avoid overflow */
- #define FM_SCALE 1000		/* faux fixed point scale */
- 
-@@ -1371,8 +1372,11 @@ static void fmeter_init(struct fmeter *fmp)
- /* Internal meter update - process cnt events and update value */
- static void fmeter_update(struct fmeter *fmp)
- {
--	time_t now = get_seconds();
--	time_t ticks = now - fmp->time;
-+	time64_t now;
-+	u32 ticks;
-+
-+	now = ktime_get_seconds();
-+	ticks = now - fmp->time;
- 
- 	if (ticks == 0)
- 		return;
--- 
-1.9.1
+Thanks,
+-Aubrey
 
