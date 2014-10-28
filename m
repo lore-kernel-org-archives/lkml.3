@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932978AbaJ1Dxl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:53:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47658 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934211AbaJ1Dxd (ORCPT
+	id S1756512AbaJ1EKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:10:06 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:21615 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaJ1EKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:53:33 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 27/43] NFSv4.1: Fix an NFSv4.1 state renewal regression
-Date: Tue, 28 Oct 2014 11:36:25 +0800
-Message-Id: <20141028033524.573148666@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 28 Oct 2014 00:10:01 -0400
+X-AuditID: cbfee68f-f791c6d000004834-3d-544f1718000b
+From: Kukjin Kim <kgene@kernel.org>
+To: "'Sylwester Nawrocki'" <s.nawrocki@samsung.com>,
+        "'Chanwoo Choi'" <cw00.choi@samsung.com>
+Cc: tomasz.figa@gmail.com, sw0312.kim@samsung.com, kyungmin.park@samsung.com,
+        inki.dae@samsung.com, geunsik.lim@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1414372318-594-1-git-send-email-cw00.choi@samsung.com>
+ <544E20E3.5030609@samsung.com>
+In-reply-to: <544E20E3.5030609@samsung.com>
+Subject: RE: [PATCHv3 0/2] clk: samsung: Add clock controller driver for
+ Exynos4415 SoC
+Date: Tue, 28 Oct 2014 13:09:59 +0900
+Message-id: <02dd01cff265$0a846060$1f8d2120$@kernel.org>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQI0CZL/2Z4VhfOaF/Z40tO6aLeghwGnET4Qm299vTA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCIsWRmVeSWpSXmKPExsVy+t8zQ10Jcf8Qg6V72C2uf3nOavFnQiub
+	xaT7E1gszja9Ybe4vGsOm8WM8/uYLA6/aWe1mDH5JZvFql1/GB04PXbOusvu0bdlFaPH501y
+	AcxRXDYpqTmZZalF+nYJXBmzN9xkL2hnreh6uIixgbGXpYuRk0NCwETiz8IbjBC2mMSFe+vZ
+	uhi5OIQEljFKXD55hBmm6OmeacwQiemMEluOT2GHcP4ySny58xoow8HBJqAs0dikD9IgLKAl
+	sXBLE9gGEYFoiUvHFzKB1DMLHGCUaLiwEmyqkECKxPcFj5lAbE4BbYnFW/azQDRHSlzY8AKs
+	hkVAVeLIz81g5/EKWEh8mtvCCmELSvyYfA+snhlo2fqdx5kgbHmJzWveQl2tILHj7GtGiCOs
+	JCZ3HWSFqBGR2PfiHSPIQRICX9klds9ZyASxTEDi2+RDLCDPSAjISmw6ADVHUuLgihssExgl
+	ZyFZPQvJ6llIVs9CsmIBI8sqRtHUguSC4qT0ImO94sTc4tK8dL3k/NxNjJDI7t/BePeA9SFG
+	AQ5GJR5eg4d+IUKsiWXFlbmHGE2BLprILCWanA9MH3kl8YbGZkYWpiamxkbmlmZK4rwLpX4G
+	CwmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamDcN22F0Z99H7e8ebvpVqhR96WAM0UFd/ru3855
+	GOHl3XtC2EuzxjyA12RC6tQi57/WaWl3RRcUi/lmzf9xZ37uQWaVE66ezf6MzFJfc6/M+5Kz
+	w217rHDO1ROff/zgNV696+hrozyl3T5t7d/bH99Qc+7sy3vB97i5V2XWT3XNIz+Td1ZGmKoo
+	sRRnJBpqMRcVJwIATD4ZZ+cCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsVy+t9jQV0Jcf8Qg8kLmC2uf3nOavFnQiub
+	xaT7E1gszja9Ybe4vGsOm8WM8/uYLA6/aWe1mDH5JZvFql1/GB04PXbOusvu0bdlFaPH501y
+	AcxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUB3
+	KCmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzZm+4yV7QzlrR9XARYwNj
+	L0sXIyeHhICJxNM905ghbDGJC/fWs3UxcnEICUxnlNhyfAo7hPOXUeLLnddAVRwcbALKEo1N
+	+iANwgJaEgu3NIENEhGIlrh0fCETSD2zwAFGiYYLK8GmCgmkSHxf8JgJxOYU0JZYvGU/C0Rz
+	pMSFDS/AalgEVCWO/NzMCGLzClhIfJrbwgphC0r8mHwPrJ4ZaNn6nceZIGx5ic1r3kJdrSCx
+	4+xrRogjrCQmdx1khagRkdj34h3jBEbhWUhGzUIyahaSUbOQtCxgZFnFKJpakFxQnJSea6hX
+	nJhbXJqXrpecn7uJEZw2nkntYFzZYHGIUYCDUYmH1+ChX4gQa2JZcWXuIUYJDmYlEV6vHUAh
+	3pTEyqrUovz4otKc1OJDjKZAn05klhJNzgemtLySeENjEzMjSyMzCyMTc3Mlcd4DrdaBQgLp
+	iSWp2ampBalFMH1MHJxSDYxFh2v8lvWnbpZVXyPzm6U5+ZVu2ocTl/7qZE6Quq59ST3Ufl57
+	skhlAINEzqrgcxrHzyqt3riOc1fqFIXDeyrdF3ZEr5eJcYhM2vfBuX+J/MZZDzvjDP8ZLmma
+	dERF9cNLl4jEyTGa0ydlNNclvwtb+CwwYF7w+4RrV7Y9+z83YK5Q8zlmuWwlluKMREMt5qLi
+	RABENF1bMQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Sylwester Nawrocki wrote:
+> 
+> On 27/10/14 02:11, Chanwoo Choi wrote:
+> > Chanwoo Choi (2):
+> >   clk: samsung: exynos4415: Add clocks using common clock framework
+> >   clk: samsung: Document binding for Exynos4415 clock controller
+> 
+> Added both to my tree, thanks. In future please put DT binding
+> documentation first in the series, before the actual driver patch.
+> 
+Hi Sylwester,
 
-------------------
+Can you please provide a topic branch for clk-exynos4415? Because exynos4415 dt
+file needs inclusion of following header files.
 
-From: Andy Adamson <andros@netapp.com>
++#include <dt-bindings/clock/exynos4415.h>
++#include <dt-bindings/clock/exynos-audss-clk.h>
 
-commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
-
-Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
-not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
-call, on the wire to renew the NFSv4.1 state if the flag was not set.
-
-The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
-(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
-sometimes does the following:
-
-In normal operation, the only way a future state renewal call is put on the
-wire is via a call to nfs4_schedule_state_renewal, which schedules a
-nfs4_renew_state workqueue task. nfs4_renew_state determines if the
-NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
-which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
-Then the nfs41_proc_async_sequence rpc_release function schedules
-another state remewal via nfs4_schedule_state_renewal.
-
-Without this change we can get into a state where an application stops
-accessing the NFSv4.1 share, state renewal calls stop due to the
-NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
-from this situation is with a clientid re-establishment, once the application
-resumes and the server has timed out the lease and so returns
-NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
-
-An example application:
-open, lock, write a file.
-
-sleep for 6 * lease (could be less)
-
-ulock, close.
-
-In the above example with NFSv4.1 delegations enabled, without this change,
-there are no OP_SEQUENCE state renewal calls during the sleep, and the
-clientid is recovered due to lease expiration on the close.
-
-This issue does not occur with NFSv4.1 delegations disabled, nor with
-NFSv4.0, with or without delegations enabled.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
-Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfs/nfs4proc.c   |    2 +-
- fs/nfs/nfs4renewd.c |   12 ++++++++++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
-
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -6067,7 +6067,7 @@ static int nfs41_proc_async_sequence(str
- 	int ret = 0;
- 
- 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
--		return 0;
-+		return -EAGAIN;
- 	task = _nfs41_proc_sequence(clp, cred, false);
- 	if (IS_ERR(task))
- 		ret = PTR_ERR(task);
---- a/fs/nfs/nfs4renewd.c
-+++ b/fs/nfs/nfs4renewd.c
-@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *wor
- 			}
- 			nfs_expire_all_delegations(clp);
- 		} else {
-+			int ret;
-+
- 			/* Queue an asynchronous RENEW. */
--			ops->sched_state_renewal(clp, cred, renew_flags);
-+			ret = ops->sched_state_renewal(clp, cred, renew_flags);
- 			put_rpccred(cred);
--			goto out_exp;
-+			switch (ret) {
-+			default:
-+				goto out_exp;
-+			case -EAGAIN:
-+			case -ENOMEM:
-+				break;
-+			}
- 		}
- 	} else {
- 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
-
+Thanks,
+Kukjin
 
