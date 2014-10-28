@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024AbaJ1FW5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:22:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46481 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932859AbaJ1DwZ (ORCPT
+	id S933904AbaJ1FYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:24:42 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47912 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933696AbaJ1FYk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:25 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 09/43] spi: dw-mid: respect 8 bit mode
-Date: Tue, 28 Oct 2014 11:36:07 +0800
-Message-Id: <20141028033523.805730513@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 01:24:40 -0400
+Message-ID: <1414473874.8574.2.camel@tkhai>
+Subject: Re: [PATCH] sched: Fix race between task_group and sched_task_group
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Burke Libbey <burke.libbey@shopify.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Date: Tue, 28 Oct 2014 08:24:34 +0300
+In-Reply-To: <20141027230427.GA18454@redhat.com>
+References: <1414405105.19914.169.camel@tkhai>
+	 <20141027230427.GA18454@redhat.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+В Вт, 28/10/2014 в 00:04 +0100, Oleg Nesterov пишет:
+> On 10/27, Kirill Tkhai wrote:
+> >
+> > +static void cpu_cgroup_fork(struct task_struct *task)
+> > +{
+> > +	sched_move_task(task);
+> > +}
+> > +
+> >  static int cpu_cgroup_can_attach(struct cgroup_subsys_state *css,
+> >  				 struct cgroup_taskset *tset)
+> >  {
+> > @@ -8205,6 +8210,7 @@ struct cgroup_subsys cpu_cgrp_subsys = {
+> >  	.css_free	= cpu_cgroup_css_free,
+> >  	.css_online	= cpu_cgroup_css_online,
+> >  	.css_offline	= cpu_cgroup_css_offline,
+> > +	.fork		= cpu_cgroup_fork,
+> 
+> Agreed, but it seems that sched_move_task() -> task_css_check() can
+> complain if CONFIG_PROVE_RCU...
 
-------------------
+Thanks, Oleg.
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> 
+> cpu_cgroup_exit() too calls sched_move_task() without any lock, but
+> there is the PF_EXITING check and init_css_set can't go away.
+> 
+> perhaps sched_move_task() should just take rcu_read_lock() and use
+> task_css() ? This lockdep_is_held(siglock) looks ugly, and iiuc we
+> need it to shut up the warning if autogroup_move_group() is the caller.
 
-commit b41583e7299046abdc578c33f25ed83ee95b9b31 upstream.
+Shouldn't we do that in separate patch? How about this?
 
-In case of 8 bit mode and DMA usage we end up with every second byte written as
-0. We have to respect bits_per_word settings what this patch actually does.
+[PATCH]sched: Remove lockdep check in sched_move_task()
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+sched_move_task() is the only interface to change sched_task_group:
+cpu_cgrp_subsys methods and autogroup_move_group() use it.
 
----
- drivers/spi/spi-dw-mid.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Everything is synchronized by task_rq_lock(), so cpu_cgroup_attach()
+is ordered with other users of sched_move_task(). This means we do
+no need RCU here: if we've dereferenced a tg here, the .attach method
+hasn't been called for it yet.
 
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -136,7 +136,7 @@ static int mid_spi_dma_transfer(struct d
- 	txconf.dst_addr = dws->dma_addr;
- 	txconf.dst_maxburst = LNW_DMA_MSIZE_16;
- 	txconf.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	txconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	txconf.dst_addr_width = dws->dma_width;
- 	txconf.device_fc = false;
+Thus, we should pass "true" to task_css_check() to silence lockdep
+warnings.
+    
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Reported-by: Oleg Nesterov <oleg@redhat.com>
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index dde8adb..d77e6ee 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7403,8 +7403,12 @@ void sched_move_task(struct task_struct *tsk)
+ 	if (unlikely(running))
+ 		put_prev_task(rq, tsk);
  
- 	txchan->device->device_control(txchan, DMA_SLAVE_CONFIG,
-@@ -159,7 +159,7 @@ static int mid_spi_dma_transfer(struct d
- 	rxconf.src_addr = dws->dma_addr;
- 	rxconf.src_maxburst = LNW_DMA_MSIZE_16;
- 	rxconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	rxconf.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	rxconf.src_addr_width = dws->dma_width;
- 	rxconf.device_fc = false;
- 
- 	rxchan->device->device_control(rxchan, DMA_SLAVE_CONFIG,
+-	tg = container_of(task_css_check(tsk, cpu_cgrp_id,
+-				lockdep_is_held(&tsk->sighand->siglock)),
++	/*
++	 * All callers are synchronized by task_rq_lock(); we do not use RCU
++	 * which is pointless here. Thus, we pass "true" to task_css_check()
++	 * to prevent lockdep warnings.
++	 */
++	tg = container_of(task_css_check(tsk, cpu_cgrp_id, true),
+ 			  struct task_group, css);
+ 	tg = autogroup_task_group(tsk, tg);
+ 	tsk->sched_task_group = tg;
 
 
