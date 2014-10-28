@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759948AbaJ1GiL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:38:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45974 "EHLO
+	id S1759952AbaJ1Gia (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:38:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45965 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076AbaJ1Duf (ORCPT
+	with ESMTP id S1755073AbaJ1Dua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:35 -0400
+	Mon, 27 Oct 2014 23:50:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Allen Pais <allen.pais@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 087/100] sparc64: cpu hardware caps support for sparc M6 and M7
-Date: Tue, 28 Oct 2014 11:36:12 +0800
-Message-Id: <20141028033504.469373703@linuxfoundation.org>
+Subject: [PATCH 3.14 085/100] sparc64: correctly recognise M6 and M7 cpu type
+Date: Tue, 28 Oct 2014 11:36:10 +0800
+Message-Id: <20141028033504.376097681@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -31,49 +31,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Allen Pais <allen.pais@oracle.com>
 
+The following patch adds support for correctly
+recognising M6 and M7 cpu type.
+
 Signed-off-by: Allen Pais <allen.pais@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/setup_64.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/sparc/include/asm/spitfire.h |    2 ++
+ arch/sparc/kernel/cpu.c           |   12 ++++++++++++
+ arch/sparc/kernel/head_64.S       |   12 ++++++++++++
+ 3 files changed, 26 insertions(+)
 
---- a/arch/sparc/kernel/setup_64.c
-+++ b/arch/sparc/kernel/setup_64.c
-@@ -500,12 +500,16 @@ static void __init init_sparc64_elf_hwca
- 		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3 ||
- 		    sun4v_chip_type == SUN4V_CHIP_NIAGARA4 ||
- 		    sun4v_chip_type == SUN4V_CHIP_NIAGARA5 ||
-+		    sun4v_chip_type == SUN4V_CHIP_SPARC_M6 ||
-+		    sun4v_chip_type == SUN4V_CHIP_SPARC_M7 ||
- 		    sun4v_chip_type == SUN4V_CHIP_SPARC64X)
- 			cap |= HWCAP_SPARC_BLKINIT;
- 		if (sun4v_chip_type == SUN4V_CHIP_NIAGARA2 ||
- 		    sun4v_chip_type == SUN4V_CHIP_NIAGARA3 ||
- 		    sun4v_chip_type == SUN4V_CHIP_NIAGARA4 ||
- 		    sun4v_chip_type == SUN4V_CHIP_NIAGARA5 ||
-+		    sun4v_chip_type == SUN4V_CHIP_SPARC_M6 ||
-+		    sun4v_chip_type == SUN4V_CHIP_SPARC_M7 ||
- 		    sun4v_chip_type == SUN4V_CHIP_SPARC64X)
- 			cap |= HWCAP_SPARC_N2;
- 	}
-@@ -533,6 +537,8 @@ static void __init init_sparc64_elf_hwca
- 			    sun4v_chip_type == SUN4V_CHIP_NIAGARA3 ||
- 			    sun4v_chip_type == SUN4V_CHIP_NIAGARA4 ||
- 			    sun4v_chip_type == SUN4V_CHIP_NIAGARA5 ||
-+			    sun4v_chip_type == SUN4V_CHIP_SPARC_M6 ||
-+			    sun4v_chip_type == SUN4V_CHIP_SPARC_M7 ||
- 			    sun4v_chip_type == SUN4V_CHIP_SPARC64X)
- 				cap |= (AV_SPARC_VIS | AV_SPARC_VIS2 |
- 					AV_SPARC_ASI_BLK_INIT |
-@@ -540,6 +546,8 @@ static void __init init_sparc64_elf_hwca
- 			if (sun4v_chip_type == SUN4V_CHIP_NIAGARA3 ||
- 			    sun4v_chip_type == SUN4V_CHIP_NIAGARA4 ||
- 			    sun4v_chip_type == SUN4V_CHIP_NIAGARA5 ||
-+			    sun4v_chip_type == SUN4V_CHIP_SPARC_M6 ||
-+			    sun4v_chip_type == SUN4V_CHIP_SPARC_M7 ||
- 			    sun4v_chip_type == SUN4V_CHIP_SPARC64X)
- 				cap |= (AV_SPARC_VIS3 | AV_SPARC_HPC |
- 					AV_SPARC_FMAF);
+--- a/arch/sparc/include/asm/spitfire.h
++++ b/arch/sparc/include/asm/spitfire.h
+@@ -45,6 +45,8 @@
+ #define SUN4V_CHIP_NIAGARA3	0x03
+ #define SUN4V_CHIP_NIAGARA4	0x04
+ #define SUN4V_CHIP_NIAGARA5	0x05
++#define SUN4V_CHIP_SPARC_M6	0x06
++#define SUN4V_CHIP_SPARC_M7	0x07
+ #define SUN4V_CHIP_SPARC64X	0x8a
+ #define SUN4V_CHIP_UNKNOWN	0xff
+ 
+--- a/arch/sparc/kernel/cpu.c
++++ b/arch/sparc/kernel/cpu.c
+@@ -493,6 +493,18 @@ static void __init sun4v_cpu_probe(void)
+ 		sparc_pmu_type = "niagara5";
+ 		break;
+ 
++	case SUN4V_CHIP_SPARC_M6:
++		sparc_cpu_type = "SPARC-M6";
++		sparc_fpu_type = "SPARC-M6 integrated FPU";
++		sparc_pmu_type = "sparc-m6";
++		break;
++
++	case SUN4V_CHIP_SPARC_M7:
++		sparc_cpu_type = "SPARC-M7";
++		sparc_fpu_type = "SPARC-M7 integrated FPU";
++		sparc_pmu_type = "sparc-m7";
++		break;
++
+ 	case SUN4V_CHIP_SPARC64X:
+ 		sparc_cpu_type = "SPARC64-X";
+ 		sparc_fpu_type = "SPARC64-X integrated FPU";
+--- a/arch/sparc/kernel/head_64.S
++++ b/arch/sparc/kernel/head_64.S
+@@ -427,6 +427,12 @@ sun4v_chip_type:
+ 	cmp	%g2, '5'
+ 	be,pt	%xcc, 5f
+ 	 mov	SUN4V_CHIP_NIAGARA5, %g4
++	cmp	%g2, '6'
++	be,pt	%xcc, 5f
++	 mov	SUN4V_CHIP_SPARC_M6, %g4
++	cmp	%g2, '7'
++	be,pt	%xcc, 5f
++	 mov	SUN4V_CHIP_SPARC_M7, %g4
+ 	ba,pt	%xcc, 49f
+ 	 nop
+ 
+@@ -585,6 +591,12 @@ niagara_tlb_fixup:
+ 	cmp	%g1, SUN4V_CHIP_NIAGARA5
+ 	be,pt	%xcc, niagara4_patch
+ 	 nop
++	cmp	%g1, SUN4V_CHIP_SPARC_M6
++	be,pt	%xcc, niagara4_patch
++	 nop
++	cmp	%g1, SUN4V_CHIP_SPARC_M7
++	be,pt	%xcc, niagara4_patch
++	 nop
+ 
+ 	call	generic_patch_copyops
+ 	 nop
 
 
