@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaJ1PFd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:05:33 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47353 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753809AbaJ1PFb (ORCPT
+	id S1753016AbaJ1PFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:05:22 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:11744 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900AbaJ1PFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:05:31 -0400
-Date: Tue, 28 Oct 2014 15:05:21 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Xia Kaixu <kaixu.xia@linaro.org>, arm@kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 4/5] ARM: allow errata and XIP options to be enabled
- without ARCH_MULTIPLATFORM_STRICT
-Message-ID: <20141028150521.GK27405@n2100.arm.linux.org.uk>
-References: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org>
- <6893071.4YhqEbdaBz@wuerfel>
- <20141028143118.GH27405@n2100.arm.linux.org.uk>
- <1831362.dUvM0VHfPi@wuerfel>
+	Tue, 28 Oct 2014 11:05:20 -0400
+Message-ID: <544FB0AC.4020205@imgtec.com>
+Date: Tue, 28 Oct 2014 15:05:16 +0000
+From: Qais Yousef <qais.yousef@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1831362.dUvM0VHfPi@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Clemens Ladisch <clemens@ladisch.de>, <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>, <devicetree@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, Neil Jones <neil.jones@imgtec.com>
+Subject: Re: [PATCH 00/11] Add AXD Audio Processing IP driver
+References: <1414495589-8579-1-git-send-email-qais.yousef@imgtec.com> <544F8439.4080402@ladisch.de> <544F97A4.7080209@imgtec.com> <20141028141348.GD18384@kroah.com>
+In-Reply-To: <20141028141348.GD18384@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 03:50:31PM +0100, Arnd Bergmann wrote:
-> That would solve the problem for V7M, but I also don't see a reason
-> to disallow XIP_KERNEL on a platform that depends on ARCH_MULTIPLATFORM.
-> 
-> The main problem is that any ARMv4/v5 platform that currently uses
-> XIP_KERNEL breaks when we do a conversion to ARCH_MULTIPLATFORM, and
-> I think that is bad.
-> 
-> The same applies to ZBOOT_ROM, which we should probably treat the
-> same way here. An example for that is the Renesas SH-Mobile SH7372 that
-> can boot directly from MMC. I really want Renesas to convert
-> all of their SH-Mobile machines to multiplatform, just like all other
-> ARMv7 platforms. There is nothing preventing you from running a
-> multiplatform kernel on SH7372 as long as you don't want to load the
-> kernel from MMC without a proper bootloader. I also don't see a reason
-> to take out that feature just because they are migrating to multiplatform
-> (there may or may not be other reasons to deprecate this feature, but that
-> is a different matter). At the moment SH-Mobile can be built either
-> as a standalone platform or as multiplatform, but even now you can build
-> a kernel that uses CONFIG_ZBOOT_ROM_MMCIF and will only ever work on
-> SH7372 but includes all other shmobile targets as well.
-> 
-> I don't see anything wrong with that, and I would like to see this
-> keep working when SH7372 is part of ARCH_MULTIPLATFORM, but at the
-> same time think it's good to have ARCH_MULTIPLATFORM_STRICT to prevent
-> this from being selected for a kernel that is supposed to run everywhere.
+On 10/28/2014 02:13 PM, Greg Kroah-Hartman wrote:
+> On Tue, Oct 28, 2014 at 01:18:28PM +0000, Qais Yousef wrote:
+>> On 10/28/2014 11:55 AM, Clemens Ladisch wrote:
+>>> Qais Yousef wrote:
+>>>> AXD Audio Processing IP performs audio decoding, encoding, mixing, equalisation,
+>>>> synchronisation and playback.
+>>> What exactly do you mean with "synchronisation" and "playback"?
+>> Synchronisation refers to accurate audio playout relative to a master
+>> clock source including compensation of drift between the master clock
+>> source and the playout clock of the audio hardware. Hence allowing
+>> synchronised audio playout across multiple independent devices.
+>>
+>> Playback simple refers to the fact that AXD is capable of managing audio
+>> playout hardware like I2S and SPDIF interfaces.
+>>
+>>
+>>>> It doesn't fit in alsa subsystem but I Cced them to confirm.
+>>> ... because those two words sound like something that a sound card could do.
+>> The problem mainly stems from the fact that we take a variety of
+>> compressed audio as input and we could perform audio encoding. The
+>> problem with the compressed audio is that the range of decoders and
+>> configuration supported in alsa is limited and there's no support for
+>> taking raw pcm and producing compressed output. I'm not an expert on
+>> alsa but when I looked it looked like there's more infra structure
+>> required.
+>>
+>> The following not supported points from Documentation/sound/alsa/compress_offload.txt affect us:
+>>
+>> - Volume control/routing is not handled by this API. Devices exposing a
+>>    compressed data interface will be considered as regular ALSA devices;
+>>    volume changes and routing information will be provided with regular
+>>    ALSA kcontrols.
+>>
+>> - Embedded audio effects. Such effects should be enabled in the same
+>>    manner, no matter if the input was PCM or compressed.
+>>
+>> - Encoding/decoding acceleration is not supported as mentioned
+>>    above. It is possible to route the output of a decoder to a capture
+>>    stream, or even implement transcoding capabilities. This routing
+>>    would be enabled with ALSA kcontrols.
+> So instead you created a one-off api just for this hardware?  Ick, no,
+> please work with the audio developers to incorporate it into the
+> standard Linux audio apis so that everyone can benifit and not require
+> special userspace programs to drive this hardware.
+>
+> thanks,
+>
+> greg k-h
 
-What you're asking for is a multiplatform kernel which can't be run on
-multiple platforms.  Think about that for a while.
+OK. I'll wait to hear from alsa developers to see the extent of work 
+required. I can't see it being trivial though. Would it be possible for 
+this to be accepted into staging until this is resolved?
 
-If you're going to be building an ARMv5 XIP kernel, then it needs to only
-include support for the ARMv5 SoC which you are targetting.  It's no good
-to think "oh, we can then include other ARMv5 SoCs too" - you can, but
-the kernel will never run there.
-
-That's where the pre-multiplatform setup works well - it ensures that the
-correct dependencies are there.  What we need to do is to combine these
-two properly such that if you want to build with a feature which limits
-you to one SoC, then the kernel configuration limits you to exactly that.
-That's not done by making some magic Kconfig option which disables a load
-of dependencies but still lets you chuck lots of useless stuff in together.
-
-In any case, the thought of an XIP kernel with an allmodconfig config
-rather misses one of the fundamental problems with XIP multiplatform.  If
-you /ever/ want to write to the flash which the XIP kernel is contained,
-you must move the interrupt handling code out into RAM, so that when an
-interrupt happens, you can talk to the flash chip to make the kernel
-readable again.  That takes *all* of the initial interrupt handling code
-and data into RAM.
-
-What that means is that our current IRQ multi-handler solution doesn't
-work there - and we need a set of platform specific assembly fragments
-to do this.
-
-As I said previously, there's also the complexity in setting up the XIP
-mappings in the assembly code, which takes quite an amount of knowledge
-of the physical memory layout on the SoC.
-
-Frankly, I think the idea of XIP and multiplatform is a pipedream.
-
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Thanks,
+Qais
