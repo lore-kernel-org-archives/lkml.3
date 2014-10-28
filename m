@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754234AbaJ1DiH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:38:07 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:47308 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149AbaJ1DiC (ORCPT
+	id S1754304AbaJ1DiV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:38:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44505 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263AbaJ1DiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:02 -0400
-From: "billbonaparte" <programme110@gmail.com>
-To: <linux-kernel@vger.kernel.org>,
-        "'Netfilter Developer Mailing List'" 
-	<netfilter-devel@vger.kernel.org>,
-        "'Pablo Neira Ayuso'" <pablo@netfilter.org>,
-        "'Patrick McHardy'" <kaber@trash.net>, <kadlec@blackhole.kfki.hu>,
-        <davem@davemloft.net>
-Cc: "'Changli Gao'" <xiaosuo@gmail.com>,
-        "'Jozsef Kadlecsik'" <kadlec@blackhole.kfki.hu>,
-        "'Jesper Dangaard Brouer'" <brouer@redhat.com>,
-        "'Andrey Vagin'" <avagin@openvz.org>
-References: <02ef01cff25f$29887f60$7c997e20$@gmail.com>
-In-Reply-To: <02ef01cff25f$29887f60$7c997e20$@gmail.com>
-Subject: netfilter: nf_conntrack: there maybe a bug in __nf_conntrack_confirm, when it race against get_next_corpse
-Date: Tue, 28 Oct 2014 11:37:31 +0800
-Message-ID: <02f201cff260$8622e610$9268b230$@gmail.com>
+	Mon, 27 Oct 2014 23:38:16 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 3.17 041/146] dmaengine: pl330: Fix NULL pointer dereference on driver unbind
+Date: Tue, 28 Oct 2014 11:33:03 +0800
+Message-Id: <20141028033345.199811580@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
+References: <20141028033343.441992423@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQHdrCcgnpFN7gwCk+dXThtr2X4YQJwpZ1Mw
-Content-Language: zh-cn
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all:
-	sorry for sending this mail again, the last mail doesn't show text
-clearly.
-	In function __nf_conntrack_confirm, we check the conntrack if it was
-alreay dead, before insert it into hash-table. 
-	we do this because if we insert an already 'dead' hash,  it will
-block further use of that particular connection.
-	but we don't do that right.
-    let's consider the following case:
-	
-	cpu1                                              cpu2
-__nf_conntrack_confirm                          get_next_corpse
-   lock corresponding hash-list                        ....
-   check nf_ct_is_dying(ct)
-for_each_possible_cpu(cpu) {
-		......
-spin_lock_bh(&pcpu->lock);
-		......
-set_bit(IPS_DYING_BIT, &ct->status);
-   nf_ct_del_from_dying_or_unconfirmed_list(ct);
-spin_unlock_bh(&pcpu_lock);
-   add_timer(&ct->timeout);                          }	
-   ct->status |= IPS_CONFIRMD;
-   __nf_conntrack_hash_insert(ct);   /* the conntrack has been seted as
-dying*/
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-	The above case reveal two problems:
-	1. we may insert a dead conntrack to hash-table, it will block
-further use of that particular connection.
-	2. operation on ct->status should be atomic, because it race aginst
-get_next_corpse.
-	  due to this reason, the operation on ct->status in
-nf_nat_setup_info should be atomic as well.
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-	if we want to resolve the first problem, we must delete the
-unconfirmed conntrack from unconfirmed-list first, then check if it is
-already dead.
-	Am I right to do this ?
-	Appreciate any comments and reply.
+commit 6e4a2a83f95826201bbd89f55522537ea52d1d67 upstream.
+
+Fix a NULL pointer dereference after unbinding the driver, if channel
+resources were not yet allocated (no call to
+pl330_alloc_chan_resources()):
+$ echo 12850000.mdma > /sys/bus/amba/drivers/dma-pl330/unbind
+[   13.606533] DMA pl330_control: removing pch: eeab6800, chan: eeab6814, thread:   (null)
+[   13.614472] Unable to handle kernel NULL pointer dereference at virtual address 0000000c
+[   13.622537] pgd = ee284000
+[   13.625228] [0000000c] *pgd=6e1e4831, *pte=00000000, *ppte=00000000
+[   13.631482] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+[   13.636859] Modules linked in:
+[   13.639903] CPU: 0 PID: 1 Comm: sh Not tainted 3.17.0-rc3-next-20140904-00004-g7020ffc33ca3-dirty #420
+[   13.649187] task: ee80a800 ti: ee888000 task.ti: ee888000
+[   13.654589] PC is at _stop+0x8/0x2c8
+[   13.658131] LR is at pl330_control+0x70/0x2e8
+[   13.662468] pc : [<c0206028>]    lr : [<c020649c>]    psr: 60000093
+[   13.662468] sp : ee889e58  ip : 00000001  fp : 000bab70
+[   13.673922] r10: eeab6814  r9 : ee16debc  r8 : 00000000
+[   13.679131] r7 : eeab685c  r6 : 60000013  r5 : ee16de10  r4 : eeab6800
+[   13.685641] r3 : 00000002  r2 : 00000000  r1 : 00010000  r0 : 00000000
+[   13.692153] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[   13.699357] Control: 10c5387d  Table: 6e28404a  DAC: 00000015
+[   13.705085] Process sh (pid: 1, stack limit = 0xee888240)
+[   13.710466] Stack: (0xee889e58 to 0xee88a000)
+[   13.714808] 9e40:                                                       00000002 eeab6800
+[   13.722969] 9e60: ee16de10 eeab6800 ee16de10 60000013 eeab685c c020649c 00000000 c040280c
+[   13.731128] 9e80: ee889e80 ee889e80 ee16de18 ee16de10 eeab6880 eeab6814 00200200 eeab68a8
+[   13.739287] 9ea0: 00100100 c0208048 00000000 c0409fc4 eea80800 eea808f8 c0605c44 0000000e
+[   13.747446] 9ec0: 0000000e eeb3960c eeb39600 c0203c48 eea80800 c0605c44 c0605a8c c023f694
+[   13.755605] 9ee0: ee80a800 eea80834 eea80800 c023f704 ee80a800 eea80800 c0605c44 c023e8ec
+[   13.763764] 9f00: 0000000e ee149780 ee29e580 ee889f80 ee29e580 c023e19c 0000000e c01167e4
+[   13.771923] 9f20: c01167a0 00000000 00000000 c0115e88 00000000 00000000 ee0b1a00 0000000e
+[   13.780082] 9f40: b6f48000 ee889f80 0000000e ee888000 b6f48000 c00bfadc 00000000 00000003
+[   13.788241] 9f60: 00000000 00000000 00000000 ee0b1a00 ee0b1a00 0000000e b6f48000 c00bfdf4
+[   13.796401] 9f80: 00000000 00000000 ffffffff 0000000e b6f48000 b6edc5d0 00000004 c000e7a4
+[   13.804560] 9fa0: 00000000 c000e620 0000000e b6f48000 00000001 b6f48000 0000000e 00000000
+[   13.812719] 9fc0: 0000000e b6f48000 b6edc5d0 00000004 0000000e b6f4c8c0 000c3470 000bab70
+[   13.820879] 9fe0: 00000000 bed2aa50 b6e18bdc b6e6b52c 60000010 00000001 c0c0c0c0 c0c0c0c0
+[   13.829058] [<c0206028>] (_stop) from [<c020649c>] (pl330_control+0x70/0x2e8)
+[   13.836165] [<c020649c>] (pl330_control) from [<c0208048>] (pl330_remove+0xb0/0xdc)
+[   13.843800] [<c0208048>] (pl330_remove) from [<c0203c48>] (amba_remove+0x24/0xc0)
+[   13.851272] [<c0203c48>] (amba_remove) from [<c023f694>] (__device_release_driver+0x70/0xc4)
+[   13.859685] [<c023f694>] (__device_release_driver) from [<c023f704>] (device_release_driver+0x1c/0x28)
+[   13.868971] [<c023f704>] (device_release_driver) from [<c023e8ec>] (unbind_store+0x58/0x90)
+[   13.877303] [<c023e8ec>] (unbind_store) from [<c023e19c>] (drv_attr_store+0x20/0x2c)
+[   13.885036] [<c023e19c>] (drv_attr_store) from [<c01167e4>] (sysfs_kf_write+0x44/0x48)
+[   13.892928] [<c01167e4>] (sysfs_kf_write) from [<c0115e88>] (kernfs_fop_write+0xc0/0x17c)
+[   13.901090] [<c0115e88>] (kernfs_fop_write) from [<c00bfadc>] (vfs_write+0xa0/0x1a8)
+[   13.908812] [<c00bfadc>] (vfs_write) from [<c00bfdf4>] (SyS_write+0x40/0x8c)
+[   13.915850] [<c00bfdf4>] (SyS_write) from [<c000e620>] (ret_fast_syscall+0x0/0x30)
+[   13.923392] Code: e5813010 e12fff1e e92d40f0 e24dd00c (e590200c)
+[   13.929467] ---[ end trace 10064e15a5929cf8 ]---
+
+Terminate the thread and free channel resource only if channel resources
+were allocated (thread is not NULL).
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: b3040e40675e ("DMA: PL330: Add dma api driver")
+Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/dma/pl330.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2784,8 +2784,10 @@ static int pl330_remove(struct amba_devi
+ 		list_del(&pch->chan.device_node);
+ 
+ 		/* Flush the channel */
+-		pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+-		pl330_free_chan_resources(&pch->chan);
++		if (pch->thread) {
++			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
++			pl330_free_chan_resources(&pch->chan);
++		}
+ 	}
+ 
+ 	pl330_del(pl330);
+
 
