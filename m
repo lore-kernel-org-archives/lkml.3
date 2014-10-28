@@ -1,152 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758322AbaJ1FeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:34:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46341 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090AbaJ1DwT (ORCPT
+	id S1758352AbaJ1Fef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:34:35 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40282 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756113AbaJ1Fed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Willem Pinckaers <willem@lekkertech.net>,
-        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
-Subject: [PATCH 3.10 24/43] lzo: check for length overrun in variable length encoding.
-Date: Tue, 28 Oct 2014 11:36:22 +0800
-Message-Id: <20141028033524.436461734@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 01:34:33 -0400
+Date: Mon, 27 Oct 2014 22:34:29 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/8] eeepc-laptop: don't assume get_acpi succeeds
+Message-ID: <20141028053429.GI60814@vmdeb7>
+References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+ <1414005163-3461-9-git-send-email-fransklaver@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414005163-3461-9-git-send-email-fransklaver@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 22, 2014 at 09:12:43PM +0200, Frans Klaver wrote:
+> In eeepc_hotk_thaw, we assume that get_acpi() will effectively return a
+> bool. However, it is possible that get_acpi() returns an error instead.
+> We should not be writing error values to the ACPI device, even though
+> it's quite possible that we couldn't contact the ACPI device in the
+> first place.
+> 
+> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+> ---
+>  drivers/platform/x86/eeepc-laptop.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> index 275a239..14f79ef 100644
+> --- a/drivers/platform/x86/eeepc-laptop.c
+> +++ b/drivers/platform/x86/eeepc-laptop.c
+> @@ -911,7 +911,7 @@ static int eeepc_hotk_thaw(struct device *device)
+>  	struct eeepc_laptop *eeepc = dev_get_drvdata(device);
+>  
+>  	if (eeepc->wlan_rfkill) {
+> -		bool wlan;
+> +		int wlan;
+>  
+>  		/*
+>  		 * Work around bios bug - acpi _PTS turns off the wireless led
+> @@ -919,7 +919,8 @@ static int eeepc_hotk_thaw(struct device *device)
+>  		 * we should kick it ourselves in case hibernation is aborted.
+>  		 */
+>  		wlan = get_acpi(eeepc, CM_ASL_WLAN);
+> -		set_acpi(eeepc, CM_ASL_WLAN, wlan);
+> +		if (wlan >= 0)
+> +			set_acpi(eeepc, CM_ASL_WLAN, wlan);
 
-------------------
+And if not? Seems like we should be passing the error code along.
 
-From: Willy Tarreau <w@1wt.eu>
+>  	}
+>  
+>  	return 0;
+> -- 
+> 2.1.0
+> 
+> 
 
-commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
-
-This fix ensures that we never meet an integer overflow while adding
-255 while parsing a variable length encoding. It works differently from
-commit 206a81c ("lzo: properly check for overruns") because instead of
-ensuring that we don't overrun the input, which is tricky to guarantee
-due to many assumptions in the code, it simply checks that the cumulated
-number of 255 read cannot overflow by bounding this number.
-
-The MAX_255_COUNT is the maximum number of times we can add 255 to a base
-count without overflowing an integer. The multiply will overflow when
-multiplying 255 by more than MAXINT/255. The sum will overflow earlier
-depending on the base count. Since the base count is taken from a u8
-and a few bits, it is safe to assume that it will always be lower than
-or equal to 2*255, thus we can always prevent any overflow by accepting
-two less 255 steps.
-
-This patch also reduces the CPU overhead and actually increases performance
-by 1.1% compared to the initial code, while the previous fix costs 3.1%
-(measured on x86_64).
-
-The fix needs to be backported to all currently supported stable kernels.
-
-Reported-by: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- lib/lzo/lzo1x_decompress_safe.c |   43 ++++++++++++++++++++++++++++++++++------
- 1 file changed, 37 insertions(+), 6 deletions(-)
-
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -25,6 +25,16 @@
- #define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
- #define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
- 
-+/* This MAX_255_COUNT is the maximum number of times we can add 255 to a base
-+ * count without overflowing an integer. The multiply will overflow when
-+ * multiplying 255 by more than MAXINT/255. The sum will overflow earlier
-+ * depending on the base count. Since the base count is taken from a u8
-+ * and a few bits, it is safe to assume that it will always be lower than
-+ * or equal to 2*255, thus we can always prevent any overflow by accepting
-+ * two less 255 steps. See Documentation/lzo.txt for more information.
-+ */
-+#define MAX_255_COUNT      ((((size_t)~0) / 255) - 2)
-+
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
- {
-@@ -55,12 +65,19 @@ int lzo1x_decompress_safe(const unsigned
- 		if (t < 16) {
- 			if (likely(state == 0)) {
- 				if (unlikely(t == 0)) {
-+					size_t offset;
-+					const unsigned char *ip_last = ip;
-+
- 					while (unlikely(*ip == 0)) {
--						t += 255;
- 						ip++;
- 						NEED_IP(1);
- 					}
--					t += 15 + *ip++;
-+					offset = ip - ip_last;
-+					if (unlikely(offset > MAX_255_COUNT))
-+						return LZO_E_ERROR;
-+
-+					offset = (offset << 8) - offset;
-+					t += offset + 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
-@@ -116,12 +133,19 @@ copy_literal_run:
- 		} else if (t >= 32) {
- 			t = (t & 31) + (3 - 1);
- 			if (unlikely(t == 2)) {
-+				size_t offset;
-+				const unsigned char *ip_last = ip;
-+
- 				while (unlikely(*ip == 0)) {
--					t += 255;
- 					ip++;
- 					NEED_IP(1);
- 				}
--				t += 31 + *ip++;
-+				offset = ip - ip_last;
-+				if (unlikely(offset > MAX_255_COUNT))
-+					return LZO_E_ERROR;
-+
-+				offset = (offset << 8) - offset;
-+				t += offset + 31 + *ip++;
- 				NEED_IP(2);
- 			}
- 			m_pos = op - 1;
-@@ -134,12 +158,19 @@ copy_literal_run:
- 			m_pos -= (t & 8) << 11;
- 			t = (t & 7) + (3 - 1);
- 			if (unlikely(t == 2)) {
-+				size_t offset;
-+				const unsigned char *ip_last = ip;
-+
- 				while (unlikely(*ip == 0)) {
--					t += 255;
- 					ip++;
- 					NEED_IP(1);
- 				}
--				t += 7 + *ip++;
-+				offset = ip - ip_last;
-+				if (unlikely(offset > MAX_255_COUNT))
-+					return LZO_E_ERROR;
-+
-+				offset = (offset << 8) - offset;
-+				t += offset + 7 + *ip++;
- 				NEED_IP(2);
- 			}
- 			next = get_unaligned_le16(ip);
-
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
