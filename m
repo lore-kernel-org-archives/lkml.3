@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaJ1RWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:22:45 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:35484 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500AbaJ1RWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753453AbaJ1RWm (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 28 Oct 2014 13:22:42 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:42797 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252AbaJ1RWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 13:22:38 -0400
 From: Andy Lutomirski <luto@amacapital.net>
 To: x86@kernel.org, linux-kernel@vger.kernel.org,
         Josh Triplett <josh@joshtriplett.org>
 Cc: mingo@kernel.org, Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 2/3] x86_64,vsyscall: Rewrite comment and clean up headers in vsyscall code
-Date: Tue, 28 Oct 2014 10:22:27 -0700
-Message-Id: <d328534a49ba6bde965368b7ad1aef1ee40694b3.1414516558.git.luto@amacapital.net>
+Subject: [PATCH 1/3] x86_64,vsyscall: Turn vsyscalls all the way off when vsyscall=none
+Date: Tue, 28 Oct 2014 10:22:26 -0700
+Message-Id: <0a6855b3c52ab55ac14bdf3c9b6279f1bea6a15e.1414516558.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <cover.1414516558.git.luto@amacapital.net>
 References: <cover.1414516558.git.luto@amacapital.net>
@@ -23,90 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vsyscall_64.c is just vsyscall emulation.  Tidy it up accordingly.
+I see no point in having an unusable read-only page sitting at
+0xffffffffff600000 when vsyscall=none.  Instead, skip mapping it and
+remove it from /proc/PID/maps.
 
-If my comment editing offends anyone, let me know and I can fix it.
+I kept the ratelimited warning when programs try to use a vsyscall
+in this mode, since it may help admins avoid confusion.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/kernel/vsyscall_64.c | 51 +++++++++++++++----------------------------
- 1 file changed, 18 insertions(+), 33 deletions(-)
+ arch/x86/kernel/vsyscall_64.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
 diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index 2d912629c96e..ee622f8183f3 100644
+index 419e83b58436..2d912629c96e 100644
 --- a/arch/x86/kernel/vsyscall_64.c
 +++ b/arch/x86/kernel/vsyscall_64.c
-@@ -1,52 +1,37 @@
- /*
-- *  Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-- *  Copyright 2003 Andi Kleen, SuSE Labs.
-+ * Mostly copyright (c) 2012-2014 Andy Lutomirski <luto@amacapital.net>
-  *
-- *  [ NOTE: this mechanism is now deprecated in favor of the vDSO. ]
-+ * This file implements vsyscall emulation.  vsyscalls are a legacy ABI:
-+ * userspace can request certain kernel services by calling fixed
-+ * addresses.  This concept is problematic:
-  *
-- *  Thanks to hpa@transmeta.com for some useful hint.
-- *  Special thanks to Ingo Molnar for his early experience with
-- *  a different vsyscall implementation for Linux/IA32 and for the name.
-+ * - It interferes with ASLR.
-+ * - It's awkward to write code that lives in kernel addresses but is
-+ *   callable by userspace at fixed addresses.
-+ * - The whole concept is impossible for 32-bit compat userspace.
-+ * - UML cannot easily virtualize a vsyscall.
-  *
-- *  vsyscall 1 is located at -10Mbyte, vsyscall 2 is located
-- *  at virtual address -10Mbyte+1024bytes etc... There are at max 4
-- *  vsyscalls. One vsyscall can reserve more than 1 slot to avoid
-- *  jumping out of line if necessary. We cannot add more with this
-- *  mechanism because older kernels won't return -ENOSYS.
-+ * As of mid-2014, I believe that there is no new userspace code that
-+ * will use a vsyscall if the vDSO is present.  I hope that there will
-+ * soon be no new userspace code that will ever use a vsyscall.
-  *
-- *  Note: the concept clashes with user mode linux.  UML users should
-- *  use the vDSO.
-+ * The code in this file emulates vsyscalls when notified of a page
-+ * fault to a vsyscall address.
-+ *
-+ * The original version of this code is:
-+ * Copyright (C) 2001 Andrea Arcangeli <andrea@suse.de> SuSE
-+ * Copyright 2003 Andi Kleen, SuSE Labs.
+@@ -307,6 +307,8 @@ struct vm_area_struct *get_gate_vma(struct mm_struct *mm)
+ 	if (!mm || mm->context.ia32_compat)
+ 		return NULL;
+ #endif
++	if (vsyscall_mode == NONE)
++		return NULL;
+ 	return &gate_vma;
+ }
+ 
+@@ -327,7 +329,7 @@ int in_gate_area(struct mm_struct *mm, unsigned long addr)
   */
+ int in_gate_area_no_mm(unsigned long addr)
+ {
+-	return (addr & PAGE_MASK) == VSYSCALL_ADDR;
++	return vsyscall_mode != NONE && (addr & PAGE_MASK) == VSYSCALL_ADDR;
+ }
  
--#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ void __init map_vsyscall(void)
+@@ -335,10 +337,12 @@ void __init map_vsyscall(void)
+ 	extern char __vsyscall_page;
+ 	unsigned long physaddr_vsyscall = __pa_symbol(&__vsyscall_page);
  
--#include <linux/time.h>
--#include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/timer.h>
--#include <linux/seqlock.h>
--#include <linux/jiffies.h>
--#include <linux/sysctl.h>
--#include <linux/topology.h>
--#include <linux/timekeeper_internal.h>
--#include <linux/getcpu.h>
--#include <linux/cpu.h>
--#include <linux/smp.h>
--#include <linux/notifier.h>
- #include <linux/syscalls.h>
- #include <linux/ratelimit.h>
- 
- #include <asm/vsyscall.h>
--#include <asm/pgtable.h>
--#include <asm/compat.h>
--#include <asm/page.h>
- #include <asm/unistd.h>
- #include <asm/fixmap.h>
--#include <asm/errno.h>
--#include <asm/io.h>
--#include <asm/segment.h>
--#include <asm/desc.h>
--#include <asm/topology.h>
- #include <asm/traps.h>
- 
- #define CREATE_TRACE_POINTS
+-	__set_fixmap(VSYSCALL_PAGE, physaddr_vsyscall,
+-		     vsyscall_mode == NATIVE
+-		     ? PAGE_KERNEL_VSYSCALL
+-		     : PAGE_KERNEL_VVAR);
++	if (vsyscall_mode != NONE)
++		__set_fixmap(VSYSCALL_PAGE, physaddr_vsyscall,
++			     vsyscall_mode == NATIVE
++			     ? PAGE_KERNEL_VSYSCALL
++			     : PAGE_KERNEL_VVAR);
++
+ 	BUILD_BUG_ON((unsigned long)__fix_to_virt(VSYSCALL_PAGE) !=
+ 		     (unsigned long)VSYSCALL_ADDR);
+ }
 -- 
 1.9.3
 
