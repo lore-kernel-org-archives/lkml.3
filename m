@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759014AbaJ1HWL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:22:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45158 "EHLO
+	id S933935AbaJ1HWh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:22:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45149 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415AbaJ1DnY (ORCPT
+	with ESMTP id S1752897AbaJ1DnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:24 -0400
+	Mon, 27 Oct 2014 23:43:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.16 020/127] spi: dw-mid: respect 8 bit mode
-Date: Tue, 28 Oct 2014 11:34:15 +0800
-Message-Id: <20141028033421.808946089@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Petr Matousek <pmatouse@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.16 018/127] x86,kvm,vmx: Preserve CR4 across VM entry
+Date: Tue, 28 Oct 2014 11:34:13 +0800
+Message-Id: <20141028033421.723688432@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,40 +31,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit b41583e7299046abdc578c33f25ed83ee95b9b31 upstream.
+commit d974baa398f34393db76be45f7d4d04fbdbb4a0a upstream.
 
-In case of 8 bit mode and DMA usage we end up with every second byte written as
-0. We have to respect bits_per_word settings what this patch actually does.
+CR4 isn't constant; at least the TSD and PCE bits can vary.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+TBH, treating CR0 and CR3 as constant scares me a bit, too, but it looks
+like it's correct.
+
+This adds a branch and a read from cr4 to each vm entry.  Because it is
+extremely likely that consecutive entries into the same vcpu will have
+the same host cr4 value, this fixes up the vmcs instead of restoring cr4
+after the fact.  A subsequent patch will add a kernel-wide cr4 shadow,
+reducing the overhead in the common case to just two memory reads and a
+branch.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Petr Matousek <pmatouse@redhat.com>
+Cc: Gleb Natapov <gleb@kernel.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-dw-mid.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/vmx.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -136,7 +136,7 @@ static int mid_spi_dma_transfer(struct d
- 	txconf.dst_addr = dws->dma_addr;
- 	txconf.dst_maxburst = LNW_DMA_MSIZE_16;
- 	txconf.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	txconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	txconf.dst_addr_width = dws->dma_width;
- 	txconf.device_fc = false;
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -450,6 +450,7 @@ struct vcpu_vmx {
+ 		int           gs_ldt_reload_needed;
+ 		int           fs_reload_needed;
+ 		u64           msr_host_bndcfgs;
++		unsigned long vmcs_host_cr4;	/* May not match real cr4 */
+ 	} host_state;
+ 	struct {
+ 		int vm86_active;
+@@ -4218,11 +4219,16 @@ static void vmx_set_constant_host_state(
+ 	u32 low32, high32;
+ 	unsigned long tmpl;
+ 	struct desc_ptr dt;
++	unsigned long cr4;
  
- 	txchan->device->device_control(txchan, DMA_SLAVE_CONFIG,
-@@ -159,7 +159,7 @@ static int mid_spi_dma_transfer(struct d
- 	rxconf.src_addr = dws->dma_addr;
- 	rxconf.src_maxburst = LNW_DMA_MSIZE_16;
- 	rxconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	rxconf.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	rxconf.src_addr_width = dws->dma_width;
- 	rxconf.device_fc = false;
+ 	vmcs_writel(HOST_CR0, read_cr0() & ~X86_CR0_TS);  /* 22.2.3 */
+-	vmcs_writel(HOST_CR4, read_cr4());  /* 22.2.3, 22.2.5 */
+ 	vmcs_writel(HOST_CR3, read_cr3());  /* 22.2.3  FIXME: shadow tables */
  
- 	rxchan->device->device_control(rxchan, DMA_SLAVE_CONFIG,
++	/* Save the most likely value for this task's CR4 in the VMCS. */
++	cr4 = read_cr4();
++	vmcs_writel(HOST_CR4, cr4);			/* 22.2.3, 22.2.5 */
++	vmx->host_state.vmcs_host_cr4 = cr4;
++
+ 	vmcs_write16(HOST_CS_SELECTOR, __KERNEL_CS);  /* 22.2.4 */
+ #ifdef CONFIG_X86_64
+ 	/*
+@@ -7336,7 +7342,7 @@ static void atomic_switch_perf_msrs(stru
+ static void __noclone vmx_vcpu_run(struct kvm_vcpu *vcpu)
+ {
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+-	unsigned long debugctlmsr;
++	unsigned long debugctlmsr, cr4;
+ 
+ 	/* Record the guest's net vcpu time for enforced NMI injections. */
+ 	if (unlikely(!cpu_has_virtual_nmis() && vmx->soft_vnmi_blocked))
+@@ -7357,6 +7363,12 @@ static void __noclone vmx_vcpu_run(struc
+ 	if (test_bit(VCPU_REGS_RIP, (unsigned long *)&vcpu->arch.regs_dirty))
+ 		vmcs_writel(GUEST_RIP, vcpu->arch.regs[VCPU_REGS_RIP]);
+ 
++	cr4 = read_cr4();
++	if (unlikely(cr4 != vmx->host_state.vmcs_host_cr4)) {
++		vmcs_writel(HOST_CR4, cr4);
++		vmx->host_state.vmcs_host_cr4 = cr4;
++	}
++
+ 	/* When single-stepping over STI and MOV SS, we must clear the
+ 	 * corresponding interruptibility bits in the guest state. Otherwise
+ 	 * vmentry fails as it then expects bit 14 (BS) in pending debug
 
 
