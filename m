@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaJ1NeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:34:12 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51496 "EHLO mail.kernel.org"
+	id S1754745AbaJ1Ne2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:34:28 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51672 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754591AbaJ1NeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:34:09 -0400
+	id S1754591AbaJ1NeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:34:25 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 20/32] perf pmu: Add proper error handling to print_pmu_events()
-Date: Tue, 28 Oct 2014 11:32:14 -0200
-Message-Id: <1414503146-22789-21-git-send-email-acme@kernel.org>
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 24/32] perf tools: Fix report -F symbol_to for data without branch info
+Date: Tue, 28 Oct 2014 11:32:18 -0200
+Message-Id: <1414503146-22789-25-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
 References: <1414503146-22789-1-git-send-email-acme@kernel.org>
@@ -27,96 +26,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
-It was silently returning or printing "(null)" when no memory was
-available at various points. Fix it by checking and warning the user
-when that happens.
+The branch field sorting code assumes hist_entry::branch_info is
+allocated, which is wrong and following perf session ends up with report
+segfault.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
+  $ perf record ls
+  $ perf report -F symbol_to
+  perf: Segmentation fault
+
+Checking that hist_entry::branch_info is valid and display "N/A" string
+in snprint callback if it's not.
+
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-835udmf66x9nza504cu6irz9@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1413468427-31049-5-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/pmu.c | 32 ++++++++++++++++++++++----------
- 1 file changed, 22 insertions(+), 10 deletions(-)
+ tools/perf/util/sort.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 91dca604c422..881b75490533 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -753,9 +753,9 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 		if (pmu->selectable)
- 			len++;
- 	}
--	aliases = malloc(sizeof(char *) * len);
-+	aliases = zalloc(sizeof(char *) * len);
- 	if (!aliases)
--		return;
-+		goto out_enomem;
- 	pmu = NULL;
- 	j = 0;
- 	while ((pmu = perf_pmu__scan(pmu)) != NULL) {
-@@ -768,16 +768,20 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 			      (!is_cpu && strglobmatch(alias->name,
- 						       event_glob))))
- 				continue;
--			aliases[j] = name;
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 0c68af83e7dd..57047c0a247c 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -413,8 +413,13 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
+ static int64_t
+ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ {
+-	struct addr_map_symbol *to_l = &left->branch_info->to;
+-	struct addr_map_symbol *to_r = &right->branch_info->to;
++	struct addr_map_symbol *to_l, *to_r;
 +
- 			if (is_cpu && !name_only)
--				aliases[j] = format_alias_or(buf, sizeof(buf),
--							      pmu, alias);
--			aliases[j] = strdup(aliases[j]);
-+				name = format_alias_or(buf, sizeof(buf), pmu, alias);
++	if (!left->branch_info || !right->branch_info)
++		return cmp_null(left->branch_info, right->branch_info);
 +
-+			aliases[j] = strdup(name);
-+			if (aliases[j] == NULL)
-+				goto out_enomem;
- 			j++;
- 		}
- 		if (pmu->selectable) {
--			scnprintf(buf, sizeof(buf), "%s//", pmu->name);
--			aliases[j] = strdup(buf);
-+			char *s;
-+			if (asprintf(&s, "%s//", pmu->name) < 0)
-+				goto out_enomem;
-+			aliases[j] = s;
- 			j++;
- 		}
- 	}
-@@ -789,12 +793,20 @@ void print_pmu_events(const char *event_glob, bool name_only)
- 			continue;
- 		}
- 		printf("  %-50s [Kernel PMU event]\n", aliases[j]);
--		zfree(&aliases[j]);
- 		printed++;
- 	}
- 	if (printed)
- 		printf("\n");
--	free(aliases);
-+out_free:
-+	for (j = 0; j < len; j++)
-+		zfree(&aliases[j]);
-+	zfree(&aliases);
-+	return;
++	to_l = &left->branch_info->to;
++	to_r = &right->branch_info->to;
+ 
+ 	if (!to_l->sym && !to_r->sym)
+ 		return _sort__addr_cmp(to_l->addr, to_r->addr);
+@@ -434,10 +439,14 @@ static int hist_entry__sym_from_snprintf(struct hist_entry *he, char *bf,
+ static int hist_entry__sym_to_snprintf(struct hist_entry *he, char *bf,
+ 				       size_t size, unsigned int width)
+ {
+-	struct addr_map_symbol *to = &he->branch_info->to;
+-	return _hist_entry__sym_snprintf(to->map, to->sym, to->addr,
+-					 he->level, bf, size, width);
++	if (he->branch_info) {
++		struct addr_map_symbol *to = &he->branch_info->to;
 +
-+out_enomem:
-+	printf("FATAL: not enough memory to print PMU events\n");
-+	if (aliases)
-+		goto out_free;
++		return _hist_entry__sym_snprintf(to->map, to->sym, to->addr,
++						 he->level, bf, size, width);
++	}
+ 
++	return repsep_snprintf(bf, size, "%-*.*s", width, width, "N/A");
  }
  
- bool pmu_have_event(const char *pname, const char *name)
+ struct sort_entry sort_dso_from = {
 -- 
 1.9.3
 
