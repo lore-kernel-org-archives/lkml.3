@@ -1,113 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961AbaJ1Qia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:38:30 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:34782 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752220AbaJ1Qft (ORCPT
+	id S1753664AbaJ1Qjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:39:37 -0400
+Received: from smtp-out-148.synserver.de ([212.40.185.148]:1084 "EHLO
+	smtp-out-148.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaJ1Qjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:35:49 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
-        kishon@ti.com, stern@rowland.harvard.edu
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v7 6/7] usb: chipidea: move usb_otg into struct ci_hdrc
-Date: Tue, 28 Oct 2014 17:35:40 +0100
-Message-Id: <1414514141-31767-7-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
+	Tue, 28 Oct 2014 12:39:35 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 21012
+Message-ID: <544FC6B1.1060002@metafoo.de>
+Date: Tue, 28 Oct 2014 17:39:13 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.1
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Max Filippov <jcmvbkbc@gmail.com>, alsa-devel@alsa-project.org,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>, linux-xtensa@linux-xtensa.org,
+        Takashi Iwai <tiwai@suse.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: add xtensa xtfpga I2S interface and
+ platform
+References: <1414436825-19416-1-git-send-email-jcmvbkbc@gmail.com> <544FBD20.5000604@metafoo.de> <20141028160414.GY18557@sirena.org.uk>
+In-Reply-To: <20141028160414.GY18557@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the usb_otg member from struct usb_phy to struct ci_hdrc. Rework
-its initialization taking in account this modification.
+On 10/28/2014 05:04 PM, Mark Brown wrote:
+> On Tue, Oct 28, 2014 at 04:58:24PM +0100, Lars-Peter Clausen wrote:
+>> On 10/27/2014 08:07 PM, Max Filippov wrote:
+>
+>>> +	if (tx_active) {
+>>> +		if (i2s->tx_fifo_high < 256)
+>>> +			xtfpga_i2s_refill_fifo(i2s);
+>>> +		else
+>>> +			tasklet_hi_schedule(&i2s->refill_fifo);
+>
+>> Maybe use threaded IRQs instead of IRQ + tasklet.
+>
+> Is that going to play nicely with the fact that the interrupt can be
+> shared and the desire to (AFAICT) do NAPI style stuff with the interrupt
+> disabled for long periods?
+>
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
-Acked-by: Peter Chen <peter.chen@freescale.com>
----
- drivers/usb/chipidea/ci.h      |  1 +
- drivers/usb/chipidea/debug.c   |  2 +-
- drivers/usb/chipidea/host.c    |  5 +++--
- drivers/usb/chipidea/otg_fsm.c | 16 +++-------------
- 4 files changed, 8 insertions(+), 16 deletions(-)
+Threaded interrupts got support for interrupt sharing a while ago, so I 
+guess yes. I think it will even work better than the tasklet approach. You 
+can configure the IRQ to disable itself as long as the thread is running.
 
-diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-index b7f589b348e6..9015139a8027 100644
---- a/drivers/usb/chipidea/ci.h
-+++ b/drivers/usb/chipidea/ci.h
-@@ -177,6 +177,7 @@ struct ci_hdrc {
- 	struct ci_role_driver		*roles[CI_ROLE_END];
- 	enum ci_role			role;
- 	bool				is_otg;
-+	struct usb_otg			otg;
- 	struct otg_fsm			fsm;
- 	struct ci_otg_fsm_timer_list	*fsm_timer;
- 	struct work_struct		work;
-diff --git a/drivers/usb/chipidea/debug.c b/drivers/usb/chipidea/debug.c
-index 8f437e1512fa..999e9d683d7a 100644
---- a/drivers/usb/chipidea/debug.c
-+++ b/drivers/usb/chipidea/debug.c
-@@ -220,7 +220,7 @@ static int ci_otg_show(struct seq_file *s, void *unused)
- 
- 	/* ------ State ----- */
- 	seq_printf(s, "OTG state: %s\n\n",
--		usb_otg_state_string(ci->usb_phy->otg.state));
-+		   usb_otg_state_string(ci->otg.state));
- 
- 	/* ------ State Machine Variables ----- */
- 	seq_printf(s, "a_bus_drop: %d\n", fsm->a_bus_drop);
-diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-index 51b086d3bb11..789809f680aa 100644
---- a/drivers/usb/chipidea/host.c
-+++ b/drivers/usb/chipidea/host.c
-@@ -86,10 +86,11 @@ static int host_start(struct ci_hdrc *ci)
- 	if (ret) {
- 		goto disable_reg;
- 	} else {
--		struct usb_otg *otg = ci->usb_phy->otg;
-+		struct usb_otg *otg = &ci->otg;
- 
- 		ci->hcd = hcd;
--		if (otg) {
-+
-+		if (ci_otg_is_fsm_mode(ci)) {
- 			otg->host = &hcd->self;
- 			hcd->self.otg_port = 1;
- 		}
-diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
-index 8a64ce87364e..862d7cb01b92 100644
---- a/drivers/usb/chipidea/otg_fsm.c
-+++ b/drivers/usb/chipidea/otg_fsm.c
-@@ -778,20 +778,10 @@ void ci_hdrc_otg_fsm_start(struct ci_hdrc *ci)
- int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
- {
- 	int retval = 0;
--	struct usb_otg *otg;
- 
--	otg = devm_kzalloc(ci->dev,
--			sizeof(struct usb_otg), GFP_KERNEL);
--	if (!otg) {
--		dev_err(ci->dev,
--		"Failed to allocate usb_otg structure for ci hdrc otg!\n");
--		return -ENOMEM;
--	}
--
--	otg->usb_phy = ci->usb_phy;
--	otg->gadget = &ci->gadget;
--	ci->fsm.otg = otg;
--	ci->usb_phy->otg = ci->fsm.otg;
-+	ci->otg.usb_phy = ci->usb_phy;
-+	ci->otg.gadget = &ci->gadget;
-+	ci->fsm.otg = &ci->otg;
- 	ci->fsm.power_up = 1;
- 	ci->fsm.id = hw_read_otgsc(ci, OTGSC_ID) ? 1 : 0;
- 	ci->fsm.otg->state = OTG_STATE_UNDEFINED;
--- 
-1.9.1
-
+- Lars
