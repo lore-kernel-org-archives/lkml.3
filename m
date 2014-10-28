@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926AbaJ1NcZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:32:25 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:50391 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753878AbaJ1NcT (ORCPT
+	id S1754003AbaJ1Ncc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:32:32 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:36685 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878AbaJ1Nca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:32:19 -0400
+	Tue, 28 Oct 2014 09:32:30 -0400
 From: Xia Kaixu <kaixu.xia@linaro.org>
 To: rmk+kernel@arm.linux.org.uk, arm@kernel.org
 Cc: kaixu.xia@linaro.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 2/5] ARM: change the corresponding arm/mach defconfigs
-Date: Tue, 28 Oct 2014 21:31:32 +0800
-Message-Id: <1414503095-25986-3-git-send-email-kaixu.xia@linaro.org>
+Subject: [PATCH v2 5/5] ARM: use early console instead of early debug in allmodconfig kernels
+Date: Tue, 28 Oct 2014 21:31:35 +0800
+Message-Id: <1414503095-25986-6-git-send-email-kaixu.xia@linaro.org>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org>
 References: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org>
@@ -21,66 +21,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DEBUG_LL will get a dependency on !ARCH_MULTIPLATFORM_STRICT.
-So change the corresponding arm/mach defconfigs to disable
-ARCH_MULTIPLATFORM_STRICT and avoid break them.
+The early debug could break something when booting 'allmodconfig'
+kernels. So we use early console instead of early debug.
+
+The early console didn't work yet on OMAP4460 because of missing
+earlycon support and I am working on that.
 
 Signed-off-by: Xia Kaixu <kaixu.xia@linaro.org>
 ---
- arch/arm/configs/bcm2835_defconfig | 1 +
- arch/arm/configs/moxart_defconfig  | 1 +
- arch/arm/configs/s5pv210_defconfig | 1 +
- arch/arm/configs/tegra_defconfig   | 1 +
- 4 files changed, 4 insertions(+)
+ arch/arm/Kconfig.debug | 25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/configs/bcm2835_defconfig b/arch/arm/configs/bcm2835_defconfig
-index 31cb073..e644c8b 100644
---- a/arch/arm/configs/bcm2835_defconfig
-+++ b/arch/arm/configs/bcm2835_defconfig
-@@ -135,6 +135,7 @@ CONFIG_TEST_KSTRTOX=y
- CONFIG_KGDB=y
- CONFIG_KGDB_KDB=y
- CONFIG_STRICT_DEVMEM=y
-+# CONFIG_ARCH_MULTIPLATFORM_STRICT is not set
- CONFIG_DEBUG_LL=y
- CONFIG_EARLY_PRINTK=y
- # CONFIG_XZ_DEC_ARM is not set
-diff --git a/arch/arm/configs/moxart_defconfig b/arch/arm/configs/moxart_defconfig
-index a3cb76c..7ba9343 100644
---- a/arch/arm/configs/moxart_defconfig
-+++ b/arch/arm/configs/moxart_defconfig
-@@ -140,6 +140,7 @@ CONFIG_DETECT_HUNG_TASK=y
- CONFIG_PROVE_LOCKING=y
- CONFIG_DMA_API_DEBUG=y
- CONFIG_KGDB=y
-+# CONFIG_ARCH_MULTIPLATFORM_STRICT is not set
- CONFIG_DEBUG_LL=y
- CONFIG_DEBUG_LL_UART_8250=y
- CONFIG_DEBUG_UART_PHYS=0x98200000
-diff --git a/arch/arm/configs/s5pv210_defconfig b/arch/arm/configs/s5pv210_defconfig
-index fa98990..bc0cad4 100644
---- a/arch/arm/configs/s5pv210_defconfig
-+++ b/arch/arm/configs/s5pv210_defconfig
-@@ -67,6 +67,7 @@ CONFIG_DEBUG_INFO=y
- CONFIG_SYSCTL_SYSCALL_CHECK=y
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_ERRORS=y
-+# CONFIG_ARCH_MULTIPLATFORM_STRICT is not set
- CONFIG_DEBUG_LL=y
- CONFIG_EARLY_PRINTK=y
- CONFIG_DEBUG_S3C_UART=1
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index 888fc15..851b80b 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -291,6 +291,7 @@ CONFIG_TIMER_STATS=y
- # CONFIG_DEBUG_PREEMPT is not set
- CONFIG_DEBUG_MUTEXES=y
- CONFIG_DEBUG_SG=y
-+# CONFIG_ARCH_MULTIPLATFORM_STRICT is not set
- CONFIG_DEBUG_LL=y
- CONFIG_EARLY_PRINTK=y
- CONFIG_CRYPTO_TWOFISH=y
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 03dc4c1..897e4ab 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -78,7 +78,7 @@ config DEBUG_USER
+ # These options are only for real kernel hackers who want to get their hands dirty.
+ config DEBUG_LL
+ 	bool "Kernel low-level debugging functions (read help!)"
+-	depends on DEBUG_KERNEL
++	depends on DEBUG_KERNEL && !ARCH_MULTIPLATFORM_STRICT
+ 	help
+ 	  Say Y here to include definitions of printascii, printch, printhex
+ 	  in the kernel.  This is helpful if you are debugging code that
+@@ -1297,6 +1297,29 @@ config EARLY_PRINTK
+ 	  kernel low-level debugging functions. Add earlyprintk to your
+ 	  kernel parameters to enable this console.
+ 
++config FORCE_EARLY_CONSOLE
++	bool "Enable all early console drivers"
++	depends on DEBUG_KERNEL && ARCH_MULTIPLATFORM_STRICT
++	select TTY
++	select SERIAL_8250
++	select SERIAL_8250_CONSOLE
++	select SERIAL_AMBA_PL011
++	select SERIAL_AMBA_PL011_CONSOLE
++	select SERIAL_EARLYCON_ARM_SEMIHOST
++	select SERIAL_MSM
++	select SERIAL_MSM_CONSOLE
++	select SERIAL_XILINX_PS_UART
++	select SERIAL_XILINX_PS_UART_CONSOLE
++	help
++	  On strict multiplatform configurations, the early debug code
++	  is not available, so the early console code should be used
++	  for debugging the startup code.
++	  This option ensures that all of the earlycon drivers are enabled,
++	  which is mainly useful for booting 'allmodconfig' kernels.
++
++	  It is always safe to say 'N' here for a smaller kernel and to
++	  select the required options individually.
++
+ config OC_ETM
+ 	bool "On-chip ETM and ETB"
+ 	depends on ARM_AMBA
 -- 
 2.1.1
 
