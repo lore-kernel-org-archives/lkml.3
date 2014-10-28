@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986AbaJ1M2A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:28:00 -0400
-Received: from ozlabs.org ([103.22.144.67]:38999 "EHLO ozlabs.org"
+	id S1754073AbaJ1M3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:29:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54682 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753918AbaJ1M16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:27:58 -0400
-Date: Tue, 28 Oct 2014 23:27:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Jesper Nilsson <jespern@axis.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: error fetching the cris tree
-Message-ID: <20141028232748.5503b635@canb.auug.org.au>
-In-Reply-To: <20141028083002.GK30087@axis.com>
-References: <20141028110857.06bfae62@canb.auug.org.au>
-	<20141028083002.GK30087@axis.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1750857AbaJ1M3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:29:48 -0400
+Date: Tue, 28 Oct 2014 08:29:00 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, isimatu.yasuaki@jp.fujitsu.com,
+        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
+        linux-api@vger.kernel.org, jason.wessel@windriver.com
+Subject: Re: [PATCH V4] kernel, add bug_on_warn
+Message-ID: <20141028122900.GA10632@redhat.com>
+References: <1414155207-29839-1-git-send-email-prarit@redhat.com>
+ <20141028121636.GC3274@tassilo.jf.intel.com>
+ <544F8A78.9070008@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/8TsfFQ=zHzRWd0VrUmAv_Hz"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544F8A78.9070008@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/8TsfFQ=zHzRWd0VrUmAv_Hz
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 28, 2014 at 08:22:16AM -0400, Prarit Bhargava wrote:
+> 
+> 
+> On 10/28/2014 08:16 AM, Andi Kleen wrote:
+> > On Fri, Oct 24, 2014 at 08:53:27AM -0400, Prarit Bhargava wrote:
+> >> There have been several times where I have had to rebuild a kernel to
+> >> cause a panic when hitting a WARN() in the code in order to get a crash
+> >> dump from a system.  Sometimes this is easy to do, other times (such as
+> >> in the case of a remote admin) it is not trivial to send new images to the
+> >> user.
+> >>
+> >> A much easier method would be a switch to change the WARN() over to a
+> >> BUG().  This makes debugging easier in that I can now test the actual
+> >> image the WARN() was seen on and I do not have to engage in remote
+> >> debugging.
+> > 
+> > IMHO this would be better and far more generically done with kdb. 
+> > You would need two things:
+> > 
+> > - Extend the break point command to run another command on a break point.
+> > - Add a command line (or possibly /proc) option to execute some kdb commands at
+> > kernel boot.
+> 
+> I suppose ... but that would mean I would have to explain to an end user the
+> elaborate process of enabling kdb, inserting a break point, etc.  The whole
+> purpose of this is to let an end user panic on WARN() easily.
+> 
+> Asking an end user to enable kdb is magnitudes worse than asking them to
+> recompile a kernel.
 
-Hi Jesper,
+Agreed. Asking a customer to setup and run kdb and put breakpoints is much
+more pain than simply asking to reboot kernel with a command line option.
 
-On Tue, 28 Oct 2014 09:30:03 +0100 Jesper Nilsson <jesper.nilsson@axis.com>=
- wrote:
->
-> However, it might be better to switch over linux-next for cris
-> to use the for-next branch of this tree:
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/jesper/cris.git
-
-I have changed to use that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/8TsfFQ=zHzRWd0VrUmAv_Hz
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUT4vJAAoJEMDTa8Ir7ZwVtWUP/0uDjYxv8VTkh434JVjLw2Ec
-op/1hlUONEpiXxSROAMxAQqxBUG8rE1civcuQeyQ1yfU/oj/Sp3l5x11FDIK+y4B
-bV4ss+kzW7fD2dJWnTQxyvxYG5YUKHvTJLKY7dF3P49iEjZRo+mZbENiZ/+A/2F2
-Plpeg1XGOij26+3C7j9X6jCE5hg4hRzNDQ9+GHWndSJdRQS2zOyR1qjERoOWKATv
-+7u8FCo1bRasXIG2FR0dcEdjQLrbYv0wdH4UiYKUVXZVhZI9zHGIERxSB1NWDz2+
-/RsLY+U4NjysOqhm6NanwCNJlZ05lO2XqdgD6Is06KYeD35/huurUsj/TDDAdIXj
-G0xXNuggofH8PL3RL+qJwIy8tHHKUxg7m6G2+HNjEKKCdj8UmdF4rocOYQwE1AyL
-6MOo64aMBpXRrNxqcsOFUXrgZvrpKWqRXr8bKR9KrCN5x3kU2OgFN394nro85msD
-A5hY0VoMNFoBZxE/ANquEqaoRKzsmLgyimrgBJm9zolnd8ph44DsUoCkZKk2NKpx
-gA0+P1EsBcrHwhMt4UAeWJCU71G4fHt/X7KlWBMBdSW1SC9XFXdvLTQu12cHoOkj
-yBuYoBUbutkNRCsAEnGnIdwg/O92cZdkoZnu/npSLwZgqAQGUf57F1rbxnNkChW8
-vua64iS0pGKTyV7Kf/wt
-=UWSc
------END PGP SIGNATURE-----
-
---Sig_/8TsfFQ=zHzRWd0VrUmAv_Hz--
+Thanks
+Vivek
