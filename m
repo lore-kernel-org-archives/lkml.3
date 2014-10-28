@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102AbaJ1Hr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:47:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44566 "EHLO
+	id S1754482AbaJ1Dix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:38:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44560 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493AbaJ1Di4 (ORCPT
+	with ESMTP id S1754439AbaJ1Div (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:56 -0400
+	Mon, 27 Oct 2014 23:38:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 071/146] ALSA: pcm: use the same dma mmap codepath both for arm and arm64
-Date: Tue, 28 Oct 2014 11:33:33 +0800
-Message-Id: <20141028033346.462969381@linuxfoundation.org>
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.17 069/146] arm64: Fix compilation error on UP builds
+Date: Tue, 28 Oct 2014 11:33:31 +0800
+Message-Id: <20141028033346.374601462@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,38 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit a011e213f3700233ed2a676f1ef0a74a052d7162 upstream.
+commit ceab3fe69408cb98f437dad3b4b4bb79434370ef upstream.
 
-This avoids following kernel crash when try to playback on arm64
+In file included from ./arch/arm64/include/asm/irq_work.h:4:0,
+        from include/linux/irq_work.h:46,
+        from include/linux/perf_event.h:49,
+        from include/linux/ftrace_event.h:9,
+        from include/trace/syscall.h:6,
+        from include/linux/syscalls.h:81,
+        from init/main.c:18:
+./arch/arm64/include/asm/smp.h:24:3:
+        error: #error "<asm/smp.h> included in non-SMP build"
+ # error "<asm/smp.h> included in non-SMP build"
 
-[  107.497203] [<ffffffc00046b310>] snd_pcm_mmap_data_fault+0x90/0xd4
-[  107.503405] [<ffffffc0001541ac>] __do_fault+0xb0/0x498
-[  107.508565] [<ffffffc0001576a0>] handle_mm_fault+0x224/0x7b0
-[  107.514246] [<ffffffc000092640>] do_page_fault+0x11c/0x310
-[  107.519738] [<ffffffc000081100>] do_mem_abort+0x38/0x98
-
-Tested: backported to 3.14 and tried to playback on arm64 machine
-
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Fixes: 3631073659d0 ("arm64: Tell irq work about self IPI support")
+Reported-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/pcm_native.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/include/asm/irq_work.h |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -3193,7 +3193,7 @@ static const struct vm_operations_struct
+--- a/arch/arm64/include/asm/irq_work.h
++++ b/arch/arm64/include/asm/irq_work.h
+@@ -1,6 +1,8 @@
+ #ifndef __ASM_IRQ_WORK_H
+ #define __ASM_IRQ_WORK_H
  
- #ifndef ARCH_HAS_DMA_MMAP_COHERENT
- /* This should be defined / handled globally! */
--#ifdef CONFIG_ARM
-+#if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
- #define ARCH_HAS_DMA_MMAP_COHERENT
- #endif
- #endif
++#ifdef CONFIG_SMP
++
+ #include <asm/smp.h>
+ 
+ static inline bool arch_irq_work_has_interrupt(void)
+@@ -8,4 +10,13 @@ static inline bool arch_irq_work_has_int
+ 	return !!__smp_cross_call;
+ }
+ 
++#else
++
++static inline bool arch_irq_work_has_interrupt(void)
++{
++	return false;
++}
++
++#endif
++
+ #endif /* __ASM_IRQ_WORK_H */
 
 
