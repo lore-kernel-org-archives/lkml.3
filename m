@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440AbaJ1LwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:52:10 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:59676 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634AbaJ1LwH (ORCPT
+	id S1753891AbaJ1Lxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:53:41 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:40071 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbaJ1Lxk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:52:07 -0400
-From: Zhen Lei <thunder.leizhen@huawei.com>
-To: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-CC: Zefan Li <lizefan@huawei.com>, Xinwei Hu <huxinwei@huawei.com>,
-        "Kefeng Wang" <wangkefeng.wang@huawei.com>,
-        Zhen Lei <thunder.leizhen@huawei.com>
-Subject: [PATCH 1/1] of/fdt: simplify early_init_dt_verify
-Date: Tue, 28 Oct 2014 19:51:05 +0800
-Message-ID: <1414497065-9808-1-git-send-email-thunder.leizhen@huawei.com>
-X-Mailer: git-send-email 1.8.4.msysgit.0
+	Tue, 28 Oct 2014 07:53:40 -0400
+X-IronPort-AV: E=Sophos;i="5.04,802,1406592000"; 
+   d="scan'208";a="186819706"
+Message-ID: <544F83C1.3010402@citrix.com>
+Date: Tue, 28 Oct 2014 11:53:37 +0000
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.8.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.177.27.142]
-X-CFilter-Loop: Reflected
+To: Ian Campbell <Ian.Campbell@citrix.com>, Juergen Gross <jgross@suse.com>
+CC: <boris.ostrovsky@oracle.com>, <xen-devel@lists.xensource.com>,
+        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 0/2] xen: Switch to virtual mapped linear
+ p2m list
+References: <1414421551-31555-1-git-send-email-jgross@suse.com>	<544E61DD.8050305@citrix.com> <544F22E4.9040706@suse.com> <1414489898.23883.25.camel@citrix.com>
+In-Reply-To: <1414489898.23883.25.camel@citrix.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-put off initial_boot_params = params; until all checks finished. If any check
-failed, initial_boot_params is equal NULL, base upon bss segment initial value.
+On 28/10/14 09:51, Ian Campbell wrote:
+> On Tue, 2014-10-28 at 06:00 +0100, Juergen Gross wrote:
+>> On 10/27/2014 04:16 PM, David Vrabel wrote:
+>>> On 27/10/14 14:52, Juergen Gross wrote:
+>>>> Paravirtualized kernels running on Xen use a three level tree for
+>>>> translation of guest specific physical addresses to machine global
+>>>> addresses. This p2m tree is used for construction of page table
+>>>> entries, so the p2m tree walk is performance critical.
+>>>>
+>>>> By using a linear virtual mapped p2m list accesses to p2m elements
+>>>> can be sped up while even simplifying code. To achieve this goal
+>>>> some p2m related initializations have to be performed later in the
+>>>> boot process, as the final p2m list can be set up only after basic
+>>>> memory management functions are available.
+>>> What impact does this have on 32-bit guests which don't have huge amount
+>>> of virtual address space?
+>>>
+>>> I think a 32-bit guest could have up to 64 GiB of PFNs, which would
+>>> require a 128 MiB p2m array, which is too large?
+>> It is 64 MB (one entry on 32 bit is 32 bits :-) ).
+>>
+>> With a m2p array of only 16 MB size I doubt a 32 bit guest can be larger
+>> than 16 GB, or am I wrong here?
+> I think they can be bigger, the compat r/o m2p is 168MB, since Xen
+> doesn't need to be in the hole as well (like it was with a real 32-bit
+> Xen). There is also some scope for dynamic sizing of the hole (queried
+> via XENMEM_machphys_mapping), I'm not sure if pvops makes use of that
+> though.
+>
+> In practice a 32-bit kernel starts to get pretty unhappy somewhere
+> between 32 and 64GB because it runs out of low memory for various
+> structures which are sized according to the amount of RAM. Or it did,
+> it's been years since I've tried, maybe things are more able to use
+> highmem now. In any case if you have such large amounts of RAM using a
+> 64-bit kernel would be advisable.
 
-Signed-off-by: Zhen Lei <thunder.leizhen@huawei.com>
----
- drivers/of/fdt.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+It is XenServers experience that something (I presume a
+power-of-two-aligned mapping) cuts off at 128MB of the compat m2p,
+allowing for 32bit guest pages to exist in the first 128GB of host RAM.
 
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index d1ffca8..325c638 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -994,14 +994,12 @@ bool __init early_init_dt_verify(void *params)
- 	if (!params)
- 		return false;
+Technically speaking, there is nothing preventing a 32bit PV guest being
+that large.  The traditional issues with 32bit PAE kernels do not apply
+as Xen is running in long mode, but kernel lowmem will be the limiting
+factor.  Switching to a 2/2 split will help, but it is a loosing battle.
 
--	/* Setup flat device-tree pointer */
--	initial_boot_params = params;
--
- 	/* check device tree validity */
--	if (fdt_check_header(params)) {
--		initial_boot_params = NULL;
-+	if (fdt_check_header(params))
- 		return false;
--	}
-+
-+	/* Setup flat device-tree pointer */
-+	initial_boot_params = params;
+It should be noted that OEL formally supports 64GB 32bit PV VMs, and as
+a result, the XenServer VM lifecycle tests do test it, and it works.
 
- 	return true;
- }
---
-1.8.0
-
+~Andrew
 
