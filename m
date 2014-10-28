@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933904AbaJ1FYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:24:42 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47912 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933696AbaJ1FYk (ORCPT
+	id S1758055AbaJ1FZX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:25:23 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:40014 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751206AbaJ1FZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 01:24:40 -0400
-Message-ID: <1414473874.8574.2.camel@tkhai>
-Subject: Re: [PATCH] sched: Fix race between task_group and sched_task_group
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: Oleg Nesterov <oleg@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Burke Libbey <burke.libbey@shopify.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>
-Date: Tue, 28 Oct 2014 08:24:34 +0300
-In-Reply-To: <20141027230427.GA18454@redhat.com>
-References: <1414405105.19914.169.camel@tkhai>
-	 <20141027230427.GA18454@redhat.com>
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Tue, 28 Oct 2014 01:25:22 -0400
+Date: Mon, 27 Oct 2014 22:25:17 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] eeepc-laptop: clean up control flow in
+ eeepc_acpi_notify
+Message-ID: <20141028052517.GG60814@vmdeb7>
+References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+ <1414005163-3461-6-git-send-email-fransklaver@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414005163-3461-6-git-send-email-fransklaver@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Вт, 28/10/2014 в 00:04 +0100, Oleg Nesterov пишет:
-> On 10/27, Kirill Tkhai wrote:
-> >
-> > +static void cpu_cgroup_fork(struct task_struct *task)
-> > +{
-> > +	sched_move_task(task);
-> > +}
-> > +
-> >  static int cpu_cgroup_can_attach(struct cgroup_subsys_state *css,
-> >  				 struct cgroup_taskset *tset)
-> >  {
-> > @@ -8205,6 +8210,7 @@ struct cgroup_subsys cpu_cgrp_subsys = {
-> >  	.css_free	= cpu_cgroup_css_free,
-> >  	.css_online	= cpu_cgroup_css_online,
-> >  	.css_offline	= cpu_cgroup_css_offline,
-> > +	.fork		= cpu_cgroup_fork,
+On Wed, Oct 22, 2014 at 09:12:40PM +0200, Frans Klaver wrote:
+> eeepc_acpi_notify increases the indentation level to a whopping four. If
+> we revise the conditions a bit, we can reduce that to a more soothing
+> two and satisfy the indentation guidelines in Documentation/CodingStyle.
 > 
-> Agreed, but it seems that sched_move_task() -> task_css_check() can
-> complain if CONFIG_PROVE_RCU...
-
-Thanks, Oleg.
-
+> Remove an unwanted space while we're in the neighbourhood.
 > 
-> cpu_cgroup_exit() too calls sched_move_task() without any lock, but
-> there is the PF_EXITING check and init_css_set can't go away.
+> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+> ---
+>  drivers/platform/x86/eeepc-laptop.c | 53 ++++++++++++++++++-------------------
+>  1 file changed, 26 insertions(+), 27 deletions(-)
 > 
-> perhaps sched_move_task() should just take rcu_read_lock() and use
-> task_css() ? This lockdep_is_held(siglock) looks ugly, and iiuc we
-> need it to shut up the warning if autogroup_move_group() is the caller.
-
-Shouldn't we do that in separate patch? How about this?
-
-[PATCH]sched: Remove lockdep check in sched_move_task()
-
-sched_move_task() is the only interface to change sched_task_group:
-cpu_cgrp_subsys methods and autogroup_move_group() use it.
-
-Everything is synchronized by task_rq_lock(), so cpu_cgroup_attach()
-is ordered with other users of sched_move_task(). This means we do
-no need RCU here: if we've dereferenced a tg here, the .attach method
-hasn't been called for it yet.
-
-Thus, we should pass "true" to task_css_check() to silence lockdep
-warnings.
-    
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index dde8adb..d77e6ee 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7403,8 +7403,12 @@ void sched_move_task(struct task_struct *tsk)
- 	if (unlikely(running))
- 		put_prev_task(rq, tsk);
- 
--	tg = container_of(task_css_check(tsk, cpu_cgrp_id,
--				lockdep_is_held(&tsk->sighand->siglock)),
-+	/*
-+	 * All callers are synchronized by task_rq_lock(); we do not use RCU
-+	 * which is pointless here. Thus, we pass "true" to task_css_check()
-+	 * to prevent lockdep warnings.
-+	 */
-+	tg = container_of(task_css_check(tsk, cpu_cgrp_id, true),
- 			  struct task_group, css);
- 	tg = autogroup_task_group(tsk, tg);
- 	tsk->sched_task_group = tg;
+> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> index 73e8d39..21ffe1f 100644
+> --- a/drivers/platform/x86/eeepc-laptop.c
+> +++ b/drivers/platform/x86/eeepc-laptop.c
+> @@ -1213,7 +1213,7 @@ static void eeepc_input_exit(struct eeepc_laptop *eeepc)
+>  static void eeepc_input_notify(struct eeepc_laptop *eeepc, int event)
+>  {
+>  	if (!eeepc->inputdev)
+> -		return ;
+> +		return;
+>  	if (!sparse_keymap_report_event(eeepc->inputdev, event, 1, true))
+>  		pr_info("Unknown key %x pressed\n", event);
+>  }
+> @@ -1222,6 +1222,7 @@ static void eeepc_acpi_notify(struct acpi_device *device, u32 event)
+>  {
+>  	struct eeepc_laptop *eeepc = acpi_driver_data(device);
+>  	u16 count;
+> +	int old_brightness, new_brightness;
 
 
+Variable declarations in order of decreasing line length please.
+
+Otherwise, looks good. Mind sending an update of this one?
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
