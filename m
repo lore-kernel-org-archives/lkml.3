@@ -1,166 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaJ1Wtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:49:47 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:64623 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750786AbaJ1Wtq (ORCPT
+	id S1753329AbaJ1Wyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:54:31 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46931 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaJ1Wy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:49:46 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 34/47] acpi: Register power-off handler with kernel power-off handler
-Date: Wed, 29 Oct 2014 00:10:19 +0100
-Message-ID: <4751363.lZMkCZKZet@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <544EFB12.1090901@roeck-us.net>
-References: <1414425354-10359-1-git-send-email-linux@roeck-us.net> <5416859.0WlfjKo7zJ@vostro.rjw.lan> <544EFB12.1090901@roeck-us.net>
+	Tue, 28 Oct 2014 18:54:29 -0400
+Date: Tue, 28 Oct 2014 22:54:28 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tim Tassonis <stuff@decentral.ch>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: overlayfs: "filesystem of lowerdir is not supported" on cdrom
+Message-ID: <20141028225428.GC7996@ZenIV.linux.org.uk>
+References: <544FDC1C.9040908@decentral.ch>
+ <20141028211313.GB7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028211313.GB7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 27, 2014 07:10:26 PM Guenter Roeck wrote:
-> On 10/27/2014 05:26 PM, Rafael J. Wysocki wrote:
-> > On Monday, October 27, 2014 08:55:41 AM Guenter Roeck wrote:
-> >> Register with kernel power-off handler instead of setting pm_power_off
-> >> directly. Register with high priority to reflect that the driver explicitly
-> >> overrides existing power-off handlers.
-> >
-> > Well, I'm still rather unconvinced that notifiers are particularly suitable for
-> > this purpose.
-> >
-> > Specifically ->
-> >
+On Tue, Oct 28, 2014 at 09:13:13PM +0000, Al Viro wrote:
+
+> Documentation is wildly over-optimistic.  You are trying to use something
+> with non-trivial ->d_hash and ->d_compare as lower layer.
 > 
-> Fine.
+> What should happen if you ask to mount an image with joliet extensions and
+> ask to create foo.txt.... when foo.txt is there?  From the isofs POV those
+> are the same; for overlayfs they are not (it's using default ->d_hash
+> and ->d_compare).
 > 
-> >> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
-> >> Cc: Len Brown <lenb@kernel.org>
-> >> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> >> ---
-> >> v3:
-> >> - Replace poweroff in all newly introduced variables and in text
-> >>    with power_off or power-off as appropriate
-> >> - Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
-> >> - Replace acpi: with ACPI: in log message
-> >> v2:
-> >> - Use define to specify poweroff handler priority
-> >> - Use pr_warn instead of pr_err
-> >>
-> >>   drivers/acpi/sleep.c | 15 +++++++++++++--
-> >>   1 file changed, 13 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> >> index 05a31b5..7875b92 100644
-> >> --- a/drivers/acpi/sleep.c
-> >> +++ b/drivers/acpi/sleep.c
-> >> @@ -16,6 +16,8 @@
-> >>   #include <linux/device.h>
-> >>   #include <linux/interrupt.h>
-> >>   #include <linux/suspend.h>
-> >> +#include <linux/notifier.h>
-> >> +#include <linux/pm.h>
-> >>   #include <linux/reboot.h>
-> >>   #include <linux/acpi.h>
-> >>   #include <linux/module.h>
-> >> @@ -827,14 +829,22 @@ static void acpi_power_off_prepare(void)
-> >>   	acpi_disable_all_gpes();
-> >>   }
-> >>
-> >> -static void acpi_power_off(void)
-> >> +static int acpi_power_off(struct notifier_block *this,
-> >> +			  unsigned long unused1, void *unused2)
-> >>   {
-> >
-> > -> Is there any reason why any notifier in the new chain would use the
-> > second argument for anything meaningful?  And the third argument for
-> > that matter?
-> >
-> >>   	/* acpi_sleep_prepare(ACPI_STATE_S5) should have already been called */
-> >>   	printk(KERN_DEBUG "%s called\n", __func__);
-> >>   	local_irq_disable();
-> >>   	acpi_enter_sleep_state(ACPI_STATE_S5);
-> >> +
-> >> +	return NOTIFY_DONE;
-> >
-> > Also is there any reason for any notifier in the new chain to return anything
-> > different from NOTIFY_DONE and if so, then what happens when anything else
-> > is returned?
-> >
-> 
-> As mentioned earlier, notifiers just come handy. That is all.
-> 
-> Having said that, I don't have a strong opinion either way. If you want me
-> to implement a priority based callback handler with a single argument,
-> just let me know and I'll be happy to implement it. It is not worth arguing
-> about.
-> 
-> Would something like
-> 
-> struct power_off_block {
-> 	void (*power_off_call)(struct power_off_block *);
-> 	struct power_off_block __rcu *next;
-> 	int priority;
-> };
-> 
-> for the data structure be acceptable ? The power-off handler code would then
-> be something like
-> 
-> static void acpi_power_off(struct power_off_block *this)
-> {
-> }
-> 
-> ie quite similar to the current power-off handler code, with an added argument.
-> The API would, except for the structure argument, pretty much stay the same.
+> We probably ought to split the normal (case-sensitive, no joliet shite) case
+> out and leave it with NULL ->s_d_op, but that'll need to be done carefully,
+> or isofs_cmp() will blow up on us.
 
-That's better in my view.
-
-You could also get rid of the priority if you had something like
-
-struct power_off_block *power_off_list[MAX_LEVEL];
-
-and then made your power_off_block registration pass the level as the
-second argument.
-
-I also would use struct list_head instead of the next pointer, because the
-list manipulation would be trivial then (and the above would become
-struct list_head power_off_list[MAX_LEVEL];) and the callers would only
-need to do
-
-static struct power_off_block my_power_off_block = {
-	.power_off_call = my_routine,
-};
-
-and then something like
-
-	register_power_off_block(&my_power_off_block, <level>);
-
-which would be just list_add_tail(&block->node, &power_off_list[<level>]) plus
-some bounds checking etc.  To avoid open coding stuff.
-
-That would allow me to avoid arbitrary gaps in the priority space too and
-if more levels need to be added over time, that should be easy to do too if
-an enum is used to define them.
-
-But if you prefer to use a unidirectional list and keep the priority in
-struct power_off_block, I'm fine with that too.
-
-[Dynamic allocation of memory for the struct power_off_block things is worth
-considering too IMHO, so that users can simply pass the name of the routine
-and the level to the registration function, like:
-
-	ret = register_power_off_call(my_routine, <level>);
-	if (ret)
-		complain;
-
-The unregistration would be somewhat less straightforward then, but I'm not
-sure if unregistration is necessary at all in this case.]
-
-Kind regards,
-Rafael
-
+See if vfs.git#for-linus works for you.
