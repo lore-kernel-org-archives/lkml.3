@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934093AbaJ1Fod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:44:33 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:54974 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753977AbaJ1Foa (ORCPT
+	id S1756641AbaJ1FpD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:45:03 -0400
+Received: from relay.parallels.com ([195.214.232.42]:50649 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985AbaJ1Fo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 01:44:30 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: <catalin.marinas@arm.com>, <will.deacon@arm.com>,
-        Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH] arm64: ARCH_PFN_OFFSET should be unsigned long
-Date: Tue, 28 Oct 2014 13:44:01 +0800
-Message-ID: <1414475041-31480-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 28 Oct 2014 01:44:59 -0400
+Message-ID: <1414475091.8574.6.camel@tkhai>
+Subject: Re: [PATCH 2/3] introduce probe_slab_address()
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Kirill Tkhai <tkhai@yandex.ru>, Christoph Lameter <cl@linux.com>
+Date: Tue, 28 Oct 2014 08:44:51 +0300
+In-Reply-To: <20141027195425.GC11736@redhat.com>
+References: <1413962231.19914.130.camel@tkhai>
+	 <20141027195339.GA11736@redhat.com> <20141027195425.GC11736@redhat.com>
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-28_04:2014-10-27,2014-10-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1410280061
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pfns are unsigned long, but PHYS_PFN_OFFSET is phys_addr_t. This leads
-to page_to_pfn() returning phys_addr_t which cause type mismatches in
-some print statements.
+В Пн, 27/10/2014 в 20:54 +0100, Oleg Nesterov пишет:
+> Extract the ifdef(CONFIG_DEBUG_PAGEALLOC) code from get_freepointer_safe()
+> into the new generic helper, probe_slab_address(). The next patch will add
+> another user.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  include/linux/uaccess.h |   15 +++++++++++++++
+>  mm/slub.c               |    6 +-----
+>  2 files changed, 16 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/uaccess.h b/include/linux/uaccess.h
+> index effb637..3367396 100644
+> --- a/include/linux/uaccess.h
+> +++ b/include/linux/uaccess.h
+> @@ -71,6 +71,21 @@ static inline unsigned long __copy_from_user_nocache(void *to,
+>  	__probe_kernel_read(&(retval), (__force void *)(addr), sizeof(retval))
+>  
+>  /*
+> + * Same as probe_kernel_address(), but @addr must be the valid pointer
+> + * to a slab object, potentially freed/reused/unmapped.
+> + */
+> +#ifdef CONFIG_DEBUG_PAGEALLOC
+> +#define probe_slab_address(addr, retval)	\
+> +	probe_kernel_address(addr, retval)
+> +#else
+> +#define probe_slab_address(addr, retval)	\
+> +	({							\
+> +		(retval) = *(typeof(retval) *)(addr);		\
+> +		0;						\
+> +	})
+> +#endif
+> +
+> +/*
+>   * probe_kernel_read(): safely attempt to read from a location
+>   * @dst: pointer to the buffer that shall take the data
+>   * @src: address to read from
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 3e8afcc..0467d22 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -265,11 +265,7 @@ static inline void *get_freepointer_safe(struct kmem_cache *s, void *object)
+>  {
+>  	void *p;
+>  
+> -#ifdef CONFIG_DEBUG_PAGEALLOC
+> -	probe_kernel_read(&p, (void **)(object + s->offset), sizeof(p));
+> -#else
+> -	p = get_freepointer(s, object);
+> -#endif
+> +	probe_slab_address(object + s->offset, p);
+>  	return p;
+>  }
+>  
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
----
- arch/arm64/include/asm/memory.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+probe_kernel_read() was arch-dependent on tree platforms:
 
-diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
-index ccc7087..a62cd07 100644
---- a/arch/arm64/include/asm/memory.h
-+++ b/arch/arm64/include/asm/memory.h
-@@ -142,7 +142,7 @@ static inline void *phys_to_virt(phys_addr_t x)
-  *  virt_to_page(k)	convert a _valid_ virtual address to struct page *
-  *  virt_addr_valid(k)	indicates whether a virtual address is valid
-  */
--#define ARCH_PFN_OFFSET		PHYS_PFN_OFFSET
-+#define ARCH_PFN_OFFSET		((unsigned long)PHYS_PFN_OFFSET)
- 
- #define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
- #define	virt_addr_valid(kaddr)	pfn_valid(__pa(kaddr) >> PAGE_SHIFT)
--- 
-1.7.9.5
+arch/blackfin/mm/maccess.c
+arch/parisc/lib/memcpy.c
+arch/um/kernel/maccess.c
+
+But now we skip these arch-dependent implementations. Is there no a problem?
+
+Kirill
 
