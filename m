@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082AbaJ1Hjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:39:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44811 "EHLO
+	id S1754841AbaJ1DkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:40:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44766 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754877AbaJ1Dk0 (ORCPT
+	with ESMTP id S1754804AbaJ1DkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:26 -0400
+	Mon, 27 Oct 2014 23:40:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Anton Blanchard <anton@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.17 115/146] powerpc/iommu/ddw: Fix endianness
-Date: Tue, 28 Oct 2014 11:34:17 +0800
-Message-Id: <20141028033348.434321047@linuxfoundation.org>
+        Eric Sandeen <sandeen@redhat.com>, Dave Chinner <dchinner@redhat.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.17 092/146] xfs: fix agno increment in xfs_inumbers() loop
+Date: Tue, 28 Oct 2014 11:33:54 +0800
+Message-Id: <20141028033347.398884046@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -31,163 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
+From: Eric Sandeen <sandeen@sandeen.net>
 
-commit 9410e0185e65394c0c6d046033904b53b97a9423 upstream.
+commit a8b1ee8bafc765ebf029d03c5479a69aebff9693 upstream.
 
-rtas_call() accepts and returns values in CPU endianness.
-The ddw_query_response and ddw_create_response structs members are
-defined and treated as BE but as they are passed to rtas_call() as
-(u32 *) and they get byteswapped automatically, the data is CPU-endian.
-This fixes ddw_query_response and ddw_create_response definitions and use.
+caused a regression in xfs_inumbers, which in turn broke
+xfsdump, causing incomplete dumps.
 
-of_read_number() is designed to work with device tree cells - it assumes
-the input is big-endian and returns data in CPU-endian. However due
-to the ddw_create_response struct fix, create.addr_hi/lo are already
-CPU-endian so do not byteswap them.
+The loop in xfs_inumbers() needs to fill the user-supplied
+buffers, and iterates via xfs_btree_increment, reading new
+ags as needed.
 
-ddw_avail is a pointer to the "ibm,ddw-applicable" property which contains
-3 cells which are big-endian as it is a device tree. rtas_call() accepts
-a RTAS token in CPU-endian. This makes use of of_property_read_u32_array
-to byte swap and avoid the need for a number of be32_to_cpu calls.
+But the first time through the loop, if xfs_btree_increment()
+succeeds, we continue, which triggers the ++agno at the bottom
+of the loop, and we skip to soon to the next ag - without
+the proper setup under next_ag to read the next ag.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[aik: folded Anton's patch with of_property_read_u32_array]
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-Acked-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Fix this by removing the agno increment from the loop conditional,
+and only increment agno if we have actually hit the code under
+the next_ag: target.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/iommu.c |   51 ++++++++++++++++++---------------
- 1 file changed, 28 insertions(+), 23 deletions(-)
+ fs/xfs/xfs_itable.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/platforms/pseries/iommu.c
-+++ b/arch/powerpc/platforms/pseries/iommu.c
-@@ -329,16 +329,16 @@ struct direct_window {
+--- a/fs/xfs/xfs_itable.c
++++ b/fs/xfs/xfs_itable.c
+@@ -639,7 +639,8 @@ next_ag:
+ 		xfs_buf_relse(agbp);
+ 		agbp = NULL;
+ 		agino = 0;
+-	} while (++agno < mp->m_sb.sb_agcount);
++		agno++;
++	} while (agno < mp->m_sb.sb_agcount);
  
- /* Dynamic DMA Window support */
- struct ddw_query_response {
--	__be32 windows_available;
--	__be32 largest_available_block;
--	__be32 page_size;
--	__be32 migration_capable;
-+	u32 windows_available;
-+	u32 largest_available_block;
-+	u32 page_size;
-+	u32 migration_capable;
- };
- 
- struct ddw_create_response {
--	__be32 liobn;
--	__be32 addr_hi;
--	__be32 addr_lo;
-+	u32 liobn;
-+	u32 addr_hi;
-+	u32 addr_lo;
- };
- 
- static LIST_HEAD(direct_window_list);
-@@ -725,16 +725,18 @@ static void remove_ddw(struct device_nod
- {
- 	struct dynamic_dma_window_prop *dwp;
- 	struct property *win64;
--	const u32 *ddw_avail;
-+	u32 ddw_avail[3];
- 	u64 liobn;
--	int len, ret = 0;
-+	int ret = 0;
-+
-+	ret = of_property_read_u32_array(np, "ibm,ddw-applicable",
-+					 &ddw_avail[0], 3);
- 
--	ddw_avail = of_get_property(np, "ibm,ddw-applicable", &len);
- 	win64 = of_find_property(np, DIRECT64_PROPNAME, NULL);
- 	if (!win64)
- 		return;
- 
--	if (!ddw_avail || len < 3 * sizeof(u32) || win64->length < sizeof(*dwp))
-+	if (ret || win64->length < sizeof(*dwp))
- 		goto delprop;
- 
- 	dwp = win64->value;
-@@ -872,8 +874,9 @@ static int create_ddw(struct pci_dev *de
- 
- 	do {
- 		/* extra outputs are LIOBN and dma-addr (hi, lo) */
--		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create, cfg_addr,
--				BUID_HI(buid), BUID_LO(buid), page_shift, window_shift);
-+		ret = rtas_call(ddw_avail[1], 5, 4, (u32 *)create,
-+				cfg_addr, BUID_HI(buid), BUID_LO(buid),
-+				page_shift, window_shift);
- 	} while (rtas_busy_delay(ret));
- 	dev_info(&dev->dev,
- 		"ibm,create-pe-dma-window(%x) %x %x %x %x %x returned %d "
-@@ -910,7 +913,7 @@ static u64 enable_ddw(struct pci_dev *de
- 	int page_shift;
- 	u64 dma_addr, max_addr;
- 	struct device_node *dn;
--	const u32 *uninitialized_var(ddw_avail);
-+	u32 ddw_avail[3];
- 	struct direct_window *window;
- 	struct property *win64;
- 	struct dynamic_dma_window_prop *ddwprop;
-@@ -942,8 +945,9 @@ static u64 enable_ddw(struct pci_dev *de
- 	 * for the given node in that order.
- 	 * the property is actually in the parent, not the PE
- 	 */
--	ddw_avail = of_get_property(pdn, "ibm,ddw-applicable", &len);
--	if (!ddw_avail || len < 3 * sizeof(u32))
-+	ret = of_property_read_u32_array(pdn, "ibm,ddw-applicable",
-+					 &ddw_avail[0], 3);
-+	if (ret)
- 		goto out_failed;
- 
-        /*
-@@ -966,11 +970,11 @@ static u64 enable_ddw(struct pci_dev *de
- 		dev_dbg(&dev->dev, "no free dynamic windows");
- 		goto out_failed;
- 	}
--	if (be32_to_cpu(query.page_size) & 4) {
-+	if (query.page_size & 4) {
- 		page_shift = 24; /* 16MB */
--	} else if (be32_to_cpu(query.page_size) & 2) {
-+	} else if (query.page_size & 2) {
- 		page_shift = 16; /* 64kB */
--	} else if (be32_to_cpu(query.page_size) & 1) {
-+	} else if (query.page_size & 1) {
- 		page_shift = 12; /* 4kB */
- 	} else {
- 		dev_dbg(&dev->dev, "no supported direct page size in mask %x",
-@@ -980,7 +984,7 @@ static u64 enable_ddw(struct pci_dev *de
- 	/* verify the window * number of ptes will map the partition */
- 	/* check largest block * page size > max memory hotplug addr */
- 	max_addr = memory_hotplug_max();
--	if (be32_to_cpu(query.largest_available_block) < (max_addr >> page_shift)) {
-+	if (query.largest_available_block < (max_addr >> page_shift)) {
- 		dev_dbg(&dev->dev, "can't map partiton max 0x%llx with %u "
- 			  "%llu-sized pages\n", max_addr,  query.largest_available_block,
- 			  1ULL << page_shift);
-@@ -1006,8 +1010,9 @@ static u64 enable_ddw(struct pci_dev *de
- 	if (ret != 0)
- 		goto out_free_prop;
- 
--	ddwprop->liobn = create.liobn;
--	ddwprop->dma_base = cpu_to_be64(of_read_number(&create.addr_hi, 2));
-+	ddwprop->liobn = cpu_to_be32(create.liobn);
-+	ddwprop->dma_base = cpu_to_be64(((u64)create.addr_hi << 32) |
-+			create.addr_lo);
- 	ddwprop->tce_shift = cpu_to_be32(page_shift);
- 	ddwprop->window_shift = cpu_to_be32(len);
- 
-@@ -1039,7 +1044,7 @@ static u64 enable_ddw(struct pci_dev *de
- 	list_add(&window->list, &direct_window_list);
- 	spin_unlock(&direct_window_list_lock);
- 
--	dma_addr = of_read_number(&create.addr_hi, 2);
-+	dma_addr = be64_to_cpu(ddwprop->dma_base);
- 	goto out_unlock;
- 
- out_free_window:
+ 	if (!error) {
+ 		if (bufidx) {
 
 
