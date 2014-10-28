@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007AbaJ1Dse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:48:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45732 "EHLO
+	id S1760232AbaJ1Guo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:50:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45736 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932948AbaJ1Dsa (ORCPT
+	with ESMTP id S932995AbaJ1Dsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:48:30 -0400
+	Mon, 27 Oct 2014 23:48:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bryan ODonoghue <pure.logic@nexus-software.ie>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 016/100] x86/intel/quark: Switch off CR4.PGE so TLB flush uses CR3 instead
-Date: Tue, 28 Oct 2014 11:35:01 +0800
-Message-Id: <20141028033501.371683062@linuxfoundation.org>
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.14 017/100] spi: dw-mid: respect 8 bit mode
+Date: Tue, 28 Oct 2014 11:35:02 +0800
+Message-Id: <20141028033501.417064837@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,53 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit ee1b5b165c0a2f04d2107e634e51f05d0eb107de upstream.
+commit b41583e7299046abdc578c33f25ed83ee95b9b31 upstream.
 
-Quark x1000 advertises PGE via the standard CPUID method
-PGE bits exist in Quark X1000's PTEs. In order to flush
-an individual PTE it is necessary to reload CR3 irrespective
-of the PTE.PGE bit.
+In case of 8 bit mode and DMA usage we end up with every second byte written as
+0. We have to respect bits_per_word settings what this patch actually does.
 
-See Quark Core_DevMan_001.pdf section 6.4.11
-
-This bug was fixed in Galileo kernels, unfixed vanilla kernels are expected to
-crash and burn on this platform.
-
-Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
-Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/intel.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ drivers/spi/spi-dw-mid.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -153,6 +153,21 @@ static void early_init_intel(struct cpui
- 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
- 		}
- 	}
-+
-+	/*
-+	 * Intel Quark Core DevMan_001.pdf section 6.4.11
-+	 * "The operating system also is required to invalidate (i.e., flush)
-+	 *  the TLB when any changes are made to any of the page table entries.
-+	 *  The operating system must reload CR3 to cause the TLB to be flushed"
-+	 *
-+	 * As a result cpu_has_pge() in arch/x86/include/asm/tlbflush.h should
-+	 * be false so that __flush_tlb_all() causes CR3 insted of CR4.PGE
-+	 * to be modified
-+	 */
-+	if (c->x86 == 5 && c->x86_model == 9) {
-+		pr_info("Disabling PGE capability bit\n");
-+		setup_clear_cpu_cap(X86_FEATURE_PGE);
-+	}
- }
+--- a/drivers/spi/spi-dw-mid.c
++++ b/drivers/spi/spi-dw-mid.c
+@@ -136,7 +136,7 @@ static int mid_spi_dma_transfer(struct d
+ 	txconf.dst_addr = dws->dma_addr;
+ 	txconf.dst_maxburst = LNW_DMA_MSIZE_16;
+ 	txconf.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	txconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	txconf.dst_addr_width = dws->dma_width;
+ 	txconf.device_fc = false;
  
- #ifdef CONFIG_X86_32
+ 	txchan->device->device_control(txchan, DMA_SLAVE_CONFIG,
+@@ -159,7 +159,7 @@ static int mid_spi_dma_transfer(struct d
+ 	rxconf.src_addr = dws->dma_addr;
+ 	rxconf.src_maxburst = LNW_DMA_MSIZE_16;
+ 	rxconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	rxconf.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	rxconf.src_addr_width = dws->dma_width;
+ 	rxconf.device_fc = false;
+ 
+ 	rxchan->device->device_control(rxchan, DMA_SLAVE_CONFIG,
 
 
