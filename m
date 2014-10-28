@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932918AbaJ1DsG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:48:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45675 "EHLO
+	id S933628AbaJ1Gxh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:53:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45685 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430AbaJ1DsB (ORCPT
+	with ESMTP id S932915AbaJ1DsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:48:01 -0400
+	Mon, 27 Oct 2014 23:48:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arun Easi <arun.easi@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.14 024/100] qla2xxx: Use correct offset to req-q-out for reserve calculation
-Date: Tue, 28 Oct 2014 11:35:09 +0800
-Message-Id: <20141028033501.713911848@linuxfoundation.org>
+        Xuelin Shi <xuelin.shi@freescale.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [PATCH 3.14 026/100] dmaengine: fix xor sources continuation
+Date: Tue, 28 Oct 2014 11:35:11 +0800
+Message-Id: <20141028033501.792295184@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -30,34 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arun Easi <arun.easi@qlogic.com>
+From: Xuelin Shi <xuelin.shi@freescale.com>
 
-commit 75554b68ac1e018bca00d68a430b92ada8ab52dd upstream.
+commit 87cea76384257e6ac3fa4791b6a6b9d0335f7457 upstream.
 
-Signed-off-by: Arun Easi <arun.easi@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+the partial xor result must be kept until the next
+tx is generated.
+
+Signed-off-by: Xuelin Shi <xuelin.shi@freescale.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_target.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ crypto/async_tx/async_xor.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -1382,12 +1382,10 @@ static inline void qlt_unmap_sg(struct s
- static int qlt_check_reserve_free_req(struct scsi_qla_host *vha,
- 	uint32_t req_cnt)
- {
--	struct qla_hw_data *ha = vha->hw;
--	device_reg_t __iomem *reg = ha->iobase;
- 	uint32_t cnt;
+--- a/crypto/async_tx/async_xor.c
++++ b/crypto/async_tx/async_xor.c
+@@ -78,8 +78,6 @@ do_async_xor(struct dma_chan *chan, stru
+ 		tx = dma->device_prep_dma_xor(chan, dma_dest, src_list,
+ 					      xor_src_cnt, unmap->len,
+ 					      dma_flags);
+-		src_list[0] = tmp;
+-
  
- 	if (vha->req->cnt < (req_cnt + 2)) {
--		cnt = (uint16_t)RD_REG_DWORD(&reg->isp24.req_q_out);
-+		cnt = (uint16_t)RD_REG_DWORD(vha->req->req_q_out);
+ 		if (unlikely(!tx))
+ 			async_tx_quiesce(&submit->depend_tx);
+@@ -92,6 +90,7 @@ do_async_xor(struct dma_chan *chan, stru
+ 						      xor_src_cnt, unmap->len,
+ 						      dma_flags);
+ 		}
++		src_list[0] = tmp;
  
- 		ql_dbg(ql_dbg_tgt, vha, 0xe00a,
- 		    "Request ring circled: cnt=%d, vha->->ring_index=%d, "
+ 		dma_set_unmap(tx, unmap);
+ 		async_tx_submit(chan, tx, submit);
 
 
