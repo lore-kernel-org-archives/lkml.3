@@ -1,157 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758286AbaJ1Ggj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:36:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45989 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755354AbaJ1Dup (ORCPT
+	id S1758443AbaJ1Ggv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:36:51 -0400
+Received: from barracuda.supercp.com ([216.234.124.52]:38202 "EHLO
+	barracuda.supercp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758410AbaJ1Ggt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:45 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Tue, 28 Oct 2014 02:36:49 -0400
+X-Greylist: delayed 974 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 02:36:48 EDT
+X-ASG-Debug-ID: 1414477232-089ef75ee265f210001-xx1T2L
+X-Barracuda-Envelope-From: list1@michaelshell.org
+X-Barracuda-Apparent-Source-IP: 216.119.133.66
+Date: Tue, 28 Oct 2014 02:32:08 -0400
+From: Michael Shell <list1@michaelshell.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.14 091/100] sparc64: Adjust KTSB assembler to support larger physical addresses.
-Date: Tue, 28 Oct 2014 11:36:16 +0800
-Message-Id: <20141028033504.639916025@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
-References: <20141028033500.670583608@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Subject: Standard VGA console with DRI/DRM under X?
+Message-Id: <20141028023208.320b777b6ad97c7c9a815300@michaelshell.org>
+X-ASG-Orig-Subj: Standard VGA console with DRI/DRM under X?
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.10; i586-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - a2s43.a2hosting.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - michaelshell.org
+X-Get-Message-Sender-Via: a2s43.a2hosting.com: authenticated_id: list1@michaelshell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
+X-Barracuda-Connect: a2s43.a2hosting.com[216.119.133.66]
+X-Barracuda-Start-Time: 1414477232
+X-Barracuda-URL: http://barracuda.supercp.com:8000/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=4.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.10982
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: "David S. Miller" <davem@davemloft.net>
-
-[ Upstream commit 8c82dc0e883821c098c8b0b130ffebabf9aab5df ]
-
-As currently coded the KTSB accesses in the kernel only support up to
-47 bits of physical addressing.
-
-Adjust the instruction and patching sequence in order to support
-arbitrary 64 bits addresses.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Acked-by: Bob Picco <bob.picco@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/include/asm/tsb.h |   30 ++++++++++++------------------
- arch/sparc/mm/init_64.c      |   28 +++++++++++++++++++++++++---
- 2 files changed, 37 insertions(+), 21 deletions(-)
-
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -256,8 +256,6 @@ extern struct tsb_phys_patch_entry __tsb
- 	(KERNEL_TSB_SIZE_BYTES / 16)
- #define KERNEL_TSB4M_NENTRIES	4096
- 
--#define KTSB_PHYS_SHIFT		15
--
- 	/* Do a kernel TSB lookup at tl>0 on VADDR+TAG, branch to OK_LABEL
- 	 * on TSB hit.  REG1, REG2, REG3, and REG4 are used as temporaries
- 	 * and the found TTE will be left in REG1.  REG3 and REG4 must
-@@ -266,17 +264,15 @@ extern struct tsb_phys_patch_entry __tsb
- 	 * VADDR and TAG will be preserved and not clobbered by this macro.
- 	 */
- #define KERN_TSB_LOOKUP_TL1(VADDR, TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
--661:	sethi		%hi(swapper_tsb), REG1;			\
--	or		REG1, %lo(swapper_tsb), REG1; \
-+661:	sethi		%uhi(swapper_tsb), REG1; \
-+	sethi		%hi(swapper_tsb), REG2; \
-+	or		REG1, %ulo(swapper_tsb), REG1; \
-+	or		REG2, %lo(swapper_tsb), REG2; \
- 	.section	.swapper_tsb_phys_patch, "ax"; \
- 	.word		661b; \
- 	.previous; \
--661:	nop; \
--	.section	.tsb_ldquad_phys_patch, "ax"; \
--	.word		661b; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	.previous; \
-+	sllx		REG1, 32, REG1; \
-+	or		REG1, REG2, REG1; \
- 	srlx		VADDR, PAGE_SHIFT, REG2; \
- 	and		REG2, (KERNEL_TSB_NENTRIES - 1), REG2; \
- 	sllx		REG2, 4, REG2; \
-@@ -291,17 +287,15 @@ extern struct tsb_phys_patch_entry __tsb
- 	 * we can make use of that for the index computation.
- 	 */
- #define KERN_TSB4M_LOOKUP_TL1(TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
--661:	sethi		%hi(swapper_4m_tsb), REG1;	     \
--	or		REG1, %lo(swapper_4m_tsb), REG1; \
-+661:	sethi		%uhi(swapper_4m_tsb), REG1; \
-+	sethi		%hi(swapper_4m_tsb), REG2; \
-+	or		REG1, %ulo(swapper_4m_tsb), REG1; \
-+	or		REG2, %lo(swapper_4m_tsb), REG2; \
- 	.section	.swapper_4m_tsb_phys_patch, "ax"; \
- 	.word		661b; \
- 	.previous; \
--661:	nop; \
--	.section	.tsb_ldquad_phys_patch, "ax"; \
--	.word		661b; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	.previous; \
-+	sllx		REG1, 32, REG1; \
-+	or		REG1, REG2, REG1; \
- 	and		TAG, (KERNEL_TSB4M_NENTRIES - 1), REG2; \
- 	sllx		REG2, 4, REG2; \
- 	add		REG1, REG2, REG2; \
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -1727,19 +1727,41 @@ static void __init tsb_phys_patch(void)
- static struct hv_tsb_descr ktsb_descr[NUM_KTSB_DESCR];
- extern struct tsb swapper_tsb[KERNEL_TSB_NENTRIES];
- 
-+/* The swapper TSBs are loaded with a base sequence of:
-+ *
-+ *	sethi	%uhi(SYMBOL), REG1
-+ *	sethi	%hi(SYMBOL), REG2
-+ *	or	REG1, %ulo(SYMBOL), REG1
-+ *	or	REG2, %lo(SYMBOL), REG2
-+ *	sllx	REG1, 32, REG1
-+ *	or	REG1, REG2, REG1
-+ *
-+ * When we use physical addressing for the TSB accesses, we patch the
-+ * first four instructions in the above sequence.
-+ */
-+
- static void patch_one_ktsb_phys(unsigned int *start, unsigned int *end, unsigned long pa)
- {
--	pa >>= KTSB_PHYS_SHIFT;
-+	unsigned long high_bits, low_bits;
-+
-+	high_bits = (pa >> 32) & 0xffffffff;
-+	low_bits = (pa >> 0) & 0xffffffff;
- 
- 	while (start < end) {
- 		unsigned int *ia = (unsigned int *)(unsigned long)*start;
- 
--		ia[0] = (ia[0] & ~0x3fffff) | (pa >> 10);
-+		ia[0] = (ia[0] & ~0x3fffff) | (high_bits >> 10);
- 		__asm__ __volatile__("flush	%0" : : "r" (ia));
- 
--		ia[1] = (ia[1] & ~0x3ff) | (pa & 0x3ff);
-+		ia[1] = (ia[1] & ~0x3fffff) | (low_bits >> 10);
- 		__asm__ __volatile__("flush	%0" : : "r" (ia + 1));
- 
-+		ia[2] = (ia[2] & ~0x1fff) | (high_bits & 0x3ff);
-+		__asm__ __volatile__("flush	%0" : : "r" (ia + 2));
-+
-+		ia[3] = (ia[3] & ~0x1fff) | (low_bits & 0x3ff);
-+		__asm__ __volatile__("flush	%0" : : "r" (ia + 3));
-+
- 		start++;
- 	}
- }
 
 
+  Greetings,
+
+Well, I want to be able to have my cake and eat it too. I want to be able to
+have the standard VGA/"hardware" classic console (not the framebuffer) but
+I still want the /dev/dri/cardX devices so that I can use DRI under Xorg.
+
+Is this possible and if not, why not?
+
+
+(I do hope I'm not bring up an issue with an obvious fix, but my searching
+ has not yielded an answer yet. For the record, I'm running modern kernel
+ (3.16.3) with much older x86 hardware [r100 Radeon video card].)
+
+
+If I boot with the kernel nomodeset option I can get the classic
+VGA/"hardware" console, but then I lose support for DRI/DRM:
+
+Oct 27 15:11:09 X kernel: [drm] Initialized drm 1.1.0 20060810
+Oct 27 15:11:09 X kernel: [drm] VGACON disable radeon kernel modesetting.
+Oct 27 15:11:09 X kernel: [drm:radeon_init] *ERROR* No UMS support in radeon module
+
+and glxgears et al. turns slow. In more modern Xorg releases, DRI is
+required for all hardware acceleration, so having /dev/dri/cardX is very
+important:
+
+http://askubuntu.com/questions/463142/why-x-is-relying-on-software-instead-of-hardware-with-nomodeset-kernel-paramet
+
+
+One reason I do not wish to use the framebuffer console is because of the
+small font. 160 columns makes it difficult to tell which [OK] belongs with
+which service. The selection of console fonts should always include a
+set that gives us an 80 column screen and the docs should point this out.
+
+And I dislike any blanking or video mode changes during boot.
+
+Can't the kernel just declare that it is capable of setting the video mode,
+provide the /dev/dri/cardX devices and leave the console alone, but still
+allow Xorg to call for a new mode and use /dev/dri/cardX if/when it sees fit?
+
+In an ideal world, there would be some kernel option such as fbcon=no.
+
+In the kernel Documentation fbcon.txt it mentions "fbcon=map:1 tells fbcon not
+to take over the console." But, IIRC, from my tests I wasn't able to use this
+to get a VGA/"hardware" console and still be able to have /dev/dri/cardX devices.
+
+
+
+    Cheers and thank you,
+
+    Mike Shell
