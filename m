@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303AbaJ1DnV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:43:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45120 "EHLO
+	id S1755337AbaJ1Dnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:43:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755259AbaJ1DnH (ORCPT
+	with ESMTP id S1755304AbaJ1Dn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:07 -0400
+	Mon, 27 Oct 2014 23:43:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arun Easi <arun.easi@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.16 031/127] qla2xxx: Use correct offset to req-q-out for reserve calculation
-Date: Tue, 28 Oct 2014 11:34:26 +0800
-Message-Id: <20141028033422.290173706@linuxfoundation.org>
+        Bryan ODonoghue <bryan.odonoghue@intel.com>,
+        Bing Niu <bing.niu@intel.com>,
+        "Alvin (Weike) Chen" <alvin.chen@intel.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+Subject: [PATCH 3.16 011/127] usb: pch_udc: usb gadget device support for Intel Quark X1000
+Date: Tue, 28 Oct 2014 11:34:06 +0800
+Message-Id: <20141028033421.409814620@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -30,34 +32,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arun Easi <arun.easi@qlogic.com>
+From: Bryan O'Donoghue <bryan.odonoghue@intel.com>
 
-commit 75554b68ac1e018bca00d68a430b92ada8ab52dd upstream.
+commit a68df7066a6f974db6069e0b93c498775660a114 upstream.
 
-Signed-off-by: Arun Easi <arun.easi@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+This patch is to enable the USB gadget device for Intel Quark X1000
+
+Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@intel.com>
+Signed-off-by: Bing Niu <bing.niu@intel.com>
+Signed-off-by: Alvin (Weike) Chen <alvin.chen@intel.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_target.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/usb/gadget/Kconfig   |    3 ++-
+ drivers/usb/gadget/pch_udc.c |   22 +++++++++++++++++++---
+ 2 files changed, 21 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -1431,12 +1431,10 @@ static inline void qlt_unmap_sg(struct s
- static int qlt_check_reserve_free_req(struct scsi_qla_host *vha,
- 	uint32_t req_cnt)
- {
--	struct qla_hw_data *ha = vha->hw;
--	device_reg_t __iomem *reg = ha->iobase;
- 	uint32_t cnt;
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -438,7 +438,7 @@ config USB_GOKU
+ 	   gadget drivers to also be dynamically linked.
  
- 	if (vha->req->cnt < (req_cnt + 2)) {
--		cnt = (uint16_t)RD_REG_DWORD(&reg->isp24.req_q_out);
-+		cnt = (uint16_t)RD_REG_DWORD(vha->req->req_q_out);
+ config USB_EG20T
+-	tristate "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831) UDC"
++	tristate "Intel QUARK X1000/EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7831) UDC"
+ 	depends on PCI
+ 	help
+ 	  This is a USB device driver for EG20T PCH.
+@@ -459,6 +459,7 @@ config USB_EG20T
+ 	  ML7213/ML7831 is companion chip for Intel Atom E6xx series.
+ 	  ML7213/ML7831 is completely compatible for Intel EG20T PCH.
  
- 		ql_dbg(ql_dbg_tgt, vha, 0xe00a,
- 		    "Request ring circled: cnt=%d, vha->->ring_index=%d, "
++	  This driver can be used with Intel's Quark X1000 SOC platform
+ #
+ # LAST -- dummy/emulated controller
+ #
+--- a/drivers/usb/gadget/pch_udc.c
++++ b/drivers/usb/gadget/pch_udc.c
+@@ -343,6 +343,7 @@ struct pch_vbus_gpio_data {
+  * @setup_data:		Received setup data
+  * @phys_addr:		of device memory
+  * @base_addr:		for mapped device memory
++ * @bar:		Indicates which PCI BAR for USB regs
+  * @irq:		IRQ line for the device
+  * @cfg_data:		current cfg, intf, and alt in use
+  * @vbus_gpio:		GPIO informaton for detecting VBUS
+@@ -370,14 +371,17 @@ struct pch_udc_dev {
+ 	struct usb_ctrlrequest		setup_data;
+ 	unsigned long			phys_addr;
+ 	void __iomem			*base_addr;
++	unsigned			bar;
+ 	unsigned			irq;
+ 	struct pch_udc_cfg_data		cfg_data;
+ 	struct pch_vbus_gpio_data	vbus_gpio;
+ };
+ #define to_pch_udc(g)	(container_of((g), struct pch_udc_dev, gadget))
+ 
++#define PCH_UDC_PCI_BAR_QUARK_X1000	0
+ #define PCH_UDC_PCI_BAR			1
+ #define PCI_DEVICE_ID_INTEL_EG20T_UDC	0x8808
++#define PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC	0x0939
+ #define PCI_VENDOR_ID_ROHM		0x10DB
+ #define PCI_DEVICE_ID_ML7213_IOH_UDC	0x801D
+ #define PCI_DEVICE_ID_ML7831_IOH_UDC	0x8808
+@@ -3076,7 +3080,7 @@ static void pch_udc_remove(struct pci_de
+ 		iounmap(dev->base_addr);
+ 	if (dev->mem_region)
+ 		release_mem_region(dev->phys_addr,
+-				   pci_resource_len(pdev, PCH_UDC_PCI_BAR));
++				   pci_resource_len(pdev, dev->bar));
+ 	if (dev->active)
+ 		pci_disable_device(pdev);
+ 	kfree(dev);
+@@ -3144,9 +3148,15 @@ static int pch_udc_probe(struct pci_dev
+ 	dev->active = 1;
+ 	pci_set_drvdata(pdev, dev);
+ 
++	/* Determine BAR based on PCI ID */
++	if (id->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC)
++		dev->bar = PCH_UDC_PCI_BAR_QUARK_X1000;
++	else
++		dev->bar = PCH_UDC_PCI_BAR;
++
+ 	/* PCI resource allocation */
+-	resource = pci_resource_start(pdev, 1);
+-	len = pci_resource_len(pdev, 1);
++	resource = pci_resource_start(pdev, dev->bar);
++	len = pci_resource_len(pdev, dev->bar);
+ 
+ 	if (!request_mem_region(resource, len, KBUILD_MODNAME)) {
+ 		dev_err(&pdev->dev, "%s: pci device used already\n", __func__);
+@@ -3212,6 +3222,12 @@ finished:
+ 
+ static const struct pci_device_id pch_udc_pcidev_id[] = {
+ 	{
++		PCI_DEVICE(PCI_VENDOR_ID_INTEL,
++			   PCI_DEVICE_ID_INTEL_QUARK_X1000_UDC),
++		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
++		.class_mask = 0xffffffff,
++	},
++	{
+ 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_EG20T_UDC),
+ 		.class = (PCI_CLASS_SERIAL_USB << 8) | 0xfe,
+ 		.class_mask = 0xffffffff,
 
 
