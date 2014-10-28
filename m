@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754655AbaJ1Djf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:39:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44632 "EHLO
+	id S1754695AbaJ1Djn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:39:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44636 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582AbaJ1Djc (ORCPT
+	with ESMTP id S1754647AbaJ1Djf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:32 -0400
+	Mon, 27 Oct 2014 23:39:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.17 093/146] PCI: mvebu: Fix uninitialized variable in mvebu_get_tgt_attr()
-Date: Tue, 28 Oct 2014 11:33:55 +0800
-Message-Id: <20141028033347.461840790@linuxfoundation.org>
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.17 094/146] PCI: Add missing MEM_64 mask in pci_assign_unassigned_bridge_resources()
+Date: Tue, 28 Oct 2014 11:33:56 +0800
+Message-Id: <20141028033347.511578463@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,60 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 56fab6e189441d714a2bfc8a64f3df9c0749dff7 upstream.
+commit d61b0e87d2dfba3706dbbd6c7c6fd41c3d845685 upstream.
 
-Geert Uytterhoeven reported a warning when building pci-mvebu:
+In 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to
+64-bit resources"), we added IORESOURCE_MEM_64 to the mask in
+pci_assign_unassigned_root_bus_resources(), but not to the mask in
+pci_assign_unassigned_bridge_resources().
 
-  drivers/pci/host/pci-mvebu.c: In function 'mvebu_get_tgt_attr':
-  drivers/pci/host/pci-mvebu.c:887:39: warning: 'rtype' may be used uninitialized in this function [-Wmaybe-uninitialized]
-     if (slot == PCI_SLOT(devfn) && type == rtype) {
-					 ^
+Add IORESOURCE_MEM_64 to the pci_assign_unassigned_bridge_resources() type
+mask.
 
-And indeed, the code of mvebu_get_tgt_attr() may lead to the usage of rtype
-when being uninitialized, even though it would only happen if we had
-entries other than I/O space and 32 bits memory space.
-
-This commit fixes that by simply skipping the current DT range being
-considered, if it doesn't match the resource type we're looking for.
-
-Reported-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/host/pci-mvebu.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/pci/setup-bus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/host/pci-mvebu.c
-+++ b/drivers/pci/host/pci-mvebu.c
-@@ -873,7 +873,7 @@ static int mvebu_get_tgt_attr(struct dev
- 	rangesz = pna + na + ns;
- 	nranges = rlen / sizeof(__be32) / rangesz;
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -1652,7 +1652,7 @@ void pci_assign_unassigned_bridge_resour
+ 	struct pci_dev_resource *fail_res;
+ 	int retval;
+ 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+-				  IORESOURCE_PREFETCH;
++				  IORESOURCE_PREFETCH | IORESOURCE_MEM_64;
  
--	for (i = 0; i < nranges; i++) {
-+	for (i = 0; i < nranges; i++, range += rangesz) {
- 		u32 flags = of_read_number(range, 1);
- 		u32 slot = of_read_number(range + 1, 1);
- 		u64 cpuaddr = of_read_number(range + na, pna);
-@@ -883,14 +883,14 @@ static int mvebu_get_tgt_attr(struct dev
- 			rtype = IORESOURCE_IO;
- 		else if (DT_FLAGS_TO_TYPE(flags) == DT_TYPE_MEM32)
- 			rtype = IORESOURCE_MEM;
-+		else
-+			continue;
- 
- 		if (slot == PCI_SLOT(devfn) && type == rtype) {
- 			*tgt = DT_CPUADDR_TO_TARGET(cpuaddr);
- 			*attr = DT_CPUADDR_TO_ATTR(cpuaddr);
- 			return 0;
- 		}
--
--		range += rangesz;
- 	}
- 
- 	return -ENOENT;
+ again:
+ 	__pci_bus_size_bridges(parent, &add_list);
 
 
