@@ -1,160 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaJ1Rjb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:39:31 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53557 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961AbaJ1Rj2 (ORCPT
+	id S1754061AbaJ1RkV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:40:21 -0400
+Received: from mail.mandriva.com.br ([177.220.134.171]:53901 "EHLO
+	mail.mandriva.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaJ1RkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:39:28 -0400
-Date: Tue, 28 Oct 2014 17:38:53 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Max Filippov <jcmvbkbc@gmail.com>
-Cc: alsa-devel@alsa-project.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>
-Message-ID: <20141028173853.GD18557@sirena.org.uk>
-References: <1414436825-19416-1-git-send-email-jcmvbkbc@gmail.com>
- <20141027193229.GE18557@sirena.org.uk>
- <CAMo8Bf+Z9V8mkiC3JOupPQmi1EJUDKrb1qcNncDbsEbhjigbww@mail.gmail.com>
- <20141028154224.GX18557@sirena.org.uk>
- <CAMo8BfLpJ0bdmaFt9+gLQ_kEjB68XdjAJUw8f8s=Owv46h_yDQ@mail.gmail.com>
+	Tue, 28 Oct 2014 13:40:18 -0400
+Date: Tue, 28 Oct 2014 15:40:12 -0200
+From: Marco A Benatto <marco.benatto@mandriva.com.br>
+To: Timofey Titovets <nefelim4ag@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: UKSM: What's maintainers think about it?
+Message-ID: <20141028174011.GC1445@sirus.conectiva>
+References: <CAGqmi77uR2Nems6fE_XM1t3a06OwuqJP-0yOMOQh7KH13vzdzw@mail.gmail.com>
+ <20141025213201.005762f9.akpm@linux-foundation.org>
+ <20141028133131.GA1445@sirus.conectiva>
+ <CAGqmi76b0oUMAsAvBt=PwaxF5JZXcckSdWe2=bL_pXaiUFFCXQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Uaw16JuuybUwHkzF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMo8BfLpJ0bdmaFt9+gLQ_kEjB68XdjAJUw8f8s=Owv46h_yDQ@mail.gmail.com>
-X-Cookie: FORCE YOURSELF TO RELAX!
+In-Reply-To: <CAGqmi76b0oUMAsAvBt=PwaxF5JZXcckSdWe2=bL_pXaiUFFCXQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: add xtensa xtfpga I2S interface and platform
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 28, 2014 at 04:59:45PM +0300, Timofey Titovets wrote:
+> 2014-10-28 16:31 GMT+03:00 Marco A Benatto <marco.benatto@mandriva.com.br>:
+> > Hi All,
+> >
+> > I'm not mantainer at all, but I've being using UKSM for a long time and remember
+> > to port it to 3.16 family once.
+> > UKSM seems good and stable and, at least for me, doesn't raised any errors.
+> > AFAIK the only limitation I know (maybe I has been fixed already) it isn't able
+> > to work together with zram stuff due to some race-conditions.
+> >
+> > Cheers,
+> >
+> > Marco A Benatto
+> > Mandriva OEM Developer
+> >
+> 
+> http://kerneldedup.org/forum/forum.php?mod=viewthread&tid=106
+> As i did find, uksm not conflicting with zram (or zswap - on my system).
 
---Uaw16JuuybUwHkzF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Interesting,
 
-On Tue, Oct 28, 2014 at 08:00:45PM +0300, Max Filippov wrote:
-> On Tue, Oct 28, 2014 at 6:42 PM, Mark Brown <broonie@kernel.org> wrote:
+I've contacted the mantainers to send some patches in April and they said me this:
 
-> > Then this just shouldn't exist at all, adding Kconfig entries for all
-> > the simple-card devices would defeat the point of having simple-card
-> > which is why we don't do it for other systems.
+"The biggest problem between UKSM/KSM and zswap is that pages can be reclaimed so
+fast by zswap before UKSM/KSM can have a chance to merge those can be merged.
 
-> sound/soc/sh/Kconfig does that as well.
-> Not having single config item to enable at once all relevant drivers feels
-> a bit strange... But ok, I'll drop that.
+So one of the ideas that make a direct solution is that:
+1. sleep the processes who trigger the zswap
+2. wake up the UKSM thread and adjust the scan parameters properly to make it
+sample the whole memory in a limited time to judge if there are any VMAs need to
+be worked on.
+3. If there are those VMAs then merge them at full speed. if there not,
+sleep UKSM.
+4. Wake up the zswap code pathes and judge that if memory is enough to satisfy
+the requests. If there is enough memory then return and redo the memory
+allocation.
+5. if there is not, then go on to do zswapping.
 
-This is new code, not a replacement of old code.
+This is just an outline of ONE of the solutions. It need to be carefully
+tweaked. Direct page reclaiming of zswap is a time sensitive code path
+, we cannot add too much overhead by doing this,
+otherwise it loses its meaning." 
 
-> > So atomics don't work?  Simple flags are one of the few cases where they
-> > might cover it...  again, the fact that this isn't similar to other code
-> > doing the same thing is worrying.
+> ---
+> Offtop:
+> Why i open up question about UKSM?
+> 
+> May be we (as community, who want to help) can split out UKSM in
+> "several patches" in independent git repo. For allowing maintainers to
+> review this.
+> 
+> Is it morally correct?
+> 
+> UKSM code licensed under GPL and as i think we can feel free for port
+> and adopt code (with indicating the author)
+> 
+> Please, fix me if i mistake or miss something.
+> This is just stream of my thoughts %_%
+> ---
 
-> tx_substream use pattern is the same as of a typical RCU variable.
-> RCU wrappers combine ACCESS_ONCE and barriers that I'd otherwise
-> have to write myself.
+If there's no problem on that and if you don't mind, I can help you on this.
+What dou you think?
 
-You *really* need to explain how it's supposed to work - right now it's
-not at all obvious, like I say the fact that this is a rarely used idiom
-is not helping.  For example when we tear down the stream we just assign
-the pointer in _stop() but don't bother with a sync until the stream is
-closed - why?  We also appear to be doing several different dereferences
-of the pointer inside a single rcu_read_lock() for some reason which is
-worrying.
+Cheers,
 
-> >> > I would also expect to see the data transfer and I2S bits more split
-> >> > out, presumably this IP can actually be used in designs with a DMA
-> >> > controller and one would expect that for practical systems this woul=
-d be
-> >> > the common case?
-
-> >> I don't know of other designs that use this IP block. Can we do it when
-> >> we get such users?
-
-> > It's also about ensuring that the code is cleanly split up so that
-> > someone can actually go in and add the required support later (and TBH
-
-> Can you point me to an example of such split, so that I don't write it in
-> an unusual way?
-
-Essentially all drivers are split this way...
-
-> > it'd be better to just add a DMA controller on the FPGA, everyone will
-> > be much happier).
-
-> Hardware people think different and it's been like that for more than 5
-> years.
-
-They appear to be the only hardware people who think this way, while we
-do have some FIQ based PIO stuff in mainline all the examples I can
-think of are there because people didn't work out how to drive the DMA
-controller yet (and even there we're using FIQs not bashing things in
-=66rom a regular interrupt).
-
-> >> Because this callback is said to be potentially called multiple times =
-per
-> >> initialization. Is it not?
-
-> > It can but but I'm not seeing any connection between that and the idea
-> > of not keeping the clock enabled when the device isn't in use?
-
-> hw_params callback can change MCLK rate, so it has to disable and
-> enable the clock anyway, and since enable can fail it does not guarantee
-> that the clock will be left in the same state. Or should I adjust MCLK ra=
-te
-> w/o disabling the clock?
-
-So yet again: why not just enable the clock only when the device is in
-use?  If it's being configured it stands to reason that the device isn't
-actively in use...
-
-> > I'm not sure I find that terribly convincing, I'd like to be able to
-> > look at the code and tell that it's not going to blow up.  This again
-> > comes back to the general comment about clarity - the code *looks*
-> > suspicious (strange indentation of the for loop with a comment in the
-> > middle of the statement itself for example).
-
-> The level field in the control register is 4 bit wide, so the allowed ran=
-ge of
-> level is 0..15. FIFO size is 8192 entries, level =3D 1 corresponds to
-> FIFO size / 2, level =3D 14 -- to FIFO size of 0. I guess this function
-> won't get period_size of 0?
-
-So if the IP gets changed and the code gets blown up this could well
-explode then...  which doesn't seem entirely unlikely considering this
-is a FPGA platform so presumably this is easy to update.  To repeat this
-is about clarity and the code looking like it's probably hiding bugs as
-much as if the code actually works if you really sit down and study it.
-
---Uaw16JuuybUwHkzF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUT9SsAAoJECTWi3JdVIfQOGsH/j4XcuOOaoBR7qBgAdNjEYm0
-Ey/C2K1KIxymJool2Abr2x2XaNEL8sqHMxI+NkVLupN0uEslRKUKhsacXwyyelPc
-zKE0E5TrpL4GDFEpCrAvSQJe3EI3HOM+AR3UnmUv5HVS38V5RD3MRDecti/iHOpL
-SGnHkBmCL0gMVIYS6KjTJbYRS9Xwjx10C54CVC5dMRkE766BiFdV23eg7mMC10Hl
-By83MOxO5S3YTqbNSP6FjXX6tZIQV3djqg6APhWtQFIFZcyjXbMmwD8LCXdiqpov
-7SYh2R+QJoWyFk26zw/cWCW4qxbDOL8cbxsWGNyV0l45SXDD0YxAd3wRtwNg+jc=
-=f3yD
------END PGP SIGNATURE-----
-
---Uaw16JuuybUwHkzF--
+> > On Sat, Oct 25, 2014 at 09:32:01PM -0700, Andrew Morton wrote:
+> >> On Sat, 25 Oct 2014 22:25:56 +0300 Timofey Titovets <nefelim4ag@gmail.com> wrote:
+> >>
+> >> > Good time of day, people.
+> >> > I try to find 'mm' subsystem specific people and lists, but list
+> >> > linux-mm looks dead and mail archive look like deprecated.
+> >> > If i must to sent this message to another list or add CC people, let me know.
+> >>
+> >> linux-mm@kvack.org is alive and well.
+> 
+> So cool, thanks for adding 'mm' to CC.
+> 
+> >> > If questions are already asked (i can't find activity before), feel
+> >> > free to kick me.
+> >> >
+> >> > The main questions:
+> >> > 1. Somebody test it? I see many reviews about it.
+> >> > I already port it to latest linux-next-git kernel and its work without issues.
+> >> > http://pastebin.com/6FMuKagS
+> >> > (if it matter, i can describe use cases and results, if somebody ask it)
+> >> >
+> >> > 2. Developers of UKSM already tried to merge it? Somebody talked with uksm devs?
+> >> > offtop: now i try to communicate with dev's on kerneldedup.org forum,
+> >> > but i have problems with email verification and wait admin
+> >> > registration approval.
+> >> > (i already sent questions to
+> >> > http://kerneldedup.org/forum/home.php?mod=space&username=xianai ,
+> >> > because him looks like team leader)
+> >> >
+> >> > 3. I just want collect feedbacks from linux maintainers team, if you
+> >> > decide what UKSM not needed in kernel, all other comments (as i
+> >> > understand) not matter.
+> >> >
+> >> > Like KSM, but better.
+> >> > UKSM - Ultra Kernel Samepage Merging
+> >> > http://kerneldedup.org/en/projects/uksm/introduction/
+> >>
+> >> It's the first I've heard of it.  No, as far as I know there has been
+> >> no attempt to upstream UKSM.
+> >>
+> >> --
+> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> >> the body to majordomo@kvack.org.  For more info on Linux MM,
+> >> see: http://www.linux-mm.org/ .
+> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> -- 
+> Have a nice day,
+> Timofey.
