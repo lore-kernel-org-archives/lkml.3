@@ -1,470 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932862AbaJ1Drv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:47:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45640 "EHLO
+	id S1756983AbaJ1Gzi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:55:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932823AbaJ1Drq (ORCPT
+	with ESMTP id S932312AbaJ1Drt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:46 -0400
+	Mon, 27 Oct 2014 23:47:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.14 000/100] 3.14.23-stable review
-Date: Tue, 28 Oct 2014 11:34:45 +0800
-Message-Id: <20141028033500.670583608@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Filipe David Borba Manana <fdmanana@gmail.com>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 011/100] Btrfs: send, fix data corruption due to incorrect hole detection
+Date: Tue, 28 Oct 2014 11:34:56 +0800
+Message-Id: <20141028033501.147189964@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
+References: <20141028033500.670583608@linuxfoundation.org>
 User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.14.23 release.
-There are 100 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
-
-Responses should be made by Thu Oct 30 03:34:43 UTC 2014.
-Anything received after that time might be too late.
-
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.23-rc1.gz
-and the diffstat can be found below.
-
-thanks,
-
-greg k-h
-
--------------
-Pseudo-Shortlog of commits:
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.14.23-rc1
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Implement __get_user_pages_fast().
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix register corruption in top-most kernel stack frame during boot.
-
-Dave Kleikamp <dave.kleikamp@oracle.com>
-    sparc64: Increase size of boot string to 1024 bytes
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Kill unnecessary tables and increase MAX_BANKS.
-
-bob picco <bpicco@meloft.net>
-    sparc64: sparse irq
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Adjust vmalloc region size based upon available virtual address bits.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Increase MAX_PHYS_ADDRESS_BITS to 53.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Use kernel page tables for vmemmap.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix physical memory management regressions with large max_phys_bits.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Adjust KTSB assembler to support larger physical addresses.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Define VA hole at run time, rather than at compile time.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Switch to 4-level page tables.
-
-bob picco <bpicco@meloft.net>
-    sparc64: T5 PMU
-
-Allen Pais <allen.pais@oracle.com>
-    sparc64: cpu hardware caps support for sparc M6 and M7
-
-Allen Pais <allen.pais@oracle.com>
-    sparc64: support M6 and M7 for building CPU distribution map
-
-Allen Pais <allen.pais@oracle.com>
-    sparc64: correctly recognise M6 and M7 cpu type
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix hibernation code refrence to PAGE_OFFSET.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Do not define thread fpregs save area as zero-length array.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix FPU register corruption with AES crypto offload.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix lockdep warnings on reboot on Ultra-5
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix reversed start/end in flush_tlb_kernel_range()
-
-Andreas Larsson <andreas@gaisler.com>
-    sparc: Let memset return the address argument
-
-Sowmini Varadhan <sowmini.varadhan@oracle.com>
-    sparc64: Move request_irq() from ldc_bind() to ldc_alloc()
-
-bob picco <bpicco@meloft.net>
-    sparc64: find_node adjustment
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix corrupted thread fault code.
-
-bob picco <bpicco@meloft.net>
-    sparc64: sun4v TLB error power off events
-
-Daniel Hellstrom <daniel@gaisler.com>
-    sparc32: dma_alloc_coherent must honour gfp flags
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Fix pcr_ops initialization and usage bugs.
-
-David S. Miller <davem@davemloft.net>
-    sparc64: Do not disable interrupts in nmi_cpu_busy()
-
-Dave Chinner <dchinner@redhat.com>
-    xfs: ensure WB_SYNC_ALL writeback handles partial pages correctly
-
-Chao Yu <chao2.yu@samsung.com>
-    ecryptfs: avoid to access NULL pointer when write metadata in xattr
-
-klightspeed@killerwolves.net <klightspeed@killerwolves.net>
-    ARM: mvebu: Netgear RN102: Use Hardware BCH ECC
-
-Arnaud Ebalard <arno@natisbad.org>
-    ARM: mvebu: Netgear RN2120: Use Hardware BCH ECC
-
-Arnaud Ebalard <arno@natisbad.org>
-    ARM: mvebu: Netgear RN104: Use Hardware BCH ECC
-
-Ludovic Desroches <ludovic.desroches@atmel.com>
-    ARM: at91/PMC: don't forget to write PMC_PCDR register to disable clocks
-
-Andreas Henriksson <andreas.henriksson@endian.se>
-    ARM: at91: fix at91sam9263ek DT mmc pinmuxing settings
-
-David Dueck <davidcdueck@googlemail.com>
-    ARM: at91/dt: Fix typo regarding can0_clk
-
-Anssi Hannula <anssi.hannula@iki.fi>
-    ALSA: hda - hdmi: Fix missing ELD change event on plug/unplug
-
-Vlad Catoi <vladcatoi@gmail.com>
-    ALSA: usb-audio: Add support for Steinberg UR22 USB interface
-
-Harsha Priya <harshapriya.n@intel.com>
-    ALSA: ALC283 codec - Avoid pop noise on headphones during suspend/resume
-
-Takashi Iwai <tiwai@suse.de>
-    ALSA: emu10k1: Fix deadlock in synth voice lookup
-
-Anatol Pomozov <anatol.pomozov@gmail.com>
-    ALSA: pcm: use the same dma mmap codepath both for arm and arm64
-
-Victor Kamensky <victor.kamensky@linaro.org>
-    arm64: compat: fix compat types affecting struct compat_elf_prpsinfo
-
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-    spi: dw-mid: terminate ongoing transfers at exit
-
-Dmitry Kasatkin <d.kasatkin@samsung.com>
-    ima: provide flag to identify new empty files
-
-Alexey Kardashevskiy <aik@ozlabs.ru>
-    powerpc/iommu/ddw: Fix endianness
-
-Catalin Marinas <catalin.marinas@arm.com>
-    futex: Ensure get_futex_key_refs() always implies a barrier
-
-Sasha Levin <sasha.levin@oracle.com>
-    kernel: add support for gcc 5
-
-Yann Droneaud <ydroneaud@opteya.com>
-    fanotify: enable close-on-exec on events' fd when requested in fanotify_init()
-
-Junxiao Bi <junxiao.bi@oracle.com>
-    mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
-
-Champion Chen <champion_chen@realsil.com.cn>
-    Bluetooth: Fix issue with USB suspend in btusb driver
-
-Johan Hedberg <johan.hedberg@intel.com>
-    Bluetooth: Fix incorrect LE CoC PDU length restriction based on HCI MTU
-
-Loic Poulain <loic.poulain@intel.com>
-    Bluetooth: Fix HCI H5 corrupted ack value
-
-Stanislaw Gruszka <sgruszka@redhat.com>
-    rt2800: correct BBP1_TX_POWER_CTRL mask
-
-Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-    PCI: Generate uppercase hex for modalias interface class
-
-Douglas Lehr <dllehr@us.ibm.com>
-    PCI: Increase IBM ipr SAS Crocodile BARs to at least system page size
-
-Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-    PCI: mvebu: Fix uninitialized variable in mvebu_get_tgt_attr()
-
-Oren Givon <oren.givon@intel.com>
-    iwlwifi: Add missing PCI IDs for the 7260 series
-
-Andy Adamson <andros@netapp.com>
-    NFSv4.1: Fix an NFSv4.1 state renewal regression
-
-Trond Myklebust <trond.myklebust@primarydata.com>
-    NFSv4: fix open/lock state recovery error handling
-
-Trond Myklebust <trond.myklebust@primarydata.com>
-    NFSv4: Fix lock recovery when CREATE_SESSION/SETCLIENTID_CONFIRM fails
-
-Frans Klaver <frans.klaver@xsens.com>
-    tty: omap-serial: fix division by zero
-
-Willy Tarreau <w@1wt.eu>
-    lzo: check for length overrun in variable length encoding.
-
-Willy Tarreau <w@1wt.eu>
-    Revert "lzo: properly check for overruns"
-
-Willy Tarreau <w@1wt.eu>
-    Documentation: lzo: document part of the encoding
-
-Olga Kornievskaia <kolga@netapp.com>
-    Fixing lease renewal
-
-Geert Uytterhoeven <geert@linux-m68k.org>
-    m68k: Disable/restore interrupts in hwreg_present()/hwreg_write()
-
-Alexander Usyskin <alexander.usyskin@intel.com>
-    mei: bus: fix possible boundaries violation
-
-K. Y. Srinivasan <kys@microsoft.com>
-    Drivers: hv: vmbus: Fix a bug in vmbus_open()
-
-K. Y. Srinivasan <kys@microsoft.com>
-    Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
-
-K. Y. Srinivasan <kys@microsoft.com>
-    Drivers: hv: vmbus: Cleanup vmbus_close_internal()
-
-K. Y. Srinivasan <kys@microsoft.com>
-    Drivers: hv: vmbus: Cleanup vmbus_teardown_gpadl()
-
-K. Y. Srinivasan <kys@microsoft.com>
-    Drivers: hv: vmbus: Cleanup vmbus_post_msg()
-
-Kees Cook <keescook@chromium.org>
-    firmware_class: make sure fw requests contain a name
-
-Xuelin Shi <xuelin.shi@freescale.com>
-    dmaengine: fix xor sources continuation
-
-Joe Lawrence <joe.lawrence@stratus.com>
-    qla2xxx: Fix shost use-after-free on device removal
-
-Arun Easi <arun.easi@qlogic.com>
-    qla2xxx: Use correct offset to req-q-out for reserve calculation
-
-Chris J Arges <chris.j.arges@canonical.com>
-    mptfusion: enable no_write_same for vmware scsi disks
-
-Mike Christie <michaelc@cs.wisc.edu>
-    be2iscsi: check ip buffer before copying
-
-Xiubo Li <Li.Xiubo@freescale.com>
-    regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.
-
-Pankaj Dubey <pankaj.dubey@samsung.com>
-    regmap: fix NULL pointer dereference in _regmap_write/read
-
-Xiubo Li <Li.Xiubo@freescale.com>
-    regmap: debugfs: fix possbile NULL pointer dereference
-
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-    spi: dw-mid: check that DMA was inited before exit
-
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-    spi: dw-mid: respect 8 bit mode
-
-Bryan O'Donoghue <pure.logic@nexus-software.ie>
-    x86/intel/quark: Switch off CR4.PGE so TLB flush uses CR3 instead
-
-David Matlack <dmatlack@google.com>
-    kvm: don't take vcpu mutex for obviously invalid vcpu ioctls
-
-Christian Borntraeger <borntraeger@de.ibm.com>
-    KVM: s390: unintended fallthrough for external call
-
-David Matlack <dmatlack@google.com>
-    kvm: fix potentially corrupt mmio cache
-
-David Matlack <dmatlack@google.com>
-    kvm: x86: fix stale mmio cache bug
-
-Filipe Manana <fdmanana@gmail.com>
-    Btrfs: send, fix data corruption due to incorrect hole detection
-
-Josef Ahmad <josef.ahmad@intel.com>
-    pci_ids: Add support for Intel Quark ILB
-
-Bryan O'Donoghue <bryan.odonoghue@intel.com>
-    usb: pch_udc: usb gadget device support for Intel Quark X1000
-
-Andy Lutomirski <luto@amacapital.net>
-    fs: Add a missing permission check to do_umount
-
-Sage Weil <sage@redhat.com>
-    Btrfs: fix race in WAIT_SYNC ioctl
-
-Josef Bacik <jbacik@fb.com>
-    Btrfs: fix build_backref_tree issue with multiple shared blocks
-
-Josef Bacik <jbacik@fb.com>
-    Btrfs: cleanup error handling in build_backref_tree
-
-Josef Bacik <jbacik@fb.com>
-    Btrfs: try not to ENOSPC on log replay
-
-Liu Bo <bo.li.liu@oracle.com>
-    Btrfs: fix up bounds checking in lseek
-
-Filipe Manana <fdmanana@suse.com>
-    Btrfs: add missing compression property remove in btrfs_ioctl_setflags
-
-David Sterba <dsterba@suse.cz>
-    btrfs: wake up transaction thread from SYNC_FS ioctl
-
-
--------------
-
-Diffstat:
-
- Documentation/lzo.txt                          | 164 ++++++++
- Documentation/virtual/kvm/mmu.txt              |  14 +
- Makefile                                       |   4 +-
- arch/arm/boot/dts/armada-370-netgear-rn102.dts |   4 +
- arch/arm/boot/dts/armada-370-netgear-rn104.dts |   4 +
- arch/arm/boot/dts/armada-xp-netgear-rn2120.dts |   4 +
- arch/arm/boot/dts/at91sam9263.dtsi             |   2 +
- arch/arm/boot/dts/sama5d3_can.dtsi             |   2 +-
- arch/arm/mach-at91/clock.c                     |   1 +
- arch/arm64/include/asm/compat.h                |   4 +-
- arch/m68k/mm/hwtest.c                          |   6 +
- arch/powerpc/platforms/pseries/iommu.c         |  51 ++-
- arch/s390/kvm/interrupt.c                      |   1 +
- arch/sparc/Kconfig                             |   1 +
- arch/sparc/include/asm/hypervisor.h            |  11 +
- arch/sparc/include/asm/irq_64.h                |   9 +-
- arch/sparc/include/asm/ldc.h                   |   5 +-
- arch/sparc/include/asm/oplib_64.h              |   3 +-
- arch/sparc/include/asm/page_64.h               |  33 +-
- arch/sparc/include/asm/pgalloc_64.h            |  28 +-
- arch/sparc/include/asm/pgtable_64.h            | 100 +++--
- arch/sparc/include/asm/setup.h                 |   4 +
- arch/sparc/include/asm/spitfire.h              |   2 +
- arch/sparc/include/asm/thread_info_64.h        |   4 +-
- arch/sparc/include/asm/tsb.h                   |  87 ++--
- arch/sparc/include/asm/visasm.h                |   8 +
- arch/sparc/kernel/cpu.c                        |  12 +
- arch/sparc/kernel/cpumap.c                     |   2 +
- arch/sparc/kernel/ds.c                         |   4 +-
- arch/sparc/kernel/dtlb_prot.S                  |   6 +-
- arch/sparc/kernel/entry.h                      |   3 -
- arch/sparc/kernel/head_64.S                    |  52 +--
- arch/sparc/kernel/hvapi.c                      |   1 +
- arch/sparc/kernel/hvcalls.S                    |  16 +
- arch/sparc/kernel/hvtramp.S                    |   1 -
- arch/sparc/kernel/ioport.c                     |   5 +-
- arch/sparc/kernel/irq_64.c                     | 507 ++++++++++++++--------
- arch/sparc/kernel/ktlb.S                       | 125 +-----
- arch/sparc/kernel/ldc.c                        |  41 +-
- arch/sparc/kernel/nmi.c                        |   1 -
- arch/sparc/kernel/pcr.c                        |  47 ++-
- arch/sparc/kernel/perf_event.c                 |  10 +-
- arch/sparc/kernel/process_64.c                 |   3 +
- arch/sparc/kernel/setup_64.c                   |  36 +-
- arch/sparc/kernel/smp_64.c                     |   8 +-
- arch/sparc/kernel/sun4v_tlb_miss.S             |  35 +-
- arch/sparc/kernel/trampoline_64.S              |  12 +-
- arch/sparc/kernel/traps_64.c                   |  15 +-
- arch/sparc/kernel/tsb.S                        |   6 +-
- arch/sparc/kernel/viohs.c                      |   4 +-
- arch/sparc/kernel/vmlinux.lds.S                |  10 +-
- arch/sparc/lib/NG4memcpy.S                     |  14 +-
- arch/sparc/lib/memset.S                        |  18 +-
- arch/sparc/mm/fault_64.c                       |   3 +
- arch/sparc/mm/gup.c                            |  30 ++
- arch/sparc/mm/init_64.c                        | 554 +++++++++++++------------
- arch/sparc/mm/init_64.h                        |  18 -
- arch/sparc/power/hibernate_asm.S               |   4 +-
- arch/sparc/prom/bootstr_64.c                   |   5 +-
- arch/sparc/prom/cif.S                          |   5 +-
- arch/sparc/prom/init_64.c                      |   6 +-
- arch/sparc/prom/p1275.c                        |   9 +-
- arch/x86/include/asm/kvm_host.h                |   1 +
- arch/x86/kernel/cpu/intel.c                    |  15 +
- arch/x86/kvm/mmu.c                             |  22 +-
- arch/x86/kvm/x86.h                             |  20 +-
- crypto/async_tx/async_xor.c                    |   3 +-
- drivers/base/firmware_class.c                  |   3 +
- drivers/base/regmap/regmap-debugfs.c           |   8 +-
- drivers/base/regmap/regmap.c                   |   7 +-
- drivers/bluetooth/btusb.c                      |   9 +
- drivers/bluetooth/hci_h5.c                     |   2 +-
- drivers/hv/channel.c                           |  49 ++-
- drivers/hv/connection.c                        |  17 +-
- drivers/message/fusion/mptspi.c                |   5 +
- drivers/misc/mei/bus.c                         |   2 +-
- drivers/net/wireless/iwlwifi/pcie/drv.c        |   4 +
- drivers/net/wireless/rt2x00/rt2800.h           |   2 +-
- drivers/pci/host/pci-mvebu.c                   |   6 +-
- drivers/pci/pci-sysfs.c                        |   2 +-
- drivers/pci/quirks.c                           |  20 +
- drivers/scsi/be2iscsi/be_mgmt.c                |  13 +-
- drivers/scsi/qla2xxx/qla_os.c                  |   6 +-
- drivers/scsi/qla2xxx/qla_target.c              |   4 +-
- drivers/spi/spi-dw-mid.c                       |  10 +-
- drivers/tty/serial/omap-serial.c               |  12 +-
- drivers/usb/gadget/Kconfig                     |   3 +-
- drivers/usb/gadget/pch_udc.c                   |  22 +-
- fs/btrfs/file.c                                |  25 +-
- fs/btrfs/inode.c                               |   3 +-
- fs/btrfs/ioctl.c                               |   9 +
- fs/btrfs/relocation.c                          |  93 +++--
- fs/btrfs/send.c                                |   4 +-
- fs/btrfs/transaction.c                         |  12 +-
- fs/ecryptfs/inode.c                            |   2 +-
- fs/namespace.c                                 |   2 +
- fs/nfs/nfs4proc.c                              |   2 +-
- fs/nfs/nfs4renewd.c                            |  12 +-
- fs/nfs/nfs4state.c                             |  18 +-
- fs/notify/fanotify/fanotify_user.c             |   2 +-
- fs/xfs/xfs_aops.c                              |  16 +-
- include/linux/compiler-gcc5.h                  |  66 +++
- include/linux/pci_ids.h                        |   1 +
- include/linux/sched.h                          |   6 +-
- kernel/futex.c                                 |   2 +
- lib/lzo/lzo1x_decompress_safe.c                | 103 +++--
- net/bluetooth/l2cap_core.c                     |   6 +-
- security/integrity/ima/ima_appraise.c          |   7 +-
- security/integrity/ima/ima_main.c              |  12 +-
- security/integrity/integrity.h                 |   1 +
- sound/core/pcm_native.c                        |   2 +-
- sound/pci/emu10k1/emu10k1_callback.c           |   6 +-
- sound/pci/hda/patch_hdmi.c                     |  15 +-
- sound/pci/hda/patch_realtek.c                  |   3 +
- sound/usb/quirks-table.h                       |  30 ++
- virt/kvm/kvm_main.c                            |  27 +-
- 116 files changed, 1900 insertions(+), 1038 deletions(-)
+3.14-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Filipe Manana <fdmanana@gmail.com>
+
+commit 766b5e5ae78dd04a93a275690a49e23d7dcb1f39 upstream.
+
+During an incremental send, when we finish processing an inode (corresponding to
+a regular file) we would assume the gap between the end of the last processed file
+extent and the file's size corresponded to a file hole, and therefore incorrectly
+send a bunch of zero bytes to overwrite that region in the file.
+
+This affects only kernel 3.14.
+
+Reproducer:
+
+    mkfs.btrfs -f /dev/sdc
+    mount /dev/sdc /mnt
+
+    xfs_io -f -c "falloc -k 0 268435456" /mnt/foo
+
+    btrfs subvolume snapshot -r /mnt /mnt/mysnap0
+
+    xfs_io -c "pwrite -S 0x01 -b 9216 16190218 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x02 -b 1121 198720104 1121" /mnt/foo
+    xfs_io -c "pwrite -S 0x05 -b 9216 107887439 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x06 -b 9216 225520207 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x07 -b 67584 102138300 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x08 -b 7000 94897484 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0x09 -b 113664 245083212 113664" /mnt/foo
+    xfs_io -c "pwrite -S 0x10 -b 123 17937788 123" /mnt/foo
+    xfs_io -c "pwrite -S 0x11 -b 39936 229573311 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x12 -b 67584 174792222 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x13 -b 9216 249253213 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x16 -b 67584 150046083 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x17 -b 39936 118246040 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x18 -b 67584 215965442 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x19 -b 33792 97096725 33792" /mnt/foo
+    xfs_io -c "pwrite -S 0x20 -b 125952 166300596 125952" /mnt/foo
+    xfs_io -c "pwrite -S 0x21 -b 123 1078957 123" /mnt/foo
+    xfs_io -c "pwrite -S 0x25 -b 9216 212044492 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x26 -b 7000 265037146 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0x27 -b 42757 215922685 42757" /mnt/foo
+    xfs_io -c "pwrite -S 0x28 -b 7000 69865411 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0x29 -b 67584 67948958 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x30 -b 39936 266967019 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x31 -b 1121 19582453 1121" /mnt/foo
+    xfs_io -c "pwrite -S 0x32 -b 17408 257710255 17408" /mnt/foo
+    xfs_io -c "pwrite -S 0x33 -b 39936 3895518 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x34 -b 125952 12045847 125952" /mnt/foo
+    xfs_io -c "pwrite -S 0x35 -b 17408 19156379 17408" /mnt/foo
+    xfs_io -c "pwrite -S 0x36 -b 39936 50160066 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x37 -b 113664 9549793 113664" /mnt/foo
+    xfs_io -c "pwrite -S 0x38 -b 105472 94391506 105472" /mnt/foo
+    xfs_io -c "pwrite -S 0x39 -b 23552 143632863 23552" /mnt/foo
+    xfs_io -c "pwrite -S 0x40 -b 39936 241283845 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x41 -b 113664 199937606 113664" /mnt/foo
+    xfs_io -c "pwrite -S 0x42 -b 67584 67380093 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x43 -b 67584 26793129 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x44 -b 39936 14421913 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x45 -b 123 253097405 123" /mnt/foo
+    xfs_io -c "pwrite -S 0x46 -b 1121 128233424 1121" /mnt/foo
+    xfs_io -c "pwrite -S 0x47 -b 105472 91577959 105472" /mnt/foo
+    xfs_io -c "pwrite -S 0x48 -b 1121 7245381 1121" /mnt/foo
+    xfs_io -c "pwrite -S 0x49 -b 113664 182414694 113664" /mnt/foo
+    xfs_io -c "pwrite -S 0x50 -b 9216 32750608 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x51 -b 67584 266546049 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x52 -b 67584 87969398 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x53 -b 9216 260848797 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x54 -b 39936 119461243 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x55 -b 7000 200178693 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0x56 -b 9216 243316029 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x57 -b 7000 209658229 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0x58 -b 101376 179745192 101376" /mnt/foo
+    xfs_io -c "pwrite -S 0x59 -b 9216 64012300 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x60 -b 125952 181705139 125952" /mnt/foo
+    xfs_io -c "pwrite -S 0x61 -b 23552 235737348 23552" /mnt/foo
+    xfs_io -c "pwrite -S 0x62 -b 113664 106021355 113664" /mnt/foo
+    xfs_io -c "pwrite -S 0x63 -b 67584 135753552 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x64 -b 23552 95730888 23552" /mnt/foo
+    xfs_io -c "pwrite -S 0x65 -b 11 17311415 11" /mnt/foo
+    xfs_io -c "pwrite -S 0x66 -b 33792 120695553 33792" /mnt/foo
+    xfs_io -c "pwrite -S 0x67 -b 9216 17164631 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x68 -b 9216 136065853 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x69 -b 67584 37752198 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x70 -b 101376 189717473 101376" /mnt/foo
+    xfs_io -c "pwrite -S 0x71 -b 7000 227463698 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0x72 -b 9216 12655137 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0x73 -b 7000 7488866 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0x74 -b 113664 87813649 113664" /mnt/foo
+    xfs_io -c "pwrite -S 0x75 -b 33792 25802183 33792" /mnt/foo
+    xfs_io -c "pwrite -S 0x76 -b 39936 93524024 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x77 -b 33792 113336388 33792" /mnt/foo
+    xfs_io -c "pwrite -S 0x78 -b 105472 184955320 105472" /mnt/foo
+    xfs_io -c "pwrite -S 0x79 -b 101376 225691598 101376" /mnt/foo
+    xfs_io -c "pwrite -S 0x80 -b 23552 77023155 23552" /mnt/foo
+    xfs_io -c "pwrite -S 0x81 -b 11 201888192 11" /mnt/foo
+    xfs_io -c "pwrite -S 0x82 -b 11 115332492 11" /mnt/foo
+    xfs_io -c "pwrite -S 0x83 -b 67584 230278015 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x84 -b 11 120589073 11" /mnt/foo
+    xfs_io -c "pwrite -S 0x85 -b 125952 202207819 125952" /mnt/foo
+    xfs_io -c "pwrite -S 0x86 -b 113664 86672080 113664" /mnt/foo
+    xfs_io -c "pwrite -S 0x87 -b 17408 208459603 17408" /mnt/foo
+    xfs_io -c "pwrite -S 0x88 -b 7000 73372211 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0x89 -b 7000 42252122 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0x90 -b 23552 46784881 23552" /mnt/foo
+    xfs_io -c "pwrite -S 0x91 -b 101376 63172351 101376" /mnt/foo
+    xfs_io -c "pwrite -S 0x92 -b 23552 59341931 23552" /mnt/foo
+    xfs_io -c "pwrite -S 0x93 -b 39936 239599283 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0x94 -b 67584 175643105 67584" /mnt/foo
+    xfs_io -c "pwrite -S 0x97 -b 23552 105534880 23552" /mnt/foo
+    xfs_io -c "pwrite -S 0x98 -b 113664 8236844 113664" /mnt/foo
+    xfs_io -c "pwrite -S 0x99 -b 125952 144489686 125952" /mnt/foo
+    xfs_io -c "pwrite -S 0xa0 -b 7000 73273112 7000" /mnt/foo
+    xfs_io -c "pwrite -S 0xa1 -b 125952 194580243 125952" /mnt/foo
+    xfs_io -c "pwrite -S 0xa2 -b 123 56296779 123" /mnt/foo
+    xfs_io -c "pwrite -S 0xa3 -b 11 233066845 11" /mnt/foo
+    xfs_io -c "pwrite -S 0xa4 -b 39936 197727090 39936" /mnt/foo
+    xfs_io -c "pwrite -S 0xa5 -b 101376 53579812 101376" /mnt/foo
+    xfs_io -c "pwrite -S 0xa6 -b 9216 85669738 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0xa7 -b 125952 21266322 125952" /mnt/foo
+    xfs_io -c "pwrite -S 0xa8 -b 23552 125726568 23552" /mnt/foo
+    xfs_io -c "pwrite -S 0xa9 -b 9216 18423680 9216" /mnt/foo
+    xfs_io -c "pwrite -S 0xb0 -b 1121 165901483 1121" /mnt/foo
+
+    btrfs subvolume snapshot -r /mnt /mnt/mysnap1
+
+    xfs_io -c "pwrite -S 0xff -b 10 16190218 10" /mnt/foo
+
+    btrfs subvolume snapshot -r /mnt /mnt/mysnap2
+
+    md5sum /mnt/foo          # returns 79e53f1466bfc09fd82b450689e6119e
+    md5sum /mnt/mysnap2/foo  # returns 79e53f1466bfc09fd82b450689e6119e too
+
+    btrfs send /mnt/mysnap1 -f /tmp/1.snap
+    btrfs send -p /mnt/mysnap1 /mnt/mysnap2 -f /tmp/2.snap
+
+    mkfs.btrfs -f /dev/sdc
+    mount /dev/sdc /mnt
+
+    btrfs receive /mnt -f /tmp/1.snap
+    btrfs receive /mnt -f /tmp/2.snap
+
+    md5sum /mnt/mysnap2/foo  # returns 2bb414c5155767cedccd7063e51beabd !!
+
+A testcase for xfstests follows soon too.
+
+Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
+Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/btrfs/send.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/fs/btrfs/send.c
++++ b/fs/btrfs/send.c
+@@ -4728,7 +4728,9 @@ static int finish_inode_if_needed(struct
+ 
+ 	if (S_ISREG(sctx->cur_inode_mode)) {
+ 		if (need_send_hole(sctx)) {
+-			if (sctx->cur_inode_last_extent == (u64)-1) {
++			if (sctx->cur_inode_last_extent == (u64)-1 ||
++			    sctx->cur_inode_last_extent <
++			    sctx->cur_inode_size) {
+ 				ret = get_last_extent(sctx, (u64)-1);
+ 				if (ret)
+ 					goto out;
 
 
