@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932981AbaJ1Ena (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:43:30 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:47217 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932869AbaJ1En0 (ORCPT
+	id S1756964AbaJ1EoI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:44:08 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:52771 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671AbaJ1EoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 00:43:26 -0400
+	Tue, 28 Oct 2014 00:44:04 -0400
+Message-ID: <544F1F0A.3040207@roeck-us.net>
+Date: Mon, 27 Oct 2014 21:43:54 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1414159000-27059-1-git-send-email-mark.rutland@arm.com>
-References: <1414159000-27059-1-git-send-email-mark.rutland@arm.com>
-Date: Mon, 27 Oct 2014 21:43:25 -0700
-Message-ID: <CAJKQeMZu+E_j-O3+bAhQ2oN-9iuAe9RwfRAy87EiHzF0MVTEXA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/1] arm64: Fix /proc/cpuinfo
-From: Greg Hackmann <ghackmann@google.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, catalin.marinas@arm.com,
-        ijc@hellion.org.uk,
-        Serban Constantinescu <serban.constantinescu@arm.com>,
-        will.deacon@arm.com, cross-distro@lists.linaro.org,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.10 00/43] 3.10.59-stable review
+References: <20141028033523.407092670@linuxfoundation.org>
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.544F1F14.00D4,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 24, 2014 at 6:56 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> [c] Print different hwcaps for compat tasks
+On 10/27/2014 08:35 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.10.59 release.
+> There are 43 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
->     This would allow for 32-bit and 64-bit applications to function
->     correctly. Having the format differ depending on the instruction set
->     of the application reading /proc/cpuinfo may be misleading in some
->     cases (e.g. a human using a 32-bit cat to read /proc/cpuinfo on a
->     64-bit system).
+> Responses should be made by Thu Oct 30 03:35:12 UTC 2014.
+> Anything received after that time might be too late.
+>
+Build results:
+	total: 137 pass: 137 fail: 0
 
-FWIW we have an Nvidia-contributed patch in the android-3.10 kernel
-tree that basically does this.  It works well in almost all cases.
+Qemu test results:
+	total: 27 pass: 27 fail: 0
 
-We've only found one situation so far where this approach falls apart.
-One specific Android NDK app detects NEON support by running
-"/system/bin/cat /proc/cpuinfo" in another process and searching for
-the string "neon" in the output.  Even though the app itself is
-32-bit, /system/bin/cat is 64-bit, so it reads the "wrong"
-/proc/cpuinfo and decides the CPU doesn't support NEON.
+Details are available at http://server.roeck-us.net:8010/builders.
 
->From Android's perspective, the only downside of using personalities
-instead is that our runtime will need to ensure 32-bit apps have the
-right personality.  Our runtime team has said they're fine with doing
-this, if that's the direction the upstream kernel wants to go.
+Guenter
 
-> Are there applications for which any of these strategies will not work?
-
-We've found a handful of Android apps that expect the "CPU
-architecture" field to be "7" specifically and get confused by the
-existence of ARMv8.  There's not much you can do on the kernel side to
-support those apps, other than lying about the CPU architecture to
-32-bit apps (and we drew the line at doing that).
