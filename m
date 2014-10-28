@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199AbaJ1Dtc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:49:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45842 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933126AbaJ1Dt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933180AbaJ1Dt1 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 27 Oct 2014 23:49:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45835 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933126AbaJ1DtX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 23:49:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.14 040/100] NFSv4: Fix lock recovery when CREATE_SESSION/SETCLIENTID_CONFIRM fails
-Date: Tue, 28 Oct 2014 11:35:25 +0800
-Message-Id: <20141028033502.419168683@linuxfoundation.org>
+        Willem Pinckaers <willem@lekkertech.net>,
+        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
+Subject: [PATCH 3.14 038/100] lzo: check for length overrun in variable length encoding.
+Date: Tue, 28 Oct 2014 11:35:23 +0800
+Message-Id: <20141028033502.336738305@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -28,35 +29,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Willy Tarreau <w@1wt.eu>
 
-commit a4339b7b686b4acc8b6de2b07d7bacbe3ae44b83 upstream.
+commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
 
-If a NFSv4.x server returns NFS4ERR_STALE_CLIENTID in response to a
-CREATE_SESSION or SETCLIENTID_CONFIRM in order to tell us that it rebooted
-a second time, then the client will currently take this to mean that it must
-declare all locks to be stale, and hence ineligible for reboot recovery.
+This fix ensures that we never meet an integer overflow while adding
+255 while parsing a variable length encoding. It works differently from
+commit 206a81c ("lzo: properly check for overruns") because instead of
+ensuring that we don't overrun the input, which is tricky to guarantee
+due to many assumptions in the code, it simply checks that the cumulated
+number of 255 read cannot overflow by bounding this number.
 
-RFC3530 and RFC5661 both suggest that the client should instead rely on the
-server to respond to inelegible open share, lock and delegation reclaim
-requests with NFS4ERR_NO_GRACE in this situation.
+The MAX_255_COUNT is the maximum number of times we can add 255 to a base
+count without overflowing an integer. The multiply will overflow when
+multiplying 255 by more than MAXINT/255. The sum will overflow earlier
+depending on the base count. Since the base count is taken from a u8
+and a few bits, it is safe to assume that it will always be lower than
+or equal to 2*255, thus we can always prevent any overflow by accepting
+two less 255 steps.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+This patch also reduces the CPU overhead and actually increases performance
+by 1.1% compared to the initial code, while the previous fix costs 3.1%
+(measured on x86_64).
+
+The fix needs to be backported to all currently supported stable kernels.
+
+Reported-by: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4state.c |    1 -
- 1 file changed, 1 deletion(-)
+ lib/lzo/lzo1x_decompress_safe.c |   43 ++++++++++++++++++++++++++++++++++------
+ 1 file changed, 37 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1788,7 +1788,6 @@ static int nfs4_handle_reclaim_lease_err
- 		break;
- 	case -NFS4ERR_STALE_CLIENTID:
- 		clear_bit(NFS4CLNT_LEASE_CONFIRM, &clp->cl_state);
--		nfs4_state_clear_reclaim_reboot(clp);
- 		nfs4_state_start_reclaim_reboot(clp);
- 		break;
- 	case -NFS4ERR_CLID_INUSE:
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -25,6 +25,16 @@
+ #define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
+ #define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+ 
++/* This MAX_255_COUNT is the maximum number of times we can add 255 to a base
++ * count without overflowing an integer. The multiply will overflow when
++ * multiplying 255 by more than MAXINT/255. The sum will overflow earlier
++ * depending on the base count. Since the base count is taken from a u8
++ * and a few bits, it is safe to assume that it will always be lower than
++ * or equal to 2*255, thus we can always prevent any overflow by accepting
++ * two less 255 steps. See Documentation/lzo.txt for more information.
++ */
++#define MAX_255_COUNT      ((((size_t)~0) / 255) - 2)
++
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+ {
+@@ -55,12 +65,19 @@ int lzo1x_decompress_safe(const unsigned
+ 		if (t < 16) {
+ 			if (likely(state == 0)) {
+ 				if (unlikely(t == 0)) {
++					size_t offset;
++					const unsigned char *ip_last = ip;
++
+ 					while (unlikely(*ip == 0)) {
+-						t += 255;
+ 						ip++;
+ 						NEED_IP(1);
+ 					}
+-					t += 15 + *ip++;
++					offset = ip - ip_last;
++					if (unlikely(offset > MAX_255_COUNT))
++						return LZO_E_ERROR;
++
++					offset = (offset << 8) - offset;
++					t += offset + 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+@@ -116,12 +133,19 @@ copy_literal_run:
+ 		} else if (t >= 32) {
+ 			t = (t & 31) + (3 - 1);
+ 			if (unlikely(t == 2)) {
++				size_t offset;
++				const unsigned char *ip_last = ip;
++
+ 				while (unlikely(*ip == 0)) {
+-					t += 255;
+ 					ip++;
+ 					NEED_IP(1);
+ 				}
+-				t += 31 + *ip++;
++				offset = ip - ip_last;
++				if (unlikely(offset > MAX_255_COUNT))
++					return LZO_E_ERROR;
++
++				offset = (offset << 8) - offset;
++				t += offset + 31 + *ip++;
+ 				NEED_IP(2);
+ 			}
+ 			m_pos = op - 1;
+@@ -134,12 +158,19 @@ copy_literal_run:
+ 			m_pos -= (t & 8) << 11;
+ 			t = (t & 7) + (3 - 1);
+ 			if (unlikely(t == 2)) {
++				size_t offset;
++				const unsigned char *ip_last = ip;
++
+ 				while (unlikely(*ip == 0)) {
+-					t += 255;
+ 					ip++;
+ 					NEED_IP(1);
+ 				}
+-				t += 7 + *ip++;
++				offset = ip - ip_last;
++				if (unlikely(offset > MAX_255_COUNT))
++					return LZO_E_ERROR;
++
++				offset = (offset << 8) - offset;
++				t += offset + 7 + *ip++;
+ 				NEED_IP(2);
+ 			}
+ 			next = get_unaligned_le16(ip);
 
 
