@@ -1,149 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203AbaJ1Qks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:40:48 -0400
-Received: from sauhun.de ([89.238.76.85]:46896 "EHLO pokefinder.org"
+	id S1754144AbaJ1Qkr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:40:47 -0400
+Received: from sauhun.de ([89.238.76.85]:46884 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754071AbaJ1Qkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753682AbaJ1Qkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 12:40:32 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: Greg KH <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>,
         Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH RESEND 4/4] coccinelle: api: add spatch to prevent unnecessary .owner
-Date: Tue, 28 Oct 2014 17:40:43 +0100
-Message-Id: <1414514443-28943-5-git-send-email-wsa@the-dreams.de>
+Subject: [PATCH RESEND 0/4] platform: fix accidently erasing .owner
+Date: Tue, 28 Oct 2014 17:40:39 +0100
+Message-Id: <1414514443-28943-1-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1414514443-28943-1-git-send-email-wsa@the-dreams.de>
-References: <1414514443-28943-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are calls which silently set the owner of a module. This is the
-preferred way [1], so avoid setting it manually. Currently, we only care
-about platform drivers, but there might be more calls to be added later.
+Since platform_register_driver() was converted to set the .owner of a driver,
+there was a codepath on which the owner would have been erased. This series
+fixes that and adds a warning to prevent such cases go unnoticed in the future.
+For consistency, a semantic patch is also added which reports when .owner gets
+unnecissarily set. More details in the patch descriptions. Thanks go to Russell
+King for pointing out this problem and to Julia Lawall for help with the
+semantic patch.
 
-[1] https://lkml.org/lkml/2014/10/12/87
+All these patches have been tested on a custom board.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
+This resend was rebased to rc2. It produced identical patches. IMO this should
+go into v3.18 since it is a bugfix.
+
+Please apply. The cleanup series for removing .owner in the kernel tree will
+be resend later, too, as a seperate pull request.
+
+Wolfram Sang (4):
+  core: platform: add warning if driver has no owner
+  core: platform: let platform_driver_probe initialize module owner
+  core: platform: let platform_create_bundle initialize module owner
+  coccinelle: api: add spatch to prevent unnecessary .owner
+
+ drivers/base/driver.c                              |   3 +
+ drivers/base/platform.c                            |  22 +++--
+ include/linux/platform_device.h                    |  12 ++-
  scripts/coccinelle/api/platform_no_drv_owner.cocci | 106 +++++++++++++++++++++
- 1 file changed, 106 insertions(+)
+ 4 files changed, 129 insertions(+), 14 deletions(-)
  create mode 100644 scripts/coccinelle/api/platform_no_drv_owner.cocci
 
-diff --git a/scripts/coccinelle/api/platform_no_drv_owner.cocci b/scripts/coccinelle/api/platform_no_drv_owner.cocci
-new file mode 100644
-index 000000000000..e065b9e714fc
---- /dev/null
-+++ b/scripts/coccinelle/api/platform_no_drv_owner.cocci
-@@ -0,0 +1,106 @@
-+/// Remove .owner field if calls are used which set it automatically
-+///
-+// Confidence: High
-+// Copyright: (C) 2014 Wolfram Sang. GPL v2.
-+
-+virtual patch
-+virtual context
-+virtual org
-+virtual report
-+
-+@match1@
-+declarer name module_platform_driver;
-+declarer name module_platform_driver_probe;
-+identifier __driver;
-+@@
-+(
-+	module_platform_driver(__driver);
-+|
-+	module_platform_driver_probe(__driver, ...);
-+)
-+
-+@fix1 depends on match1 && patch && !context && !org && !report@
-+identifier match1.__driver;
-+@@
-+	static struct platform_driver __driver = {
-+		.driver = {
-+-			.owner = THIS_MODULE,
-+		}
-+	};
-+
-+@match2@
-+identifier __driver;
-+@@
-+(
-+	platform_driver_register(&__driver)
-+|
-+	platform_driver_probe(&__driver, ...)
-+|
-+	platform_create_bundle(&__driver, ...)
-+)
-+
-+@fix2 depends on match2 && patch && !context && !org && !report@
-+identifier match2.__driver;
-+@@
-+	static struct platform_driver __driver = {
-+		.driver = {
-+-			.owner = THIS_MODULE,
-+		}
-+	};
-+
-+// ----------------------------------------------------------------------------
-+
-+@fix1_context depends on match1 && !patch && (context || org || report)@
-+identifier match1.__driver;
-+position j0;
-+@@
-+
-+ 	static struct platform_driver __driver = {
-+		.driver = {
-+*			.owner@j0 = THIS_MODULE,
-+		}
-+	};
-+
-+@fix2_context depends on match2 && !patch && (context || org || report)@
-+identifier match2.__driver;
-+position j0;
-+@@
-+
-+ 	static struct platform_driver __driver = {
-+		.driver = {
-+*			.owner@j0 = THIS_MODULE,
-+		}
-+	};
-+
-+// ----------------------------------------------------------------------------
-+
-+@script:python fix1_org depends on org@
-+j0 << fix1_context.j0;
-+@@
-+
-+msg = "No need to set .owner here. The core will do it."
-+coccilib.org.print_todo(j0[0], msg)
-+
-+@script:python fix2_org depends on org@
-+j0 << fix2_context.j0;
-+@@
-+
-+msg = "No need to set .owner here. The core will do it."
-+coccilib.org.print_todo(j0[0], msg)
-+
-+// ----------------------------------------------------------------------------
-+
-+@script:python fix1_report depends on report@
-+j0 << fix1_context.j0;
-+@@
-+
-+msg = "No need to set .owner here. The core will do it."
-+coccilib.report.print_report(j0[0], msg)
-+
-+@script:python fix2_report depends on report@
-+j0 << fix2_context.j0;
-+@@
-+
-+msg = "No need to set .owner here. The core will do it."
-+coccilib.report.print_report(j0[0], msg)
-+
 -- 
 2.0.0
 
