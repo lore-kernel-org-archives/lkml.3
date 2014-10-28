@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398AbaJ1Dnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:43:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45205 "EHLO
+	id S1755459AbaJ1DoZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:44:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45256 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755390AbaJ1Dnx (ORCPT
+	with ESMTP id S1753539AbaJ1DoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:53 -0400
+	Mon, 27 Oct 2014 23:44:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.16 051/127] NFSv4: fix open/lock state recovery error handling
-Date: Tue, 28 Oct 2014 11:34:46 +0800
-Message-Id: <20141028033423.130672876@linuxfoundation.org>
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>, Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 3.16 032/127] qla2xxx: Fix shost use-after-free on device removal
+Date: Tue, 28 Oct 2014 11:34:27 +0800
+Message-Id: <20141028033422.331267952@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -28,71 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Joe Lawrence <joe.lawrence@stratus.com>
 
-commit df817ba35736db2d62b07de6f050a4db53492ad8 upstream.
+commit db7157d4cfce6edf052452fb1d327d4d11b67f4c upstream.
 
-The current open/lock state recovery unfortunately does not handle errors
-such as NFS4ERR_CONN_NOT_BOUND_TO_SESSION correctly. Instead of looping,
-just proceeds as if the state manager is finished recovering.
-This patch ensures that we loop back, handle higher priority errors
-and complete the open/lock state recovery.
+Once calling scsi_host_put, be careful to not access qla_hw_data through
+the Scsi_Host private data (ie, scsi_qla_host base_vha).
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Fixes: fe1b806f4f71 ("qla2xxx: Refactor shutdown code so some functionality can be reused")
+Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
+Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4state.c |   16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ drivers/scsi/qla2xxx/qla_os.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1732,7 +1732,8 @@ restart:
- 			if (status < 0) {
- 				set_bit(ops->owner_flag_bit, &sp->so_flags);
- 				nfs4_put_state_owner(sp);
--				return nfs4_recovery_handle_error(clp, status);
-+				status = nfs4_recovery_handle_error(clp, status);
-+				return (status != 0) ? status : -EAGAIN;
- 			}
- 
- 			nfs4_put_state_owner(sp);
-@@ -1741,7 +1742,7 @@ restart:
- 		spin_unlock(&clp->cl_lock);
- 	}
- 	rcu_read_unlock();
--	return status;
-+	return 0;
+--- a/drivers/scsi/qla2xxx/qla_os.c
++++ b/drivers/scsi/qla2xxx/qla_os.c
+@@ -3111,10 +3111,8 @@ qla2x00_unmap_iobases(struct qla_hw_data
  }
  
- static int nfs4_check_lease(struct nfs_client *clp)
-@@ -2393,14 +2394,11 @@ static void nfs4_state_manager(struct nf
- 			section = "reclaim reboot";
- 			status = nfs4_do_reclaim(clp,
- 				clp->cl_mvops->reboot_recovery_ops);
--			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
--			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state))
--				continue;
--			nfs4_state_end_reclaim_reboot(clp);
--			if (test_bit(NFS4CLNT_RECLAIM_NOGRACE, &clp->cl_state))
-+			if (status == -EAGAIN)
- 				continue;
- 			if (status < 0)
- 				goto out_error;
-+			nfs4_state_end_reclaim_reboot(clp);
- 		}
+ static void
+-qla2x00_clear_drv_active(scsi_qla_host_t *vha)
++qla2x00_clear_drv_active(struct qla_hw_data *ha)
+ {
+-	struct qla_hw_data *ha = vha->hw;
+-
+ 	if (IS_QLA8044(ha)) {
+ 		qla8044_idc_lock(ha);
+ 		qla8044_clear_drv_active(ha);
+@@ -3185,7 +3183,7 @@ qla2x00_remove_one(struct pci_dev *pdev)
  
- 		/* Now recover expired state... */
-@@ -2408,9 +2406,7 @@ static void nfs4_state_manager(struct nf
- 			section = "reclaim nograce";
- 			status = nfs4_do_reclaim(clp,
- 				clp->cl_mvops->nograce_recovery_ops);
--			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
--			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state) ||
--			    test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state))
-+			if (status == -EAGAIN)
- 				continue;
- 			if (status < 0)
- 				goto out_error;
+ 	scsi_host_put(base_vha->host);
+ 
+-	qla2x00_clear_drv_active(base_vha);
++	qla2x00_clear_drv_active(ha);
+ 
+ 	qla2x00_unmap_iobases(ha);
+ 
 
 
