@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277AbaJ1PNx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:13:53 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:54854 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711AbaJ1PNv (ORCPT
+	id S1754419AbaJ1POV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:14:21 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56242 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087AbaJ1POU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:13:51 -0400
+	Tue, 28 Oct 2014 11:14:20 -0400
+Date: Tue, 28 Oct 2014 08:14:16 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.16 000/127] 3.16.7-stable review
+Message-ID: <20141028151416.GB4452@roeck-us.net>
+References: <20141028033420.925922046@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1412188684-20820-1-git-send-email-pramod.gurav@smartplayin.com>
-References: <1412188684-20820-1-git-send-email-pramod.gurav@smartplayin.com>
-Date: Tue, 28 Oct 2014 16:13:50 +0100
-Message-ID: <CACRpkdaX2OmTbUw3ZWV8q6P0vqMa60cOJjPCmK2H0czrty_fXQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: grgpio: remove irq_domain resources on failure
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.544FB2CB.0205,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 9
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 1, 2014 at 8:38 PM, Pramod Gurav
-<pramod.gurav@smartplayin.com> wrote:
+On Tue, Oct 28, 2014 at 11:33:55AM +0800, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.16.7 release.
+> There are 127 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Thu Oct 30 03:33:57 UTC 2014.
+> Anything received after that time might be too late.
+> 
+Build results:
+	total: 136 pass: 136 fail: 0
+Qemu test results:
+	total: 30 pass: 30 fail: 0
 
-> Call irq_domain_remove when gpiochip_add fails to release irq_domain
-> resources.
->
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Alexandre Courbot <gnurou@gmail.com>
-> Cc: linux-gpio@vger.kernel.org
-> Signed-off-by: Pramod Gurav <pramod.gurav@smartplayin.com>
+Details are available at http://server.roeck-us.net:8010/builders.
 
-Patch applied.
-
-This driver is doing really weird stuff in it's IRQ remapping business...
-
-Yours,
-Linus Walleij
+Guenter
