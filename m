@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbaJ1LCM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:02:12 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:64424 "EHLO
+	id S1754896AbaJ1LCL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:02:11 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:64423 "EHLO
 	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703AbaJ1LCE (ORCPT
+	with ESMTP id S1754715AbaJ1LCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 07:02:04 -0400
 From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
@@ -16,9 +16,9 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         linux-kernel@vger.kernel.org,
         =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
         <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv2 6/6] net: fec: fix regression on i.MX28 introduced by rx_copybreak support
-Date: Tue, 28 Oct 2014 12:01:44 +0100
-Message-Id: <1414494104-27943-7-git-send-email-LW@KARO-electronics.de>
+Subject: [PATCHv2 2/6] net: fec: declare bufdesc_ex flag as bool
+Date: Tue, 28 Oct 2014 12:01:40 +0100
+Message-Id: <1414494104-27943-3-git-send-email-LW@KARO-electronics.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1414494104-27943-1-git-send-email-LW@KARO-electronics.de>
 References: <1414494104-27943-1-git-send-email-LW@KARO-electronics.de>
@@ -29,95 +29,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 1b7bde6d659d ("net: fec: implement rx_copybreak to improve rx performance")
-introduced a regression for i.MX28. The swap_buffer() function doing
-the endian conversion of the received data on i.MX28 may access memory
-beyond the actual packet size in the DMA buffer. fec_enet_copybreak()
-does not copy those bytes, so that the last bytes of a packet may be
-filled with invalid data after swapping.
-This will likely lead to checksum errors on received packets.
-E.g. when trying to mount an NFS rootfs:
-UDP: bad checksum. From 192.168.1.225:111 to 192.168.100.73:44662 ulen 36
-
-Do the byte swapping and copying to the new skb in one go if
-necessary.
+fep->bufdesc_ex is used as boolean flag; thus declare it as such.
+Also remove an unnecessary initialization to 0.
 
 Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 ---
- drivers/net/ethernet/freescale/fec_main.c |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/freescale/fec.h      |    2 +-
+ drivers/net/ethernet/freescale/fec_main.c |    4 +---
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/net/ethernet/freescale/fec.h b/drivers/net/ethernet/freescale/fec.h
+index 1e65917..2634de2 100644
+--- a/drivers/net/ethernet/freescale/fec.h
++++ b/drivers/net/ethernet/freescale/fec.h
+@@ -451,7 +451,7 @@ struct fec_enet_private {
+ 	int	speed;
+ 	struct	completion mdio_done;
+ 	int	irq[FEC_IRQ_NUM];
+-	int	bufdesc_ex;
++	bool	bufdesc_ex;
+ 	int	pause_flag;
+ 
+ 	struct	napi_struct napi;
 diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 404fb9d..b92324c 100644
+index decea57..f7d344f 100644
 --- a/drivers/net/ethernet/freescale/fec_main.c
 +++ b/drivers/net/ethernet/freescale/fec_main.c
-@@ -339,6 +339,18 @@ static void *swap_buffer(void *bufaddr, int len)
- 	return bufaddr;
- }
+@@ -3209,8 +3209,6 @@ fec_probe(struct platform_device *pdev)
+ 	fep->pdev = pdev;
+ 	fep->dev_id = dev_id++;
  
-+static void *swap_buffer2(void *dst_buf, void *src_buf, int len)
-+{
-+	int i;
-+	unsigned int *src = src_buf;
-+	unsigned int *dst = dst_buf;
-+
-+	for (i = 0; i < len; i += 4, src++, dst++)
-+		swab32s(src);
-+
-+	return dst_buf;
-+}
-+
- static void fec_dump(struct net_device *ndev)
- {
- 	struct fec_enet_private *fep = netdev_priv(ndev);
-@@ -1334,7 +1346,7 @@ fec_enet_new_rxbdp(struct net_device *ndev, struct bufdesc *bdp, struct sk_buff
- }
+-	fep->bufdesc_ex = 0;
+-
+ 	platform_set_drvdata(pdev, ndev);
  
- static bool fec_enet_copybreak(struct net_device *ndev, struct sk_buff **skb,
--			       struct bufdesc *bdp, u32 length)
-+			       struct bufdesc *bdp, u32 length, bool swap)
- {
- 	struct  fec_enet_private *fep = netdev_priv(ndev);
- 	struct sk_buff *new_skb;
-@@ -1349,7 +1361,10 @@ static bool fec_enet_copybreak(struct net_device *ndev, struct sk_buff **skb,
- 	dma_sync_single_for_cpu(&fep->pdev->dev, bdp->cbd_bufaddr,
- 				FEC_ENET_RX_FRSIZE - fep->rx_align,
- 				DMA_FROM_DEVICE);
--	memcpy(new_skb->data, (*skb)->data, length);
-+	if (!swap)
-+		memcpy(new_skb->data, (*skb)->data, length);
-+	else
-+		swap_buffer2(new_skb->data, (*skb)->data, length);
- 	*skb = new_skb;
+ 	phy_node = of_parse_phandle(np, "phy-handle", 0);
+@@ -3268,7 +3266,7 @@ fec_probe(struct platform_device *pdev)
+ 		pdev->id_entry->driver_data & FEC_QUIRK_HAS_BUFDESC_EX;
+ 	if (IS_ERR(fep->clk_ptp)) {
+ 		fep->clk_ptp = NULL;
+-		fep->bufdesc_ex = 0;
++		fep->bufdesc_ex = false;
+ 	}
  
- 	return true;
-@@ -1377,6 +1392,7 @@ fec_enet_rx_queue(struct net_device *ndev, int budget, u16 queue_id)
- 	u16	vlan_tag;
- 	int	index = 0;
- 	bool	is_copybreak;
-+	bool	need_swap = fep->quirks & FEC_QUIRK_SWAP_FRAME;
- 
- #ifdef CONFIG_M532x
- 	flush_cache_all();
-@@ -1440,7 +1456,8 @@ fec_enet_rx_queue(struct net_device *ndev, int budget, u16 queue_id)
- 		 * include that when passing upstream as it messes up
- 		 * bridging applications.
- 		 */
--		is_copybreak = fec_enet_copybreak(ndev, &skb, bdp, pkt_len - 4);
-+		is_copybreak = fec_enet_copybreak(ndev, &skb, bdp, pkt_len - 4,
-+						  need_swap);
- 		if (!is_copybreak) {
- 			skb_new = netdev_alloc_skb(ndev, FEC_ENET_RX_FRSIZE);
- 			if (unlikely(!skb_new)) {
-@@ -1455,7 +1472,7 @@ fec_enet_rx_queue(struct net_device *ndev, int budget, u16 queue_id)
- 		prefetch(skb->data - NET_IP_ALIGN);
- 		skb_put(skb, pkt_len - 4);
- 		data = skb->data;
--		if (fep->quirks & FEC_QUIRK_SWAP_FRAME)
-+		if (!is_copybreak && need_swap)
- 			swap_buffer(data, pkt_len);
- 
- 		/* Extract the enhanced buffer descriptor */
+ 	ret = fec_enet_clk_enable(ndev, true);
 -- 
 1.7.10.4
 
