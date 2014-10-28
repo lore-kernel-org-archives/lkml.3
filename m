@@ -1,117 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686AbaJ1LhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:37:20 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:38597 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022AbaJ1LhR (ORCPT
+	id S1754903AbaJ1LiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:38:00 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:38243 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622AbaJ1Lh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:37:17 -0400
-X-Originating-IP: 83.155.44.161
-Message-ID: <1414499805.2406.6.camel@hadess.net>
-Subject: Re: A desktop environment[1] kernel wishlist
-From: Bastien Nocera <hadess@hadess.net>
-To: Zygo Blaxell <zblaxell@furryterror.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Tue, 28 Oct 2014 13:36:45 +0100
-In-Reply-To: <20141027205936.GE17380@hungrycats.org>
-References: <1413881397.30379.7.camel@hadess.net>
-	 <CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	 <1413911644.30379.12.camel@hadess.net>
-	 <CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	 <1413914978.30379.14.camel@hadess.net>
-	 <20141022170433.GA10186@hungrycats.org>
-	 <1414420084.30379.53.camel@hadess.net>
-	 <20141027205936.GE17380@hungrycats.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 (3.12.7-1.fc21) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Oct 2014 07:37:57 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <1412295313-8198-1-git-send-email-xypron.glpk@gmx.de>
+References: <1412295197-8100-1-git-send-email-xypron.glpk@gmx.de> <1412295313-8198-1-git-send-email-xypron.glpk@gmx.de>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Tue, 28 Oct 2014 12:37:36 +0100
+Message-ID: <CAKgNAkhZTHThGB+4_P6T4Gw9GBPbv4Wy5NvKOX7sG-vgk_SN3A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] getrandom.2: new manpage
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-man <linux-man@vger.kernel.org>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 16:59 -0400, Zygo Blaxell wrote:
-> On Mon, Oct 27, 2014 at 03:28:04PM +0100, Bastien Nocera wrote:
-> > On Wed, 2014-10-22 at 13:04 -0400, Zygo Blaxell wrote:
-> > > On Tue, Oct 21, 2014 at 08:09:38PM +0200, Bastien Nocera wrote:
-> > > > On Tue, 2014-10-21 at 11:00 -0700, John Stultz wrote:
-> > > > > On Tue, Oct 21, 2014 at 10:14 AM, Bastien Nocera <hadess@hadess.net> wrote:
-> > > > > >> As for: 'Export of "wake reason" when the system wakes up (rtc alarm,
-> > > > > >> lid open, etc.) and wakealarm (/sys/class/rtc/foo/wakealarm)
-> > > > > >> documentation'
-> > > > > >>
-> > > > > >> Can you expand more on the rational for the need here? Is this for UI
-> > > > > >> for power debugging, or something else?
-> > > > > >
-> > > > > > No, it would be used for automating backups, or implementing
-> > > > > > suspend->hibernation transitions. For example, right before the machine
-> > > > > > suspends, I would schedule it to wake up in a hour. If I get woken up by
-> > > > > > the rtc alarm (and not by the user through a lid open), I might:
-> > > > > > - check that I'm plugged into the AC, it's night, and in the vicinity of
-> > > > > > the server that handles my backups and so backup the system.
-> > > > > > - check whether the battery is low, and hibernate the machine (if it
-> > > > > > supports it, obviously).
-> > > > > >
-> > > > > > We cannot do that if we can't make out whether the wake-up came from a
-> > > > > > user action, or the alarm we set.
-> > > > > 
-> > > > > I suspect wakeup type reporting is maybe not the best way to go about
-> > > > > this, since there may be a number of causes for wakeups and they can
-> > > > > arrive closely together in different orders, which can result in
-> > > > > races.
-> > > > > 
-> > > > > For instance, if the machine suspends, and sets an alarm to be woken
-> > > > > up at midnight to do a backup, if the user resumes their laptop at
-> > > > > 11:59:59, should the backup still proceed at midnight?
-> > > > 
-> > > > No. And I would expect that we would get a wake up type of "power
-> > > > button" or "lid open" in this case.
-> > > 
-> > > I have been using something like this for the last 7 years or so.
-> > > The relevant inputs are:
-> > > 
-> > > 	1. is the user present (is there recent input on HID devices,
-> > > 	keyboard/mouse, but ignore devices like light sensors, 3D
-> > > 	accelerometers, and ACPI virtual keys)?
-> > 
-> > If the user woke the machine up through the power button, you wouldn't
-> > see that from user-space. You could detect that the lid was opened,
-> > because you have state.
-> > 
-> > > 	2. which network connection(s) are available to reach the
-> > > 	backup server?
-> > > 
-> > > 	3. how much power is available (if on battery, how much run
-> > > 	time left?)
-> > > 
-> > > 	4. what is the policy (do backups happen at a specific time
-> > > 	of day, or whenever they can?)
-> > > 
-> > > 	5. was a backup completed successfully in the last N hours?
-> > > 
-> > > Note the absence of any information about the cause of recent
-> > > suspend/resume activity, or any input from suspend/resume at all.
-> > 
-> > How do I tell my environment not to wake the screen up when the machine
-> > was woken up by an alarm I scheduled to launch a backup? 
-> 
-> Lid closed?  Screen off (nobody can see it, it wastes power on battery,
-> and lengthens charge time on AC).
-> 
-> Lid open and user input?  Screen on.
-> 
-> Lid open and user disabled time-based screen power saving?  Screen on.
-> 
-> These are not symmetrical.  To wake up the screen, the screen needs to
-> be visible, and the policy conditions to wake up the screen need to be
-> met.  Spontaneously firing up a backlight at full power in a dark room
-> in the middle of the night may not be appreciated by the system owner.
+Ping^2, Ted!
 
-How do I detect that the screen is visible on a tablet? I could turn on
-the webcam to see if a face is detected ;)
+I'm still hoping for your sign-off on this man-pages patch.
 
-Maybe the wake-up reason isn't good enough on its own, but how do I know
-which one the possible wake-up reasons was the last one to trigger?
+Also adding LKML in CC, in case anyone else wants to comment.
 
+Cheers,
+
+Michael
+
+
+On Fri, Oct 3, 2014 at 2:15 AM, Heinrich Schuchardt <xypron.glpk@gmx.de> wrote:
+> Kernel 3.17 introduces a new system call getrandom(2).
+>
+> The man page in this patch is based on the commit message by
+> Theodore Ts'o <tytso@mit.edu> and suggestion by
+> Michael Kerrisk <mtk.manpages@gmail.com>.
+>
+> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> ---
+>  man2/getrandom.2 | 242 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 242 insertions(+)
+>  create mode 100644 man2/getrandom.2
+>
+> diff --git a/man2/getrandom.2 b/man2/getrandom.2
+> new file mode 100644
+> index 0000000..f6a8a1b
+> --- /dev/null
+> +++ b/man2/getrandom.2
+> @@ -0,0 +1,242 @@
+> +.\" Copyright (C) 2014, Theodore Ts'o <tytso@mit.edu>
+> +.\" Copyright (C) 2014, Heinrich Schuchardt <xypron.glpk@gmx.de>
+> +.\"
+> +.\" %%%LICENSE_START(VERBATIM)
+> +.\" Permission is granted to make and distribute verbatim copies of this
+> +.\" manual provided the copyright notice and this permission notice are
+> +.\" preserved on all copies.
+> +.\"
+> +.\" Permission is granted to copy and distribute modified versions of
+> +.\" this manual under the conditions for verbatim copying, provided that
+> +.\" the entire resulting derived work is distributed under the terms of
+> +.\" a permission notice identical to this one.
+> +.\"
+> +.\" Since the Linux kernel and libraries are constantly changing, this
+> +.\" manual page may be incorrect or out-of-date.  The author(s) assume.
+> +.\" no responsibility for errors or omissions, or for damages resulting.
+> +.\" from the use of the information contained herein.  The author(s) may.
+> +.\" not have taken the same level of care in the production of this.
+> +.\" manual, which is licensed free of charge, as they might when working.
+> +.\" professionally.
+> +.\"
+> +.\" Formatted or processed versions of this manual, if unaccompanied by
+> +.\" the source, must acknowledge the copyright and authors of this work.
+> +.\" %%%LICENSE_END
+> +
+> +.TH GETRANDOM 2 2014-10-03 "Linux" "Linux Programmer's Manual"
+> +.SH NAME
+> +getrandom \- obtain a series of random bytes
+> +.SH SYNOPSIS
+> +.B #include <linux/random.h>
+> +.sp
+> +.BI "int getrandom(void *"buf ", size_t " buflen ", unsigned int " flags );
+> +.SH DESCRIPTION
+> +The system call
+> +.BR getrandom ()
+> +fills the buffer pointed to by
+> +.I buf
+> +with up to
+> +.I buflen
+> +random bytes.
+> +These can be used to seed user-space random number generators
+> +or for other cryptographic purposes.
+> +.PP
+> +.BR getrandom ()
+> +relies on entropy gathered from device drivers and other sources of
+> +environmental noise.
+> +Unnecessarily reading large quantities of data will have a negative impact
+> +on other users of the
+> +.I /dev/random
+> +and the
+> +.I /dev/urandom
+> +devices.
+> +Therefore
+> +.BR getrandom ()
+> +should not be used for Monte Carlo simulations or other
+> +programs/algorithms which are doing probabilistic sampling.
+> +.PP
+> +The
+> +.I flags
+> +argument is a bit mask that can contain zero or more of the following values
+> +ORed together:
+> +.TP
+> +.B GRND_RANDOM
+> +If this bit is set, then random bytes are drawn from the
+> +.I /dev/random
+> +pool instead of the
+> +.I /dev/urandom
+> +pool.
+> +The
+> +.I /dev/random
+> +pool is limited based on the entropy that can be obtained from environmental
+> +noise.
+> +If less random bytes are available than are requested in argument
+> +.IR buflen ,
+> +the available random bytes will be copied and the call returns.
+> +If no random byte is available, the response will depend on the
+> +presence of
+> +.B GRND_NONBLOCK
+> +in the
+> +.I flags
+> +argument.
+> +.TP
+> +.B GRND_NONBLOCK
+> +If this bit is set and there is no random byte available at all,
+> +.BR getrandom ()
+> +will return -1 with
+> +.I errno
+> +set to
+> +.BR EAGAIN .
+> +If the
+> +.B GRND_NONBLOCK
+> +bit is not set and there is no random byte available at all,
+> +.BR getrandom ()
+> +will block.
+> +.SH RETURN VALUE
+> +On success,
+> +.BR getrandom ()
+> +returns the number of bytes that were copied to the buffer
+> +.IR buf .
+> +This may be less than the bytes requested by the caller via
+> +.I buflen
+> +if insufficient entropy was present in the
+> +.IR /dev/random
+> +pool, or if the system call was interrupted by a signal.
+> +.PP
+> +On error, -1 is returned, and
+> +.I errno
+> +is set appropriately.
+> +.SH ERRORS
+> +.TP
+> +.B EINVAL
+> +An invalid flag was passed to
+> +.BR getrandom ().
+> +.TP
+> +.B EFAULT
+> +The address referenced in parameter
+> +.I buf
+> +is outside the accessible address space.
+> +.TP
+> +.B EAGAIN
+> +The requested entropy was not available, and
+> +.BR getrandom ()
+> +would have blocked if the
+> +.B GRND_NONBLOCK
+> +flag was not set.
+> +.TP
+> +.B EINTR
+> +While blocked waiting for entropy, the call was interrupted by a signal
+> +handler; see the description of how interrupted
+> +.BR read (2)
+> +calls on "slow" devices are handled with and without the
+> +.B SA_RESTART
+> +flag in the
+> +.BR signal (7)
+> +man page.
+> +.SH VERSIONS
+> +.BR getrandom ()
+> +was introduced in version 3.17 of the Linux kernel.
+> +.SH CONFORMING TO
+> +This system call is Linux-specific.
+> +.SH NOTES
+> +.SS Interruption by a signal handler
+> +The reaction of
+> +.BR getrandom ()
+> +in case of an interruption of a blocking call by a signal
+> +when reading from
+> +.I /dev/urandom
+> +.RB ( GRND_RANDOM
+> +is not set)
+> +depends on the initialization state of the entropy buffer
+> +and on the request size
+> +.IR buflen .
+> +If the entropy is not yet initialized or the request size is large
+> +.RI ( buflen
+> +> 256),
+> +.B EINTR
+> +will be returned.
+> +If the entropy pool has been intialized and the request size is small
+> +.RI ( buflen
+> +<= 256),
+> +.BR getrandom ()
+> +will not return
+> +.BR EINTR .
+> +Instead, it will return all of the bytes that have been requested.
+> +.PP
+> +When reading from
+> +.I /dev/random
+> +.RB ( GRND_RANDOM
+> +is set)
+> +these guarantees do
+> +.I not
+> +apply.
+> +.PP
+> +Calling
+> +.BR getrandom ()
+> +to read
+> +.I /dev/urandom
+> +for small values (<= 256) of
+> +.I buflen
+> +is the preferred mode of usage.
+> +.PP
+> +The special treatment of small values of
+> +.I buflen
+> +was designed for compatibility with
+> +OpenBSD's
+> +.BR getentropy ()
+> +system call.
+> +.PP
+> +The user of
+> +.BR getrandom ()
+> +.I must
+> +always check the return value, in case it indicates some error,
+> +or if fewer bytes than requested were returned.
+> +In the case where
+> +.B GRND_RANDOM
+> +is not specified and
+> +.I buflen
+> +is less than or equal to 256,
+> +a return of fewer bytes than requested should never happen,
+> +but the careful user-space code should check for this anyway!
+> +.SS Choice of random device
+> +Unless you are doing long-term key generation (and perhaps not even
+> +then), you probably shouldn't be using
+> +.B GRND_RANDOM.
+> +The cryptographic algorithms used for
+> +.I /dev/urandom
+> +are quite conservative, and so should be sufficient for all purposes.
+> +The disadvantage of
+> +.B GRND_RANDOM
+> +is that it can block.
+> +Furthermore, dealing with partially fulfilled
+> +.BR getrandom ()
+> +requests increases code complexity.
+> +.SS Emulating OpenBSD's getentropy()
+> +The
+> +.BR getentropy ()
+> +system call in OpenBSD can be emulated using the following
+> +function:
+> +
+> +.in +4n
+> +.nf
+> +int
+> +getentropy(void *buf, size_t buflen)
+> +{
+> +    int ret;
+> +
+> +    if (buflen > 256)
+> +        goto failure;
+> +    ret = getrandom(buf, buflen, 0);
+> +    if (ret < 0)
+> +        return ret;
+> +    if (ret == buflen)
+> +        return 0;
+> +failure:
+> +    errno = EIO;
+> +    return -1;
+> +}
+> +.fi
+> +.in
+> +.SH SEE ALSO
+> +.BR random (4),
+> +.BR urandom (4)
+> --
+> 2.1.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-man" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
