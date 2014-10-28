@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789AbaJ1VaO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:30:14 -0400
+	id S1755843AbaJ1Vr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:47:56 -0400
 Received: from down.free-electrons.com ([37.187.137.238]:36959 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751872AbaJ1VaK (ORCPT
+	with ESMTP id S1750982AbaJ1VaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:30:10 -0400
+	Tue, 28 Oct 2014 17:30:09 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 16/58] dmaengine: jz4740: Split device_control
-Date: Tue, 28 Oct 2014 22:25:31 +0100
-Message-Id: <1414531573-18807-17-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 14/58] dmaengine: coh901318: Split device_control
+Date: Tue, 28 Oct 2014 22:25:29 +0100
+Message-Id: <1414531573-18807-15-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,60 +24,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the JZ4740 DMA driver to make use of the
-newly introduced callbacks, that will eventually be used to retrieve slave
-capabilities.
+Split the device_control callback of the ST-Ericsson COH901318 DMA driver to
+make use of the newly introduced callbacks, that will eventually be used to
+retrieve slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/dma/dma-jz4740.c | 20 +++-----------------
- 1 file changed, 3 insertions(+), 17 deletions(-)
+ drivers/dma/coh901318.c | 137 +++++++++++++++++++++---------------------------
+ 1 file changed, 60 insertions(+), 77 deletions(-)
 
-diff --git a/drivers/dma/dma-jz4740.c b/drivers/dma/dma-jz4740.c
-index ae2ab14e64b3..c25fc0aa7776 100644
---- a/drivers/dma/dma-jz4740.c
-+++ b/drivers/dma/dma-jz4740.c
-@@ -210,7 +210,7 @@ static enum jz4740_dma_transfer_size jz4740_dma_maxburst(u32 maxburst)
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index e88588d8ecd3..418e4e4fb7ba 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -2114,6 +2114,57 @@ static irqreturn_t dma_irq_handler(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
  }
  
- static int jz4740_dma_slave_config(struct dma_chan *c,
--	const struct dma_slave_config *config)
-+				   struct dma_slave_config *config)
++static int coh901318_terminate_all(struct dma_chan *chan)
++{
++	unsigned long flags;
++	struct coh901318_chan *cohc = to_coh901318_chan(chan);
++	struct coh901318_desc *cohd;
++	void __iomem *virtbase = cohc->base->virtbase;
++
++	/* The remainder of this function terminates the transfer */
++	coh901318_pause(chan);
++	spin_lock_irqsave(&cohc->lock, flags);
++
++	/* Clear any pending BE or TC interrupt */
++	if (cohc->id < 32) {
++		writel(1 << cohc->id, virtbase + COH901318_BE_INT_CLEAR1);
++		writel(1 << cohc->id, virtbase + COH901318_TC_INT_CLEAR1);
++	} else {
++		writel(1 << (cohc->id - 32), virtbase +
++		       COH901318_BE_INT_CLEAR2);
++		writel(1 << (cohc->id - 32), virtbase +
++		       COH901318_TC_INT_CLEAR2);
++	}
++
++	enable_powersave(cohc);
++
++	while ((cohd = coh901318_first_active_get(cohc))) {
++		/* release the lli allocation*/
++		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
++
++		/* return desc to free-list */
++		coh901318_desc_remove(cohd);
++		coh901318_desc_free(cohc, cohd);
++	}
++
++	while ((cohd = coh901318_first_queued(cohc))) {
++		/* release the lli allocation*/
++		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
++
++		/* return desc to free-list */
++		coh901318_desc_remove(cohd);
++		coh901318_desc_free(cohc, cohd);
++	}
++
++
++	cohc->nbr_active_done = 0;
++	cohc->busy = 0;
++
++	spin_unlock_irqrestore(&cohc->lock, flags);
++
++	return 0;
++}
++
+ static int coh901318_alloc_chan_resources(struct dma_chan *chan)
  {
- 	struct jz4740_dmaengine_chan *chan = to_jz4740_dma_chan(c);
- 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
-@@ -290,21 +290,6 @@ static int jz4740_dma_terminate_all(struct dma_chan *c)
- 	return 0;
+ 	struct coh901318_chan	*cohc = to_coh901318_chan(chan);
+@@ -2156,7 +2207,7 @@ coh901318_free_chan_resources(struct dma_chan *chan)
+ 
+ 	spin_unlock_irqrestore(&cohc->lock, flags);
+ 
+-	dmaengine_terminate_all(chan);
++	coh901318_terminate_all(chan);
  }
  
--static int jz4740_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
+ 
+@@ -2540,80 +2591,6 @@ static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
+ 	cohc->ctrl = ctrl;
+ }
+ 
+-static int
+-coh901318_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		  unsigned long arg)
 -{
--	struct dma_slave_config *config = (struct dma_slave_config *)arg;
+-	unsigned long flags;
+-	struct coh901318_chan *cohc = to_coh901318_chan(chan);
+-	struct coh901318_desc *cohd;
+-	void __iomem *virtbase = cohc->base->virtbase;
 -
--	switch (cmd) {
--	case DMA_SLAVE_CONFIG:
--		return jz4740_dma_slave_config(chan, config);
--	case DMA_TERMINATE_ALL:
--		return jz4740_dma_terminate_all(chan);
--	default:
--		return -ENOSYS;
+-	if (cmd == DMA_SLAVE_CONFIG) {
+-		struct dma_slave_config *config =
+-			(struct dma_slave_config *) arg;
+-
+-		coh901318_dma_set_runtimeconfig(chan, config);
+-		return 0;
+-	  }
+-
+-	if (cmd == DMA_PAUSE) {
+-		coh901318_pause(chan);
+-		return 0;
 -	}
+-
+-	if (cmd == DMA_RESUME) {
+-		coh901318_resume(chan);
+-		return 0;
+-	}
+-
+-	if (cmd != DMA_TERMINATE_ALL)
+-		return -ENXIO;
+-
+-	/* The remainder of this function terminates the transfer */
+-	coh901318_pause(chan);
+-	spin_lock_irqsave(&cohc->lock, flags);
+-
+-	/* Clear any pending BE or TC interrupt */
+-	if (cohc->id < 32) {
+-		writel(1 << cohc->id, virtbase + COH901318_BE_INT_CLEAR1);
+-		writel(1 << cohc->id, virtbase + COH901318_TC_INT_CLEAR1);
+-	} else {
+-		writel(1 << (cohc->id - 32), virtbase +
+-		       COH901318_BE_INT_CLEAR2);
+-		writel(1 << (cohc->id - 32), virtbase +
+-		       COH901318_TC_INT_CLEAR2);
+-	}
+-
+-	enable_powersave(cohc);
+-
+-	while ((cohd = coh901318_first_active_get(cohc))) {
+-		/* release the lli allocation*/
+-		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
+-
+-		/* return desc to free-list */
+-		coh901318_desc_remove(cohd);
+-		coh901318_desc_free(cohc, cohd);
+-	}
+-
+-	while ((cohd = coh901318_first_queued(cohc))) {
+-		/* release the lli allocation*/
+-		coh901318_lli_free(&cohc->base->pool, &cohd->lli);
+-
+-		/* return desc to free-list */
+-		coh901318_desc_remove(cohd);
+-		coh901318_desc_free(cohc, cohd);
+-	}
+-
+-
+-	cohc->nbr_active_done = 0;
+-	cohc->busy = 0;
+-
+-	spin_unlock_irqrestore(&cohc->lock, flags);
+-
+-	return 0;
 -}
 -
- static int jz4740_dma_start_transfer(struct jz4740_dmaengine_chan *chan)
+ void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
+ 			 struct coh901318_base *base)
  {
- 	struct jz4740_dma_dev *dmadev = jz4740_dma_chan_get_dev(chan);
-@@ -561,7 +546,8 @@ static int jz4740_dma_probe(struct platform_device *pdev)
- 	dd->device_issue_pending = jz4740_dma_issue_pending;
- 	dd->device_prep_slave_sg = jz4740_dma_prep_slave_sg;
- 	dd->device_prep_dma_cyclic = jz4740_dma_prep_dma_cyclic;
--	dd->device_control = jz4740_dma_control;
-+	dd->device_config = jz4740_dma_slave_config;
-+	dd->device_terminate_all = jz4740_dma_terminate_all;
- 	dd->dev = &pdev->dev;
- 	dd->chancnt = JZ_DMA_NR_CHANS;
- 	INIT_LIST_HEAD(&dd->channels);
+@@ -2717,7 +2694,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
+ 	base->dma_slave.device_prep_slave_sg = coh901318_prep_slave_sg;
+ 	base->dma_slave.device_tx_status = coh901318_tx_status;
+ 	base->dma_slave.device_issue_pending = coh901318_issue_pending;
+-	base->dma_slave.device_control = coh901318_control;
++	base->dma_slave.device_config = coh901318_dma_set_runtimeconfig;
++	base->dma_slave.device_pause = coh901318_pause;
++	base->dma_slave.device_resume = coh901318_resume;
++	base->dma_slave.device_terminate_all = coh901318_terminate_all;
+ 	base->dma_slave.dev = &pdev->dev;
+ 
+ 	err = dma_async_device_register(&base->dma_slave);
+@@ -2737,7 +2717,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
+ 	base->dma_memcpy.device_prep_dma_memcpy = coh901318_prep_memcpy;
+ 	base->dma_memcpy.device_tx_status = coh901318_tx_status;
+ 	base->dma_memcpy.device_issue_pending = coh901318_issue_pending;
+-	base->dma_memcpy.device_control = coh901318_control;
++	base->dma_memcpy.device_config = coh901318_dma_set_runtimeconfig;
++	base->dma_memcpy.device_pause = coh901318_pause;
++	base->dma_memcpy.device_resume = coh901318_resume;
++	base->dma_memcpy.device_terminate_all = coh901318_terminate_all;
+ 	base->dma_memcpy.dev = &pdev->dev;
+ 	/*
+ 	 * This controller can only access address at even 32bit boundaries,
 -- 
 2.1.1
 
