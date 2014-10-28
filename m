@@ -1,132 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892AbaJ1Acy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 20:32:54 -0400
-Received: from regular1.263xmail.com ([211.150.99.132]:59440 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265AbaJ1Acx (ORCPT
+	id S1752986AbaJ1AeL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 20:34:11 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:14227 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752369AbaJ1AeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 20:32:53 -0400
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-FST-TO: zhengsq@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <b95dbb24873099e7968aae459daca742>
-X-DNS-TYPE: 0
-Message-ID: <544EE42D.3030208@rock-chips.com>
-Date: Tue, 28 Oct 2014 08:32:45 +0800
-From: Caesar Wang <caesar.wang@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 27 Oct 2014 20:34:08 -0400
+Date: Mon, 27 Oct 2014 17:34:26 -0700
+From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+To: Jeffrey Hugo <jhugo@codeaurora.org>
+CC: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Suman Anna <s-anna@ti.com>
+Subject: Re: [RFC 4/7] soc: qcom: Add Shared Memory Manager driver
+Message-ID: <20141028003424.GP28611@sonymobile.com>
+References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1412037291-16880-5-git-send-email-bjorn.andersson@sonymobile.com>
+ <5435AD8E.2000109@codeaurora.org>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
-        zyf@rock-chips.com, dianders@chromium.org,
-        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
-        cjf@rock-chips.com, zhengsq@rock-chips.com
-Subject: Re: [PATCH v14 2/5] dt-bindings: document Rockchip thermal
-References: <1414377588-2237-1-git-send-email-caesar.wang@rock-chips.com> <1414377588-2237-3-git-send-email-caesar.wang@rock-chips.com> <20141028002915.GJ7594@dtor-ws>
-In-Reply-To: <20141028002915.GJ7594@dtor-ws>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <5435AD8E.2000109@codeaurora.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry,
+On Wed 08 Oct 14:33 PDT 2014, Jeffrey Hugo wrote:
 
-在 2014年10月28日 08:29, Dmitry Torokhov 写道:
-> On Mon, Oct 27, 2014 at 10:39:45AM +0800, Caesar Wang wrote:
->> This add the necessary binding documentation for the thermal
->> found on Rockchip SoCs
->>
->> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
->> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
->> ---
->>   .../bindings/thermal/rockchip-thermal.txt          | 53 ++++++++++++++++++++++
->>   1 file changed, 53 insertions(+)
->>   create mode 100644 Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
->>
->> diff --git a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
->> new file mode 100644
->> index 0000000..d5b1401
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
->> @@ -0,0 +1,53 @@
->> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
->> +
->> +Required properties:
->> +- compatible : "rockchip,rk3288-tsadc"
->> +- reg : physical base address of the controller and length of memory mapped
->> +	region.
->> +- interrupts : The interrupt number to the cpu. The interrupt specifier format
->> +	       depends on the interrupt controller.
->> +- clocks : Must contain an entry for each entry in clock-names.
->> +- clock-names : Shall be "tsadc" for the converter-clock, and "apb_pclk" for
->> +		the peripheral clock.
->> +- #thermal-sensor-cells : Should be 1. See ./thermal.txt for a description.
-> I think you are missing description of hw-shut-temp, tsadc-tshut-mode
-> and tsadc-tshut-mode
->   and optional pinctrl settings.
+[..]
+> > + */
+> > +struct smem_header {
+> > +     struct smem_proc_comm proc_comm[4];
+> > +     u32 version[32];
+> > +     u32 smem_initialized;
+> > +     u32 free_offset;
+> > +     u32 available;
+> > +     u32 unused;
+> 
+> I see that you inlined the smem_heap_info struct.  That is slightly
+> problematic since we have some uses of that structure, and without it,
+> accessing id 1 becomes complicated.  I would prefer you reintroduce it.
+> 
 
-If it's really need,we just have hw-shut-temp,tsadc-tshut-mode
-and tsadc-tshut-mode,no need  pinctrl setting,I think.
+Could you help me better understand what you mean here? I've scanned through
+msm-3.4 and msm-3.10 and read your comment numerous times, but I can't find any
+uses that needs it nor figure out why it would be difficult to access item 1.
 
->> +
->> +Exiample:
->> +tsadc: tsadc@ff280000 {
->> +	compatible = "rockchip,rk3288-tsadc";
->> +	reg = <0xff280000 0x100>;
->> +	interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
->> +	clocks = <&cru SCLK_TSADC>, <&cru PCLK_TSADC>;
->> +	clock-names = "tsadc", "apb_pclk";
->> +};
->> +
->> +Example: referring to thermal sensors:
->> +thermal-zones {
->> +	cpu_thermal: cpu_thermal {
->> +		polling-delay-passive = <1000>; /* milliseconds */
->> +		polling-delay = <5000>; /* milliseconds */
->> +
->> +		/* sensor	ID */
->> +		thermal-sensors = <&tsadc	1>;
->> +
->> +		trips {
->> +			cpu_alert0: cpu_alert {
->> +				temperature = <80000>; /* millicelsius */
->> +				hysteresis = <2000>; /* millicelsius */
->> +				type = "passive";
->> +			};
->> +			cpu_crit: cpu_crit {
->> +				temperature = <120000>; /* millicelsius */
->> +				hysteresis = <2000>; /* millicelsius */
->> +				type = "critical";
->> +			};
->> +		};
->> +
->> +		cooling-maps {
->> +			map0 {
->> +				trip = <&cpu_alert0>;
->> +				cooling-device =
->> +					<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
->> +			};
->> +		};
->> +	};
->> +};
->> -- 
->> 1.9.1
->>
->>
+> > +     struct smem_entry toc[SMEM_MAX_ITEMS];
+> > +};
 
--- 
-Best regards,
-Caesar
-
-
+Thanks,
+Bjorn
