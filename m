@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760909AbaJ1Hwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:52:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44488 "EHLO
+	id S1760918AbaJ1Hwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:52:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44478 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242AbaJ1DiL (ORCPT
+	with ESMTP id S1754162AbaJ1DiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:11 -0400
+	Mon, 27 Oct 2014 23:38:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Fabian Frederick <fabf@skynet.be>,
         Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.17 060/146] NFSv4: fix open/lock state recovery error handling
-Date: Tue, 28 Oct 2014 11:33:22 +0800
-Message-Id: <20141028033345.985994037@linuxfoundation.org>
+Subject: [PATCH 3.17 058/146] nfs: fix duplicate proc entries
+Date: Tue, 28 Oct 2014 11:33:20 +0800
+Message-Id: <20141028033345.906079197@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -28,71 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Fabian Frederick <fabf@skynet.be>
 
-commit df817ba35736db2d62b07de6f050a4db53492ad8 upstream.
+commit 2f3169fb18f4643ac9a6a097a6a6c71f0b2cef75 upstream.
 
-The current open/lock state recovery unfortunately does not handle errors
-such as NFS4ERR_CONN_NOT_BOUND_TO_SESSION correctly. Instead of looping,
-just proceeds as if the state manager is finished recovering.
-This patch ensures that we loop back, handle higher priority errors
-and complete the open/lock state recovery.
+Commit 65b38851a174
+("NFS: Fix /proc/fs/nfsfs/servers and /proc/fs/nfsfs/volumes")
 
+updated the following function:
+static int nfs_volume_list_open(struct inode *inode, struct file *file)
+
+it used &nfs_server_list_ops instead of &nfs_volume_list_ops
+which means cat /proc/fs/nfsfs/volumes = /proc/fs/nfsfs/servers
+
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+Fixes: 65b38851a174 (NFS: Fix /proc/fs/nfsfs/servers and...)
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4state.c |   16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ fs/nfs/client.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1705,7 +1705,8 @@ restart:
- 			if (status < 0) {
- 				set_bit(ops->owner_flag_bit, &sp->so_flags);
- 				nfs4_put_state_owner(sp);
--				return nfs4_recovery_handle_error(clp, status);
-+				status = nfs4_recovery_handle_error(clp, status);
-+				return (status != 0) ? status : -EAGAIN;
- 			}
- 
- 			nfs4_put_state_owner(sp);
-@@ -1714,7 +1715,7 @@ restart:
- 		spin_unlock(&clp->cl_lock);
- 	}
- 	rcu_read_unlock();
--	return status;
-+	return 0;
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -1318,7 +1318,7 @@ static int nfs_server_list_show(struct s
+  */
+ static int nfs_volume_list_open(struct inode *inode, struct file *file)
+ {
+-	return seq_open_net(inode, file, &nfs_server_list_ops,
++	return seq_open_net(inode, file, &nfs_volume_list_ops,
+ 			   sizeof(struct seq_net_private));
  }
  
- static int nfs4_check_lease(struct nfs_client *clp)
-@@ -2366,14 +2367,11 @@ static void nfs4_state_manager(struct nf
- 			section = "reclaim reboot";
- 			status = nfs4_do_reclaim(clp,
- 				clp->cl_mvops->reboot_recovery_ops);
--			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
--			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state))
--				continue;
--			nfs4_state_end_reclaim_reboot(clp);
--			if (test_bit(NFS4CLNT_RECLAIM_NOGRACE, &clp->cl_state))
-+			if (status == -EAGAIN)
- 				continue;
- 			if (status < 0)
- 				goto out_error;
-+			nfs4_state_end_reclaim_reboot(clp);
- 		}
- 
- 		/* Now recover expired state... */
-@@ -2381,9 +2379,7 @@ static void nfs4_state_manager(struct nf
- 			section = "reclaim nograce";
- 			status = nfs4_do_reclaim(clp,
- 				clp->cl_mvops->nograce_recovery_ops);
--			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
--			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state) ||
--			    test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state))
-+			if (status == -EAGAIN)
- 				continue;
- 			if (status < 0)
- 				goto out_error;
 
 
