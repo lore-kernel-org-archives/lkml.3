@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933610AbaJ1DwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:52:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46152 "EHLO
+	id S1756086AbaJ1DwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:52:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46170 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933487AbaJ1DwF (ORCPT
+	with ESMTP id S933606AbaJ1DwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:05 -0400
+	Mon, 27 Oct 2014 23:52:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: [PATCH 3.10 20/43] Drivers: hv: vmbus: Fix a bug in vmbus_open()
-Date: Tue, 28 Oct 2014 11:36:18 +0800
-Message-Id: <20141028033524.264589586@linuxfoundation.org>
+        Bryan ODonoghue <pure.logic@nexus-software.ie>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 08/43] x86/intel/quark: Switch off CR4.PGE so TLB flush uses CR3 instead
+Date: Tue, 28 Oct 2014 11:36:06 +0800
+Message-Id: <20141028033523.763907075@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
 References: <20141028033523.407092670@linuxfoundation.org>
@@ -29,35 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
-commit 45d727cee9e200f5b351528b9fb063b69cf702c8 upstream.
+commit ee1b5b165c0a2f04d2107e634e51f05d0eb107de upstream.
 
-Fix a bug in vmbus_open() and properly propagate the error. I would
-like to thank Dexuan Cui <decui@microsoft.com> for identifying the
-issue.
+Quark x1000 advertises PGE via the standard CPUID method
+PGE bits exist in Quark X1000's PTEs. In order to flush
+an individual PTE it is necessary to reload CR3 irrespective
+of the PTE.PGE bit.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+See Quark Core_DevMan_001.pdf section 6.4.11
+
+This bug was fixed in Galileo kernels, unfixed vanilla kernels are expected to
+crash and burn on this platform.
+
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/channel.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/intel.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -199,8 +199,10 @@ int vmbus_open(struct vmbus_channel *new
- 	ret = vmbus_post_msg(open_msg,
- 			       sizeof(struct vmbus_channel_open_channel));
- 
--	if (ret != 0)
-+	if (ret != 0) {
-+		err = ret;
- 		goto error1;
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -154,6 +154,21 @@ static void __cpuinit early_init_intel(s
+ 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
+ 		}
+ 	}
++
++	/*
++	 * Intel Quark Core DevMan_001.pdf section 6.4.11
++	 * "The operating system also is required to invalidate (i.e., flush)
++	 *  the TLB when any changes are made to any of the page table entries.
++	 *  The operating system must reload CR3 to cause the TLB to be flushed"
++	 *
++	 * As a result cpu_has_pge() in arch/x86/include/asm/tlbflush.h should
++	 * be false so that __flush_tlb_all() causes CR3 insted of CR4.PGE
++	 * to be modified
++	 */
++	if (c->x86 == 5 && c->x86_model == 9) {
++		pr_info("Disabling PGE capability bit\n");
++		setup_clear_cpu_cap(X86_FEATURE_PGE);
 +	}
+ }
  
- 	t = wait_for_completion_timeout(&open_info->waitevent, 5*HZ);
- 	if (t == 0) {
+ #ifdef CONFIG_X86_32
 
 
