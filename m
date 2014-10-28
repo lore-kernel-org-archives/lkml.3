@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939AbaJ1Ur7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:47:59 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:45083 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaJ1Ur5 (ORCPT
+	id S1753277AbaJ1Utp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:49:45 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35795 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaJ1Uto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:47:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1414404527-17526-1-git-send-email-cywang@chromium.org>
-References: <1412861506-21732-1-git-send-email-cywang@chromium.org>
-	<1414404527-17526-1-git-send-email-cywang@chromium.org>
-Date: Tue, 28 Oct 2014 16:47:56 -0400
-Message-ID: <CAN+gG=G+YYntYg3rpGP+rUU8wT6Ejny8nrdG7K_cfyt7BwkWbA@mail.gmail.com>
-Subject: Re: [PATCH v2] input: fix BTN_TOUCH reporting in input_mt_report_pointer_emulation
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Chung-yih Wang <cywang@chromium.org>
-Cc: linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Hans de Goede <hdegoede@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 28 Oct 2014 16:49:44 -0400
+Date: Tue, 28 Oct 2014 16:49:39 -0400 (EDT)
+Message-Id: <20141028.164939.509353257563688482.davem@davemloft.net>
+To: sebastian.hesselbarth@gmail.com
+Cc: antoine.tenart@free-electrons.com, f.fainelli@gmail.com,
+        eric.y.miao@gmail.com, haojian.zhuang@gmail.com,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fixup! net: pxa168_eth: Provide phy_interface mode on
+ platform_data
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1414231739-7447-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1414002412-13615-3-git-send-email-sebastian.hesselbarth@gmail.com>
+	<1414231739-7447-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 28 Oct 2014 13:49:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chung-yih,
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Date: Sat, 25 Oct 2014 12:08:59 +0200
 
-On Mon, Oct 27, 2014 at 6:08 AM, Chung-yih Wang <cywang@chromium.org> wrote:
->   From the definition of BTN_TOUCH, BTN_TOOL_<name> and BTN_TOUCH codes
-> are orthogonal. BTN_TOUCH should be zero if there is no physical contact
-> happened on device. With ABS_MT_DISTANCE information, the patch uses
-> touch_count and finger_count to get the final reporting code for
-> BTN_TOUCH and BTN_TOOL_<name>, respectively.
->
-> Signed-off-by: Chung-yih Wang <cywang@chromium.org>
+> Do not add phy include to the board file but platform_data include
+> instead.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 > ---
->  drivers/input/input-mt.c | 15 ++++++++++-----
->  1 file changed, 10 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
-> index fbe29fc..a2ab8e3 100644
-> --- a/drivers/input/input-mt.c
-> +++ b/drivers/input/input-mt.c
-> @@ -192,18 +192,21 @@ void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count)
->  {
->         struct input_mt *mt = dev->mt;
->         struct input_mt_slot *oldest;
-> -       int oldid, count, i;
-> +       int oldid, i;
-> +       int touch_count, finger_count;
->
->         if (!mt)
->                 return;
->
->         oldest = NULL;
->         oldid = mt->trkid;
-> -       count = 0;
-> +       touch_count = 0;
-> +       finger_count = 0;
->
->         for (i = 0; i < mt->num_slots; ++i) {
->                 struct input_mt_slot *ps = &mt->slots[i];
->                 int id = input_mt_get_value(ps, ABS_MT_TRACKING_ID);
-> +               int distance = input_mt_get_value(ps, ABS_MT_DISTANCE);
+> David,
+> 
+> I should have compile tested this patch earlier. I did now on
+> pxa168_defconfig right after I received an 0-day kbuild error
+> on this patch.
+> 
+> This is the corresponding fix, can you please squash it in?
+> 
+> Thanks and sorry for the noise,
 
-I don't really like this statement, even if it works. Some devices do
-not report ABS_MT_DISTANCE, and the value for them should not be
-considered as '0' but 'undefined'.
+Patch applied to net-next, but:
 
->
->                 if (id < 0)
->                         continue;
-> @@ -211,12 +214,14 @@ void input_mt_report_pointer_emulation(struct input_dev *dev, bool use_count)
->                         oldest = ps;
->                         oldid = id;
->                 }
-> -               count++;
-> +               finger_count++;
-> +               if (distance == 0)
+1) There is never any way for me to "squash" a patch into an old
+   one.  Once I apply a patch it is a permanent commit in my tree
+   and cannot be undone and/or modified.
 
-I'd rather test here if ABS_MT_DISTANCE is used, and then if the value is 0.
+   Therefore the only thing you can do is send me a relative fix
+   and that's what shows up in my tree as yet another later commit.
 
-> +                       touch_count++;
->         }
->
-> -       input_event(dev, EV_KEY, BTN_TOUCH, count > 0);
-> +       input_event(dev, EV_KEY, BTN_TOUCH, touch_count > 0);
+2) Always be specific about the target tree in you subject,
+   line.  Never assume I can figure it out by context.
 
-For the record, I *think* this will not break user space. This is used
-in the touchpad part of libinput, and does not seemed to be impacted
-by the change.
-Adding Peter and Hans in CC who can tell us if I am assuming right.
-
-Cheers,
-Benjamin
-
->         if (use_count)
-> -               input_mt_report_finger_count(dev, count);
-> +               input_mt_report_finger_count(dev, finger_count);
->
->         if (oldest) {
->                 int x = input_mt_get_value(oldest, ABS_MT_POSITION_X);
-> --
-> 2.1.2
->
+Thanks.
