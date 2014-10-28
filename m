@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185AbaJ1Psv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:48:51 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:35763 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873AbaJ1Pst (ORCPT
+	id S1753968AbaJ1PuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:50:14 -0400
+Received: from mout.kundenserver.de ([212.227.126.130]:51315 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaJ1PuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:48:49 -0400
+	Tue, 28 Oct 2014 11:50:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Heena Sirwani <heenasirwani@gmail.com>, linux-kernel@vger.kernel.org,
+        john.stultz@linaro.org
+Subject: Re: [PATCH v2] timekeeping: Added a function to return tv_sec portion of ktime_get_real_ts64()
+Date: Tue, 28 Oct 2014 16:50:01 +0100
+Message-ID: <3267270.TT2UKZmIpE@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <alpine.DEB.2.11.1410281641350.5308@nanos>
+References: <20141027050804.GA8550@heena-HP-Compaq-8200-Elite-MT-PC> <alpine.DEB.2.11.1410281641350.5308@nanos>
 MIME-Version: 1.0
-In-Reply-To: <20141028023208.320b777b6ad97c7c9a815300@michaelshell.org>
-References: <20141028023208.320b777b6ad97c7c9a815300@michaelshell.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 28 Oct 2014 09:48:28 -0600
-Message-ID: <CAErSpo4zDxhG08FjyV9BJ+=cJLGYkyocz87ZRWndw70ND3g6XA@mail.gmail.com>
-Subject: Re: Standard VGA console with DRI/DRM under X?
-To: Michael Shell <list1@michaelshell.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:Y1/ee/ADz1S4h7vZ4DYWAvhA7+7DzafAmYBosbqc6Lu
+ inD/pFdvhQplFR4XM6v/iWuRGp4RWUNDJtl7BSVJHhGCs5KL7r
+ TN2Sif9J6uw00M6QVfHPSxlO0S6IC7NG4mty0EAdn6zlMz8Eho
+ GC914hEAJS054D8UFlb26FO1E38Rg7xESErBUQluE09VDLbRrB
+ d9C7XMqyKaMYna9WCH+Ezoi2Imhr6ZLcqZRPRKN9FsKc+puWbC
+ AK8zZXe/EOx04RTFadakusBCh3aGEntuJvRlHzMdarhib/5a3y
+ Uf795ye/vdMxlLadw9JMB7lsiHq/wY88cDFboRct93HghuCEHG
+ h53W0T0/uIS/N8KGB4Ss=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc David, Alex, Christian, dri-devel]
+On Tuesday 28 October 2014 16:43:42 Thomas Gleixner wrote:
+> >  
+> > +time64_t ktime_get_real_seconds(void)
+> > +{
+> > +     time64_t seconds;
+> > +     struct timekeeper *tk = &tk_core.timekeeper;
+> > +     unsigned int seq;
+> > +
+> > +     if (IS_ENABLED(CONFIG_64BIT))
+> > +             return tk->xtime_sec;
+> > +
+> > +     do {
+> > +             seq = read_seqcount_begin(&tk_core.seq);
+> > +             seconds = tk->xtime_sec;
+> > +
+> > +     } while (read_seqcount_retry(&tk_core.seq, seq));
+> > +
+> > +     return seconds;
+> > +}
+> > +EXPORT_SYMBOL_GPL(ktime_get_real_seconds);
+> 
+> Nice and clean implementation! Though I wonder whether we should just
+> name it get_seconds64().
+> 
 
-On Tue, Oct 28, 2014 at 12:32 AM, Michael Shell <list1@michaelshell.org> wrote:
->
->
->   Greetings,
->
-> Well, I want to be able to have my cake and eat it too. I want to be able to
-> have the standard VGA/"hardware" classic console (not the framebuffer) but
-> I still want the /dev/dri/cardX devices so that I can use DRI under Xorg.
->
-> Is this possible and if not, why not?
->
->
-> (I do hope I'm not bring up an issue with an obvious fix, but my searching
->  has not yielded an answer yet. For the record, I'm running modern kernel
->  (3.16.3) with much older x86 hardware [r100 Radeon video card].)
->
->
-> If I boot with the kernel nomodeset option I can get the classic
-> VGA/"hardware" console, but then I lose support for DRI/DRM:
->
-> Oct 27 15:11:09 X kernel: [drm] Initialized drm 1.1.0 20060810
-> Oct 27 15:11:09 X kernel: [drm] VGACON disable radeon kernel modesetting.
-> Oct 27 15:11:09 X kernel: [drm:radeon_init] *ERROR* No UMS support in radeon module
->
-> and glxgears et al. turns slow. In more modern Xorg releases, DRI is
-> required for all hardware acceleration, so having /dev/dri/cardX is very
-> important:
->
-> http://askubuntu.com/questions/463142/why-x-is-relying-on-software-instead-of-hardware-with-nomodeset-kernel-paramet
->
->
-> One reason I do not wish to use the framebuffer console is because of the
-> small font. 160 columns makes it difficult to tell which [OK] belongs with
-> which service. The selection of console fonts should always include a
-> set that gives us an 80 column screen and the docs should point this out.
->
-> And I dislike any blanking or video mode changes during boot.
->
-> Can't the kernel just declare that it is capable of setting the video mode,
-> provide the /dev/dri/cardX devices and leave the console alone, but still
-> allow Xorg to call for a new mode and use /dev/dri/cardX if/when it sees fit?
->
-> In an ideal world, there would be some kernel option such as fbcon=no.
->
-> In the kernel Documentation fbcon.txt it mentions "fbcon=map:1 tells fbcon not
-> to take over the console." But, IIRC, from my tests I wasn't able to use this
-> to get a VGA/"hardware" console and still be able to have /dev/dri/cardX devices.
->
->
->
->     Cheers and thank you,
->
->     Mike Shell
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I don't have a strong opinion here, I suggested ktime_get_real_seconds()
+for consistency with ktime_get_real_ts64(), but get_seconds64() would
+make as much sense.
+
+As I mentioned in my other reply, we have also concluded that returning
+'unsigned long' from get_seconds() at the moment is actually not a
+problem for y2038 because it will do the right until 2106 by returning
+the unsigned lower 32-bit of the correct 64-bit number, so we might
+not actually need this one.
+
+I also don't have a strong opinion on this matter, adding it would
+make it easier for developers to pick get_seconds64/ktime_get_real_ts64()
+and understand that it's correct without having to know the finer
+details of the time_t/ulong distinction.
+
+	Arnd
