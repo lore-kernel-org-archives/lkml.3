@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753161AbaJ1Afy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 20:35:54 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:63132 "EHLO
+	id S1753098AbaJ1Afx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 20:35:53 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:63120 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252AbaJ1Afw (ORCPT
+	with ESMTP id S1751666AbaJ1Afw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Oct 2014 20:35:52 -0400
 X-Original-SENDERIP: 165.186.175.39
@@ -14,9 +14,9 @@ To: gregkh@linuxfoundation.org, john.stultz@linaro.org, rebecca@android.com,
         lauraa@codeaurora.org, dan.carpenter@oracle.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         gunho.lee@lge.com, gioh.kim@lge.com
-Subject: [PATCH 3/3] staging: ion: limit pool size
-Date: Tue, 28 Oct 2014 09:36:45 +0900
-Message-Id: <1414456605-26049-4-git-send-email-gioh.kim@lge.com>
+Subject: [PATCH 1/3] staging: ion: shrink page-pool by page unit
+Date: Tue, 28 Oct 2014 09:36:43 +0900
+Message-Id: <1414456605-26049-2-git-send-email-gioh.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414456605-26049-1-git-send-email-gioh.kim@lge.com>
 References: <1414456605-26049-1-git-send-email-gioh.kim@lge.com>
@@ -24,81 +24,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch limits pool size by page unit.
+This patch shrink page-pool by page unit.
+
+Shrinker usually get the pool size with the pool-scanner
+and pass the size to the pool-counter to shrink entire pool.
+But the pool-scanner is working in block unit.
+and pool-counter page unit.
+So it is confused.
 
 Signed-off-by: Gioh Kim <gioh.kim@lge.com>
 ---
- drivers/staging/android/ion/Kconfig         |    8 ++++++++
- drivers/staging/android/ion/ion_page_pool.c |   24 ++++++++++++++----------
- 2 files changed, 22 insertions(+), 10 deletions(-)
+ drivers/staging/android/ion/ion_page_pool.c   |    5 +++--
+ drivers/staging/android/ion/ion_system_heap.c |    7 +++++--
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/android/ion/Kconfig b/drivers/staging/android/ion/Kconfig
-index 3452346..06b4466 100644
---- a/drivers/staging/android/ion/Kconfig
-+++ b/drivers/staging/android/ion/Kconfig
-@@ -33,3 +33,11 @@ config ION_TEGRA
- 	help
- 	  Choose this option if you wish to use ion on an nVidia Tegra.
- 
-+config ION_POOL_LIMIT
-+	int "Limit count of pages in pool"
-+	depends on ION
-+	default "0"
-+	help
-+	  Set the maximum number of pages the individual pool can have.
-+	  This doesn't care the total pages of all pools.
-+	  0 means no limit.
 diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-index 165152f..15d1ac8 100644
+index 5864f3d..165152f 100644
 --- a/drivers/staging/android/ion/ion_page_pool.c
 +++ b/drivers/staging/android/ion/ion_page_pool.c
-@@ -22,6 +22,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
- #include <linux/swap.h>
-+#include <linux/kconfig.h>
- #include "ion_priv.h"
- 
- static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
-@@ -41,8 +42,21 @@ static void ion_page_pool_free_pages(struct ion_page_pool *pool,
- 	__free_pages(page, pool->order);
- }
- 
-+static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
-+{
-+	int count = pool->low_count;
-+
-+	if (high)
-+		count += pool->high_count;
-+
-+	return count << pool->order;
-+}
-+
- static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
- {
-+	if (CONFIG_ION_POOL_LIMIT && ion_page_pool_total(pool, 1) > POOL_LIMIT)
-+		return 1;
-+
- 	mutex_lock(&pool->mutex);
- 	if (PageHighMem(page)) {
- 		list_add_tail(&page->lru, &pool->high_items);
-@@ -103,16 +117,6 @@ void ion_page_pool_free(struct ion_page_pool *pool, struct page *page)
- 		ion_page_pool_free_pages(pool, page);
- }
- 
--static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
--{
--	int count = pool->low_count;
--
--	if (high)
--		count += pool->high_count;
--
--	return count << pool->order;
--}
--
+@@ -116,7 +116,7 @@ static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
  int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
  				int nr_to_scan)
  {
+-	int freed;
++	int freed = 0;
+ 	bool high;
+ 
+ 	if (current_is_kswapd())
+@@ -127,7 +127,7 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
+ 	if (nr_to_scan == 0)
+ 		return ion_page_pool_total(pool, high);
+ 
+-	for (freed = 0; freed < nr_to_scan; freed++) {
++	while (freed <= nr_to_scan) {
+ 		struct page *page;
+ 
+ 		mutex_lock(&pool->mutex);
+@@ -141,6 +141,7 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
+ 		}
+ 		mutex_unlock(&pool->mutex);
+ 		ion_page_pool_free_pages(pool, page);
++		freed += (1 << pool->order);
+ 	}
+ 
+ 	return freed;
+diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
+index da2a63c..91d862f 100644
+--- a/drivers/staging/android/ion/ion_system_heap.c
++++ b/drivers/staging/android/ion/ion_system_heap.c
+@@ -211,7 +211,7 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
+ 					int nr_to_scan)
+ {
+ 	struct ion_system_heap *sys_heap;
+-	int nr_total = 0;
++	int nr_total = 0, nr_freed;
+ 	int i;
+ 
+ 	sys_heap = container_of(heap, struct ion_system_heap, heap);
+@@ -219,7 +219,10 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
+ 	for (i = 0; i < num_orders; i++) {
+ 		struct ion_page_pool *pool = sys_heap->pools[i];
+ 
+-		nr_total += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
++		nr_freed = ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
++		nr_total += nr_freed;
++		/* nr_to_scan can be negative */
++		nr_to_scan -= nr_freed;
+ 	}
+ 
+ 	return nr_total;
 -- 
 1.7.9.5
 
