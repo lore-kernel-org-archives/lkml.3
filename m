@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934022AbaJ1Hlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:41:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44738 "EHLO
+	id S1754788AbaJ1DkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:40:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44703 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790AbaJ1DkH (ORCPT
+	with ESMTP id S1754745AbaJ1DkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:07 -0400
+	Mon, 27 Oct 2014 23:40:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 3.17 089/146] udf: Fix loading of special inodes
-Date: Tue, 28 Oct 2014 11:33:51 +0800
-Message-Id: <20141028033347.246853836@linuxfoundation.org>
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>
+Subject: [PATCH 3.17 087/146] ARM: dts: imx28-evk: Let i2c0 run at 100kHz
+Date: Tue, 28 Oct 2014 11:33:49 +0800
+Message-Id: <20141028033347.165128439@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -28,141 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 6174c2eb8ecef271159bdcde460ce8af54d8f72f upstream.
+commit d1e61eb443dc7512885dfe89ee2f2a1c29fcb1da upstream.
 
-Some UDF media have special inodes (like VAT or metadata partition
-inodes) whose link_count is 0. Thus commit 4071b9136223 (udf: Properly
-detect stale inodes) broke loading these inodes because udf_iget()
-started returning -ESTALE for them. Since we still need to properly
-detect stale inodes queried by NFS, create two variants of udf_iget() -
-one which is used for looking up special inodes (which ignores
-link_count == 0) and one which is used for other cases which return
-ESTALE when link_count == 0.
+Commit 78b81f4666fb ("ARM: dts: imx28-evk: Run I2C0 at 400kHz") caused issues
+when doing the following sequence in loop:
 
-Fixes: 4071b913622316970d0e1919f7d82b4403fec5f2
-Signed-off-by: Jan Kara <jack@suse.cz>
+- Boot the kernel
+- Perform audio playback
+- Reboot the system via 'reboot' command
+
+In many times the audio card cannot be probed, which causes playback to fail.
+
+After restoring to the original i2c0 frequency of 100kHz there is no such
+problem anymore.
+
+This reverts commit 78b81f4666fbb22a20b1e63e5baf197ad2e90e88.
+
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/udf/inode.c   |   14 +++++++++-----
- fs/udf/super.c   |   10 +++++-----
- fs/udf/udfdecl.h |   13 ++++++++++++-
- 3 files changed, 26 insertions(+), 11 deletions(-)
+ arch/arm/boot/dts/imx28-evk.dts |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -1277,7 +1277,7 @@ update_time:
-  */
- #define UDF_MAX_ICB_NESTING 1024
+--- a/arch/arm/boot/dts/imx28-evk.dts
++++ b/arch/arm/boot/dts/imx28-evk.dts
+@@ -193,7 +193,6 @@
+ 			i2c0: i2c@80058000 {
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&i2c0_pins_a>;
+-				clock-frequency = <400000>;
+ 				status = "okay";
  
--static int udf_read_inode(struct inode *inode)
-+static int udf_read_inode(struct inode *inode, bool hidden_inode)
- {
- 	struct buffer_head *bh = NULL;
- 	struct fileEntry *fe;
-@@ -1436,8 +1436,11 @@ reread:
- 
- 	link_count = le16_to_cpu(fe->fileLinkCount);
- 	if (!link_count) {
--		ret = -ESTALE;
--		goto out;
-+		if (!hidden_inode) {
-+			ret = -ESTALE;
-+			goto out;
-+		}
-+		link_count = 1;
- 	}
- 	set_nlink(inode, link_count);
- 
-@@ -1826,7 +1829,8 @@ out:
- 	return err;
- }
- 
--struct inode *udf_iget(struct super_block *sb, struct kernel_lb_addr *ino)
-+struct inode *__udf_iget(struct super_block *sb, struct kernel_lb_addr *ino,
-+			 bool hidden_inode)
- {
- 	unsigned long block = udf_get_lb_pblock(sb, ino, 0);
- 	struct inode *inode = iget_locked(sb, block);
-@@ -1839,7 +1843,7 @@ struct inode *udf_iget(struct super_bloc
- 		return inode;
- 
- 	memcpy(&UDF_I(inode)->i_location, ino, sizeof(struct kernel_lb_addr));
--	err = udf_read_inode(inode);
-+	err = udf_read_inode(inode, hidden_inode);
- 	if (err < 0) {
- 		iget_failed(inode);
- 		return ERR_PTR(err);
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -959,7 +959,7 @@ struct inode *udf_find_metadata_inode_ef
- 	addr.logicalBlockNum = meta_file_loc;
- 	addr.partitionReferenceNum = partition_num;
- 
--	metadata_fe = udf_iget(sb, &addr);
-+	metadata_fe = udf_iget_special(sb, &addr);
- 
- 	if (IS_ERR(metadata_fe)) {
- 		udf_warn(sb, "metadata inode efe not found\n");
-@@ -1020,7 +1020,7 @@ static int udf_load_metadata_files(struc
- 		udf_debug("Bitmap file location: block = %d part = %d\n",
- 			  addr.logicalBlockNum, addr.partitionReferenceNum);
- 
--		fe = udf_iget(sb, &addr);
-+		fe = udf_iget_special(sb, &addr);
- 		if (IS_ERR(fe)) {
- 			if (sb->s_flags & MS_RDONLY)
- 				udf_warn(sb, "bitmap inode efe not found but it's ok since the disc is mounted read-only\n");
-@@ -1119,7 +1119,7 @@ static int udf_fill_partdesc_info(struct
- 		};
- 		struct inode *inode;
- 
--		inode = udf_iget(sb, &loc);
-+		inode = udf_iget_special(sb, &loc);
- 		if (IS_ERR(inode)) {
- 			udf_debug("cannot load unallocSpaceTable (part %d)\n",
- 				  p_index);
-@@ -1154,7 +1154,7 @@ static int udf_fill_partdesc_info(struct
- 		};
- 		struct inode *inode;
- 
--		inode = udf_iget(sb, &loc);
-+		inode = udf_iget_special(sb, &loc);
- 		if (IS_ERR(inode)) {
- 			udf_debug("cannot load freedSpaceTable (part %d)\n",
- 				  p_index);
-@@ -1198,7 +1198,7 @@ static void udf_find_vat_block(struct su
- 	     vat_block >= map->s_partition_root &&
- 	     vat_block >= start_block - 3; vat_block--) {
- 		ino.logicalBlockNum = vat_block - map->s_partition_root;
--		inode = udf_iget(sb, &ino);
-+		inode = udf_iget_special(sb, &ino);
- 		if (!IS_ERR(inode)) {
- 			sbi->s_vat_inode = inode;
- 			break;
---- a/fs/udf/udfdecl.h
-+++ b/fs/udf/udfdecl.h
-@@ -138,7 +138,18 @@ extern int udf_write_fi(struct inode *in
- /* file.c */
- extern long udf_ioctl(struct file *, unsigned int, unsigned long);
- /* inode.c */
--extern struct inode *udf_iget(struct super_block *, struct kernel_lb_addr *);
-+extern struct inode *__udf_iget(struct super_block *, struct kernel_lb_addr *,
-+				bool hidden_inode);
-+static inline struct inode *udf_iget_special(struct super_block *sb,
-+					     struct kernel_lb_addr *ino)
-+{
-+	return __udf_iget(sb, ino, true);
-+}
-+static inline struct inode *udf_iget(struct super_block *sb,
-+				     struct kernel_lb_addr *ino)
-+{
-+	return __udf_iget(sb, ino, false);
-+}
- extern int udf_expand_file_adinicb(struct inode *);
- extern struct buffer_head *udf_expand_dir_adinicb(struct inode *, int *, int *);
- extern struct buffer_head *udf_bread(struct inode *, int, int, int *);
+ 				sgtl5000: codec@0a {
 
 
