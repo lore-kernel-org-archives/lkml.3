@@ -1,81 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaJ1RHc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:07:32 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:53507 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903AbaJ1RH3 (ORCPT
+	id S1751902AbaJ1RKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:10:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:58529 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727AbaJ1RKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:07:29 -0400
-Date: Tue, 28 Oct 2014 17:06:44 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Max Filippov <jcmvbkbc@gmail.com>, alsa-devel@alsa-project.org,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>, linux-xtensa@linux-xtensa.org,
-        Takashi Iwai <tiwai@suse.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        linux-kernel@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>
-Message-ID: <20141028170644.GC18557@sirena.org.uk>
-References: <1414436825-19416-1-git-send-email-jcmvbkbc@gmail.com>
- <544FBD20.5000604@metafoo.de>
- <20141028160414.GY18557@sirena.org.uk>
- <544FC6B1.1060002@metafoo.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n2RoZOfqketZuWCG"
-Content-Disposition: inline
-In-Reply-To: <544FC6B1.1060002@metafoo.de>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: add xtensa xtfpga I2S interface and
- platform
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Tue, 28 Oct 2014 13:10:37 -0400
+Message-ID: <1414516228.7447.80.camel@fourier>
+Subject: Re: [PATCH 3.13 099/105] dmaengine: pl330: Fix NULL pointer
+ dereference on probe failure
+From: Kamal Mostafa <kamal@canonical.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Vinod Koul <vinod.koul@intel.com>
+Date: Tue, 28 Oct 2014 10:10:28 -0700
+In-Reply-To: <1414483115.24949.2.camel@AMDC1943>
+References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
+	 <1414436240-13879-100-git-send-email-kamal@canonical.com>
+	 <1414483115.24949.2.camel@AMDC1943>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-10-28 at 08:58 +0100, Krzysztof Kozlowski wrote:
+> On pon, 2014-10-27 at 11:57 -0700, Kamal Mostafa wrote:
+> > 3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > 
+> > commit 0f5ebabdd03b471da1906f7edddc61ceb35cee02 upstream.
+> > 
+> > If dma_async_device_register() returns error and probe should clean up
+> > and return error, a NULL pointer exception happens because of
+> > dereference of not allocated channel thread:
+> 
+> Hi,
+> 
+> Please drop this patch from stable-3.13. This is fix only for 3.17. I
+> made mistake when searching for commit introducing this bug.
 
---n2RoZOfqketZuWCG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, dropped from 3.13-stable.  Thanks very much Krzysztof.
 
-On Tue, Oct 28, 2014 at 05:39:13PM +0100, Lars-Peter Clausen wrote:
-> On 10/28/2014 05:04 PM, Mark Brown wrote:
+ -Kamal
 
-> >Is that going to play nicely with the fact that the interrupt can be
-> >shared and the desire to (AFAICT) do NAPI style stuff with the interrupt
-> >disabled for long periods?
 
-> Threaded interrupts got support for interrupt sharing a while ago, so I
-> guess yes. I think it will even work better than the tasklet approach. You
-> can configure the IRQ to disable itself as long as the thread is running.
+> Actually this is fix for c26939e5204c ("dmaengine: pl330: Remove
+> pl330_chan_ctrl()") which was introduced in 3.17.
+> 
+> Best regards,
+> Krzysztof
+> 
+> > 
+> > Dmesg log (from early printk):
+> > dma-pl330 12680000.pdma: unable to register DMAC
+> > DMA pl330_control: removing pch: eeac4000, chan: eeac4014, thread:   (null)
+> > Unable to handle kernel NULL pointer dereference at virtual address 0000000c
+> > pgd = c0004000
+> > [0000000c] *pgd=00000000
+> > Internal error: Oops: 5 [#1] PREEMPT SMP ARM
+> > Modules linked in:
+> > CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc3-next-20140904-00005-g6cc4c1937d90-dirty #427
+> > task: ee80a800 ti: ee888000 task.ti: ee888000
+> > PC is at _stop+0x8/0x2c8
+> > LR is at pl330_control+0x70/0x2e8
+> > pc : [<c0205dc8>]    lr : [<c020623c>]    psr: 60000193
+> > sp : ee889df8  ip : 00000002  fp : 00000000
+> > r10: eeac4014  r9 : ee0e62bc  r8 : 00000000
+> > r7 : eeac405c  r6 : 60000113  r5 : ee0e6210  r4 : eeac4000
+> > r3 : 00000002  r2 : 00000002  r1 : 00010000  r0 : 00000000
+> > Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> > Control: 10c5387d  Table: 4000404a  DAC: 00000015
+> > Process swapper/0 (pid: 1, stack limit = 0xee888240)
+> > Stack: (0xee889df8 to 0xee88a000)
+> > 9de0:                                                       00000002 eeac4000
+> > 9e00: ee0e6210 eeac4000 ee0e6210 60000113 eeac405c c020623c 00000000 c020725c
+> > 9e20: ee889e20 ee889e20 ee0e6210 eeac4080 00200200 00100100 eeac4014 00000020
+> > 9e40: ee0e6218 c0208374 00000000 ee9bb340 ee0e6210 00000000 00000000 c0605cd8
+> > 9e60: ee970000 c0605c84 ee9700f8 00000000 c05c4270 00000000 00000000 c0203b3c
+> > 9e80: ee970000 c06624a8 00000000 c0605c84 00000000 c023f890 ee970000 c0605c84
+> > 9ea0: ee970034 00000000 c05b23d0 c023fa3c 00000000 c0605c84 c023f9b0 c023e0d4
+> > 9ec0: ee947e78 ee9b9440 c0605c84 eea1e780 c0605acc c023f094 c0513b50 c0605c84
+> > 9ee0: c05ecbd8 c0605c84 c05ecbd8 ee11ba40 c0626500 c0240064 00000000 c05ecbd8
+> > 9f00: c05ecbd8 c0008964 c040f13c 0000009f c0626500 c057465c ee80a800 60000113
+> > 9f20: 00000000 c05efdb0 60000113 00000000 ef7fc89d c0421168 0000008f c003787c
+> > 9f40: c0573d6c 00000006 ef7fc8bb 00000006 c05efd50 ef7fc800 c05dfbc4 00000006
+> > 9f60: c05c4264 c0626500 0000008f c05c4270 c059b518 c059bcb4 00000006 00000006
+> > 9f80: c059b518 c003c08c 00000000 c040091c 00000000 00000000 00000000 00000000
+> > 9fa0: 00000000 c0400924 00000000 c000e7b8 00000000 00000000 00000000 00000000
+> > 9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> > 9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
+> > [<c0205dc8>] (_stop) from [<c020623c>] (pl330_control+0x70/0x2e8)
+> > [<c020623c>] (pl330_control) from [<c0208374>] (pl330_probe+0x594/0x75c)
+> > [<c0208374>] (pl330_probe) from [<c0203b3c>] (amba_probe+0xb8/0x120)
+> > [<c0203b3c>] (amba_probe) from [<c023f890>] (driver_probe_device+0x10c/0x22c)
+> > [<c023f890>] (driver_probe_device) from [<c023fa3c>] (__driver_attach+0x8c/0x90)
+> > [<c023fa3c>] (__driver_attach) from [<c023e0d4>] (bus_for_each_dev+0x54/0x88)
+> > [<c023e0d4>] (bus_for_each_dev) from [<c023f094>] (bus_add_driver+0xd4/0x1d0)
+> > [<c023f094>] (bus_add_driver) from [<c0240064>] (driver_register+0x78/0xf4)
+> > [<c0240064>] (driver_register) from [<c0008964>] (do_one_initcall+0x80/0x1d0)
+> > [<c0008964>] (do_one_initcall) from [<c059bcb4>] (kernel_init_freeable+0x108/0x1d4)
+> > [<c059bcb4>] (kernel_init_freeable) from [<c0400924>] (kernel_init+0x8/0xec)
+> > [<c0400924>] (kernel_init) from [<c000e7b8>] (ret_from_fork+0x14/0x3c)
+> > Code: e5813010 e12fff1e e92d40f0 e24dd00c (e590200c)
+> > ---[ end trace c94b2f4f38dff3bf ]---
+> > 
+> > This happens because the necessary resources were not yet allocated - no
+> > call to pl330_alloc_chan_resources().
+> > 
+> > Terminate the thread and free channel resource only if channel thread is not NULL.
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > Fixes: 0b94c5771705 ("DMA: PL330: Add check if device tree compatible")
+> > Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+> > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> > ---
+> >  drivers/dma/pl330.c | 6 ++++--
+> >  1 file changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> > index 536632f..df7fabb 100644
+> > --- a/drivers/dma/pl330.c
+> > +++ b/drivers/dma/pl330.c
+> > @@ -3047,8 +3047,10 @@ probe_err3:
+> >  		list_del(&pch->chan.device_node);
+> >  
+> >  		/* Flush the channel */
+> > -		pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+> > -		pl330_free_chan_resources(&pch->chan);
+> > +		if (pch->thread) {
+> > +			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
+> > +			pl330_free_chan_resources(&pch->chan);
+> > +		}
+> >  	}
+> >  probe_err2:
+> >  	pl330_del(pi);
+> 
 
-I know you *can* share threaded interrupts, I'm just not sure that
-hogging the threaded handler plays nicely with other users.  Though now
-I look at this again tx_fifo_high is a "constant" so it's not actually
-trying to do a NAPI type mitigation thing and this is really just an
-open coded threaded interrupt as you say.
 
---n2RoZOfqketZuWCG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUT80jAAoJECTWi3JdVIfQgUgH/1FAr8h7Ttski6CahzubwkA+
-Unp3ehJ36F2UR4Gwcr8pFbKJ88oFi9WmLqJ4ZQ+TRDg8axEKJW5rKfO9Ho8Y1UGn
-h1wTSxYKNJlzNK9H0r85k5lrhdZlqoPtC8DDXyv4/nJCnwAEwgezEcaaqdsnqS0p
-pp4giA1N4oKGEZD3dfzvdlk6S+m9mfL9DGnddDZy8EJGFDyIv8tzVg1RirTWok/u
-mAquqw6cX9eWThcvwTWKQ545JcfZUBEDwnZOGMWy9778HR+I4g0qZI8n1iM3TIxn
-R721beh5f3Bqkw4Ewgpj+A0A/h8peueLU0afxHkxxMSheF/HvyFqOYP8K2QlS/w=
-=briD
------END PGP SIGNATURE-----
-
---n2RoZOfqketZuWCG--
