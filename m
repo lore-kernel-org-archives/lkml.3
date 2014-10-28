@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232AbaJ1Sno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:43:44 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:42065 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaJ1Snl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:43:41 -0400
-From: Tomas Melin <tomas.melin@iki.fi>
-To: m.chehab@samsung.com
-Cc: david@hardeman.nu, james.hogan@imgtec.com, a.seppala@gmail.com,
-        bay@hackerdom.ru, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tomas Melin <tomas.melin@iki.fi>
-Subject: [PATCH v3] [media] rc-core: fix protocol_change regression in ir_raw_event_register
-Date: Tue, 28 Oct 2014 20:43:14 +0200
-Message-Id: <1414521794-7776-1-git-send-email-tomas.melin@iki.fi>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753691AbaJ1Soz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:44:55 -0400
+Received: from rush.cubic.ch ([176.9.78.115]:50430 "EHLO mail2.cubic.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813AbaJ1Soy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 14:44:54 -0400
+X-Greylist: delayed 2057 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 14:44:54 EDT
+Message-ID: <544FDC1C.9040908@decentral.ch>
+Date: Tue, 28 Oct 2014 19:10:36 +0100
+From: Tim Tassonis <stuff@decentral.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: overlayfs: "filesystem of lowerdir is not supported" on cdrom
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IR receiver using nuvoton-cir and lirc required additional configuration
-steps after upgrade from kernel 3.16 to 3.17-rcX.
-Bisected regression to commit da6e162d6a4607362f8478c715c797d84d449f8b
-("[media] rc-core: simplify sysfs code").
+Hi
 
-The regression comes from adding function change_protocol in
-ir-raw.c. It changes behaviour so that only the protocol enabled by driver's
-map_name will be active after registration. This breaks user space behaviour,
-lirc does not get key press signals anymore.
+Just installed 3.18-rc2 and tried to test the overlayfs stuff:
 
-Enable lirc protocol by default for ir raw decoders to restore original behaviour.
+$ mkdir /ovtmp
+$ mount -t tmpfs tmpfs /ovtmp/
+$ mkdir /ovtmp/work
+$ mkdir /ovtmp/upper
+$ mkdir /cdrw
+$ mount /dev/sr0 /mnt
+$ mount |egrep "ovtmp|sr0"
 
-Signed-off-by: Tomas Melin <tomas.melin@iki.fi>
----
- drivers/media/rc/rc-ir-raw.c |    1 -
- drivers/media/rc/rc-main.c   |    2 ++
- 2 files changed, 2 insertions(+), 1 deletion(-)
+/dev/sr0 on /mnt type iso9660 (ro,relatime)
+tmpfs on /ovtmp type tmpfs (rw,relatime)
 
-diff --git a/drivers/media/rc/rc-ir-raw.c b/drivers/media/rc/rc-ir-raw.c
-index e8fff2a..b732ac6 100644
---- a/drivers/media/rc/rc-ir-raw.c
-+++ b/drivers/media/rc/rc-ir-raw.c
-@@ -262,7 +262,6 @@ int ir_raw_event_register(struct rc_dev *dev)
- 		return -ENOMEM;
- 
- 	dev->raw->dev = dev;
--	dev->enabled_protocols = ~0;
- 	dev->change_protocol = change_protocol;
- 	rc = kfifo_alloc(&dev->raw->kfifo,
- 			 sizeof(struct ir_raw_event) * MAX_IR_EVENT_SIZE,
-diff --git a/drivers/media/rc/rc-main.c b/drivers/media/rc/rc-main.c
-index a7991c7..8d3b74c 100644
---- a/drivers/media/rc/rc-main.c
-+++ b/drivers/media/rc/rc-main.c
-@@ -1421,6 +1421,8 @@ int rc_register_device(struct rc_dev *dev)
- 
- 	if (dev->change_protocol) {
- 		u64 rc_type = (1 << rc_map->rc_type);
-+		if (dev->driver_type == RC_DRIVER_IR_RAW)
-+			rc_type |= RC_BIT_LIRC;
- 		rc = dev->change_protocol(dev, &rc_type);
- 		if (rc < 0)
- 			goto out_raw;
--- 
-1.7.10.4
+$ mount -t overlayfs overlayfs \
+ -olowerdir=/mnt,upperdir=/ovtmp/upper,workdir=/ovtmp/work /cdrw
+
+mount: wrong fs type, bad option, bad superblock on overlayfs,
+       missing codepage or helper program, or other error
+
+       In some cases useful info is found in syslog - try
+       dmesg | tail or so.
+
+$ dmesg |tail
+
+[ 3266.793218] overlayfs: filesystem of lowerdir is not supported
+
+However, the doc in Documentation/filesystems/overlayfs.txt states:
+
+"The lower filesystem can be any filesystem supported by Linux and does
+not need to be writable.  The lower filesystem can even be another
+overlayfs.  The upper filesystem will normally be writable and if it
+is it must support the creation of trusted.* extended attributes, and
+must provide valid d_type in readdir responses, so NFS is not suitable."
+
+So: Is the documentation wrong, the error message in dmesg wrong, or
+have missed something completely?
+
+
+Kind regards
+Tim
 
