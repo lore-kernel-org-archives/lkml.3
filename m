@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938AbaJ1Dkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:40:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44836 "EHLO
+	id S1754959AbaJ1Dkn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:40:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44841 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918AbaJ1Dkg (ORCPT
+	with ESMTP id S1754386AbaJ1Dkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:36 -0400
+	Mon, 27 Oct 2014 23:40:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: [PATCH 3.17 119/146] ima: pass opened flag to identify newly created files
-Date: Tue, 28 Oct 2014 11:34:21 +0800
-Message-Id: <20141028033348.601750537@linuxfoundation.org>
+        Daniel Hellstrom <daniel@gaisler.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 120/146] sparc32: dma_alloc_coherent must honour gfp flags
+Date: Tue, 28 Oct 2014 11:34:22 +0800
+Message-Id: <20141028033348.650262791@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,179 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+From: Daniel Hellstrom <daniel@gaisler.com>
 
-commit 3034a146820c26fe6da66a45f6340fe87fe0983a upstream.
+[ Upstream commit d1105287aabe88dbb3af825140badaa05cf0442c ]
 
-Empty files and missing xattrs do not guarantee that a file was
-just created.  This patch passes FILE_CREATED flag to IMA to
-reliably identify new files.
+dma_zalloc_coherent() calls dma_alloc_coherent(__GFP_ZERO)
+but the sparc32 implementations sbus_alloc_coherent() and
+pci32_alloc_coherent() doesn't take the gfp flags into
+account.
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Tested on the SPARC32/LEON GRETH Ethernet driver which fails
+due to dma_alloc_coherent(__GFP_ZERO) returns non zeroed
+pages.
+
+Signed-off-by: Daniel Hellstrom <daniel@gaisler.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/namei.c                            |    2 +-
- fs/nfsd/vfs.c                         |    2 +-
- include/linux/ima.h                   |    4 ++--
- security/integrity/ima/ima.h          |    4 ++--
- security/integrity/ima/ima_appraise.c |    4 ++--
- security/integrity/ima/ima_main.c     |   16 ++++++++--------
- 6 files changed, 16 insertions(+), 16 deletions(-)
+ arch/sparc/kernel/ioport.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3074,7 +3074,7 @@ opened:
- 	error = open_check_o_direct(file);
- 	if (error)
- 		goto exit_fput;
--	error = ima_file_check(file, op->acc_mode);
-+	error = ima_file_check(file, op->acc_mode, *opened);
- 	if (error)
- 		goto exit_fput;
- 
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -708,7 +708,7 @@ nfsd_open(struct svc_rqst *rqstp, struct
- 		host_err = PTR_ERR(*filp);
- 		*filp = NULL;
- 	} else {
--		host_err = ima_file_check(*filp, may_flags);
-+		host_err = ima_file_check(*filp, may_flags, 0);
- 
- 		if (may_flags & NFSD_MAY_64BIT_COOKIE)
- 			(*filp)->f_mode |= FMODE_64BITHASH;
---- a/include/linux/ima.h
-+++ b/include/linux/ima.h
-@@ -15,7 +15,7 @@ struct linux_binprm;
- 
- #ifdef CONFIG_IMA
- extern int ima_bprm_check(struct linux_binprm *bprm);
--extern int ima_file_check(struct file *file, int mask);
-+extern int ima_file_check(struct file *file, int mask, int opened);
- extern void ima_file_free(struct file *file);
- extern int ima_file_mmap(struct file *file, unsigned long prot);
- extern int ima_module_check(struct file *file);
-@@ -27,7 +27,7 @@ static inline int ima_bprm_check(struct
- 	return 0;
- }
- 
--static inline int ima_file_check(struct file *file, int mask)
-+static inline int ima_file_check(struct file *file, int mask, int opened)
- {
- 	return 0;
- }
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -177,7 +177,7 @@ void ima_delete_rules(void);
- int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
- 			     struct file *file, const unsigned char *filename,
- 			     struct evm_ima_xattr_data *xattr_value,
--			     int xattr_len);
-+			     int xattr_len, int opened);
- int ima_must_appraise(struct inode *inode, int mask, enum ima_hooks func);
- void ima_update_xattr(struct integrity_iint_cache *iint, struct file *file);
- enum integrity_status ima_get_cache_status(struct integrity_iint_cache *iint,
-@@ -193,7 +193,7 @@ static inline int ima_appraise_measureme
- 					   struct file *file,
- 					   const unsigned char *filename,
- 					   struct evm_ima_xattr_data *xattr_value,
--					   int xattr_len)
-+					   int xattr_len, int opened)
- {
- 	return INTEGRITY_UNKNOWN;
- }
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -183,7 +183,7 @@ int ima_read_xattr(struct dentry *dentry
- int ima_appraise_measurement(int func, struct integrity_iint_cache *iint,
- 			     struct file *file, const unsigned char *filename,
- 			     struct evm_ima_xattr_data *xattr_value,
--			     int xattr_len)
-+			     int xattr_len, int opened)
- {
- 	static const char op[] = "appraise_data";
- 	char *cause = "unknown";
-@@ -203,7 +203,7 @@ int ima_appraise_measurement(int func, s
- 
- 		cause = "missing-hash";
- 		status = INTEGRITY_NOLABEL;
--		if (inode->i_size == 0) {
-+		if (opened & FILE_CREATED) {
- 			iint->flags |= IMA_NEW_FILE;
- 			status = INTEGRITY_PASS;
- 		}
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -157,7 +157,7 @@ void ima_file_free(struct file *file)
- }
- 
- static int process_measurement(struct file *file, const char *filename,
--			       int mask, int function)
-+			       int mask, int function, int opened)
- {
- 	struct inode *inode = file_inode(file);
- 	struct integrity_iint_cache *iint;
-@@ -226,7 +226,7 @@ static int process_measurement(struct fi
- 				      xattr_value, xattr_len);
- 	if (action & IMA_APPRAISE_SUBMASK)
- 		rc = ima_appraise_measurement(_func, iint, file, pathname,
--					      xattr_value, xattr_len);
-+					      xattr_value, xattr_len, opened);
- 	if (action & IMA_AUDIT)
- 		ima_audit_measurement(iint, pathname);
- 	kfree(pathbuf);
-@@ -255,7 +255,7 @@ out:
- int ima_file_mmap(struct file *file, unsigned long prot)
- {
- 	if (file && (prot & PROT_EXEC))
--		return process_measurement(file, NULL, MAY_EXEC, MMAP_CHECK);
-+		return process_measurement(file, NULL, MAY_EXEC, MMAP_CHECK, 0);
- 	return 0;
- }
- 
-@@ -277,7 +277,7 @@ int ima_bprm_check(struct linux_binprm *
- 	return process_measurement(bprm->file,
- 				   (strcmp(bprm->filename, bprm->interp) == 0) ?
- 				   bprm->filename : bprm->interp,
--				   MAY_EXEC, BPRM_CHECK);
-+				   MAY_EXEC, BPRM_CHECK, 0);
- }
- 
- /**
-@@ -290,12 +290,12 @@ int ima_bprm_check(struct linux_binprm *
-  * On success return 0.  On integrity appraisal error, assuming the file
-  * is in policy and IMA-appraisal is in enforcing mode, return -EACCES.
-  */
--int ima_file_check(struct file *file, int mask)
-+int ima_file_check(struct file *file, int mask, int opened)
- {
- 	ima_rdwr_violation_check(file);
- 	return process_measurement(file, NULL,
- 				   mask & (MAY_READ | MAY_WRITE | MAY_EXEC),
--				   FILE_CHECK);
-+				   FILE_CHECK, opened);
- }
- EXPORT_SYMBOL_GPL(ima_file_check);
- 
-@@ -318,7 +318,7 @@ int ima_module_check(struct file *file)
- #endif
- 		return 0;	/* We rely on module signature checking */
+--- a/arch/sparc/kernel/ioport.c
++++ b/arch/sparc/kernel/ioport.c
+@@ -278,7 +278,8 @@ static void *sbus_alloc_coherent(struct
  	}
--	return process_measurement(file, NULL, MAY_EXEC, MODULE_CHECK);
-+	return process_measurement(file, NULL, MAY_EXEC, MODULE_CHECK, 0);
- }
  
- int ima_fw_from_file(struct file *file, char *buf, size_t size)
-@@ -329,7 +329,7 @@ int ima_fw_from_file(struct file *file,
- 			return -EACCES;	/* INTEGRITY_UNKNOWN */
- 		return 0;
+ 	order = get_order(len_total);
+-	if ((va = __get_free_pages(GFP_KERNEL|__GFP_COMP, order)) == 0)
++	va = __get_free_pages(gfp, order);
++	if (va == 0)
+ 		goto err_nopages;
+ 
+ 	if ((res = kzalloc(sizeof(struct resource), GFP_KERNEL)) == NULL)
+@@ -443,7 +444,7 @@ static void *pci32_alloc_coherent(struct
  	}
--	return process_measurement(file, NULL, MAY_EXEC, FIRMWARE_CHECK);
-+	return process_measurement(file, NULL, MAY_EXEC, FIRMWARE_CHECK, 0);
- }
  
- static int __init init_ima(void)
+ 	order = get_order(len_total);
+-	va = (void *) __get_free_pages(GFP_KERNEL, order);
++	va = (void *) __get_free_pages(gfp, order);
+ 	if (va == NULL) {
+ 		printk("pci_alloc_consistent: no %ld pages\n", len_total>>PAGE_SHIFT);
+ 		goto err_nopages;
 
 
