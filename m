@@ -1,151 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476AbaJ1PcN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:32:13 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49423 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaJ1PcL (ORCPT
+	id S1754752AbaJ1Pcq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:32:46 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:21071 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754061AbaJ1Pcn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:32:11 -0400
-Date: Tue, 28 Oct 2014 16:32:07 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Marc Zyngier <marc.zyngier@arm.com>
-cc: Jason Cooper <jason@lakedaemon.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/3] genirq: Add support for priority-drop/deactivate
- interrupt controllers
-In-Reply-To: <544E67D8.3020504@arm.com>
-Message-ID: <alpine.DEB.2.11.1410272158160.5308@nanos>
-References: <1414235215-10468-1-git-send-email-marc.zyngier@arm.com> <1414235215-10468-2-git-send-email-marc.zyngier@arm.com> <alpine.DEB.2.11.1410252144170.5308@nanos> <544E67D8.3020504@arm.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 28 Oct 2014 11:32:43 -0400
+Date: Tue, 28 Oct 2014 11:32:40 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, netdev@vger.kernel.org,
+        cluster-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
+Subject: Re: [PATCH 0/7] seq_printf cleanups
+Message-ID: <20141028113240.74dbe5c5@gandalf.local.home>
+In-Reply-To: <cover.1412031505.git.joe@perches.com>
+References: <20140929124246.3e39dac8@gandalf.local.home>
+	<cover.1412031505.git.joe@perches.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Oct 2014, Marc Zyngier wrote:
-> On 25/10/14 21:27, Thomas Gleixner wrote:
-> > On Sat, 25 Oct 2014, Marc Zyngier wrote:
-> >> +{
-> >> +	struct irq_chip *chip = desc->irq_data.chip;
-> >> +
-> >> +	/* If we can do priority drop, then masking comes for free */
-> >> +	if (chip->irq_priority_drop)
-> >> +		irq_state_set_masked(desc);
-> >> +	else
-> >> +		mask_irq(desc);
-> >> +}
-> > 
-> >>  void unmask_irq(struct irq_desc *desc)
-> >>  {
-> >> -	if (desc->irq_data.chip->irq_unmask) {
-> >> -		desc->irq_data.chip->irq_unmask(&desc->irq_data);
-> >> +	struct irq_chip *chip = desc->irq_data.chip;
-> >> +
-> >> +	if (chip->irq_unmask && !chip->irq_priority_drop)
-> >> +		chip->irq_unmask(&desc->irq_data);
-> > 
-> > I have a hard time to understand that logic. Assume the interrupt
-> > being masked at the hardware level after boot. Now at request_irq()
-> > time what is going to unmask that very interrupt? Ditto for masking
-> > after disable_irq(). Probably not what you really want.
-> 
-> Peering at the code (and assuming I'm finally awake), request_irq() uses
-> irq_startup() -> irq_enable() -> chip->irq_unmask().
+Joe,
 
-Right. That's the default implementation.
+If you haven't already done so, can you update checkpatch.pl to
+complain if someone checks the return value of seq_printf(),
+seq_puts(), or seq_putc().
 
-> But you're perfectly right, it breaks an independent use of
-> unmask_irq(), which is pretty bad.
+It should state that those functions will soon be returning void.
 
-Indeed.
- 
-> >> +static void eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
-> >> +{
-> >> +	if (chip->irq_priority_drop)
-> >> +		chip->irq_priority_drop(&desc->irq_data);
-> >> +	if (chip->irq_eoi)
-> >> +		chip->irq_eoi(&desc->irq_data);
-> >> +}
-> > 
-> > So if you are using that priority drop stuff, you need both calls even
-> > for the non threaded case?
-> 
-> Yes. This is a global property (all interrupt lines for this irqchip are
-> affected), so even the non-threaded case has to issue both calls.
+Thanks!
 
-Ok.
- 
-> > Can you please explain detailed how this "priority drop" mode
-> > works? 
-> 
-> The basics of this mode are pretty simple:
-> - Interrupt signalled, CPU enter the GIC code
-> - Read the IAR register, interrupt becomes active:
->   -> no other interrupt can be taken
-> - Run whatever interrupt handler
-> - Write to the EOI register:
->   -> interrupt is still active, and cannot be taken again, but other
-> interrupts can now be taken
-> - Write to the DIR register:
->   -> interrupt is now inactive, and can be taken again.
-> 
-> A few interesting things here:
-> - EOI (which causes priority drop) acts as a mask
-> - DIR (which causes deactivate) acts as unmask+EOI
-
-Let me make a few assumptions and correct me if I'm wrong as usual.
-
-1) The startup/shutdown procedure for such an interrupt is the
-   expensive mask/unmask which you want to avoid for the actual
-   handling case
-
-2) In case of an actual interrupt the flow (ignoring locking) is:
-
-   handle_xxx_irq()
-
-	mask_irq();	/* chip->irq_mask() maps to EOI */
-
-	if (!action || irq_disabled())
-	   return;
-
-	handle_actions();
-
-	if (irq_threads_active() || irq_disabled())
-	   return;
-
-	unmask_irq();	/* chip->irq_unmask() maps to DIR */
-
-  So that is handle_level_irq() with the chip callbacks being:
-
-   irq_startup  = gic_unmask
-   irq_shutdown = gic_mask
-   irq_unmask	= gic_dir
-   irq_mask	= gic_eoi
-
-3) In the threaded case as seen above finalize_oneshot() will call
-   chip->unmask_irq() which maps to the DIR write and gets things
-   going again.
-
-4) In the lazy irq disable case if the interrupt fires mask_irq()
-   [EOI] is good enough to silence it.
-
-   Though in the enable_irq() case you cannot rely on the automatic
-   resend of the interrupt when you unmask [DIR]. So we need to make
-   sure that even in the level case (dunno whether that's supported in
-   that mode) we end up calling the irq_retrigger() callback. But
-   that's rather simple to achieve with a new chip flag.
-
-You might have to look at the suspend/resume implications, but if I
-did not miss anything crucial that should be fine as well.
-
-Thanks,
-
-	tglx
-
+-- Steve
