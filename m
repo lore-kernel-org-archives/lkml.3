@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753137AbaJ1Txa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 15:53:30 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:42951 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834AbaJ1TxZ (ORCPT
+	id S1754164AbaJ1Txm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 15:53:42 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:36435 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798AbaJ1Txe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 15:53:25 -0400
+	Tue, 28 Oct 2014 15:53:34 -0400
 X-IronPort-AV: E=Sophos;i="5.04,804,1406617200"; 
-   d="scan'208";a="49345219"
+   d="scan'208";a="49567640"
 From: Scott Branden <sbranden@broadcom.com>
 To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -27,9 +27,9 @@ To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
 CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, Scott Branden <sbranden@broadcom.com>
-Subject: [PATCH v8 7/8] ARM: mach-bcm: ARCH_BCM_MOBILE: remove one level of menu from Kconfig
-Date: Tue, 28 Oct 2014 12:53:11 -0700
-Message-ID: <1414525992-3678-8-git-send-email-sbranden@broadcom.com>
+Subject: [PATCH v8 5/8] MAINTAINERS: Entry for Cygnus/iproc arm architecture
+Date: Tue, 28 Oct 2014 12:53:09 -0700
+Message-ID: <1414525992-3678-6-git-send-email-sbranden@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414525992-3678-1-git-send-email-sbranden@broadcom.com>
 References: <Scott Branden <sbranden@broadcom.com>
@@ -40,125 +40,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove menu "Broadcom Mobile SoC Selection"
-This requires:
-- selecting ARCH_BCM_MOBILE based on SoC selections
-- fixup bcm_defconfig and multi_v7_defconfig to work with new menu levels.
-
+Acked-by: Jonathan Richardson <jonathar@broadcom.com>
 Signed-off-by: Scott Branden <sbranden@broadcom.com>
 ---
- arch/arm/configs/bcm_defconfig      |    3 ++-
- arch/arm/configs/multi_v7_defconfig |    3 ++-
- arch/arm/mach-bcm/Kconfig           |   26 ++++++++++----------------
- 3 files changed, 14 insertions(+), 18 deletions(-)
+ MAINTAINERS |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-index bc614f4..83a87e4 100644
---- a/arch/arm/configs/bcm_defconfig
-+++ b/arch/arm/configs/bcm_defconfig
-@@ -25,7 +25,8 @@ CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
- CONFIG_PARTITION_ADVANCED=y
- CONFIG_ARCH_BCM=y
--CONFIG_ARCH_BCM_MOBILE=y
-+CONFIG_ARCH_BCM_21664=y
-+CONFIG_ARCH_BCM_281XX=y
- CONFIG_ARM_THUMBEE=y
- CONFIG_SMP=y
- CONFIG_PREEMPT=y
-diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-index f1dc7fc..6e0d7cb 100644
---- a/arch/arm/configs/multi_v7_defconfig
-+++ b/arch/arm/configs/multi_v7_defconfig
-@@ -17,7 +17,8 @@ CONFIG_MACH_ARMADA_38X=y
- CONFIG_MACH_ARMADA_XP=y
- CONFIG_MACH_DOVE=y
- CONFIG_ARCH_BCM=y
--CONFIG_ARCH_BCM_MOBILE=y
-+CONFIG_ARCH_BCM_21664=y
-+CONFIG_ARCH_BCM_281XX=y
- CONFIG_ARCH_BCM_5301X=y
- CONFIG_ARCH_BRCMSTB=y
- CONFIG_ARCH_BERLIN=y
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 6e79696..cceb69f 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -51,8 +51,10 @@ config ARCH_BCM_5301X
- 	  different SoC or with the older BCM47XX and BCM53XX based
- 	  network SoC using a MIPS CPU, they are supported by arch/mips/bcm47xx
+diff --git a/MAINTAINERS b/MAINTAINERS
+index dab92a7..15a3d89 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2129,6 +2129,20 @@ L:	linux-scsi@vger.kernel.org
+ S:	Supported
+ F:	drivers/scsi/bnx2i/
  
-+comment "KONA architected SoCs"
++BROADCOM CYGNUS/IPROC ARM ARCHITECTURE
++M:	Ray Jui <rjui@broadcom.com>
++M:	Scott Branden <sbranden@broadcom.com>
++L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
++L:	bcm-kernel-feedback-list@broadcom.com
++T:	git git://git.github.com/brcm/linux.git
++S:	Maintained
++N:	iproc
++N:	cygnus
++N:	bcm9113*
++N:	bcm9583*
++N:	bcm583*
++N:	bcm113*
 +
- config ARCH_BCM_MOBILE
--	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
-+	bool
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARM_ERRATA_754322
- 	select ARM_ERRATA_775420
-@@ -61,16 +63,13 @@ config ARCH_BCM_MOBILE
- 	select TICK_ONESHOT
- 	select HAVE_ARM_ARCH_TIMER
- 	select PINCTRL
-+	select ARCH_BCM_MOBILE_SMP if SMP
- 	help
- 	  This enables support for systems based on Broadcom mobile SoCs.
- 
--if ARCH_BCM_MOBILE
--
--menu "Broadcom Mobile SoC Selection"
--
- config ARCH_BCM_281XX
- 	bool "Broadcom BCM281XX SoC family"
--	default y
-+	select ARCH_BCM_MOBILE
- 	select HAVE_SMP
- 	help
- 	  Enable support for the BCM281XX family, which includes
-@@ -79,7 +78,7 @@ config ARCH_BCM_281XX
- 
- config ARCH_BCM_21664
- 	bool "Broadcom BCM21664 SoC family"
--	default y
-+	select ARCH_BCM_MOBILE
- 	select HAVE_SMP
- 	help
- 	  Enable support for the BCM21664 family, which includes
-@@ -87,19 +86,18 @@ config ARCH_BCM_21664
- 
- config ARCH_BCM_MOBILE_L2_CACHE
- 	bool "Broadcom mobile SoC level 2 cache support"
--	depends on (ARCH_BCM_281XX || ARCH_BCM_21664)
-+	depends on ARCH_BCM_MOBILE
- 	default y
- 	select CACHE_L2X0
- 	select ARCH_BCM_MOBILE_SMC
- 
- config ARCH_BCM_MOBILE_SMC
- 	bool
--	depends on ARCH_BCM_281XX || ARCH_BCM_21664
-+	depends on ARCH_BCM_MOBILE
- 
- config ARCH_BCM_MOBILE_SMP
--	bool "Broadcom mobile SoC SMP support"
--	depends on (ARCH_BCM_281XX || ARCH_BCM_21664) && SMP
--	default y
-+	bool
-+	depends on ARCH_BCM_MOBILE
- 	select HAVE_ARM_SCU
- 	select ARM_ERRATA_764369
- 	help
-@@ -107,10 +105,6 @@ config ARCH_BCM_MOBILE_SMP
- 	  Provided as an option so SMP support for SoCs of this type
- 	  can be disabled for an SMP-enabled kernel.
- 
--endmenu
--
--endif
--
- comment "Other Architectures"
- 
- config ARCH_BCM2835
+ BROADCOM KONA GPIO DRIVER
+ M:	Ray Jui <rjui@broadcom.com>
+ L:	bcm-kernel-feedback-list@broadcom.com
 -- 
 1.7.9.5
 
