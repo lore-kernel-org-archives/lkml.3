@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933235AbaJ1Dtm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:49:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45867 "EHLO
+	id S933268AbaJ1Dtt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:49:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45882 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933126AbaJ1Dth (ORCPT
+	with ESMTP id S933247AbaJ1Dto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:49:37 -0400
+	Mon, 27 Oct 2014 23:49:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anssi Hannula <anssi.hannula@iki.fi>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 063/100] ALSA: hda - hdmi: Fix missing ELD change event on plug/unplug
-Date: Tue, 28 Oct 2014 11:35:48 +0800
-Message-Id: <20141028033503.420143327@linuxfoundation.org>
+        Nathalie Cyrille <nathalie.cyrille@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH 3.14 066/100] ARM: at91/PMC: dont forget to write PMC_PCDR register to disable clocks
+Date: Tue, 28 Oct 2014 11:35:51 +0800
+Message-Id: <20141028033503.544330303@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -30,62 +30,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Ludovic Desroches <ludovic.desroches@atmel.com>
 
-commit 6acce400d9daf1353fbf497302670c90a3205e1d upstream.
+commit cfa1950e6c6b72251e80adc736af3c3d2907ab0e upstream.
 
-The ELD ALSA control change event is sent by hdmi_present_sense() when
-eld_changed is true.
+When introducing support for sama5d3, the write to PMC_PCDR register has
+been accidentally removed.
 
-Currently, it is only true when the ELD buffer contents have been
-modified. However, the user-visible ELD controls also change to a
-zero-length value and back when eld_valid is unset/set, and no event is
-currently sent in such cases (such as when unplugging or replugging a
-sink).
-
-Fix the code to always set eld_changed if eld_valid value is changed,
-and therefore to always send the change event when the user-visible
-value changes.
-
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
-Cc: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reported-by: Nathalie Cyrille <nathalie.cyrille@atmel.com>
+Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   15 +++++++++------
- 1 file changed, 9 insertions(+), 6 deletions(-)
+ arch/arm/mach-at91/clock.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1557,19 +1557,22 @@ static bool hdmi_present_sense(struct hd
- 		}
+--- a/arch/arm/mach-at91/clock.c
++++ b/arch/arm/mach-at91/clock.c
+@@ -962,6 +962,7 @@ static int __init at91_clock_reset(void)
  	}
  
--	if (pin_eld->eld_valid && !eld->eld_valid) {
--		update_eld = true;
-+	if (pin_eld->eld_valid != eld->eld_valid)
- 		eld_changed = true;
--	}
-+
-+	if (pin_eld->eld_valid && !eld->eld_valid)
-+		update_eld = true;
-+
- 	if (update_eld) {
- 		bool old_eld_valid = pin_eld->eld_valid;
- 		pin_eld->eld_valid = eld->eld_valid;
--		eld_changed = pin_eld->eld_size != eld->eld_size ||
-+		if (pin_eld->eld_size != eld->eld_size ||
- 			      memcmp(pin_eld->eld_buffer, eld->eld_buffer,
--				     eld->eld_size) != 0;
--		if (eld_changed)
-+				     eld->eld_size) != 0) {
- 			memcpy(pin_eld->eld_buffer, eld->eld_buffer,
- 			       eld->eld_size);
-+			eld_changed = true;
-+		}
- 		pin_eld->eld_size = eld->eld_size;
- 		pin_eld->info = eld->info;
+ 	at91_pmc_write(AT91_PMC_SCDR, scdr);
++	at91_pmc_write(AT91_PMC_PCDR, pcdr);
+ 	if (cpu_is_sama5d3())
+ 		at91_pmc_write(AT91_PMC_PCDR1, pcdr1);
  
 
 
