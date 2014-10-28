@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaJ1MsT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:48:19 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62409 "EHLO mga01.intel.com"
+	id S1751999AbaJ1Mtk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:49:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52462 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490AbaJ1MsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:48:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="407230250"
-Date: Tue, 28 Oct 2014 05:48:17 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: akpm@linux-foundation.org, mingo@kernel.org, bp@suse.de,
-        eranian@google.com, zheng.z.yan@intel.com, hpa@zytor.com,
-        tglx@linutronix.de, josh@joshtriplett.org,
-        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/urgent] perf/x86: Fix compile warnings for intel_uncore
-Message-ID: <20141028124817.GE3274@tassilo.jf.intel.com>
-References: <tip-7fb0f1de49fc75a0dcec22531f2d0a79fc2fb625@git.kernel.org>
- <20141028111921.GB3274@tassilo.jf.intel.com>
- <20141028124227.GR3337@twins.programming.kicks-ass.net>
+	id S1750727AbaJ1Mti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:49:38 -0400
+Message-ID: <544F90B1.1070102@redhat.com>
+Date: Tue, 28 Oct 2014 08:48:49 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028124227.GR3337@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andi Kleen <ak@linux.intel.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Fabian Frederick <fabf@skynet.be>, isimatu.yasuaki@jp.fujitsu.com,
+        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
+        linux-api@vger.kernel.org, jason.wessel@windriver.com
+Subject: Re: [PATCH V4] kernel, add bug_on_warn
+References: <1414155207-29839-1-git-send-email-prarit@redhat.com> <20141028121636.GC3274@tassilo.jf.intel.com> <544F8A78.9070008@redhat.com> <20141028122900.GA10632@redhat.com> <20141028124425.GD3274@tassilo.jf.intel.com>
+In-Reply-To: <20141028124425.GD3274@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 01:42:28PM +0100, Peter Zijlstra wrote:
-> On Tue, Oct 28, 2014 at 04:19:21AM -0700, Andi Kleen wrote:
-> > > +config PERF_EVENTS_INTEL_UNCORE
-> > > +	def_bool y
-> > 
-> > Why not give it a user name? It should be user configurable.
+
+
+On 10/28/2014 08:44 AM, Andi Kleen wrote:
+>>> I suppose ... but that would mean I would have to explain to an end user the
+>>> elaborate process of enabling kdb, inserting a break point, etc.  The whole
+>>> purpose of this is to let an end user panic on WARN() easily.
+>>>
+>>> Asking an end user to enable kdb is magnitudes worse than asking them to
+>>> recompile a kernel.
+>>
+>> Agreed. Asking a customer to setup and run kdb and put breakpoints is much
+>> more pain than simply asking to reboot kernel with a command line option.
 > 
-> To avoid just that, another more or less pointless config option.
+> If you have a command line option to execute kdb commands you still
+> would only have a command line option, just a slightly longer one.
+> 
+> kdb="on, bp warn_slowpath_common sr c, go" 
 
-Good point. We should default to allyesconfig, because obviously everyone
-needs everything.
+KDB is not on all kernels.  This would require me to go to great lengths to
+explain to a user how to set it up, etc., rather than saying "Hi, please add
+panic_on_warn as a kernel parameter/echo 1 into /proc/sys/kernel/panic_on_warn
+and on the next time you see that WARN() the system will panic and kdump.  Send
+me that kdump."
 
--Andi
+> 
+> But it would be a generic facility instead of a special purpose hack.
+
+Generic to KDB be configured on and it is in no way trivial to use.
+
+P.
