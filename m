@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691AbaJ1Soz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:44:55 -0400
-Received: from rush.cubic.ch ([176.9.78.115]:50430 "EHLO mail2.cubic.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813AbaJ1Soy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:44:54 -0400
-X-Greylist: delayed 2057 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 14:44:54 EDT
-Message-ID: <544FDC1C.9040908@decentral.ch>
-Date: Tue, 28 Oct 2014 19:10:36 +0100
-From: Tim Tassonis <stuff@decentral.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753939AbaJ1SqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:46:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51698 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751391AbaJ1SqQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 14:46:16 -0400
+Date: Tue, 28 Oct 2014 19:45:32 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [Patch v7 01/18] ACPI, irq: fix regression casued by
+ 6b9fb7082409
+In-Reply-To: <CAErSpo5Dh8rx42HkS3cPoJ1=oQq2qsFAut5LK83obbghy+OsFA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1410281943100.5308@nanos>
+References: <1414387308-27148-1-git-send-email-jiang.liu@linux.intel.com> <1414387308-27148-2-git-send-email-jiang.liu@linux.intel.com> <CAErSpo5Dh8rx42HkS3cPoJ1=oQq2qsFAut5LK83obbghy+OsFA@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: overlayfs: "filesystem of lowerdir is not supported" on cdrom
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, 28 Oct 2014, Bjorn Helgaas wrote:
+> The subject should describe the change you're making.  "Fix regression
+> caused by xxx" doesn't say anything about what the patch does.
+> 
+> On Sun, Oct 26, 2014 at 11:21 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> > When IOAPIC is disabled, acpi_gsi_to_irq() should return gsi directly
+> > instead of calling mp_map_gsi_to_irq() to translate gsi to IRQ by IOAPIC.
+> 
+> I don't know what the convention is or if there even is one, but "GSI"
+> is even more of an acronym than "IRQ", so I'd capitalize it.
+> 
+> > It fixes https://bugzilla.kernel.org/show_bug.cgi?id=84381.
+> 
+> A line like the following may be useful to those who have to backport this.
+> 
+> Fixes: 6b9fb7082409 ("x86, ACPI, irq: Consolidate algorithm of mapping
+> (ioapic, pin) to IRQ number")
 
-Just installed 3.18-rc2 and tried to test the overlayfs stuff:
+The patch is already queued in tip x86/urgent with a proper changelog.
 
-$ mkdir /ovtmp
-$ mount -t tmpfs tmpfs /ovtmp/
-$ mkdir /ovtmp/work
-$ mkdir /ovtmp/upper
-$ mkdir /cdrw
-$ mount /dev/sr0 /mnt
-$ mount |egrep "ovtmp|sr0"
+http://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?id=961b6a7003acec4f9d70dabc1a253b783cb74272
 
-/dev/sr0 on /mnt type iso9660 (ro,relatime)
-tmpfs on /ovtmp type tmpfs (rw,relatime)
+Thanks,
 
-$ mount -t overlayfs overlayfs \
- -olowerdir=/mnt,upperdir=/ovtmp/upper,workdir=/ovtmp/work /cdrw
-
-mount: wrong fs type, bad option, bad superblock on overlayfs,
-       missing codepage or helper program, or other error
-
-       In some cases useful info is found in syslog - try
-       dmesg | tail or so.
-
-$ dmesg |tail
-
-[ 3266.793218] overlayfs: filesystem of lowerdir is not supported
-
-However, the doc in Documentation/filesystems/overlayfs.txt states:
-
-"The lower filesystem can be any filesystem supported by Linux and does
-not need to be writable.  The lower filesystem can even be another
-overlayfs.  The upper filesystem will normally be writable and if it
-is it must support the creation of trusted.* extended attributes, and
-must provide valid d_type in readdir responses, so NFS is not suitable."
-
-So: Is the documentation wrong, the error message in dmesg wrong, or
-have missed something completely?
-
-
-Kind regards
-Tim
-
+	tglx
