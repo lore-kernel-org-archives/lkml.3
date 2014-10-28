@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526AbaJ1Ply (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:41:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52207 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968AbaJ1Plw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754276AbaJ1Plx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:41:53 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:50636 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753518AbaJ1Plw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 11:41:52 -0400
-Message-ID: <544FB8A8.1090402@redhat.com>
-Date: Tue, 28 Oct 2014 11:39:20 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, Alex Thorlton <athorlton@sgi.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <lliubbo@gmail.com>, David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
-References: <1414032567-109765-1-git-send-email-athorlton@sgi.com> <87lho0pf4l.fsf@tassilo.jf.intel.com> <544F9302.4010001@redhat.com>
-In-Reply-To: <544F9302.4010001@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <874musjyfi.fsf@why.wild-wind.fr.eu.org>
+References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com>
+	<CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com>
+	<alpine.DEB.2.11.1410211120430.5308@nanos>
+	<544628BF.8010809@arm.com>
+	<CAJAp7OjpN-+S=OH1BW6Fcme9mp4qj8AsSNC3_41fhfpYzX-Shg@mail.gmail.com>
+	<544A936D.5040409@arm.com>
+	<CAJAp7OjQ8qRspy_ocUnp+es+HPiR1jULhKK6g4DBXXZcOsABug@mail.gmail.com>
+	<874musjyfi.fsf@why.wild-wind.fr.eu.org>
+Date: Tue, 28 Oct 2014 08:41:50 -0700
+Message-ID: <CAJAp7OiXpksp_CPdpLYd2kwGXRNx2q+cq1a_hjc9fEBrcwXTiA@mail.gmail.com>
+Subject: Re: [PATCH] genirq: Introduce irq_read_line()
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 08:58 AM, Rik van Riel wrote:
-> On 10/28/2014 08:12 AM, Andi Kleen wrote:
->> Alex Thorlton <athorlton@sgi.com> writes:
+On Sat, Oct 25, 2014 at 2:22 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+> On Sat, Oct 25 2014 at 12:12:55 am BST, Bjorn Andersson <bjorn@kryo.se> wrote:
+>> On Fri, Oct 24, 2014 at 10:59 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>> I just pushed out a branch:
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
+>>> irq/irqchip_state
+>>>
+>>> Please let me know if that's useful for you.
+>>>
 >>
->>> Last week, while discussing possible fixes for some unexpected/unwanted behavior
->>> from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
->>> mentioned possibly changing changing khugepaged to work as a task_work function
->>> instead of a kernel thread.  This will give us finer grained control over the
->>> page collapse scans, eliminate some unnecessary scans since tasks that are
->>> relatively inactive will not be scanned often, and eliminate the unwanted
->>> behavior described in the email thread I mentioned.
->>
->> With your change, what would happen in a single threaded case?
->>
->> Previously one core would scan and another would run the workload.
->> With your change both scanning and running would be on the same
->> core.
->>
->> Would seem like a step backwards to me.
+>> I think that my irq_read_line() would be equivalent of
+>> irq_get_irqchip_state(IRQCHIP_STATE_PENDING), i.e. the state of the
+>> interrupt ignoring masking. And the rest would be EINVAL.
+>> So I think this would work out just fine for us!
 >
-> It's not just scanning, either.
+> Excellent.
 >
-> Memory compaction can spend a lot of time waiting on
-> locks. Not consuming CPU or anything, but just waiting.
->
-> I am not convinced that moving all that waiting to task
-> context is a good idea.
 
-It may be worth investigating how the hugepage code calls
-the memory allocation & compaction code.
+Hi Marc,
 
-Doing only async compaction from task_work context should
-probably be ok.
+We gave this some more thought and read up on what "pending" and
+"active" means according to the ARM GIC - PENDING is not what we want
+:(
 
+In the Qualcomm pmic we have two interrupt status registers
+"interrupt" and "real-time". I think the "interrupt" status register
+would be the one related to your defined constants. However what we
+need to access in our use cases are the "real-time" status register,
+which basically is a representation of the input to the interrupt
+logic.
+
+As far as I can see the GIC does not offer anything like that, but I
+hope we could add another constant to your enum list and utilise your
+api for this.
+
+I'm not entirely sure what we should call it though,
+IRQCHIP_STATE_LEVEL seems somewhat conflicting with level trigger and
+the Qualcomm name IRQCHIP_STATE_REALTIME isn't very self describing.
+Maybe IRQCHIP_STATE_LINE_LEVEL?
+
+Regards,
+Bjorn
