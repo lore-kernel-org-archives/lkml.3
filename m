@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286AbaJ1VbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:31:09 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:37133 "EHLO
+	id S1755378AbaJ1VcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:32:18 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:37219 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755244AbaJ1VbF (ORCPT
+	with ESMTP id S1755282AbaJ1VbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:31:05 -0400
+	Tue, 28 Oct 2014 17:31:10 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 34/58] dmaengine: pl330: Split device_control
-Date: Tue, 28 Oct 2014 22:25:49 +0100
-Message-Id: <1414531573-18807-35-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 39/58] dmaengine: sirf: Split device_control
+Date: Tue, 28 Oct 2014 22:25:54 +0100
+Message-Id: <1414531573-18807-40-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,169 +24,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the AMBA PL330 DMA driver to make use
+Split the device_control callback of the SiRF Prima 2 DMA driver to make use
 of the newly introduced callbacks, that will eventually be used to retrieve
 slave capabilities.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/dma/pl330.c | 108 ++++++++++++++++++++++++++--------------------------
- 1 file changed, 53 insertions(+), 55 deletions(-)
+ drivers/dma/sirf-dma.c | 43 +++++++++++++------------------------------
+ 1 file changed, 13 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index b563bfa6cc4d..bd0e47eefa34 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2062,72 +2062,69 @@ static int pl330_alloc_chan_resources(struct dma_chan *chan)
- 	return 1;
+diff --git a/drivers/dma/sirf-dma.c b/drivers/dma/sirf-dma.c
+index 149d7fddfa75..711c2bae9003 100644
+--- a/drivers/dma/sirf-dma.c
++++ b/drivers/dma/sirf-dma.c
+@@ -281,9 +281,10 @@ static dma_cookie_t sirfsoc_dma_tx_submit(struct dma_async_tx_descriptor *txd)
+ 	return cookie;
  }
  
--static int pl330_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd, unsigned long arg)
-+static int pl330_config(struct dma_chan *chan,
-+			struct dma_slave_config *slave_config)
-+{
-+	struct dma_pl330_chan *pch = to_pchan(chan);
-+
-+	if (slave_config->direction == DMA_MEM_TO_DEV) {
-+		if (slave_config->dst_addr)
-+			pch->fifo_addr = slave_config->dst_addr;
-+		if (slave_config->dst_addr_width)
-+			pch->burst_sz = __ffs(slave_config->dst_addr_width);
-+		if (slave_config->dst_maxburst)
-+			pch->burst_len = slave_config->dst_maxburst;
-+	} else if (slave_config->direction == DMA_DEV_TO_MEM) {
-+		if (slave_config->src_addr)
-+			pch->fifo_addr = slave_config->src_addr;
-+		if (slave_config->src_addr_width)
-+			pch->burst_sz = __ffs(slave_config->src_addr_width);
-+		if (slave_config->src_maxburst)
-+			pch->burst_len = slave_config->src_maxburst;
-+	}
-+
-+	return 0;
-+}
-+
-+static int pl330_terminate_all(struct dma_chan *chan)
+-static int sirfsoc_dma_slave_config(struct sirfsoc_dma_chan *schan,
+-	struct dma_slave_config *config)
++static int sirfsoc_dma_slave_config(struct dma_chan *chan,
++				    struct dma_slave_config *config)
  {
- 	struct dma_pl330_chan *pch = to_pchan(chan);
- 	struct dma_pl330_desc *desc;
++	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
  	unsigned long flags;
- 	struct pl330_dmac *pl330 = pch->dmac;
--	struct dma_slave_config *slave_config;
- 	LIST_HEAD(list);
  
--	switch (cmd) {
--	case DMA_TERMINATE_ALL:
--		spin_lock_irqsave(&pch->lock, flags);
--
--		spin_lock(&pl330->lock);
--		_stop(pch->thread);
--		spin_unlock(&pl330->lock);
-+	spin_lock_irqsave(&pch->lock, flags);
- 
--		pch->thread->req[0].desc = NULL;
--		pch->thread->req[1].desc = NULL;
--		pch->thread->req_running = -1;
-+	spin_lock(&pl330->lock);
-+	_stop(pch->thread);
-+	spin_unlock(&pl330->lock);
- 
--		/* Mark all desc done */
--		list_for_each_entry(desc, &pch->submitted_list, node) {
--			desc->status = FREE;
--			dma_cookie_complete(&desc->txd);
--		}
-+	pch->thread->req[0].desc = NULL;
-+	pch->thread->req[1].desc = NULL;
-+	pch->thread->req_running = -1;
- 
--		list_for_each_entry(desc, &pch->work_list , node) {
--			desc->status = FREE;
--			dma_cookie_complete(&desc->txd);
--		}
-+	/* Mark all desc done */
-+	list_for_each_entry(desc, &pch->submitted_list, node) {
-+		desc->status = FREE;
-+		dma_cookie_complete(&desc->txd);
-+	}
- 
--		list_for_each_entry(desc, &pch->completed_list , node) {
--			desc->status = FREE;
--			dma_cookie_complete(&desc->txd);
--		}
-+	list_for_each_entry(desc, &pch->work_list , node) {
-+		desc->status = FREE;
-+		dma_cookie_complete(&desc->txd);
-+	}
- 
--		list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
--		list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
--		list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
--		spin_unlock_irqrestore(&pch->lock, flags);
--		break;
--	case DMA_SLAVE_CONFIG:
--		slave_config = (struct dma_slave_config *)arg;
--
--		if (slave_config->direction == DMA_MEM_TO_DEV) {
--			if (slave_config->dst_addr)
--				pch->fifo_addr = slave_config->dst_addr;
--			if (slave_config->dst_addr_width)
--				pch->burst_sz = __ffs(slave_config->dst_addr_width);
--			if (slave_config->dst_maxburst)
--				pch->burst_len = slave_config->dst_maxburst;
--		} else if (slave_config->direction == DMA_DEV_TO_MEM) {
--			if (slave_config->src_addr)
--				pch->fifo_addr = slave_config->src_addr;
--			if (slave_config->src_addr_width)
--				pch->burst_sz = __ffs(slave_config->src_addr_width);
--			if (slave_config->src_maxburst)
--				pch->burst_len = slave_config->src_maxburst;
--		}
--		break;
--	default:
--		dev_err(pch->dmac->ddma.dev, "Not supported command.\n");
--		return -ENXIO;
-+	list_for_each_entry(desc, &pch->completed_list , node) {
-+		desc->status = FREE;
-+		dma_cookie_complete(&desc->txd);
- 	}
- 
-+	list_splice_tail_init(&pch->submitted_list, &pl330->desc_pool);
-+	list_splice_tail_init(&pch->work_list, &pl330->desc_pool);
-+	list_splice_tail_init(&pch->completed_list, &pl330->desc_pool);
-+	spin_unlock_irqrestore(&pch->lock, flags);
-+
+ 	if ((config->src_addr_width != DMA_SLAVE_BUSWIDTH_4_BYTES) ||
+@@ -297,8 +298,9 @@ static int sirfsoc_dma_slave_config(struct sirfsoc_dma_chan *schan,
  	return 0;
  }
  
-@@ -2701,7 +2698,8 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
- 	pd->device_prep_dma_cyclic = pl330_prep_dma_cyclic;
- 	pd->device_tx_status = pl330_tx_status;
- 	pd->device_prep_slave_sg = pl330_prep_slave_sg;
--	pd->device_control = pl330_control;
-+	pd->device_config = pl330_config;
-+	pd->device_terminate_all = pl330_terminate_all;
- 	pd->device_issue_pending = pl330_issue_pending;
- 	pd->device_slave_caps = pl330_dma_device_slave_caps;
+-static int sirfsoc_dma_terminate_all(struct sirfsoc_dma_chan *schan)
++static int sirfsoc_dma_terminate_all(struct dma_chan *chan)
+ {
++	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+ 	struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(&schan->chan);
+ 	int cid = schan->chan.chan_id;
+ 	unsigned long flags;
+@@ -327,8 +329,9 @@ static int sirfsoc_dma_terminate_all(struct sirfsoc_dma_chan *schan)
+ 	return 0;
+ }
  
-@@ -2749,7 +2747,7 @@ probe_err3:
+-static int sirfsoc_dma_pause_chan(struct sirfsoc_dma_chan *schan)
++static int sirfsoc_dma_pause_chan(struct dma_chan *chan)
+ {
++	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+ 	struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(&schan->chan);
+ 	int cid = schan->chan.chan_id;
+ 	unsigned long flags;
+@@ -348,8 +351,9 @@ static int sirfsoc_dma_pause_chan(struct sirfsoc_dma_chan *schan)
+ 	return 0;
+ }
  
- 		/* Flush the channel */
- 		if (pch->thread) {
--			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-+			pl330_terminate_all(&pch->chan);
- 			pl330_free_chan_resources(&pch->chan);
- 		}
- 	}
-@@ -2778,7 +2776,7 @@ static int pl330_remove(struct amba_device *adev)
+-static int sirfsoc_dma_resume_chan(struct sirfsoc_dma_chan *schan)
++static int sirfsoc_dma_resume_chan(struct dma_chan *chan)
+ {
++	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+ 	struct sirfsoc_dma *sdma = dma_chan_to_sirfsoc_dma(&schan->chan);
+ 	int cid = schan->chan.chan_id;
+ 	unsigned long flags;
+@@ -369,30 +373,6 @@ static int sirfsoc_dma_resume_chan(struct sirfsoc_dma_chan *schan)
+ 	return 0;
+ }
  
- 		/* Flush the channel */
- 		if (pch->thread) {
--			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-+			pl330_terminate_all(&pch->chan);
- 			pl330_free_chan_resources(&pch->chan);
- 		}
- 	}
+-static int sirfsoc_dma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-	unsigned long arg)
+-{
+-	struct dma_slave_config *config;
+-	struct sirfsoc_dma_chan *schan = dma_chan_to_sirfsoc_dma_chan(chan);
+-
+-	switch (cmd) {
+-	case DMA_PAUSE:
+-		return sirfsoc_dma_pause_chan(schan);
+-	case DMA_RESUME:
+-		return sirfsoc_dma_resume_chan(schan);
+-	case DMA_TERMINATE_ALL:
+-		return sirfsoc_dma_terminate_all(schan);
+-	case DMA_SLAVE_CONFIG:
+-		config = (struct dma_slave_config *)arg;
+-		return sirfsoc_dma_slave_config(schan, config);
+-
+-	default:
+-		break;
+-	}
+-
+-	return -ENOSYS;
+-}
+-
+ /* Alloc channel resources */
+ static int sirfsoc_dma_alloc_chan_resources(struct dma_chan *chan)
+ {
+@@ -740,7 +720,10 @@ static int sirfsoc_dma_probe(struct platform_device *op)
+ 	dma->device_alloc_chan_resources = sirfsoc_dma_alloc_chan_resources;
+ 	dma->device_free_chan_resources = sirfsoc_dma_free_chan_resources;
+ 	dma->device_issue_pending = sirfsoc_dma_issue_pending;
+-	dma->device_control = sirfsoc_dma_control;
++	dma->device_config = sirfsoc_dma_slave_config;
++	dma->device_pause = sirfsoc_dma_pause_chan;
++	dma->device_resume = sirfsoc_dma_resume_chan;
++	dma->device_terminate_all = sirfsoc_dma_terminate_all;
+ 	dma->device_tx_status = sirfsoc_dma_tx_status;
+ 	dma->device_prep_interleaved_dma = sirfsoc_dma_prep_interleaved;
+ 	dma->device_prep_dma_cyclic = sirfsoc_dma_prep_cyclic;
 -- 
 2.1.1
 
