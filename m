@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503AbaJ1Dpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:45:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45434 "EHLO
+	id S1755695AbaJ1Dp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:45:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45448 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932484AbaJ1Dpq (ORCPT
+	with ESMTP id S1754766AbaJ1Dpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:45:46 -0400
+	Mon, 27 Oct 2014 23:45:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anatol Pomozov <anatol.pomozov@gmail.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.16 079/127] ALSA: pcm: use the same dma mmap codepath both for arm and arm64
-Date: Tue, 28 Oct 2014 11:35:14 +0800
-Message-Id: <20141028033424.327583166@linuxfoundation.org>
+Subject: [PATCH 3.16 081/127] ALSA: emu10k1: Fix deadlock in synth voice lookup
+Date: Tue, 28 Oct 2014 11:35:16 +0800
+Message-Id: <20141028033424.405702790@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,38 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a011e213f3700233ed2a676f1ef0a74a052d7162 upstream.
+commit 95926035b187cc9fee6fb61385b7da9c28123f74 upstream.
 
-This avoids following kernel crash when try to playback on arm64
+The emu10k1 voice allocator takes voice_lock spinlock.  When there is
+no empty stream available, it tries to release a voice used by synth,
+and calls get_synth_voice.  The callback function,
+snd_emu10k1_synth_get_voice(), however, also takes the voice_lock,
+thus it deadlocks.
 
-[  107.497203] [<ffffffc00046b310>] snd_pcm_mmap_data_fault+0x90/0xd4
-[  107.503405] [<ffffffc0001541ac>] __do_fault+0xb0/0x498
-[  107.508565] [<ffffffc0001576a0>] handle_mm_fault+0x224/0x7b0
-[  107.514246] [<ffffffc000092640>] do_page_fault+0x11c/0x310
-[  107.519738] [<ffffffc000081100>] do_mem_abort+0x38/0x98
+The fix is simply removing the voice_lock holds in
+snd_emu10k1_synth_get_voice(), as this is always called in the
+spinlock context.
 
-Tested: backported to 3.14 and tried to playback on arm64 machine
-
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Reported-and-tested-by: Arthur Marsh <arthur.marsh@internode.on.net>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/pcm_native.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/emu10k1/emu10k1_callback.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/sound/core/pcm_native.c
-+++ b/sound/core/pcm_native.c
-@@ -3190,7 +3190,7 @@ static const struct vm_operations_struct
+--- a/sound/pci/emu10k1/emu10k1_callback.c
++++ b/sound/pci/emu10k1/emu10k1_callback.c
+@@ -85,6 +85,8 @@ snd_emu10k1_ops_setup(struct snd_emux *e
+  * get more voice for pcm
+  *
+  * terminate most inactive voice and give it as a pcm voice.
++ *
++ * voice_lock is already held.
+  */
+ int
+ snd_emu10k1_synth_get_voice(struct snd_emu10k1 *hw)
+@@ -92,12 +94,10 @@ snd_emu10k1_synth_get_voice(struct snd_e
+ 	struct snd_emux *emu;
+ 	struct snd_emux_voice *vp;
+ 	struct best_voice best[V_END];
+-	unsigned long flags;
+ 	int i;
  
- #ifndef ARCH_HAS_DMA_MMAP_COHERENT
- /* This should be defined / handled globally! */
--#ifdef CONFIG_ARM
-+#if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
- #define ARCH_HAS_DMA_MMAP_COHERENT
- #endif
- #endif
+ 	emu = hw->synth;
+ 
+-	spin_lock_irqsave(&emu->voice_lock, flags);
+ 	lookup_voices(emu, hw, best, 1); /* no OFF voices */
+ 	for (i = 0; i < V_END; i++) {
+ 		if (best[i].voice >= 0) {
+@@ -113,11 +113,9 @@ snd_emu10k1_synth_get_voice(struct snd_e
+ 			vp->emu->num_voices--;
+ 			vp->ch = -1;
+ 			vp->state = SNDRV_EMUX_ST_OFF;
+-			spin_unlock_irqrestore(&emu->voice_lock, flags);
+ 			return ch;
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&emu->voice_lock, flags);
+ 
+ 	/* not found */
+ 	return -ENOMEM;
 
 
