@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932520AbaJ1G64 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:58:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45584 "EHLO
+	id S1760477AbaJ1G7d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:59:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45564 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932753AbaJ1DrM (ORCPT
+	with ESMTP id S932721AbaJ1DrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:47:12 -0400
+	Mon, 27 Oct 2014 23:47:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.16 124/127] sparc64: Kill unnecessary tables and increase MAX_BANKS.
-Date: Tue, 28 Oct 2014 11:35:59 +0800
-Message-Id: <20141028033426.260285721@linuxfoundation.org>
+Subject: [PATCH 3.16 120/127] sparc64: Use kernel page tables for vmemmap.
+Date: Tue, 28 Oct 2014 11:35:55 +0800
+Message-Id: <20141028033426.082305701@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -31,111 +31,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit d195b71bad4347d2df51072a537f922546a904f1 ]
+[ Upstream commit c06240c7f5c39c83dfd7849c0770775562441b96 ]
 
-swapper_low_pmd_dir and swapper_pud_dir are actually completely
-useless and unnecessary.
+For sparse memory configurations, the vmemmap array behaves terribly
+and it takes up an inordinate amount of space in the BSS section of
+the kernel image unconditionally.
 
-We just need swapper_pg_dir[].  Naturally the other page table chunks
-will be allocated on an as-needed basis.  Since the kernel actually
-accesses these tables in the PAGE_OFFSET view, there is not even a TLB
-locality advantage of placing them in the kernel image.
+Just build huge PMDs and look them up just like we do for TLB misses
+in the vmalloc area.
 
-Use the hard coded vmlinux.ld.S slot for swapper_pg_dir which is
-naturally page aligned.
-
-Increase MAX_BANKS to 1024 in order to handle heavily fragmented
-virtual guests.
-
-Even with this MAX_BANKS increase, the kernel is 20K+ smaller.
+Kernel BSS shrinks by about 2MB.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/pgtable_64.h |    1 -
- arch/sparc/kernel/vmlinux.lds.S     |    5 +++--
- arch/sparc/mm/init_64.c             |   25 ++-----------------------
- 3 files changed, 5 insertions(+), 26 deletions(-)
+ arch/sparc/kernel/ktlb.S |    9 +----
+ arch/sparc/mm/init_64.c  |   72 ++++++++++++++++++++++-------------------------
+ arch/sparc/mm/init_64.h  |   11 -------
+ 3 files changed, 36 insertions(+), 56 deletions(-)
 
---- a/arch/sparc/include/asm/pgtable_64.h
-+++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -927,7 +927,6 @@ static inline void __set_pte_at(struct m
+--- a/arch/sparc/kernel/ktlb.S
++++ b/arch/sparc/kernel/ktlb.S
+@@ -186,13 +186,8 @@ kvmap_dtlb_load:
+ 
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ kvmap_vmemmap:
+-	sub		%g4, %g5, %g5
+-	srlx		%g5, ILOG2_4MB, %g5
+-	sethi		%hi(vmemmap_table), %g1
+-	sllx		%g5, 3, %g5
+-	or		%g1, %lo(vmemmap_table), %g1
+-	ba,pt		%xcc, kvmap_dtlb_load
+-	 ldx		[%g1 + %g5], %g5
++	KERN_PGTABLE_WALK(%g4, %g5, %g2, kvmap_dtlb_longpath)
++	ba,a,pt		%xcc, kvmap_dtlb_load
  #endif
  
- extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
--extern pmd_t swapper_low_pmd_dir[PTRS_PER_PMD];
- 
- void paging_init(void);
- unsigned long find_ecache_flush_span(unsigned long size);
---- a/arch/sparc/kernel/vmlinux.lds.S
-+++ b/arch/sparc/kernel/vmlinux.lds.S
-@@ -35,8 +35,9 @@ jiffies = jiffies_64;
- 
- SECTIONS
- {
--	/* swapper_low_pmd_dir is sparc64 only */
--	swapper_low_pmd_dir = 0x0000000000402000;
-+#ifdef CONFIG_SPARC64
-+	swapper_pg_dir = 0x0000000000402000;
-+#endif
- 	. = INITIAL_ADDRESS;
- 	.text TEXTSTART :
- 	{
+ kvmap_dtlb_nonlinear:
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -86,7 +86,7 @@ extern struct tsb swapper_tsb[KERNEL_TSB
+@@ -2260,18 +2260,9 @@ unsigned long _PAGE_CACHE __read_mostly;
+ EXPORT_SYMBOL(_PAGE_CACHE);
  
- static unsigned long cpu_pgsz_mask;
- 
--#define MAX_BANKS	32
-+#define MAX_BANKS	1024
- 
- static struct linux_prom64_registers pavail[MAX_BANKS];
- static int pavail_ents;
-@@ -1942,12 +1942,6 @@ static void __init sun4v_linear_pte_xor_
- 
- static unsigned long last_valid_pfn;
- 
--/* These must be page aligned in order to not trigger the
-- * alignment tests of pgd_bad() and pud_bad().
-- */
--pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__ ((aligned (PAGE_SIZE)));
--static pud_t swapper_pud_dir[PTRS_PER_PUD] __attribute__ ((aligned (PAGE_SIZE)));
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+-unsigned long vmemmap_table[VMEMMAP_SIZE];
 -
- static void sun4u_pgprot_init(void);
- static void sun4v_pgprot_init(void);
- 
-@@ -1955,8 +1949,6 @@ void __init paging_init(void)
+-static long __meminitdata addr_start, addr_end;
+-static int __meminitdata node_start;
+-
+ int __meminit vmemmap_populate(unsigned long vstart, unsigned long vend,
+ 			       int node)
  {
- 	unsigned long end_pfn, shift, phys_base;
- 	unsigned long real_end, i;
--	pud_t *pud;
--	pmd_t *pmd;
- 	int node;
+-	unsigned long phys_start = (vstart - VMEMMAP_BASE);
+-	unsigned long phys_end = (vend - VMEMMAP_BASE);
+-	unsigned long addr = phys_start & VMEMMAP_CHUNK_MASK;
+-	unsigned long end = VMEMMAP_ALIGN(phys_end);
+ 	unsigned long pte_base;
  
- 	setup_page_offset();
-@@ -2051,20 +2043,7 @@ void __init paging_init(void)
- 	 */
- 	init_mm.pgd += ((shift) / (sizeof(pgd_t)));
- 	
--	memset(swapper_low_pmd_dir, 0, sizeof(swapper_low_pmd_dir));
--
--	/* The kernel page tables we publish into what the rest of the
--	 * world sees must be adjusted so that they see the PAGE_OFFSET
--	 * address of these in-kerenel data structures.  However right
--	 * here we must access them from the kernel image side, because
--	 * the trap tables haven't been taken over and therefore we cannot
--	 * take TLB misses in the PAGE_OFFSET linear mappings yet.
--	 */
--	pud = swapper_pud_dir + (shift / sizeof(pud_t));
--	pgd_set(&swapper_pg_dir[0], pud);
--
--	pmd = swapper_low_pmd_dir + (shift / sizeof(pmd_t));
--	pud_set(&swapper_pud_dir[0], pmd);
-+	memset(swapper_pg_dir, 0, sizeof(swapper_pg_dir));
+ 	pte_base = (_PAGE_VALID | _PAGE_SZ4MB_4U |
+@@ -2282,47 +2273,52 @@ int __meminit vmemmap_populate(unsigned
+ 			    _PAGE_CP_4V | _PAGE_CV_4V |
+ 			    _PAGE_P_4V | _PAGE_W_4V);
  
- 	inherit_prom_mappings();
- 	
+-	for (; addr < end; addr += VMEMMAP_CHUNK) {
+-		unsigned long *vmem_pp =
+-			vmemmap_table + (addr >> VMEMMAP_CHUNK_SHIFT);
+-		void *block;
++	pte_base |= _PAGE_PMD_HUGE;
+ 
+-		if (!(*vmem_pp & _PAGE_VALID)) {
+-			block = vmemmap_alloc_block(1UL << ILOG2_4MB, node);
+-			if (!block)
++	vstart = vstart & PMD_MASK;
++	vend = ALIGN(vend, PMD_SIZE);
++	for (; vstart < vend; vstart += PMD_SIZE) {
++		pgd_t *pgd = pgd_offset_k(vstart);
++		unsigned long pte;
++		pud_t *pud;
++		pmd_t *pmd;
++
++		if (pgd_none(*pgd)) {
++			pud_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
++
++			if (!new)
+ 				return -ENOMEM;
++			pgd_populate(&init_mm, pgd, new);
++		}
+ 
+-			*vmem_pp = pte_base | __pa(block);
++		pud = pud_offset(pgd, vstart);
++		if (pud_none(*pud)) {
++			pmd_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
+ 
+-			/* check to see if we have contiguous blocks */
+-			if (addr_end != addr || node_start != node) {
+-				if (addr_start)
+-					printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
+-					       addr_start, addr_end-1, node_start);
+-				addr_start = addr;
+-				node_start = node;
+-			}
+-			addr_end = addr + VMEMMAP_CHUNK;
++			if (!new)
++				return -ENOMEM;
++			pud_populate(&init_mm, pud, new);
+ 		}
+-	}
+-	return 0;
+-}
+ 
+-void __meminit vmemmap_populate_print_last(void)
+-{
+-	if (addr_start) {
+-		printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
+-		       addr_start, addr_end-1, node_start);
+-		addr_start = 0;
+-		addr_end = 0;
+-		node_start = 0;
++		pmd = pmd_offset(pud, vstart);
++
++		pte = pmd_val(*pmd);
++		if (!(pte & _PAGE_VALID)) {
++			void *block = vmemmap_alloc_block(PMD_SIZE, node);
++
++			if (!block)
++				return -ENOMEM;
++
++			pmd_val(*pmd) = pte_base | __pa(block);
++		}
+ 	}
++
++	return 0;
+ }
+ 
+ void vmemmap_free(unsigned long start, unsigned long end)
+ {
+ }
+-
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void prot_init_common(unsigned long page_none,
+--- a/arch/sparc/mm/init_64.h
++++ b/arch/sparc/mm/init_64.h
+@@ -31,15 +31,4 @@ extern unsigned long kern_locked_tte_dat
+ 
+ void prom_world(int enter);
+ 
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-#define VMEMMAP_CHUNK_SHIFT	22
+-#define VMEMMAP_CHUNK		(1UL << VMEMMAP_CHUNK_SHIFT)
+-#define VMEMMAP_CHUNK_MASK	~(VMEMMAP_CHUNK - 1UL)
+-#define VMEMMAP_ALIGN(x)	(((x)+VMEMMAP_CHUNK-1UL)&VMEMMAP_CHUNK_MASK)
+-
+-#define VMEMMAP_SIZE	((((1UL << MAX_PHYSADDR_BITS) >> PAGE_SHIFT) * \
+-			  sizeof(struct page)) >> VMEMMAP_CHUNK_SHIFT)
+-extern unsigned long vmemmap_table[VMEMMAP_SIZE];
+-#endif
+-
+ #endif /* _SPARC64_MM_INIT_H */
 
 
