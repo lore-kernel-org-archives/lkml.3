@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933583AbaJ1HtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:49:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44543 "EHLO
+	id S1759671AbaJ1Htg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:49:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44535 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754400AbaJ1Dil (ORCPT
+	with ESMTP id S1754369AbaJ1Dig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:38:41 -0400
+	Mon, 27 Oct 2014 23:38:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weston Andros Adamson <dros@primarydata.com>,
+        Steve Dickson <SteveD@redhat.com>,
         Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.17 065/146] NFSv4.1/pnfs: replace broken pnfs_put_lseg_async
-Date: Tue, 28 Oct 2014 11:33:27 +0800
-Message-Id: <20141028033346.193163908@linuxfoundation.org>
+Subject: [PATCH 3.17 063/146] NFS: Fix an uninitialised pointer Oops in the writeback error path
+Date: Tue, 28 Oct 2014 11:33:25 +0800
+Message-Id: <20141028033346.106061712@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -31,110 +31,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 6543f803670530f6aa93790d9fa116d8395a537d upstream.
+commit 3caa0c6ed754d91b15266abf222498edbef982bd upstream.
 
-You cannot call pnfs_put_lseg_async() more than once per lseg, so it
-is really an inappropriate way to deal with a refcount issue.
+SteveD reports the following Oops:
+ RIP: 0010:[<ffffffffa053461d>]  [<ffffffffa053461d>] __put_nfs_open_context+0x1d/0x100 [nfs]
+ RSP: 0018:ffff880fed687b90  EFLAGS: 00010286
+ RAX: 0000000000000024 RBX: 0000000000000000 RCX: 0000000000000006
+ RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
+ RBP: ffff880fed687bc0 R08: 0000000000000092 R09: 000000000000047a
+ R10: 0000000000000000 R11: ffff880fed6878d6 R12: ffff880fed687d20
+ R13: ffff880fed687d20 R14: 0000000000000070 R15: ffffea000aa33ec0
+ FS:  00007fce290f0740(0000) GS:ffff8807ffc60000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000000070 CR3: 00000007f2e79000 CR4: 00000000000007e0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Stack:
+  0000000000000000 ffff880036c5e510 ffff880fed687d20 ffff880fed687d20
+  ffff880036c5e200 ffffea000aa33ec0 ffff880fed687bd0 ffffffffa0534710
+  ffff880fed687be8 ffffffffa053d5f0 ffff880036c5e200 ffff880fed687c08
+ Call Trace:
+  [<ffffffffa0534710>] put_nfs_open_context+0x10/0x20 [nfs]
+  [<ffffffffa053d5f0>] nfs_pgio_data_destroy+0x20/0x40 [nfs]
+  [<ffffffffa053d672>] nfs_pgio_error+0x22/0x40 [nfs]
+  [<ffffffffa053d8f4>] nfs_generic_pgio+0x74/0x2e0 [nfs]
+  [<ffffffffa06b18c3>] pnfs_generic_pg_writepages+0x63/0x210 [nfsv4]
+  [<ffffffffa053d579>] nfs_pageio_doio+0x19/0x50 [nfs]
+  [<ffffffffa053eb84>] nfs_pageio_complete+0x24/0x30 [nfs]
+  [<ffffffffa053cb25>] nfs_direct_write_schedule_iovec+0x115/0x1f0 [nfs]
+  [<ffffffffa053675f>] ? nfs_get_lock_context+0x4f/0x120 [nfs]
+  [<ffffffffa053d252>] nfs_file_direct_write+0x262/0x420 [nfs]
+  [<ffffffffa0532d91>] nfs_file_write+0x131/0x1d0 [nfs]
+  [<ffffffffa0532c60>] ? nfs_need_sync_write.isra.17+0x40/0x40 [nfs]
+  [<ffffffff812127b8>] do_io_submit+0x3b8/0x840
+  [<ffffffff81212c50>] SyS_io_submit+0x10/0x20
+  [<ffffffff81610f29>] system_call_fastpath+0x16/0x1b
 
-Instead, replace it with a function that decrements the refcount, and
-puts the final 'free' operation (which is incompatible with locks) on
-the workqueue.
+This is due to the calls to nfs_pgio_error() in nfs_generic_pgio(), which
+happen before the nfs_pgio_header's open context is referenced in
+nfs_pgio_rpcsetup().
 
-Cc: Weston Andros Adamson <dros@primarydata.com>
-Fixes: e6cf82d1830f: pnfs: add pnfs_put_lseg_async
+Reported-by: Steve Dickson <SteveD@redhat.com>
 Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/filelayout/filelayout.c |    2 +-
- fs/nfs/pnfs.c                  |   33 +++++++++++++++++++++++++++------
- fs/nfs/pnfs.h                  |    6 +-----
- 3 files changed, 29 insertions(+), 12 deletions(-)
+ fs/nfs/pagelist.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/filelayout/filelayout.c
-+++ b/fs/nfs/filelayout/filelayout.c
-@@ -1031,7 +1031,7 @@ filelayout_clear_request_commit(struct n
- 	}
- out:
- 	nfs_request_remove_commit_list(req, cinfo);
--	pnfs_put_lseg_async(freeme);
-+	pnfs_put_lseg_locked(freeme);
- }
- 
- static void
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -361,22 +361,43 @@ pnfs_put_lseg(struct pnfs_layout_segment
- }
- EXPORT_SYMBOL_GPL(pnfs_put_lseg);
- 
--static void pnfs_put_lseg_async_work(struct work_struct *work)
-+static void pnfs_free_lseg_async_work(struct work_struct *work)
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -518,7 +518,8 @@ EXPORT_SYMBOL_GPL(nfs_pgio_header_free);
+  */
+ void nfs_pgio_data_destroy(struct nfs_pgio_header *hdr)
  {
- 	struct pnfs_layout_segment *lseg;
-+	struct pnfs_layout_hdr *lo;
- 
- 	lseg = container_of(work, struct pnfs_layout_segment, pls_work);
-+	lo = lseg->pls_layout;
- 
--	pnfs_put_lseg(lseg);
-+	pnfs_free_lseg(lseg);
-+	pnfs_put_layout_hdr(lo);
+-	put_nfs_open_context(hdr->args.context);
++	if (hdr->args.context)
++		put_nfs_open_context(hdr->args.context);
+ 	if (hdr->page_array.pagevec != hdr->page_array.page_array)
+ 		kfree(hdr->page_array.pagevec);
  }
- 
--void
--pnfs_put_lseg_async(struct pnfs_layout_segment *lseg)
-+static void pnfs_free_lseg_async(struct pnfs_layout_segment *lseg)
- {
--	INIT_WORK(&lseg->pls_work, pnfs_put_lseg_async_work);
-+	INIT_WORK(&lseg->pls_work, pnfs_free_lseg_async_work);
- 	schedule_work(&lseg->pls_work);
- }
--EXPORT_SYMBOL_GPL(pnfs_put_lseg_async);
-+
-+void
-+pnfs_put_lseg_locked(struct pnfs_layout_segment *lseg)
-+{
-+	if (!lseg)
-+		return;
-+
-+	assert_spin_locked(&lseg->pls_layout->plh_inode->i_lock);
-+
-+	dprintk("%s: lseg %p ref %d valid %d\n", __func__, lseg,
-+		atomic_read(&lseg->pls_refcount),
-+		test_bit(NFS_LSEG_VALID, &lseg->pls_flags));
-+	if (atomic_dec_and_test(&lseg->pls_refcount)) {
-+		struct pnfs_layout_hdr *lo = lseg->pls_layout;
-+		pnfs_get_layout_hdr(lo);
-+		pnfs_layout_remove_lseg(lo, lseg);
-+		pnfs_free_lseg_async(lseg);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(pnfs_put_lseg_locked);
- 
- static u64
- end_offset(u64 start, u64 len)
---- a/fs/nfs/pnfs.h
-+++ b/fs/nfs/pnfs.h
-@@ -183,7 +183,7 @@ extern int nfs4_proc_layoutreturn(struct
- /* pnfs.c */
- void pnfs_get_layout_hdr(struct pnfs_layout_hdr *lo);
- void pnfs_put_lseg(struct pnfs_layout_segment *lseg);
--void pnfs_put_lseg_async(struct pnfs_layout_segment *lseg);
-+void pnfs_put_lseg_locked(struct pnfs_layout_segment *lseg);
- 
- void set_pnfs_layoutdriver(struct nfs_server *, const struct nfs_fh *, u32);
- void unset_pnfs_layoutdriver(struct nfs_server *);
-@@ -422,10 +422,6 @@ static inline void pnfs_put_lseg(struct
- {
- }
- 
--static inline void pnfs_put_lseg_async(struct pnfs_layout_segment *lseg)
--{
--}
--
- static inline int pnfs_return_layout(struct inode *ino)
- {
- 	return 0;
 
 
