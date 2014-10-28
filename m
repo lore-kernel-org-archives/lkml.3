@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567AbaJ1Doz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:44:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45328 "EHLO
+	id S1760690AbaJ1HNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:13:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45334 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281AbaJ1Dov (ORCPT
+	with ESMTP id S1755566AbaJ1Dox (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:44:51 -0400
+	Mon, 27 Oct 2014 23:44:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oren Givon <oren.givon@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.16 057/127] iwlwifi: Add missing PCI IDs for the 7260 series
-Date: Tue, 28 Oct 2014 11:34:52 +0800
-Message-Id: <20141028033423.370174325@linuxfoundation.org>
+        "Carol L. Soto" <clsoto@us.ibm.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 3.16 075/127] powerpc/eeh: Clear frozen device state in time
+Date: Tue, 28 Oct 2014 11:35:10 +0800
+Message-Id: <20141028033424.133644443@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,39 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oren Givon <oren.givon@intel.com>
+From: Gavin Shan <gwshan@linux.vnet.ibm.com>
 
-commit 4f08970f5284dce486f0e2290834aefb2a262189 upstream.
+commit 22fca17924094113fe79c1db5135290e1a84ad4b upstream.
 
-Add 4 missing PCI IDs for the 7260 series.
+The problem was reported by Carol: In the scenario of passing mlx4
+adapter to guest, EEH error could be recovered successfully. When
+returning the device back to host, the driver (mlx4_core.ko)
+couldn't be loaded successfully because of error number -5 (-EIO)
+returned from mlx4_get_ownership(), which hits offlined PCI device.
+The root cause is that we missed to put the affected devices into
+normal state on clearing PE isolated state right after PE reset.
 
-Signed-off-by: Oren Givon <oren.givon@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+The patch fixes above issue by putting the affected devices to
+normal state when clearing PE isolated state in eeh_pe_state_clear().
+
+Reported-by: Carol L. Soto <clsoto@us.ibm.com>
+Signed-off-by: Gavin Shan <gwshan@linux.vnet.ibm.com>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/pcie/drv.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/powerpc/kernel/eeh_pe.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/pcie/drv.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
-@@ -273,6 +273,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 	{IWL_PCI_DEVICE(0x08B1, 0x4070, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4072, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4170, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0x4C60, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0x4C70, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4060, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x406A, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0x4160, iwl7260_2n_cfg)},
-@@ -316,6 +318,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
- 	{IWL_PCI_DEVICE(0x08B1, 0xC770, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B1, 0xC760, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC270, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0xCC70, iwl7260_2ac_cfg)},
-+	{IWL_PCI_DEVICE(0x08B1, 0xCC60, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC272, iwl7260_2ac_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC260, iwl7260_2n_cfg)},
- 	{IWL_PCI_DEVICE(0x08B2, 0xC26A, iwl7260_n_cfg)},
+--- a/arch/powerpc/kernel/eeh_pe.c
++++ b/arch/powerpc/kernel/eeh_pe.c
+@@ -570,6 +570,8 @@ static void *__eeh_pe_state_clear(void *
+ {
+ 	struct eeh_pe *pe = (struct eeh_pe *)data;
+ 	int state = *((int *)flag);
++	struct eeh_dev *edev, *tmp;
++	struct pci_dev *pdev;
+ 
+ 	/* Keep the state of permanently removed PE intact */
+ 	if ((pe->freeze_count > EEH_MAX_ALLOWED_FREEZES) &&
+@@ -578,9 +580,22 @@ static void *__eeh_pe_state_clear(void *
+ 
+ 	pe->state &= ~state;
+ 
+-	/* Clear check count since last isolation */
+-	if (state & EEH_PE_ISOLATED)
+-		pe->check_count = 0;
++	/*
++	 * Special treatment on clearing isolated state. Clear
++	 * check count since last isolation and put all affected
++	 * devices to normal state.
++	 */
++	if (!(state & EEH_PE_ISOLATED))
++		return NULL;
++
++	pe->check_count = 0;
++	eeh_pe_for_each_dev(pe, edev, tmp) {
++		pdev = eeh_dev_to_pci_dev(edev);
++		if (!pdev)
++			continue;
++
++		pdev->error_state = pci_channel_io_normal;
++	}
+ 
+ 	return NULL;
+ }
 
 
