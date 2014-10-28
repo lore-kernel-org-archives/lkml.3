@@ -1,31 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215AbaJ1LDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:03:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50904 "EHLO
+	id S1755157AbaJ1LS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:18:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51427 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636AbaJ1LDJ (ORCPT
+	with ESMTP id S1751332AbaJ1LS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:03:09 -0400
-Date: Tue, 28 Oct 2014 04:02:07 -0700
-From: tip-bot for Juri Lelli <tipbot@zytor.com>
-Message-ID: <tip-aee38ea95419c818dfdde52b115aeffe9cbb259b@git.kernel.org>
-Cc: juri.lelli@arm.com, hpa@zytor.com, peterz@infradead.org,
-        tglx@linutronix.de, michael@amarulasolutions.com,
-        daniel.wagner@bmw-carit.de, mingo@kernel.org,
+	Tue, 28 Oct 2014 07:18:57 -0400
+Date: Tue, 28 Oct 2014 04:18:42 -0700
+From: "tip-bot for Maciej W. Rozycki" <tipbot@zytor.com>
+Message-ID: <tip-60e684f0d66369add7aa49fc39785d2f26fe9169@git.kernel.org>
+Cc: torvalds@linux-foundation.org, hpa@zytor.com, tglx@linutronix.de,
+        mingo@kernel.org, macro@linux-mips.org, linux-kernel@vger.kernel.org
+Reply-To: tglx@linutronix.de, mingo@kernel.org, macro@linux-mips.org,
         linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        raistlin@linux.it, fchecconi@gmail.com
-Reply-To: daniel.wagner@bmw-carit.de, michael@amarulasolutions.com,
-        tglx@linutronix.de, hpa@zytor.com, juri.lelli@arm.com,
-        peterz@infradead.org, fchecconi@gmail.com,
-        torvalds@linux-foundation.org, raistlin@linux.it,
-        linux-kernel@vger.kernel.org, mingo@kernel.org
-In-Reply-To: <1414142198-18552-5-git-send-email-juri.lelli@arm.com>
-References: <1414142198-18552-5-git-send-email-juri.lelli@arm.com>
+        hpa@zytor.com
+In-Reply-To: <alpine.LFD.2.11.1410260147190.21390@eddie.linux-mips.org>
+References: <alpine.LFD.2.11.1410260147190.21390@eddie.linux-mips.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/deadline:
-  Fix races between rt_mutex_setprio() and dl_task_timer()
-Git-Commit-ID: aee38ea95419c818dfdde52b115aeffe9cbb259b
+Subject: [tip:x86/urgent] x86/irq: Fix XT-PIC-XT-PIC in /proc/interrupts
+Git-Commit-ID: 60e684f0d66369add7aa49fc39785d2f26fe9169
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,73 +32,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  aee38ea95419c818dfdde52b115aeffe9cbb259b
-Gitweb:     http://git.kernel.org/tip/aee38ea95419c818dfdde52b115aeffe9cbb259b
-Author:     Juri Lelli <juri.lelli@arm.com>
-AuthorDate: Fri, 24 Oct 2014 10:16:38 +0100
+Commit-ID:  60e684f0d66369add7aa49fc39785d2f26fe9169
+Gitweb:     http://git.kernel.org/tip/60e684f0d66369add7aa49fc39785d2f26fe9169
+Author:     Maciej W. Rozycki <macro@linux-mips.org>
+AuthorDate: Sun, 26 Oct 2014 16:06:28 +0000
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:46:01 +0100
+CommitDate: Tue, 28 Oct 2014 12:01:08 +0100
 
-sched/deadline: Fix races between rt_mutex_setprio() and dl_task_timer()
+x86/irq: Fix XT-PIC-XT-PIC in /proc/interrupts
 
-dl_task_timer() is racy against several paths. Daniel noticed that
-the replenishment timer may experience a race condition against an
-enqueue_dl_entity() called from rt_mutex_setprio(). With his own
-words:
+Fix duplicate XT-PIC seen in /proc/interrupts on x86 systems
+that make  use of 8259A Programmable Interrupt Controllers.
+Specifically convert  output like this:
 
- rt_mutex_setprio() resets p->dl.dl_throttled. So the pattern is:
- start_dl_timer() throttled = 1, rt_mutex_setprio() throlled = 0,
- sched_switch() -> enqueue_task(), dl_task_timer-> enqueue_task()
- throttled is 0
+           CPU0
+  0:      76573    XT-PIC-XT-PIC    timer
+  1:         11    XT-PIC-XT-PIC    i8042
+  2:          0    XT-PIC-XT-PIC    cascade
+  4:          8    XT-PIC-XT-PIC    serial
+  6:          3    XT-PIC-XT-PIC    floppy
+  7:          0    XT-PIC-XT-PIC    parport0
+  8:          1    XT-PIC-XT-PIC    rtc0
+ 10:        448    XT-PIC-XT-PIC    fddi0
+ 12:         23    XT-PIC-XT-PIC    eth0
+ 14:       2464    XT-PIC-XT-PIC    ide0
+NMI:          0   Non-maskable interrupts
+ERR:          0
 
-=> BUG_ON(on_dl_rq(dl_se)) fires as the scheduling entity is already
-enqueued on the -deadline runqueue.
+to one like this:
 
-As we do for the other races, we just bail out in the replenishment
-timer code.
+           CPU0
+  0:     122033    XT-PIC  timer
+  1:         11    XT-PIC  i8042
+  2:          0    XT-PIC  cascade
+  4:          8    XT-PIC  serial
+  6:          3    XT-PIC  floppy
+  7:          0    XT-PIC  parport0
+  8:          1    XT-PIC  rtc0
+ 10:        145    XT-PIC  fddi0
+ 12:         31    XT-PIC  eth0
+ 14:       2245    XT-PIC  ide0
+NMI:          0   Non-maskable interrupts
+ERR:          0
 
-Reported-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
-Tested-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
-Signed-off-by: Juri Lelli <juri.lelli@arm.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: vincent@legout.info
-Cc: Dario Faggioli <raistlin@linux.it>
-Cc: Michael Trimarchi <michael@amarulasolutions.com>
-Cc: Fabio Checconi <fchecconi@gmail.com>
+that is one like we used to have from ~2.2 till it was changed
+sometime.
+
+The rationale is there is no value in this duplicate
+information, it  merely clutters output and looks ugly.  We only
+have one handler for  8259A interrupts so there is no need to
+give it a name separate from the  name already given to
+irq_chip.
+
+We could define meaningful names for handlers based on bits in
+the ELCR  register on systems that have it or the value of the
+LTIM bit we use in  ICW1 otherwise (hardcoded to 0 though with
+MCA support gone), to tell  edge-triggered and level-triggered
+inputs apart.  While that information  does not affect 8259A
+interrupt handlers it could help people determine  which lines
+are shareable and which are not.  That is material for a
+separate change though.
+
+Any tools that parse /proc/interrupts are supposed not to be
+affected  since it was many years we used the format this change
+converts back to.
+
+Signed-off-by: Maciej W. Rozycki <macro@linux-mips.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1414142198-18552-5-git-send-email-juri.lelli@arm.com
+Link: http://lkml.kernel.org/r/alpine.LFD.2.11.1410260147190.21390@eddie.linux-mips.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/deadline.c | 18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ arch/x86/kernel/i8259.c   | 3 +--
+ arch/x86/kernel/irqinit.c | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 92279ea..4616789 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -518,12 +518,20 @@ again:
- 	}
+diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
+index 8af8171..e7cc537 100644
+--- a/arch/x86/kernel/i8259.c
++++ b/arch/x86/kernel/i8259.c
+@@ -111,8 +111,7 @@ static void make_8259A_irq(unsigned int irq)
+ {
+ 	disable_irq_nosync(irq);
+ 	io_apic_irqs &= ~(1<<irq);
+-	irq_set_chip_and_handler_name(irq, &i8259A_chip, handle_level_irq,
+-				      i8259A_chip.name);
++	irq_set_chip_and_handler(irq, &i8259A_chip, handle_level_irq);
+ 	enable_irq(irq);
+ }
  
- 	/*
--	 * We need to take care of a possible races here. In fact, the
--	 * task might have changed its scheduling policy to something
--	 * different from SCHED_DEADLINE or changed its reservation
--	 * parameters (through sched_setattr()).
-+	 * We need to take care of several possible races here:
-+	 *
-+	 *   - the task might have changed its scheduling policy
-+	 *     to something different than SCHED_DEADLINE
-+	 *   - the task might have changed its reservation parameters
-+	 *     (through sched_setattr())
-+	 *   - the task might have been boosted by someone else and
-+	 *     might be in the boosting/deboosting path
-+	 *
-+	 * In all this cases we bail out, as the task is already
-+	 * in the runqueue or is going to be enqueued back anyway.
- 	 */
--	if (!dl_task(p) || dl_se->dl_new)
-+	if (!dl_task(p) || dl_se->dl_new ||
-+	    dl_se->dl_boosted || !dl_se->dl_throttled)
- 		goto unlock;
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index 44f1ed4..4de73ee 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -70,7 +70,6 @@ int vector_used_by_percpu_irq(unsigned int vector)
+ void __init init_ISA_irqs(void)
+ {
+ 	struct irq_chip *chip = legacy_pic->chip;
+-	const char *name = chip->name;
+ 	int i;
  
- 	sched_clock_tick();
+ #if defined(CONFIG_X86_64) || defined(CONFIG_X86_LOCAL_APIC)
+@@ -79,7 +78,7 @@ void __init init_ISA_irqs(void)
+ 	legacy_pic->init(0);
+ 
+ 	for (i = 0; i < nr_legacy_irqs(); i++)
+-		irq_set_chip_and_handler_name(i, chip, handle_level_irq, name);
++		irq_set_chip_and_handler(i, chip, handle_level_irq);
+ }
+ 
+ void __init init_IRQ(void)
