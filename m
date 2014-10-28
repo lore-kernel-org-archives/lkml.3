@@ -1,140 +1,482 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978AbaJ1RKo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:10:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58534 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001AbaJ1RKm (ORCPT
+	id S1753511AbaJ1RLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:11:17 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:42739 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753319AbaJ1RLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:10:42 -0400
-Message-ID: <1414516236.7447.81.camel@fourier>
-Subject: Re: [PATCH 3.13 100/105] dmaengine: pl330: Fix NULL pointer
- dereference on driver unbind
-From: Kamal Mostafa <kamal@canonical.com>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Vinod Koul <vinod.koul@intel.com>
-Date: Tue, 28 Oct 2014 10:10:36 -0700
-In-Reply-To: <1414483101.24949.1.camel@AMDC1943>
-References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
-	 <1414436240-13879-101-git-send-email-kamal@canonical.com>
-	 <1414483101.24949.1.camel@AMDC1943>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Oct 2014 13:11:13 -0400
+From: Guenter Roeck <linux@roeck-us.net>
+To: linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Alan Cox <gnomes@lxorguk.ukuu.org.uk>, Alexander Graf <agraf@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Heiko Stuebner <heiko@sntech.de>, Lee Jones <lee.jones@linaro.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        =?UTF-8?q?Philippe=20R=C3=A9tornaz?= <philippe.retornaz@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Romain Perier <romain.perier@gmail.com>
+Subject: [PATCH v4] kernel: Add support for power-off handler call chain
+Date: Tue, 28 Oct 2014 10:11:06 -0700
+Message-Id: <1414516266-4965-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020209.544FCE30.0393,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-10-28 at 08:58 +0100, Krzysztof Kozlowski wrote:
-> On pon, 2014-10-27 at 11:57 -0700, Kamal Mostafa wrote:
-> > 3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > 
-> > commit 6e4a2a83f95826201bbd89f55522537ea52d1d67 upstream.
-> 
-> Hi,
-> 
-> Please drop this patch from stable-3.13. This is fix only for 3.17. I
-> made mistake when searching for commit introducing this bug.
+Various drivers implement architecture and/or device specific means to
+power off the system.  For the most part, those drivers set the global
+variable pm_power_off to point to a function within the driver.
 
-Ok, dropped from 3.13-stable.  Thanks very much Krzysztof.
+This mechanism has a number of drawbacks.  Typically only one scheme
+to remove power is supported (at least if pm_power_off is used).
+At least in theory there can be multiple means remove power, some of
+which may be less desirable. For example, some mechanisms may only
+power off the CPU or the CPU card, while another may power off the
+entire system.  Others may really just execute a restart sequence
+or drop into the ROM monitor. Using pm_power_off can also be racy
+if the function pointer is set from a driver built as module, as the
+driver may be in the process of being unloaded when pm_power_off is
+called. If there are multiple power-off handlers in the system, removing
+a module with such a handler may inadvertently reset the pointer to
+pm_power_off to NULL, leaving the system with no means to remove power.
 
- -Kamal
+Introduce a system power-off handler call chain to solve the described
+problems.  This call chain is expected to be executed from the architecture
+specific machine_power_off() function.  Drivers and architeceture code
+providing system power-off functionality are expected to register with
+this call chain.  When registering a power-off handler, callers can
+provide a priority to control power-off handler execution sequence
+and thus ensure that the power-off handler with the optimal capabilities
+to remove power for a given system is called first.
 
+Cc: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Heiko Stuebner <heiko@sntech.de>
+Cc: Lee Jones <lee.jones@linaro.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Philippe Rétornaz <philippe.retornaz@gmail.com>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Romain Perier <romain.perier@gmail.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+Without agreement on this patch it does not make sense to keep going
+with the rest of the series, so I won't submit the rest of the series
+anymore until this patch has been accepted.
 
-> Actually this is fix for c26939e5204c ("dmaengine: pl330: Remove
-> pl330_chan_ctrl()") which was introduced in 3.17.
-> 
-> Best regards,
-> Krzysztof
-> 
-> > 
-> > Fix a NULL pointer dereference after unbinding the driver, if channel
-> > resources were not yet allocated (no call to
-> > pl330_alloc_chan_resources()):
-> > $ echo 12850000.mdma > /sys/bus/amba/drivers/dma-pl330/unbind
-> > [   13.606533] DMA pl330_control: removing pch: eeab6800, chan: eeab6814, thread:   (null)
-> > [   13.614472] Unable to handle kernel NULL pointer dereference at virtual address 0000000c
-> > [   13.622537] pgd = ee284000
-> > [   13.625228] [0000000c] *pgd=6e1e4831, *pte=00000000, *ppte=00000000
-> > [   13.631482] Internal error: Oops: 17 [#1] PREEMPT SMP ARM
-> > [   13.636859] Modules linked in:
-> > [   13.639903] CPU: 0 PID: 1 Comm: sh Not tainted 3.17.0-rc3-next-20140904-00004-g7020ffc33ca3-dirty #420
-> > [   13.649187] task: ee80a800 ti: ee888000 task.ti: ee888000
-> > [   13.654589] PC is at _stop+0x8/0x2c8
-> > [   13.658131] LR is at pl330_control+0x70/0x2e8
-> > [   13.662468] pc : [<c0206028>]    lr : [<c020649c>]    psr: 60000093
-> > [   13.662468] sp : ee889e58  ip : 00000001  fp : 000bab70
-> > [   13.673922] r10: eeab6814  r9 : ee16debc  r8 : 00000000
-> > [   13.679131] r7 : eeab685c  r6 : 60000013  r5 : ee16de10  r4 : eeab6800
-> > [   13.685641] r3 : 00000002  r2 : 00000000  r1 : 00010000  r0 : 00000000
-> > [   13.692153] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> > [   13.699357] Control: 10c5387d  Table: 6e28404a  DAC: 00000015
-> > [   13.705085] Process sh (pid: 1, stack limit = 0xee888240)
-> > [   13.710466] Stack: (0xee889e58 to 0xee88a000)
-> > [   13.714808] 9e40:                                                       00000002 eeab6800
-> > [   13.722969] 9e60: ee16de10 eeab6800 ee16de10 60000013 eeab685c c020649c 00000000 c040280c
-> > [   13.731128] 9e80: ee889e80 ee889e80 ee16de18 ee16de10 eeab6880 eeab6814 00200200 eeab68a8
-> > [   13.739287] 9ea0: 00100100 c0208048 00000000 c0409fc4 eea80800 eea808f8 c0605c44 0000000e
-> > [   13.747446] 9ec0: 0000000e eeb3960c eeb39600 c0203c48 eea80800 c0605c44 c0605a8c c023f694
-> > [   13.755605] 9ee0: ee80a800 eea80834 eea80800 c023f704 ee80a800 eea80800 c0605c44 c023e8ec
-> > [   13.763764] 9f00: 0000000e ee149780 ee29e580 ee889f80 ee29e580 c023e19c 0000000e c01167e4
-> > [   13.771923] 9f20: c01167a0 00000000 00000000 c0115e88 00000000 00000000 ee0b1a00 0000000e
-> > [   13.780082] 9f40: b6f48000 ee889f80 0000000e ee888000 b6f48000 c00bfadc 00000000 00000003
-> > [   13.788241] 9f60: 00000000 00000000 00000000 ee0b1a00 ee0b1a00 0000000e b6f48000 c00bfdf4
-> > [   13.796401] 9f80: 00000000 00000000 ffffffff 0000000e b6f48000 b6edc5d0 00000004 c000e7a4
-> > [   13.804560] 9fa0: 00000000 c000e620 0000000e b6f48000 00000001 b6f48000 0000000e 00000000
-> > [   13.812719] 9fc0: 0000000e b6f48000 b6edc5d0 00000004 0000000e b6f4c8c0 000c3470 000bab70
-> > [   13.820879] 9fe0: 00000000 bed2aa50 b6e18bdc b6e6b52c 60000010 00000001 c0c0c0c0 c0c0c0c0
-> > [   13.829058] [<c0206028>] (_stop) from [<c020649c>] (pl330_control+0x70/0x2e8)
-> > [   13.836165] [<c020649c>] (pl330_control) from [<c0208048>] (pl330_remove+0xb0/0xdc)
-> > [   13.843800] [<c0208048>] (pl330_remove) from [<c0203c48>] (amba_remove+0x24/0xc0)
-> > [   13.851272] [<c0203c48>] (amba_remove) from [<c023f694>] (__device_release_driver+0x70/0xc4)
-> > [   13.859685] [<c023f694>] (__device_release_driver) from [<c023f704>] (device_release_driver+0x1c/0x28)
-> > [   13.868971] [<c023f704>] (device_release_driver) from [<c023e8ec>] (unbind_store+0x58/0x90)
-> > [   13.877303] [<c023e8ec>] (unbind_store) from [<c023e19c>] (drv_attr_store+0x20/0x2c)
-> > [   13.885036] [<c023e19c>] (drv_attr_store) from [<c01167e4>] (sysfs_kf_write+0x44/0x48)
-> > [   13.892928] [<c01167e4>] (sysfs_kf_write) from [<c0115e88>] (kernfs_fop_write+0xc0/0x17c)
-> > [   13.901090] [<c0115e88>] (kernfs_fop_write) from [<c00bfadc>] (vfs_write+0xa0/0x1a8)
-> > [   13.908812] [<c00bfadc>] (vfs_write) from [<c00bfdf4>] (SyS_write+0x40/0x8c)
-> > [   13.915850] [<c00bfdf4>] (SyS_write) from [<c000e620>] (ret_fast_syscall+0x0/0x30)
-> > [   13.923392] Code: e5813010 e12fff1e e92d40f0 e24dd00c (e590200c)
-> > [   13.929467] ---[ end trace 10064e15a5929cf8 ]---
-> > 
-> > Terminate the thread and free channel resource only if channel resources
-> > were allocated (thread is not NULL).
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Fixes: b3040e40675e ("DMA: PL330: Add dma api driver")
-> > Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
-> > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> > ---
-> >  drivers/dma/pl330.c | 6 ++++--
-> >  1 file changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> > index df7fabb..5b03b4a 100644
-> > --- a/drivers/dma/pl330.c
-> > +++ b/drivers/dma/pl330.c
-> > @@ -3080,8 +3080,10 @@ static int pl330_remove(struct amba_device *adev)
-> >  		list_del(&pch->chan.device_node);
-> >  
-> >  		/* Flush the channel */
-> > -		pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-> > -		pl330_free_chan_resources(&pch->chan);
-> > +		if (pch->thread) {
-> > +			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-> > +			pl330_free_chan_resources(&pch->chan);
-> > +		}
-> >  	}
-> >  
-> >  	pi = &pdmac->pif;
-> 
+Tested with acpi power-off handler (patch 34/47 of original series)
+with adjustments made for the new version of this patch.
 
+v4:
+- Do not use notifiers but internal functions and data structures to manage
+  the list of power-off handlers. Drop unused parameters from callbacks, and
+  make the power-off function type void.
+  Code to manage and walk the list of callbacks is derived from notifier.c.
+v3:
+- Rename new file to power_off_handler.c
+- Replace poweroff in all newly introduced variables and in text
+  with power_off or power-off as appropriate
+- Replace POWEROFF_PRIORITY_xxx with POWER_OFF_PRIORITY_xxx
+- Execute power-off handlers without any locks held
+v2:
+- poweroff -> power_off
+- Add defines for default priorities
+- Use raw notifiers protected by spinlocks instead of atomic notifiers
+- Add register_poweroff_handler_simple
+- Add devm_register_power_off_handler
+
+ include/linux/pm.h               |  28 ++++
+ kernel/power/Makefile            |   1 +
+ kernel/power/power_off_handler.c | 293 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 322 insertions(+)
+ create mode 100644 kernel/power/power_off_handler.c
+
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index 383fd68..a4d6bf8 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -35,6 +35,34 @@ extern void (*pm_power_off)(void);
+ extern void (*pm_power_off_prepare)(void);
+ 
+ struct device; /* we have a circular dep with device.h */
++
++/*
++ * Data structures and callbacks to manage power-off handlers
++ */
++
++struct power_off_handler_block {
++	void (*handler)(struct power_off_handler_block *);
++	struct power_off_handler_block __rcu *next;
++	int priority;
++};
++
++int register_power_off_handler(struct power_off_handler_block *);
++int devm_register_power_off_handler(struct device *,
++				    struct power_off_handler_block *);
++int register_power_off_handler_simple(void (*function)(void), int priority);
++int unregister_power_off_handler(struct power_off_handler_block *);
++void do_kernel_power_off(void);
++bool have_kernel_power_off(void);
++
++/*
++ * Pre-defined power-off handler priorities
++ */
++#define POWER_OFF_PRIORITY_FALLBACK	0
++#define POWER_OFF_PRIORITY_LOW		64
++#define POWER_OFF_PRIORITY_DEFAULT	128
++#define POWER_OFF_PRIORITY_HIGH		192
++#define POWER_OFF_PRIORITY_HIGHEST	255
++
+ #ifdef CONFIG_VT_CONSOLE_SLEEP
+ extern void pm_vt_switch_required(struct device *dev, bool required);
+ extern void pm_vt_switch_unregister(struct device *dev);
+diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+index 29472bf..567eda5 100644
+--- a/kernel/power/Makefile
++++ b/kernel/power/Makefile
+@@ -2,6 +2,7 @@
+ ccflags-$(CONFIG_PM_DEBUG)	:= -DDEBUG
+ 
+ obj-y				+= qos.o
++obj-y				+= power_off_handler.o
+ obj-$(CONFIG_PM)		+= main.o
+ obj-$(CONFIG_VT_CONSOLE_SLEEP)	+= console.o
+ obj-$(CONFIG_FREEZER)		+= process.o
+diff --git a/kernel/power/power_off_handler.c b/kernel/power/power_off_handler.c
+new file mode 100644
+index 0000000..e576534
+--- /dev/null
++++ b/kernel/power/power_off_handler.c
+@@ -0,0 +1,293 @@
++/*
++ * kernel/power/power_off_handler.c - Power-off handling functions
++ *
++ * Copyright (c) 2014 Guenter Roeck
++ *
++ * List management code derived from kernel/notifier.c.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#define pr_fmt(fmt)	"power-off: " fmt
++
++#include <linux/ctype.h>
++#include <linux/device.h>
++#include <linux/export.h>
++#include <linux/kallsyms.h>
++#include <linux/pm.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
++#include <linux/types.h>
++
++/*
++ * List of handlers for kernel code which wants to be called
++ * to power off the system.
++ */
++static struct power_off_handler_block __rcu *power_off_handler_list;
++static DEFINE_SPINLOCK(power_off_handler_lock);
++
++/*
++ * Internal function to register power-off handler.
++ * Must be called with power-off spinlock acquired.
++ */
++static void _register_power_off_handler(struct power_off_handler_block *p)
++{
++	struct power_off_handler_block **pl = &power_off_handler_list;
++
++	while ((*pl) != NULL) {
++		if (p->priority > (*pl)->priority)
++			break;
++		pl = &((*pl)->next);
++	}
++	p->next = *pl;
++	rcu_assign_pointer(*pl, p);
++}
++
++/*
++ * Internal function to unregister a power-off handler.
++ * Must be called with power-off spinlock acquired.
++ */
++static int _unregister_power_off_handler(struct power_off_handler_block *p)
++{
++	struct power_off_handler_block **pl = &power_off_handler_list;
++
++	while ((*pl) != NULL) {
++		if ((*pl) == p) {
++			rcu_assign_pointer(*pl, p->next);
++			return 0;
++		}
++		pl = &((*pl)->next);
++	}
++	return -ENOENT;
++}
++
++/**
++ *	register_power_off_handler - Register function to be called to power off
++ *				     the system
++ *	@nb: Info about handler function to be called
++ *	@nb->priority:	Handler priority. Handlers should follow the
++ *			following guidelines for setting priorities.
++ *			0:	Power-off handler of last resort,
++ *				with limited power-off capabilities,
++ *				such as power-off handlers which
++ *				do not really power off the system
++ *				but loop forever or stop the CPU.
++ *			128:	Default power-off handler; use if no other
++ *				power-off handler is expected to be available,
++ *				and/or if power-off functionality is
++ *				sufficient to power off the entire system
++ *			255:	Highest priority power-off handler, will
++ *				preempt all other power-off handlers
++ *
++ *	Registers a function with code to be called to power off the
++ *	system.
++ *
++ *	Registered functions will be called from machine_power_off as last
++ *	step of the power-off sequence. Registered functions are expected
++ *	to power off the system immediately. If more than one function is
++ *	registered, the power-off handler priority selects which function
++ *	will be called first.
++ *
++ *	Power-off handlers may be registered from architecture code or from
++ *	drivers. A typical use case would be a system where power off
++ *	functionality is provided through a multi-function chip or through
++ *	a programmable power controller. Multiple power-off handlers may exist;
++ *	for example, one power-off handler might power off the entire system,
++ *	while another only powers off the CPU card. In such cases, the
++ *	power-off handler which only powers off part of the hardware is
++ *	expected to register with low priority to ensure that it only
++ *	runs if no other means to power off the system are available.
++ *
++ *	Always returns zero.
++ */
++int register_power_off_handler(struct power_off_handler_block *pb)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&power_off_handler_lock, flags);
++	_register_power_off_handler(pb);
++	spin_unlock_irqrestore(&power_off_handler_lock, flags);
++
++	return 0;
++}
++EXPORT_SYMBOL(register_power_off_handler);
++
++/**
++ *	unregister_power_off_handler - Unregister previously registered
++ *				       power-off handler
++ *	@nb: Hook to be unregistered
++ *
++ *	Unregisters a previously registered power-off handler function.
++ *
++ *	Returns zero on success, or %-ENOENT on failure.
++ */
++int unregister_power_off_handler(struct power_off_handler_block *pb)
++{
++	unsigned long flags;
++	int ret;
++
++	spin_lock_irqsave(&power_off_handler_lock, flags);
++	ret = _unregister_power_off_handler(pb);
++	spin_unlock_irqrestore(&power_off_handler_lock, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(unregister_power_off_handler);
++
++struct _power_off_handler_data {
++	void (*handler)(void);
++	struct power_off_handler_block power_off_hb;
++};
++
++static void _power_off_handler(struct power_off_handler_block *this)
++{
++	struct _power_off_handler_data *poh =
++		container_of(this, struct _power_off_handler_data,
++			     power_off_hb);
++
++	poh->handler();
++}
++
++static struct _power_off_handler_data power_off_handler_data;
++
++/**
++ *	register_power_off_handler_simple - Register function to be called
++ *					    to power off the system
++ *	@handler:	Function to be called to power off the system
++ *	@priority:	Handler priority. For priority guidelines see
++ *			register_power_off_handler.
++ *
++ *	This is a simplified version of register_power_off_handler. It does
++ *	not take a power-off handler as argument, but a function pointer.
++ *	The function registers a power-off handler with specified priority.
++ *	Power-off handlers registered with this function can not be
++ *	unregistered, and only a single power-off handler can be installed
++ *	using it.
++ *
++ *	This function must not be called from modules and is therefore
++ *	not exported.
++ *
++ *	Returns %-EBUSY if a power-off handler has already been registered
++ *	using register_power_off_handler_simple. Otherwise returns zero.
++ */
++int register_power_off_handler_simple(void (*handler)(void), int priority)
++{
++	unsigned long flags;
++	int ret = 0;
++
++	spin_lock_irqsave(&power_off_handler_lock, flags);
++
++	if (power_off_handler_data.handler) {
++		pr_warn("Power-off function already registered (%ps), cannot register %ps",
++			power_off_handler_data.handler, handler);
++		ret = -EBUSY;
++		goto abort;
++	}
++
++	power_off_handler_data.handler = handler;
++	power_off_handler_data.power_off_hb.handler = _power_off_handler;
++	power_off_handler_data.power_off_hb.priority = priority;
++
++	_register_power_off_handler(&power_off_handler_data.power_off_hb);
++abort:
++	spin_unlock_irqrestore(&power_off_handler_lock, flags);
++	return ret;
++}
++
++/* Device managed power-off handler registration */
++
++static void devm_power_off_release(struct device *dev, void *res)
++{
++	struct power_off_handler_block *hb;
++
++	hb = *(struct power_off_handler_block **)res;
++	unregister_power_off_handler(hb);
++}
++
++/**
++ *	devm_register_power_off_handler - Register function to be called
++ *					  to power off the system
++ *	@dev:		The device registering the power-off handler.
++ *	@handler:	Function to be called to power off the system
++ *	@priority:	Handler priority. For priority guidelines see
++ *			register_power_off_handler.
++ *
++ *	This is the device managed version of register_power_off_handler.
++ *
++ *	Returns %-EINVAL if dev is NULL. Returns %-ENOMEM if the system is
++ *	out of memory. Otherwise returns zero.
++ */
++int devm_register_power_off_handler(struct device *dev,
++				    struct power_off_handler_block *hb)
++{
++	struct power_off_handler_block **ptr;
++	unsigned long flags;
++
++	if (!dev)
++		return -EINVAL;
++
++	ptr = devres_alloc(devm_power_off_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return -ENOMEM;
++
++	spin_lock_irqsave(&power_off_handler_lock, flags);
++	_register_power_off_handler(hb);
++	spin_unlock_irqrestore(&power_off_handler_lock, flags);
++
++	*ptr = hb;
++	devres_add(dev, ptr);
++	return 0;
++}
++EXPORT_SYMBOL(devm_register_power_off_handler);
++
++/**
++ *	do_kernel_power_off - Execute kernel power-off handler call chain
++ *
++ *	Calls functions registered with register_power_off_handler.
++ *
++ *	Expected to be called from machine_power_off as last step of
++ *	the power-off sequence.
++ *
++ *	Powers the system off immediately if a power-off handler function
++ *	has been registered. Otherwise does nothing.
++ */
++void do_kernel_power_off(void)
++{
++	struct power_off_handler_block *p, *next_p;
++
++	/*
++	 * No locking. This code can be called from both atomic and non-atomic
++	 * context, with interrupts enabled or disabled, depending on the
++	 * architecture and platform.
++	 *
++	 * Power-off handler registration and de-registration are executed in
++	 * atomic context with interrupts disabled, which guarantees that
++	 * do_kernel_power_off() will not be called while a power-off handler
++	 * is installed or removed.
++	 * There is a theoretic risc that a power-off handler is installed or
++	 * removed while the call chain is traversed, but we'll have to accept
++	 * that risk.
++	 */
++
++	p = rcu_dereference_raw(power_off_handler_list);
++	while (p) {
++		next_p = rcu_dereference_raw(p->next);
++		p->handler(p);
++		p = next_p;
++	}
++}
++
++/**
++ * have_kernel_power_off() - Check if kernel power-off handler is available
++ *
++ * Returns true if a kernel power-off handler is available, false otherwise.
++ */
++bool have_kernel_power_off(void)
++{
++	return pm_power_off != NULL ||
++			rcu_dereference_raw(power_off_handler_list) != NULL;
++}
++EXPORT_SYMBOL(have_kernel_power_off);
+-- 
+1.9.1
 
