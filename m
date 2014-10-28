@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760216AbaJ1GuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:50:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45743 "EHLO
+	id S933007AbaJ1Dse (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:48:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933018AbaJ1Dsh (ORCPT
+	with ESMTP id S932948AbaJ1Dsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:48:37 -0400
+	Mon, 27 Oct 2014 23:48:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiubo Li <Li.Xiubo@freescale.com>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.14 019/100] regmap: debugfs: fix possbile NULL pointer dereference
-Date: Tue, 28 Oct 2014 11:35:04 +0800
-Message-Id: <20141028033501.495063502@linuxfoundation.org>
+        Bryan ODonoghue <pure.logic@nexus-software.ie>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.14 016/100] x86/intel/quark: Switch off CR4.PGE so TLB flush uses CR3 instead
+Date: Tue, 28 Oct 2014 11:35:01 +0800
+Message-Id: <20141028033501.371683062@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -28,53 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiubo Li <Li.Xiubo@freescale.com>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
-commit 2c98e0c1cc6b8e86f1978286c3d4e0769ee9d733 upstream.
+commit ee1b5b165c0a2f04d2107e634e51f05d0eb107de upstream.
 
-If 'map->dev' is NULL and there will lead dev_name() to be NULL pointer
-dereference. So before dev_name(), we need to have check of the map->dev
-pionter.
+Quark x1000 advertises PGE via the standard CPUID method
+PGE bits exist in Quark X1000's PTEs. In order to flush
+an individual PTE it is necessary to reload CR3 irrespective
+of the PTE.PGE bit.
 
-We also should make sure that the 'name' pointer shouldn't be NULL for
-debugfs_create_dir(). So here using one default "dummy" debugfs name when
-the 'name' pointer and 'map->dev' are both NULL.
+See Quark Core_DevMan_001.pdf section 6.4.11
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+This bug was fixed in Galileo kernels, unfixed vanilla kernels are expected to
+crash and burn on this platform.
+
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/regmap-debugfs.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/intel.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -473,6 +473,7 @@ void regmap_debugfs_init(struct regmap *
- {
- 	struct rb_node *next;
- 	struct regmap_range_node *range_node;
-+	const char *devname = "dummy";
- 
- 	/* If we don't have the debugfs root yet, postpone init */
- 	if (!regmap_debugfs_root) {
-@@ -491,12 +492,15 @@ void regmap_debugfs_init(struct regmap *
- 	INIT_LIST_HEAD(&map->debugfs_off_cache);
- 	mutex_init(&map->cache_lock);
- 
-+	if (map->dev)
-+		devname = dev_name(map->dev);
-+
- 	if (name) {
- 		map->debugfs_name = kasprintf(GFP_KERNEL, "%s-%s",
--					      dev_name(map->dev), name);
-+					      devname, name);
- 		name = map->debugfs_name;
- 	} else {
--		name = dev_name(map->dev);
-+		name = devname;
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -153,6 +153,21 @@ static void early_init_intel(struct cpui
+ 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
+ 		}
  	}
++
++	/*
++	 * Intel Quark Core DevMan_001.pdf section 6.4.11
++	 * "The operating system also is required to invalidate (i.e., flush)
++	 *  the TLB when any changes are made to any of the page table entries.
++	 *  The operating system must reload CR3 to cause the TLB to be flushed"
++	 *
++	 * As a result cpu_has_pge() in arch/x86/include/asm/tlbflush.h should
++	 * be false so that __flush_tlb_all() causes CR3 insted of CR4.PGE
++	 * to be modified
++	 */
++	if (c->x86 == 5 && c->x86_model == 9) {
++		pr_info("Disabling PGE capability bit\n");
++		setup_clear_cpu_cap(X86_FEATURE_PGE);
++	}
+ }
  
- 	map->debugfs = debugfs_create_dir(name, regmap_debugfs_root);
+ #ifdef CONFIG_X86_32
 
 
