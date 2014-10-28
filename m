@@ -1,178 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369AbaJ1SMs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:12:48 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:58510 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553AbaJ1SMq (ORCPT
+	id S1753842AbaJ1SNU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:13:20 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:40791 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438AbaJ1SNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:12:46 -0400
-From: Cheng-Yi He <chengyihetaipei@gmail.com>
-To: lidza.louina@gmail.com, markh@compro.net, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Cheng-Yi He <chengyihetaipei@gmail.com>
-Subject: [PATCH] Staging: dgnc: fix macro coding style issue in digi.h
-Date: Wed, 29 Oct 2014 02:12:38 +0800
-Message-Id: <1414519958-20457-1-git-send-email-chengyihetaipei@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Tue, 28 Oct 2014 14:13:18 -0400
+Date: Tue, 28 Oct 2014 11:13:11 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Yassin Jaffer <yassinjaffer@gmail.com>
+Subject: Re: [PATCH v7 1/2] mtd: nand: add sunxi NAND flash controller support
+Message-ID: <20141028181310.GA23619@ld-irv-0074>
+References: <1413896922-11680-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1413896922-11680-2-git-send-email-boris.brezillon@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1413896922-11680-2-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the digi.h file that fixes up the following error
-found by the checkpatch tool.
-ERROR: Macros with complex values should be enclosed in parentheses
+Hi Boris,
 
-Signed-off-by: Cheng-Yi He <chengyihetaipei@gmail.com>
----
- drivers/staging/dgnc/digi.h | 60 ++++++++++++++++++++++-----------------------
- 1 file changed, 30 insertions(+), 30 deletions(-)
+On Tue, Oct 21, 2014 at 03:08:41PM +0200, Boris Brezillon wrote:
+> +static int sunxi_nand_hw_ecc_ctrl_init(struct mtd_info *mtd,
+> +				       struct nand_ecc_ctrl *ecc,
+> +				       struct device_node *np)
+> +{
+> +	struct nand_ecclayout *layout;
+> +	int i, j;
+> +	int ret;
+> +
+> +	ret = sunxi_nand_hw_common_ecc_ctrl_init(mtd, ecc, np);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ecc->read_page = sunxi_nfc_hw_ecc_read_page;
+> +	ecc->write_page = sunxi_nfc_hw_ecc_write_page;
+> +	layout = ecc->layout;
+> +
+> +	for (i = 0; i < ecc->steps; i++) {
 
-diff --git a/drivers/staging/dgnc/digi.h b/drivers/staging/dgnc/digi.h
-index 3181a35..d6e0b9f 100644
---- a/drivers/staging/dgnc/digi.h
-+++ b/drivers/staging/dgnc/digi.h
-@@ -38,8 +38,8 @@
- 
- #if !defined(TIOCMODG)
- 
--#define	TIOCMODG	('d'<<8) | 250		/* get modem ctrl state	*/
--#define	TIOCMODS	('d'<<8) | 251		/* set modem ctrl state	*/
-+#define	TIOCMODG	(('d'<<8) | 250)	/* get modem ctrl state	*/
-+#define	TIOCMODS	(('d'<<8) | 251)	/* set modem ctrl state	*/
- 
- #ifndef TIOCM_LE
- #define		TIOCM_LE	0x01		/* line enable		*/
-@@ -58,44 +58,44 @@
- #endif
- 
- #if !defined(TIOCMSET)
--#define	TIOCMSET	('d'<<8) | 252		/* set modem ctrl state	*/
--#define	TIOCMGET	('d'<<8) | 253		/* set modem ctrl state	*/
-+#define	TIOCMSET	(('d'<<8) | 252)	/* set modem ctrl state	*/
-+#define	TIOCMGET	(('d'<<8) | 253)	/* set modem ctrl state	*/
- #endif
- 
- #if !defined(TIOCMBIC)
--#define	TIOCMBIC	('d'<<8) | 254		/* set modem ctrl state */
--#define	TIOCMBIS	('d'<<8) | 255		/* set modem ctrl state */
-+#define	TIOCMBIC	(('d'<<8) | 254)	/* set modem ctrl state */
-+#define	TIOCMBIS	(('d'<<8) | 255)	/* set modem ctrl state */
- #endif
- 
- 
- #if !defined(TIOCSDTR)
--#define	TIOCSDTR	('e'<<8) | 0		/* set DTR		*/
--#define	TIOCCDTR	('e'<<8) | 1		/* clear DTR		*/
-+#define	TIOCSDTR	(('e'<<8) | 0)		/* set DTR		*/
-+#define	TIOCCDTR	(('e'<<8) | 1)		/* clear DTR		*/
- #endif
- 
- /************************************************************************
-  * Ioctl command arguments for DIGI parameters.
-  ************************************************************************/
--#define DIGI_GETA	('e'<<8) | 94		/* Read params		*/
-+#define DIGI_GETA	(('e'<<8) | 94)		/* Read params		*/
- 
--#define DIGI_SETA	('e'<<8) | 95		/* Set params		*/
--#define DIGI_SETAW	('e'<<8) | 96		/* Drain & set params	*/
--#define DIGI_SETAF	('e'<<8) | 97		/* Drain, flush & set params */
-+#define DIGI_SETA	(('e'<<8) | 95)		/* Set params		*/
-+#define DIGI_SETAW	(('e'<<8) | 96)		/* Drain & set params	*/
-+#define DIGI_SETAF	(('e'<<8) | 97)		/* Drain, flush & set params */
- 
--#define DIGI_KME	('e'<<8) | 98		/* Read/Write Host	*/
-+#define DIGI_KME	(('e'<<8) | 98)		/* Read/Write Host	*/
- 						/* Adapter Memory	*/
- 
--#define	DIGI_GETFLOW	('e'<<8) | 99		/* Get startc/stopc flow */
-+#define	DIGI_GETFLOW	(('e'<<8) | 99)		/* Get startc/stopc flow */
- 						/* control characters	 */
--#define	DIGI_SETFLOW	('e'<<8) | 100		/* Set startc/stopc flow */
-+#define	DIGI_SETFLOW	(('e'<<8) | 100)	/* Set startc/stopc flow */
- 						/* control characters	 */
--#define	DIGI_GETAFLOW	('e'<<8) | 101		/* Get Aux. startc/stopc */
-+#define	DIGI_GETAFLOW	(('e'<<8) | 101)	/* Get Aux. startc/stopc */
- 						/* flow control chars	 */
--#define	DIGI_SETAFLOW	('e'<<8) | 102		/* Set Aux. startc/stopc */
-+#define	DIGI_SETAFLOW	(('e'<<8) | 102)	/* Set Aux. startc/stopc */
- 						/* flow control chars	 */
- 
--#define DIGI_GEDELAY	('d'<<8) | 246		/* Get edelay */
--#define DIGI_SEDELAY	('d'<<8) | 247		/* Set edelay */
-+#define DIGI_GEDELAY	(('d'<<8) | 246)	/* Get edelay */
-+#define DIGI_SEDELAY	(('d'<<8) | 247)	/* Set edelay */
- 
- struct	digiflow_t {
- 	unsigned char	startc;				/* flow cntl start char	*/
-@@ -104,8 +104,8 @@ struct	digiflow_t {
- 
- 
- #ifdef	FLOW_2200
--#define	F2200_GETA	('e'<<8) | 104		/* Get 2x36 flow cntl flags */
--#define	F2200_SETAW	('e'<<8) | 105		/* Set 2x36 flow cntl flags */
-+#define	F2200_GETA	(('e'<<8) | 104)	/* Get 2x36 flow cntl flags */
-+#define	F2200_SETAW	(('e'<<8) | 105)	/* Set 2x36 flow cntl flags */
- #define		F2200_MASK	0x03		/* 2200 flow cntl bit mask  */
- #define		FCNTL_2200	0x01		/* 2x36 terminal flow cntl  */
- #define		PCNTL_2200	0x02		/* 2x36 printer flow cntl   */
-@@ -241,7 +241,7 @@ struct digi_dinfo {
- 	char		dinfo_version[16];	/* driver version       */
- };
- 
--#define	DIGI_GETDD	('d'<<8) | 248		/* get driver info      */
-+#define	DIGI_GETDD	(('d'<<8) | 248)	/* get driver info      */
- 
- /************************************************************************
-  * Structure used with ioctl commands for per-board information
-@@ -261,7 +261,7 @@ struct digi_info {
- 	char		info_reserved[7];	/* for future expansion    */
- };
- 
--#define	DIGI_GETBD	('d'<<8) | 249		/* get board info          */
-+#define	DIGI_GETBD	(('d'<<8) | 249)	/* get board info          */
- 
- struct digi_stat {
- 	unsigned int	info_chan;		/* Channel number (0 based)  */
-@@ -276,7 +276,7 @@ struct digi_stat {
- 	unsigned int	info_reserved[8];	/* for future expansion    */
- };
- 
--#define	DIGI_GETSTAT	('d'<<8) | 244		/* get board info          */
-+#define	DIGI_GETSTAT	(('d'<<8) | 244)	/* get board info          */
- /************************************************************************
-  *
-  * Structure used with ioctl commands for per-channel information
-@@ -339,7 +339,7 @@ struct digi_getcounter {
- #define INFO_CH_WLOW	0x0020
- #define INFO_XXBUF_BUSY 0x0040
- 
--#define	DIGI_GETCH	('d'<<8) | 245		/* get board info          */
-+#define	DIGI_GETCH	(('d'<<8) | 245)	/* get board info          */
- 
- /* Board type definitions */
- 
-@@ -384,15 +384,15 @@ struct digi_getcounter {
- #define BD_TRIBOOT	0x8
- #define	BD_BADKME	0x80
- 
--#define DIGI_SPOLL            ('d'<<8) | 254  /* change poller rate   */
-+#define DIGI_SPOLL            (('d'<<8) | 254)  /* change poller rate   */
- 
- #define DIGI_SETCUSTOMBAUD	_IOW('e', 106, int)	/* Set integer baud rate */
- #define DIGI_GETCUSTOMBAUD	_IOR('e', 107, int)	/* Get integer baud rate */
- 
--#define DIGI_REALPORT_GETBUFFERS ('e'<<8) | 108
--#define DIGI_REALPORT_SENDIMMEDIATE ('e'<<8) | 109
--#define DIGI_REALPORT_GETCOUNTERS ('e'<<8) | 110
--#define DIGI_REALPORT_GETEVENTS ('e'<<8) | 111
-+#define DIGI_REALPORT_GETBUFFERS (('e'<<8) | 108)
-+#define DIGI_REALPORT_SENDIMMEDIATE (('e'<<8) | 109)
-+#define DIGI_REALPORT_GETCOUNTERS (('e'<<8) | 110)
-+#define DIGI_REALPORT_GETEVENTS (('e'<<8) | 111)
- 
- #define EV_OPU		0x0001		/* !<Output paused by client */
- #define EV_OPS		0x0002		/* !<Output paused by reqular sw flowctrl */
--- 
-1.8.1.2
+Hmm, did you retest this since changing this to ecc->steps? I think this
+won't work, since ecc->steps is only initialized in nand_scan_tail(),
+which comes after this. I only recommended the change for the
+{read,write}_page() type of functions, not the initialization functions.
 
+[snip the rest]
+
+So I'd suggest the following additional patch, and otherwise, the series
+is fine with me. If you give your ack, I can just squash this in and
+apply it to my tree:
+
+diff --git a/drivers/mtd/nand/sunxi_nand.c b/drivers/mtd/nand/sunxi_nand.c
+index ea615dc442a4..ccaa8e283388 100644
+--- a/drivers/mtd/nand/sunxi_nand.c
++++ b/drivers/mtd/nand/sunxi_nand.c
+@@ -931,6 +931,7 @@ static int sunxi_nand_hw_common_ecc_ctrl_init(struct mtd_info *mtd,
+ 	struct sunxi_nfc *nfc = to_sunxi_nfc(sunxi_nand->nand.controller);
+ 	struct sunxi_nand_hw_ecc *data;
+ 	struct nand_ecclayout *layout;
++	int nsectors;
+ 	int ret;
+ 	int i;
+ 
+@@ -959,13 +960,14 @@ static int sunxi_nand_hw_common_ecc_ctrl_init(struct mtd_info *mtd,
+ 	ecc->bytes = ALIGN(ecc->bytes, 2);
+ 
+ 	layout = &data->layout;
++	nsectors = mtd->writesize / ecc->size;
+ 
+-	if (mtd->oobsize < ((ecc->bytes + 4) * ecc->steps)) {
++	if (mtd->oobsize < ((ecc->bytes + 4) * nsectors)) {
+ 		ret = -EINVAL;
+ 		goto err;
+ 	}
+ 
+-	layout->eccbytes = (ecc->bytes * ecc->steps);
++	layout->eccbytes = (ecc->bytes * nsectors);
+ 
+ 	ecc->layout = layout;
+ 	ecc->priv = data;
+@@ -988,6 +990,7 @@ static int sunxi_nand_hw_ecc_ctrl_init(struct mtd_info *mtd,
+ 				       struct device_node *np)
+ {
+ 	struct nand_ecclayout *layout;
++	int nsectors;
+ 	int i, j;
+ 	int ret;
+ 
+@@ -998,8 +1001,9 @@ static int sunxi_nand_hw_ecc_ctrl_init(struct mtd_info *mtd,
+ 	ecc->read_page = sunxi_nfc_hw_ecc_read_page;
+ 	ecc->write_page = sunxi_nfc_hw_ecc_write_page;
+ 	layout = ecc->layout;
++	nsectors = mtd->writesize / ecc->size;
+ 
+-	for (i = 0; i < ecc->steps; i++) {
++	for (i = 0; i < nsectors; i++) {
+ 		if (i) {
+ 			layout->oobfree[i].offset =
+ 				layout->oobfree[i - 1].offset +
+@@ -1022,13 +1026,13 @@ static int sunxi_nand_hw_ecc_ctrl_init(struct mtd_info *mtd,
+ 					layout->oobfree[i].length + j;
+ 	}
+ 
+-	if (mtd->oobsize > (ecc->bytes + 4) * ecc->steps) {
+-		layout->oobfree[ecc->steps].offset =
+-				layout->oobfree[ecc->steps - 1].offset +
+-				layout->oobfree[ecc->steps - 1].length +
++	if (mtd->oobsize > (ecc->bytes + 4) * nsectors) {
++		layout->oobfree[nsectors].offset =
++				layout->oobfree[nsectors - 1].offset +
++				layout->oobfree[nsectors - 1].length +
+ 				ecc->bytes;
+-		layout->oobfree[ecc->steps].length = mtd->oobsize -
+-				((ecc->bytes + 4) * ecc->steps);
++		layout->oobfree[nsectors].length = mtd->oobsize -
++				((ecc->bytes + 4) * nsectors);
+ 	}
+ 
+ 	return 0;
+@@ -1039,6 +1043,7 @@ static int sunxi_nand_hw_syndrome_ecc_ctrl_init(struct mtd_info *mtd,
+ 						struct device_node *np)
+ {
+ 	struct nand_ecclayout *layout;
++	int nsectors;
+ 	int i;
+ 	int ret;
+ 
+@@ -1051,8 +1056,9 @@ static int sunxi_nand_hw_syndrome_ecc_ctrl_init(struct mtd_info *mtd,
+ 	ecc->write_page = sunxi_nfc_hw_syndrome_ecc_write_page;
+ 
+ 	layout = ecc->layout;
++	nsectors = mtd->writesize / ecc->size;
+ 
+-	for (i = 0; i < (ecc->bytes * ecc->steps); i++)
++	for (i = 0; i < (ecc->bytes * nsectors); i++)
+ 		layout->eccpos[i] = i;
+ 
+ 	layout->oobfree[0].length = mtd->oobsize - i;
