@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaJ1WES (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:04:18 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53135 "EHLO e7.ny.us.ibm.com"
+	id S1755705AbaJ1WEX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:04:23 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:45783 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753438AbaJ1WER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:04:17 -0400
+	id S1753438AbaJ1WET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:04:19 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,59 +14,59 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
         bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 3/5] documentation: Additional restriction for control dependencies
-Date: Tue, 28 Oct 2014 15:00:15 -0700
-Message-Id: <1414533617-25933-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 4/5] documentation: Add atomic_long_t to atomic_ops.txt
+Date: Tue, 28 Oct 2014 15:00:16 -0700
+Message-Id: <1414533617-25933-4-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1414533617-25933-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20141028215937.GA25095@linux.vnet.ibm.com>
  <1414533617-25933-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102822-0025-0000-0000-000000F0501D
+x-cbid: 14102822-0033-0000-0000-000000E3F221
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Short-circuit booleans are not defences against compilers breaking
-your intended control dependencies.
-
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- Documentation/memory-barriers.txt | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ Documentation/atomic_ops.txt | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index d6bc77eb179a..8ebb66128cc8 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -725,6 +725,24 @@ Please note once again that the stores to 'b' differ.  If they were
- identical, as noted earlier, the compiler could pull this store outside
- of the 'if' statement.
+diff --git a/Documentation/atomic_ops.txt b/Documentation/atomic_ops.txt
+index 68542fe13b85..183e41bdcb69 100644
+--- a/Documentation/atomic_ops.txt
++++ b/Documentation/atomic_ops.txt
+@@ -7,12 +7,13 @@
+ maintainers on how to implement atomic counter, bitops, and spinlock
+ interfaces properly.
  
-+You must also be careful not to rely too much on boolean short-circuit
-+evaluation.  Consider this example:
+-	The atomic_t type should be defined as a signed integer.
+-Also, it should be made opaque such that any kind of cast to a normal
+-C integer type will fail.  Something like the following should
+-suffice:
++	The atomic_t type should be defined as a signed integer and
++the atomic_long_t type as a signed long integer.  Also, they should
++be made opaque such that any kind of cast to a normal C integer type
++will fail.  Something like the following should suffice:
+ 
+ 	typedef struct { int counter; } atomic_t;
++	typedef struct { long counter; } atomic_long_t;
+ 
+ Historically, counter has been declared volatile.  This is now discouraged.
+ See Documentation/volatile-considered-harmful.txt for the complete rationale.
+@@ -37,6 +38,9 @@ initializer is used before runtime.  If the initializer is used at runtime, a
+ proper implicit or explicit read memory barrier is needed before reading the
+ value with atomic_read from another thread.
+ 
++As with all of the atomic_ interfaces, replace the leading "atomic_"
++with "atomic_long_" to operate on atomic_long_t.
 +
-+	q = ACCESS_ONCE(a);
-+	if (a || 1 > 0)
-+		ACCESS_ONCE(b) = 1;
-+
-+Because the second condition is always true, the compiler can transform
-+this example as following, defeating control dependency:
-+
-+	q = ACCESS_ONCE(a);
-+	ACCESS_ONCE(b) = 1;
-+
-+This example underscores the need to ensure that the compiler cannot
-+out-guess your code.  More generally, although ACCESS_ONCE() does force
-+the compiler to actually emit code for a given load, it does not force
-+the compiler to use the results.
-+
- Finally, control dependencies do -not- provide transitivity.  This is
- demonstrated by two related examples, with the initial values of
- x and y both being zero:
+ The second interface can be used at runtime, as in:
+ 
+ 	struct foo { atomic_t counter; };
 -- 
 1.8.1.5
 
