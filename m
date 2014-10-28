@@ -1,149 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933247AbaJ1H6n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:58:43 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:9532 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759912AbaJ1H6l (ORCPT
+	id S1753937AbaJ1DhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:37:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44390 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753915AbaJ1DhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 03:58:41 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-65-544f4cae664a
-Message-id: <1414483115.24949.2.camel@AMDC1943>
-Subject: Re: [PATCH 3.13 099/105] dmaengine: pl330: Fix NULL pointer
- dereference on probe failure
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Vinod Koul <vinod.koul@intel.com>
-Date: Tue, 28 Oct 2014 08:58:35 +0100
-In-reply-to: <1414436240-13879-100-git-send-email-kamal@canonical.com>
-References: <1414436240-13879-1-git-send-email-kamal@canonical.com>
- <1414436240-13879-100-git-send-email-kamal@canonical.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDLMWRmVeSWpSXmKPExsVy+t/xa7rrfPxDDNqXs1l8v7qbxWLOo03s
-	Fpd3zWGzWLDxEaPFy779LA6sHrMaetk8Fu95yeRx7cZ9Fo/Pm+QCWKK4bFJSczLLUov07RK4
-	Mj5M/cJasE6r4uvdI+wNjGuUuxg5OSQETCQmnt7FCmGLSVy4t56ti5GLQ0hgKaPEptvvoJzP
-	jBJ7P85kAaniFdCXePRnA1MXIweHsECyxPtGsEFsAsYSm5cvYQOxRQTUJU4emQJWzixQLXH2
-	0yxGkHIWAVWJ3RsTQcKcAm4S3Wd7wcqFBOolVjzdxQZRri4xad4iZpByCQFlicZ+N4ilghI/
-	Jt+DmigvsXnNW+YJjAKzkHTMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh
-	Ifx1B+PSY1aHGAU4GJV4eCNY/EOEWBPLiitzDzFKcDArifAuVwEK8aYkVlalFuXHF5XmpBYf
-	YmTi4JRqYDSd5MvW8cDGdt1byVcxEw7cCI/YoVS57ONqV79tPAos/k5fn/O1Tmac/u7kIl0z
-	3vcymtvPrwxYrHfk0Rwur208rzeZG/i+upUhLXFFUfpaZO3BymDznwyx0+9yXn0qs7/+65RP
-	FssfXln77+kRVpPrO9bskmBybJVfsuNIqs6RaykbzkkxzytRYinOSDTUYi4qTgQAoeWa0D8C	AAA=
+	Mon, 27 Oct 2014 23:37:14 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Matlack <dmatlack@google.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.17 017/146] kvm: fix potentially corrupt mmio cache
+Date: Tue, 28 Oct 2014 11:32:39 +0800
+Message-Id: <20141028033344.168618746@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
+References: <20141028033343.441992423@linuxfoundation.org>
+User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pon, 2014-10-27 at 11:57 -0700, Kamal Mostafa wrote:
-> 3.13.11.10 -stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
-> commit 0f5ebabdd03b471da1906f7edddc61ceb35cee02 upstream.
-> 
-> If dma_async_device_register() returns error and probe should clean up
-> and return error, a NULL pointer exception happens because of
-> dereference of not allocated channel thread:
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-Hi,
+------------------
 
-Please drop this patch from stable-3.13. This is fix only for 3.17. I
-made mistake when searching for commit introducing this bug.
+From: David Matlack <dmatlack@google.com>
 
-Actually this is fix for c26939e5204c ("dmaengine: pl330: Remove
-pl330_chan_ctrl()") which was introduced in 3.17.
+commit ee3d1570b58677885b4552bce8217fda7b226a68 upstream.
 
-Best regards,
-Krzysztof
+vcpu exits and memslot mutations can run concurrently as long as the
+vcpu does not aquire the slots mutex. Thus it is theoretically possible
+for memslots to change underneath a vcpu that is handling an exit.
 
-> 
-> Dmesg log (from early printk):
-> dma-pl330 12680000.pdma: unable to register DMAC
-> DMA pl330_control: removing pch: eeac4000, chan: eeac4014, thread:   (null)
-> Unable to handle kernel NULL pointer dereference at virtual address 0000000c
-> pgd = c0004000
-> [0000000c] *pgd=00000000
-> Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-> Modules linked in:
-> CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.17.0-rc3-next-20140904-00005-g6cc4c1937d90-dirty #427
-> task: ee80a800 ti: ee888000 task.ti: ee888000
-> PC is at _stop+0x8/0x2c8
-> LR is at pl330_control+0x70/0x2e8
-> pc : [<c0205dc8>]    lr : [<c020623c>]    psr: 60000193
-> sp : ee889df8  ip : 00000002  fp : 00000000
-> r10: eeac4014  r9 : ee0e62bc  r8 : 00000000
-> r7 : eeac405c  r6 : 60000113  r5 : ee0e6210  r4 : eeac4000
-> r3 : 00000002  r2 : 00000002  r1 : 00010000  r0 : 00000000
-> Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 10c5387d  Table: 4000404a  DAC: 00000015
-> Process swapper/0 (pid: 1, stack limit = 0xee888240)
-> Stack: (0xee889df8 to 0xee88a000)
-> 9de0:                                                       00000002 eeac4000
-> 9e00: ee0e6210 eeac4000 ee0e6210 60000113 eeac405c c020623c 00000000 c020725c
-> 9e20: ee889e20 ee889e20 ee0e6210 eeac4080 00200200 00100100 eeac4014 00000020
-> 9e40: ee0e6218 c0208374 00000000 ee9bb340 ee0e6210 00000000 00000000 c0605cd8
-> 9e60: ee970000 c0605c84 ee9700f8 00000000 c05c4270 00000000 00000000 c0203b3c
-> 9e80: ee970000 c06624a8 00000000 c0605c84 00000000 c023f890 ee970000 c0605c84
-> 9ea0: ee970034 00000000 c05b23d0 c023fa3c 00000000 c0605c84 c023f9b0 c023e0d4
-> 9ec0: ee947e78 ee9b9440 c0605c84 eea1e780 c0605acc c023f094 c0513b50 c0605c84
-> 9ee0: c05ecbd8 c0605c84 c05ecbd8 ee11ba40 c0626500 c0240064 00000000 c05ecbd8
-> 9f00: c05ecbd8 c0008964 c040f13c 0000009f c0626500 c057465c ee80a800 60000113
-> 9f20: 00000000 c05efdb0 60000113 00000000 ef7fc89d c0421168 0000008f c003787c
-> 9f40: c0573d6c 00000006 ef7fc8bb 00000006 c05efd50 ef7fc800 c05dfbc4 00000006
-> 9f60: c05c4264 c0626500 0000008f c05c4270 c059b518 c059bcb4 00000006 00000006
-> 9f80: c059b518 c003c08c 00000000 c040091c 00000000 00000000 00000000 00000000
-> 9fa0: 00000000 c0400924 00000000 c000e7b8 00000000 00000000 00000000 00000000
-> 9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> 9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
-> [<c0205dc8>] (_stop) from [<c020623c>] (pl330_control+0x70/0x2e8)
-> [<c020623c>] (pl330_control) from [<c0208374>] (pl330_probe+0x594/0x75c)
-> [<c0208374>] (pl330_probe) from [<c0203b3c>] (amba_probe+0xb8/0x120)
-> [<c0203b3c>] (amba_probe) from [<c023f890>] (driver_probe_device+0x10c/0x22c)
-> [<c023f890>] (driver_probe_device) from [<c023fa3c>] (__driver_attach+0x8c/0x90)
-> [<c023fa3c>] (__driver_attach) from [<c023e0d4>] (bus_for_each_dev+0x54/0x88)
-> [<c023e0d4>] (bus_for_each_dev) from [<c023f094>] (bus_add_driver+0xd4/0x1d0)
-> [<c023f094>] (bus_add_driver) from [<c0240064>] (driver_register+0x78/0xf4)
-> [<c0240064>] (driver_register) from [<c0008964>] (do_one_initcall+0x80/0x1d0)
-> [<c0008964>] (do_one_initcall) from [<c059bcb4>] (kernel_init_freeable+0x108/0x1d4)
-> [<c059bcb4>] (kernel_init_freeable) from [<c0400924>] (kernel_init+0x8/0xec)
-> [<c0400924>] (kernel_init) from [<c000e7b8>] (ret_from_fork+0x14/0x3c)
-> Code: e5813010 e12fff1e e92d40f0 e24dd00c (e590200c)
-> ---[ end trace c94b2f4f38dff3bf ]---
-> 
-> This happens because the necessary resources were not yet allocated - no
-> call to pl330_alloc_chan_resources().
-> 
-> Terminate the thread and free channel resource only if channel thread is not NULL.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Fixes: 0b94c5771705 ("DMA: PL330: Add check if device tree compatible")
-> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
-> Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> ---
->  drivers/dma/pl330.c | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-> index 536632f..df7fabb 100644
-> --- a/drivers/dma/pl330.c
-> +++ b/drivers/dma/pl330.c
-> @@ -3047,8 +3047,10 @@ probe_err3:
->  		list_del(&pch->chan.device_node);
->  
->  		/* Flush the channel */
-> -		pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-> -		pl330_free_chan_resources(&pch->chan);
-> +		if (pch->thread) {
-> +			pl330_control(&pch->chan, DMA_TERMINATE_ALL, 0);
-> +			pl330_free_chan_resources(&pch->chan);
-> +		}
->  	}
->  probe_err2:
->  	pl330_del(pi);
+If we increment the memslot generation number again after
+synchronize_srcu_expedited(), vcpus can safely cache memslot generation
+without maintaining a single rcu_dereference through an entire vm exit.
+And much of the x86/kvm code does not maintain a single rcu_dereference
+of the current memslots during each exit.
+
+We can prevent the following case:
+
+   vcpu (CPU 0)                             | thread (CPU 1)
+--------------------------------------------+--------------------------
+1  vm exit                                  |
+2  srcu_read_unlock(&kvm->srcu)             |
+3  decide to cache something based on       |
+     old memslots                           |
+4                                           | change memslots
+                                            | (increments generation)
+5                                           | synchronize_srcu(&kvm->srcu);
+6  retrieve generation # from new memslots  |
+7  tag cache with new memslot generation    |
+8  srcu_read_unlock(&kvm->srcu)             |
+...                                         |
+   <action based on cache occurs even       |
+    though the caching decision was based   |
+    on the old memslots>                    |
+...                                         |
+   <action *continues* to occur until next  |
+    memslot generation change, which may    |
+    be never>                               |
+                                            |
+
+By incrementing the generation after synchronizing with kvm->srcu readers,
+we ensure that the generation retrieved in (6) will become invalid soon
+after (8).
+
+Keeping the existing increment is not strictly necessary, but we
+do keep it and just move it for consistency from update_memslots to
+install_new_memslots.  It invalidates old cached MMIOs immediately,
+instead of having to wait for the end of synchronize_srcu_expedited,
+which makes the code more clearly correct in case CPU 1 is preempted
+right after synchronize_srcu() returns.
+
+To avoid halving the generation space in SPTEs, always presume that the
+low bit of the generation is zero when reconstructing a generation number
+out of an SPTE.  This effectively disables MMIO caching in SPTEs during
+the call to synchronize_srcu_expedited.  Using the low bit this way is
+somewhat like a seqcount---where the protected thing is a cache, and
+instead of retrying we can simply punt if we observe the low bit to be 1.
+
+Signed-off-by: David Matlack <dmatlack@google.com>
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Reviewed-by: David Matlack <dmatlack@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ Documentation/virtual/kvm/mmu.txt |   14 ++++++++++++++
+ arch/x86/kvm/mmu.c                |   20 ++++++++++++--------
+ virt/kvm/kvm_main.c               |   23 ++++++++++++++++-------
+ 3 files changed, 42 insertions(+), 15 deletions(-)
+
+--- a/Documentation/virtual/kvm/mmu.txt
++++ b/Documentation/virtual/kvm/mmu.txt
+@@ -425,6 +425,20 @@ fault through the slow path.
+ Since only 19 bits are used to store generation-number on mmio spte, all
+ pages are zapped when there is an overflow.
+ 
++Unfortunately, a single memory access might access kvm_memslots(kvm) multiple
++times, the last one happening when the generation number is retrieved and
++stored into the MMIO spte.  Thus, the MMIO spte might be created based on
++out-of-date information, but with an up-to-date generation number.
++
++To avoid this, the generation number is incremented again after synchronize_srcu
++returns; thus, the low bit of kvm_memslots(kvm)->generation is only 1 during a
++memslot update, while some SRCU readers might be using the old copy.  We do not
++want to use an MMIO sptes created with an odd generation number, and we can do
++this without losing a bit in the MMIO spte.  The low bit of the generation
++is not stored in MMIO spte, and presumed zero when it is extracted out of the
++spte.  If KVM is unlucky and creates an MMIO spte while the low bit is 1,
++the next access to the spte will always be a cache miss.
++
+ 
+ Further reading
+ ===============
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -199,16 +199,20 @@ void kvm_mmu_set_mmio_spte_mask(u64 mmio
+ EXPORT_SYMBOL_GPL(kvm_mmu_set_mmio_spte_mask);
+ 
+ /*
+- * spte bits of bit 3 ~ bit 11 are used as low 9 bits of generation number,
+- * the bits of bits 52 ~ bit 61 are used as high 10 bits of generation
+- * number.
++ * the low bit of the generation number is always presumed to be zero.
++ * This disables mmio caching during memslot updates.  The concept is
++ * similar to a seqcount but instead of retrying the access we just punt
++ * and ignore the cache.
++ *
++ * spte bits 3-11 are used as bits 1-9 of the generation number,
++ * the bits 52-61 are used as bits 10-19 of the generation number.
+  */
+-#define MMIO_SPTE_GEN_LOW_SHIFT		3
++#define MMIO_SPTE_GEN_LOW_SHIFT		2
+ #define MMIO_SPTE_GEN_HIGH_SHIFT	52
+ 
+-#define MMIO_GEN_SHIFT			19
+-#define MMIO_GEN_LOW_SHIFT		9
+-#define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 1)
++#define MMIO_GEN_SHIFT			20
++#define MMIO_GEN_LOW_SHIFT		10
++#define MMIO_GEN_LOW_MASK		((1 << MMIO_GEN_LOW_SHIFT) - 2)
+ #define MMIO_GEN_MASK			((1 << MMIO_GEN_SHIFT) - 1)
+ #define MMIO_MAX_GEN			((1 << MMIO_GEN_SHIFT) - 1)
+ 
+@@ -4433,7 +4437,7 @@ void kvm_mmu_invalidate_mmio_sptes(struc
+ 	 * The very rare case: if the generation-number is round,
+ 	 * zap all shadow pages.
+ 	 */
+-	if (unlikely(kvm_current_mmio_generation(kvm) >= MMIO_MAX_GEN)) {
++	if (unlikely(kvm_current_mmio_generation(kvm) == 0)) {
+ 		printk_ratelimited(KERN_INFO "kvm: zapping shadow pages for mmio generation wraparound\n");
+ 		kvm_mmu_invalidate_zap_all_pages(kvm);
+ 	}
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -95,8 +95,6 @@ static int hardware_enable_all(void);
+ static void hardware_disable_all(void);
+ 
+ static void kvm_io_bus_destroy(struct kvm_io_bus *bus);
+-static void update_memslots(struct kvm_memslots *slots,
+-			    struct kvm_memory_slot *new, u64 last_generation);
+ 
+ static void kvm_release_pfn_dirty(pfn_t pfn);
+ static void mark_page_dirty_in_slot(struct kvm *kvm,
+@@ -687,8 +685,7 @@ static void sort_memslots(struct kvm_mem
+ }
+ 
+ static void update_memslots(struct kvm_memslots *slots,
+-			    struct kvm_memory_slot *new,
+-			    u64 last_generation)
++			    struct kvm_memory_slot *new)
+ {
+ 	if (new) {
+ 		int id = new->id;
+@@ -699,8 +696,6 @@ static void update_memslots(struct kvm_m
+ 		if (new->npages != npages)
+ 			sort_memslots(slots);
+ 	}
+-
+-	slots->generation = last_generation + 1;
+ }
+ 
+ static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
+@@ -722,10 +717,24 @@ static struct kvm_memslots *install_new_
+ {
+ 	struct kvm_memslots *old_memslots = kvm->memslots;
+ 
+-	update_memslots(slots, new, kvm->memslots->generation);
++	/*
++	 * Set the low bit in the generation, which disables SPTE caching
++	 * until the end of synchronize_srcu_expedited.
++	 */
++	WARN_ON(old_memslots->generation & 1);
++	slots->generation = old_memslots->generation + 1;
++
++	update_memslots(slots, new);
+ 	rcu_assign_pointer(kvm->memslots, slots);
+ 	synchronize_srcu_expedited(&kvm->srcu);
+ 
++	/*
++	 * Increment the new memslot generation a second time. This prevents
++	 * vm exits that race with memslot updates from caching a memslot
++	 * generation that will (potentially) be valid forever.
++	 */
++	slots->generation++;
++
+ 	kvm_arch_memslots_updated(kvm);
+ 
+ 	return old_memslots;
+
 
