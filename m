@@ -1,64 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323AbaJ1EIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:08:13 -0400
-Received: from out4133-66.mail.aliyun.com ([42.120.133.66]:28834 "EHLO
-	out4133-66.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933209AbaJ1EIK (ORCPT
+	id S932978AbaJ1Dxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:53:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47658 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934211AbaJ1Dxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 00:08:10 -0400
-X-Greylist: delayed 1931 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 00:08:10 EDT
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R131e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r41g06002;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=10;RT=10;SR=0;
-Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-To: "'Andy Lutomirski'" <luto@amacapital.net>
-Cc: "'Peter Zijlstra'" <peterz@infradead.org>,
-        "'Ingo Molnar'" <mingo@redhat.com>,
-        "'Vince Weaver'" <vince@deater.net>,
-        "'Paul Mackerras'" <paulus@samba.org>,
-        "'Kees Cook'" <keescook@chromium.org>,
-        "'Arnaldo Carvalho de Melo'" <acme@kernel.org>,
-        "'Andrea Arcangeli'" <aarcange@redhat.com>,
-        <linux-kernel@vger.kernel.org>,
-        "'Valdis Kletnieks'" <Valdis.Kletnieks@vt.edu>
-References: <00cd01cff1b5$fda5a660$f8f0f320$@alibaba-inc.com> <CALCETrX7-OzQrOr3+TXy8NB8LS8aYwLN_A-vAeicwoQHsUH_yw@mail.gmail.com> <007d01cff260$3c69e9b0$b53dbd10$@alibaba-inc.com> <CALCETrW5iJWd65Ems6F3RZL+CxYrQ75nDyFFmgA52ky--pzwTQ@mail.gmail.com>
-In-Reply-To: <CALCETrW5iJWd65Ems6F3RZL+CxYrQ75nDyFFmgA52ky--pzwTQ@mail.gmail.com>
-Subject: RE: [PATCH v2 7/8] x86, perf: Only allow rdpmc if a perf_event is mapped
-Date: Tue, 28 Oct 2014 12:07:43 +0800
-Message-ID: <007e01cff264$bce6afc0$36b40f40$@alibaba-inc.com>
+	Mon, 27 Oct 2014 23:53:33 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.10 27/43] NFSv4.1: Fix an NFSv4.1 state renewal regression
+Date: Tue, 28 Oct 2014 11:36:25 +0800
+Message-Id: <20141028033524.573148666@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQGv8belJq57AVXnUT9ecJ/XX3ZkYAILijxMAfGBfZwCIFdox5xT+ZOg
-Content-Language: zh-cn
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> Subject: Re: [PATCH v2 7/8] x86, perf: Only allow rdpmc if a perf_event is mapped
-> >>
-> > CPU D                   CPU A
-> > switch_mm
-> > load_mm_cr4
-> >                         x86_pmu_event_unmapped
-> >
-> > I wonder if the X86_CR4_PCE set on CPU D is
-> > cleared by CPU A by broadcasting IPI.
-> >
-> 
-> It should be okay.  The IPI does:
-> 
-> +       if (current->mm)
-> +               load_mm_cr4(current->mm);
-> 
-> which refers to the current task running on the targetted CPU, not to
-> the IPI sender's task.  So, if it happens after a context switch, it
-> will harmlessly reload the new task's cr4.
->
-Right, but prev != next is checked in switch_mm.
+3.10-stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Andy Adamson <andros@netapp.com>
+
+commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
+
+Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
+not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
+call, on the wire to renew the NFSv4.1 state if the flag was not set.
+
+The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
+(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
+sometimes does the following:
+
+In normal operation, the only way a future state renewal call is put on the
+wire is via a call to nfs4_schedule_state_renewal, which schedules a
+nfs4_renew_state workqueue task. nfs4_renew_state determines if the
+NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
+which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
+Then the nfs41_proc_async_sequence rpc_release function schedules
+another state remewal via nfs4_schedule_state_renewal.
+
+Without this change we can get into a state where an application stops
+accessing the NFSv4.1 share, state renewal calls stop due to the
+NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
+from this situation is with a clientid re-establishment, once the application
+resumes and the server has timed out the lease and so returns
+NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
+
+An example application:
+open, lock, write a file.
+
+sleep for 6 * lease (could be less)
+
+ulock, close.
+
+In the above example with NFSv4.1 delegations enabled, without this change,
+there are no OP_SEQUENCE state renewal calls during the sleep, and the
+clientid is recovered due to lease expiration on the close.
+
+This issue does not occur with NFSv4.1 delegations disabled, nor with
+NFSv4.0, with or without delegations enabled.
+
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
+Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/nfs/nfs4proc.c   |    2 +-
+ fs/nfs/nfs4renewd.c |   12 ++++++++++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -6067,7 +6067,7 @@ static int nfs41_proc_async_sequence(str
+ 	int ret = 0;
  
-Hillf
+ 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
+-		return 0;
++		return -EAGAIN;
+ 	task = _nfs41_proc_sequence(clp, cred, false);
+ 	if (IS_ERR(task))
+ 		ret = PTR_ERR(task);
+--- a/fs/nfs/nfs4renewd.c
++++ b/fs/nfs/nfs4renewd.c
+@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *wor
+ 			}
+ 			nfs_expire_all_delegations(clp);
+ 		} else {
++			int ret;
++
+ 			/* Queue an asynchronous RENEW. */
+-			ops->sched_state_renewal(clp, cred, renew_flags);
++			ret = ops->sched_state_renewal(clp, cred, renew_flags);
+ 			put_rpccred(cred);
+-			goto out_exp;
++			switch (ret) {
++			default:
++				goto out_exp;
++			case -EAGAIN:
++			case -ENOMEM:
++				break;
++			}
+ 		}
+ 	} else {
+ 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
 
 
