@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaJ1WKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:10:42 -0400
-Received: from botnar.kaiser.cx ([176.28.20.183]:33057 "EHLO botnar.kaiser.cx"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755027AbaJ1WKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:10:41 -0400
-X-Greylist: delayed 1166 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Oct 2014 18:10:40 EDT
-Date: Tue, 28 Oct 2014 22:51:01 +0100
-From: Martin Kaiser <martin@kaiser.cx>
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] [media] lirc: use kfifo_initialized() on lirc_buffer's fifo
-Message-ID: <20141028215052.GA28171@husavik.kaiser.cx>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755094AbaJ1WL6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:11:58 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:63797 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaJ1WL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:11:56 -0400
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net-next 0/3] reduce verifier memory consumption and add tests
+Date: Tue, 28 Oct 2014 15:11:40 -0700
+Message-Id: <1414534303-9906-1-git-send-email-ast@plumgrid.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can use kfifo_initialized() to check if the fifo in lirc_buffer is
-initialized or not. There's no need to have a dedicated fifo status
-variable in lirc_buffer.
+Small set of cleanups:
+ - reduce verifier memory consumption
+ - add verifier test to check register state propagation and state equivalence
+ - add JIT test reduced from recent nmap triggered crash
 
-Signed-off-by: Martin Kaiser <martin@kaiser.cx>
----
- include/media/lirc_dev.h |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+Alexei Starovoitov (3):
+  bpf: reduce verifier memory consumption
+  samples: bpf: add a verifier test and summary line
+  test: bpf: add a testcase reduced from nmap
 
-diff --git a/include/media/lirc_dev.h b/include/media/lirc_dev.h
-index 78f0637..05e7ad5 100644
---- a/include/media/lirc_dev.h
-+++ b/include/media/lirc_dev.h
-@@ -29,14 +29,13 @@ struct lirc_buffer {
- 	/* Using chunks instead of bytes pretends to simplify boundary checking
- 	 * And should allow for some performance fine tunning later */
- 	struct kfifo fifo;
--	u8 fifo_initialized;
- };
- 
- static inline void lirc_buffer_clear(struct lirc_buffer *buf)
- {
- 	unsigned long flags;
- 
--	if (buf->fifo_initialized) {
-+	if (kfifo_initialized(&buf->fifo)) {
- 		spin_lock_irqsave(&buf->fifo_lock, flags);
- 		kfifo_reset(&buf->fifo);
- 		spin_unlock_irqrestore(&buf->fifo_lock, flags);
-@@ -56,17 +55,14 @@ static inline int lirc_buffer_init(struct lirc_buffer *buf,
- 	buf->chunk_size = chunk_size;
- 	buf->size = size;
- 	ret = kfifo_alloc(&buf->fifo, size * chunk_size, GFP_KERNEL);
--	if (ret == 0)
--		buf->fifo_initialized = 1;
- 
- 	return ret;
- }
- 
- static inline void lirc_buffer_free(struct lirc_buffer *buf)
- {
--	if (buf->fifo_initialized) {
-+	if (kfifo_initialized(&buf->fifo)) {
- 		kfifo_free(&buf->fifo);
--		buf->fifo_initialized = 0;
- 	} else
- 		WARN(1, "calling %s on an uninitialized lirc_buffer\n",
- 		     __func__);
+ kernel/bpf/verifier.c       |  101 ++++++++++++++++++++++++-------------------
+ lib/test_bpf.c              |   43 ++++++++++++++++++
+ samples/bpf/test_verifier.c |   46 +++++++++++++++++++-
+ 3 files changed, 145 insertions(+), 45 deletions(-)
+
 -- 
-1.7.10.4
+1.7.9.5
 
