@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222AbaJ1V4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:56:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60668 "EHLO mx1.redhat.com"
+	id S1755372AbaJ1V5e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:57:34 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:50928 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754581AbaJ1V4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:56:36 -0400
-Date: Tue, 28 Oct 2014 23:52:50 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Burke Libbey <burke.libbey@shopify.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>
-Subject: Re: [PATCH] sched: Fix race between task_group and sched_task_group
-Message-ID: <20141028225250.GA8519@redhat.com>
-References: <1414405105.19914.169.camel@tkhai> <20141027230427.GA18454@redhat.com> <1414473874.8574.2.camel@tkhai>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414473874.8574.2.camel@tkhai>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751390AbaJ1V5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 17:57:32 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 04/10] rcu: Remove "cpu" argument to rcu_pending()
+Date: Tue, 28 Oct 2014 14:53:31 -0700
+Message-Id: <1414533217-24910-4-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20141028215140.GA23970@linux.vnet.ibm.com>
+ <1414533217-24910-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102821-0029-0000-0000-000000F4ECA7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28, Kirill Tkhai wrote:
->
-> Shouldn't we do that in separate patch? How about this?
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Up to Peter, but I think a separate patch is fine.
+Because rcu_pending()'s argument is guaranteed to always be the current
+CPU, drop the argument and replace per_cpu_ptr() with this_cpu_ptr().
 
-> [PATCH]sched: Remove lockdep check in sched_move_task()
->
-> sched_move_task() is the only interface to change sched_task_group:
-> cpu_cgrp_subsys methods and autogroup_move_group() use it.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcu/tree.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Yes, but...
-
-> Everything is synchronized by task_rq_lock(), so cpu_cgroup_attach()
-> is ordered with other users of sched_move_task(). This means we do
-> no need RCU here: if we've dereferenced a tg here, the .attach method
-> hasn't been called for it yet.
->
-> Thus, we should pass "true" to task_css_check() to silence lockdep
-> warnings.
-
-In theory, I am not sure.
-
-However, I never really understood this code and today I forgot everything,
-please correct me.
-
-> @@ -7403,8 +7403,12 @@ void sched_move_task(struct task_struct *tsk)
->  	if (unlikely(running))
->  		put_prev_task(rq, tsk);
->
-> -	tg = container_of(task_css_check(tsk, cpu_cgrp_id,
-> -				lockdep_is_held(&tsk->sighand->siglock)),
-> +	/*
-> +	 * All callers are synchronized by task_rq_lock(); we do not use RCU
-> +	 * which is pointless here. Thus, we pass "true" to task_css_check()
-> +	 * to prevent lockdep warnings.
-> +	 */
-> +	tg = container_of(task_css_check(tsk, cpu_cgrp_id, true),
->  			  struct task_group, css);
-
-Why this can't race with cgroup_task_migrate() if it is called by
-cgroup_post_fork() ?
-
-And cgroup_task_migrate() can free ->cgroups via call_rcu(). Of course,
-in practice raw_spin_lock_irq() should also act as rcu_read_lock(), but
-we should not rely on implementation details.
-
-task_group = tsk->cgroups[cpu_cgrp_id] can't go away because yes, if we
-race with migrate then ->attach() was not called. But it seems that in
-theory it is not safe to dereference tsk->cgroups.
-
-Oleg.
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 3107811bba69..0670ba3a65d3 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -325,7 +325,7 @@ static void force_qs_rnp(struct rcu_state *rsp,
+ 				  unsigned long *maxj),
+ 			 bool *isidle, unsigned long *maxj);
+ static void force_quiescent_state(struct rcu_state *rsp);
+-static int rcu_pending(int cpu);
++static int rcu_pending(void);
+ 
+ /*
+  * Return the number of RCU-sched batches processed thus far for debug & stats.
+@@ -2421,7 +2421,7 @@ void rcu_check_callbacks(int user)
+ 		rcu_bh_qs();
+ 	}
+ 	rcu_preempt_check_callbacks(smp_processor_id());
+-	if (rcu_pending(smp_processor_id()))
++	if (rcu_pending())
+ 		invoke_rcu_core();
+ 	if (user)
+ 		rcu_note_voluntary_context_switch(current);
+@@ -3144,12 +3144,12 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+  * by the current CPU, returning 1 if so.  This function is part of the
+  * RCU implementation; it is -not- an exported member of the RCU API.
+  */
+-static int rcu_pending(int cpu)
++static int rcu_pending(void)
+ {
+ 	struct rcu_state *rsp;
+ 
+ 	for_each_rcu_flavor(rsp)
+-		if (__rcu_pending(rsp, per_cpu_ptr(rsp->rda, cpu)))
++		if (__rcu_pending(rsp, this_cpu_ptr(rsp->rda)))
+ 			return 1;
+ 	return 0;
+ }
+-- 
+1.8.1.5
 
