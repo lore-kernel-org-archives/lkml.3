@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbaJ1J6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 05:58:12 -0400
-Received: from smtp105.iad3a.emailsrvr.com ([173.203.187.105]:44562 "EHLO
-	smtp105.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752176AbaJ1J6L convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 05:58:11 -0400
-X-Sender-Id: kiran.padwal@smartplayin.com
-Date: Tue, 28 Oct 2014 05:58:09 -0400 (EDT)
-Subject: =?utf-8?Q?Re=3A_=5BPATCH=5D_iommu=3A_use_dev=5Fget=5Fplatdata=28=29?=
-From: kiran.padwal@smartplayin.com
-To: "Joerg Roedel" <joro@8bytes.org>
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
+	id S1754784AbaJ1J7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 05:59:00 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:32892 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104AbaJ1J66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 05:58:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Importance: Normal
-X-Priority: 3 (Normal)
-X-Type: plain
-In-Reply-To: <20141022143021.GI10074@8bytes.org>
-References: <1412947870-10033-1-git-send-email-kiran.padwal@smartplayin.com> 
- <20141022143021.GI10074@8bytes.org>
-X-Auth-ID: kiran.padwal@smartplayin.com
-Message-ID: <1414490289.8326098@apps.rackspace.com>
-X-Mailer: webmail7.0
+In-Reply-To: <1413289246-31650-5-git-send-email-k.kozlowski@samsung.com>
+References: <1413289246-31650-1-git-send-email-k.kozlowski@samsung.com>
+	<1413289246-31650-5-git-send-email-k.kozlowski@samsung.com>
+Date: Tue, 28 Oct 2014 10:58:57 +0100
+Message-ID: <CACRpkdbL8dn-GVvXU83u_Wx-VKCer-mc6pisZhtPXgBNMo4rtA@mail.gmail.com>
+Subject: Re: [PATCH 4/8] power: ab8500: Use power_supply_*() API for accessing
+ function attrs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Anton Vorontsov <anton@enomsg.org>, Guenter Roeck <linux@roeck-us.net>,
+        Pavel Machek <pavel@ucw.cz>, Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 14, 2014 at 2:20 PM, Krzysztof Kozlowski
+<k.kozlowski@samsung.com> wrote:
 
+> Replace direct calls to power supply function attributes with wrappers.
+> Wrappers provide safe access access in case of unregistering the power
+> supply (.e.g by removing the driver). Replace:
+>  - get_property -> power_supply_get_property
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-On Wednesday, October 22, 2014 10:30am, "Joerg Roedel" <joro@8bytes.org> said:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-> On Fri, Oct 10, 2014 at 07:01:10PM +0530, Kiran Padwal wrote:
->> Use the wrapper function for retrieving the platform data instead of
->> accessing dev->platform_data directly.
->>
->> Signed-off-by: Kiran Padwal <kiran.padwal@smartplayin.com>
->> ---
->>  drivers/iommu/msm_iommu_dev.c |    4 ++--
->>  drivers/iommu/omap-iommu.c    |    6 +++---
->>  2 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> This touches 2 drivers, can you please split it up into per-driver
-> patches?
-
-Sure, I will resent the separate patches.
-sorry for delayed response.
- 
-Thanks,
---Kiran
-
+Yours,
+Linus Walleij
