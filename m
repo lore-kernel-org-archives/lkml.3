@@ -1,25 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487AbaJ1LNF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:13:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51321 "EHLO
+	id S1753817AbaJ1LNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:13:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51331 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756381AbaJ1LMv (ORCPT
+	with ESMTP id S1754992AbaJ1LNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:12:51 -0400
-Date: Tue, 28 Oct 2014 04:11:58 -0700
+	Tue, 28 Oct 2014 07:13:18 -0400
+Date: Tue, 28 Oct 2014 04:12:15 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-8eb23b9f35aae413140d3fda766a98092c21e9b0@git.kernel.org>
-Cc: mingo@kernel.org, hpa@zytor.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Reply-To: hpa@zytor.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, peterz@infradead.org,
-        torvalds@linux-foundation.org
-In-Reply-To: <20140924082242.591637616@infradead.org>
-References: <20140924082242.591637616@infradead.org>
+Message-ID: <tip-3427445afd26bd2395f29241319283a93f362cd0@git.kernel.org>
+Cc: rusty@rustcorp.com.au, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, jbaron@akamai.com, hpa@zytor.com,
+        mingo@kernel.org, rostedt@goodmis.org, peterz@infradead.org,
+        alex.elder@linaro.org, davej@redhat.com, torvalds@linux-foundation.org,
+        axel.lin@ingics.com, dborkman@redhat.com, tglx@linutronix.de
+Reply-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        rusty@rustcorp.com.au, rostedt@goodmis.org, peterz@infradead.org,
+        mingo@kernel.org, jbaron@akamai.com, hpa@zytor.com,
+        alex.elder@linaro.org, dborkman@redhat.com, tglx@linutronix.de,
+        axel.lin@ingics.com, davej@redhat.com, torvalds@linux-foundation.org
+In-Reply-To: <20140924082242.656559952@infradead.org>
+References: <20140924082242.656559952@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Debug nested sleeps
-Git-Commit-ID: 8eb23b9f35aae413140d3fda766a98092c21e9b0
+Subject: [tip:sched/core] sched: Exclude cond_resched()
+  from nested sleep test
+Git-Commit-ID: 3427445afd26bd2395f29241319283a93f362cd0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,135 +38,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8eb23b9f35aae413140d3fda766a98092c21e9b0
-Gitweb:     http://git.kernel.org/tip/8eb23b9f35aae413140d3fda766a98092c21e9b0
+Commit-ID:  3427445afd26bd2395f29241319283a93f362cd0
+Gitweb:     http://git.kernel.org/tip/3427445afd26bd2395f29241319283a93f362cd0
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 24 Sep 2014 10:18:55 +0200
+AuthorDate: Wed, 24 Sep 2014 10:18:56 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:56:52 +0100
+CommitDate: Tue, 28 Oct 2014 10:56:57 +0100
 
-sched: Debug nested sleeps
+sched: Exclude cond_resched() from nested sleep test
 
-Validate we call might_sleep() with TASK_RUNNING, which catches places
-where we nest blocking primitives, eg. mutex usage in a wait loop.
+cond_resched() is a preemption point, not strictly a blocking
+primitive, so exclude it from the ->state test.
 
-Since all blocking is arranged through task_struct::state, nesting
-this will cause the inner primitive to set TASK_RUNNING and the outer
-will thus not block.
-
-Another observed problem is calling a blocking function from
-schedule()->sched_submit_work()->blk_schedule_flush_plug() which will
-then destroy the task state for the actual __schedule() call that
-comes after it.
+In particular, preemption preserves task_struct::state.
 
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
 Cc: tglx@linutronix.de
 Cc: ilya.dryomov@inktank.com
 Cc: umgwanakikbuti@gmail.com
 Cc: oleg@redhat.com
+Cc: Alex Elder <alex.elder@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Axel Lin <axel.lin@ingics.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Jason Baron <jbaron@akamai.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140924082242.591637616@infradead.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/20140924082242.656559952@infradead.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h | 46 ++++++++++++++++++++++++++++++++++++++++++++--
- kernel/sched/core.c   | 13 +++++++++++++
- 2 files changed, 57 insertions(+), 2 deletions(-)
+ include/linux/kernel.h |  3 +++
+ include/linux/sched.h  |  6 +++---
+ kernel/sched/core.c    | 12 +++++++++---
+ 3 files changed, 15 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 5068a0d..446d76a 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -162,6 +162,7 @@ extern int _cond_resched(void);
+ #endif
+ 
+ #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
++  void ___might_sleep(const char *file, int line, int preempt_offset);
+   void __might_sleep(const char *file, int line, int preempt_offset);
+ /**
+  * might_sleep - annotation for functions that can sleep
+@@ -177,6 +178,8 @@ extern int _cond_resched(void);
+ 	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
+ # define sched_annotate_sleep()	__set_current_state(TASK_RUNNING)
+ #else
++  static inline void ___might_sleep(const char *file, int line,
++				   int preempt_offset) { }
+   static inline void __might_sleep(const char *file, int line,
+ 				   int preempt_offset) { }
+ # define might_sleep() do { might_resched(); } while (0)
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 320a977..4648e07 100644
+index 4648e07..4400ddc 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -243,6 +243,43 @@ extern char ___assert_task_state[1 - 2*!!(
- 				((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
- 				 (task->flags & PF_FROZEN) == 0)
+@@ -2806,7 +2806,7 @@ static inline int signal_pending_state(long state, struct task_struct *p)
+ extern int _cond_resched(void);
  
-+#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
-+
-+#define __set_task_state(tsk, state_value)			\
-+	do {							\
-+		(tsk)->task_state_change = _THIS_IP_;		\
-+		(tsk)->state = (state_value);			\
-+	} while (0)
-+#define set_task_state(tsk, state_value)			\
-+	do {							\
-+		(tsk)->task_state_change = _THIS_IP_;		\
-+		set_mb((tsk)->state, (state_value));		\
-+	} while (0)
-+
-+/*
-+ * set_current_state() includes a barrier so that the write of current->state
-+ * is correctly serialised wrt the caller's subsequent test of whether to
-+ * actually sleep:
-+ *
-+ *	set_current_state(TASK_UNINTERRUPTIBLE);
-+ *	if (do_i_need_to_sleep())
-+ *		schedule();
-+ *
-+ * If the caller does not need such serialisation then use __set_current_state()
-+ */
-+#define __set_current_state(state_value)			\
-+	do {							\
-+		current->task_state_change = _THIS_IP_;		\
-+		current->state = (state_value);			\
-+	} while (0)
-+#define set_current_state(state_value)				\
-+	do {							\
-+		current->task_state_change = _THIS_IP_;		\
-+		set_mb(current->state, (state_value));		\
-+	} while (0)
-+
-+#else
-+
- #define __set_task_state(tsk, state_value)		\
- 	do { (tsk)->state = (state_value); } while (0)
- #define set_task_state(tsk, state_value)		\
-@@ -259,11 +296,13 @@ extern char ___assert_task_state[1 - 2*!!(
-  *
-  * If the caller does not need such serialisation then use __set_current_state()
-  */
--#define __set_current_state(state_value)			\
-+#define __set_current_state(state_value)		\
- 	do { current->state = (state_value); } while (0)
--#define set_current_state(state_value)		\
-+#define set_current_state(state_value)			\
- 	set_mb(current->state, (state_value))
+ #define cond_resched() ({			\
+-	__might_sleep(__FILE__, __LINE__, 0);	\
++	___might_sleep(__FILE__, __LINE__, 0);	\
+ 	_cond_resched();			\
+ })
  
-+#endif
-+
- /* Task command name length */
- #define TASK_COMM_LEN 16
- 
-@@ -1661,6 +1700,9 @@ struct task_struct {
- 	unsigned int	sequential_io;
- 	unsigned int	sequential_io_avg;
+@@ -2819,14 +2819,14 @@ extern int __cond_resched_lock(spinlock_t *lock);
  #endif
-+#ifdef CONFIG_DEBUG_ATOMIC_SLEEP
-+	unsigned long	task_state_change;
-+#endif
- };
  
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
+ #define cond_resched_lock(lock) ({				\
+-	__might_sleep(__FILE__, __LINE__, PREEMPT_LOCK_OFFSET);	\
++	___might_sleep(__FILE__, __LINE__, PREEMPT_LOCK_OFFSET);\
+ 	__cond_resched_lock(lock);				\
+ })
+ 
+ extern int __cond_resched_softirq(void);
+ 
+ #define cond_resched_softirq() ({					\
+-	__might_sleep(__FILE__, __LINE__, SOFTIRQ_DISABLE_OFFSET);	\
++	___might_sleep(__FILE__, __LINE__, SOFTIRQ_DISABLE_OFFSET);	\
+ 	__cond_resched_softirq();					\
+ })
+ 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0456a55..5b4b96b 100644
+index 5b4b96b..b9f78f1 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -7298,6 +7298,19 @@ void __might_sleep(const char *file, int line, int preempt_offset)
- {
- 	static unsigned long prev_jiffy;	/* ratelimiting */
+@@ -7296,8 +7296,6 @@ static inline int preempt_count_equals(int preempt_offset)
  
-+	/*
-+	 * Blocking primitives will set (and therefore destroy) current->state,
-+	 * since we will exit with TASK_RUNNING make sure we enter with it,
-+	 * otherwise we will destroy state.
-+	 */
-+	if (WARN(current->state != TASK_RUNNING,
-+			"do not call blocking ops when !TASK_RUNNING; "
-+			"state=%lx set at [<%p>] %pS\n",
-+			current->state,
-+			(void *)current->task_state_change,
-+			(void *)current->task_state_change))
-+		__set_current_state(TASK_RUNNING);
+ void __might_sleep(const char *file, int line, int preempt_offset)
+ {
+-	static unsigned long prev_jiffy;	/* ratelimiting */
+-
+ 	/*
+ 	 * Blocking primitives will set (and therefore destroy) current->state,
+ 	 * since we will exit with TASK_RUNNING make sure we enter with it,
+@@ -7311,6 +7309,14 @@ void __might_sleep(const char *file, int line, int preempt_offset)
+ 			(void *)current->task_state_change))
+ 		__set_current_state(TASK_RUNNING);
+ 
++	___might_sleep(file, line, preempt_offset);
++}
++EXPORT_SYMBOL(__might_sleep);
++
++void ___might_sleep(const char *file, int line, int preempt_offset)
++{
++	static unsigned long prev_jiffy;	/* ratelimiting */
 +
  	rcu_sleep_check(); /* WARN_ON_ONCE() by default, no rate limit reqd. */
  	if ((preempt_count_equals(preempt_offset) && !irqs_disabled() &&
  	     !is_idle_task(current)) ||
+@@ -7340,7 +7346,7 @@ void __might_sleep(const char *file, int line, int preempt_offset)
+ #endif
+ 	dump_stack();
+ }
+-EXPORT_SYMBOL(__might_sleep);
++EXPORT_SYMBOL(___might_sleep);
+ #endif
+ 
+ #ifdef CONFIG_MAGIC_SYSRQ
