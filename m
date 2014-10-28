@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146AbaJ1Dm3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:42:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45042 "EHLO
+	id S1755185AbaJ1Dmn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:42:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45065 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753426AbaJ1DmZ (ORCPT
+	with ESMTP id S932355AbaJ1Dmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:25 -0400
+	Mon, 27 Oct 2014 23:42:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.16 007/127] Btrfs: cleanup error handling in build_backref_tree
-Date: Tue, 28 Oct 2014 11:34:02 +0800
-Message-Id: <20141028033421.247455991@linuxfoundation.org>
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.16 021/127] spi: dw-mid: check that DMA was inited before exit
+Date: Tue, 28 Oct 2014 11:34:16 +0800
+Message-Id: <20141028033421.856925076@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -28,215 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fb.com>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 75bfb9aff45e44625260f52a5fd581b92ace3e62 upstream.
+commit fb57862ead652454ceeb659617404c5f13bc34b5 upstream.
 
-When balance panics it tends to panic in the
+If the driver was compiled with DMA support, but DMA channels weren't acquired
+by some reason, mid_spi_dma_exit() will crash the kernel.
 
-BUG_ON(!upper->checked);
-
-test, because it means it couldn't build the backref tree properly.  This is
-annoying to users and frankly a recoverable error, nothing in this function is
-actually fatal since it is just an in-memory building of the backrefs for a
-given bytenr.  So go through and change all the BUG_ON()'s to ASSERT()'s, and
-fix the BUG_ON(!upper->checked) thing to just return an error.
-
-This patch also fixes the error handling so it tears down the work we've done
-properly.  This code was horribly broken since we always just panic'ed instead
-of actually erroring out, so it needed to be completely re-worked.  With this
-patch my broken image no longer panics when I mount it.  Thanks,
-
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Fixes: 7063c0d942a1 (spi/dw_spi: add DMA support)
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/relocation.c |   88 +++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 59 insertions(+), 29 deletions(-)
+ drivers/spi/spi-dw-mid.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/btrfs/relocation.c
-+++ b/fs/btrfs/relocation.c
-@@ -736,7 +736,8 @@ again:
- 		err = ret;
- 		goto out;
- 	}
--	BUG_ON(!ret || !path1->slots[0]);
-+	ASSERT(ret);
-+	ASSERT(path1->slots[0]);
+--- a/drivers/spi/spi-dw-mid.c
++++ b/drivers/spi/spi-dw-mid.c
+@@ -89,6 +89,8 @@ err_exit:
  
- 	path1->slots[0]--;
- 
-@@ -746,10 +747,10 @@ again:
- 		 * the backref was added previously when processing
- 		 * backref of type BTRFS_TREE_BLOCK_REF_KEY
- 		 */
--		BUG_ON(!list_is_singular(&cur->upper));
-+		ASSERT(list_is_singular(&cur->upper));
- 		edge = list_entry(cur->upper.next, struct backref_edge,
- 				  list[LOWER]);
--		BUG_ON(!list_empty(&edge->list[UPPER]));
-+		ASSERT(list_empty(&edge->list[UPPER]));
- 		exist = edge->node[UPPER];
- 		/*
- 		 * add the upper level block to pending list if we need
-@@ -831,7 +832,7 @@ again:
- 					cur->cowonly = 1;
- 			}
- #else
--		BUG_ON(key.type == BTRFS_EXTENT_REF_V0_KEY);
-+		ASSERT(key.type != BTRFS_EXTENT_REF_V0_KEY);
- 		if (key.type == BTRFS_SHARED_BLOCK_REF_KEY) {
- #endif
- 			if (key.objectid == key.offset) {
-@@ -840,7 +841,7 @@ again:
- 				 * backref of this type.
- 				 */
- 				root = find_reloc_root(rc, cur->bytenr);
--				BUG_ON(!root);
-+				ASSERT(root);
- 				cur->root = root;
- 				break;
- 			}
-@@ -868,7 +869,7 @@ again:
- 			} else {
- 				upper = rb_entry(rb_node, struct backref_node,
- 						 rb_node);
--				BUG_ON(!upper->checked);
-+				ASSERT(upper->checked);
- 				INIT_LIST_HEAD(&edge->list[UPPER]);
- 			}
- 			list_add_tail(&edge->list[LOWER], &cur->upper);
-@@ -892,7 +893,7 @@ again:
- 
- 		if (btrfs_root_level(&root->root_item) == cur->level) {
- 			/* tree root */
--			BUG_ON(btrfs_root_bytenr(&root->root_item) !=
-+			ASSERT(btrfs_root_bytenr(&root->root_item) ==
- 			       cur->bytenr);
- 			if (should_ignore_root(root))
- 				list_add(&cur->list, &useless);
-@@ -927,7 +928,7 @@ again:
- 		need_check = true;
- 		for (; level < BTRFS_MAX_LEVEL; level++) {
- 			if (!path2->nodes[level]) {
--				BUG_ON(btrfs_root_bytenr(&root->root_item) !=
-+				ASSERT(btrfs_root_bytenr(&root->root_item) ==
- 				       lower->bytenr);
- 				if (should_ignore_root(root))
- 					list_add(&lower->list, &useless);
-@@ -982,7 +983,7 @@ again:
- 			} else {
- 				upper = rb_entry(rb_node, struct backref_node,
- 						 rb_node);
--				BUG_ON(!upper->checked);
-+				ASSERT(upper->checked);
- 				INIT_LIST_HEAD(&edge->list[UPPER]);
- 				if (!upper->owner)
- 					upper->owner = btrfs_header_owner(eb);
-@@ -1026,7 +1027,7 @@ next:
- 	 * everything goes well, connect backref nodes and insert backref nodes
- 	 * into the cache.
- 	 */
--	BUG_ON(!node->checked);
-+	ASSERT(node->checked);
- 	cowonly = node->cowonly;
- 	if (!cowonly) {
- 		rb_node = tree_insert(&cache->rb_root, node->bytenr,
-@@ -1062,8 +1063,21 @@ next:
- 			continue;
- 		}
- 
--		BUG_ON(!upper->checked);
--		BUG_ON(cowonly != upper->cowonly);
-+		if (!upper->checked) {
-+			/*
-+			 * Still want to blow up for developers since this is a
-+			 * logic bug.
-+			 */
-+			ASSERT(0);
-+			err = -EINVAL;
-+			goto out;
-+		}
-+		if (cowonly != upper->cowonly) {
-+			ASSERT(0);
-+			err = -EINVAL;
-+			goto out;
-+		}
-+
- 		if (!cowonly) {
- 			rb_node = tree_insert(&cache->rb_root, upper->bytenr,
- 					      &upper->rb_node);
-@@ -1086,7 +1100,7 @@ next:
- 	while (!list_empty(&useless)) {
- 		upper = list_entry(useless.next, struct backref_node, list);
- 		list_del_init(&upper->list);
--		BUG_ON(!list_empty(&upper->upper));
-+		ASSERT(list_empty(&upper->upper));
- 		if (upper == node)
- 			node = NULL;
- 		if (upper->lowest) {
-@@ -1119,29 +1133,45 @@ out:
- 	if (err) {
- 		while (!list_empty(&useless)) {
- 			lower = list_entry(useless.next,
--					   struct backref_node, upper);
--			list_del_init(&lower->upper);
-+					   struct backref_node, list);
-+			list_del_init(&lower->list);
- 		}
--		upper = node;
--		INIT_LIST_HEAD(&list);
--		while (upper) {
--			if (RB_EMPTY_NODE(&upper->rb_node)) {
--				list_splice_tail(&upper->upper, &list);
--				free_backref_node(cache, upper);
--			}
--
--			if (list_empty(&list))
--				break;
--
--			edge = list_entry(list.next, struct backref_edge,
--					  list[LOWER]);
-+		while (!list_empty(&list)) {
-+			edge = list_first_entry(&list, struct backref_edge,
-+						list[UPPER]);
-+			list_del(&edge->list[UPPER]);
- 			list_del(&edge->list[LOWER]);
-+			lower = edge->node[LOWER];
- 			upper = edge->node[UPPER];
- 			free_backref_edge(cache, edge);
-+
-+			/*
-+			 * Lower is no longer linked to any upper backref nodes
-+			 * and isn't in the cache, we can free it ourselves.
-+			 */
-+			if (list_empty(&lower->upper) &&
-+			    RB_EMPTY_NODE(&lower->rb_node))
-+				list_add(&lower->list, &useless);
-+
-+			if (!RB_EMPTY_NODE(&upper->rb_node))
-+				continue;
-+
-+			/* Add this guy's upper edges to the list to proces */
-+			list_for_each_entry(edge, &upper->upper, list[LOWER])
-+				list_add_tail(&edge->list[UPPER], &list);
-+			if (list_empty(&upper->upper))
-+				list_add(&upper->list, &useless);
-+		}
-+
-+		while (!list_empty(&useless)) {
-+			lower = list_entry(useless.next,
-+					   struct backref_node, list);
-+			list_del_init(&lower->list);
-+			free_backref_node(cache, lower);
- 		}
- 		return ERR_PTR(err);
- 	}
--	BUG_ON(node && node->detached);
-+	ASSERT(!node || !node->detached);
- 	return node;
+ static void mid_spi_dma_exit(struct dw_spi *dws)
+ {
++	if (!dws->dma_inited)
++		return;
+ 	dma_release_channel(dws->txchan);
+ 	dma_release_channel(dws->rxchan);
  }
- 
 
 
