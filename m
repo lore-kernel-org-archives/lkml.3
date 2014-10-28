@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996AbaJ1Dh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:37:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44403 "EHLO
+	id S1754039AbaJ1Dhe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:37:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44419 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766AbaJ1DhW (ORCPT
+	with ESMTP id S1753956AbaJ1Dh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:22 -0400
+	Mon, 27 Oct 2014 23:37:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Matlack <dmatlack@google.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.17 020/146] kvm: dont take vcpu mutex for obviously invalid vcpu ioctls
-Date: Tue, 28 Oct 2014 11:32:42 +0800
-Message-Id: <20141028033344.300833735@linuxfoundation.org>
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 023/146] spi: dw-mid: respect 8 bit mode
+Date: Tue, 28 Oct 2014 11:32:45 +0800
+Message-Id: <20141028033344.443184889@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,46 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Matlack <dmatlack@google.com>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 2ea75be3219571d0ec009ce20d9971e54af96e09 upstream.
+commit b41583e7299046abdc578c33f25ed83ee95b9b31 upstream.
 
-vcpu ioctls can hang the calling thread if issued while a vcpu is running.
-However, invalid ioctls can happen when userspace tries to probe the kind
-of file descriptors (e.g. isatty() calls ioctl(TCGETS)); in that case,
-we know the ioctl is going to be rejected as invalid anyway and we can
-fail before trying to take the vcpu mutex.
+In case of 8 bit mode and DMA usage we end up with every second byte written as
+0. We have to respect bits_per_word settings what this patch actually does.
 
-This patch does not change functionality, it just makes invalid ioctls
-fail faster.
-
-Signed-off-by: David Matlack <dmatlack@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- virt/kvm/kvm_main.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/spi/spi-dw-mid.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -52,6 +52,7 @@
+--- a/drivers/spi/spi-dw-mid.c
++++ b/drivers/spi/spi-dw-mid.c
+@@ -136,7 +136,7 @@ static int mid_spi_dma_transfer(struct d
+ 	txconf.dst_addr = dws->dma_addr;
+ 	txconf.dst_maxburst = LNW_DMA_MSIZE_16;
+ 	txconf.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	txconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	txconf.dst_addr_width = dws->dma_width;
+ 	txconf.device_fc = false;
  
- #include <asm/processor.h>
- #include <asm/io.h>
-+#include <asm/ioctl.h>
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
+ 	txchan->device->device_control(txchan, DMA_SLAVE_CONFIG,
+@@ -159,7 +159,7 @@ static int mid_spi_dma_transfer(struct d
+ 	rxconf.src_addr = dws->dma_addr;
+ 	rxconf.src_maxburst = LNW_DMA_MSIZE_16;
+ 	rxconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-	rxconf.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	rxconf.src_addr_width = dws->dma_width;
+ 	rxconf.device_fc = false;
  
-@@ -1991,6 +1992,9 @@ static long kvm_vcpu_ioctl(struct file *
- 	if (vcpu->kvm->mm != current->mm)
- 		return -EIO;
- 
-+	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
-+		return -EINVAL;
-+
- #if defined(CONFIG_S390) || defined(CONFIG_PPC) || defined(CONFIG_MIPS)
- 	/*
- 	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
+ 	rxchan->device->device_control(rxchan, DMA_SLAVE_CONFIG,
 
 
