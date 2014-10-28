@@ -1,55 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaJ1OS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 10:18:26 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:34447 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375AbaJ1OSZ (ORCPT
+	id S1753418AbaJ1OTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 10:19:17 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:56543 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955AbaJ1OTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 10:18:25 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-aa-544fa5adf1e1
-Subject: [PATCH] Makefile: sort list of defconfig targets in make help output
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-To: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Date: Tue, 28 Oct 2014 17:18:20 +0400
-Message-id: <20141028141820.14137.64256.stgit@buzz>
-User-Agent: StGit/0.17.1-dirty
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPJMWRmVeSWpSXmKPExsVy+t/xq7prl/qHGBzutrH4sbOX1eLPrh1M
-	Fpd3zWGzaNl3gcmBxaNvyypGjzMLjrB7fN4kF8AcxWWTkpqTWZZapG+XwJVx6f0SpoIHrBWn
-	1qxlamD8ztLFyMkhIWAiMa/9BCOELSZx4d56ti5GLg4hgaWMEu83HmCEcBqZJI5cfMIEUiUs
-	4Ctx/8IvVhCbTcBMYtu+22DdIgLxEh0N65hBbBYBVYn2x4vANvAKGEvMPbuGHcQWFZCTWHm5
-	hRUiLijxY/I9oBoODmYBdYkpU3JBwswC8hKb17xlnsDIOwtJ1SyEqllIqhYwMq9iFE0tTS4o
-	TkrPNdIrTswtLs1L10vOz93ECAm0rzsYlx6zOsQowMGoxMMbweIfIsSaWFZcmXuIUYKDWUmE
-	NyIGKMSbklhZlVqUH19UmpNafIiRiYNTqoHR8nPab9X7MaaGRjFq3xm0N5Te2J6ULnZG4E3h
-	ren2VxU/8jYx6YZLe3NnTMpeL7Y7oFCJfXGCZKbT2e3zivw4DJ9cK1rUtvBs9nzZxcxZ///6
-	/YlZe+u2xu3JyVF1vgdS19gJ6UpK26ozcMWs+8X6Jf5nJO/uw5ydBtd4z4TaNPz3PV+xZaUS
-	S3FGoqEWc1FxIgDYpwluEgIAAA==
+	Tue, 28 Oct 2014 10:19:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <1413321714-25931-2-git-send-email-b.galvani@gmail.com>
+References: <1413321714-25931-1-git-send-email-b.galvani@gmail.com>
+	<1413321714-25931-2-git-send-email-b.galvani@gmail.com>
+Date: Tue, 28 Oct 2014 15:19:13 +0100
+Message-ID: <CACRpkdaO5wHB1fMR1Pw6R7bs9Qk14p3wOP8dxco7yAnqMOP_Lg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] pinctrl: add driver for Amlogic Meson SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Carlo Caione <carlo@caione.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without sorting this list is completely unreadable for ARCH=arm.
+On Tue, Oct 14, 2014 at 11:21 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
 
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
----
- Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> This is a driver for the pinmux and GPIO controller available in
+> Amlogic Meson SoCs. At the moment it only supports Meson8 devices,
+> however other SoC families like Meson6 and Meson8b (the Cortex-A5
+> variant) appear to be similar, with just different sets of banks and
+> registers.
+>
+> GPIO interrupts are not supported at the moment due to lack of
+> documentation.
+>
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 
-diff --git a/Makefile b/Makefile
-index 52c1297..63f05dc 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1234,7 +1234,7 @@ rpm: include/config/kernel.release FORCE
- # ---------------------------------------------------------------------------
- 
- boards := $(wildcard $(srctree)/arch/$(SRCARCH)/configs/*_defconfig)
--boards := $(notdir $(boards))
-+boards := $(sort $(notdir $(boards)))
- board-dirs := $(dir $(wildcard $(srctree)/arch/$(SRCARCH)/configs/*/*_defconfig))
- board-dirs := $(sort $(notdir $(board-dirs:/=)))
- 
+(...)
+>  arch/arm/mach-meson/Kconfig            |   3 +
 
+Still not split off from the main patch.
+
+> +static void meson_domain_set_bit(struct meson_domain *domain,
+> +                                void __iomem *addr, unsigned int bit,
+> +                                unsigned int value)
+
+Still not migrated to regmap MMIO.
+
+> +       /* Copy group and function definitions from domains to pinctrl */
+> +       pc->groups = devm_kzalloc(pc->dev, pc->num_groups *
+> +                                 sizeof(struct meson_pmx_group), GFP_KERNEL);
+> +       pc->funcs = devm_kzalloc(pc->dev, pc->num_funcs *
+> +                                 sizeof(struct meson_pmx_func), GFP_KERNEL);
+> +       if (!pc->groups || !pc->funcs)
+> +               return -ENOMEM;
+
+Still lots of copying of data.
+
+> +static int meson_gpiolib_register(struct meson_pinctrl *pc)
+> +{
+> +       struct meson_domain *domain;
+> +       unsigned int base = 0;
+
+No.
+
+> +       int i, ret;
+> +
+> +       for (i = 0; i < pc->num_domains; i++) {
+> +               domain = &pc->domains[i];
+> +
+> +               domain->chip.label = domain->data->name;
+> +               domain->chip.dev = pc->dev;
+> +               domain->chip.request = meson_gpio_request;
+> +               domain->chip.free = meson_gpio_free;
+> +               domain->chip.direction_input = meson_gpio_direction_input;
+> +               domain->chip.direction_output = meson_gpio_direction_output;
+> +               domain->chip.get = meson_gpio_get;
+> +               domain->chip.set = meson_gpio_set;
+> +               domain->chip.base = base;
+
+No. Set it to -1 and let the gpiolib assign some random GPIO numbers.
+
+> +               domain->chip.ngpio = domain->data->num_pins;
+> +               domain->chip.names = domain->data->pin_names;
+> +               domain->chip.can_sleep = false;
+> +               domain->chip.of_node = domain->of_node;
+> +               domain->chip.of_gpio_n_cells = 2;
+> +               domain->chip.of_xlate = meson_gpio_of_xlate;
+
+Go for the generic xlate function instead.
+
+> +               domain->gpio_range.name = domain->data->name;
+> +               domain->gpio_range.id = i;
+> +               domain->gpio_range.base = base;
+> +               domain->gpio_range.pin_base = base;
+> +               domain->gpio_range.npins = domain->data->num_pins;
+> +               domain->gpio_range.gc = &domain->chip;
+> +
+> +               pinctrl_add_gpio_range(pc->pcdev, &domain->gpio_range);
+
+Don't add the gpio range from the pinctrl side, add it from the
+gpiolib side using gpiochip_add_pin_range() instead.
+
+> +static int __init meson_pinctrl_drv_register(void)
+> +{
+> +       return platform_driver_register(&meson_pinctrl_driver);
+> +}
+> +postcore_initcall(meson_pinctrl_drv_register);
+
+Does it have to be this early?
+
+> +/**
+> + * struct meson_domain
+> + *
+> + * @reg_mux:   registers for mux settings
+> + * @reg_pullen:        registers for pull-enable settings
+> + * @reg_pull:  registers for pull settings
+> + * @reg_gpio:  registers for gpio settings
+> + * @mux_size:  size of mux register range (in words)
+> + * @pullen_size:size of pull-enable register range
+> + * @pull_size: size of pull register range
+> + * @gpio_size: size of gpio register range
+> + * @chip:      gpio chip associated with the domain
+> + * @data;      platform data for the domain
+> + * @node:      device tree node for the domain
+> + * @gpio_range:        gpio range that maps domain gpios to the pin controller
+> + * @lock:      spinlock for accessing domain registers
+> + *
+> + * A domain represents a set of banks controlled by the same set of
+> + * registers. Typically there is a domain for the normal banks and
+> + * another one for the Always-On bus.
+> + */
+
+Insert all the info from your previous mail.
+
+Yours,
+Linus Walleij
