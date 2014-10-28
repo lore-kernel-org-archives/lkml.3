@@ -1,376 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796AbaJ1NkA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:40:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51401 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752781AbaJ1Ndx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:33:53 -0400
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 16/32] perf tools: Build programs to copy 32-bit compatibility
-Date: Tue, 28 Oct 2014 11:32:10 -0200
-Message-Id: <1414503146-22789-17-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
-References: <1414503146-22789-1-git-send-email-acme@kernel.org>
+	id S1754680AbaJ1NkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:40:07 -0400
+Received: from mout.kundenserver.de ([212.227.126.131]:57263 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753015AbaJ1NkB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:40:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH v5 21/29] nios2: Time keeping
+Date: Tue, 28 Oct 2014 14:39:46 +0100
+Message-ID: <2258102.tG8NmIz9Bk@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414492984.2295.8.camel@leyfoon-vm>
+References: <1414139071-3818-1-git-send-email-lftan@altera.com> <1806277.3CF96bVORX@wuerfel> <1414492984.2295.8.camel@leyfoon-vm>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:/SbMqKm6SJeNmHp68QLJv9Gr4WSVaNDyLJE1RSvXwYt
+ sKjkRWgfUgfLANbwvXTlHvoW6UhKnj/zB9E+kWXpjDXmebVOq+
+ biTzbWEg9Ln2U8uLs94ySDr5HAK0BTGSeEJgAGxlW4s49LHRmp
+ 8L76H93vjXf35yjm7nbwmH6oXe6U437hK7c5DtmZAhpgu+xAYj
+ W9/srOG+PYO6rvvF6FqBDkitqN6na8mLoMEFXAguP+c4CkFPCl
+ dGYm6QqrkIdIKCwTOanpX/v6aRuF1OjHpR3M+0i5YAfjqRCjAl
+ CayMcm1im/eTHSQMd2/3EQcqARohWhj6jW6/xaihNjXpmqusba
+ J45fD6NeS/uXWBeoDgLI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrian Hunter <adrian.hunter@intel.com>
+On Tuesday 28 October 2014 18:43:04 Ley Foon Tan wrote:
+> On Sel, 2014-10-28 at 10:23 +0100, Arnd Bergmann wrote:
+> > On Tuesday 28 October 2014 10:46:29 Ley Foon Tan wrote:
+> > > On Sun, Oct 26, 2014 at 5:10 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > > On Fri, 24 Oct 2014, Ley Foon Tan wrote:
+> > > >> +#ifndef _ASM_NIOS2_TIMEX_H
+> > > >> +#define _ASM_NIOS2_TIMEX_H
+> > > >> +
+> > > >> +typedef unsigned long cycles_t;
+> > > >> +
+> > > >> +extern cycles_t get_cycles(void);
+> > > >> +
+> > > >> +#define ARCH_HAS_READ_CURRENT_TIMER
+> > > >
+> > > > Why does NIOS need that? Does it have a hardware implementation
+> > > > dependent clock frequency which needs to be calibrated at boot time?
+> > > This is suggestion from Arnd to use read_current_timer instead of using
+> > > expensive delay loop calibration during boot.
+> > 
+> > My mistake, sorry. I think the right way is to define
+> > calibrate_delay_is_known() rather than read_current_timer(), I was
+> > getting confused by the ARM implementation that does both.
+> Hi Arnd,
+> No problem, I can change that. But, seem that we don't need to have
+> calibrate_delay_is_known() as well. We can just set "lpj_fine" variable,
+> arm64 uses this.
 
-perf tools copy VDSO out of memory.  However, on 64-bit machines there
-may be 32-bit compatibility VDOs also.  To copy those requires separate
-32-bit executables.
+Right, that works too.
 
-This patch adds to the build additional programs perf-read-vdso32 and
-perf-read-vdsox32 for 32-bit and x32 respectively.
+> BTW, do you have further comment for other patches in this series? Only
+> few minor updates since v4 patches and would like to get it into the
+> v3.18 merge window if possible. What's your opinion? 
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1414061124-26830-15-git-send-email-adrian.hunter@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile.perf                        | 38 ++++++++++++++++++++++---
- tools/perf/config/Makefile                      | 25 +++++++++++++++-
- tools/perf/config/Makefile.arch                 |  8 ++++++
- tools/perf/config/feature-checks/Makefile       | 10 ++++++-
- tools/perf/config/feature-checks/test-compile.c |  4 +++
- tools/perf/perf-read-vdso.c                     | 34 ++++++++++++++++++++++
- tools/perf/util/find-vdso-map.c                 | 30 +++++++++++++++++++
- tools/perf/util/vdso.c                          | 37 ++++--------------------
- 8 files changed, 149 insertions(+), 37 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-compile.c
- create mode 100644 tools/perf/perf-read-vdso.c
- create mode 100644 tools/perf/util/find-vdso-map.c
+The 3.18 merge window is closed, we already have 3.18-rc2 now.
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 262916f4a377..9c4ced0fc845 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -60,6 +60,12 @@ include config/utilities.mak
- #
- # Define NO_LIBDW_DWARF_UNWIND if you do not want libdw support
- # for dwarf backtrace post unwind.
-+#
-+# Define NO_PERF_READ_VDSO32 if you do not want to build perf-read-vdso32
-+# for reading the 32-bit compatibility VDSO in 64-bit mode
-+#
-+# Define NO_PERF_READ_VDSOX32 if you do not want to build perf-read-vdsox32
-+# for reading the x32 mode 32-bit compatibility VDSO in 64-bit mode
- 
- ifeq ($(srctree),)
- srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-@@ -171,11 +177,16 @@ $(OUTPUT)python/perf.so: $(PYTHON_EXT_SRCS) $(PYTHON_EXT_DEPS)
- 
- SCRIPTS = $(patsubst %.sh,%,$(SCRIPT_SH))
- 
--#
--# Single 'perf' binary right now:
--#
- PROGRAMS += $(OUTPUT)perf
- 
-+ifndef NO_PERF_READ_VDSO32
-+PROGRAMS += $(OUTPUT)perf-read-vdso32
-+endif
-+
-+ifndef NO_PERF_READ_VDSOX32
-+PROGRAMS += $(OUTPUT)perf-read-vdsox32
-+endif
-+
- # what 'all' will build and 'install' will install, in perfexecdir
- ALL_PROGRAMS = $(PROGRAMS) $(SCRIPTS)
- 
-@@ -253,6 +264,7 @@ LIB_H += util/event.h
- LIB_H += util/evsel.h
- LIB_H += util/evlist.h
- LIB_H += util/exec_cmd.h
-+LIB_H += util/find-vdso-map.c
- LIB_H += util/levenshtein.h
- LIB_H += util/machine.h
- LIB_H += util/map.h
-@@ -732,6 +744,16 @@ $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Uti
- $(OUTPUT)perf-%: %.o $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
- 
-+ifndef NO_PERF_READ_VDSO32
-+$(OUTPUT)perf-read-vdso32: perf-read-vdso.c util/find-vdso-map.c
-+	$(QUIET_CC)$(CC) -m32 $(filter -static,$(LDFLAGS)) -Wall -Werror -o $@ perf-read-vdso.c
-+endif
-+
-+ifndef NO_PERF_READ_VDSOX32
-+$(OUTPUT)perf-read-vdsox32: perf-read-vdso.c util/find-vdso-map.c
-+	$(QUIET_CC)$(CC) -mx32 $(filter -static,$(LDFLAGS)) -Wall -Werror -o $@ perf-read-vdso.c
-+endif
-+
- $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
- $(patsubst perf-%,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
- 
-@@ -876,6 +898,14 @@ install-bin: all install-gtk
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(bindir_SQ)'; \
- 		$(INSTALL) $(OUTPUT)perf '$(DESTDIR_SQ)$(bindir_SQ)'; \
- 		$(LN) '$(DESTDIR_SQ)$(bindir_SQ)/perf' '$(DESTDIR_SQ)$(bindir_SQ)/trace'
-+ifndef NO_PERF_READ_VDSO32
-+	$(call QUIET_INSTALL, perf-read-vdso32) \
-+		$(INSTALL) $(OUTPUT)perf-read-vdso32 '$(DESTDIR_SQ)$(bindir_SQ)';
-+endif
-+ifndef NO_PERF_READ_VDSOX32
-+	$(call QUIET_INSTALL, perf-read-vdsox32) \
-+		$(INSTALL) $(OUTPUT)perf-read-vdsox32 '$(DESTDIR_SQ)$(bindir_SQ)';
-+endif
- 	$(call QUIET_INSTALL, libexec) \
- 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$(perfexec_instdir_SQ)'
- 	$(call QUIET_INSTALL, perf-archive) \
-@@ -928,7 +958,7 @@ config-clean:
- 
- clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
- 	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_OBJS) $(BUILTIN_OBJS) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(OUTPUT)perf.o $(LANG_BINDINGS) $(GTK_OBJS)
--	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf
-+	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf perf-read-vdso32 perf-read-vdsox32
- 	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-CFLAGS $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
- 	$(python-clean)
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 58f609198c6d..3ba2382a5236 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -230,7 +230,9 @@ VF_FEATURE_TESTS =			\
- 	bionic				\
- 	liberty				\
- 	liberty-z			\
--	cplus-demangle
-+	cplus-demangle			\
-+	compile-32			\
-+	compile-x32
- 
- # Set FEATURE_CHECK_(C|LD)FLAGS-all for all CORE_FEATURE_TESTS features.
- # If in the future we need per-feature checks/flags for features not
-@@ -622,6 +624,27 @@ ifdef HAVE_KVM_STAT_SUPPORT
-     CFLAGS += -DHAVE_KVM_STAT_SUPPORT
- endif
- 
-+ifeq (${IS_64_BIT}, 1)
-+  ifndef NO_PERF_READ_VDSO32
-+    $(call feature_check,compile-32)
-+    ifneq ($(feature-compile-32), 1)
-+      NO_PERF_READ_VDSO32 := 1
-+    endif
-+  endif
-+  ifneq (${IS_X86_64}, 1)
-+    NO_PERF_READ_VDSOX32 := 1
-+  endif
-+  ifndef NO_PERF_READ_VDSOX32
-+    $(call feature_check,compile-x32)
-+    ifneq ($(feature-compile-x32), 1)
-+      NO_PERF_READ_VDSOX32 := 1
-+    endif
-+  endif
-+else
-+  NO_PERF_READ_VDSO32 := 1
-+  NO_PERF_READ_VDSOX32 := 1
-+endif
-+
- # Among the variables below, these:
- #   perfexecdir
- #   template_dir
-diff --git a/tools/perf/config/Makefile.arch b/tools/perf/config/Makefile.arch
-index 4b06719ee984..851cd0172a76 100644
---- a/tools/perf/config/Makefile.arch
-+++ b/tools/perf/config/Makefile.arch
-@@ -21,3 +21,11 @@ ifeq ($(ARCH),x86_64)
-     RAW_ARCH := x86_64
-   endif
- endif
-+
-+ifeq (${IS_X86_64}, 1)
-+  IS_64_BIT := 1
-+else ifeq ($(ARCH),x86)
-+  IS_64_BIT := 0
-+else
-+  IS_64_BIT := $(shell echo __LP64__ | ${CC} ${CFLAGS} -E -x c - | tail -n 1)
-+endif
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 72ab2984718e..7c68ec74a808 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -27,7 +27,9 @@ FILES=					\
- 	test-libunwind-debug-frame.bin	\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin		\
--	test-libdw-dwarf-unwind.bin
-+	test-libdw-dwarf-unwind.bin	\
-+	test-compile-32.bin		\
-+	test-compile-x32.bin
- 
- CC := $(CROSS_COMPILE)gcc -MD
- PKG_CONFIG := $(CROSS_COMPILE)pkg-config
-@@ -131,6 +133,12 @@ test-libdw-dwarf-unwind.bin:
- test-sync-compare-and-swap.bin:
- 	$(BUILD) -Werror
- 
-+test-compile-32.bin:
-+	$(CC) -m32 -o $(OUTPUT)$@ test-compile.c
-+
-+test-compile-x32.bin:
-+	$(CC) -mx32 -o $(OUTPUT)$@ test-compile.c
-+
- -include *.d
- 
- ###############################
-diff --git a/tools/perf/config/feature-checks/test-compile.c b/tools/perf/config/feature-checks/test-compile.c
-new file mode 100644
-index 000000000000..31dbf45bf99c
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-compile.c
-@@ -0,0 +1,4 @@
-+int main(void)
-+{
-+	return 0;
-+}
-diff --git a/tools/perf/perf-read-vdso.c b/tools/perf/perf-read-vdso.c
-new file mode 100644
-index 000000000000..764e2547c25a
---- /dev/null
-+++ b/tools/perf/perf-read-vdso.c
-@@ -0,0 +1,34 @@
-+#include <stdio.h>
-+#include <string.h>
-+
-+#define VDSO__MAP_NAME "[vdso]"
-+
-+/*
-+ * Include definition of find_vdso_map() also used in util/vdso.c for
-+ * building perf.
-+ */
-+#include "util/find-vdso-map.c"
-+
-+int main(void)
-+{
-+	void *start, *end;
-+	size_t size, written;
-+
-+	if (find_vdso_map(&start, &end))
-+		return 1;
-+
-+	size = end - start;
-+
-+	while (size) {
-+		written = fwrite(start, 1, size, stdout);
-+		if (!written)
-+			return 1;
-+		start += written;
-+		size -= written;
-+	}
-+
-+	if (fflush(stdout))
-+		return 1;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/find-vdso-map.c b/tools/perf/util/find-vdso-map.c
-new file mode 100644
-index 000000000000..95ef1cffc056
---- /dev/null
-+++ b/tools/perf/util/find-vdso-map.c
-@@ -0,0 +1,30 @@
-+static int find_vdso_map(void **start, void **end)
-+{
-+	FILE *maps;
-+	char line[128];
-+	int found = 0;
-+
-+	maps = fopen("/proc/self/maps", "r");
-+	if (!maps) {
-+		fprintf(stderr, "vdso: cannot open maps\n");
-+		return -1;
-+	}
-+
-+	while (!found && fgets(line, sizeof(line), maps)) {
-+		int m = -1;
-+
-+		/* We care only about private r-x mappings. */
-+		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
-+				start, end, &m))
-+			continue;
-+		if (m < 0)
-+			continue;
-+
-+		if (!strncmp(&line[m], VDSO__MAP_NAME,
-+			     sizeof(VDSO__MAP_NAME) - 1))
-+			found = 1;
-+	}
-+
-+	fclose(maps);
-+	return !found;
-+}
-diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
-index adca69384fcc..f51390a1ed51 100644
---- a/tools/perf/util/vdso.c
-+++ b/tools/perf/util/vdso.c
-@@ -15,6 +15,12 @@
- #include "linux/string.h"
- #include "debug.h"
- 
-+/*
-+ * Include definition of find_vdso_map() also used in perf-read-vdso.c for
-+ * building perf-read-vdso32 and perf-read-vdsox32.
-+ */
-+#include "find-vdso-map.c"
-+
- #define VDSO__TEMP_FILE_NAME "/tmp/perf-vdso.so-XXXXXX"
- 
- struct vdso_file {
-@@ -40,37 +46,6 @@ static struct vdso_info *vdso_info__new(void)
- 	return memdup(&vdso_info_init, sizeof(vdso_info_init));
- }
- 
--static int find_vdso_map(void **start, void **end)
--{
--	FILE *maps;
--	char line[128];
--	int found = 0;
--
--	maps = fopen("/proc/self/maps", "r");
--	if (!maps) {
--		pr_err("vdso: cannot open maps\n");
--		return -1;
--	}
--
--	while (!found && fgets(line, sizeof(line), maps)) {
--		int m = -1;
--
--		/* We care only about private r-x mappings. */
--		if (2 != sscanf(line, "%p-%p r-xp %*x %*x:%*x %*u %n",
--				start, end, &m))
--			continue;
--		if (m < 0)
--			continue;
--
--		if (!strncmp(&line[m], VDSO__MAP_NAME,
--			     sizeof(VDSO__MAP_NAME) - 1))
--			found = 1;
--	}
--
--	fclose(maps);
--	return !found;
--}
--
- static char *get_file(struct vdso_file *vdso_file)
- {
- 	char *vdso = NULL;
--- 
-1.9.3
+I have taken another look over the series now, I only had
+a few additional comments. Please fix those along with the comments
+you got from other reviewers and then ask Stephen Rothwell to
+include your tree in linux-next (if it isn't already).
 
+When 3.18 is released, you can then send a pull request to Linus.
+
+	Arnd
