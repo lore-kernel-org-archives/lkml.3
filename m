@@ -1,125 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaJ1FkY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:40:24 -0400
-Received: from mga03.intel.com ([134.134.136.65]:27787 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756525AbaJ1FkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 01:40:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,801,1406617200"; 
-   d="scan'208";a="626697056"
-Message-ID: <1414474824.4246.6.camel@rzhang1-toshiba>
-Subject: Re: [GIT PULL] thermal-soc changes
-From: Zhang Rui <rui.zhang@intel.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 28 Oct 2014 13:40:24 +0800
-In-Reply-To: <20141027195346.GB6088@developer>
-References: <20141021134941.GA4937@developer>
-	 <1414041345.2380.3.camel@rzhang1-toshiba> <20141023112721.GA5683@developer>
-	 <20141027195346.GB6088@developer>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1758589AbaJ1Flv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:41:51 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:52238 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933641AbaJ1Flt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 01:41:49 -0400
+Message-ID: <544F2C95.7060806@hitachi.com>
+Date: Tue, 28 Oct 2014 14:41:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Jason Baron <jbaron@akamai.com>, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
+        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
+        isimatu.yasuaki@jp.fujitsu.com, linux-doc@vger.kernel.org,
+        kexec@lists.infradead.org, linux-api@vger.kernel.org
+Subject: Re: Re: [PATCH V4] kernel, add bug_on_warn
+References: <1414155207-29839-1-git-send-email-prarit@redhat.com> <544E8985.50203@akamai.com> <544E8BB8.8000707@redhat.com>
+In-Reply-To: <544E8BB8.8000707@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Eduardo,
+(2014/10/28 3:15), Prarit Bhargava wrote:
+> 
+> 
+> On 10/27/2014 02:05 PM, Jason Baron wrote:
+>> Hi Prarit,
+>>
+>> On 10/24/2014 08:53 AM, Prarit Bhargava wrote:
+>>> There have been several times where I have had to rebuild a kernel to
+>>> cause a panic when hitting a WARN() in the code in order to get a crash
+>>> dump from a system.  Sometimes this is easy to do, other times (such as
+>>> in the case of a remote admin) it is not trivial to send new images to the
+>>> user.panic_on_stackoverflow
+>>>
+>>> A much easier method would be a switch to change the WARN() over to a
+>>> BUG().  This makes debugging easier in that I can now test the actual
+>>> image the WARN() was seen on and I do not have to engage in remote
+>>> debugging.
+>>>
+>>> This patch adds a bug_on_warn kernel parameter and
+>>> /proc/sys/kernel/bug_on_warn calls BUG() in the warn_slowpath_common()
+>>> path.  The function will still print out the location of the warning.
+>>>
+>>> An example of the bug_on_warn output:
+>>>
+>>> The first line below is from the WARN_ON() to output the WARN_ON()'s location.
+>>> After that the new BUG() call is displayed.
+>>>
+>>>  WARNING: CPU: 27 PID: 3204 at
+>>> /home/rhel7/redhat/debug/dummy-module/dummy-module.c:25 init_dummy+0x28/0x30
+>>> [dummy_module]()
+>>>  bug_on_warn set, calling BUG()...
+>>>  ------------[ cut here ]------------
+>>>  kernel BUG at kernel/panic.c:434!
+>>
+>> Seems reasonable-I'm wondering why you just don't call panic() in this
+>> case. The BUG() call at line '434' doesn't at anything since its just being
+>> called from panic.c.
 
-On 一, 2014-10-27 at 15:53 -0400, Eduardo Valentin wrote:
-> Hello Rui,
-> 
-> On Thu, Oct 23, 2014 at 07:27:24AM -0400, Eduardo Valentin wrote:
-> > Hello Rui,
-> > 
-> > On Thu, Oct 23, 2014 at 01:15:45PM +0800, Zhang Rui wrote:
-> > > On 二, 2014-10-21 at 09:49 -0400, Eduardo Valentin wrote:
-> > > > Hello Rui,
-> > > > 
-> > > > Here are a couple of changes that are in my tree. They include:
-> > > > - a few code refactoring improving the Exynos code base;
-> > > > - new feature on the Exynos code base (TRIMINFO and TRIMRELOAD);
-> > > > - a documentation of RCAR thermal; and
-> > > > - a fix in the of-thermal, regarding the proper usage of of APIs.
-> > > > 
-> > > what's their target?
-> > > please send me separate pull requests for different targets.
-> > > 
-> > 
-> > All are for 3.18, I forgot to mention. 
-> 
-> Any updates?
-> 
-Well, I'm on a trip, and unfortunately, my Linux laptop is broken for
-the moment. so I think first we should keep all the patches for 3.18-rc
-in your tree to get tested, and then either I can send out the pull
-request at around 20th Nov, after coming back from travel, or you can
-help me send the pull request for 3.18-rc.
++1, I like calling panic() instead of BUG() :)
 
-thanks,
-rui
-> > 
-> > BR,
-> > 
-> > Eduardo Valentin
-> > 
-> > > thanks,
-> > > rui
-> > > > They are based on your next branch.
-> > > > 
-> > > > BR,
-> > > > 
-> > > > Eduardo Valentin
-> > > > 
-> > > > The following changes since commit 6ceaf58abe25e86292152005c51169796bad3407:
-> > > > 
-> > > >   Merge branch 'int340x-thermal' of .git into next (2014-10-17 14:30:58 +0800)
-> > > > 
-> > > > are available in the git repository at:
-> > > > 
-> > > > 
-> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/evalenti/linux-soc-thermal.git next
-> > > > 
-> > > > for you to fetch changes up to df67e40f51398fef8dd705dfe4e287ad9b10ba4b:
-> > > > 
-> > > >   thermal: fix multiple disbalanced device node counters (2014-10-21 08:05:50 -0400)
-> > > > 
-> > > > ----------------------------------------------------------------
-> > > > Bartlomiej Zolnierkiewicz (9):
-> > > >       thermal: exynos: remove unused struct exynos_tmu_registers entries
-> > > >       thermal: exynos: remove dead code for HW_MODE calibration
-> > > >       thermal: exynos: remove redundant pdata checks from exynos_tmu_initialize()
-> > > >       thermal: exynos: remove redundant threshold_code checks from exynos_tmu_initialize()
-> > > >       thermal: exynos: simplify temp_to_code() and code_to_temp()
-> > > >       thermal: exynos: cache non_hw_trigger_levels in pdata
-> > > >       thermal: exynos: remove redundant pdata checks from exynos_tmu_control()
-> > > >       thermal: exynos: remove identical values from exynos*_tmu_registers structures
-> > > >       thermal: samsung: Exynos5260 and Exynos5420 should not use TRIM_RELOAD flag
-> > > > 
-> > > > Chanwoo Choi (2):
-> > > >       thermal: exynos: Add support for many TRIMINFO_CTRL registers
-> > > >       thermal: exynos: Add support for TRIM_RELOAD feature at Exynos3250
-> > > > 
-> > > > Geert Uytterhoeven (1):
-> > > >       thermal: rcar: Add binding docs for new R-Car Gen2 SoCs
-> > > > 
-> > > > Vladimir Zapolskiy (1):
-> > > >       thermal: fix multiple disbalanced device node counters
-> > > > 
-> > > >  .../devicetree/bindings/thermal/rcar-thermal.txt   |   5 +-
-> > > >  drivers/thermal/of-thermal.c                       |  40 ++++--
-> > > >  drivers/thermal/samsung/exynos_thermal_common.h    |   2 +-
-> > > >  drivers/thermal/samsung/exynos_tmu.c               | 141 ++++++---------------
-> > > >  drivers/thermal/samsung/exynos_tmu.h               |  81 ++----------
-> > > >  drivers/thermal/samsung/exynos_tmu_data.c          |  83 ++++--------
-> > > >  drivers/thermal/samsung/exynos_tmu_data.h          |  39 +-----
-> > > >  7 files changed, 111 insertions(+), 280 deletions(-)
-> > > 
-> > > 
+Thank you,
+
 > 
+> Hmm ... I didn't even think about that.
 > 
+>>
+>> So something like 'panic_on_warn' would seem to be more appropriate
+>> in keeping with things like 'panic_on_oops' or 'panic_on_stackoverflow'.
+> 
+> I like it a lot better that way too :)  I'm changing it to panic_on_warn unless
+> anyone has any strenuous objections.
+> 
+> P.
+> 
+>>
+>> Thanks,
+>>
+>> -Jason
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
