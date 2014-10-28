@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759600AbaJ1Hq4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:46:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44598 "EHLO
+	id S1758102AbaJ1Hr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:47:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44566 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552AbaJ1DjN (ORCPT
+	with ESMTP id S1754493AbaJ1Di4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:13 -0400
+	Mon, 27 Oct 2014 23:38:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Anatol Pomozov <anatol.pomozov@gmail.com>,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 077/146] ALSA: hda - Fix inverted LED gpio setup for Lenovo Ideapad
-Date: Tue, 28 Oct 2014 11:33:39 +0800
-Message-Id: <20141028033346.731584978@linuxfoundation.org>
+Subject: [PATCH 3.17 071/146] ALSA: pcm: use the same dma mmap codepath both for arm and arm64
+Date: Tue, 28 Oct 2014 11:33:33 +0800
+Message-Id: <20141028033346.462969381@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -28,35 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-commit b1974f965a506c131b60cd3e483340884e831920 upstream.
+commit a011e213f3700233ed2a676f1ef0a74a052d7162 upstream.
 
-We implemented in a wrong way for mute LED on Lenovo Ideapad; the bit
-must be flipped.
+This avoids following kernel crash when try to playback on arm64
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=16373
-Fixes: 3e887f379d8a ('ALSA: hda - Add mute LED support to Lenovo Ideapad')
+[  107.497203] [<ffffffc00046b310>] snd_pcm_mmap_data_fault+0x90/0xd4
+[  107.503405] [<ffffffc0001541ac>] __do_fault+0xb0/0x498
+[  107.508565] [<ffffffc0001576a0>] handle_mm_fault+0x224/0x7b0
+[  107.514246] [<ffffffc000092640>] do_page_fault+0x11c/0x310
+[  107.519738] [<ffffffc000081100>] do_mem_abort+0x38/0x98
+
+Tested: backported to 3.14 and tried to playback on arm64 machine
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/core/pcm_native.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5786,9 +5786,9 @@ static void alc662_led_gpio1_mute_hook(v
- 	unsigned int oldval = spec->gpio_led;
+--- a/sound/core/pcm_native.c
++++ b/sound/core/pcm_native.c
+@@ -3193,7 +3193,7 @@ static const struct vm_operations_struct
  
- 	if (enabled)
--		spec->gpio_led &= ~0x01;
--	else
- 		spec->gpio_led |= 0x01;
-+	else
-+		spec->gpio_led &= ~0x01;
- 	if (spec->gpio_led != oldval)
- 		snd_hda_codec_write(codec, 0x01, 0, AC_VERB_SET_GPIO_DATA,
- 				    spec->gpio_led);
+ #ifndef ARCH_HAS_DMA_MMAP_COHERENT
+ /* This should be defined / handled globally! */
+-#ifdef CONFIG_ARM
++#if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
+ #define ARCH_HAS_DMA_MMAP_COHERENT
+ #endif
+ #endif
 
 
