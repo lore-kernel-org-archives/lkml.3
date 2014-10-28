@@ -1,236 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaJ1N03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:26:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:15664 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753598AbaJ1N00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:26:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="407247506"
-Message-ID: <544F98A2.6080309@linux.intel.com>
-Date: Tue, 28 Oct 2014 15:22:42 +0200
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	id S1753807AbaJ1N0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:26:55 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:64825 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785AbaJ1NXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:23:13 -0400
+From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Frank Li <Frank.Li@freescale.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: [PATCHv3 2/9] net: fec: consistently use lower case chars as hex digits
+Date: Tue, 28 Oct 2014 14:22:57 +0100
+Message-Id: <1414502584-10583-3-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1414502584-10583-1-git-send-email-LW@KARO-electronics.de>
+References: <1414494104-27943-1-git-send-email-LW@KARO-electronics.de>
+ <1414502584-10583-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Francis Moreau <francis.moro@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: kernel 3.17.1: fail to use USB3 device after resuming from suspend
-References: <544961F6.8050609@gmail.com> <3246508.csL4NlCXV0@vostro.rjw.lan>
-In-Reply-To: <3246508.csL4NlCXV0@vostro.rjw.lan>
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.10.2014 00:13, Rafael J. Wysocki wrote:
-> On Thursday, October 23, 2014 10:15:50 PM Francis Moreau wrote:
->> Hello,
->>
->> After resuming from a suspend (to RAM), I can't use an external USB hard
->> drive anymore, the kernel seems to fail to detect it.
->>
->> Here is the kernel log when doing a suspend/resume cycle.
->>
->> [Oct23 22:03] wlp2s0: deauthenticating from 92:23:b1:f9:54:e4 by local
->> choice (Reason: 3=DEAUTH_LEAVING)
->> [  +0.025152] cfg80211: Calling CRDA to update world regulatory domain
->> [  +0.052636] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
->> [  +0.071175] PM: Syncing filesystems ... done.
->> [  +0.099223] PM: Preparing system for mem sleep
->> [  +0.000347] Freezing user space processes ... (elapsed 0.001 seconds)
->> done.
->> [  +0.001406] Freezing remaining freezable tasks ... (elapsed 0.001
->> seconds) done.
->> [  +0.001083] PM: Entering mem sleep
->> [  +0.000017] Suspending console(s) (use no_console_suspend to debug)
->> [  +0.000264] sd 4:0:0:0: [sdb] Synchronizing SCSI cache
->> [  +0.000036] sd 4:0:0:0: [sdb] Stopping disk
->> [  +0.000004] sd 0:0:0:0: [sda] Synchronizing SCSI cache
->> [  +0.000049] sd 0:0:0:0: [sda] Stopping disk
->> [  +1.058316] PM: suspend of devices complete after 1057.429 msecs
->> [  +0.013434] PM: late suspend of devices complete after 13.410 msecs
->> [  +0.000875] ehci-pci 0000:00:1d.0: System wakeup enabled by ACPI
->> [  +0.000013] r8169 0000:03:00.2: System wakeup enabled by ACPI
->> [  +0.000101] ehci-pci 0000:00:1a.0: System wakeup enabled by ACPI
->> [  +0.000047] xhci_hcd 0000:00:14.0: System wakeup enabled by ACPI
->> [  +0.012356] PM: noirq suspend of devices complete after 13.373 msecs
->> [  +0.000401] ACPI: Preparing to enter system sleep state S3
->> [  +0.002149] PM: Saving platform NVS memory
->> [  +0.000006] Disabling non-boot CPUs ...
->> [  +0.000075] intel_pstate CPU 1 exiting
->> [  +0.001363] kvm: disabling virtualization on CPU1
->> [  +0.000028] smpboot: CPU 1 is now offline
->> [  +0.000436] intel_pstate CPU 2 exiting
->> [  +0.001348] kvm: disabling virtualization on CPU2
->> [  +0.100773] smpboot: CPU 2 is now offline
->> [  +0.000322] intel_pstate CPU 3 exiting
->> [  +0.001260] kvm: disabling virtualization on CPU3
->> [  +0.101855] smpboot: CPU 3 is now offline
->> [  +0.000246] intel_pstate CPU 4 exiting
->> [  +0.001181] kvm: disabling virtualization on CPU4
->> [  +0.102021] smpboot: CPU 4 is now offline
->> [  +0.000396] intel_pstate CPU 5 exiting
->> [  +0.001242] kvm: disabling virtualization on CPU5
->> [  +0.101801] smpboot: CPU 5 is now offline
->> [  +0.000292] intel_pstate CPU 6 exiting
->> [  +0.001301] kvm: disabling virtualization on CPU6
->> [  +0.101880] smpboot: CPU 6 is now offline
->> [  +0.000496] intel_pstate CPU 7 exiting
->> [  +0.001265] kvm: disabling virtualization on CPU7
->> [  +0.101649] smpboot: CPU 7 is now offline
->> [  +0.002022] ACPI: Low-level resume complete
->> [  +0.000043] PM: Restoring platform NVS memory
->> [  +0.000342] Enabling non-boot CPUs ...
->> [  +0.000047] x86: Booting SMP configuration:
->> [  +0.000002] smpboot: Booting Node 0 Processor 1 APIC 0x2
->> [  +0.011516] kvm: enabling virtualization on CPU1
->> [  +0.002301] CPU1 is up
->> [  +0.000025] smpboot: Booting Node 0 Processor 2 APIC 0x4
->> [  +0.011466] kvm: enabling virtualization on CPU2
->> [  +0.002307] CPU2 is up
->> [  +0.000022] smpboot: Booting Node 0 Processor 3 APIC 0x6
->> [  +0.011469] kvm: enabling virtualization on CPU3
->> [  +0.002305] CPU3 is up
->> [  +0.000022] smpboot: Booting Node 0 Processor 4 APIC 0x1
->> [  +0.011483] kvm: enabling virtualization on CPU4
->> [  +0.002298] CPU4 is up
->> [  +0.000018] smpboot: Booting Node 0 Processor 5 APIC 0x3
->> [  +0.011437] kvm: enabling virtualization on CPU5
->> [  +0.002305] CPU5 is up
->> [  +0.000017] smpboot: Booting Node 0 Processor 6 APIC 0x5
->> [  +0.011550] kvm: enabling virtualization on CPU6
->> [  +0.002297] CPU6 is up
->> [  +0.000017] smpboot: Booting Node 0 Processor 7 APIC 0x7
->> [  +0.011457] kvm: enabling virtualization on CPU7
->> [  +0.002312] CPU7 is up
->> [  +0.006813] ACPI: Waking up from system sleep state S3
->> [  +0.046539] ehci-pci 0000:00:1d.0: System wakeup disabled by ACPI
->> [  +0.000267] ehci-pci 0000:00:1a.0: System wakeup disabled by ACPI
->> [  +0.000123] xhci_hcd 0000:00:14.0: System wakeup disabled by ACPI
->> [  +0.000053] PM: noirq resume of devices complete after 13.005 msecs
->> [  +0.000523] PM: early resume of devices complete after 0.479 msecs
->> [  +0.000120] mei_me 0000:00:16.0: irq 28 for MSI/MSI-X
->> [  +0.000047] r8169 0000:03:00.2: System wakeup disabled by ACPI
->> [  +0.000097] snd_hda_intel 0000:00:1b.0: irq 29 for MSI/MSI-X
->> [  +0.003073] rtc_cmos 00:02: System wakeup disabled by ACPI
->> [  +0.008776] sd 4:0:0:0: [sdb] Starting disk
->> [  +0.000009] sd 0:0:0:0: [sda] Starting disk
->> [  +0.053104] r8169 0000:03:00.2 enp3s0f2: link down
->> [  +0.254016] usb 1-4: reset full-speed USB device number 2 using xhci_hcd
->> [  +0.000016] xhci_hcd 0000:00:14.0: Setup ERROR: setup context command
->> for slot 1.
 
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/net/ethernet/freescale/fec.h |   88 +++++++++++++++++-----------------
+ 1 file changed, 44 insertions(+), 44 deletions(-)
 
-Looks like after resetting the device, "enable device" ends up doing a address device command with BSR=1 on a slot that
-is already in default state. Address command with BSR=1 should be used to get a slot
-from enabled state to default state. xhci sees this as a invalid state transition and fails.
-
-If this is the cause I wonder why it hasn't been seen earlier?
-
-Can you try using the old enumeration scheme for devices, (as root) do:
-
-echo Y > /sys/module/usbcore/parameters/old_scheme_first
-
-and see if it makes any difference?
-
->> [  +0.000003] usb 1-4: hub failed to enable device, error -22
->> [  +0.019787] ata3: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
->> [  +0.002347] ata3.00: configured for UDMA/100
->> [  +0.004325] ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->> [  +0.014796] ata5.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES)
->> succeeded
->> [  +0.000004] ata5.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY FREEZE
->> LOCK) filtered out
->> [  +0.000002] ata5.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
->> CONFIGURATION OVERLAY) filtered out
->> [  +0.036236] ata5.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES)
->> succeeded
->> [  +0.000004] ata5.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY FREEZE
->> LOCK) filtered out
->> [  +0.000003] ata5.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
->> CONFIGURATION OVERLAY) filtered out
->> [  +0.002230] ata5.00: configured for UDMA/133
->> [  +0.080235] usb 1-4: reset full-speed USB device number 2 using xhci_hcd
->> [  +0.000014] xhci_hcd 0000:00:14.0: Setup ERROR: setup context command
->> for slot 1.
->> [  +0.000002] usb 1-4: hub failed to enable device, error -22
->> [  +0.160144] usb 1-4: reset full-speed USB device number 2 using xhci_hcd
->> [  +0.015695] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
->> disabled ep ffff880405d77900
->> [  +0.000003] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
->> disabled ep ffff880405d77948
->> [  +0.000001] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
->> disabled ep ffff880405d77990
->> [  +0.000002] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
->> disabled ep ffff880405ece3c0
->> [  +0.000001] xhci_hcd 0000:00:14.0: xHCI xhci_drop_endpoint called with
->> disabled ep ffff880405ece408
-> 
-> The above messages look suspicious to me, but I'm not a USB expert.
-> CCing linux-usb and linux-pm.
-> 
->> [  +0.001376] PM: resume of devices complete after 655.778 msecs
->> [  +0.001102] PM: Finishing wakeup.
->> [  +0.000002] Restarting tasks ... done.
->> [  +0.008460] video LNXVIDEO:00: Restoring backlight state
->> [  +0.269354] IPv6: ADDRCONF(NETDEV_UP): enp3s0f2: link is not ready
->> [  +0.067225] r8169 0000:03:00.2 enp3s0f2: link down
->> [  +0.000036] IPv6: ADDRCONF(NETDEV_UP): enp3s0f2: link is not ready
->> [  +0.041454] iwlwifi 0000:02:00.0: L1 Disabled; Enabling L0S
->> [  +0.007433] iwlwifi 0000:02:00.0: Radio type=0x2-0x0-0x0
->> [  +0.052615] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
->> [  +0.645784] wlp2s0: authenticate with 92:23:b1:f9:54:e4
->> [  +0.010244] wlp2s0: send auth to 92:23:b1:f9:54:e4 (try 1/3)
->> [  +0.002563] wlp2s0: authenticated
->> [  +0.000151] iwlwifi 0000:02:00.0 wlp2s0: disabling HT/VHT due to
->> WEP/TKIP use
->> [  +0.000942] wlp2s0: associate with 92:23:b1:f9:54:e4 (try 1/3)
->> [  +0.002687] wlp2s0: RX AssocResp from 92:23:b1:f9:54:e4 (capab=0x411
->> status=0 aid=4)
->> [  +0.019814] wlp2s0: associated
->> [  +0.000027] IPv6: ADDRCONF(NETDEV_CHANGE): wlp2s0: link becomes ready
->> [  +0.257801] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
->> [  +0.006493] ata1.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES)
->> succeeded
->> [  +0.000006] ata1.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY FREEZE
->> LOCK) filtered out
->> [  +0.000004] ata1.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
->> CONFIGURATION OVERLAY) filtered out
->> [  +0.012908] ata1.00: ACPI cmd ef/10:06:00:00:00:00 (SET FEATURES)
->> succeeded
->> [  +0.000022] ata1.00: ACPI cmd f5/00:00:00:00:00:00 (SECURITY FREEZE
->> LOCK) filtered out
->> [  +0.000003] ata1.00: ACPI cmd b1/c1:00:00:00:00:00 (DEVICE
->> CONFIGURATION OVERLAY) filtered out
->> [  +0.006284] ata1.00: configured for UDMA/133
->> ^[[B[Oct23 22:04] usb 2-2: new SuperSpeed USB device number 2 using xhci_hcd
->> [  +0.034951] usb-storage 2-2:1.0: USB Mass Storage device detected
->> [  +0.000233] scsi host6: usb-storage 2-2:1.0
->> [  +0.000138] usbcore: registered new interface driver usb-storage
->> [  +0.001865] usbcore: registered new interface driver uas
->> [  +1.330800] usb 2-2: USB disconnect, device number 2
->>
->> The xHCI controller is:
->>
->> 00:14.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset
->> Family USB xHCI Host Controller (rev 04) (prog-if 30 [XHCI])
->> 	Subsystem: CLEVO/KAPOK Computer Device 0550
->> 	Flags: bus master, medium devsel, latency 0, IRQ 26
->> 	Memory at f7d00000 (64-bit, non-prefetchable) [size=64K]
->> 	Capabilities: [70] Power Management version 2
->> 	Capabilities: [80] MSI: Enable+ Count=1/8 Maskable- 64bit+
->> 	Kernel driver in use: xhci_hcd
->> 	Kernel modules: xhci_hcd
->>
->>
->> Please let me know if you need more information.
->>
->> Thanks
-> 
+diff --git a/drivers/net/ethernet/freescale/fec.h b/drivers/net/ethernet/freescale/fec.h
+index 3047db4..e778b9e 100644
+--- a/drivers/net/ethernet/freescale/fec.h
++++ b/drivers/net/ethernet/freescale/fec.h
+@@ -38,9 +38,9 @@
+ #define FEC_ADDR_LOW		0x0e4 /* Low 32bits MAC address */
+ #define FEC_ADDR_HIGH		0x0e8 /* High 16bits MAC address */
+ #define FEC_OPD			0x0ec /* Opcode + Pause duration */
+-#define FEC_TXIC0		0xF0  /* Tx Interrupt Coalescing for ring 0 */
+-#define FEC_TXIC1		0xF4  /* Tx Interrupt Coalescing for ring 1 */
+-#define FEC_TXIC2		0xF8  /* Tx Interrupt Coalescing for ring 2 */
++#define FEC_TXIC0		0x0f0 /* Tx Interrupt Coalescing for ring 0 */
++#define FEC_TXIC1		0x0f4 /* Tx Interrupt Coalescing for ring 1 */
++#define FEC_TXIC2		0x0f8 /* Tx Interrupt Coalescing for ring 2 */
+ #define FEC_RXIC0		0x100 /* Rx Interrupt Coalescing for ring 0 */
+ #define FEC_RXIC1		0x104 /* Rx Interrupt Coalescing for ring 1 */
+ #define FEC_RXIC2		0x108 /* Rx Interrupt Coalescing for ring 2 */
+@@ -62,7 +62,7 @@
+ #define FEC_R_FIFO_RSEM		0x194 /* Receive FIFO section empty threshold */
+ #define FEC_R_FIFO_RAEM		0x198 /* Receive FIFO almost empty threshold */
+ #define FEC_R_FIFO_RAFL		0x19c /* Receive FIFO almost full threshold */
+-#define FEC_RACC		0x1C4 /* Receive Accelerator function */
++#define FEC_RACC		0x1c4 /* Receive Accelerator function */
+ #define FEC_RCMR_1		0x1c8 /* Receive classification match ring 1 */
+ #define FEC_RCMR_2		0x1cc /* Receive classification match ring 2 */
+ #define FEC_DMA_CFG_1		0x1d8 /* DMA class configuration for ring 1 */
+@@ -82,57 +82,57 @@
+ #define RMON_T_DROP		0x200 /* Count of frames not cntd correctly */
+ #define RMON_T_PACKETS		0x204 /* RMON TX packet count */
+ #define RMON_T_BC_PKT		0x208 /* RMON TX broadcast pkts */
+-#define RMON_T_MC_PKT		0x20C /* RMON TX multicast pkts */
++#define RMON_T_MC_PKT		0x20c /* RMON TX multicast pkts */
+ #define RMON_T_CRC_ALIGN	0x210 /* RMON TX pkts with CRC align err */
+ #define RMON_T_UNDERSIZE	0x214 /* RMON TX pkts < 64 bytes, good CRC */
+ #define RMON_T_OVERSIZE		0x218 /* RMON TX pkts > MAX_FL bytes good CRC */
+-#define RMON_T_FRAG		0x21C /* RMON TX pkts < 64 bytes, bad CRC */
++#define RMON_T_FRAG		0x21c /* RMON TX pkts < 64 bytes, bad CRC */
+ #define RMON_T_JAB		0x220 /* RMON TX pkts > MAX_FL bytes, bad CRC */
+ #define RMON_T_COL		0x224 /* RMON TX collision count */
+ #define RMON_T_P64		0x228 /* RMON TX 64 byte pkts */
+-#define RMON_T_P65TO127		0x22C /* RMON TX 65 to 127 byte pkts */
++#define RMON_T_P65TO127		0x22c /* RMON TX 65 to 127 byte pkts */
+ #define RMON_T_P128TO255	0x230 /* RMON TX 128 to 255 byte pkts */
+ #define RMON_T_P256TO511	0x234 /* RMON TX 256 to 511 byte pkts */
+ #define RMON_T_P512TO1023	0x238 /* RMON TX 512 to 1023 byte pkts */
+-#define RMON_T_P1024TO2047	0x23C /* RMON TX 1024 to 2047 byte pkts */
++#define RMON_T_P1024TO2047	0x23c /* RMON TX 1024 to 2047 byte pkts */
+ #define RMON_T_P_GTE2048	0x240 /* RMON TX pkts > 2048 bytes */
+ #define RMON_T_OCTETS		0x244 /* RMON TX octets */
+ #define IEEE_T_DROP		0x248 /* Count of frames not counted crtly */
+-#define IEEE_T_FRAME_OK		0x24C /* Frames tx'd OK */
++#define IEEE_T_FRAME_OK		0x24c /* Frames tx'd OK */
+ #define IEEE_T_1COL		0x250 /* Frames tx'd with single collision */
+ #define IEEE_T_MCOL		0x254 /* Frames tx'd with multiple collision */
+ #define IEEE_T_DEF		0x258 /* Frames tx'd after deferral delay */
+-#define IEEE_T_LCOL		0x25C /* Frames tx'd with late collision */
++#define IEEE_T_LCOL		0x25c /* Frames tx'd with late collision */
+ #define IEEE_T_EXCOL		0x260 /* Frames tx'd with excesv collisions */
+ #define IEEE_T_MACERR		0x264 /* Frames tx'd with TX FIFO underrun */
+ #define IEEE_T_CSERR		0x268 /* Frames tx'd with carrier sense err */
+-#define IEEE_T_SQE		0x26C /* Frames tx'd with SQE err */
++#define IEEE_T_SQE		0x26c /* Frames tx'd with SQE err */
+ #define IEEE_T_FDXFC		0x270 /* Flow control pause frames tx'd */
+ #define IEEE_T_OCTETS_OK	0x274 /* Octet count for frames tx'd w/o err */
+ #define RMON_R_PACKETS		0x284 /* RMON RX packet count */
+ #define RMON_R_BC_PKT		0x288 /* RMON RX broadcast pkts */
+-#define RMON_R_MC_PKT		0x28C /* RMON RX multicast pkts */
++#define RMON_R_MC_PKT		0x28c /* RMON RX multicast pkts */
+ #define RMON_R_CRC_ALIGN	0x290 /* RMON RX pkts with CRC alignment err */
+ #define RMON_R_UNDERSIZE	0x294 /* RMON RX pkts < 64 bytes, good CRC */
+ #define RMON_R_OVERSIZE		0x298 /* RMON RX pkts > MAX_FL bytes good CRC */
+-#define RMON_R_FRAG		0x29C /* RMON RX pkts < 64 bytes, bad CRC */
+-#define RMON_R_JAB		0x2A0 /* RMON RX pkts > MAX_FL bytes, bad CRC */
+-#define RMON_R_RESVD_O		0x2A4 /* Reserved */
+-#define RMON_R_P64		0x2A8 /* RMON RX 64 byte pkts */
+-#define RMON_R_P65TO127		0x2AC /* RMON RX 65 to 127 byte pkts */
+-#define RMON_R_P128TO255	0x2B0 /* RMON RX 128 to 255 byte pkts */
+-#define RMON_R_P256TO511	0x2B4 /* RMON RX 256 to 511 byte pkts */
+-#define RMON_R_P512TO1023	0x2B8 /* RMON RX 512 to 1023 byte pkts */
+-#define RMON_R_P1024TO2047	0x2BC /* RMON RX 1024 to 2047 byte pkts */
+-#define RMON_R_P_GTE2048	0x2C0 /* RMON RX pkts > 2048 bytes */
+-#define RMON_R_OCTETS		0x2C4 /* RMON RX octets */
+-#define IEEE_R_DROP		0x2C8 /* Count frames not counted correctly */
+-#define IEEE_R_FRAME_OK		0x2CC /* Frames rx'd OK */
+-#define IEEE_R_CRC		0x2D0 /* Frames rx'd with CRC err */
+-#define IEEE_R_ALIGN		0x2D4 /* Frames rx'd with alignment err */
+-#define IEEE_R_MACERR		0x2D8 /* Receive FIFO overflow count */
+-#define IEEE_R_FDXFC		0x2DC /* Flow control pause frames rx'd */
+-#define IEEE_R_OCTETS_OK	0x2E0 /* Octet cnt for frames rx'd w/o err */
++#define RMON_R_FRAG		0x29c /* RMON RX pkts < 64 bytes, bad CRC */
++#define RMON_R_JAB		0x2a0 /* RMON RX pkts > MAX_FL bytes, bad CRC */
++#define RMON_R_RESVD_O		0x2a4 /* Reserved */
++#define RMON_R_P64		0x2a8 /* RMON RX 64 byte pkts */
++#define RMON_R_P65TO127		0x2ac /* RMON RX 65 to 127 byte pkts */
++#define RMON_R_P128TO255	0x2b0 /* RMON RX 128 to 255 byte pkts */
++#define RMON_R_P256TO511	0x2b4 /* RMON RX 256 to 511 byte pkts */
++#define RMON_R_P512TO1023	0x2b8 /* RMON RX 512 to 1023 byte pkts */
++#define RMON_R_P1024TO2047	0x2bc /* RMON RX 1024 to 2047 byte pkts */
++#define RMON_R_P_GTE2048	0x2c0 /* RMON RX pkts > 2048 bytes */
++#define RMON_R_OCTETS		0x2c4 /* RMON RX octets */
++#define IEEE_R_DROP		0x2c8 /* Count frames not counted correctly */
++#define IEEE_R_FRAME_OK		0x2cc /* Frames rx'd OK */
++#define IEEE_R_CRC		0x2d0 /* Frames rx'd with CRC err */
++#define IEEE_R_ALIGN		0x2d4 /* Frames rx'd with alignment err */
++#define IEEE_R_MACERR		0x2d8 /* Receive FIFO overflow count */
++#define IEEE_R_FDXFC		0x2dc /* Flow control pause frames rx'd */
++#define IEEE_R_OCTETS_OK	0x2e0 /* Octet cnt for frames rx'd w/o err */
+ 
+ #else
+ 
+@@ -170,16 +170,16 @@
+ /* Not existed in real chip
+  * Just for pass build.
+  */
+-#define FEC_RCMR_1		0xFFF
+-#define FEC_RCMR_2		0xFFF
+-#define FEC_DMA_CFG_1		0xFFF
+-#define FEC_DMA_CFG_2		0xFFF
+-#define FEC_TXIC0		0xFFF
+-#define FEC_TXIC1		0xFFF
+-#define FEC_TXIC2		0xFFF
+-#define FEC_RXIC0		0xFFF
+-#define FEC_RXIC1		0xFFF
+-#define FEC_RXIC2		0xFFF
++#define FEC_RCMR_1		0xfff
++#define FEC_RCMR_2		0xfff
++#define FEC_DMA_CFG_1		0xfff
++#define FEC_DMA_CFG_2		0xfff
++#define FEC_TXIC0		0xfff
++#define FEC_TXIC1		0xfff
++#define FEC_TXIC2		0xfff
++#define FEC_RXIC0		0xfff
++#define FEC_RXIC1		0xfff
++#define FEC_RXIC2		0xfff
+ #endif /* CONFIG_M5272 */
+ 
+ 
+@@ -296,7 +296,7 @@ struct bufdesc_ex {
+ 
+ #define DMA_CLASS_EN		(1 << 16)
+ #define FEC_RCMR(X)		((X == 2) ? FEC_RCMR_2 : FEC_RCMR_1)
+-#define IDLE_SLOPE_MASK		0xFFFF
++#define IDLE_SLOPE_MASK		0xffff
+ #define IDLE_SLOPE_1		0x200 /* BW fraction: 0.5 */
+ #define IDLE_SLOPE_2		0x200 /* BW fraction: 0.5 */
+ #define IDLE_SLOPE(X)		((X == 1) ? (IDLE_SLOPE_1 & IDLE_SLOPE_MASK) : \
+@@ -308,7 +308,7 @@ struct bufdesc_ex {
+ #define RCMR_CMP_2		(RCMR_CMP_CFG(4, 0) | RCMR_CMP_CFG(5, 1) | \
+ 				RCMR_CMP_CFG(6, 2) | RCMR_CMP_CFG(7, 3))
+ #define RCMR_CMP(X)		((X == 1) ? RCMR_CMP_1 : RCMR_CMP_2)
+-#define FEC_TX_BD_FTYPE(X)	((X & 0xF) << 20)
++#define FEC_TX_BD_FTYPE(X)	((X & 0xf) << 20)
+ 
+ /* The number of Tx and Rx buffers.  These are allocated from the page
+  * pool.  The code may assume these are power of two, so it it best
+@@ -359,8 +359,8 @@ struct bufdesc_ex {
+ /* ENET interrupt coalescing macro define */
+ #define FEC_ITR_CLK_SEL		(0x1 << 30)
+ #define FEC_ITR_EN		(0x1 << 31)
+-#define FEC_ITR_ICFT(X)		((X & 0xFF) << 20)
+-#define FEC_ITR_ICTT(X)		((X) & 0xFFFF)
++#define FEC_ITR_ICFT(X)		((X & 0xff) << 20)
++#define FEC_ITR_ICTT(X)		((X) & 0xffff)
+ #define FEC_ITR_ICFT_DEFAULT	200  /* Set 200 frame count threshold */
+ #define FEC_ITR_ICTT_DEFAULT	1000 /* Set 1000us timer threshold */
+ 
+-- 
+1.7.10.4
 
