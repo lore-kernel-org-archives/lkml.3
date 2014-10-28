@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933809AbaJ1HQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:16:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45247 "EHLO
+	id S1754537AbaJ1DoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:44:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45243 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333AbaJ1DoR (ORCPT
+	with ESMTP id S1755420AbaJ1DoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:44:17 -0400
+	Mon, 27 Oct 2014 23:44:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "K. Y. Srinivasan" <kys@microsoft.com>,
         Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: [PATCH 3.16 040/127] Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
-Date: Tue, 28 Oct 2014 11:34:35 +0800
-Message-Id: <20141028033422.663186690@linuxfoundation.org>
+Subject: [PATCH 3.16 039/127] Drivers: hv: vmbus: Cleanup vmbus_close_internal()
+Date: Tue, 28 Oct 2014 11:34:34 +0800
+Message-Id: <20141028033422.623898869@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -31,40 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 72c6b71c245dac8f371167d97ef471b367d0b66b upstream.
+commit 98d731bb064a9d1817a6ca9bf8b97051334a7cfe upstream.
 
-Eliminate the call to BUG_ON() by waiting for the host to respond. We are
-trying to reclaim the ownership of memory that was given to the host and so
-we will have to wait until the host responds.
+Eliminate calls to BUG_ON() in vmbus_close_internal().
+We have chosen to potentially leak memory, than crash the guest
+in case of failures.
+
+In this version of the patch I have addressed comments from
+Dan Carpenter (dan.carpenter@oracle.com).
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/channel.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/hv/channel.c |   29 +++++++++++++++++++++++------
+ 1 file changed, 23 insertions(+), 6 deletions(-)
 
 --- a/drivers/hv/channel.c
 +++ b/drivers/hv/channel.c
-@@ -363,7 +363,6 @@ int vmbus_establish_gpadl(struct vmbus_c
- 	u32 next_gpadl_handle;
- 	unsigned long flags;
- 	int ret = 0;
--	int t;
+@@ -479,7 +479,7 @@ static void reset_channel_cb(void *arg)
+ 	channel->onchannel_callback = NULL;
+ }
  
- 	next_gpadl_handle = atomic_read(&vmbus_connection.next_gpadl_handle);
- 	atomic_inc(&vmbus_connection.next_gpadl_handle);
-@@ -410,9 +409,7 @@ int vmbus_establish_gpadl(struct vmbus_c
+-static void vmbus_close_internal(struct vmbus_channel *channel)
++static int vmbus_close_internal(struct vmbus_channel *channel)
+ {
+ 	struct vmbus_channel_close_channel *msg;
+ 	int ret;
+@@ -502,11 +502,28 @@ static void vmbus_close_internal(struct
  
- 		}
- 	}
--	t = wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
--	BUG_ON(t == 0);
+ 	ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel));
+ 
+-	BUG_ON(ret != 0);
++	if (ret) {
++		pr_err("Close failed: close post msg return is %d\n", ret);
++		/*
++		 * If we failed to post the close msg,
++		 * it is perhaps better to leak memory.
++		 */
++		return ret;
++	}
++
+ 	/* Tear down the gpadl for the channel's ring buffer */
+-	if (channel->ringbuffer_gpadlhandle)
+-		vmbus_teardown_gpadl(channel,
+-					  channel->ringbuffer_gpadlhandle);
++	if (channel->ringbuffer_gpadlhandle) {
++		ret = vmbus_teardown_gpadl(channel,
++					   channel->ringbuffer_gpadlhandle);
++		if (ret) {
++			pr_err("Close failed: teardown gpadl return %d\n", ret);
++			/*
++			 * If we failed to teardown gpadl,
++			 * it is perhaps better to leak memory.
++			 */
++			return ret;
++		}
++	}
+ 
+ 	/* Cleanup the ring buffers for this channel */
+ 	hv_ringbuffer_cleanup(&channel->outbound);
+@@ -515,7 +532,7 @@ static void vmbus_close_internal(struct
+ 	free_pages((unsigned long)channel->ringbuffer_pages,
+ 		get_order(channel->ringbuffer_pagecount * PAGE_SIZE));
+ 
 -
-+	wait_for_completion(&msginfo->waitevent);
++	return ret;
+ }
  
- 	/* At this point, we received the gpadl created msg */
- 	*gpadl_handle = gpadlmsg->gpadl;
+ /*
 
 
