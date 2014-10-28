@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbaJ1LJL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:09:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51150 "EHLO
+	id S1756007AbaJ1LJJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:09:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51152 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755281AbaJ1LJF (ORCPT
+	with ESMTP id S1754583AbaJ1LJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:09:05 -0400
-Date: Tue, 28 Oct 2014 04:07:22 -0700
-From: tip-bot for Juri Lelli <tipbot@zytor.com>
-Message-ID: <tip-f82f80426f7afcf55953924e71555984a4bd6ce6@git.kernel.org>
-Cc: tglx@linutronix.de, torvalds@linux-foundation.org, mingo@kernel.org,
-        peterz@infradead.org, lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, juri.lelli@arm.com
-Reply-To: torvalds@linux-foundation.org, tglx@linutronix.de, mingo@kernel.org,
-        peterz@infradead.org, lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, juri.lelli@arm.com
-In-Reply-To: <5433E6AF.5080105@arm.com>
-References: <5433E6AF.5080105@arm.com>
+	Tue, 28 Oct 2014 07:09:06 -0400
+Date: Tue, 28 Oct 2014 04:08:13 -0700
+From: "tip-bot for Peter Zijlstra (Intel)" <tipbot@zytor.com>
+Message-ID: <tip-65d71fe1375b973083733294795bf2b09d45b3c2@git.kernel.org>
+Cc: mingo@kernel.org, hpa@zytor.com, peterz@infradead.org, tglx@linutronix.de,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        luto@amacapital.net, acme@kernel.org
+Reply-To: hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, acme@kernel.org, luto@amacapital.net
+In-Reply-To: <20141007124757.GH19379@twins.programming.kicks-ass.net>
+References: <20141007124757.GH19379@twins.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/deadline:
-  Ensure that updates to exclusive cpusets don't break AC
-Git-Commit-ID: f82f80426f7afcf55953924e71555984a4bd6ce6
+Subject: [tip:perf/urgent] perf: Fix bogus kernel printk
+Git-Commit-ID: 65d71fe1375b973083733294795bf2b09d45b3c2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,101 +33,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f82f80426f7afcf55953924e71555984a4bd6ce6
-Gitweb:     http://git.kernel.org/tip/f82f80426f7afcf55953924e71555984a4bd6ce6
-Author:     Juri Lelli <juri.lelli@arm.com>
-AuthorDate: Tue, 7 Oct 2014 09:52:11 +0100
+Commit-ID:  65d71fe1375b973083733294795bf2b09d45b3c2
+Gitweb:     http://git.kernel.org/tip/65d71fe1375b973083733294795bf2b09d45b3c2
+Author:     Peter Zijlstra (Intel) <peterz@infradead.org>
+AuthorDate: Tue, 7 Oct 2014 19:07:33 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:48:00 +0100
+CommitDate: Tue, 28 Oct 2014 10:51:01 +0100
 
-sched/deadline: Ensure that updates to exclusive cpusets don't break AC
+perf: Fix bogus kernel printk
 
-How we deal with updates to exclusive cpusets is currently broken.
-As an example, suppose we have an exclusive cpuset composed of
-two cpus: A[cpu0,cpu1]. We can assign SCHED_DEADLINE task to it
-up to the allowed bandwidth. If we want now to modify cpusetA's
-cpumask, we have to check that removing a cpu's amount of
-bandwidth doesn't break AC guarantees. This thing isn't checked
-in the current code.
+Andy spotted the fail in what was intended as a conditional printk level.
 
-This patch fixes the problem above, denying an update if the
-new cpumask won't have enough bandwidth for SCHED_DEADLINE tasks
-that are currently active.
-
-Signed-off-by: Juri Lelli <juri.lelli@arm.com>
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Fixes: cc6cd47e7395 ("perf/x86: Tone down kernel messages when the PMU check fails in a virtual environment")
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: cgroups@vger.kernel.org
-Link: http://lkml.kernel.org/r/5433E6AF.5080105@arm.com
+Link: http://lkml.kernel.org/r/20141007124757.GH19379@twins.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h |  2 ++
- kernel/cpuset.c       | 10 ++++++++++
- kernel/sched/core.c   | 19 +++++++++++++++++++
- 3 files changed, 31 insertions(+)
+ arch/x86/kernel/cpu/perf_event.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1d1fa08..320a977 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2052,6 +2052,8 @@ static inline void tsk_restore_flags(struct task_struct *task,
- 	task->flags |= orig_flags & flags;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 1b8299d..66451a6 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -243,8 +243,9 @@ static bool check_hw_exists(void)
+ 
+ msr_fail:
+ 	printk(KERN_CONT "Broken PMU hardware detected, using software events only.\n");
+-	printk(boot_cpu_has(X86_FEATURE_HYPERVISOR) ? KERN_INFO : KERN_ERR
+-	       "Failed to access perfctr msr (MSR %x is %Lx)\n", reg, val_new);
++	printk("%sFailed to access perfctr msr (MSR %x is %Lx)\n",
++		boot_cpu_has(X86_FEATURE_HYPERVISOR) ? KERN_INFO : KERN_ERR,
++		reg, val_new);
+ 
+ 	return false;
  }
- 
-+extern int cpuset_cpumask_can_shrink(const struct cpumask *cur,
-+				     const struct cpumask *trial);
- extern int task_can_attach(struct task_struct *p,
- 			   const struct cpumask *cs_cpus_allowed);
- #ifdef CONFIG_SMP
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 7af8577..723cfc9 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -506,6 +506,16 @@ static int validate_change(struct cpuset *cur, struct cpuset *trial)
- 			goto out;
- 	}
- 
-+	/*
-+	 * We can't shrink if we won't have enough room for SCHED_DEADLINE
-+	 * tasks.
-+	 */
-+	ret = -EBUSY;
-+	if (is_cpu_exclusive(cur) &&
-+	    !cpuset_cpumask_can_shrink(cur->cpus_allowed,
-+				       trial->cpus_allowed))
-+		goto out;
-+
- 	ret = 0;
- out:
- 	rcu_read_unlock();
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9993fee..0456a55 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4650,6 +4650,25 @@ void init_idle(struct task_struct *idle, int cpu)
- #endif
- }
- 
-+int cpuset_cpumask_can_shrink(const struct cpumask *cur,
-+			      const struct cpumask *trial)
-+{
-+	int ret = 1, trial_cpus;
-+	struct dl_bw *cur_dl_b;
-+	unsigned long flags;
-+
-+	cur_dl_b = dl_bw_of(cpumask_any(cur));
-+	trial_cpus = cpumask_weight(trial);
-+
-+	raw_spin_lock_irqsave(&cur_dl_b->lock, flags);
-+	if (cur_dl_b->bw != -1 &&
-+	    cur_dl_b->bw * trial_cpus < cur_dl_b->total_bw)
-+		ret = 0;
-+	raw_spin_unlock_irqrestore(&cur_dl_b->lock, flags);
-+
-+	return ret;
-+}
-+
- int task_can_attach(struct task_struct *p,
- 		    const struct cpumask *cs_cpus_allowed)
- {
