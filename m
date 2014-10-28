@@ -1,76 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbaJ1FcX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:32:23 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:55783 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbaJ1FcT (ORCPT
+	id S1758322AbaJ1FeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:34:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46341 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756090AbaJ1DwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 01:32:19 -0400
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, akpm@linux-foundation.org, riel@redhat.com,
-        mgorman@suse.de, oleg@redhat.com, mingo@redhat.com, minchan@kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, viro@zeniv.linux.org.uk,
-        dave@stgolabs.net, linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC][PATCH 0/6] Another go at speculative page faults
-References: <20141020215633.717315139@infradead.org>
-	<20141021162340.GA5508@gmail.com>
-	<20141021170948.GA25964@node.dhcp.inet.fi>
-	<20141021175603.GI3219@twins.programming.kicks-ass.net>
-	<5448DB05.5050803@cn.fujitsu.com>
-	<20141023110438.GQ21513@worktop.programming.kicks-ass.net>
-	<20141024075423.GA24479@gmail.com>
-	<20141024131440.GZ21513@worktop.programming.kicks-ass.net>
-Date: Tue, 28 Oct 2014 14:32:16 +0900
-In-Reply-To: <20141024131440.GZ21513@worktop.programming.kicks-ass.net> (Peter
-	Zijlstra's message of "Fri, 24 Oct 2014 15:14:40 +0200")
-Message-ID: <87mw8g7o9r.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 27 Oct 2014 23:52:19 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Willem Pinckaers <willem@lekkertech.net>,
+        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
+Subject: [PATCH 3.10 24/43] lzo: check for length overrun in variable length encoding.
+Date: Tue, 28 Oct 2014 11:36:22 +0800
+Message-Id: <20141028033524.436461734@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On Fri, 24 Oct 2014 15:14:40 +0200, Peter Zijlstra wrote:
-> On Fri, Oct 24, 2014 at 09:54:23AM +0200, Ingo Molnar wrote:
->> 
->> * Peter Zijlstra <peterz@infradead.org> wrote:
->> > Its what I thought initially, I tried doing perf record with and
->> > without, but then I ran into perf diff not quite working for me and I've
->> > yet to find time to kick that thing into shape.
->> 
->> Might be the 'perf diff' regression fixed by this:
->> 
->>   9ab1f50876db perf diff: Add missing hists__init() call at tool start
->> 
->> I just pushed it out into tip:master.
->
-> I was on tip/master, so unlikely to be that as I was likely already
-> having it.
->
-> perf-report was affected too, for some reason my CONFIG_DEBUG_INFO=y
-> vmlinux wasn't showing symbols (and I double checked that KASLR crap was
-> disabled, so that wasn't confusing stuff either).
->
-> When I forced perf-report to use kallsyms it works, however perf-diff
-> doesn't have that option.
->
-> So there's two issues there, 1) perf-report failing to generate useful
-> output and 2) per-diff lacking options to force it to behave.
+------------------
 
-Did the perf-report fail to show any (kernel) symbols or are they wrong
-symbols?  Maybe it's related to this:
+From: Willy Tarreau <w@1wt.eu>
 
-https://lkml.org/lkml/2014/9/22/78
+commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
 
-Thanks,
-Namhyung
+This fix ensures that we never meet an integer overflow while adding
+255 while parsing a variable length encoding. It works differently from
+commit 206a81c ("lzo: properly check for overruns") because instead of
+ensuring that we don't overrun the input, which is tricky to guarantee
+due to many assumptions in the code, it simply checks that the cumulated
+number of 255 read cannot overflow by bounding this number.
+
+The MAX_255_COUNT is the maximum number of times we can add 255 to a base
+count without overflowing an integer. The multiply will overflow when
+multiplying 255 by more than MAXINT/255. The sum will overflow earlier
+depending on the base count. Since the base count is taken from a u8
+and a few bits, it is safe to assume that it will always be lower than
+or equal to 2*255, thus we can always prevent any overflow by accepting
+two less 255 steps.
+
+This patch also reduces the CPU overhead and actually increases performance
+by 1.1% compared to the initial code, while the previous fix costs 3.1%
+(measured on x86_64).
+
+The fix needs to be backported to all currently supported stable kernels.
+
+Reported-by: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ lib/lzo/lzo1x_decompress_safe.c |   43 ++++++++++++++++++++++++++++++++++------
+ 1 file changed, 37 insertions(+), 6 deletions(-)
+
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -25,6 +25,16 @@
+ #define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
+ #define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+ 
++/* This MAX_255_COUNT is the maximum number of times we can add 255 to a base
++ * count without overflowing an integer. The multiply will overflow when
++ * multiplying 255 by more than MAXINT/255. The sum will overflow earlier
++ * depending on the base count. Since the base count is taken from a u8
++ * and a few bits, it is safe to assume that it will always be lower than
++ * or equal to 2*255, thus we can always prevent any overflow by accepting
++ * two less 255 steps. See Documentation/lzo.txt for more information.
++ */
++#define MAX_255_COUNT      ((((size_t)~0) / 255) - 2)
++
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+ {
+@@ -55,12 +65,19 @@ int lzo1x_decompress_safe(const unsigned
+ 		if (t < 16) {
+ 			if (likely(state == 0)) {
+ 				if (unlikely(t == 0)) {
++					size_t offset;
++					const unsigned char *ip_last = ip;
++
+ 					while (unlikely(*ip == 0)) {
+-						t += 255;
+ 						ip++;
+ 						NEED_IP(1);
+ 					}
+-					t += 15 + *ip++;
++					offset = ip - ip_last;
++					if (unlikely(offset > MAX_255_COUNT))
++						return LZO_E_ERROR;
++
++					offset = (offset << 8) - offset;
++					t += offset + 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+@@ -116,12 +133,19 @@ copy_literal_run:
+ 		} else if (t >= 32) {
+ 			t = (t & 31) + (3 - 1);
+ 			if (unlikely(t == 2)) {
++				size_t offset;
++				const unsigned char *ip_last = ip;
++
+ 				while (unlikely(*ip == 0)) {
+-					t += 255;
+ 					ip++;
+ 					NEED_IP(1);
+ 				}
+-				t += 31 + *ip++;
++				offset = ip - ip_last;
++				if (unlikely(offset > MAX_255_COUNT))
++					return LZO_E_ERROR;
++
++				offset = (offset << 8) - offset;
++				t += offset + 31 + *ip++;
+ 				NEED_IP(2);
+ 			}
+ 			m_pos = op - 1;
+@@ -134,12 +158,19 @@ copy_literal_run:
+ 			m_pos -= (t & 8) << 11;
+ 			t = (t & 7) + (3 - 1);
+ 			if (unlikely(t == 2)) {
++				size_t offset;
++				const unsigned char *ip_last = ip;
++
+ 				while (unlikely(*ip == 0)) {
+-					t += 255;
+ 					ip++;
+ 					NEED_IP(1);
+ 				}
+-				t += 7 + *ip++;
++				offset = ip - ip_last;
++				if (unlikely(offset > MAX_255_COUNT))
++					return LZO_E_ERROR;
++
++				offset = (offset << 8) - offset;
++				t += offset + 7 + *ip++;
+ 				NEED_IP(2);
+ 			}
+ 			next = get_unaligned_le16(ip);
+
+
