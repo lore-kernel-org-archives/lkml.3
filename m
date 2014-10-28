@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314AbaJ1E3B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:29:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47021 "EHLO
+	id S933975AbaJ1Dw4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:52:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46459 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933979AbaJ1Dw5 (ORCPT
+	with ESMTP id S933801AbaJ1Dwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:57 -0400
+	Mon, 27 Oct 2014 23:52:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.10 30/43] PCI: Generate uppercase hex for modalias interface class
-Date: Tue, 28 Oct 2014 11:36:28 +0800
-Message-Id: <20141028033524.698762844@linuxfoundation.org>
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.10 38/43] arm64: compat: fix compat types affecting struct compat_elf_prpsinfo
+Date: Tue, 28 Oct 2014 11:36:36 +0800
+Message-Id: <20141028033525.039367034@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
 References: <20141028033523.407092670@linuxfoundation.org>
@@ -29,42 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+From: Victor Kamensky <victor.kamensky@linaro.org>
 
-commit 89ec3dcf17fd3fa009ecf8faaba36828dd6bc416 upstream.
+commit 971a5b6fe634bb7b617d8c5f25b6a3ddbc600194 upstream.
 
-Some implementations of modprobe fail to load the driver for a PCI device
-automatically because the "interface" part of the modalias from the kernel
-is lowercase, and the modalias from file2alias is uppercase.
+The compat_elf_prpsinfo structure does not match the arch/arm struct
+elf_pspsinfo definition. As result NT_PRPSINFO note in core file
+created by arm64 kernel for aarch32 (compat) process has wrong size.
+So gdb cannot display command that caused process crash.
 
-The "interface" is the low-order byte of the Class Code, defined in PCI
-r3.0, Appendix D.  Most interface types defined in the spec do not use
-alpha characters, so they won't be affected.  For example, 00h, 01h, 10h,
-20h, etc. are unaffected.
+Fix is to change size of __compat_uid_t, __compat_gid_t so it would
+match size of similar fields in arch/arm case.
 
-Print the "interface" byte of the Class Code in uppercase hex, as we
-already do for the Vendor ID, Device ID, Class, etc.
-
-[bhelgaas: changelog]
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci-sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm64/include/asm/compat.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -175,7 +175,7 @@ static ssize_t modalias_show(struct devi
- {
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
- 
--	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
-+	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X\n",
- 		       pci_dev->vendor, pci_dev->device,
- 		       pci_dev->subsystem_vendor, pci_dev->subsystem_device,
- 		       (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
+--- a/arch/arm64/include/asm/compat.h
++++ b/arch/arm64/include/asm/compat.h
+@@ -33,8 +33,8 @@ typedef s32		compat_ssize_t;
+ typedef s32		compat_time_t;
+ typedef s32		compat_clock_t;
+ typedef s32		compat_pid_t;
+-typedef u32		__compat_uid_t;
+-typedef u32		__compat_gid_t;
++typedef u16		__compat_uid_t;
++typedef u16		__compat_gid_t;
+ typedef u16		__compat_uid16_t;
+ typedef u16		__compat_gid16_t;
+ typedef u32		__compat_uid32_t;
 
 
