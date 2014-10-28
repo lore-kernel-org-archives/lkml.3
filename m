@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754734AbaJ1Pyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:54:33 -0400
-Received: from 75-148-32-185-Colorado.hfc.comcastbusiness.net ([75.148.32.185]:34852
-	"EHLO mail.scrye.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaJ1Pyb (ORCPT
+	id S1752108AbaJ1P6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:58:04 -0400
+Received: from smtprelay0176.hostedemail.com ([216.40.44.176]:35165 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750855AbaJ1P6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:54:31 -0400
-Date: Tue, 28 Oct 2014 09:54:28 -0600
-From: Kevin Fenzi <kevin@scrye.com>
-To: Yanko Kaneti <yaneti@declera.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jay Vosburgh <jay.vosburgh@canonical.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cong Wang <cwang@twopensource.com>, netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        mroos@linux.ee, tj@kernel.org
-Subject: Re: localed stuck in recent 3.18 git in copy_net_ns?
-Message-ID: <20141028095428.15cadd01@voldemort.scrye.com>
-In-Reply-To: <20141028130002.GA1682@declera.com>
-References: <20141024230524.GA16023@linux.vnet.ibm.com>
-	<10136.1414196448@famine>
-	<20141025020324.GA28247@linux.vnet.ibm.com>
-	<11813.1414211613@famine>
-	<20141025051602.GB28247@linux.vnet.ibm.com>
-	<15891.1414255096@famine>
-	<20141025181827.GE28247@linux.vnet.ibm.com>
-	<20141027174539.GC27568@linux.vnet.ibm.com>
-	<20141028081243.GA32082@declera.com>
-	<20141028125059.GO5718@linux.vnet.ibm.com>
-	<20141028130002.GA1682@declera.com>
-Organization: Scrye, INC
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
- boundary="Sig_/.y+M9QmDo4qm3TvHqld=UHP"; protocol="application/pgp-signature"
+	Tue, 28 Oct 2014 11:58:01 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::,RULES_HIT:41:355:379:541:599:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3873:3874:4321:5007:6261:9038:10004:10400:10848:11026:11232:11657:11658:11914:12043:12438:12517:12519:12555:12663:12740:13069:13161:13229:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fly63_7fd903741cf63
+X-Filterd-Recvd-Size: 2893
+Message-ID: <1414511877.6643.12.camel@perches.com>
+Subject: Re: [PATCH 7/7] docg3: Fix miuse of seq_printf return value
+From: Joe Perches <joe@perches.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Brian Norris <computersforpeace@gmail.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 28 Oct 2014 08:57:57 -0700
+In-Reply-To: <20141028111301.22481f2a@gandalf.local.home>
+References: <20140929124246.3e39dac8@gandalf.local.home>
+	 <cover.1412031505.git.joe@perches.com>
+	 <c1a1138f1b05e87a3fbd8737af2f2c0be6e2724b.1412031505.git.joe@perches.com>
+	 <20141022082916.GD16128@brian-ubuntu>
+	 <20141028111301.22481f2a@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/.y+M9QmDo4qm3TvHqld=UHP
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2014-10-28 at 11:13 -0400, Steven Rostedt wrote:
+> I'm going to be working on changes to remove the return value of
+> seq_printf() and friends.
 
-Just FYI, this solves the orig issue for me as well. ;)=20
+I'm sure you know all of this, but for anyone else:
 
-Thanks for all the work in tracking it down...=20
+This doesn't need to be done in a single pass.
 
-Tested-by: Kevin Fenzi <kevin@scrye.com>
+The seq_<foo> functions themselves can wait until
+all the uses are converted.
 
-kevin
+Here are files that likely need to change:
+
+$ git grep --name-only -E "[\(=]\s*seq_(vprintf|printf|puts|putc|escape|write|put_decimal_\w+)\s*\("
+arch/arm/plat-pxa/dma.c
+arch/cris/arch-v10/kernel/fasttimer.c
+arch/cris/arch-v32/kernel/fasttimer.c
+arch/microblaze/kernel/cpu/mb.c
+arch/x86/kernel/cpu/mtrr/if.c
+drivers/base/power/wakeup.c
+drivers/mfd/ab8500-debugfs.c
+drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+drivers/parisc/ccio-dma.c
+drivers/parisc/sba_iommu.c
+drivers/regulator/dbx500-prcmu.c
+drivers/staging/lustre/lustre/fid/lproc_fid.c
+drivers/staging/lustre/lustre/llite/lproc_llite.c
+drivers/staging/lustre/lustre/mdc/lproc_mdc.c
+drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+drivers/staging/lustre/lustre/osc/lproc_osc.c
+drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
+drivers/staging/lustre/lustre/ptlrpc/sec_bulk.c
+drivers/usb/gadget/udc/goku_udc.c
+drivers/usb/gadget/udc/pxa27x_udc.c
+drivers/watchdog/bcm_kona_wdt.c
+fs/debugfs/file.c
+fs/dlm/debug_fs.c
+fs/eventfd.c
+fs/eventpoll.c
+fs/notify/fdinfo.c
+fs/proc/base.c
+fs/seq_file.c
+kernel/trace/trace_seq.c
+net/batman-adv/gateway_client.c
+net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+net/netfilter/nf_conntrack_standalone.c
+net/netfilter/nf_log.c
+net/netfilter/xt_hashlimit.c
 
 
-
---Sig_/.y+M9QmDo4qm3TvHqld=UHP
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCgAGBQJUT7w2AAoJEEs3sNgP+7teNREP/A/eQC08k96aE87UIGfKsDPL
-7h9ccuOGSqf4LveycOhBOHGgocy+YLv9jOoNMBeIEBUc/7vhu13udCCeL1XQRkJK
-HSaqXksdXDYCAKdRsEgEK2aduMBO/b8TdcrM770qLHdqtCxALy8M+SeIiNtSeFHt
-IFmZHDx7Nkf+cI+OmUS1sijMDP0PcN6VF9dqapRPFft22wmk4OOruM03czF8seze
-Ck0zqXZ/xYvkN2fMAwSUiyJFNGqhPSKqzmRHy/51/os6dIwHSupOyqKq6RERKa3e
-qZUP6BEhGAkhVJJ26rmzWmMijrXpasgtjdYiOS8Ez5w3mzerij0kXp7Qyk18PRwR
-3T0U00KzSd3cwmk3B3W4/fe7/ZtgXo/kDml5wjAcWwl4tMUv6MV/9hFaCWL8foC4
-zG3rnG2EQcsYBiJtWZGlRDNzk2XngmJsA6Xb277GedhluVe4KBaLBwDKieCkZ8en
-oRelunFgATZy7iXEV338lg0HwrmfWOEKpLGiAGCsYIaIdw2L18Psymf2FDa11se8
-xG0zZ3kx53wJZHVW0b8wQztSn8Ci1U5eNVSunjK/efmeWYWx/1VyXR6YBlb6MU7n
-5eJpIBcmqIyVuet3IVppsdR9I76G+5Aku/Jd4/05DiqlqzXjXo9l6flRQHsMaBWN
-8bcm9+2IHvUaysQNP2+V
-=hM20
------END PGP SIGNATURE-----
-
---Sig_/.y+M9QmDo4qm3TvHqld=UHP--
