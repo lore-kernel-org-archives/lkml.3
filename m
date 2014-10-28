@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788AbaJ1DkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:40:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44703 "EHLO
+	id S934038AbaJ1Hm2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:42:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44695 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745AbaJ1DkC (ORCPT
+	with ESMTP id S1754752AbaJ1Dj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:02 -0400
+	Mon, 27 Oct 2014 23:39:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [PATCH 3.17 087/146] ARM: dts: imx28-evk: Let i2c0 run at 100kHz
-Date: Tue, 28 Oct 2014 11:33:49 +0800
-Message-Id: <20141028033347.165128439@linuxfoundation.org>
+        Ben Peddell <klightspeed@killerwolves.net>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Arnaud Ebalard <arno@natisbad.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.17 086/146] ARM: mvebu: Netgear RN102: Use Hardware BCH ECC
+Date: Tue, 28 Oct 2014 11:33:48 +0800
+Message-Id: <20141028033347.124502993@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,41 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: "klightspeed@killerwolves.net" <klightspeed@killerwolves.net>
 
-commit d1e61eb443dc7512885dfe89ee2f2a1c29fcb1da upstream.
+commit ace8578182dc347b043c0825b9873f62fdaa5b77 upstream.
 
-Commit 78b81f4666fb ("ARM: dts: imx28-evk: Run I2C0 at 400kHz") caused issues
-when doing the following sequence in loop:
+The bootloader on the Netgear ReadyNAS RN102 uses Hardware BCH ECC
+(strength = 4), while the pxa3xx NAND driver by default uses
+Hamming ECC (strength = 1).
 
-- Boot the kernel
-- Perform audio playback
-- Reboot the system via 'reboot' command
+This patch changes the ECC mode on these machines to match that
+of the bootloader and of the stock firmware. That way, it is
+now possible to update the kernel from userland (e.g. using
+standard tools from mtd-utils package); u-boot will happily
+load and boot it.
 
-In many times the audio card cannot be probed, which causes playback to fail.
-
-After restoring to the original i2c0 frequency of 100kHz there is no such
-problem anymore.
-
-This reverts commit 78b81f4666fbb22a20b1e63e5baf197ad2e90e88.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Fixes: 92beaccd8b49 ("ARM: mvebu: Enable NAND controller in ReadyNAS 102 .dts file")
+Signed-off-by: Ben Peddell <klightspeed@killerwolves.net>
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Tested-by: Arnaud Ebalard <arno@natisbad.org>
+Link: https://lkml.kernel.org/r/1410339341-3372-1-git-send-email-klightspeed@killerwolves.net
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/imx28-evk.dts |    1 -
- 1 file changed, 1 deletion(-)
+ arch/arm/boot/dts/armada-370-netgear-rn102.dts |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arm/boot/dts/imx28-evk.dts
-+++ b/arch/arm/boot/dts/imx28-evk.dts
-@@ -193,7 +193,6 @@
- 			i2c0: i2c@80058000 {
- 				pinctrl-names = "default";
- 				pinctrl-0 = <&i2c0_pins_a>;
--				clock-frequency = <400000>;
- 				status = "okay";
+--- a/arch/arm/boot/dts/armada-370-netgear-rn102.dts
++++ b/arch/arm/boot/dts/armada-370-netgear-rn102.dts
+@@ -143,6 +143,10 @@
+ 				marvell,nand-enable-arbiter;
+ 				nand-on-flash-bbt;
  
- 				sgtl5000: codec@0a {
++				/* Use Hardware BCH ECC */
++				nand-ecc-strength = <4>;
++				nand-ecc-step-size = <512>;
++
+ 				partition@0 {
+ 					label = "u-boot";
+ 					reg = <0x0000000 0x180000>;  /* 1.5MB */
 
 
