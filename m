@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599AbaJ1DjV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:39:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44605 "EHLO
+	id S1754635AbaJ1Dja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:39:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44621 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582AbaJ1DjR (ORCPT
+	with ESMTP id S1754582AbaJ1Dj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:17 -0400
+	Mon, 27 Oct 2014 23:39:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Gross <agross@codeaurora.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH 3.17 079/146] clk: qcom: Add IPQ8064 PLL required for USB
-Date: Tue, 28 Oct 2014 11:33:41 +0800
-Message-Id: <20141028033346.827889365@linuxfoundation.org>
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH 3.17 070/146] arm64: compat: fix compat types affecting struct compat_elf_prpsinfo
+Date: Tue, 28 Oct 2014 11:33:32 +0800
+Message-Id: <20141028033346.415682359@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,75 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Gross <agross@codeaurora.org>
+From: Victor Kamensky <victor.kamensky@linaro.org>
 
-commit dc1b3f657f25798b2dc9ed8928b80eb3183019a2 upstream.
+commit 971a5b6fe634bb7b617d8c5f25b6a3ddbc600194 upstream.
 
-This patch adds the PLL0 that is required for the USB clocks to
-work properly.
+The compat_elf_prpsinfo structure does not match the arch/arm struct
+elf_pspsinfo definition. As result NT_PRPSINFO note in core file
+created by arm64 kernel for aarch32 (compat) process has wrong size.
+So gdb cannot display command that caused process crash.
 
-Signed-off-by: Andy Gross <agross@codeaurora.org>
-Fixes: 24d8fba44af3 "clk: qcom: Add support for IPQ8064's global clock controller (GCC)"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Fix is to change size of __compat_uid_t, __compat_gid_t so it would
+match size of similar fields in arch/arm case.
+
+Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clk/qcom/gcc-ipq806x.c |   31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
+ arch/arm64/include/asm/compat.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/clk/qcom/gcc-ipq806x.c
-+++ b/drivers/clk/qcom/gcc-ipq806x.c
-@@ -32,6 +32,33 @@
- #include "clk-branch.h"
- #include "reset.h"
- 
-+static struct clk_pll pll0 = {
-+	.l_reg = 0x30c4,
-+	.m_reg = 0x30c8,
-+	.n_reg = 0x30cc,
-+	.config_reg = 0x30d4,
-+	.mode_reg = 0x30c0,
-+	.status_reg = 0x30d8,
-+	.status_bit = 16,
-+	.clkr.hw.init = &(struct clk_init_data){
-+		.name = "pll0",
-+		.parent_names = (const char *[]){ "pxo" },
-+		.num_parents = 1,
-+		.ops = &clk_pll_ops,
-+	},
-+};
-+
-+static struct clk_regmap pll0_vote = {
-+	.enable_reg = 0x34c0,
-+	.enable_mask = BIT(0),
-+	.hw.init = &(struct clk_init_data){
-+		.name = "pll0_vote",
-+		.parent_names = (const char *[]){ "pll0" },
-+		.num_parents = 1,
-+		.ops = &clk_pll_vote_ops,
-+	},
-+};
-+
- static struct clk_pll pll3 = {
- 	.l_reg = 0x3164,
- 	.m_reg = 0x3168,
-@@ -154,7 +181,7 @@ static const u8 gcc_pxo_pll8_pll0[] = {
- static const char *gcc_pxo_pll8_pll0_map[] = {
- 	"pxo",
- 	"pll8_vote",
--	"pll0",
-+	"pll0_vote",
- };
- 
- static struct freq_tbl clk_tbl_gsbi_uart[] = {
-@@ -2133,6 +2160,8 @@ static struct clk_branch usb_fs1_h_clk =
- };
- 
- static struct clk_regmap *gcc_ipq806x_clks[] = {
-+	[PLL0] = &pll0.clkr,
-+	[PLL0_VOTE] = &pll0_vote,
- 	[PLL3] = &pll3.clkr,
- 	[PLL8] = &pll8.clkr,
- 	[PLL8_VOTE] = &pll8_vote,
+--- a/arch/arm64/include/asm/compat.h
++++ b/arch/arm64/include/asm/compat.h
+@@ -37,8 +37,8 @@ typedef s32		compat_ssize_t;
+ typedef s32		compat_time_t;
+ typedef s32		compat_clock_t;
+ typedef s32		compat_pid_t;
+-typedef u32		__compat_uid_t;
+-typedef u32		__compat_gid_t;
++typedef u16		__compat_uid_t;
++typedef u16		__compat_gid_t;
+ typedef u16		__compat_uid16_t;
+ typedef u16		__compat_gid16_t;
+ typedef u32		__compat_uid32_t;
 
 
