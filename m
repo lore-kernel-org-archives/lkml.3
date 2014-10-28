@@ -1,214 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaJ1Vsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:48:46 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:36949 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752138AbaJ1VaG (ORCPT
+	id S1755448AbaJ1Vtj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:49:39 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:42142 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329AbaJ1Vti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:30:06 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 12/58] dmaengine: hdmac: Split device_control
-Date: Tue, 28 Oct 2014 22:25:27 +0100
-Message-Id: <1414531573-18807-13-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 28 Oct 2014 17:49:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141028212642.GH10873@pd.tnic>
+References: <20141007150132.GA7307@nazgul.tnic>
+	<20141007170748.GA25767@jig.fritz.box>
+	<20141008151730.GB16892@pd.tnic>
+	<CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
+	<20141008222619.GG16892@pd.tnic>
+	<20141012125515.GA32045@jig.fritz.box>
+	<20141028185756.GD10873@pd.tnic>
+	<CA+rthh9qePkJogFDT+ttSLvYPvJrAM6CXMJ407Hq3PjcRw9WTw@mail.gmail.com>
+	<20141028201342.GG10873@pd.tnic>
+	<CA+rthh9LSRm12qYORAd5BWzpw7DEP7hqHLA3EDdfUDxwx-4=2g@mail.gmail.com>
+	<20141028212642.GH10873@pd.tnic>
+Date: Tue, 28 Oct 2014 22:49:36 +0100
+Message-ID: <CA+rthh-Tk3PO0qUeyLzxggCYOhr5D4EvPjKR+jhmjdPXi4yu=Q@mail.gmail.com>
+Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
+From: Mathias Krause <minipli@googlemail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86-ml <x86@kernel.org>, Matt Fleming <matt.fleming@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Atmel HDMAC driver to make use
-of the newly introduced callbacks, that will eventually be used to retrieve
-slave capabilities.
+On 28 October 2014 22:26, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Oct 28, 2014 at 10:14:25PM +0100, Mathias Krause wrote:
+>> Oh, well. Have fun with that! I would take the "map kernel into EFI
+>> page table" route instead. ;)
+>
+> Actually, I want to try to keep them completely separate and sync only
+> before an EFI RT call for function arguments.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/dma/at_hdmac.c | 121 +++++++++++++++++++++++++++++--------------------
- 1 file changed, 73 insertions(+), 48 deletions(-)
+Sync only data or kernel code, too?
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index ca9dd2613283..86450b3442f2 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -972,11 +972,13 @@ err_out:
- 	return NULL;
- }
- 
--static int set_runtime_config(struct dma_chan *chan,
--			      struct dma_slave_config *sconfig)
-+static int atc_config(struct dma_chan *chan,
-+		      struct dma_slave_config *sconfig)
- {
- 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
- 
-+	dev_vdbg(chan2dev(chan), "%s\n", __func__);
-+
- 	/* Check if it is chan is configured for slave transfers */
- 	if (!chan->private)
- 		return -EINVAL;
-@@ -989,9 +991,28 @@ static int set_runtime_config(struct dma_chan *chan,
- 	return 0;
- }
- 
-+static int atc_pause(struct dma_chan *chan)
-+{
-+	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
-+	struct at_dma		*atdma = to_at_dma(chan->device);
-+	int			chan_id = atchan->chan_common.chan_id;
-+	unsigned long		flags;
- 
--static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--		       unsigned long arg)
-+	LIST_HEAD(list);
-+
-+	dev_vdbg(chan2dev(chan), "%s\n", __func__);
-+
-+	spin_lock_irqsave(&atchan->lock, flags);
-+
-+	dma_writel(atdma, CHER, AT_DMA_SUSP(chan_id));
-+	set_bit(ATC_IS_PAUSED, &atchan->status);
-+
-+	spin_unlock_irqrestore(&atchan->lock, flags);
-+
-+	return 0;
-+}
-+
-+static int atc_resume(struct dma_chan *chan)
- {
- 	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
- 	struct at_dma		*atdma = to_at_dma(chan->device);
-@@ -1000,60 +1021,61 @@ static int atc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 
- 	LIST_HEAD(list);
- 
--	dev_vdbg(chan2dev(chan), "atc_control (%d)\n", cmd);
-+	dev_vdbg(chan2dev(chan), "%s\n", __func__);
- 
--	if (cmd == DMA_PAUSE) {
--		spin_lock_irqsave(&atchan->lock, flags);
-+	if (!atc_chan_is_paused(atchan))
-+		return 0;
- 
--		dma_writel(atdma, CHER, AT_DMA_SUSP(chan_id));
--		set_bit(ATC_IS_PAUSED, &atchan->status);
-+	spin_lock_irqsave(&atchan->lock, flags);
- 
--		spin_unlock_irqrestore(&atchan->lock, flags);
--	} else if (cmd == DMA_RESUME) {
--		if (!atc_chan_is_paused(atchan))
--			return 0;
-+	dma_writel(atdma, CHDR, AT_DMA_RES(chan_id));
-+	clear_bit(ATC_IS_PAUSED, &atchan->status);
- 
--		spin_lock_irqsave(&atchan->lock, flags);
-+	spin_unlock_irqrestore(&atchan->lock, flags);
- 
--		dma_writel(atdma, CHDR, AT_DMA_RES(chan_id));
--		clear_bit(ATC_IS_PAUSED, &atchan->status);
-+	return 0;
-+}
- 
--		spin_unlock_irqrestore(&atchan->lock, flags);
--	} else if (cmd == DMA_TERMINATE_ALL) {
--		struct at_desc	*desc, *_desc;
--		/*
--		 * This is only called when something went wrong elsewhere, so
--		 * we don't really care about the data. Just disable the
--		 * channel. We still have to poll the channel enable bit due
--		 * to AHB/HSB limitations.
--		 */
--		spin_lock_irqsave(&atchan->lock, flags);
-+static int atc_terminate_all(struct dma_chan *chan)
-+{
-+	struct at_dma_chan	*atchan = to_at_dma_chan(chan);
-+	struct at_dma		*atdma = to_at_dma(chan->device);
-+	int			chan_id = atchan->chan_common.chan_id;
-+	struct at_desc		*desc, *_desc;
-+	unsigned long		flags;
- 
--		/* disabling channel: must also remove suspend state */
--		dma_writel(atdma, CHDR, AT_DMA_RES(chan_id) | atchan->mask);
-+	LIST_HEAD(list);
- 
--		/* confirm that this channel is disabled */
--		while (dma_readl(atdma, CHSR) & atchan->mask)
--			cpu_relax();
-+	dev_vdbg(chan2dev(chan), "%s\n", __func__);
- 
--		/* active_list entries will end up before queued entries */
--		list_splice_init(&atchan->queue, &list);
--		list_splice_init(&atchan->active_list, &list);
-+	/*
-+	 * This is only called when something went wrong elsewhere, so
-+	 * we don't really care about the data. Just disable the
-+	 * channel. We still have to poll the channel enable bit due
-+	 * to AHB/HSB limitations.
-+	 */
-+	spin_lock_irqsave(&atchan->lock, flags);
- 
--		/* Flush all pending and queued descriptors */
--		list_for_each_entry_safe(desc, _desc, &list, desc_node)
--			atc_chain_complete(atchan, desc);
-+	/* disabling channel: must also remove suspend state */
-+	dma_writel(atdma, CHDR, AT_DMA_RES(chan_id) | atchan->mask);
- 
--		clear_bit(ATC_IS_PAUSED, &atchan->status);
--		/* if channel dedicated to cyclic operations, free it */
--		clear_bit(ATC_IS_CYCLIC, &atchan->status);
-+	/* confirm that this channel is disabled */
-+	while (dma_readl(atdma, CHSR) & atchan->mask)
-+		cpu_relax();
- 
--		spin_unlock_irqrestore(&atchan->lock, flags);
--	} else if (cmd == DMA_SLAVE_CONFIG) {
--		return set_runtime_config(chan, (struct dma_slave_config *)arg);
--	} else {
--		return -ENXIO;
--	}
-+	/* active_list entries will end up before queued entries */
-+	list_splice_init(&atchan->queue, &list);
-+	list_splice_init(&atchan->active_list, &list);
-+
-+	/* Flush all pending and queued descriptors */
-+	list_for_each_entry_safe(desc, _desc, &list, desc_node)
-+		atc_chain_complete(atchan, desc);
-+
-+	clear_bit(ATC_IS_PAUSED, &atchan->status);
-+	/* if channel dedicated to cyclic operations, free it */
-+	clear_bit(ATC_IS_CYCLIC, &atchan->status);
-+
-+	spin_unlock_irqrestore(&atchan->lock, flags);
- 
- 	return 0;
- }
-@@ -1505,7 +1527,10 @@ static int __init at_dma_probe(struct platform_device *pdev)
- 		/* controller can do slave DMA: can trigger cyclic transfers */
- 		dma_cap_set(DMA_CYCLIC, atdma->dma_common.cap_mask);
- 		atdma->dma_common.device_prep_dma_cyclic = atc_prep_dma_cyclic;
--		atdma->dma_common.device_control = atc_control;
-+		atdma->dma_common.device_config = atc_config;
-+		atdma->dma_common.device_pause = atc_pause;
-+		atdma->dma_common.device_resume = atc_resume;
-+		atdma->dma_common.device_terminate_all = atc_terminate_all;
- 	}
- 
- 	dma_writel(atdma, EN, AT_DMA_ENABLE);
-@@ -1622,7 +1647,7 @@ static void atc_suspend_cyclic(struct at_dma_chan *atchan)
- 	if (!atc_chan_is_paused(atchan)) {
- 		dev_warn(chan2dev(chan),
- 		"cyclic channel not paused, should be done by channel user\n");
--		atc_control(chan, DMA_PAUSE, 0);
-+		atc_pause(chan);
- 	}
- 
- 	/* now preserve additional data for cyclic operations */
--- 
-2.1.1
+> And then remove PGDs after
+> I return from it. We'll see how it all works out.
 
+That shouldn't be needed as you're switching away from the EFI page
+table, so its entries wouldn't be effective any more anyway.
+
+Really, I'd just map the EFI RT service virtual mappings "somewhere"
+but at pgd[511] and have pgd[511] initially set up as
+init_level4_pgt[511]. Then, thing should "just work"(TM).
+
+If you fear the EFI code might do harm to the kernel code/data, then
+you've lost anyway. Nothing will prevent the EFI code from doing nasty
+things -- like setting up its own mappings to tamper with the kernel's
+memory.
+
+Regards,
+Mathias
