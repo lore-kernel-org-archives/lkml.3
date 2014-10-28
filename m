@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352AbaJ1Qfx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:35:53 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:34767 "EHLO
+	id S1753183AbaJ1Qfw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:35:52 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:34774 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750939AbaJ1Qfr (ORCPT
+	with ESMTP id S1752142AbaJ1Qfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Oct 2014 12:35:47 -0400
 From: Antoine Tenart <antoine.tenart@free-electrons.com>
@@ -15,9 +15,9 @@ Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
         thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v7 3/7] usb: add support to the generic PHY framework in OTG
-Date: Tue, 28 Oct 2014 17:35:37 +0100
-Message-Id: <1414514141-31767-4-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v7 4/7] usb: allow to supply the PHY in the drivers when using HCD
+Date: Tue, 28 Oct 2014 17:35:38 +0100
+Message-Id: <1414514141-31767-5-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -25,34 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support of the PHY framework in OTG and keeps the USB
-PHY compatibility. Here the only modification is to add PHY member in
-the OTG structure, along with the USB PHY one.
+This patch modify the generic code handling PHYs to allow them to be
+supplied from the drivers. This adds checks to ensure no PHY was already
+there when looking for one in the generic code. This also makes sure we
+do not modify its state in the generic HCD functions, it was provided by
+the driver.
 
 Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- include/linux/usb/otg.h | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/core/hcd.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
-index 978fbbb0e266..52661c5da690 100644
---- a/include/linux/usb/otg.h
-+++ b/include/linux/usb/otg.h
-@@ -9,11 +9,14 @@
- #ifndef __LINUX_USB_OTG_H
- #define __LINUX_USB_OTG_H
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index b84fb141e122..6a2a2fd990ab 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2648,7 +2648,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 		}
+ 	}
  
-+#include <linux/phy/phy.h>
- #include <linux/usb/phy.h>
+-	if (IS_ENABLED(CONFIG_GENERIC_PHY)) {
++	if (IS_ENABLED(CONFIG_GENERIC_PHY) && !hcd->phy) {
+ 		struct phy *phy = phy_get(hcd->self.controller, "usb");
  
- struct usb_otg {
- 	u8			default_a;
+ 		if (IS_ERR(phy)) {
+@@ -2668,6 +2668,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 				goto err_phy;
+ 			}
+ 			hcd->phy = phy;
++			hcd->remove_phy = 1;
+ 		}
+ 	}
  
-+	struct phy		*phy;
-+	/* old usb_phy interface */
- 	struct usb_phy		*usb_phy;
- 	struct usb_bus		*host;
- 	struct usb_gadget	*gadget;
+@@ -2814,7 +2815,7 @@ err_allocate_root_hub:
+ err_register_bus:
+ 	hcd_buffer_destroy(hcd);
+ err_create_buf:
+-	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
++	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
+ 		phy_power_off(hcd->phy);
+ 		phy_exit(hcd->phy);
+ 		phy_put(hcd->phy);
+@@ -2898,7 +2899,7 @@ void usb_remove_hcd(struct usb_hcd *hcd)
+ 	usb_deregister_bus(&hcd->self);
+ 	hcd_buffer_destroy(hcd);
+ 
+-	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->phy) {
++	if (IS_ENABLED(CONFIG_GENERIC_PHY) && hcd->remove_phy && hcd->phy) {
+ 		phy_power_off(hcd->phy);
+ 		phy_exit(hcd->phy);
+ 		phy_put(hcd->phy);
 -- 
 1.9.1
 
