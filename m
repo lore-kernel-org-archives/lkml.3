@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaJ1R4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:56:33 -0400
-Received: from forward8l.mail.yandex.net ([84.201.143.141]:53277 "EHLO
-	forward8l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaJ1R4c (ORCPT
+	id S1753642AbaJ1R5p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:57:45 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36177 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751684AbaJ1R5o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:56:32 -0400
-X-Yandex-Uniq: 74c3ac73-7b67-454e-b371-5479ddf77a1a
-Authentication-Results: smtp17.mail.yandex.net; dkim=pass header.i=@yandex.ru
-Message-ID: <544FD8C6.5020606@yandex.ru>
-Date: Tue, 28 Oct 2014 20:56:22 +0300
-From: Kirill Tkhai <tkhai@yandex.ru>
-Reply-To: tkhai@yandex.ru
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:33.0) Gecko/20100101 Icedove/33.0
+	Tue, 28 Oct 2014 13:57:44 -0400
+X-Originating-IP: 173.246.103.110
+Date: Tue, 28 Oct 2014 10:57:38 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, mingo@kernel.org
+Subject: Re: [PATCH 3/3] x86_64,vsyscall: Make vsyscall emulation configurable
+Message-ID: <20141028174629.GA2150@jtriplet-mobl1>
+References: <cover.1414516558.git.luto@amacapital.net>
+ <6b0c9b0fc128de68634c730a5b1a80e1d085ad02.1414516558.git.luto@amacapital.net>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>
-CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 2/3] introduce probe_slab_address()
-References: <1413962231.19914.130.camel@tkhai> <20141027195339.GA11736@redhat.com> <20141027195425.GC11736@redhat.com> <1414475091.8574.6.camel@tkhai> <20141028150102.GP3219@twins.programming.kicks-ass.net>
-In-Reply-To: <20141028150102.GP3219@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6b0c9b0fc128de68634c730a5b1a80e1d085ad02.1414516558.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.10.2014 18:01, Peter Zijlstra wrote:
-> On Tue, Oct 28, 2014 at 08:44:51AM +0300, Kirill Tkhai wrote:
->> В Пн, 27/10/2014 в 20:54 +0100, Oleg Nesterov пишет:
+On Tue, Oct 28, 2014 at 10:22:28AM -0700, Andy Lutomirski wrote:
+> This adds CONFIG_X86_VSYSCALL_EMULATION, guarded by CONFIG_EXPERT.
+> Turning it off completely disables vsyscall emulation, saving ~3.5k
+> for vsyscall_64.c, 4k for vsyscall_emu_64.S (the fake vsyscall
+> page), some tiny amount of core mm code that supports a gate area,
+> and possibly 4k for a wasted pagetable.  The latter is because the
+> vsyscall addresses are misaligned and fit poorly in the fixmap.
 > 
->>> +#define probe_slab_address(addr, retval)	\
->>> +	probe_kernel_address(addr, retval)
->>
->> probe_kernel_read() was arch-dependent on tree platforms:
->>
->> arch/blackfin/mm/maccess.c
->> arch/parisc/lib/memcpy.c
->> arch/um/kernel/maccess.c
->>
->> But now we skip these arch-dependent implementations. Is there no a problem?
->
-> Nope, see the first patch, it makes probe_kernel_address use
-> __probe_kernel_read().
-> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 
-Yes, probe_kernel_read() is in [1/3], but it's not the same as
-__probe_kernel_read() for blackfin, for example.
+One minor nit below, but with or without that change,
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-It's defined as
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -1456,11 +1456,13 @@ static int xen_pgd_alloc(struct mm_struct *mm)
+>  		user_pgd = (pgd_t *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
+>  		page->private = (unsigned long)user_pgd;
+>  
+> +#ifdef CONFIG_X86_VSYSCALL_EMULATION
+>  		if (user_pgd != NULL) {
+>  			user_pgd[pgd_index(VSYSCALL_ADDR)] =
+>  				__pgd(__pa(level3_user_vsyscall) | _PAGE_TABLE);
+>  			ret = 0;
+>  		}
+> +#endif
 
-long __weak probe_kernel_read(void *dst, const void *src, size_t size)
-    __attribute__((alias("__probe_kernel_read")));
+Could you instead make the if use IS_ENABLED?
 
-But blackfin's probe_kernel_read() redefines this __weak function,
-isn't it? Didn't get_freepointer_safe() use to call architecture's
-probe_kernel_read() before?
+		if (IS_ENABLED(CONFIG_X86_VSYSCALL_EMULATION) && user_pgd != NULL)
 
-I don't see how it is called now...
+That has the advantage of ensuring that the code continues to compile.
+(Given that you haven't removed level3_user_vsyscall, that should work.)
+
+- Josh Triplett
