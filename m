@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262AbaJ1NdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:33:10 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51184 "EHLO mail.kernel.org"
+	id S1754213AbaJ1NdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:33:05 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51159 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752601AbaJ1NdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:33:07 -0400
+	id S1752654AbaJ1NdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:33:02 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 05/32] perf callchains: Use thread->mg->machine
-Date: Tue, 28 Oct 2014 11:31:59 -0200
-Message-Id: <1414503146-22789-6-git-send-email-acme@kernel.org>
+Subject: [PATCH 04/32] perf thread: Adopt resolve_callchain method from machine
+Date: Tue, 28 Oct 2014 11:31:58 -0200
+Message-Id: <1414503146-22789-5-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
 References: <1414503146-22789-1-git-send-email-acme@kernel.org>
@@ -29,8 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-The unwind__get_entries() already receives the thread parameter, from where it can
-obtain the matching machine structure, shorten the signature.
+Shortening function signature lenght too, since a thread's machine can be
+obtained from thread->mg->machine, no need to pass thread, machine.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -44,150 +44,122 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-isjc6bm8mv4612mhi6af64go@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-5wb6css280ty0cel5p0zo2b1@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/tests/dwarf-unwind.c    | 18 +++++++++---------
- tools/perf/util/machine.c          |  2 +-
- tools/perf/util/unwind-libdw.c     |  4 ++--
- tools/perf/util/unwind-libunwind.c |  4 ++--
- tools/perf/util/unwind.h           |  2 --
- 5 files changed, 14 insertions(+), 16 deletions(-)
+ tools/perf/util/callchain.c                            |  4 ++--
+ tools/perf/util/machine.c                              | 15 +++++++--------
+ tools/perf/util/machine.h                              | 13 ++++++-------
+ tools/perf/util/scripting-engines/trace-event-python.c |  6 +++---
+ tools/perf/util/session.c                              |  6 +++---
+ 5 files changed, 21 insertions(+), 23 deletions(-)
 
-diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
-index fc25e57f4a5d..ab28cca2cb97 100644
---- a/tools/perf/tests/dwarf-unwind.c
-+++ b/tools/perf/tests/dwarf-unwind.c
-@@ -59,7 +59,7 @@ static int unwind_entry(struct unwind_entry *entry, void *arg)
- }
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index c84d3f8dcb75..00229809a904 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -754,8 +754,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
  
- __attribute__ ((noinline))
--static int unwind_thread(struct thread *thread, struct machine *machine)
-+static int unwind_thread(struct thread *thread)
- {
- 	struct perf_sample sample;
- 	unsigned long cnt = 0;
-@@ -72,7 +72,7 @@ static int unwind_thread(struct thread *thread, struct machine *machine)
- 		goto out;
+ 	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain ||
+ 	    sort__has_parent) {
+-		return machine__resolve_callchain(al->machine, evsel, al->thread,
+-						  sample, parent, al, max_stack);
++		return thread__resolve_callchain(al->thread, evsel, sample,
++						 parent, al, max_stack);
  	}
- 
--	err = unwind__get_entries(unwind_entry, &cnt, machine, thread,
-+	err = unwind__get_entries(unwind_entry, &cnt, thread,
- 				  &sample, MAX_STACK);
- 	if (err)
- 		pr_debug("unwind failed\n");
-@@ -89,21 +89,21 @@ static int unwind_thread(struct thread *thread, struct machine *machine)
+ 	return 0;
  }
- 
- __attribute__ ((noinline))
--static int krava_3(struct thread *thread, struct machine *machine)
-+static int krava_3(struct thread *thread)
- {
--	return unwind_thread(thread, machine);
-+	return unwind_thread(thread);
- }
- 
- __attribute__ ((noinline))
--static int krava_2(struct thread *thread, struct machine *machine)
-+static int krava_2(struct thread *thread)
- {
--	return krava_3(thread, machine);
-+	return krava_3(thread);
- }
- 
- __attribute__ ((noinline))
--static int krava_1(struct thread *thread, struct machine *machine)
-+static int krava_1(struct thread *thread)
- {
--	return krava_2(thread, machine);
-+	return krava_2(thread);
- }
- 
- int test__dwarf_unwind(void)
-@@ -137,7 +137,7 @@ int test__dwarf_unwind(void)
- 		goto out;
- 	}
- 
--	err = krava_1(thread, machine);
-+	err = krava_1(thread);
- 
-  out:
- 	machine__delete_threads(machine);
 diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index fd192e4885cc..51a630301afa 100644
+index 08e63fdbd14f..fd192e4885cc 100644
 --- a/tools/perf/util/machine.c
 +++ b/tools/perf/util/machine.c
-@@ -1486,7 +1486,7 @@ int thread__resolve_callchain(struct thread *thread,
+@@ -1464,13 +1464,12 @@ static int unwind_entry(struct unwind_entry *entry, void *arg)
+ 				       entry->map, entry->sym);
+ }
+ 
+-int machine__resolve_callchain(struct machine *machine,
+-			       struct perf_evsel *evsel,
+-			       struct thread *thread,
+-			       struct perf_sample *sample,
+-			       struct symbol **parent,
+-			       struct addr_location *root_al,
+-			       int max_stack)
++int thread__resolve_callchain(struct thread *thread,
++			      struct perf_evsel *evsel,
++			      struct perf_sample *sample,
++			      struct symbol **parent,
++			      struct addr_location *root_al,
++			      int max_stack)
+ {
+ 	int ret = thread__resolve_callchain_sample(thread, sample->callchain,
+ 						   parent, root_al, max_stack);
+@@ -1487,7 +1486,7 @@ int machine__resolve_callchain(struct machine *machine,
  	    (!sample->user_stack.size))
  		return 0;
  
--	return unwind__get_entries(unwind_entry, &callchain_cursor, thread->mg->machine,
-+	return unwind__get_entries(unwind_entry, &callchain_cursor,
+-	return unwind__get_entries(unwind_entry, &callchain_cursor, machine,
++	return unwind__get_entries(unwind_entry, &callchain_cursor, thread->mg->machine,
  				   thread, sample, max_stack);
  
  }
-diff --git a/tools/perf/util/unwind-libdw.c b/tools/perf/util/unwind-libdw.c
-index f24b350ab192..2dcfe9a7c8d0 100644
---- a/tools/perf/util/unwind-libdw.c
-+++ b/tools/perf/util/unwind-libdw.c
-@@ -164,14 +164,14 @@ frame_callback(Dwfl_Frame *state, void *arg)
- }
+diff --git a/tools/perf/util/machine.h b/tools/perf/util/machine.h
+index 2b651a7f5d0d..88ec74e18cbf 100644
+--- a/tools/perf/util/machine.h
++++ b/tools/perf/util/machine.h
+@@ -122,13 +122,12 @@ struct branch_info *sample__resolve_bstack(struct perf_sample *sample,
+ 					   struct addr_location *al);
+ struct mem_info *sample__resolve_mem(struct perf_sample *sample,
+ 				     struct addr_location *al);
+-int machine__resolve_callchain(struct machine *machine,
+-			       struct perf_evsel *evsel,
+-			       struct thread *thread,
+-			       struct perf_sample *sample,
+-			       struct symbol **parent,
+-			       struct addr_location *root_al,
+-			       int max_stack);
++int thread__resolve_callchain(struct thread *thread,
++			      struct perf_evsel *evsel,
++			      struct perf_sample *sample,
++			      struct symbol **parent,
++			      struct addr_location *root_al,
++			      int max_stack);
  
- int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
--			struct machine *machine, struct thread *thread,
-+			struct thread *thread,
- 			struct perf_sample *data,
- 			int max_stack)
- {
- 	struct unwind_info ui = {
- 		.sample		= data,
- 		.thread		= thread,
--		.machine	= machine,
-+		.machine	= thread->mg->machine,
- 		.cb		= cb,
- 		.arg		= arg,
- 		.max_stack	= max_stack,
-diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
-index ed0cb1bc356c..3e1fa7f8776c 100644
---- a/tools/perf/util/unwind-libunwind.c
-+++ b/tools/perf/util/unwind-libunwind.c
-@@ -580,14 +580,14 @@ static int get_entries(struct unwind_info *ui, unwind_entry_cb_t cb,
- }
+ /*
+  * Default guest kernel is defined by parameter --guestkallsyms
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 496f21cadd97..25e5a238f1cb 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -312,9 +312,9 @@ static PyObject *python_process_callchain(struct perf_sample *sample,
+ 	if (!symbol_conf.use_callchain || !sample->callchain)
+ 		goto exit;
  
- int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
--			struct machine *machine, struct thread *thread,
-+			struct thread *thread,
- 			struct perf_sample *data, int max_stack)
- {
- 	u64 ip;
- 	struct unwind_info ui = {
- 		.sample       = data,
- 		.thread       = thread,
--		.machine      = machine,
-+		.machine      = thread->mg->machine,
- 	};
- 	int ret;
+-	if (machine__resolve_callchain(al->machine, evsel, al->thread,
+-					   sample, NULL, NULL,
+-					   PERF_MAX_STACK_DEPTH) != 0) {
++	if (thread__resolve_callchain(al->thread, evsel,
++				      sample, NULL, NULL,
++				      PERF_MAX_STACK_DEPTH) != 0) {
+ 		pr_err("Failed to resolve callchain. Skipping\n");
+ 		goto exit;
+ 	}
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 6702ac28754b..776010844cdc 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1417,9 +1417,9 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, struct perf_sample *sample,
+ 	if (symbol_conf.use_callchain && sample->callchain) {
+ 		struct addr_location node_al;
  
-diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
-index c17c4855bdbc..412fd7975bdc 100644
---- a/tools/perf/util/unwind.h
-+++ b/tools/perf/util/unwind.h
-@@ -16,7 +16,6 @@ typedef int (*unwind_entry_cb_t)(struct unwind_entry *entry, void *arg);
- 
- #ifdef HAVE_DWARF_UNWIND_SUPPORT
- int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
--			struct machine *machine,
- 			struct thread *thread,
- 			struct perf_sample *data, int max_stack);
- /* libunwind specific */
-@@ -36,7 +35,6 @@ static inline void unwind__finish_access(struct thread *thread __maybe_unused) {
- static inline int
- unwind__get_entries(unwind_entry_cb_t cb __maybe_unused,
- 		    void *arg __maybe_unused,
--		    struct machine *machine __maybe_unused,
- 		    struct thread *thread __maybe_unused,
- 		    struct perf_sample *data __maybe_unused,
- 		    int max_stack __maybe_unused)
+-		if (machine__resolve_callchain(al->machine, evsel, al->thread,
+-					       sample, NULL, NULL,
+-					       PERF_MAX_STACK_DEPTH) != 0) {
++		if (thread__resolve_callchain(al->thread, evsel,
++					      sample, NULL, NULL,
++					      PERF_MAX_STACK_DEPTH) != 0) {
+ 			if (verbose)
+ 				error("Failed to resolve callchain. Skipping\n");
+ 			return;
 -- 
 1.9.3
 
