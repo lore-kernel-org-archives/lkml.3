@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759164AbaJ1HZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:25:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45088 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204AbaJ1Dmu (ORCPT
+	id S1759204AbaJ1HZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:25:59 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:41519 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759179AbaJ1HZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:50 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiubo Li <Li.Xiubo@freescale.com>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.16 026/127] regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.
-Date: Tue, 28 Oct 2014 11:34:21 +0800
-Message-Id: <20141028033422.057403669@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
-References: <20141028033420.925922046@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 03:25:56 -0400
 MIME-Version: 1.0
+In-Reply-To: <20141027175725.GB18557@sirena.org.uk>
+References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
+	<1414427215-14380-2-git-send-email-romain.perier@gmail.com>
+	<20141027163918.GB14253@saruman>
+	<20141027172636.GZ18557@sirena.org.uk>
+	<20141027173025.GA16005@saruman>
+	<20141027175725.GB18557@sirena.org.uk>
+Date: Tue, 28 Oct 2014 08:25:55 +0100
+Message-ID: <CABgxDo+goYskzGB5uCTkteOs5=6+vRbYCABMh8D_3qZxQC0thA@mail.gmail.com>
+Subject: Re: [PATCH v1 02/10] dt-bindings: Document the standard property "system-power-controller"
+From: Romain Perier <romain.perier@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Felipe Balbi <balbi@ti.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        devicetree <devicetree@vger.kernel.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, robh <robh@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Johan Hovold <johan@kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, "pawel.moll" <pawel.moll@arm.com>,
+        "ijc+devicetree" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+If this is possible, that's probably better to drop all these patches
+(including poweroff-source) from "next", in this way it will be
+possible to re-do things properly from scratch (with the new name).
 
-------------------
+If you have a look at linux-next the property "poweroff-source" is
+already used by tps910 AND act8865, I don't like that (it is not used
+yet by dts files). I mean, I don't really want to support
+"vendor,system-power-controller", "system-power-controller" and
+"poweroff-source" from "of_has_system_power_source" and do a lot of
+unclean commits in order to don't break compatibility. Just keep
+things simple.
 
-From: Xiubo Li <Li.Xiubo@freescale.com>
-
-commit d6b41cb06044a7d895db82bdd54f6e4219970510 upstream.
-
-Since we cannot make sure the 'val_count' will always be none zero
-here, and then if it equals to zero, the kmemdup() will return
-ZERO_SIZE_PTR, which equals to ((void *)16).
-
-So this patch fix this with just doing the zero check before calling
-kmemdup().
-
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/base/regmap/regmap.c |    3 +++
- 1 file changed, 3 insertions(+)
-
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1646,6 +1646,9 @@ out:
- 	} else {
- 		void *wval;
- 
-+		if (!val_count)
-+			return -EINVAL;
-+
- 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
- 		if (!wval) {
- 			dev_err(map->dev, "Error in memory allocation\n");
+What do you think ?
 
 
+2014-10-27 18:57 GMT+01:00 Mark Brown <broonie@kernel.org>:
+> On Mon, Oct 27, 2014 at 12:30:25PM -0500, Felipe Balbi wrote:
+>> On Mon, Oct 27, 2014 at 05:26:36PM +0000, Mark Brown wrote:
+>
+>> > Given that poweroff-source hasn't made it into a released kernel yet we
+>> > can probably just kill it off completely can't we?
+>
+>> please do, then we will never have that commit in Linus' tree to give us
+>> nightmares.
+>
+> Well, the commit isn't a particularly big deal (and got cross-merged
+> into another tree already) - if it's convenient to rebase it out we
+> probably should but it's also not the end of the world either so long as
+> it doesn't appear in a release.  Worst case people adopt it based on the
+> list discussions and we check for two properties which also isn't that
+> bad.
