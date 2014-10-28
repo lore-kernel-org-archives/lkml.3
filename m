@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760717AbaJ1H3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:29:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45009 "EHLO
+	id S1760724AbaJ1HaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:30:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45006 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112AbaJ1DmG (ORCPT
+	with ESMTP id S1755099AbaJ1DmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:06 -0400
+	Mon, 27 Oct 2014 23:42:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 126/146] sparc64: Fix reversed start/end in flush_tlb_kernel_range()
-Date: Tue, 28 Oct 2014 11:34:28 +0800
-Message-Id: <20141028033348.906531757@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        Bob Picco <bob.picco@oracle.com>
+Subject: [PATCH 3.17 135/146] sparc64: Switch to 4-level page tables.
+Date: Tue, 28 Oct 2014 11:34:37 +0800
+Message-Id: <20141028033349.310825177@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,65 +31,318 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 473ad7f4fb005d1bb727e4ef27d370d28703a062 ]
+[ Upstream commit ac55c768143aa34cc3789c4820cbb0809a76fd9c ]
 
-When we have to split up a flush request into multiple pieces
-(in order to avoid the firmware range) we don't specify the
-arguments in the right order for the second piece.
+This has become necessary with chips that support more than 43-bits
+of physical addressing.
 
-Fix the order, or else we get hangs as the code tries to
-flush "a lot" of entries and we get lockups like this:
+Based almost entirely upon a patch by Bob Picco.
 
-[ 4422.981276] NMI watchdog: BUG: soft lockup - CPU#12 stuck for 23s! [expect:117032]
-[ 4422.996130] Modules linked in: ipv6 loop usb_storage igb ptp sg sr_mod ehci_pci ehci_hcd pps_core n2_rng rng_core
-[ 4423.016617] CPU: 12 PID: 117032 Comm: expect Not tainted 3.17.0-rc4+ #1608
-[ 4423.030331] task: fff8003cc730e220 ti: fff8003d99d54000 task.ti: fff8003d99d54000
-[ 4423.045282] TSTATE: 0000000011001602 TPC: 00000000004521e8 TNPC: 00000000004521ec Y: 00000000    Not tainted
-[ 4423.064905] TPC: <__flush_tlb_kernel_range+0x28/0x40>
-[ 4423.074964] g0: 000000000052fd10 g1: 00000001295a8000 g2: ffffff7176ffc000 g3: 0000000000002000
-[ 4423.092324] g4: fff8003cc730e220 g5: fff8003dfedcc000 g6: fff8003d99d54000 g7: 0000000000000006
-[ 4423.109687] o0: 0000000000000000 o1: 0000000000000000 o2: 0000000000000003 o3: 00000000f0000000
-[ 4423.127058] o4: 0000000000000080 o5: 00000001295a8000 sp: fff8003d99d56d01 ret_pc: 000000000052ff54
-[ 4423.145121] RPC: <__purge_vmap_area_lazy+0x314/0x3a0>
-[ 4423.155185] l0: 0000000000000000 l1: 0000000000000000 l2: 0000000000a38040 l3: 0000000000000000
-[ 4423.172559] l4: fff8003dae8965e0 l5: ffffffffffffffff l6: 0000000000000000 l7: 00000000f7e2b138
-[ 4423.189913] i0: fff8003d99d576a0 i1: fff8003d99d576a8 i2: fff8003d99d575e8 i3: 0000000000000000
-[ 4423.207284] i4: 0000000000008008 i5: fff8003d99d575c8 i6: fff8003d99d56df1 i7: 0000000000530c24
-[ 4423.224640] I7: <free_vmap_area_noflush+0x64/0x80>
-[ 4423.234193] Call Trace:
-[ 4423.239051]  [0000000000530c24] free_vmap_area_noflush+0x64/0x80
-[ 4423.251029]  [0000000000531a7c] remove_vm_area+0x5c/0x80
-[ 4423.261628]  [0000000000531b80] __vunmap+0x20/0x120
-[ 4423.271352]  [000000000071cf18] n_tty_close+0x18/0x40
-[ 4423.281423]  [00000000007222b0] tty_ldisc_close+0x30/0x60
-[ 4423.292183]  [00000000007225a4] tty_ldisc_reinit+0x24/0xa0
-[ 4423.303120]  [0000000000722ab4] tty_ldisc_hangup+0xd4/0x1e0
-[ 4423.314232]  [0000000000719aa0] __tty_hangup+0x280/0x3c0
-[ 4423.324835]  [0000000000724cb4] pty_close+0x134/0x1a0
-[ 4423.334905]  [000000000071aa24] tty_release+0x104/0x500
-[ 4423.345316]  [00000000005511d0] __fput+0x90/0x1e0
-[ 4423.354701]  [000000000047fa54] task_work_run+0x94/0xe0
-[ 4423.365126]  [0000000000404b44] __handle_signal+0xc/0x2c
-
-Fixes: 4ca9a23765da ("sparc64: Guard against flushing openfirmware mappings.")
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/mm/init_64.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/sparc/include/asm/page_64.h    |    6 +++++
+ arch/sparc/include/asm/pgalloc_64.h |   28 ++++++++++++++++++++++++++-
+ arch/sparc/include/asm/pgtable_64.h |   37 +++++++++++++++++++++++++++++++-----
+ arch/sparc/include/asm/tsb.h        |   10 +++++++++
+ arch/sparc/kernel/smp_64.c          |    7 ++++++
+ arch/sparc/mm/init_64.c             |   31 ++++++++++++++++++++++++++----
+ 6 files changed, 109 insertions(+), 10 deletions(-)
 
+--- a/arch/sparc/include/asm/page_64.h
++++ b/arch/sparc/include/asm/page_64.h
+@@ -57,18 +57,21 @@ void copy_user_page(void *to, void *from
+ typedef struct { unsigned long pte; } pte_t;
+ typedef struct { unsigned long iopte; } iopte_t;
+ typedef struct { unsigned long pmd; } pmd_t;
++typedef struct { unsigned long pud; } pud_t;
+ typedef struct { unsigned long pgd; } pgd_t;
+ typedef struct { unsigned long pgprot; } pgprot_t;
+ 
+ #define pte_val(x)	((x).pte)
+ #define iopte_val(x)	((x).iopte)
+ #define pmd_val(x)      ((x).pmd)
++#define pud_val(x)      ((x).pud)
+ #define pgd_val(x)	((x).pgd)
+ #define pgprot_val(x)	((x).pgprot)
+ 
+ #define __pte(x)	((pte_t) { (x) } )
+ #define __iopte(x)	((iopte_t) { (x) } )
+ #define __pmd(x)        ((pmd_t) { (x) } )
++#define __pud(x)        ((pud_t) { (x) } )
+ #define __pgd(x)	((pgd_t) { (x) } )
+ #define __pgprot(x)	((pgprot_t) { (x) } )
+ 
+@@ -77,18 +80,21 @@ typedef struct { unsigned long pgprot; }
+ typedef unsigned long pte_t;
+ typedef unsigned long iopte_t;
+ typedef unsigned long pmd_t;
++typedef unsigned long pud_t;
+ typedef unsigned long pgd_t;
+ typedef unsigned long pgprot_t;
+ 
+ #define pte_val(x)	(x)
+ #define iopte_val(x)	(x)
+ #define pmd_val(x)      (x)
++#define pud_val(x)      (x)
+ #define pgd_val(x)	(x)
+ #define pgprot_val(x)	(x)
+ 
+ #define __pte(x)	(x)
+ #define __iopte(x)	(x)
+ #define __pmd(x)        (x)
++#define __pud(x)        (x)
+ #define __pgd(x)	(x)
+ #define __pgprot(x)	(x)
+ 
+--- a/arch/sparc/include/asm/pgalloc_64.h
++++ b/arch/sparc/include/asm/pgalloc_64.h
+@@ -15,6 +15,13 @@
+ 
+ extern struct kmem_cache *pgtable_cache;
+ 
++static inline void __pgd_populate(pgd_t *pgd, pud_t *pud)
++{
++	pgd_set(pgd, pud);
++}
++
++#define pgd_populate(MM, PGD, PUD)	__pgd_populate(PGD, PUD)
++
+ static inline pgd_t *pgd_alloc(struct mm_struct *mm)
+ {
+ 	return kmem_cache_alloc(pgtable_cache, GFP_KERNEL);
+@@ -25,7 +32,23 @@ static inline void pgd_free(struct mm_st
+ 	kmem_cache_free(pgtable_cache, pgd);
+ }
+ 
+-#define pud_populate(MM, PUD, PMD)	pud_set(PUD, PMD)
++static inline void __pud_populate(pud_t *pud, pmd_t *pmd)
++{
++	pud_set(pud, pmd);
++}
++
++#define pud_populate(MM, PUD, PMD)	__pud_populate(PUD, PMD)
++
++static inline pud_t *pud_alloc_one(struct mm_struct *mm, unsigned long addr)
++{
++	return kmem_cache_alloc(pgtable_cache,
++				GFP_KERNEL|__GFP_REPEAT);
++}
++
++static inline void pud_free(struct mm_struct *mm, pud_t *pud)
++{
++	kmem_cache_free(pgtable_cache, pud);
++}
+ 
+ static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
+ {
+@@ -91,4 +114,7 @@ static inline void __pte_free_tlb(struct
+ #define __pmd_free_tlb(tlb, pmd, addr)		      \
+ 	pgtable_free_tlb(tlb, pmd, false)
+ 
++#define __pud_free_tlb(tlb, pud, addr)		      \
++	pgtable_free_tlb(tlb, pud, false)
++
+ #endif /* _SPARC64_PGALLOC_H */
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -20,8 +20,6 @@
+ #include <asm/page.h>
+ #include <asm/processor.h>
+ 
+-#include <asm-generic/pgtable-nopud.h>
+-
+ /* The kernel image occupies 0x4000000 to 0x6000000 (4MB --> 96MB).
+  * The page copy blockops can use 0x6000000 to 0x8000000.
+  * The 8K TSB is mapped in the 0x8000000 to 0x8400000 range.
+@@ -55,13 +53,21 @@
+ #define PMD_MASK	(~(PMD_SIZE-1))
+ #define PMD_BITS	(PAGE_SHIFT - 3)
+ 
+-/* PGDIR_SHIFT determines what a third-level page table entry can map */
+-#define PGDIR_SHIFT	(PAGE_SHIFT + (PAGE_SHIFT-3) + PMD_BITS)
++/* PUD_SHIFT determines the size of the area a third-level page
++ * table can map
++ */
++#define PUD_SHIFT	(PMD_SHIFT + PMD_BITS)
++#define PUD_SIZE	(_AC(1,UL) << PUD_SHIFT)
++#define PUD_MASK	(~(PUD_SIZE-1))
++#define PUD_BITS	(PAGE_SHIFT - 3)
++
++/* PGDIR_SHIFT determines what a fourth-level page table entry can map */
++#define PGDIR_SHIFT	(PUD_SHIFT + PUD_BITS)
+ #define PGDIR_SIZE	(_AC(1,UL) << PGDIR_SHIFT)
+ #define PGDIR_MASK	(~(PGDIR_SIZE-1))
+ #define PGDIR_BITS	(PAGE_SHIFT - 3)
+ 
+-#if (PGDIR_SHIFT + PGDIR_BITS) != 43
++#if (PGDIR_SHIFT + PGDIR_BITS) != 53
+ #error Page table parameters do not cover virtual address space properly.
+ #endif
+ 
+@@ -93,6 +99,7 @@ static inline bool kern_addr_valid(unsig
+ /* Entries per page directory level. */
+ #define PTRS_PER_PTE	(1UL << (PAGE_SHIFT-3))
+ #define PTRS_PER_PMD	(1UL << PMD_BITS)
++#define PTRS_PER_PUD	(1UL << PUD_BITS)
+ #define PTRS_PER_PGD	(1UL << PGDIR_BITS)
+ 
+ /* Kernel has a separate 44bit address space. */
+@@ -101,6 +108,9 @@ static inline bool kern_addr_valid(unsig
+ #define pmd_ERROR(e)							\
+ 	pr_err("%s:%d: bad pmd %p(%016lx) seen at (%pS)\n",		\
+ 	       __FILE__, __LINE__, &(e), pmd_val(e), __builtin_return_address(0))
++#define pud_ERROR(e)							\
++	pr_err("%s:%d: bad pud %p(%016lx) seen at (%pS)\n",		\
++	       __FILE__, __LINE__, &(e), pud_val(e), __builtin_return_address(0))
+ #define pgd_ERROR(e)							\
+ 	pr_err("%s:%d: bad pgd %p(%016lx) seen at (%pS)\n",		\
+ 	       __FILE__, __LINE__, &(e), pgd_val(e), __builtin_return_address(0))
+@@ -779,6 +789,11 @@ static inline int pmd_present(pmd_t pmd)
+ #define pud_bad(pud)			((pud_val(pud) & ~PAGE_MASK) || \
+ 					 !__kern_addr_valid(pud_val(pud)))
+ 
++#define pgd_none(pgd)			(!pgd_val(pgd))
++
++#define pgd_bad(pgd)			((pgd_val(pgd) & ~PAGE_MASK) || \
++					 !__kern_addr_valid(pgd_val(pgd)))
++
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 		pmd_t *pmdp, pmd_t pmd);
+@@ -815,10 +830,17 @@ static inline unsigned long __pmd_page(p
+ #define pmd_clear(pmdp)			(pmd_val(*(pmdp)) = 0UL)
+ #define pud_present(pud)		(pud_val(pud) != 0U)
+ #define pud_clear(pudp)			(pud_val(*(pudp)) = 0UL)
++#define pgd_page_vaddr(pgd)		\
++	((unsigned long) __va(pgd_val(pgd)))
++#define pgd_present(pgd)		(pgd_val(pgd) != 0U)
++#define pgd_clear(pgdp)			(pgd_val(*(pgd)) = 0UL)
+ 
+ /* Same in both SUN4V and SUN4U.  */
+ #define pte_none(pte) 			(!pte_val(pte))
+ 
++#define pgd_set(pgdp, pudp)	\
++	(pgd_val(*(pgdp)) = (__pa((unsigned long) (pudp))))
++
+ /* to find an entry in a page-table-directory. */
+ #define pgd_index(address)	(((address) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
+ #define pgd_offset(mm, address)	((mm)->pgd + pgd_index(address))
+@@ -826,6 +848,11 @@ static inline unsigned long __pmd_page(p
+ /* to find an entry in a kernel page-table-directory */
+ #define pgd_offset_k(address) pgd_offset(&init_mm, address)
+ 
++/* Find an entry in the third-level page table.. */
++#define pud_index(address)	(((address) >> PUD_SHIFT) & (PTRS_PER_PUD - 1))
++#define pud_offset(pgdp, address)	\
++	((pud_t *) pgd_page_vaddr(*(pgdp)) + pud_index(address))
++
+ /* Find an entry in the second-level page table.. */
+ #define pmd_offset(pudp, address)	\
+ 	((pmd_t *) pud_page_vaddr(*(pudp)) + \
+--- a/arch/sparc/include/asm/tsb.h
++++ b/arch/sparc/include/asm/tsb.h
+@@ -145,6 +145,11 @@ extern struct tsb_phys_patch_entry __tsb
+ 	andn		REG2, 0x7, REG2; \
+ 	ldx		[REG1 + REG2], REG1; \
+ 	brz,pn		REG1, FAIL_LABEL; \
++	 sllx		VADDR, 64 - (PUD_SHIFT + PUD_BITS), REG2; \
++	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
++	andn		REG2, 0x7, REG2; \
++	ldxa		[REG1 + REG2] ASI_PHYS_USE_EC, REG1; \
++	brz,pn		REG1, FAIL_LABEL; \
+ 	 sllx		VADDR, 64 - (PMD_SHIFT + PMD_BITS), REG2; \
+ 	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
+ 	andn		REG2, 0x7, REG2; \
+@@ -198,6 +203,11 @@ extern struct tsb_phys_patch_entry __tsb
+ 	andn		REG2, 0x7, REG2; \
+ 	ldxa		[PHYS_PGD + REG2] ASI_PHYS_USE_EC, REG1; \
+ 	brz,pn		REG1, FAIL_LABEL; \
++	 sllx		VADDR, 64 - (PUD_SHIFT + PUD_BITS), REG2; \
++	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
++	andn		REG2, 0x7, REG2; \
++	ldxa		[REG1 + REG2] ASI_PHYS_USE_EC, REG1; \
++	brz,pn		REG1, FAIL_LABEL; \
+ 	 sllx		VADDR, 64 - (PMD_SHIFT + PMD_BITS), REG2; \
+ 	srlx		REG2, 64 - PAGE_SHIFT, REG2; \
+ 	andn		REG2, 0x7, REG2; \
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -1467,6 +1467,13 @@ static void __init pcpu_populate_pte(uns
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 
++	if (pgd_none(*pgd)) {
++		pud_t *new;
++
++		new = __alloc_bootmem(PAGE_SIZE, PAGE_SIZE, PAGE_SIZE);
++		pgd_populate(&init_mm, pgd, new);
++	}
++
+ 	pud = pud_offset(pgd, addr);
+ 	if (pud_none(*pud)) {
+ 		pmd_t *new;
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -2790,8 +2790,8 @@ void flush_tlb_kernel_range(unsigned lon
- 			do_flush_tlb_kernel_range(start, LOW_OBP_ADDRESS);
- 		}
- 		if (end > HI_OBP_ADDRESS) {
--			flush_tsb_kernel_range(end, HI_OBP_ADDRESS);
--			do_flush_tlb_kernel_range(end, HI_OBP_ADDRESS);
-+			flush_tsb_kernel_range(HI_OBP_ADDRESS, end);
-+			do_flush_tlb_kernel_range(HI_OBP_ADDRESS, end);
- 		}
- 	} else {
- 		flush_tsb_kernel_range(start, end);
+@@ -1390,6 +1390,13 @@ static unsigned long __ref kernel_map_ra
+ 		pmd_t *pmd;
+ 		pte_t *pte;
+ 
++		if (pgd_none(*pgd)) {
++			pud_t *new;
++
++			new = __alloc_bootmem(PAGE_SIZE, PAGE_SIZE, PAGE_SIZE);
++			alloc_bytes += PAGE_SIZE;
++			pgd_populate(&init_mm, pgd, new);
++		}
+ 		pud = pud_offset(pgd, vstart);
+ 		if (pud_none(*pud)) {
+ 			pmd_t *new;
+@@ -1856,7 +1863,12 @@ static void __init sun4v_linear_pte_xor_
+ /* paging_init() sets up the page tables */
+ 
+ static unsigned long last_valid_pfn;
+-pgd_t swapper_pg_dir[PTRS_PER_PGD];
++
++/* These must be page aligned in order to not trigger the
++ * alignment tests of pgd_bad() and pud_bad().
++ */
++pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__ ((aligned (PAGE_SIZE)));
++static pud_t swapper_pud_dir[PTRS_PER_PUD] __attribute__ ((aligned (PAGE_SIZE)));
+ 
+ static void sun4u_pgprot_init(void);
+ static void sun4v_pgprot_init(void);
+@@ -1865,6 +1877,8 @@ void __init paging_init(void)
+ {
+ 	unsigned long end_pfn, shift, phys_base;
+ 	unsigned long real_end, i;
++	pud_t *pud;
++	pmd_t *pmd;
+ 	int node;
+ 
+ 	setup_page_offset();
+@@ -1961,9 +1975,18 @@ void __init paging_init(void)
+ 	
+ 	memset(swapper_low_pmd_dir, 0, sizeof(swapper_low_pmd_dir));
+ 
+-	/* Now can init the kernel/bad page tables. */
+-	pud_set(pud_offset(&swapper_pg_dir[0], 0),
+-		swapper_low_pmd_dir + (shift / sizeof(pgd_t)));
++	/* The kernel page tables we publish into what the rest of the
++	 * world sees must be adjusted so that they see the PAGE_OFFSET
++	 * address of these in-kerenel data structures.  However right
++	 * here we must access them from the kernel image side, because
++	 * the trap tables haven't been taken over and therefore we cannot
++	 * take TLB misses in the PAGE_OFFSET linear mappings yet.
++	 */
++	pud = swapper_pud_dir + (shift / sizeof(pud_t));
++	pgd_set(&swapper_pg_dir[0], pud);
++
++	pmd = swapper_low_pmd_dir + (shift / sizeof(pmd_t));
++	pud_set(&swapper_pud_dir[0], pmd);
+ 	
+ 	inherit_prom_mappings();
+ 	
 
 
