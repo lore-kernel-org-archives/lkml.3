@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397AbaJ1Dnt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:43:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45195 "EHLO
+	id S1755412AbaJ1DoB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:44:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45212 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387AbaJ1Dnp (ORCPT
+	with ESMTP id S1753532AbaJ1Dn6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:45 -0400
+	Mon, 27 Oct 2014 23:43:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Willem Pinckaers <willem@lekkertech.net>,
-        "Don A. Bailey" <donb@securitymouse.com>, Willy Tarreau <w@1wt.eu>
-Subject: [PATCH 3.16 048/127] lzo: check for length overrun in variable length encoding.
-Date: Tue, 28 Oct 2014 11:34:43 +0800
-Message-Id: <20141028033423.000062878@linuxfoundation.org>
+        Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.16 052/127] NFSv4.1: Fix an NFSv4.1 state renewal regression
+Date: Tue, 28 Oct 2014 11:34:47 +0800
+Message-Id: <20141028033423.168504021@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,124 +29,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Willy Tarreau <w@1wt.eu>
+From: Andy Adamson <andros@netapp.com>
 
-commit 72cf90124e87d975d0b2114d930808c58b4c05e4 upstream.
+commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
 
-This fix ensures that we never meet an integer overflow while adding
-255 while parsing a variable length encoding. It works differently from
-commit 206a81c ("lzo: properly check for overruns") because instead of
-ensuring that we don't overrun the input, which is tricky to guarantee
-due to many assumptions in the code, it simply checks that the cumulated
-number of 255 read cannot overflow by bounding this number.
+Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
+not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
+call, on the wire to renew the NFSv4.1 state if the flag was not set.
 
-The MAX_255_COUNT is the maximum number of times we can add 255 to a base
-count without overflowing an integer. The multiply will overflow when
-multiplying 255 by more than MAXINT/255. The sum will overflow earlier
-depending on the base count. Since the base count is taken from a u8
-and a few bits, it is safe to assume that it will always be lower than
-or equal to 2*255, thus we can always prevent any overflow by accepting
-two less 255 steps.
+The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
+(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
+sometimes does the following:
 
-This patch also reduces the CPU overhead and actually increases performance
-by 1.1% compared to the initial code, while the previous fix costs 3.1%
-(measured on x86_64).
+In normal operation, the only way a future state renewal call is put on the
+wire is via a call to nfs4_schedule_state_renewal, which schedules a
+nfs4_renew_state workqueue task. nfs4_renew_state determines if the
+NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
+which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
+Then the nfs41_proc_async_sequence rpc_release function schedules
+another state remewal via nfs4_schedule_state_renewal.
 
-The fix needs to be backported to all currently supported stable kernels.
+Without this change we can get into a state where an application stops
+accessing the NFSv4.1 share, state renewal calls stop due to the
+NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
+from this situation is with a clientid re-establishment, once the application
+resumes and the server has timed out the lease and so returns
+NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
 
-Reported-by: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
+An example application:
+open, lock, write a file.
+
+sleep for 6 * lease (could be less)
+
+ulock, close.
+
+In the above example with NFSv4.1 delegations enabled, without this change,
+there are no OP_SEQUENCE state renewal calls during the sleep, and the
+clientid is recovered due to lease expiration on the close.
+
+This issue does not occur with NFSv4.1 delegations disabled, nor with
+NFSv4.0, with or without delegations enabled.
+
+Signed-off-by: Andy Adamson <andros@netapp.com>
+Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
+Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/lzo/lzo1x_decompress_safe.c |   43 ++++++++++++++++++++++++++++++++++------
- 1 file changed, 37 insertions(+), 6 deletions(-)
+ fs/nfs/nfs4proc.c   |    2 +-
+ fs/nfs/nfs4renewd.c |   12 ++++++++++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -25,6 +25,16 @@
- #define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
- #define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -7242,7 +7242,7 @@ static int nfs41_proc_async_sequence(str
+ 	int ret = 0;
  
-+/* This MAX_255_COUNT is the maximum number of times we can add 255 to a base
-+ * count without overflowing an integer. The multiply will overflow when
-+ * multiplying 255 by more than MAXINT/255. The sum will overflow earlier
-+ * depending on the base count. Since the base count is taken from a u8
-+ * and a few bits, it is safe to assume that it will always be lower than
-+ * or equal to 2*255, thus we can always prevent any overflow by accepting
-+ * two less 255 steps. See Documentation/lzo.txt for more information.
-+ */
-+#define MAX_255_COUNT      ((((size_t)~0) / 255) - 2)
-+
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
- {
-@@ -55,12 +65,19 @@ int lzo1x_decompress_safe(const unsigned
- 		if (t < 16) {
- 			if (likely(state == 0)) {
- 				if (unlikely(t == 0)) {
-+					size_t offset;
-+					const unsigned char *ip_last = ip;
-+
- 					while (unlikely(*ip == 0)) {
--						t += 255;
- 						ip++;
- 						NEED_IP(1);
- 					}
--					t += 15 + *ip++;
-+					offset = ip - ip_last;
-+					if (unlikely(offset > MAX_255_COUNT))
-+						return LZO_E_ERROR;
-+
-+					offset = (offset << 8) - offset;
-+					t += offset + 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
-@@ -116,12 +133,19 @@ copy_literal_run:
- 		} else if (t >= 32) {
- 			t = (t & 31) + (3 - 1);
- 			if (unlikely(t == 2)) {
-+				size_t offset;
-+				const unsigned char *ip_last = ip;
-+
- 				while (unlikely(*ip == 0)) {
--					t += 255;
- 					ip++;
- 					NEED_IP(1);
- 				}
--				t += 31 + *ip++;
-+				offset = ip - ip_last;
-+				if (unlikely(offset > MAX_255_COUNT))
-+					return LZO_E_ERROR;
-+
-+				offset = (offset << 8) - offset;
-+				t += offset + 31 + *ip++;
- 				NEED_IP(2);
+ 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
+-		return 0;
++		return -EAGAIN;
+ 	task = _nfs41_proc_sequence(clp, cred, false);
+ 	if (IS_ERR(task))
+ 		ret = PTR_ERR(task);
+--- a/fs/nfs/nfs4renewd.c
++++ b/fs/nfs/nfs4renewd.c
+@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *wor
  			}
- 			m_pos = op - 1;
-@@ -134,12 +158,19 @@ copy_literal_run:
- 			m_pos -= (t & 8) << 11;
- 			t = (t & 7) + (3 - 1);
- 			if (unlikely(t == 2)) {
-+				size_t offset;
-+				const unsigned char *ip_last = ip;
+ 			nfs_expire_all_delegations(clp);
+ 		} else {
++			int ret;
 +
- 				while (unlikely(*ip == 0)) {
--					t += 255;
- 					ip++;
- 					NEED_IP(1);
- 				}
--				t += 7 + *ip++;
-+				offset = ip - ip_last;
-+				if (unlikely(offset > MAX_255_COUNT))
-+					return LZO_E_ERROR;
-+
-+				offset = (offset << 8) - offset;
-+				t += offset + 7 + *ip++;
- 				NEED_IP(2);
- 			}
- 			next = get_unaligned_le16(ip);
+ 			/* Queue an asynchronous RENEW. */
+-			ops->sched_state_renewal(clp, cred, renew_flags);
++			ret = ops->sched_state_renewal(clp, cred, renew_flags);
+ 			put_rpccred(cred);
+-			goto out_exp;
++			switch (ret) {
++			default:
++				goto out_exp;
++			case -EAGAIN:
++			case -ENOMEM:
++				break;
++			}
+ 		}
+ 	} else {
+ 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
 
 
