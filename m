@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412AbaJ1DoB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:44:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45212 "EHLO
+	id S1755442AbaJ1DoM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:44:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45230 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532AbaJ1Dn6 (ORCPT
+	with ESMTP id S932416AbaJ1DoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:58 -0400
+	Mon, 27 Oct 2014 23:44:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.16 052/127] NFSv4.1: Fix an NFSv4.1 state renewal regression
-Date: Tue, 28 Oct 2014 11:34:47 +0800
-Message-Id: <20141028033423.168504021@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>, qge@redhat.com,
+        Jason Wang <jasowang@redhat.com>
+Subject: [PATCH 3.16 036/127] Drivers: hv: util: Properly pack the data for file copy functionality
+Date: Tue, 28 Oct 2014 11:34:31 +0800
+Message-Id: <20141028033422.494345032@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,91 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
+commit bc5a5b02331a3175a5fca20a4beba249e573b672 upstream.
 
-Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
-not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
-call, on the wire to renew the NFSv4.1 state if the flag was not set.
+Properly pack the data for file copy functionality. Patch based on
+investigation done by Matej Muzila <mmuzila@redhat.com>
 
-The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
-(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
-sometimes does the following:
-
-In normal operation, the only way a future state renewal call is put on the
-wire is via a call to nfs4_schedule_state_renewal, which schedules a
-nfs4_renew_state workqueue task. nfs4_renew_state determines if the
-NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
-which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
-Then the nfs41_proc_async_sequence rpc_release function schedules
-another state remewal via nfs4_schedule_state_renewal.
-
-Without this change we can get into a state where an application stops
-accessing the NFSv4.1 share, state renewal calls stop due to the
-NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
-from this situation is with a clientid re-establishment, once the application
-resumes and the server has timed out the lease and so returns
-NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
-
-An example application:
-open, lock, write a file.
-
-sleep for 6 * lease (could be less)
-
-ulock, close.
-
-In the above example with NFSv4.1 delegations enabled, without this change,
-there are no OP_SEQUENCE state renewal calls during the sleep, and the
-clientid is recovered due to lease expiration on the close.
-
-This issue does not occur with NFSv4.1 delegations disabled, nor with
-NFSv4.0, with or without delegations enabled.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
-Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: <qge@redhat.com>
+Acked-by: Jason Wang <jasowang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c   |    2 +-
- fs/nfs/nfs4renewd.c |   12 ++++++++++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ include/uapi/linux/hyperv.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -7242,7 +7242,7 @@ static int nfs41_proc_async_sequence(str
- 	int ret = 0;
+--- a/include/uapi/linux/hyperv.h
++++ b/include/uapi/linux/hyperv.h
+@@ -137,7 +137,7 @@ struct hv_do_fcopy {
+ 	__u64	offset;
+ 	__u32	size;
+ 	__u8	data[DATA_FRAGMENT];
+-};
++} __attribute__((packed));
  
- 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
--		return 0;
-+		return -EAGAIN;
- 	task = _nfs41_proc_sequence(clp, cred, false);
- 	if (IS_ERR(task))
- 		ret = PTR_ERR(task);
---- a/fs/nfs/nfs4renewd.c
-+++ b/fs/nfs/nfs4renewd.c
-@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *wor
- 			}
- 			nfs_expire_all_delegations(clp);
- 		} else {
-+			int ret;
-+
- 			/* Queue an asynchronous RENEW. */
--			ops->sched_state_renewal(clp, cred, renew_flags);
-+			ret = ops->sched_state_renewal(clp, cred, renew_flags);
- 			put_rpccred(cred);
--			goto out_exp;
-+			switch (ret) {
-+			default:
-+				goto out_exp;
-+			case -EAGAIN:
-+			case -ENOMEM:
-+				break;
-+			}
- 		}
- 	} else {
- 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
+ /*
+  * An implementation of HyperV key value pair (KVP) functionality for Linux.
 
 
