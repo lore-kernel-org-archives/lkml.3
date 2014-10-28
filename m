@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933982AbaJ1H1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:27:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45045 "EHLO
+	id S1759300AbaJ1H2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:28:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45037 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136AbaJ1Dm2 (ORCPT
+	with ESMTP id S932330AbaJ1DmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:28 -0400
+	Mon, 27 Oct 2014 23:42:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc MERLIN <marc@merlins.org>, Josef Bacik <jbacik@fb.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.16 008/127] Btrfs: fix build_backref_tree issue with multiple shared blocks
-Date: Tue, 28 Oct 2014 11:34:03 +0800
-Message-Id: <20141028033421.290803528@linuxfoundation.org>
+        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.16 006/127] Btrfs: try not to ENOSPC on log replay
+Date: Tue, 28 Oct 2014 11:34:01 +0800
+Message-Id: <20141028033421.200510058@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -31,61 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josef Bacik <jbacik@fb.com>
 
-commit bbe9051441effce51c9a533d2c56440df64db2d7 upstream.
+commit 1d52c78afbbf80b58299e076a159617d6b42fe3c upstream.
 
-Marc Merlin sent me a broken fs image months ago where it would blow up in the
-upper->checked BUG_ON() in build_backref_tree.  This is because we had a
-scenario like this
+When doing log replay we may have to update inodes, which traditionally goes
+through our delayed inode stuff.  This will try to move space over from the
+trans handle, but we don't reserve space in our trans handle on replay since we
+don't know how much we will need, so instead we try to flush.  But because we
+have a trans handle open we won't flush anything, so if we are out of reserve
+space we will simply return ENOSPC.  Since we know that if an operation made it
+into the log then we definitely had space before the box bought the farm then we
+don't need to worry about doing this space reservation.  Use the
+fs_info->log_root_recovering flag to skip the delayed inode stuff and update the
+item directly.  Thanks,
 
-block a -- level 4 (not shared)
-   |
-block b -- level 3 (reloc block, shared)
-   |
-block c -- level 2 (not shared)
-   |
-block d -- level 1 (shared)
-   |
-block e -- level 0 (shared)
-
-We go to build a backref tree for block e, we notice block d is shared and add
-it to the list of blocks to lookup it's backrefs for.  Now when we loop around
-we will check edges for the block, so we will see we looked up block c last
-time.  So we lookup block d and then see that the block that points to it is
-block c and we can just skip that edge since we've already been up this path.
-The problem is because we clear need_check when we see block d (as it is shared)
-we never add block b as needing to be checked.  And because block c is in our
-path already we bail out before we walk up to block b and add it to the backref
-check list.
-
-To fix this we need to reset need_check if we trip over a block that doesn't
-need to be checked.  This will make sure that any subsequent blocks in the path
-as we're walking up afterwards are added to the list to be processed.  With this
-patch I can now mount Marc's fs image and it'll complete the balance without
-panicing.  Thanks,
-
-Reported-by: Marc MERLIN <marc@merlins.org>
 Signed-off-by: Josef Bacik <jbacik@fb.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/relocation.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ fs/btrfs/inode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/relocation.c
-+++ b/fs/btrfs/relocation.c
-@@ -978,8 +978,11 @@ again:
- 					need_check = false;
- 					list_add_tail(&edge->list[UPPER],
- 						      &list);
--				} else
-+				} else {
-+					if (upper->checked)
-+						need_check = true;
- 					INIT_LIST_HEAD(&edge->list[UPPER]);
-+				}
- 			} else {
- 				upper = rb_entry(rb_node, struct backref_node,
- 						 rb_node);
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -3656,7 +3656,8 @@ noinline int btrfs_update_inode(struct b
+ 	 * without delay
+ 	 */
+ 	if (!btrfs_is_free_space_inode(inode)
+-	    && root->root_key.objectid != BTRFS_DATA_RELOC_TREE_OBJECTID) {
++	    && root->root_key.objectid != BTRFS_DATA_RELOC_TREE_OBJECTID
++	    && !root->fs_info->log_root_recovering) {
+ 		btrfs_update_root_times(trans, root);
+ 
+ 		ret = btrfs_delayed_update_inode(trans, root, inode);
 
 
