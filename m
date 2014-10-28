@@ -1,49 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081AbaJ1R7o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:59:44 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:4356 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751700AbaJ1R7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:59:43 -0400
-X-IronPort-AV: E=Sophos;i="5.04,804,1406592000"; 
-   d="scan'208";a="185710973"
-Message-ID: <544FD8A8.4060709@citrix.com>
-Date: Tue, 28 Oct 2014 17:55:52 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	id S1754158AbaJ1SA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:00:26 -0400
+Received: from forward3l.mail.yandex.net ([84.201.143.136]:56411 "EHLO
+	forward3l.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaJ1SAZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 14:00:25 -0400
+X-Yandex-Uniq: 57c83e68-c6f1-4784-ab71-f43319889694
+Authentication-Results: smtp2h.mail.yandex.net; dkim=pass header.i=@yandex.ru
+Message-ID: <544FD9B2.70108@yandex.ru>
+Date: Tue, 28 Oct 2014 21:00:18 +0300
+From: Kirill Tkhai <tkhai@yandex.ru>
+Reply-To: tkhai@yandex.ru
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:33.0) Gecko/20100101 Icedove/33.0
 MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [PATCH 2/2] Xen: switch to linear virtual mapped sparse p2m list
-References: <1414421551-31555-1-git-send-email-jgross@suse.com> <1414421551-31555-3-git-send-email-jgross@suse.com>
-In-Reply-To: <1414421551-31555-3-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+To: Peter Zijlstra <peterz@infradead.org>, Kirill Tkhai <ktkhai@parallels.com>
+CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 2/3] introduce probe_slab_address()
+References: <1413962231.19914.130.camel@tkhai> <20141027195339.GA11736@redhat.com> <20141027195425.GC11736@redhat.com> <1414475091.8574.6.camel@tkhai> <20141028150102.GP3219@twins.programming.kicks-ass.net> <544FD8C6.5020606@yandex.ru>
+In-Reply-To: <544FD8C6.5020606@yandex.ru>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/10/14 14:52, Juergen Gross wrote:
-> At start of the day the Xen hypervisor presents a contiguous mfn list
-> to a pv-domain. In order to support sparse memory this mfn list is
-> accessed via a three level p2m tree built early in the boot process.
-> Whenever the system needs the mfn associated with a pfn this tree is
-> used to find the mfn.
+On 28.10.2014 20:56, Kirill Tkhai wrote:
+> On 28.10.2014 18:01, Peter Zijlstra wrote:
+>> On Tue, Oct 28, 2014 at 08:44:51AM +0300, Kirill Tkhai wrote:
+>>> В Пн, 27/10/2014 в 20:54 +0100, Oleg Nesterov пишет:
+>>
+>>>> +#define probe_slab_address(addr, retval)	\
+>>>> +	probe_kernel_address(addr, retval)
+>>>
+>>> probe_kernel_read() was arch-dependent on tree platforms:
+>>>
+>>> arch/blackfin/mm/maccess.c
+>>> arch/parisc/lib/memcpy.c
+>>> arch/um/kernel/maccess.c
+>>>
+>>> But now we skip these arch-dependent implementations. Is there no a problem?
+>>
+>> Nope, see the first patch, it makes probe_kernel_address use
+>> __probe_kernel_read().
+>>
 > 
-> Instead of using a software walked tree for accessing a specific mfn
-> list entry this patch is creating a virtual address area for the
-> entire possible mfn list including memory holes. The holes are
-> covered by mapping a pre-defined  page consisting only of "invalid
-> mfn" entries. Access to a mfn entry is possible by just using the
-> virtual base address of the mfn list and the pfn as index into that
-> list. This speeds up the (hot) path of determining the mfn of a
-> pfn.
+> Yes, probe_kernel_read() is in [1/3], but it's not the same as
+> __probe_kernel_read() for blackfin, for example.
 
-I'm generally in favour of this I think but this is just too big to
-review carefully. Is there any way you can split this up?  Perhaps with
-some preparatory patches before the big switch to the linear array?
+Vise versa, I mean __probe_kernel_read() is in [1/3].
 
-David
+> It's defined as
+> 
+> long __weak probe_kernel_read(void *dst, const void *src, size_t size)
+>     __attribute__((alias("__probe_kernel_read")));
+> 
+> But blackfin's probe_kernel_read() redefines this __weak function,
+> isn't it? Didn't get_freepointer_safe() use to call architecture's
+> probe_kernel_read() before?
+> 
+> I don't see how it is called now...
+> 
