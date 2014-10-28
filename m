@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759147AbaJ1HYz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:24:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45100 "EHLO
+	id S1759164AbaJ1HZe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:25:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45088 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222AbaJ1Dmz (ORCPT
+	with ESMTP id S1755204AbaJ1Dmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:55 -0400
+	Mon, 27 Oct 2014 23:42:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bruce Lucas <bruce.lucas@mongodb.com>,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.16 028/127] mptfusion: enable no_write_same for vmware scsi disks
-Date: Tue, 28 Oct 2014 11:34:23 +0800
-Message-Id: <20141028033422.147345492@linuxfoundation.org>
+        Xiubo Li <Li.Xiubo@freescale.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.16 026/127] regmap: fix possible ZERO_SIZE_PTR pointer dereferencing error.
+Date: Tue, 28 Oct 2014 11:34:21 +0800
+Message-Id: <20141028033422.057403669@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -31,40 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris J Arges <chris.j.arges@canonical.com>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
-commit 4089b71cc820a426d601283c92fcd4ffeb5139c2 upstream.
+commit d6b41cb06044a7d895db82bdd54f6e4219970510 upstream.
 
-When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
-data can be improperly zeroed out using the mptfusion driver. This patch
-disables write_same for this driver and the vmware subsystem_vendor which
-ensures that manual zeroing out is used instead.
+Since we cannot make sure the 'val_count' will always be none zero
+here, and then if it equals to zero, the kmemdup() will return
+ZERO_SIZE_PTR, which equals to ((void *)16).
 
-BugLink: http://bugs.launchpad.net/bugs/1371591
-Reported-by: Bruce Lucas <bruce.lucas@mongodb.com>
-Tested-by: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+So this patch fix this with just doing the zero check before calling
+kmemdup().
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/message/fusion/mptspi.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/base/regmap/regmap.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/message/fusion/mptspi.c
-+++ b/drivers/message/fusion/mptspi.c
-@@ -1420,6 +1420,11 @@ mptspi_probe(struct pci_dev *pdev, const
- 		goto out_mptspi_probe;
-         }
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1646,6 +1646,9 @@ out:
+ 	} else {
+ 		void *wval;
  
-+	/* VMWare emulation doesn't properly implement WRITE_SAME
-+	 */
-+	if (pdev->subsystem_vendor == 0x15AD)
-+		sh->no_write_same = 1;
++		if (!val_count)
++			return -EINVAL;
 +
- 	spin_lock_irqsave(&ioc->FreeQlock, flags);
- 
- 	/* Attach the SCSI Host to the IOC structure
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
+ 			dev_err(map->dev, "Error in memory allocation\n");
 
 
