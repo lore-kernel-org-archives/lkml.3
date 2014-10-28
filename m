@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759541AbaJ1Hod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:44:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44650 "EHLO
+	id S1759557AbaJ1HpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:45:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44626 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754660AbaJ1Djj (ORCPT
+	with ESMTP id S1754626AbaJ1Dja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:39:39 -0400
+	Mon, 27 Oct 2014 23:39:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 3.17 096/146] PCI: Generate uppercase hex for modalias interface class
-Date: Tue, 28 Oct 2014 11:33:58 +0800
-Message-Id: <20141028033347.628148591@linuxfoundation.org>
+        Arnaud Ebalard <arno@natisbad.org>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.17 084/146] ARM: mvebu: Netgear RN104: Use Hardware BCH ECC
+Date: Tue, 28 Oct 2014 11:33:46 +0800
+Message-Id: <20141028033347.036286276@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,42 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+From: Arnaud Ebalard <arno@natisbad.org>
 
-commit 89ec3dcf17fd3fa009ecf8faaba36828dd6bc416 upstream.
+commit 225b94cdf719d0bc522a354bdafc18e5da5ff83b upstream.
 
-Some implementations of modprobe fail to load the driver for a PCI device
-automatically because the "interface" part of the modalias from the kernel
-is lowercase, and the modalias from file2alias is uppercase.
+The bootloader on the Netgear ReadyNAS RN104 uses Hardware BCH
+ECC (strength = 4), while the pxa3xx NAND driver by default uses
+Hamming ECC (strength = 1).
 
-The "interface" is the low-order byte of the Class Code, defined in PCI
-r3.0, Appendix D.  Most interface types defined in the spec do not use
-alpha characters, so they won't be affected.  For example, 00h, 01h, 10h,
-20h, etc. are unaffected.
+This patch changes the ECC mode on these machines to match that
+of the bootloader and of the stock firmware. That way, it is
+now possible to update the kernel from userland (e.g. using
+standard tools from mtd-utils package); u-boot will happily
+load and boot it.
 
-Print the "interface" byte of the Class Code in uppercase hex, as we
-already do for the Vendor ID, Device ID, Class, etc.
+The issue was initially reported and fixed by Ben Pedell for
+RN102. The RN104 shares the same Hynix H27U1G8F2BTR NAND
+flash and setup. This patch is based on Ben's fix for RN102.
 
-[bhelgaas: changelog]
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fixes: 0373a558bd79 ("ARM: mvebu: Enable NAND controller in ReadyNAS 104 .dts file")
+Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
+Link: https://lkml.kernel.org/r/920c7e7169dc6aaaa3eb4bced2336d38e77b8864.1410035142.git.arno@natisbad.org
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci-sysfs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/boot/dts/armada-370-netgear-rn104.dts |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -177,7 +177,7 @@ static ssize_t modalias_show(struct devi
- {
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
+--- a/arch/arm/boot/dts/armada-370-netgear-rn104.dts
++++ b/arch/arm/boot/dts/armada-370-netgear-rn104.dts
+@@ -145,6 +145,10 @@
+ 				marvell,nand-enable-arbiter;
+ 				nand-on-flash-bbt;
  
--	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
-+	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X\n",
- 		       pci_dev->vendor, pci_dev->device,
- 		       pci_dev->subsystem_vendor, pci_dev->subsystem_device,
- 		       (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
++				/* Use Hardware BCH ECC */
++				nand-ecc-strength = <4>;
++				nand-ecc-step-size = <512>;
++
+ 				partition@0 {
+ 					label = "u-boot";
+ 					reg = <0x0000000 0x180000>;  /* 1.5MB */
 
 
