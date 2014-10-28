@@ -1,624 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232AbaJ1Mad (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:30:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41251 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751391AbaJ1Maa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:30:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,802,1406617200"; 
-   d="scan'208";a="612727444"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next] mei: add reference counting for me clients
-Date: Tue, 28 Oct 2014 14:29:34 +0200
-Message-Id: <1414499374-7597-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S1754243AbaJ1Mbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:31:40 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:32845 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406AbaJ1Mbi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:31:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1410857931-4980-2-git-send-email-ch.naveen@samsung.com>
+References: <1410857931-4980-1-git-send-email-ch.naveen@samsung.com>
+	<1410857931-4980-2-git-send-email-ch.naveen@samsung.com>
+Date: Tue, 28 Oct 2014 18:01:36 +0530
+X-Google-Sender-Auth: iicLNqbUnlwJTeMrGlf4jPOAJuA
+Message-ID: <CAFp+6iH77ToXfOG1bXpCi60JpuzhhxOqaz99=9v4_9DppkSCNw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] iio: exyno-adc: use syscon for PMU register access
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-iio@vger.kernel.org
+Cc: "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cw00.choi@samsung.com, Greg KH <gregkh@linuxfoundation.org>,
+        naveenkrishna.ch@gmail.com, lars@metafoo.de, CPGS <cpgs@samsung.com>,
+        grundler@chromium.org, jic23@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support dynamic addition/remove we add reference
-counter.
+Hi all,
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/amthif.c  |  14 +++---
- drivers/misc/mei/bus.c     |  39 +++++++++------
- drivers/misc/mei/client.c  | 122 ++++++++++++++++++++++++++++++++++++---------
- drivers/misc/mei/client.h  |   6 +++
- drivers/misc/mei/debugfs.c |  31 +++++++-----
- drivers/misc/mei/hbm.c     |  17 +++++--
- drivers/misc/mei/main.c    |  22 ++++----
- drivers/misc/mei/mei_dev.h |   2 +
- drivers/misc/mei/nfc.c     |   2 +
- drivers/misc/mei/wd.c      |   1 +
- 10 files changed, 183 insertions(+), 73 deletions(-)
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index 56255ffe5a84..cafd9470a856 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -97,23 +97,25 @@ int mei_amthif_host_init(struct mei_device *dev)
- 	/* allocate storage for ME message buffer */
- 	msg_buf = kcalloc(dev->iamthif_mtu,
- 			sizeof(unsigned char), GFP_KERNEL);
--	if (!msg_buf)
--		return -ENOMEM;
-+	if (!msg_buf) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
- 
- 	dev->iamthif_msg_buf = msg_buf;
- 
- 	ret = mei_cl_link(cl, MEI_IAMTHIF_HOST_CLIENT_ID);
--
- 	if (ret < 0) {
--		dev_err(dev->dev,
--			"amthif: failed link client %d\n", ret);
--		return ret;
-+		dev_err(dev->dev, "amthif: failed cl_link %d\n", ret);
-+		goto out;
- 	}
- 
- 	ret = mei_cl_connect(cl, NULL);
- 
- 	dev->iamthif_state = MEI_IAMTHIF_IDLE;
- 
-+out:
-+	mei_me_cl_put(me_cl);
- 	return ret;
- }
- 
-diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
-index b3a72bca5242..b2de93724f5b 100644
---- a/drivers/misc/mei/bus.c
-+++ b/drivers/misc/mei/bus.c
-@@ -228,8 +228,8 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
- 			bool blocking)
- {
- 	struct mei_device *dev;
--	struct mei_me_client *me_cl;
--	struct mei_cl_cb *cb;
-+	struct mei_me_client *me_cl = NULL;
-+	struct mei_cl_cb *cb = NULL;
- 	int rets;
- 
- 	if (WARN_ON(!cl || !cl->dev))
-@@ -237,33 +237,40 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
- 
- 	dev = cl->dev;
- 
--	if (cl->state != MEI_FILE_CONNECTED)
--		return -ENODEV;
-+	mutex_lock(&dev->device_lock);
-+	if (cl->state != MEI_FILE_CONNECTED) {
-+		rets = -ENODEV;
-+		goto out;
-+	}
- 
- 	/* Check if we have an ME client device */
- 	me_cl = mei_me_cl_by_uuid_id(dev, &cl->cl_uuid, cl->me_client_id);
--	if (!me_cl)
--		return -ENOTTY;
-+	if (!me_cl) {
-+		rets = -ENOTTY;
-+		goto out;
-+	}
- 
--	if (length > me_cl->props.max_msg_length)
--		return -EFBIG;
-+	if (length > me_cl->props.max_msg_length) {
-+		rets = -EFBIG;
-+		goto out;
-+	}
- 
- 	cb = mei_io_cb_init(cl, NULL);
--	if (!cb)
--		return -ENOMEM;
-+	if (!cb) {
-+		rets = -ENOMEM;
-+		goto out;
-+	}
- 
- 	rets = mei_io_cb_alloc_req_buf(cb, length);
--	if (rets < 0) {
--		mei_io_cb_free(cb);
--		return rets;
--	}
-+	if (rets < 0)
-+		goto out;
- 
- 	memcpy(cb->request_buffer.data, buf, length);
- 
--	mutex_lock(&dev->device_lock);
--
- 	rets = mei_cl_write(cl, cb, blocking);
- 
-+out:
-+	mei_me_cl_put(me_cl);
- 	mutex_unlock(&dev->device_lock);
- 	if (rets < 0)
- 		mei_io_cb_free(cb);
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index 03c95e06ed1b..12e7e9a0e264 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -26,6 +26,57 @@
- #include "hbm.h"
- #include "client.h"
- 
-+
-+/**
-+ * mei_me_cl_init - initialize me client
-+ *
-+ * @me_cl: me client
-+ */
-+void mei_me_cl_init(struct mei_me_client *me_cl)
-+{
-+	INIT_LIST_HEAD(&me_cl->list);
-+	kref_init(&me_cl->refcnt);
-+}
-+
-+/**
-+ * mei_me_cl_get - increase me client refcount
-+ *
-+ * @me_cl: me client
-+ *
-+ * Return: me client or NULL
-+ */
-+
-+struct mei_me_client *mei_me_cl_get(struct mei_me_client *me_cl)
-+{
-+	if (me_cl)
-+		kref_get(&me_cl->refcnt);
-+
-+	return me_cl;
-+}
-+
-+/**
-+ * mei_me_cl_release - unlink and free me client
-+ *
-+ * @me_cl: me client
-+ */
-+static void mei_me_cl_release(struct kref *ref)
-+{
-+	struct mei_me_client *me_cl =
-+		container_of(ref, struct mei_me_client, refcnt);
-+	list_del(&me_cl->list);
-+	kfree(me_cl);
-+}
-+/**
-+ * mei_me_cl_put - decrease me client refcount and free client if necessary
-+ *
-+ * @me_cl: me client
-+ */
-+void mei_me_cl_put(struct mei_me_client *me_cl)
-+{
-+	if (me_cl)
-+		kref_put(&me_cl->refcnt, mei_me_cl_release);
-+}
-+
- /**
-  * mei_me_cl_by_uuid - locate me client by uuid
-  *
-@@ -43,7 +94,7 @@ struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
- 
- 	list_for_each_entry(me_cl, &dev->me_clients, list)
- 		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0)
--			return me_cl;
-+			return mei_me_cl_get(me_cl);
- 
- 	return NULL;
- }
-@@ -65,7 +116,8 @@ struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
- 
- 	list_for_each_entry(me_cl, &dev->me_clients, list)
- 		if (me_cl->client_id == client_id)
--			return me_cl;
-+			return mei_me_cl_get(me_cl);
-+
- 	return NULL;
- }
- 
-@@ -88,31 +140,44 @@ struct mei_me_client *mei_me_cl_by_uuid_id(struct mei_device *dev,
- 	list_for_each_entry(me_cl, &dev->me_clients, list)
- 		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0 &&
- 		    me_cl->client_id == client_id)
--			return me_cl;
-+			return mei_me_cl_get(me_cl);
-+
- 	return NULL;
- }
- 
- /**
-- * mei_me_cl_remove - remove me client matching uuid and client_id
-+ * mei_me_cl_rm_by_uuid - remove all me clients matching uuid
-  *
-  * @dev: the device structure
-  * @uuid: me client uuid
-- * @client_id: me client address
-  */
--void mei_me_cl_remove(struct mei_device *dev, const uuid_le *uuid, u8 client_id)
-+void mei_me_cl_rm_by_uuid(struct mei_device *dev, const uuid_le *uuid)
- {
- 	struct mei_me_client *me_cl, *next;
- 
-+	dev_dbg(dev->dev, "remove %pUl\n", uuid);
- 	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list) {
--		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0 &&
--		    me_cl->client_id == client_id) {
--			list_del(&me_cl->list);
--			kfree(me_cl);
--			break;
--		}
-+		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0)
-+			mei_me_cl_put(me_cl);
- 	}
- }
- 
-+/**
-+ * mei_me_cl_remove_by_id - remove all me clients matching client id
-+ *
-+ * @dev: the device structure
-+ * @id: me client id
-+ */
-+void mei_me_cl_rm_by_id(struct mei_device *dev, u8 id)
-+{
-+	struct mei_me_client *me_cl, *next;
-+
-+	dev_dbg(dev->dev, "remove %d\n", id);
-+	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list) {
-+		if (me_cl->client_id == id)
-+			mei_me_cl_put(me_cl);
-+	}
-+}
- 
- /**
-  * mei_cl_cmp_id - tells if the clients are the same
-@@ -695,6 +760,7 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
- {
- 	struct mei_device *dev;
- 	struct mei_me_client *me_cl;
-+	int rets = 0;
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return -EINVAL;
-@@ -710,12 +776,13 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
- 		return -ENOENT;
- 	}
- 
--	if (me_cl->mei_flow_ctrl_creds) {
-+	if (me_cl->mei_flow_ctrl_creds > 0) {
-+		rets = 1;
- 		if (WARN_ON(me_cl->props.single_recv_buf == 0))
--			return -EINVAL;
--		return 1;
-+			rets = -EINVAL;
- 	}
--	return 0;
-+	mei_me_cl_put(me_cl);
-+	return rets;
- }
- 
- /**
-@@ -732,6 +799,7 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl)
- {
- 	struct mei_device *dev;
- 	struct mei_me_client *me_cl;
-+	int rets;
- 
- 	if (WARN_ON(!cl || !cl->dev))
- 		return -EINVAL;
-@@ -745,15 +813,22 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl)
- 	}
- 
- 	if (me_cl->props.single_recv_buf) {
--		if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0))
--			return -EINVAL;
-+		if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0)) {
-+			rets = -EINVAL;
-+			goto out;
-+		}
- 		me_cl->mei_flow_ctrl_creds--;
- 	} else {
--		if (WARN_ON(cl->mei_flow_ctrl_creds <= 0))
--			return -EINVAL;
-+		if (WARN_ON(cl->mei_flow_ctrl_creds <= 0)) {
-+			rets = -EINVAL;
-+			goto out;
-+		}
- 		cl->mei_flow_ctrl_creds--;
- 	}
--	return 0;
-+	rets = 0;
-+out:
-+	mei_me_cl_put(me_cl);
-+	return rets;
- }
- 
- /**
-@@ -788,6 +863,9 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
- 		cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
- 		return  -ENOTTY;
- 	}
-+	/* always allocate at least client max message */
-+	length = max_t(size_t, length, me_cl->props.max_msg_length);
-+	mei_me_cl_put(me_cl);
- 
- 	rets = pm_runtime_get(dev->dev);
- 	if (rets < 0 && rets != -EINPROGRESS) {
-@@ -802,8 +880,6 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
- 		goto out;
- 	}
- 
--	/* always allocate at least client max message */
--	length = max_t(size_t, length, me_cl->props.max_msg_length);
- 	rets = mei_io_cb_alloc_resp_buf(cb, length);
- 	if (rets)
- 		goto out;
-diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
-index d9d0c1525259..d997b56a3fcd 100644
---- a/drivers/misc/mei/client.h
-+++ b/drivers/misc/mei/client.h
-@@ -34,6 +34,12 @@ struct mei_me_client *mei_me_cl_by_uuid_id(struct mei_device *dev,
- void mei_me_cl_remove(struct mei_device *dev,
- 		      const uuid_le *uuid, u8 client_id);
- 
-+void mei_me_cl_rm_by_uuid(struct mei_device *dev, const uuid_le *uuid);
-+void mei_me_cl_rm_by_id(struct mei_device *dev, u8 id);
-+void mei_me_cl_init(struct mei_me_client *me_cl);
-+void mei_me_cl_put(struct mei_me_client *me_cl);
-+struct mei_me_client *mei_me_cl_get(struct mei_me_client *me_cl);
-+
- /*
-  * MEI IO Functions
-  */
-diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
-index b60b4263cf0f..d38a9b6a60f3 100644
---- a/drivers/misc/mei/debugfs.c
-+++ b/drivers/misc/mei/debugfs.c
-@@ -21,20 +21,22 @@
- #include <linux/mei.h>
- 
- #include "mei_dev.h"
-+#include "client.h"
- #include "hw.h"
- 
- static ssize_t mei_dbgfs_read_meclients(struct file *fp, char __user *ubuf,
- 					size_t cnt, loff_t *ppos)
- {
- 	struct mei_device *dev = fp->private_data;
--	struct mei_me_client *me_cl;
-+	struct mei_me_client *me_cl, *n;
- 	size_t bufsz = 1;
- 	char *buf;
- 	int i = 0;
- 	int pos = 0;
- 	int ret;
- 
--#define HDR "  |id|fix|         UUID                       |con|msg len|sb|\n"
-+#define HDR \
-+"  |id|fix|         UUID                       |con|msg len|sb|refc|\n"
- 
- 	mutex_lock(&dev->device_lock);
- 
-@@ -54,16 +56,21 @@ static ssize_t mei_dbgfs_read_meclients(struct file *fp, char __user *ubuf,
- 	if (dev->dev_state != MEI_DEV_ENABLED)
- 		goto out;
- 
--	list_for_each_entry(me_cl, &dev->me_clients, list) {
--
--		pos += scnprintf(buf + pos, bufsz - pos,
--			"%2d|%2d|%3d|%pUl|%3d|%7d|%2d|\n",
--			i++, me_cl->client_id,
--			me_cl->props.fixed_address,
--			&me_cl->props.protocol_name,
--			me_cl->props.max_number_of_connections,
--			me_cl->props.max_msg_length,
--			me_cl->props.single_recv_buf);
-+	list_for_each_entry_safe(me_cl, n,  &dev->me_clients, list) {
-+
-+		me_cl = mei_me_cl_get(me_cl);
-+		if (me_cl)
-+			pos += scnprintf(buf + pos, bufsz - pos,
-+				"%2d|%2d|%3d|%pUl|%3d|%7d|%2d|%4d|\n",
-+				i++, me_cl->client_id,
-+				me_cl->props.fixed_address,
-+				&me_cl->props.protocol_name,
-+				me_cl->props.max_number_of_connections,
-+				me_cl->props.max_msg_length,
-+				me_cl->props.single_recv_buf,
-+				atomic_read(&me_cl->refcnt.refcount));
-+
-+		mei_me_cl_put(me_cl);
- 	}
- out:
- 	mutex_unlock(&dev->device_lock);
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 49a2653d91a5..65a505226222 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -339,11 +339,16 @@ static int mei_hbm_me_cl_add(struct mei_device *dev,
- 			     struct hbm_props_response *res)
- {
- 	struct mei_me_client *me_cl;
-+	const uuid_le *uuid = &res->client_properties.protocol_name;
-+
-+	mei_me_cl_rm_by_uuid(dev, uuid);
- 
- 	me_cl = kzalloc(sizeof(struct mei_me_client), GFP_KERNEL);
- 	if (!me_cl)
- 		return -ENOMEM;
- 
-+	mei_me_cl_init(me_cl);
-+
- 	me_cl->props = res->client_properties;
- 	me_cl->client_id = res->me_addr;
- 	me_cl->mei_flow_ctrl_creds = 0;
-@@ -484,6 +489,7 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
- 				  struct hbm_flow_control *flow)
- {
- 	struct mei_me_client *me_cl;
-+	int rets;
- 
- 	me_cl = mei_me_cl_by_id(dev, flow->me_addr);
- 	if (!me_cl) {
-@@ -492,14 +498,19 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
- 		return -ENOENT;
- 	}
- 
--	if (WARN_ON(me_cl->props.single_recv_buf == 0))
--		return -EINVAL;
-+	if (WARN_ON(me_cl->props.single_recv_buf == 0)) {
-+		rets = -EINVAL;
-+		goto out;
-+	}
- 
- 	me_cl->mei_flow_ctrl_creds++;
- 	dev_dbg(dev->dev, "recv flow ctrl msg ME %d (single) creds = %d.\n",
- 	    flow->me_addr, me_cl->mei_flow_ctrl_creds);
- 
--	return 0;
-+	rets = 0;
-+out:
-+	mei_me_cl_put(me_cl);
-+	return rets;
- }
- 
- /**
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index beedc91f03a6..5d6a15c3619a 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -303,7 +303,7 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
- 			 size_t length, loff_t *offset)
- {
- 	struct mei_cl *cl = file->private_data;
--	struct mei_me_client *me_cl;
-+	struct mei_me_client *me_cl = NULL;
- 	struct mei_cl_cb *write_cb = NULL;
- 	struct mei_device *dev;
- 	unsigned long timeout = 0;
-@@ -399,12 +399,14 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
- 				"amthif write failed with status = %d\n", rets);
- 			goto out;
- 		}
-+		mei_me_cl_put(me_cl);
- 		mutex_unlock(&dev->device_lock);
- 		return length;
- 	}
- 
- 	rets = mei_cl_write(cl, write_cb, false);
- out:
-+	mei_me_cl_put(me_cl);
- 	mutex_unlock(&dev->device_lock);
- 	if (rets < 0)
- 		mei_io_cb_free(write_cb);
-@@ -433,24 +435,19 @@ static int mei_ioctl_connect_client(struct file *file,
- 	cl = file->private_data;
- 	dev = cl->dev;
- 
--	if (dev->dev_state != MEI_DEV_ENABLED) {
--		rets = -ENODEV;
--		goto end;
--	}
-+	if (dev->dev_state != MEI_DEV_ENABLED)
-+		return -ENODEV;
- 
- 	if (cl->state != MEI_FILE_INITIALIZING &&
--	    cl->state != MEI_FILE_DISCONNECTED) {
--		rets = -EBUSY;
--		goto end;
--	}
-+	    cl->state != MEI_FILE_DISCONNECTED)
-+		return  -EBUSY;
- 
- 	/* find ME client we're trying to connect to */
- 	me_cl = mei_me_cl_by_uuid(dev, &data->in_client_uuid);
- 	if (!me_cl || me_cl->props.fixed_address) {
- 		dev_dbg(dev->dev, "Cannot connect to FW Client UUID = %pUl\n",
- 				&data->in_client_uuid);
--		rets = -ENOTTY;
--		goto end;
-+		return  -ENOTTY;
- 	}
- 
- 	cl->me_client_id = me_cl->client_id;
-@@ -487,17 +484,16 @@ static int mei_ioctl_connect_client(struct file *file,
- 		goto end;
- 	}
- 
--
- 	/* prepare the output buffer */
- 	client = &data->out_client_properties;
- 	client->max_msg_length = me_cl->props.max_msg_length;
- 	client->protocol_version = me_cl->props.protocol_version;
- 	dev_dbg(dev->dev, "Can connect?\n");
- 
--
- 	rets = mei_cl_connect(cl, file);
- 
- end:
-+	mei_me_cl_put(me_cl);
- 	return rets;
- }
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 1288a5cf60b9..7d3a1de0b051 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -169,12 +169,14 @@ struct mei_fw_status {
-  * struct mei_me_client - representation of me (fw) client
-  *
-  * @list: link in me client list
-+ * @refcnt: struct reference count
-  * @props: client properties
-  * @client_id: me client id
-  * @mei_flow_ctrl_creds: flow control credits
-  */
- struct mei_me_client {
- 	struct list_head list;
-+	struct kref refcnt;
- 	struct mei_client_properties props;
- 	u8 client_id;
- 	u8 mei_flow_ctrl_creds;
-diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
-index 82f38613c550..a10f3250aa2c 100644
---- a/drivers/misc/mei/nfc.c
-+++ b/drivers/misc/mei/nfc.c
-@@ -513,6 +513,7 @@ int mei_nfc_host_init(struct mei_device *dev)
- 
- 	cl_info->me_client_id = me_cl->client_id;
- 	cl_info->cl_uuid = me_cl->props.protocol_name;
-+	mei_me_cl_put(me_cl);
- 
- 	ret = mei_cl_link(cl_info, MEI_HOST_CLIENT_ID_ANY);
- 	if (ret)
-@@ -531,6 +532,7 @@ int mei_nfc_host_init(struct mei_device *dev)
- 
- 	cl->me_client_id = me_cl->client_id;
- 	cl->cl_uuid = me_cl->props.protocol_name;
-+	mei_me_cl_put(me_cl);
- 
- 	ret = mei_cl_link(cl, MEI_HOST_CLIENT_ID_ANY);
- 	if (ret)
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index b1d892cea94d..475f1dea45bf 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -76,6 +76,7 @@ int mei_wd_host_init(struct mei_device *dev)
- 
- 	cl->me_client_id = me_cl->client_id;
- 	cl->cl_uuid = me_cl->props.protocol_name;
-+	mei_me_cl_put(me_cl);
- 
- 	ret = mei_cl_link(cl, MEI_WD_HOST_CLIENT_ID);
- 
+CC'ing Naveen's gmail id, since the Samsung id is invalid now.
+
+
+On Tue, Sep 16, 2014 at 2:28 PM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> This patch updates the IIO based ADC driver to use syscon and regmap
+> APIs to access and use PMU registers instead of remapping the PMU
+> registers in the driver.
+>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> To: linux-iio@vger.kernel.org
+> ---
+> Changes since v1:
+> Rebased on top of togreg branch of IIO git
+
+If the changes look good, then first two patches of this series can be
+picked up ?
+The last dt patch then belongs to samsung tree.
+
+>
+>  drivers/iio/adc/exynos_adc.c |   30 +++++++++++++++++++++---------
+>  1 file changed, 21 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> index 43620fd..fe03177 100644
+> --- a/drivers/iio/adc/exynos_adc.c
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -39,6 +39,8 @@
+>  #include <linux/iio/iio.h>
+>  #include <linux/iio/machine.h>
+>  #include <linux/iio/driver.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/regmap.h>
+>
+>  /* S3C/EXYNOS4412/5250 ADC_V1 registers definitions */
+>  #define ADC_V1_CON(x)          ((x) + 0x00)
+> @@ -90,11 +92,14 @@
+>
+>  #define EXYNOS_ADC_TIMEOUT     (msecs_to_jiffies(100))
+>
+> +#define EXYNOS_ADCV1_PHY_OFFSET        0x0718
+> +#define EXYNOS_ADCV2_PHY_OFFSET        0x0720
+> +
+>  struct exynos_adc {
+>         struct exynos_adc_data  *data;
+>         struct device           *dev;
+>         void __iomem            *regs;
+> -       void __iomem            *enable_reg;
+> +       struct regmap           *pmu_map;
+>         struct clk              *clk;
+>         struct clk              *sclk;
+>         unsigned int            irq;
+> @@ -110,6 +115,7 @@ struct exynos_adc_data {
+>         int num_channels;
+>         bool needs_sclk;
+>         bool needs_adc_phy;
+> +       int phy_offset;
+>         u32 mask;
+>
+>         void (*init_hw)(struct exynos_adc *info);
+> @@ -183,7 +189,7 @@ static void exynos_adc_v1_init_hw(struct exynos_adc *info)
+>         u32 con1;
+>
+>         if (info->data->needs_adc_phy)
+> -               writel(1, info->enable_reg);
+> +               regmap_write(info->pmu_map, info->data->phy_offset, 1);
+>
+>         /* set default prescaler values and Enable prescaler */
+>         con1 =  ADC_V1_CON_PRSCLV(49) | ADC_V1_CON_PRSCEN;
+> @@ -198,7 +204,7 @@ static void exynos_adc_v1_exit_hw(struct exynos_adc *info)
+>         u32 con;
+>
+>         if (info->data->needs_adc_phy)
+> -               writel(0, info->enable_reg);
+> +               regmap_write(info->pmu_map, info->data->phy_offset, 0);
+>
+>         con = readl(ADC_V1_CON(info->regs));
+>         con |= ADC_V1_CON_STANDBY;
+> @@ -225,6 +231,7 @@ static const struct exynos_adc_data exynos_adc_v1_data = {
+>         .num_channels   = MAX_ADC_V1_CHANNELS,
+>         .mask           = ADC_DATX_MASK,        /* 12 bit ADC resolution */
+>         .needs_adc_phy  = true,
+> +       .phy_offset     = EXYNOS_ADCV1_PHY_OFFSET,
+>
+>         .init_hw        = exynos_adc_v1_init_hw,
+>         .exit_hw        = exynos_adc_v1_exit_hw,
+> @@ -314,7 +321,7 @@ static void exynos_adc_v2_init_hw(struct exynos_adc *info)
+>         u32 con1, con2;
+>
+>         if (info->data->needs_adc_phy)
+> -               writel(1, info->enable_reg);
+> +               regmap_write(info->pmu_map, info->data->phy_offset, 1);
+>
+>         con1 = ADC_V2_CON1_SOFT_RESET;
+>         writel(con1, ADC_V2_CON1(info->regs));
+> @@ -332,7 +339,7 @@ static void exynos_adc_v2_exit_hw(struct exynos_adc *info)
+>         u32 con;
+>
+>         if (info->data->needs_adc_phy)
+> -               writel(0, info->enable_reg);
+> +               regmap_write(info->pmu_map, info->data->phy_offset, 0);
+>
+>         con = readl(ADC_V2_CON1(info->regs));
+>         con &= ~ADC_CON_EN_START;
+> @@ -362,6 +369,7 @@ static const struct exynos_adc_data exynos_adc_v2_data = {
+>         .num_channels   = MAX_ADC_V2_CHANNELS,
+>         .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
+>         .needs_adc_phy  = true,
+> +       .phy_offset     = EXYNOS_ADCV2_PHY_OFFSET,
+>
+>         .init_hw        = exynos_adc_v2_init_hw,
+>         .exit_hw        = exynos_adc_v2_exit_hw,
+> @@ -374,6 +382,7 @@ static const struct exynos_adc_data exynos3250_adc_data = {
+>         .mask           = ADC_DATX_MASK, /* 12 bit ADC resolution */
+>         .needs_sclk     = true,
+>         .needs_adc_phy  = true,
+> +       .phy_offset     = EXYNOS_ADCV1_PHY_OFFSET,
+>
+>         .init_hw        = exynos_adc_v2_init_hw,
+>         .exit_hw        = exynos_adc_v2_exit_hw,
+> @@ -558,10 +567,13 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>
+>
+>         if (info->data->needs_adc_phy) {
+> -               mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> -               info->enable_reg = devm_ioremap_resource(&pdev->dev, mem);
+> -               if (IS_ERR(info->enable_reg))
+> -                       return PTR_ERR(info->enable_reg);
+> +               info->pmu_map = syscon_regmap_lookup_by_phandle(
+> +                                       pdev->dev.of_node,
+> +                                       "samsung,syscon-phandle");
+> +               if (IS_ERR(info->pmu_map)) {
+> +                       dev_err(&pdev->dev, "syscon regmap lookup failed.\n");
+> +                       return PTR_ERR(info->pmu_map);
+> +               }
+>         }
+>
+>         irq = platform_get_irq(pdev, 0);
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
 -- 
-1.9.3
-
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
