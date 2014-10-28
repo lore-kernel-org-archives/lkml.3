@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760746AbaJ1HbO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:31:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44990 "EHLO
+	id S1760766AbaJ1Hbo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:31:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44987 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168AbaJ1Dlx (ORCPT
+	with ESMTP id S932237AbaJ1Dlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:53 -0400
+	Mon, 27 Oct 2014 23:41:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Allen Pais <allen.pais@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 131/146] sparc64: correctly recognise M6 and M7 cpu type
-Date: Tue, 28 Oct 2014 11:34:33 +0800
-Message-Id: <20141028033349.120362748@linuxfoundation.org>
+Subject: [PATCH 3.17 130/146] sparc64: Fix hibernation code refrence to PAGE_OFFSET.
+Date: Tue, 28 Oct 2014 11:34:32 +0800
+Message-Id: <20141028033349.072320840@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,79 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Allen Pais <allen.pais@oracle.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-The following patch adds support for correctly
-recognising M6 and M7 cpu type.
+We changed PAGE_OFFSET to be a variable rather than a constant,
+but this reference here in the hibernate assembler got missed.
 
-Signed-off-by: Allen Pais <allen.pais@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/spitfire.h |    2 ++
- arch/sparc/kernel/cpu.c           |   12 ++++++++++++
- arch/sparc/kernel/head_64.S       |   12 ++++++++++++
- 3 files changed, 26 insertions(+)
+ arch/sparc/power/hibernate_asm.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/include/asm/spitfire.h
-+++ b/arch/sparc/include/asm/spitfire.h
-@@ -45,6 +45,8 @@
- #define SUN4V_CHIP_NIAGARA3	0x03
- #define SUN4V_CHIP_NIAGARA4	0x04
- #define SUN4V_CHIP_NIAGARA5	0x05
-+#define SUN4V_CHIP_SPARC_M6	0x06
-+#define SUN4V_CHIP_SPARC_M7	0x07
- #define SUN4V_CHIP_SPARC64X	0x8a
- #define SUN4V_CHIP_UNKNOWN	0xff
- 
---- a/arch/sparc/kernel/cpu.c
-+++ b/arch/sparc/kernel/cpu.c
-@@ -494,6 +494,18 @@ static void __init sun4v_cpu_probe(void)
- 		sparc_pmu_type = "niagara5";
- 		break;
- 
-+	case SUN4V_CHIP_SPARC_M6:
-+		sparc_cpu_type = "SPARC-M6";
-+		sparc_fpu_type = "SPARC-M6 integrated FPU";
-+		sparc_pmu_type = "sparc-m6";
-+		break;
-+
-+	case SUN4V_CHIP_SPARC_M7:
-+		sparc_cpu_type = "SPARC-M7";
-+		sparc_fpu_type = "SPARC-M7 integrated FPU";
-+		sparc_pmu_type = "sparc-m7";
-+		break;
-+
- 	case SUN4V_CHIP_SPARC64X:
- 		sparc_cpu_type = "SPARC64-X";
- 		sparc_fpu_type = "SPARC64-X integrated FPU";
---- a/arch/sparc/kernel/head_64.S
-+++ b/arch/sparc/kernel/head_64.S
-@@ -427,6 +427,12 @@ sun4v_chip_type:
- 	cmp	%g2, '5'
- 	be,pt	%xcc, 5f
- 	 mov	SUN4V_CHIP_NIAGARA5, %g4
-+	cmp	%g2, '6'
-+	be,pt	%xcc, 5f
-+	 mov	SUN4V_CHIP_SPARC_M6, %g4
-+	cmp	%g2, '7'
-+	be,pt	%xcc, 5f
-+	 mov	SUN4V_CHIP_SPARC_M7, %g4
- 	ba,pt	%xcc, 49f
+--- a/arch/sparc/power/hibernate_asm.S
++++ b/arch/sparc/power/hibernate_asm.S
+@@ -54,8 +54,8 @@ ENTRY(swsusp_arch_resume)
  	 nop
  
-@@ -585,6 +591,12 @@ niagara_tlb_fixup:
- 	cmp	%g1, SUN4V_CHIP_NIAGARA5
- 	be,pt	%xcc, niagara4_patch
- 	 nop
-+	cmp	%g1, SUN4V_CHIP_SPARC_M6
-+	be,pt	%xcc, niagara4_patch
-+	 nop
-+	cmp	%g1, SUN4V_CHIP_SPARC_M7
-+	be,pt	%xcc, niagara4_patch
-+	 nop
+ 	/* Write PAGE_OFFSET to %g7 */
+-	sethi	%uhi(PAGE_OFFSET), %g7
+-	sllx	%g7, 32, %g7
++	sethi	%hi(PAGE_OFFSET), %g7
++	ldx	[%g7 + %lo(PAGE_OFFSET)], %g7
  
- 	call	generic_patch_copyops
- 	 nop
+ 	setuw	(PAGE_SIZE-8), %g3
+ 
 
 
