@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754092AbaJ1Pd4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:33:56 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:41121 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaJ1Pdy (ORCPT
+	id S1754880AbaJ1PeD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:34:03 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:60403 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaJ1Pd7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:33:54 -0400
+	Tue, 28 Oct 2014 11:33:59 -0400
+Message-ID: <544FB763.6040904@imgtec.com>
+Date: Tue, 28 Oct 2014 15:33:55 +0000
+From: Qais Yousef <qais.yousef@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZbTXWP34nx8eeAd_BpPuwSspAUZbMv2WRCvaQURiHdfQ@mail.gmail.com>
-References: <1413792260-4265-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1413792260-4265-2-git-send-email-antoine.tenart@free-electrons.com>
-	<CACRpkdZbTXWP34nx8eeAd_BpPuwSspAUZbMv2WRCvaQURiHdfQ@mail.gmail.com>
-Date: Tue, 28 Oct 2014 16:33:53 +0100
-Message-ID: <CACRpkda7g7mZoTmHUWoLFaNmMYDShceJ=Gch8UQJ8sTJ+57ydw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] Documentation: bindings: pinctrl: document the
- generic groups property
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Antoine Tenart <antoine.tenart@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lars-Peter Clausen <lars@metafoo.de>, Clemens Ladisch <clemens@ladisch.de>,
+        <linux-kernel@vger.kernel.org>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        Neil Jones <neil.jones@imgtec.com>
+Subject: Re: [PATCH 00/11] Add AXD Audio Processing IP driver
+References: <1414495589-8579-1-git-send-email-qais.yousef@imgtec.com> <544F8439.4080402@ladisch.de> <544F97A4.7080209@imgtec.com> <544FAE35.4000509@metafoo.de>
+In-Reply-To: <544FAE35.4000509@metafoo.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 4:29 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Oct 20, 2014 at 10:04 AM, Antoine Tenart
-> <antoine.tenart@free-electrons.com> wrote:
->
->> Group-based drivers use a groups property to define on which groups a
->> mux function is applied to. Document it.
+On 10/28/2014 02:54 PM, Lars-Peter Clausen wrote:
+> On 10/28/2014 02:18 PM, Qais Yousef wrote:
+>> On 10/28/2014 11:55 AM, Clemens Ladisch wrote:
+>>> Qais Yousef wrote:
+>>>> AXD Audio Processing IP performs audio decoding, encoding, mixing,
+>>>> equalisation,
+>>>> synchronisation and playback.
+>>> What exactly do you mean with "synchronisation" and "playback"?
 >>
->> Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
+>> Synchronisation refers to accurate audio playout relative to a master
+>> clock source including compensation of drift between the master clock
+>> source and the playout clock of the audio hardware. Hence allowing
+>> synchronised audio playout across multiple independent devices.
+>>
+>> Playback simple refers to the fact that AXD is capable of managing audio
+>> playout hardware like I2S and SPDIF interfaces.
+>>
+>>
+>>>> It doesn't fit in alsa subsystem but I Cced them to confirm.
+>>> ... because those two words sound like something that a sound card 
+>>> could do.
+>>
+>> The problem mainly stems from the fact that we take a variety of
+>> compressed audio as input and we could perform audio encoding. The
+>> problem with the compressed audio is that the range of decoders and
+>> configuration supported in alsa is limited and there's no support for
+>> taking raw pcm and producing compressed output. I'm not an expert on
+>> alsa but when I looked it looked like there's more infra structure
+>> required.
+>>
+>> [...]
 >
-> This is already documented but under another heading.
+> This doesn't sound to different from any of the other supported audio 
+> DSPs. ALSA seems to have 95% of what you need. And the missing 5% is 
+> probably stuff that is not specific to your hardware but rather 
+> something that other hardware will need as well. The framework is not 
+> set in stone you can make modifications and add the features that are 
+> missing to make your hardware work.
 >
-> This section was to be for pin config, we now have a separate
-> section for pin muxing.
+> E.g. look at sound/soc/intel/ for an example of a audio DSP.
+>
+> No integrating this into ALSA will quite likely result in a quite 
+> messy situation for you on the long run.
+>
+> - Lars
+>
+>
+>
+OK thanks for the reference. To be honest it felt like 15-20% of the 
+features are missing but I'll need to look at the specifics and 
+judge/estimate better.
 
-Bah rather, look in the upstream kernel:
-
-== Generic pin multiplexing node content ==
-
-pin multiplexing nodes:
-
-function                - the mux function to select
-groups                  - the list of groups to select with this function
-
-Example:
-
-state_0_node_a {
-        function = "uart0";
-        groups = "u0rxtx", "u0rtscts";
-};
-state_1_node_a {
-        function = "spi0";
-        groups = "spi0pins";
-};
-
-== Generic pin configuration node content ==
-
-(...)
-
-Supported generic properties are:
-
-pins                    - the list of pins that properties in the node
-                          apply to (either this or "group" has to be
-                          specified)
-group                   - the group to apply the properties to, if the driver
-                          supports configuration of whole groups rather than
-                          individual pins (either this or "pins" has to be
-                          specified)
-
-
-So now the first one is explicitly for mux and the latter on explicitly for
-configs.
-
-Maybe we have to have "pins" for the mux too, for drivers that do
-per-pin function assignment, but it's clear that configs are per-pin
-or per-group atleast, while muxing is done in nodes that contain
-a "function" element.
-
-Yours,
-Linus Walleij
+Thanks,
+Qais
