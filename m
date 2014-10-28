@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488AbaJ1Ndk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:33:40 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51342 "EHLO mail.kernel.org"
+	id S1754518AbaJ1Ndn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:33:43 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51357 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754463AbaJ1Ndh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:33:37 -0400
+	id S1754463AbaJ1Ndl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:33:41 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Hemant Kumar <hemant@linux.vnet.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+        Arun Sharma <asharma@fb.com>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 11/32] perf tools: Add support for exclusive option
-Date: Tue, 28 Oct 2014 11:32:05 -0200
-Message-Id: <1414503146-22789-12-git-send-email-acme@kernel.org>
+Subject: [PATCH 13/32] perf callchain: Use global caching provided by libunwind
+Date: Tue, 28 Oct 2014 11:32:07 -0200
+Message-Id: <1414503146-22789-14-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
 References: <1414503146-22789-1-git-send-email-acme@kernel.org>
@@ -26,173 +27,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-Some options cannot be used at the same time.  To handle such options
-add a new PARSE_OPT_EXCLUSIVE flag and show error message if more than
-one of them is used.
+The libunwind provides two caching policy which are global and
+per-thread.  As perf unwinds callchains in a single thread, it'd
+sufficient to use global caching.
+
+This speeds up my perf report from 14s to 7s on a ~260MB data file.
+Although the output sometimes contains a slight difference (~0.01% in
+terms of number of lines printed) on callchains which were not resolved.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Acked-by: Jean Pihet <jean.pihet@linaro.org>
+Cc: Arun Sharma <asharma@fb.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1413990949-13953-5-git-send-email-namhyung@kernel.org
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1412556363-26229-4-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/parse-options.c | 59 +++++++++++++++++++++++++++++++++--------
- tools/perf/util/parse-options.h |  2 ++
- 2 files changed, 50 insertions(+), 11 deletions(-)
+ tools/perf/util/thread.c           |  3 +++
+ tools/perf/util/unwind-libunwind.c | 12 ++++++++++++
+ tools/perf/util/unwind.h           |  3 +++
+ 3 files changed, 18 insertions(+)
 
-diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
-index b6016101b40b..f62dee7bd924 100644
---- a/tools/perf/util/parse-options.c
-+++ b/tools/perf/util/parse-options.c
-@@ -45,6 +45,23 @@ static int get_value(struct parse_opt_ctx_t *p,
- 	if (opt->flags & PARSE_OPT_DISABLED)
- 		return opterror(opt, "is not usable", flags);
- 
-+	if (opt->flags & PARSE_OPT_EXCLUSIVE) {
-+		if (p->excl_opt) {
-+			char msg[128];
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 855cbfc3725c..bf5bf858b7f6 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -117,6 +117,9 @@ int __thread__set_comm(struct thread *thread, const char *str, u64 timestamp,
+ 		if (!new)
+ 			return -ENOMEM;
+ 		list_add(&new->list, &thread->comm_list);
 +
-+			if (((flags & OPT_SHORT) && p->excl_opt->short_name) ||
-+			    p->excl_opt->long_name == NULL) {
-+				scnprintf(msg, sizeof(msg), "cannot be used with switch `%c'",
-+					  p->excl_opt->short_name);
-+			} else {
-+				scnprintf(msg, sizeof(msg), "cannot be used with %s",
-+					  p->excl_opt->long_name);
-+			}
-+			opterror(opt, msg, flags);
-+			return -3;
-+		}
-+		p->excl_opt = opt;
-+	}
- 	if (!(flags & OPT_SHORT) && p->opt) {
- 		switch (opt->type) {
- 		case OPTION_CALLBACK:
-@@ -345,13 +362,14 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		       const char * const usagestr[])
- {
- 	int internal_help = !(ctx->flags & PARSE_OPT_NO_INTERNAL_HELP);
-+	int excl_short_opt = 1;
-+	const char *arg;
- 
- 	/* we must reset ->opt, unknown short option leave it dangling */
- 	ctx->opt = NULL;
- 
- 	for (; ctx->argc; ctx->argc--, ctx->argv++) {
--		const char *arg = ctx->argv[0];
--
-+		arg = ctx->argv[0];
- 		if (*arg != '-' || !arg[1]) {
- 			if (ctx->flags & PARSE_OPT_STOP_AT_NON_OPTION)
- 				break;
-@@ -360,19 +378,21 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 		}
- 
- 		if (arg[1] != '-') {
--			ctx->opt = arg + 1;
-+			ctx->opt = ++arg;
- 			if (internal_help && *ctx->opt == 'h')
- 				return usage_with_options_internal(usagestr, options, 0);
- 			switch (parse_short_opt(ctx, options)) {
- 			case -1:
--				return parse_options_usage(usagestr, options, arg + 1, 1);
-+				return parse_options_usage(usagestr, options, arg, 1);
- 			case -2:
- 				goto unknown;
-+			case -3:
-+				goto exclusive;
- 			default:
- 				break;
- 			}
- 			if (ctx->opt)
--				check_typos(arg + 1, options);
-+				check_typos(arg, options);
- 			while (ctx->opt) {
- 				if (internal_help && *ctx->opt == 'h')
- 					return usage_with_options_internal(usagestr, options, 0);
-@@ -389,6 +409,8 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 					ctx->argv[0] = strdup(ctx->opt - 1);
- 					*(char *)ctx->argv[0] = '-';
- 					goto unknown;
-+				case -3:
-+					goto exclusive;
- 				default:
- 					break;
- 				}
-@@ -404,19 +426,23 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
- 			break;
- 		}
- 
--		if (internal_help && !strcmp(arg + 2, "help-all"))
-+		arg += 2;
-+		if (internal_help && !strcmp(arg, "help-all"))
- 			return usage_with_options_internal(usagestr, options, 1);
--		if (internal_help && !strcmp(arg + 2, "help"))
-+		if (internal_help && !strcmp(arg, "help"))
- 			return usage_with_options_internal(usagestr, options, 0);
--		if (!strcmp(arg + 2, "list-opts"))
-+		if (!strcmp(arg, "list-opts"))
- 			return PARSE_OPT_LIST_OPTS;
--		if (!strcmp(arg + 2, "list-cmds"))
-+		if (!strcmp(arg, "list-cmds"))
- 			return PARSE_OPT_LIST_SUBCMDS;
--		switch (parse_long_opt(ctx, arg + 2, options)) {
-+		switch (parse_long_opt(ctx, arg, options)) {
- 		case -1:
--			return parse_options_usage(usagestr, options, arg + 2, 0);
-+			return parse_options_usage(usagestr, options, arg, 0);
- 		case -2:
- 			goto unknown;
-+		case -3:
-+			excl_short_opt = 0;
-+			goto exclusive;
- 		default:
- 			break;
- 		}
-@@ -428,6 +454,17 @@ unknown:
- 		ctx->opt = NULL;
++		if (exec)
++			unwind__flush_access(thread);
  	}
- 	return PARSE_OPT_DONE;
-+
-+exclusive:
-+	parse_options_usage(usagestr, options, arg, excl_short_opt);
-+	if ((excl_short_opt && ctx->excl_opt->short_name) ||
-+	    ctx->excl_opt->long_name == NULL) {
-+		char opt = ctx->excl_opt->short_name;
-+		parse_options_usage(NULL, options, &opt, 1);
-+	} else {
-+		parse_options_usage(NULL, options, ctx->excl_opt->long_name, 0);
-+	}
-+	return PARSE_OPT_HELP;
+ 
+ 	thread->comm_set = true;
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index 3e1fa7f8776c..371219a6daf1 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -538,11 +538,23 @@ int unwind__prepare_access(struct thread *thread)
+ 		return -ENOMEM;
+ 	}
+ 
++	unw_set_caching_policy(addr_space, UNW_CACHE_GLOBAL);
+ 	thread__set_priv(thread, addr_space);
+ 
+ 	return 0;
  }
  
- int parse_options_end(struct parse_opt_ctx_t *ctx)
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index b7c80dbc7627..97b153fb4999 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -39,6 +39,7 @@ enum parse_opt_option_flags {
- 	PARSE_OPT_HIDDEN  = 8,
- 	PARSE_OPT_LASTARG_DEFAULT = 16,
- 	PARSE_OPT_DISABLED = 32,
-+	PARSE_OPT_EXCLUSIVE = 64,
- };
++void unwind__flush_access(struct thread *thread)
++{
++	unw_addr_space_t addr_space;
++
++	if (callchain_param.record_mode != CALLCHAIN_DWARF)
++		return;
++
++	addr_space = thread__priv(thread);
++	unw_flush_cache(addr_space, 0, 0);
++}
++
+ void unwind__finish_access(struct thread *thread)
+ {
+ 	unw_addr_space_t addr_space;
+diff --git a/tools/perf/util/unwind.h b/tools/perf/util/unwind.h
+index 412fd7975bdc..12790cf94618 100644
+--- a/tools/perf/util/unwind.h
++++ b/tools/perf/util/unwind.h
+@@ -22,6 +22,7 @@ int unwind__get_entries(unwind_entry_cb_t cb, void *arg,
+ #ifdef HAVE_LIBUNWIND_SUPPORT
+ int libunwind__arch_reg_id(int regnum);
+ int unwind__prepare_access(struct thread *thread);
++void unwind__flush_access(struct thread *thread);
+ void unwind__finish_access(struct thread *thread);
+ #else
+ static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
+@@ -29,6 +30,7 @@ static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
+ 	return 0;
+ }
  
- struct option;
-@@ -174,6 +175,7 @@ struct parse_opt_ctx_t {
- 	const char **out;
- 	int argc, cpidx;
- 	const char *opt;
-+	const struct option *excl_opt;
- 	int flags;
- };
++static inline void unwind__flush_access(struct thread *thread __maybe_unused) {}
+ static inline void unwind__finish_access(struct thread *thread __maybe_unused) {}
+ #endif
+ #else
+@@ -47,6 +49,7 @@ static inline int unwind__prepare_access(struct thread *thread __maybe_unused)
+ 	return 0;
+ }
  
++static inline void unwind__flush_access(struct thread *thread __maybe_unused) {}
+ static inline void unwind__finish_access(struct thread *thread __maybe_unused) {}
+ #endif /* HAVE_DWARF_UNWIND_SUPPORT */
+ #endif /* __UNWIND_H */
 -- 
 1.9.3
 
