@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933526AbaJ1Hgp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:36:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44865 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932101AbaJ1Dkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932102AbaJ1Dkx (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 27 Oct 2014 23:40:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44849 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754958AbaJ1Dkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 23:40:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Larsson <andreas@gaisler.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 125/146] sparc: Let memset return the address argument
-Date: Tue, 28 Oct 2014 11:34:27 +0800
-Message-Id: <20141028033348.866983895@linuxfoundation.org>
+        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 122/146] sparc64: Fix corrupted thread fault code.
+Date: Tue, 28 Oct 2014 11:34:24 +0800
+Message-Id: <20141028033348.737292192@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,75 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Larsson <andreas@gaisler.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 74cad25c076a2f5253312c2fe82d1a4daecc1323 ]
+[ Upstream commit 84bd6d8b9c0f06b3f188efb479c77e20f05e9a8a ]
 
-This makes memset follow the standard (instead of returning 0 on success). This
-is needed when certain versions of gcc optimizes around memset calls and assume
-that the address argument is preserved in %o0.
+Every path that ends up at do_sparc64_fault() must install a valid
+FAULT_CODE_* bitmask in the per-thread fault code byte.
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+Two paths leading to the label winfix_trampoline (which expects the
+FAULT_CODE_* mask in register %g4) were not doing so:
+
+1) For pre-hypervisor TLB protection violation traps, if we took
+   the 'winfix_trampoline' path we wouldn't have %g4 initialized
+   with the FAULT_CODE_* value yet.  Resulting in using the
+   TLB_TAG_ACCESS register address value instead.
+
+2) In the TSB miss path, when we notice that we are going to use a
+   hugepage mapping, but we haven't allocated the hugepage TSB yet, we
+   still have to take the window fixup case into consideration and
+   in that particular path we leave %g4 not setup properly.
+
+Errors on this sort were largely invisible previously, but after
+commit 4ccb9272892c33ef1c19a783cfa87103b30c2784 ("sparc64: sun4v TLB
+error power off events") we now have a fault_code mask bit
+(FAULT_CODE_BAD_RA) that triggers due to this bug.
+
+FAULT_CODE_BAD_RA triggers because this bit is set in TLB_TAG_ACCESS
+(see #1 above) and thus we get seemingly random bus errors triggered
+for user processes.
+
+Fixes: 4ccb9272892c ("sparc64: sun4v TLB error power off events")
+Reported-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/lib/memset.S |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ arch/sparc/kernel/dtlb_prot.S |    6 +++---
+ arch/sparc/kernel/tsb.S       |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/arch/sparc/lib/memset.S
-+++ b/arch/sparc/lib/memset.S
-@@ -3,8 +3,9 @@
-  * Copyright (C) 1996,1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
-  * Copyright (C) 1996 David S. Miller (davem@caip.rutgers.edu)
-  *
-- * Returns 0, if ok, and number of bytes not yet set if exception
-- * occurs and we were called as clear_user.
-+ * Calls to memset returns initial %o0. Calls to bzero returns 0, if ok, and
-+ * number of bytes not yet set if exception occurs and we were called as
-+ * clear_user.
-  */
+--- a/arch/sparc/kernel/dtlb_prot.S
++++ b/arch/sparc/kernel/dtlb_prot.S
+@@ -24,11 +24,11 @@
+ 	mov		TLB_TAG_ACCESS, %g4		! For reload of vaddr
  
- #include <asm/ptrace.h>
-@@ -65,6 +66,8 @@ __bzero_begin:
- 	.globl	__memset_start, __memset_end
- __memset_start:
- memset:
-+	mov	%o0, %g1
-+	mov	1, %g4
- 	and	%o1, 0xff, %g3
- 	sll	%g3, 8, %g2
- 	or	%g3, %g2, %g3
-@@ -89,6 +92,7 @@ memset:
- 	 sub	%o0, %o2, %o0
+ /* PROT ** ICACHE line 2: More real fault processing */
++	ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
+ 	bgu,pn		%xcc, winfix_trampoline		! Yes, perform winfixup
+-	 ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
+-	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
+ 	 mov		FAULT_CODE_DTLB | FAULT_CODE_WRITE, %g4
+-	nop
++	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
++	 nop
+ 	nop
+ 	nop
+ 	nop
+--- a/arch/sparc/kernel/tsb.S
++++ b/arch/sparc/kernel/tsb.S
+@@ -162,10 +162,10 @@ tsb_miss_page_table_walk_sun4v_fastpath:
+ 	nop
+ 	.previous
  
- __bzero:
-+	clr	%g4
- 	mov	%g0, %g3
- 1:
- 	cmp	%o1, 7
-@@ -151,8 +155,8 @@ __bzero:
- 	bne,a	8f
- 	 EX(stb	%g3, [%o0], and %o1, 1)
- 8:
--	retl
--	 clr	%o0
-+	b	0f
-+	 nop
- 7:
- 	be	13b
- 	 orcc	%o1, 0, %g0
-@@ -164,6 +168,12 @@ __bzero:
- 	bne	8b
- 	 EX(stb	%g3, [%o0 - 1], add %o1, 1)
- 0:
-+	andcc	%g4, 1, %g0
-+	be	5f
-+	 nop
-+	retl
-+	 mov	%g1, %o0
-+5:
- 	retl
- 	 clr	%o0
- __memset_end:
+-	rdpr	%tl, %g3
+-	cmp	%g3, 1
++	rdpr	%tl, %g7
++	cmp	%g7, 1
+ 	bne,pn	%xcc, winfix_trampoline
+-	 nop
++	 mov	%g3, %g4
+ 	ba,pt	%xcc, etrap
+ 	 rd	%pc, %g7
+ 	call	hugetlb_setup
 
 
