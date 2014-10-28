@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaJ1Dq2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:46:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45502 "EHLO
+	id S932605AbaJ1DqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:46:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45493 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932587AbaJ1DqY (ORCPT
+	with ESMTP id S932162AbaJ1DqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:46:24 -0400
+	Mon, 27 Oct 2014 23:46:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Allen Pais <allen.pais@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 113/127] sparc64: support M6 and M7 for building CPU distribution map
-Date: Tue, 28 Oct 2014 11:35:48 +0800
-Message-Id: <20141028033425.789687132@linuxfoundation.org>
+        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.16 110/127] sparc64: Do not define thread fpregs save area as zero-length array.
+Date: Tue, 28 Oct 2014 11:35:45 +0800
+Message-Id: <20141028033425.667041969@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,27 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Allen Pais <allen.pais@oracle.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-Add M6 and M7 chip type in cpumap.c to correctly build CPU distribution map that spans all online CPUs.
+[ Upstream commit e2653143d7d79a49f1a961aeae1d82612838b12c ]
 
-Signed-off-by: Allen Pais <allen.pais@oracle.com>
+This breaks the stack end corruption detection facility.
+
+What that facility does it write a magic value to "end_of_stack()"
+and checking to see if it gets overwritten.
+
+"end_of_stack()" is "task_thread_info(p) + 1", which for sparc64 is
+the beginning of the FPU register save area.
+
+So once the user uses the FPU, the magic value is overwritten and the
+debug checks trigger.
+
+Fix this by making the size explicit.
+
+Due to the size we use for the fpsaved[], gsr[], and xfsr[] arrays we
+are limited to 7 levels of FPU state saves.  So each FPU register set
+is 256 bytes, allocate 256 * 7 for the fpregs area.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/cpumap.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/include/asm/thread_info_64.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/cpumap.c
-+++ b/arch/sparc/kernel/cpumap.c
-@@ -326,6 +326,8 @@ static int iterate_cpu(struct cpuinfo_tr
- 	case SUN4V_CHIP_NIAGARA3:
- 	case SUN4V_CHIP_NIAGARA4:
- 	case SUN4V_CHIP_NIAGARA5:
-+	case SUN4V_CHIP_SPARC_M6:
-+	case SUN4V_CHIP_SPARC_M7:
- 	case SUN4V_CHIP_SPARC64X:
- 		rover_inc_table = niagara_iterate_method;
- 		break;
+--- a/arch/sparc/include/asm/thread_info_64.h
++++ b/arch/sparc/include/asm/thread_info_64.h
+@@ -63,7 +63,8 @@ struct thread_info {
+ 	struct pt_regs		*kern_una_regs;
+ 	unsigned int		kern_una_insn;
+ 
+-	unsigned long		fpregs[0] __attribute__ ((aligned(64)));
++	unsigned long		fpregs[(7 * 256) / sizeof(unsigned long)]
++		__attribute__ ((aligned(64)));
+ };
+ 
+ #endif /* !(__ASSEMBLY__) */
 
 
