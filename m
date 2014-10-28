@@ -1,114 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934086AbaJ1DxL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:53:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47013 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933893AbaJ1Dwu (ORCPT
+	id S1753269AbaJ1EU4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:20:56 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:7656 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076AbaJ1EUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:50 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chao Yu <chao2.yu@samsung.com>, Tyler Hicks <tyhicks@canonical.com>
-Subject: [PATCH 3.10 43/43] ecryptfs: avoid to access NULL pointer when write metadata in xattr
-Date: Tue, 28 Oct 2014 11:36:41 +0800
-Message-Id: <20141028033525.264238123@linuxfoundation.org>
+	Tue, 28 Oct 2014 00:20:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 27 Oct 2014 21:20:13 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <devicetree@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] Documentation: gpio: guidelines for bindings
+Date: Tue, 28 Oct 2014 13:20:34 +0900
+Message-ID: <1414470034-16143-1-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Now that ACPI supports named GPIO properties, either through ACPI 5.1 or
+the per-driver ACPI GPIO mappings, we can be more narrow about the way
+GPIOs should be specified in Device Tree bindings.
 
-------------------
+This patch updates the GPIO DT bindings documentation to highlight the
+following rules for new GPIO bindings:
 
-From: Chao Yu <chao2.yu@samsung.com>
+- All new bindings must have a meaningful name (e.g. the "gpios"
+  property must not be used)
+- The only suffix allowed is "-gpios", no matter the number of
+  descriptors in the property
+- GPIOs can only be grouped under the same property when they serve the
+  same purpose, a case that should remain exceptional (e.g. bit-banged
+  data lines).
 
-commit 35425ea2492175fd39f6116481fe98b2b3ddd4ca upstream.
-
-Christopher Head 2014-06-28 05:26:20 UTC described:
-"I tried to reproduce this on 3.12.21. Instead, when I do "echo hello > foo"
-in an ecryptfs mount with ecryptfs_xattr specified, I get a kernel crash:
-
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-PGD d7840067 PUD b2c3c067 PMD 0
-Oops: 0002 [#1] SMP
-Modules linked in: nvidia(PO)
-CPU: 3 PID: 3566 Comm: bash Tainted: P           O 3.12.21-gentoo-r1 #2
-Hardware name: ASUSTek Computer Inc. G60JX/G60JX, BIOS 206 03/15/2010
-task: ffff8801948944c0 ti: ffff8800bad70000 task.ti: ffff8800bad70000
-RIP: 0010:[<ffffffff8110eb39>]  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-RSP: 0018:ffff8800bad71c10  EFLAGS: 00010246
-RAX: 00000000000181a4 RBX: ffff880198648480 RCX: 0000000000000000
-RDX: 0000000000000004 RSI: ffff880172010450 RDI: 0000000000000000
-RBP: ffff880198490e40 R08: 0000000000000000 R09: 0000000000000000
-R10: ffff880172010450 R11: ffffea0002c51e80 R12: 0000000000002000
-R13: 000000000000001a R14: 0000000000000000 R15: ffff880198490e40
-FS:  00007ff224caa700(0000) GS:ffff88019fcc0000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000000bb07f000 CR4: 00000000000007e0
-Stack:
-ffffffff811826e8 ffff8800a39d8000 0000000000000000 000000000000001a
-ffff8800a01d0000 ffff8800a39d8000 ffffffff81185fd5 ffffffff81082c2c
-00000001a39d8000 53d0abbc98490e40 0000000000000037 ffff8800a39d8220
-Call Trace:
-[<ffffffff811826e8>] ? ecryptfs_setxattr+0x40/0x52
-[<ffffffff81185fd5>] ? ecryptfs_write_metadata+0x1b3/0x223
-[<ffffffff81082c2c>] ? should_resched+0x5/0x23
-[<ffffffff8118322b>] ? ecryptfs_initialize_file+0xaf/0xd4
-[<ffffffff81183344>] ? ecryptfs_create+0xf4/0x142
-[<ffffffff810f8c0d>] ? vfs_create+0x48/0x71
-[<ffffffff810f9c86>] ? do_last.isra.68+0x559/0x952
-[<ffffffff810f7ce7>] ? link_path_walk+0xbd/0x458
-[<ffffffff810fa2a3>] ? path_openat+0x224/0x472
-[<ffffffff810fa7bd>] ? do_filp_open+0x2b/0x6f
-[<ffffffff81103606>] ? __alloc_fd+0xd6/0xe7
-[<ffffffff810ee6ab>] ? do_sys_open+0x65/0xe9
-[<ffffffff8157d022>] ? system_call_fastpath+0x16/0x1b
-RIP  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-RSP <ffff8800bad71c10>
-CR2: 0000000000000000
----[ end trace df9dba5f1ddb8565 ]---"
-
-If we create a file when we mount with ecryptfs_xattr_metadata option, we will
-encounter a crash in this path:
-->ecryptfs_create
-  ->ecryptfs_initialize_file
-    ->ecryptfs_write_metadata
-      ->ecryptfs_write_metadata_to_xattr
-        ->ecryptfs_setxattr
-          ->fsstack_copy_attr_all
-It's because our dentry->d_inode used in fsstack_copy_attr_all is NULL, and it
-will be initialized when ecryptfs_initialize_file finish.
-
-So we should skip copying attr from lower inode when the value of ->d_inode is
-invalid.
-
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+CC: Linus Walleij <linus.walleij@linaro.org>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Rafael J. Wysocki <rjw@rjwysocki.net>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- fs/ecryptfs/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/devicetree/bindings/gpio/gpio.txt | 41 +++++++++++++++++--------
+ 1 file changed, 29 insertions(+), 12 deletions(-)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -1051,7 +1051,7 @@ ecryptfs_setxattr(struct dentry *dentry,
- 	}
+diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
+index 3fb8f53071b8..1043f8b47433 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+@@ -13,13 +13,23 @@ properties, each containing a 'gpio-list':
+ 	gpio-specifier : Array of #gpio-cells specifying specific gpio
+ 			 (controller specific)
  
- 	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
--	if (!rc)
-+	if (!rc && dentry->d_inode)
- 		fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
- out:
- 	return rc;
-
+-GPIO properties should be named "[<name>-]gpios". The exact
+-meaning of each gpios property must be documented in the device tree
++GPIO properties should be named "[<name>-]gpios", with <name> being the con_id
++argument that is passed to gpiod_get(). While a NULL con_id is accepted by the
++GPIO API for compatibility reasons (resolving to the "gpios" property), it is
++not allowed for new bindings.
++
++GPIO properties can contain one or more GPIO phandles, but only in exceptional
++cases should they contain more than one. If your device uses several GPIOs with
++distinct functions, reference each of them under its own property, giving it a
++meaningful name. The only case where an array of GPIOs is accepted is when
++several GPIOs serve the same function (e.g. a parallel data line). In that case
++individual GPIOs can be retrieved using gpiod_get_index().
++
++The exact meaning of each gpios property must be documented in the device tree
+ binding for each device.
+ 
+ For example, the following could be used to describe GPIO pins used
+-as chip select lines; with chip selects 0, 1 and 3 populated, and chip
+-select 2 left empty:
++as device enable and bit-banged data signals:
+ 
+ 	gpio1: gpio1 {
+ 		gpio-controller
+@@ -30,10 +40,16 @@ select 2 left empty:
+ 		 #gpio-cells = <1>;
+ 	};
+ 	[...]
+-	 chipsel-gpios = <&gpio1 12 0>,
+-			 <&gpio1 13 0>,
+-			 <0>, /* holes are permitted, means no GPIO 2 */
+-			 <&gpio2 2>;
++
++	enable-gpios = <&gpio2 2>;
++	data-gpios = <&gpio1 12 0>,
++		     <&gpio1 13 0>,
++		     <&gpio1 14 0>,
++		     <&gpio1 15 0>;
++
++The "enable" GPIO can then be retrieved using gpiod_get(dev, "enable", ...),
++and the data GPIOs are reached by calling gpiod_get_index(dev, "data", idx, ...)
++where idx can go from 0 to 3 included.
+ 
+ Note that gpio-specifier length is controller dependent.  In the
+ above example, &gpio1 uses 2 cells to specify a gpio, while &gpio2
+@@ -42,16 +58,17 @@ only uses one.
+ gpio-specifier may encode: bank, pin position inside the bank,
+ whether pin is open-drain and whether pin is logically inverted.
+ Exact meaning of each specifier cell is controller specific, and must
+-be documented in the device tree binding for the device.
++be documented in the device tree binding for the device. Use the macros
++defined in include/dt-bindings/gpio/gpio.h whenever possible:
+ 
+ Example of a node using GPIOs:
+ 
+ 	node {
+-		gpios = <&qe_pio_e 18 0>;
++		enable-gpios = <&qe_pio_e 18 GPIO_ACTIVE_HIGH>;
+ 	};
+ 
+-In this example gpio-specifier is "18 0" and encodes GPIO pin number,
+-and GPIO flags as accepted by the "qe_pio_e" gpio-controller.
++GPIO_ACTIVE_HIGH is 0, so in this example gpio-specifier is "18 0" and encodes
++GPIO pin number, and GPIO flags as accepted by the "qe_pio_e" gpio-controller.
+ 
+ 1.1) GPIO specifier best practices
+ ----------------------------------
+-- 
+2.1.2
 
