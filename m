@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439AbaJ1Ooj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 10:44:39 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:36408 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198AbaJ1Ooh (ORCPT
+	id S1752462AbaJ1Ots (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 10:49:48 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:43778 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810AbaJ1Otq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 10:44:37 -0400
+	Tue, 28 Oct 2014 10:49:46 -0400
+Date: Tue, 28 Oct 2014 15:49:33 +0100
+From: Johan Hedberg <johan.hedberg@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Gustavo Padovan <gustavo@padovan.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, marcel@holtmann.org
+Subject: Re: linux-next: build failure after merge of the bluetooth tree
+Message-ID: <20141028144933.GA22555@t440s>
+References: <20141027131956.68b62e5e@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1413472164-22366-1-git-send-email-standby24x7@gmail.com>
-References: <1413472164-22366-1-git-send-email-standby24x7@gmail.com>
-Date: Tue, 28 Oct 2014 15:44:37 +0100
-Message-ID: <CACRpkdbALMZvLT+h1YswhsBWdYU-MY-eCVPndWndbARCoaF7gg@mail.gmail.com>
-Subject: Re: [PATCH] [trivial] treewide: Fix company name in module descriptions
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Jiri Kosina <trivial@kernel.org>, Alexandre Courbot <gnurou@gmail.com>,
-        jcliburn@gmail.com, chris.snook@gmail.com,
-        Viresh Kumar <viresh.linux@gmail.com>, inki.dae@samsung.com,
-        leedonghwa <dh09.lee@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027131956.68b62e5e@canb.auug.org.au>
+Organization: Intel Finland Oy - BIC 0357606-4 - PL 281, 00181 Helsinki
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 16, 2014 at 5:09 PM, Masanari Iida <standby24x7@gmail.com> wrote:
+Hi Stephen,
 
-> This patch fix company name's spelling typo in module descriptions
-> and a Kconfig.
->
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+On Mon, Oct 27, 2014, Stephen Rothwell wrote:
+> After merging the bluetooth tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> net/bluetooth/smp.o: In function `test_smp':
+> smp.c:(.init.text+0x0): multiple definition of `init_module'
+> net/bluetooth/af_bluetooth.o:af_bluetooth.c:(.init.text+0x0): first defined here
+> 
+> Probably caused by commit 4cd3362da899 ("Bluetooth: Add skeleton for
+> SMP self-tests").
+> 
+> I have used the bluetooth tree from next-20141023 for today.
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+We've applied a revert patch for the SMP self-tests to the
+bluetooth-next tree until we figure out how to fix this properly.
 
-Yours,
-Linus Walleij
+Johan
