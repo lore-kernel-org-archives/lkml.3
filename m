@@ -1,73 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446AbaJ1W2X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:28:23 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:27979 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703AbaJ1W2P (ORCPT
+	id S1755380AbaJ1W2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:28:10 -0400
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:46974 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241AbaJ1W2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:28:15 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1++NKS4zJqByGl9DnZe2pBY
-Date: Tue, 28 Oct 2014 15:26:41 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
-        sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
-Subject: Re: USB Ethernet gadget on Nokia n900
-Message-ID: <20141028222641.GW2542@atomide.com>
-References: <20141019090107.GA19132@amd>
- <201410262222.39892@pali>
- <20141026215548.GA9004@amd>
- <201410262323.17891@pali>
- <20141027195209.GP2560@atomide.com>
- <20141027223114.GU2560@atomide.com>
- <20141028220450.GA27667@amd>
- <20141028222123.GA17518@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028222123.GA17518@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 28 Oct 2014 18:28:01 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH RESEND V4 1/9] of: Add NVIDIA Tegra XUSB mailbox binding
+Date: Tue, 28 Oct 2014 15:27:48 -0700
+Message-Id: <1414535277-15645-2-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
+References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pavel Machek <pavel@ucw.cz> [141028 15:22]:
-> On Tue 2014-10-28 23:04:50, Pavel Machek wrote:
-> > Hi!
-> > 
-> > > Here's a patch that should fix the issues for built-in USB
-> > > gadgets.
-> > > 
-> > > Pavel, care to see if this gets NFSroot over USB working again
-> > > for you?
-> > 
-> > It seems to have did the trick for me. (Plus I needed to add
-> > 
-> > +CONFIG_ARM_ATAG_DTB_COMPAT=y
-> > +CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER=y
-> > +# CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND is not set
-> > 
-> > to be able to control the command line, that's why testing took me a
-> > while.)
-> > 
-> > Networking now works against 3.17-based kernel. Thanks!
-> 
-> It works on 3.18-rc1 kernel, too. (I had to hand-modify patch to apply
-> to 3.17, no changes needed for 3.18-rc1.)
-> 
-> Tested-by: Pavel Machek <pavel@ucw.cz>
+Add device-tree bindings for the Tegra XUSB mailbox which will be used
+for communication between the Tegra xHCI controller's firmware and the
+host processor.
 
-Whatever we decice to do to fix this regression, it should probably
-be backported to at least v3.16 stable for distro use, maybe earlier
-too. I'd assume this is broken on multiple platforms currently.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+No changes from v3.
+Changes from v2:
+ - Dropped channel specifier.
+ - Added pointer to mailbox documentation.
+Changes from v1:
+ - Updated to use common mailbox bindings.
+---
+ .../bindings/mailbox/nvidia,tegra124-xusb-mbox.txt | 32 ++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
 
-Regards,
+diff --git a/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt b/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
+new file mode 100644
+index 0000000..b35ea6e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
+@@ -0,0 +1,32 @@
++NVIDIA Tegra XUSB mailbox
++=========================
++
++The Tegra XUSB mailbox is used by the Tegra xHCI controller's firmware to
++communicate requests to the host and PHY drivers.
++
++Refer to ./mailbox.txt for generic information about mailbox device-tree
++bindings.
++
++Required properties:
++--------------------
++ - compatible: Should be "nvidia,tegra124-xusb-mbox".
++ - reg: Address and length of the XUSB FPCI registers.
++ - interrupts: XUSB mailbox interrupt.
++ - #mbox-cells: Should be 0.  There is only one physical channel.
++
++Example:
++--------
++	xusb_mbox: mailbox@0,70098000 {
++		compatible = "nvidia,tegra124-xusb-mbox";
++		reg = <0x0 0x70098000 0x0 0x1000>;
++		interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
++
++		#mbox-cells = <0>;
++	};
++
++	usb@0,70090000 {
++		...
++		mboxes = <&xusb_mbox>;
++		mbox-names = "xusb";
++		...
++	};
+-- 
+2.1.0.rc2.206.gedb03e5
 
-Tony
