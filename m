@@ -1,81 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710AbaJ1Pav (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:30:51 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:58363 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625AbaJ1Pas (ORCPT
+	id S1754476AbaJ1PcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:32:13 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49423 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaJ1PcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:30:48 -0400
+	Tue, 28 Oct 2014 11:32:11 -0400
+Date: Tue, 28 Oct 2014 16:32:07 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Marc Zyngier <marc.zyngier@arm.com>
+cc: Jason Cooper <jason@lakedaemon.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/3] genirq: Add support for priority-drop/deactivate
+ interrupt controllers
+In-Reply-To: <544E67D8.3020504@arm.com>
+Message-ID: <alpine.DEB.2.11.1410272158160.5308@nanos>
+References: <1414235215-10468-1-git-send-email-marc.zyngier@arm.com> <1414235215-10468-2-git-send-email-marc.zyngier@arm.com> <alpine.DEB.2.11.1410252144170.5308@nanos> <544E67D8.3020504@arm.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <1414496662-25202-2-git-send-email-will.deacon@arm.com>
-References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
-	<1414496662-25202-2-git-send-email-will.deacon@arm.com>
-Date: Tue, 28 Oct 2014 08:30:43 -0700
-X-Google-Sender-Auth: GkmAzeg4BdIq30nRLBmOZQPPOnU
-Message-ID: <CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
- after TLB batching faiure
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 4:44 AM, Will Deacon <will.deacon@arm.com> wrote:
->
-> This patch fixes the problem by incrementing addr by the PAGE_SIZE
-> before breaking out of the loop on batch failure.
+On Mon, 27 Oct 2014, Marc Zyngier wrote:
+> On 25/10/14 21:27, Thomas Gleixner wrote:
+> > On Sat, 25 Oct 2014, Marc Zyngier wrote:
+> >> +{
+> >> +	struct irq_chip *chip = desc->irq_data.chip;
+> >> +
+> >> +	/* If we can do priority drop, then masking comes for free */
+> >> +	if (chip->irq_priority_drop)
+> >> +		irq_state_set_masked(desc);
+> >> +	else
+> >> +		mask_irq(desc);
+> >> +}
+> > 
+> >>  void unmask_irq(struct irq_desc *desc)
+> >>  {
+> >> -	if (desc->irq_data.chip->irq_unmask) {
+> >> -		desc->irq_data.chip->irq_unmask(&desc->irq_data);
+> >> +	struct irq_chip *chip = desc->irq_data.chip;
+> >> +
+> >> +	if (chip->irq_unmask && !chip->irq_priority_drop)
+> >> +		chip->irq_unmask(&desc->irq_data);
+> > 
+> > I have a hard time to understand that logic. Assume the interrupt
+> > being masked at the hardware level after boot. Now at request_irq()
+> > time what is going to unmask that very interrupt? Ditto for masking
+> > after disable_irq(). Probably not what you really want.
+> 
+> Peering at the code (and assuming I'm finally awake), request_irq() uses
+> irq_startup() -> irq_enable() -> chip->irq_unmask().
 
-This patch seems harmless and right, unlike the other one.
+Right. That's the default implementation.
 
-I'd be ok with changing the *generic* code to do the "update start/end
-pointers in the mmu_gather structure", but then it really has to be
-done in *generic* code. Move your arm64 start/end updates to
-include/asm-generic/tlb.h, and change the initialization of start/end
-entirely. Right now we initialize those things to the maximal range
-(see tlb_gather_mmu()), and the arm64 logic seems to be to initialize
-them to TASK_SIZE/0 respectively and then update start/end as you add
-pages, so that you get the minimal range.
+> But you're perfectly right, it breaks an independent use of
+> unmask_irq(), which is pretty bad.
 
-But because of this arm64 confusion (the "minimal range" really is
-*not* how this is designed to work), the current existing
-tlb_gather_mmu() does the wrong initialization.
+Indeed.
+ 
+> >> +static void eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
+> >> +{
+> >> +	if (chip->irq_priority_drop)
+> >> +		chip->irq_priority_drop(&desc->irq_data);
+> >> +	if (chip->irq_eoi)
+> >> +		chip->irq_eoi(&desc->irq_data);
+> >> +}
+> > 
+> > So if you are using that priority drop stuff, you need both calls even
+> > for the non threaded case?
+> 
+> Yes. This is a global property (all interrupt lines for this irqchip are
+> affected), so even the non-threaded case has to issue both calls.
 
-In other words: my argument is that right now the arm64 code is just
-*wrong*. I'd be ok with making it the right thing to do, but if so, it
-needs to be made generic.
+Ok.
+ 
+> > Can you please explain detailed how this "priority drop" mode
+> > works? 
+> 
+> The basics of this mode are pretty simple:
+> - Interrupt signalled, CPU enter the GIC code
+> - Read the IAR register, interrupt becomes active:
+>   -> no other interrupt can be taken
+> - Run whatever interrupt handler
+> - Write to the EOI register:
+>   -> interrupt is still active, and cannot be taken again, but other
+> interrupts can now be taken
+> - Write to the DIR register:
+>   -> interrupt is now inactive, and can be taken again.
+> 
+> A few interesting things here:
+> - EOI (which causes priority drop) acts as a mask
+> - DIR (which causes deactivate) acts as unmask+EOI
 
-Are there any actual advantages to teh whole "minimal range" model? It
-adds overhead and complexity, and the only case where it would seem to
-be worth it is for benchmarks that do mmap/munmap in a loop and then
-only map a single page. Normal loads don't tend to have those kinds of
-"minimal range is very different from whole range" cases. Do you have
-a real case for why it does that minimal range thing.
+Let me make a few assumptions and correct me if I'm wrong as usual.
 
-Because if you don't have a real case, I'd really suggest you get rid
-of all the arm64 games with start/end. That still leaves this one
-patch the correct thing to do (because even without the start/end
-games the "need_flush" flag goes with the range, but it makes the
-second patch a complete non-issue.
+1) The startup/shutdown procedure for such an interrupt is the
+   expensive mask/unmask which you want to avoid for the actual
+   handling case
 
-If you *do* have a real case, I think you need to modify your second patch to:
+2) In case of an actual interrupt the flow (ignoring locking) is:
 
- - move the arm start/end updates from tlb_flush/tlb_add_flush to asm-generic
+   handle_xxx_irq()
 
- - make tlb_gather_mmu() initialize start/end to TASK_SIZE/0 the same
-way your tlb_flush does (so that the subsequent min/max games work).
+	mask_irq();	/* chip->irq_mask() maps to EOI */
 
-so that *everybody* does the start/end games. I'd be ok with that.
-What I'm not ok with is arm64 using the generic TLB gather way in odd
-ways that then breaks code and results in things like your 2/2 patch
-that fixes ARM64 but breaks x86.
+	if (!action || irq_disabled())
+	   return;
 
-Hmm? Is there something I'm missing?
+	handle_actions();
 
-                         Linus
+	if (irq_threads_active() || irq_disabled())
+	   return;
+
+	unmask_irq();	/* chip->irq_unmask() maps to DIR */
+
+  So that is handle_level_irq() with the chip callbacks being:
+
+   irq_startup  = gic_unmask
+   irq_shutdown = gic_mask
+   irq_unmask	= gic_dir
+   irq_mask	= gic_eoi
+
+3) In the threaded case as seen above finalize_oneshot() will call
+   chip->unmask_irq() which maps to the DIR write and gets things
+   going again.
+
+4) In the lazy irq disable case if the interrupt fires mask_irq()
+   [EOI] is good enough to silence it.
+
+   Though in the enable_irq() case you cannot rely on the automatic
+   resend of the interrupt when you unmask [DIR]. So we need to make
+   sure that even in the level case (dunno whether that's supported in
+   that mode) we end up calling the irq_retrigger() callback. But
+   that's rather simple to achieve with a new chip flag.
+
+You might have to look at the suspend/resume implications, but if I
+did not miss anything crucial that should be fine as well.
+
+Thanks,
+
+	tglx
+
