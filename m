@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389AbaJ1Ql7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:41:59 -0400
-Received: from sauhun.de ([89.238.76.85]:46888 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648AbaJ1Qk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:40:29 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH RESEND 2/4] core: platform: let platform_driver_probe initialize module owner
-Date: Tue, 28 Oct 2014 17:40:41 +0100
-Message-Id: <1414514443-28943-3-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1414514443-28943-1-git-send-email-wsa@the-dreams.de>
-References: <1414514443-28943-1-git-send-email-wsa@the-dreams.de>
+	id S1752562AbaJ1Qn3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:43:29 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:37415 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855AbaJ1Qn1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 12:43:27 -0400
+Date: Tue, 28 Oct 2014 09:43:22 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        Jaewon Kim <jaewon02.kim@samsung.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: max77693-haptic - fix potential overflow
+Message-ID: <20141028164322.GA13234@dtor-ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 9447057eaff8 ("platform_device: use a macro instead of
-platform_driver_register"), platform_driver_register() always overwrites
-the .owner field of a platform_driver with THIS_MODULE. This breaks
-platform_driver_probe() which uses it from within the platform core
-instead of the module init. Fix it by using a similar #define construct
-to obtain THIS_MODULE and pass it on later.
+Expression haptic->pwm_dev->period * haptic->magnitude is of type 'unsigned
+int' and may overflow. We need to convert one of the operands to u64 before
+multiplying, instead of casting result (potentially overflown) to u64.
 
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Reported by Coverity: CID 1248753
+
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- drivers/base/platform.c         | 11 ++++++-----
- include/linux/platform_device.h |  6 ++++--
- 2 files changed, 10 insertions(+), 7 deletions(-)
+ drivers/input/misc/max77693-haptic.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index b2afc29403f9..c87a63326871 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -580,9 +580,10 @@ void platform_driver_unregister(struct platform_driver *drv)
- EXPORT_SYMBOL_GPL(platform_driver_unregister);
- 
- /**
-- * platform_driver_probe - register driver for non-hotpluggable device
-+ * __platform_driver_probe - register driver for non-hotpluggable device
-  * @drv: platform driver structure
-  * @probe: the driver probe routine, probably from an __init section
-+ * @module: module which will be the owner of the driver
-  *
-  * Use this instead of platform_driver_register() when you know the device
-  * is not hotpluggable and has already been registered, and you want to
-@@ -598,8 +599,8 @@ EXPORT_SYMBOL_GPL(platform_driver_unregister);
-  * Returns zero if the driver registered and bound to a device, else returns
-  * a negative error code and with the driver not registered.
-  */
--int __init_or_module platform_driver_probe(struct platform_driver *drv,
--		int (*probe)(struct platform_device *))
-+int __init_or_module __platform_driver_probe(struct platform_driver *drv,
-+		int (*probe)(struct platform_device *), struct module *module)
+diff --git a/drivers/input/misc/max77693-haptic.c b/drivers/input/misc/max77693-haptic.c
+index 7b1fde9..ef6a9d6 100644
+--- a/drivers/input/misc/max77693-haptic.c
++++ b/drivers/input/misc/max77693-haptic.c
+@@ -194,7 +194,7 @@ static int max77693_haptic_play_effect(struct input_dev *dev, void *data,
+ 				       struct ff_effect *effect)
  {
- 	int retval, code;
+ 	struct max77693_haptic *haptic = input_get_drvdata(dev);
+-	uint64_t period_mag_multi;
++	u64 period_mag_multi;
  
-@@ -614,7 +615,7 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
+ 	haptic->magnitude = effect->u.rumble.strong_magnitude;
+ 	if (!haptic->magnitude)
+@@ -205,8 +205,7 @@ static int max77693_haptic_play_effect(struct input_dev *dev, void *data,
+ 	 * The formula to convert magnitude to pwm_duty as follows:
+ 	 * - pwm_duty = (magnitude * pwm_period) / MAX_MAGNITUDE(0xFFFF)
+ 	 */
+-	period_mag_multi = (int64_t)(haptic->pwm_dev->period *
+-						haptic->magnitude);
++	period_mag_multi = (u64)haptic->pwm_dev->period * haptic->magnitude;
+ 	haptic->pwm_duty = (unsigned int)(period_mag_multi >>
+ 						MAX_MAGNITUDE_SHIFT);
  
- 	/* temporary section violation during probe() */
- 	drv->probe = probe;
--	retval = code = platform_driver_register(drv);
-+	retval = code = __platform_driver_register(drv, module);
- 
- 	/*
- 	 * Fixup that section violation, being paranoid about code scanning
-@@ -633,7 +634,7 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
- 		platform_driver_unregister(drv);
- 	return retval;
- }
--EXPORT_SYMBOL_GPL(platform_driver_probe);
-+EXPORT_SYMBOL_GPL(__platform_driver_probe);
- 
- /**
-  * platform_create_bundle - register driver and create corresponding device
-diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
-index 153d303af7eb..c8d95c60da19 100644
---- a/include/linux/platform_device.h
-+++ b/include/linux/platform_device.h
-@@ -197,8 +197,10 @@ extern void platform_driver_unregister(struct platform_driver *);
- /* non-hotpluggable platform devices may use this so that probe() and
-  * its support may live in __init sections, conserving runtime memory.
-  */
--extern int platform_driver_probe(struct platform_driver *driver,
--		int (*probe)(struct platform_device *));
-+#define platform_driver_probe(drv, probe) \
-+	__platform_driver_probe(drv, probe, THIS_MODULE)
-+extern int __platform_driver_probe(struct platform_driver *driver,
-+		int (*probe)(struct platform_device *), struct module *module);
- 
- static inline void *platform_get_drvdata(const struct platform_device *pdev)
- {
 -- 
-2.0.0
+2.1.0.rc2.206.gedb03e5
 
+
+-- 
+Dmitry
