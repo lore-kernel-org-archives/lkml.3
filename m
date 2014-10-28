@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421AbaJ1Wcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:32:47 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54012 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754649AbaJ1Wcp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:32:45 -0400
-Date: Tue, 28 Oct 2014 22:31:21 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Message-ID: <20141028223121.GH18557@sirena.org.uk>
-References: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com>
- <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="waAWgznbqtWOzvJZ"
-Content-Disposition: inline
-In-Reply-To: <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: FORCE YOURSELF TO RELAX!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 3/4] regulator: max77686: Add suspend disable for some
- LDOs
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1755734AbaJ1WdC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:33:02 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60960 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400AbaJ1W1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:27:04 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 7/7] rcu: Fix for rcuo online-time-creation reorganization bug
+Date: Tue, 28 Oct 2014 15:23:02 -0700
+Message-Id: <1414534982-29203-7-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1414534982-29203-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20141028222224.GA28263@linux.vnet.ibm.com>
+ <1414534982-29203-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102822-0029-0000-0000-000000F50641
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
---waAWgznbqtWOzvJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Commit 35ce7f29a44a (rcu: Create rcuo kthreads only for onlined CPUs)
+contains checks for the case where CPUs are brought online out of
+order, re-wiring the rcuo leader-follower relationships as needed.
+Unfortunately, this rewiring was broken.  This apparently went undetected
+due to the tendency of systems to bring CPUs online in order.  This commit
+nevertheless fixes the rewiring.
 
-On Mon, Oct 27, 2014 at 01:11:49PM +0100, Krzysztof Kozlowski wrote:
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcu/tree_plugin.h | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-> @@ -247,6 +250,8 @@ static struct regulator_ops max77686_ldo_ops = {
->  	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
->  	.set_voltage_time_sel	= regulator_set_voltage_time_sel,
->  	.set_suspend_mode	= max77686_ldo_set_suspend_mode,
-> +	.set_suspend_disable	= max77686_set_suspend_disable,
-> +	.set_suspend_enable	= max77686_enable,
+diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+index 6d07fb402e84..5053dae4454e 100644
+--- a/kernel/rcu/tree_plugin.h
++++ b/kernel/rcu/tree_plugin.h
+@@ -2586,9 +2586,13 @@ static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
+ 			rdp->nocb_leader = rdp_spawn;
+ 			if (rdp_last && rdp != rdp_spawn)
+ 				rdp_last->nocb_next_follower = rdp;
+-			rdp_last = rdp;
+-			rdp = rdp->nocb_next_follower;
+-			rdp_last->nocb_next_follower = NULL;
++			if (rdp == rdp_spawn) {
++				rdp = rdp->nocb_next_follower;
++			} else {
++				rdp_last = rdp;
++				rdp = rdp->nocb_next_follower;
++				rdp_last->nocb_next_follower = NULL;
++			}
+ 		} while (rdp);
+ 		rdp_spawn->nocb_next_follower = rdp_old_leader;
+ 	}
+-- 
+1.8.1.5
 
-This looks wrong, you're using the regular enable operation as suspend
-enable.  How does that work without disrupting the current runtime
-state?
-
---waAWgznbqtWOzvJZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUUBk4AAoJECTWi3JdVIfQSJYH/RTYhHzyf/43tuvH9ge6Zqhr
-8D17nEvNtEt6aaRrQ27Xn4eWcghsnCGIHVfm7T5zQRxQZTaK2p6eiHYnO51N86cg
-orx2lmaIhvQvnW2aTFJFMlcc17buBmyT7sNBOUuZA6kHN1eu/IzJL2f62+aspp79
-6gnfejrhgvDNkdCRYpLSJDuBWQCJTVTs/IzBHAfDw+yNvk5PsbKwrU9sXSx2/1+p
-y6q7IWnqDTH6OW/5FSx8pIKQMiY6jLbaZZCl8X/aGk+5UFwo9Qr27q15DkhtGKwI
-FMcatv+CZTtkCn+bG/V9pRbqu2KaY+osBsLP4TTfdXVkTlaTuoW7aGyLYoQj/vk=
-=zgZa
------END PGP SIGNATURE-----
-
---waAWgznbqtWOzvJZ--
