@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098AbaJ1Afx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 20:35:53 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:63120 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666AbaJ1Afw (ORCPT
+	id S1753249AbaJ1Ahn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 20:37:43 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:43715 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811AbaJ1Ahl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 20:35:52 -0400
-X-Original-SENDERIP: 165.186.175.39
-X-Original-MAILFROM: gioh.kim@lge.com
-From: Gioh Kim <gioh.kim@lge.com>
-To: gregkh@linuxfoundation.org, john.stultz@linaro.org, rebecca@android.com,
-        lauraa@codeaurora.org, dan.carpenter@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        gunho.lee@lge.com, gioh.kim@lge.com
-Subject: [PATCH 1/3] staging: ion: shrink page-pool by page unit
-Date: Tue, 28 Oct 2014 09:36:43 +0900
-Message-Id: <1414456605-26049-2-git-send-email-gioh.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1414456605-26049-1-git-send-email-gioh.kim@lge.com>
-References: <1414456605-26049-1-git-send-email-gioh.kim@lge.com>
+	Mon, 27 Oct 2014 20:37:41 -0400
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Caesar Wang <caesar.wang@rock-chips.com>
+Cc: heiko@sntech.de, rui.zhang@intel.com, edubezval@gmail.com,
+        zyf@rock-chips.com, dianders@chromium.org,
+        linux-rockchip@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        cf@rock-chips.com, dbasehore@chromium.org, huangtao@rock-chips.com,
+        cjf@rock-chips.com, zhengsq@rock-chips.com
+Subject: Re: [PATCH v14 2/5] dt-bindings: document Rockchip thermal
+Date: Mon, 27 Oct 2014 17:37:38 -0700
+Message-ID: <4038023.8IINY8khj6@dtor-glaptop>
+User-Agent: KMail/4.13.3 (Linux/3.13.0-37-generic; KDE/4.13.3; x86_64; ; )
+In-Reply-To: <544EE42D.3030208@rock-chips.com>
+References: <1414377588-2237-1-git-send-email-caesar.wang@rock-chips.com> <20141028002915.GJ7594@dtor-ws> <544EE42D.3030208@rock-chips.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch shrink page-pool by page unit.
+On Tuesday, October 28, 2014 08:32:45 AM Caesar Wang wrote:
+> Dmitry,
+> 
+> 在 2014年10月28日 08:29, Dmitry Torokhov 写道:
+> > On Mon, Oct 27, 2014 at 10:39:45AM +0800, Caesar Wang wrote:
+> >> This add the necessary binding documentation for the thermal
+> >> found on Rockchip SoCs
+> >> 
+> >> Signed-off-by: zhaoyifeng <zyf@rock-chips.com>
+> >> Signed-off-by: Caesar Wang <caesar.wang@rock-chips.com>
+> >> ---
+> >> 
+> >>   .../bindings/thermal/rockchip-thermal.txt          | 53
+> >>   ++++++++++++++++++++++ 1 file changed, 53 insertions(+)
+> >>   create mode 100644
+> >>   Documentation/devicetree/bindings/thermal/rockchip-thermal.txt>> 
+> >> diff --git
+> >> a/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> >> b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt new
+> >> file mode 100644
+> >> index 0000000..d5b1401
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/thermal/rockchip-thermal.txt
+> >> @@ -0,0 +1,53 @@
+> >> +* Temperature Sensor ADC (TSADC) on rockchip SoCs
+> >> +
+> >> +Required properties:
+> >> +- compatible : "rockchip,rk3288-tsadc"
+> >> +- reg : physical base address of the controller and length of memory
+> >> mapped +	region.
+> >> +- interrupts : The interrupt number to the cpu. The interrupt specifier
+> >> format +	       depends on the interrupt controller.
+> >> +- clocks : Must contain an entry for each entry in clock-names.
+> >> +- clock-names : Shall be "tsadc" for the converter-clock, and "apb_pclk"
+> >> for +		the peripheral clock.
+> >> +- #thermal-sensor-cells : Should be 1. See ./thermal.txt for a
+> >> description.> 
+> > I think you are missing description of hw-shut-temp, tsadc-tshut-mode
+> > and tsadc-tshut-mode
+> > 
+> >   and optional pinctrl settings.
+> 
+> If it's really need,we just have hw-shut-temp,tsadc-tshut-mode
+> and tsadc-tshut-mode,no need  pinctrl setting,I think.
 
-Shrinker usually get the pool size with the pool-scanner
-and pass the size to the pool-counter to shrink entire pool.
-But the pool-scanner is working in block unit.
-and pool-counter page unit.
-So it is confused.
+This is more question to DeviceTree guys, but I can see us not documenting
+pinctrl since it is generic property used by every driver out there. We should
+definitely document driver-specific properties.
 
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
----
- drivers/staging/android/ion/ion_page_pool.c   |    5 +++--
- drivers/staging/android/ion/ion_system_heap.c |    7 +++++--
- 2 files changed, 8 insertions(+), 4 deletions(-)
+Thanks.
 
-diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-index 5864f3d..165152f 100644
---- a/drivers/staging/android/ion/ion_page_pool.c
-+++ b/drivers/staging/android/ion/ion_page_pool.c
-@@ -116,7 +116,7 @@ static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
- int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
- 				int nr_to_scan)
- {
--	int freed;
-+	int freed = 0;
- 	bool high;
- 
- 	if (current_is_kswapd())
-@@ -127,7 +127,7 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
- 	if (nr_to_scan == 0)
- 		return ion_page_pool_total(pool, high);
- 
--	for (freed = 0; freed < nr_to_scan; freed++) {
-+	while (freed <= nr_to_scan) {
- 		struct page *page;
- 
- 		mutex_lock(&pool->mutex);
-@@ -141,6 +141,7 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
- 		}
- 		mutex_unlock(&pool->mutex);
- 		ion_page_pool_free_pages(pool, page);
-+		freed += (1 << pool->order);
- 	}
- 
- 	return freed;
-diff --git a/drivers/staging/android/ion/ion_system_heap.c b/drivers/staging/android/ion/ion_system_heap.c
-index da2a63c..91d862f 100644
---- a/drivers/staging/android/ion/ion_system_heap.c
-+++ b/drivers/staging/android/ion/ion_system_heap.c
-@@ -211,7 +211,7 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
- 					int nr_to_scan)
- {
- 	struct ion_system_heap *sys_heap;
--	int nr_total = 0;
-+	int nr_total = 0, nr_freed;
- 	int i;
- 
- 	sys_heap = container_of(heap, struct ion_system_heap, heap);
-@@ -219,7 +219,10 @@ static int ion_system_heap_shrink(struct ion_heap *heap, gfp_t gfp_mask,
- 	for (i = 0; i < num_orders; i++) {
- 		struct ion_page_pool *pool = sys_heap->pools[i];
- 
--		nr_total += ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
-+		nr_freed = ion_page_pool_shrink(pool, gfp_mask, nr_to_scan);
-+		nr_total += nr_freed;
-+		/* nr_to_scan can be negative */
-+		nr_to_scan -= nr_freed;
- 	}
- 
- 	return nr_total;
 -- 
-1.7.9.5
-
+Dmitry
