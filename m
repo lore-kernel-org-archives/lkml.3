@@ -1,101 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542AbaJ1SCH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:02:07 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:42671 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648AbaJ1SCE (ORCPT
+	id S1751957AbaJ1SDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:03:55 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:54487 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaJ1SDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:02:04 -0400
-Message-ID: <544FDA19.4070705@linaro.org>
-Date: Tue, 28 Oct 2014 19:02:01 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 28 Oct 2014 14:03:54 -0400
 MIME-Version: 1.0
-To: Preeti Murthy <preeti.lkml@gmail.com>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/5] sched: idle: Get the next timer event and pass it
- the cpuidle framework
-References: <1413822343-1972-1-git-send-email-daniel.lezcano@linaro.org>	<1413822343-1972-2-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pOzC2riePt4sfsdG=SLYvZmhMc4KgT-hfq6XkjF2Mce7g@mail.gmail.com>
-In-Reply-To: <CAM4v1pOzC2riePt4sfsdG=SLYvZmhMc4KgT-hfq6XkjF2Mce7g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141028170715.GJ29706@arm.com>
+References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
+	<1414496662-25202-2-git-send-email-will.deacon@arm.com>
+	<CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
+	<20141028160729.GH29706@arm.com>
+	<CA+55aFxvz=guax4KcAszyjkqdqXGwV38O+G23xMvGFJDTrZqtg@mail.gmail.com>
+	<20141028170715.GJ29706@arm.com>
+Date: Tue, 28 Oct 2014 11:03:53 -0700
+X-Google-Sender-Auth: vhjPqoPmWuVCOzw6yB8mZyWORFU
+Message-ID: <CA+55aFwNALj9=R-V7cMK3_dT8TP_aGjFQiswSk8yegD_dzj9Wg@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
+ after TLB batching faiure
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 07:40 AM, Preeti Murthy wrote:
-> Hi Daniel,
+On Tue, Oct 28, 2014 at 10:07 AM, Will Deacon <will.deacon@arm.com> wrote:
 >
-> On Mon, Oct 20, 2014 at 9:55 PM, Daniel Lezcano
-> <daniel.lezcano@linaro.org> wrote:
->> Following the logic of the previous patch, retrieve from the idle task the
->> expected timer sleep duration and pass it to the cpuidle framework.
->>
->> Take the opportunity to remove the unused headers in the menu.c file.
->>
->> This patch does not change the current behavior.
->>
->> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->> ---
->>   drivers/cpuidle/cpuidle.c          | 11 +++++------
->>   drivers/cpuidle/governors/ladder.c |  3 ++-
->>   drivers/cpuidle/governors/menu.c   |  8 ++------
->>   include/linux/cpuidle.h            |  8 +++++---
->>   kernel/sched/idle.c                | 16 ++++++++++++----
->>   5 files changed, 26 insertions(+), 20 deletions(-)
->>
->> diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
->> index 372c36f..64f5800 100644
->> --- a/drivers/cpuidle/cpuidle.c
->> +++ b/drivers/cpuidle/cpuidle.c
->> @@ -8,16 +8,12 @@
->>    * This code is licenced under the GPL.
->>    */
->>
->> -#include <linux/clockchips.h>
->>   #include <linux/kernel.h>
->>   #include <linux/mutex.h>
->> -#include <linux/sched.h>
->>   #include <linux/notifier.h>
->>   #include <linux/pm_qos.h>
->>   #include <linux/cpu.h>
->>   #include <linux/cpuidle.h>
->> -#include <linux/ktime.h>
->> -#include <linux/hrtimer.h>
->>   #include <linux/module.h>
->>   #include <trace/events/power.h>
->>
->> @@ -155,11 +151,13 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
->>    *
->>    * @drv: the cpuidle driver
->>    * @dev: the cpuidle device
->> + * @latency_req: the latency constraint when choosing an idle state
->
-> You might want to include this change in the previous patch itself.
+> I don't think that's necessarily true, at least not on the systems I'm
+> familiar with. A table walk can be comparatively expensive, particularly
+> when virtualisation is involved and the depth of the host and guest page
+> tables starts to grow -- we're talking >20 memory accesses per walk. By
+> contrast, the TLB invalidation messages are asynchronous and carried on
+> the interconnect (a DSB instruction is used to synchronise the updates).
 
-Ah, yes. Thanks.
+">20 memory accesses per *walk*"? Isn't the ARM a regular table? So
+once you've gone down to the pte level, it's just an array, regardless
+of how many levels there are.
 
->> + * @next_timer_event: the duration until the timer expires
->>    *
->>    * Returns the index of the idle state.
->>    */
->
-> Regards
-> Preeti U Murthy
->
+But I guess there are no actual multi-socket ARM's around in real
+life, so you probably don't see the real scaling costs. Within a die,
+you're probably right that the overhead is negligible.
 
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+                   Linus
