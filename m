@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759133AbaJ1HYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:24:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45109 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187AbaJ1DnA (ORCPT
+	id S933945AbaJ1HYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:24:21 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:4913 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756908AbaJ1HYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:00 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Himanshu Madhani <himanshu.madhani@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.16 030/127] qla2xxx: fix kernel NULL pointer access
-Date: Tue, 28 Oct 2014 11:34:25 +0800
-Message-Id: <20141028033422.234665359@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
-References: <20141028033420.925922046@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 03:24:18 -0400
+From: Yao Dongdong <yaodongdong@huawei.com>
+To: <edubezval@gmail.com>, <rui.zhang@intel.com>
+CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <lizefan@huawei.com>
+Subject: [PATCH 2/2 resend] Thermal:Remove usless if(!result) before return tz
+Date: Tue, 28 Oct 2014 07:40:25 +0000
+Message-ID: <1414482025-4482-2-git-send-email-yaodongdong@huawei.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1414482025-4482-1-git-send-email-yaodongdong@huawei.com>
+References: <1414482025-4482-1-git-send-email-yaodongdong@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.189]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+result is always zero when comes here.
 
-------------------
-
-From: Himanshu Madhani <himanshu.madhani@qlogic.com>
-
-commit 78c2106a50e067f7168ee8c0944baaeb0e988272 upstream.
-
-This patch is to fix regression added by commit id
-51a07f84649d2be206c4c2ad9a612956db0c2f8c.
-
-When allocating memory for new session original patch does
-not assign vha to op->vha resulting into NULL pointer
-access during qlt_create_sess_from_atio().
-
-Signed-off-by: Himanshu Madhani <himanshu.madhani@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Yao Dongdong <yaodongdong@huawei.com>
+Acked-by: Eduardo Valentin <edubezval@gmail.com>
 ---
- drivers/scsi/qla2xxx/qla_target.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/thermal/thermal_core.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_target.c
-+++ b/drivers/scsi/qla2xxx/qla_target.c
-@@ -3277,6 +3277,7 @@ static int qlt_handle_cmd_for_atio(struc
- 			return -ENOMEM;
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index d358605..a438c95 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -1575,8 +1575,7 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
  
- 		memcpy(&op->atio, atio, sizeof(*atio));
-+		op->vha = vha;
- 		INIT_WORK(&op->work, qlt_create_sess_from_atio);
- 		queue_work(qla_tgt_wq, &op->work);
- 		return 0;
-
+ 	thermal_zone_device_update(tz);
+ 
+-	if (!result)
+-		return tz;
++	return tz;
+ 
+ unregister:
+ 	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
+-- 
+1.8.3.4
 
