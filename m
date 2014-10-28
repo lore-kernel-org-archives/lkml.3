@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753AbaJ1L51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:57:27 -0400
-Received: from mail-bl2on0122.outbound.protection.outlook.com ([65.55.169.122]:23744
+	id S932113AbaJ1L6F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:58:05 -0400
+Received: from mail-bl2on0136.outbound.protection.outlook.com ([65.55.169.136]:54272
 	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754719AbaJ1L5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:57:20 -0400
-X-WSS-ID: 0NE5L7A-08-OD7-02
+	id S1755693AbaJ1L5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 07:57:23 -0400
+X-WSS-ID: 0NE5L7H-07-BHS-02
 X-M-MSG: 
 From: Huang Rui <ray.huang@amd.com>
 To: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
@@ -19,77 +19,141 @@ CC: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
         Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
         <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Huang Rui <ray.huang@amd.com>
-Subject: [PATCH v3 18/19] PCI: Add quirk to prevent AMD NL USB3 DRD to bind with xHCI driver
-Date: Tue, 28 Oct 2014 19:54:39 +0800
-Message-ID: <1414497280-3126-19-git-send-email-ray.huang@amd.com>
+Subject: [PATCH v3 19/19] usb: dwc3: add support for AMD NL platform
+Date: Tue, 28 Oct 2014 19:54:40 +0800
+Message-ID: <1414497280-3126-20-git-send-email-ray.huang@amd.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
 References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(19580405001)(19580395003)(50466002)(85852003)(89996001)(84676001)(86362001)(95666004)(229853001)(87286001)(50986999)(92726001)(48376002)(68736004)(88136002)(2171001)(44976005)(87936001)(21056001)(76176999)(50226001)(107046002)(4396001)(46102003)(77096002)(53416004)(93916002)(80022003)(105586002)(97736003)(106466001)(575784001)(33646002)(62966002)(85306004)(104166001)(101416001)(102836001)(120916001)(76482002)(20776003)(36756003)(92566001)(64706001)(77156001)(47776003)(31966008);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB205;H:atltwp02.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(92726001)(93916002)(76482002)(86362001)(101416001)(33646002)(68736004)(87286001)(88136002)(104166001)(102836001)(62966002)(19580405001)(2171001)(89996001)(87936001)(21056001)(20776003)(50986999)(47776003)(64706001)(76176999)(85852003)(84676001)(19580395003)(77096002)(48376002)(53416004)(105586002)(106466001)(95666004)(4396001)(229853001)(107046002)(85306004)(31966008)(120916001)(44976005)(92566001)(50466002)(50226001)(77156001)(97736003)(36756003)(46102003)(80022003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB207;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB205;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB207;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Forefront-PRVS: 0378F1E47A
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
  smtp.mailfrom=Ray.Huang@amd.com; 
 X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AMD Nolan (NL) SoC contains a DesignWare USB3 Dual-Role Device that can
-be operated either as a USB Host or a USB Device.  In the AMD NL platform,
-this device ([1022:7912]) has a class code of PCI_CLASS_SERIAL_USB_XHCI
-(0x0c0330), which means the xhci driver will claim it.
+This patch adds support for AMD Nolan (NL) FPGA and SoC platform.
 
-But the dwc3 driver is a more specific driver for this device, and we'd
-prefer to use it instead of xhci.  To prevent xhci from claiming the
-device, change the class code to 0x0c03fe, which the PCI r3.0 spec defines
-as "USB device (not host controller)".  The dwc3 driver can then claim it
-based on its Vendor and Device ID.
-
-Suggested-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Jason Chang <jason.chang@amd.com>
 Signed-off-by: Huang Rui <ray.huang@amd.com>
 ---
- drivers/pci/quirks.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/usb/dwc3/core.c          |  9 +++++++++
+ drivers/usb/dwc3/core.h          |  2 ++
+ drivers/usb/dwc3/dwc3-pci.c      | 19 +++++++++++++++++++
+ drivers/usb/dwc3/platform_data.h |  1 +
+ 4 files changed, 31 insertions(+)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 90acb32..1152bef 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -379,6 +379,26 @@ static void quirk_ati_exploding_mce(struct pci_dev *dev)
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI,	PCI_DEVICE_ID_ATI_RS100,   quirk_ati_exploding_mce);
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index 33a8f3c..7ab867b 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -526,6 +526,12 @@ static int dwc3_core_init(struct dwc3 *dwc)
+ 		dwc->is_fpga = true;
+ 	}
  
- /*
-+ * In the AMD NL platform, this device ([1022:7912]) has a class code of
-+ * PCI_CLASS_SERIAL_USB_XHCI (0x0c0330), which means the xhci driver will
-+ * claim it.
-+ * But the dwc3 driver is a more specific driver for this device, and we'd
-+ * prefer to use it instead of xhci. To prevent xhci from claiming the
-+ * device, change the class code to 0x0c03fe, which the PCI r3.0 spec
-+ * defines as "USB device (not host controller)". The dwc3 driver can then
-+ * claim it based on its Vendor and Device ID.
-+ */
-+static void quirk_amd_nl_class(struct pci_dev *pdev)
-+{
-+	/*
-+	 * Use 'USB Device' (0x0x03fe) instead of PCI header provided
-+	 */
-+	pdev->class = 0x0c03fe;
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_NL_USB,
-+		quirk_amd_nl_class);
++	if (dwc->amd_nl_plat && dwc->is_fpga) {
++		dwc->disable_scramble_quirk = true;
++		dwc->dis_u3_susphy_quirk = true;
++		dwc->dis_u2_susphy_quirk = true;
++	}
 +
-+/*
-  * Let's make the southbridge information explicit instead
-  * of having to worry about people probing the ACPI areas,
-  * for example.. (Yes, it happens, and if you read the wrong
+ 	WARN_ONCE(dwc->disable_scramble_quirk && !dwc->is_fpga,
+ 			"disable_scramble cannot be used on non-FPGA builds\n");
+ 
+@@ -817,6 +823,8 @@ static int dwc3_probe(struct platform_device *pdev)
+ 				"snps,dis_u3_susphy_quirk");
+ 		dwc->dis_u2_susphy_quirk = of_property_read_bool(node,
+ 				"snps,dis_u2_susphy_quirk");
++		dwc->amd_nl_plat = of_property_read_bool(node,
++				"snps,amd_nl_plat");
+ 
+ 		dwc->tx_deemph_quirk = of_property_read_bool(node,
+ 				"snps,tx_deemph_quirk");
+@@ -841,6 +849,7 @@ static int dwc3_probe(struct platform_device *pdev)
+ 		dwc->rx_detect_poll_quirk = pdata->rx_detect_poll_quirk;
+ 		dwc->dis_u3_susphy_quirk = pdata->dis_u3_susphy_quirk;
+ 		dwc->dis_u2_susphy_quirk = pdata->dis_u2_susphy_quirk;
++		dwc->amd_nl_plat = pdata->amd_nl_plat;
+ 
+ 		dwc->tx_deemph_quirk = pdata->tx_deemph_quirk;
+ 		if (pdata->tx_deemph)
+diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+index 8b94ad5..b08a2f9 100644
+--- a/drivers/usb/dwc3/core.h
++++ b/drivers/usb/dwc3/core.h
+@@ -699,6 +699,7 @@ struct dwc3_scratchpad_array {
+  * @rx_detect_poll_quirk: set if we enable rx_detect to polling lfps quirk
+  * @dis_u3_susphy_quirk: set if we disable usb3 suspend phy
+  * @dis_u2_susphy_quirk: set if we disable usb2 suspend phy
++ * @amd_nl_plat: set if we use AMD NL platform
+  * @tx_deemph_quirk: set if we enable Tx deemphasis quirk
+  * @tx_deemph: Tx deemphasis value
+  *	0	- -6dB de-emphasis
+@@ -822,6 +823,7 @@ struct dwc3 {
+ 	unsigned		rx_detect_poll_quirk:1;
+ 	unsigned		dis_u3_susphy_quirk:1;
+ 	unsigned		dis_u2_susphy_quirk:1;
++	unsigned		amd_nl_plat:1;
+ 
+ 	unsigned		tx_deemph_quirk:1;
+ 	unsigned		tx_deemph:2;
+diff --git a/drivers/usb/dwc3/dwc3-pci.c b/drivers/usb/dwc3/dwc3-pci.c
+index ada975f..3af9b47 100644
+--- a/drivers/usb/dwc3/dwc3-pci.c
++++ b/drivers/usb/dwc3/dwc3-pci.c
+@@ -145,6 +145,24 @@ static int dwc3_pci_probe(struct pci_dev *pci,
+ 	res[1].name	= "dwc_usb3";
+ 	res[1].flags	= IORESOURCE_IRQ;
+ 
++	if (pci->vendor == PCI_VENDOR_ID_AMD &&
++			pci->device == PCI_DEVICE_ID_AMD_NL_USB) {
++		dwc3_pdata.has_lpm_erratum = true;
++		dwc3_pdata.lpm_nyet_thres = 0xf;
++
++		dwc3_pdata.u2exit_lfps_quirk = true;
++		dwc3_pdata.u2ss_inp3_quirk = true;
++		dwc3_pdata.req_p1p2p3_quirk = true;
++		dwc3_pdata.del_p1p2p3_quirk = true;
++		dwc3_pdata.del_phy_power_chg_quirk = true;
++		dwc3_pdata.lfps_filter_quirk = true;
++		dwc3_pdata.rx_detect_poll_quirk = true;
++		dwc3_pdata.amd_nl_plat = true;
++
++		dwc3_pdata.tx_deemph_quirk = true;
++		dwc3_pdata.tx_deemph = 1;
++	}
++
+ 	ret = platform_device_add_resources(dwc3, res, ARRAY_SIZE(res));
+ 	if (ret) {
+ 		dev_err(dev, "couldn't add resources to dwc3 device\n");
+@@ -194,6 +212,7 @@ static const struct pci_device_id dwc3_pci_id_table[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BSW), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_BYT), },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_MRFLD), },
++	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_NL_USB), },
+ 	{  }	/* Terminating Entry */
+ };
+ MODULE_DEVICE_TABLE(pci, dwc3_pci_id_table);
+diff --git a/drivers/usb/dwc3/platform_data.h b/drivers/usb/dwc3/platform_data.h
+index 1cfd384..c2c3511 100644
+--- a/drivers/usb/dwc3/platform_data.h
++++ b/drivers/usb/dwc3/platform_data.h
+@@ -37,6 +37,7 @@ struct dwc3_platform_data {
+ 	unsigned rx_detect_poll_quirk:1;
+ 	unsigned dis_u3_susphy_quirk:1;
+ 	unsigned dis_u2_susphy_quirk:1;
++	unsigned amd_nl_plat:1;
+ 
+ 	unsigned tx_deemph_quirk:1;
+ 	unsigned tx_deemph:2;
 -- 
 1.9.1
 
