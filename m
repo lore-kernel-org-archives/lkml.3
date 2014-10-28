@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759939AbaJ1IEu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 04:04:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44306 "EHLO
+	id S1755686AbaJ1IFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:05:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44301 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753651AbaJ1Dgd (ORCPT
+	with ESMTP id S1753621AbaJ1Dg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:36:33 -0400
+	Mon, 27 Oct 2014 23:36:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.17 009/146] Btrfs: cleanup error handling in build_backref_tree
-Date: Tue, 28 Oct 2014 11:32:31 +0800
-Message-Id: <20141028033343.841818561@linuxfoundation.org>
+Subject: [PATCH 3.17 007/146] Btrfs: dont do async reclaim during log replay
+Date: Tue, 28 Oct 2014 11:32:29 +0800
+Message-Id: <20141028033343.759096425@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -30,213 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josef Bacik <jbacik@fb.com>
 
-commit 75bfb9aff45e44625260f52a5fd581b92ace3e62 upstream.
+commit f6acfd50110b335c7af636cf1fc8e55319cae5fc upstream.
 
-When balance panics it tends to panic in the
-
-BUG_ON(!upper->checked);
-
-test, because it means it couldn't build the backref tree properly.  This is
-annoying to users and frankly a recoverable error, nothing in this function is
-actually fatal since it is just an in-memory building of the backrefs for a
-given bytenr.  So go through and change all the BUG_ON()'s to ASSERT()'s, and
-fix the BUG_ON(!upper->checked) thing to just return an error.
-
-This patch also fixes the error handling so it tears down the work we've done
-properly.  This code was horribly broken since we always just panic'ed instead
-of actually erroring out, so it needed to be completely re-worked.  With this
-patch my broken image no longer panics when I mount it.  Thanks,
+Trying to reproduce a log enospc bug I hit a panic in the async reclaim code
+during log replay.  This is because we use fs_info->fs_root as our root for
+shrinking and such.  Technically we can use whatever root we want, but let's
+just not allow async reclaim while we're doing log replay.  Thanks,
 
 Signed-off-by: Josef Bacik <jbacik@fb.com>
 Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/relocation.c |   88 +++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 59 insertions(+), 29 deletions(-)
+ fs/btrfs/extent-tree.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/relocation.c
-+++ b/fs/btrfs/relocation.c
-@@ -736,7 +736,8 @@ again:
- 		err = ret;
- 		goto out;
- 	}
--	BUG_ON(!ret || !path1->slots[0]);
-+	ASSERT(ret);
-+	ASSERT(path1->slots[0]);
- 
- 	path1->slots[0]--;
- 
-@@ -746,10 +747,10 @@ again:
- 		 * the backref was added previously when processing
- 		 * backref of type BTRFS_TREE_BLOCK_REF_KEY
- 		 */
--		BUG_ON(!list_is_singular(&cur->upper));
-+		ASSERT(list_is_singular(&cur->upper));
- 		edge = list_entry(cur->upper.next, struct backref_edge,
- 				  list[LOWER]);
--		BUG_ON(!list_empty(&edge->list[UPPER]));
-+		ASSERT(list_empty(&edge->list[UPPER]));
- 		exist = edge->node[UPPER];
- 		/*
- 		 * add the upper level block to pending list if we need
-@@ -831,7 +832,7 @@ again:
- 					cur->cowonly = 1;
- 			}
- #else
--		BUG_ON(key.type == BTRFS_EXTENT_REF_V0_KEY);
-+		ASSERT(key.type != BTRFS_EXTENT_REF_V0_KEY);
- 		if (key.type == BTRFS_SHARED_BLOCK_REF_KEY) {
- #endif
- 			if (key.objectid == key.offset) {
-@@ -840,7 +841,7 @@ again:
- 				 * backref of this type.
- 				 */
- 				root = find_reloc_root(rc, cur->bytenr);
--				BUG_ON(!root);
-+				ASSERT(root);
- 				cur->root = root;
- 				break;
- 			}
-@@ -868,7 +869,7 @@ again:
- 			} else {
- 				upper = rb_entry(rb_node, struct backref_node,
- 						 rb_node);
--				BUG_ON(!upper->checked);
-+				ASSERT(upper->checked);
- 				INIT_LIST_HEAD(&edge->list[UPPER]);
- 			}
- 			list_add_tail(&edge->list[LOWER], &cur->upper);
-@@ -892,7 +893,7 @@ again:
- 
- 		if (btrfs_root_level(&root->root_item) == cur->level) {
- 			/* tree root */
--			BUG_ON(btrfs_root_bytenr(&root->root_item) !=
-+			ASSERT(btrfs_root_bytenr(&root->root_item) ==
- 			       cur->bytenr);
- 			if (should_ignore_root(root))
- 				list_add(&cur->list, &useless);
-@@ -927,7 +928,7 @@ again:
- 		need_check = true;
- 		for (; level < BTRFS_MAX_LEVEL; level++) {
- 			if (!path2->nodes[level]) {
--				BUG_ON(btrfs_root_bytenr(&root->root_item) !=
-+				ASSERT(btrfs_root_bytenr(&root->root_item) ==
- 				       lower->bytenr);
- 				if (should_ignore_root(root))
- 					list_add(&lower->list, &useless);
-@@ -982,7 +983,7 @@ again:
- 			} else {
- 				upper = rb_entry(rb_node, struct backref_node,
- 						 rb_node);
--				BUG_ON(!upper->checked);
-+				ASSERT(upper->checked);
- 				INIT_LIST_HEAD(&edge->list[UPPER]);
- 				if (!upper->owner)
- 					upper->owner = btrfs_header_owner(eb);
-@@ -1026,7 +1027,7 @@ next:
- 	 * everything goes well, connect backref nodes and insert backref nodes
- 	 * into the cache.
- 	 */
--	BUG_ON(!node->checked);
-+	ASSERT(node->checked);
- 	cowonly = node->cowonly;
- 	if (!cowonly) {
- 		rb_node = tree_insert(&cache->rb_root, node->bytenr,
-@@ -1062,8 +1063,21 @@ next:
- 			continue;
- 		}
- 
--		BUG_ON(!upper->checked);
--		BUG_ON(cowonly != upper->cowonly);
-+		if (!upper->checked) {
-+			/*
-+			 * Still want to blow up for developers since this is a
-+			 * logic bug.
-+			 */
-+			ASSERT(0);
-+			err = -EINVAL;
-+			goto out;
-+		}
-+		if (cowonly != upper->cowonly) {
-+			ASSERT(0);
-+			err = -EINVAL;
-+			goto out;
-+		}
-+
- 		if (!cowonly) {
- 			rb_node = tree_insert(&cache->rb_root, upper->bytenr,
- 					      &upper->rb_node);
-@@ -1086,7 +1100,7 @@ next:
- 	while (!list_empty(&useless)) {
- 		upper = list_entry(useless.next, struct backref_node, list);
- 		list_del_init(&upper->list);
--		BUG_ON(!list_empty(&upper->upper));
-+		ASSERT(list_empty(&upper->upper));
- 		if (upper == node)
- 			node = NULL;
- 		if (upper->lowest) {
-@@ -1119,29 +1133,45 @@ out:
- 	if (err) {
- 		while (!list_empty(&useless)) {
- 			lower = list_entry(useless.next,
--					   struct backref_node, upper);
--			list_del_init(&lower->upper);
-+					   struct backref_node, list);
-+			list_del_init(&lower->list);
- 		}
--		upper = node;
--		INIT_LIST_HEAD(&list);
--		while (upper) {
--			if (RB_EMPTY_NODE(&upper->rb_node)) {
--				list_splice_tail(&upper->upper, &list);
--				free_backref_node(cache, upper);
--			}
--
--			if (list_empty(&list))
--				break;
--
--			edge = list_entry(list.next, struct backref_edge,
--					  list[LOWER]);
-+		while (!list_empty(&list)) {
-+			edge = list_first_entry(&list, struct backref_edge,
-+						list[UPPER]);
-+			list_del(&edge->list[UPPER]);
- 			list_del(&edge->list[LOWER]);
-+			lower = edge->node[LOWER];
- 			upper = edge->node[UPPER];
- 			free_backref_edge(cache, edge);
-+
-+			/*
-+			 * Lower is no longer linked to any upper backref nodes
-+			 * and isn't in the cache, we can free it ourselves.
-+			 */
-+			if (list_empty(&lower->upper) &&
-+			    RB_EMPTY_NODE(&lower->rb_node))
-+				list_add(&lower->list, &useless);
-+
-+			if (!RB_EMPTY_NODE(&upper->rb_node))
-+				continue;
-+
-+			/* Add this guy's upper edges to the list to proces */
-+			list_for_each_entry(edge, &upper->upper, list[LOWER])
-+				list_add_tail(&edge->list[UPPER], &list);
-+			if (list_empty(&upper->upper))
-+				list_add(&upper->list, &useless);
-+		}
-+
-+		while (!list_empty(&useless)) {
-+			lower = list_entry(useless.next,
-+					   struct backref_node, list);
-+			list_del_init(&lower->list);
-+			free_backref_node(cache, lower);
- 		}
- 		return ERR_PTR(err);
- 	}
--	BUG_ON(node && node->detached);
-+	ASSERT(!node || !node->detached);
- 	return node;
- }
- 
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -4502,7 +4502,13 @@ again:
+ 		space_info->flush = 1;
+ 	} else if (!ret && space_info->flags & BTRFS_BLOCK_GROUP_METADATA) {
+ 		used += orig_bytes;
+-		if (need_do_async_reclaim(space_info, root->fs_info, used) &&
++		/*
++		 * We will do the space reservation dance during log replay,
++		 * which means we won't have fs_info->fs_root set, so don't do
++		 * the async reclaim as we will panic.
++		 */
++		if (!root->fs_info->log_root_recovering &&
++		    need_do_async_reclaim(space_info, root->fs_info, used) &&
+ 		    !work_busy(&root->fs_info->async_reclaim_work))
+ 			queue_work(system_unbound_wq,
+ 				   &root->fs_info->async_reclaim_work);
 
 
