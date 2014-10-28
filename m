@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaJ1TxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 15:53:21 -0400
+	id S1753137AbaJ1Txa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 15:53:30 -0400
 Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:42951 "EHLO
 	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaJ1TxT (ORCPT
+	with ESMTP id S1752834AbaJ1TxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 15:53:19 -0400
+	Tue, 28 Oct 2014 15:53:25 -0400
 X-IronPort-AV: E=Sophos;i="5.04,804,1406617200"; 
-   d="scan'208";a="49345207"
+   d="scan'208";a="49345219"
 From: Scott Branden <sbranden@broadcom.com>
 To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
@@ -26,135 +26,139 @@ To: Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Antti Palosaari <crope@iki.fi>
 CC: JD Zheng <jdzheng@broadcom.com>, Ray Jui <rjui@broadcom.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Jonathan Richardson <jonathar@broadcom.com>,
-        Scott Branden <sbranden@broadcom.com>
-Subject: [PATCH v8 1/8] ARM: cygnus: Initial support for Broadcom Cygnus SoC
-Date: Tue, 28 Oct 2014 12:53:05 -0700
-Message-ID: <1414525992-3678-2-git-send-email-sbranden@broadcom.com>
+        <devicetree@vger.kernel.org>, Scott Branden <sbranden@broadcom.com>
+Subject: [PATCH v8 7/8] ARM: mach-bcm: ARCH_BCM_MOBILE: remove one level of menu from Kconfig
+Date: Tue, 28 Oct 2014 12:53:11 -0700
+Message-ID: <1414525992-3678-8-git-send-email-sbranden@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1414525992-3678-1-git-send-email-sbranden@broadcom.com>
 References: <Scott Branden <sbranden@broadcom.com>
  <1414525992-3678-1-git-send-email-sbranden@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonathan Richardson <jonathar@broadcom.com>
+remove menu "Broadcom Mobile SoC Selection"
+This requires:
+- selecting ARCH_BCM_MOBILE based on SoC selections
+- fixup bcm_defconfig and multi_v7_defconfig to work with new menu levels.
 
-Adds initial support for the Cygnus SoC based on Broadcom’s iProc series.
-
-Reviewed-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Desmond Liu <desmondl@broadcom.com>
-Reviewed-by: JD (Jiandong) Zheng <jdzheng@broadcom.com>
-Tested-by: Jonathan Richardson <jonathar@broadcom.com>
 Signed-off-by: Scott Branden <sbranden@broadcom.com>
 ---
- arch/arm/mach-bcm/Kconfig      |   32 ++++++++++++++++++++++++++++++++
- arch/arm/mach-bcm/Makefile     |    3 +++
- arch/arm/mach-bcm/bcm_cygnus.c |   26 ++++++++++++++++++++++++++
- 3 files changed, 61 insertions(+)
- create mode 100644 arch/arm/mach-bcm/bcm_cygnus.c
+ arch/arm/configs/bcm_defconfig      |    3 ++-
+ arch/arm/configs/multi_v7_defconfig |    3 ++-
+ arch/arm/mach-bcm/Kconfig           |   26 ++++++++++----------------
+ 3 files changed, 14 insertions(+), 18 deletions(-)
 
+diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
+index bc614f4..83a87e4 100644
+--- a/arch/arm/configs/bcm_defconfig
++++ b/arch/arm/configs/bcm_defconfig
+@@ -25,7 +25,8 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_BLK_DEV_BSG is not set
+ CONFIG_PARTITION_ADVANCED=y
+ CONFIG_ARCH_BCM=y
+-CONFIG_ARCH_BCM_MOBILE=y
++CONFIG_ARCH_BCM_21664=y
++CONFIG_ARCH_BCM_281XX=y
+ CONFIG_ARM_THUMBEE=y
+ CONFIG_SMP=y
+ CONFIG_PREEMPT=y
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index f1dc7fc..6e0d7cb 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -17,7 +17,8 @@ CONFIG_MACH_ARMADA_38X=y
+ CONFIG_MACH_ARMADA_XP=y
+ CONFIG_MACH_DOVE=y
+ CONFIG_ARCH_BCM=y
+-CONFIG_ARCH_BCM_MOBILE=y
++CONFIG_ARCH_BCM_21664=y
++CONFIG_ARCH_BCM_281XX=y
+ CONFIG_ARCH_BCM_5301X=y
+ CONFIG_ARCH_BRCMSTB=y
+ CONFIG_ARCH_BERLIN=y
 diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 2abad74..73d95c2 100644
+index 6e79696..cceb69f 100644
 --- a/arch/arm/mach-bcm/Kconfig
 +++ b/arch/arm/mach-bcm/Kconfig
-@@ -5,6 +5,36 @@ menuconfig ARCH_BCM
+@@ -51,8 +51,10 @@ config ARCH_BCM_5301X
+ 	  different SoC or with the older BCM47XX and BCM53XX based
+ 	  network SoC using a MIPS CPU, they are supported by arch/mips/bcm47xx
  
- if ARCH_BCM
- 
-+comment "IPROC architected SoCs"
-+
-+config ARCH_BCM_IPROC
-+	bool
-+	select ARM_GIC
-+	select CACHE_L2X0
-+	select HAVE_ARM_SCU if SMP
-+	select HAVE_ARM_TWD if SMP
-+	select ARM_GLOBAL_TIMER
-+
-+	select CLKSRC_MMIO
-+	select ARCH_REQUIRE_GPIOLIB
-+	select ARM_AMBA
-+	select PINCTRL
-+	help
-+	  This enables support for systems based on Broadcom IPROC architected SoCs.
-+	  The IPROC complex contains one or more ARM CPUs along with common
-+	  core periperals. Application specific SoCs are created by adding a
-+	  uArchitecture containing peripherals outside of the IPROC complex.
-+	  Currently supported SoCs are Cygnus.
-+
-+config ARCH_BCM_CYGNUS
-+	bool "Broadcom Cygnus Support" if ARCH_MULTI_V7
-+	select ARCH_BCM_IPROC
-+	help
-+	  Enable support for the Cygnus family,
-+	  which includes the following variants:
-+	  BCM11300, BCM11320, BCM11350, BCM11360,
-+	  BCM58300, BCM58302, BCM58303, BCM58305.
++comment "KONA architected SoCs"
 +
  config ARCH_BCM_MOBILE
- 	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
+-	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
++	bool
  	select ARCH_REQUIRE_GPIOLIB
-@@ -65,6 +95,8 @@ endmenu
+ 	select ARM_ERRATA_754322
+ 	select ARM_ERRATA_775420
+@@ -61,16 +63,13 @@ config ARCH_BCM_MOBILE
+ 	select TICK_ONESHOT
+ 	select HAVE_ARM_ARCH_TIMER
+ 	select PINCTRL
++	select ARCH_BCM_MOBILE_SMP if SMP
+ 	help
+ 	  This enables support for systems based on Broadcom mobile SoCs.
  
- endif
+-if ARCH_BCM_MOBILE
+-
+-menu "Broadcom Mobile SoC Selection"
+-
+ config ARCH_BCM_281XX
+ 	bool "Broadcom BCM281XX SoC family"
+-	default y
++	select ARCH_BCM_MOBILE
+ 	select HAVE_SMP
+ 	help
+ 	  Enable support for the BCM281XX family, which includes
+@@ -79,7 +78,7 @@ config ARCH_BCM_281XX
  
-+comment "Other Architectures"
-+
+ config ARCH_BCM_21664
+ 	bool "Broadcom BCM21664 SoC family"
+-	default y
++	select ARCH_BCM_MOBILE
+ 	select HAVE_SMP
+ 	help
+ 	  Enable support for the BCM21664 family, which includes
+@@ -87,19 +86,18 @@ config ARCH_BCM_21664
+ 
+ config ARCH_BCM_MOBILE_L2_CACHE
+ 	bool "Broadcom mobile SoC level 2 cache support"
+-	depends on (ARCH_BCM_281XX || ARCH_BCM_21664)
++	depends on ARCH_BCM_MOBILE
+ 	default y
+ 	select CACHE_L2X0
+ 	select ARCH_BCM_MOBILE_SMC
+ 
+ config ARCH_BCM_MOBILE_SMC
+ 	bool
+-	depends on ARCH_BCM_281XX || ARCH_BCM_21664
++	depends on ARCH_BCM_MOBILE
+ 
+ config ARCH_BCM_MOBILE_SMP
+-	bool "Broadcom mobile SoC SMP support"
+-	depends on (ARCH_BCM_281XX || ARCH_BCM_21664) && SMP
+-	default y
++	bool
++	depends on ARCH_BCM_MOBILE
+ 	select HAVE_ARM_SCU
+ 	select ARM_ERRATA_764369
+ 	help
+@@ -107,10 +105,6 @@ config ARCH_BCM_MOBILE_SMP
+ 	  Provided as an option so SMP support for SoCs of this type
+ 	  can be disabled for an SMP-enabled kernel.
+ 
+-endmenu
+-
+-endif
+-
+ comment "Other Architectures"
+ 
  config ARCH_BCM2835
- 	bool "Broadcom BCM2835 family" if ARCH_MULTI_V6
- 	select ARCH_REQUIRE_GPIOLIB
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index 300ae4b..34d45ba 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -10,6 +10,9 @@
- # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
- 
-+# Cygnus
-+obj-$(CONFIG_ARCH_BCM_CYGNUS) +=  bcm_cygnus.o
-+
- # BCM281XX
- obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
- 
-diff --git a/arch/arm/mach-bcm/bcm_cygnus.c b/arch/arm/mach-bcm/bcm_cygnus.c
-new file mode 100644
-index 0000000..41b4933
---- /dev/null
-+++ b/arch/arm/mach-bcm/bcm_cygnus.c
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright 2014 Broadcom Corporation.  All rights reserved.
-+ *
-+ * Unless you and Broadcom execute a separate written software license
-+ * agreement governing use of this software, this software is licensed to you
-+ * under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <asm/mach/arch.h>
-+
-+static const char const *bcm_cygnus_dt_compat[] = {
-+	"brcm,cygnus",
-+	NULL,
-+};
-+
-+DT_MACHINE_START(BCM_CYGNUS_DT, "Broadcom Cygnus SoC")
-+	.l2c_aux_val	= 0,
-+	.l2c_aux_mask	= ~0,
-+	.dt_compat = bcm_cygnus_dt_compat,
-+MACHINE_END
 -- 
 1.7.9.5
 
