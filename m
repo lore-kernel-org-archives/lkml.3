@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbaJ1Mo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:44:29 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62370 "EHLO mga01.intel.com"
+	id S1752696AbaJ1MpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:45:20 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:9492 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752388AbaJ1Mo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:44:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="407229009"
-Date: Tue, 28 Oct 2014 05:44:25 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, isimatu.yasuaki@jp.fujitsu.com,
-        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
-        linux-api@vger.kernel.org, jason.wessel@windriver.com
-Subject: Re: [PATCH V4] kernel, add bug_on_warn
-Message-ID: <20141028124425.GD3274@tassilo.jf.intel.com>
-References: <1414155207-29839-1-git-send-email-prarit@redhat.com>
- <20141028121636.GC3274@tassilo.jf.intel.com>
- <544F8A78.9070008@redhat.com>
- <20141028122900.GA10632@redhat.com>
+	id S1751163AbaJ1MpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:45:18 -0400
+X-IronPort-AV: E=Sophos;i="5.04,802,1406592000"; 
+   d="scan'208";a="186836720"
+Message-ID: <544F8FBB.2010709@citrix.com>
+Date: Tue, 28 Oct 2014 12:44:43 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028122900.GA10632@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andrew Cooper <andrew.cooper3@citrix.com>, Juergen Gross <jgross@suse.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+CC: <boris.ostrovsky@oracle.com>, <xen-devel@lists.xensource.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 0/2] xen: Switch to virtual mapped linear
+ p2m list
+References: <1414421551-31555-1-git-send-email-jgross@suse.com>	<544E61DD.8050305@citrix.com>	<544F22E4.9040706@suse.com> <1414489898.23883.25.camel@citrix.com> <544F83C1.3010402@citrix.com> <544F8713.9040803@suse.com> <544F8E89.6070006@citrix.com> <544F8F3A.3030505@citrix.com>
+In-Reply-To: <544F8F3A.3030505@citrix.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I suppose ... but that would mean I would have to explain to an end user the
-> > elaborate process of enabling kdb, inserting a break point, etc.  The whole
-> > purpose of this is to let an end user panic on WARN() easily.
-> > 
-> > Asking an end user to enable kdb is magnitudes worse than asking them to
-> > recompile a kernel.
+On 28/10/14 12:42, Andrew Cooper wrote:
+> On 28/10/14 12:39, David Vrabel wrote:
+>> On 28/10/14 12:07, Juergen Gross wrote:
+>>> Okay, back to the original question: is the (up to) 64 MB virtual
+>>> mapping of the p2m list on 32-bit pv domains a problem or not?
+>> I think up-to 64 MiB of vmalloc area is fine.  The vmalloc space can be
+>> increased with a command line option in the unlikely event that there
+>> are domUs that would be affected.
+>>
+>>> If yes, the virtual mapped linear p2m list could still be used on
+>>> 64 bit domains, paving the way for support of more than 512 GB of
+>>> domain memory. OTOH having to keep the p2m tree coding alive isn't
+>>> my favorite solution...
+>> Having to keep both the tree and linear p2m code would be awful.  Let's
+>> not do this!
+>>
+>> David
 > 
-> Agreed. Asking a customer to setup and run kdb and put breakpoints is much
-> more pain than simply asking to reboot kernel with a command line option.
+> How is the toolstack expected to find and mutate this p2m on migrate? 
+> The toolstack does not use guest pagetables.
 
-If you have a command line option to execute kdb commands you still
-would only have a command line option, just a slightly longer one.
+The p2m code maintains two trees.  One for use by the guest and one for
+use by the toolstack.  This series replaces the first tree with the
+linear array (at least that's how I understand it -- I've not reviewed
+the series in detail yet).
 
-kdb="on, bp warn_slowpath_common sr c, go" 
-
-But it would be a generic facility instead of a special purpose hack.
-
--Andi
-
+David
