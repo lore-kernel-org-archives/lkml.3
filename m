@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933599AbaJ1HLC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:11:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45390 "EHLO
+	id S1758777AbaJ1HLa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:11:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45380 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755635AbaJ1DpW (ORCPT
+	with ESMTP id S1755620AbaJ1DpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:45:22 -0400
+	Mon, 27 Oct 2014 23:45:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Dueck <davidcdueck@googlemail.com>,
-        Anthony Harivel <anthony.harivel@emtrion.de>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 3.16 087/127] ARM: at91/dt: Fix typo regarding can0_clk
-Date: Tue, 28 Oct 2014 11:35:22 +0800
-Message-Id: <20141028033424.667781409@linuxfoundation.org>
+        Steve Dickson <SteveD@redhat.com>,
+        Weston Andros Adamson <dros@primarydata.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.16 055/127] NFS: Fix a bogus warning in nfs_generic_pgio
+Date: Tue, 28 Oct 2014 11:34:50 +0800
+Message-Id: <20141028033423.289793222@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -31,32 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Dueck <davidcdueck@googlemail.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 0a51d644c20f5c88fd3a659119d1903f74927082 upstream.
+commit b8fb9c30f25e45dab5d2cd310ab6913b6861d00f upstream.
 
-Otherwise the clock for can0 will never get enabled.
+It is OK for pageused == pagecount in the loop, as long as we don't add
+another entry to the *pages array. Move the test so that it only triggers
+in that case.
 
-Signed-off-by: David Dueck <davidcdueck@googlemail.com>
-Signed-off-by: Anthony Harivel <anthony.harivel@emtrion.de>
-Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Reported-by: Steve Dickson <SteveD@redhat.com>
+Fixes: bba5c1887a92 (nfs: disallow duplicate pages in pgio page vectors)
+Cc: Weston Andros Adamson <dros@primarydata.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/sama5d3_can.dtsi |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/pagelist.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/arch/arm/boot/dts/sama5d3_can.dtsi
-+++ b/arch/arm/boot/dts/sama5d3_can.dtsi
-@@ -40,7 +40,7 @@
- 						atmel,clk-output-range = <0 66000000>;
- 					};
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -754,12 +754,11 @@ int nfs_generic_pgio(struct nfs_pageio_d
+ 		nfs_list_remove_request(req);
+ 		nfs_list_add_request(req, &hdr->pages);
  
--					can1_clk: can0_clk {
-+					can1_clk: can1_clk {
- 						#clock-cells = <0>;
- 						reg = <41>;
- 						atmel,clk-output-range = <0 66000000>;
+-		if (WARN_ON_ONCE(pageused >= pagecount))
+-			return nfs_pgio_error(desc, hdr);
+-
+ 		if (!last_page || last_page != req->wb_page) {
+-			*pages++ = last_page = req->wb_page;
+ 			pageused++;
++			if (pageused > pagecount)
++				break;
++			*pages++ = last_page = req->wb_page;
+ 		}
+ 	}
+ 	if (WARN_ON_ONCE(pageused != pagecount))
 
 
