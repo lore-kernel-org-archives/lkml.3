@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119AbaJ1DmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:42:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45002 "EHLO
+	id S932324AbaJ1DmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:42:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45021 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015AbaJ1DmB (ORCPT
+	with ESMTP id S932310AbaJ1DmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:42:01 -0400
+	Mon, 27 Oct 2014 23:42:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        sparclinux@vger.kernel.org, Bob Picco <bob.picco@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 134/146] sparc64: T5 PMU
-Date: Tue, 28 Oct 2014 11:34:36 +0800
-Message-Id: <20141028033349.249957961@linuxfoundation.org>
+        Zhao Lei <zhaolei@cn.fujitsu.com>, Qu Wenruo <quwenruo@cn.fujitsu.com>,
+        Stefan Behrens <sbehrens@giantdisaster.de>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.16 002/127] btrfs: Fix a deadlock in btrfs_dev_replace_finishing()
+Date: Tue, 28 Oct 2014 11:33:57 +0800
+Message-Id: <20141028033421.033999343@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
-References: <20141028033343.441992423@linuxfoundation.org>
+In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
+References: <20141028033420.925922046@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,183 +25,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.16-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: bob picco <bpicco@meloft.net>
+From: Qu Wenruo <quwenruo@cn.fujitsu.com>
 
-The T5 (niagara5) has different PCR related HV fast trap values and a new
-HV API Group. This patch utilizes these and shares when possible with niagara4.
+commit 12b894cb288d57292b01cf158177b6d5c89a6272 upstream.
 
-We use the same sparc_pmu niagara4_pmu. Should there be new effort to
-obtain the MCU perf statistics then this would have to be changed.
+btrfs-transacion:5657
+[stack snip]
+btrfs_bio_map()
+    btrfs_bio_counter_inc_blocked()
+        percpu_counter_inc(&fs_info->bio_counter)  ###bio_counter > 0(A)
+        __btrfs_bio_map()
+            btrfs_dev_replace_lock()
+                mutex_lock(dev_replace->lock)	   ###wait mutex(B)
 
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: Bob Picco <bob.picco@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+btrfs:32612
+[stack snip]
+btrfs_dev_replace_start()
+    btrfs_dev_replace_lock()
+	mutex_lock(dev_replace->lock)		   ###hold mutex(B)
+    btrfs_dev_replace_finishing()
+        btrfs_rm_dev_replace_blocked()
+            wait until percpu_counter_sum == 0	   ###wait on bio_counter(A)
+
+This bug can be triggered quite easily by the following test script:
+http://pastebin.com/MQmb37Cy
+
+This patch will fix the ABBA problem by calling
+btrfs_dev_replace_unlock() before btrfs_rm_dev_replace_blocked().
+
+The consistency of btrfs devices list and their superblocks is protected
+by device_list_mutex, not btrfs_dev_replace_lock/unlock().
+So it is safe the move btrfs_dev_replace_unlock() before
+btrfs_rm_dev_replace_blocked().
+
+Reported-by: Zhao Lei <zhaolei@cn.fujitsu.com>
+Signed-off-by: Qu Wenruo <quwenruo@cn.fujitsu.com>
+Cc: Stefan Behrens <sbehrens@giantdisaster.de>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/include/asm/hypervisor.h |   11 ++++++++
- arch/sparc/kernel/hvapi.c           |    1 
- arch/sparc/kernel/hvcalls.S         |   16 ++++++++++++
- arch/sparc/kernel/pcr.c             |   47 ++++++++++++++++++++++++++++++++----
- arch/sparc/kernel/perf_event.c      |    3 +-
- 5 files changed, 73 insertions(+), 5 deletions(-)
 
---- a/arch/sparc/include/asm/hypervisor.h
-+++ b/arch/sparc/include/asm/hypervisor.h
-@@ -2947,6 +2947,16 @@ unsigned long sun4v_vt_set_perfreg(unsig
- 				   unsigned long reg_val);
- #endif
+---
+ fs/btrfs/dev-replace.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/fs/btrfs/dev-replace.c
++++ b/fs/btrfs/dev-replace.c
+@@ -567,6 +567,8 @@ static int btrfs_dev_replace_finishing(s
+ 	btrfs_kobj_rm_device(fs_info, src_device);
+ 	btrfs_kobj_add_device(fs_info, tgt_device);
  
-+#define	HV_FAST_T5_GET_PERFREG		0x1a8
-+#define	HV_FAST_T5_SET_PERFREG		0x1a9
++	btrfs_dev_replace_unlock(dev_replace);
 +
-+#ifndef	__ASSEMBLY__
-+unsigned long sun4v_t5_get_perfreg(unsigned long reg_num,
-+				   unsigned long *reg_val);
-+unsigned long sun4v_t5_set_perfreg(unsigned long reg_num,
-+				   unsigned long reg_val);
-+#endif
-+
- /* Function numbers for HV_CORE_TRAP.  */
- #define HV_CORE_SET_VER			0x00
- #define HV_CORE_PUTCHAR			0x01
-@@ -2978,6 +2988,7 @@ unsigned long sun4v_vt_set_perfreg(unsig
- #define HV_GRP_VF_CPU			0x0205
- #define HV_GRP_KT_CPU			0x0209
- #define HV_GRP_VT_CPU			0x020c
-+#define HV_GRP_T5_CPU			0x0211
- #define HV_GRP_DIAG			0x0300
+ 	btrfs_rm_dev_replace_blocked(fs_info);
  
- #ifndef __ASSEMBLY__
---- a/arch/sparc/kernel/hvapi.c
-+++ b/arch/sparc/kernel/hvapi.c
-@@ -46,6 +46,7 @@ static struct api_info api_table[] = {
- 	{ .group = HV_GRP_VF_CPU,				},
- 	{ .group = HV_GRP_KT_CPU,				},
- 	{ .group = HV_GRP_VT_CPU,				},
-+	{ .group = HV_GRP_T5_CPU,				},
- 	{ .group = HV_GRP_DIAG,		.flags = FLAG_PRE_API	},
- };
+ 	btrfs_rm_dev_replace_srcdev(fs_info, src_device);
+@@ -580,7 +582,6 @@ static int btrfs_dev_replace_finishing(s
+ 	 * superblock is scratched out so that it is no longer marked to
+ 	 * belong to this filesystem.
+ 	 */
+-	btrfs_dev_replace_unlock(dev_replace);
+ 	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
+ 	mutex_unlock(&root->fs_info->chunk_mutex);
  
---- a/arch/sparc/kernel/hvcalls.S
-+++ b/arch/sparc/kernel/hvcalls.S
-@@ -821,3 +821,19 @@ ENTRY(sun4v_vt_set_perfreg)
- 	retl
- 	 nop
- ENDPROC(sun4v_vt_set_perfreg)
-+
-+ENTRY(sun4v_t5_get_perfreg)
-+	mov	%o1, %o4
-+	mov	HV_FAST_T5_GET_PERFREG, %o5
-+	ta	HV_FAST_TRAP
-+	stx	%o1, [%o4]
-+	retl
-+	 nop
-+ENDPROC(sun4v_t5_get_perfreg)
-+
-+ENTRY(sun4v_t5_set_perfreg)
-+	mov	HV_FAST_T5_SET_PERFREG, %o5
-+	ta	HV_FAST_TRAP
-+	retl
-+	 nop
-+ENDPROC(sun4v_t5_set_perfreg)
---- a/arch/sparc/kernel/pcr.c
-+++ b/arch/sparc/kernel/pcr.c
-@@ -191,12 +191,41 @@ static const struct pcr_ops n4_pcr_ops =
- 	.pcr_nmi_disable	= PCR_N4_PICNPT,
- };
- 
-+static u64 n5_pcr_read(unsigned long reg_num)
-+{
-+	unsigned long val;
-+
-+	(void) sun4v_t5_get_perfreg(reg_num, &val);
-+
-+	return val;
-+}
-+
-+static void n5_pcr_write(unsigned long reg_num, u64 val)
-+{
-+	(void) sun4v_t5_set_perfreg(reg_num, val);
-+}
-+
-+static const struct pcr_ops n5_pcr_ops = {
-+	.read_pcr		= n5_pcr_read,
-+	.write_pcr		= n5_pcr_write,
-+	.read_pic		= n4_pic_read,
-+	.write_pic		= n4_pic_write,
-+	.nmi_picl_value		= n4_picl_value,
-+	.pcr_nmi_enable		= (PCR_N4_PICNPT | PCR_N4_STRACE |
-+				   PCR_N4_UTRACE | PCR_N4_TOE |
-+				   (26 << PCR_N4_SL_SHIFT)),
-+	.pcr_nmi_disable	= PCR_N4_PICNPT,
-+};
-+
-+
- static unsigned long perf_hsvc_group;
- static unsigned long perf_hsvc_major;
- static unsigned long perf_hsvc_minor;
- 
- static int __init register_perf_hsvc(void)
- {
-+	unsigned long hverror;
-+
- 	if (tlb_type == hypervisor) {
- 		switch (sun4v_chip_type) {
- 		case SUN4V_CHIP_NIAGARA1:
-@@ -215,6 +244,10 @@ static int __init register_perf_hsvc(voi
- 			perf_hsvc_group = HV_GRP_VT_CPU;
- 			break;
- 
-+		case SUN4V_CHIP_NIAGARA5:
-+			perf_hsvc_group = HV_GRP_T5_CPU;
-+			break;
-+
- 		default:
- 			return -ENODEV;
- 		}
-@@ -222,10 +255,12 @@ static int __init register_perf_hsvc(voi
- 
- 		perf_hsvc_major = 1;
- 		perf_hsvc_minor = 0;
--		if (sun4v_hvapi_register(perf_hsvc_group,
--					 perf_hsvc_major,
--					 &perf_hsvc_minor)) {
--			printk("perfmon: Could not register hvapi.\n");
-+		hverror = sun4v_hvapi_register(perf_hsvc_group,
-+					       perf_hsvc_major,
-+					       &perf_hsvc_minor);
-+		if (hverror) {
-+			pr_err("perfmon: Could not register hvapi(0x%lx).\n",
-+			       hverror);
- 			return -ENODEV;
- 		}
- 	}
-@@ -254,6 +289,10 @@ static int __init setup_sun4v_pcr_ops(vo
- 		pcr_ops = &n4_pcr_ops;
- 		break;
- 
-+	case SUN4V_CHIP_NIAGARA5:
-+		pcr_ops = &n5_pcr_ops;
-+		break;
-+
- 	default:
- 		ret = -ENODEV;
- 		break;
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1662,7 +1662,8 @@ static bool __init supported_pmu(void)
- 		sparc_pmu = &niagara2_pmu;
- 		return true;
- 	}
--	if (!strcmp(sparc_pmu_type, "niagara4")) {
-+	if (!strcmp(sparc_pmu_type, "niagara4") ||
-+	    !strcmp(sparc_pmu_type, "niagara5")) {
- 		sparc_pmu = &niagara4_pmu;
- 		return true;
- 	}
 
 
