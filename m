@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841AbaJ1Dg6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:36:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44348 "EHLO
+	id S1756047AbaJ1IBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 04:01:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44344 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766AbaJ1Dgz (ORCPT
+	with ESMTP id S1753800AbaJ1Dgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:36:55 -0400
+	Mon, 27 Oct 2014 23:36:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 031/146] regmap: fix NULL pointer dereference in _regmap_write/read
-Date: Tue, 28 Oct 2014 11:32:53 +0800
-Message-Id: <20141028033344.790371251@linuxfoundation.org>
+        Xiubo Li <Li.Xiubo@freescale.com>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.17 030/146] regmap: debugfs: fix possbile NULL pointer dereference
+Date: Tue, 28 Oct 2014 11:32:52 +0800
+Message-Id: <20141028033344.748258713@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,41 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
+From: Xiubo Li <Li.Xiubo@freescale.com>
 
-commit 5336be8416a71b5568d2cf54a2f2066abe9f2a53 upstream.
+commit 2c98e0c1cc6b8e86f1978286c3d4e0769ee9d733 upstream.
 
-If LOG_DEVICE is defined and map->dev is NULL it will lead to NULL
-pointer dereference. This patch fixes this issue by adding check for
-dev->NULL in all such places in regmap.c
+If 'map->dev' is NULL and there will lead dev_name() to be NULL pointer
+dereference. So before dev_name(), we need to have check of the map->dev
+pionter.
 
-Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+We also should make sure that the 'name' pointer shouldn't be NULL for
+debugfs_create_dir(). So here using one default "dummy" debugfs name when
+the 'name' pointer and 'map->dev' are both NULL.
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/regmap.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/base/regmap/regmap-debugfs.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -1408,7 +1408,7 @@ int _regmap_write(struct regmap *map, un
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -473,6 +473,7 @@ void regmap_debugfs_init(struct regmap *
+ {
+ 	struct rb_node *next;
+ 	struct regmap_range_node *range_node;
++	const char *devname = "dummy";
+ 
+ 	/* If we don't have the debugfs root yet, postpone init */
+ 	if (!regmap_debugfs_root) {
+@@ -491,12 +492,15 @@ void regmap_debugfs_init(struct regmap *
+ 	INIT_LIST_HEAD(&map->debugfs_off_cache);
+ 	mutex_init(&map->cache_lock);
+ 
++	if (map->dev)
++		devname = dev_name(map->dev);
++
+ 	if (name) {
+ 		map->debugfs_name = kasprintf(GFP_KERNEL, "%s-%s",
+-					      dev_name(map->dev), name);
++					      devname, name);
+ 		name = map->debugfs_name;
+ 	} else {
+-		name = dev_name(map->dev);
++		name = devname;
  	}
  
- #ifdef LOG_DEVICE
--	if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
-+	if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
- 		dev_info(map->dev, "%x <= %x\n", reg, val);
- #endif
- 
-@@ -2058,7 +2058,7 @@ static int _regmap_read(struct regmap *m
- 	ret = map->reg_read(context, reg, val);
- 	if (ret == 0) {
- #ifdef LOG_DEVICE
--		if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
-+		if (map->dev && strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
- 			dev_info(map->dev, "%x => %x\n", reg, *val);
- #endif
- 
+ 	map->debugfs = debugfs_create_dir(name, regmap_debugfs_root);
 
 
