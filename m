@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485AbaJ1D2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:28:17 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50183 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461AbaJ1D2P (ORCPT
+	id S1753414AbaJ1DgG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:36:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44254 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239AbaJ1DgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:28:15 -0400
-From: "billbonaparte" <programme110@gmail.com>
-To: <linux-kernel@vger.kernel.org>,
-        "Netfilter Developer Mailing List" <netfilter-devel@vger.kernel.org>,
-        "'Pablo Neira Ayuso'" <pablo@netfilter.org>,
-        "'Patrick McHardy'" <kaber@trash.net>, <kadlec@blackhole.kfki.hu>,
-        <davem@davemloft.net>
-Cc: "'Changli Gao'" <xiaosuo@gmail.com>,
-        "'Jozsef Kadlecsik'" <kadlec@blackhole.kfki.hu>,
-        "'Jesper Dangaard Brouer'" <brouer@redhat.com>,
-        "'Andrey Vagin'" <avagin@openvz.org>
-Subject: netfilter: nf_conntrack: there maybe a bug in __nf_conntrack_confirm, when it race against get_next_corpse
-Date: Tue, 28 Oct 2014 11:27:43 +0800
-Message-ID: <02ee01cff25f$28808540$79818fc0$@gmail.com>
+	Mon, 27 Oct 2014 23:36:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Sterba <dsterba@suse.cz>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.17 001/146] btrfs: wake up transaction thread from SYNC_FS ioctl
+Date: Tue, 28 Oct 2014 11:32:23 +0800
+Message-Id: <20141028033343.501310192@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
+References: <20141028033343.441992423@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: Ac/yXyF1brr4J258ScKVbIQiIUY2UQ==
-Content-Language: zh-cn
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all:
-	In function __nf_conntrack_confirm, we check the conntrack if it was
-alreay dead, before insert it into hash-table. 
-	we do this because if we insert an already 'dead' hash,  it will
-block further use of that particular connection.
-	but we don't do that right.
-    let's consider the following case:
-	
-	cpu1
-cpu2
-	__nf_conntrack_confirm
-get_next_corpse
-   		lock corresponding hash-list
-....
-		check nf_ct_is_dying(ct)
-for_each_possible_cpu(cpu) {
-		......
-spin_lock_bh(&pcpu->lock);
-		......
-set_bit(IPS_DYING_BIT, &ct->status);
-		nf_ct_del_from_dying_or_unconfirmed_list(ct);
-spin_unlock_bh(&pcpu_lock);
-		add_timer(&ct->timeout);
-}	
-		ct->status |= IPS_CONFIRMD;
-		__nf_conntrack_hash_insert(ct);
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-	
-	The above case reveal two problems:
-	1. we may insert a dead conntrack to hash-table, it will block
-further use of that particular connection.
-	2. operation on ct->status should be atomic, because it race aginst
-get_next_corpse.
-	  due to this reason, the operation on ct->status in
-nf_nat_setup_info should be atomic as well.
+From: David Sterba <dsterba@suse.cz>
 
-	if we want to resolve the first problem, we must delete the
-unconfirmed conntrack from unconfirmed-list first, then check if it is
-already dead.
-	Am I right to do this ?
-	Appreciate any comments and reply.
+commit 2fad4e83e12591eb3bd213875b9edc2d18e93383 upstream.
+
+The transaction thread may want to do more work, namely it pokes the
+cleaner ktread that will start processing uncleaned subvols.
+
+This can be triggered by user via the 'btrfs fi sync' command, otherwise
+there was a delay up to 30 seconds before the cleaner started to clean
+old snapshots.
+
+Signed-off-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/btrfs/ioctl.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -5283,6 +5283,12 @@ long btrfs_ioctl(struct file *file, unsi
+ 		if (ret)
+ 			return ret;
+ 		ret = btrfs_sync_fs(file->f_dentry->d_sb, 1);
++		/*
++		 * The transaction thread may want to do more work,
++		 * namely it pokes the cleaner ktread that will start
++		 * processing uncleaned subvols.
++		 */
++		wake_up_process(root->fs_info->transaction_kthread);
+ 		return ret;
+ 	}
+ 	case BTRFS_IOC_START_SYNC:
+
 
