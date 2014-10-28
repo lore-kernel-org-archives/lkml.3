@@ -1,144 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933837AbaJ1FLE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 01:11:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46314 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933708AbaJ1Dwe (ORCPT
+	id S1753524AbaJ1FM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 01:12:28 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39605 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442AbaJ1FM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:34 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Matlack <dmatlack@google.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH 3.10 05/43] kvm: x86: fix stale mmio cache bug
-Date: Tue, 28 Oct 2014 11:36:03 +0800
-Message-Id: <20141028033523.636391365@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 01:12:26 -0400
+Date: Mon, 27 Oct 2014 22:12:20 -0700
+From: Darren Hart <dvhart@infradead.org>
+To: Frans Klaver <fransklaver@gmail.com>
+Cc: Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/8] eeepc-laptop: define rfkill notifier nodes only once
+Message-ID: <20141028051220.GE60814@vmdeb7>
+References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
+ <1414005163-3461-4-git-send-email-fransklaver@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1414005163-3461-4-git-send-email-fransklaver@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Oct 22, 2014 at 09:12:38PM +0200, Frans Klaver wrote:
+> The rfkill notifier node names are used in three different places. As a
+> matter of style, it is better to store them somewhere and have the
+> compiler warn us about typos in the function arguments.
+> 
+> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+> ---
+>  drivers/platform/x86/eeepc-laptop.c | 22 +++++++++++++---------
+>  1 file changed, 13 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+> index 6e3be01..e92ea41 100644
+> --- a/drivers/platform/x86/eeepc-laptop.c
+> +++ b/drivers/platform/x86/eeepc-laptop.c
+> @@ -819,11 +819,15 @@ static int eeepc_new_rfkill(struct eeepc_laptop *eeepc,
+>  	return 0;
+>  }
+>  
+> +static char EEEPC_RFKILL_NODE_1[] = "\\_SB.PCI0.P0P5";
+> +static char EEEPC_RFKILL_NODE_2[] = "\\_SB.PCI0.P0P6";
+> +static char EEEPC_RFKILL_NODE_3[] = "\\_SB.PCI0.P0P7";
 
-------------------
+So, out of curiosity, any particular reason for static char[] instead of
+#define? I see both used frequently and didn't see any advice in CodingStyle.
 
-From: David Matlack <dmatlack@google.com>
+Regardless, Queued and thanks,
 
-commit 56f17dd3fbc44adcdbc3340fe3988ddb833a47a7 upstream.
-
-The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
-up to userspace:
-
-(1) Guest accesses gpa X without a memory slot. The gfn is cached in
-struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
-the SPTE write-execute-noread so that future accesses cause
-EPT_MISCONFIGs.
-
-(2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
-covering the page just accessed.
-
-(3) Guest attempts to read or write to gpa X again. On Intel, this
-generates an EPT_MISCONFIG. The memory slot generation number that
-was incremented in (2) would normally take care of this but we fast
-path mmio faults through quickly_check_mmio_pf(), which only checks
-the per-vcpu mmio cache. Since we hit the cache, KVM passes a
-KVM_EXIT_MMIO up to userspace.
-
-This patch fixes the issue by using the memslot generation number
-to validate the mmio cache.
-
-Signed-off-by: David Matlack <dmatlack@google.com>
-[xiaoguangrong: adjust the code to make it simpler for stable-tree fix.]
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Reviewed-by: David Matlack <dmatlack@google.com>
-Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Tested-by: David Matlack <dmatlack@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/mmu.c              |    2 +-
- arch/x86/kvm/x86.h              |   20 +++++++++++++++-----
- 3 files changed, 17 insertions(+), 6 deletions(-)
-
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -463,6 +463,7 @@ struct kvm_vcpu_arch {
- 	u64 mmio_gva;
- 	unsigned access;
- 	gfn_t mmio_gfn;
-+	u64 mmio_gen;
- 
- 	struct kvm_pmu pmu;
- 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -3072,7 +3072,7 @@ static void mmu_sync_roots(struct kvm_vc
- 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
- 		return;
- 
--	vcpu_clear_mmio_info(vcpu, ~0ul);
-+	vcpu_clear_mmio_info(vcpu, MMIO_GVA_ANY);
- 	kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
- 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
- 		hpa_t root = vcpu->arch.mmu.root_hpa;
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -78,15 +78,23 @@ static inline void vcpu_cache_mmio_info(
- 	vcpu->arch.mmio_gva = gva & PAGE_MASK;
- 	vcpu->arch.access = access;
- 	vcpu->arch.mmio_gfn = gfn;
-+	vcpu->arch.mmio_gen = kvm_memslots(vcpu->kvm)->generation;
-+}
-+
-+static inline bool vcpu_match_mmio_gen(struct kvm_vcpu *vcpu)
-+{
-+	return vcpu->arch.mmio_gen == kvm_memslots(vcpu->kvm)->generation;
- }
- 
- /*
-- * Clear the mmio cache info for the given gva,
-- * specially, if gva is ~0ul, we clear all mmio cache info.
-+ * Clear the mmio cache info for the given gva. If gva is MMIO_GVA_ANY, we
-+ * clear all mmio cache info.
-  */
-+#define MMIO_GVA_ANY (~(gva_t)0)
-+
- static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
- {
--	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
-+	if (gva != MMIO_GVA_ANY && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
- 		return;
- 
- 	vcpu->arch.mmio_gva = 0;
-@@ -94,7 +102,8 @@ static inline void vcpu_clear_mmio_info(
- 
- static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
- {
--	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
-+	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gva &&
-+	      vcpu->arch.mmio_gva == (gva & PAGE_MASK))
- 		return true;
- 
- 	return false;
-@@ -102,7 +111,8 @@ static inline bool vcpu_match_mmio_gva(s
- 
- static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
- {
--	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
-+	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gfn &&
-+	      vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
- 		return true;
- 
- 	return false;
-
-
+-- 
+Darren Hart
+Intel Open Source Technology Center
