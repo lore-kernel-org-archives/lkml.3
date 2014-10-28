@@ -1,143 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061AbaJ1RkV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:40:21 -0400
-Received: from mail.mandriva.com.br ([177.220.134.171]:53901 "EHLO
-	mail.mandriva.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaJ1RkS (ORCPT
+	id S1753978AbaJ1RkT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:40:19 -0400
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:57575 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaJ1RkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:40:18 -0400
-Date: Tue, 28 Oct 2014 15:40:12 -0200
-From: Marco A Benatto <marco.benatto@mandriva.com.br>
-To: Timofey Titovets <nefelim4ag@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: UKSM: What's maintainers think about it?
-Message-ID: <20141028174011.GC1445@sirus.conectiva>
-References: <CAGqmi77uR2Nems6fE_XM1t3a06OwuqJP-0yOMOQh7KH13vzdzw@mail.gmail.com>
- <20141025213201.005762f9.akpm@linux-foundation.org>
- <20141028133131.GA1445@sirus.conectiva>
- <CAGqmi76b0oUMAsAvBt=PwaxF5JZXcckSdWe2=bL_pXaiUFFCXQ@mail.gmail.com>
+	Tue, 28 Oct 2014 13:40:17 -0400
+Date: Tue, 28 Oct 2014 15:40:09 -0200
+From: "Leonidas S. Barbosa" <leosilva@linux.vnet.ibm.com>
+To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org,
+        Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>,
+        Fionnuala Gunter <fin@linux.vnet.ibm.com>
+Subject: [PATCH 0/9] NX crypto driver fixes
+Message-ID: <20141028174006.GA15893@bluepex.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAGqmi76b0oUMAsAvBt=PwaxF5JZXcckSdWe2=bL_pXaiUFFCXQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102817-0005-0000-0000-000000E805ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 04:59:45PM +0300, Timofey Titovets wrote:
-> 2014-10-28 16:31 GMT+03:00 Marco A Benatto <marco.benatto@mandriva.com.br>:
-> > Hi All,
-> >
-> > I'm not mantainer at all, but I've being using UKSM for a long time and remember
-> > to port it to 3.16 family once.
-> > UKSM seems good and stable and, at least for me, doesn't raised any errors.
-> > AFAIK the only limitation I know (maybe I has been fixed already) it isn't able
-> > to work together with zram stuff due to some race-conditions.
-> >
-> > Cheers,
-> >
-> > Marco A Benatto
-> > Mandriva OEM Developer
-> >
-> 
-> http://kerneldedup.org/forum/forum.php?mod=viewthread&tid=106
-> As i did find, uksm not conflicting with zram (or zswap - on my system).
+This patch set fixes the follow issues in  NX crypto driver:
 
-Interesting,
+  - Bound limit issue that causes a memory crash
+  - SHA concurrence issue
+  - IV vector fix with the correct bit order
+  - NX CCM does not support keys larger than 128 causing
+  crashes in fips mode.
 
-I've contacted the mantainers to send some patches in April and they said me this:
 
-"The biggest problem between UKSM/KSM and zswap is that pages can be reclaimed so
-fast by zswap before UKSM/KSM can have a chance to merge those can be merged.
+Leonidas S. Barbosa (9):
+  Moving NX-AES-CBC to be process logic
+  Moving NX-AES-CCM to be process logic and sg_list bounds
+  Moving limit and bound logic in CTR and fix IV vector
+  Moving NX-AES-ECB to be processed logic
+  Moving NX-AES-GCM to be processed logic
+  Moving NX-AES-XCBC to be processed logic
+  Fix SHA concurrence issue and sg limit bounds
+  Fixing the limit number of bytes to be processed
+  Disable ccm and ccm4309 in fips mod
 
-So one of the ideas that make a direct solution is that:
-1. sleep the processes who trigger the zswap
-2. wake up the UKSM thread and adjust the scan parameters properly to make it
-sample the whole memory in a limited time to judge if there are any VMAs need to
-be worked on.
-3. If there are those VMAs then merge them at full speed. if there not,
-sleep UKSM.
-4. Wake up the zswap code pathes and judge that if memory is enough to satisfy
-the requests. If there is enough memory then return and redo the memory
-allocation.
-5. if there is not, then go on to do zswapping.
+ drivers/crypto/nx/nx-aes-cbc.c  |   12 +--
+ drivers/crypto/nx/nx-aes-ccm.c  |   61 +++++------
+ drivers/crypto/nx/nx-aes-ctr.c  |   13 +--
+ drivers/crypto/nx/nx-aes-ecb.c  |   12 +--
+ drivers/crypto/nx/nx-aes-gcm.c  |   66 +++++++-----
+ drivers/crypto/nx/nx-aes-xcbc.c |   81 +++++++++++---
+ drivers/crypto/nx/nx-sha256.c   |  208 ++++++++++++++++++-------------------
+ drivers/crypto/nx/nx-sha512.c   |  222 ++++++++++++++++++---------------------
+ drivers/crypto/nx/nx.c          |  159 +++++++++++++++++++++++-----
+ drivers/crypto/nx/nx.h          |    8 +-
+ 10 files changed, 469 insertions(+), 373 deletions(-)
 
-This is just an outline of ONE of the solutions. It need to be carefully
-tweaked. Direct page reclaiming of zswap is a time sensitive code path
-, we cannot add too much overhead by doing this,
-otherwise it loses its meaning." 
-
-> ---
-> Offtop:
-> Why i open up question about UKSM?
-> 
-> May be we (as community, who want to help) can split out UKSM in
-> "several patches" in independent git repo. For allowing maintainers to
-> review this.
-> 
-> Is it morally correct?
-> 
-> UKSM code licensed under GPL and as i think we can feel free for port
-> and adopt code (with indicating the author)
-> 
-> Please, fix me if i mistake or miss something.
-> This is just stream of my thoughts %_%
-> ---
-
-If there's no problem on that and if you don't mind, I can help you on this.
-What dou you think?
-
-Cheers,
-
-> > On Sat, Oct 25, 2014 at 09:32:01PM -0700, Andrew Morton wrote:
-> >> On Sat, 25 Oct 2014 22:25:56 +0300 Timofey Titovets <nefelim4ag@gmail.com> wrote:
-> >>
-> >> > Good time of day, people.
-> >> > I try to find 'mm' subsystem specific people and lists, but list
-> >> > linux-mm looks dead and mail archive look like deprecated.
-> >> > If i must to sent this message to another list or add CC people, let me know.
-> >>
-> >> linux-mm@kvack.org is alive and well.
-> 
-> So cool, thanks for adding 'mm' to CC.
-> 
-> >> > If questions are already asked (i can't find activity before), feel
-> >> > free to kick me.
-> >> >
-> >> > The main questions:
-> >> > 1. Somebody test it? I see many reviews about it.
-> >> > I already port it to latest linux-next-git kernel and its work without issues.
-> >> > http://pastebin.com/6FMuKagS
-> >> > (if it matter, i can describe use cases and results, if somebody ask it)
-> >> >
-> >> > 2. Developers of UKSM already tried to merge it? Somebody talked with uksm devs?
-> >> > offtop: now i try to communicate with dev's on kerneldedup.org forum,
-> >> > but i have problems with email verification and wait admin
-> >> > registration approval.
-> >> > (i already sent questions to
-> >> > http://kerneldedup.org/forum/home.php?mod=space&username=xianai ,
-> >> > because him looks like team leader)
-> >> >
-> >> > 3. I just want collect feedbacks from linux maintainers team, if you
-> >> > decide what UKSM not needed in kernel, all other comments (as i
-> >> > understand) not matter.
-> >> >
-> >> > Like KSM, but better.
-> >> > UKSM - Ultra Kernel Samepage Merging
-> >> > http://kerneldedup.org/en/projects/uksm/introduction/
-> >>
-> >> It's the first I've heard of it.  No, as far as I know there has been
-> >> no attempt to upstream UKSM.
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> -- 
-> Have a nice day,
-> Timofey.
