@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbaJ1OLx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 10:11:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56902 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaJ1OLw (ORCPT
+	id S1753963AbaJ1OMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 10:12:12 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:35070 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753625AbaJ1OMJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 10:11:52 -0400
-Date: Tue, 28 Oct 2014 22:10:38 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Qais Yousef <qais.yousef@imgtec.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 03/11] drivers: char: add AXD Audio Processing IP driver
-Message-ID: <20141028141038.GA18384@kroah.com>
-References: <1414495589-8579-1-git-send-email-qais.yousef@imgtec.com>
- <1414495589-8579-4-git-send-email-qais.yousef@imgtec.com>
+	Tue, 28 Oct 2014 10:12:09 -0400
+Date: Tue, 28 Oct 2014 10:11:58 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Jeff Layton <jlayton@poochiereds.net>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 5/7] fs: Convert show_fdinfo functions to void
+Message-ID: <20141028101158.3dde9880@gandalf.local.home>
+In-Reply-To: <e37e6e7b76acbdcc3bb4ab2a57c8f8ca1ae11b9a.1412031505.git.joe@perches.com>
+References: <20140929124246.3e39dac8@gandalf.local.home>
+	<cover.1412031505.git.joe@perches.com>
+	<e37e6e7b76acbdcc3bb4ab2a57c8f8ca1ae11b9a.1412031505.git.joe@perches.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414495589-8579-4-git-send-email-qais.yousef@imgtec.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 11:26:21AM +0000, Qais Yousef wrote:
-> AXD is Audio Processing IP by Imagination Technologies that can
-> perform decoding, encoding, equalisation, resampling, mixing,
-> synchronisation and audio playback.
+On Mon, 29 Sep 2014 16:08:25 -0700
+Joe Perches <joe@perches.com> wrote:
 
-Isn't that a codec?  Why is this a "char" driver and not one that fits
-into our existing audio subsystem?
-
-> this patch adds defs and initialisation files
-
-Spell check :)
-
-> Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: <devicetree@vger.kernel.org>
-> Cc: <alsa-devel@alsa-project.org>
-> ---
->  drivers/char/axd/axd_api.h    |  641 +++++++++++++++++++++++++
->  drivers/char/axd/axd_module.c | 1064 +++++++++++++++++++++++++++++++++++++++++
->  drivers/char/axd/axd_module.h |   99 ++++
->  include/linux/axd.h           |   32 ++
->  4 files changed, 1836 insertions(+)
->  create mode 100644 drivers/char/axd/axd_api.h
->  create mode 100644 drivers/char/axd/axd_module.c
->  create mode 100644 drivers/char/axd/axd_module.h
->  create mode 100644 include/linux/axd.h
+> seq_printf functions shouldn't really check the return value.
+> Checking seq_is_full occasionally is used instead.
 > 
-> diff --git a/drivers/char/axd/axd_api.h b/drivers/char/axd/axd_api.h
-> new file mode 100644
-> index 000000000000..0d732f173f55
-> --- /dev/null
-> +++ b/drivers/char/axd/axd_api.h
-> @@ -0,0 +1,641 @@
-> +/*
-> + *  Copyright (C) 2011-2014 Imagination Technologies Ltd.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License, or (at your option) any later version.
-
-Do you really mean "any later version"?
+> Update vfs documentation.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
 
-> + *
-> + *  Main API to the AXD for access from the host.
-> + */
-> +#ifndef AXD_API_H_
-> +#define AXD_API_H_
-> +
-> +#include <linux/types.h>
-> +
-> +
-> +#define THREAD_COUNT 4
-> +#define AXD_MAX_PIPES 3
-> +
-> +
-> +#define AXD_DESCRIPTOR_READY_BIT	0x80000000
-> +#define AXD_DESCRIPTOR_INUSE_BIT	0x40000000
-> +#define AXD_DESCRIPTOR_EOS_BIT		0x20000000
-> +#define AXD_DESCRIPTOR_SIZE_MASK	0x0000FFFF
-> +
-> +struct axd_buffer_desc {
-> +	uint32_t status_size;
-> +	uint32_t data_ptr;
-> +	uint32_t pts_high;
-> +	uint32_t pts_low;
+>  
+> -#ifdef CONFIG_PROC_FS
+> -static int eventfd_show_fdinfo(struct seq_file *m, struct file *f)
+> +static void eventfd_show_fdinfo(struct seq_file *m, struct file *f)
+>  {
+> +#ifdef CONFIG_PROC_FS
+>  	struct eventfd_ctx *ctx = f->private_data;
+> -	int ret;
+>  
+>  	spin_lock_irq(&ctx->wqh.lock);
+> -	ret = seq_printf(m, "eventfd-count: %16llx\n",
+> -			 (unsigned long long)ctx->count);
+> +	seq_printf(m, "eventfd-count: %16llx\n",
+> +		   (unsigned long long)ctx->count);
+>  	spin_unlock_irq(&ctx->wqh.lock);
+> -
+> -	return ret;
+> -}
+>  #endif
+> +}
+>  
+>  static const struct file_operations eventfd_fops = {
+> -#ifdef CONFIG_PROC_FS
+>  	.show_fdinfo	= eventfd_show_fdinfo,
+> -#endif
 
-Please always use standard Linux kernel types, "u32" in this case.
+I wouldn't change logic on this. There's no reason to call this
+function if it isn't doing anything.
 
-thanks,
+I'll change this to just do the update and not change logic like this.
 
-greg k-h
+-- Steve
+
+>  	.release	= eventfd_release,
+>  	.poll		= eventfd_poll,
+>  	.read		= eventfd_read,
+
+
+
+> diff --git a/fs/proc/fd.c b/fs/proc/fd.c
+> index e11d7c5..4c3c253 100644
+> --- a/fs/proc/fd.c
+> +++ b/fs/proc/fd.c
+> @@ -53,7 +53,7 @@ static int seq_show(struct seq_file *m, void *v)
+>  			   (long long)file->f_pos, f_flags,
+>  			   real_mount(file->f_path.mnt)->mnt_id);
+>  		if (file->f_op->show_fdinfo)
+> -			ret = file->f_op->show_fdinfo(m, file);
+> +			file->f_op->show_fdinfo(m, file);
+>  		fput(file);
+>  	}
+>  
