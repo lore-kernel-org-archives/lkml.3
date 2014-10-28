@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253AbaJ1KRi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 06:17:38 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:57635 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111AbaJ1KRg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 06:17:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <1413309277-32485-1-git-send-email-david.a.cohen@linux.intel.com>
-References: <1413224639-21552-1-git-send-email-david.a.cohen@linux.intel.com>
-	<1413309277-32485-1-git-send-email-david.a.cohen@linux.intel.com>
-Date: Tue, 28 Oct 2014 11:17:35 +0100
-Message-ID: <CACRpkdYzTP-uQCA_b=e9o7btkXxPXtawPjo9c44FT24Zo5qGow@mail.gmail.com>
-Subject: Re: [PATCH v2] pinctrl: baytrail: show output gpio state correctly on
- Intel Baytrail
-From: Linus Walleij <linus.walleij@linaro.org>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, stable <stable@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754182AbaJ1KTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 06:19:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60184 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338AbaJ1KTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 06:19:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,802,1406617200"; 
+   d="scan'208";a="621979740"
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: jic23@kernel.org, linux-iio@vger.kernel.org
+Cc: daniel.baluta@intel.com, knaack.h@gmx.de, linux-kernel@vger.kernel.org,
+        irina.tirdea@intel.com
+Subject: [PATCH v3 0/7] Introduce IIO interface for Android advanced features
+Date: Tue, 28 Oct 2014 12:19:24 +0200
+Message-Id: <1414491571-11672-1-git-send-email-daniel.baluta@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 14, 2014 at 7:54 PM, David Cohen
-<david.a.cohen@linux.intel.com> wrote:
+This patchset introduces a new interface for supporting some of the composite
+sensors in Android [1]. First supported sensors are activity and pedometer.
 
-> Even if a gpio pin is set to output, we still need to set INPUT_EN
-> functionality (by clearing INPUT_EN bit) to be able to read the pin's
-> level.
->
-> E.g. without this change, we'll always read low level state from sysfs.
->
-> Cc: <stable@vger.kernel.org> # v3.14+
-> Cc: Mathias Nyman <mathias.nyman@linux.intel.com>
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
->
-> v1 to v2: improved patch's body description as requested by Felipe Balbi
+This is a follow up of the discussion about adding new channels to IIO
+initiated some time ago on IIO list [2].
 
-This v2 version applied for fixes with Felipe's review tag.
+A device that has the activity/pedometer functionality is Freescale's MMA9553L ([3]).
 
-Sorry for slow catching up with email :(
+Because we don't have yet the hardware, to demonstrate these new channels we
+update iio_dummy kernel module and iio_event_monitor test program. We want
+to get an early feedback about extending the IIO interface in the correct
+direction.
 
-Yours,
-Linus Walleij
+[1] http://source.android.com/devices/sensors/composite_sensors.html
+[2] http://marc.info/?l=linux-iio&m=138374342831057&w=2
+[3] http://www.freescale.com/files/sensors/doc/ref_manual/MMA9553LSWRM.pdf
+
+Changes since v2: (comments from Jonathan and Hartmut)
+	* dropped the RFC tag
+	* use int instead of unsigned long for ret in iio_evgen_poke
+	* remove TRANSITION event and use THRESHOLD instead
+	* remove IIO_HEIGHT channel and use CALIBHEIGHT mask instead
+	* adapt iio_dummy modules and iio_event_monitor to reflect IIO
+	  interface changes.
+
+Daniel Baluta (4):
+  iio: dummy: Add virtual registers for dummy device
+  iio: core: Introduce IIO_ACTIVITY channel
+  iio: dummy: Demonstrate the usage of new channel types
+  iio: event_monitor: Add support for new channel types
+
+Irina Tirdea (3):
+  iio: core: Introduce IIO_EV_DIR_NONE
+  iio: core: Introduce STEPS channel type, ENABLE mask and INSTANCE
+    event
+  iio: core: Introduce IIO_CHAN_INFO_CALIBHEIGHT
+
+ Documentation/ABI/testing/sysfs-bus-iio            |  74 ++++++++
+ drivers/iio/industrialio-core.c                    |   8 +
+ drivers/iio/industrialio-event.c                   |  13 +-
+ .../staging/iio/Documentation/iio_event_monitor.c  |  23 ++-
+ drivers/staging/iio/iio_dummy_evgen.c              |  17 ++
+ drivers/staging/iio/iio_dummy_evgen.h              |   6 +
+ drivers/staging/iio/iio_simple_dummy.c             | 199 +++++++++++++++++++--
+ drivers/staging/iio/iio_simple_dummy.h             |   7 +
+ drivers/staging/iio/iio_simple_dummy_events.c      |  66 ++++++-
+ include/linux/iio/iio.h                            |   2 +
+ include/linux/iio/types.h                          |  10 +-
+ 11 files changed, 395 insertions(+), 30 deletions(-)
+
+-- 
+1.9.1
+
