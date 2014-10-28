@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148AbaJ1Tdq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 15:33:46 -0400
-Received: from smtprelay06.ispgateway.de ([80.67.18.29]:35973 "EHLO
-	smtprelay06.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaJ1Tdp (ORCPT
+	id S1751628AbaJ1Tfr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 15:35:47 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:33704 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727AbaJ1Tfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 15:33:45 -0400
-References: <1398561815-22033-1-git-send-email-peter@piie.net> <1406043436-17068-1-git-send-email-peter@piie.net> <1406043436-17068-4-git-send-email-peter@piie.net> <cone.1406384086.541895.7413.1000@galar> <1406514389.14109.7.camel@rzhang1-toshiba> <cone.1413887350.971616.2744.1000@mups>
-Message-ID: <cone.1414524819.964570.994.1000@galar>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Peter Feuerer <peter@piie.net>
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>, Borislav Petkov <bp@suse.de>,
-        Javi Merino <javi.merino@arm.com>
-Subject: Re: [PATCH v5 3/6] thermal: Added Bang-bang thermal governor
-Date: Tue, 28 Oct 2014 20:33:39 +0100
-Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
+	Tue, 28 Oct 2014 15:35:46 -0400
+Message-ID: <544FF00B.8050403@de.ibm.com>
+Date: Tue, 28 Oct 2014 20:35:39 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@lst.de>,
+        "linux-kernel@vger.kernel.org >> Linux Kernel Mailing List" 
+	<linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Subject: blk-mq vs cpu hotplug performance (due to percpu_ref_put performance)
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: NDA0MDk0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102819-0025-0000-0000-0000021C2A84
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rui,
+Tejun,
 
-I wonder whether you've had time to apply my set of patches already?  Would 
-you please be so kind to just send me a short reply?
+when going from 3.17 to 3.18-rc2 cpu hotplug become horrible slow on some KVM guests on s390
 
-thanks and kind regards,
---peter;
+I was able to bisect this to
+
+commit 9eca80461a45177e456219a9cd944c27675d6512
+("Revert "blk-mq, percpu_ref: implement a kludge for SCSI blk-mq stall during probe")
+
+Seems that this is due to all the rcu grace periods on percpu_ref_put during the cpu hotplug notifiers.
+
+This is barely noticable on small guests (lets say 1 virtio disk), but on guests with 20 disks a hotplug takes 2 or 3 instead of around 0.1 sec.
+There are three things that make this especially noticably on s390:
+- s390 has 100HZ which makes grace period waiting slower
+- s390 does not yet implement context tracking which would speed up RCU
+- s390 systems usually have a bigger amount of disk (e.g. 20 7GB disks instead of one 140GB disks)
+
+Any idea how to improve the situation? I think we could accept an expedited variant on cpu hotplug, since stop_machine_run will cause hickups anyway, but there are probably other callers.
 
 
-Peter Feuerer writes:
+Christian
 
-> Hi Rui,
-> 
-> Zhang Rui writes:
-> 
->> On Sat, 2014-07-26 at 16:14 +0200, Peter Feuerer wrote:
->>> Hi Rui,
->>> 
->>> Peter Feuerer writes:
->>> 
->>> > The bang-bang thermal governor uses a hysteresis to switch abruptly on
->>> > or off a cooling device.  It is intended to control fans, which can
->>> > not be throttled but just switched on or off.
->>> > Bang-bang cannot be set as default governor as it is intended for
->>> > special devices only.  For those special devices the driver needs to
->>> > explicitely request it.
->>> > 
->>> > Cc: Andrew Morton <akpm@linux-foundation.org>
->>> > Cc: Zhang Rui <rui.zhang@intel.com>
->>> 
->>> Anything that prevents you from giving your acked-by?
->>> 
->> NO.
->> 
->> I'll queue them for 3.18.
-> 
-> Are all 6 patches in for 3.18 as you promissed?
-> 
-> kind regards,
-> --peter;
+PS: on the plus side, this makes CPU hotplug races less likely.... 
+
