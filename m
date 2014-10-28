@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426AbaJ1L1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:27:36 -0400
-Received: from mailapp01.imgtec.com ([195.59.15.196]:27768 "EHLO
+	id S1754624AbaJ1L14 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:27:56 -0400
+Received: from mailapp01.imgtec.com ([195.59.15.196]:25399 "EHLO
 	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753095AbaJ1L12 (ORCPT
+	with ESMTP id S1754341AbaJ1L1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:27:28 -0400
+	Tue, 28 Oct 2014 07:27:36 -0400
 From: Qais Yousef <qais.yousef@imgtec.com>
 To: <linux-kernel@vger.kernel.org>
 CC: Qais Yousef <qais.yousef@imgtec.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
         <alsa-devel@alsa-project.org>
-Subject: [PATCH 04/11] drivers: char: axd: add fw binary header manipulation files
-Date: Tue, 28 Oct 2014 11:26:22 +0000
-Message-ID: <1414495589-8579-5-git-send-email-qais.yousef@imgtec.com>
+Subject: [PATCH 11/11] drivers: char: axd: add Kconfig and Makefile
+Date: Tue, 28 Oct 2014 11:26:29 +0000
+Message-ID: <1414495589-8579-12-git-send-email-qais.yousef@imgtec.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1414495589-8579-1-git-send-email-qais.yousef@imgtec.com>
 References: <1414495589-8579-1-git-send-email-qais.yousef@imgtec.com>
@@ -25,121 +25,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-these files provide functions to get information from the fw binary
-header
+Now all necessary files are added, allow AXD to be selected through
+Kconfig and compiled.
+
+NOTE: at the moment AXD can only work on MIPS but this restrictions
+should be lifted in the future as it evolves.
 
 Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: <alsa-devel@alsa-project.org>
 ---
- drivers/char/axd/axd_hdr.c | 69 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/char/axd/axd_hdr.h | 20 ++++++++++++++
- 2 files changed, 89 insertions(+)
- create mode 100644 drivers/char/axd/axd_hdr.c
- create mode 100644 drivers/char/axd/axd_hdr.h
+ drivers/char/Kconfig      |  2 ++
+ drivers/char/Makefile     |  2 ++
+ drivers/char/axd/Kconfig  | 19 +++++++++++++++++++
+ drivers/char/axd/Makefile | 20 ++++++++++++++++++++
+ 4 files changed, 43 insertions(+)
+ create mode 100644 drivers/char/axd/Kconfig
+ create mode 100644 drivers/char/axd/Makefile
 
-diff --git a/drivers/char/axd/axd_hdr.c b/drivers/char/axd/axd_hdr.c
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index efefd12a0f7b..7800a72cf771 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -602,5 +602,7 @@ config TILE_SROM
+ 
+ source "drivers/char/xillybus/Kconfig"
+ 
++source "drivers/char/axd/Kconfig"
++
+ endmenu
+ 
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index d06cde26031b..6c1769d8abf3 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -62,3 +62,5 @@ js-rtc-y = rtc.o
+ 
+ obj-$(CONFIG_TILE_SROM)		+= tile-srom.o
+ obj-$(CONFIG_XILLYBUS)		+= xillybus/
++
++obj-$(CONFIG_AXD)		+= axd/
+diff --git a/drivers/char/axd/Kconfig b/drivers/char/axd/Kconfig
 new file mode 100644
-index 000000000000..86a3aeec83e9
+index 000000000000..a1a94b12c04a
 --- /dev/null
-+++ b/drivers/char/axd/axd_hdr.c
-@@ -0,0 +1,69 @@
-+/*
-+ * Copyright (C) 2011-2014 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ *
-+ * Helper functions to parse AXD Header in the firmware binary.
-+ */
-+#include <linux/kernel.h>
++++ b/drivers/char/axd/Kconfig
+@@ -0,0 +1,19 @@
++config AXD
++	tristate "AXD Audio Processing IP"
++	depends on MIPS && COMMON_CLK && CMA
++	---help---
++	  Say Y here if you want to use AXD Audio Processing IP.
 +
-+#include "axd_api.h"
-+#include "axd_hdr.h"
++config AXD_DEBUG_DIAG
++	bool "AXD diagnostics"
++	depends on AXD
++	---help---
++	  Say Y if you want AXD driver to print some diagnostics after playing
++	  a stream.
 +
-+
-+#ifdef DEBUG_HEADER
-+#define debughdr	printk
-+#else
-+#define debughdr(format, ...)
-+#endif
-+
-+static struct axd_hdr *hdr;
-+
-+static void dump_hdr(void)
-+{
-+#ifdef DEBUG_HEADER
-+	unsigned int offset = 0;
-+	unsigned long address = (unsigned long)hdr;
-+
-+	debughdr("header <0x%08lX>:\n", address);
-+	while (offset <= sizeof(*hdr)) {
-+		debughdr("0x%08X\t", *(unsigned int *)(address+offset));
-+		offset += 4;
-+		if ((offset % (4*4)) == 0)
-+			debughdr("\n");
-+	}
-+	debughdr("\n");
-+#endif
-+}
-+
-+void axd_hdr_init(unsigned long address)
-+{
-+	hdr = (struct axd_hdr *)address;
-+	dump_hdr();
-+}
-+
-+unsigned long axd_hdr_get_pc(unsigned int thread)
-+{
-+	if (thread >= THREAD_COUNT)
-+		return -1;
-+	return hdr->thread_pc[thread];
-+}
-+
-+unsigned long axd_hdr_get_cmdblock_offset(void)
-+{
-+	debughdr("cmdblock_offset = 0x%08X\n", hdr->cmd_block_offset);
-+	return hdr->cmd_block_offset;
-+}
-+
-+char *axd_hdr_get_build_str(void)
-+{
-+	return hdr->build_str;
-+}
-+
-+unsigned long axd_hdr_get_log_offset(void)
-+{
-+	return hdr->log_offset;
-+}
-diff --git a/drivers/char/axd/axd_hdr.h b/drivers/char/axd/axd_hdr.h
++config AXD_DEBUG_VERBOSE
++	bool "AXD verbose debug"
++	depends on AXD
++	---help---
++	  Say Y if you want AXD driver to print verbose debug information.
++	  The output is extensive.
+diff --git a/drivers/char/axd/Makefile b/drivers/char/axd/Makefile
 new file mode 100644
-index 000000000000..34a46a7f8e65
+index 000000000000..3b367721073d
 --- /dev/null
-+++ b/drivers/char/axd/axd_hdr.h
++++ b/drivers/char/axd/Makefile
 @@ -0,0 +1,20 @@
-+/*
-+ * Copyright (C) 2011-2014 Imagination Technologies Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ *
-+ * Helper functions to parse AXD Header in the firmware binary
-+ */
-+ #ifndef AXD_HDR_H_
-+ #define AXD_HDR_H_
++obj-$(CONFIG_AXD) := axd.o
 +
-+void axd_hdr_init(unsigned long address);
-+unsigned long axd_hdr_get_pc(unsigned int thread);
-+unsigned long axd_hdr_get_cmdblock_offset(void);
-+char *axd_hdr_get_build_str(void);
-+unsigned long axd_hdr_get_log_offset(void);
++axd-objs = axd_buffers.o \
++	   axd_cmds.o \
++	   axd_cmds_codec_internal.o \
++	   axd_cmds_config.o \
++	   axd_cmds_decoder_config.o \
++	   axd_cmds_encoder_config.o \
++	   axd_cmds_info.o \
++	   axd_cmds_internal.o \
++	   axd_cmds_pipes.o \
++	   axd_hdr.o \
++	   axd_module.o \
++	   axd_platform_mips.o \
++	   axd_sysfs_ctrl.o \
++	   axd_sysfs_input.o \
++	   axd_sysfs_output.o
 +
-+#endif /* AXD_HDR_H_ */
++ccflags-$(CONFIG_AXD_DEBUG_DIAG) += -DDEBUG_DIAG
++ccflags-$(CONFIG_AXD_DEBUG_VERBOSE) += -DDEBUG_BUFFERS
 -- 
 2.1.0
 
