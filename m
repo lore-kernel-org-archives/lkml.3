@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848AbaJ1DuR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:50:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45937 "EHLO
+	id S1755866AbaJ1DuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:50:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755308AbaJ1DuN (ORCPT
+	with ESMTP id S1755175AbaJ1DuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:13 -0400
+	Mon, 27 Oct 2014 23:50:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.14 058/100] arm64: compat: fix compat types affecting struct compat_elf_prpsinfo
-Date: Tue, 28 Oct 2014 11:35:43 +0800
-Message-Id: <20141028033503.203814578@linuxfoundation.org>
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.14 057/100] spi: dw-mid: terminate ongoing transfers at exit
+Date: Tue, 28 Oct 2014 11:35:42 +0800
+Message-Id: <20141028033503.156578680@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -30,39 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Victor Kamensky <victor.kamensky@linaro.org>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 971a5b6fe634bb7b617d8c5f25b6a3ddbc600194 upstream.
+commit 8e45ef682cb31fda62ed4eeede5d9745a0a1b1e2 upstream.
 
-The compat_elf_prpsinfo structure does not match the arch/arm struct
-elf_pspsinfo definition. As result NT_PRPSINFO note in core file
-created by arm64 kernel for aarch32 (compat) process has wrong size.
-So gdb cannot display command that caused process crash.
+Do full clean up at exit, means terminate all ongoing DMA transfers.
 
-Fix is to change size of __compat_uid_t, __compat_gid_t so it would
-match size of similar fields in arch/arm case.
-
-Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/compat.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/spi/spi-dw-mid.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/arm64/include/asm/compat.h
-+++ b/arch/arm64/include/asm/compat.h
-@@ -37,8 +37,8 @@ typedef s32		compat_ssize_t;
- typedef s32		compat_time_t;
- typedef s32		compat_clock_t;
- typedef s32		compat_pid_t;
--typedef u32		__compat_uid_t;
--typedef u32		__compat_gid_t;
-+typedef u16		__compat_uid_t;
-+typedef u16		__compat_gid_t;
- typedef u16		__compat_uid16_t;
- typedef u16		__compat_gid16_t;
- typedef u32		__compat_uid32_t;
+--- a/drivers/spi/spi-dw-mid.c
++++ b/drivers/spi/spi-dw-mid.c
+@@ -91,7 +91,11 @@ static void mid_spi_dma_exit(struct dw_s
+ {
+ 	if (!dws->dma_inited)
+ 		return;
++
++	dmaengine_terminate_all(dws->txchan);
+ 	dma_release_channel(dws->txchan);
++
++	dmaengine_terminate_all(dws->rxchan);
+ 	dma_release_channel(dws->rxchan);
+ }
+ 
 
 
