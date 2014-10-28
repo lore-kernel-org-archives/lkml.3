@@ -1,134 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609AbaJ1WNU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:13:20 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:35558 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755266AbaJ1WL7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:11:59 -0400
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 2/3] samples: bpf: add a verifier test and summary line
-Date: Tue, 28 Oct 2014 15:11:42 -0700
-Message-Id: <1414534303-9906-3-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1414534303-9906-1-git-send-email-ast@plumgrid.com>
-References: <1414534303-9906-1-git-send-email-ast@plumgrid.com>
+	id S1755732AbaJ1WNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:13:41 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:58257 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755136AbaJ1WNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:13:38 -0400
+Date: Tue, 28 Oct 2014 15:09:44 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: [PATCH tip/core/rcu 0/9] Miscellaneous fixes for 3.19
+Message-ID: <20141028220944.GA26114@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102822-0025-0000-0000-000000F05F10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- add a test specifically targeting verifier state pruning.
-It checks state propagation between registers, storing that
-state into stack and state pruning algorithm recognizing
-equivalent stack and register states.
+Hello!
 
-- add summary line to spot failures easier
+This series provides miscellaneous fixes:
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- samples/bpf/test_verifier.c |   46 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 45 insertions(+), 1 deletion(-)
+1.	Removes the CONFIG_RCU_CPU_STALL_VERBOSE, so that RCU CPU stall
+	warnings are henceforth unconditionally verbose.  (Another RCU
+	Kconfig variable bites the dust!)
 
-diff --git a/samples/bpf/test_verifier.c b/samples/bpf/test_verifier.c
-index eb4bec0ad8af..63402742345e 100644
---- a/samples/bpf/test_verifier.c
-+++ b/samples/bpf/test_verifier.c
-@@ -602,6 +602,45 @@ static struct bpf_test tests[] = {
- 		},
- 		.result = ACCEPT,
- 	},
-+	{
-+		"jump test 5",
-+		.insns = {
-+			BPF_MOV64_REG(BPF_REG_2, BPF_REG_10),
-+			BPF_MOV64_REG(BPF_REG_3, BPF_REG_2),
-+			BPF_JMP_IMM(BPF_JGE, BPF_REG_1, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_3, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_2, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 0),
-+			BPF_MOV64_IMM(BPF_REG_0, 0),
-+			BPF_JMP_IMM(BPF_JGE, BPF_REG_1, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_3, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_2, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 0),
-+			BPF_MOV64_IMM(BPF_REG_0, 0),
-+			BPF_JMP_IMM(BPF_JGE, BPF_REG_1, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_3, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_2, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 0),
-+			BPF_MOV64_IMM(BPF_REG_0, 0),
-+			BPF_JMP_IMM(BPF_JGE, BPF_REG_1, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_3, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_2, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 0),
-+			BPF_MOV64_IMM(BPF_REG_0, 0),
-+			BPF_JMP_IMM(BPF_JGE, BPF_REG_1, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_3, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 2),
-+			BPF_STX_MEM(BPF_DW, BPF_REG_2, BPF_REG_2, -8),
-+			BPF_JMP_IMM(BPF_JA, 0, 0, 0),
-+			BPF_MOV64_IMM(BPF_REG_0, 0),
-+			BPF_EXIT_INSN(),
-+		},
-+		.result = ACCEPT,
-+	},
- };
- 
- static int probe_filter_length(struct bpf_insn *fp)
-@@ -630,7 +669,7 @@ static int create_map(void)
- 
- static int test(void)
- {
--	int prog_fd, i;
-+	int prog_fd, i, pass_cnt = 0, err_cnt = 0;
- 
- 	for (i = 0; i < ARRAY_SIZE(tests); i++) {
- 		struct bpf_insn *prog = tests[i].insns;
-@@ -657,21 +696,25 @@ static int test(void)
- 				printf("FAIL\nfailed to load prog '%s'\n",
- 				       strerror(errno));
- 				printf("%s", bpf_log_buf);
-+				err_cnt++;
- 				goto fail;
- 			}
- 		} else {
- 			if (prog_fd >= 0) {
- 				printf("FAIL\nunexpected success to load\n");
- 				printf("%s", bpf_log_buf);
-+				err_cnt++;
- 				goto fail;
- 			}
- 			if (strstr(bpf_log_buf, tests[i].errstr) == 0) {
- 				printf("FAIL\nunexpected error message: %s",
- 				       bpf_log_buf);
-+				err_cnt++;
- 				goto fail;
- 			}
- 		}
- 
-+		pass_cnt++;
- 		printf("OK\n");
- fail:
- 		if (map_fd >= 0)
-@@ -679,6 +722,7 @@ fail:
- 		close(prog_fd);
- 
- 	}
-+	printf("Summary: %d PASSED, %d FAILED\n", pass_cnt, err_cnt);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+2.	Allow 1- and 2-byte smp_load_acquire() and smp_store_release().
+	This has the side effect of removing support for pre-EV56 Alpha
+	CPUs, and the official Alpha maintainers have thus far been
+	silent on this issue.
+
+3.	Use rcu_dereference() for accessing struct mapped_device,
+	courtesy of Pranith Kumar.
+
+4.	Annotate the dm_table's ->map field with __rcu, courtesy of
+	Pranith Kumar.
+
+5.	Add sparse checking for use of RCU_INIT_POINTER() on a non-__rcu
+	pointer, courtesy of Pranith Kumar.
+
+6.	Prevent cond_resched_rcu_qs() from doing gratuitous call to
+	rcu_note_voluntary_context_switch().
+
+7.	Update the list of rcu_read_unlock() potential deadlocks, courtesy
+	of Oleg Nesterov.
+
+8.	Bind rcu_tasks_kthread() to housekeeping CPUs in CONFIG_NO_HZ_FULL
+	builds.
+
+9.	Provide lockless_dereference() for times when you want
+	rcu_dereference(), but without the sparse and lockdep-RCU noise.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/Documentation/RCU/stallwarn.txt                             |    6 --
+ b/drivers/md/dm.c                                             |   10 ++--
+ b/include/linux/compiler.h                                    |    2 
+ b/include/linux/rcupdate.h                                    |   24 ++++++++--
+ b/kernel/rcu/tree_plugin.h                                    |   13 -----
+ b/kernel/rcu/update.c                                         |    3 -
+ b/lib/Kconfig.debug                                           |   12 -----
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE01       |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE02       |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE02-T     |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE03       |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE04       |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE05       |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE06       |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE07       |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08       |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08-T     |    1 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE09       |    1 
+ b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt |    3 -
+ 19 files changed, 30 insertions(+), 54 deletions(-)
 
