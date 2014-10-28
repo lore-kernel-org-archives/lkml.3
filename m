@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427AbaJ1Vdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:33:31 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:37219 "EHLO
+	id S1755451AbaJ1Vdw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:33:52 -0400
+Received: from down.free-electrons.com ([37.187.137.238]:37133 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755249AbaJ1VbG (ORCPT
+	with ESMTP id S1755194AbaJ1VbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:31:06 -0400
+	Tue, 28 Oct 2014 17:31:03 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         =?UTF-8?q?Antoine=20T=C3=A9nart?= <antoine@free-electrons.com>,
         Russell King <linux@arm.linux.org.uk>, lars@metafoo.de,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v4 35/58] dmaengine: bam-dma: Split device_control
-Date: Tue, 28 Oct 2014 22:25:50 +0100
-Message-Id: <1414531573-18807-36-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v4 58/58] dmaengine: Remove device_control and device_slave_caps
+Date: Tue, 28 Oct 2014 22:26:13 +0100
+Message-Id: <1414531573-18807-59-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,156 +24,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split the device_control callback of the Qualcomm BAM DMA driver to make use
-of the newly introduced callbacks, that will eventually be used to retrieve
-slave capabilities.
+Now that device_control has been split into several functions, and
+device_slave_caps rendered useless, we can safely remove them.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 ---
- drivers/dma/qcom_bam_dma.c | 85 +++++++++++++++++++++++-----------------------
- 1 file changed, 43 insertions(+), 42 deletions(-)
+ include/linux/dmaengine.h | 52 ++++++-----------------------------------------
+ 1 file changed, 6 insertions(+), 46 deletions(-)
 
-diff --git a/drivers/dma/qcom_bam_dma.c b/drivers/dma/qcom_bam_dma.c
-index 7a4bbb0f80a5..03b1bf2afd4e 100644
---- a/drivers/dma/qcom_bam_dma.c
-+++ b/drivers/dma/qcom_bam_dma.c
-@@ -448,11 +448,18 @@ static void bam_free_chan(struct dma_chan *chan)
-  * Sets slave configuration for channel
-  *
-  */
--static void bam_slave_config(struct bam_chan *bchan,
--		struct dma_slave_config *cfg)
-+static int bam_slave_config(struct dma_chan *chan,
-+			    struct dma_slave_config *cfg)
- {
-+	struct bam_chan *bchan = to_bam_chan(chan);
-+	unsigned long flag;
-+
-+	spin_lock_irqsave(&bchan->vc.lock, flag);
- 	memcpy(&bchan->slave, cfg, sizeof(*cfg));
- 	bchan->reconfigure = 1;
-+	spin_unlock_irqrestore(&bchan->vc.lock, flag);
-+
-+	return 0;
- }
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index be9e60aa8f5e..b01b7a7c581b 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -189,25 +189,6 @@ enum dma_ctrl_flags {
+ };
  
  /**
-@@ -545,8 +552,9 @@ err_out:
-  * No callbacks are done
-  *
+- * enum dma_ctrl_cmd - DMA operations that can optionally be exercised
+- * on a running channel.
+- * @DMA_TERMINATE_ALL: terminate all ongoing transfers
+- * @DMA_PAUSE: pause ongoing transfers
+- * @DMA_RESUME: resume paused transfer
+- * @DMA_SLAVE_CONFIG: this command is only implemented by DMA controllers
+- * that need to runtime reconfigure the slave channels (as opposed to passing
+- * configuration data in statically from the platform). An additional
+- * argument of struct dma_slave_config must be passed in with this
+- * command.
+- */
+-enum dma_ctrl_cmd {
+-	DMA_TERMINATE_ALL,
+-	DMA_PAUSE,
+-	DMA_RESUME,
+-	DMA_SLAVE_CONFIG,
+-};
+-
+-/**
+  * enum sum_check_bits - bit position of pq_check_flags
   */
--static void bam_dma_terminate_all(struct bam_chan *bchan)
-+static int bam_dma_terminate_all(struct dma_chan *chan)
+ enum sum_check_bits {
+@@ -336,9 +317,8 @@ enum dma_slave_buswidth {
+  * This struct is passed in as configuration data to a DMA engine
+  * in order to set up a certain channel for DMA transport at runtime.
+  * The DMA device/engine has to provide support for an additional
+- * command in the channel config interface, DMA_SLAVE_CONFIG
+- * and this struct will then be passed in as an argument to the
+- * DMA engine device_control() function.
++ * callback in the dma_device structure, device_config and this struct
++ * will then be passed in as an argument to the function.
+  *
+  * The rationale for adding configuration information to this struct is as
+  * follows: if it is likely that more than one DMA slave controllers in
+@@ -617,8 +597,6 @@ struct dma_tx_state {
+  * @device_prep_interleaved_dma: Transfer expression in a generic way.
+  * @device_config: Pushes a new configuration to a channel, return 0 or an error
+  *	code
+- * @device_control: manipulate all pending operations on a channel, returns
+- *	zero or error code
+  * @device_pause: Pauses any transfer happening on a channel. Returns
+  *	0 or an error code
+  * @device_resume: Resumes any transfer on a channel previously
+@@ -630,7 +608,6 @@ struct dma_tx_state {
+  *	struct with auxiliary transfer status information, otherwise the call
+  *	will just return a simple status code
+  * @device_issue_pending: push pending transactions to hardware
+- * @device_slave_caps: return the slave channel capabilities
+  */
+ struct dma_device {
+ 
+@@ -697,8 +674,6 @@ struct dma_device {
+ 
+ 	int (*device_config)(struct dma_chan *chan,
+ 			     struct dma_slave_config *config);
+-	int (*device_control)(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+-		unsigned long arg);
+ 	int (*device_pause)(struct dma_chan *chan);
+ 	int (*device_resume)(struct dma_chan *chan);
+ 	int (*device_terminate_all)(struct dma_chan *chan);
+@@ -707,27 +682,15 @@ struct dma_device {
+ 					    dma_cookie_t cookie,
+ 					    struct dma_tx_state *txstate);
+ 	void (*device_issue_pending)(struct dma_chan *chan);
+-	int (*device_slave_caps)(struct dma_chan *chan, struct dma_slave_caps *caps);
+ };
+ 
+-static inline int dmaengine_device_control(struct dma_chan *chan,
+-					   enum dma_ctrl_cmd cmd,
+-					   unsigned long arg)
+-{
+-	if (chan->device->device_control)
+-		return chan->device->device_control(chan, cmd, arg);
+-
+-	return -ENOSYS;
+-}
+-
+ static inline int dmaengine_slave_config(struct dma_chan *chan,
+ 					  struct dma_slave_config *config)
  {
-+	struct bam_chan *bchan = to_bam_chan(chan);
- 	unsigned long flag;
- 	LIST_HEAD(head);
+ 	if (chan->device->device_config)
+ 		return chan->device->device_config(chan, config);
  
-@@ -561,56 +569,46 @@ static void bam_dma_terminate_all(struct bam_chan *bchan)
- 	spin_unlock_irqrestore(&bchan->vc.lock, flag);
- 
- 	vchan_dma_desc_free_list(&bchan->vc, &head);
-+
-+	return 0;
+-	return dmaengine_device_control(chan, DMA_SLAVE_CONFIG,
+-			(unsigned long)config);
++	return -ENOSYS;
  }
  
- /**
-- * bam_control - DMA device control
-+ * bam_pause - Pause DMA channel
-  * @chan: dma channel
-- * @cmd: control cmd
-- * @arg: cmd argument
-  *
-- * Perform DMA control command
-+ */
-+static int bam_pause(struct dma_chan *chan)
-+{
-+	struct bam_chan *bchan = to_bam_chan(chan);
-+	struct bam_device *bdev = bchan->bdev;
-+	unsigned long flag;
-+
-+	spin_lock_irqsave(&bchan->vc.lock, flag);
-+	writel_relaxed(1, bdev->regs + BAM_P_HALT(bchan->id));
-+	bchan->paused = 1;
-+	spin_unlock_irqrestore(&bchan->vc.lock, flag);
-+
-+	return 0;
-+}
-+
-+/**
-+ * bam_resume - Resume DMA channel operations
-+ * @chan: dma channel
-  *
-  */
--static int bam_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
--	unsigned long arg)
-+static int bam_resume(struct dma_chan *chan)
- {
- 	struct bam_chan *bchan = to_bam_chan(chan);
- 	struct bam_device *bdev = bchan->bdev;
--	int ret = 0;
- 	unsigned long flag;
+ static inline bool is_slave_direction(enum dma_transfer_direction direction)
+@@ -807,9 +770,6 @@ static inline int dma_get_slave_caps(struct dma_chan *chan, struct dma_slave_cap
+ 	if (!test_bit(DMA_SLAVE, device->cap_mask.bits))
+ 		return -ENXIO;
  
--	switch (cmd) {
--	case DMA_PAUSE:
--		spin_lock_irqsave(&bchan->vc.lock, flag);
--		writel_relaxed(1, bdev->regs + BAM_P_HALT(bchan->id));
--		bchan->paused = 1;
--		spin_unlock_irqrestore(&bchan->vc.lock, flag);
--		break;
+-	if (device->device_slave_caps)
+-		return device->device_slave_caps(chan, caps);
 -
--	case DMA_RESUME:
--		spin_lock_irqsave(&bchan->vc.lock, flag);
--		writel_relaxed(0, bdev->regs + BAM_P_HALT(bchan->id));
--		bchan->paused = 0;
--		spin_unlock_irqrestore(&bchan->vc.lock, flag);
--		break;
--
--	case DMA_TERMINATE_ALL:
--		bam_dma_terminate_all(bchan);
--		break;
--
--	case DMA_SLAVE_CONFIG:
--		spin_lock_irqsave(&bchan->vc.lock, flag);
--		bam_slave_config(bchan, (struct dma_slave_config *)arg);
--		spin_unlock_irqrestore(&bchan->vc.lock, flag);
--		break;
--
--	default:
--		ret = -ENXIO;
--		break;
--	}
-+	spin_lock_irqsave(&bchan->vc.lock, flag);
-+	writel_relaxed(0, bdev->regs + BAM_P_HALT(bchan->id));
-+	bchan->paused = 0;
-+	spin_unlock_irqrestore(&bchan->vc.lock, flag);
+ 	/*
+ 	 * Check whether it reports it uses the generic slave
+ 	 * capabilities, if not, that means it doesn't support any
+@@ -834,7 +794,7 @@ static inline int dmaengine_terminate_all(struct dma_chan *chan)
+ 	if (chan->device->device_terminate_all)
+ 		return chan->device->device_terminate_all(chan);
  
--	return ret;
-+	return 0;
+-	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
++	return -ENOSYS;
  }
  
- /**
-@@ -1050,7 +1048,10 @@ static int bam_dma_probe(struct platform_device *pdev)
- 	bdev->common.device_alloc_chan_resources = bam_alloc_chan;
- 	bdev->common.device_free_chan_resources = bam_free_chan;
- 	bdev->common.device_prep_slave_sg = bam_prep_slave_sg;
--	bdev->common.device_control = bam_control;
-+	bdev->common.device_config = bam_slave_config;
-+	bdev->common.device_pause = bam_pause;
-+	bdev->common.device_resume = bam_resume;
-+	bdev->common.device_terminate_all = bam_dma_terminate_all;
- 	bdev->common.device_issue_pending = bam_issue_pending;
- 	bdev->common.device_tx_status = bam_tx_status;
- 	bdev->common.dev = bdev->dev;
-@@ -1089,7 +1090,7 @@ static int bam_dma_remove(struct platform_device *pdev)
- 	devm_free_irq(bdev->dev, bdev->irq, bdev);
+ static inline int dmaengine_pause(struct dma_chan *chan)
+@@ -842,7 +802,7 @@ static inline int dmaengine_pause(struct dma_chan *chan)
+ 	if (chan->device->device_pause)
+ 		return chan->device->device_pause(chan);
  
- 	for (i = 0; i < bdev->num_channels; i++) {
--		bam_dma_terminate_all(&bdev->channels[i]);
-+		bam_dma_terminate_all(&bdev->channels[i].vc.chan);
- 		tasklet_kill(&bdev->channels[i].vc.task);
+-	return dmaengine_device_control(chan, DMA_PAUSE, 0);
++	return -ENOSYS;
+ }
  
- 		dma_free_writecombine(bdev->dev, BAM_DESC_FIFO_SIZE,
+ static inline int dmaengine_resume(struct dma_chan *chan)
+@@ -850,7 +810,7 @@ static inline int dmaengine_resume(struct dma_chan *chan)
+ 	if (chan->device->device_resume)
+ 		return chan->device->device_resume(chan);
+ 
+-	return dmaengine_device_control(chan, DMA_RESUME, 0);
++	return -ENOSYS;
+ }
+ 
+ static inline enum dma_status dmaengine_tx_status(struct dma_chan *chan,
 -- 
 2.1.1
 
