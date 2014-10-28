@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934004AbaJ1DxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:53:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46679 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933822AbaJ1Dwk (ORCPT
+	id S1756166AbaJ1E0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:26:36 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:35718 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756151AbaJ1E0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:40 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bruce Lucas <bruce.lucas@mongodb.com>,
-        Chris J Arges <chris.j.arges@canonical.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.10 14/43] mptfusion: enable no_write_same for vmware scsi disks
-Date: Tue, 28 Oct 2014 11:36:12 +0800
-Message-Id: <20141028033524.013560111@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 00:26:33 -0400
+Date: Mon, 27 Oct 2014 21:26:26 -0700
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: fsl_asrc: Add reg_defaults for regmap to fix
+ kernel dump
+Message-ID: <20141028042603.GA5548@Asurada>
+References: <1414202637-18929-1-git-send-email-nicoleotsuka@gmail.com>
+ <20141028001904.GH18557@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028001904.GH18557@sirena.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Oct 28, 2014 at 12:19:04AM +0000, Mark Brown wrote:
+> On Fri, Oct 24, 2014 at 07:03:57PM -0700, Nicolin Chen wrote:
+> > Kernel dump (WARN_ON) ocurred during system boot-up inside regmap_write():
+> > 
+> > ------------[ cut here ]------------
+> > WARNING: CPU: 0 PID: 47 at kernel/locking/lockdep.c:2744 lockdep_trace_alloc+0xe8/0x108()
 
-------------------
+> > Even though this may be a bug that should be fixed, I still try to send this
+> > patch as a quick fix (work around) since it does no harm to assign default
+> > values of every registers when using regcache.
+> 
+> It's not a bug, it's not reasonable to default allocations to atomic and
+> we can't really tell what context we're in.  Anything used inside a
+> heavily locked path should either have a default provided or arrange for
+> a prior write to set up the cache.
 
-From: Chris J Arges <chris.j.arges@canonical.com>
+I've a little trouble to understand the prior write over here. Inside my
+probe() there's a register_init() call which has a set of regmap_write().
+And then the first regmap_write() results the dump. Does that mean this
+regmap_write() isn't prior write? If so, how should I do if not setting
+default values here -- Some IPs may have default value 0 for registers.
+And this would make reg_defaults tedious since there's nothing special
+to assign.
 
-commit 4089b71cc820a426d601283c92fcd4ffeb5139c2 upstream.
+And actually I remember I haven't seen any dump when I sent the initial
+patch for the whole ASRC driver but it manifested last month. I thought
+it might be a partially-merging issue and it would be fixed after merge
+window's done.....
 
-When using a virtual SCSI disk in a VMWare VM if blkdev_issue_zeroout is used
-data can be improperly zeroed out using the mptfusion driver. This patch
-disables write_same for this driver and the vmware subsystem_vendor which
-ensures that manual zeroing out is used instead.
-
-BugLink: http://bugs.launchpad.net/bugs/1371591
-Reported-by: Bruce Lucas <bruce.lucas@mongodb.com>
-Tested-by: Chris J Arges <chris.j.arges@canonical.com>
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/message/fusion/mptspi.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
---- a/drivers/message/fusion/mptspi.c
-+++ b/drivers/message/fusion/mptspi.c
-@@ -1422,6 +1422,11 @@ mptspi_probe(struct pci_dev *pdev, const
- 		goto out_mptspi_probe;
-         }
- 
-+	/* VMWare emulation doesn't properly implement WRITE_SAME
-+	 */
-+	if (pdev->subsystem_vendor == 0x15AD)
-+		sh->no_write_same = 1;
-+
- 	spin_lock_irqsave(&ioc->FreeQlock, flags);
- 
- 	/* Attach the SCSI Host to the IOC structure
-
-
+Thank you
+Nicolin
