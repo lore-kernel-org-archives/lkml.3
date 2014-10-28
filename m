@@ -1,258 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaJ1Qh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:37:29 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:34760 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752235AbaJ1Qfu (ORCPT
+	id S1753809AbaJ1Qhr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:37:47 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:57698 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235AbaJ1Qhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:35:50 -0400
-From: Antoine Tenart <antoine.tenart@free-electrons.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org, Peter.Chen@freescale.com,
-        kishon@ti.com, stern@rowland.harvard.edu
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com,
-        thomas.petazzoni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v7 7/7] usb: chipidea: add support to the generic PHY framework in ChipIdea
-Date: Tue, 28 Oct 2014 17:35:41 +0100
-Message-Id: <1414514141-31767-8-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1414514141-31767-1-git-send-email-antoine.tenart@free-electrons.com>
+	Tue, 28 Oct 2014 12:37:43 -0400
+Date: Tue, 28 Oct 2014 09:37:34 -0700
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH] ASoC: fsl_asrc: Add reg_defaults for regmap to fix
+ kernel dump
+Message-ID: <20141028163733.GA6480@Asurada>
+References: <1414202637-18929-1-git-send-email-nicoleotsuka@gmail.com>
+ <20141028001904.GH18557@sirena.org.uk>
+ <20141028042603.GA5548@Asurada>
+ <20141028104742.GP18557@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028104742.GP18557@sirena.org.uk>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support of the PHY framework for ChipIdea drivers.
-Changes are done in both the ChipIdea common code and in the drivers
-accessing the PHY. This is done by adding a new PHY member in
-ChipIdea's structures and by taking care of it in the code.
+On Tue, Oct 28, 2014 at 10:47:42AM +0000, Mark Brown wrote:
+> On Mon, Oct 27, 2014 at 09:26:26PM -0700, Nicolin Chen wrote:
+> > On Tue, Oct 28, 2014 at 12:19:04AM +0000, Mark Brown wrote:
+> 
+> > > It's not a bug, it's not reasonable to default allocations to atomic and
+> > > we can't really tell what context we're in.  Anything used inside a
+> > > heavily locked path should either have a default provided or arrange for
+> > > a prior write to set up the cache.
+> 
+> > I've a little trouble to understand the prior write over here. Inside my
+> > probe() there's a register_init() call which has a set of regmap_write().
+> > And then the first regmap_write() results the dump. Does that mean this
+> > regmap_write() isn't prior write? If so, how should I do if not setting
+> 
+> Oh, bother.  We fixed things so that we're now always running with the
+> spinlock held...  never mind.
 
-Signed-off-by: Antoine Tenart <antoine.tenart@free-electrons.com>
----
- drivers/usb/chipidea/ci.h      |  5 ++-
- drivers/usb/chipidea/core.c    | 83 +++++++++++++++++++++++++++++++++---------
- drivers/usb/chipidea/host.c    |  5 ++-
- drivers/usb/chipidea/otg_fsm.c |  6 ++-
- include/linux/usb/chipidea.h   |  2 +
- 5 files changed, 80 insertions(+), 21 deletions(-)
+Okay...so only one choice left.
 
-diff --git a/drivers/usb/chipidea/ci.h b/drivers/usb/chipidea/ci.h
-index 9015139a8027..5bbfcc73cf70 100644
---- a/drivers/usb/chipidea/ci.h
-+++ b/drivers/usb/chipidea/ci.h
-@@ -161,7 +161,8 @@ struct hw_bank {
-  * @test_mode: the selected test mode
-  * @platdata: platform specific information supplied by parent device
-  * @vbus_active: is VBUS active
-- * @usb_phy: pointer to USB PHY, if any
-+ * @phy: pointer to PHY, if any
-+ * @usb_phy: pointer to USB PHY, if any and if using the USB PHY framework
-  * @hcd: pointer to usb_hcd for ehci host driver
-  * @debugfs: root dentry for this controller in debugfs
-  * @id_event: indicates there is an id event, and handled at ci_otg_work
-@@ -202,6 +203,8 @@ struct ci_hdrc {
- 
- 	struct ci_hdrc_platform_data	*platdata;
- 	int				vbus_active;
-+	struct phy			*phy;
-+	/* old usb_phy interface */
- 	struct usb_phy			*usb_phy;
- 	struct usb_hcd			*hcd;
- 	struct dentry			*debugfs;
-diff --git a/drivers/usb/chipidea/core.c b/drivers/usb/chipidea/core.c
-index b7b01694d52e..ba0ac2723098 100644
---- a/drivers/usb/chipidea/core.c
-+++ b/drivers/usb/chipidea/core.c
-@@ -47,6 +47,7 @@
- #include <linux/delay.h>
- #include <linux/device.h>
- #include <linux/dma-mapping.h>
-+#include <linux/phy/phy.h>
- #include <linux/platform_device.h>
- #include <linux/module.h>
- #include <linux/idr.h>
-@@ -299,6 +300,49 @@ static void hw_phymode_configure(struct ci_hdrc *ci)
- }
- 
- /**
-+ * _ci_usb_phy_init: initialize phy taking in account both phy and usb_phy
-+ * interfaces
-+ * @ci: the controller
-+ *
-+ * This function returns an error code if the phy failed to init
-+ */
-+static int _ci_usb_phy_init(struct ci_hdrc *ci)
-+{
-+	int ret;
-+
-+	if (ci->phy) {
-+		ret = phy_init(ci->phy);
-+		if (ret)
-+			return ret;
-+
-+		ret = phy_power_on(ci->phy);
-+		if (ret) {
-+			phy_exit(ci->phy);
-+			return ret;
-+		}
-+	} else {
-+		ret = usb_phy_init(ci->usb_phy);
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * _ci_usb_phy_exit: deinitialize phy taking in account both phy and usb_phy
-+ * interfaces
-+ * @ci: the controller
-+ */
-+static void ci_usb_phy_exit(struct ci_hdrc *ci)
-+{
-+	if (ci->phy) {
-+		phy_power_off(ci->phy);
-+		phy_exit(ci->phy);
-+	} else {
-+		usb_phy_shutdown(ci->usb_phy);
-+	}
-+}
-+
-+/**
-  * ci_usb_phy_init: initialize phy according to different phy type
-  * @ci: the controller
-  *
-@@ -312,7 +356,7 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
- 	case USBPHY_INTERFACE_MODE_UTMI:
- 	case USBPHY_INTERFACE_MODE_UTMIW:
- 	case USBPHY_INTERFACE_MODE_HSIC:
--		ret = usb_phy_init(ci->usb_phy);
-+		ret = _ci_usb_phy_init(ci);
- 		if (ret)
- 			return ret;
- 		hw_phymode_configure(ci);
-@@ -320,12 +364,12 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
- 	case USBPHY_INTERFACE_MODE_ULPI:
- 	case USBPHY_INTERFACE_MODE_SERIAL:
- 		hw_phymode_configure(ci);
--		ret = usb_phy_init(ci->usb_phy);
-+		ret = _ci_usb_phy_init(ci);
- 		if (ret)
- 			return ret;
- 		break;
- 	default:
--		ret = usb_phy_init(ci->usb_phy);
-+		ret = _ci_usb_phy_init(ci);
- 	}
- 
- 	return ret;
-@@ -605,23 +649,26 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- 		return -ENODEV;
- 	}
- 
--	if (ci->platdata->usb_phy)
-+	if (ci->platdata->phy) {
-+		ci->phy = ci->platdata->phy;
-+	} else if (ci->platdata->usb_phy) {
- 		ci->usb_phy = ci->platdata->usb_phy;
--	else
-+	} else {
-+		ci->phy = devm_phy_get(dev, "usb-phy");
- 		ci->usb_phy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
- 
--	if (IS_ERR(ci->usb_phy)) {
--		ret = PTR_ERR(ci->usb_phy);
--		/*
--		 * if -ENXIO is returned, it means PHY layer wasn't
--		 * enabled, so it makes no sense to return -EPROBE_DEFER
--		 * in that case, since no PHY driver will ever probe.
--		 */
--		if (ret == -ENXIO)
--			return ret;
-+		/* if both generic PHY and USB PHY layers aren't enabled */
-+		if (PTR_ERR(ci->phy) == -ENOSYS &&
-+				PTR_ERR(ci->usb_phy) == -ENXIO)
-+			return -ENXIO;
-+
-+		if (IS_ERR(ci->phy) && IS_ERR(ci->usb_phy))
-+			return -EPROBE_DEFER;
- 
--		dev_err(dev, "no usb2 phy configured\n");
--		return -EPROBE_DEFER;
-+		if (IS_ERR(ci->phy))
-+			ci->phy = NULL;
-+		else if (IS_ERR(ci->usb_phy))
-+			ci->usb_phy = NULL;
- 	}
- 
- 	ret = ci_usb_phy_init(ci);
-@@ -728,7 +775,7 @@ static int ci_hdrc_probe(struct platform_device *pdev)
- stop:
- 	ci_role_destroy(ci);
- deinit_phy:
--	usb_phy_shutdown(ci->usb_phy);
-+	ci_usb_phy_exit(ci);
- 
- 	return ret;
- }
-@@ -741,7 +788,7 @@ static int ci_hdrc_remove(struct platform_device *pdev)
- 	free_irq(ci->irq, ci);
- 	ci_role_destroy(ci);
- 	ci_hdrc_enter_lpm(ci, true);
--	usb_phy_shutdown(ci->usb_phy);
-+	ci_usb_phy_exit(ci);
- 	kfree(ci->hw_bank.regmap);
- 
- 	return 0;
-diff --git a/drivers/usb/chipidea/host.c b/drivers/usb/chipidea/host.c
-index 789809f680aa..4f8eb40ad93a 100644
---- a/drivers/usb/chipidea/host.c
-+++ b/drivers/usb/chipidea/host.c
-@@ -59,8 +59,11 @@ static int host_start(struct ci_hdrc *ci)
- 	hcd->has_tt = 1;
- 
- 	hcd->power_budget = ci->platdata->power_budget;
--	hcd->usb_phy = ci->usb_phy;
- 	hcd->tpl_support = ci->platdata->tpl_support;
-+	if (ci->phy)
-+		hcd->phy = ci->phy;
-+	else
-+		hcd->usb_phy = ci->usb_phy;
- 
- 	ehci = hcd_to_ehci(hcd);
- 	ehci->caps = ci->hw_bank.cap;
-diff --git a/drivers/usb/chipidea/otg_fsm.c b/drivers/usb/chipidea/otg_fsm.c
-index 862d7cb01b92..3c2ab1ae00fc 100644
---- a/drivers/usb/chipidea/otg_fsm.c
-+++ b/drivers/usb/chipidea/otg_fsm.c
-@@ -779,7 +779,11 @@ int ci_hdrc_otg_fsm_init(struct ci_hdrc *ci)
- {
- 	int retval = 0;
- 
--	ci->otg.usb_phy = ci->usb_phy;
-+	if (ci->phy)
-+		ci->otg.phy = ci->phy;
-+	else
-+		ci->otg.usb_phy = ci->usb_phy;
-+
- 	ci->otg.gadget = &ci->gadget;
- 	ci->fsm.otg = &ci->otg;
- 	ci->fsm.power_up = 1;
-diff --git a/include/linux/usb/chipidea.h b/include/linux/usb/chipidea.h
-index 4fe161a84c7d..c01bf4ea27b9 100644
---- a/include/linux/usb/chipidea.h
-+++ b/include/linux/usb/chipidea.h
-@@ -13,6 +13,8 @@ struct ci_hdrc_platform_data {
- 	/* offset of the capability registers */
- 	uintptr_t	 capoffset;
- 	unsigned	 power_budget;
-+	struct phy	*phy;
-+	/* old usb_phy interface */
- 	struct usb_phy	*usb_phy;
- 	enum usb_phy_interface phy_mode;
- 	unsigned long	 flags;
--- 
-1.9.1
+> > default values here -- Some IPs may have default value 0 for registers.
+> > And this would make reg_defaults tedious since there's nothing special
+> > to assign.
+> 
+> Write a small script then, or a little bit of code to create the
+> defaults dynamically.
 
+It actually doesn't bother me at all. I just thought there might be
+a simpler way. :)
+
+Thank you
+Nicolin
