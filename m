@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644AbaJ1WZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:25:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:59860 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186AbaJ1WZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:25:18 -0400
-Date: Tue, 28 Oct 2014 22:25:16 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: i8042 - add mux quirk for HP EliteBook 8470p
-Message-ID: <20141028222516.GA4265@hercules>
-References: <1414525704-8409-1-git-send-email-luis.henriques@canonical.com>
- <20141028201046.GB7461@dtor-ws>
+	id S1754785AbaJ1W0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:26:19 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60330 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138AbaJ1W0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:26:18 -0400
+Date: Tue, 28 Oct 2014 15:22:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: [PATCH tip/core/rcu 0/7] Real-time updates for 3.19
+Message-ID: <20141028222224.GA28263@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141028201046.GB7461@dtor-ws>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102822-0029-0000-0000-000000F50517
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 01:10:46PM -0700, Dmitry Torokhov wrote:
-> Hi Luis,
-> 
-> On Tue, Oct 28, 2014 at 07:48:24PM +0000, Luis Henriques wrote:
-> > This laptop requires active multiplexing to be enabled in order to be able
-> > to separate the PS/2 mouse and the touchpad.
-> > 
-> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> > ---
-> >  drivers/input/serio/i8042-x86ia64io.h | 7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-> > index a0bcbb64d06d..34b95e4268eb 100644
-> > --- a/drivers/input/serio/i8042-x86ia64io.h
-> > +++ b/drivers/input/serio/i8042-x86ia64io.h
-> > @@ -220,6 +220,13 @@ static const struct dmi_system_id __initconst i8042_dmi_mux_table[] = {
-> >  			DMI_MATCH(DMI_PRODUCT_NAME, "CF-18"),
-> >  		},
-> >  	},
-> > +	{
-> > +		/* HP EliteBook 8470p */
-> > +		.matches = {
-> > +			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-> > +			DMI_MATCH(DMI_PRODUCT_NAME, "HP EliteBook 8470p"),
-> 
-> Hmm, so the tide is turning the other way ;) I think I'll be comfortable
-> extending this to all EliteBooks as I know 840 and 1040 work as well and
-> I have not heard any other complaints about this model line.
-> 
-> Cold you resend with match on "HP EliteBook" instead of "HP EliteBook
-> 8470p"?
-> 
+Hello!
 
-Sure, sending it in a minute.
+This series contains real-time-related updates:
 
-Cheers,
---
-Luís
+1.	Move RCU_NOCB_CPU to choice, courtesy of Stefan Hengelein.
 
-> Thanks.
-> 
-> -- 
-> Dmitry
+2.	Place RCU_BOOST-specific variables under pre-existing #ifdef.
+
+3.	Prevent synchronize_sched_expedited() from sending IPIs to
+	idle and to nohz_full CPUs.
+
+4.	Unify boost and kthread priorities, and allow this unified
+	priority to be set at boot time, courtesy of Clark Williams.
+
+5.	Remove redundant TREE_PREEMPT_RCU Kconfig option, courtesy of
+	Pranith Kumar.
+
+6.	Handle the possibility of a no-CBs CPU posting callbacks on
+	their last pass through the idle loop by waking up the
+	leader kthread after the CPU has gone completely offline.
+
+7.	Fix rcuo online-time-creation reoganization bug, which seems
+	to be a latent bug due to systems (wisely) bringing CPUs online
+	in numerical order.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/Documentation/RCU/rcu.txt                                                     |    4 
+ b/Documentation/RCU/stallwarn.txt                                               |    8 -
+ b/Documentation/RCU/trace.txt                                                   |    4 
+ b/Documentation/RCU/whatisRCU.txt                                               |    2 
+ b/Documentation/kernel-parameters.txt                                           |    6 +
+ b/include/linux/init_task.h                                                     |    2 
+ b/include/linux/rcupdate.h                                                      |    6 -
+ b/include/linux/sched.h                                                         |    4 
+ b/include/trace/events/rcu.h                                                    |    4 
+ b/init/Kconfig                                                                  |   49 +++------
+ b/kernel/rcu/Makefile                                                           |    2 
+ b/kernel/rcu/tree.c                                                             |   44 +++++---
+ b/kernel/rcu/tree.h                                                             |   10 -
+ b/kernel/rcu/tree_plugin.h                                                      |   53 ++++++----
+ b/kernel/rcu/update.c                                                           |    2 
+ b/lib/Kconfig.debug                                                             |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE01                         |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE02                         |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE02-T                       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE03                         |    4 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08                         |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE08-T                       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/TREE09                         |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P1-S-T-NH-SD-SMP-HP       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P2-2-t-nh-sd-SMP-hp       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P3-3-T-nh-SD-SMP-hp       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P4-A-t-NH-sd-SMP-HP       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v0.0/P5-U-T-NH-sd-SMP-hp       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P1-S-T-NH-SD-SMP-HP      |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P2-2-t-nh-sd-SMP-hp      |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P3-3-T-nh-SD-SMP-hp      |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P4-A-t-NH-sd-SMP-HP      |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P5-U-T-NH-sd-SMP-hp      |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P6---t-nh-SD-smp-hp      |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP      |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-all  |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-HP-none |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.12/P7-4-T-NH-SD-SMP-hp      |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P1-S-T-NH-SD-SMP-HP       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P2-2-t-nh-sd-SMP-hp       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P3-3-T-nh-SD-SMP-hp       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P4-A-t-NH-sd-SMP-HP       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.3/P5-U-T-NH-sd-SMP-hp       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P1-S-T-NH-SD-SMP-HP       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P2-2-t-nh-sd-SMP-hp       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P3-3-T-nh-SD-SMP-hp       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P4-A-t-NH-sd-SMP-HP       |    2 
+ b/tools/testing/selftests/rcutorture/configs/rcu/v3.5/P5-U-T-NH-sd-SMP-hp       |    2 
+ b/tools/testing/selftests/rcutorture/doc/TINY_RCU.txt                           |    2 
+ b/tools/testing/selftests/rcutorture/doc/TREE_RCU-kconfig.txt                   |   14 +-
+ 50 files changed, 157 insertions(+), 127 deletions(-)
+
