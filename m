@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755141AbaJ1Wev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:34:51 -0400
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:46406 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941AbaJ1Wet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:34:49 -0400
-Date: Tue, 28 Oct 2014 22:34:35 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: "Skidanov, Alexey" <Alexey.Skidanov@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: 32 bit user space compatibility
-Message-ID: <20141028223435.73b3778c@alan.etchedpixels.co.uk>
-In-Reply-To: <AD975D71AAD7784D8D1265DF6444C2FD0C4307FC@storexdag03.amd.com>
-References: <AD975D71AAD7784D8D1265DF6444C2FD0C4307FC@storexdag03.amd.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755941AbaJ1WeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:34:06 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37386 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755859AbaJ1WeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:34:02 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 1/6] torture: Run Linux-kernel binary out of results directory
+Date: Tue, 28 Oct 2014 15:30:00 -0700
+Message-Id: <1414535405-30228-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20141028222929.GA29476@linux.vnet.ibm.com>
+References: <20141028222929.GA29476@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102822-0025-0000-0000-000000F0724C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 Oct 2014 12:25:08 +0000
-"Skidanov, Alexey" <Alexey.Skidanov@amd.com> wrote:
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-> Hi,
-> 
-> Running 32 bit user space needs some work to be done with ioctls. I understand that there are two options to implement:
-> 1.       Use only fixed size types. Pad IOCTLS params to multiple of 64 bits - simple; don't know if it covers all compatibility issues; 
-> 2.       32 bit compatibility layer (through compat_ioctl, just like many drivers in kernel implement)  - just a little bit simple code with some translations; really covers all issues;
->  
-> Which one is preferred by kernel community?
+The rcutorture scripts create a qemu-cmd script containing the actual
+qemu command.  However, this command references the build directory,
+which will be overwritten by later builds.  This commit therefore runs
+the kernel out of the results directory so that less hand-editing is
+required to re-run a previous test.
 
-You shouldn't need to pad paramters in most cases as platform alignment
-rules are usually sane for 32 and 64bit. #1 is preferred. #2 exists
-because 64bit appeared after Linux was designed so it wasn't designed in
-from day one.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+index f6b2b4771b78..e0f896999d6b 100755
+--- a/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
++++ b/tools/testing/selftests/rcutorture/bin/kvm-test-1-run.sh
+@@ -168,8 +168,8 @@ then
+ 	touch $resdir/buildonly
+ 	exit 0
+ fi
+-echo $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
+-( $QEMU $qemu_args -m 512 -kernel $builddir/$BOOT_IMAGE -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval ) &
++echo $QEMU $qemu_args -m 512 -kernel $resdir/bzImage -append \"$qemu_append $boot_args\" > $resdir/qemu-cmd
++( $QEMU $qemu_args -m 512 -kernel $resdir/bzImage -append "$qemu_append $boot_args"; echo $? > $resdir/qemu-retval ) &
+ qemu_pid=$!
+ commandcompleted=0
+ echo Monitoring qemu job at pid $qemu_pid
+-- 
+1.8.1.5
+
