@@ -1,109 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305AbaJ1BOb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 21:14:31 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:45896 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216AbaJ1BO3 (ORCPT
+	id S1752991AbaJ1BTS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 21:19:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:38160 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332AbaJ1BTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 21:14:29 -0400
+	Mon, 27 Oct 2014 21:19:16 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        =?UTF-8?q?M=C3=A5ns=20Rullg=C3=A5rd?= <mans@mansr.com>,
+        Will Deacon <will.deacon@arm.com>, Mark Rutland <mark.rutland@arm.com>
+Subject: [RFC/PATCH] ARM: Expose cpuid registers to userspace
+Date: Mon, 27 Oct 2014 18:19:12 -0700
+Message-Id: <1414459152-32425-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 2.1.0.61.ge50deb1
 MIME-Version: 1.0
-In-Reply-To: <20141027210523.GD6880@dastard>
-References: <20141016100913.GA8140@wfg-t540p.sh.intel.com>
-	<20141016110127.GD6085@quack.suse.cz>
-	<20141027010422.GA16186@dastard>
-	<20141027095812.GA16093@quack.suse.cz>
-	<20141027210523.GD6880@dastard>
-Date: Tue, 28 Oct 2014 09:14:27 +0800
-Message-ID: <CADJHv_uQgNYiQWZ5pRPk6t+x4yTPHbWnX7J6cJ5YFE-bofFFpg@mail.gmail.com>
-Subject: Re: [vfs] WARNING: CPU: 3 PID: 2339 at mm/truncate.c:758 pagecache_isize_extended+0xdd/0x120()
-From: Xiong Zhou <jencce.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, Fengguang Wu <fengguang.wu@intel.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        lkp@01.org, "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-still in rc2
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 18152 at mm/truncate.c:758
-pagecache_isize_extended+0xfd/0x110()
-Modules linked in: btrfs xor zlib_deflate raid6_pq ntfs fuse
-x86_pkg_temp_thermal wmi radeon e1000e ttm
-CPU: 0 PID: 18152 Comm: Cache I/O Tainted: G        W      3.18.0-rc2 #1
-Hardware name: Hewlett-Packard HP Compaq Elite 8300 MT/3397, BIOS K01
-v02.05 05/07/2012
- 0000000000000009 ffff8800d1b3bd38 ffffffff81863216 0000000000000000
- 0000000000000000 ffff8800d1b3bd78 ffffffff8105046c ffffea0002e0b600
- 0000000000001000 ffff8800bb9a49a8 0000000000000000 0000000000031ada
-Call Trace:
- [<ffffffff81863216>] dump_stack+0x46/0x58
- [<ffffffff8105046c>] warn_slowpath_common+0x7c/0xa0
- [<ffffffff81050535>] warn_slowpath_null+0x15/0x20
- [<ffffffff8111ebbd>] pagecache_isize_extended+0xfd/0x110
- [<ffffffff812ca780>] ? __xfs_get_blocks+0x4d0/0x4d0
- [<ffffffff8111f8a2>] truncate_setsize+0x22/0x40
- [<ffffffff812df5db>] xfs_setattr_size+0x10b/0x3c0
- [<ffffffff812ecb3e>] ? xfs_trans_commit+0x13e/0x220
- [<ffffffff812d4c57>] xfs_file_fallocate+0x2e7/0x300
- [<ffffffff81167374>] ? __sb_start_write+0x44/0xd0
- [<ffffffff811630da>] do_fallocate+0x12a/0x1d0
- [<ffffffff811631c3>] SyS_fallocate+0x43/0x70
- [<ffffffff8186ce29>] system_call_fastpath+0x12/0x17
----[ end trace abf71ba1f4096942 ]---
+Exporting all the different possible configurations of CPUID
+registers to userspace via hwcaps is going to explode the hwcaps.
+Emulate userspace cpuid register accesses and export a new
+"cpuid" hwcap instead so that userspace can know to try to
+read the cpuid registers itself.
 
-2014-10-28 5:05 GMT+08:00 Dave Chinner <david@fromorbit.com>:
-> On Mon, Oct 27, 2014 at 10:58:12AM +0100, Jan Kara wrote:
->> On Mon 27-10-14 12:04:22, Dave Chinner wrote:
->> > On Thu, Oct 16, 2014 at 01:01:27PM +0200, Jan Kara wrote:
->> > > From de3426d6495f4b44b14c09b7c7202e9a86d864b9 Mon Sep 17 00:00:00 2001
->> > > From: Jan Kara <jack@suse.cz>
->> > > Date: Thu, 16 Oct 2014 12:58:42 +0200
->> > > Subject: [PATCH] mm: Remove false WARN_ON from pagecache_isize_extended()
->> > >
->> > > The WARN_ON checking whether i_mutex is held in
->> > > pagecache_isize_extended() was wrong because some filesystems (e.g.
->> > > XFS) use different locks for serialization of truncates / writes. So
->> > > just remove the check.
->> > >
->> > > Signed-off-by: Jan Kara <jack@suse.cz>
->> > > ---
->> > >  mm/truncate.c | 1 -
->> > >  1 file changed, 1 deletion(-)
->> > >
->> > > diff --git a/mm/truncate.c b/mm/truncate.c
->> > > index 261eaf6e5a19..c646084e5eec 100644
->> > > --- a/mm/truncate.c
->> > > +++ b/mm/truncate.c
->> > > @@ -755,7 +755,6 @@ void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
->> > >   struct page *page;
->> > >   pgoff_t index;
->> > >
->> > > - WARN_ON(!mutex_is_locked(&inode->i_mutex));
->> > >   WARN_ON(to > inode->i_size);
->> > >
->> > >   if (from >= to || bsize == PAGE_CACHE_SIZE)
->> >
->> > Jan, Have you sent this patch upstream yet? I'm seeing it fire in
->> > my testing in 3.18-rc1 kernels, so I was wondering what your plans
->> > are for this...
->>   I did send it but it got lost somewhere. I'll resend it.
->
-> If it comes to it, I can push it through the XFS tree - I've got a
-> few patches I need to send for -rc3...
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Cc: Måns Rullgård <mans@mansr.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+
+This is in response to Will's suggestion[1] that we explore exposing
+these cpuid registers to userspace. A simple test program is as follows:
+
+  #include <stdio.h>
+  
+  int main(void)
+  {
+  	int val;
+  
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c1, 0\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c1, 0 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c1, 1\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c1, 1 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c1, 2\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c1, 2 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c1, 3\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c1, 3 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c1, 4\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c1, 4 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c1, 5\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c1, 5 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c1, 6\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c1, 6 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c1, 7\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c1, 7 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c2, 0\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c2, 0 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c2, 1\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c2, 1 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c2, 2\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c2, 2 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c2, 3\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c2, 3 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c2, 4\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c2, 4 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c2, 5\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c2, 5 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c2, 6\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c2, 6 is %#x\n", val);
+  	__asm__ volatile ("mrc p15, 0, %0, c0, c2, 7\n" : "=r" (val));
+  	fprintf(stderr, "mrc p15, 0, rX, c0, c2, 7 is %#x\n", val);
+  	__asm__ volatile ("mrc p10, 7, %0, c7, c0, 0\n" : "=r" (val));
+  	fprintf(stderr, "mrc p10, 0, rX, c7, c0, 0 is %#x\n", val);
+  	__asm__ volatile ("mrc p10, 7, %0, c6, c0, 0\n" : "=r" (val));
+  	fprintf(stderr, "mrc p10, 0, rX, c6, c0, 0 is %#x\n", val);
+  	__asm__ volatile ("mrc p10, 7, %0, c0, c0, 0\n" : "=r" (val));
+  	fprintf(stderr, "mrc p10, 0, rX, c0, c0, 0 is %#x\n", val);
+  	__asm__ volatile ("mrc p10, 7, %0, c2, c0, 0\n" : "=r" (val));
+  
+  	return 0;
+  }
+
+[1] http://lkml.kernel.org/r/20141027103118.GA8768@arm.com
+
+ arch/arm/include/asm/opcodes.h    |   9 +++
+ arch/arm/include/uapi/asm/hwcap.h |   1 +
+ arch/arm/kernel/setup.c           | 113 +++++++++++++++++++++++++++++++++++++-
+ arch/arm/kernel/swp_emulate.c     |   8 ---
+ 4 files changed, 122 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/include/asm/opcodes.h b/arch/arm/include/asm/opcodes.h
+index e796c598513b..751eca1d4e22 100644
+--- a/arch/arm/include/asm/opcodes.h
++++ b/arch/arm/include/asm/opcodes.h
+@@ -216,6 +216,15 @@ extern asmlinkage unsigned int arm_check_condition(u32 opcode, u32 psr);
+ #define __inst_arm_thumb32(arm_opcode, thumb_opcode) __inst_arm(arm_opcode)
+ #endif
+ 
++/*
++ * Macros/defines for extracting register numbers from instruction.
++ */
++#define EXTRACT_REG_NUM(instruction, offset) \
++	(((instruction) & (0xf << (offset))) >> (offset))
++#define RN_OFFSET  16
++#define RT_OFFSET  12
++#define RT2_OFFSET  0
++
+ /* Helpers for the helpers.  Don't use these directly. */
+ #ifdef __ASSEMBLY__
+ #define ___inst_arm(x) .long x
+diff --git a/arch/arm/include/uapi/asm/hwcap.h b/arch/arm/include/uapi/asm/hwcap.h
+index 20d12f230a2f..4ec061e81d38 100644
+--- a/arch/arm/include/uapi/asm/hwcap.h
++++ b/arch/arm/include/uapi/asm/hwcap.h
+@@ -27,6 +27,7 @@
+ #define HWCAP_IDIV	(HWCAP_IDIVA | HWCAP_IDIVT)
+ #define HWCAP_LPAE	(1 << 20)
+ #define HWCAP_EVTSTRM	(1 << 21)
++#define HWCAP_CPUID	(1 << 22)
+ 
+ /*
+  * HWCAP2 flags - for elf_hwcap2 (in kernel) and AT_HWCAP2
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 84db893dedc2..ea0c1a013e00 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -30,6 +30,7 @@
+ #include <linux/bug.h>
+ #include <linux/compiler.h>
+ #include <linux/sort.h>
++#include <linux/perf_event.h>
+ 
+ #include <asm/unified.h>
+ #include <asm/cp15.h>
+@@ -56,9 +57,11 @@
+ #include <asm/unwind.h>
+ #include <asm/memblock.h>
+ #include <asm/virt.h>
++#include <asm/opcodes.h>
++#include <asm/vfp.h>
+ 
+ #include "atags.h"
+-
++#include "../vfp/vfpinstr.h"
+ 
+ #if defined(CONFIG_FPE_NWFPE) || defined(CONFIG_FPE_FASTFPE)
+ char fpe_type[8];
+@@ -371,6 +374,108 @@ void __init early_print(const char *str, ...)
+ 	printk("%s", buf);
+ }
+ 
++static u32 arm_id_registers[2 * 8];
++static u32 arm_vfp_id_registers[3];
++
++static void cache_id_registers(void)
++{
++	arm_id_registers[0]  = read_cpuid_ext(CPUID_EXT_PFR0);
++	arm_id_registers[1]  = read_cpuid_ext(CPUID_EXT_PFR1);
++	arm_id_registers[2] = read_cpuid_ext(CPUID_EXT_DFR0);
++	arm_id_registers[3] = read_cpuid_ext(CPUID_EXT_AFR0);
++	arm_id_registers[4] = read_cpuid_ext(CPUID_EXT_MMFR0);
++	arm_id_registers[5] = read_cpuid_ext(CPUID_EXT_MMFR1);
++	arm_id_registers[6] = read_cpuid_ext(CPUID_EXT_MMFR2);
++	arm_id_registers[7] = read_cpuid_ext(CPUID_EXT_MMFR3);
++	arm_id_registers[8] = read_cpuid_ext(CPUID_EXT_ISAR0);
++	arm_id_registers[9] = read_cpuid_ext(CPUID_EXT_ISAR1);
++	arm_id_registers[10] = read_cpuid_ext(CPUID_EXT_ISAR2);
++	arm_id_registers[11] = read_cpuid_ext(CPUID_EXT_ISAR3);
++	arm_id_registers[12] = read_cpuid_ext(CPUID_EXT_ISAR4);
++	arm_id_registers[13] = read_cpuid_ext(CPUID_EXT_ISAR5);
++	arm_vfp_id_registers[0] = fmrx(FPSID);
++	arm_vfp_id_registers[1] = fmrx(MVFR1);
++	arm_vfp_id_registers[2] = fmrx(MVFR0);
++}
++
++static int get_id_trap(struct pt_regs *regs, unsigned int instr)
++{
++	unsigned int destreg, crm, opc2;
++	unsigned int res;
++
++	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, regs->ARM_pc);
++
++	res = arm_check_condition(instr, regs->ARM_cpsr);
++	if (res == ARM_OPCODE_CONDTEST_FAIL) {
++		regs->ARM_pc += 4;
++		return 0;
++	}
++
++	destreg = EXTRACT_REG_NUM(instr, RT_OFFSET);
++	crm = instr & 0xf;
++	opc2 = (instr >> 5) & 0x7;
++
++	if (crm > 2 || crm == 0)
++		return -EINVAL;
++
++	regs->uregs[destreg] = arm_id_registers[((crm - 1) * 8) + opc2];
++	regs->ARM_pc += 4;
++
++	return 0;
++}
++
++struct undef_hook arm_mrc_id_hook = {
++	.instr_mask	= 0x0f100f10,
++	.instr_val	= 0x0e100f10,
++	.cpsr_mask	= MODE_MASK,
++	.cpsr_val	= USR_MODE,
++	.fn		= get_id_trap,
++};
++
++static int get_vmrs_id_trap(struct pt_regs *regs, unsigned int instr)
++{
++	unsigned int destreg, data, reg;
++	unsigned int res;
++
++	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, regs->ARM_pc);
++
++	res = arm_check_condition(instr, regs->ARM_cpsr);
++	if (res == ARM_OPCODE_CONDTEST_FAIL) {
++		regs->ARM_pc += 4;
++		return 0;
++	}
++
++	destreg = EXTRACT_REG_NUM(instr, RT_OFFSET);
++	reg = (instr >> 16) & 0xf;
++
++	switch (reg) {
++	case 0:
++		data = arm_vfp_id_registers[0];
++		break;
++	case 6:
++		data = arm_vfp_id_registers[1];
++		break;
++	case 7:
++		data = arm_vfp_id_registers[2];
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	regs->uregs[destreg] = data;
++	regs->ARM_pc += 4;
++
++	return 0;
++}
++
++struct undef_hook arm_vmrs_id_hook = {
++	.instr_mask	= 0x0ff00ff0,
++	.instr_val	= 0x0ef00a10,
++	.cpsr_mask	= MODE_MASK,
++	.cpsr_val	= USR_MODE,
++	.fn		= get_vmrs_id_trap,
++};
++
+ static void __init cpuid_init_hwcaps(void)
+ {
+ 	unsigned int divide_instrs, vmsa;
+@@ -378,6 +483,11 @@ static void __init cpuid_init_hwcaps(void)
+ 	if (cpu_architecture() < CPU_ARCH_ARMv7)
+ 		return;
+ 
++	cache_id_registers();
++	elf_hwcap |= HWCAP_CPUID;
++	register_undef_hook(&arm_mrc_id_hook);
++	register_undef_hook(&arm_vmrs_id_hook);
++
+ 	divide_instrs = (read_cpuid_ext(CPUID_EXT_ISAR0) & 0x0f000000) >> 24;
+ 
+ 	switch (divide_instrs) {
+@@ -1009,6 +1119,7 @@ static const char *hwcap_str[] = {
+ 	"vfpd32",
+ 	"lpae",
+ 	"evtstrm",
++	"cpuid",
+ 	NULL
+ };
+ 
+diff --git a/arch/arm/kernel/swp_emulate.c b/arch/arm/kernel/swp_emulate.c
+index 67ca8578c6d8..ebdcac50feef 100644
+--- a/arch/arm/kernel/swp_emulate.c
++++ b/arch/arm/kernel/swp_emulate.c
+@@ -62,14 +62,6 @@
+ 	__user_swpX_asm(data, addr, res, temp, "b")
+ 
+ /*
+- * Macros/defines for extracting register numbers from instruction.
+- */
+-#define EXTRACT_REG_NUM(instruction, offset) \
+-	(((instruction) & (0xf << (offset))) >> (offset))
+-#define RN_OFFSET  16
+-#define RT_OFFSET  12
+-#define RT2_OFFSET  0
+-/*
+  * Bit 22 of the instruction encoding distinguishes between
+  * the SWP and SWPB variants (bit set means SWPB).
+  */
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
