@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755687AbaJ1LGA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:06:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51017 "EHLO
+	id S1755731AbaJ1LGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:06:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51027 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755651AbaJ1LF5 (ORCPT
+	with ESMTP id S1755495AbaJ1LGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:05:57 -0400
-Date: Tue, 28 Oct 2014 04:04:56 -0700
+	Tue, 28 Oct 2014 07:06:08 -0400
+Date: Tue, 28 Oct 2014 04:05:11 -0700
 From: tip-bot for Rik van Riel <tipbot@zytor.com>
-Message-ID: <tip-6c6b1193e71fed1a58dc3fab9d967d245177f87b@git.kernel.org>
-Cc: peterz@infradead.org, torvalds@linux-foundation.org, hpa@zytor.com,
-        riel@redhat.com, mingo@kernel.org, chegu_vinod@hp.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org
-Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org, chegu_vinod@hp.com,
-        peterz@infradead.org, torvalds@linux-foundation.org, riel@redhat.com,
-        hpa@zytor.com, mingo@kernel.org
-In-Reply-To: <1413530994-9732-5-git-send-email-riel@redhat.com>
-References: <1413530994-9732-5-git-send-email-riel@redhat.com>
+Message-ID: <tip-54009416ac3b5f219c0df68559ce534287ae97b1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, riel@redhat.com,
+        peterz@infradead.org, torvalds@linux-foundation.org,
+        chegu_vinod@hp.com, mingo@kernel.org, hpa@zytor.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, riel@redhat.com,
+        torvalds@linux-foundation.org, chegu_vinod@hp.com
+In-Reply-To: <1413530994-9732-6-git-send-email-riel@redhat.com>
+References: <1413530994-9732-6-git-send-email-riel@redhat.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:sched/core] sched/numa:
-  Calculate node scores in complex NUMA topologies
-Git-Commit-ID: 6c6b1193e71fed1a58dc3fab9d967d245177f87b
+  Find the preferred nid with complex NUMA topology
+Git-Commit-ID: 54009416ac3b5f219c0df68559ce534287ae97b1
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,153 +34,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6c6b1193e71fed1a58dc3fab9d967d245177f87b
-Gitweb:     http://git.kernel.org/tip/6c6b1193e71fed1a58dc3fab9d967d245177f87b
+Commit-ID:  54009416ac3b5f219c0df68559ce534287ae97b1
+Gitweb:     http://git.kernel.org/tip/54009416ac3b5f219c0df68559ce534287ae97b1
 Author:     Rik van Riel <riel@redhat.com>
-AuthorDate: Fri, 17 Oct 2014 03:29:52 -0400
+AuthorDate: Fri, 17 Oct 2014 03:29:53 -0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:47:50 +0100
+CommitDate: Tue, 28 Oct 2014 10:47:51 +0100
 
-sched/numa: Calculate node scores in complex NUMA topologies
+sched/numa: Find the preferred nid with complex NUMA topology
 
-In order to do task placement on systems with complex NUMA topologies,
-it is necessary to count the faults on nodes nearby the node that is
-being examined for a potential move.
+On systems with complex NUMA topologies, the node scoring is adjusted
+to allow workloads to converge on nodes that are near each other.
 
-In case of a system with a backplane interconnect, we are dealing with
-groups of NUMA nodes; each of the nodes within a group is the same number
-of hops away from nodes in other groups in the system. Optimal placement
-on this topology is achieved by counting all nearby nodes equally. When
-comparing nodes A and B at distance N, nearby nodes are those at distances
-smaller than N from nodes A or B.
-
-Placement strategy on a system with a glueless mesh NUMA topology needs
-to be different, because there are no natural groups of nodes determined
-by the hardware. Instead, when dealing with two nodes A and B at distance
-N, N >= 2, there will be intermediate nodes at distance < N from both nodes
-A and B. Good placement can be achieved by right shifting the faults on
-nearby nodes by the number of hops from the node being scored. In this
-context, a nearby node is any node less than the maximum distance in the
-system away from the node. Those nodes are skipped for efficiency reasons,
-there is no real policy reason to do so.
-
-Placement policy on directly connected NUMA systems is not affected.
+The way a task group's preferred nid is determined needs to be adjusted,
+in order for the preferred_nid to be consistent with group_weight scoring.
+This ensures that we actually try to converge workloads on adjacent nodes.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
 Tested-by: Chegu Vinod <chegu_vinod@hp.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: mgorman@suse.de
 Cc: chegu_vinod@hp.com
-Link: http://lkml.kernel.org/r/1413530994-9732-5-git-send-email-riel@redhat.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1413530994-9732-6-git-send-email-riel@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 74 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 74 insertions(+)
+ kernel/sched/fair.c | 88 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 87 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0af3bed..7e5712a 100644
+index 7e5712a..7760c2a 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -925,6 +925,71 @@ static inline unsigned long group_faults_cpu(struct numa_group *group, int nid)
- 		group->faults_cpu[task_faults_idx(nid, 1)];
+@@ -1659,6 +1659,92 @@ static u64 numa_get_avg_runtime(struct task_struct *p, u64 *period)
+ 	return delta;
  }
  
-+/* Handle placement on systems where not all nodes are directly connected. */
-+static unsigned long score_nearby_nodes(struct task_struct *p, int nid,
-+					int maxdist, bool task)
++/*
++ * Determine the preferred nid for a task in a numa_group. This needs to
++ * be done in a way that produces consistent results with group_weight,
++ * otherwise workloads might not converge.
++ */
++static int preferred_group_nid(struct task_struct *p, int nid)
 +{
-+	unsigned long score = 0;
-+	int node;
++	nodemask_t nodes;
++	int dist;
 +
-+	/*
-+	 * All nodes are directly connected, and the same distance
-+	 * from each other. No need for fancy placement algorithms.
-+	 */
++	/* Direct connections between all NUMA nodes. */
 +	if (sched_numa_topology_type == NUMA_DIRECT)
-+		return 0;
++		return nid;
 +
 +	/*
-+	 * This code is called for each node, introducing N^2 complexity,
-+	 * which should be ok given the number of nodes rarely exceeds 8.
++	 * On a system with glueless mesh NUMA topology, group_weight
++	 * scores nodes according to the number of NUMA hinting faults on
++	 * both the node itself, and on nearby nodes.
 +	 */
-+	for_each_online_node(node) {
-+		unsigned long faults;
-+		int dist = node_distance(nid, node);
++	if (sched_numa_topology_type == NUMA_GLUELESS_MESH) {
++		unsigned long score, max_score = 0;
++		int node, max_node = nid;
 +
-+		/*
-+		 * The furthest away nodes in the system are not interesting
-+		 * for placement; nid was already counted.
-+		 */
-+		if (dist == sched_max_numa_distance || node == nid)
-+			continue;
++		dist = sched_max_numa_distance;
 +
-+		/*
-+		 * On systems with a backplane NUMA topology, compare groups
-+		 * of nodes, and move tasks towards the group with the most
-+		 * memory accesses. When comparing two nodes at distance
-+		 * "hoplimit", only nodes closer by than "hoplimit" are part
-+		 * of each group. Skip other nodes.
-+		 */
-+		if (sched_numa_topology_type == NUMA_BACKPLANE &&
-+					dist > maxdist)
-+			continue;
-+
-+		/* Add up the faults from nearby nodes. */
-+		if (task)
-+			faults = task_faults(p, node);
-+		else
-+			faults = group_faults(p, node);
-+
-+		/*
-+		 * On systems with a glueless mesh NUMA topology, there are
-+		 * no fixed "groups of nodes". Instead, nodes that are not
-+		 * directly connected bounce traffic through intermediate
-+		 * nodes; a numa_group can occupy any set of nodes.
-+		 * The further away a node is, the less the faults count.
-+		 * This seems to result in good task placement.
-+		 */
-+		if (sched_numa_topology_type == NUMA_GLUELESS_MESH) {
-+			faults *= (sched_max_numa_distance - dist);
-+			faults /= (sched_max_numa_distance - LOCAL_DISTANCE);
++		for_each_online_node(node) {
++			score = group_weight(p, node, dist);
++			if (score > max_score) {
++				max_score = score;
++				max_node = node;
++			}
 +		}
-+
-+		score += faults;
++		return max_node;
 +	}
 +
-+	return score;
++	/*
++	 * Finding the preferred nid in a system with NUMA backplane
++	 * interconnect topology is more involved. The goal is to locate
++	 * tasks from numa_groups near each other in the system, and
++	 * untangle workloads from different sides of the system. This requires
++	 * searching down the hierarchy of node groups, recursively searching
++	 * inside the highest scoring group of nodes. The nodemask tricks
++	 * keep the complexity of the search down.
++	 */
++	nodes = node_online_map;
++	for (dist = sched_max_numa_distance; dist > LOCAL_DISTANCE; dist--) {
++		unsigned long max_faults = 0;
++		nodemask_t max_group;
++		int a, b;
++
++		/* Are there nodes at this distance from each other? */
++		if (!find_numa_distance(dist))
++			continue;
++
++		for_each_node_mask(a, nodes) {
++			unsigned long faults = 0;
++			nodemask_t this_group;
++			nodes_clear(this_group);
++
++			/* Sum group's NUMA faults; includes a==b case. */
++			for_each_node_mask(b, nodes) {
++				if (node_distance(a, b) < dist) {
++					faults += group_faults(p, b);
++					node_set(b, this_group);
++					node_clear(b, nodes);
++				}
++			}
++
++			/* Remember the top group. */
++			if (faults > max_faults) {
++				max_faults = faults;
++				max_group = this_group;
++				/*
++				 * subtle: at the smallest distance there is
++				 * just one node left in each "group", the
++				 * winner is the preferred nid.
++				 */
++				nid = a;
++			}
++		}
++		/* Next round, evaluate the nodes within max_group. */
++		nodes = max_group;
++	}
++	return nid;
 +}
 +
- /*
-  * These return the fraction of accesses done by a particular task, or
-  * task group, on a particular numa node.  The group weight is given a
-@@ -945,6 +1010,8 @@ static inline unsigned long task_weight(struct task_struct *p, int nid,
- 		return 0;
+ static void task_numa_placement(struct task_struct *p)
+ {
+ 	int seq, nid, max_nid = -1, max_group_nid = -1;
+@@ -1741,7 +1827,7 @@ static void task_numa_placement(struct task_struct *p)
+ 	if (p->numa_group) {
+ 		update_numa_active_node_mask(p->numa_group);
+ 		spin_unlock_irq(group_lock);
+-		max_nid = max_group_nid;
++		max_nid = preferred_group_nid(p, max_group_nid);
+ 	}
  
- 	faults = task_faults(p, nid);
-+	faults += score_nearby_nodes(p, nid, dist, true);
-+
- 	return 1000 * faults / total_faults;
- }
- 
-@@ -962,6 +1029,8 @@ static inline unsigned long group_weight(struct task_struct *p, int nid,
- 		return 0;
- 
- 	faults = group_faults(p, nid);
-+	faults += score_nearby_nodes(p, nid, dist, false);
-+
- 	return 1000 * faults / total_faults;
- }
- 
-@@ -1374,6 +1443,11 @@ static int task_numa_migrate(struct task_struct *p)
- 				continue;
- 
- 			dist = node_distance(env.src_nid, env.dst_nid);
-+			if (sched_numa_topology_type == NUMA_BACKPLANE &&
-+						dist != env.dist) {
-+				taskweight = task_weight(p, env.src_nid, dist);
-+				groupweight = group_weight(p, env.src_nid, dist);
-+			}
- 
- 			/* Only consider nodes where both task and groups benefit */
- 			taskimp = task_weight(p, nid, dist) - taskweight;
+ 	if (max_faults) {
