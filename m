@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932938AbaJ1Hfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:35:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44922 "EHLO
+	id S1754973AbaJ1Dk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:40:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44870 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828AbaJ1DlM (ORCPT
+	with ESMTP id S932113AbaJ1Dkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:12 -0400
+	Mon, 27 Oct 2014 23:40:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Matteo Franchin <Matteo.Franchin@arm.com>,
-        Davidlohr Bueso <dave@stgolabs.net>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Junxiao Bi <junxiao.bi@oracle.com>, Dave Chinner <david@fromorbit.com>,
+        "joyce.xue" <xuejiufei@huawei.com>, Ming Lei <ming.lei@canonical.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 112/146] futex: Ensure get_futex_key_refs() always implies a barrier
-Date: Tue, 28 Oct 2014 11:34:14 +0800
-Message-Id: <20141028033348.310026984@linuxfoundation.org>
+Subject: [PATCH 3.17 106/146] mm: clear __GFP_FS when PF_MEMALLOC_NOIO is set
+Date: Tue, 28 Oct 2014 11:34:08 +0800
+Message-Id: <20141028033348.054641723@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -36,54 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 76835b0ebf8a7fe85beb03c75121419a7dec52f0 upstream.
+commit 934f3072c17cc8886f4c043b47eeeb1b12f8de33 upstream.
 
-Commit b0c29f79ecea (futexes: Avoid taking the hb->lock if there's
-nothing to wake up) changes the futex code to avoid taking a lock when
-there are no waiters. This code has been subsequently fixed in commit
-11d4616bd07f (futex: revert back to the explicit waiter counting code).
-Both the original commit and the fix-up rely on get_futex_key_refs() to
-always imply a barrier.
+commit 21caf2fc1931 ("mm: teach mm by current context info to not do I/O
+during memory allocation") introduces PF_MEMALLOC_NOIO flag to avoid doing
+I/O inside memory allocation, __GFP_IO is cleared when this flag is set,
+but __GFP_FS implies __GFP_IO, it should also be cleared.  Or it may still
+run into I/O, like in superblock shrinker.  And this will make the kernel
+run into the deadlock case described in that commit.
 
-However, for private futexes, none of the cases in the switch statement
-of get_futex_key_refs() would be hit and the function completes without
-a memory barrier as required before checking the "waiters" in
-futex_wake() -> hb_waiters_pending(). The consequence is a race with a
-thread waiting on a futex on another CPU, allowing the waker thread to
-read "waiters == 0" while the waiter thread to have read "futex_val ==
-locked" (in kernel).
+See Dave Chinner's comment about io in superblock shrinker:
 
-Without this fix, the problem (user space deadlocks) can be seen with
-Android bionic's mutex implementation on an arm64 multi-cluster system.
+Filesystem shrinkers do indeed perform IO from the superblock shrinker and
+have for years.  Even clean inodes can require IO before they can be freed
+- e.g.  on an orphan list, need truncation of post-eof blocks, need to
+wait for ordered operations to complete before it can be freed, etc.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-by: Matteo Franchin <Matteo.Franchin@arm.com>
-Fixes: b0c29f79ecea (futexes: Avoid taking the hb->lock if there's nothing to wake up)
-Acked-by: Davidlohr Bueso <dave@stgolabs.net>
-Tested-by: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+IOWs, Ext4, btrfs and XFS all can issue and/or block on arbitrary amounts
+of IO in the superblock shrinker context.  XFS, in particular, has been
+doing transactions and IO from the VFS inode cache shrinker since it was
+first introduced....
+
+Fix this by clearing __GFP_FS in memalloc_noio_flags(), this function has
+masked all the gfp_mask that will be passed into fs for the processes
+setting PF_MEMALLOC_NOIO in the direct reclaim path.
+
+v1 thread at: https://lkml.org/lkml/2014/9/3/32
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: joyce.xue <xuejiufei@huawei.com>
+Cc: Ming Lei <ming.lei@canonical.com>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/futex.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/sched.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -343,6 +343,8 @@ static void get_futex_key_refs(union fut
- 	case FUT_OFF_MMSHARED:
- 		futex_get_mm(key); /* implies MB (B) */
- 		break;
-+	default:
-+		smp_mb(); /* explicit MB (B) */
- 	}
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1934,11 +1934,13 @@ extern void thread_group_cputime_adjuste
+ #define tsk_used_math(p) ((p)->flags & PF_USED_MATH)
+ #define used_math() tsk_used_math(current)
+ 
+-/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
++/* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags
++ * __GFP_FS is also cleared as it implies __GFP_IO.
++ */
+ static inline gfp_t memalloc_noio_flags(gfp_t flags)
+ {
+ 	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
+-		flags &= ~__GFP_IO;
++		flags &= ~(__GFP_IO | __GFP_FS);
+ 	return flags;
  }
  
 
