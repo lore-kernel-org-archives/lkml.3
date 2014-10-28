@@ -1,126 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254AbaJ1Lc5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:32:57 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:65412 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738AbaJ1LcO (ORCPT
+	id S1754657AbaJ1LeG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:34:06 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:9459 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753921AbaJ1LeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:32:14 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-78-544f7ebbd06f
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz, jmorris@namei.org,
-        dmitry.kasatkin@gmail.com, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        stable@vger.kernel.org
-Subject: [PATCH v3 1/3] ima: check xattr value length and type in the
- ima_inode_setxattr()
-Date: Tue, 28 Oct 2014 13:31:22 +0200
-Message-id: <4768b2c1c8e9a5ec16cb1e58c493fac83940f24c.1414494901.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <cover.1414494901.git.d.kasatkin@samsung.com>
-References: <cover.1414494901.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1414494901.git.d.kasatkin@samsung.com>
-References: <cover.1414494901.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrILMWRmVeSWpSXmKPExsVy+t/xy7q76/xDDOa9lLS49Xcvs8WXpXUW
-	s6c3M1msW7+YyeLljHnsFpd3zWGz+NDziM1iwcZHjBafVkxiduD02DnrLrvHg0ObWTx2L/jM
-	5NHzPdmjb8sqRo8zC46we3zeJBfAHsVlk5Kak1mWWqRvl8CVserHSsaCJqWKp1NPsTUwXpLp
-	YuTkkBAwkTi1ZQ0LhC0mceHeerYuRi4OIYGljBIXX11lh3A6mSQmNK9kA6liE9CT2ND8gx3E
-	FhHIkXj05zVYEbPAIkaJ3+97GUESwgIxEhtPrGEGsVkEVCVe/tsCtoJXIE7i4ZQFzBDr5CRO
-	HpvMCmJzClhJdE1pBesVErCUmHrvB07xCYz8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefn
-	bmKEBOuXHYyLj1kdYhTgYFTi4d0xzTdEiDWxrLgy9xCjBAezkghvRIx/iBBvSmJlVWpRfnxR
-	aU5q8SFGJg5OqQbG5R92vPOLmuvWnZjnt3L/GtnQt0+d9v63WXpiaokS18s4qYTN8ZNnRl+d
-	u22tc8rzjh3cX0Skclm8b/1cfWymqZ/RNOO0c9Mv33NUtQpKvzpZnDvg6EUW3xe2S25qCxjM
-	NuupDuk8c6/gy7Euu7LQ4IWr+l/xaH75ExjCbREWs+Px1PUhJsKmSizFGYmGWsxFxYkAGZ9G
-	ijQCAAA=
+	Tue, 28 Oct 2014 07:34:04 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>,
+        Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] usb: gadget: don't create new string_container if already exist
+Date: Tue, 28 Oct 2014 19:33:58 +0800
+Message-ID: <1414496039-5655-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
+ definitions=2014-10-28_05:2014-10-28,2014-10-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1410280112
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ima_inode_setxattr() can be called with no value. Function does not
-check the length so that following command can be used to produce
-kernel oops: setfattr -n security.ima FOO. This patch fixes it.
+Don't create new usb_gadget_string_container if the current strings are
+already exist in the usb_composite_dev.
+Otherwise the ids_tab will overflow soon if we bind / unbind usb
+functions frequently like android does.
 
-Changes in v3:
-* for stable reverted "allow setting hash only in fix or log mode"
-  It will be a separate patch.
-
-Changes in v2:
-* testing validity of xattr type
-* allow setting hash only in fix or log mode (Mimi)
-
-[  261.562522] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[  261.564109] IP: [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
-[  261.564109] PGD 3112f067 PUD 42965067 PMD 0
-[  261.564109] Oops: 0000 [#1] SMP
-[  261.564109] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
-[  261.564109] CPU: 0 PID: 3299 Comm: setxattr Not tainted 3.16.0-kds+ #2924
-[  261.564109] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  261.564109] task: ffff8800428c2430 ti: ffff880042be0000 task.ti: ffff880042be0000
-[  261.564109] RIP: 0010:[<ffffffff812af272>]  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
-[  261.564109] RSP: 0018:ffff880042be3d50  EFLAGS: 00010246
-[  261.564109] RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000015
-[  261.564109] RDX: 0000001500000000 RSI: 0000000000000000 RDI: ffff8800375cc600
-[  261.564109] RBP: ffff880042be3d68 R08: 0000000000000000 R09: 00000000004d6256
-[  261.564109] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88002149ba00
-[  261.564109] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-[  261.564109] FS:  00007f6c1e219740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
-[  261.564109] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  261.564109] CR2: 0000000000000000 CR3: 000000003b35a000 CR4: 00000000000006f0
-[  261.564109] Stack:
-[  261.564109]  ffff88002149ba00 ffff880042be3df8 0000000000000000 ffff880042be3d98
-[  261.564109]  ffffffff812a101b ffff88002149ba00 ffff880042be3df8 0000000000000000
-[  261.564109]  0000000000000000 ffff880042be3de0 ffffffff8116d08a ffff880042be3dc8
-[  261.564109] Call Trace:
-[  261.564109]  [<ffffffff812a101b>] security_inode_setxattr+0x48/0x6a
-[  261.564109]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
-[  261.564109]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
-[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[  261.564109]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
-[  261.564109]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[  261.564109]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
-[  261.564109]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
-[  261.564109]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
-[  261.564109] Code: 48 89 f7 48 c7 c6 58 36 81 81 53 31 db e8 73 27 04 00 85 c0 75 28 bf 15 00 00 00 e8 8a a5 d9 ff 84 c0 75 05 83 cb ff eb 15 31 f6 <41> 80 7d 00 03 49 8b 7c 24 68 40 0f 94 c6 e8 e1 f9 ff ff 89 d8
-[  261.564109] RIP  [<ffffffff812af272>] ima_inode_setxattr+0x3e/0x5a
-[  261.564109]  RSP <ffff880042be3d50>
-[  261.564109] CR2: 0000000000000000
-[  261.599998] ---[ end trace 39a89a3fc267e652 ]---
-
-Reported-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: stable@vger.kernel.org
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 ---
- security/integrity/ima/ima_appraise.c | 2 ++
- security/integrity/integrity.h        | 1 +
- 2 files changed, 3 insertions(+)
+ drivers/usb/gadget/composite.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
-index 9226854..7c8f41e 100644
---- a/security/integrity/ima/ima_appraise.c
-+++ b/security/integrity/ima/ima_appraise.c
-@@ -378,6 +378,8 @@ int ima_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- 	result = ima_protect_xattr(dentry, xattr_name, xattr_value,
- 				   xattr_value_len);
- 	if (result == 1) {
-+		if (!xattr_value_len || (xvalue->type >= IMA_XATTR_LAST))
-+			return -EINVAL;
- 		ima_reset_appraise_flags(dentry->d_inode,
- 			 (xvalue->type == EVM_IMA_XATTR_DIGSIG) ? 1 : 0);
- 		result = 0;
-diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
-index caa1f6c..0fc9519 100644
---- a/security/integrity/integrity.h
-+++ b/security/integrity/integrity.h
-@@ -61,6 +61,7 @@ enum evm_ima_xattr_type {
- 	EVM_XATTR_HMAC,
- 	EVM_IMA_XATTR_DIGSIG,
- 	IMA_XATTR_DIGEST_NG,
-+	IMA_XATTR_LAST
- };
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index a8c18df..6fe3c6b 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -1183,6 +1183,12 @@ struct usb_string *usb_gstrings_attach(struct usb_composite_dev *cdev,
+ 	if (!n_gstrings)
+ 		return ERR_PTR(-EINVAL);
  
- struct evm_ima_xattr_data {
++	list_for_each_entry(uc, &cdev->gstrings, list) {
++		n_gs = get_containers_gs(uc);
++		if (!strcmp(n_gs[0]->strings[0].s, sp[0]->strings[0].s))
++			return n_gs[0]->strings;
++	}
++
+ 	uc = copy_gadget_strings(sp, n_gstrings, n_strings);
+ 	if (IS_ERR(uc))
+ 		return ERR_CAST(uc);
 -- 
-1.9.1
+1.7.9.5
 
