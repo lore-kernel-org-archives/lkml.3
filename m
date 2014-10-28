@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148AbaJ1Dhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:37:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44452 "EHLO
+	id S1756800AbaJ1HzZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:55:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44449 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044AbaJ1Dhv (ORCPT
+	with ESMTP id S1754107AbaJ1Dht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:51 -0400
+	Mon, 27 Oct 2014 23:37:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olga Kornievskaia <kolga@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.17 053/146] Fixing lease renewal
-Date: Tue, 28 Oct 2014 11:33:15 +0800
-Message-Id: <20141028033345.705955922@linuxfoundation.org>
+        Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 3.17 052/146] m68k: Disable/restore interrupts in hwreg_present()/hwreg_write()
+Date: Tue, 28 Oct 2014 11:33:14 +0800
+Message-Id: <20141028033345.664767517@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,34 +29,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olga Kornievskaia <kolga@netapp.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 8faaa6d5d48b201527e0451296d9e71d23afb362 upstream.
+commit e4dc601bf99ccd1c95b7e6eef1d3cf3c4b0d4961 upstream.
 
-Commit c9fdeb28 removed a 'continue' after checking if the lease needs
-to be renewed. However, if client hasn't moved, the code falls down to
-starting reboot recovery erroneously (ie., sends open reclaim and gets
-back stale_clientid error) before recovering from getting stale_clientid
-on the renew operation.
+hwreg_present() and hwreg_write() temporarily change the VBR register to
+another vector table. This table contains a valid bus error handler
+only, all other entries point to arbitrary addresses.
 
-Signed-off-by: Olga Kornievskaia <kolga@netapp.com>
-Fixes: c9fdeb280b8c (NFS: Add basic migration support to state manager thread)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+If an interrupt comes in while the temporary table is active, the
+processor will start executing at such an arbitrary address, and the
+kernel will crash.
+
+While most callers run early, before interrupts are enabled, or
+explicitly disable interrupts, Finn Thain pointed out that macsonic has
+one callsite that doesn't, causing intermittent boot crashes.
+There's another unsafe callsite in hilkbd.
+
+Fix this for good by disabling and restoring interrupts inside
+hwreg_present() and hwreg_write().
+
+Explicitly disabling interrupts can be removed from the callsites later.
+
+Reported-by: Finn Thain <fthain@telegraphics.com.au>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4state.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/m68k/mm/hwtest.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -2345,6 +2345,7 @@ static void nfs4_state_manager(struct nf
- 			status = nfs4_check_lease(clp);
- 			if (status < 0)
- 				goto out_error;
-+			continue;
- 		}
+--- a/arch/m68k/mm/hwtest.c
++++ b/arch/m68k/mm/hwtest.c
+@@ -28,9 +28,11 @@
+ int hwreg_present( volatile void *regp )
+ {
+     int	ret = 0;
++    unsigned long flags;
+     long	save_sp, save_vbr;
+     long	tmp_vectors[3];
  
- 		if (test_and_clear_bit(NFS4CLNT_MOVED, &clp->cl_state)) {
++    local_irq_save(flags);
+     __asm__ __volatile__
+ 	(	"movec	%/vbr,%2\n\t"
+ 		"movel	#Lberr1,%4@(8)\n\t"
+@@ -46,6 +48,7 @@ int hwreg_present( volatile void *regp )
+ 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
+ 		: "a" (regp), "a" (tmp_vectors)
+                 );
++    local_irq_restore(flags);
+ 
+     return( ret );
+ }
+@@ -58,9 +61,11 @@ EXPORT_SYMBOL(hwreg_present);
+ int hwreg_write( volatile void *regp, unsigned short val )
+ {
+ 	int		ret;
++	unsigned long flags;
+ 	long	save_sp, save_vbr;
+ 	long	tmp_vectors[3];
+ 
++	local_irq_save(flags);
+ 	__asm__ __volatile__
+ 	(	"movec	%/vbr,%2\n\t"
+ 		"movel	#Lberr2,%4@(8)\n\t"
+@@ -78,6 +83,7 @@ int hwreg_write( volatile void *regp, un
+ 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
+ 		: "a" (regp), "a" (tmp_vectors), "g" (val)
+ 	);
++	local_irq_restore(flags);
+ 
+ 	return( ret );
+ }
 
 
