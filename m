@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611AbaJ1QHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 12:07:39 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:49836 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867AbaJ1QHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 12:07:37 -0400
-Date: Tue, 28 Oct 2014 16:07:29 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [RFC PATCH 1/2] zap_pte_range: update addr when forcing flush
- after TLB batching faiure
-Message-ID: <20141028160729.GH29706@arm.com>
-References: <1414496662-25202-1-git-send-email-will.deacon@arm.com>
- <1414496662-25202-2-git-send-email-will.deacon@arm.com>
- <CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
+	id S1753852AbaJ1QHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 12:07:48 -0400
+Received: from mail-bn1bon0071.outbound.protection.outlook.com ([157.56.111.71]:61339
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753664AbaJ1QHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 12:07:46 -0400
+Date: Tue, 28 Oct 2014 09:07:30 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Subject: Re: [PATCH RFC v2 3/8] pinctrl: pinconf-generic: Add parameter 'IO
+ standard'
+References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1413479495-14206-4-git-send-email-soren.brinkmann@xilinx.com>
+ <CACRpkdZtqNUroNfd_0Kftq+-056YFzjvR+ROrZZ0htZX2v2qzg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxVtxA-j7uwVCeB4asm4DB-gz4xnsygW8_s0OYfU8hXrw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdZtqNUroNfd_0Kftq+-056YFzjvR+ROrZZ0htZX2v2qzg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21058.005
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <62aa98fc84d14f919e35dd068d24e5a7@BN1BFFO11FD060.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(377454003)(377424004)(164054003)(51704005)(199003)(189002)(4396001)(76482002)(85852003)(85202003)(86362001)(102836001)(85306004)(50466002)(106466001)(47776003)(92566001)(64706001)(80022003)(83506001)(23676002)(46102003)(21056001)(19580395003)(31966008)(20776003)(104016003)(108616004)(33646002)(6806004)(120916001)(44976005)(95666004)(53416004)(85182001)(87936001)(76176999)(50986999)(74316001)(110136001)(19580405001)(107046002)(77096002)(54356999)(41533002)(107986001)(24736002)(23106004)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB060;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB060;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Forefront-PRVS: 0378F1E47A
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-On Tue, Oct 28, 2014 at 03:30:43PM +0000, Linus Torvalds wrote:
-> On Tue, Oct 28, 2014 at 4:44 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > This patch fixes the problem by incrementing addr by the PAGE_SIZE
-> > before breaking out of the loop on batch failure.
+On Tue, 2014-10-28 at 03:59PM +0100, Linus Walleij wrote:
+> On Thu, Oct 16, 2014 at 7:11 PM, Soren Brinkmann
+> <soren.brinkmann@xilinx.com> wrote:
 > 
-> This patch seems harmless and right, unlike the other one.
-
-Yes; the other patch was more of a discussion point, as I was really
-struggling to solve the problem without changing arch code. It was also
-broken, as you discovered.
-
-> I'd be ok with changing the *generic* code to do the "update start/end
-> pointers in the mmu_gather structure", but then it really has to be
-> done in *generic* code. Move your arm64 start/end updates to
-> include/asm-generic/tlb.h, and change the initialization of start/end
-> entirely. Right now we initialize those things to the maximal range
-> (see tlb_gather_mmu()), and the arm64 logic seems to be to initialize
-> them to TASK_SIZE/0 respectively and then update start/end as you add
-> pages, so that you get the minimal range.
+> > For HW that can select the IO standard for pins, add the infrastructure
+> > in pinconf generic to parse this parameter.
+> >
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 > 
-> But because of this arm64 confusion (the "minimal range" really is
-> *not* how this is designed to work), the current existing
-> tlb_gather_mmu() does the wrong initialization.
+> Nothing in this patch actually explain what an "IO standard" is,
+> which is paramount if it should be a generic property.
 > 
-> In other words: my argument is that right now the arm64 code is just
-> *wrong*. I'd be ok with making it the right thing to do, but if so, it
-> needs to be made generic.
-
-Ok, that's useful, thanks. Out of curiosity, what *is* the current intention
-of __tlb_remove_tlb_entry, if start/end shouldn't be touched by
-architectures? Is it just for the PPC hash thing?
-
-> Are there any actual advantages to teh whole "minimal range" model? It
-> adds overhead and complexity, and the only case where it would seem to
-> be worth it is for benchmarks that do mmap/munmap in a loop and then
-> only map a single page. Normal loads don't tend to have those kinds of
-> "minimal range is very different from whole range" cases. Do you have
-> a real case for why it does that minimal range thing.
-
-I was certainly seeing this issue trigger regularly when running firefox,
-but I'll need to dig and find out the differences in range size.
-
-> Because if you don't have a real case, I'd really suggest you get rid
-> of all the arm64 games with start/end. That still leaves this one
-> patch the correct thing to do (because even without the start/end
-> games the "need_flush" flag goes with the range, but it makes the
-> second patch a complete non-issue.
-
-Since we have hardware broadcasting of TLB invalidations on ARM, it is
-in our interest to keep the number of outstanding operations as small as
-possible, particularly on large systems where we don't get the targetted
-shootdown with a single message that you can perform using IPIs (i.e.
-you can only broadcast to all or no CPUs, and that happens for each pte).
-
-Now, what I'd actually like to do is to keep track of discrete ranges,
-so that we can avoid sending a TLB invalidation for each PAGE_SIZE region
-of a huge-page mapping. That information is lost with our current minimal
-range scheme and it was whilst I was thinking about this that I noticed
-we were getting passed negative ranges with the current implementation.
-
-> If you *do* have a real case, I think you need to modify your second patch to:
+> And if it should be generic, I really want to know why this is a
+> thing not overlapping with existing generic configs, and exactly
+> what it is and that it is probable other silicon will have it too.
+> And we need to discuss if it's the right name.
 > 
->  - move the arm start/end updates from tlb_flush/tlb_add_flush to asm-generic
-> 
->  - make tlb_gather_mmu() initialize start/end to TASK_SIZE/0 the same
-> way your tlb_flush does (so that the subsequent min/max games work).
-> 
-> so that *everybody* does the start/end games. I'd be ok with that.
+> Looking at what you actually set up, it looks very much like this
+> is actually PIN_CONFIG_DRIVE_STRENGTH.
 
-I'll try and come up with something which addresses the above, and we can
-go from there.
+I was thinking about that, but:
+drive strength is well defined saying you choose the drive strength in
+mA (or some other variation of Amperes). That is not (directly) what you
+can set in Zynq. In Zynq the config allows selecting IO-standards like
+LVCMOS(1.8|2.5|3.3) or HSTL.
+So, this might also map to a certain drive-strength, but is not really
+mapping well to Zynq pin configuration options.
+Hence, I thought introducing this new property which allows a more
+flexible interpretation of the argument would be a better way and might
+also help other pinctrl cases (though this is speculative).
 
-> What I'm not ok with is arm64 using the generic TLB gather way in odd
-> ways that then breaks code and results in things like your 2/2 patch
-> that fixes ARM64 but breaks x86.
-
-Understood, that certainly wasn't my intention.
-
-Cheers,
-
-Will
+	Thanks,
+	Sören
