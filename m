@@ -1,103 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210AbaJ1UXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:23:54 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52167 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583AbaJ1UXv (ORCPT
+	id S1751428AbaJ1U0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:26:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:32917 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750786AbaJ1U0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:23:51 -0400
-Date: Tue, 28 Oct 2014 21:23:11 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Marc Zyngier <marc.zyngier@arm.com>
-cc: Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-Subject: Re: [Patch Part2 v3 01/24] irqdomain: Introduce new interfaces to
- support hierarchy irqdomains
-In-Reply-To: <544FF900.4020601@arm.com>
-Message-ID: <alpine.DEB.2.11.1410282116220.5308@nanos>
-References: <1414484803-10311-1-git-send-email-jiang.liu@linux.intel.com>  <1414484803-10311-2-git-send-email-jiang.liu@linux.intel.com> <1414489711.32399.53.camel@mtksdaap41> <alpine.DEB.2.11.1410282010340.5308@nanos> <544FF900.4020601@arm.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Tue, 28 Oct 2014 16:26:17 -0400
+Date: Tue, 28 Oct 2014 13:26:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Kyungmin Park <kyungmin.park@samsung.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Thierry Reding <treding@nvidia.com>
+Subject: Re: linux-next: manual merge of the akpm-current tree with the
+ dma-mapping tree
+Message-Id: <20141028132617.12dc0fb45f33103fe9f6b04b@linux-foundation.org>
+In-Reply-To: <544F3D91.1070604@samsung.com>
+References: <20141028152444.79bd9fe9@canb.auug.org.au>
+	<20141027232910.952850f8.akpm@linux-foundation.org>
+	<544F3D91.1070604@samsung.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Oct 2014, Marc Zyngier wrote:
-> On 28/10/14 19:37, Thomas Gleixner wrote:
-> > So while we are at it:
-> > 
-> >> +	if (irq_domain_is_hierarchy(domain)) {
-> >> +		if (domain->ops->xlate) {
-> >> +			/*
-> >> +			 * If we've already configured this interrupt,
-> >> +			 * don't do it again, or hell will break loose.
-> >> +			 */
-> >> +			virq = irq_find_mapping(domain, hwirq);
-> >> +			if (virq)
-> >> +				return virq;
-> > 
-> > I can understand that it is an issue if the mapping exists already,
-> > but I have to ask WHY is it correct behaviour to call into that code
-> > for an existing mapping.
+On Tue, 28 Oct 2014 07:54:09 +0100 Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+
+> Hello,
 > 
-> As I have originally looked at this, I'll answer the question:
+> On 2014-10-28 07:29, Andrew Morton wrote:
+> > On Tue, 28 Oct 2014 15:24:44 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> >> Today's linux-next merge of the akpm-current tree got a conflict in
+> >> mm/cma.c between commit 16195ddd4ebc ("mm: cma: Ensure that
+> >> reservations never cross the low/high mem boundary") from the
+> >> dma-mapping tree and commit 2a70e5a78672 ("mm/cma: ake kmemleak ignore
+> >> CMA regions") from the akpm-current tree.
+> > hm, we have multiple trees altering mm/cma.c?
+> >
+> > I'm a bit surprised that this series was merged, given that Laurent
+> > said he would be sending out a v2...
 > 
-> The generic DT code parses the whole tree, and generates platform
-> devices as it goes. As part of the platform device creation, it
-> populates the IRQ resources, which translates into calling into
-> irq_create_of_mapping(). You could argue that this behaviour is crazy,
-> and I wouldn't disagree.
+> v2 of Laurent's patches has been posted on 24th October
+> (https://lkml.org/lkml/2014/10/24/207 ), but since I didn't notice them 
+> to be taken
+> I thought that it would make sense to get them via my tree and send them 
+> to Linus
+> during the 3.18-rc cycle. If this was not appropriate, I will drop my tree.
 
-Mooo.
+I think I got it all sorted out.  Thierry's "mm/cma: make kmemleak
+ignore CMA regions" needed a bit of rework - please check.
 
-> See http://www.spinics.net/lists/devicetree/msg53164.html for more gory
-> details.
-> 
-> > And why would this check only apply if domain->ops->xlate is set?
-> > irq_create_mapping() does it unconditionally.
-> 
-> My original code used the xlate callback to parse the opaque irq_data,
-> computing hwirq, and I suspect this is a leftover of it. The above code
-> seems to pull hwirq out of thin air, which is probably not the intended
-> behaviour. Joe?
 
-No. Here is the full patch from Joe:
+From: Thierry Reding <treding@nvidia.com>
+Subject: mm/cma: make kmemleak ignore CMA regions
 
-  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-October/296543.html
+kmemleak will add allocations as objects to a pool.  The memory allocated
+for each object in this pool is periodically searched for pointers to
+other allocated objects.  This only works for memory that is mapped into
+the kernel's virtual address space, which happens not to be the case for
+most CMA regions.  
 
-hwirq gets either set from hwirq = irq_data->args[0] or from the xlate
-call.
+Furthermore, CMA regions are typically used to store data transferred to
+or from a device and therefore don't contain pointers to other objects.
 
-But my question still stands:
+Without this, the kernel crashes on the first execution of the
+scan_gray_list() because it tries to access highmem.  Perhaps a more
+appropriate fix would be to reject any object that can't map to a kernel
+virtual address?
 
-Why would this check only apply if domain->ops->xlate is set?
-irq_create_mapping() does it unconditionally.
+[akpm@linux-foundation.org: add comment]
+[akpm@linux-foundation.org: fix comment, per Catalin]
+[sfr@canb.auug.org.au: include linux/io.h for phys_to_virt()]
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
 
-Thanks,
+ mm/cma.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-	tglx
+diff -puN mm/cma.c~mm-cma-make-kmemleak-ignore-cma-regions mm/cma.c
+--- a/mm/cma.c~mm-cma-make-kmemleak-ignore-cma-regions
++++ a/mm/cma.c
+@@ -33,6 +33,7 @@
+ #include <linux/log2.h>
+ #include <linux/cma.h>
+ #include <linux/highmem.h>
++#include <linux/io.h>
+ 
+ struct cma {
+ 	unsigned long	base_pfn;
+@@ -301,6 +302,11 @@ int __init cma_declare_contiguous(phys_a
+ 			}
+ 		}
+ 
++		/*
++		 * kmemleak scans/reads tracked objects for pointers to other
++		 * objects but this address isn't mapped and accessible
++		 */
++		kmemleak_ignore(phys_to_virt(addr));
+ 		base = addr;
+ 	}
+ 
+_
+
