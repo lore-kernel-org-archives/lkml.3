@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933949AbaJ1Dwy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:52:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46193 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933772AbaJ1Dwd (ORCPT
+	id S1753178AbaJ1Ee2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:34:28 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:39050 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386AbaJ1EeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:33 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        John Soni Jose <sony.john-n@emulex.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.10 13/43] be2iscsi: check ip buffer before copying
-Date: Tue, 28 Oct 2014 11:36:11 +0800
-Message-Id: <20141028033523.965876039@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 00:34:25 -0400
 MIME-Version: 1.0
+In-Reply-To: <20141027164214.GF14253@saruman>
+References: <1414427215-14380-1-git-send-email-romain.perier@gmail.com>
+ <1414427215-14380-7-git-send-email-romain.perier@gmail.com> <20141027164214.GF14253@saruman>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 28 Oct 2014 13:34:03 +0900
+Message-ID: <CAAVeFuL2MvbC9U-8fM=QPhkvnaMRZ8kep9WpD8hhU4m4cGWjLw@mail.gmail.com>
+Subject: Re: [PATCH v2 07/10] ARM: dts: tegra: Use standard power-off property
+ in tps65911 for tegra30 apalis
+To: balbi@ti.com
+Cc: Romain Perier <romain.perier@gmail.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>, robh@kernel.org,
+        Mark Rutland <mark.rutland@arm.com>, Johan Hovold <johan@kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Oct 28, 2014 at 1:42 AM, Felipe Balbi <balbi@ti.com> wrote:
+> On Mon, Oct 27, 2014 at 04:26:52PM +0000, Romain Perier wrote:
+>> Signed-off-by: Romain Perier <romain.perier@gmail.com>
+>> ---
+>>  arch/arm/boot/dts/tegra30-apalis.dtsi | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/dts/tegra30-apalis.dtsi b/arch/arm/boot/dts/tegra30-apalis.dtsi
+>> index a5446cb..ced4436 100644
+>> --- a/arch/arm/boot/dts/tegra30-apalis.dtsi
+>> +++ b/arch/arm/boot/dts/tegra30-apalis.dtsi
+>> @@ -412,7 +412,7 @@
+>>                       #interrupt-cells = <2>;
+>>                       interrupt-controller;
+>>
+>> -                     ti,system-power-controller;
+>> +                     system-power-controller;
+>
+> this board is broken until this patch is applied.
 
-------------------
-
-From: Mike Christie <michaelc@cs.wisc.edu>
-
-commit a41a9ad3bbf61fae0b6bfb232153da60d14fdbd9 upstream.
-
-Dan Carpenter found a issue where be2iscsi would copy the ip
-from userspace to the driver buffer before checking the len
-of the data being copied:
-http://marc.info/?l=linux-scsi&m=140982651504251&w=2
-
-This patch just has us only copy what we the driver buffer
-can support.
-
-Tested-by: John Soni Jose <sony.john-n@emulex.com>
-Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/be2iscsi/be_mgmt.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
-
---- a/drivers/scsi/be2iscsi/be_mgmt.c
-+++ b/drivers/scsi/be2iscsi/be_mgmt.c
-@@ -812,17 +812,20 @@ mgmt_static_ip_modify(struct beiscsi_hba
- 
- 	if (ip_action == IP_ACTION_ADD) {
- 		memcpy(req->ip_params.ip_record.ip_addr.addr, ip_param->value,
--		       ip_param->len);
-+		       sizeof(req->ip_params.ip_record.ip_addr.addr));
- 
- 		if (subnet_param)
- 			memcpy(req->ip_params.ip_record.ip_addr.subnet_mask,
--			       subnet_param->value, subnet_param->len);
-+			       subnet_param->value,
-+			       sizeof(req->ip_params.ip_record.ip_addr.subnet_mask));
- 	} else {
- 		memcpy(req->ip_params.ip_record.ip_addr.addr,
--		       if_info->ip_addr.addr, ip_param->len);
-+		       if_info->ip_addr.addr,
-+		       sizeof(req->ip_params.ip_record.ip_addr.addr));
- 
- 		memcpy(req->ip_params.ip_record.ip_addr.subnet_mask,
--		       if_info->ip_addr.subnet_mask, ip_param->len);
-+		       if_info->ip_addr.subnet_mask,
-+		       sizeof(req->ip_params.ip_record.ip_addr.subnet_mask));
- 	}
- 
- 	rc = mgmt_exec_nonemb_cmd(phba, &nonemb_cmd, NULL, 0);
-@@ -850,7 +853,7 @@ static int mgmt_modify_gateway(struct be
- 	req->action = gtway_action;
- 	req->ip_addr.ip_type = BE2_IPV4;
- 
--	memcpy(req->ip_addr.addr, gt_addr, param_len);
-+	memcpy(req->ip_addr.addr, gt_addr, sizeof(req->ip_addr.addr));
- 
- 	return mgmt_exec_nonemb_cmd(phba, &nonemb_cmd, NULL, 0);
- }
-
-
+It should not. Supporting a new property in the tps65911 is fine, but
+the old property must keep being supported to preserve DT
+compatibility. If a change removing support for
+"ti,system-power-controller" has landed in -next, then it should be
+removed.
