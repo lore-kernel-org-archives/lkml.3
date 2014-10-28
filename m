@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756034AbaJ1DvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:51:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46039 "EHLO
+	id S1758281AbaJ1Gdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:33:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46043 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756022AbaJ1DvT (ORCPT
+	with ESMTP id S1754600AbaJ1DvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:51:19 -0400
+	Mon, 27 Oct 2014 23:51:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        sparclinux@vger.kernel.org, Bob Picco <bob.picco@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 075/100] sparc64: sun4v TLB error power off events
-Date: Tue, 28 Oct 2014 11:36:00 +0800
-Message-Id: <20141028033503.926103002@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>,
+        Bob Picco <bob.picco@oracle.com>
+Subject: [PATCH 3.14 097/100] sparc64: Kill unnecessary tables and increase MAX_BANKS.
+Date: Tue, 28 Oct 2014 11:36:22 +0800
+Message-Id: <20141028033504.897931165@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -29,205 +29,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: bob picco <bpicco@meloft.net>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 4ccb9272892c33ef1c19a783cfa87103b30c2784 ]
+[ Upstream commit d195b71bad4347d2df51072a537f922546a904f1 ]
 
-We've witnessed a few TLB events causing the machine to power off because
-of prom_halt. In one case it was some nfs related area during rmmod. Another
-was an mmapper of /dev/mem. A more recent one is an ITLB issue with
-a bad pagesize which could be a hardware bug. Bugs happen but we should
-attempt to not power off the machine and/or hang it when possible.
+swapper_low_pmd_dir and swapper_pud_dir are actually completely
+useless and unnecessary.
 
-This is a DTLB error from an mmapper of /dev/mem:
-[root@sparcie ~]# SUN4V-DTLB: Error at TPC[fffff80100903e6c], tl 1
-SUN4V-DTLB: TPC<0xfffff80100903e6c>
-SUN4V-DTLB: O7[fffff801081979d0]
-SUN4V-DTLB: O7<0xfffff801081979d0>
-SUN4V-DTLB: vaddr[fffff80100000000] ctx[1250] pte[98000000000f0610] error[2]
-.
+We just need swapper_pg_dir[].  Naturally the other page table chunks
+will be allocated on an as-needed basis.  Since the kernel actually
+accesses these tables in the PAGE_OFFSET view, there is not even a TLB
+locality advantage of placing them in the kernel image.
 
-This is recent mainline for ITLB:
-[ 3708.179864] SUN4V-ITLB: TPC<0xfffffc010071cefc>
-[ 3708.188866] SUN4V-ITLB: O7[fffffc010071cee8]
-[ 3708.197377] SUN4V-ITLB: O7<0xfffffc010071cee8>
-[ 3708.206539] SUN4V-ITLB: vaddr[e0003] ctx[1a3c] pte[2900000dcc800eeb] error[4]
-.
+Use the hard coded vmlinux.ld.S slot for swapper_pg_dir which is
+naturally page aligned.
 
-Normally sun4v_itlb_error_report() and sun4v_dtlb_error_report() would call
-prom_halt() and drop us to OF command prompt "ok". This isn't the case for
-LDOMs and the machine powers off.
+Increase MAX_BANKS to 1024 in order to handle heavily fragmented
+virtual guests.
 
-For the HV reported error of HV_ENORADDR for HV HV_MMU_MAP_ADDR_TRAP we cause
-a SIGBUS error by qualifying it within do_sparc64_fault() for fault code mask
-of FAULT_CODE_BAD_RA. This is done when trap level (%tl) is less or equal
-one("1"). Otherwise, for %tl > 1,  we proceed eventually to die_if_kernel().
+Even with this MAX_BANKS increase, the kernel is 20K+ smaller.
 
-The logic of this patch was partially inspired by David Miller's feedback.
-
-Power off of large sparc64 machines is painful. Plus die_if_kernel provides
-more context. A reset sequence isn't a brief period on large sparc64 but
-better than power-off/power-on sequence.
-
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/thread_info_64.h |    1 
- arch/sparc/kernel/sun4v_tlb_miss.S      |   35 +++++++++++++++++++-------------
- arch/sparc/kernel/traps_64.c            |   15 ++++++++-----
- arch/sparc/mm/fault_64.c                |    3 ++
- 4 files changed, 34 insertions(+), 20 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h |    1 -
+ arch/sparc/kernel/vmlinux.lds.S     |    5 +++--
+ arch/sparc/mm/init_64.c             |   25 ++-----------------------
+ 3 files changed, 5 insertions(+), 26 deletions(-)
 
---- a/arch/sparc/include/asm/thread_info_64.h
-+++ b/arch/sparc/include/asm/thread_info_64.h
-@@ -102,6 +102,7 @@ struct thread_info {
- #define FAULT_CODE_ITLB		0x04	/* Miss happened in I-TLB	   */
- #define FAULT_CODE_WINFIXUP	0x08	/* Miss happened during spill/fill */
- #define FAULT_CODE_BLKCOMMIT	0x10	/* Use blk-commit ASI in copy_page */
-+#define	FAULT_CODE_BAD_RA	0x20	/* Bad RA for sun4v		   */
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -927,7 +927,6 @@ static inline void __set_pte_at(struct m
+ #endif
  
- #if PAGE_SHIFT == 13
- #define THREAD_SIZE (2*PAGE_SIZE)
---- a/arch/sparc/kernel/sun4v_tlb_miss.S
-+++ b/arch/sparc/kernel/sun4v_tlb_miss.S
-@@ -195,6 +195,11 @@ sun4v_tsb_miss_common:
- 	 ldx	[%g2 + TRAP_PER_CPU_PGD_PADDR], %g7
+ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+-extern pmd_t swapper_low_pmd_dir[PTRS_PER_PMD];
  
- sun4v_itlb_error:
-+	rdpr	%tl, %g1
-+	cmp	%g1, 1
-+	ble,pt	%icc, sun4v_bad_ra
-+	 or	%g0, FAULT_CODE_BAD_RA | FAULT_CODE_ITLB, %g1
-+
- 	sethi	%hi(sun4v_err_itlb_vaddr), %g1
- 	stx	%g4, [%g1 + %lo(sun4v_err_itlb_vaddr)]
- 	sethi	%hi(sun4v_err_itlb_ctx), %g1
-@@ -206,15 +211,10 @@ sun4v_itlb_error:
- 	sethi	%hi(sun4v_err_itlb_error), %g1
- 	stx	%o0, [%g1 + %lo(sun4v_err_itlb_error)]
+ extern void paging_init(void);
+ extern unsigned long find_ecache_flush_span(unsigned long size);
+--- a/arch/sparc/kernel/vmlinux.lds.S
++++ b/arch/sparc/kernel/vmlinux.lds.S
+@@ -35,8 +35,9 @@ jiffies = jiffies_64;
  
-+	sethi	%hi(1f), %g7
- 	rdpr	%tl, %g4
--	cmp	%g4, 1
--	ble,pt	%icc, 1f
--	 sethi	%hi(2f), %g7
- 	ba,pt	%xcc, etraptl1
--	 or	%g7, %lo(2f), %g7
--
--1:	ba,pt	%xcc, etrap
--2:	 or	%g7, %lo(2b), %g7
-+1:	 or	%g7, %lo(1f), %g7
- 	mov	%l4, %o1
- 	call	sun4v_itlb_error_report
- 	 add	%sp, PTREGS_OFF, %o0
-@@ -222,6 +222,11 @@ sun4v_itlb_error:
- 	/* NOTREACHED */
- 
- sun4v_dtlb_error:
-+	rdpr	%tl, %g1
-+	cmp	%g1, 1
-+	ble,pt	%icc, sun4v_bad_ra
-+	 or	%g0, FAULT_CODE_BAD_RA | FAULT_CODE_DTLB, %g1
-+
- 	sethi	%hi(sun4v_err_dtlb_vaddr), %g1
- 	stx	%g4, [%g1 + %lo(sun4v_err_dtlb_vaddr)]
- 	sethi	%hi(sun4v_err_dtlb_ctx), %g1
-@@ -233,21 +238,23 @@ sun4v_dtlb_error:
- 	sethi	%hi(sun4v_err_dtlb_error), %g1
- 	stx	%o0, [%g1 + %lo(sun4v_err_dtlb_error)]
- 
-+	sethi	%hi(1f), %g7
- 	rdpr	%tl, %g4
--	cmp	%g4, 1
--	ble,pt	%icc, 1f
--	 sethi	%hi(2f), %g7
- 	ba,pt	%xcc, etraptl1
--	 or	%g7, %lo(2f), %g7
--
--1:	ba,pt	%xcc, etrap
--2:	 or	%g7, %lo(2b), %g7
-+1:	 or	%g7, %lo(1f), %g7
- 	mov	%l4, %o1
- 	call	sun4v_dtlb_error_report
- 	 add	%sp, PTREGS_OFF, %o0
- 
- 	/* NOTREACHED */
- 
-+sun4v_bad_ra:
-+	or	%g0, %g4, %g5
-+	ba,pt	%xcc, sparc64_realfault_common
-+	 or	%g1, %g0, %g4
-+
-+	/* NOTREACHED */
-+
- 	/* Instruction Access Exception, tl0. */
- sun4v_iacc:
- 	ldxa	[%g0] ASI_SCRATCHPAD, %g2
---- a/arch/sparc/kernel/traps_64.c
-+++ b/arch/sparc/kernel/traps_64.c
-@@ -2102,6 +2102,11 @@ void sun4v_nonresum_overflow(struct pt_r
- 	atomic_inc(&sun4v_nonresum_oflow_cnt);
- }
- 
-+static void sun4v_tlb_error(struct pt_regs *regs)
-+{
-+	die_if_kernel("TLB/TSB error", regs);
-+}
-+
- unsigned long sun4v_err_itlb_vaddr;
- unsigned long sun4v_err_itlb_ctx;
- unsigned long sun4v_err_itlb_pte;
-@@ -2109,8 +2114,7 @@ unsigned long sun4v_err_itlb_error;
- 
- void sun4v_itlb_error_report(struct pt_regs *regs, int tl)
+ SECTIONS
  {
--	if (tl > 1)
--		dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
-+	dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
+-	/* swapper_low_pmd_dir is sparc64 only */
+-	swapper_low_pmd_dir = 0x0000000000402000;
++#ifdef CONFIG_SPARC64
++	swapper_pg_dir = 0x0000000000402000;
++#endif
+ 	. = INITIAL_ADDRESS;
+ 	.text TEXTSTART :
+ 	{
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -85,7 +85,7 @@ extern struct tsb swapper_tsb[KERNEL_TSB
  
- 	printk(KERN_EMERG "SUN4V-ITLB: Error at TPC[%lx], tl %d\n",
- 	       regs->tpc, tl);
-@@ -2123,7 +2127,7 @@ void sun4v_itlb_error_report(struct pt_r
- 	       sun4v_err_itlb_vaddr, sun4v_err_itlb_ctx,
- 	       sun4v_err_itlb_pte, sun4v_err_itlb_error);
+ static unsigned long cpu_pgsz_mask;
  
--	prom_halt();
-+	sun4v_tlb_error(regs);
- }
+-#define MAX_BANKS	32
++#define MAX_BANKS	1024
  
- unsigned long sun4v_err_dtlb_vaddr;
-@@ -2133,8 +2137,7 @@ unsigned long sun4v_err_dtlb_error;
+ static struct linux_prom64_registers pavail[MAX_BANKS];
+ static int pavail_ents;
+@@ -1937,12 +1937,6 @@ static void __init sun4v_linear_pte_xor_
  
- void sun4v_dtlb_error_report(struct pt_regs *regs, int tl)
+ static unsigned long last_valid_pfn;
+ 
+-/* These must be page aligned in order to not trigger the
+- * alignment tests of pgd_bad() and pud_bad().
+- */
+-pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__ ((aligned (PAGE_SIZE)));
+-static pud_t swapper_pud_dir[PTRS_PER_PUD] __attribute__ ((aligned (PAGE_SIZE)));
+-
+ static void sun4u_pgprot_init(void);
+ static void sun4v_pgprot_init(void);
+ 
+@@ -1950,8 +1944,6 @@ void __init paging_init(void)
  {
--	if (tl > 1)
--		dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
-+	dump_tl1_traplog((struct tl1_traplog *)(regs + 1));
+ 	unsigned long end_pfn, shift, phys_base;
+ 	unsigned long real_end, i;
+-	pud_t *pud;
+-	pmd_t *pmd;
+ 	int node;
  
- 	printk(KERN_EMERG "SUN4V-DTLB: Error at TPC[%lx], tl %d\n",
- 	       regs->tpc, tl);
-@@ -2147,7 +2150,7 @@ void sun4v_dtlb_error_report(struct pt_r
- 	       sun4v_err_dtlb_vaddr, sun4v_err_dtlb_ctx,
- 	       sun4v_err_dtlb_pte, sun4v_err_dtlb_error);
+ 	setup_page_offset();
+@@ -2046,20 +2038,7 @@ void __init paging_init(void)
+ 	 */
+ 	init_mm.pgd += ((shift) / (sizeof(pgd_t)));
+ 	
+-	memset(swapper_low_pmd_dir, 0, sizeof(swapper_low_pmd_dir));
+-
+-	/* The kernel page tables we publish into what the rest of the
+-	 * world sees must be adjusted so that they see the PAGE_OFFSET
+-	 * address of these in-kerenel data structures.  However right
+-	 * here we must access them from the kernel image side, because
+-	 * the trap tables haven't been taken over and therefore we cannot
+-	 * take TLB misses in the PAGE_OFFSET linear mappings yet.
+-	 */
+-	pud = swapper_pud_dir + (shift / sizeof(pud_t));
+-	pgd_set(&swapper_pg_dir[0], pud);
+-
+-	pmd = swapper_low_pmd_dir + (shift / sizeof(pmd_t));
+-	pud_set(&swapper_pud_dir[0], pmd);
++	memset(swapper_pg_dir, 0, sizeof(swapper_pg_dir));
  
--	prom_halt();
-+	sun4v_tlb_error(regs);
- }
- 
- void hypervisor_tlbop_error(unsigned long err, unsigned long op)
---- a/arch/sparc/mm/fault_64.c
-+++ b/arch/sparc/mm/fault_64.c
-@@ -348,6 +348,9 @@ retry:
- 		down_read(&mm->mmap_sem);
- 	}
- 
-+	if (fault_code & FAULT_CODE_BAD_RA)
-+		goto do_sigbus;
-+
- 	vma = find_vma(mm, address);
- 	if (!vma)
- 		goto bad_area;
+ 	inherit_prom_mappings();
+ 	
 
 
