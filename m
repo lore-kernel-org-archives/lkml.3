@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166AbaJ1E0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:26:36 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:35718 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756151AbaJ1E0d (ORCPT
+	id S1751024AbaJ1E1C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:27:02 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51478 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756170AbaJ1E06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 00:26:33 -0400
-Date: Mon, 27 Oct 2014 21:26:26 -0700
-From: Nicolin Chen <nicoleotsuka@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] ASoC: fsl_asrc: Add reg_defaults for regmap to fix
- kernel dump
-Message-ID: <20141028042603.GA5548@Asurada>
-References: <1414202637-18929-1-git-send-email-nicoleotsuka@gmail.com>
- <20141028001904.GH18557@sirena.org.uk>
+	Tue, 28 Oct 2014 00:26:58 -0400
+Date: Mon, 27 Oct 2014 21:11:27 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-unionfs@vger.kernel.org
+Subject: Re: [GIT PULL] overlay filesystem v25
+Message-ID: <20141028041127.GM5718@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141024032422.GI7996@ZenIV.linux.org.uk>
+ <CAJfpegt-X_Cd8B5H65keshhhuwH2-HPpaBC30atKeS3QjaariA@mail.gmail.com>
+ <20141025081845.GJ7996@ZenIV.linux.org.uk>
+ <CAJfpegvM8d-cizf=3KmTSFVgAYPBDp_0fQAh+G2Q87u=taXm3A@mail.gmail.com>
+ <20141025170609.GK7996@ZenIV.linux.org.uk>
+ <CAJfpegucroRzo0NHTz=4N0WcrB2oDC0eDiZXk=aKSjc8vdYDjw@mail.gmail.com>
+ <20141027155901.GE5718@linux.vnet.ibm.com>
+ <20141027172800.GW7996@ZenIV.linux.org.uk>
+ <20141027173621.GG5718@linux.vnet.ibm.com>
+ <20141028011214.GZ7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141028001904.GH18557@sirena.org.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20141028011214.GZ7996@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102804-0033-0000-0000-0000027C56B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 12:19:04AM +0000, Mark Brown wrote:
-> On Fri, Oct 24, 2014 at 07:03:57PM -0700, Nicolin Chen wrote:
-> > Kernel dump (WARN_ON) ocurred during system boot-up inside regmap_write():
+On Tue, Oct 28, 2014 at 01:12:14AM +0000, Al Viro wrote:
+> On Mon, Oct 27, 2014 at 10:36:21AM -0700, Paul E. McKenney wrote:
+> > Code making direct use of smp_read_barrier_depends() is harder to read,
+> > in my experience, but good point on the sparse noise.  Maybe a new
+> > lockless_dereference() primitive?  Maybe something like the following?
+> > (Untested, probably does not even build.)
 > > 
-> > ------------[ cut here ]------------
-> > WARNING: CPU: 0 PID: 47 at kernel/locking/lockdep.c:2744 lockdep_trace_alloc+0xe8/0x108()
-
-> > Even though this may be a bug that should be fixed, I still try to send this
-> > patch as a quick fix (work around) since it does no harm to assign default
-> > values of every registers when using regcache.
+> > #define lockless_dereference(p) \
+> > ({ \
+> > 	typeof(*p) *_________p1 = ACCESS_ONCE(p); \
+> > 	smp_read_barrier_depends(); /* Dependency order vs. p above. */ \
+> > 	_________p1; \
+> > })
 > 
-> It's not a bug, it's not reasonable to default allocations to atomic and
-> we can't really tell what context we're in.  Anything used inside a
-> heavily locked path should either have a default provided or arrange for
-> a prior write to set up the cache.
+> Hmm...  Where would you prefer to put it?  rcupdate.h?
 
-I've a little trouble to understand the prior write over here. Inside my
-probe() there's a register_init() call which has a set of regmap_write().
-And then the first regmap_write() results the dump. Does that mean this
-regmap_write() isn't prior write? If so, how should I do if not setting
-default values here -- Some IPs may have default value 0 for registers.
-And this would make reg_defaults tedious since there's nothing special
-to assign.
+Good a place as any, I guess.  Please see patch below.  Left to myself,
+I would send this along for the next merge window, but please let me
+know if you would like it sooner.
 
-And actually I remember I haven't seen any dump when I sent the initial
-patch for the whole ASRC driver but it manifested last month. I thought
-it might be a partially-merging issue and it would be fixed after merge
-window's done.....
+							Thanx, Paul
 
-Thank you
-Nicolin
+------------------------------------------------------------------------
+
+rcu: Provide counterpart to rcu_dereference() for non-RCU situations
+
+Although rcu_dereference() and friends can be used in situations where
+object lifetimes are being managed by something other than RCU, the
+resulting sparse and lockdep-RCU noise can be annoying.  This commit
+therefore supplies a lockless_dereference(), which provides the
+protection for dereferences without the RCU-related debugging noise.
+
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 9575c2d403b5..ed4f5939a452 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -617,6 +617,21 @@ static inline void rcu_preempt_sleep_check(void)
+ #define RCU_INITIALIZER(v) (typeof(*(v)) __force __rcu *)(v)
+ 
+ /**
++ * lockless_dereference() - safely load a pointer for later dereference
++ * @p: The pointer to load
++ *
++ * Similar to rcu_dereference(), but for situations where the pointed-to
++ * object's lifetime is managed by something other than RCU.  That
++ * "something other" might be reference counting or simple immortality.
++ */
++#define lockless_dereference(p) \
++({ \
++	typeof(p) _________p1 = ACCESS_ONCE(p); \
++	smp_read_barrier_depends(); /* Dependency order vs. p above. */ \
++	(_________p1); \
++})
++
++/**
+  * rcu_assign_pointer() - assign to RCU-protected pointer
+  * @p: pointer to assign to
+  * @v: value to assign (publish)
+
