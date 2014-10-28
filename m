@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760806AbaJ1Hc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:32:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44963 "EHLO
+	id S1760810AbaJ1Hda (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:33:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44956 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932172AbaJ1Dlg (ORCPT
+	with ESMTP id S1755092AbaJ1Dlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:36 -0400
+	Mon, 27 Oct 2014 23:41:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.17 143/146] sparc64: Kill unnecessary tables and increase MAX_BANKS.
-Date: Tue, 28 Oct 2014 11:34:45 +0800
-Message-Id: <20141028033349.667875181@linuxfoundation.org>
+Subject: [PATCH 3.17 141/146] sparc64: Adjust vmalloc region size based upon available virtual address bits.
+Date: Tue, 28 Oct 2014 11:34:43 +0800
+Message-Id: <20141028033349.578405420@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -31,111 +31,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit d195b71bad4347d2df51072a537f922546a904f1 ]
+[ Upstream commit bb4e6e85daa52a9f6210fa06a5ec6269598a202b ]
 
-swapper_low_pmd_dir and swapper_pud_dir are actually completely
-useless and unnecessary.
+In order to accomodate embedded per-cpu allocation with large numbers
+of cpus and numa nodes, we have to use as much virtual address space
+as possible for the vmalloc region.  Otherwise we can get things like:
 
-We just need swapper_pg_dir[].  Naturally the other page table chunks
-will be allocated on an as-needed basis.  Since the kernel actually
-accesses these tables in the PAGE_OFFSET view, there is not even a TLB
-locality advantage of placing them in the kernel image.
+PERCPU: max_distance=0x380001c10000 too large for vmalloc space 0xff00000000
 
-Use the hard coded vmlinux.ld.S slot for swapper_pg_dir which is
-naturally page aligned.
-
-Increase MAX_BANKS to 1024 in order to handle heavily fragmented
-virtual guests.
-
-Even with this MAX_BANKS increase, the kernel is 20K+ smaller.
+So, once we select a value for PAGE_OFFSET, derive the size of the
+vmalloc region based upon that.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/pgtable_64.h |    1 -
- arch/sparc/kernel/vmlinux.lds.S     |    5 +++--
- arch/sparc/mm/init_64.c             |   25 ++-----------------------
- 3 files changed, 5 insertions(+), 26 deletions(-)
+ arch/sparc/include/asm/page_64.h    |    1 -
+ arch/sparc/include/asm/pgtable_64.h |    9 +++++----
+ arch/sparc/kernel/ktlb.S            |    8 ++++----
+ arch/sparc/mm/init_64.c             |   30 +++++++++++++++++++-----------
+ 4 files changed, 28 insertions(+), 20 deletions(-)
 
+--- a/arch/sparc/include/asm/page_64.h
++++ b/arch/sparc/include/asm/page_64.h
+@@ -117,7 +117,6 @@ extern unsigned long sparc64_va_hole_bot
+ 
+ #include <asm-generic/memory_model.h>
+ 
+-#define PAGE_OFFSET_BY_BITS(X)	(-(_AC(1,UL) << (X)))
+ extern unsigned long PAGE_OFFSET;
+ 
+ #endif /* !(__ASSEMBLY__) */
 --- a/arch/sparc/include/asm/pgtable_64.h
 +++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -927,7 +927,6 @@ static inline void __set_pte_at(struct m
- #endif
+@@ -40,10 +40,7 @@
+ #define LOW_OBP_ADDRESS		_AC(0x00000000f0000000,UL)
+ #define HI_OBP_ADDRESS		_AC(0x0000000100000000,UL)
+ #define VMALLOC_START		_AC(0x0000000100000000,UL)
+-#define VMALLOC_END		_AC(0x0000010000000000,UL)
+-#define VMEMMAP_BASE		_AC(0x0000010000000000,UL)
+-
+-#define vmemmap			((struct page *)VMEMMAP_BASE)
++#define VMEMMAP_BASE		VMALLOC_END
  
- extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
--extern pmd_t swapper_low_pmd_dir[PTRS_PER_PMD];
+ /* PMD_SHIFT determines the size of the area a second-level page
+  * table can map
+@@ -81,6 +78,10 @@
  
- void paging_init(void);
- unsigned long find_ecache_flush_span(unsigned long size);
---- a/arch/sparc/kernel/vmlinux.lds.S
-+++ b/arch/sparc/kernel/vmlinux.lds.S
-@@ -35,8 +35,9 @@ jiffies = jiffies_64;
+ #ifndef __ASSEMBLY__
  
- SECTIONS
- {
--	/* swapper_low_pmd_dir is sparc64 only */
--	swapper_low_pmd_dir = 0x0000000000402000;
-+#ifdef CONFIG_SPARC64
-+	swapper_pg_dir = 0x0000000000402000;
-+#endif
- 	. = INITIAL_ADDRESS;
- 	.text TEXTSTART :
- 	{
++extern unsigned long VMALLOC_END;
++
++#define vmemmap			((struct page *)VMEMMAP_BASE)
++
+ #include <linux/sched.h>
+ 
+ bool kern_addr_valid(unsigned long addr);
+--- a/arch/sparc/kernel/ktlb.S
++++ b/arch/sparc/kernel/ktlb.S
+@@ -199,8 +199,8 @@ kvmap_dtlb_nonlinear:
+ 
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ 	/* Do not use the TSB for vmemmap.  */
+-	mov		(VMEMMAP_BASE >> 40), %g5
+-	sllx		%g5, 40, %g5
++	sethi		%hi(VMEMMAP_BASE), %g5
++	ldx		[%g5 + %lo(VMEMMAP_BASE)], %g5
+ 	cmp		%g4,%g5
+ 	bgeu,pn		%xcc, kvmap_vmemmap
+ 	 nop
+@@ -212,8 +212,8 @@ kvmap_dtlb_tsbmiss:
+ 	sethi		%hi(MODULES_VADDR), %g5
+ 	cmp		%g4, %g5
+ 	blu,pn		%xcc, kvmap_dtlb_longpath
+-	 mov		(VMALLOC_END >> 40), %g5
+-	sllx		%g5, 40, %g5
++	 sethi		%hi(VMALLOC_END), %g5
++	ldx		[%g5 + %lo(VMALLOC_END)], %g5
+ 	cmp		%g4, %g5
+ 	bgeu,pn		%xcc, kvmap_dtlb_longpath
+ 	 nop
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -87,7 +87,7 @@ extern struct tsb swapper_tsb[KERNEL_TSB
+@@ -1369,25 +1369,24 @@ static unsigned long max_phys_bits = 40;
  
- static unsigned long cpu_pgsz_mask;
- 
--#define MAX_BANKS	32
-+#define MAX_BANKS	1024
- 
- static struct linux_prom64_registers pavail[MAX_BANKS];
- static int pavail_ents;
-@@ -1943,12 +1943,6 @@ static void __init sun4v_linear_pte_xor_
- 
- static unsigned long last_valid_pfn;
- 
--/* These must be page aligned in order to not trigger the
-- * alignment tests of pgd_bad() and pud_bad().
-- */
--pgd_t swapper_pg_dir[PTRS_PER_PGD] __attribute__ ((aligned (PAGE_SIZE)));
--static pud_t swapper_pud_dir[PTRS_PER_PUD] __attribute__ ((aligned (PAGE_SIZE)));
--
- static void sun4u_pgprot_init(void);
- static void sun4v_pgprot_init(void);
- 
-@@ -1956,8 +1950,6 @@ void __init paging_init(void)
+ bool kern_addr_valid(unsigned long addr)
  {
- 	unsigned long end_pfn, shift, phys_base;
- 	unsigned long real_end, i;
--	pud_t *pud;
--	pmd_t *pmd;
- 	int node;
+-	unsigned long above = ((long)addr) >> max_phys_bits;
+ 	pgd_t *pgd;
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 	pte_t *pte;
  
- 	setup_page_offset();
-@@ -2052,20 +2044,7 @@ void __init paging_init(void)
- 	 */
- 	init_mm.pgd += ((shift) / (sizeof(pgd_t)));
- 	
--	memset(swapper_low_pmd_dir, 0, sizeof(swapper_low_pmd_dir));
+-	if (above != 0 && above != -1UL)
+-		return false;
 -
--	/* The kernel page tables we publish into what the rest of the
--	 * world sees must be adjusted so that they see the PAGE_OFFSET
--	 * address of these in-kerenel data structures.  However right
--	 * here we must access them from the kernel image side, because
--	 * the trap tables haven't been taken over and therefore we cannot
--	 * take TLB misses in the PAGE_OFFSET linear mappings yet.
--	 */
--	pud = swapper_pud_dir + (shift / sizeof(pud_t));
--	pgd_set(&swapper_pg_dir[0], pud);
+-	if (addr >= (unsigned long) KERNBASE &&
+-	    addr < (unsigned long)&_end)
+-		return true;
 -
--	pmd = swapper_low_pmd_dir + (shift / sizeof(pmd_t));
--	pud_set(&swapper_pud_dir[0], pmd);
-+	memset(swapper_pg_dir, 0, sizeof(swapper_pg_dir));
+-	if (addr >= PAGE_OFFSET) {
++	if ((long)addr < 0L) {
+ 		unsigned long pa = __pa(addr);
  
- 	inherit_prom_mappings();
- 	
++		if ((addr >> max_phys_bits) != 0UL)
++			return false;
++
+ 		return pfn_valid(pa >> PAGE_SHIFT);
+ 	}
+ 
++	if (addr >= (unsigned long) KERNBASE &&
++	    addr < (unsigned long)&_end)
++		return true;
++
+ 	pgd = pgd_offset_k(addr);
+ 	if (pgd_none(*pgd))
+ 		return 0;
+@@ -1656,6 +1655,9 @@ unsigned long __init find_ecache_flush_s
+ unsigned long PAGE_OFFSET;
+ EXPORT_SYMBOL(PAGE_OFFSET);
+ 
++unsigned long VMALLOC_END   = 0x0000010000000000UL;
++EXPORT_SYMBOL(VMALLOC_END);
++
+ unsigned long sparc64_va_hole_top =    0xfffff80000000000UL;
+ unsigned long sparc64_va_hole_bottom = 0x0000080000000000UL;
+ 
+@@ -1712,10 +1714,16 @@ static void __init setup_page_offset(voi
+ 		prom_halt();
+ 	}
+ 
+-	PAGE_OFFSET = PAGE_OFFSET_BY_BITS(max_phys_bits);
++	PAGE_OFFSET = sparc64_va_hole_top;
++	VMALLOC_END = ((sparc64_va_hole_bottom >> 1) +
++		       (sparc64_va_hole_bottom >> 2));
+ 
+-	pr_info("PAGE_OFFSET is 0x%016lx (max_phys_bits == %lu)\n",
++	pr_info("MM: PAGE_OFFSET is 0x%016lx (max_phys_bits == %lu)\n",
+ 		PAGE_OFFSET, max_phys_bits);
++	pr_info("MM: VMALLOC [0x%016lx --> 0x%016lx]\n",
++		VMALLOC_START, VMALLOC_END);
++	pr_info("MM: VMEMMAP [0x%016lx --> 0x%016lx]\n",
++		VMEMMAP_BASE, VMEMMAP_BASE << 1);
+ }
+ 
+ static void __init tsb_phys_patch(void)
 
 
