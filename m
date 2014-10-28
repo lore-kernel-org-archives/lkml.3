@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986AbaJ1AeL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 20:34:11 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:14227 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752369AbaJ1AeI (ORCPT
+	id S1753223AbaJ1Af5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 20:35:57 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:63127 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858AbaJ1Afw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 20:34:08 -0400
-Date: Mon, 27 Oct 2014 17:34:26 -0700
-From: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-To: Jeffrey Hugo <jhugo@codeaurora.org>
-CC: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Suman Anna <s-anna@ti.com>
-Subject: Re: [RFC 4/7] soc: qcom: Add Shared Memory Manager driver
-Message-ID: <20141028003424.GP28611@sonymobile.com>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1412037291-16880-5-git-send-email-bjorn.andersson@sonymobile.com>
- <5435AD8E.2000109@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <5435AD8E.2000109@codeaurora.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Mon, 27 Oct 2014 20:35:52 -0400
+X-Original-SENDERIP: 165.186.175.39
+X-Original-MAILFROM: gioh.kim@lge.com
+From: Gioh Kim <gioh.kim@lge.com>
+To: gregkh@linuxfoundation.org, john.stultz@linaro.org, rebecca@android.com,
+        lauraa@codeaurora.org, dan.carpenter@oracle.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        gunho.lee@lge.com, gioh.kim@lge.com
+Subject: [PATCH 2/3] staging: ion: debugfs to shrink pool
+Date: Tue, 28 Oct 2014 09:36:44 +0900
+Message-Id: <1414456605-26049-3-git-send-email-gioh.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1414456605-26049-1-git-send-email-gioh.kim@lge.com>
+References: <1414456605-26049-1-git-send-email-gioh.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 08 Oct 14:33 PDT 2014, Jeffrey Hugo wrote:
+This patch enables debugfs files /sys/kernel/debug/ion/heaps/system_shrink
+,which was commented out, to shrink pool or get pool size
+Reading the file returns pool size and writing occurs to shrink pool.
 
-[..]
-> > + */
-> > +struct smem_header {
-> > +     struct smem_proc_comm proc_comm[4];
-> > +     u32 version[32];
-> > +     u32 smem_initialized;
-> > +     u32 free_offset;
-> > +     u32 available;
-> > +     u32 unused;
-> 
-> I see that you inlined the smem_heap_info struct.  That is slightly
-> problematic since we have some uses of that structure, and without it,
-> accessing id 1 becomes complicated.  I would prefer you reintroduce it.
-> 
+Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+---
+ drivers/staging/android/ion/ion.c |   31 ++++++++-----------------------
+ 1 file changed, 8 insertions(+), 23 deletions(-)
 
-Could you help me better understand what you mean here? I've scanned through
-msm-3.4 and msm-3.10 and read your comment numerous times, but I can't find any
-uses that needs it nor figure out why it would be difficult to access item 1.
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index 290d4d2..ecc1121 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -1463,43 +1463,29 @@ static const struct file_operations debug_heap_fops = {
+ 	.release = single_release,
+ };
+ 
+-#ifdef DEBUG_HEAP_SHRINKER
+ static int debug_shrink_set(void *data, u64 val)
+ {
+ 	struct ion_heap *heap = data;
+-	struct shrink_control sc;
+ 	int objs;
+ 
+-	sc.gfp_mask = -1;
+-	sc.nr_to_scan = 0;
+-
+-	if (!val)
+-		return 0;
+-
+-	objs = heap->shrinker.shrink(&heap->shrinker, &sc);
+-	sc.nr_to_scan = objs;
++	if (val)
++		objs = val;
++	else
++		objs = heap->ops->shrink(heap, __GFP_HIGHMEM, 0);
+ 
+-	heap->shrinker.shrink(&heap->shrinker, &sc);
++	(void)heap->ops->shrink(heap, __GFP_HIGHMEM, objs);
+ 	return 0;
+ }
+ 
+ static int debug_shrink_get(void *data, u64 *val)
+ {
+ 	struct ion_heap *heap = data;
+-	struct shrink_control sc;
+-	int objs;
+-
+-	sc.gfp_mask = -1;
+-	sc.nr_to_scan = 0;
+-
+-	objs = heap->shrinker.shrink(&heap->shrinker, &sc);
+-	*val = objs;
++	*val = heap->ops->shrink(heap, __GFP_HIGHMEM, 0);
+ 	return 0;
+ }
+ 
+ DEFINE_SIMPLE_ATTRIBUTE(debug_shrink_fops, debug_shrink_get,
+ 			debug_shrink_set, "%llu\n");
+-#endif
+ 
+ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
+ {
+@@ -1534,8 +1520,7 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
+ 			path, heap->name);
+ 	}
+ 
+-#ifdef DEBUG_HEAP_SHRINKER
+-	if (heap->shrinker.shrink) {
++	if (heap->ops->shrink) {
+ 		char debug_name[64];
+ 
+ 		snprintf(debug_name, 64, "%s_shrink", heap->name);
+@@ -1550,7 +1535,7 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
+ 				path, debug_name);
+ 		}
+ 	}
+-#endif
++
+ 	up_write(&dev->lock);
+ }
+ 
+-- 
+1.7.9.5
 
-> > +     struct smem_entry toc[SMEM_MAX_ITEMS];
-> > +};
-
-Thanks,
-Bjorn
