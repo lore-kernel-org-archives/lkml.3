@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657AbaJ1LeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:34:06 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:9459 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753921AbaJ1LeE (ORCPT
+	id S1754088AbaJ1Lfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:35:46 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47073 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751517AbaJ1Lfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:34:04 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>,
-        Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH] usb: gadget: don't create new string_container if already exist
-Date: Tue, 28 Oct 2014 19:33:58 +0800
-Message-ID: <1414496039-5655-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 28 Oct 2014 07:35:44 -0400
+Date: Tue, 28 Oct 2014 11:35:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Tomasz Figa <tomasz.figa@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, lauraa@codeaurora.org,
+        linux-omap@vger.kernel.org, linus.walleij@linaro.org,
+        santosh.shilimkar@ti.com, tony@atomide.com, drake@endlessm.com,
+        loeliger@gmail.com, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH v6 4/7] ARM: l2c: Add support for overriding prefetch
+	settings
+Message-ID: <20141028113531.GZ12379@n2100.arm.linux.org.uk>
+References: <1414407950-3029-1-git-send-email-m.szyprowski@samsung.com> <1414407950-3029-5-git-send-email-m.szyprowski@samsung.com> <20141027111404.GW12379@n2100.arm.linux.org.uk> <544E2A46.7070106@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.12.52,1.0.28,0.0.0000
- definitions=2014-10-28_05:2014-10-28,2014-10-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1410280112
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <544E2A46.7070106@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't create new usb_gadget_string_container if the current strings are
-already exist in the usb_composite_dev.
-Otherwise the ids_tab will overflow soon if we bind / unbind usb
-functions frequently like android does.
+On Mon, Oct 27, 2014 at 12:19:34PM +0100, Marek Szyprowski wrote:
+> Hello,
+>
+> On 2014-10-27 12:14, Russell King - ARM Linux wrote:
+>> On Mon, Oct 27, 2014 at 12:05:47PM +0100, Marek Szyprowski wrote:
+>>> From: Tomasz Figa <t.figa@samsung.com>
+>>>
+>>> Firmware on certain boards (e.g. ODROID-U3) can leave incorrect L2C prefetch
+>>> settings configured in registers leading to crashes if L2C is enabled
+>>> without overriding them. This patch introduces bindings to enable
+>>> prefetch settings to be specified from DT and necessary support in the
+>>> driver.
+>>>
+>>> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+>>> [mszyprow: rebased onto v3.18-rc1, added error messages when property value
+>>>   is missing]
+>> Why?  What if the boot loader has already set these up appropriately?  Why
+>> should we force people to list these in the DT?
+>
+> The error message is displayed only when user provided prefetch related
+> properties without any value (empty properties). Something that Mark Rutland
+> requested here: https://lkml.org/lkml/2014/9/24/426 I'm sorry if I didn't
+> describe it clearly enough.
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
----
- drivers/usb/gadget/composite.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+Ok.
 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index a8c18df..6fe3c6b 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -1183,6 +1183,12 @@ struct usb_string *usb_gstrings_attach(struct usb_composite_dev *cdev,
- 	if (!n_gstrings)
- 		return ERR_PTR(-EINVAL);
- 
-+	list_for_each_entry(uc, &cdev->gstrings, list) {
-+		n_gs = get_containers_gs(uc);
-+		if (!strcmp(n_gs[0]->strings[0].s, sp[0]->strings[0].s))
-+			return n_gs[0]->strings;
-+	}
-+
- 	uc = copy_gadget_strings(sp, n_gstrings, n_strings);
- 	if (IS_ERR(uc))
- 		return ERR_CAST(uc);
+I'd ask for one change.  Please make all these messages start with
+"L2C-310 OF" not "PL310 OF:".  The device is described in ARM
+documentation as a L2C-310 not PL310.  (Also note the : is dropped
+too - most of the other messages don't have the : either.)
+
+The:
+
+"PL310 OF: cache setting yield illegal associativity
+PL310 OF: -1073346556 calculated, only 8 and 16 legal"
+
+message could also be changed to something like:
+
+"L2C-310 OF cache associativity %d invalid, only 8 or 16 permitted\n"
+
+Thanks.
+
 -- 
-1.7.9.5
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
