@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaJ1Plx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:41:53 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:50636 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753518AbaJ1Plw (ORCPT
+	id S1754667AbaJ1Pmp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:42:45 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:42822 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750873AbaJ1Pmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:41:52 -0400
+	Tue, 28 Oct 2014 11:42:44 -0400
+Date: Tue, 28 Oct 2014 11:42:41 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Petr Mladek <pmladek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] debugfs: Fix misuse of seq_printf return value
+Message-ID: <20141028114241.0bebcedd@gandalf.local.home>
+In-Reply-To: <1414509951.6643.8.camel@perches.com>
+References: <20140929124246.3e39dac8@gandalf.local.home>
+	<cover.1412031505.git.joe@perches.com>
+	<2634b19eb1c04a9d31148c1fe6f1f3819be95349.1412031505.git.joe@perches.com>
+	<20141028105831.69a14d4d@gandalf.local.home>
+	<1414509951.6643.8.camel@perches.com>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <874musjyfi.fsf@why.wild-wind.fr.eu.org>
-References: <1408479811-26088-1-git-send-email-bjorn.andersson@sonymobile.com>
-	<CAJAp7OgGPZZuCgC8iUiW2jrEVubK=KCATxd6eazdT1x1sSrffg@mail.gmail.com>
-	<alpine.DEB.2.11.1410211120430.5308@nanos>
-	<544628BF.8010809@arm.com>
-	<CAJAp7OjpN-+S=OH1BW6Fcme9mp4qj8AsSNC3_41fhfpYzX-Shg@mail.gmail.com>
-	<544A936D.5040409@arm.com>
-	<CAJAp7OjQ8qRspy_ocUnp+es+HPiR1jULhKK6g4DBXXZcOsABug@mail.gmail.com>
-	<874musjyfi.fsf@why.wild-wind.fr.eu.org>
-Date: Tue, 28 Oct 2014 08:41:50 -0700
-Message-ID: <CAJAp7OiXpksp_CPdpLYd2kwGXRNx2q+cq1a_hjc9fEBrcwXTiA@mail.gmail.com>
-Subject: Re: [PATCH] genirq: Introduce irq_read_line()
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 25, 2014 at 2:22 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> On Sat, Oct 25 2014 at 12:12:55 am BST, Bjorn Andersson <bjorn@kryo.se> wrote:
->> On Fri, Oct 24, 2014 at 10:59 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
->>> I just pushed out a branch:
->>> git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git
->>> irq/irqchip_state
->>>
->>> Please let me know if that's useful for you.
->>>
->>
->> I think that my irq_read_line() would be equivalent of
->> irq_get_irqchip_state(IRQCHIP_STATE_PENDING), i.e. the state of the
->> interrupt ignoring masking. And the rest would be EINVAL.
->> So I think this would work out just fine for us!
->
-> Excellent.
->
+On Tue, 28 Oct 2014 08:25:51 -0700
+Joe Perches <joe@perches.com> wrote:
 
-Hi Marc,
+> On Tue, 2014-10-28 at 10:58 -0400, Steven Rostedt wrote:
+> > On Mon, 29 Sep 2014 16:08:26 -0700
+> > Joe Perches <joe@perches.com> wrote:
+> > > Adding repeated -1 to the return is not correct.
+> > > Use seq_is_full to test for unnecessary seq_printf uses
+> > > and always return 0.
+> []
+> > Actually, debugfs_print_regs32() should return void as well.
+> > I'll update that.
+> 
+> Great though this should possibly be another patch.
 
-We gave this some more thought and read up on what "pending" and
-"active" means according to the ARM GIC - PENDING is not what we want
-:(
+Could have, but other patches that had functions returning the value of
+seq_printf() also changed their output with the change. Don't worry
+about being blamed, I update the change log to show that I modified it
+too. ;-)
 
-In the Qualcomm pmic we have two interrupt status registers
-"interrupt" and "real-time". I think the "interrupt" status register
-would be the one related to your defined constants. However what we
-need to access in our use cases are the "real-time" status register,
-which basically is a representation of the input to the interrupt
-logic.
+> 
+> I didn't want to update the documentation.
 
-As far as I can see the GIC does not offer anything like that, but I
-hope we could add another constant to your enum list and utilise your
-api for this.
+It was a one liner, that didn't really change the content.
 
-I'm not entirely sure what we should call it though,
-IRQCHIP_STATE_LEVEL seems somewhat conflicting with level trigger and
-the Qualcomm name IRQCHIP_STATE_REALTIME isn't very self describing.
-Maybe IRQCHIP_STATE_LINE_LEVEL?
+> 
+> Maybe remove the prototype and make it static too.
+> 
 
-Regards,
-Bjorn
+Now that can be a separate patch set if you want. I'm not too worried
+about that as it doesn't affect the updates I want to do with
+seq_file.
+
+-- Steve
+
