@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933975AbaJ1Dw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:52:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46459 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933801AbaJ1Dwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:36 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.10 38/43] arm64: compat: fix compat types affecting struct compat_elf_prpsinfo
-Date: Tue, 28 Oct 2014 11:36:36 +0800
-Message-Id: <20141028033525.039367034@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	id S1756559AbaJ1EcX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:32:23 -0400
+Received: from mga14.intel.com ([192.55.52.115]:9325 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756542AbaJ1EcT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 00:32:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="407060698"
+Message-ID: <544F1C50.8010505@linux.intel.com>
+Date: Tue, 28 Oct 2014 12:32:16 +0800
+From: "Li, Aubrey" <aubrey.li@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        "linux-pm@vger.kernel.org >> Linux PM list" 
+	<linux-pm@vger.kernel.org>
+Subject: Re: [RFC/PATCH] PM / Sleep: Timer quiesce in freeze state
+References: <5446787E.60202@linux.intel.com> <20141024153656.GM12706@worktop.programming.kicks-ass.net> <544DE5CF.9040501@linux.intel.com> <20141027072816.GD10501@worktop.programming.kicks-ass.net>
+In-Reply-To: <20141027072816.GD10501@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 2014/10/27 15:28, Peter Zijlstra wrote:
+> On Mon, Oct 27, 2014 at 02:27:27PM +0800, Li, Aubrey wrote:
+>>> Now I suppose the problem is with cpu_pause() which needs IPIs to
+>>> complete? Do we really need cpuidle_pause() there?
+>>> cpuidle_uninstall_handlers() seems like a daft thing to call just about
+>>> there.
+>>
+>> Please check the log of 8651f97bd951d0bb1c10fa24e3fa3455193f3548.
+>> Rafael should know more this question than me.
+> 
+> That changelog explains its complete bollocks to do it here. We _want_
+> to enter and/or remain in deep idle states.
 
-------------------
+cpuidle_resume() will be called at the end of dpm_resume_noirq(). So we
+still are able to enter deep idle states after resume.
 
-From: Victor Kamensky <victor.kamensky@linaro.org>
+Thanks,
+-Aubrey
 
-commit 971a5b6fe634bb7b617d8c5f25b6a3ddbc600194 upstream.
-
-The compat_elf_prpsinfo structure does not match the arch/arm struct
-elf_pspsinfo definition. As result NT_PRPSINFO note in core file
-created by arm64 kernel for aarch32 (compat) process has wrong size.
-So gdb cannot display command that caused process crash.
-
-Fix is to change size of __compat_uid_t, __compat_gid_t so it would
-match size of similar fields in arch/arm case.
-
-Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm64/include/asm/compat.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/arch/arm64/include/asm/compat.h
-+++ b/arch/arm64/include/asm/compat.h
-@@ -33,8 +33,8 @@ typedef s32		compat_ssize_t;
- typedef s32		compat_time_t;
- typedef s32		compat_clock_t;
- typedef s32		compat_pid_t;
--typedef u32		__compat_uid_t;
--typedef u32		__compat_gid_t;
-+typedef u16		__compat_uid_t;
-+typedef u16		__compat_gid_t;
- typedef u16		__compat_uid16_t;
- typedef u16		__compat_gid16_t;
- typedef u32		__compat_uid32_t;
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
