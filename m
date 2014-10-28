@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaJ1U0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 16:26:49 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:43726 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751230AbaJ1U0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 16:26:46 -0400
-Date: Tue, 28 Oct 2014 13:22:52 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: hung tasks in 3.18.0-rc1-00221-gc3351df
-Message-ID: <20141028202251.GZ5718@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LRH.2.11.1410231619340.11555@adalberg.ut.ee>
- <20141024001822.GK4977@linux.vnet.ibm.com>
- <alpine.LRH.2.11.1410241057270.15464@adalberg.ut.ee>
- <20141024145509.GO4977@linux.vnet.ibm.com>
- <20141027174424.GB27568@linux.vnet.ibm.com>
- <alpine.LRH.2.11.1410281014530.6536@adalberg.ut.ee>
- <20141028124942.GN5718@linux.vnet.ibm.com>
- <alpine.LRH.2.11.1410282147310.19428@adalberg.ut.ee>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1410282147310.19428@adalberg.ut.ee>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102820-0029-0000-0000-000000F499C2
+	id S1754230AbaJ1U1d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 16:27:33 -0400
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:52310 "EHLO
+	homiemail-a10.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751684AbaJ1U1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 16:27:32 -0400
+Message-ID: <1414528039.10092.21.camel@linux-t7sj.site>
+Subject: Re: [PATCH 03/10] mm: convert i_mmap_mutex to rwsem
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: akpm@linux-foundation.org, hughd@google.com, riel@redhat.com,
+        mgorman@suse.de, peterz@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Tue, 28 Oct 2014 13:27:19 -0700
+In-Reply-To: <20141024224537.GA21108@node.dhcp.inet.fi>
+References: <1414188380-17376-1-git-send-email-dave@stgolabs.net>
+	 <1414188380-17376-4-git-send-email-dave@stgolabs.net>
+	 <20141024224537.GA21108@node.dhcp.inet.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 09:48:21PM +0200, Meelis Roos wrote:
-> > > > rcu: Make rcu_barrier() understand about missing rcuo kthreads
-> > > 
-> > > I can not trigger the previous problem at will so my testing is not very 
-> > > useful. I tested the previous patch that you sent but the problem did 
-> > > not trigger, and yesterday applied this one and it still does not 
-> > > trigger, but I an using remote sessions only for now (no desktop).
-> > > 
-> > > At least it's not clearly broken :)
-> > 
-> > A couple of other people had more reproducible test setups and confirmed
-> > that it fixed them.
-> > 
-> > But yes, there are no doubt other RCU bugs waiting to be found.  ;-)
+On Sat, 2014-10-25 at 01:45 +0300, Kirill A. Shutemov wrote:
+> On Fri, Oct 24, 2014 at 03:06:13PM -0700, Davidlohr Bueso wrote:
+> > diff --git a/mm/fremap.c b/mm/fremap.c
+> > index 72b8fa3..11ef7ec 100644
+> > --- a/mm/fremap.c
+> > +++ b/mm/fremap.c
+> > @@ -238,13 +238,13 @@ get_write_lock:
+> >  			}
+> >  			goto out_freed;
+> >  		}
+> > -		mutex_lock(&mapping->i_mmap_mutex);
+> > +		i_mmap_lock_write(mapping);
+> >  		flush_dcache_mmap_lock(mapping);
+> >  		vma->vm_flags |= VM_NONLINEAR;
+> >  		vma_interval_tree_remove(vma, &mapping->i_mmap);
+> >  		vma_nonlinear_insert(vma, &mapping->i_mmap_nonlinear);
+> >  		flush_dcache_mmap_unlock(mapping);
+> > -		mutex_unlock(&mapping->i_mmap_mutex);
+> > +		i_mmap_unlock_write(mapping);
+> >  	}
+> >  
+> >  	if (vma->vm_flags & VM_LOCKED) {
 > 
-> I reproduced the problem on Thinkpad T400 with Core2Duo and Chromium 
-> startup failing, and your patch fixes that.
-> 
-> Tested-by: Meelis Roos <mroos@linux.ee>
+> This should go to previous patch.
 
-Got it, thank you!!!
+Indeed. I had forgotten I snuck that change in as when I was writing the
+patch there was a conflict with that fremap. However you removed
+mm/fremap.c altogether in -next (mm: replace remap_file_pages() syscall
+with emulation) so I'll just update accordingly.
 
-							Thanx, Paul
+Thanks,
+Davidlohr
 
