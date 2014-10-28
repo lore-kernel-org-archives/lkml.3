@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286AbaJ1E4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 00:56:39 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:36679 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562AbaJ1E4f (ORCPT
+	id S1757297AbaJ1E7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 00:59:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46344 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933843AbaJ1Dwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 00:56:35 -0400
-Date: Mon, 27 Oct 2014 21:56:31 -0700
-From: Darren Hart <dvhart@infradead.org>
-To: Frans Klaver <fransklaver@gmail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] eeepc-laptop: flatten control flow
-Message-ID: <20141028045631.GD60814@vmdeb7>
-References: <1414005163-3461-1-git-send-email-fransklaver@gmail.com>
- <1414005163-3461-2-git-send-email-fransklaver@gmail.com>
+	Mon, 27 Oct 2014 23:52:41 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Oren Givon <oren.givon@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 28/43] iwlwifi: Add missing PCI IDs for the 7260 series
+Date: Tue, 28 Oct 2014 11:36:26 +0800
+Message-Id: <20141028033524.620428148@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414005163-3461-2-git-send-email-fransklaver@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 22, 2014 at 09:12:36PM +0200, Frans Klaver wrote:
-> In eeepc_rfkill_hotplug there's an if statement with a big tail that
-> ends right before the out_unlock label. We might as well invert the
-> condition and jump to out_unlock in that case, pretty much like the rest
-> of the code does. This removes an indentation level for a large chunk of
-> code and also stops suggesting there might be an else clause.
-> 
-> Signed-off-by: Frans Klaver <fransklaver@gmail.com>
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Queued for 3.19, thanks Frans.
+------------------
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+From: Oren Givon <oren.givon@intel.com>
+
+commit 4f08970f5284dce486f0e2290834aefb2a262189 upstream.
+
+Add 4 missing PCI IDs for the 7260 series.
+
+Signed-off-by: Oren Givon <oren.givon@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/iwlwifi/pcie/drv.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/drivers/net/wireless/iwlwifi/pcie/drv.c
++++ b/drivers/net/wireless/iwlwifi/pcie/drv.c
+@@ -269,6 +269,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4070, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4072, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4170, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0x4C60, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0x4C70, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4060, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x406A, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0x4160, iwl7260_2n_cfg)},
+@@ -306,6 +308,8 @@ static DEFINE_PCI_DEVICE_TABLE(iwl_hw_ca
+ 	{IWL_PCI_DEVICE(0x08B1, 0xC770, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B1, 0xC760, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC270, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0xCC70, iwl7260_2ac_cfg)},
++	{IWL_PCI_DEVICE(0x08B1, 0xCC60, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC272, iwl7260_2ac_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC260, iwl7260_2n_cfg)},
+ 	{IWL_PCI_DEVICE(0x08B2, 0xC26A, iwl7260_n_cfg)},
+
+
