@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944AbaJ1PNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:13:08 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:51831 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751030AbaJ1PNG (ORCPT
+	id S1754078AbaJ1PNV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:13:21 -0400
+Received: from bh-25.webhostbox.net ([208.91.199.152]:56175 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaJ1PNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:13:06 -0400
-Date: Tue, 28 Oct 2014 11:13:01 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Joe Perches <joe@perches.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Petr Mladek <pmladek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] docg3: Fix miuse of seq_printf return value
-Message-ID: <20141028111301.22481f2a@gandalf.local.home>
-In-Reply-To: <20141022082916.GD16128@brian-ubuntu>
-References: <20140929124246.3e39dac8@gandalf.local.home>
-	<cover.1412031505.git.joe@perches.com>
-	<c1a1138f1b05e87a3fbd8737af2f2c0be6e2724b.1412031505.git.joe@perches.com>
-	<20141022082916.GD16128@brian-ubuntu>
-X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Tue, 28 Oct 2014 11:13:18 -0400
+Date: Tue, 28 Oct 2014 08:13:13 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.14 000/100] 3.14.23-stable review
+Message-ID: <20141028151313.GA4452@roeck-us.net>
+References: <20141028033500.670583608@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.544FB28D.01ED,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Oct 2014 01:29:16 -0700
-Brian Norris <computersforpeace@gmail.com> wrote:
-
-> On Mon, Sep 29, 2014 at 04:08:27PM -0700, Joe Perches wrote:
-> > seq_printf doesn't return a useful value, so remove
-> > these misuses.
+On Tue, Oct 28, 2014 at 11:34:45AM +0800, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.23 release.
+> There are 100 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> Good catch. So it looks like this driver always had some form of
-> wrongness (returning a character count) in its debugfs callbacks, but
-> nobody noticed.
+> Responses should be made by Thu Oct 30 03:34:43 UTC 2014.
+> Anything received after that time might be too late.
 > 
-> Applied to l2-mtd.git. Thanks!
-> 
+Build results:
+	total: 137 pass: 137 fail: 0
+Qemu test results:
+	total: 30 pass: 30 fail: 0
 
-Note, I'm going to be working on changes to remove the return value of
-seq_printf() and friends. I need this change as well. If you
-already applied it to your git tree, if you can still rebase, can you
-make a separate branch off of Linus's tree that I can pull to do work
-on?
+Details are available at http://server.roeck-us.net:8010/builders.
 
-Or I can take this patch as well, with your Acked-by.
-
-Thanks!
-
--- Steve
+Guenter
