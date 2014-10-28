@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606AbaJ1HAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:00:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45547 "EHLO
+	id S1757429AbaJ1HBI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:01:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45536 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932671AbaJ1Dqs (ORCPT
+	with ESMTP id S932645AbaJ1Dqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:46:48 -0400
+	Mon, 27 Oct 2014 23:46:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Larsson <andreas@gaisler.com>,
+        sparclinux@vger.kernel.org, Bob Picco <bob.picco@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 104/127] sparc: Let memset return the address argument
-Date: Tue, 28 Oct 2014 11:35:39 +0800
-Message-Id: <20141028033425.388747154@linuxfoundation.org>
+Subject: [PATCH 3.16 102/127] sparc64: find_node adjustment
+Date: Tue, 28 Oct 2014 11:35:37 +0800
+Message-Id: <20141028033425.301155371@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,75 +29,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Larsson <andreas@gaisler.com>
+From: bob picco <bpicco@meloft.net>
 
-[ Upstream commit 74cad25c076a2f5253312c2fe82d1a4daecc1323 ]
+[ Upstream commit 3dee9df54836d5f844f3d58281d3f3e6331b467f ]
 
-This makes memset follow the standard (instead of returning 0 on success). This
-is needed when certain versions of gcc optimizes around memset calls and assume
-that the address argument is preserved in %o0.
+We have seen an issue with guest boot into LDOM that causes early boot failures
+because of no matching rules for node identitity of the memory. I analyzed this
+on my T4 and concluded there might not be a solution. I saw the issue in
+mainline too when booting into the control/primary domain - with guests
+configured.  Note, this could be a firmware bug on some older machines.
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+I'll provide a full explanation of the issues below. Should we not find a
+matching BEST latency group for a real address (RA) then we will assume node 0.
+On the T4-2 here with the information provided I can't see an alternative.
+
+Technically the LDOM shown below should match the MBLOCK to the
+favorable latency group. However other factors must be considered too. Were
+the memory controllers configured "fine" grained interleave or "coarse"
+grain interleaved -  T4. Also should a "group" MD node be considered a NUMA
+node?
+
+There has to be at least one Machine Description (MD) "group" and hence one
+NUMA node. The group can have one or more latency groups (lg) - more than one
+memory controller. The current code chooses the smallest latency as the most
+favorable per group. The latency and lg information is in MLGROUP below.
+MBLOCK is the base and size of the RAs for the machine as fetched from OBP
+/memory "available" property. My machine has one MBLOCK but more would be
+possible - with holes?
+
+For a T4-2 the following information has been gathered:
+with LDOM guest
+MEMBLOCK configuration:
+ memory size = 0x27f870000
+ memory.cnt  = 0x3
+ memory[0x0]    [0x00000020400000-0x0000029fc67fff], 0x27f868000 bytes
+ memory[0x1]    [0x0000029fd8a000-0x0000029fd8bfff], 0x2000 bytes
+ memory[0x2]    [0x0000029fd92000-0x0000029fd97fff], 0x6000 bytes
+ reserved.cnt  = 0x2
+ reserved[0x0]  [0x00000020800000-0x000000216c15c0], 0xec15c1 bytes
+ reserved[0x1]  [0x00000024800000-0x0000002c180c1e], 0x7980c1f bytes
+MBLOCK[0]: base[20000000] size[280000000] offset[0]
+(note: "base" and "size" reported in "MBLOCK" encompass the "memory[X]" values)
+(note: (RA + offset) & mask = val is the formula to detect a match for the
+memory controller. should there be no match for find_node node, a return
+value of -1 resulted for the node - BAD)
+
+There is one group. It has these forward links
+MLGROUP[1]: node[545] latency[1f7e8] match[200000000] mask[200000000]
+MLGROUP[2]: node[54d] latency[2de60] match[0] mask[200000000]
+NUMA NODE[0]: node[545] mask[200000000] val[200000000] (latency[1f7e8])
+(note: "val" is the best lg's (smallest latency) "match")
+
+no LDOM guest - bare metal
+MEMBLOCK configuration:
+ memory size = 0xfdf2d0000
+ memory.cnt  = 0x3
+ memory[0x0]    [0x00000020400000-0x00000fff6adfff], 0xfdf2ae000 bytes
+ memory[0x1]    [0x00000fff6d2000-0x00000fff6e7fff], 0x16000 bytes
+ memory[0x2]    [0x00000fff766000-0x00000fff771fff], 0xc000 bytes
+ reserved.cnt  = 0x2
+ reserved[0x0]  [0x00000020800000-0x00000021a04580], 0x1204581 bytes
+ reserved[0x1]  [0x00000024800000-0x0000002c7d29fc], 0x7fd29fd bytes
+MBLOCK[0]: base[20000000] size[fe0000000] offset[0]
+
+there are two groups
+group node[16d5]
+MLGROUP[0]: node[1765] latency[1f7e8] match[0] mask[200000000]
+MLGROUP[3]: node[177d] latency[2de60] match[200000000] mask[200000000]
+NUMA NODE[0]: node[1765] mask[200000000] val[0] (latency[1f7e8])
+group node[171d]
+MLGROUP[2]: node[1775] latency[2de60] match[0] mask[200000000]
+MLGROUP[1]: node[176d] latency[1f7e8] match[200000000] mask[200000000]
+NUMA NODE[1]: node[176d] mask[200000000] val[200000000] (latency[1f7e8])
+(note: for this two "group" bare metal machine, 1/2 memory is in group one's
+lg and 1/2 memory is in group two's lg).
+
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/lib/memset.S |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ arch/sparc/mm/init_64.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/sparc/lib/memset.S
-+++ b/arch/sparc/lib/memset.S
-@@ -3,8 +3,9 @@
-  * Copyright (C) 1996,1997 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
-  * Copyright (C) 1996 David S. Miller (davem@caip.rutgers.edu)
-  *
-- * Returns 0, if ok, and number of bytes not yet set if exception
-- * occurs and we were called as clear_user.
-+ * Calls to memset returns initial %o0. Calls to bzero returns 0, if ok, and
-+ * number of bytes not yet set if exception occurs and we were called as
-+ * clear_user.
-  */
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -839,7 +839,10 @@ static int find_node(unsigned long addr)
+ 		if ((addr & p->mask) == p->val)
+ 			return i;
+ 	}
+-	return -1;
++	/* The following condition has been observed on LDOM guests.*/
++	WARN_ONCE(1, "find_node: A physical address doesn't match a NUMA node"
++		" rule. Some physical memory will be owned by node 0.");
++	return 0;
+ }
  
- #include <asm/ptrace.h>
-@@ -65,6 +66,8 @@ __bzero_begin:
- 	.globl	__memset_start, __memset_end
- __memset_start:
- memset:
-+	mov	%o0, %g1
-+	mov	1, %g4
- 	and	%o1, 0xff, %g3
- 	sll	%g3, 8, %g2
- 	or	%g3, %g2, %g3
-@@ -89,6 +92,7 @@ memset:
- 	 sub	%o0, %o2, %o0
- 
- __bzero:
-+	clr	%g4
- 	mov	%g0, %g3
- 1:
- 	cmp	%o1, 7
-@@ -151,8 +155,8 @@ __bzero:
- 	bne,a	8f
- 	 EX(stb	%g3, [%o0], and %o1, 1)
- 8:
--	retl
--	 clr	%o0
-+	b	0f
-+	 nop
- 7:
- 	be	13b
- 	 orcc	%o1, 0, %g0
-@@ -164,6 +168,12 @@ __bzero:
- 	bne	8b
- 	 EX(stb	%g3, [%o0 - 1], add %o1, 1)
- 0:
-+	andcc	%g4, 1, %g0
-+	be	5f
-+	 nop
-+	retl
-+	 mov	%g1, %o0
-+5:
- 	retl
- 	 clr	%o0
- __memset_end:
+ static u64 memblock_nid_range(u64 start, u64 end, int *nid)
 
 
