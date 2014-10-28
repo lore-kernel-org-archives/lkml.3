@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757707AbaJ1HSV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:18:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45217 "EHLO
+	id S933906AbaJ1HSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:18:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45208 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330AbaJ1Dn7 (ORCPT
+	with ESMTP id S932388AbaJ1Dnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:59 -0400
+	Mon, 27 Oct 2014 23:43:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kinglong Mee <kinglongmee@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [PATCH 3.16 053/127] nfsd4: reserve adequate space for LOCK op
-Date: Tue, 28 Oct 2014 11:34:48 +0800
-Message-Id: <20141028033423.208932070@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH 3.16 034/127] firmware_class: make sure fw requests contain a name
+Date: Tue, 28 Oct 2014 11:34:29 +0800
+Message-Id: <20141028033422.410107857@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,46 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit f7b43d0c992c3ec3e8d9285c3fb5e1e0eb0d031a upstream.
+commit 471b095dfe0d693a8d624cbc716d1ee4d74eb437 upstream.
 
-As of  8c7424cff6 "nfsd4: don't try to encode conflicting owner if low
-on space", we permit the server to process a LOCK operation even if
-there might not be space to return the conflicting lockowner, because
-we've made returning the conflicting lockowner optional.
+An empty firmware request name will trigger warnings when building
+device names. Make sure this is caught earlier and rejected.
 
-However, the rpc server still wants to know the most we might possibly
-return, so we need to take into account the possible conflicting
-lockowner in the svc_reserve_space() call here.
+The warning was visible via the test_firmware.ko module interface:
 
-Symptoms were log messages like "RPC request reserved 88 but used 108".
+echo -ne "\x00" > /sys/devices/virtual/misc/test_firmware/trigger_request
 
-Fixes: 8c7424cff6 "nfsd4: don't try to encode conflicting owner if low on space"
-Reported-by: Kinglong Mee <kinglongmee@gmail.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Tested-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/base/firmware_class.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -1675,6 +1675,14 @@ nfsd4_decode_compound(struct nfsd4_compo
- 			readbytes += nfsd4_max_reply(argp->rqstp, op);
- 		} else
- 			max_reply += nfsd4_max_reply(argp->rqstp, op);
-+		/*
-+		 * OP_LOCK may return a conflicting lock.  (Special case
-+		 * because it will just skip encoding this if it runs
-+		 * out of xdr buffer space, and it is the only operation
-+		 * that behaves this way.)
-+		 */
-+		if (op->opnum == OP_LOCK)
-+			max_reply += NFS4_OPAQUE_LIMIT;
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -1086,6 +1086,9 @@ _request_firmware(const struct firmware
+ 	if (!firmware_p)
+ 		return -EINVAL;
  
- 		if (op->status) {
- 			argp->opcnt = i+1;
++	if (!name || name[0] == '\0')
++		return -EINVAL;
++
+ 	ret = _request_firmware_prepare(&fw, name, device);
+ 	if (ret <= 0) /* error or already assigned */
+ 		goto out;
 
 
