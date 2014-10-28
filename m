@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaJ1PPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:15:11 -0400
-Received: from bh-25.webhostbox.net ([208.91.199.152]:56311 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753451AbaJ1PPJ (ORCPT
+	id S1754640AbaJ1PPy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:15:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:49263 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaJ1PPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:15:09 -0400
-Date: Tue, 28 Oct 2014 08:15:05 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.17 000/146] 3.17.2-stable review
-Message-ID: <20141028151505.GC4452@roeck-us.net>
-References: <20141028033343.441992423@linuxfoundation.org>
+	Tue, 28 Oct 2014 11:15:53 -0400
+Date: Tue, 28 Oct 2014 16:15:48 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Ley Foon Tan <lftan@altera.com>
+cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Subject: Re: [PATCH v5 21/29] nios2: Time keeping
+In-Reply-To: <1414492984.2295.8.camel@leyfoon-vm>
+Message-ID: <alpine.DEB.2.11.1410281614390.5308@nanos>
+References: <1414139071-3818-1-git-send-email-lftan@altera.com>  <alpine.DEB.2.11.1410252258570.5308@nanos>  <CAFiDJ5_zsyQ92W4iYG2Ria12TKpkFa8Au5noos1=gtq6_aPyjg@mail.gmail.com>  <1806277.3CF96bVORX@wuerfel> <1414492984.2295.8.camel@leyfoon-vm>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.544FB2FC.033C,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.000
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 16
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 11:32:22AM +0800, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.17.2 release.
-> There are 146 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Thu Oct 30 03:32:38 UTC 2014.
-> Anything received after that time might be too late.
-> 
-Build results:
-	total: 133 pass: 133 fail: 0
-Qemu test results:
-	total: 30 pass: 30 fail: 0
+On Tue, 28 Oct 2014, Ley Foon Tan wrote:
+> On Sel, 2014-10-28 at 10:23 +0100, Arnd Bergmann wrote:
+> > On Tuesday 28 October 2014 10:46:29 Ley Foon Tan wrote:
+> > > On Sun, Oct 26, 2014 at 5:10 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > > On Fri, 24 Oct 2014, Ley Foon Tan wrote:
+> > > >> +#ifndef _ASM_NIOS2_TIMEX_H
+> > > >> +#define _ASM_NIOS2_TIMEX_H
+> > > >> +
+> > > >> +typedef unsigned long cycles_t;
+> > > >> +
+> > > >> +extern cycles_t get_cycles(void);
+> > > >> +
+> > > >> +#define ARCH_HAS_READ_CURRENT_TIMER
+> > > >
+> > > > Why does NIOS need that? Does it have a hardware implementation
+> > > > dependent clock frequency which needs to be calibrated at boot time?
+> > > This is suggestion from Arnd to use read_current_timer instead of using
+> > > expensive delay loop calibration during boot.
+> > 
+> > My mistake, sorry. I think the right way is to define
+> > calibrate_delay_is_known() rather than read_current_timer(), I was
+> > getting confused by the ARM implementation that does both.
+> Hi Arnd,
+> No problem, I can change that. But, seem that we don't need to have
+> calibrate_delay_is_known() as well. We can just set "lpj_fine" variable,
+> arm64 uses this.
 
-Details are available at http://server.roeck-us.net:8010/builders.
+Please do so and resend the result so I can have another look and add
+my reviewed tag then.
 
-Guenter
+Thanks,
+
+	tglx
