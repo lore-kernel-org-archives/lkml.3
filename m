@@ -1,77 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350AbaJ1Dwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:52:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46141 "EHLO
+	id S934354AbaJ1Dxt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:53:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933712AbaJ1Dw0 (ORCPT
+	with ESMTP id S934323AbaJ1Dxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:52:26 -0400
+	Mon, 27 Oct 2014 23:53:46 -0400
+Date: Tue, 28 Oct 2014 11:51:01 +0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiubo Li <Li.Xiubo@freescale.com>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 11/43] regmap: debugfs: fix possbile NULL pointer dereference
-Date: Tue, 28 Oct 2014 11:36:09 +0800
-Message-Id: <20141028033523.886188544@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
-References: <20141028033523.407092670@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.16 000/127] 3.16.7-stable review
+Message-ID: <20141028035101.GA20053@kroah.com>
+References: <20141028033420.925922046@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, Oct 28, 2014 at 11:33:55AM +0800, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.16.7 release.
+> There are 127 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Thu Oct 30 03:33:57 UTC 2014.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.16.7-rc1.gz
+> and the diffstat can be found below.
 
-------------------
+Please note, this is going to be the LAST 3.16-stable release from me,
+after this one, it's end-of-life.
 
-From: Xiubo Li <Li.Xiubo@freescale.com>
+thanks,
 
-commit 2c98e0c1cc6b8e86f1978286c3d4e0769ee9d733 upstream.
-
-If 'map->dev' is NULL and there will lead dev_name() to be NULL pointer
-dereference. So before dev_name(), we need to have check of the map->dev
-pionter.
-
-We also should make sure that the 'name' pointer shouldn't be NULL for
-debugfs_create_dir(). So here using one default "dummy" debugfs name when
-the 'name' pointer and 'map->dev' are both NULL.
-
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/base/regmap/regmap-debugfs.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/drivers/base/regmap/regmap-debugfs.c
-+++ b/drivers/base/regmap/regmap-debugfs.c
-@@ -460,16 +460,20 @@ void regmap_debugfs_init(struct regmap *
- {
- 	struct rb_node *next;
- 	struct regmap_range_node *range_node;
-+	const char *devname = "dummy";
- 
- 	INIT_LIST_HEAD(&map->debugfs_off_cache);
- 	mutex_init(&map->cache_lock);
- 
-+	if (map->dev)
-+		devname = dev_name(map->dev);
-+
- 	if (name) {
- 		map->debugfs_name = kasprintf(GFP_KERNEL, "%s-%s",
--					      dev_name(map->dev), name);
-+					      devname, name);
- 		name = map->debugfs_name;
- 	} else {
--		name = dev_name(map->dev);
-+		name = devname;
- 	}
- 
- 	map->debugfs = debugfs_create_dir(name, regmap_debugfs_root);
-
-
+greg k-h
