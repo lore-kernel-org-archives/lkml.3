@@ -1,124 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397AbaJ1SLg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 14:11:36 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:36303 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168AbaJ1SLe (ORCPT
+	id S1753369AbaJ1SMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 14:12:48 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:58510 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553AbaJ1SMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 14:11:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20141028173853.GD18557@sirena.org.uk>
-References: <1414436825-19416-1-git-send-email-jcmvbkbc@gmail.com>
-	<20141027193229.GE18557@sirena.org.uk>
-	<CAMo8Bf+Z9V8mkiC3JOupPQmi1EJUDKrb1qcNncDbsEbhjigbww@mail.gmail.com>
-	<20141028154224.GX18557@sirena.org.uk>
-	<CAMo8BfLpJ0bdmaFt9+gLQ_kEjB68XdjAJUw8f8s=Owv46h_yDQ@mail.gmail.com>
-	<20141028173853.GD18557@sirena.org.uk>
-Date: Tue, 28 Oct 2014 21:11:34 +0300
-Message-ID: <CAMo8BfL+vW7BjC1bQPNjhuBMTcRTkf8_DDS3NO2HmBUnfHYAFQ@mail.gmail.com>
-Subject: Re: [PATCH] ASoC: add xtensa xtfpga I2S interface and platform
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: alsa-devel@alsa-project.org,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 28 Oct 2014 14:12:46 -0400
+From: Cheng-Yi He <chengyihetaipei@gmail.com>
+To: lidza.louina@gmail.com, markh@compro.net, gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Cheng-Yi He <chengyihetaipei@gmail.com>
+Subject: [PATCH] Staging: dgnc: fix macro coding style issue in digi.h
+Date: Wed, 29 Oct 2014 02:12:38 +0800
+Message-Id: <1414519958-20457-1-git-send-email-chengyihetaipei@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 8:38 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Tue, Oct 28, 2014 at 08:00:45PM +0300, Max Filippov wrote:
->> On Tue, Oct 28, 2014 at 6:42 PM, Mark Brown <broonie@kernel.org> wrote:
->> > So atomics don't work?  Simple flags are one of the few cases where they
->> > might cover it...  again, the fact that this isn't similar to other code
->> > doing the same thing is worrying.
->
->> tx_substream use pattern is the same as of a typical RCU variable.
->> RCU wrappers combine ACCESS_ONCE and barriers that I'd otherwise
->> have to write myself.
->
-> You *really* need to explain how it's supposed to work - right now it's
-> not at all obvious, like I say the fact that this is a rarely used idiom
-> is not helping.  For example when we tear down the stream we just assign
-> the pointer in _stop() but don't bother with a sync until the stream is
-> closed - why?
+This is a patch to the digi.h file that fixes up the following error
+found by the checkpatch tool.
+ERROR: Macros with complex values should be enclosed in parentheses
 
-Because we can't wait in stop and syncing is not time critical, we can
-do it any time before the stream becomes invalid.
+Signed-off-by: Cheng-Yi He <chengyihetaipei@gmail.com>
+---
+ drivers/staging/dgnc/digi.h | 60 ++++++++++++++++++++++-----------------------
+ 1 file changed, 30 insertions(+), 30 deletions(-)
 
-> We also appear to be doing several different dereferences
-> of the pointer inside a single rcu_read_lock() for some reason which is
-> worrying.
-
-I've cleaned that up.
-
->> > it'd be better to just add a DMA controller on the FPGA, everyone will
->> > be much happier).
->
->> Hardware people think different and it's been like that for more than 5
->> years.
->
-> They appear to be the only hardware people who think this way, while we
-
-The whole audio subsystem on xtfpga boards is there for, I think, a single
-purpose: for the demonstration of CPU audio processing capabilities.
-That's why it's that simple.
-
-> do have some FIQ based PIO stuff in mainline all the examples I can
-> think of are there because people didn't work out how to drive the DMA
-> controller yet (and even there we're using FIQs not bashing things in
-> from a regular interrupt).
-
-Currently we don't support fast interrupt handlers written in C on xtensa.
-
->> >> Because this callback is said to be potentially called multiple times per
->> >> initialization. Is it not?
->
->> > It can but but I'm not seeing any connection between that and the idea
->> > of not keeping the clock enabled when the device isn't in use?
->
->> hw_params callback can change MCLK rate, so it has to disable and
->> enable the clock anyway, and since enable can fail it does not guarantee
->> that the clock will be left in the same state. Or should I adjust MCLK rate
->> w/o disabling the clock?
->
-> So yet again: why not just enable the clock only when the device is in
-> use?  If it's being configured it stands to reason that the device isn't
-> actively in use...
-
-Mark, I don't get it, sorry ): My clock synthesizer is I2C controlled, so
-I can't prepare/unprepare it in the trigger callback. When should I do it?
-
->> > I'm not sure I find that terribly convincing, I'd like to be able to
->> > look at the code and tell that it's not going to blow up.  This again
->> > comes back to the general comment about clarity - the code *looks*
->> > suspicious (strange indentation of the for loop with a comment in the
->> > middle of the statement itself for example).
->
->> The level field in the control register is 4 bit wide, so the allowed range of
->> level is 0..15. FIFO size is 8192 entries, level = 1 corresponds to
->> FIFO size / 2, level = 14 -- to FIFO size of 0. I guess this function
->> won't get period_size of 0?
->
-> So if the IP gets changed and the code gets blown up this could well
-> explode then...  which doesn't seem entirely unlikely considering this
-> is a FPGA platform so presumably this is easy to update.  To repeat this
-> is about clarity and the code looking like it's probably hiding bugs as
-> much as if the code actually works if you really sit down and study it.
-
-The calculation does not depend on the actual hardware, but on the
-constant definitions in the same file. They need to be updated if the
-hardware changes. I'll try to rewrite it in a cleaner way.
-
+diff --git a/drivers/staging/dgnc/digi.h b/drivers/staging/dgnc/digi.h
+index 3181a35..d6e0b9f 100644
+--- a/drivers/staging/dgnc/digi.h
++++ b/drivers/staging/dgnc/digi.h
+@@ -38,8 +38,8 @@
+ 
+ #if !defined(TIOCMODG)
+ 
+-#define	TIOCMODG	('d'<<8) | 250		/* get modem ctrl state	*/
+-#define	TIOCMODS	('d'<<8) | 251		/* set modem ctrl state	*/
++#define	TIOCMODG	(('d'<<8) | 250)	/* get modem ctrl state	*/
++#define	TIOCMODS	(('d'<<8) | 251)	/* set modem ctrl state	*/
+ 
+ #ifndef TIOCM_LE
+ #define		TIOCM_LE	0x01		/* line enable		*/
+@@ -58,44 +58,44 @@
+ #endif
+ 
+ #if !defined(TIOCMSET)
+-#define	TIOCMSET	('d'<<8) | 252		/* set modem ctrl state	*/
+-#define	TIOCMGET	('d'<<8) | 253		/* set modem ctrl state	*/
++#define	TIOCMSET	(('d'<<8) | 252)	/* set modem ctrl state	*/
++#define	TIOCMGET	(('d'<<8) | 253)	/* set modem ctrl state	*/
+ #endif
+ 
+ #if !defined(TIOCMBIC)
+-#define	TIOCMBIC	('d'<<8) | 254		/* set modem ctrl state */
+-#define	TIOCMBIS	('d'<<8) | 255		/* set modem ctrl state */
++#define	TIOCMBIC	(('d'<<8) | 254)	/* set modem ctrl state */
++#define	TIOCMBIS	(('d'<<8) | 255)	/* set modem ctrl state */
+ #endif
+ 
+ 
+ #if !defined(TIOCSDTR)
+-#define	TIOCSDTR	('e'<<8) | 0		/* set DTR		*/
+-#define	TIOCCDTR	('e'<<8) | 1		/* clear DTR		*/
++#define	TIOCSDTR	(('e'<<8) | 0)		/* set DTR		*/
++#define	TIOCCDTR	(('e'<<8) | 1)		/* clear DTR		*/
+ #endif
+ 
+ /************************************************************************
+  * Ioctl command arguments for DIGI parameters.
+  ************************************************************************/
+-#define DIGI_GETA	('e'<<8) | 94		/* Read params		*/
++#define DIGI_GETA	(('e'<<8) | 94)		/* Read params		*/
+ 
+-#define DIGI_SETA	('e'<<8) | 95		/* Set params		*/
+-#define DIGI_SETAW	('e'<<8) | 96		/* Drain & set params	*/
+-#define DIGI_SETAF	('e'<<8) | 97		/* Drain, flush & set params */
++#define DIGI_SETA	(('e'<<8) | 95)		/* Set params		*/
++#define DIGI_SETAW	(('e'<<8) | 96)		/* Drain & set params	*/
++#define DIGI_SETAF	(('e'<<8) | 97)		/* Drain, flush & set params */
+ 
+-#define DIGI_KME	('e'<<8) | 98		/* Read/Write Host	*/
++#define DIGI_KME	(('e'<<8) | 98)		/* Read/Write Host	*/
+ 						/* Adapter Memory	*/
+ 
+-#define	DIGI_GETFLOW	('e'<<8) | 99		/* Get startc/stopc flow */
++#define	DIGI_GETFLOW	(('e'<<8) | 99)		/* Get startc/stopc flow */
+ 						/* control characters	 */
+-#define	DIGI_SETFLOW	('e'<<8) | 100		/* Set startc/stopc flow */
++#define	DIGI_SETFLOW	(('e'<<8) | 100)	/* Set startc/stopc flow */
+ 						/* control characters	 */
+-#define	DIGI_GETAFLOW	('e'<<8) | 101		/* Get Aux. startc/stopc */
++#define	DIGI_GETAFLOW	(('e'<<8) | 101)	/* Get Aux. startc/stopc */
+ 						/* flow control chars	 */
+-#define	DIGI_SETAFLOW	('e'<<8) | 102		/* Set Aux. startc/stopc */
++#define	DIGI_SETAFLOW	(('e'<<8) | 102)	/* Set Aux. startc/stopc */
+ 						/* flow control chars	 */
+ 
+-#define DIGI_GEDELAY	('d'<<8) | 246		/* Get edelay */
+-#define DIGI_SEDELAY	('d'<<8) | 247		/* Set edelay */
++#define DIGI_GEDELAY	(('d'<<8) | 246)	/* Get edelay */
++#define DIGI_SEDELAY	(('d'<<8) | 247)	/* Set edelay */
+ 
+ struct	digiflow_t {
+ 	unsigned char	startc;				/* flow cntl start char	*/
+@@ -104,8 +104,8 @@ struct	digiflow_t {
+ 
+ 
+ #ifdef	FLOW_2200
+-#define	F2200_GETA	('e'<<8) | 104		/* Get 2x36 flow cntl flags */
+-#define	F2200_SETAW	('e'<<8) | 105		/* Set 2x36 flow cntl flags */
++#define	F2200_GETA	(('e'<<8) | 104)	/* Get 2x36 flow cntl flags */
++#define	F2200_SETAW	(('e'<<8) | 105)	/* Set 2x36 flow cntl flags */
+ #define		F2200_MASK	0x03		/* 2200 flow cntl bit mask  */
+ #define		FCNTL_2200	0x01		/* 2x36 terminal flow cntl  */
+ #define		PCNTL_2200	0x02		/* 2x36 printer flow cntl   */
+@@ -241,7 +241,7 @@ struct digi_dinfo {
+ 	char		dinfo_version[16];	/* driver version       */
+ };
+ 
+-#define	DIGI_GETDD	('d'<<8) | 248		/* get driver info      */
++#define	DIGI_GETDD	(('d'<<8) | 248)	/* get driver info      */
+ 
+ /************************************************************************
+  * Structure used with ioctl commands for per-board information
+@@ -261,7 +261,7 @@ struct digi_info {
+ 	char		info_reserved[7];	/* for future expansion    */
+ };
+ 
+-#define	DIGI_GETBD	('d'<<8) | 249		/* get board info          */
++#define	DIGI_GETBD	(('d'<<8) | 249)	/* get board info          */
+ 
+ struct digi_stat {
+ 	unsigned int	info_chan;		/* Channel number (0 based)  */
+@@ -276,7 +276,7 @@ struct digi_stat {
+ 	unsigned int	info_reserved[8];	/* for future expansion    */
+ };
+ 
+-#define	DIGI_GETSTAT	('d'<<8) | 244		/* get board info          */
++#define	DIGI_GETSTAT	(('d'<<8) | 244)	/* get board info          */
+ /************************************************************************
+  *
+  * Structure used with ioctl commands for per-channel information
+@@ -339,7 +339,7 @@ struct digi_getcounter {
+ #define INFO_CH_WLOW	0x0020
+ #define INFO_XXBUF_BUSY 0x0040
+ 
+-#define	DIGI_GETCH	('d'<<8) | 245		/* get board info          */
++#define	DIGI_GETCH	(('d'<<8) | 245)	/* get board info          */
+ 
+ /* Board type definitions */
+ 
+@@ -384,15 +384,15 @@ struct digi_getcounter {
+ #define BD_TRIBOOT	0x8
+ #define	BD_BADKME	0x80
+ 
+-#define DIGI_SPOLL            ('d'<<8) | 254  /* change poller rate   */
++#define DIGI_SPOLL            (('d'<<8) | 254)  /* change poller rate   */
+ 
+ #define DIGI_SETCUSTOMBAUD	_IOW('e', 106, int)	/* Set integer baud rate */
+ #define DIGI_GETCUSTOMBAUD	_IOR('e', 107, int)	/* Get integer baud rate */
+ 
+-#define DIGI_REALPORT_GETBUFFERS ('e'<<8) | 108
+-#define DIGI_REALPORT_SENDIMMEDIATE ('e'<<8) | 109
+-#define DIGI_REALPORT_GETCOUNTERS ('e'<<8) | 110
+-#define DIGI_REALPORT_GETEVENTS ('e'<<8) | 111
++#define DIGI_REALPORT_GETBUFFERS (('e'<<8) | 108)
++#define DIGI_REALPORT_SENDIMMEDIATE (('e'<<8) | 109)
++#define DIGI_REALPORT_GETCOUNTERS (('e'<<8) | 110)
++#define DIGI_REALPORT_GETEVENTS (('e'<<8) | 111)
+ 
+ #define EV_OPU		0x0001		/* !<Output paused by client */
+ #define EV_OPS		0x0002		/* !<Output paused by reqular sw flowctrl */
 -- 
-Thanks.
--- Max
+1.8.1.2
+
