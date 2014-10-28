@@ -1,36 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449AbaJ1LLp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 07:11:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51269 "EHLO
+	id S1756223AbaJ1LLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 07:11:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51279 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756180AbaJ1LLm (ORCPT
+	with ESMTP id S1754920AbaJ1LLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 07:11:42 -0400
-Date: Tue, 28 Oct 2014 04:10:15 -0700
+	Tue, 28 Oct 2014 07:11:49 -0400
+Date: Tue, 28 Oct 2014 04:10:52 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-1029a2b52c09e479fd7b07275812ad97868c0fb0@git.kernel.org>
-Cc: ionut.m.alexa@gmail.com, mhocko@suse.cz, hpa@zytor.com, jbaron@akamai.com,
-        tglx@linutronix.de, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, rostedt@goodmis.org,
-        mschmidt@redhat.com, linux-kernel@vger.kernel.org, axel.lin@ingics.com,
-        davej@redhat.com, alex.elder@linaro.org, riel@redhat.com,
-        guillaume@morinfr.org, oleg@redhat.com, paulmck@linux.vnet.ibm.com,
-        dborkman@redhat.com, mingo@kernel.org, akpm@linux-foundation.org,
-        peterz@infradead.org
-Reply-To: axel.lin@ingics.com, alex.elder@linaro.org, riel@redhat.com,
-        davej@redhat.com, paulmck@linux.vnet.ibm.com, guillaume@morinfr.org,
-        oleg@redhat.com, peterz@infradead.org, mingo@kernel.org,
-        akpm@linux-foundation.org, dborkman@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, jbaron@akamai.com, mhocko@suse.cz,
-        ionut.m.alexa@gmail.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, mschmidt@redhat.com, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org
-In-Reply-To: <20140924082242.186408915@infradead.org>
-References: <20140924082242.186408915@infradead.org>
+Message-ID: <tip-97d9e28d1a27b84a6a0b155f2390289afa279341@git.kernel.org>
+Cc: gregkh@linuxfoundation.org, peterz@infradead.org, jslaby@suse.cz,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, hpa@zytor.com, mingo@kernel.org
+Reply-To: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        torvalds@linux-foundation.org, mingo@kernel.org, hpa@zytor.com,
+        gregkh@linuxfoundation.org, peterz@infradead.org, jslaby@suse.cz
+In-Reply-To: <20140924082242.323011233@infradead.org>
+References: <20140924082242.323011233@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched, exit: Deal with nested sleeps
-Git-Commit-ID: 1029a2b52c09e479fd7b07275812ad97868c0fb0
+Subject: [tip:sched/core] sched, tty: Deal with nested sleeps
+Git-Commit-ID: 97d9e28d1a27b84a6a0b155f2390289afa279341
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -43,113 +33,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1029a2b52c09e479fd7b07275812ad97868c0fb0
-Gitweb:     http://git.kernel.org/tip/1029a2b52c09e479fd7b07275812ad97868c0fb0
+Commit-ID:  97d9e28d1a27b84a6a0b155f2390289afa279341
+Gitweb:     http://git.kernel.org/tip/97d9e28d1a27b84a6a0b155f2390289afa279341
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 24 Sep 2014 10:18:49 +0200
+AuthorDate: Wed, 24 Sep 2014 10:18:51 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 28 Oct 2014 10:55:30 +0100
+CommitDate: Tue, 28 Oct 2014 10:56:10 +0100
 
-sched, exit: Deal with nested sleeps
+sched, tty: Deal with nested sleeps
 
-do_wait() is a big wait loop, but we set TASK_RUNNING too late; we end
-up calling potential sleeps before we reset it.
+n_tty_{read,write} are wait loops with sleeps in. Wait loops rely on
+task_struct::state and sleeps do too, since that's the only means of
+actually sleeping. Therefore the nested sleeps destroy the wait loop
+state.
 
-Not strictly a bug since we're guaranteed to exit the loop and not
-call schedule(); put in annotations to quiet might_sleep().
-
- WARNING: CPU: 0 PID: 1 at ../kernel/sched/core.c:7123 __might_sleep+0x7e/0x90()
- do not call blocking ops when !TASK_RUNNING; state=1 set at [<ffffffff8109a788>] do_wait+0x88/0x270
-
- Call Trace:
-  [<ffffffff81694991>] dump_stack+0x4e/0x7a
-  [<ffffffff8109877c>] warn_slowpath_common+0x8c/0xc0
-  [<ffffffff8109886c>] warn_slowpath_fmt+0x4c/0x50
-  [<ffffffff810bca6e>] __might_sleep+0x7e/0x90
-  [<ffffffff811a1c15>] might_fault+0x55/0xb0
-  [<ffffffff8109a3fb>] wait_consider_task+0x90b/0xc10
-  [<ffffffff8109a804>] do_wait+0x104/0x270
-  [<ffffffff8109b837>] SyS_wait4+0x77/0x100
-  [<ffffffff8169d692>] system_call_fastpath+0x16/0x1b
+Fix this by using the new woken_wake_function and wait_woken() stuff,
+which registers wakeups in wait and thereby allows shrinking the
+task_state::state changes to the actual sleep part.
 
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: tglx@linutronix.de
-Cc: umgwanakikbuti@gmail.com
-Cc: ilya.dryomov@inktank.com
-Cc: Alex Elder <alex.elder@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Axel Lin <axel.lin@ingics.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Guillaume Morin <guillaume@morinfr.org>
-Cc: Ionut Alexa <ionut.m.alexa@gmail.com>
-Cc: Jason Baron <jbaron@akamai.com>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Michal Schmidt <mschmidt@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20140924082242.186408915@infradead.org
+Cc: tglx@linutronix.de
+Cc: ilya.dryomov@inktank.com
+Cc: umgwanakikbuti@gmail.com
+Cc: oleg@redhat.com
+Link: http://lkml.kernel.org/r/20140924082242.323011233@infradead.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/kernel.h | 2 ++
- kernel/exit.c          | 5 +++++
- 2 files changed, 7 insertions(+)
+ drivers/tty/n_tty.c | 17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 3d770f55..5068a0d 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -175,10 +175,12 @@ extern int _cond_resched(void);
-  */
- # define might_sleep() \
- 	do { __might_sleep(__FILE__, __LINE__, 0); might_resched(); } while (0)
-+# define sched_annotate_sleep()	__set_current_state(TASK_RUNNING)
- #else
-   static inline void __might_sleep(const char *file, int line,
- 				   int preempt_offset) { }
- # define might_sleep() do { might_resched(); } while (0)
-+# define sched_annotate_sleep() do { } while (0)
- #endif
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 89c4cee..fb3f519 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -2123,7 +2123,7 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	unsigned char __user *b = buf;
+-	DECLARE_WAITQUEUE(wait, current);
++	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+ 	int c;
+ 	int minimum, time;
+ 	ssize_t retval = 0;
+@@ -2186,10 +2186,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 			nr--;
+ 			break;
+ 		}
+-		/* This statement must be first before checking for input
+-		   so that any interrupt will set the state back to
+-		   TASK_RUNNING. */
+-		set_current_state(TASK_INTERRUPTIBLE);
  
- #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 5d30019..232c4bc 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -997,6 +997,8 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 		if (((minimum - (b - buf)) < ldata->minimum_to_wake) &&
+ 		    ((minimum - (b - buf)) >= 1))
+@@ -2220,13 +2216,13 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 				n_tty_set_room(tty);
+ 				up_read(&tty->termios_rwsem);
  
- 		get_task_struct(p);
- 		read_unlock(&tasklist_lock);
-+		sched_annotate_sleep();
-+
- 		if ((exit_code & 0x7f) == 0) {
- 			why = CLD_EXITED;
- 			status = exit_code >> 8;
-@@ -1079,6 +1081,7 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
- 	 * thread can reap it because we its state == DEAD/TRACE.
- 	 */
- 	read_unlock(&tasklist_lock);
-+	sched_annotate_sleep();
+-				timeout = schedule_timeout(timeout);
++				timeout = wait_woken(&wait, TASK_INTERRUPTIBLE,
++						     timeout);
  
- 	retval = wo->wo_rusage
- 		? getrusage(p, RUSAGE_BOTH, wo->wo_rusage) : 0;
-@@ -1210,6 +1213,7 @@ unlock_sig:
- 	pid = task_pid_vnr(p);
- 	why = ptrace ? CLD_TRAPPED : CLD_STOPPED;
- 	read_unlock(&tasklist_lock);
-+	sched_annotate_sleep();
+ 				down_read(&tty->termios_rwsem);
+ 				continue;
+ 			}
+ 		}
+-		__set_current_state(TASK_RUNNING);
  
- 	if (unlikely(wo->wo_flags & WNOWAIT))
- 		return wait_noreap_copyout(wo, p, pid, uid, why, exit_code);
-@@ -1272,6 +1276,7 @@ static int wait_task_continued(struct wait_opts *wo, struct task_struct *p)
- 	pid = task_pid_vnr(p);
- 	get_task_struct(p);
- 	read_unlock(&tasklist_lock);
-+	sched_annotate_sleep();
+ 		/* Deal with packet mode. */
+ 		if (packet && b == buf) {
+@@ -2273,7 +2269,6 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
  
- 	if (!wo->wo_info) {
- 		retval = wo->wo_rusage
+ 	mutex_unlock(&ldata->atomic_read_lock);
+ 
+-	__set_current_state(TASK_RUNNING);
+ 	if (b - buf)
+ 		retval = b - buf;
+ 
+@@ -2306,7 +2301,7 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 			   const unsigned char *buf, size_t nr)
+ {
+ 	const unsigned char *b = buf;
+-	DECLARE_WAITQUEUE(wait, current);
++	DEFINE_WAIT_FUNC(wait, woken_wake_function);
+ 	int c;
+ 	ssize_t retval = 0;
+ 
+@@ -2324,7 +2319,6 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 
+ 	add_wait_queue(&tty->write_wait, &wait);
+ 	while (1) {
+-		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (signal_pending(current)) {
+ 			retval = -ERESTARTSYS;
+ 			break;
+@@ -2378,12 +2372,11 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
+ 		}
+ 		up_read(&tty->termios_rwsem);
+ 
+-		schedule();
++		wait_woken(&wait, TASK_INTERRUPTIBLE, MAX_SCHEDULE_TIMEOUT);
+ 
+ 		down_read(&tty->termios_rwsem);
+ 	}
+ break_out:
+-	__set_current_state(TASK_RUNNING);
+ 	remove_wait_queue(&tty->write_wait, &wait);
+ 	if (b - buf != nr && tty->fasync)
+ 		set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
