@@ -1,308 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaJ1Mcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:32:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59443 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722AbaJ1Mcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:32:43 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, vgoyal@redhat.com,
-        isimatu.yasuaki@jp.fujitsu.com, jbaron@akamai.com,
-        linux-doc@vger.kernel.org, kexec@lists.infradead.org,
-        linux-api@vger.kernel.org
-Subject: [PATCH V5] kernel, add panic_on_warn
-Date: Tue, 28 Oct 2014 08:31:39 -0400
-Message-Id: <1414499499-21952-1-git-send-email-prarit@redhat.com>
+	id S1753036AbaJ1MeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:34:08 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:49511 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547AbaJ1MeF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:34:05 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-6e-544f8d3a8826
+Message-id: <544F8D12.2030104@samsung.com>
+Date: Tue, 28 Oct 2014 14:33:22 +0200
+From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org,
+        linux-ima-devel@lists.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz, jmorris@namei.org,
+        dmitry.kasatkin@gmail.com, stable@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] evm: check xattr value length and type in
+ evm_inode_setxattr()
+References: <cover.1414494901.git.d.kasatkin@samsung.com>
+ <5fccfb5344bad84eb87096dd6b9d5a775dc11efb.1414494901.git.d.kasatkin@samsung.com>
+In-reply-to: <5fccfb5344bad84eb87096dd6b9d5a775dc11efb.1414494901.git.d.kasatkin@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Originating-IP: [106.122.1.121]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t/xa7pWvf4hBv+myll8WVpnMXt6M5PF
+	uvWLmSxezpjHbnF51xw2iw89j9gsFmx8xGjxacUkZgcOj52z7rJ7PDi0mcVj94LPTB4935M9
+	ziw4wu7xeZNcAFsUl01Kak5mWWqRvl0CV8bJqUfZCpYqVcx5vJKtgfGhTBcjJ4eEgInE5Y7f
+	bBC2mMSFe+uBbC4OIYGljBL/Z++FchqZJN403WUGqRISmMUo0XfeFMTmFdCSeP1xHiOIzSKg
+	KrH8ezsLiM0moCexofkHO4gtKhAhcWXNHEaIekGJH5PvgdWICORIPPrzGqyGWaBMYs2tNlYQ
+	W1ggRmLzsw/MEIt7gK748g7sPE6BeIlVlxYDFXEANehJ3L+oBdErL7F5zVuo21QluteuhfpG
+	UeL05HPMExiFZyFZPQuhexaS7gWMzKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQqLnyw7G
+	xcesDjEKcDAq8fDumOYbIsSaWFZcmXuIUYKDWUmENyLGP0SINyWxsiq1KD++qDQntfgQIxMH
+	p1QDo/OSok6Hu9Gr0qqyuzZVzu3x36ecv2r1IYvdDUsSrr/M3pE1a3VtirbRn1QVtmC9kOdv
+	uOf2PIl5Lvgj+t/Nj8nu6+/XbmP4Vbem43VQ0HPD7/w27rekT09ZOdP+m52Caq36N1/OsuMP
+	vxm98dj5gTdy+++kVhmFd5M2s6jnL0tcdrzyxKK4R0osxRmJhlrMRcWJAPplMrJ8AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There have been several times where I have had to rebuild a kernel to
-cause a panic when hitting a WARN() in the code in order to get a crash
-dump from a system.  Sometimes this is easy to do, other times (such as
-in the case of a remote admin) it is not trivial to send new images to the
-user.
+Sorry, this was the wrong version of the patch.
+Please ignore this patch and use what is in the reply to this patch:
+[PATCH v3 1/1] evm: check xattr value length and type in
+evm_inode_setxattr()
 
-A much easier method would be a switch to change the WARN() over to a
-panic.  This makes debugging easier in that I can now test the actual
-image the WARN() was seen on and I do not have to engage in remote
-debugging.
+- Dmitry
 
-This patch adds a panic_on_warn kernel parameter and
-/proc/sys/kernel/panic_on_warn calls panic() in the warn_slowpath_common()
-path.  The function will still print out the location of the warning.
-
-An example of the panic_on_warn output:
-
-The first line below is from the WARN_ON() to output the WARN_ON()'s location.
-After that the panic() output is displayed.
-
-WARNING: CPU: 30 PID: 11698 at /home/prarit/dummy_module/dummy-module.c:25 init_dummy+0x1f/0x30 [dummy_module]()
-Kernel panic - not syncing: panic_on_warn set ...
-
-CPU: 30 PID: 11698 Comm: insmod Tainted: G        W  OE  3.17.0+ #57
-Hardware name: Intel Corporation S2600CP/S2600CP, BIOS RMLSDP.86I.00.29.D696.1311111329 11/11/2013
- 0000000000000000 000000008e3f87df ffff88080f093c38 ffffffff81665190
- 0000000000000000 ffffffff818aea3d ffff88080f093cb8 ffffffff8165e2ec
- ffffffff00000008 ffff88080f093cc8 ffff88080f093c68 000000008e3f87df
-Call Trace:
- [<ffffffff81665190>] dump_stack+0x46/0x58
- [<ffffffff8165e2ec>] panic+0xd0/0x204
- [<ffffffffa038e05f>] ? init_dummy+0x1f/0x30 [dummy_module]
- [<ffffffff81076b90>] warn_slowpath_common+0xd0/0xd0
- [<ffffffffa038e040>] ? dummy_greetings+0x40/0x40 [dummy_module]
- [<ffffffff81076c8a>] warn_slowpath_null+0x1a/0x20
- [<ffffffffa038e05f>] init_dummy+0x1f/0x30 [dummy_module]
- [<ffffffff81002144>] do_one_initcall+0xd4/0x210
- [<ffffffff811b52c2>] ? __vunmap+0xc2/0x110
- [<ffffffff810f8889>] load_module+0x16a9/0x1b30
- [<ffffffff810f3d30>] ? store_uevent+0x70/0x70
- [<ffffffff810f49b9>] ? copy_module_from_fd.isra.44+0x129/0x180
- [<ffffffff810f8ec6>] SyS_finit_module+0xa6/0xd0
- [<ffffffff8166cf29>] system_call_fastpath+0x12/0x17
-
-Successfully tested by me.
-
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Fabian Frederick <fabf@skynet.be>
-Cc: vgoyal@redhat.com
-Cc: isimatu.yasuaki@jp.fujitsu.com
-Cc: jbaron@akamai.com
-Cc: linux-doc@vger.kernel.org
-Cc: kexec@lists.infradead.org
-Cc: linux-api@vger.kernel.org
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-[v2]: add /proc/sys/kernel/panic_on_warn, additional documentation, modify
-      !slowpath cases
-[v3]: use proc_dointvec_minmax() in sysctl handler
-[v4]: remove !slowpath cases, and add __read_mostly
-[v5]: change to panic_on_warn, re-alphabetize Documentation/sysctl/kernel.txt
----
- Documentation/kdump/kdump.txt       |    7 ++++++
- Documentation/kernel-parameters.txt |    3 +++
- Documentation/sysctl/kernel.txt     |   40 +++++++++++++++++++++++------------
- include/linux/kernel.h              |    1 +
- include/uapi/linux/sysctl.h         |    1 +
- kernel/panic.c                      |   20 +++++++++++++++++-
- kernel/sysctl.c                     |    9 ++++++++
- kernel/sysctl_binary.c              |    1 +
- 8 files changed, 67 insertions(+), 15 deletions(-)
-
-diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-index 6c0b9f2..bc4bd5a 100644
---- a/Documentation/kdump/kdump.txt
-+++ b/Documentation/kdump/kdump.txt
-@@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
- 
-    http://people.redhat.com/~anderson/
- 
-+Trigger Kdump on WARN()
-+=======================
-+
-+The kernel parameter, panic_on_warn, calls panic() in all WARN() paths.  This
-+will cause a kdump to occur at the panic() call.  In cases where a user wants
-+to specify this during runtime, /proc/sys/kernel/panic_on_warn can be set to 1
-+to achieve the same behaviour.
- 
- Contact
- =======
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 74339c5..262ff3b 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2495,6 +2495,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			timeout < 0: reboot immediately
- 			Format: <timeout>
- 
-+	panic_on_warn	panic() instead of WARN().  Useful to cause kdump
-+			on a WARN().
-+
- 	crash_kexec_post_notifiers
- 			Run kdump after running panic-notifiers and dumping
- 			kmsg. This only for the users who doubt kdump always
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 57baff5..b5d0c85 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -54,8 +54,9 @@ show up in /proc/sys/kernel:
- - overflowuid
- - panic
- - panic_on_oops
--- panic_on_unrecovered_nmi
- - panic_on_stackoverflow
-+- panic_on_unrecovered_nmi
-+- panic_on_warn
- - pid_max
- - powersave-nap               [ PPC only ]
- - printk
-@@ -527,19 +528,6 @@ the recommended setting is 60.
- 
- ==============================================================
- 
--panic_on_unrecovered_nmi:
--
--The default Linux behaviour on an NMI of either memory or unknown is
--to continue operation. For many environments such as scientific
--computing it is preferable that the box is taken out and the error
--dealt with than an uncorrected parity/ECC error get propagated.
--
--A small number of systems do generate NMI's for bizarre random reasons
--such as power management so the default is off. That sysctl works like
--the existing panic controls already in that directory.
--
--==============================================================
--
- panic_on_oops:
- 
- Controls the kernel's behaviour when an oops or BUG is encountered.
-@@ -563,6 +551,30 @@ This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
- 
- ==============================================================
- 
-+panic_on_unrecovered_nmi:
-+
-+The default Linux behaviour on an NMI of either memory or unknown is
-+to continue operation. For many environments such as scientific
-+computing it is preferable that the box is taken out and the error
-+dealt with than an uncorrected parity/ECC error get propagated.
-+
-+A small number of systems do generate NMI's for bizarre random reasons
-+such as power management so the default is off. That sysctl works like
-+the existing panic controls already in that directory.
-+
-+==============================================================
-+
-+panic_on_warn:
-+
-+Calls panic() in the WARN() path when set to 1.  This is useful to avoid
-+a kernel rebuild when attempting to kdump at the location of a WARN().
-+
-+0: only WARN(), default behaviour.
-+
-+1: call panic() after printing out WARN() location.
-+
-+==============================================================
-+
- perf_cpu_time_max_percent:
- 
- Hints to the kernel how much CPU time it should be allowed to
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 3d770f55..d60d31d 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -422,6 +422,7 @@ extern int panic_timeout;
- extern int panic_on_oops;
- extern int panic_on_unrecovered_nmi;
- extern int panic_on_io_nmi;
-+extern int panic_on_warn;
- extern int sysctl_panic_on_stackoverflow;
- /*
-  * Only to be used by arch init code. If the user over-wrote the default
-diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
-index 43aaba1..0956373 100644
---- a/include/uapi/linux/sysctl.h
-+++ b/include/uapi/linux/sysctl.h
-@@ -153,6 +153,7 @@ enum
- 	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
- 	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
- 	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
-+	KERN_PANIC_ON_WARN=77, /* int: call panic() in WARN() functions */
- };
- 
- 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index d09dc5c..2ab2168 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -33,6 +33,7 @@ static int pause_on_oops;
- static int pause_on_oops_flag;
- static DEFINE_SPINLOCK(pause_on_oops_lock);
- static bool crash_kexec_post_notifiers;
-+int panic_on_warn __read_mostly;
- 
- int panic_timeout = CONFIG_PANIC_TIMEOUT;
- EXPORT_SYMBOL_GPL(panic_timeout);
-@@ -420,13 +421,23 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
- {
- 	disable_trace_on_warning();
- 
--	pr_warn("------------[ cut here ]------------\n");
-+	if (!panic_on_warn)
-+		pr_warn("------------[ cut here ]------------\n");
- 	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
- 		raw_smp_processor_id(), current->pid, file, line, caller);
- 
- 	if (args)
- 		vprintk(args->fmt, args->args);
- 
-+	if (panic_on_warn) {
-+		/*
-+		 * A flood of WARN()s may occur.  Prevent further WARN()s
-+		 * from panicking the system.
-+		 */
-+		panic_on_warn = 0;
-+		panic("panic_on_warn set ... \n");
-+	}
-+
- 	print_modules();
- 	dump_stack();
- 	print_oops_end_marker();
-@@ -501,3 +512,10 @@ static int __init oops_setup(char *s)
- 	return 0;
- }
- early_param("oops", oops_setup);
-+
-+static int __init panic_on_warn_setup(char *s)
-+{
-+	panic_on_warn = 1;
-+	return 0;
-+}
-+early_param("panic_on_warn", panic_on_warn_setup);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4aada6d..38deafa 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1103,6 +1103,15 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- #endif
-+	{
-+		.procname	= "panic_on_warn",
-+		.data		= &panic_on_warn,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
- 	{ }
- };
- 
-diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
-index 9a4f750..c62d421 100644
---- a/kernel/sysctl_binary.c
-+++ b/kernel/sysctl_binary.c
-@@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
- 	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
- 	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
- 	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
-+	{ CTL_INT,	KERN_BUG_ON_WARN,		"panic_on_warn" },
- 	{}
- };
- 
--- 
-1.7.9.3
+On 28/10/14 13:31, Dmitry Kasatkin wrote:
+> evm_inode_setxattr() can be called with no value. The function does not
+> check the length so that following command can be used to produce the
+> kernel oops: setfattr -n security.evm FOO. This patch fixes it.
+>
+> Changes in v2:
+> * testing for validity of xattr type
+>
+> [ 1106.396921] BUG: unable to handle kernel NULL pointer dereference at           (null)
+> [ 1106.398192] IP: [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
+> [ 1106.399244] PGD 29048067 PUD 290d7067 PMD 0
+> [ 1106.399953] Oops: 0000 [#1] SMP
+> [ 1106.400020] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
+> [ 1106.400020] CPU: 0 PID: 3635 Comm: setxattr Not tainted 3.16.0-kds+ #2936
+> [ 1106.400020] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> [ 1106.400020] task: ffff8800291a0000 ti: ffff88002917c000 task.ti: ffff88002917c000
+> [ 1106.400020] RIP: 0010:[<ffffffff812af7b8>]  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
+> [ 1106.400020] RSP: 0018:ffff88002917fd50  EFLAGS: 00010246
+> [ 1106.400020] RAX: 0000000000000000 RBX: ffff88002917fdf8 RCX: 0000000000000000
+> [ 1106.400020] RDX: 0000000000000000 RSI: ffffffff818136d3 RDI: ffff88002917fdf8
+> [ 1106.400020] RBP: ffff88002917fd68 R08: 0000000000000000 R09: 00000000003ec1df
+> [ 1106.400020] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800438a0a00
+> [ 1106.400020] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+> [ 1106.400020] FS:  00007f7dfa7d7740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
+> [ 1106.400020] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [ 1106.400020] CR2: 0000000000000000 CR3: 000000003763e000 CR4: 00000000000006f0
+> [ 1106.400020] Stack:
+> [ 1106.400020]  ffff8800438a0a00 ffff88002917fdf8 0000000000000000 ffff88002917fd98
+> [ 1106.400020]  ffffffff812a1030 ffff8800438a0a00 ffff88002917fdf8 0000000000000000
+> [ 1106.400020]  0000000000000000 ffff88002917fde0 ffffffff8116d08a ffff88002917fdc8
+> [ 1106.400020] Call Trace:
+> [ 1106.400020]  [<ffffffff812a1030>] security_inode_setxattr+0x5d/0x6a
+> [ 1106.400020]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
+> [ 1106.400020]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
+> [ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+> [ 1106.400020]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
+> [ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
+> [ 1106.400020]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
+> [ 1106.400020]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
+> [ 1106.400020]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
+> [ 1106.400020] Code: c3 0f 1f 44 00 00 55 48 89 e5 41 55 49 89 d5 41 54 49 89 fc 53 48 89 f3 48 c7 c6 d3 36 81 81 48 89 df e8 18 22 04 00 85 c0 75 07 <41> 80 7d 00 02 74 0d 48 89 de 4c 89 e7 e8 5a fe ff ff eb 03 83
+> [ 1106.400020] RIP  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
+> [ 1106.400020]  RSP <ffff88002917fd50>
+> [ 1106.400020] CR2: 0000000000000000
+> [ 1106.428061] ---[ end trace ae08331628ba3050 ]---
+>
+> Reported-by: Jan Kara <jack@suse.cz>
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+> Cc: stable@vger.kernel.org
+> ---
+>  security/integrity/evm/evm_main.c | 11 ++++++++---
+>  1 file changed, 8 insertions(+), 3 deletions(-)
+>
+> diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
+> index b392fe6..1384e4b 100644
+> --- a/security/integrity/evm/evm_main.c
+> +++ b/security/integrity/evm/evm_main.c
+> @@ -324,9 +324,14 @@ int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
+>  {
+>  	const struct evm_ima_xattr_data *xattr_data = xattr_value;
+>  
+> -	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
+> -	    && (xattr_data->type == EVM_XATTR_HMAC))
+> -		return -EPERM;
+> +	if (strcmp(xattr_name, XATTR_NAME_EVM) == 0) {
+> +		if (!xattr_value_len)
+> +			return -EINVAL;
+> +		if (xattr_data->type == EVM_XATTR_HMAC)
+> +			return -EPERM;
+> +		if (xattr_data->type != EVM_IMA_XATTR_DIGSIG)
+> +			return -EINVAL;
+> +	}
+>  	return evm_protect_xattr(dentry, xattr_name, xattr_value,
+>  				 xattr_value_len);
+>  }
 
