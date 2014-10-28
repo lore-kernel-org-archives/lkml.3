@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587AbaJ1DpD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:45:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45344 "EHLO
+	id S1755601AbaJ1DpI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:45:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755568AbaJ1Do6 (ORCPT
+	with ESMTP id S1753884AbaJ1DpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:44:58 -0400
+	Mon, 27 Oct 2014 23:45:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.16 058/127] spi: dw-mid: terminate ongoing transfers at exit
-Date: Tue, 28 Oct 2014 11:34:53 +0800
-Message-Id: <20141028033423.410929290@linuxfoundation.org>
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH 3.16 060/127] PCI: Add missing MEM_64 mask in pci_assign_unassigned_bridge_resources()
+Date: Tue, 28 Oct 2014 11:34:55 +0800
+Message-Id: <20141028033423.494834696@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,33 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit 8e45ef682cb31fda62ed4eeede5d9745a0a1b1e2 upstream.
+commit d61b0e87d2dfba3706dbbd6c7c6fd41c3d845685 upstream.
 
-Do full clean up at exit, means terminate all ongoing DMA transfers.
+In 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to
+64-bit resources"), we added IORESOURCE_MEM_64 to the mask in
+pci_assign_unassigned_root_bus_resources(), but not to the mask in
+pci_assign_unassigned_bridge_resources().
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Add IORESOURCE_MEM_64 to the pci_assign_unassigned_bridge_resources() type
+mask.
+
+Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-dw-mid.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/pci/setup-bus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -91,7 +91,11 @@ static void mid_spi_dma_exit(struct dw_s
- {
- 	if (!dws->dma_inited)
- 		return;
-+
-+	dmaengine_terminate_all(dws->txchan);
- 	dma_release_channel(dws->txchan);
-+
-+	dmaengine_terminate_all(dws->rxchan);
- 	dma_release_channel(dws->rxchan);
- }
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -1652,7 +1652,7 @@ void pci_assign_unassigned_bridge_resour
+ 	struct pci_dev_resource *fail_res;
+ 	int retval;
+ 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM |
+-				  IORESOURCE_PREFETCH;
++				  IORESOURCE_PREFETCH | IORESOURCE_MEM_64;
  
+ again:
+ 	__pci_bus_size_bridges(parent, &add_list);
 
 
