@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205AbaJ1X36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 19:29:58 -0400
-Received: from mail-bn1bon0080.outbound.protection.outlook.com ([157.56.111.80]:23072
+	id S1755227AbaJ1XaN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 19:30:13 -0400
+Received: from mail-bn1bon0091.outbound.protection.outlook.com ([157.56.111.91]:26835
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754790AbaJ1X3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 19:29:54 -0400
+	id S1755130AbaJ1X35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 19:29:57 -0400
 From: <dinguyen@opensource.altera.com>
 To: <paulz@synopsys.com>, <balbi@ti.com>
 CC: <dinh.linux@gmail.com>, <swarren@wwwdotorg.org>,
@@ -16,9 +16,9 @@ CC: <dinh.linux@gmail.com>, <swarren@wwwdotorg.org>,
         <dianders@chromium.org>, <kever.yang@rock-chips.com>,
         <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Dinh Nguyen <dinguyen@opensource.altera.com>
-Subject: [PATCHv6 6/8] usb: dwc2: gadget: Do not fail probe if there isn't a clock node
-Date: Tue, 28 Oct 2014 18:25:47 -0500
-Message-ID: <1414538749-14735-7-git-send-email-dinguyen@opensource.altera.com>
+Subject: [PATCHv6 8/8] usb: dwc2: move usb_disabled() call to host driver only
+Date: Tue, 28 Oct 2014 18:25:49 -0500
+Message-ID: <1414538749-14735-9-git-send-email-dinguyen@opensource.altera.com>
 X-Mailer: git-send-email 2.0.3
 In-Reply-To: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com>
 References: <1414538749-14735-1-git-send-email-dinguyen@opensource.altera.com>
@@ -39,135 +39,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dinh Nguyen <dinguyen@opensource.altera.com>
 
-Since the dwc2 hcd driver is currently not looking for a clock node during
-init, we should not completely fail if there isn't a clock provided.
-For dual-role mode, we will only fail init for a non-clock node error. We
-then update the HCD to only call gadget funtions if there is a proper clock
-node.
+Now that platform.c will get built for both Host and Gadget, if we leave the
+usb_disabled() call in platform.c, it results in the following build error
+when (!USB && USB_GADGET) condition is met.
+
+ERROR: "usb_disabled" [drivers/usb/dwc2/dwc2_platform.ko] undefined!
+
+Since usb_disabled() is mostly used to disable USB host functionality, move
+the call the host portion for the DWC2 driver.
 
 Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
 ---
-v5: reworked to not access gadget functions from the hcd.
----
- drivers/usb/dwc2/core.h      |  3 +--
- drivers/usb/dwc2/core_intr.c |  9 ++++++---
- drivers/usb/dwc2/hcd.c       |  3 ++-
- drivers/usb/dwc2/platform.c  | 19 +++++++++++++++----
- 4 files changed, 24 insertions(+), 10 deletions(-)
+ drivers/usb/dwc2/hcd.c      | 3 +++
+ drivers/usb/dwc2/platform.c | 3 ---
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/dwc2/core.h b/drivers/usb/dwc2/core.h
-index ec70862..48120c8 100644
---- a/drivers/usb/dwc2/core.h
-+++ b/drivers/usb/dwc2/core.h
-@@ -660,6 +660,7 @@ struct dwc2_hsotg {
- #endif
- #endif /* CONFIG_USB_DWC2_HOST || CONFIG_USB_DWC2_DUAL_ROLE */
- 
-+	struct clk *clk;
- #if IS_ENABLED(CONFIG_USB_DWC2_PERIPHERAL) || IS_ENABLED(CONFIG_USB_DWC2_DUAL_ROLE)
- 	/* Gadget structures */
- 	struct usb_gadget_driver *driver;
-@@ -667,8 +668,6 @@ struct dwc2_hsotg {
- 	struct usb_phy *uphy;
- 	struct s3c_hsotg_plat *plat;
- 
--	struct clk *clk;
--
- 	struct regulator_bulk_data supplies[ARRAY_SIZE(s3c_hsotg_supply_names)];
- 
- 	u32 phyif;
-diff --git a/drivers/usb/dwc2/core_intr.c b/drivers/usb/dwc2/core_intr.c
-index 1240875..1608037 100644
---- a/drivers/usb/dwc2/core_intr.c
-+++ b/drivers/usb/dwc2/core_intr.c
-@@ -339,7 +339,8 @@ static void dwc2_handle_wakeup_detected_intr(struct dwc2_hsotg *hsotg)
- 		}
- 		/* Change to L0 state */
- 		hsotg->lx_state = DWC2_L0;
--		call_gadget(hsotg, resume);
-+		if (!IS_ERR(hsotg->clk))
-+			call_gadget(hsotg, resume);
- 	} else {
- 		if (hsotg->lx_state != DWC2_L1) {
- 			u32 pcgcctl = readl(hsotg->regs + PCGCTL);
-@@ -400,7 +401,8 @@ static void dwc2_handle_usb_suspend_intr(struct dwc2_hsotg *hsotg)
- 			"DSTS.Suspend Status=%d HWCFG4.Power Optimize=%d\n",
- 			!!(dsts & DSTS_SUSPSTS),
- 			hsotg->hw_params.power_optimized);
--		call_gadget(hsotg, suspend);
-+		if (!IS_ERR(hsotg->clk))
-+			call_gadget(hsotg, suspend);
- 	} else {
- 		if (hsotg->op_state == OTG_STATE_A_PERIPHERAL) {
- 			dev_dbg(hsotg->dev, "a_peripheral->a_host\n");
-@@ -477,7 +479,8 @@ irqreturn_t dwc2_handle_common_intr(int irq, void *dev)
- 	spin_lock(&hsotg->lock);
- 
- 	if (dwc2_is_device_mode(hsotg))
--		retval = s3c_hsotg_irq(irq, dev);
-+		if (!IS_ERR(hsotg->clk))
-+			retval = s3c_hsotg_irq(irq, dev);
- 
- 	gintsts = dwc2_read_common_intr(hsotg);
- 	if (gintsts & ~GINTSTS_PRTINT)
 diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
-index 44c609f..fa49c72 100644
+index fa49c72..b741997 100644
 --- a/drivers/usb/dwc2/hcd.c
 +++ b/drivers/usb/dwc2/hcd.c
-@@ -1371,7 +1371,8 @@ static void dwc2_conn_id_status_change(struct work_struct *work)
- 		hsotg->op_state = OTG_STATE_B_PERIPHERAL;
- 		dwc2_core_init(hsotg, false, -1);
- 		dwc2_enable_global_interrupts(hsotg);
--		s3c_hsotg_core_init(hsotg);
-+		if (!IS_ERR(hsotg->clk))
-+			s3c_hsotg_core_init(hsotg);
- 	} else {
- 		/* A-Device connector (Host Mode) */
- 		dev_dbg(hsotg->dev, "connId A\n");
+@@ -2780,6 +2780,9 @@ int dwc2_hcd_init(struct dwc2_hsotg *hsotg, int irq,
+ 	int i, num_channels;
+ 	int retval;
+ 
++	if (usb_disabled())
++		return -ENODEV;
++
+ 	dev_dbg(hsotg->dev, "DWC OTG HCD INIT\n");
+ 
+ 	/* Detect config values from hardware */
 diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index 72f32f7..77c8417 100644
+index 77c8417..123cf54 100644
 --- a/drivers/usb/dwc2/platform.c
 +++ b/drivers/usb/dwc2/platform.c
-@@ -217,8 +217,17 @@ static int dwc2_driver_probe(struct platform_device *dev)
+@@ -157,9 +157,6 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 	int retval;
+ 	int irq;
  
- 	spin_lock_init(&hsotg->lock);
- 	retval = dwc2_gadget_init(hsotg, irq);
--	if (retval)
--		return retval;
-+	if (retval) {
-+		/*
-+		 * We will not fail the driver initialization for dual-role
-+		 * if no clock node is supplied. However, all gadget
-+		 * functionality will be disabled if a clock node is not
-+		 * provided. Host functionality will continue.
-+		 * TO-DO: make clock node a requirement for the HCD.
-+		 */
-+		if (!IS_ERR(hsotg->clk))
-+			return retval;
-+	}
- 	retval = dwc2_hcd_init(hsotg, irq, params);
- 	if (retval)
- 		return retval;
-@@ -234,7 +243,8 @@ static int dwc2_suspend(struct device *dev)
- 	int ret = 0;
- 
- 	if (dwc2_is_device_mode(dwc2))
--		ret = s3c_hsotg_suspend(dwc2);
-+		if (!IS_ERR(dwc2->clk))
-+			ret = s3c_hsotg_suspend(dwc2);
- 	return ret;
- }
- 
-@@ -244,7 +254,8 @@ static int dwc2_resume(struct device *dev)
- 	int ret = 0;
- 
- 	if (dwc2_is_device_mode(dwc2))
--		ret = s3c_hsotg_resume(dwc2);
-+		if (!IS_ERR(dwc2->clk))
-+			ret = s3c_hsotg_resume(dwc2);
- 
- 	return ret;
- }
+-	if (usb_disabled())
+-		return -ENODEV;
+-
+ 	match = of_match_device(dwc2_of_match_table, &dev->dev);
+ 	if (match && match->data) {
+ 		params = match->data;
 -- 
 2.0.3
 
