@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947AbaJ1Du4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:50:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45997 "EHLO
+	id S1755965AbaJ1DvB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:51:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46009 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755913AbaJ1Duu (ORCPT
+	with ESMTP id S1755913AbaJ1Du6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:50:50 -0400
+	Mon, 27 Oct 2014 23:50:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.14 093/100] sparc64: Use kernel page tables for vmemmap.
-Date: Tue, 28 Oct 2014 11:36:18 +0800
-Message-Id: <20141028033504.733083450@linuxfoundation.org>
+Subject: [PATCH 3.14 095/100] sparc64: Adjust vmalloc region size based upon available virtual address bits.
+Date: Tue, 28 Oct 2014 11:36:20 +0800
+Message-Id: <20141028033504.814438849@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033500.670583608@linuxfoundation.org>
 References: <20141028033500.670583608@linuxfoundation.org>
@@ -31,164 +31,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit c06240c7f5c39c83dfd7849c0770775562441b96 ]
+[ Upstream commit bb4e6e85daa52a9f6210fa06a5ec6269598a202b ]
 
-For sparse memory configurations, the vmemmap array behaves terribly
-and it takes up an inordinate amount of space in the BSS section of
-the kernel image unconditionally.
+In order to accomodate embedded per-cpu allocation with large numbers
+of cpus and numa nodes, we have to use as much virtual address space
+as possible for the vmalloc region.  Otherwise we can get things like:
 
-Just build huge PMDs and look them up just like we do for TLB misses
-in the vmalloc area.
+PERCPU: max_distance=0x380001c10000 too large for vmalloc space 0xff00000000
 
-Kernel BSS shrinks by about 2MB.
+So, once we select a value for PAGE_OFFSET, derive the size of the
+vmalloc region based upon that.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/kernel/ktlb.S |    9 +----
- arch/sparc/mm/init_64.c  |   72 ++++++++++++++++++++++-------------------------
- arch/sparc/mm/init_64.h  |   11 -------
- 3 files changed, 36 insertions(+), 56 deletions(-)
+ arch/sparc/include/asm/page_64.h    |    1 -
+ arch/sparc/include/asm/pgtable_64.h |    9 +++++----
+ arch/sparc/kernel/ktlb.S            |    8 ++++----
+ arch/sparc/mm/init_64.c             |   30 +++++++++++++++++++-----------
+ 4 files changed, 28 insertions(+), 20 deletions(-)
 
+--- a/arch/sparc/include/asm/page_64.h
++++ b/arch/sparc/include/asm/page_64.h
+@@ -117,7 +117,6 @@ extern unsigned long sparc64_va_hole_bot
+ 
+ #include <asm-generic/memory_model.h>
+ 
+-#define PAGE_OFFSET_BY_BITS(X)	(-(_AC(1,UL) << (X)))
+ extern unsigned long PAGE_OFFSET;
+ 
+ #endif /* !(__ASSEMBLY__) */
+--- a/arch/sparc/include/asm/pgtable_64.h
++++ b/arch/sparc/include/asm/pgtable_64.h
+@@ -40,10 +40,7 @@
+ #define LOW_OBP_ADDRESS		_AC(0x00000000f0000000,UL)
+ #define HI_OBP_ADDRESS		_AC(0x0000000100000000,UL)
+ #define VMALLOC_START		_AC(0x0000000100000000,UL)
+-#define VMALLOC_END		_AC(0x0000010000000000,UL)
+-#define VMEMMAP_BASE		_AC(0x0000010000000000,UL)
+-
+-#define vmemmap			((struct page *)VMEMMAP_BASE)
++#define VMEMMAP_BASE		VMALLOC_END
+ 
+ /* PMD_SHIFT determines the size of the area a second-level page
+  * table can map
+@@ -81,6 +78,10 @@
+ 
+ #ifndef __ASSEMBLY__
+ 
++extern unsigned long VMALLOC_END;
++
++#define vmemmap			((struct page *)VMEMMAP_BASE)
++
+ #include <linux/sched.h>
+ 
+ bool kern_addr_valid(unsigned long addr);
 --- a/arch/sparc/kernel/ktlb.S
 +++ b/arch/sparc/kernel/ktlb.S
-@@ -186,13 +186,8 @@ kvmap_dtlb_load:
+@@ -199,8 +199,8 @@ kvmap_dtlb_nonlinear:
  
  #ifdef CONFIG_SPARSEMEM_VMEMMAP
- kvmap_vmemmap:
--	sub		%g4, %g5, %g5
--	srlx		%g5, ILOG2_4MB, %g5
--	sethi		%hi(vmemmap_table), %g1
--	sllx		%g5, 3, %g5
--	or		%g1, %lo(vmemmap_table), %g1
--	ba,pt		%xcc, kvmap_dtlb_load
--	 ldx		[%g1 + %g5], %g5
-+	KERN_PGTABLE_WALK(%g4, %g5, %g2, kvmap_dtlb_longpath)
-+	ba,a,pt		%xcc, kvmap_dtlb_load
- #endif
- 
- kvmap_dtlb_nonlinear:
+ 	/* Do not use the TSB for vmemmap.  */
+-	mov		(VMEMMAP_BASE >> 40), %g5
+-	sllx		%g5, 40, %g5
++	sethi		%hi(VMEMMAP_BASE), %g5
++	ldx		[%g5 + %lo(VMEMMAP_BASE)], %g5
+ 	cmp		%g4,%g5
+ 	bgeu,pn		%xcc, kvmap_vmemmap
+ 	 nop
+@@ -212,8 +212,8 @@ kvmap_dtlb_tsbmiss:
+ 	sethi		%hi(MODULES_VADDR), %g5
+ 	cmp		%g4, %g5
+ 	blu,pn		%xcc, kvmap_dtlb_longpath
+-	 mov		(VMALLOC_END >> 40), %g5
+-	sllx		%g5, 40, %g5
++	 sethi		%hi(VMALLOC_END), %g5
++	ldx		[%g5 + %lo(VMALLOC_END)], %g5
+ 	cmp		%g4, %g5
+ 	bgeu,pn		%xcc, kvmap_dtlb_longpath
+ 	 nop
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -2255,18 +2255,9 @@ unsigned long _PAGE_CACHE __read_mostly;
- EXPORT_SYMBOL(_PAGE_CACHE);
+@@ -1363,25 +1363,24 @@ static unsigned long max_phys_bits = 40;
  
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
--unsigned long vmemmap_table[VMEMMAP_SIZE];
--
--static long __meminitdata addr_start, addr_end;
--static int __meminitdata node_start;
--
- int __meminit vmemmap_populate(unsigned long vstart, unsigned long vend,
- 			       int node)
+ bool kern_addr_valid(unsigned long addr)
  {
--	unsigned long phys_start = (vstart - VMEMMAP_BASE);
--	unsigned long phys_end = (vend - VMEMMAP_BASE);
--	unsigned long addr = phys_start & VMEMMAP_CHUNK_MASK;
--	unsigned long end = VMEMMAP_ALIGN(phys_end);
- 	unsigned long pte_base;
+-	unsigned long above = ((long)addr) >> max_phys_bits;
+ 	pgd_t *pgd;
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+ 	pte_t *pte;
  
- 	pte_base = (_PAGE_VALID | _PAGE_SZ4MB_4U |
-@@ -2277,47 +2268,52 @@ int __meminit vmemmap_populate(unsigned
- 			    _PAGE_CP_4V | _PAGE_CV_4V |
- 			    _PAGE_P_4V | _PAGE_W_4V);
+-	if (above != 0 && above != -1UL)
+-		return false;
+-
+-	if (addr >= (unsigned long) KERNBASE &&
+-	    addr < (unsigned long)&_end)
+-		return true;
+-
+-	if (addr >= PAGE_OFFSET) {
++	if ((long)addr < 0L) {
+ 		unsigned long pa = __pa(addr);
  
--	for (; addr < end; addr += VMEMMAP_CHUNK) {
--		unsigned long *vmem_pp =
--			vmemmap_table + (addr >> VMEMMAP_CHUNK_SHIFT);
--		void *block;
-+	pte_base |= _PAGE_PMD_HUGE;
- 
--		if (!(*vmem_pp & _PAGE_VALID)) {
--			block = vmemmap_alloc_block(1UL << ILOG2_4MB, node);
--			if (!block)
-+	vstart = vstart & PMD_MASK;
-+	vend = ALIGN(vend, PMD_SIZE);
-+	for (; vstart < vend; vstart += PMD_SIZE) {
-+		pgd_t *pgd = pgd_offset_k(vstart);
-+		unsigned long pte;
-+		pud_t *pud;
-+		pmd_t *pmd;
++		if ((addr >> max_phys_bits) != 0UL)
++			return false;
 +
-+		if (pgd_none(*pgd)) {
-+			pud_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
-+
-+			if (!new)
- 				return -ENOMEM;
-+			pgd_populate(&init_mm, pgd, new);
-+		}
- 
--			*vmem_pp = pte_base | __pa(block);
-+		pud = pud_offset(pgd, vstart);
-+		if (pud_none(*pud)) {
-+			pmd_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
- 
--			/* check to see if we have contiguous blocks */
--			if (addr_end != addr || node_start != node) {
--				if (addr_start)
--					printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
--					       addr_start, addr_end-1, node_start);
--				addr_start = addr;
--				node_start = node;
--			}
--			addr_end = addr + VMEMMAP_CHUNK;
-+			if (!new)
-+				return -ENOMEM;
-+			pud_populate(&init_mm, pud, new);
- 		}
--	}
--	return 0;
--}
- 
--void __meminit vmemmap_populate_print_last(void)
--{
--	if (addr_start) {
--		printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
--		       addr_start, addr_end-1, node_start);
--		addr_start = 0;
--		addr_end = 0;
--		node_start = 0;
-+		pmd = pmd_offset(pud, vstart);
-+
-+		pte = pmd_val(*pmd);
-+		if (!(pte & _PAGE_VALID)) {
-+			void *block = vmemmap_alloc_block(PMD_SIZE, node);
-+
-+			if (!block)
-+				return -ENOMEM;
-+
-+			pmd_val(*pmd) = pte_base | __pa(block);
-+		}
+ 		return pfn_valid(pa >> PAGE_SHIFT);
  	}
+ 
++	if (addr >= (unsigned long) KERNBASE &&
++	    addr < (unsigned long)&_end)
++		return true;
 +
-+	return 0;
+ 	pgd = pgd_offset_k(addr);
+ 	if (pgd_none(*pgd))
+ 		return 0;
+@@ -1650,6 +1649,9 @@ unsigned long __init find_ecache_flush_s
+ unsigned long PAGE_OFFSET;
+ EXPORT_SYMBOL(PAGE_OFFSET);
+ 
++unsigned long VMALLOC_END   = 0x0000010000000000UL;
++EXPORT_SYMBOL(VMALLOC_END);
++
+ unsigned long sparc64_va_hole_top =    0xfffff80000000000UL;
+ unsigned long sparc64_va_hole_bottom = 0x0000080000000000UL;
+ 
+@@ -1706,10 +1708,16 @@ static void __init setup_page_offset(voi
+ 		prom_halt();
+ 	}
+ 
+-	PAGE_OFFSET = PAGE_OFFSET_BY_BITS(max_phys_bits);
++	PAGE_OFFSET = sparc64_va_hole_top;
++	VMALLOC_END = ((sparc64_va_hole_bottom >> 1) +
++		       (sparc64_va_hole_bottom >> 2));
+ 
+-	pr_info("PAGE_OFFSET is 0x%016lx (max_phys_bits == %lu)\n",
++	pr_info("MM: PAGE_OFFSET is 0x%016lx (max_phys_bits == %lu)\n",
+ 		PAGE_OFFSET, max_phys_bits);
++	pr_info("MM: VMALLOC [0x%016lx --> 0x%016lx]\n",
++		VMALLOC_START, VMALLOC_END);
++	pr_info("MM: VMEMMAP [0x%016lx --> 0x%016lx]\n",
++		VMEMMAP_BASE, VMEMMAP_BASE << 1);
  }
  
- void vmemmap_free(unsigned long start, unsigned long end)
- {
- }
--
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
- 
- static void prot_init_common(unsigned long page_none,
---- a/arch/sparc/mm/init_64.h
-+++ b/arch/sparc/mm/init_64.h
-@@ -31,15 +31,4 @@ extern unsigned long kern_locked_tte_dat
- 
- extern void prom_world(int enter);
- 
--#ifdef CONFIG_SPARSEMEM_VMEMMAP
--#define VMEMMAP_CHUNK_SHIFT	22
--#define VMEMMAP_CHUNK		(1UL << VMEMMAP_CHUNK_SHIFT)
--#define VMEMMAP_CHUNK_MASK	~(VMEMMAP_CHUNK - 1UL)
--#define VMEMMAP_ALIGN(x)	(((x)+VMEMMAP_CHUNK-1UL)&VMEMMAP_CHUNK_MASK)
--
--#define VMEMMAP_SIZE	((((1UL << MAX_PHYSADDR_BITS) >> PAGE_SHIFT) * \
--			  sizeof(struct page)) >> VMEMMAP_CHUNK_SHIFT)
--extern unsigned long vmemmap_table[VMEMMAP_SIZE];
--#endif
--
- #endif /* _SPARC64_MM_INIT_H */
+ static void __init tsb_phys_patch(void)
 
 
