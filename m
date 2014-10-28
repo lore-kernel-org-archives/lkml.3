@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102AbaJ1Dkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:40:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44849 "EHLO
+	id S932080AbaJ1Dku (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:40:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44853 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958AbaJ1Dkn (ORCPT
+	with ESMTP id S1753726AbaJ1Dkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:40:43 -0400
+	Mon, 27 Oct 2014 23:40:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Meelis Roos <mroos@linux.ee>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 122/146] sparc64: Fix corrupted thread fault code.
-Date: Tue, 28 Oct 2014 11:34:24 +0800
-Message-Id: <20141028033348.737292192@linuxfoundation.org>
+        Jukka Rissanen <jukka.rissanen@linux.intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.17 105/146] Bluetooth: 6lowpan: Route packets that are not meant to peer via correct device
+Date: Tue, 28 Oct 2014 11:34:07 +0800
+Message-Id: <20141028033348.007370648@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -28,76 +29,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Jukka Rissanen <jukka.rissanen@linux.intel.com>
 
-[ Upstream commit 84bd6d8b9c0f06b3f188efb479c77e20f05e9a8a ]
+commit 39e90c77637b3892a39f2908aea57539e961c50e upstream.
 
-Every path that ends up at do_sparc64_fault() must install a valid
-FAULT_CODE_* bitmask in the per-thread fault code byte.
+Packets that are supposed to be delivered via the peer device need to
+be checked and sent to correct device. This requires that user has set
+the routes properly so that the 6lowpan module can then figure out
+the destination gateway and the correct Bluetooth device.
 
-Two paths leading to the label winfix_trampoline (which expects the
-FAULT_CODE_* mask in register %g4) were not doing so:
-
-1) For pre-hypervisor TLB protection violation traps, if we took
-   the 'winfix_trampoline' path we wouldn't have %g4 initialized
-   with the FAULT_CODE_* value yet.  Resulting in using the
-   TLB_TAG_ACCESS register address value instead.
-
-2) In the TSB miss path, when we notice that we are going to use a
-   hugepage mapping, but we haven't allocated the hugepage TSB yet, we
-   still have to take the window fixup case into consideration and
-   in that particular path we leave %g4 not setup properly.
-
-Errors on this sort were largely invisible previously, but after
-commit 4ccb9272892c33ef1c19a783cfa87103b30c2784 ("sparc64: sun4v TLB
-error power off events") we now have a fault_code mask bit
-(FAULT_CODE_BAD_RA) that triggers due to this bug.
-
-FAULT_CODE_BAD_RA triggers because this bit is set in TLB_TAG_ACCESS
-(see #1 above) and thus we get seemingly random bus errors triggered
-for user processes.
-
-Fixes: 4ccb9272892c ("sparc64: sun4v TLB error power off events")
-Reported-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jukka Rissanen <jukka.rissanen@linux.intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/dtlb_prot.S |    6 +++---
- arch/sparc/kernel/tsb.S       |    6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/arch/sparc/kernel/dtlb_prot.S
-+++ b/arch/sparc/kernel/dtlb_prot.S
-@@ -24,11 +24,11 @@
- 	mov		TLB_TAG_ACCESS, %g4		! For reload of vaddr
+---
+ net/bluetooth/6lowpan.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 63 insertions(+), 2 deletions(-)
+
+--- a/net/bluetooth/6lowpan.c
++++ b/net/bluetooth/6lowpan.c
+@@ -39,6 +39,7 @@ static struct dentry *lowpan_control_deb
  
- /* PROT ** ICACHE line 2: More real fault processing */
-+	ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
- 	bgu,pn		%xcc, winfix_trampoline		! Yes, perform winfixup
--	 ldxa		[%g4] ASI_DMMU, %g5		! Put tagaccess in %g5
--	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
- 	 mov		FAULT_CODE_DTLB | FAULT_CODE_WRITE, %g4
--	nop
-+	ba,pt		%xcc, sparc64_realfault_common	! Nope, normal fault
-+	 nop
- 	nop
- 	nop
- 	nop
---- a/arch/sparc/kernel/tsb.S
-+++ b/arch/sparc/kernel/tsb.S
-@@ -162,10 +162,10 @@ tsb_miss_page_table_walk_sun4v_fastpath:
- 	nop
- 	.previous
+ struct skb_cb {
+ 	struct in6_addr addr;
++	struct in6_addr gw;
+ 	struct l2cap_chan *chan;
+ 	int status;
+ };
+@@ -158,6 +159,54 @@ static inline struct lowpan_peer *peer_l
+ 	return NULL;
+ }
  
--	rdpr	%tl, %g3
--	cmp	%g3, 1
-+	rdpr	%tl, %g7
-+	cmp	%g7, 1
- 	bne,pn	%xcc, winfix_trampoline
--	 nop
-+	 mov	%g3, %g4
- 	ba,pt	%xcc, etrap
- 	 rd	%pc, %g7
- 	call	hugetlb_setup
++static inline struct lowpan_peer *peer_lookup_dst(struct lowpan_dev *dev,
++						  struct in6_addr *daddr,
++						  struct sk_buff *skb)
++{
++	struct lowpan_peer *peer, *tmp;
++	struct in6_addr *nexthop;
++	struct rt6_info *rt = (struct rt6_info *)skb_dst(skb);
++	int count = atomic_read(&dev->peer_count);
++
++	BT_DBG("peers %d addr %pI6c rt %p", count, daddr, rt);
++
++	/* If we have multiple 6lowpan peers, then check where we should
++	 * send the packet. If only one peer exists, then we can send the
++	 * packet right away.
++	 */
++	if (count == 1)
++		return list_first_entry(&dev->peers, struct lowpan_peer,
++					list);
++
++	if (!rt) {
++		nexthop = &lowpan_cb(skb)->gw;
++
++		if (ipv6_addr_any(nexthop))
++			return NULL;
++	} else {
++		nexthop = rt6_nexthop(rt);
++
++		/* We need to remember the address because it is needed
++		 * by bt_xmit() when sending the packet. In bt_xmit(), the
++		 * destination routing info is not set.
++		 */
++		memcpy(&lowpan_cb(skb)->gw, nexthop, sizeof(struct in6_addr));
++	}
++
++	BT_DBG("gw %pI6c", nexthop);
++
++	list_for_each_entry_safe(peer, tmp, &dev->peers, list) {
++		BT_DBG("dst addr %pMR dst type %d ip %pI6c",
++		       &peer->chan->dst, peer->chan->dst_type,
++		       &peer->peer_addr);
++
++		if (!ipv6_addr_cmp(&peer->peer_addr, nexthop))
++			return peer;
++	}
++
++	return NULL;
++}
++
+ static struct lowpan_peer *lookup_peer(struct l2cap_conn *conn)
+ {
+ 	struct lowpan_dev *entry, *tmp;
+@@ -415,8 +464,18 @@ static int header_create(struct sk_buff
+ 		read_unlock_irqrestore(&devices_lock, flags);
+ 
+ 		if (!peer) {
+-			BT_DBG("no such peer %pMR found", &addr);
+-			return -ENOENT;
++			/* The packet might be sent to 6lowpan interface
++			 * because of routing (either via default route
++			 * or user set route) so get peer according to
++			 * the destination address.
++			 */
++			read_lock_irqsave(&devices_lock, flags);
++			peer = peer_lookup_dst(dev, &hdr->daddr, skb);
++			read_unlock_irqrestore(&devices_lock, flags);
++			if (!peer) {
++				BT_DBG("no such peer %pMR found", &addr);
++				return -ENOENT;
++			}
+ 		}
+ 
+ 		daddr = peer->eui64_addr;
+@@ -520,6 +579,8 @@ static netdev_tx_t bt_xmit(struct sk_buf
+ 
+ 		read_lock_irqsave(&devices_lock, flags);
+ 		peer = peer_lookup_ba(dev, &addr, addr_type);
++		if (!peer)
++			peer = peer_lookup_dst(dev, &lowpan_cb(skb)->addr, skb);
+ 		read_unlock_irqrestore(&devices_lock, flags);
+ 
+ 		BT_DBG("xmit %s to %pMR type %d IP %pI6c peer %p",
 
 
