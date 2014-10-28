@@ -1,318 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaJ1AB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 20:01:26 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53154 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752596AbaJ1ABY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 20:01:24 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <544EDC80.9060402@jp.fujitsu.com>
-Date: Tue, 28 Oct 2014 09:00:00 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753170AbaJ1ADT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 20:03:19 -0400
+Received: from roy.gaast.net ([80.101.33.21]:41788 "EHLO mail.gaast.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752734AbaJ1ADS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Oct 2014 20:03:18 -0400
+Message-ID: <544EDD40.1040107@gaast.net>
+Date: Tue, 28 Oct 2014 00:03:12 +0000
+From: Wilmer van der Gaast <wilmer@gaast.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130112 Icedove/17.0.2
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: <linux-kernel@vger.kernel.org>, Jonathan Corbet <corbet@lwn.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <ak@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Fabian Frederick <fabf@skynet.be>, <vgoyal@redhat.com>,
-        <linux-doc@vger.kernel.org>, <kexec@lists.infradead.org>,
-        <linux-api@vger.kernel.org>
-Subject: Re: [PATCH V4] kernel, add bug_on_warn
-References: <1414155207-29839-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <1414155207-29839-1-git-send-email-prarit@redhat.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Machine crashes right *after* ~successful resume
+References: <543F049F.5090605@gaast.net> <CAE9FiQWDHq5esSt4UvE5AkHR-=XMvrzaNFwLg+0xKisTNOtcsQ@mail.gmail.com> <543F9182.9000004@gaast.net> <CAE9FiQVNZHTxpNCnn+YPtqjWrQjFmtTh06sbBawqFonMFwSZ-w@mail.gmail.com> <544033CF.3080104@gaast.net> <CAE9FiQW0x5uy_osjvVDOOMDaz2=2KL+TusQ8QqcHL5dWTPrK2w@mail.gmail.com> <5442FE58.5020700@gaast.net> <CAE9FiQWugqXZdZDhDyKofKRXH6EgVq6DJ0JphM6DZSdS5nMhbw@mail.gmail.com> <5446D2D8.2090203@gaast.net> <CAE9FiQWjvZapL0u5QSwD3gYTXisKrCgRcUYWAcy8onUYbkLHTg@mail.gmail.com> <20141022125354.GA3832@gaast.net> <CAE9FiQXF-6b4+y-BJmv7ekrCrXKYyhvZDBqVbLeXSPJa0_cToA@mail.gmail.com> <544E235C.5010908@gaast.net> <CAE9FiQVMaGs=2OMbk6M7x=EhhfaVn5xT_70Sr+rU2Z1HEfjXbw@mail.gmail.com> <544EC59D.9080303@gaast.net> <CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com>
+In-Reply-To: <CAE9FiQXC7YfzPp43EX5r4KNPhF4jua_Jg_JLBnSTffzAmRaY=g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/10/24 21:53), Prarit Bhargava wrote:
-> There have been several times where I have had to rebuild a kernel to
-> cause a panic when hitting a WARN() in the code in order to get a crash
-> dump from a system.  Sometimes this is easy to do, other times (such as
-> in the case of a remote admin) it is not trivial to send new images to the
-> user.
-> 
-> A much easier method would be a switch to change the WARN() over to a
-> BUG().  This makes debugging easier in that I can now test the actual
-> image the WARN() was seen on and I do not have to engage in remote
-> debugging.
-> 
-> This patch adds a bug_on_warn kernel parameter and
-> /proc/sys/kernel/bug_on_warn calls BUG() in the warn_slowpath_common()
-> path.  The function will still print out the location of the warning.
-> 
-> An example of the bug_on_warn output:
-> 
-> The first line below is from the WARN_ON() to output the WARN_ON()'s location.
-> After that the new BUG() call is displayed.
-> 
->   WARNING: CPU: 27 PID: 3204 at
-> /home/rhel7/redhat/debug/dummy-module/dummy-module.c:25 init_dummy+0x28/0x30
-> [dummy_module]()
->   bug_on_warn set, calling BUG()...
->   ------------[ cut here ]------------
->   kernel BUG at kernel/panic.c:434!
->   invalid opcode: 0000 [#1] SMP
->   Modules linked in: dummy_module(OE+) sg nfsv3 rpcsec_gss_krb5 nfsv4
-> dns_resolver nfs fscache cfg80211 rfkill x86_pkg_temp_thermal intel_powerclamp
-> coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel
-> ghash_clmulni_intel igb iTCO_wdt aesni_intel iTCO_vendor_support lrw gf128mul
-> sb_edac ptp edac_core glue_helper lpc_ich ioatdma pcspkr ablk_helper pps_core
-> i2c_i801 mfd_core cryptd dca shpchp ipmi_si wmi ipmi_msghandler acpi_cpufreq
-> nfsd auth_rpcgss nfs_acl lockd grace sunrpc xfs libcrc32c sr_mod cdrom sd_mod
-> mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit drm_kms_helper isci ttm
-> drm libsas ahci libahci scsi_transport_sas libata i2c_core dm_mirror
-> dm_region_hash dm_log dm_mod
->   CPU: 27 PID: 3204 Comm: insmod Tainted: G           OE  3.17.0+ #19
->   Hardware name: Intel Corporation S2600CP/S2600CP, BIOS
-> RMLSDP.86I.00.29.D696.1311111329 11/11/2013
->   task: ffff880034e75160 ti: ffff8807fc5ac000 task.ti: ffff8807fc5ac000
->   RIP: 0010:[<ffffffff81076b81>]  [<ffffffff81076b81>] warn_slowpath_common+0xc1/0xd0
->   RSP: 0018:ffff8807fc5afc68  EFLAGS: 00010246
->   RAX: 0000000000000021 RBX: ffff8807fc5afcb0 RCX: 0000000000000000
->   RDX: 0000000000000000 RSI: ffff88081efee5f8 RDI: ffff88081efee5f8
->   RBP: ffff8807fc5afc98 R08: 0000000000000096 R09: 0000000000000000
->   R10: 0000000000000711 R11: ffff8807fc5af93e R12: ffffffffa0424070
->   R13: 0000000000000019 R14: ffffffffa0423068 R15: 0000000000000009
->   FS:  00007f2d4b034740(0000) GS:ffff88081efe0000(0000) knlGS:0000000000000000
->   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->   CR2: 00007f2d4a99f3c0 CR3: 00000007fd88b000 CR4: 00000000001407e0
->   Stack:
->    ffff8807fc5afcb8 ffffffff8199f020 ffff88080e396160 0000000000000000
->    ffffffffa0423040 ffffffffa0425000 ffff8807fc5afd08 ffffffff81076be5
->    0000000000000008 ffffffffa0424053 ffff880700000018 ffff8807fc5afd18
->   Call Trace:
->    [<ffffffffa0423040>] ? dummy_greetings+0x40/0x40 [dummy_module]
->    [<ffffffff81076be5>] warn_slowpath_fmt+0x55/0x70
->    [<ffffffffa0423068>] init_dummy+0x28/0x30 [dummy_module]
->    [<ffffffff81002144>] do_one_initcall+0xd4/0x210
->    [<ffffffff811b52c2>] ? __vunmap+0xc2/0x110
->    [<ffffffff810f8889>] load_module+0x16a9/0x1b30
->    [<ffffffff810f3d30>] ? store_uevent+0x70/0x70
->    [<ffffffff810f49b9>] ? copy_module_from_fd.isra.44+0x129/0x180
->    [<ffffffff810f8ec6>] SyS_finit_module+0xa6/0xd0
->    [<ffffffff8166ce29>] system_call_fastpath+0x12/0x17
->   Code: c4 08 5b 41 5c 41 5d 41 5e 41 5f 5d c3 48 c7 c7 20 42 8a 81 31 c0 e8 fc
-> 80 5e 00 eb 80 48 c7 c7 78 42 8a 81 31 c0 e8 ec 80 5e 00 <0f> 0b 66 66 66 66 2e
-> 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55
->   RIP  [<ffffffff81076b81>] warn_slowpath_common+0xc1/0xd0
->    RSP <ffff8807fc5afc68>
->   ---[ end trace 428218934a12088b ]---
-> 
-> Successfully tested by me.
-> 
-> Cc: Jonathan Corbet <corbet@lwn.net>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Fabian Frederick <fabf@skynet.be>
-> Cc: vgoyal@redhat.com
-> Cc: isimatu.yasuaki@jp.fujitsu.com
-> Cc: linux-doc@vger.kernel.org
-> Cc: kexec@lists.infradead.org
-> Cc: linux-api@vger.kernel.org
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> 
-> [v2]: add /proc/sys/kernel/bug_on_warn, additional documentation, modify
->        !slowpath cases
-> [v3]: use proc_dointvec_minmax() in sysctl handler
-> [v4]: remove !slowpath cases, and add __read_mostly
-> ---
+On 27-10-14 23:41, Yinghai Lu wrote:
+>
+> Can you only apply the patch that revert enable bridge early and
+> two pci dump patches to see if 04:00.0 readout is 0xff?
+>
+I was curious about that already, did that with a 3.16.6 that I think 
+just had your revert applied (and using lspci -xxxx to get the dump 
+which I assumed would be the same): No changes to 04:00 at all.
 
-Looks good to me.
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Confirmed that this is the case with 3.17 + those patches as well, it's 
+showing this at all times:
 
-Thanks,
-Yasuaki Ishimatsu
+[  130.000122] PCI: 0000:04:00.0
+0000: 83 12 92 88 07 00 10 00 10 01 04 06 01 00 01 00
+0010: 00 00 00 00 00 00 00 00 04 05 05 20 d1 d1 20 22
+0020: c0 fb c0 fb f1 ff 01 00 00 00 00 00 00 00 00 00
+0030: 00 00 00 00 90 00 00 00 00 00 00 00 0b 01 00 02
+0040: 0c 31 00 00 08 06 00 00 00 00 00 00 ff 00 00 00
+0050: 72 ab b9 6d 00 00 00 00 20 c9 8e 00 00 00 00 00
+0060: 00 00 00 00 aa 0d 00 10 00 44 00 00 00 00 00 80
+0070: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+0080: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+0090: 01 a0 42 fe 00 00 00 00 00 00 00 00 00 00 00 00
+00a0: 0d 00 00 00 58 14 00 50 00 00 00 00 00 00 00 00
+00b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+00f0: 00 00 00 00 00 1f 00 00 00 00 00 00 00 00 00 00
 
 
->   Documentation/kdump/kdump.txt       |    7 +++++++
->   Documentation/kernel-parameters.txt |    3 +++
->   Documentation/sysctl/kernel.txt     |   12 ++++++++++++
->   include/linux/kernel.h              |    1 +
->   include/uapi/linux/sysctl.h         |    1 +
->   kernel/panic.c                      |   21 ++++++++++++++++++++-
->   kernel/sysctl.c                     |    9 +++++++++
->   kernel/sysctl_binary.c              |    1 +
->   8 files changed, 54 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/kdump/kdump.txt b/Documentation/kdump/kdump.txt
-> index 6c0b9f2..a04ed72 100644
-> --- a/Documentation/kdump/kdump.txt
-> +++ b/Documentation/kdump/kdump.txt
-> @@ -471,6 +471,13 @@ format. Crash is available on Dave Anderson's site at the following URL:
->   
->      http://people.redhat.com/~anderson/
->   
-> +Trigger Kdump on WARN()
-> +=======================
-> +
-> +The kernel parameter, bug_on_warn, calls BUG() in all WARN() paths.  This
-> +will cause a kdump to occur at the BUG() call.  In cases where a user
-> +wants to specify this during runtime, /proc/sys/kernel/bug_on_warn can be
-> +set to 1 to achieve the same behaviour.
->   
->   Contact
->   =======
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 74339c5..aa1d319 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -553,6 +553,9 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->   	bttv.pll=	See Documentation/video4linux/bttv/Insmod-options
->   	bttv.tuner=
->   
-> +	bug_on_warn	BUG() instead of WARN().  Useful to cause kdump
-> +			on a WARN().
-> +
->   	bulk_remove=off	[PPC]  This parameter disables the use of the pSeries
->   			firmware feature for flushing multiple hpte entries
->   			at a time.
-> diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-> index 57baff5..dcadcdc 100644
-> --- a/Documentation/sysctl/kernel.txt
-> +++ b/Documentation/sysctl/kernel.txt
-> @@ -23,6 +23,7 @@ show up in /proc/sys/kernel:
->   - auto_msgmni
->   - bootloader_type	     [ X86 only ]
->   - bootloader_version	     [ X86 only ]
-> +- bug_on_warn
->   - callhome		     [ S390 only ]
->   - cap_last_cap
->   - core_pattern
-> @@ -152,6 +153,17 @@ Documentation/x86/boot.txt for additional information.
->   
->   ==============================================================
->   
-> +bug_on_warn:
-> +
-> +Calls BUG() in the WARN() path when set to 1.  This is useful to avoid
-> +a kernel rebuild when attempting to kdump at the location of a WARN().
-> +
-> +0: only WARN(), default behaviour.
-> +
-> +1: call BUG() after printing out WARN() location.
-> +
-> +==============================================================
-> +
->   callhome:
->   
->   Controls the kernel's callhome behavior in case of a kernel panic.
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 3d770f55..fc28bff 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -423,6 +423,7 @@ extern int panic_on_oops;
->   extern int panic_on_unrecovered_nmi;
->   extern int panic_on_io_nmi;
->   extern int sysctl_panic_on_stackoverflow;
-> +extern int bug_on_warn;
->   /*
->    * Only to be used by arch init code. If the user over-wrote the default
->    * CONFIG_PANIC_TIMEOUT, honor it.
-> diff --git a/include/uapi/linux/sysctl.h b/include/uapi/linux/sysctl.h
-> index 43aaba1..2ba0a58 100644
-> --- a/include/uapi/linux/sysctl.h
-> +++ b/include/uapi/linux/sysctl.h
-> @@ -153,6 +153,7 @@ enum
->   	KERN_MAX_LOCK_DEPTH=74, /* int: rtmutex's maximum lock depth */
->   	KERN_NMI_WATCHDOG=75, /* int: enable/disable nmi watchdog */
->   	KERN_PANIC_ON_NMI=76, /* int: whether we will panic on an unrecovered */
-> +	KERN_BUG_ON_WARN=77, /* int: call BUG() in WARN() functions */
->   };
->   
->   
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index d09dc5c..740d9ff 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -33,6 +33,7 @@ static int pause_on_oops;
->   static int pause_on_oops_flag;
->   static DEFINE_SPINLOCK(pause_on_oops_lock);
->   static bool crash_kexec_post_notifiers;
-> +int bug_on_warn __read_mostly;
->   
->   int panic_timeout = CONFIG_PANIC_TIMEOUT;
->   EXPORT_SYMBOL_GPL(panic_timeout);
-> @@ -420,13 +421,24 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
->   {
->   	disable_trace_on_warning();
->   
-> -	pr_warn("------------[ cut here ]------------\n");
-> +	if (!bug_on_warn)
-> +		pr_warn("------------[ cut here ]------------\n");
->   	pr_warn("WARNING: CPU: %d PID: %d at %s:%d %pS()\n",
->   		raw_smp_processor_id(), current->pid, file, line, caller);
->   
->   	if (args)
->   		vprintk(args->fmt, args->args);
->   
-> +	if (bug_on_warn) {
-> +		pr_warn("bug_on_warn set, calling BUG()...\n");
-> +		/*
-> +		 * A flood of WARN()s may occur.  Prevent further WARN()s
-> +		 * from panicking the system.
-> +		 */
-> +		bug_on_warn = 0;
-> +		BUG();
-> +	}
-> +
->   	print_modules();
->   	dump_stack();
->   	print_oops_end_marker();
-> @@ -501,3 +513,10 @@ static int __init oops_setup(char *s)
->   	return 0;
->   }
->   early_param("oops", oops_setup);
-> +
-> +static int __init bug_on_warn_setup(char *s)
-> +{
-> +	bug_on_warn = 1;
-> +	return 0;
-> +}
-> +early_param("bug_on_warn", bug_on_warn_setup);
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 4aada6d..818cd31 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -1103,6 +1103,15 @@ static struct ctl_table kern_table[] = {
->   		.proc_handler	= proc_dointvec,
->   	},
->   #endif
-> +	{
-> +		.procname	= "bug_on_warn",
-> +		.data		= &bug_on_warn,
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_dointvec_minmax,
-> +		.extra1		= &zero,
-> +		.extra2		= &one,
-> +	},
->   	{ }
->   };
->   
-> diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
-> index 9a4f750..28376bf 100644
-> --- a/kernel/sysctl_binary.c
-> +++ b/kernel/sysctl_binary.c
-> @@ -137,6 +137,7 @@ static const struct bin_table bin_kern_table[] = {
->   	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
->   	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
->   	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
-> +	{ CTL_INT,	KERN_BUG_ON_WARN,		"bug_on_warn" },
->   	{}
->   };
->   
-> 
+Wilmer v/d Gaast.
 
-
+-- 
++-------- .''`.     - -- ---+  +        - -- --- ---- ----- ------+
+| wilmer : :'  :  gaast.net |  | OSS Programmer   www.bitlbee.org |
+| lintux `. `~'  debian.org |  | Full-time geek  wilmer.gaast.net |
++--- -- -  ` ---------------+  +------ ----- ---- --- -- -        +
