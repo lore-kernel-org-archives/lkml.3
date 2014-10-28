@@ -1,138 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702AbaJ1Wbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:31:44 -0400
-Received: from galahad.ideasonboard.com ([185.26.127.97]:49060 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755669AbaJ1Wbm (ORCPT
+	id S1755541AbaJ1WbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:31:20 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:47792 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755289AbaJ1W2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:31:42 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
+	Tue, 28 Oct 2014 18:28:03 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
+Cc: Andrew Bresticker <abrestic@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
+        Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Antoine =?ISO-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>, lars@metafoo.de
-Subject: Re: [PATCH v4 10/58] dmaengine: Create a generic dma_slave_caps callback
-Date: Wed, 29 Oct 2014 00:31:50 +0200
-Message-ID: <2404835.bBK1tFY7m2@avalon>
-User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
-In-Reply-To: <1414531573-18807-11-git-send-email-maxime.ripard@free-electrons.com>
-References: <1414531573-18807-1-git-send-email-maxime.ripard@free-electrons.com> <1414531573-18807-11-git-send-email-maxime.ripard@free-electrons.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+        linux-usb@vger.kernel.org
+Subject: [PATCH RESEND V4 5/9] of: Add NVIDIA Tegra xHCI controller binding
+Date: Tue, 28 Oct 2014 15:27:52 -0700
+Message-Id: <1414535277-15645-6-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
+References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Maxime,
+Add device-tree binding documentation for the xHCI controller present
+on Tegra124 and later SoCs.
 
-Thank you for the patch.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+No changes from v3.
+Changes from v2:
+ - Added mbox-names property.
+Changes from v1:
+ - Updated to use common mailbox bindings.
+ - Added remaining XUSB-related clocks and resets.
+ - Updated list of power supplies to be more accurate wrt to the hardware.
+---
+ .../bindings/usb/nvidia,tegra124-xhci.txt          | 104 +++++++++++++++++++++
+ 1 file changed, 104 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
 
-On Tuesday 28 October 2014 22:25:25 Maxime Ripard wrote:
-> dma_slave_caps is very important to the generic layers that might interact
-> with dmaengine, such as ASoC. Unfortunately, it has been added as yet
-> another dma_device callback, and most of the existing drivers haven't
-> implemented it, reducing its reliability.
-> 
-> Introduce a generic behaviour to implement this, that rely on both the split
-> of device_control to derive which functions are supported and on new
-> variables to be set in the dma_device structure.
-> 
-> These variables holds what used to be the capabilities, that were set
-> per-channel. However, this proved to be a bit overkill, since every driver
-> filling these so far were hardcoding it, disregarding which channel was
-> actually given.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-You might want to consider adding "dmaengine: Move dma_get_slave_caps() 
-implementation to dmaengine.c" to this series.
-
-> ---
->  include/linux/dmaengine.h | 41 +++++++++++++++++++++++++++++++++++++----
->  1 file changed, 37 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-> index b0efc805937a..be9e60aa8f5e 100644
-> --- a/include/linux/dmaengine.h
-> +++ b/include/linux/dmaengine.h
-> @@ -593,6 +593,14 @@ struct dma_tx_state {
->   * @fill_align: alignment shift for memset operations
->   * @dev_id: unique device ID
->   * @dev: struct device reference for dma mapping api
-> + * @src_addr_widths: bit mask of src addr widths the device supports
-> + * @dst_addr_widths: bit mask of dst addr widths the device supports
-> + * @directions: bit mask of slave direction the device supports since
-> + * 	the enum dma_transfer_direction is not defined as bits for
-> + * 	each type of direction, the dma controller should fill (1 <<
-> + * 	<TYPE>) and same should be checked by controller as well
-> + * @residue_granularity: granularity of the transfer residue reported
-> + *	by tx_status
->   * @device_alloc_chan_resources: allocate resources and return the
->   *	number of allocated descriptors
->   * @device_free_chan_resources: release DMA channel's resources
-> @@ -642,6 +650,11 @@ struct dma_device {
->  	int dev_id;
->  	struct device *dev;
-> 
-> +	u32 src_addr_widths;
-> +	u32 dst_addr_widths;
-> +	u32 directions;
-> +	enum dma_residue_granularity residue_granularity;
-> +
->  	int (*device_alloc_chan_resources)(struct dma_chan *chan);
->  	void (*device_free_chan_resources)(struct dma_chan *chan);
-> 
-> @@ -783,17 +796,37 @@ static inline struct dma_async_tx_descriptor
-> *dmaengine_prep_dma_sg(
-> 
->  static inline int dma_get_slave_caps(struct dma_chan *chan, struct
-> dma_slave_caps *caps) {
-> +	struct dma_device *device;
-> +
->  	if (!chan || !caps)
->  		return -EINVAL;
-> 
-> +	device = chan->device;
-> +
->  	/* check if the channel supports slave transactions */
-> -	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
-> +	if (!test_bit(DMA_SLAVE, device->cap_mask.bits))
-> +		return -ENXIO;
-> +
-> +	if (device->device_slave_caps)
-> +		return device->device_slave_caps(chan, caps);
-> +
-> +	/*
-> +	 * Check whether it reports it uses the generic slave
-> +	 * capabilities, if not, that means it doesn't support any
-> +	 * kind of slave capabilities reporting.
-> +	 */
-> +	if (!device->directions)
->  		return -ENXIO;
-> 
-> -	if (chan->device->device_slave_caps)
-> -		return chan->device->device_slave_caps(chan, caps);
-> +	caps->src_addr_widths = device->src_addr_widths;
-> +	caps->dst_addr_widths = device->dst_addr_widths;
-> +	caps->directions = device->directions;
-> +	caps->residue_granularity = device->residue_granularity;
-> +
-> +	caps->cmd_pause = !!device->device_pause;
-> +	caps->cmd_terminate = !!device->device_terminate_all;
-> 
-> -	return -ENXIO;
-> +	return 0;
->  }
-> 
->  static inline int dmaengine_terminate_all(struct dma_chan *chan)
-
+diff --git a/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
+new file mode 100644
+index 0000000..51a7751
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
+@@ -0,0 +1,104 @@
++NVIDIA Tegra xHCI controller
++============================
++
++The Tegra xHCI controller supports both USB2 and USB3 interfaces exposed
++by the Tegra XUSB pad controller.
++
++Required properties:
++--------------------
++ - compatible: Should be "nvidia,tegra124-xhci".
++ - reg: Address and length of the register sets.  There should be three
++   entries in the following order: xHCI host registers, FPCI registers, and
++   IPFS registers.
++ - interrupts: xHCI host interrupt.
++ - clocks: Must contain an entry for each entry in clock-names.
++   See ../clock/clock-bindings.txt for details.
++ - clock-names: Must include the following entries:
++    - xusb_host
++    - xusb_host_src
++    - xusb_dev
++    - xusb_dev_src
++    - xusb_falcon_src
++    - xusb_ss
++    - xusb_ss_src
++    - xusb_ss_div2
++    - xusb_hs_src
++    - xusb_fs_src
++    - pll_u_480m
++    - clk_m
++    - pll_e
++ - resets: Must contain an entry for each entry in reset-names.
++   See ../reset/reset.txt for details.
++ - reset-names: Must include the following entries:
++   - xusb_host
++   - xusb_dev
++   - xusb_ss
++   - xusb
++   Note that xusb_dev is the shared reset for xusb_dev and xusb_dev_src and
++   that xusb is the shared reset for xusb_{ss,hs,fs,falcon,host}_src.
++ - mboxes: Must contain an entry for the XUSB mailbox channel.
++   See ../mailbox/mailbox.txt for details.
++ - mbox-names: Must include the following entries:
++   - xusb
++
++Optional properties:
++--------------------
++ - phys: Must contain an entry for each entry in phy-names.
++   See ../phy/phy-bindings.txt for details.
++ - phy-names: Should include an entry for each PHY used by the controller.
++   May be a subset of the following:
++    - utmi-{0,1,2}
++    - hsic-{0,1}
++    - usb3-{0,1}
++ - avddio-pex-supply: PCIe/USB3 analog logic power supply.  Must supply 1.05V.
++ - dvddio-pex-supply: PCIe/USB3 digital logic power supply.  Must supply 1.05V.
++ - avdd-usb-supply: USB controller power supply.  Must supply 3.3V.
++ - avdd-pll-utmip-supply: UTMI PLL power supply.  Must supply 1.8V.
++ - avdd-pll-erefe-supply: PLLE reference PLL power supply.  Must supply 1.05V.
++ - avdd-pex-pll-supply: PCIe/USB3 PLL power supply.  Must supply 1.05V.
++ - hvdd-pex-supply: High-voltage PCIe/USB3 power supply.  Must supply 3.3V.
++ - hvdd-pex-plle-supply: High-voltage PLLE power supply.  Must supply 3.3V.
++
++Example:
++--------
++	usb@0,70090000 {
++		compatible = "nvidia,tegra124-xhci";
++		reg = <0x0 0x70090000 0x0 0x8000>,
++		      <0x0 0x70098000 0x0 0x1000>,
++		      <0x0 0x70099000 0x0 0x1000>;
++		interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&tegra_car TEGRA124_CLK_XUSB_HOST>,
++			 <&tegra_car TEGRA124_CLK_XUSB_HOST_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_DEV>,
++			 <&tegra_car TEGRA124_CLK_XUSB_DEV_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_FALCON_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS_DIV2>,
++			 <&tegra_car TEGRA124_CLK_XUSB_SS_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_HS_SRC>,
++			 <&tegra_car TEGRA124_CLK_XUSB_FS_SRC>,
++			 <&tegra_car TEGRA124_CLK_PLL_U_480M>,
++			 <&tegra_car TEGRA124_CLK_CLK_M>,
++			 <&tegra_car TEGRA124_CLK_PLL_E>;
++		clock-names = "xusb_host", "xusb_host_src", "xusb_dev",
++			      "xusb_dev_src", "xusb_falcon_src", "xusb_ss",
++			      "xusb_ss_div2", "xusb_ss_src", "xusb_hs_src",
++			      "xusb_fs_src", "pll_u_480m", "clk_m", "pll_e";
++		resets = <&tegra_car 89>, <&tegra_car 95>, <&tegra_car 156>,
++			 <&tegra_car 143>;
++		reset-names = "xusb_host", "xusb_dev", "xusb_ss", "xusb";
++		mboxes = <&xusb_mbox>;
++		mbox-names = "xusb";
++		phys = <&padctl TEGRA_XUSB_PADCTL_UTMI_P1>, /* mini-PCIe USB */
++		       <&padctl TEGRA_XUSB_PADCTL_UTMI_P2>, /* USB A */
++		       <&padctl TEGRA_XUSB_PADCTL_USB3_P0>; /* USB A */
++		phy-names = "utmi-1", "utmi-2", "usb3-0";
++		avddio-pex-supply = <&vdd_1v05_run>;
++		dvddio-pex-supply = <&vdd_1v05_run>;
++		avdd-usb-supply = <&vdd_3v3_lp0>;
++		avdd-pll-utmip-supply = <&vddio_1v8>;
++		avdd-pll-erefe-supply = <&avdd_1v05_run>;
++		avdd-pex-pll-supply = <&vdd_1v05_run>;
++		hvdd-pex-supply = <&vdd_3v3_lp0>;
++		hvdd-pex-plle-supply = <&vdd_3v3_lp0>;
++	};
 -- 
-Regards,
-
-Laurent Pinchart
+2.1.0.rc2.206.gedb03e5
 
