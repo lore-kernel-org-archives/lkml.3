@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933808AbaJ1GaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:30:10 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:60262 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaJ1GaG (ORCPT
+	id S1758257AbaJ1Gav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:30:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46082 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932475AbaJ1Dvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 02:30:06 -0400
-Date: Tue, 28 Oct 2014 07:30:01 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Richard Guy Briggs <rgb@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        przanoni@gmail.com, hpa@linux.intel.com,
-        linux-tip-commits@vger.kernel.org, linux-audit@redhat.com
-Subject: Re: [PATCH] i386/audit: stop scribbling on the stack frame
-Message-ID: <20141028063001.GA24672@gmail.com>
-References: <1414037043-30647-1-git-send-email-eparis@redhat.com>
- <tip-26c2d2b39128adba276d140eefa2745591b88536@git.kernel.org>
- <alpine.DEB.2.11.1410251034320.5308@nanos>
- <20141027023457.GY15532@madcap2.tricolour.ca>
- <1414418157.24347.1.camel@redhat.com>
- <544E7A8D.1030909@zytor.com>
- <1414430984.24347.6.camel@redhat.com>
+	Mon, 27 Oct 2014 23:51:45 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Thomas Huth <thuth@linux.vnet.ibm.com>
+Subject: [PATCH 3.10 06/43] KVM: s390: unintended fallthrough for external call
+Date: Tue, 28 Oct 2014 11:36:04 +0800
+Message-Id: <20141028033523.680792675@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <20141028033523.407092670@linuxfoundation.org>
+References: <20141028033523.407092670@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1414430984.24347.6.camel@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-* Eric Paris <eparis@redhat.com> wrote:
+------------------
 
-> On Mon, 2014-10-27 at 10:02 -0700, H. Peter Anvin wrote:
-> > On 10/27/2014 06:55 AM, Eric Paris wrote:
-> > > My patch was already committed to the -tip urgent branch.  I believe any
-> > > optimization should be based on that branch, Richard.  If you are trying
-> > > to wrangle every bit of speed out of this, should you
-> > > 
-> > > push %esi;
-> > > push %edi;
-> > > CFI_ADJUST_CFA_OFFSET 8
-> > > call __audit_syscall_entry
-> > > pop;
-> > > pop;
-> > > CFI_ADJUST_CFA_OFFSET -8
-> > > 
-> > > Instead of using the pushl_cfi and popl_cfi macros?
-> > > 
-> > > I wrote my patch to be obviously correct, but agree there are certainly
-> > > some speedups possible.
-> > > 
-> > 
-> > Uh... not only is that plain wrong (the CFI should be adjusted after
-> > each instruction that changes the stack pointer),
-> 
-> Sure, things would be screwed up between the two push's
-> 
-> >  but what the heck is
-> > wrong with using the macros?
-> 
-> I was asking if that would save an instruction or two by 
-> consolidating the CFI update and if so would that tradeoff be 
-> worth it, given the regularity of this code being run.
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-CFI updates have no effect on runtime behavior whatsoever (they 
-don't emit any instructions), they only affect the debug info 
-being constructed.
+commit f346026e55f1efd3949a67ddd1dcea7c1b9a615e upstream.
 
-Thanks,
+We must not fallthrough if the conditions for external call are not met.
 
-	Ingo
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: Thomas Huth <thuth@linux.vnet.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/s390/kvm/interrupt.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/s390/kvm/interrupt.c
++++ b/arch/s390/kvm/interrupt.c
+@@ -71,6 +71,7 @@ static int __interrupt_is_deliverable(st
+ 			return 0;
+ 		if (vcpu->arch.sie_block->gcr[0] & 0x2000ul)
+ 			return 1;
++		return 0;
+ 	case KVM_S390_INT_EMERGENCY:
+ 		if (psw_extint_disabled(vcpu))
+ 			return 0;
+
+
