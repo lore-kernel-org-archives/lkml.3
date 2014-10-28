@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbaJ1Dhe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:37:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44419 "EHLO
+	id S1754105AbaJ1Dhp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:37:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44434 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753956AbaJ1Dh3 (ORCPT
+	with ESMTP id S1754044AbaJ1Dhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:37:29 -0400
+	Mon, 27 Oct 2014 23:37:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.17 023/146] spi: dw-mid: respect 8 bit mode
-Date: Tue, 28 Oct 2014 11:32:45 +0800
-Message-Id: <20141028033344.443184889@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: [PATCH 3.17 048/146] Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
+Date: Tue, 28 Oct 2014 11:33:10 +0800
+Message-Id: <20141028033345.496707697@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -29,40 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit b41583e7299046abdc578c33f25ed83ee95b9b31 upstream.
+commit 72c6b71c245dac8f371167d97ef471b367d0b66b upstream.
 
-In case of 8 bit mode and DMA usage we end up with every second byte written as
-0. We have to respect bits_per_word settings what this patch actually does.
+Eliminate the call to BUG_ON() by waiting for the host to respond. We are
+trying to reclaim the ownership of memory that was given to the host and so
+we will have to wait until the host responds.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-dw-mid.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hv/channel.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -136,7 +136,7 @@ static int mid_spi_dma_transfer(struct d
- 	txconf.dst_addr = dws->dma_addr;
- 	txconf.dst_maxburst = LNW_DMA_MSIZE_16;
- 	txconf.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	txconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	txconf.dst_addr_width = dws->dma_width;
- 	txconf.device_fc = false;
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -363,7 +363,6 @@ int vmbus_establish_gpadl(struct vmbus_c
+ 	u32 next_gpadl_handle;
+ 	unsigned long flags;
+ 	int ret = 0;
+-	int t;
  
- 	txchan->device->device_control(txchan, DMA_SLAVE_CONFIG,
-@@ -159,7 +159,7 @@ static int mid_spi_dma_transfer(struct d
- 	rxconf.src_addr = dws->dma_addr;
- 	rxconf.src_maxburst = LNW_DMA_MSIZE_16;
- 	rxconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	rxconf.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	rxconf.src_addr_width = dws->dma_width;
- 	rxconf.device_fc = false;
+ 	next_gpadl_handle = atomic_read(&vmbus_connection.next_gpadl_handle);
+ 	atomic_inc(&vmbus_connection.next_gpadl_handle);
+@@ -410,9 +409,7 @@ int vmbus_establish_gpadl(struct vmbus_c
  
- 	rxchan->device->device_control(rxchan, DMA_SLAVE_CONFIG,
+ 		}
+ 	}
+-	t = wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
+-	BUG_ON(t == 0);
+-
++	wait_for_completion(&msginfo->waitevent);
+ 
+ 	/* At this point, we received the gpadl created msg */
+ 	*gpadl_handle = gpadlmsg->gpadl;
 
 
