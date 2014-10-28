@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175AbaJ1VzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 17:55:05 -0400
-Received: from down.free-electrons.com ([37.187.137.238]:37838 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751602AbaJ1VzD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 17:55:03 -0400
-Date: Tue, 28 Oct 2014 22:51:37 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Roman Byshko <rbyshko@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, Kishon Vijay Abraham I <kishon@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH 2/5] ARM: dtsi: sunxi: add common VBUS regulator
-Message-ID: <20141028215137.GG9255@lukather>
-References: <cover.1414444953.git.rbyshko@gmail.com>
- <210cc2a03d43e3d65b08f302b3b32663044ad94f.1414444953.git.rbyshko@gmail.com>
+	id S1755198AbaJ1Vzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 17:55:35 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:50296 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753142AbaJ1Vzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 17:55:33 -0400
+Date: Tue, 28 Oct 2014 14:51:40 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
+        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
+        bobby.prani@gmail.com
+Subject: [PATCH tip/core/rcu 0/9] Per-CPU-variable updates
+Message-ID: <20141028215140.GA23970@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="reI/iBAAp9kzkmX4"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <210cc2a03d43e3d65b08f302b3b32663044ad94f.1414444953.git.rbyshko@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102821-0029-0000-0000-000000F4EB88
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello!
 
---reI/iBAAp9kzkmX4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This series updates RCU's handling of per-CPU variables, mostly
+moving from "cpu" function arguments to various "this_"-style accessors
+for per-CPU variables:
 
-On Mon, Oct 27, 2014 at 10:43:02PM +0100, Roman Byshko wrote:
-> Until now the regulator nodes for powering USB VBUS
-> existed only for the two host controllers. Now the regulator
-> is added for USB OTG too.
-> ---
->  arch/arm/boot/dts/sunxi-common-regulators.dtsi | 19 +++++++++++++++++++
->  1 file changed, 19 insertions(+)
->=20
-> diff --git a/arch/arm/boot/dts/sunxi-common-regulators.dtsi b/arch/arm/bo=
-ot/dts/sunxi-common-regulators.dtsi
-> index c9c5b10..f521672 100644
-> --- a/arch/arm/boot/dts/sunxi-common-regulators.dtsi
-> +++ b/arch/arm/boot/dts/sunxi-common-regulators.dtsi
-> @@ -21,6 +21,13 @@
->  				allwinner,pull =3D <0>;
->  			};
-> =20
-> +			usb0_vbus_pin_a: usb0_vbus_pin@0 {
-> +				allwinner,pins =3D "PB9";
-> +				allwinner,function =3D "gpio_out";
-> +				allwinner,drive =3D <0>;
-> +				allwinner,pull =3D <0>;
-> +			};
-> +
->  			usb1_vbus_pin_a: usb1_vbus_pin@0 {
->  				allwinner,pins =3D "PH6";
->  				allwinner,function =3D "gpio_out";
-> @@ -49,6 +56,18 @@
->  		status =3D "disabled";
->  	};
-> =20
-> +	reg_usb0_vbus: usb0-vbus {
-> +		compatible =3D "regulator-fixed";
-> +		pinctrl-names =3D "default";
-> +		pinctrl-0 =3D <&usb0_vbus_pin_a>;
-> +		regulator-name =3D "usb0-vbus";
-> +		regulator-min-microvolt =3D <5000000>;
-> +		regulator-max-microvolt =3D <5000000>;
-> +		enable-active-high;
-> +		gpio =3D <&pio 1 9 0>;
-> +		status =3D "disabled";
-> +	};
+1.	Drop the rdtp argument from RCU's dyntick-idle and sysidle
+	functions, substituting this_cpu_ptr(), courtesy of Christoph
+	Lameter.
 
-We're using these regulators because a huuuge majority of the boards
-out there, regardless of their SoC, are using the same GPIO to drive
-the same regulator. Is this the case here? What board have you looked
-at?
+2.	Use DEFINE_PER_CPU_SHARED_ALIGNED for rcu_data structures in
+	order to avoid false sharing with other per-CPU variables.
 
-Thanks,
-Maxime
+3-9.	Remove "cpu" arguments from a number of RCU functions that are
+	only ever invoked on that CPU, and use appropriate "this_"-style
+	accesssors for the per-CPU variables.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+							Thanx, Paul
 
---reI/iBAAp9kzkmX4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+------------------------------------------------------------------------
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+ b/include/linux/rcupdate.h |    2 +-
+ b/include/linux/rcutiny.h  |    2 +-
+ b/include/linux/rcutree.h  |    4 ++--
+ b/kernel/cpu.c             |   19 +++++++++++++------
+ b/kernel/rcu/tiny.c        |    2 +-
+ b/kernel/rcu/tree.c        |   25 +++++++++++++------------
+ b/kernel/rcu/tree.h        |    4 ++--
+ b/kernel/rcu/tree_plugin.h |   11 +++++++----
+ b/kernel/sched/core.c      |    2 +-
+ b/kernel/softirq.c         |    2 +-
+ b/kernel/time/tick-sched.c |    2 +-
+ b/kernel/time/timer.c      |    3 +--
+ include/linux/rcupdate.h   |    2 +-
+ include/linux/rcutree.h    |    2 +-
+ kernel/rcu/tree.c          |   30 +++++++++++++++---------------
+ kernel/rcu/tree.h          |    8 ++++----
+ kernel/rcu/tree_plugin.h   |   42 +++++++++++++++++++++---------------------
+ 17 files changed, 86 insertions(+), 76 deletions(-)
 
-iQIcBAEBAgAGBQJUUA/pAAoJEBx+YmzsjxAgBFQP/R0/geH9Ku9G/DQlOQ0a8wFN
-MwRDpmp49F5QSQuTJv+/4XQJwwvLvAdB9JWAGZ54TLiE7O6i3PepWlqS+BpvFznp
-IkPVWe2egZ1dN2tSvhbmIvFeenkJMb99aK4HwmjGOBlpuzOoUxuDng58ZufS49Or
-tghCYnVrJ81WhZw3KRQ7/eLHc7Nvl5wt3iKxHljEsiE2wDtnBLwDBIdDeVKsE222
-it/cMWHXhC6hTwBEHp0q5ZgAB5/RHnW98xM0REANEUJFesthFEDlZA9fYEPAnLjY
-GZsnuW4+YLAA8C4yMWzT+OdHndJtIabb9rOy/1cTi+OUTicMxM+zuxRnVaRlNt8+
-n5+Ft/QYcn8FDJG9/2dBqrkfrz9RdscRgMAkai5F/NMg+fEcTKSygFYQiQJNv45c
-JBRzt9mnp9bVxwTGk8aIBonS2qE/xWWs2rbprtGCKjv08jJQ1uCsneD+iqQZlDyv
-kW8+X9e4z3gQjejHa/FLrBy4wtcAMf0tqoR5Iuq1SZX0ryZWR3BsGmqo405HPXYS
-tqpMZ1eB6K7rb2ACd/2CT+Bfy6epyx2Q+31uFrWLFGm+1OazAKSZ8XgBh+ttVh5X
-nq8s8gRu66+/OMZwFF9XA63nM3e5pC6RmKz/sx6WObDY0wLjsH3PnGG5SFsM68JZ
-Um1RmLCQU1UCxfYjEU17
-=dBpE
------END PGP SIGNATURE-----
-
---reI/iBAAp9kzkmX4--
