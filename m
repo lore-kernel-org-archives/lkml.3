@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495AbaJ1PBM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:01:12 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:46548 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754358AbaJ1PBJ (ORCPT
+	id S1753628AbaJ1PFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:05:25 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:55356 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511AbaJ1PFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:01:09 -0400
-Date: Tue, 28 Oct 2014 16:01:02 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kirill Tkhai <ktkhai@parallels.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Kirill Tkhai <tkhai@yandex.ru>, Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 2/3] introduce probe_slab_address()
-Message-ID: <20141028150102.GP3219@twins.programming.kicks-ass.net>
-References: <1413962231.19914.130.camel@tkhai>
- <20141027195339.GA11736@redhat.com>
- <20141027195425.GC11736@redhat.com>
- <1414475091.8574.6.camel@tkhai>
+	Tue, 28 Oct 2014 11:05:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1414475091.8574.6.camel@tkhai>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1413479495-14206-9-git-send-email-soren.brinkmann@xilinx.com>
+References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
+	<1413479495-14206-9-git-send-email-soren.brinkmann@xilinx.com>
+Date: Tue, 28 Oct 2014 16:05:18 +0100
+Message-ID: <CACRpkda9v=H9rQBq484c+UCwEKeca9qOE_78Wf+STB4rDwhuyA@mail.gmail.com>
+Subject: Re: [PATCH RFC v2 8/8] ARM: zynq: DT: Add pinctrl information
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 08:44:51AM +0300, Kirill Tkhai wrote:
-> В Пн, 27/10/2014 в 20:54 +0100, Oleg Nesterov пишет:
+On Thu, Oct 16, 2014 at 7:11 PM, Soren Brinkmann
+<soren.brinkmann@xilinx.com> wrote:
 
-> > +#define probe_slab_address(addr, retval)	\
-> > +	probe_kernel_address(addr, retval)
-> 
-> probe_kernel_read() was arch-dependent on tree platforms:
-> 
-> arch/blackfin/mm/maccess.c
-> arch/parisc/lib/memcpy.c
-> arch/um/kernel/maccess.c
-> 
-> But now we skip these arch-dependent implementations. Is there no a problem?
+> Add pinctrl descriptions to the zc702 and zc706 device trees.
+>
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
 
-Nope, see the first patch, it makes probe_kernel_address use
-__probe_kernel_read().
+(...)
+> +&pinctrl0 {
+> +       pinctrl_can0_default: pinctrl-can0-default {
+> +               common {
+> +                       function = "can0";
+> +                       groups = "can0_9_grp";
+> +                       bias-pull-up = <0>;
+
+No. If you want pull-up, just use
+bias-pull-up;
+
+If you want to disable pull-up, use
+bias-disable;
+
+> +                       slew-rate = <0>;
+
+If this measure is any kind of time unit, this is against the laws of nature.
+
+> +                       io-standard = <1>;
+> +               };
+> +
+> +               rx {
+> +                       pins = "MIO46";
+> +                       bias-high-impedance = <1>;
+
+Just
+bias-high-impedance;
+
+> +               };
+> +
+> +               tx {
+> +                       pins = "MIO47";
+> +                       bias-high-impedance = <0>;
+
+Just
+bias-disable;
+
+Look all these over closely.
+
+Yours,
+Linus Walleij
