@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802AbaJ1WEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:04:39 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53192 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755200AbaJ1WEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:04:21 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
-        josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 5/5] documentation: memory-barriers.txt: Correct example for reorderings
-Date: Tue, 28 Oct 2014 15:00:17 -0700
-Message-Id: <1414533617-25933-5-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1414533617-25933-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20141028215937.GA25095@linux.vnet.ibm.com>
- <1414533617-25933-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102822-0029-0000-0000-000000F4F2C7
+	id S1755913AbaJ1WEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:04:54 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50390 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770AbaJ1WEw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 18:04:52 -0400
+Date: Tue, 28 Oct 2014 23:04:50 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Felipe Balbi <balbi@ti.com>,
+        sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+Subject: Re: USB Ethernet gadget on Nokia n900
+Message-ID: <20141028220450.GA27667@amd>
+References: <20141019090107.GA19132@amd>
+ <201410262222.39892@pali>
+ <20141026215548.GA9004@amd>
+ <201410262323.17891@pali>
+ <20141027195209.GP2560@atomide.com>
+ <20141027223114.GU2560@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141027223114.GU2560@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pranith Kumar <bobby.prani@gmail.com>
+Hi!
 
-Correct the example of memory orderings in memory-barriers.txt
+> Here's a patch that should fix the issues for built-in USB
+> gadgets.
+> 
+> Pavel, care to see if this gets NFSroot over USB working again
+> for you?
 
-Commit 615cc2c9cf95 "Documentation/memory-barriers.txt: fix important typo re
-memory barriers" changed the assignment to x and y. Change the rest of the
-example to match this change.
+It seems to have did the trick for me. (Plus I needed to add
 
-Reported-by: Ganesh Rapolu <ganesh.rapolu@hotmail.com>
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- Documentation/memory-barriers.txt | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
++CONFIG_ARM_ATAG_DTB_COMPAT=y
++CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER=y
++# CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND is not set
 
-diff --git a/Documentation/memory-barriers.txt b/Documentation/memory-barriers.txt
-index 8ebb66128cc8..3d5f49b9f82b 100644
---- a/Documentation/memory-barriers.txt
-+++ b/Documentation/memory-barriers.txt
-@@ -121,22 +121,22 @@ For example, consider the following sequence of events:
- The set of accesses as seen by the memory system in the middle can be arranged
- in 24 different combinations:
- 
--	STORE A=3,	STORE B=4,	x=LOAD A->3,	y=LOAD B->4
--	STORE A=3,	STORE B=4,	y=LOAD B->4,	x=LOAD A->3
--	STORE A=3,	x=LOAD A->3,	STORE B=4,	y=LOAD B->4
--	STORE A=3,	x=LOAD A->3,	y=LOAD B->2,	STORE B=4
--	STORE A=3,	y=LOAD B->2,	STORE B=4,	x=LOAD A->3
--	STORE A=3,	y=LOAD B->2,	x=LOAD A->3,	STORE B=4
--	STORE B=4,	STORE A=3,	x=LOAD A->3,	y=LOAD B->4
-+	STORE A=3,	STORE B=4,	y=LOAD A->3,	x=LOAD B->4
-+	STORE A=3,	STORE B=4,	x=LOAD B->4,	y=LOAD A->3
-+	STORE A=3,	y=LOAD A->3,	STORE B=4,	x=LOAD B->4
-+	STORE A=3,	y=LOAD A->3,	x=LOAD B->2,	STORE B=4
-+	STORE A=3,	x=LOAD B->2,	STORE B=4,	y=LOAD A->3
-+	STORE A=3,	x=LOAD B->2,	y=LOAD A->3,	STORE B=4
-+	STORE B=4,	STORE A=3,	y=LOAD A->3,	x=LOAD B->4
- 	STORE B=4, ...
- 	...
- 
- and can thus result in four different combinations of values:
- 
--	x == 1, y == 2
--	x == 1, y == 4
--	x == 3, y == 2
--	x == 3, y == 4
-+	x == 2, y == 1
-+	x == 2, y == 3
-+	x == 4, y == 1
-+	x == 4, y == 3
- 
- 
- Furthermore, the stores committed by a CPU to the memory system may not be
+to be able to control the command line, that's why testing took me a
+while.)
+
+Networking now works against 3.17-based kernel. Thanks!
+
+Tested-by: Pavel Machek <pavel@ucw.cz>
+
 -- 
-1.8.1.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
