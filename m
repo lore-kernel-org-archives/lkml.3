@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626AbaJ1WbZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 18:31:25 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:33937 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755240AbaJ1W2A (ORCPT
+	id S1755570AbaJ1WbX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 18:31:23 -0400
+Received: from mail-pa0-f74.google.com ([209.85.220.74]:56379 "EHLO
+	mail-pa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268AbaJ1W2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 18:28:00 -0400
+	Tue, 28 Oct 2014 18:28:03 -0400
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>, linux-tegra@vger.kernel.org
@@ -25,112 +25,179 @@ Cc: Andrew Bresticker <abrestic@chromium.org>,
         Kishon Vijay Abraham I <kishon@ti.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-usb@vger.kernel.org
-Subject: [PATCH RESEND V4 0/9] Tegra xHCI support
-Date: Tue, 28 Oct 2014 15:27:47 -0700
-Message-Id: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
+Subject: [PATCH RESEND V4 3/9] of: Update Tegra XUSB pad controller binding for USB
+Date: Tue, 28 Oct 2014 15:27:50 -0700
+Message-Id: <1414535277-15645-4-git-send-email-abrestic@chromium.org>
 X-Mailer: git-send-email 2.1.0.rc2.206.gedb03e5
+In-Reply-To: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
+References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds support for xHCI on NVIDIA Tegra SoCs.  This includes:
- - patches 1 and 2: adding a driver for the mailbox used to communicate
-   with the xHCI controller's firmware,
- - patches 3 and 4: extending the XUSB pad controller driver to support
-   the USB PHY types (UTMI, HSIC, and USB3),
- - patches 5 and 6: adding a xHCI host-controller driver, and
- - patches 7, 8, and 9: updating the relevant DT files.
+Add new bindings used for USB support by the Tegra XUSB pad controller.
+This includes additional PHY types, USB-specific pinconfig properties, etc.
 
-The PHY and host drivers have compile-time dependencies on the mailbox
-driver, and the host driver has compile-time dependencies on the PHY
-driver.  It is probably best if these all get merged through the Tegra
-tree.  This series still needs ACKs from the relevant maintainers for
-the mailbox and xHCI host drivers and their device-tree bindings.
-
-Tested on Venice2, Jetson TK1, and Big with a variety of USB2.0 and
-USB3.0 memory sticks and ethernet dongles using controller firmware
-recently posted by Andrew Chew [0].
-
-Based on v3.18-rc2.  All other dependencies (xHCI modules and mailbox
-series) have been merged.
-
-Notes:
- - HSIC support is mostly untested and I think there are still some issues
-   to work out there.  I do have a Tegra124 board with a HSIC hub so I'll
-   try to sort those out later.
- - The XUSB padctl driver doesn't play nice with the existing Tegra USB2.0
-   PHY driver, so all ports should be assigned to the XHCI controller.
-
-Based on work by:
-  a lot of people, but from what I can tell from the L4T tree [1], the
-  original authors of the Tegra xHCI driver are:
-    Ajay Gupta <ajayg@nvidia.com>
-    Bharath Yadav <byadav@nvidia.com>
-
-Changes from v3:
- - Fixed USB2.0 flakiness on Jetson-TK1.
- - Switched to 32-bit DMA mask for host.
- - Addressed Stephen's review comments.
-
-Chagnes from v2:
- - Dropped mailbox channel specifier.  The mailbox driver allocates virtual
-   channels backed by the single physical channel.
- - Added support for HS_CURR_LEVEL adjustment pinconfig property, which
-   will be required for the Blaze board.
- - Addressed Stephen's review comments.
-
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+Changes from v2:
+ - Added nvidia,otg-hs-curr-level-offset property.
+ - Dropped "-otg" from VBUS supplies.
+ - Added mbox-names property.
+ - Removed extra whitespace.
 Changes from v1:
- - Converted mailbox driver to use the common mailbox framework.
- - Fixed up host driver so that it can now be built and used as a module.
- - Addressed Stephen's review comments.
- - Misc. cleanups.
+ - Updated to use common mailbox bindings.
+ - Made USB3 port-to-lane mappins a top-level binding rather than a pinconfig
+   binding.
+ - Add #defines for the padctl lanes.
+---
+ .../pinctrl/nvidia,tegra124-xusb-padctl.txt        | 56 ++++++++++++++++++++--
+ include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h   | 20 ++++++++
+ 2 files changed, 72 insertions(+), 4 deletions(-)
 
-Changes from RFC:
- - Dropped Tegra114 support.
- - Split out mailbox into separate driver.
- - Stopped using child xhci-plat device in xHCI host-controller driver.
- - Added PHY support to Thierry's XUSB padctl driver instead of in a separate
-   USB PHY driver.
- - Added Jetson TK1 support.
- - Misc. cleanups.
-
-[0] https://patchwork.ozlabs.org/patch/400110/
-[1] git://nv-tegra.nvidia.com/linux-3.10.git
-
-Andrew Bresticker (9):
-  of: Add NVIDIA Tegra XUSB mailbox binding
-  mailbox: Add NVIDIA Tegra XUSB mailbox driver
-  of: Update Tegra XUSB pad controller binding for USB
-  pinctrl: tegra-xusb: Add USB PHY support
-  of: Add NVIDIA Tegra xHCI controller binding
-  usb: xhci: Add NVIDIA Tegra xHCI host-controller driver
-  ARM: tegra: Add Tegra124 XUSB mailbox and xHCI controller
-  ARM: tegra: jetson-tk1: Add xHCI support
-  ARM: tegra: venice2: Add xHCI support
-
- .../bindings/mailbox/nvidia,tegra124-xusb-mbox.txt |   32 +
- .../pinctrl/nvidia,tegra124-xusb-padctl.txt        |   56 +-
- .../bindings/usb/nvidia,tegra124-xhci.txt          |  104 ++
- arch/arm/boot/dts/tegra124-jetson-tk1.dts          |   46 +-
- arch/arm/boot/dts/tegra124-venice2.dts             |   79 +-
- arch/arm/boot/dts/tegra124.dtsi                    |   41 +
- drivers/mailbox/Kconfig                            |    3 +
- drivers/mailbox/Makefile                           |    2 +
- drivers/mailbox/tegra-xusb-mailbox.c               |  290 +++++
- drivers/pinctrl/Kconfig                            |    1 +
- drivers/pinctrl/pinctrl-tegra-xusb.c               | 1233 +++++++++++++++++++-
- drivers/usb/host/Kconfig                           |    9 +
- drivers/usb/host/Makefile                          |    1 +
- drivers/usb/host/xhci-tegra.c                      |  907 ++++++++++++++
- include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h   |   20 +
- include/soc/tegra/xusb.h                           |   53 +
- 16 files changed, 2797 insertions(+), 80 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mailbox/nvidia,tegra124-xusb-mbox.txt
- create mode 100644 Documentation/devicetree/bindings/usb/nvidia,tegra124-xhci.txt
- create mode 100644 drivers/mailbox/tegra-xusb-mailbox.c
- create mode 100644 drivers/usb/host/xhci-tegra.c
- create mode 100644 include/soc/tegra/xusb.h
-
+diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
+index 2f9c0bd..4a1b9475 100644
+--- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
+@@ -21,6 +21,18 @@ Required properties:
+   - padctl
+ - #phy-cells: Should be 1. The specifier is the index of the PHY to reference.
+   See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list of valid values.
++- mboxes: Must contain an entry for the XUSB mailbox channel.
++  See ../mailbox/mailbox.txt for details.
++- mbox-names: Must include the following entries:
++  - xusb
++
++Optional properties:
++-------------------
++- vbus-{0,1,2}-supply: VBUS regulator for the corresponding UTMI pad.
++- vddio-hsic-supply: VDDIO regulator for the HSIC pads.
++- nvidia,usb3-port-{0,1}-lane: PCIe/SATA lane to which the corresponding USB3
++  port is mapped.  See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list
++  of valid values.
+ 
+ Lane muxing:
+ ------------
+@@ -50,6 +62,17 @@ Optional properties:
+   pin or group should be assigned to. Valid values for function names are
+   listed below.
+ - nvidia,iddq: Enables IDDQ mode of the lane. (0: no, 1: yes)
++- nvidia,usb2-port-num: USB2 port (0, 1, or 2) to which the lane is mapped.
++- nvidia,hsic-strobe-trim: HSIC strobe trimmer value.
++- nvidia,hsic-rx-strobe-trim: HSIC RX strobe trimmer value.
++- nvidia,hsic-rx-data-trim: HSIC RX data trimmer value.
++- nvidia,hsic-tx-rtune-n: HSIC TX RTUNEN value.
++- nvidia,hsic-tx-rtune-p: HSIC TX RTUNEP value.
++- nvidia,hsic-tx-slew-n: HSIC TX SLEWN value.
++- nvidia,hsic-tx-slew-p: HSIC TX SLEWP value.
++- nvidia,hsic-auto-term: Enables HSIC AUTO_TERM. (0: no, 1: yes)
++- nvidia,otg-hs-curr-level-offset: Offset to be applied to the pad's fused
++  HS_CURR_LEVEL value.
+ 
+ Note that not all of these properties are valid for all lanes. Lanes can be
+ divided into three groups:
+@@ -58,18 +81,21 @@ divided into three groups:
+ 
+     Valid functions for this group are: "snps", "xusb", "uart", "rsvd".
+ 
+-    The nvidia,iddq property does not apply to this group.
++    The nvidia,otg-hs-curr-level-offset property only applies.
+ 
+   - ulpi-0, hsic-0, hsic-1:
+ 
+     Valid functions for this group are: "snps", "xusb".
+ 
+-    The nvidia,iddq property does not apply to this group.
++    The nvidia,hsic-* properties apply only to the pins hsic-{0,1} when
++    the function is xusb.
+ 
+   - pcie-0, pcie-1, pcie-2, pcie-3, pcie-4, sata-0:
+ 
+     Valid functions for this group are: "pcie", "usb3", "sata", "rsvd".
+ 
++    The nvidia,usb2-port-num property only applies and is required when
++    the function is usb3.
+ 
+ Example:
+ ========
+@@ -82,6 +108,8 @@ SoC file extract:
+ 		reg = <0x0 0x7009f000 0x0 0x1000>;
+ 		resets = <&tegra_car 142>;
+ 		reset-names = "padctl";
++		mboxes = <&xusb_mbox>;
++		mbox-names = "xusb";
+ 
+ 		#phy-cells = <1>;
+ 	};
+@@ -100,15 +128,35 @@ Board file extract:
+ 
+ 	...
+ 
++	usb@0,70090000 {
++		...
++
++		phys = <&padctl 5>, <&padctl 6>, <&padctl 7>;
++		phy-names = "utmi-1", "utmi-2", "usb3-0";
++
++		...
++	}
++
++	...
++
+ 	padctl: padctl@0,7009f000 {
+ 		pinctrl-0 = <&padctl_default>;
+ 		pinctrl-names = "default";
+ 
++		nvidia,usb3-port-0-lane = <TEGRA_XUSB_PADCTL_PIN_PCIE_0>;
++		vbus-2-supply = <&vdd_usb3_vbus>;
++
+ 		padctl_default: pinmux {
+-			usb3 {
+-				nvidia,lanes = "pcie-0", "pcie-1";
++			otg {
++				nvidia,lanes = "otg-1", "otg-2";
++				nvidia,function = "xusb";
++			};
++
++			usb3p0 {
++				nvidia,lanes = "pcie-0";
+ 				nvidia,function = "usb3";
+ 				nvidia,iddq = <0>;
++				nvidia,usb2-port-num = <2>;
+ 			};
+ 
+ 			pcie {
+diff --git a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
+index 914d56d..17b1aab 100644
+--- a/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
++++ b/include/dt-bindings/pinctrl/pinctrl-tegra-xusb.h
+@@ -3,5 +3,25 @@
+ 
+ #define TEGRA_XUSB_PADCTL_PCIE 0
+ #define TEGRA_XUSB_PADCTL_SATA 1
++#define TEGRA_XUSB_PADCTL_USB3_P0 2
++#define TEGRA_XUSB_PADCTL_USB3_P1 3
++#define TEGRA_XUSB_PADCTL_UTMI_P0 4
++#define TEGRA_XUSB_PADCTL_UTMI_P1 5
++#define TEGRA_XUSB_PADCTL_UTMI_P2 6
++#define TEGRA_XUSB_PADCTL_HSIC_P0 7
++#define TEGRA_XUSB_PADCTL_HSIC_P1 8
++
++#define TEGRA_XUSB_PADCTL_PIN_OTG_0   0
++#define TEGRA_XUSB_PADCTL_PIN_OTG_1   1
++#define TEGRA_XUSB_PADCTL_PIN_OTG_2   2
++#define TEGRA_XUSB_PADCTL_PIN_ULPI_0  3
++#define TEGRA_XUSB_PADCTL_PIN_HSIC_0  4
++#define TEGRA_XUSB_PADCTL_PIN_HSIC_1  5
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_0  6
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_1  7
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_2  8
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_3  9
++#define TEGRA_XUSB_PADCTL_PIN_PCIE_4 10
++#define TEGRA_XUSB_PADCTL_PIN_SATA_0 11
+ 
+ #endif /* _DT_BINDINGS_PINCTRL_TEGRA_XUSB_H */
 -- 
 2.1.0.rc2.206.gedb03e5
 
