@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642AbaJ1R5p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:57:45 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36177 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684AbaJ1R5o (ORCPT
+	id S1753997AbaJ1R57 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:57:59 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51518 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752904AbaJ1R55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:57:44 -0400
-X-Originating-IP: 173.246.103.110
-Date: Tue, 28 Oct 2014 10:57:38 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, mingo@kernel.org
-Subject: Re: [PATCH 3/3] x86_64,vsyscall: Make vsyscall emulation configurable
-Message-ID: <20141028174629.GA2150@jtriplet-mobl1>
-References: <cover.1414516558.git.luto@amacapital.net>
- <6b0c9b0fc128de68634c730a5b1a80e1d085ad02.1414516558.git.luto@amacapital.net>
+	Tue, 28 Oct 2014 13:57:57 -0400
+Date: Tue, 28 Oct 2014 18:57:46 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Hansen <dave.hansen@intel.com>
+cc: Qiaowei Ren <qiaowei.ren@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH v9 05/12] x86, mpx: on-demand kernel allocation of bounds
+ tables
+In-Reply-To: <544FD5D4.4090404@intel.com>
+Message-ID: <alpine.DEB.2.11.1410281851390.5308@nanos>
+References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-6-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241257300.5308@nanos> <544FD5D4.4090404@intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6b0c9b0fc128de68634c730a5b1a80e1d085ad02.1414516558.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 10:22:28AM -0700, Andy Lutomirski wrote:
-> This adds CONFIG_X86_VSYSCALL_EMULATION, guarded by CONFIG_EXPERT.
-> Turning it off completely disables vsyscall emulation, saving ~3.5k
-> for vsyscall_64.c, 4k for vsyscall_emu_64.S (the fake vsyscall
-> page), some tiny amount of core mm code that supports a gate area,
-> and possibly 4k for a wasted pagetable.  The latter is because the
-> vsyscall addresses are misaligned and fit poorly in the fixmap.
+On Tue, 28 Oct 2014, Dave Hansen wrote:
+
+> On 10/24/2014 05:08 AM, Thomas Gleixner wrote:
+> > On Sun, 12 Oct 2014, Qiaowei Ren wrote:
+> >> +	/*
+> >> +	 * Go poke the address of the new bounds table in to the
+> >> +	 * bounds directory entry out in userspace memory.  Note:
+> >> +	 * we may race with another CPU instantiating the same table.
+> >> +	 * In that case the cmpxchg will see an unexpected
+> >> +	 * 'actual_old_val'.
+> >> +	 */
+> >> +	ret = user_atomic_cmpxchg_inatomic(&actual_old_val, bd_entry,
+> >> +					   expected_old_val, bt_addr);
+> > 
+> > This is fully preemptible non-atomic context, right?
+> > 
+> > So this wants a proper comment, why using
+> > user_atomic_cmpxchg_inatomic() is the right thing to do here.
 > 
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> Hey Thomas,
+> 
+> How's this for a new comment?  Does this cover the points you think need
+> clarified?
+> 
+> ====
+> 
+> The kernel has allocated a bounds table and needs to point the
+> (userspace-allocated) directory to it.  The directory entry is the
+> *only* place we track that this table was allocated, so we essentially
+> use it instead of an kernel data structure for synchronization.  A
+> copy_to_user()-style function would not give us the atomicity that we need.
+> 
+> If two threads race to instantiate a table, the cmpxchg ensures we know
+> which one lost the race and that the loser frees the table that they
+> just allocated.
 
-One minor nit below, but with or without that change,
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Yup. That explains the cmpxchg.
 
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1456,11 +1456,13 @@ static int xen_pgd_alloc(struct mm_struct *mm)
->  		user_pgd = (pgd_t *)__get_free_page(GFP_KERNEL | __GFP_ZERO);
->  		page->private = (unsigned long)user_pgd;
->  
-> +#ifdef CONFIG_X86_VSYSCALL_EMULATION
->  		if (user_pgd != NULL) {
->  			user_pgd[pgd_index(VSYSCALL_ADDR)] =
->  				__pgd(__pa(level3_user_vsyscall) | _PAGE_TABLE);
->  			ret = 0;
->  		}
-> +#endif
+The other thing which puzzled me was that it calls
+user_atomic_cmpxchg_inatomic() but the context is not atomic at
+all. Its fully preemptible and actually we want it to be able to
+handle the fault. The implementation does that, just the function
+itself suggest something different.
+ 
+Thanks,
 
-Could you instead make the if use IS_ENABLED?
-
-		if (IS_ENABLED(CONFIG_X86_VSYSCALL_EMULATION) && user_pgd != NULL)
-
-That has the advantage of ensuring that the code continues to compile.
-(Given that you haven't removed level3_user_vsyscall, that should work.)
-
-- Josh Triplett
+	tglx
