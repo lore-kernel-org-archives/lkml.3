@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830AbaJ1Nen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:34:43 -0400
-Received: from mail.kernel.org ([198.145.19.201]:51798 "EHLO mail.kernel.org"
+	id S1754956AbaJ1Nfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:35:42 -0400
+Received: from mail.kernel.org ([198.145.19.201]:51928 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752087AbaJ1Nel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:34:41 -0400
+	id S1754854AbaJ1Nez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:34:55 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Hemant Kumar <hemant@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 27/32] perf tools: Fix report -F dso_from for data without branch info
-Date: Tue, 28 Oct 2014 11:32:21 -0200
-Message-Id: <1414503146-22789-28-git-send-email-acme@kernel.org>
+Subject: [PATCH 31/32] perf probe: Trivial typo fix for --demangle
+Date: Tue, 28 Oct 2014 11:32:25 -0200
+Message-Id: <1414503146-22789-32-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414503146-22789-1-git-send-email-acme@kernel.org>
 References: <1414503146-22789-1-git-send-email-acme@kernel.org>
@@ -26,62 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@kernel.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-The branch field sorting code assumes hist_entry::branch_info is
-allocated, which is wrong and following perf session ends up with report
-segfault.
+Replace "Disable" with "Enable", since --demangle option enables symbol
+demangling, not disable it.
 
-  $ perf record ls
-  $ perf report -F dso_from
-  perf: Segmentation fault
+perf probe has --demangle and --no-demangle options, but the
+command-line help (--help) shows only --demangle option. So it should
+explain about --demangle.
 
-Checking that hist_entry::branch_info is valid and display "N/A" string
-in snprint callback if it's not.
-
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1413468427-31049-8-git-send-email-jolsa@kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/20141027203124.21219.68278.stgit@localhost.localdomain
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/sort.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ tools/perf/builtin-probe.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 7a9054a23c36..9402885a77f3 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -373,6 +373,9 @@ struct sort_entry sort_cpu = {
- static int64_t
- sort__dso_from_cmp(struct hist_entry *left, struct hist_entry *right)
- {
-+	if (!left->branch_info || !right->branch_info)
-+		return cmp_null(left->branch_info, right->branch_info);
-+
- 	return _sort__dso_cmp(left->branch_info->from.map,
- 			      right->branch_info->from.map);
- }
-@@ -380,8 +383,11 @@ sort__dso_from_cmp(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__dso_from_snprintf(struct hist_entry *he, char *bf,
- 				    size_t size, unsigned int width)
- {
--	return _hist_entry__dso_snprintf(he->branch_info->from.map,
--					 bf, size, width);
-+	if (he->branch_info)
-+		return _hist_entry__dso_snprintf(he->branch_info->from.map,
-+						 bf, size, width);
-+	else
-+		return repsep_snprintf(bf, size, "%-*.*s", width, width, "N/A");
- }
- 
- static int64_t
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 23d6e7f03cf1..2d3577d1009d 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -375,7 +375,7 @@ __cmd_probe(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK('x', "exec", NULL, "executable|path",
+ 			"target executable name or path", opt_set_target),
+ 	OPT_BOOLEAN(0, "demangle", &symbol_conf.demangle,
+-		    "Disable symbol demangling"),
++		    "Enable symbol demangling"),
+ 	OPT_BOOLEAN(0, "demangle-kernel", &symbol_conf.demangle_kernel,
+ 		    "Enable kernel symbol demangling"),
+ 	OPT_END()
 -- 
 1.9.3
 
