@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208AbaJ1MMJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:12:09 -0400
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:49660 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798AbaJ1MMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:12:07 -0400
-Date: Tue, 28 Oct 2014 12:11:55 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Clark <robdclark@gmail.com>
-Subject: Re: [PATCH v2 2/3] ARM: vfp: Fix VFPv3 hwcap detection on CPUID
- based cpus
-Message-ID: <20141028121154.GA12136@arm.com>
-References: <1413294539-22069-1-git-send-email-sboyd@codeaurora.org>
- <1413294539-22069-3-git-send-email-sboyd@codeaurora.org>
- <20141027103118.GA8768@arm.com>
- <544EA212.7030401@codeaurora.org>
+	id S1753668AbaJ1MNE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:13:04 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47493 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700AbaJ1MNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:13:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,802,1406617200"; 
+   d="scan'208";a="597602675"
+From: Andi Kleen <andi@firstfloor.org>
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <lliubbo@gmail.com>, David Rientjes <rientjes@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Kees Cook <keescook@chromium.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
+References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
+Date: Tue, 28 Oct 2014 05:12:26 -0700
+In-Reply-To: <1414032567-109765-1-git-send-email-athorlton@sgi.com> (Alex
+	Thorlton's message of "Wed, 22 Oct 2014 21:49:23 -0500")
+Message-ID: <87lho0pf4l.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544EA212.7030401@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 07:50:42PM +0000, Stephen Boyd wrote:
-> On 10/27/2014 03:31 AM, Will Deacon wrote:
-> > On Tue, Oct 14, 2014 at 02:48:58PM +0100, Stephen Boyd wrote:
-> >> If the CPU is using CPUID scheme, use the MVFR registers to
-> >> determine what version of VFP is supported. We already do this
-> >> for VFPv4, so do something similar for VFPv3 and look for single
-> >> or double precision support in MVFR0. Otherwise fall back to
-> >> using FPSID to detect VFP suppport on non-CPUID scheme CPUs. We
-> >> know that VFPv3 is only present in CPUs that have support for the
-> >> CPUID scheme so this should be equivalent.
-> > This looks correct to me, but it raises a bigger question about the
-> > suitability of hwcaps for describing features of the instruction set.
-> 
-> Great. Can I get your reviewed-by on this patch please?
+Alex Thorlton <athorlton@sgi.com> writes:
 
-Sure. There's a spelling mistake ("arhitecture") which you should fix,
-but the code looks ok.
+> Last week, while discussing possible fixes for some unexpected/unwanted behavior
+> from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
+> mentioned possibly changing changing khugepaged to work as a task_work function
+> instead of a kernel thread.  This will give us finer grained control over the
+> page collapse scans, eliminate some unnecessary scans since tasks that are
+> relatively inactive will not be scanned often, and eliminate the unwanted
+> behavior described in the email thread I mentioned.
 
-> > With the extended CPUID scheme, there are a whole bunch of different
-> > instruction set features that are reported and bundling arbitrary subsets of
-> > them into hwcaps such as `VFPv4' doesn't feel like the right thing to do in
-> > the long run. It also doesn't seem to match where the architecture is going.
-> >
-> > Perhaps it would be better to consider exposing the ID registers to
-> > userspace in some manner? This could be done either via an undef handler, or
-> > using the vdso. We would add a (final) hwcap advertising this cpuid support.
-> > For big/little systems, the kernel would need to expose a suitable subset of
-> > the features (we already have the sanity checking code from Rutland).
-> >
-> > I'd certainly like to explore that route for arm64, before we start adding a
-> > bunch of fine-grained capabilities.
-> 
-> I have an RFC for the undef handler written up, except for the
-> big/little thing. Let me post it. Is there anyone from the userspace
-> side that can be on Cc?
+With your change, what would happen in a single threaded case?
 
-Off the top of my head:
+Previously one core would scan and another would run the workload.
+With your change both scanning and running would be on the same
+core.
 
-  Mans Rullgard (already replied to this thread)
-  Peter Maydell <peter.maydell@linaro.org> [QEMU]
-  Jacob Bramley <jacob.bramley@arm.com> [JITs]
-  Kyrylo Tkachov <kyrylo.tkachov@arm.com> [GCC]
+Would seem like a step backwards to me.
 
-(CC Rutland for the big/little bits too)
+-Andi
 
-Will
+-- 
+ak@linux.intel.com -- Speaking for myself only
