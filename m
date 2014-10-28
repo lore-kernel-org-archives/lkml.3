@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbaJ1NCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 09:02:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37433 "EHLO mx1.redhat.com"
+	id S1752583AbaJ1NDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 09:03:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46169 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853AbaJ1NCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 09:02:14 -0400
-Message-ID: <544F9302.4010001@redhat.com>
-Date: Tue, 28 Oct 2014 08:58:42 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1751062AbaJ1NDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 09:03:10 -0400
+Message-ID: <544F940B.8090707@suse.com>
+Date: Tue, 28 Oct 2014 14:03:07 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>, Alex Thorlton <athorlton@sgi.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <lliubbo@gmail.com>, David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vladimir Davydov <vdavydov@parallels.com>,
+To: Andrew Cooper <andrew.cooper3@citrix.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+CC: boris.ostrovsky@oracle.com, xen-devel@lists.xensource.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
-References: <1414032567-109765-1-git-send-email-athorlton@sgi.com> <87lho0pf4l.fsf@tassilo.jf.intel.com>
-In-Reply-To: <87lho0pf4l.fsf@tassilo.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [Xen-devel] [PATCH 0/2] xen: Switch to virtual mapped linear
+ p2m list
+References: <1414421551-31555-1-git-send-email-jgross@suse.com>	<544E61DD.8050305@citrix.com>	<544F22E4.9040706@suse.com> <1414489898.23883.25.camel@citrix.com> <544F83C1.3010402@citrix.com> <544F8713.9040803@suse.com> <544F8E89.6070006@citrix.com> <544F8F3A.3030505@citrix.com> <544F8FBB.2010709@citrix.com> <544F902C.8040502@citrix.com>
+In-Reply-To: <544F902C.8040502@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 08:12 AM, Andi Kleen wrote:
-> Alex Thorlton <athorlton@sgi.com> writes:
-> 
->> Last week, while discussing possible fixes for some unexpected/unwanted behavior
->> from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
->> mentioned possibly changing changing khugepaged to work as a task_work function
->> instead of a kernel thread.  This will give us finer grained control over the
->> page collapse scans, eliminate some unnecessary scans since tasks that are
->> relatively inactive will not be scanned often, and eliminate the unwanted
->> behavior described in the email thread I mentioned.
-> 
-> With your change, what would happen in a single threaded case?
-> 
-> Previously one core would scan and another would run the workload.
-> With your change both scanning and running would be on the same
-> core.
-> 
-> Would seem like a step backwards to me.
+On 10/28/2014 01:46 PM, Andrew Cooper wrote:
+> On 28/10/14 12:44, David Vrabel wrote:
+>> On 28/10/14 12:42, Andrew Cooper wrote:
+>>> On 28/10/14 12:39, David Vrabel wrote:
+>>>> On 28/10/14 12:07, Juergen Gross wrote:
+>>>>> Okay, back to the original question: is the (up to) 64 MB virtual
+>>>>> mapping of the p2m list on 32-bit pv domains a problem or not?
+>>>> I think up-to 64 MiB of vmalloc area is fine.  The vmalloc space can be
+>>>> increased with a command line option in the unlikely event that there
+>>>> are domUs that would be affected.
+>>>>
+>>>>> If yes, the virtual mapped linear p2m list could still be used on
+>>>>> 64 bit domains, paving the way for support of more than 512 GB of
+>>>>> domain memory. OTOH having to keep the p2m tree coding alive isn't
+>>>>> my favorite solution...
+>>>> Having to keep both the tree and linear p2m code would be awful.  Let's
+>>>> not do this!
+>>>>
+>>>> David
+>>> How is the toolstack expected to find and mutate this p2m on migrate?
+>>> The toolstack does not use guest pagetables.
+>> The p2m code maintains two trees.  One for use by the guest and one for
+>> use by the toolstack.  This series replaces the first tree with the
+>> linear array (at least that's how I understand it -- I've not reviewed
+>> the series in detail yet).
+>
+> Ah - fine (if that is how it works).
 
-It's not just scanning, either.
+That's the plan, yes.
 
-Memory compaction can spend a lot of time waiting on
-locks. Not consuming CPU or anything, but just waiting.
 
-I am not convinced that moving all that waiting to task
-context is a good idea.
+Juergen
 
