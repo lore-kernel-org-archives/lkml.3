@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953AbaJ1HUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:20:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45180 "EHLO
+	id S932367AbaJ1Dnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:43:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45169 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343AbaJ1Dni (ORCPT
+	with ESMTP id S1755304AbaJ1Dnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:43:38 -0400
+	Mon, 27 Oct 2014 23:43:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olga Kornievskaia <kolga@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.16 045/127] Fixing lease renewal
-Date: Tue, 28 Oct 2014 11:34:40 +0800
-Message-Id: <20141028033422.871879820@linuxfoundation.org>
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: [PATCH 3.16 042/127] Drivers: hv: vmbus: Cleanup hv_post_message()
+Date: Tue, 28 Oct 2014 11:34:37 +0800
+Message-Id: <20141028033422.751280272@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,34 +29,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olga Kornievskaia <kolga@netapp.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit 8faaa6d5d48b201527e0451296d9e71d23afb362 upstream.
+commit b29ef3546aecb253a5552b198cef23750d56e1e4 upstream.
 
-Commit c9fdeb28 removed a 'continue' after checking if the lease needs
-to be renewed. However, if client hasn't moved, the code falls down to
-starting reboot recovery erroneously (ie., sends open reclaim and gets
-back stale_clientid error) before recovering from getting stale_clientid
-on the renew operation.
+Minimize failures in this function by pre-allocating the buffer
+for posting messages. The hypercall for posting the message can fail
+for a number of reasons:
 
-Signed-off-by: Olga Kornievskaia <kolga@netapp.com>
-Fixes: c9fdeb280b8c (NFS: Add basic migration support to state manager thread)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+        1. Transient resource related issues
+        2. Buffer alignment
+        3. Buffer cannot span a page boundry
+
+We address issues 2 and 3 by preallocating a per-cpu page for the buffer.
+Transient resource related failures are handled by retrying by the callers
+of this function.
+
+This patch is based on the investigation
+done by Dexuan Cui <decui@microsoft.com>.
+
+I would like to thank Sitsofe Wheeler <sitsofe@yahoo.com>
+for reporting the issue and helping in debuggging.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4state.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/hv/hv.c           |   27 +++++++++++++++------------
+ drivers/hv/hyperv_vmbus.h |    4 ++++
+ 2 files changed, 19 insertions(+), 12 deletions(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -2372,6 +2372,7 @@ static void nfs4_state_manager(struct nf
- 			status = nfs4_check_lease(clp);
- 			if (status < 0)
- 				goto out_error;
-+			continue;
- 		}
+--- a/drivers/hv/hv.c
++++ b/drivers/hv/hv.c
+@@ -138,6 +138,8 @@ int hv_init(void)
+ 	memset(hv_context.synic_event_page, 0, sizeof(void *) * NR_CPUS);
+ 	memset(hv_context.synic_message_page, 0,
+ 	       sizeof(void *) * NR_CPUS);
++	memset(hv_context.post_msg_page, 0,
++	       sizeof(void *) * NR_CPUS);
+ 	memset(hv_context.vp_index, 0,
+ 	       sizeof(int) * NR_CPUS);
+ 	memset(hv_context.event_dpc, 0,
+@@ -217,26 +219,18 @@ int hv_post_message(union hv_connection_
+ 		  enum hv_message_type message_type,
+ 		  void *payload, size_t payload_size)
+ {
+-	struct aligned_input {
+-		u64 alignment8;
+-		struct hv_input_post_message msg;
+-	};
  
- 		if (test_and_clear_bit(NFS4CLNT_MOVED, &clp->cl_state)) {
+ 	struct hv_input_post_message *aligned_msg;
+ 	u16 status;
+-	unsigned long addr;
+ 
+ 	if (payload_size > HV_MESSAGE_PAYLOAD_BYTE_COUNT)
+ 		return -EMSGSIZE;
+ 
+-	addr = (unsigned long)kmalloc(sizeof(struct aligned_input), GFP_ATOMIC);
+-	if (!addr)
+-		return -ENOMEM;
+-
+ 	aligned_msg = (struct hv_input_post_message *)
+-			(ALIGN(addr, HV_HYPERCALL_PARAM_ALIGN));
++			hv_context.post_msg_page[get_cpu()];
+ 
+ 	aligned_msg->connectionid = connection_id;
++	aligned_msg->reserved = 0;
+ 	aligned_msg->message_type = message_type;
+ 	aligned_msg->payload_size = payload_size;
+ 	memcpy((void *)aligned_msg->payload, payload, payload_size);
+@@ -244,8 +238,7 @@ int hv_post_message(union hv_connection_
+ 	status = do_hypercall(HVCALL_POST_MESSAGE, aligned_msg, NULL)
+ 		& 0xFFFF;
+ 
+-	kfree((void *)addr);
+-
++	put_cpu();
+ 	return status;
+ }
+ 
+@@ -294,6 +287,14 @@ int hv_synic_alloc(void)
+ 			pr_err("Unable to allocate SYNIC event page\n");
+ 			goto err;
+ 		}
++
++		hv_context.post_msg_page[cpu] =
++			(void *)get_zeroed_page(GFP_ATOMIC);
++
++		if (hv_context.post_msg_page[cpu] == NULL) {
++			pr_err("Unable to allocate post msg page\n");
++			goto err;
++		}
+ 	}
+ 
+ 	return 0;
+@@ -308,6 +309,8 @@ static void hv_synic_free_cpu(int cpu)
+ 		free_page((unsigned long)hv_context.synic_event_page[cpu]);
+ 	if (hv_context.synic_message_page[cpu])
+ 		free_page((unsigned long)hv_context.synic_message_page[cpu]);
++	if (hv_context.post_msg_page[cpu])
++		free_page((unsigned long)hv_context.post_msg_page[cpu]);
+ }
+ 
+ void hv_synic_free(void)
+--- a/drivers/hv/hyperv_vmbus.h
++++ b/drivers/hv/hyperv_vmbus.h
+@@ -515,6 +515,10 @@ struct hv_context {
+ 	 * per-cpu list of the channels based on their CPU affinity.
+ 	 */
+ 	struct list_head percpu_list[NR_CPUS];
++	/*
++	 * buffer to post messages to the host.
++	 */
++	void *post_msg_page[NR_CPUS];
+ };
+ 
+ extern struct hv_context hv_context;
 
 
