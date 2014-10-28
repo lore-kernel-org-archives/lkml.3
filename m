@@ -1,130 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429AbaJ1HBI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 03:01:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45536 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932645AbaJ1Dqn (ORCPT
+	id S1760487AbaJ1HBg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:01:36 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:64038 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757445AbaJ1HBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:46:43 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        sparclinux@vger.kernel.org, Bob Picco <bob.picco@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.16 102/127] sparc64: find_node adjustment
-Date: Tue, 28 Oct 2014 11:35:37 +0800
-Message-Id: <20141028033425.301155371@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
-References: <20141028033420.925922046@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Tue, 28 Oct 2014 03:01:33 -0400
 MIME-Version: 1.0
+In-Reply-To: <1414054881-17713-3-git-send-email-daniel.lezcano@linaro.org>
+References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org>
+	<1414054881-17713-3-git-send-email-daniel.lezcano@linaro.org>
+Date: Tue, 28 Oct 2014 12:31:33 +0530
+Message-ID: <CAM4v1pO9e7r10KX=D=9aVTV_ecvPa-aJOoB6PAwR5jxMS3eg4w@mail.gmail.com>
+Subject: Re: [PATCH V2 3/5] cpuidle: idle: menu: Don't reflect when a state
+ selection failed
+From: Preeti Murthy <preeti.lkml@gmail.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        patches@linaro.org, Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Oct 23, 2014 at 2:31 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> In the current code, the check to reflect or not the outcoming state is done
+> against the idle state which has been chosen and its value.
+>
+> Instead of doing a check in each of the reflect functions, just don't call reflect
+> if something went wrong in the idle path.
+>
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Acked-by: Nicolas Pitre <nico@linaro.org>
+> ---
+>  drivers/cpuidle/governors/ladder.c | 3 +--
+>  drivers/cpuidle/governors/menu.c   | 4 +---
+>  kernel/sched/idle.c                | 3 ++-
+>  3 files changed, 4 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
+> index fb396d6..c0b36a8 100644
+> --- a/drivers/cpuidle/governors/ladder.c
+> +++ b/drivers/cpuidle/governors/ladder.c
+> @@ -165,8 +165,7 @@ static int ladder_enable_device(struct cpuidle_driver *drv,
+>  static void ladder_reflect(struct cpuidle_device *dev, int index)
+>  {
+>         struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
+> -       if (index > 0)
+> -               ldev->last_state_idx = index;
+> +       ldev->last_state_idx = index;
+>  }
+>
+>  static struct cpuidle_governor ladder_governor = {
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index a17515f..3907301 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -365,9 +365,7 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
+>  static void menu_reflect(struct cpuidle_device *dev, int index)
+>  {
+>         struct menu_device *data = &__get_cpu_var(menu_devices);
+> -       data->last_state_idx = index;
+> -       if (index >= 0)
+> -               data->needs_update = 1;
+> +       data->needs_update = 1;
 
-------------------
+Why is the last_state_idx not getting updated ?
 
-From: bob picco <bpicco@meloft.net>
-
-[ Upstream commit 3dee9df54836d5f844f3d58281d3f3e6331b467f ]
-
-We have seen an issue with guest boot into LDOM that causes early boot failures
-because of no matching rules for node identitity of the memory. I analyzed this
-on my T4 and concluded there might not be a solution. I saw the issue in
-mainline too when booting into the control/primary domain - with guests
-configured.  Note, this could be a firmware bug on some older machines.
-
-I'll provide a full explanation of the issues below. Should we not find a
-matching BEST latency group for a real address (RA) then we will assume node 0.
-On the T4-2 here with the information provided I can't see an alternative.
-
-Technically the LDOM shown below should match the MBLOCK to the
-favorable latency group. However other factors must be considered too. Were
-the memory controllers configured "fine" grained interleave or "coarse"
-grain interleaved -  T4. Also should a "group" MD node be considered a NUMA
-node?
-
-There has to be at least one Machine Description (MD) "group" and hence one
-NUMA node. The group can have one or more latency groups (lg) - more than one
-memory controller. The current code chooses the smallest latency as the most
-favorable per group. The latency and lg information is in MLGROUP below.
-MBLOCK is the base and size of the RAs for the machine as fetched from OBP
-/memory "available" property. My machine has one MBLOCK but more would be
-possible - with holes?
-
-For a T4-2 the following information has been gathered:
-with LDOM guest
-MEMBLOCK configuration:
- memory size = 0x27f870000
- memory.cnt  = 0x3
- memory[0x0]    [0x00000020400000-0x0000029fc67fff], 0x27f868000 bytes
- memory[0x1]    [0x0000029fd8a000-0x0000029fd8bfff], 0x2000 bytes
- memory[0x2]    [0x0000029fd92000-0x0000029fd97fff], 0x6000 bytes
- reserved.cnt  = 0x2
- reserved[0x0]  [0x00000020800000-0x000000216c15c0], 0xec15c1 bytes
- reserved[0x1]  [0x00000024800000-0x0000002c180c1e], 0x7980c1f bytes
-MBLOCK[0]: base[20000000] size[280000000] offset[0]
-(note: "base" and "size" reported in "MBLOCK" encompass the "memory[X]" values)
-(note: (RA + offset) & mask = val is the formula to detect a match for the
-memory controller. should there be no match for find_node node, a return
-value of -1 resulted for the node - BAD)
-
-There is one group. It has these forward links
-MLGROUP[1]: node[545] latency[1f7e8] match[200000000] mask[200000000]
-MLGROUP[2]: node[54d] latency[2de60] match[0] mask[200000000]
-NUMA NODE[0]: node[545] mask[200000000] val[200000000] (latency[1f7e8])
-(note: "val" is the best lg's (smallest latency) "match")
-
-no LDOM guest - bare metal
-MEMBLOCK configuration:
- memory size = 0xfdf2d0000
- memory.cnt  = 0x3
- memory[0x0]    [0x00000020400000-0x00000fff6adfff], 0xfdf2ae000 bytes
- memory[0x1]    [0x00000fff6d2000-0x00000fff6e7fff], 0x16000 bytes
- memory[0x2]    [0x00000fff766000-0x00000fff771fff], 0xc000 bytes
- reserved.cnt  = 0x2
- reserved[0x0]  [0x00000020800000-0x00000021a04580], 0x1204581 bytes
- reserved[0x1]  [0x00000024800000-0x0000002c7d29fc], 0x7fd29fd bytes
-MBLOCK[0]: base[20000000] size[fe0000000] offset[0]
-
-there are two groups
-group node[16d5]
-MLGROUP[0]: node[1765] latency[1f7e8] match[0] mask[200000000]
-MLGROUP[3]: node[177d] latency[2de60] match[200000000] mask[200000000]
-NUMA NODE[0]: node[1765] mask[200000000] val[0] (latency[1f7e8])
-group node[171d]
-MLGROUP[2]: node[1775] latency[2de60] match[0] mask[200000000]
-MLGROUP[1]: node[176d] latency[1f7e8] match[200000000] mask[200000000]
-NUMA NODE[1]: node[176d] mask[200000000] val[200000000] (latency[1f7e8])
-(note: for this two "group" bare metal machine, 1/2 memory is in group one's
-lg and 1/2 memory is in group two's lg).
-
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: Bob Picco <bob.picco@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/mm/init_64.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -839,7 +839,10 @@ static int find_node(unsigned long addr)
- 		if ((addr & p->mask) == p->val)
- 			return i;
- 	}
--	return -1;
-+	/* The following condition has been observed on LDOM guests.*/
-+	WARN_ONCE(1, "find_node: A physical address doesn't match a NUMA node"
-+		" rule. Some physical memory will be owned by node 0.");
-+	return 0;
- }
- 
- static u64 memblock_nid_range(u64 start, u64 end, int *nid)
-
-
+Regards
+Preeti U Murthy
