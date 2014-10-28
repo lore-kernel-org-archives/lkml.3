@@ -1,153 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207AbaJ1PA1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 11:00:27 -0400
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:56670 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738AbaJ1PAZ (ORCPT
+	id S1754584AbaJ1PBN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 11:01:13 -0400
+Received: from mout.kundenserver.de ([212.227.17.13]:61976 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345AbaJ1PBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 11:00:25 -0400
+	Tue, 28 Oct 2014 11:01:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, arm@kernel.org,
+        linux-kernel@vger.kernel.org, Xia Kaixu <kaixu.xia@linaro.org>
+Subject: Re: [PATCH v2 5/5] ARM: use early console instead of early debug in allmodconfig kernels
+Date: Tue, 28 Oct 2014 16:01:02 +0100
+Message-ID: <1974731.Nqyg6BoJOO@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141028143536.GI27405@n2100.arm.linux.org.uk>
+References: <1414503095-25986-1-git-send-email-kaixu.xia@linaro.org> <3063784.TXO37ZkrnY@wuerfel> <20141028143536.GI27405@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <544FA8E2.3050404@imgtec.com>
-References: <544F73CD.1010409@imgtec.com>
-	<CAAmzW4NdBNhsPtx1yw+drN+J=a23SS3yLkgQdvQx-Giokwxu-Q@mail.gmail.com>
-	<544F97D4.4030408@imgtec.com>
-	<544F991E.3070500@imgtec.com>
-	<CAAmzW4O6EFq-aaAi5gNFng1dhyXJdUmEMTR8meJfir=47iwmZw@mail.gmail.com>
-	<CAAmzW4M0Ca3iQni-RRVuh152bjA=oezTrK+OE6qjaNqmG0q9nA@mail.gmail.com>
-	<544FA8E2.3050404@imgtec.com>
-Date: Wed, 29 Oct 2014 00:00:25 +0900
-Message-ID: <CAAmzW4OGLgneoccpP1=H4XA0_eL0vtwPvWh49J9TnV1=FL-3jw@mail.gmail.com>
-Subject: Re: Boot problems on Malta with EVA (bisected to 12220dea07f1
- "mm/slab: support slab merge")
-From: Joonsoo Kim <js1304@gmail.com>
-To: Markos Chandras <Markos.Chandras@imgtec.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mips@linux-mips.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:1GSnHDx8JZnMc5z7LE8BeBHwyqhFbbLZxaJHKOIW0rp
+ iM/2VXkUSUoSsUgm9R5jar9JaDOfkOtjr+5mtZgXDVhuoJWXyt
+ n+1orNXtAOw9z8lEOSQjnOGmpzk3NtF2LH9kYhWpWcQ0QCUq8N
+ NRr7y7+FLoailT8ENH1vDecSiQ1WN8S5Y0yUxYz0ottF7pPbKK
+ WcVhnzGUA6XSH2vjM34d8TvwzAbOrU15jOj9E4bW6VtOy2mW7F
+ aSsppIMqyIeCCbCD7JUl/2R0O0JUYIostkCOmvKRD3B3FlRAll
+ wM6JIXtybtbDGNw9UCiiLZOmtY5g8AqosMdu5cCudxzPwacjoq
+ JY5U4GdGoyENgs68rUmY=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-10-28 23:32 GMT+09:00 Markos Chandras <Markos.Chandras@imgtec.com>:
-> On 10/28/2014 02:21 PM, Joonsoo Kim wrote:
->> 2014-10-28 22:48 GMT+09:00 Joonsoo Kim <js1304@gmail.com>:
->>> 2014-10-28 22:24 GMT+09:00 Markos Chandras <Markos.Chandras@imgtec.com>:
->>>> On 10/28/2014 01:19 PM, Markos Chandras wrote:
->>>>> On 10/28/2014 01:01 PM, Joonsoo Kim wrote:
->>>>>> 2014-10-28 19:45 GMT+09:00 Markos Chandras <Markos.Chandras@imgtec.com>:
->>>>>>> Hi,
->>>>>>>
->>>>>>> It seems I am unable to boot my Malta with EVA. The problem appeared in
->>>>>>> the 3.18 merge window. I bisected the problem (between v3.17 and
->>>>>>> v3.18-rc1) and I found the following commit responsible for the broken boot.
->>>>>>
->>>>>> Hello,
->>>>>>
->>>>>> Did you start to bisect from v3.18-rc1?
->>>>>> I'd like to be sure that this is another bug which is fixed by following commit.
->>>>>>
->>>>>> commit 85c9f4b04a08f6bc770b77530c22d04103468b8f
->>>>>> Author: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->>>>>> Date:   Mon Oct 13 15:51:01 2014 -0700
->>>>>>
->>>>>>     mm/slab: fix unaligned access on sparc64
->>>>>>
->>>>>> This fix is merged into v3.18-rc1 sometime later that
->>>>>> 'support slab merge' is merged.
->>>>>>
->>>>>> Thanks.
->>>>>>
->>>>> Hi,
->>>>>
->>>>> I bisected from v3.17 until 3.18-rc1. But 3.18-rc2 and the latest
->>>>> mainline (f7e87a44ef60ad379e39b45437604141453bf0ec) still have the same
->>>>> problem
->>>>>
->>>>> btw i did more tests and this is not EVA specific. A maltaup_defconfig
->>>>> fails in the same way. I suspect all malta*_defconfigs will fail in a
->>>>> similar way which makes it probably easier for you to reproduce it on a
->>>>> QEMU.
->>>>>
->>>>
->>>> sorry maltaup_defconfig does not fail. maltasmvp_defconfig does. So it
->>>> might be a similar problem like the one fixed in
->>>> 85c9f4b04a08f6bc770b77530c22d04103468b8f
->>>
->>> Oops. Sorry. Above commit ('mm/slab: fix unaligned access on sparc64')
->>> is irrelevant to this problem.
->>>
->>> Anyway, your problem would be related to merging with incompatible slab cache.
->>> Best way to debug is printing source/target slab cache's object size and
->>> alignment and find the problem. I will try to reproduce it using QEMU.
->>
->> I found that cross compile for MIPS isn't easy job. :)
+On Tuesday 28 October 2014 14:35:36 Russell King - ARM Linux wrote:
+> On Tue, Oct 28, 2014 at 03:29:01PM +0100, Arnd Bergmann wrote:
+> > On Tuesday 28 October 2014 14:05:36 Russell King - ARM Linux wrote:
+> > > On Tue, Oct 28, 2014 at 09:31:35PM +0800, Xia Kaixu wrote:
+> > > > The early debug could break something when booting 'allmodconfig'
+> > > > kernels. So we use early console instead of early debug.
+> > > > 
+> > > > The early console didn't work yet on OMAP4460 because of missing
+> > > > earlycon support and I am working on that.
+> > > 
+> > > No. bloody. way.
+> > > 
+> > > > @@ -78,7 +78,7 @@ config DEBUG_USER
+> > > >  # These options are only for real kernel hackers who want to get their hands dirty.
+> > > >  config DEBUG_LL
+> > > >       bool "Kernel low-level debugging functions (read help!)"
+> > > > -     depends on DEBUG_KERNEL
+> > > > +     depends on DEBUG_KERNEL && !ARCH_MULTIPLATFORM_STRICT
+> > > 
+> > > Firstly, this is well advertised that it can only be applied to a single
+> > > configuration.  So I don't think we need this dependency here.  Even if
+> > > you want to build a strict multiplatform kernel, it should still be
+> > > possible to enable this for a specific platform.
+> > 
+> > I've asked Kaixu to do this patch. This is one of the most fundamental
+> > uses of ARCH_MULTIPLATFORM_STRICT: as soon as you turn on DEBUG_LL, the
+> > kernel no longer runs on any other platform, so it can still be built
+> > as a multiplatform kernel, but not a "strict" one that is known to
+> > work on all hardware that is enabled.
+> 
+> No, that is not correct.  You can turn on DEBUG_LL, and a multiplatform
+> kernel will still run.
+> 
+> The point at which it won't run is if you call the DEBUG_LL function on
+> a platform it wasn't configured for.  That happens if you start using
+> the printascii() et.al. functions, or (against my better judgement) the
+> early console support is enabled.
 >
-> You could grab the following toolchain
->
-> https://sourcery.mentor.com/GNUToolchain/release2791
->
-> (get the IA32 linux tar)
->
-> unpack it somewhere (eg /tmp) and then
->
-> make ARCH=mips maltasmvp_defconfig
-> make ARCH=mips CROSS_COMPILE=/tmp/mips-2014.05/bin/mips-linux-gnu- -j8
-> or something :)
+> So, as the early console support went against my wishes there, I see
+> this problem as more of an early console problem than a DEBUG_LL problem.
 
-Wow!! Really Thanks!
-I will try it.
+Good point, yes.
 
->> Could you help me to debug the problem with below patch?
->
-> (there are a few build warnings with your patch
-> mm/slab.c:2065:4: warning: format '%lu' expects argument of type 'long
-> unsigned int', but argument 5 has type 'size_t' [-Wformat=]
-> mm/slab.c:2065:4: warning: format '%lu' expects argument of type 'long
-> unsigned int', but argument 7 has type 'unsigned int' [-Wformat=]
-> mm/slab.c:2065:4: warning: format '%lu' expects argument of type 'long
-> unsigned int', but argument 8 has type 'int' [-Wformat=]
-> mm/slab.c:2065:4: warning: format '%lu' expects argument of type 'long
-> unsigned int', but argument 9 has type 'int' [-Wformat=]
-> )
->
-> but here is the output from a QEMU boot right before the crash
->
-> CPU frequency 200.00 MHz
-> Calibrating delay loop... 1087.89 BogoMIPS (lpj=5439488)
-> pid_max: default: 32768 minimum: 301
-> __kmem_cache_alias: (cred_jar 92 0) to (kmalloc-128 128 128 128)
-> __kmem_cache_alias: (files_cache 256 0) to (kmalloc-256 256 128 256)
-> __kmem_cache_alias: (fs_cache 36 0) to (pid 64 64 44)
-> __kmem_cache_alias: (names_cache 4096 0) to (kmalloc-4096 4096 128 4096)
-> __kmem_cache_alias: (mnt_cache 160 0) to (filp 192 64 160)
-> Mount-cache hash table entries: 4096 (order: 0, 16384 bytes)
-> Mountpoint-cache hash table entries: 4096 (order: 0, 16384 bytes)
-> __kmem_cache_alias: (pool_workqueue 256 256) to (kmalloc-256 256 128 256)
+What about DEBUG_UNCOMPRESS then? It is currently defined as
 
-alignment is mismatch between pool_workqueue and kmalloc-256,
-but, slab caches are merged, because they have same object size.
-Perhaps, slab cache for pool_workqueue returns 128 byte aligned memory
-and workqueue can't work well with it.
+config DEBUG_UNCOMPRESS
+        bool
+        depends on ARCH_MULTIPLATFORM || ARCH_MSM || PLAT_SAMSUNG
+        default y if DEBUG_LL && !DEBUG_OMAP2PLUS_UART && \
+                     (!DEBUG_TEGRA_UART || !ZBOOT_ROM)
 
-Quick fix may be something like below, but, I will try it on QEMU MIPS.
+so it will be turned on implicitly when DEBUG_LL is set on a
+multiplatform kernel. Doesn't that cause an external abort or similar
+as soon as you start writing to some random physical address from the
+decompressor when running on the wrong platform?
 
-Thanks.
-
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 3a6e0cf..d57b1a2 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -269,6 +269,9 @@ struct kmem_cache *find_mergeable(size_t size, size_t align,
-                if (s->size - size >= sizeof(void *))
-                        continue;
-
-+               if (align > s->align)
-+                       continue;
-+
-                return s;
-        }
-        return NULL;
+	Arnd
