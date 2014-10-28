@@ -1,46 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638AbaJ1On1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 10:43:27 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:55434 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468AbaJ1OnY (ORCPT
+	id S1754439AbaJ1Ooj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 10:44:39 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36408 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198AbaJ1Ooh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 10:43:24 -0400
+	Tue, 28 Oct 2014 10:44:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <1414499805.2406.6.camel@hadess.net>
-References: <1413881397.30379.7.camel@hadess.net>
-	<CANcMJZA=7FNNCrMpz-mC4FaJMKi8hEhqGtO_bv7iJdWVC_GpWA@mail.gmail.com>
-	<1413911644.30379.12.camel@hadess.net>
-	<CALAqxLURBHdrprCZzUiXdO6M7sjbwawxyDQpoG1-HWRGBvaMjg@mail.gmail.com>
-	<1413914978.30379.14.camel@hadess.net>
-	<20141022170433.GA10186@hungrycats.org>
-	<1414420084.30379.53.camel@hadess.net>
-	<20141027205936.GE17380@hungrycats.org>
-	<1414499805.2406.6.camel@hadess.net>
-Date: Tue, 28 Oct 2014 07:36:24 -0700
-Message-ID: <CALAqxLUdkpwg=+Fcz+BKTAb1uzYbeSU0M6o5FcZGOD8X37Dfzw@mail.gmail.com>
-Subject: Re: A desktop environment[1] kernel wishlist
-From: John Stultz <john.stultz@linaro.org>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: Zygo Blaxell <zblaxell@furryterror.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1413472164-22366-1-git-send-email-standby24x7@gmail.com>
+References: <1413472164-22366-1-git-send-email-standby24x7@gmail.com>
+Date: Tue, 28 Oct 2014 15:44:37 +0100
+Message-ID: <CACRpkdbALMZvLT+h1YswhsBWdYU-MY-eCVPndWndbARCoaF7gg@mail.gmail.com>
+Subject: Re: [PATCH] [trivial] treewide: Fix company name in module descriptions
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jiri Kosina <trivial@kernel.org>, Alexandre Courbot <gnurou@gmail.com>,
+        jcliburn@gmail.com, chris.snook@gmail.com,
+        Viresh Kumar <viresh.linux@gmail.com>, inki.dae@samsung.com,
+        leedonghwa <dh09.lee@samsung.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 5:36 AM, Bastien Nocera <hadess@hadess.net> wrote:
-> Maybe the wake-up reason isn't good enough on its own, but how do I know
-> which one the possible wake-up reasons was the last one to trigger?
+On Thu, Oct 16, 2014 at 5:09 PM, Masanari Iida <standby24x7@gmail.com> wrote:
 
-So I feel like I'm still missing why its so critical to know what the
-last-event was?  To me it seems a number of events have occurred, and
-they should all be processed. Since they're all asynchronous, they
-could come in any order, so it seems best handle them one by one
-rather then have any requirement on which one happened last.
+> This patch fix company name's spelling typo in module descriptions
+> and a Kconfig.
+>
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-What does the exact timeline of the events provide for you?
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-thanks
--john
+Yours,
+Linus Walleij
