@@ -1,336 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaJ1Xqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 19:46:43 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:58079 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641AbaJ1Xql (ORCPT
+	id S1753337AbaJ1Xwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 19:52:34 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:46734 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbaJ1Xwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 19:46:41 -0400
-Date: Tue, 28 Oct 2014 18:44:31 -0500
-From: Eric Rost <eric.rost@mybabylon.net>
-To: gregkh@linuxfoundation.org, jason@lakedaemon.net, jake@lwn.net,
-        antonysaraev@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/1] staging: skein: Removes skein_debug include
-Message-ID: <20141028234431.GA16606@localhost>
+	Tue, 28 Oct 2014 19:52:32 -0400
+X-Original-SENDERIP: 10.178.30.169
+X-Original-MAILFROM: hankyung.yu@lge.com
+From: =?ks_c_5601-1987?B?wK/H0bDm?= <hankyung.yu@lge.com>
+To: "'Jaehoon Chung'" <jh80.chung@samsung.com>,
+        "'Chanho Min'" <chanho.min@lge.com>, "'Chris Ball'" <chris@printf.net>,
+        "'Ulf Hansson'" <ulf.hansson@linaro.org>,
+        "'Seungwon Jeon'" <tgih.jun@samsung.com>
+Cc: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "'HyoJun Im'" <hyojun.im@lge.com>, <gunho.lee@lge.com>,
+        "'CPGS'" <cpgs@samsung.com>
+References: <1413946555-1266-1-git-send-email-chanho.min@lge.com> <544F1DB3.9050204@samsung.com>
+In-Reply-To: <544F1DB3.9050204@samsung.com>
+Subject: RE: [PATCH] mmc:core: fix hs400 timing selection
+Date: Wed, 29 Oct 2014 08:52:30 +0900
+Message-ID: <00b601cff30a$3c57e710$b507b530$@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain;
+	charset="ks_c_5601-1987"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQJgI7CSBWg4GKXd5yLJVzam1HpizQGEUuZimxmpfXA=
+Content-Language: ko
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes skein_debug.h include since skein_debug.h is nonexistent.
-Removes unneeded debug empty macro defines and their uses.
+Hi I'm Hankyung Yu
 
-Signed-off-by: Eric Rost <eric.rost@mybabylon.net>
----
- drivers/staging/skein/skein_base.c  | 18 ------------------
- drivers/staging/skein/skein_base.h  | 17 -----------------
- drivers/staging/skein/skein_block.c | 30 +-----------------------------
- 3 files changed, 1 insertion(+), 64 deletions(-)
+I will answer instead Chanho Min
 
-diff --git a/drivers/staging/skein/skein_base.c b/drivers/staging/skein/skein_base.c
-index ebc436a..7e700a6 100644
---- a/drivers/staging/skein/skein_base.c
-+++ b/drivers/staging/skein/skein_base.c
-@@ -124,8 +124,6 @@ int skein_256_init_ext(struct skein_256_ctx *ctx, size_t hash_bit_len,
- 	/* tree hash config info (or SKEIN_CFG_TREE_INFO_SEQUENTIAL) */
- 	cfg.w[2] = skein_swap64(tree_info);
- 
--	skein_show_key(256, &ctx->h, key, key_bytes);
--
- 	/* compute the initial chaining values from config block */
- 	skein_256_process_block(ctx, cfg.b, 1, SKEIN_CFG_STR_LEN);
- 
-@@ -232,8 +230,6 @@ int skein_256_final(struct skein_256_ctx *ctx, u8 *hash_val)
- 		/* "output" the ctr mode bytes */
- 		skein_put64_lsb_first(hash_val+i*SKEIN_256_BLOCK_BYTES, ctx->x,
- 				      n);
--		skein_show_final(256, &ctx->h, n,
--				 hash_val+i*SKEIN_256_BLOCK_BYTES);
- 		/* restore the counter mode key for next time */
- 		memcpy(ctx->x, x, sizeof(x));
- 	}
-@@ -353,8 +349,6 @@ int skein_512_init_ext(struct skein_512_ctx *ctx, size_t hash_bit_len,
- 	/* tree hash config info (or SKEIN_CFG_TREE_INFO_SEQUENTIAL) */
- 	cfg.w[2] = skein_swap64(tree_info);
- 
--	skein_show_key(512, &ctx->h, key, key_bytes);
--
- 	/* compute the initial chaining values from config block */
- 	skein_512_process_block(ctx, cfg.b, 1, SKEIN_CFG_STR_LEN);
- 
-@@ -461,8 +455,6 @@ int skein_512_final(struct skein_512_ctx *ctx, u8 *hash_val)
- 		/* "output" the ctr mode bytes */
- 		skein_put64_lsb_first(hash_val+i*SKEIN_512_BLOCK_BYTES, ctx->x,
- 				      n);
--		skein_show_final(512, &ctx->h, n,
--				 hash_val+i*SKEIN_512_BLOCK_BYTES);
- 		/* restore the counter mode key for next time */
- 		memcpy(ctx->x, x, sizeof(x));
- 	}
-@@ -577,8 +569,6 @@ int skein_1024_init_ext(struct skein_1024_ctx *ctx, size_t hash_bit_len,
- 	/* tree hash config info (or SKEIN_CFG_TREE_INFO_SEQUENTIAL) */
- 	cfg.w[2] = skein_swap64(tree_info);
- 
--	skein_show_key(1024, &ctx->h, key, key_bytes);
--
- 	/* compute the initial chaining values from config block */
- 	skein_1024_process_block(ctx, cfg.b, 1, SKEIN_CFG_STR_LEN);
- 
-@@ -685,8 +675,6 @@ int skein_1024_final(struct skein_1024_ctx *ctx, u8 *hash_val)
- 		/* "output" the ctr mode bytes */
- 		skein_put64_lsb_first(hash_val+i*SKEIN_1024_BLOCK_BYTES, ctx->x,
- 				      n);
--		skein_show_final(1024, &ctx->h, n,
--				 hash_val+i*SKEIN_1024_BLOCK_BYTES);
- 		/* restore the counter mode key for next time */
- 		memcpy(ctx->x, x, sizeof(x));
- 	}
-@@ -794,8 +782,6 @@ int skein_256_output(struct skein_256_ctx *ctx, u8 *hash_val)
- 		/* "output" the ctr mode bytes */
- 		skein_put64_lsb_first(hash_val+i*SKEIN_256_BLOCK_BYTES, ctx->x,
- 				      n);
--		skein_show_final(256, &ctx->h, n,
--				 hash_val+i*SKEIN_256_BLOCK_BYTES);
- 		/* restore the counter mode key for next time */
- 		memcpy(ctx->x, x, sizeof(x));
- 	}
-@@ -833,8 +819,6 @@ int skein_512_output(struct skein_512_ctx *ctx, u8 *hash_val)
- 		/* "output" the ctr mode bytes */
- 		skein_put64_lsb_first(hash_val+i*SKEIN_512_BLOCK_BYTES, ctx->x,
- 				      n);
--		skein_show_final(256, &ctx->h, n,
--				 hash_val+i*SKEIN_512_BLOCK_BYTES);
- 		/* restore the counter mode key for next time */
- 		memcpy(ctx->x, x, sizeof(x));
- 	}
-@@ -872,8 +856,6 @@ int skein_1024_output(struct skein_1024_ctx *ctx, u8 *hash_val)
- 		/* "output" the ctr mode bytes */
- 		skein_put64_lsb_first(hash_val+i*SKEIN_1024_BLOCK_BYTES, ctx->x,
- 				      n);
--		skein_show_final(256, &ctx->h, n,
--				 hash_val+i*SKEIN_1024_BLOCK_BYTES);
- 		/* restore the counter mode key for next time */
- 		memcpy(ctx->x, x, sizeof(x));
- 	}
-diff --git a/drivers/staging/skein/skein_base.h b/drivers/staging/skein/skein_base.h
-index 0111fa4..993b951 100644
---- a/drivers/staging/skein/skein_base.h
-+++ b/drivers/staging/skein/skein_base.h
-@@ -15,10 +15,6 @@
- **
- ** The "default" note explains what happens when the switch is not defined.
- **
--**  SKEIN_DEBUG            -- make callouts from inside Skein code
--**                            to examine/display intermediate values.
--**                            [default: no callouts (no overhead)]
--**
- **  SKEIN_ERR_CHECK        -- how error checking is handled inside Skein
- **                            code. If not defined, most error checking
- **                            is disabled (for performance). Otherwise,
-@@ -279,19 +275,6 @@ int skein_1024_output(struct skein_1024_ctx *ctx, u8 *hash_val);
- 		(hdr).tweak[1] |= SKEIN_T1_TREE_LEVEL(height); \
- 	}
- 
--/*****************************************************************
--** "Internal" Skein definitions for debugging and error checking
--******************************************************************/
--#ifdef SKEIN_DEBUG             /* examine/display intermediate values? */
--#include "skein_debug.h"
--#else                           /* default is no callouts */
--#define skein_show_block(bits, ctx, x, blk_ptr, w_ptr, ks_event_ptr, ks_odd_ptr)
--#define skein_show_round(bits, ctx, r, x)
--#define skein_show_r_ptr(bits, ctx, r, x_ptr)
--#define skein_show_final(bits, ctx, cnt, out_ptr)
--#define skein_show_key(bits, ctx, key, key_bytes)
--#endif
--
- /* ignore all asserts, for performance */
- #define skein_assert_ret(x, ret_code)
- #define skein_assert(x)
-diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
-index 36b0b40..289bf13 100644
---- a/drivers/staging/skein/skein_block.c
-+++ b/drivers/staging/skein/skein_block.c
-@@ -70,7 +70,6 @@ do {                                         \
- #define R256(p0, p1, p2, p3, ROT, r_num) /* fully unrolled */ \
- do {                                                          \
- 	ROUND256(p0, p1, p2, p3, ROT, r_num);                 \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, r_num, X_ptr);    \
- } while (0)
- 
- #define I256(R)                                                           \
-@@ -80,14 +79,12 @@ do {                                                                      \
- 	X1   += ks[((R) + 2) % 5] + ts[((R) + 1) % 3];                    \
- 	X2   += ks[((R) + 3) % 5] + ts[((R) + 2) % 3];                    \
- 	X3   += ks[((R) + 4) % 5] + (R) + 1;                              \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
- } while (0)
- #else
- /* looping version */
- #define R256(p0, p1, p2, p3, ROT, r_num) \
- do { \
- 	ROUND256(p0, p1, p2, p3, ROT, r_num); \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, 4 * (r - 1) + r_num, X_ptr); \
- } while (0)
- 
- #define I256(R) \
-@@ -100,7 +97,6 @@ do { \
- 	/* rotate key schedule */                                         \
- 	ks[r + (R) + 4] = ks[r + (R) - 1];                                \
- 	ts[r + (R) + 2] = ts[r + (R) - 1];                                \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
- } while (0)
- #endif
- #define R256_8_ROUNDS(R)                                 \
-@@ -160,8 +156,7 @@ do {                                                         \
- #if SKEIN_UNROLL_512 == 0
- #define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num) /* unrolled */ \
- do {                                                                    \
--	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)            \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, r_num, X_ptr);              \
-+	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num);           \
- } while (0)
- 
- #define I512(R)                                                           \
-@@ -175,14 +170,12 @@ do {                                                                      \
- 	X5   += ks[((R) + 6) % 9] + ts[((R) + 1) % 3];                    \
- 	X6   += ks[((R) + 7) % 9] + ts[((R) + 2) % 3];                    \
- 	X7   += ks[((R) + 8) % 9] + (R) + 1;                              \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
- } while (0)
- 
- #else /* looping version */
- #define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)                 \
- do {                                                                     \
- 	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num);            \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, 4 * (r - 1) + r_num, X_ptr); \
- } while (0)
- 
- #define I512(R)                                                           \
-@@ -199,7 +192,6 @@ do {                                                                      \
- 	/* rotate key schedule */                                         \
- 	ks[r + (R) + 8] = ks[r + (R) - 1];                                \
- 	ts[r + (R) + 2] = ts[r + (R) - 1];                                \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
- } while (0)
- #endif /* end of looped code definitions */
- #define R512_8_ROUNDS(R)  /* do 8 full rounds */                      \
-@@ -274,7 +266,6 @@ do {                                                                          \
- do {                                                                          \
- 	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
- 		  pF, ROT, rn);                                               \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, rn, X_ptr);                       \
- } while (0)
- 
- #define I1024(R)                                                          \
-@@ -296,7 +287,6 @@ do {                                                                      \
- 	X13 += ks[((R) + 14) % 17] + ts[((R) + 1) % 3];                   \
- 	X14 += ks[((R) + 15) % 17] + ts[((R) + 2) % 3];                   \
- 	X15 += ks[((R) + 16) % 17] + (R) + 1;                             \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
- } while (0)
- #else /* looping version */
- #define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
-@@ -304,7 +294,6 @@ do {                                                                      \
- do {                                                                          \
- 	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
- 		  pF, ROT, rn);                                               \
--	skein_show_r_ptr(BLK_BITS, &ctx->h, 4 * (r - 1) + rn, X_ptr);         \
- } while (0)
- 
- #define I1024(R)                                                           \
-@@ -329,7 +318,6 @@ do {                                                                       \
- 	/* rotate key schedule */                                          \
- 	ks[r + (R) + 16] = ks[r + (R) - 1];                                \
- 	ts[r + (R) + 2] = ts[r + (R) - 1];                                 \
--	skein_show_r_ptr(BLK_BITSi, &ctx->h, SKEIN_RND_KEY_INJECT, X_ptr); \
- } while (0)
- 
- #endif
-@@ -413,7 +401,6 @@ void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
- 		/* get input block in little-endian format */
- 		skein_get64_lsb_first(w, blk_ptr, WCNT);
- 		debug_save_tweak(ctx);
--		skein_show_block(BLK_BITS, &ctx->h, ctx->x, blk_ptr, w, ks, ts);
- 
- 		/* do the first full key injection */
- 		X0 = w[0] + ks[0];
-@@ -422,9 +409,6 @@ void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
- 		X3 = w[3] + ks[3];
- 
- 		/* show starting state values */
--		skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INITIAL,
--				 x_ptr);
--
- 		blk_ptr += SKEIN_256_BLOCK_BYTES;
- 
- 		/* run the rounds */
-@@ -481,8 +465,6 @@ void skein_256_process_block(struct skein_256_ctx *ctx, const u8 *blk_ptr,
- 		ctx->x[2] = X2 ^ w[2];
- 		ctx->x[3] = X3 ^ w[3];
- 
--		skein_show_round(BLK_BITS, &ctx->h, SKEIN_RND_FEED_FWD, ctx->x);
--
- 		ts[1] &= ~SKEIN_T1_FLAG_FIRST;
- 	} while (--blk_cnt);
- 	ctx->h.tweak[0] = ts[0];
-@@ -558,7 +540,6 @@ void skein_512_process_block(struct skein_512_ctx *ctx, const u8 *blk_ptr,
- 		/* get input block in little-endian format */
- 		skein_get64_lsb_first(w, blk_ptr, WCNT);
- 		debug_save_tweak(ctx);
--		skein_show_block(BLK_BITS, &ctx->h, ctx->x, blk_ptr, w, ks, ts);
- 
- 		/* do the first full key injection */
- 		X0 = w[0] + ks[0];
-@@ -572,8 +553,6 @@ void skein_512_process_block(struct skein_512_ctx *ctx, const u8 *blk_ptr,
- 
- 		blk_ptr += SKEIN_512_BLOCK_BYTES;
- 
--		skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INITIAL,
--				 X_ptr);
- 		/* run the rounds */
- 		for (r = 1;
- 			r < (SKEIN_UNROLL_512 ? 2 * RCNT : 2);
-@@ -634,7 +613,6 @@ void skein_512_process_block(struct skein_512_ctx *ctx, const u8 *blk_ptr,
- 		ctx->x[5] = X5 ^ w[5];
- 		ctx->x[6] = X6 ^ w[6];
- 		ctx->x[7] = X7 ^ w[7];
--		skein_show_round(BLK_BITS, &ctx->h, SKEIN_RND_FEED_FWD, ctx->x);
- 
- 		ts[1] &= ~SKEIN_T1_FLAG_FIRST;
- 	} while (--blk_cnt);
-@@ -732,7 +710,6 @@ void skein_1024_process_block(struct skein_1024_ctx *ctx, const u8 *blk_ptr,
- 		/* get input block in little-endian format */
- 		skein_get64_lsb_first(w, blk_ptr, WCNT);
- 		debug_save_tweak(ctx);
--		skein_show_block(BLK_BITS, &ctx->h, ctx->x, blk_ptr, w, ks, ts);
- 
- 		/* do the first full key injection */
- 		X00 = w[0] + ks[0];
-@@ -752,9 +729,6 @@ void skein_1024_process_block(struct skein_1024_ctx *ctx, const u8 *blk_ptr,
- 		X14 = w[14] + ks[14] + ts[1];
- 		X15 = w[15] + ks[15];
- 
--		skein_show_r_ptr(BLK_BITS, &ctx->h, SKEIN_RND_KEY_INITIAL,
--				 X_ptr);
--
- 		for (r = 1;
- 			r < (SKEIN_UNROLL_1024 ? 2 * RCNT : 2);
- 			r += (SKEIN_UNROLL_1024 ? 2 * SKEIN_UNROLL_1024 : 1)) {
-@@ -821,8 +795,6 @@ void skein_1024_process_block(struct skein_1024_ctx *ctx, const u8 *blk_ptr,
- 		ctx->x[14] = X14 ^ w[14];
- 		ctx->x[15] = X15 ^ w[15];
- 
--		skein_show_round(BLK_BITS, &ctx->h, SKEIN_RND_FEED_FWD, ctx->x);
--
- 		ts[1] &= ~SKEIN_T1_FLAG_FIRST;
- 		blk_ptr += SKEIN_1024_BLOCK_BYTES;
- 	} while (--blk_cnt);
--- 
-2.1.1
+After mmc_set_timing(card->host, MMC_TIMING_MMC_HS); 
+
+Host controller set to SDR transfer
+
+so is to change to a DDR transfer mode.
+
+
+-----Original Message-----
+From: Jaehoon Chung [mailto:jh80.chung@samsung.com] 
+Sent: Tuesday, October 28, 2014 1:38 PM
+To: Chanho Min; Chris Ball; Ulf Hansson; Seungwon Jeon; Jaehoon Chung
+Cc: linux-mmc@vger.kernel.org; linux-kernel@vger.kernel.org; HyoJun Im;
+gunho.lee@lge.com; Hankyung Yu; CPGS
+Subject: Re: [PATCH] mmc:core: fix hs400 timing selection
+
+Hi, Chanho.
+
+On 10/22/2014 11:55 AM, Chanho Min wrote:
+> According to JEDEC v5.01 spec (6.6.5), In order to switch to HS400 
+> mode, host should perform the following steps.
+> 
+>  1. HS200 mode selection completed
+>  2. Set HS_TIMING to 0x01(High Speed)
+>  3. Host changes frequency to =< 52MHz  4. Set the bus width to DDR 
+> 8bit (CMD6)  5. Host may read Driver Strength (CMD8)  6. Set HS_TIMING 
+> to 0x03 (HS400)
+> 
+> In current implementation, the order of 2 and 3 is reversed.
+> The HS_TIMING field should be set to 0x1 before the clock frequency is 
+> set to a value not greater than 52 MHz. Otherwise, Initialization of 
+> timing can be failed. Also, the host contoller's UHS timing mode 
+> should be set to DDR50 after the bus width is set to DDR 8bit.
+> 
+> Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
+> Signed-off-by: Chanho Min <chanho.min@lge.com>
+> ---
+>  drivers/mmc/core/mmc.c |   13 ++++++++++---
+>  1 file changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c index 
+> a301a78..52f78e0 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -1061,9 +1061,6 @@ static int mmc_select_hs400(struct mmc_card *card)
+>  	 * Before switching to dual data rate operation for HS400,
+>  	 * it is required to convert from HS200 mode to HS mode.
+>  	 */
+> -	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
+> -	mmc_set_bus_speed(card);
+> -
+>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS,
+>  			   card->ext_csd.generic_cmd6_time, @@ -1074,6
++1071,14 @@ static 
+> int mmc_select_hs400(struct mmc_card *card)
+>  		return err;
+>  	}
+>  
+> +	/*
+> +	 * According to JEDEC v5.01 spec (6.6.5), Clock frequency should
+> +	 * be set to a value not greater than 52MHz after the HS_TIMING
+> +	 * field is set to 0x1.
+> +	 */
+> +	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
+> +	mmc_set_bus_speed(card);
+> +
+>  	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>  			 EXT_CSD_BUS_WIDTH,
+>  			 EXT_CSD_DDR_BUS_WIDTH_8,
+> @@ -1084,6 +1089,8 @@ static int mmc_select_hs400(struct mmc_card *card)
+>  		return err;
+>  	}
+>  
+> +	mmc_set_timing(card->host, MMC_TIMING_MMC_DDR52);
+> +
+
+I didn't know why timing is set to ddr50.
+
+Best Regards,
+Jaehoon Chung
+
+>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS400,
+>  			   card->ext_csd.generic_cmd6_time,
+> 
 
