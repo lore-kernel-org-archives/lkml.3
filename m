@@ -1,137 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141AbaJ1Rs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 13:48:27 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:43623 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaJ1RsY (ORCPT
+	id S1753934AbaJ1Rsy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 13:48:54 -0400
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:56589 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752257AbaJ1Rsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 13:48:24 -0400
+	Tue, 28 Oct 2014 13:48:52 -0400
+Date: Tue, 28 Oct 2014 15:48:47 -0200
+From: "Leonidas S. Barbosa" <leosilva@linux.vnet.ibm.com>
+To: linux-crypto@vger.kernel.org, Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org,
+        Marcelo Henrique Cerri <mhcerri@linux.vnet.ibm.com>,
+        Fionnuala Gunter <fin@linux.vnet.ibm.com>
+Subject: [PATCH 6/9] Moving NX-AES-XCBC to be processed logic
+Message-ID: <20141028174845.GA17838@bluepex.com>
 MIME-Version: 1.0
-In-Reply-To: <CAHse=S8KpmA6X9S11JG=_y7sqgit_S26uC6=NCk742nKRRP=0w@mail.gmail.com>
-References: <1413978269-17274-1-git-send-email-drysdale@google.com>
- <1413978269-17274-2-git-send-email-drysdale@google.com> <CALCETrWbj=BTDyKqtbSKteANj3J3UFZnrvWv9DMosCoEZaSoeA@mail.gmail.com>
- <CAHse=S-x6NKEn9EGFos6bS=asK-1mWCr0r9aji2a97_fgxU+Sg@mail.gmail.com>
- <CALCETrWN+bKj_PPRJy2pNDVCRd3xyd-=w7P+9khhd-XuJRXCyA@mail.gmail.com> <CAHse=S8KpmA6X9S11JG=_y7sqgit_S26uC6=NCk742nKRRP=0w@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 28 Oct 2014 10:48:02 -0700
-Message-ID: <CALCETrU61NCvE7N2TX9gy5R7T4VOwaau1q2Hspfb3Py2kW_jYw@mail.gmail.com>
-Subject: Re: [PATCHv5 1/3] syscalls,x86: implement execveat() system call
-To: David Drysdale <drysdale@google.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        X86 ML <x86@kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14102817-0017-0000-0000-000000D90464
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 10:30 AM, David Drysdale <drysdale@google.com> wrote:
-> [Oops, re-send remembering to turn on plaintext mode -- sorry]
->
-> On Mon, Oct 27, 2014 at 6:47 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Mon, Oct 27, 2014 at 11:03 AM, David Drysdale <drysdale@google.com> wrote:
->>> On Wed, Oct 22, 2014 at 7:44 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> On Wed, Oct 22, 2014 at 4:44 AM, David Drysdale <drysdale@google.com> wrote:
->>>>> Add a new system execveat(2) syscall. execveat() is to execve() as
->>>>> openat() is to open(): it takes a file descriptor that refers to a
->>>>> directory, and resolves the filename relative to that.
->>>>>
->>>>
->>>>>         bprm->file = file;
->>>>> -       bprm->filename = bprm->interp = filename->name;
->>>>> +       if (fd == AT_FDCWD || filename->name[0] == '/') {
->>>>> +               bprm->filename = filename->name;
->>>>> +       } else {
->>>>> +               /*
->>>>> +                * Build a pathname that reflects how we got to the file,
->>>>> +                * either "/dev/fd/<fd>" (for an empty filename) or
->>>>> +                * "/dev/fd/<fd>/<filename>".
->>>>> +                */
->>>>> +               pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
->>>>> +               if (!pathbuf) {
->>>>> +                       retval = -ENOMEM;
->>>>> +                       goto out_unmark;
->>>>> +               }
->>>>> +               bprm->filename = pathbuf;
->>>>> +               if (filename->name[0] == '\0')
->>>>> +                       sprintf(pathbuf, "/dev/fd/%d", fd);
->>>>
->>>> If the fd is O_CLOEXEC, then this will result in a confused child
->>>> process.  Should we fail exec attempts like that for non-static
->>>> programs?  (E.g. set filename to "" or something and fix up the binfmt
->>>> drivers to handle that?)
->>>
->>> Isn't it just scripts that get confused here (as normal executables don't
->>> get to see brpm->filename)?
->>>
->>> Given that we don't know which we have at this point, I'd suggest
->>> carrying on regardless.  Or we could fall back to use the previous
->>> best-effort d_path() code for O_CLOEXEC fds.  Thoughts?
->>
->> How hard would it be to mark the bprm as not having a path for the
->> binary?  Then we could fail later on if and when we actually need the
->> path.
->
-> Adding a flag to bprm->interp_flags to indicate that the bprm->filename
-> will be inaccessible after exec is straightforward.  But I'm not sure who
-> should/could make use of the flag...
->
->> I don't really have a strong opinion here, though.  I do prefer
->> actually failing the execveat call over succeeding but invoking a
->> script interpreter than can't possibly work.
->
-> Yeah, but that involves the kernel code (e.g. fs/binfmt_script.c) making
-> an assumption about what the interpreter is going to do -- specifically
-> that it's going to try to open its argv[1].  Admittedly, that's a very likely
-> assumption, but I'm not sure it's one the kernel should make -- a script
-> like "#!/bin/echo" wouldn't be very useful, but fexecve()ing it would still
-> work OK on a name like "/dev/fd/7" after fd 7 is closed.
+The previous limits were estimated locally in a single step
+basead on bound values, however it was not correct since
+when given certain scatterlist the function nx_build_sg_lists
+was consuming more sg entries than allocated causing a
+memory corruption and crashes.
 
-Hmm.  I'm unconvinced.  If an important part of executing the script
-is passing it an argv[0] that can be opened, then I think we shouldn't
-allow a known-bad argv[0].
+This patch removes the old logic and replaces it into nx_sg_build_lists
+in order to build a correct nx_sg list using the correct sg_max limit
+and bounds.
 
->
-> (Also, we need some kind of non-empty name in bprm->filename,
-> even if it's going to be inaccessible later, so that any LSM processing
-> off of the bprm_set_creds()/bprm_check_security() hooks has something
-> to work with; those hooks are pre-exec so the "/dev/fd/<fd>" part should
-> still be OK at that point.)
->
-> So I guess I lean towards keeping "/dev/fd/<fd>/<path>" regardless.
->
->>>
->>>>> +               else
->>>>> +                       snprintf(pathbuf, PATH_MAX,
->>>>> +                                "/dev/fd/%d/%s", fd, filename->name);
->>>>
->>>> Does this need to handle the case where the result exceeds PATH_MAX?
->>>
->>> I guess we could kmalloc(strlen(filename->name) + 19) to avoid the
->>> possibility of failure, but that just defers the inevitable -- the interpreter
->>> won't be able to open the script file anyway.  But it would at least then
->>> generate the appropriate error (ENAMETOOLONG rather than ENOENT).
->>
->> Depends whether anyone cares about bprm->filename.  But I think the
->> code should either return an error or allocate enough space.
->
-> I'll allocate enough space.
->
->>
->> --
->> Andy Lutomirski
->> AMA Capital Management, LLC
+Signed-off-by: Leonidas S. Barbosa <leosilva@linux.vnet.ibm.com>
+---
+ drivers/crypto/nx/nx-aes-xcbc.c |   81 ++++++++++++++++++++++++++++++---------
+ 1 files changed, 63 insertions(+), 18 deletions(-)
 
-
-
+diff --git a/drivers/crypto/nx/nx-aes-xcbc.c b/drivers/crypto/nx/nx-aes-xcbc.c
+index 03c4bf5..8c2faff 100644
+--- a/drivers/crypto/nx/nx-aes-xcbc.c
++++ b/drivers/crypto/nx/nx-aes-xcbc.c
+@@ -75,6 +75,7 @@ static int nx_xcbc_empty(struct shash_desc *desc, u8 *out)
+ 	u8 keys[2][AES_BLOCK_SIZE];
+ 	u8 key[32];
+ 	int rc = 0;
++	int len;
+ 
+ 	/* Change to ECB mode */
+ 	csbcpb->cpb.hdr.mode = NX_MODE_AES_ECB;
+@@ -86,11 +87,20 @@ static int nx_xcbc_empty(struct shash_desc *desc, u8 *out)
+ 	memset(keys[0], 0x01, sizeof(keys[0]));
+ 	memset(keys[1], 0x03, sizeof(keys[1]));
+ 
++	len = sizeof(keys);
+ 	/* Generate K1 and K3 encrypting the patterns */
+-	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *) keys, sizeof(keys),
++	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *) keys, &len,
+ 				 nx_ctx->ap->sglen);
+-	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *) keys, sizeof(keys),
++
++	if (len != sizeof(keys))
++		return -EINVAL;
++
++	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *) keys, &len,
+ 				  nx_ctx->ap->sglen);
++
++	if (len != sizeof(keys))
++		return -EINVAL;
++
+ 	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
+ 	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
+ 
+@@ -103,12 +113,23 @@ static int nx_xcbc_empty(struct shash_desc *desc, u8 *out)
+ 	/* XOr K3 with the padding for a 0 length message */
+ 	keys[1][0] ^= 0x80;
+ 
++	len = sizeof(keys[1]);
++
+ 	/* Encrypt the final result */
+ 	memcpy(csbcpb->cpb.aes_ecb.key, keys[0], AES_BLOCK_SIZE);
+-	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *) keys[1], sizeof(keys[1]),
++	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *) keys[1], &len,
+ 				 nx_ctx->ap->sglen);
+-	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, AES_BLOCK_SIZE,
++
++	if (len != sizeof(keys[1]))
++		return -EINVAL;
++
++	len = AES_BLOCK_SIZE;
++	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, &len,
+ 				  nx_ctx->ap->sglen);
++
++	if (len != AES_BLOCK_SIZE)
++		return -EINVAL;
++
+ 	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
+ 	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
+ 
+@@ -133,6 +154,7 @@ static int nx_xcbc_init(struct shash_desc *desc)
+ 	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	struct nx_sg *out_sg;
++	int len;
+ 
+ 	nx_ctx_init(nx_ctx, HCOP_FC_AES);
+ 
+@@ -144,8 +166,13 @@ static int nx_xcbc_init(struct shash_desc *desc)
+ 	memcpy(csbcpb->cpb.aes_xcbc.key, nx_ctx->priv.xcbc.key, AES_BLOCK_SIZE);
+ 	memset(nx_ctx->priv.xcbc.key, 0, sizeof *nx_ctx->priv.xcbc.key);
+ 
++	len = AES_BLOCK_SIZE;
+ 	out_sg = nx_build_sg_list(nx_ctx->out_sg, (u8 *)sctx->state,
+-				  AES_BLOCK_SIZE, nx_ctx->ap->sglen);
++				  &len, nx_ctx->ap->sglen);
++
++	if (len != AES_BLOCK_SIZE)
++		return -EINVAL;
++
+ 	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
+ 
+ 	return 0;
+@@ -159,10 +186,11 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 	struct nx_crypto_ctx *nx_ctx = crypto_tfm_ctx(&desc->tfm->base);
+ 	struct nx_csbcpb *csbcpb = nx_ctx->csbcpb;
+ 	struct nx_sg *in_sg;
+-	u32 to_process, leftover, total;
+-	u32 max_sg_len;
++	u32 to_process = 0, leftover, total;
++	unsigned int max_sg_len;
+ 	unsigned long irq_flags;
+ 	int rc = 0;
++	int data_len;
+ 
+ 	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
+ 
+@@ -180,17 +208,15 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 	}
+ 
+ 	in_sg = nx_ctx->in_sg;
+-	max_sg_len = min_t(u32, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
++	max_sg_len = min_t(u64, nx_driver.of.max_sg_len/sizeof(struct nx_sg),
+ 				nx_ctx->ap->sglen);
++	max_sg_len = min_t(u64, max_sg_len,
++				nx_ctx->ap->databytelen/NX_PAGE_SIZE);
+ 
+ 	do {
+-
+-		/* to_process: the AES_BLOCK_SIZE data chunk to process in this
+-		 * update */
+-		to_process = min_t(u64, total, nx_ctx->ap->databytelen);
+-		to_process = min_t(u64, to_process,
+-					NX_PAGE_SIZE * (max_sg_len - 1));
++		to_process = total - to_process;
+ 		to_process = to_process & ~(AES_BLOCK_SIZE - 1);
++
+ 		leftover = total - to_process;
+ 
+ 		/* the hardware will not accept a 0 byte operation for this
+@@ -204,15 +230,24 @@ static int nx_xcbc_update(struct shash_desc *desc,
+ 		}
+ 
+ 		if (sctx->count) {
++			data_len = sctx->count;
+ 			in_sg = nx_build_sg_list(nx_ctx->in_sg,
+ 						(u8 *) sctx->buffer,
+-						sctx->count,
++						&data_len,
+ 						max_sg_len);
++			if (data_len != sctx->count)
++				return -EINVAL;
+ 		}
++
++		data_len = to_process - sctx->count;
+ 		in_sg = nx_build_sg_list(in_sg,
+ 					(u8 *) data,
+-					to_process - sctx->count,
++					&data_len,
+ 					max_sg_len);
++
++		if (data_len != to_process - sctx->count)
++			return -EINVAL;
++
+ 		nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) *
+ 					sizeof(struct nx_sg);
+ 
+@@ -263,6 +298,7 @@ static int nx_xcbc_final(struct shash_desc *desc, u8 *out)
+ 	struct nx_sg *in_sg, *out_sg;
+ 	unsigned long irq_flags;
+ 	int rc = 0;
++	int len;
+ 
+ 	spin_lock_irqsave(&nx_ctx->lock, irq_flags);
+ 
+@@ -285,11 +321,20 @@ static int nx_xcbc_final(struct shash_desc *desc, u8 *out)
+ 	 * this is not an intermediate operation */
+ 	NX_CPB_FDM(csbcpb) &= ~NX_FDM_INTERMEDIATE;
+ 
++	len = sctx->count;
+ 	in_sg = nx_build_sg_list(nx_ctx->in_sg, (u8 *)sctx->buffer,
+-				 sctx->count, nx_ctx->ap->sglen);
+-	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, AES_BLOCK_SIZE,
++				 &len, nx_ctx->ap->sglen);
++
++	if (len != sctx->count)
++		return -EINVAL;
++
++	len = AES_BLOCK_SIZE;
++	out_sg = nx_build_sg_list(nx_ctx->out_sg, out, &len,
+ 				  nx_ctx->ap->sglen);
+ 
++	if (len != AES_BLOCK_SIZE)
++		return -EINVAL;
++
+ 	nx_ctx->op.inlen = (nx_ctx->in_sg - in_sg) * sizeof(struct nx_sg);
+ 	nx_ctx->op.outlen = (nx_ctx->out_sg - out_sg) * sizeof(struct nx_sg);
+ 
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.7.1
+
