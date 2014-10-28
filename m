@@ -1,118 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643AbaJ1KDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 06:03:54 -0400
-Received: from mga11.intel.com ([192.55.52.93]:19196 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752758AbaJ1KDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 06:03:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="407174446"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH RESEND] net: rfkill: gpio: Add ACPI default GPIO driver mappings
-Date: Tue, 28 Oct 2014 12:03:48 +0200
-Message-Id: <1414490628-107823-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 2.1.1
+	id S1754486AbaJ1KHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 06:07:12 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:64228 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141AbaJ1KHK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 06:07:10 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] mfd: tc3589x: get rid of static base
+Date: Tue, 28 Oct 2014 11:06:56 +0100
+Message-Id: <1414490816-13574-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver uses devm_gpiod_get_index(..., index) so that the index refers
-directly to the GpioIo resource under the ACPI device. The problem with
-this is that if the ordering changes we get wrong GPIOs.
+The TC3589x driver is now a device tree-only driver, so we want
+only dynamic IRQs and GPIO numbers from the tc3589x, no static
+assignments.
 
-With ACPI 5.1 _DSD we can now use names instead to reference GPIOs
-analogous to Device Tree. However, we still have systems out there that do
-not provide _DSD at all. These systems must be supported as well.
-
-Luckily we now have acpi_dev_add_driver_gpios() that can be used to provide
-mappings for systems where _DSD is not provided and still take advantage of
-_DSD if it exists.
-
-This patch converts the rfkill-gpio.c driver to create default GPIO
-mappings to the two GPIOs in case we are running on ACPI system.
-
-While there we can drop the indices completely.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
-Acked-by: Johannes Berg <johannes@sipsolutions.net>
-Acked-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
-Resending with linux-acpi included. I also added ACKs from Johannes and
-John. The patch itself is intact.
+ drivers/gpio/gpio-tc3589x.c | 2 +-
+ drivers/mfd/tc3589x.c       | 9 +++------
+ include/linux/mfd/tc3589x.h | 8 --------
+ 3 files changed, 4 insertions(+), 15 deletions(-)
 
- net/rfkill/rfkill-gpio.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-index 0f62326c0f5e..2a4717967502 100644
---- a/net/rfkill/rfkill-gpio.c
-+++ b/net/rfkill/rfkill-gpio.c
-@@ -63,6 +63,15 @@ static const struct rfkill_ops rfkill_gpio_ops = {
- 	.set_block = rfkill_gpio_set_power,
+diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
+index ae0f6466eb09..abdcf58935f5 100644
+--- a/drivers/gpio/gpio-tc3589x.c
++++ b/drivers/gpio/gpio-tc3589x.c
+@@ -262,7 +262,7 @@ static int tc3589x_gpio_probe(struct platform_device *pdev)
+ 	tc3589x_gpio->chip = template_chip;
+ 	tc3589x_gpio->chip.ngpio = tc3589x->num_gpio;
+ 	tc3589x_gpio->chip.dev = &pdev->dev;
+-	tc3589x_gpio->chip.base = (pdata) ? pdata->gpio_base : -1;
++	tc3589x_gpio->chip.base = -1;
+ 
+ #ifdef CONFIG_OF_GPIO
+ 	tc3589x_gpio->chip.of_node = np;
+diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+index 0072e668c208..aacb3720065c 100644
+--- a/drivers/mfd/tc3589x.c
++++ b/drivers/mfd/tc3589x.c
+@@ -241,10 +241,8 @@ static struct irq_domain_ops tc3589x_irq_ops = {
+ 
+ static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
+ {
+-	int base = tc3589x->irq_base;
+-
+ 	tc3589x->domain = irq_domain_add_simple(
+-		np, TC3589x_NR_INTERNAL_IRQS, base,
++		np, TC3589x_NR_INTERNAL_IRQS, 0,
+ 		&tc3589x_irq_ops, tc3589x);
+ 
+ 	if (!tc3589x->domain) {
+@@ -298,7 +296,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
+ 	if (blocks & TC3589x_BLOCK_GPIO) {
+ 		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_gpio,
+ 				      ARRAY_SIZE(tc3589x_dev_gpio), NULL,
+-				      tc3589x->irq_base, tc3589x->domain);
++				      0, tc3589x->domain);
+ 		if (ret) {
+ 			dev_err(tc3589x->dev, "failed to add gpio child\n");
+ 			return ret;
+@@ -309,7 +307,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
+ 	if (blocks & TC3589x_BLOCK_KEYPAD) {
+ 		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_keypad,
+ 				      ARRAY_SIZE(tc3589x_dev_keypad), NULL,
+-				      tc3589x->irq_base, tc3589x->domain);
++				      0, tc3589x->domain);
+ 		if (ret) {
+ 			dev_err(tc3589x->dev, "failed to keypad child\n");
+ 			return ret;
+@@ -404,7 +402,6 @@ static int tc3589x_probe(struct i2c_client *i2c,
+ 	tc3589x->dev = &i2c->dev;
+ 	tc3589x->i2c = i2c;
+ 	tc3589x->pdata = pdata;
+-	tc3589x->irq_base = pdata->irq_base;
+ 
+ 	switch (version) {
+ 	case TC3589X_TC35893:
+diff --git a/include/linux/mfd/tc3589x.h b/include/linux/mfd/tc3589x.h
+index e6088c2e2092..e1c12d84c26a 100644
+--- a/include/linux/mfd/tc3589x.h
++++ b/include/linux/mfd/tc3589x.h
+@@ -164,13 +164,10 @@ struct tc3589x_keypad_platform_data {
+ 
+ /**
+  * struct tc3589x_gpio_platform_data - TC3589x GPIO platform data
+- * @gpio_base: first gpio number assigned to TC3589x.  A maximum of
+- *	       %TC3589x_NR_GPIOS GPIOs will be allocated.
+  * @setup: callback for board-specific initialization
+  * @remove: callback for board-specific teardown
+  */
+ struct tc3589x_gpio_platform_data {
+-	int gpio_base;
+ 	void (*setup)(struct tc3589x *tc3589x, unsigned gpio_base);
+ 	void (*remove)(struct tc3589x *tc3589x, unsigned gpio_base);
+ };
+@@ -178,18 +175,13 @@ struct tc3589x_gpio_platform_data {
+ /**
+  * struct tc3589x_platform_data - TC3589x platform data
+  * @block: bitmask of blocks to enable (use TC3589x_BLOCK_*)
+- * @irq_base: base IRQ number.  %TC3589x_NR_IRQS irqs will be used.
+  * @gpio: GPIO-specific platform data
+  * @keypad: keypad-specific platform data
+  */
+ struct tc3589x_platform_data {
+ 	unsigned int block;
+-	int irq_base;
+ 	struct tc3589x_gpio_platform_data *gpio;
+ 	const struct tc3589x_keypad_platform_data *keypad;
  };
  
-+static const struct acpi_gpio_params reset_gpios = { 0, 0, false };
-+static const struct acpi_gpio_params shutdown_gpios = { 1, 0, false };
-+
-+static const struct acpi_gpio_mapping acpi_rfkill_default_gpios[] = {
-+	{ "reset-gpios", &reset_gpios, 1 },
-+	{ "shutdown-gpios", &shutdown_gpios, 1 },
-+	{ },
-+};
-+
- static int rfkill_gpio_acpi_probe(struct device *dev,
- 				  struct rfkill_gpio_data *rfkill)
- {
-@@ -75,7 +84,8 @@ static int rfkill_gpio_acpi_probe(struct device *dev,
- 	rfkill->name = dev_name(dev);
- 	rfkill->type = (unsigned)id->driver_data;
- 
--	return 0;
-+	return acpi_dev_add_driver_gpios(ACPI_COMPANION(dev),
-+					 acpi_rfkill_default_gpios);
- }
- 
- static int rfkill_gpio_probe(struct platform_device *pdev)
-@@ -102,7 +112,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 
- 	rfkill->clk = devm_clk_get(&pdev->dev, NULL);
- 
--	gpio = devm_gpiod_get_index(&pdev->dev, "reset", 0);
-+	gpio = devm_gpiod_get(&pdev->dev, "reset");
- 	if (!IS_ERR(gpio)) {
- 		ret = gpiod_direction_output(gpio, 0);
- 		if (ret)
-@@ -110,7 +120,7 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 		rfkill->reset_gpio = gpio;
- 	}
- 
--	gpio = devm_gpiod_get_index(&pdev->dev, "shutdown", 1);
-+	gpio = devm_gpiod_get(&pdev->dev, "shutdown");
- 	if (!IS_ERR(gpio)) {
- 		ret = gpiod_direction_output(gpio, 0);
- 		if (ret)
-@@ -150,6 +160,8 @@ static int rfkill_gpio_remove(struct platform_device *pdev)
- 	rfkill_unregister(rfkill->rfkill_dev);
- 	rfkill_destroy(rfkill->rfkill_dev);
- 
-+	acpi_dev_remove_driver_gpios(ACPI_COMPANION(&pdev->dev));
-+
- 	return 0;
- }
- 
+-#define TC3589x_NR_GPIOS	24
+-#define TC3589x_NR_IRQS		TC3589x_INT_GPIO(TC3589x_NR_GPIOS)
+-
+ #endif
 -- 
-2.1.1
+1.9.3
 
