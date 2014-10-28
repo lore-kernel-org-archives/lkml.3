@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459AbaJ1DoZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:44:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45256 "EHLO
+	id S1755479AbaJ1Do3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Oct 2014 23:44:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45264 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753539AbaJ1DoW (ORCPT
+	with ESMTP id S1753539AbaJ1Do0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:44:22 -0400
+	Mon, 27 Oct 2014 23:44:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 3.16 032/127] qla2xxx: Fix shost use-after-free on device removal
-Date: Tue, 28 Oct 2014 11:34:27 +0800
-Message-Id: <20141028033422.331267952@linuxfoundation.org>
+        Loic Poulain <loic.poulain@intel.com>,
+        Marcel Holtmann <marcel@holtmann.org>
+Subject: [PATCH 3.16 065/127] Bluetooth: Fix HCI H5 corrupted ack value
+Date: Tue, 28 Oct 2014 11:35:00 +0800
+Message-Id: <20141028033423.706998983@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033420.925922046@linuxfoundation.org>
 References: <20141028033420.925922046@linuxfoundation.org>
@@ -29,45 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Lawrence <joe.lawrence@stratus.com>
+From: Loic Poulain <loic.poulain@intel.com>
 
-commit db7157d4cfce6edf052452fb1d327d4d11b67f4c upstream.
+commit 4807b51895dce8aa650ebebc51fa4a795ed6b8b8 upstream.
 
-Once calling scsi_host_put, be careful to not access qla_hw_data through
-the Scsi_Host private data (ie, scsi_qla_host base_vha).
+In this expression: seq = (seq - 1) % 8
+seq (u8) is implicitly converted to an int in the arithmetic operation.
+So if seq value is 0, operation is ((0 - 1) % 8) => (-1 % 8) => -1.
+The new seq value is 0xff which is an invalid ACK value, we expect 0x07.
+It leads to frequent dropped ACK and retransmission.
+Fix this by using '&' binary operator instead of '%'.
 
-Fixes: fe1b806f4f71 ("qla2xxx: Refactor shutdown code so some functionality can be reused")
-Signed-off-by: Joe Lawrence <joe.lawrence@stratus.com>
-Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Loic Poulain <loic.poulain@intel.com>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_os.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/bluetooth/hci_h5.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -3111,10 +3111,8 @@ qla2x00_unmap_iobases(struct qla_hw_data
- }
+--- a/drivers/bluetooth/hci_h5.c
++++ b/drivers/bluetooth/hci_h5.c
+@@ -237,7 +237,7 @@ static void h5_pkt_cull(struct h5 *h5)
+ 			break;
  
- static void
--qla2x00_clear_drv_active(scsi_qla_host_t *vha)
-+qla2x00_clear_drv_active(struct qla_hw_data *ha)
- {
--	struct qla_hw_data *ha = vha->hw;
--
- 	if (IS_QLA8044(ha)) {
- 		qla8044_idc_lock(ha);
- 		qla8044_clear_drv_active(ha);
-@@ -3185,7 +3183,7 @@ qla2x00_remove_one(struct pci_dev *pdev)
+ 		to_remove--;
+-		seq = (seq - 1) % 8;
++		seq = (seq - 1) & 0x07;
+ 	}
  
- 	scsi_host_put(base_vha->host);
- 
--	qla2x00_clear_drv_active(base_vha);
-+	qla2x00_clear_drv_active(ha);
- 
- 	qla2x00_unmap_iobases(ha);
- 
+ 	if (seq != h5->rx_ack)
 
 
