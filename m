@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068AbaJ1Dl0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Oct 2014 23:41:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44939 "EHLO
+	id S932504AbaJ1Hdz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 03:33:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44946 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755015AbaJ1DlV (ORCPT
+	with ESMTP id S1755072AbaJ1Dl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Oct 2014 23:41:21 -0400
+	Mon, 27 Oct 2014 23:41:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "David S. Miller" <davem@davemloft.net>,
         Bob Picco <bob.picco@oracle.com>
-Subject: [PATCH 3.17 137/146] sparc64: Adjust KTSB assembler to support larger physical addresses.
-Date: Tue, 28 Oct 2014 11:34:39 +0800
-Message-Id: <20141028033349.400418813@linuxfoundation.org>
+Subject: [PATCH 3.17 139/146] sparc64: Use kernel page tables for vmemmap.
+Date: Tue, 28 Oct 2014 11:34:41 +0800
+Message-Id: <20141028033349.483445774@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <20141028033343.441992423@linuxfoundation.org>
 References: <20141028033343.441992423@linuxfoundation.org>
@@ -31,127 +31,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 8c82dc0e883821c098c8b0b130ffebabf9aab5df ]
+[ Upstream commit c06240c7f5c39c83dfd7849c0770775562441b96 ]
 
-As currently coded the KTSB accesses in the kernel only support up to
-47 bits of physical addressing.
+For sparse memory configurations, the vmemmap array behaves terribly
+and it takes up an inordinate amount of space in the BSS section of
+the kernel image unconditionally.
 
-Adjust the instruction and patching sequence in order to support
-arbitrary 64 bits addresses.
+Just build huge PMDs and look them up just like we do for TLB misses
+in the vmalloc area.
+
+Kernel BSS shrinks by about 2MB.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Acked-by: Bob Picco <bob.picco@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/include/asm/tsb.h |   30 ++++++++++++------------------
- arch/sparc/mm/init_64.c      |   28 +++++++++++++++++++++++++---
- 2 files changed, 37 insertions(+), 21 deletions(-)
+ arch/sparc/kernel/ktlb.S |    9 +----
+ arch/sparc/mm/init_64.c  |   72 ++++++++++++++++++++++-------------------------
+ arch/sparc/mm/init_64.h  |   11 -------
+ 3 files changed, 36 insertions(+), 56 deletions(-)
 
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -256,8 +256,6 @@ extern struct tsb_phys_patch_entry __tsb
- 	(KERNEL_TSB_SIZE_BYTES / 16)
- #define KERNEL_TSB4M_NENTRIES	4096
+--- a/arch/sparc/kernel/ktlb.S
++++ b/arch/sparc/kernel/ktlb.S
+@@ -186,13 +186,8 @@ kvmap_dtlb_load:
  
--#define KTSB_PHYS_SHIFT		15
--
- 	/* Do a kernel TSB lookup at tl>0 on VADDR+TAG, branch to OK_LABEL
- 	 * on TSB hit.  REG1, REG2, REG3, and REG4 are used as temporaries
- 	 * and the found TTE will be left in REG1.  REG3 and REG4 must
-@@ -266,17 +264,15 @@ extern struct tsb_phys_patch_entry __tsb
- 	 * VADDR and TAG will be preserved and not clobbered by this macro.
- 	 */
- #define KERN_TSB_LOOKUP_TL1(VADDR, TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
--661:	sethi		%hi(swapper_tsb), REG1;			\
--	or		REG1, %lo(swapper_tsb), REG1; \
-+661:	sethi		%uhi(swapper_tsb), REG1; \
-+	sethi		%hi(swapper_tsb), REG2; \
-+	or		REG1, %ulo(swapper_tsb), REG1; \
-+	or		REG2, %lo(swapper_tsb), REG2; \
- 	.section	.swapper_tsb_phys_patch, "ax"; \
- 	.word		661b; \
- 	.previous; \
--661:	nop; \
--	.section	.tsb_ldquad_phys_patch, "ax"; \
--	.word		661b; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	.previous; \
-+	sllx		REG1, 32, REG1; \
-+	or		REG1, REG2, REG1; \
- 	srlx		VADDR, PAGE_SHIFT, REG2; \
- 	and		REG2, (KERNEL_TSB_NENTRIES - 1), REG2; \
- 	sllx		REG2, 4, REG2; \
-@@ -291,17 +287,15 @@ extern struct tsb_phys_patch_entry __tsb
- 	 * we can make use of that for the index computation.
- 	 */
- #define KERN_TSB4M_LOOKUP_TL1(TAG, REG1, REG2, REG3, REG4, OK_LABEL) \
--661:	sethi		%hi(swapper_4m_tsb), REG1;	     \
--	or		REG1, %lo(swapper_4m_tsb), REG1; \
-+661:	sethi		%uhi(swapper_4m_tsb), REG1; \
-+	sethi		%hi(swapper_4m_tsb), REG2; \
-+	or		REG1, %ulo(swapper_4m_tsb), REG1; \
-+	or		REG2, %lo(swapper_4m_tsb), REG2; \
- 	.section	.swapper_4m_tsb_phys_patch, "ax"; \
- 	.word		661b; \
- 	.previous; \
--661:	nop; \
--	.section	.tsb_ldquad_phys_patch, "ax"; \
--	.word		661b; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	sllx		REG1, KTSB_PHYS_SHIFT, REG1; \
--	.previous; \
-+	sllx		REG1, 32, REG1; \
-+	or		REG1, REG2, REG1; \
- 	and		TAG, (KERNEL_TSB4M_NENTRIES - 1), REG2; \
- 	sllx		REG2, 4, REG2; \
- 	add		REG1, REG2, REG2; \
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ kvmap_vmemmap:
+-	sub		%g4, %g5, %g5
+-	srlx		%g5, ILOG2_4MB, %g5
+-	sethi		%hi(vmemmap_table), %g1
+-	sllx		%g5, 3, %g5
+-	or		%g1, %lo(vmemmap_table), %g1
+-	ba,pt		%xcc, kvmap_dtlb_load
+-	 ldx		[%g1 + %g5], %g5
++	KERN_PGTABLE_WALK(%g4, %g5, %g2, kvmap_dtlb_longpath)
++	ba,a,pt		%xcc, kvmap_dtlb_load
+ #endif
+ 
+ kvmap_dtlb_nonlinear:
 --- a/arch/sparc/mm/init_64.c
 +++ b/arch/sparc/mm/init_64.c
-@@ -1733,19 +1733,41 @@ static void __init tsb_phys_patch(void)
- static struct hv_tsb_descr ktsb_descr[NUM_KTSB_DESCR];
- extern struct tsb swapper_tsb[KERNEL_TSB_NENTRIES];
+@@ -2261,18 +2261,9 @@ unsigned long _PAGE_CACHE __read_mostly;
+ EXPORT_SYMBOL(_PAGE_CACHE);
  
-+/* The swapper TSBs are loaded with a base sequence of:
-+ *
-+ *	sethi	%uhi(SYMBOL), REG1
-+ *	sethi	%hi(SYMBOL), REG2
-+ *	or	REG1, %ulo(SYMBOL), REG1
-+ *	or	REG2, %lo(SYMBOL), REG2
-+ *	sllx	REG1, 32, REG1
-+ *	or	REG1, REG2, REG1
-+ *
-+ * When we use physical addressing for the TSB accesses, we patch the
-+ * first four instructions in the above sequence.
-+ */
-+
- static void patch_one_ktsb_phys(unsigned int *start, unsigned int *end, unsigned long pa)
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+-unsigned long vmemmap_table[VMEMMAP_SIZE];
+-
+-static long __meminitdata addr_start, addr_end;
+-static int __meminitdata node_start;
+-
+ int __meminit vmemmap_populate(unsigned long vstart, unsigned long vend,
+ 			       int node)
  {
--	pa >>= KTSB_PHYS_SHIFT;
-+	unsigned long high_bits, low_bits;
+-	unsigned long phys_start = (vstart - VMEMMAP_BASE);
+-	unsigned long phys_end = (vend - VMEMMAP_BASE);
+-	unsigned long addr = phys_start & VMEMMAP_CHUNK_MASK;
+-	unsigned long end = VMEMMAP_ALIGN(phys_end);
+ 	unsigned long pte_base;
+ 
+ 	pte_base = (_PAGE_VALID | _PAGE_SZ4MB_4U |
+@@ -2283,47 +2274,52 @@ int __meminit vmemmap_populate(unsigned
+ 			    _PAGE_CP_4V | _PAGE_CV_4V |
+ 			    _PAGE_P_4V | _PAGE_W_4V);
+ 
+-	for (; addr < end; addr += VMEMMAP_CHUNK) {
+-		unsigned long *vmem_pp =
+-			vmemmap_table + (addr >> VMEMMAP_CHUNK_SHIFT);
+-		void *block;
++	pte_base |= _PAGE_PMD_HUGE;
+ 
+-		if (!(*vmem_pp & _PAGE_VALID)) {
+-			block = vmemmap_alloc_block(1UL << ILOG2_4MB, node);
+-			if (!block)
++	vstart = vstart & PMD_MASK;
++	vend = ALIGN(vend, PMD_SIZE);
++	for (; vstart < vend; vstart += PMD_SIZE) {
++		pgd_t *pgd = pgd_offset_k(vstart);
++		unsigned long pte;
++		pud_t *pud;
++		pmd_t *pmd;
 +
-+	high_bits = (pa >> 32) & 0xffffffff;
-+	low_bits = (pa >> 0) & 0xffffffff;
- 
- 	while (start < end) {
- 		unsigned int *ia = (unsigned int *)(unsigned long)*start;
- 
--		ia[0] = (ia[0] & ~0x3fffff) | (pa >> 10);
-+		ia[0] = (ia[0] & ~0x3fffff) | (high_bits >> 10);
- 		__asm__ __volatile__("flush	%0" : : "r" (ia));
- 
--		ia[1] = (ia[1] & ~0x3ff) | (pa & 0x3ff);
-+		ia[1] = (ia[1] & ~0x3fffff) | (low_bits >> 10);
- 		__asm__ __volatile__("flush	%0" : : "r" (ia + 1));
- 
-+		ia[2] = (ia[2] & ~0x1fff) | (high_bits & 0x3ff);
-+		__asm__ __volatile__("flush	%0" : : "r" (ia + 2));
++		if (pgd_none(*pgd)) {
++			pud_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
 +
-+		ia[3] = (ia[3] & ~0x1fff) | (low_bits & 0x3ff);
-+		__asm__ __volatile__("flush	%0" : : "r" (ia + 3));
++			if (!new)
+ 				return -ENOMEM;
++			pgd_populate(&init_mm, pgd, new);
++		}
+ 
+-			*vmem_pp = pte_base | __pa(block);
++		pud = pud_offset(pgd, vstart);
++		if (pud_none(*pud)) {
++			pmd_t *new = vmemmap_alloc_block(PAGE_SIZE, node);
+ 
+-			/* check to see if we have contiguous blocks */
+-			if (addr_end != addr || node_start != node) {
+-				if (addr_start)
+-					printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
+-					       addr_start, addr_end-1, node_start);
+-				addr_start = addr;
+-				node_start = node;
+-			}
+-			addr_end = addr + VMEMMAP_CHUNK;
++			if (!new)
++				return -ENOMEM;
++			pud_populate(&init_mm, pud, new);
+ 		}
+-	}
+-	return 0;
+-}
+ 
+-void __meminit vmemmap_populate_print_last(void)
+-{
+-	if (addr_start) {
+-		printk(KERN_DEBUG " [%lx-%lx] on node %d\n",
+-		       addr_start, addr_end-1, node_start);
+-		addr_start = 0;
+-		addr_end = 0;
+-		node_start = 0;
++		pmd = pmd_offset(pud, vstart);
 +
- 		start++;
++		pte = pmd_val(*pmd);
++		if (!(pte & _PAGE_VALID)) {
++			void *block = vmemmap_alloc_block(PMD_SIZE, node);
++
++			if (!block)
++				return -ENOMEM;
++
++			pmd_val(*pmd) = pte_base | __pa(block);
++		}
  	}
++
++	return 0;
  }
+ 
+ void vmemmap_free(unsigned long start, unsigned long end)
+ {
+ }
+-
+ #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+ 
+ static void prot_init_common(unsigned long page_none,
+--- a/arch/sparc/mm/init_64.h
++++ b/arch/sparc/mm/init_64.h
+@@ -31,15 +31,4 @@ extern unsigned long kern_locked_tte_dat
+ 
+ void prom_world(int enter);
+ 
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-#define VMEMMAP_CHUNK_SHIFT	22
+-#define VMEMMAP_CHUNK		(1UL << VMEMMAP_CHUNK_SHIFT)
+-#define VMEMMAP_CHUNK_MASK	~(VMEMMAP_CHUNK - 1UL)
+-#define VMEMMAP_ALIGN(x)	(((x)+VMEMMAP_CHUNK-1UL)&VMEMMAP_CHUNK_MASK)
+-
+-#define VMEMMAP_SIZE	((((1UL << MAX_PHYSADDR_BITS) >> PAGE_SHIFT) * \
+-			  sizeof(struct page)) >> VMEMMAP_CHUNK_SHIFT)
+-extern unsigned long vmemmap_table[VMEMMAP_SIZE];
+-#endif
+-
+ #endif /* _SPARC64_MM_INIT_H */
 
 
