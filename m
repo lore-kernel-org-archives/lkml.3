@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559AbaJ1GBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 02:01:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42252 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753171AbaJ1GB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 02:01:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="407085163"
-Message-ID: <544F307D.7090701@intel.com>
-Date: Tue, 28 Oct 2014 13:58:21 +0800
-From: Ren Qiaowei <qiaowei.ren@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	id S1757694AbaJ1GBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 02:01:38 -0400
+Received: from mail-by2on0124.outbound.protection.outlook.com ([207.46.100.124]:60740
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933563AbaJ1GBe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 02:01:34 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v2 0/3] pwm: ftm: add Power Management support
+Thread-Topic: [PATCH v2 0/3] pwm: ftm: add Power Management support
+Thread-Index: AQHP6Df/Ewkv3RMNekymn6py5vm4o5xFF6Wg
+Date: Tue, 28 Oct 2014 06:01:31 +0000
+Message-ID: <549e977528334f08a2652eda14a6ee6e@BY2PR0301MB0613.namprd03.prod.outlook.com>
+References: <1413350495-40980-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1413350495-40980-1-git-send-email-Li.Xiubo@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ms-exchange-transport-fromentityheader: Hosted
+x-originating-ip: [123.151.195.49]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0613;
+x-forefront-prvs: 0378F1E47A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(979002)(6009001)(13464003)(51704005)(199003)(189002)(164054003)(377454003)(99286002)(106356001)(106116001)(66066001)(64706001)(4396001)(105586002)(80022003)(46102003)(40100003)(122556002)(95666004)(20776003)(74316001)(85306004)(99396003)(107046002)(87936001)(76482002)(77096002)(85852003)(19580405001)(19580395003)(92566001)(86362001)(101416001)(120916001)(50986999)(76176999)(76576001)(108616004)(54356999)(21056001)(31966008)(2501002)(97736003)(33646002)(2656002)(24736002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0613;H:BY2PR0301MB0613.namprd03.prod.outlook.com;FPR:;MLV:ovrnspm;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        "Hansen, Dave" <dave.hansen@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
-Subject: Re: [PATCH v9 09/12] x86, mpx: decode MPX instruction to get bound
- violation information
-References: <1413088915-13428-1-git-send-email-qiaowei.ren@intel.com> <1413088915-13428-10-git-send-email-qiaowei.ren@intel.com> <alpine.DEB.2.11.1410241408360.5308@nanos> <9E0BE1322F2F2246BD820DA9FC397ADE0180ED16@shsmsx102.ccr.corp.intel.com> <alpine.DEB.2.11.1410272135420.5308@nanos>
-In-Reply-To: <alpine.DEB.2.11.1410272135420.5308@nanos>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 04:36 AM, Thomas Gleixner wrote:
-> On Mon, 27 Oct 2014, Ren, Qiaowei wrote:
->> On 2014-10-24, Thomas Gleixner wrote:
->>> On Sun, 12 Oct 2014, Qiaowei Ren wrote:
->>>
->>>> This patch sets bound violation fields of siginfo struct in #BR
->>>> exception handler by decoding the user instruction and constructing
->>>> the faulting pointer.
->>>>
->>>> This patch does't use the generic decoder, and implements a limited
->>>> special-purpose decoder to decode MPX instructions, simply because
->>>> the generic decoder is very heavyweight not just in terms of
->>>> performance but in terms of interface -- because it has to.
->>>
->>> My question still stands why using the existing decoder is an issue.
->>> Performance is a complete non issue in case of a bounds violation and
->>> the interface argument is just silly, really.
->>>
->>
->> As hpa said, we only need to decode several mpx instructions
->> including BNDCL/BNDCU, and general decoder looks like a little
->> heavy. Peter, what do you think about it?
->
-> You're repeating yourself. Care to read the discussion about this from
-> the last round of review again?
->
+Hi Thierry, 
 
-Ok. I will go through it again. Thanks.
+Ping...
 
-- Qiaowei
+
+Thanks,
+
+BRs
+Xiubo
+
+
+> -----Original Message-----
+> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
+> Sent: Wednesday, October 15, 2014 1:22 PM
+> To: thierry.reding@gmail.com; linux-pwm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org; Xiubo Li-B47053
+> Subject: [PATCH v2 0/3] pwm: ftm: add Power Management support
+> 
+> Changes in v2:
+> - Fix one bug.
+> - Add regmap cache support.
+> - Remove run time PM for now.
+> 
+> Xiubo Li (3):
+>   pwm: ftm: fix one bug of wrong counting the use counter.
+>   pwm: ftm: add regmap rbtree type cache support.
+>   pwm: ftm: add Power Management support for FTM pwm.
+> 
+>  drivers/pwm/pwm-fsl-ftm.c | 64 ++++++++++++++++++++++++++++++++++++++++++++--
+> -
+>  1 file changed, 60 insertions(+), 4 deletions(-)
+> 
+> --
+> 2.1.0.27.g96db324
+
