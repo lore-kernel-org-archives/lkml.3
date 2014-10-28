@@ -1,115 +1,624 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbaJ1MaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 08:30:24 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:32222 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786AbaJ1MaV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 08:30:21 -0400
-X-AuditID: cbfec7f5-b7f956d000005ed7-d6-544f8c3a2c37
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, linux-security-module@vger.kernel.org,
-        linux-ima-devel@lists.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, jack@suse.cz, jmorris@namei.org,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH v3 1/1] evm: check xattr value length and type in
- evm_inode_setxattr()
-Date: Tue, 28 Oct 2014 14:28:49 +0200
-Message-id: <97d668f19ffb838c16e259a6569ebd19af9d18d9.1414499329.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <5fccfb5344bad84eb87096dd6b9d5a775dc11efb.1414494901.git.d.kasatkin@samsung.com>
-References: <5fccfb5344bad84eb87096dd6b9d5a775dc11efb.1414494901.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHJMWRmVeSWpSXmKPExsVy+t/xa7pWPf4hBpuPqFvc+ruX2WL29GYm
-	i3XrFzNZvJwxj93i8q45bBYfeh6xWSzY+IjR4tOKScwOHB4PDm1m8di94DOTR8/3ZI++LasY
-	Pc4sOMLu8XmTXABbFJdNSmpOZllqkb5dAlfGh6M/2As+yVfs3nmNtYFxinQXIyeHhICJxK9d
-	j9khbDGJC/fWs3UxcnEICSxllDh77TdrFyMHkNPJJPE+CaSGTUBPYkPzD7B6EYEciUd/XrOD
-	1DMLtDJKrFk+FSwhLBAhsfd4PzOIzSKgKvGy9w4LiM0rECfxZPpuqGVyEiePTWYFsTkF4iVW
-	XVoMZgsB1dzYf4l5AiPvAkaGVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghYfZ1B+PSY1aH
-	GAU4GJV4eCNY/EOEWBPLiitzDzFKcDArifBGxACFeFMSK6tSi/Lji0pzUosPMTJxcEo1MLKs
-	miufqqO86evBWzz+PXd9b6pkbdX/FD9/15abR/Jb2j5ZN15yOWT29HtY+LGJccvSP/svuD6v
-	YXK9fvVz5j6Zovi85wJ5FTO/lysu3qdmZe4h8VV4jlHbp65uZj7dWQW2B1LMffmDagQTb/R8
-	ee93K++i9PTQel4Xo1cbVcVWrY7cvyrfW4mlOCPRUIu5qDgRAPQPTVwRAgAA
+	id S1754232AbaJ1Mad (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 08:30:33 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41251 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751391AbaJ1Maa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 08:30:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,802,1406617200"; 
+   d="scan'208";a="612727444"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next] mei: add reference counting for me clients
+Date: Tue, 28 Oct 2014 14:29:34 +0200
+Message-Id: <1414499374-7597-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-evm_inode_setxattr() can be called with no value. The function does not
-check the length so that following command can be used to produce the
-kernel oops: setfattr -n security.evm FOO. This patch fixes it.
+To support dynamic addition/remove we add reference
+counter.
 
-Changes in v3:
-* there is no reason to return different error codes for EVM_XATTR_HMAC
-  and non EVM_XATTR_HMAC. Remove unnecessary test then.
-
-Changes in v2:
-* testing for validity of xattr type
-
-[ 1106.396921] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[ 1106.398192] IP: [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
-[ 1106.399244] PGD 29048067 PUD 290d7067 PMD 0
-[ 1106.399953] Oops: 0000 [#1] SMP
-[ 1106.400020] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
-[ 1106.400020] CPU: 0 PID: 3635 Comm: setxattr Not tainted 3.16.0-kds+ #2936
-[ 1106.400020] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[ 1106.400020] task: ffff8800291a0000 ti: ffff88002917c000 task.ti: ffff88002917c000
-[ 1106.400020] RIP: 0010:[<ffffffff812af7b8>]  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
-[ 1106.400020] RSP: 0018:ffff88002917fd50  EFLAGS: 00010246
-[ 1106.400020] RAX: 0000000000000000 RBX: ffff88002917fdf8 RCX: 0000000000000000
-[ 1106.400020] RDX: 0000000000000000 RSI: ffffffff818136d3 RDI: ffff88002917fdf8
-[ 1106.400020] RBP: ffff88002917fd68 R08: 0000000000000000 R09: 00000000003ec1df
-[ 1106.400020] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800438a0a00
-[ 1106.400020] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-[ 1106.400020] FS:  00007f7dfa7d7740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
-[ 1106.400020] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1106.400020] CR2: 0000000000000000 CR3: 000000003763e000 CR4: 00000000000006f0
-[ 1106.400020] Stack:
-[ 1106.400020]  ffff8800438a0a00 ffff88002917fdf8 0000000000000000 ffff88002917fd98
-[ 1106.400020]  ffffffff812a1030 ffff8800438a0a00 ffff88002917fdf8 0000000000000000
-[ 1106.400020]  0000000000000000 ffff88002917fde0 ffffffff8116d08a ffff88002917fdc8
-[ 1106.400020] Call Trace:
-[ 1106.400020]  [<ffffffff812a1030>] security_inode_setxattr+0x5d/0x6a
-[ 1106.400020]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
-[ 1106.400020]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
-[ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[ 1106.400020]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
-[ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[ 1106.400020]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
-[ 1106.400020]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
-[ 1106.400020]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
-[ 1106.400020] Code: c3 0f 1f 44 00 00 55 48 89 e5 41 55 49 89 d5 41 54 49 89 fc 53 48 89 f3 48 c7 c6 d3 36 81 81 48 89 df e8 18 22 04 00 85 c0 75 07 <41> 80 7d 00 02 74 0d 48 89 de 4c 89 e7 e8 5a fe ff ff eb 03 83
-[ 1106.400020] RIP  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
-[ 1106.400020]  RSP <ffff88002917fd50>
-[ 1106.400020] CR2: 0000000000000000
-[ 1106.428061] ---[ end trace ae08331628ba3050 ]---
-
-Reported-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: stable@vger.kernel.org
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- security/integrity/evm/evm_main.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/misc/mei/amthif.c  |  14 +++---
+ drivers/misc/mei/bus.c     |  39 +++++++++------
+ drivers/misc/mei/client.c  | 122 ++++++++++++++++++++++++++++++++++++---------
+ drivers/misc/mei/client.h  |   6 +++
+ drivers/misc/mei/debugfs.c |  31 +++++++-----
+ drivers/misc/mei/hbm.c     |  17 +++++--
+ drivers/misc/mei/main.c    |  22 ++++----
+ drivers/misc/mei/mei_dev.h |   2 +
+ drivers/misc/mei/nfc.c     |   2 +
+ drivers/misc/mei/wd.c      |   1 +
+ 10 files changed, 183 insertions(+), 73 deletions(-)
 
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index b392fe6..f589c9a0 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -324,9 +324,12 @@ int evm_inode_setxattr(struct dentry *dentry, const char *xattr_name,
- {
- 	const struct evm_ima_xattr_data *xattr_data = xattr_value;
- 
--	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
--	    && (xattr_data->type == EVM_XATTR_HMAC))
--		return -EPERM;
-+	if (strcmp(xattr_name, XATTR_NAME_EVM) == 0) {
-+		if (!xattr_value_len)
-+			return -EINVAL;
-+		if (xattr_data->type != EVM_IMA_XATTR_DIGSIG)
-+			return -EPERM;
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index 56255ffe5a84..cafd9470a856 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -97,23 +97,25 @@ int mei_amthif_host_init(struct mei_device *dev)
+ 	/* allocate storage for ME message buffer */
+ 	msg_buf = kcalloc(dev->iamthif_mtu,
+ 			sizeof(unsigned char), GFP_KERNEL);
+-	if (!msg_buf)
+-		return -ENOMEM;
++	if (!msg_buf) {
++		ret = -ENOMEM;
++		goto out;
 +	}
- 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
- 				 xattr_value_len);
+ 
+ 	dev->iamthif_msg_buf = msg_buf;
+ 
+ 	ret = mei_cl_link(cl, MEI_IAMTHIF_HOST_CLIENT_ID);
+-
+ 	if (ret < 0) {
+-		dev_err(dev->dev,
+-			"amthif: failed link client %d\n", ret);
+-		return ret;
++		dev_err(dev->dev, "amthif: failed cl_link %d\n", ret);
++		goto out;
+ 	}
+ 
+ 	ret = mei_cl_connect(cl, NULL);
+ 
+ 	dev->iamthif_state = MEI_IAMTHIF_IDLE;
+ 
++out:
++	mei_me_cl_put(me_cl);
+ 	return ret;
  }
+ 
+diff --git a/drivers/misc/mei/bus.c b/drivers/misc/mei/bus.c
+index b3a72bca5242..b2de93724f5b 100644
+--- a/drivers/misc/mei/bus.c
++++ b/drivers/misc/mei/bus.c
+@@ -228,8 +228,8 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
+ 			bool blocking)
+ {
+ 	struct mei_device *dev;
+-	struct mei_me_client *me_cl;
+-	struct mei_cl_cb *cb;
++	struct mei_me_client *me_cl = NULL;
++	struct mei_cl_cb *cb = NULL;
+ 	int rets;
+ 
+ 	if (WARN_ON(!cl || !cl->dev))
+@@ -237,33 +237,40 @@ static int ___mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
+ 
+ 	dev = cl->dev;
+ 
+-	if (cl->state != MEI_FILE_CONNECTED)
+-		return -ENODEV;
++	mutex_lock(&dev->device_lock);
++	if (cl->state != MEI_FILE_CONNECTED) {
++		rets = -ENODEV;
++		goto out;
++	}
+ 
+ 	/* Check if we have an ME client device */
+ 	me_cl = mei_me_cl_by_uuid_id(dev, &cl->cl_uuid, cl->me_client_id);
+-	if (!me_cl)
+-		return -ENOTTY;
++	if (!me_cl) {
++		rets = -ENOTTY;
++		goto out;
++	}
+ 
+-	if (length > me_cl->props.max_msg_length)
+-		return -EFBIG;
++	if (length > me_cl->props.max_msg_length) {
++		rets = -EFBIG;
++		goto out;
++	}
+ 
+ 	cb = mei_io_cb_init(cl, NULL);
+-	if (!cb)
+-		return -ENOMEM;
++	if (!cb) {
++		rets = -ENOMEM;
++		goto out;
++	}
+ 
+ 	rets = mei_io_cb_alloc_req_buf(cb, length);
+-	if (rets < 0) {
+-		mei_io_cb_free(cb);
+-		return rets;
+-	}
++	if (rets < 0)
++		goto out;
+ 
+ 	memcpy(cb->request_buffer.data, buf, length);
+ 
+-	mutex_lock(&dev->device_lock);
+-
+ 	rets = mei_cl_write(cl, cb, blocking);
+ 
++out:
++	mei_me_cl_put(me_cl);
+ 	mutex_unlock(&dev->device_lock);
+ 	if (rets < 0)
+ 		mei_io_cb_free(cb);
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index 03c95e06ed1b..12e7e9a0e264 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -26,6 +26,57 @@
+ #include "hbm.h"
+ #include "client.h"
+ 
++
++/**
++ * mei_me_cl_init - initialize me client
++ *
++ * @me_cl: me client
++ */
++void mei_me_cl_init(struct mei_me_client *me_cl)
++{
++	INIT_LIST_HEAD(&me_cl->list);
++	kref_init(&me_cl->refcnt);
++}
++
++/**
++ * mei_me_cl_get - increase me client refcount
++ *
++ * @me_cl: me client
++ *
++ * Return: me client or NULL
++ */
++
++struct mei_me_client *mei_me_cl_get(struct mei_me_client *me_cl)
++{
++	if (me_cl)
++		kref_get(&me_cl->refcnt);
++
++	return me_cl;
++}
++
++/**
++ * mei_me_cl_release - unlink and free me client
++ *
++ * @me_cl: me client
++ */
++static void mei_me_cl_release(struct kref *ref)
++{
++	struct mei_me_client *me_cl =
++		container_of(ref, struct mei_me_client, refcnt);
++	list_del(&me_cl->list);
++	kfree(me_cl);
++}
++/**
++ * mei_me_cl_put - decrease me client refcount and free client if necessary
++ *
++ * @me_cl: me client
++ */
++void mei_me_cl_put(struct mei_me_client *me_cl)
++{
++	if (me_cl)
++		kref_put(&me_cl->refcnt, mei_me_cl_release);
++}
++
+ /**
+  * mei_me_cl_by_uuid - locate me client by uuid
+  *
+@@ -43,7 +94,7 @@ struct mei_me_client *mei_me_cl_by_uuid(const struct mei_device *dev,
+ 
+ 	list_for_each_entry(me_cl, &dev->me_clients, list)
+ 		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0)
+-			return me_cl;
++			return mei_me_cl_get(me_cl);
+ 
+ 	return NULL;
+ }
+@@ -65,7 +116,8 @@ struct mei_me_client *mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
+ 
+ 	list_for_each_entry(me_cl, &dev->me_clients, list)
+ 		if (me_cl->client_id == client_id)
+-			return me_cl;
++			return mei_me_cl_get(me_cl);
++
+ 	return NULL;
+ }
+ 
+@@ -88,31 +140,44 @@ struct mei_me_client *mei_me_cl_by_uuid_id(struct mei_device *dev,
+ 	list_for_each_entry(me_cl, &dev->me_clients, list)
+ 		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0 &&
+ 		    me_cl->client_id == client_id)
+-			return me_cl;
++			return mei_me_cl_get(me_cl);
++
+ 	return NULL;
+ }
+ 
+ /**
+- * mei_me_cl_remove - remove me client matching uuid and client_id
++ * mei_me_cl_rm_by_uuid - remove all me clients matching uuid
+  *
+  * @dev: the device structure
+  * @uuid: me client uuid
+- * @client_id: me client address
+  */
+-void mei_me_cl_remove(struct mei_device *dev, const uuid_le *uuid, u8 client_id)
++void mei_me_cl_rm_by_uuid(struct mei_device *dev, const uuid_le *uuid)
+ {
+ 	struct mei_me_client *me_cl, *next;
+ 
++	dev_dbg(dev->dev, "remove %pUl\n", uuid);
+ 	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list) {
+-		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0 &&
+-		    me_cl->client_id == client_id) {
+-			list_del(&me_cl->list);
+-			kfree(me_cl);
+-			break;
+-		}
++		if (uuid_le_cmp(*uuid, me_cl->props.protocol_name) == 0)
++			mei_me_cl_put(me_cl);
+ 	}
+ }
+ 
++/**
++ * mei_me_cl_remove_by_id - remove all me clients matching client id
++ *
++ * @dev: the device structure
++ * @id: me client id
++ */
++void mei_me_cl_rm_by_id(struct mei_device *dev, u8 id)
++{
++	struct mei_me_client *me_cl, *next;
++
++	dev_dbg(dev->dev, "remove %d\n", id);
++	list_for_each_entry_safe(me_cl, next, &dev->me_clients, list) {
++		if (me_cl->client_id == id)
++			mei_me_cl_put(me_cl);
++	}
++}
+ 
+ /**
+  * mei_cl_cmp_id - tells if the clients are the same
+@@ -695,6 +760,7 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
+ {
+ 	struct mei_device *dev;
+ 	struct mei_me_client *me_cl;
++	int rets = 0;
+ 
+ 	if (WARN_ON(!cl || !cl->dev))
+ 		return -EINVAL;
+@@ -710,12 +776,13 @@ int mei_cl_flow_ctrl_creds(struct mei_cl *cl)
+ 		return -ENOENT;
+ 	}
+ 
+-	if (me_cl->mei_flow_ctrl_creds) {
++	if (me_cl->mei_flow_ctrl_creds > 0) {
++		rets = 1;
+ 		if (WARN_ON(me_cl->props.single_recv_buf == 0))
+-			return -EINVAL;
+-		return 1;
++			rets = -EINVAL;
+ 	}
+-	return 0;
++	mei_me_cl_put(me_cl);
++	return rets;
+ }
+ 
+ /**
+@@ -732,6 +799,7 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl)
+ {
+ 	struct mei_device *dev;
+ 	struct mei_me_client *me_cl;
++	int rets;
+ 
+ 	if (WARN_ON(!cl || !cl->dev))
+ 		return -EINVAL;
+@@ -745,15 +813,22 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl)
+ 	}
+ 
+ 	if (me_cl->props.single_recv_buf) {
+-		if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0))
+-			return -EINVAL;
++		if (WARN_ON(me_cl->mei_flow_ctrl_creds <= 0)) {
++			rets = -EINVAL;
++			goto out;
++		}
+ 		me_cl->mei_flow_ctrl_creds--;
+ 	} else {
+-		if (WARN_ON(cl->mei_flow_ctrl_creds <= 0))
+-			return -EINVAL;
++		if (WARN_ON(cl->mei_flow_ctrl_creds <= 0)) {
++			rets = -EINVAL;
++			goto out;
++		}
+ 		cl->mei_flow_ctrl_creds--;
+ 	}
+-	return 0;
++	rets = 0;
++out:
++	mei_me_cl_put(me_cl);
++	return rets;
+ }
+ 
+ /**
+@@ -788,6 +863,9 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
+ 		cl_err(dev, cl, "no such me client %d\n", cl->me_client_id);
+ 		return  -ENOTTY;
+ 	}
++	/* always allocate at least client max message */
++	length = max_t(size_t, length, me_cl->props.max_msg_length);
++	mei_me_cl_put(me_cl);
+ 
+ 	rets = pm_runtime_get(dev->dev);
+ 	if (rets < 0 && rets != -EINPROGRESS) {
+@@ -802,8 +880,6 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
+ 		goto out;
+ 	}
+ 
+-	/* always allocate at least client max message */
+-	length = max_t(size_t, length, me_cl->props.max_msg_length);
+ 	rets = mei_io_cb_alloc_resp_buf(cb, length);
+ 	if (rets)
+ 		goto out;
+diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
+index d9d0c1525259..d997b56a3fcd 100644
+--- a/drivers/misc/mei/client.h
++++ b/drivers/misc/mei/client.h
+@@ -34,6 +34,12 @@ struct mei_me_client *mei_me_cl_by_uuid_id(struct mei_device *dev,
+ void mei_me_cl_remove(struct mei_device *dev,
+ 		      const uuid_le *uuid, u8 client_id);
+ 
++void mei_me_cl_rm_by_uuid(struct mei_device *dev, const uuid_le *uuid);
++void mei_me_cl_rm_by_id(struct mei_device *dev, u8 id);
++void mei_me_cl_init(struct mei_me_client *me_cl);
++void mei_me_cl_put(struct mei_me_client *me_cl);
++struct mei_me_client *mei_me_cl_get(struct mei_me_client *me_cl);
++
+ /*
+  * MEI IO Functions
+  */
+diff --git a/drivers/misc/mei/debugfs.c b/drivers/misc/mei/debugfs.c
+index b60b4263cf0f..d38a9b6a60f3 100644
+--- a/drivers/misc/mei/debugfs.c
++++ b/drivers/misc/mei/debugfs.c
+@@ -21,20 +21,22 @@
+ #include <linux/mei.h>
+ 
+ #include "mei_dev.h"
++#include "client.h"
+ #include "hw.h"
+ 
+ static ssize_t mei_dbgfs_read_meclients(struct file *fp, char __user *ubuf,
+ 					size_t cnt, loff_t *ppos)
+ {
+ 	struct mei_device *dev = fp->private_data;
+-	struct mei_me_client *me_cl;
++	struct mei_me_client *me_cl, *n;
+ 	size_t bufsz = 1;
+ 	char *buf;
+ 	int i = 0;
+ 	int pos = 0;
+ 	int ret;
+ 
+-#define HDR "  |id|fix|         UUID                       |con|msg len|sb|\n"
++#define HDR \
++"  |id|fix|         UUID                       |con|msg len|sb|refc|\n"
+ 
+ 	mutex_lock(&dev->device_lock);
+ 
+@@ -54,16 +56,21 @@ static ssize_t mei_dbgfs_read_meclients(struct file *fp, char __user *ubuf,
+ 	if (dev->dev_state != MEI_DEV_ENABLED)
+ 		goto out;
+ 
+-	list_for_each_entry(me_cl, &dev->me_clients, list) {
+-
+-		pos += scnprintf(buf + pos, bufsz - pos,
+-			"%2d|%2d|%3d|%pUl|%3d|%7d|%2d|\n",
+-			i++, me_cl->client_id,
+-			me_cl->props.fixed_address,
+-			&me_cl->props.protocol_name,
+-			me_cl->props.max_number_of_connections,
+-			me_cl->props.max_msg_length,
+-			me_cl->props.single_recv_buf);
++	list_for_each_entry_safe(me_cl, n,  &dev->me_clients, list) {
++
++		me_cl = mei_me_cl_get(me_cl);
++		if (me_cl)
++			pos += scnprintf(buf + pos, bufsz - pos,
++				"%2d|%2d|%3d|%pUl|%3d|%7d|%2d|%4d|\n",
++				i++, me_cl->client_id,
++				me_cl->props.fixed_address,
++				&me_cl->props.protocol_name,
++				me_cl->props.max_number_of_connections,
++				me_cl->props.max_msg_length,
++				me_cl->props.single_recv_buf,
++				atomic_read(&me_cl->refcnt.refcount));
++
++		mei_me_cl_put(me_cl);
+ 	}
+ out:
+ 	mutex_unlock(&dev->device_lock);
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index 49a2653d91a5..65a505226222 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -339,11 +339,16 @@ static int mei_hbm_me_cl_add(struct mei_device *dev,
+ 			     struct hbm_props_response *res)
+ {
+ 	struct mei_me_client *me_cl;
++	const uuid_le *uuid = &res->client_properties.protocol_name;
++
++	mei_me_cl_rm_by_uuid(dev, uuid);
+ 
+ 	me_cl = kzalloc(sizeof(struct mei_me_client), GFP_KERNEL);
+ 	if (!me_cl)
+ 		return -ENOMEM;
+ 
++	mei_me_cl_init(me_cl);
++
+ 	me_cl->props = res->client_properties;
+ 	me_cl->client_id = res->me_addr;
+ 	me_cl->mei_flow_ctrl_creds = 0;
+@@ -484,6 +489,7 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
+ 				  struct hbm_flow_control *flow)
+ {
+ 	struct mei_me_client *me_cl;
++	int rets;
+ 
+ 	me_cl = mei_me_cl_by_id(dev, flow->me_addr);
+ 	if (!me_cl) {
+@@ -492,14 +498,19 @@ static int mei_hbm_add_single_flow_creds(struct mei_device *dev,
+ 		return -ENOENT;
+ 	}
+ 
+-	if (WARN_ON(me_cl->props.single_recv_buf == 0))
+-		return -EINVAL;
++	if (WARN_ON(me_cl->props.single_recv_buf == 0)) {
++		rets = -EINVAL;
++		goto out;
++	}
+ 
+ 	me_cl->mei_flow_ctrl_creds++;
+ 	dev_dbg(dev->dev, "recv flow ctrl msg ME %d (single) creds = %d.\n",
+ 	    flow->me_addr, me_cl->mei_flow_ctrl_creds);
+ 
+-	return 0;
++	rets = 0;
++out:
++	mei_me_cl_put(me_cl);
++	return rets;
+ }
+ 
+ /**
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index beedc91f03a6..5d6a15c3619a 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -303,7 +303,7 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+ 			 size_t length, loff_t *offset)
+ {
+ 	struct mei_cl *cl = file->private_data;
+-	struct mei_me_client *me_cl;
++	struct mei_me_client *me_cl = NULL;
+ 	struct mei_cl_cb *write_cb = NULL;
+ 	struct mei_device *dev;
+ 	unsigned long timeout = 0;
+@@ -399,12 +399,14 @@ static ssize_t mei_write(struct file *file, const char __user *ubuf,
+ 				"amthif write failed with status = %d\n", rets);
+ 			goto out;
+ 		}
++		mei_me_cl_put(me_cl);
+ 		mutex_unlock(&dev->device_lock);
+ 		return length;
+ 	}
+ 
+ 	rets = mei_cl_write(cl, write_cb, false);
+ out:
++	mei_me_cl_put(me_cl);
+ 	mutex_unlock(&dev->device_lock);
+ 	if (rets < 0)
+ 		mei_io_cb_free(write_cb);
+@@ -433,24 +435,19 @@ static int mei_ioctl_connect_client(struct file *file,
+ 	cl = file->private_data;
+ 	dev = cl->dev;
+ 
+-	if (dev->dev_state != MEI_DEV_ENABLED) {
+-		rets = -ENODEV;
+-		goto end;
+-	}
++	if (dev->dev_state != MEI_DEV_ENABLED)
++		return -ENODEV;
+ 
+ 	if (cl->state != MEI_FILE_INITIALIZING &&
+-	    cl->state != MEI_FILE_DISCONNECTED) {
+-		rets = -EBUSY;
+-		goto end;
+-	}
++	    cl->state != MEI_FILE_DISCONNECTED)
++		return  -EBUSY;
+ 
+ 	/* find ME client we're trying to connect to */
+ 	me_cl = mei_me_cl_by_uuid(dev, &data->in_client_uuid);
+ 	if (!me_cl || me_cl->props.fixed_address) {
+ 		dev_dbg(dev->dev, "Cannot connect to FW Client UUID = %pUl\n",
+ 				&data->in_client_uuid);
+-		rets = -ENOTTY;
+-		goto end;
++		return  -ENOTTY;
+ 	}
+ 
+ 	cl->me_client_id = me_cl->client_id;
+@@ -487,17 +484,16 @@ static int mei_ioctl_connect_client(struct file *file,
+ 		goto end;
+ 	}
+ 
+-
+ 	/* prepare the output buffer */
+ 	client = &data->out_client_properties;
+ 	client->max_msg_length = me_cl->props.max_msg_length;
+ 	client->protocol_version = me_cl->props.protocol_version;
+ 	dev_dbg(dev->dev, "Can connect?\n");
+ 
+-
+ 	rets = mei_cl_connect(cl, file);
+ 
+ end:
++	mei_me_cl_put(me_cl);
+ 	return rets;
+ }
+ 
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 1288a5cf60b9..7d3a1de0b051 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -169,12 +169,14 @@ struct mei_fw_status {
+  * struct mei_me_client - representation of me (fw) client
+  *
+  * @list: link in me client list
++ * @refcnt: struct reference count
+  * @props: client properties
+  * @client_id: me client id
+  * @mei_flow_ctrl_creds: flow control credits
+  */
+ struct mei_me_client {
+ 	struct list_head list;
++	struct kref refcnt;
+ 	struct mei_client_properties props;
+ 	u8 client_id;
+ 	u8 mei_flow_ctrl_creds;
+diff --git a/drivers/misc/mei/nfc.c b/drivers/misc/mei/nfc.c
+index 82f38613c550..a10f3250aa2c 100644
+--- a/drivers/misc/mei/nfc.c
++++ b/drivers/misc/mei/nfc.c
+@@ -513,6 +513,7 @@ int mei_nfc_host_init(struct mei_device *dev)
+ 
+ 	cl_info->me_client_id = me_cl->client_id;
+ 	cl_info->cl_uuid = me_cl->props.protocol_name;
++	mei_me_cl_put(me_cl);
+ 
+ 	ret = mei_cl_link(cl_info, MEI_HOST_CLIENT_ID_ANY);
+ 	if (ret)
+@@ -531,6 +532,7 @@ int mei_nfc_host_init(struct mei_device *dev)
+ 
+ 	cl->me_client_id = me_cl->client_id;
+ 	cl->cl_uuid = me_cl->props.protocol_name;
++	mei_me_cl_put(me_cl);
+ 
+ 	ret = mei_cl_link(cl, MEI_HOST_CLIENT_ID_ANY);
+ 	if (ret)
+diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
+index b1d892cea94d..475f1dea45bf 100644
+--- a/drivers/misc/mei/wd.c
++++ b/drivers/misc/mei/wd.c
+@@ -76,6 +76,7 @@ int mei_wd_host_init(struct mei_device *dev)
+ 
+ 	cl->me_client_id = me_cl->client_id;
+ 	cl->cl_uuid = me_cl->props.protocol_name;
++	mei_me_cl_put(me_cl);
+ 
+ 	ret = mei_cl_link(cl, MEI_WD_HOST_CLIENT_ID);
+ 
 -- 
-1.9.1
+1.9.3
 
