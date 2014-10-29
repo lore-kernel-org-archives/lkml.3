@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583AbaJ2Sgf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:36:35 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47050 "EHLO mga01.intel.com"
+	id S932168AbaJ2Sgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:36:46 -0400
+Received: from mga14.intel.com ([192.55.52.115]:24939 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756493AbaJ2Sgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:36:33 -0400
+	id S1756619AbaJ2Sgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 14:36:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,278,1413270000"; 
-   d="scan'208";a="613605847"
-Subject: [RFC PATCH 1/5] block, ioprio: include caching advice via ionice
+   d="scan'208";a="613606012"
+Subject: [RFC PATCH 4/5] block,
+ mm: Added the necessary plumbing to take ioprio hints down to block
+ layer
 From: "Jason B. Akers" <jason.b.akers@intel.com>
 To: linux-ide@vger.kernel.org
 Cc: axboe@fb.com, kapil.karkra@intel.com, dan.j.williams@intel.com,
         linux-kernel@vger.kernel.org
-Date: Wed, 29 Oct 2014 11:23:45 -0700
-Message-ID: <20141029182345.4879.98373.stgit@stg-AndroidDev-VirtualBox>
+Date: Wed, 29 Oct 2014 11:24:04 -0700
+Message-ID: <20141029182404.4879.92000.stgit@stg-AndroidDev-VirtualBox>
 In-Reply-To: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
 References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
 User-Agent: StGit/0.17.1-4-g4a0c1
@@ -26,96 +28,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Kapil Karkra <kapil.karkra@intel.com>
 
-Steal one unused bit from the priority class and two bits from the
-priority data, to implement a 3 bit cache-advice field.  Similar to the
-page cache advice from fadvise() these hints are meant to be consumed
-by hybrid drives.  Solid State Hyrbid-Drives, as defined by the SATA-IO
-Specification, implement up to a 4-bit cache priority that can be
-specified along with a FPDMA command.
-
-	IOPRIO_ADV_NONE: default if ionice hint is not provided
-
-	IOPRIO_ADV_EVICT: indicate that if the lba's associated with
-			this command are in the cache, write them back
-			and invalidate.
-	IOPRIO_ADV_DONTNEED: caching this data has little value, but no
-	need to actively evict
-
-	IOPRIO_ADV_NORMAL: perform best-effort / device-default caching
-
-	IOPRIO_ADV_RESERVED1: reserved for future use, potentially
-	IOPRIO_ADV_RESERVED2: permit the kernel to use these for
-	IOPRIO_ADV_RESERVED3: internal cache priorities, but userspace
-				owns highest priority override
-
-	IOPRIO_ADV_WILLNEED: cache this data at the highest possible priority
-
-The expectation is that a table in the driver is responsible for
-translating this advice into transport/device specific priority value.
+Added the necessary plumbing to take the ioprio hints down to the block
+layer from where they further flow down into the libata. For reads or
+direct IO, bio_associate_ioprio (invoked from blk_throtl_bio) copies
+the ioprio from the current io context into the bio in the submit_bio
+context. For lazy writes, 3 bits from the page_flags are used to record
+ioprio in every page associated with a particular IO. Since page-flags
+are scarce, we do this enabling only on 64 bit platforms. We take the
+ioprio from the current io context and store it into each page in
+grab_cache_page_write_begin function. the bio_associate_ioprio method
+walks through all pages and determines the overall best priority to be
+associated to the bio. The bio carries the io priority further down the
+IO stack.
 
 Signed-off-by: Kapil Karkra <kapil.karkra@intel.com>
 Signed-off-by: Jason B. Akers <jason.b.akers@intel.com>
 ---
- include/linux/ioprio.h |   32 ++++++++++++++++++++++++++++----
- 1 file changed, 28 insertions(+), 4 deletions(-)
+ block/bio.c                |   34 ++++++++++++++++++++++++++++++++++
+ block/blk-throttle.c       |    5 +++++
+ include/linux/bio.h        |    1 +
+ include/linux/page-flags.h |   24 ++++++++++++++++++++++++
+ mm/debug.c                 |    5 +++++
+ mm/filemap.c               |   18 ++++++++++++++++++
+ 6 files changed, 87 insertions(+)
 
-diff --git a/include/linux/ioprio.h b/include/linux/ioprio.h
-index beb9ce1..752813d 100644
---- a/include/linux/ioprio.h
-+++ b/include/linux/ioprio.h
-@@ -5,17 +5,27 @@
- #include <linux/iocontext.h>
+diff --git a/block/bio.c b/block/bio.c
+index b93ae04..cc5cc64 100644
+--- a/block/bio.c
++++ b/block/bio.c
+@@ -1965,6 +1965,40 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
+ }
+ EXPORT_SYMBOL(bioset_create);
  
++int bio_associate_ioprio(struct bio *bio)
++{
++	struct io_context *ioc;
++	struct bio_vec bv;
++	struct bvec_iter iter;
++	int max_ioprio = 0; /* init max_ioprio to 0 (invalid) */
++	int advice, ioprio;
++
++	ioc = current->io_context;
++	if (!ioc)
++		return -ENOENT;
++
++	/* scan the bio_vecs for this bio and get the highest
++	 * ioprio to use for current
++	 */
++	bio_for_each_segment(bv, bio, iter) {
++		advice = PageGetAdvice(bv.bv_page);
++		ioprio = IOPRIO_ADVISE(0, 0, advice);
++		if (ioprio_advice_valid(ioprio))
++			max_ioprio = ioprio_best(ioprio, max_ioprio);
++	}
++
++	/* set max priority found in all bio_vecs */
++	bio_set_prio(bio, max_ioprio);
++
++	/* acquire active ref on @ioc and associate
++	 * also handles the read case
++	 */
++	bio_associate_ioc(bio,ioc);
++	bio_set_prio(bio, ioprio_best(ioc->ioprio, max_ioprio));
++
++	return 0;
++}
++
+ /**
+  * bioset_create_nobvec  - Create a bio_set without bio_vec mempool
+  * @pool_size:	Number of bio to cache in the mempool
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index 9273d09..abc33a5 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -1484,6 +1484,11 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+ 	struct blkcg *blkcg;
+ 	bool throttled = false;
+ 
++	/* associate the best ioprio to the bio */
++	spin_lock_irq(q->queue_lock);
++	bio_associate_ioprio(bio);
++	spin_unlock_irq(q->queue_lock);
++
+ 	/* see throtl_charge_bio() */
+ 	if (bio->bi_rw & REQ_THROTTLED)
+ 		goto out;
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 8419319..4747c78 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -470,6 +470,7 @@ extern struct bio_vec *bvec_alloc(gfp_t, int, unsigned long *, mempool_t *);
+ extern void bvec_free(mempool_t *, struct bio_vec *, unsigned int);
+ extern unsigned int bvec_nr_vecs(unsigned short idx);
+ 
++int bio_associate_ioprio(struct bio *bio);
+ int bio_associate_current(struct bio *bio);
+ void bio_disassociate_task(struct bio *bio);
+ 
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index e1f5fcd..8811234 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -109,6 +109,11 @@ enum pageflags {
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	PG_compound_lock,
+ #endif
++#ifdef CONFIG_PAGEFLAGS_EXTENDED
++	PG_ioprio_advice_0,	/* 3 flag bits store ioprio advice */
++	PG_ioprio_advice_1,
++	PG_ioprio_advice_2,
++#endif
+ 	__NR_PAGEFLAGS,
+ 
+ 	/* Filesystems */
+@@ -370,6 +375,25 @@ static inline void ClearPageCompound(struct page *page)
+ 
+ #define PG_head_mask ((1L << PG_head))
+ 
++/*
++ * ioprio advise is recorded here
++ */
++static inline void PageSetAdvice(struct page *page, unsigned int advice)
++{
++	page->flags = (page->flags |
++	((((advice >> 0) & 1) << PG_ioprio_advice_0) |
++	(((advice >> 1) & 1) << PG_ioprio_advice_1) |
++	(((advice >> 2) & 1) << PG_ioprio_advice_2)));
++}
++
++static inline int PageGetAdvice(struct page *page)
++{
++	unsigned int advice = (((page->flags >> PG_ioprio_advice_0) & 1) |
++			  (((page->flags >> PG_ioprio_advice_1) & 1) << 1) |
++			  (((page->flags >> PG_ioprio_advice_2) & 1) << 2));
++	return advice;
++}
++
+ #else
  /*
-- * Gives us 8 prio classes with 13-bits of data for each class
-+ * Gives us 4 prio classes with 11-bits of data for each class
-+ * ...additionally a prio can indicate one of 7 cacheability hints
-  */
- #define IOPRIO_BITS		(16)
-+#define IOPRIO_CACHE_SHIFT	(15) /* msb of the cache-advice mask */
- #define IOPRIO_CLASS_SHIFT	(13)
--#define IOPRIO_PRIO_MASK	((1UL << IOPRIO_CLASS_SHIFT) - 1)
-+#define IOPRIO_ADV_SHIFT	(11)
-+#define IOPRIO_PRIO_MASK	((1UL << IOPRIO_ADV_SHIFT) - 1)
- 
--#define IOPRIO_PRIO_CLASS(mask)	((mask) >> IOPRIO_CLASS_SHIFT)
-+#define IOPRIO_PRIO_CLASS(mask)	(((mask) >> IOPRIO_CLASS_SHIFT) & 3)
- #define IOPRIO_PRIO_DATA(mask)	((mask) & IOPRIO_PRIO_MASK)
-+#define IOPRIO_ADVICE(mask)     ((((mask) >> IOPRIO_ADV_SHIFT) & 3) | \
-+				(((mask) >> IOPRIO_CACHE_SHIFT & 1) << 2))
- #define IOPRIO_PRIO_VALUE(class, data)	(((class) << IOPRIO_CLASS_SHIFT) | data)
-+#define IOPRIO_ADVISE(class, data, advice) \
-+	((IOPRIO_PRIO_VALUE(class, data) | ((advice) & 3) << IOPRIO_ADV_SHIFT)\
-+	| (((advice) & 4)  << (IOPRIO_CACHE_SHIFT - 2)))
- 
--#define ioprio_valid(mask)	(IOPRIO_PRIO_CLASS((mask)) != IOPRIO_CLASS_NONE)
-+#define ioprio_valid(mask)	(IOPRIO_PRIO_CLASS((mask)) != \
-+						IOPRIO_CLASS_NONE)
-+#define ioprio_advice_valid(mask) (IOPRIO_ADVICE(mask) != IOPRIO_ADV_NONE)
- 
- /*
-  * These are the io priority groups as implemented by CFQ. RT is the realtime
-@@ -31,6 +41,20 @@ enum {
+  * Reduce page flag use as much as possible by overlapping
+diff --git a/mm/debug.c b/mm/debug.c
+index 5ce45c9..c785b06 100644
+--- a/mm/debug.c
++++ b/mm/debug.c
+@@ -48,6 +48,11 @@ static const struct trace_print_flags pageflag_names[] = {
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	{1UL << PG_compound_lock,	"compound_lock"	},
+ #endif
++#ifdef CONFIG_PAGEFLAGS_EXTENDED
++	{1UL << PG_ioprio_advice_0,	"ioprio_adv0"	},
++	{1UL << PG_ioprio_advice_1,	"ioprio_adv1"	},
++	{1UL << PG_ioprio_advice_2,	"ioprio_adv2"	},
++#endif
  };
  
- /*
-+ * Four cacheability hints that map to their fadvise(2) equivalents
-+ */
-+enum {
-+	IOPRIO_ADV_NONE,
-+	IOPRIO_ADV_EVICT, /* actively discard cached data */
-+	IOPRIO_ADV_DONTNEED, /* caching this data has little value */
-+	IOPRIO_ADV_NORMAL, /* best-effort / device-default cache priority */
-+	IOPRIO_ADV_RESERVED1, /* reserved for future use */
-+	IOPRIO_ADV_RESERVED2,
-+	IOPRIO_ADV_RESERVED3,
-+	IOPRIO_ADV_WILLNEED, /* high temporal locality or cache valuable */
-+};
+ static void dump_flags(unsigned long flags,
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 14b4642..f82529d 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2438,6 +2438,9 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ {
+ 	struct page *page;
+ 	int fgp_flags = FGP_LOCK|FGP_ACCESSED|FGP_WRITE|FGP_CREAT;
++	struct io_context *ioc;
++	int advice;
++	int ioprio;
+ 
+ 	if (flags & AOP_FLAG_NOFS)
+ 		fgp_flags |= FGP_NOFS;
+@@ -2448,6 +2451,21 @@ struct page *grab_cache_page_write_begin(struct address_space *mapping,
+ 	if (page)
+ 		wait_for_stable_page(page);
+ 
++	/* store the ioprio into the page flags */
++	if (current && current->io_context) {
++		ioc = current->io_context;
++		advice = PageGetAdvice(page);
++		ioprio = IOPRIO_ADVISE(0, 0, advice);
++		if (ioprio_advice_valid(ioc->ioprio)) {
++			if (ioprio_advice_valid(ioprio))
++				ioprio = ioprio_best(ioprio, ioc->ioprio);
++			else
++				ioprio = ioc->ioprio;
 +
-+/*
-  * 8 best effort priority levels are supported
-  */
- #define IOPRIO_BE_NR	(8)
++			PageSetAdvice(page, IOPRIO_ADVICE(ioprio));
++		}
++	}
++
+ 	return page;
+ }
+ EXPORT_SYMBOL(grab_cache_page_write_begin);
 
