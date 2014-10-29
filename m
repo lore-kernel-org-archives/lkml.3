@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248AbaJ2FUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 01:20:21 -0400
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:18444 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751165AbaJ2FUU (ORCPT
+	id S1753094AbaJ2FVm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 01:21:42 -0400
+Received: from smtprelay0207.hostedemail.com ([216.40.44.207]:43629 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751145AbaJ2FVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 01:20:20 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Rob Herring'" <robherring2@gmail.com>, Joe Perches <joe@perches.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+	Wed, 29 Oct 2014 01:21:40 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2901:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3872:3873:3874:4321:5007:6120:6261:7903:10004:10400:10848:11026:11232:11473:11658:11914:12114:12438:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pig46_e541ac98b244
+X-Filterd-Recvd-Size: 2047
+Message-ID: <1414560096.10912.18.camel@perches.com>
+Subject: Re: [RFC V4 1/3] add CONFIG_HAVE_ARCH_BITREVERSE to support rbit
+ instruction
+From: Joe Perches <joe@perches.com>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'Rob Herring'" <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Will Deacon <Will.Deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "akinobu.mita@gmail.com" <akinobu.mita@gmail.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 29 Oct 2014 13:20:14 +0800
-Subject: RE: [RFC V2] arm/arm64:add CONFIG_HAVE_ARCH_BITREVERSE to support
- rbit instruction
-Thread-Topic: [RFC V2] arm/arm64:add CONFIG_HAVE_ARCH_BITREVERSE to support
- rbit instruction
-Thread-Index: Ac/zKGffEmlPWtUCT7yIK/xKLtVDxQAD4w/w
-Message-ID: <35FD53F367049845BC99AC72306C23D103E010D18262@CNBJMBX05.corpusers.net>
+Date: Tue, 28 Oct 2014 22:21:36 -0700
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E010D1825F@CNBJMBX05.corpusers.net>
 References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
- <1414392371.8884.2.camel@perches.com>
- <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
-In-Reply-To: <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	 <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
+	 <1414392371.8884.2.camel@perches.com>
+	 <CAL_JsqJYBoG+nrr7R3UWz1wrZ--Xjw5X31RkpCrTWMJAePBgRg@mail.gmail.com>
+	 <35FD53F367049845BC99AC72306C23D103E010D1825F@CNBJMBX05.corpusers.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id s9T5KSpK032472
 
-> From: Rob Herring [mailto:robherring2@gmail.com]
-> >> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig index
-> >> 9532f8d..263c28c 100644
-> >> --- a/arch/arm64/Kconfig
-> >> +++ b/arch/arm64/Kconfig
-> >> @@ -36,6 +36,7 @@ config ARM64
-> >>       select HARDIRQS_SW_RESEND
-> >>       select HAVE_ARCH_AUDITSYSCALL
-> >>       select HAVE_ARCH_JUMP_LABEL
-> >> +     select HAVE_ARCH_BITREVERSE
-> >>       select HAVE_ARCH_KGDB
-> >>       select HAVE_ARCH_TRACEHOOK
-> >>       select HAVE_BPF_JIT
-> 
-> The kconfig lists should be sorted.
-> 
-> Rob
+On Wed, 2014-10-29 at 13:14 +0800, Wang, Yalin wrote:
+> this change add CONFIG_HAVE_ARCH_BITREVERSE config option,
+> so that we can use arm/arm64 rbit instruction to do bitrev operation
+> by hardware.
 
-Got it ,
-Thanks for your remind.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> We also change byte_rev_table[] to be static,
+> to make sure no drivers can access it directly.
+
+You break the build with this patch.
+
+You can't do this until the users of the table
+are converted.
+
+So far, they are not.
+
+I submitted patches for these uses, but those patches
+are not yet applied.
+
+Please make sure the dependencies for your patches
+are explicitly stated.
+
+
