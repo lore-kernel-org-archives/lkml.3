@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560AbaJ2H35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 03:29:57 -0400
-Received: from mout.kundenserver.de ([212.227.126.131]:62799 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843AbaJ2H34 (ORCPT
+	id S1755455AbaJ2Hgp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 03:36:45 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:64065 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283AbaJ2Hgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 03:29:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
-        ralf@linux-mips.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, mbizon@freebox.fr, jogo@openwrt.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH 02/11] irqchip: brcmstb-l2: Eliminate dependency on ARM code
-Date: Wed, 29 Oct 2014 08:29:33 +0100
-Message-ID: <4427811.Si9a9OX0zn@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1414555138-6500-2-git-send-email-cernekee@gmail.com>
-References: <1414555138-6500-1-git-send-email-cernekee@gmail.com> <1414555138-6500-2-git-send-email-cernekee@gmail.com>
+	Wed, 29 Oct 2014 03:36:43 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:djXYKn5dpSWTWMIsfZD4hl4YtxeMiPM8m3/hiWj1pAS
- 4QF2nbHf3XRUDf/GXtHVEbH0mk+rObN3qvb4omhEWToQJolQ27
- XAzHrpHkCFA9RNxX6vtuA69tuv3xpebNXgzcItxIPhq5CgafPs
- YJ1N3aHtO0YcInJOqRc4pvsBYt3U35oXqKUdpk5iVJCfl8MFcs
- LfaYZdtfw24VH707LsKTHhs3Zh+BLzs9v7qSkeg4ZHqOI1Cwvx
- /9wLGMCOKLvoZX9N41+JgCp3guf2mi4SdzSuXcLMfq80sxLmpN
- +IdFm9dFVLpKQcAR7f2f5o7XEJTrNcReSPhKf6ukauSgQR4qR/
- 2TbjArYcM8OfZiGATFnM=
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <2258102.tG8NmIz9Bk@wuerfel>
+References: <1414139071-3818-1-git-send-email-lftan@altera.com>
+	<1806277.3CF96bVORX@wuerfel>
+	<1414492984.2295.8.camel@leyfoon-vm>
+	<2258102.tG8NmIz9Bk@wuerfel>
+Date: Wed, 29 Oct 2014 15:36:41 +0800
+X-Google-Sender-Auth: 3WBdZPd4Lip0O5a4CufKy6f-3Rw
+Message-ID: <CAFiDJ5-WPfyS8Zn+NRu4ps3LKbt9xhhe=3sO1ykOjhrqEZx3rA@mail.gmail.com>
+Subject: Re: [PATCH v5 21/29] nios2: Time keeping
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Chung-Lin Tang <cltang@codesourcery.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 October 2014 20:58:49 Kevin Cernekee wrote:
-> The irq-brcmstb-l2 driver has a single dependency on the ARM code, the
-> do_bad_IRQ macro.  Expand this macro in-place so that the driver can be
-> built on non-ARM platforms.
-> 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-> 
+On Tue, Oct 28, 2014 at 9:39 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+>> Hi Arnd,
+>> No problem, I can change that. But, seem that we don't need to have
+>> calibrate_delay_is_known() as well. We can just set "lpj_fine" variable,
+>> arm64 uses this.
+>
+> Right, that works too.
+Okay.
+>
+>> BTW, do you have further comment for other patches in this series? Only
+>> few minor updates since v4 patches and would like to get it into the
+>> v3.18 merge window if possible. What's your opinion?
+>
+> The 3.18 merge window is closed, we already have 3.18-rc2 now.
+>
+> I have taken another look over the series now, I only had
+> a few additional comments. Please fix those along with the comments
+> you got from other reviewers and then ask Stephen Rothwell to
+> include your tree in linux-next (if it isn't already).
+Okay, I will fix them and will ask Stephen to include nios2 tree later.
+Anyone other thing I need to do other than this? Do we need setup
+nios2 repo in git://git.kernel.org? Or can we use our own git repo?
+
+>
+> When 3.18 is released, you can then send a pull request to Linus.
+Okay, will wait for 3.18 to release then.
+
+Thanks for reviewing.
+
+Regards
+Ley Foon
