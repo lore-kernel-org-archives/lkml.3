@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322AbaJ2D7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 23:59:38 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:55248 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753752AbaJ2D7V (ORCPT
+	id S1755391AbaJ2D75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 23:59:57 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:53072 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755027AbaJ2D7S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 23:59:21 -0400
+	Tue, 28 Oct 2014 23:59:18 -0400
 From: Kevin Cernekee <cernekee@gmail.com>
 To: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
         ralf@linux-mips.org
 Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
-Subject: [PATCH 11/11] irqchip: Decouple bcm7120-l2 from brcmstb-l2
-Date: Tue, 28 Oct 2014 20:58:58 -0700
-Message-Id: <1414555138-6500-11-git-send-email-cernekee@gmail.com>
+Subject: [PATCH 09/11] irqchip: bcm7120-l2: Use gc->mask_cache to simplify suspend/resume functions
+Date: Tue, 28 Oct 2014 20:58:56 -0700
+Message-Id: <1414555138-6500-9-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1414555138-6500-1-git-send-email-cernekee@gmail.com>
 References: <1414555138-6500-1-git-send-email-cernekee@gmail.com>
@@ -22,71 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some chips, such as BCM6328, only require the former driver.  Some
-BCM7xxx STB configurations only require the latter driver.  Treat them
-as two separate entities, and update the mach-bcm dependencies to
-reflect the change.
+The cached value already incorporates irq_fwd_mask, and was saved the
+last time an IRQ was enabled/disabled.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- arch/arm/mach-bcm/Kconfig        | 1 +
- drivers/irqchip/Kconfig          | 5 +++++
- drivers/irqchip/Makefile         | 4 ++--
- drivers/irqchip/irq-bcm7120-l2.c | 2 +-
- 4 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/irqchip/irq-bcm7120-l2.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 2abad74..bf47eb0 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -125,6 +125,7 @@ config ARCH_BRCMSTB
- 	select HAVE_ARM_ARCH_TIMER
- 	select BRCMSTB_GISB_ARB
- 	select BRCMSTB_L2_IRQ
-+	select BCM7120_L2_IRQ
- 	help
- 	  Say Y if you intend to run the kernel on a Broadcom ARM-based STB
- 	  chipset.
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index 6a03c65..2d52b07 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -51,6 +51,11 @@ config ATMEL_AIC5_IRQ
- 	select MULTI_IRQ_HANDLER
- 	select SPARSE_IRQ
- 
-+config BCM7120_L2_IRQ
-+	bool
-+	select GENERIC_IRQ_CHIP
-+	select IRQ_DOMAIN
-+
- config BRCMSTB_L2_IRQ
- 	bool
- 	select GENERIC_IRQ_CHIP
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 173bb5f..f0909d0 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -35,6 +35,6 @@ obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
- obj-$(CONFIG_XTENSA)			+= irq-xtensa-pic.o
- obj-$(CONFIG_XTENSA_MX)			+= irq-xtensa-mx.o
- obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
--obj-$(CONFIG_BRCMSTB_L2_IRQ)		+= irq-brcmstb-l2.o \
--					   irq-bcm7120-l2.o
-+obj-$(CONFIG_BCM7120_L2_IRQ)		+= irq-bcm7120-l2.o
-+obj-$(CONFIG_BRCMSTB_L2_IRQ)		+= irq-brcmstb-l2.o
- obj-$(CONFIG_KEYSTONE_IRQ)		+= irq-keystone.o
 diff --git a/drivers/irqchip/irq-bcm7120-l2.c b/drivers/irqchip/irq-bcm7120-l2.c
-index 734fece..91065b9 100644
+index e9331f8..c76c9ad 100644
 --- a/drivers/irqchip/irq-bcm7120-l2.c
 +++ b/drivers/irqchip/irq-bcm7120-l2.c
-@@ -247,5 +247,5 @@ out_unmap:
- 	kfree(data);
- 	return ret;
+@@ -37,7 +37,6 @@ struct bcm7120_l2_intc_data {
+ 	bool can_wake;
+ 	u32 irq_fwd_mask;
+ 	u32 irq_map_mask;
+-	u32 saved_mask;
+ };
+ 
+ static void bcm7120_l2_intc_irq_handle(unsigned int irq, struct irq_desc *desc)
+@@ -62,14 +61,11 @@ static void bcm7120_l2_intc_suspend(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+ 	struct bcm7120_l2_intc_data *b = gc->private;
+-	u32 reg;
+ 
+ 	irq_gc_lock(gc);
+-	/* Save the current mask and the interrupt forward mask */
+-	b->saved_mask = irq_reg_readl(b->base + IRQEN) | b->irq_fwd_mask;
+ 	if (b->can_wake) {
+-		reg = b->saved_mask | gc->wake_active;
+-		irq_reg_writel(reg, b->base + IRQEN);
++		irq_reg_writel(gc->mask_cache | gc->wake_active,
++			       b->base + IRQEN);
+ 	}
+ 	irq_gc_unlock(gc);
  }
--IRQCHIP_DECLARE(brcmstb_l2_intc, "brcm,bcm7120-l2-intc",
-+IRQCHIP_DECLARE(bcm7120_l2_intc, "brcm,bcm7120-l2-intc",
- 		bcm7120_l2_intc_of_init);
+@@ -77,11 +73,10 @@ static void bcm7120_l2_intc_suspend(struct irq_data *d)
+ static void bcm7120_l2_intc_resume(struct irq_data *d)
+ {
+ 	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+-	struct bcm7120_l2_intc_data *b = gc->private;
+ 
+ 	/* Restore the saved mask */
+ 	irq_gc_lock(gc);
+-	irq_reg_writel(b->saved_mask, b->base + IRQEN);
++	irq_reg_writel(gc->mask_cache, b->base + IRQEN);
+ 	irq_gc_unlock(gc);
+ }
+ 
 -- 
 2.1.1
 
