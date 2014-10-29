@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875AbaJ2DQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 23:16:17 -0400
-Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:3292 "EHLO
-	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751365AbaJ2DQQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 23:16:16 -0400
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Joe Perches'" <joe@perches.com>
-CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        alsa-devel <alsa-devel@alsa-project.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Oct 2014 11:10:08 +0800
-Subject: RE: [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
-Thread-Topic: [PATCH] 6fire: Convert byte_rev_table uses to bitrev8
-Thread-Index: Ac/zJVEb9dfpFDzUQ92yzC+kZNCdrAAAGweA
-Message-ID: <35FD53F367049845BC99AC72306C23D103E010D1825E@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E010D18254@CNBJMBX05.corpusers.net>
-	 <35FD53F367049845BC99AC72306C23D103E010D18257@CNBJMBX05.corpusers.net>
-	 <1414392371.8884.2.camel@perches.com>
-	 <1414531369.10912.14.camel@perches.com>
-	 <35FD53F367049845BC99AC72306C23D103E010D1825C@CNBJMBX05.corpusers.net>
- <1414551974.10912.16.camel@perches.com>
-In-Reply-To: <1414551974.10912.16.camel@perches.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753393AbaJ2DQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 23:16:31 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:55479 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbaJ2DQ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 23:16:29 -0400
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.49 with qID s9T3GPYe004736, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net 0/3] r8152: patches for autosuspend
+Date: Wed, 29 Oct 2014 11:12:14 +0800
+Message-ID: <1394712342-15778-69-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Joe Perches [mailto:joe@perches.com]
-> > I think the most safe way is change byte_rev_table[] to be satic, So
-> > that no driver can access it directly, The build error can remind the
-> > developer if they use byte_rev_table[] Directly .
-> 
-> You can do that with your later patch, but the existing uses _must_ be
-> converted first so you don't break the build.
-> 
-> 
-Yeah, I agree with you,
-I will add this into my later patch.
+There are unexpected processes when enabling autosuspend.
+These patches are used to fix them.
 
-Thanks
+Hayes Wang (3):
+  r8152: clear SELECTIVE_SUSPEND when autoresuming
+  r8152: reset tp->speed before autoresuming in open function
+  r8152: check WORK_ENABLE in suspend function
+
+ drivers/net/usb/r8152.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+-- 
+1.9.3
+
