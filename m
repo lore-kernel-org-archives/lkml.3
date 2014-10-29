@@ -1,138 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452AbaJ2Knh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:43:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:53112 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932259AbaJ2Knf convert rfc822-to-8bit (ORCPT
+	id S932600AbaJ2KoJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:44:09 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:15374 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932249AbaJ2KoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:43:35 -0400
-Date: Wed, 29 Oct 2014 10:43:22 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Sudeep Holla <Sudeep.Holla@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        Robert Moore <robert.moore@intel.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "Kangkang.Shen@huawei.com" <Kangkang.Shen@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v5 12/18] ACPI / processor: Make it possible to get CPU
- hardware ID via GICC
-Message-ID: <20141029104321.GA8896@e102568-lin.cambridge.arm.com>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
- <1413553034-20956-13-git-send-email-hanjun.guo@linaro.org>
- <20141024173920.GB8303@red-moon>
- <544E1732.5090902@linaro.org>
-MIME-Version: 1.0
-In-Reply-To: <544E1732.5090902@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 29 Oct 2014 10:43:30.0091 (UTC) FILETIME=[2DB1D7B0:01CFF365]
-X-MC-Unique: 114102910433205001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	Wed, 29 Oct 2014 06:44:07 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7f956d000005ed7-9c-5450c4f4b9b5
+Content-transfer-encoding: 8BIT
+Message-id: <1414579442.18868.13.camel@AMDC1943>
+Subject: Re: [PATCH v5 3/4] regulator: max77686: Add suspend disable for some
+ LDOs
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Date: Wed, 29 Oct 2014 11:44:02 +0100
+In-reply-to: <20141029103140.GY18557@sirena.org.uk>
+References: <1414411911-5539-1-git-send-email-k.kozlowski@samsung.com>
+ <1414411911-5539-4-git-send-email-k.kozlowski@samsung.com>
+ <20141028223121.GH18557@sirena.org.uk> <1414574413.18868.6.camel@AMDC1943>
+ <20141029100142.GR18557@sirena.org.uk> <1414577934.18868.7.camel@AMDC1943>
+ <20141029103140.GY18557@sirena.org.uk>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t/xq7pfjgSEGFxfLGGxccZ6VotJ6w4w
+	WUx9+ITN4vqX56wW84+cY7U4+rvAonfBVTaLs01v2C2+Xelgstj0+BqrxeVdc9gsZpzfx2Rx
+	+zKvxdojd9kd+DxamnvYPP4+v87i8XfVC2aPnbPusntsWtXJ5rF5Sb1H35ZVjB6fN8kFcERx
+	2aSk5mSWpRbp2yVwZXyYtY694BFrxb71U9kbGE+wdDFyckgImEjs3L+BFcIWk7hwbz0biC0k
+	sJRRYu3vKBCbV0BQ4sfke0D1HBzMAvISRy5lg4SZBdQlJs1bxNzFyAVU/plR4uL/XkaIegOJ
+	led2gM0RFgiR+HbtABOIzSZgLLF5+RKwuIiAssTV73tZQJqZBaaxSCz4eAmsmUVAVaJp5zqw
+	Ik6ghpVfF0NtOMYksWz7Z3aQKySAuhv73SYwCsxCct8shPtmIblvASPzKkbR1NLkguKk9Fwj
+	veLE3OLSvHS95PzcTYyQCPq6g3HpMatDjAIcjEo8vBEs/iFCrIllxZW5hxglOJiVRHjf7Q0I
+	EeJNSaysSi3Kjy8qzUktPsTIxMEp1cDIbXFcft0U+40zpNdtn5ybLiQj7Zx5h0Va2faG54Jp
+	ucd6jlYxb/PXSnVwUeedxVqVPeXSi28sTb6zq4X6JmtqnmsoE9z0+I/Nx/w1NxZVM7rEf2u9
+	er+BWdvryKreynmdxTsezV22rF7Wiu/0GTE+meBFD1+45TLsV7hiqv2+Y8uOxTtW/Z6qxFKc
+	kWioxVxUnAgANFKwYX4CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 27, 2014 at 09:58:10AM +0000, Hanjun Guo wrote:
-
-[...]
-
-> >> +static int map_gicc_mpidr(struct acpi_subtable_header *entry,
-> >> +		int device_declaration, u32 acpi_id, int *mpidr)
-> >> +{
-> >> +	struct acpi_madt_generic_interrupt *gicc =
-> >> +	    container_of(entry, struct acpi_madt_generic_interrupt, header);
-> >> +
-> >> +	if (!(gicc->flags & ACPI_MADT_ENABLED))
-> >> +		return -ENODEV;
-> >> +
-> >> +	/* In the GIC interrupt model, logical processors are
-> >> +	 * required to have a Processor Device object in the DSDT,
-> >> +	 * so we should check device_declaration here
-> >> +	 */
-> >> +	if (device_declaration && (gicc->uid == acpi_id)) {
-> >> +		/*
-> >> +		 * Only bits [0:7] Aff0, bits [8:15] Aff1, bits [16:23] Aff2
-> >> +		 * and bits [32:39] Aff3 are meaningful, so pack the Affx
-> >> +		 * fields into a single 32 bit identifier to accommodate the
-> >> +		 * acpi processor drivers.
-> >> +		 */
-> >> +		*mpidr = ((gicc->arm_mpidr & 0xff00000000) >> 8)
-> >> +			 | gicc->arm_mpidr;
-> > 
-> > The simple fact that you define a function to pack the mpidr value and
-> > you can't use it here because this is *generic* code is telling, and
-> > a very bad omen. At the cost of sounding like a broken record, I do not
-> > like this mpidr->apic->logical_cpu song and dance at all.
-> > ACPI is peppered with code (eg hotplug is another example, CPUidle driver
-> > even worse) that is supposed to be generic but contains x86 code to carry
-> > out this cpuid conversion, I really think that in order to start an ARM64
-> > ACPI port properly we should at least try to factor out this physical to
-> > logical cpu id conversion, and it is not the first time that I mention this
-> > on the lists.
+On śro, 2014-10-29 at 10:31 +0000, Mark Brown wrote:
+> On Wed, Oct 29, 2014 at 11:18:54AM +0100, Krzysztof Kozlowski wrote:
+> > On śro, 2014-10-29 at 10:01 +0000, Mark Brown wrote:
 > 
-> I know, thanks for pointing this out. As I replied in previous version
-> of this patch set, apic_id is x86/ia64 specific, but the meaning behind
-> it is not. It means the CPU hardware id to identify itself in the system,
-> it just like MPIDR on ARM.
-
-Yes, except that it is called apic_id.
-
-> I will send out a patch for RFC to convert apic_id to physid which
-> is generic for all platforms.
-
-That seems a good idea to sound out if I am the only one having an issue
-with the current approach.
-
-> > I will also talk to Rafael about this at the earliest opportunity, I
-> > guess that x86 code relies on apic-id because some ACPI versions could
-> > not rely on the acpi-id or some other reasons I have to investigate.
+> > > No, this isn't suspend enable control - this is normal, standard enable
+> > > control and the device has no suspend enable control.
 > 
-> As ACPI spec (section 8.4, Declaring Processors) said, Each processor
-> in the system must be declared in the ACPI namespace, so each cpu will
-> have acpi_id in all ACPI versions, and in theory we can map acpi_id to
-> logical cpu id if we want to.
+> > You mean that for such regulator the driver shouldn't implement
+> > suspend_enable()?
 > 
-> But things are complicated, apic_id is connected to many
-> tables, MADT for smp init, DSDT for device driver, and SRAT for NUMA (there
-> is no acpi_id in it, ONLY has apic_id in the table for x86/ia64), so if we
-> want to factor the code to map acpi_id to logical cpu id, we need to modify:
-> 
->  - ACPI drivers;
->  - SMP init for x86 and ia64
->  - the mappings for NUMA init for x86 and ia64
-> that will be lots of work I think.
-> 
-> I'm willing to discuss this further and come out a solution, please
-> comment on what I said and share your ideas :)
+> Yes, if there is no separate control of suspend mode in hardware then of
+> course the driver shouldn't implement operations for things it doesn't
+> have.
 
-Factoring out apic_id to a common cpu_physical_id is ok to me, because
-basically that's what you are doing except for the naming. I do not
-have any particular preference for the acpi_id, I mentioned that only
-as a means to implement a generic cpu_physical_id, arch agnostic.
+Oh, thanks! I'll send fixed patch.
 
-Drop the RFC you mentioned above please on the list, we will restart debating
-from there.
+This means that probably the max77802 ("mirrored" driver) should be
+fixed...
 
-Thanks,
-Lorenzo
+Best regards,
+Krzysztof
 
