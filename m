@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934817AbaJ2Qz7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:55:59 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:64505 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933822AbaJ2Qz4 (ORCPT
+	id S934547AbaJ2Q4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:56:34 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:59959 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934001AbaJ2QyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:55:56 -0400
+	Wed, 29 Oct 2014 12:54:10 -0400
+Message-ID: <54511B96.4000304@gmail.com>
+Date: Wed, 29 Oct 2014 09:53:42 -0700
+From: Florian Fainelli <f.fainelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <5450B1B1.5070301@imgtec.com>
-References: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
-	<1414541562-10076-3-git-send-email-abrestic@chromium.org>
-	<5450B1B1.5070301@imgtec.com>
-Date: Wed, 29 Oct 2014 09:55:56 -0700
-X-Google-Sender-Auth: aie1nVPGjk_dC-h9SLT8YI0mBG8
-Message-ID: <CAL1qeaFeoKFbea7eiiXaw87PYUWO1JmP5xxdLLpW2RrFCprtZg@mail.gmail.com>
-Subject: Re: [PATCH V3 2/4] of: Add binding document for MIPS GIC
-From: Andrew Bresticker <abrestic@chromium.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kevin Cernekee <cernekee@gmail.com>, tglx@linutronix.de,
+        jason@lakedaemon.net, ralf@linux-mips.org
+CC: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        mbizon@freebox.fr, jogo@openwrt.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH 04/11] irqchip: Remove ARM dependency for bcm7120-l2 and
+ brcmstb-l2
+References: <1414555138-6500-1-git-send-email-cernekee@gmail.com> <1414555138-6500-4-git-send-email-cernekee@gmail.com>
+In-Reply-To: <1414555138-6500-4-git-send-email-cernekee@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On 10/28/2014 08:58 PM, Kevin Cernekee wrote:
+> This can compile for MIPS (or anything else) now.
+> 
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 
-On Wed, Oct 29, 2014 at 2:21 AM, James Hogan <james.hogan@imgtec.com> wrote:
-> Hi Andrew,
->
-> On 29/10/14 00:12, Andrew Bresticker wrote:
->>  - changed compatible string to include CPU version
->
->> +Required properties:
->> +- compatible : Should be "mti,<cpu>-gic".  Supported variants:
->> +  - "mti,interaptiv-gic"
->
->> +Required properties for timer sub-node:
->> +- compatible : Should be "mti,<cpu>-gic-timer".  Supported variants:
->> +  - "mti,interaptiv-gic-timer"
->
-> Erm, I'm a bit confused...
-> Why do you include the core name in the compatible string?
->
-> You seem to be suggesting that:
->
-> 1) The GIC/timer drivers need to know what core they're running on.
->
-> Is that really true?
+Acked-by: Florian Fainelli <f.fainelli@gmail.com>
 
-They don't now, but it's possible that a future CPU has a newer
-revision of the GIC which has some differences that need to be
-accounted for in the driver.
+> ---
+>  drivers/irqchip/Kconfig | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+> index 6f0e80b..6a03c65 100644
+> --- a/drivers/irqchip/Kconfig
+> +++ b/drivers/irqchip/Kconfig
+> @@ -53,7 +53,6 @@ config ATMEL_AIC5_IRQ
+>  
+>  config BRCMSTB_L2_IRQ
+>  	bool
+> -	depends on ARM
+>  	select GENERIC_IRQ_CHIP
+>  	select IRQ_DOMAIN
+>  
+> 
 
-> 2) It isn't possible to probe the core type.
->
-> But the kernel already knows this, so what's wrong with using
-> current_cpu_type() like everything else that needs to know?
->
-> 3) Every new core should require a new compatible string to be added
-> before the GIC will work. You don't even have a generic compatible
-> string that DT can specify after the core specific one as a fallback.
-
-Yes, adding a generic compatible string would be a good idea.
-
-> Please lets not do this unless it's actually necessary (which AFAICT it
-> really isn't).
-
-The point of this was to future-proof these bindings and I though that
-CPU type was the best way to indicate version in the compatible
-string.  This is also how it's done for the ARM GIC and arch timers.
-Perhaps the best thing to do is to require both a core-specific
-("mti,interaptiv-gic") and generic ("mti,gic") compatible string and
-just match on the generic one for now until there's a need to use the
-core-specific one.  Thoughts?
