@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934017AbaJ2PNR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:13:17 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:10181 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933723AbaJ2PLG (ORCPT
+	id S933603AbaJ2PP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:15:26 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:20143 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932962AbaJ2PPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:11:06 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-9d-545103871fdf
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 5/8] regulator: max77686: Initialize opmode explicitly to
- normal mode
-Date: Wed, 29 Oct 2014 16:06:43 +0100
-Message-id: <1414595206-1437-6-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1414595206-1437-1-git-send-email-k.kozlowski@samsung.com>
-References: <1414595206-1437-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xy7rtzIEhBlsPK1psnLGe1WLSugNM
-	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
-	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
-	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DKeNj8lLngD3vFhP1vmBoYn7B1
-	MXJySAiYSGzdsYYJwhaTuHBvPVCci0NIYCmjxOzJcxghnD4miQ0Xd4NVsQkYS2xevgSsSkSg
-	k1mi52AvM4jDLLCaSeLnlVPMIFXCAlESzVu6GEFsFgFViUVLH4Ht4xVwk3j6+SAjxD45iZPH
-	JrOC2JwC7hILWz6AxYWAat4um8QygZF3ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQ
-	IP+yg3HxMatDjAIcjEo8vA4bA0KEWBPLiitzDzFKcDArifB+/gUU4k1JrKxKLcqPLyrNSS0+
-	xMjEwSnVwBg3Lyur/uK0J5duPRRS0sz8yz6Ru3PSgS8RAoye6XPVVbvMI9fVTLn2eL1mSnrR
-	HKNrqhd6IksumTnoNS6a+/2Y6MYlERHOwqHpFhtuviz9WcDfKnPo754CyxOCTouZ+7WmCHfN
-	PXxD7co195ITu1f4tuoFL6z/72k28wXP+fa1oezsQtVdV5VYijMSDbWYi4oTAVl6r5xQAgAA
+	Wed, 29 Oct 2014 11:15:25 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgMTAFADUVRXQzqR/2dsb2JhbABcgw6BLLoeBgEBAQEBBQF0mkEEAoEcFwEBAQEBfYQwLyOBGjeIRQG4R45vLIY1ilQdhDUFnWiWOIFHAYIxPC+CSwEBAQ
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Fabian Frederick <fabf@skynet.be>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        iss_storagedev@hp.com, linux-scsi@vger.kernel.org
+Subject: [PATCH 1/1 linux-next] hpsa: remove set but unused variable rc
+Date: Wed, 29 Oct 2014 16:15:04 +0100
+Message-Id: <1414595704-3119-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor nit: Initialize the opmode for each regulator to normal mode in a
-readable explicit way.
+Fix -Wunused-but-set-variable warning
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Suggested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- drivers/regulator/max77686.c | 4 ++--
+ drivers/scsi/hpsa.c | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index 7ec9b4e5b917..5497e10b9659 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -497,8 +497,8 @@ static int max77686_pmic_probe(struct platform_device *pdev)
- 		config.init_data = rdata[i].init_data;
- 		config.of_node = rdata[i].of_node;
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index cef5d49..34330e1 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -6619,11 +6619,11 @@ static void hpsa_free_cmd_pool(struct ctlr_info *h)
  
--		max77686->opmode[id] = regulators[i].enable_mask >>
--						max77686_get_opmode_shift(id);
-+		max77686->opmode[id] = MAX77686_NORMAL;
-+
- 		rdev = devm_regulator_register(&pdev->dev,
- 						&regulators[i], &config);
- 		if (IS_ERR(rdev)) {
+ static void hpsa_irq_affinity_hints(struct ctlr_info *h)
+ {
+-	int i, cpu, rc;
++	int i, cpu;
+ 
+ 	cpu = cpumask_first(cpu_online_mask);
+ 	for (i = 0; i < h->msix_vector; i++) {
+-		rc = irq_set_affinity_hint(h->intr[i], get_cpu_mask(cpu));
++		irq_set_affinity_hint(h->intr[i], get_cpu_mask(cpu));
+ 		cpu = cpumask_next(cpu, cpu_online_mask);
+ 	}
+ }
 -- 
-1.9.1
+1.9.3
 
