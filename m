@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933294AbaJ2MvW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:51:22 -0400
+	id S933317AbaJ2Mvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:51:48 -0400
 Received: from mail.sigma-star.at ([95.130.255.111]:14400 "EHLO
 	mail.sigma-star.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909AbaJ2MqT (ORCPT
+	with ESMTP id S932889AbaJ2MqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:46:19 -0400
+	Wed, 29 Oct 2014 08:46:18 -0400
 From: Richard Weinberger <richard@nod.at>
 To: dedekind1@gmail.com
 Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         tlinder@codeaurora.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH 21/35] UBI: Fastmap: Switch to ro mode if invalidate_fastmap() fails
-Date: Wed, 29 Oct 2014 13:45:44 +0100
-Message-Id: <1414586758-9972-22-git-send-email-richard@nod.at>
+Subject: [PATCH 18/35] UBI: Fastmap: Fix race in ubi_eba_atomic_leb_change()
+Date: Wed, 29 Oct 2014 13:45:41 +0100
+Message-Id: <1414586758-9972-19-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1414586758-9972-1-git-send-email-richard@nod.at>
 References: <1414586758-9972-1-git-send-email-richard@nod.at>
@@ -21,41 +21,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have to switch to ro mode to guarantee that upon next UBI attach
-all data is consistent.
+This function a) requests a new PEB, b) writes data to it,
+c) returns the old PEB and d) registers the new PEB in the EBA table.
+
+For the non-fastmap care this works perfectly fine and is powercut safe.
+Is fastmap enabled this can lead to issues.
+If a new fastmap is written between a) and c) the freshly requested PEB
+is no longer in a pool and will not be scanned upon attaching.
+If now a powercut happens between c) and d) the freshly requested PEB
+will not be scanned and the old one got already scheduled for erase.
+After attaching the EBA table will point to a erased PEB.
+
+Fix this issue by swapping steps c) and d).
 
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- drivers/mtd/ubi/fastmap.c | 8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ drivers/mtd/ubi/eba.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index ad3655c..79b7387 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -842,10 +842,6 @@ fail:
- 		list_del(&tmp_aeb->u.list);
- 		kmem_cache_free(ai->aeb_slab_cache, tmp_aeb);
+diff --git a/drivers/mtd/ubi/eba.c b/drivers/mtd/ubi/eba.c
+index 2402d3b..04abe7f 100644
+--- a/drivers/mtd/ubi/eba.c
++++ b/drivers/mtd/ubi/eba.c
+@@ -842,7 +842,7 @@ write_error:
+ int ubi_eba_atomic_leb_change(struct ubi_device *ubi, struct ubi_volume *vol,
+ 			      int lnum, const void *buf, int len)
+ {
+-	int err, pnum, tries = 0, vol_id = vol->vol_id;
++	int err, pnum, old_pnum, tries = 0, vol_id = vol->vol_id;
+ 	struct ubi_vid_hdr *vid_hdr;
+ 	uint32_t crc;
+ 
+@@ -905,16 +905,17 @@ retry:
+ 		goto write_error;
  	}
--	list_for_each_entry_safe(tmp_aeb, _tmp_aeb, &eba_orphans, u.list) {
--		list_del(&tmp_aeb->u.list);
--		kmem_cache_free(ai->aeb_slab_cache, tmp_aeb);
+ 
+-	if (vol->eba_tbl[lnum] >= 0) {
+-		err = ubi_wl_put_peb(ubi, vol_id, lnum, vol->eba_tbl[lnum], 0);
+-		if (err)
+-			goto out_leb_unlock;
 -	}
- 	list_for_each_entry_safe(tmp_aeb, _tmp_aeb, &free, u.list) {
- 		list_del(&tmp_aeb->u.list);
- 		kmem_cache_free(ai->aeb_slab_cache, tmp_aeb);
-@@ -1562,8 +1558,10 @@ err:
- 	ret = 0;
- 	if (old_fm) {
- 		ret = invalidate_fastmap(ubi, old_fm);
--		if (ret < 0)
-+		if (ret < 0) {
- 			ubi_err("Unable to invalidiate current fastmap!");
-+			ubi_ro_mode(ubi);
-+		}
- 		else if (ret)
- 			ret = 0;
- 	}
+-
+ 	down_read(&ubi->fm_sem);
++	old_pnum = vol->eba_tbl[lnum];
+ 	vol->eba_tbl[lnum] = pnum;
+ 	up_read(&ubi->fm_sem);
+ 
++	if (old_pnum >= 0) {
++		err = ubi_wl_put_peb(ubi, vol_id, lnum, old_pnum, 0);
++		if (err)
++			goto out_leb_unlock;
++	}
++
+ out_leb_unlock:
+ 	leb_write_unlock(ubi, vol_id, lnum);
+ out_mutex:
 -- 
 1.8.4.5
 
