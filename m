@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147AbaJ2Nr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 09:47:29 -0400
-Received: from s250.sam-solutions.net ([217.21.49.219]:46611 "EHLO
+	id S933106AbaJ2Nr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 09:47:28 -0400
+Received: from s250.sam-solutions.net ([217.21.49.219]:46608 "EHLO
 	s250.sam-solutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933020AbaJ2Nr0 (ORCPT
+	with ESMTP id S932965AbaJ2Nr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Oct 2014 09:47:26 -0400
 From: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
@@ -16,9 +16,9 @@ To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>, <robh+dt@kernel.org>,
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
         "Dmitry Lavnikevich" <d.lavnikevich@sam-solutions.com>
-Subject: [PATCH v5 2/3] ARM: dts: pbab01: enable I2S audio on phyFLEX-i.MX6 boards
-Date: Wed, 29 Oct 2014 16:47:03 +0300
-Message-ID: <1414590424-25585-3-git-send-email-d.lavnikevich@sam-solutions.com>
+Subject: [PATCH v5 1/3] ARM: dts: pbab01: move i2c pins and frequency configuration into pfla02
+Date: Wed, 29 Oct 2014 16:47:02 +0300
+Message-ID: <1414590424-25585-2-git-send-email-d.lavnikevich@sam-solutions.com>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1414590424-25585-1-git-send-email-d.lavnikevich@sam-solutions.com>
 References: <1414590424-25585-1-git-send-email-d.lavnikevich@sam-solutions.com>
@@ -31,174 +31,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Audio on phyFLEX boards is presented by tlv320aic3007 codec connected
-over SSI interface.
+Since pins and frequency are specific to module (pfla02), not base board
+(pbab02), it is better to be initialized in corresponding dts file.
+
+This patch fixes i2c2, i2c3 pin configuration which caused messages:
+
+imx6q-pinctrl 20e0000.iomuxc: no groups defined in /soc/aips-bus@02000000/iomuxc@020e0000/i2c2grp
+imx6q-pinctrl 20e0000.iomuxc: no groups defined in /soc/aips-bus@02000000/iomuxc@020e0000/i2c3grp
+imx6q-pinctrl 20e0000.iomuxc: unable to find group for node i2c2grp
+imx6q-pinctrl 20e0000.iomuxc: unable to find group for node i2c3grp
 
 Signed-off-by: Dmitry Lavnikevich <d.lavnikevich@sam-solutions.com>
 ---
- arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi | 100 ++++++++++++++++++++++++++-
- arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi |  15 ++++
- 2 files changed, 113 insertions(+), 2 deletions(-)
+ arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi | 22 ----------------------
+ arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi | 26 ++++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 22 deletions(-)
 
 diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
-index f1bdcae5b97d..cb8f1b6ec083 100644
+index 584721264121..f1bdcae5b97d 100644
 --- a/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
 +++ b/arch/arm/boot/dts/imx6qdl-phytec-pbab01.dtsi
-@@ -9,10 +9,73 @@
-  * http://www.gnu.org/copyleft/gpl.html
-  */
- 
-+#include <dt-bindings/sound/fsl-imx-audmux.h>
-+
- / {
- 	chosen {
- 		linux,stdout-path = &uart4;
- 	};
-+
-+	regulators {
-+		sound_1v8: regulator@2 {
-+			compatible = "regulator-fixed";
-+			reg = <2>;
-+			regulator-name = "i2s-audio-1v8";
-+			regulator-min-microvolt = <1800000>;
-+			regulator-max-microvolt = <1800000>;
-+		};
-+
-+		sound_3v3: regulator@3 {
-+			compatible = "regulator-fixed";
-+			reg = <3>;
-+			regulator-name = "i2s-audio-3v3";
-+			regulator-min-microvolt = <3300000>;
-+			regulator-max-microvolt = <3300000>;
-+		};
-+	};
-+
-+	tlv320_mclk: oscillator {
-+		compatible = "fixed-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <19200000>;
-+		clock-output-names = "tlv320-mclk";
-+	};
-+
-+	sound {
-+		compatible = "simple-audio-card";
-+		simple-audio-card,name = "OnboardTLV320AIC3007";
-+		simple-audio-card,format = "i2s";
-+		simple-audio-card,bitclock-master = <&dailink_master>;
-+		simple-audio-card,frame-master = <&dailink_master>;
-+		simple-audio-card,widgets =
-+			"Microphone", "Mic Jack",
-+			"Line", "Line In",
-+			"Line", "Line Out",
-+			"Speaker", "Speaker",
-+			"Headphone", "Headphone Jack";
-+		simple-audio-card,routing =
-+			"Line Out", "LLOUT",
-+			"Line Out", "RLOUT",
-+			"Speaker", "SPOP",
-+			"Speaker", "SPOM",
-+			"Headphone Jack", "HPLOUT",
-+			"Headphone Jack", "HPROUT",
-+			"MIC3L", "Mic Jack",
-+			"MIC3R", "Mic Jack",
-+			"Mic Jack", "Mic Bias",
-+			"LINE1L", "Line In",
-+			"LINE1R", "Line In";
-+
-+		simple-audio-card,cpu {
-+			sound-dai = <&ssi2>;
-+		};
-+
-+		dailink_master: simple-audio-card,codec {
-+			sound-dai = <&codec>;
-+			clocks = <&tlv320_mclk>;
-+		};
-+	};
-+
+@@ -28,9 +28,6 @@
  };
  
- &fec {
-@@ -27,12 +90,45 @@
- 	status = "okay";
- };
- 
-+&ssi2 {
-+	status = "okay";
-+};
-+
-+&audmux {
-+	status = "okay";
-+
-+	ssi2 {
-+		fsl,audmux-port = <1>;
-+		fsl,port-config = <
-+			(IMX_AUDMUX_V2_PTCR_TFSDIR |
-+			IMX_AUDMUX_V2_PTCR_TFSEL(4) |
-+			IMX_AUDMUX_V2_PTCR_TCLKDIR |
-+			IMX_AUDMUX_V2_PTCR_TCSEL(4))
-+	                IMX_AUDMUX_V2_PDCR_RXDSEL(4)
-+		>;
-+	};
-+	pins5 {
-+		fsl,audmux-port = <4>;
-+		fsl,port-config = <
-+			0x00000000
-+			IMX_AUDMUX_V2_PDCR_RXDSEL(1)
-+		>;
-+	};
-+};
-+
  &i2c2 {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_i2c2>;
+-	clock-frequency = <100000>;
  	status = "okay";
  
--	tlv320@18 {
--		compatible = "ti,tlv320aic3x";
-+	codec: tlv320@18 {
-+		compatible = "ti,tlv320aic3007";
-+		#sound-dai-cells = <0>;
- 		reg = <0x18>;
-+		ai3x-micbias-vg = <2>;
-+
-+		AVDD-supply = <&sound_3v3>;
-+		IOVDD-supply = <&sound_3v3>;
-+		DRVDD-supply = <&sound_3v3>;
-+		DVDD-supply = <&sound_1v8>;
- 	};
+ 	tlv320@18 {
+@@ -55,9 +52,6 @@
+ };
  
- 	stmpe@41 {
+ &i2c3 {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_i2c3>;
+-	clock-frequency = <100000>;
+ 	status = "okay";
+ };
+ 
+@@ -84,19 +78,3 @@
+ &usdhc3 {
+ 	status = "okay";
+ };
+-
+-&iomuxc {
+-	pinctrl_i2c2: i2c2grp {
+-		fsl,pins = <
+-			MX6QDL_PAD_EIM_EB2__I2C2_SCL		0x4001b8b1
+-			MX6QDL_PAD_EIM_D16__I2C2_SDA		0x4001b8b1
+-		>;
+-	};
+-
+-	pinctrl_i2c3: i2c3grp {
+-		fsl,pins = <
+-			MX6QDL_PAD_EIM_D17__I2C3_SCL		0x4001b8b1
+-			MX6QDL_PAD_EIM_D18__I2C3_SDA		0x4001b8b1
+-		>;
+-	};
+-};
 diff --git a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
-index aa2275671d2c..d7f34664e008 100644
+index 0e50bb0a6b94..aa2275671d2c 100644
 --- a/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
 +++ b/arch/arm/boot/dts/imx6qdl-phytec-pfla02.dtsi
-@@ -58,6 +58,12 @@
+@@ -162,6 +162,18 @@
  	};
  };
  
-+&audmux {
++&i2c2 {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_audmux>;
-+	status = "disabled";
++	pinctrl-0 = <&pinctrl_i2c2>;
++	clock-frequency = <100000>;
 +};
 +
- &ecspi3 {
++&i2c3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c3>;
++	clock-frequency = <100000>;
++};
++
+ &iomuxc {
  	pinctrl-names = "default";
- 	pinctrl-0 = <&pinctrl_ecspi3>;
-@@ -319,6 +325,15 @@
- 				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000
+ 	pinctrl-0 = <&pinctrl_hog>;
+@@ -235,6 +247,20 @@
  			>;
  		};
-+
-+		pinctrl_audmux: audmuxgrp {
+ 
++		pinctrl_i2c2: i2c2grp {
 +			fsl,pins = <
-+				MX6QDL_PAD_DISP0_DAT16__AUD5_TXC	0x130b0
-+				MX6QDL_PAD_DISP0_DAT18__AUD5_TXFS	0x130b0
-+				MX6QDL_PAD_DISP0_DAT17__AUD5_TXD	0x110b0
-+				MX6QDL_PAD_DISP0_DAT19__AUD5_RXD	0x130b0
++				MX6QDL_PAD_EIM_EB2__I2C2_SCL		0x4001b8b1
++				MX6QDL_PAD_EIM_D16__I2C2_SDA		0x4001b8b1
 +			>;
 +		};
- 	};
- };
- 
++
++		pinctrl_i2c3: i2c3grp {
++			fsl,pins = <
++				MX6QDL_PAD_EIM_D17__I2C3_SCL		0x4001b8b1
++				MX6QDL_PAD_EIM_D18__I2C3_SDA		0x4001b8b1
++			>;
++		};
++
+ 		pinctrl_uart3: uart3grp {
+ 			fsl,pins = <
+ 				MX6QDL_PAD_EIM_D24__UART3_TX_DATA	0x1b0b1
 -- 
 2.1.2
 
