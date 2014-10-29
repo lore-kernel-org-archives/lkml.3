@@ -1,99 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739AbaJ2EeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 00:34:10 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:33467 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaJ2EeI (ORCPT
+	id S1752028AbaJ2EpT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 00:45:19 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:50497 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319AbaJ2EpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 00:34:08 -0400
-X-AuditID: cbfee68e-f79b46d000002b74-dc-54506e3cfcce
-Message-id: <54506E3C.9050206@samsung.com>
-Date: Wed, 29 Oct 2014 13:34:04 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, Jaewon Kim <jaewon02.kim@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: max77693-haptic - fix potential overflow
-References: <20141028164322.GA13234@dtor-ws>
-In-reply-to: <20141028164322.GA13234@dtor-ws>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42JZI2JSoGuTFxBi0N5ka3F40QtGix0NR1gt
-	bn76xmpxedccNgcWj52z7rJ79G1ZxejxeZNcAHMUl01Kak5mWWqRvl0CV8aFnk9sBRN5K05M
-	/8rewPiSq4uRk0NCwERi7qNXTBC2mMSFe+vZuhi5OIQEljJKbFi5nQ2m6Pq5m0wQiUWMErfm
-	LYSqes0ocWjKSmaQKl4BLYlrh5aygtgsAqoSJy6sAouzAcX3v7gBNklUIExi5fQrLBD1ghI/
-	Jt8Ds0UE9CW2z/7FCGIzC6RJbFnwB+wkYQEXiR37trGD2EICOhKT//SAzeQU0JXomrgbql5H
-	Yn/rNDYIW15i85q3zCDHSQgsYpfYteo1E8RBAhLfJh8CWsYBlJCV2HSAGeIzSYmDK26wTGAU
-	m4XkpFlIxs5CMnYBI/MqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjMA4Ov3vWd8OxpsHrA8x
-	CnAwKvHwvkgOCBFiTSwrrsw9xGgKdMVEZinR5HxgtOaVxBsamxlZmJqYGhuZW5opifMmSP0M
-	FhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cBozyJ5yr8+SaCDe1q6/bM5EyrWbClgb3y2/t51
-	rpcM1RHb5Z+cqriuLRW6KsRxulBs5qMII9XrrSafnI7bqKm8EJs71zb2Id9fvaqf25JEJb4F
-	13zb5jc7cU/zw/knnma+7lswebPYj+ffeYNevF15cqnNwqq16d/XBx/evceRR6/0xHnGvHdH
-	lFiKMxINtZiLihMBGV+cP54CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jAV2bvIAQgzMvTC0OL3rBaLGj4Qir
-	xc1P31gtLu+aw+bA4rFz1l12j74tqxg9Pm+SC2COamC0yUhNTEktUkjNS85PycxLt1XyDo53
-	jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFap6RQlphTChQKSCwuVtK3wzQhNMRN1wKmMULX
-	NyQIrsfIAA0krGHMuNDzia1gIm/Fielf2RsYX3J1MXJySAiYSFw/d5MJwhaTuHBvPVsXIxeH
-	kMAiRolb8xZCOa8ZJQ5NWckMUsUroCVx7dBSVhCbRUBV4sSFVWBxNqD4/hc32EBsUYEwiZXT
-	r7BA1AtK/Jh8D8wWEdCX2D77FyOIzSyQJrFlwR+wzcICLhI79m1jB7GFBHQkJv/pAZvJKaAr
-	0TVxN1S9jsT+1mlsELa8xOY1b5knMArMQrJiFpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0u
-	zUvXS87P3cQIjtJnUjsYVzZYHGIU4GBU4uF9kRwQIsSaWFZcmXuIUYKDWUmEd4c5UIg3JbGy
-	KrUoP76oNCe1+BCjKTAEJjJLiSbnAxNIXkm8obGJmZGlkbmhhZGxuZI474FW60AhgfTEktTs
-	1NSC1CKYPiYOTqkGRlk1vcdeG8Vbr6isCbDwvZKTPzdLioeFu8ToyR25JM3+j28e31m1eU6B
-	5jXNzGMCZgtKBKw2cD3PuN4h8OTTrS1CjEnTt/533nE9qOTFoWrZwxZ8CUKMC/nmn75n83y2
-	xiH7pFOXVPdKvkzg8lle++GS3Y66KWfZpPasWRbFy9dn3aO+deryg0osxRmJhlrMRcWJAO6a
-	qUfoAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 29 Oct 2014 00:45:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1414492597-13566-1-git-send-email-julien.chauveau@neo-technologies.fr>
+References: <1414492597-13566-1-git-send-email-julien.chauveau@neo-technologies.fr>
+Date: Tue, 28 Oct 2014 21:45:15 -0700
+X-Google-Sender-Auth: d4Z8D1YVvJjV6RMJ6CFXTEg7SXw
+Message-ID: <CAD=FV=Vs9NT3hMS_Z0dOuwyBdxCsMddqohWFYOGYbM2ePm9PrQ@mail.gmail.com>
+Subject: Re: [PATCH v2] ARM: dts: rockchip: use internal pull-up resistors on
+ I2C busses
+From: Doug Anderson <dianders@chromium.org>
+To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Cc: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "moderated list:ARM/Rockchip SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Addy Ke <addy.ke@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2014 01:43 AM, Dmitry Torokhov wrote:
-> Expression haptic->pwm_dev->period * haptic->magnitude is of type 'unsigned
-> int' and may overflow. We need to convert one of the operands to u64 before
-> multiplying, instead of casting result (potentially overflown) to u64.
-> 
-> Reported by Coverity: CID 1248753
-> 
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Julien,
+
+On Tue, Oct 28, 2014 at 3:36 AM, Julien CHAUVEAU
+<julien.chauveau@neo-technologies.fr> wrote:
+> According to the I2C bus specification, it is required to use pull-up resistors
+> on the clock and data lines. Probing the I2C busses with i2cdetect results in
+> bad results when no devices are connected and no external resistors are used.
+>
+> This patch configures the I2C busses to use the internal pull-up resistors
+> on the RK3066, RK3188 and RK3288 Rockchip processors. It should also be noted
+> that these default pull settings match the original configuration on these SoCs.
+>
+> Below is the results of using i2cdetect on a I2C bus with no devices connected
+> before (1) and after (2) applying this patch.
+>
+> (1) root@localhost:~# i2cdetect -y 3
+>      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+> 00:          03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
+> 10: 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
+> 20: 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f
+> 30: -- -- -- -- -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x81, state: 2
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 2
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 2
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
+> -- rk3x-i2c 2005a000.i2c: timeout, ipd: 0x80, state: 3
+> ...
+>
+> (2) root@localhost:~# i2cdetect -y 3
+>      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+> 00:          -- -- -- -- -- -- -- -- -- -- -- -- --
+> 10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+> 70: -- -- -- -- -- -- -- --
+>
+> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
 > ---
->  drivers/input/misc/max77693-haptic.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/input/misc/max77693-haptic.c b/drivers/input/misc/max77693-haptic.c
-> index 7b1fde9..ef6a9d6 100644
-> --- a/drivers/input/misc/max77693-haptic.c
-> +++ b/drivers/input/misc/max77693-haptic.c
-> @@ -194,7 +194,7 @@ static int max77693_haptic_play_effect(struct input_dev *dev, void *data,
->  				       struct ff_effect *effect)
->  {
->  	struct max77693_haptic *haptic = input_get_drvdata(dev);
-> -	uint64_t period_mag_multi;
-> +	u64 period_mag_multi;
->  
->  	haptic->magnitude = effect->u.rumble.strong_magnitude;
->  	if (!haptic->magnitude)
-> @@ -205,8 +205,7 @@ static int max77693_haptic_play_effect(struct input_dev *dev, void *data,
->  	 * The formula to convert magnitude to pwm_duty as follows:
->  	 * - pwm_duty = (magnitude * pwm_period) / MAX_MAGNITUDE(0xFFFF)
->  	 */
-> -	period_mag_multi = (int64_t)(haptic->pwm_dev->period *
-> -						haptic->magnitude);
-> +	period_mag_multi = (u64)haptic->pwm_dev->period * haptic->magnitude;
->  	haptic->pwm_duty = (unsigned int)(period_mag_multi >>
->  						MAX_MAGNITUDE_SHIFT);
->  
-> 
+> Changes since v1:
+> - fix the rk3066a pull settings (only available is pull_none/pull_default)
+> - remove the warnings in the results of i2cdetect
+>
+>  arch/arm/boot/dts/rk3066a.dtsi | 20 ++++++++++----------
+>  arch/arm/boot/dts/rk3188.dtsi  | 20 ++++++++++----------
+>  arch/arm/boot/dts/rk3288.dtsi  | 24 ++++++++++++------------
+>  3 files changed, 32 insertions(+), 32 deletions(-)
 
-Looks good to me.
+I won't NAK this change myself, but I have to say I'm not a huge fan.
+On exynos boards the i2c has pulls by default, so there is precedent
+for what you're proposing at least.
 
-Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
+...but I'll also say that most sane boards have external pulls on i2c
+and don't rely on the internal pulls.  If you've got a board where the
+internal pull works well enough (lucky you!) then I think you should
+override the pinctrl for just that board.
 
-Thanks,
-Chanwoo Choi
+You are arguing that the internal pull "can't hurt".  I have past
+experience that shows that not to be the case.  Here's an old change
+for the Samsung ARM Chromebook:
+
+https://chromium-review.googlesource.com/#/c/26607/
+
+You probably can't dig into the bug link due to permissions, but I can
+paste some of that in:
+
+---
+
+On Daisy / Snow we've got a NXP HDMI level converter on i2c2.  That
+part has its own internal pullups.
+
+Ideally it shouldn't hurt for us to also have the exynos's (weak) 400K
+pullups on for the line too.  But according to our EE, we're just
+barely within spec and so turning off the exynos pullups makes sense.
+
+Specifically, the problem is the data line when the external HDMI
+device is driving low.  The NXP chip doesn't manage to drive the data
+line all the way low.  Measured on one board:
+* If exynos has pullup: "low" is 560mV
+* If exynos has no pull: "low" is 518mV
+* If exynos has pulldown: "low" is 490mV
+
+Low should really be 0, but exynos allows .3*VDD (or 540mV).
+
+
+We should disable pullups in both the kernel and in U-Boot.  There's
+even a chance that we'd want to enable pulldowns.
+
+
+Note that to read EDID at all you need to also remove the strong
+external pullups.
+
+---
+
+I did put your patch in my rk3288 board and it booted up OK, but I'm
+not setup to test HDMI right now.
+
+In v1 I think Addy said he was having trouble with HDMI and the
+internal pulls on some board, so maybe he had a similar experience to
+mine on snow.
+
+-Doug
