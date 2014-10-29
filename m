@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675AbaJ2L2Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 07:28:16 -0400
-Received: from glenfiddich.mraw.org ([62.210.215.98]:43047 "EHLO
-	glenfiddich.mraw.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384AbaJ2L2O (ORCPT
+	id S1756025AbaJ2LbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 07:31:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42127 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208AbaJ2LbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 07:28:14 -0400
-X-Greylist: delayed 938 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Oct 2014 07:28:13 EDT
-Date: Wed, 29 Oct 2014 12:12:24 +0100
-From: Cyril Brulebois <kibi@debian.org>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] wireless: rt2x00: add new rt2800usb device
-Message-ID: <20141029111224.GC29720@mraw.org>
-References: <1414510961-28920-1-git-send-email-kibi@debian.org>
- <20141029110214.GB2021@redhat.com>
+	Wed, 29 Oct 2014 07:31:11 -0400
+Date: Wed, 29 Oct 2014 12:31:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, mingo@kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        ilya.dryomov@inktank.com, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, rafael.j.wysocki@intel.com
+Subject: Re: [PATCH 00/11] nested sleeps, fixes and debug infrastructure
+Message-ID: <20141029113103.GC10476@twins.programming.kicks-ass.net>
+References: <1411633803.15810.12.camel@marge.simpson.net>
+ <20140925090619.GA5430@worktop>
+ <20140925091556.GB5430@worktop>
+ <20141002102251.GA6324@worktop.programming.kicks-ass.net>
+ <20141002121553.GB6324@worktop.programming.kicks-ass.net>
+ <20141027134103.GA10476@twins.programming.kicks-ass.net>
+ <20141028000703.GA22964@redhat.com>
+ <20141028082335.GM3337@twins.programming.kicks-ass.net>
+ <20141029000055.GA12107@redhat.com>
+ <20141029093503.GX3337@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5G06lTa6Jq83wMTw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141029110214.GB2021@redhat.com>
-Organization: Debian
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141029093503.GX3337@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 29, 2014 at 10:35:03AM +0100, Peter Zijlstra wrote:
+> On Wed, Oct 29, 2014 at 01:00:56AM +0100, Oleg Nesterov wrote:
 
---5G06lTa6Jq83wMTw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > But what if it calls try_to_freeze() and another thread (which should
+> > be frozen too) sleeps in kthread_stop() ?
+> 
+> Fair point indeed. Now I had a look at __refrigerator() and is there any
+> reason we should not remove that .check_kthr_stop argument and replace
+> it with an unconditional (current->flags & PF_KTHREAD) ?
 
-Stanislaw Gruszka <sgruszka@redhat.com> (2014-10-29):
-> On Tue, Oct 28, 2014 at 04:42:41PM +0100, Cyril Brulebois wrote:
-> > 0x1b75 0xa200 AirLive WN-200USB wireless 11b/g/n dongle
-> >=20
-> > References: https://bugs.debian.org/766802
-> > Reported-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
->=20
-> Was this patch tested by reporter? I would rather see Reported-and-tested=
--by tag :-)
+Hmm, doesn't kthread_freezable_should_stop() suffer the same problem? It
+should not refrigerate when should_stop.
 
-The reporter confirmed the following trick worked:
 
-  # echo rt2800usb >> /etc/modules
-  # echo 'install rt2800usb /sbin/modprobe --ignore-install rt2800usb $CMDL=
-INE_OPTS && echo 1b75 a200 > /sys/bus/usb/drivers/rt2800usb/new_id' > /etc/=
-modprobe.d/ralink.conf
-  # modprobe -r rt2800usb ; modprobe rt2800usb
-
-but I'll try and get this patch tested on top of 3.16.x (which is what
-we have in Debian at the moment) if that's good enough for you.
-
-Mraw,
-KiBi.
-
---5G06lTa6Jq83wMTw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJUUMuYAAoJEP+RSvDCs1UgqXoP/ir73I8VkEWvHsLs56Wc2Jo5
-Wf4Zpr19uj1KGuktexF8UpaIdzi84Ot3DWW3L0Jxb8GtBE3yr1MNDKGCQ+yncQcw
-RGqkbYb3DuAPfPb3ecg21er5dBZNZ+anu2uKcyd5nxeNh4U5N+Brr4qLapPHoNp+
-FtDE68+6b1W9HmEnSMz2uZdXLUTKOYPR4je34eIt8x1pULlRpRUEUtM090q9D94s
-lx2hmDxrMxTigkpJUJ2NCSen4uklS/pPpF1yd5Htst5l7TaXXxHTf+gh3Y5B+a77
-VC3P/+rWbJamYtUD2jvYDUS5VlL0PaMAFYEOdoU8wFP528SJi9woVIB2WbFrULQY
-mVvdsMDpn2lk+MkFy3kbHqLNTsJZvmTrvSvbOnYTmFGaVoHt/OTQDrRHHWXHyIve
-RtHGdrK+qjVexHfHT4xrjnYC1Mw5/2fJOO14oCq4E/v8I/AADVCedg41pAtusKrS
-hd1EQ7cLH/ewxsWXY97aRolqQNqIb842UVVANir648dIkT72CLDuialK3OLVvUNI
-In+iTlEFhkJrbctPJ7Mk6fOOcuzPU9+kv3pdJgwhh7VhPzNYANsZZG7fquuyg1Pk
-cTGTHaIzQP/pZhp9WlVk+ghpoL4PJmH2kWCbomZAK2vQOCQu8O5aQKQ/mloYVH0r
-MIP0hb1J8kEsVOtAwR/M
-=VB1b
------END PGP SIGNATURE-----
-
---5G06lTa6Jq83wMTw--
