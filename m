@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934618AbaJ2Q2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:28:31 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:33683 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933931AbaJ2QYD (ORCPT
+	id S934444AbaJ2Q33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:29:29 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60442 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933459AbaJ2Q32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:24:03 -0400
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: linux-tegra@vger.kernel.org
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Mikko Perttunen <mperttunen@nvidia.com>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
+	Wed, 29 Oct 2014 12:29:28 -0400
+Message-ID: <545115DF.9070008@collabora.co.uk>
+Date: Wed, 29 Oct 2014 17:29:19 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>, Chris Zhong <zyw@rock-chips.com>
+CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
         Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 01/13] clk: tegra124: Remove old emc clock
-Date: Wed, 29 Oct 2014 17:22:19 +0100
-Message-Id: <1414599796-30597-2-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1414599796-30597-1-git-send-email-tomeu.vizoso@collabora.com>
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kevin Hilman <khilman@kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 7/7] ARM: dts: add suspend voltage setting for RK808
+References: <1414583525-17395-1-git-send-email-zyw@rock-chips.com>	<1414583525-17395-8-git-send-email-zyw@rock-chips.com> <CAD=FV=XeGj63_MEPL5i1ihUORuHnwD1ktEjJN5x=B-tkHV088w@mail.gmail.com>
+In-Reply-To: <CAD=FV=XeGj63_MEPL5i1ihUORuHnwD1ktEjJN5x=B-tkHV088w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikko Perttunen <mperttunen@nvidia.com>
+Hello Chris,
 
-This clock has never been able to do anything.
+On 10/29/2014 04:40 PM, Doug Anderson wrote:
+>>                                 regulator-min-microvolt = <750000>;
+>>                                 regulator-max-microvolt = <1300000>;
+>>                                 regulator-name = "vdd_arm";
+>> +                               regulator-suspend-mem-disabled;
+> 
+> NAK.  "regulator-suspend-mem-disabled" is a local property added by
+> local Chrome OS patches and doesn't belong in an upstream submission.
+> 
+> You should using the new patches from Chanwoo.
+> 
+> 40e20d6 regulator: of: Add support for parsing regulator_state for suspend state
+> 291d761 regulator: Document binding for regulator suspend state for PM state
+> 
+> In your case, it would look like:
+> 
+> regulator-state-mem {
+>   regulator-off-in-suspend;
+> };
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Agreed.
 
----
+> 
+>> @@ -76,6 +80,7 @@
+>>                                 regulator-min-microvolt = <3300000>;
+>>                                 regulator-max-microvolt = <3300000>;
+>>                                 regulator-name = "vccio_pmu";
+>> +                               regulator-suspend-mem-microvolt = <3300000>;
+> 
+> Similarly this property isn't upstream.  You can see Javier's work on
+> this in <https://patchwork.kernel.org/patch/5106351/> and I think
+> you'll need an rk808-specific patch just like he needs an max77802
+> patch.  You probably want to wait for him to spin it first, though,
+> since Mark had feedback on his last patch.
+>
 
-v2:	* Don't remove emc_mux as it's being used by the MC clock now
----
- drivers/clk/tegra/clk-tegra124.c | 1 -
- 1 file changed, 1 deletion(-)
+I'm working on adding support to configure the regulator mode on startup
+and when the system enters in a suspend state.
 
-diff --git a/drivers/clk/tegra/clk-tegra124.c b/drivers/clk/tegra/clk-tegra124.c
-index f5f9bac..07ec882 100644
---- a/drivers/clk/tegra/clk-tegra124.c
-+++ b/drivers/clk/tegra/clk-tegra124.c
-@@ -790,7 +790,6 @@ static struct tegra_clk tegra124_clks[tegra_clk_max] __initdata = {
- 	[tegra_clk_i2c2] = { .dt_id = TEGRA124_CLK_I2C2, .present = true },
- 	[tegra_clk_uartc] = { .dt_id = TEGRA124_CLK_UARTC, .present = true },
- 	[tegra_clk_mipi_cal] = { .dt_id = TEGRA124_CLK_MIPI_CAL, .present = true },
--	[tegra_clk_emc] = { .dt_id = TEGRA124_CLK_EMC, .present = true },
- 	[tegra_clk_usb2] = { .dt_id = TEGRA124_CLK_USB2, .present = true },
- 	[tegra_clk_usb3] = { .dt_id = TEGRA124_CLK_USB3, .present = true },
- 	[tegra_clk_vde_8] = { .dt_id = TEGRA124_CLK_VDE, .present = true },
--- 
-1.9.3
+As Doug said I've to re-spin since Mark wanted things to be more integrated
+with the core. So I'm doing some refactoring to pass the static regulator
+descriptor to the function extracting the regulator initial data so drivers
+should only define a function handler that does the modes translation.
+I believe this is the more sensible place to add the mapping function since
+the modes translation should be a non-varying property of the regulator.
+ 
+Having said that, I see a different use case here. You want to set a voltage
+on system suspend. But the value is the same that is set to your fixed
+regulator so I wonder if what you want here is to enable the regulator on
+suspend instead?
 
+In other words, do you want the core to call rk808_set_suspend_voltage() or
+rk808_set_suspend_enable()? If the later then you can use Chanwoo's bindings:
+
+regulator-state-mem {
+   regulator-on-in-suspend;
+};
+
+If you want the former then you should look at Chanwoo's previous series that
+had support to define the voltage for regulators during a suspend state [0]
+
+Mark had some questions about how that should play with the regulator voltage
+range [1] but was not against the idea AFAIU.
+
+Best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2014/8/18/22
+[1]: https://lkml.org/lkml/2014/9/4/651
