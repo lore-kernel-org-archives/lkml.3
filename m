@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933347AbaJ2OHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:07:00 -0400
-Received: from mail.kernel.org ([198.145.19.201]:40927 "EHLO mail.kernel.org"
+	id S933370AbaJ2OHK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:07:10 -0400
+Received: from mail.kernel.org ([198.145.19.201]:40956 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932768AbaJ2OG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:06:58 -0400
+	id S933350AbaJ2OHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 10:07:04 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@au1.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/25] perf tools powerpc: Cache the DWARF debug info
-Date: Wed, 29 Oct 2014 12:06:13 -0200
-Message-Id: <1414591597-2763-2-git-send-email-acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 02/25] perf tools: Set thread->mg.machine in all places
+Date: Wed, 29 Oct 2014 12:06:14 -0200
+Message-Id: <1414591597-2763-3-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414591597-2763-1-git-send-email-acme@kernel.org>
 References: <1414591597-2763-1-git-send-email-acme@kernel.org>
@@ -22,131 +27,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Cache the DWARF debug info for DSO so we don't have to rebuild it for each
-address in the DSO.
+We were setting this only in machine__init(), i.e. for the map_groups that
+holds the kernel module maps, not for the one used for a thread's executable
+mmaps.
 
-Note that dso__new() uses calloc() so don't need to set dso->dwfl to NULL.
+Now we are sure that we can obtain the machine where a thread is by going
+via thread->mg->machine, thus we can, in the following patch, make all
+codepaths that receive machine _and_ thread, drop the machine one.
 
-	$ /tmp/perf.orig --version
-	perf version 3.18.rc1.gc2661b8
-	$ /tmp/perf.new --version
-	perf version 3.18.rc1.g402d62
-	$ perf stat -e cycles,instructions /tmp/perf.orig report -g > orig
-
-	 Performance counter stats for '/tmp/perf.orig report -g':
-
-	     6,428,177,183 cycles                    #    0.000 GHz
-	     4,176,288,391 instructions              #    0.65  insns per cycle
-
-	       1.840666132 seconds time elapsed
-
-	$ perf stat -e cycles,instructions /tmp/perf.new report -g > new
-
-	 Performance counter stats for '/tmp/perf.new report -g':
-
-	       305,773,142 cycles                    #    0.000 GHz
-	       276,048,272 instructions              #    0.90  insns per cycle
-
-	       0.087693543 seconds time elapsed
-	$ diff orig new
-	$
-
-Changelog[v2]:
-
-[Arnaldo Carvalho] Cache in existing global objects rather than create
-                   new static/globals in functions.
-
-Reported-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jean Pihet <jean.pihet@linaro.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/20141022000958.GB2228@us.ibm.com
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-y6zgaqsvhrf04v57u15e4ybm@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/arch/powerpc/util/skip-callchain-idx.c | 33 +++++++++++++++--------
- tools/perf/util/dso.h                             |  1 +
- 2 files changed, 23 insertions(+), 11 deletions(-)
+ tools/perf/util/machine.c | 5 ++---
+ tools/perf/util/map.c     | 8 ++++----
+ tools/perf/util/map.h     | 4 ++--
+ tools/perf/util/thread.c  | 2 +-
+ 4 files changed, 9 insertions(+), 10 deletions(-)
 
-diff --git a/tools/perf/arch/powerpc/util/skip-callchain-idx.c b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
-index d73ef8bb08c7..9892b0f0bec4 100644
---- a/tools/perf/arch/powerpc/util/skip-callchain-idx.c
-+++ b/tools/perf/arch/powerpc/util/skip-callchain-idx.c
-@@ -145,7 +145,7 @@ static Dwarf_Frame *get_dwarf_frame(Dwfl_Module *mod, Dwarf_Addr pc)
-  *		yet used)
-  *	-1 in case of errors
-  */
--static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
-+static int check_return_addr(struct dso *dso, Dwarf_Addr pc)
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index 34fc7c8672e4..c70b3ff7b289 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -21,7 +21,7 @@ static void dsos__init(struct dsos *dsos)
+ 
+ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
  {
- 	int		rc = -1;
- 	Dwfl		*dwfl;
-@@ -156,15 +156,27 @@ static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
- 	Dwarf_Addr	end = pc;
- 	bool		signalp;
+-	map_groups__init(&machine->kmaps);
++	map_groups__init(&machine->kmaps, machine);
+ 	RB_CLEAR_NODE(&machine->rb_node);
+ 	dsos__init(&machine->user_dsos);
+ 	dsos__init(&machine->kernel_dsos);
+@@ -32,7 +32,6 @@ int machine__init(struct machine *machine, const char *root_dir, pid_t pid)
  
--	dwfl = dwfl_begin(&offline_callbacks);
--	if (!dwfl) {
--		pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
--		return -1;
--	}
-+	dwfl = dso->dwfl;
+ 	machine->vdso_info = NULL;
  
--	if (dwfl_report_offline(dwfl, "",  exec_file, -1) == NULL) {
--		pr_debug("dwfl_report_offline() failed %s\n", dwarf_errmsg(-1));
--		goto out;
-+	if (!dwfl) {
-+		dwfl = dwfl_begin(&offline_callbacks);
-+		if (!dwfl) {
-+			pr_debug("dwfl_begin() failed: %s\n", dwarf_errmsg(-1));
-+			return -1;
-+		}
-+
-+		if (dwfl_report_offline(dwfl, "", dso->long_name, -1) == NULL) {
-+			pr_debug("dwfl_report_offline() failed %s\n",
-+						dwarf_errmsg(-1));
-+			/*
-+			 * We normally cache the DWARF debug info and never
-+			 * call dwfl_end(). But to prevent fd leak, free in
-+			 * case of error.
-+			 */
-+			dwfl_end(dwfl);
-+			goto out;
-+		}
-+		dso->dwfl = dwfl;
- 	}
+-	machine->kmaps.machine = machine;
+ 	machine->pid = pid;
  
- 	mod = dwfl_addrmodule(dwfl, pc);
-@@ -194,7 +206,6 @@ static int check_return_addr(const char *exec_file, Dwarf_Addr pc)
- 	rc = check_return_reg(ra_regno, frame);
+ 	machine->symbol_filter = NULL;
+@@ -319,7 +318,7 @@ static void machine__update_thread_pid(struct machine *machine,
+ 		goto out_err;
  
- out:
--	dwfl_end(dwfl);
- 	return rc;
+ 	if (!leader->mg)
+-		leader->mg = map_groups__new();
++		leader->mg = map_groups__new(machine);
+ 
+ 	if (!leader->mg)
+ 		goto out_err;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 2137c4596ec7..040a785c857b 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -413,14 +413,14 @@ u64 map__objdump_2mem(struct map *map, u64 ip)
+ 	return ip + map->reloc;
  }
  
-@@ -246,7 +257,7 @@ int arch_skip_callchain_idx(struct machine *machine, struct thread *thread,
- 		return skip_slot;
+-void map_groups__init(struct map_groups *mg)
++void map_groups__init(struct map_groups *mg, struct machine *machine)
+ {
+ 	int i;
+ 	for (i = 0; i < MAP__NR_TYPES; ++i) {
+ 		mg->maps[i] = RB_ROOT;
+ 		INIT_LIST_HEAD(&mg->removed_maps[i]);
  	}
+-	mg->machine = NULL;
++	mg->machine = machine;
+ 	mg->refcnt = 1;
+ }
  
--	rc = check_return_addr(dso->long_name, ip);
-+	rc = check_return_addr(dso, ip);
+@@ -471,12 +471,12 @@ bool map_groups__empty(struct map_groups *mg)
+ 	return true;
+ }
  
- 	pr_debug("DSO %s, nr %" PRIx64 ", ip 0x%" PRIx64 "rc %d\n",
- 				dso->long_name, chain->nr, ip, rc);
-diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
-index acb651acc7fd..3c9b391493f9 100644
---- a/tools/perf/util/dso.h
-+++ b/tools/perf/util/dso.h
-@@ -127,6 +127,7 @@ struct dso {
- 	const char	 *long_name;
- 	u16		 long_name_len;
- 	u16		 short_name_len;
-+	void		*dwfl;			/* DWARF debug info */
+-struct map_groups *map_groups__new(void)
++struct map_groups *map_groups__new(struct machine *machine)
+ {
+ 	struct map_groups *mg = malloc(sizeof(*mg));
  
- 	/* dso data file */
- 	struct {
+ 	if (mg != NULL)
+-		map_groups__init(mg);
++		map_groups__init(mg, machine);
+ 
+ 	return mg;
+ }
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 2f83954af050..6951a9d42339 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -64,7 +64,7 @@ struct map_groups {
+ 	int		 refcnt;
+ };
+ 
+-struct map_groups *map_groups__new(void);
++struct map_groups *map_groups__new(struct machine *machine);
+ void map_groups__delete(struct map_groups *mg);
+ bool map_groups__empty(struct map_groups *mg);
+ 
+@@ -150,7 +150,7 @@ void maps__remove(struct rb_root *maps, struct map *map);
+ struct map *maps__find(struct rb_root *maps, u64 addr);
+ struct map *maps__first(struct rb_root *maps);
+ struct map *maps__next(struct map *map);
+-void map_groups__init(struct map_groups *mg);
++void map_groups__init(struct map_groups *mg, struct machine *machine);
+ void map_groups__exit(struct map_groups *mg);
+ int map_groups__clone(struct map_groups *mg,
+ 		      struct map_groups *parent, enum map_type type);
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index c41411726c7a..8db9626f6835 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -15,7 +15,7 @@ int thread__init_map_groups(struct thread *thread, struct machine *machine)
+ 	pid_t pid = thread->pid_;
+ 
+ 	if (pid == thread->tid || pid == -1) {
+-		thread->mg = map_groups__new();
++		thread->mg = map_groups__new(machine);
+ 	} else {
+ 		leader = machine__findnew_thread(machine, pid, pid);
+ 		if (leader)
 -- 
 1.9.3
 
