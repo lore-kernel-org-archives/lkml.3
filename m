@@ -1,106 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753013AbaJ2BsW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 21:48:22 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35021 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619AbaJ2BsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 21:48:21 -0400
-Message-ID: <54504672.8010804@linux.vnet.ibm.com>
-Date: Wed, 29 Oct 2014 07:14:18 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1753199AbaJ2BwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 21:52:04 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:33331 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaJ2BwD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Oct 2014 21:52:03 -0400
+Date: Tue, 28 Oct 2014 18:51:58 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Sebastian Reichel <sre@kernel.org>, linux-pm@vger.kernel.org,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-kernel@vger.kernel.org, Marc Carino <marc.ceeeee@gmail.com>
+Subject: Re: [PATCH v2 10/10] power/reset: brcmstb: Register with kernel
+ restart handler
+Message-ID: <20141029015158.GC23619@ld-irv-0074>
+References: <1412099316-23167-1-git-send-email-linux@roeck-us.net>
+ <1412099316-23167-11-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        patches@linaro.org
-Subject: Re: [PATCH V2 3/5] cpuidle: idle: menu: Don't reflect when a state
- selection failed
-References: <1414054881-17713-1-git-send-email-daniel.lezcano@linaro.org> <1414054881-17713-3-git-send-email-daniel.lezcano@linaro.org> <CAM4v1pO9e7r10KX=D=9aVTV_ecvPa-aJOoB6PAwR5jxMS3eg4w@mail.gmail.com> <544FE032.5050900@linaro.org>
-In-Reply-To: <544FE032.5050900@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14102901-0029-0000-0000-000000F72FC6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1412099316-23167-11-git-send-email-linux@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2014 11:58 PM, Daniel Lezcano wrote:
-> On 10/28/2014 08:01 AM, Preeti Murthy wrote:
->> On Thu, Oct 23, 2014 at 2:31 PM, Daniel Lezcano
->> <daniel.lezcano@linaro.org> wrote:
->>> In the current code, the check to reflect or not the outcoming state
->>> is done
->>> against the idle state which has been chosen and its value.
->>>
->>> Instead of doing a check in each of the reflect functions, just don't
->>> call reflect
->>> if something went wrong in the idle path.
->>>
->>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
->>> Acked-by: Nicolas Pitre <nico@linaro.org>
->>> ---
->>>   drivers/cpuidle/governors/ladder.c | 3 +--
->>>   drivers/cpuidle/governors/menu.c   | 4 +---
->>>   kernel/sched/idle.c                | 3 ++-
->>>   3 files changed, 4 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/cpuidle/governors/ladder.c
->>> b/drivers/cpuidle/governors/ladder.c
->>> index fb396d6..c0b36a8 100644
->>> --- a/drivers/cpuidle/governors/ladder.c
->>> +++ b/drivers/cpuidle/governors/ladder.c
->>> @@ -165,8 +165,7 @@ static int ladder_enable_device(struct
->>> cpuidle_driver *drv,
->>>   static void ladder_reflect(struct cpuidle_device *dev, int index)
->>>   {
->>>          struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
->>> -       if (index > 0)
->>> -               ldev->last_state_idx = index;
->>> +       ldev->last_state_idx = index;
->>>   }
->>>
->>>   static struct cpuidle_governor ladder_governor = {
->>> diff --git a/drivers/cpuidle/governors/menu.c
->>> b/drivers/cpuidle/governors/menu.c
->>> index a17515f..3907301 100644
->>> --- a/drivers/cpuidle/governors/menu.c
->>> +++ b/drivers/cpuidle/governors/menu.c
->>> @@ -365,9 +365,7 @@ static int menu_select(struct cpuidle_driver
->>> *drv, struct cpuidle_device *dev,
->>>   static void menu_reflect(struct cpuidle_device *dev, int index)
->>>   {
->>>          struct menu_device *data = &__get_cpu_var(menu_devices);
->>> -       data->last_state_idx = index;
->>> -       if (index >= 0)
->>> -               data->needs_update = 1;
->>> +       data->needs_update = 1;
->>
->> Why is the last_state_idx not getting updated ?
+On Tue, Sep 30, 2014 at 10:48:36AM -0700, Guenter Roeck wrote:
+> Register with kernel restart handler instead of setting arm_pm_restart directly.
 > 
-> Oups, right. This is missing.
-> 
-> Thanks for pointing this out.
-> 
-> By the way, I don't think a back end driver is changing the selected
-> state currently and I am not sure this is desirable since we want to
-> trust the state we are going (as a best effort). So if the 'enter'
-> function does not change the index, that means the last_state_idx has
-> not to be changed since it has been assigned in the 'select' function.
+> Cc: Marc Carino <marc.ceeeee@gmail.com>
+> Cc: Brian Norris <computersforpeace@gmail.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 
-Hmm Right. So you might want to remove the last_state_idx update in
-ladder_reflect() also?
+Tested on top of linux-next:
 
-Regards
-Preeti U Murthy
-> 
-> 
-> 
-
+Tested-by: Brian Norris <computersforpeace@gmail.com>
+Acked-by: Brian Norris <computersforpeace@gmail.com>
