@@ -1,109 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934692AbaJ2RZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 13:25:29 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:56171 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934213AbaJ2RZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 13:25:28 -0400
+	id S934711AbaJ2R0S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 13:26:18 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7345 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933998AbaJ2R0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 13:26:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,278,1413270000"; 
+   d="scan'208";a="627775234"
+Date: Wed, 29 Oct 2014 10:26:16 -0700 (PDT)
+From: Vikas Shivappa <vikas.shivappa@intel.com>
+X-X-Sender: vikas@vshiva-Udesk
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Matt Fleming <matt@console-pimps.org>,
+        vikas <vikas.shivappa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "matt.fleming" <matt.fleming@intel.com>,
+        "will.auld" <will.auld@intel.com>, tj@kernel.org,
+        "vikas.shivappa" <vikas.shivappa@intel.com>
+Subject: Re: Cache Allocation Technology Design
+In-Reply-To: <20141024105306.GI12706@worktop.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1410291020020.26215@vshiva-Udesk>
+References: <1413485050.28564.14.camel@vshiva-Udesk> <20141020161855.GF12020@console-pimps.org> <20141024105306.GI12706@worktop.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <5451201C.9090106@imgtec.com>
-References: <1414541562-10076-1-git-send-email-abrestic@chromium.org>
-	<1414541562-10076-3-git-send-email-abrestic@chromium.org>
-	<5450B1B1.5070301@imgtec.com>
-	<CAL1qeaFeoKFbea7eiiXaw87PYUWO1JmP5xxdLLpW2RrFCprtZg@mail.gmail.com>
-	<5451201C.9090106@imgtec.com>
-Date: Wed, 29 Oct 2014 10:25:27 -0700
-X-Google-Sender-Auth: RzLYAdF_FXrjFSKL8bRiPcUGvSU
-Message-ID: <CAL1qeaEOifj-R2vcWzzh2i5S3ogBf3eZ4X8PbVa1j_BtsgFCwA@mail.gmail.com>
-Subject: Re: [PATCH V3 2/4] of: Add binding document for MIPS GIC
-From: Andrew Bresticker <abrestic@chromium.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        John Crispin <blogic@openwrt.org>, David Daney <ddaney.cavm@gmail.com>,
-        Qais Yousef <qais.yousef@imgtec.com>,
-        Linux-MIPS <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul <Paul.Burton@imgtec.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 10:13 AM, James Hogan <james.hogan@imgtec.com> wrote:
-> On 29/10/14 16:55, Andrew Bresticker wrote:
->> Hi James,
->>
->> On Wed, Oct 29, 2014 at 2:21 AM, James Hogan <james.hogan@imgtec.com> wrote:
->>> Hi Andrew,
->>>
->>> On 29/10/14 00:12, Andrew Bresticker wrote:
->>>>  - changed compatible string to include CPU version
->>>
->>>> +Required properties:
->>>> +- compatible : Should be "mti,<cpu>-gic".  Supported variants:
->>>> +  - "mti,interaptiv-gic"
->>>
->>>> +Required properties for timer sub-node:
->>>> +- compatible : Should be "mti,<cpu>-gic-timer".  Supported variants:
->>>> +  - "mti,interaptiv-gic-timer"
->>>
->>> Erm, I'm a bit confused...
->>> Why do you include the core name in the compatible string?
->>>
->>> You seem to be suggesting that:
->>>
->>> 1) The GIC/timer drivers need to know what core they're running on.
->>>
->>> Is that really true?
->>
->> They don't now, but it's possible that a future CPU has a newer
->> revision of the GIC which has some differences that need to be
->> accounted for in the driver.
->>
->>> 2) It isn't possible to probe the core type.
->>>
->>> But the kernel already knows this, so what's wrong with using
->>> current_cpu_type() like everything else that needs to know?
->>>
->>> 3) Every new core should require a new compatible string to be added
->>> before the GIC will work. You don't even have a generic compatible
->>> string that DT can specify after the core specific one as a fallback.
->>
->> Yes, adding a generic compatible string would be a good idea.
->>
->>> Please lets not do this unless it's actually necessary (which AFAICT it
->>> really isn't).
->>
->> The point of this was to future-proof these bindings and I though that
->> CPU type was the best way to indicate version in the compatible
->> string.  This is also how it's done for the ARM GIC and arch timers.
->> Perhaps the best thing to do is to require both a core-specific
->> ("mti,interaptiv-gic") and generic ("mti,gic") compatible string and
->> just match on the generic one for now until there's a need to use the
->> core-specific one.  Thoughts?
+
+
+On Fri, 24 Oct 2014, Peter Zijlstra wrote:
+
+> On Mon, Oct 20, 2014 at 05:18:55PM +0100, Matt Fleming wrote:
+>>> What is Cache Allocation Technology ( CAT )
+>>> -------------------------------------------
 >
-> FPGA boards like Malta are something else to consider (when it is
-> eventually converted to DT - Paul on CC knows more than me). You might
-> load an interAptiv, or a proAptiv, or a P5600 bitstream, and the gic
-> setup will be pretty much the same I think, since e.g. the address
-> depends on where it is convenient to put it in the address space of the
-> platform.
+> Its a horrible name is what it is, please consider using the old name,
+> that at least was clear in purpose.
+>
+>>> Kernel implementation Overview
+>>> -------------------------------
+>>>
+>>> Kernel implements a cgroup subsystem to support Cache Allocation.
+>>>
+>>> Creating a CAT cgroup would create a new CLOS <-> CBM mapping. Each
+>>> cgroup would have one CBM and would just represent one cache 'subset'.
+>>>
+>>> The user would be allowed to create as many directories as there are
+>>> CLOSs defined by the h/w. If user tries to create more than the
+>>> available CLOSs , -ENOSPC is returned. Currently we support only one
+>>> level of directory, ie directory can be created only under the root.
+>
+> NAK, cgroups must support full hierarchies, simply enforce that the
+> child cgroup's mask is a subset of the parent's.
+>
+>>> There are 2 modes supported
+>>>
+>>> 1. Affinitized mode : Each CAT cgroup is affinitized to a set of CPUs
+>>> specified by the 'cpus' file. The tasks in the CAT cgroup would be
+>>> constrained only on the CPUs in the 'cpus' file. The CPUs in this file
+>>> are exclusively used for this cgroup. Requests by task
+>>> using the sched_setaffinity() would be filtered through the tasks
+>>> 'cpus'.
+>
+> NAK, we will not have yet another cgroup mucking about with task
+> affinities.
+>
+>>> These tasks would get to fill the LLC cache represented by the
+>>> cgroup's 'cbm' file.  'cpus'  is a cpumask and works the same way as
+>>> the existing cpumask datastructure.
+>>>
+>>> 2. Non Affinitized mode : Each CAT cgroup(inturn 'subset') would be
+>>> for a group of tasks. There is no 'cpus' file and the CPUs that the
+>>> tasks run are not restricted by the CAT cgroup
+>
+> It appears to me this 'mode' thing is entirely superfluous and can be
+> constructed by voluntary operation of this and cpusets or manual
+> affinity calls.
 
-Ah, I didn't realize that the CPU bitstream could be changed
-independently of the GIC.
-In that case, the CPU revision isn't that useful.
+Do you mean user would would just user the cpusets for cpu affinity and 
+CAT cgroup for cache allocation as shown in example below ?
 
-> Any thoughts on the existence of current_cpu_type(), and the GIC
-> revision register? They pretty much make encoding of core in compatible
-> string redundant I think.
+In other words say affinitize the PID1 and PID2 to CPUs 1 and 2
+  and then set the desired cache allocation as well like below - then we 
+have the desired cpu affinity and cache allocation for these PIDs..
 
-Ok, I suppose using the revision register is fine then.
+cd /sys/fs/cgroup/cpuset
+
+mkdir group1_specialuse
+/bin/echo 1-2 > cpuset.cpus
+/bin/echo PID1 > tasks
+/bin/echo PID2 > tasks
+
+Now come to CAT and do the cache allocation for the same tasks PID1 and 
+PID2.
+
+cd /sys/fs/cgroup/cat (CAT cgroup)
+
+mkdir group1_specialuse (keeping same name just for understanding)
+/bin/echo 0xf > cat.cbm (set the cache bit mask)
+/bin/echo PID1 > tasks
+/bin/echo PID2 > tasks
+
+
+
+>
+>>> Assignment of CBM,CLOS and modes
+>>> ---------------------------------
+>>>
+>>> Root directory would have all bits in 'cbm' file by default.
+>>>
+>>> The cbm_max file in the root defines the maximum number of bits
+>>> describing the available cache units. Say if cbm_max is 16 then the
+>>> 'cbm' cannot have more than 16 bits.
+>
+> This seems redundant, if you've already stated that the root cbm is the
+> full set, there is no need to further provide this.
+>
+>>> The 'cbm' file is restricted to having no more than its cbm_max least
+>>> significant bits set. Any contiguous subset of these bits maybe set to
+>>> indication the cache mapping desired.  The 'cbm' between 2 directories
+>>> can overlap. The 'cbm' would represent the cache 'subset' of the CAT
+>>> cgroup.
+>
+> This would follow from the hierarchy requirement/conditions.
+>
+>>> Scheduling and Context Switch
+>>> ------------------------------
+>
+>>> In non-affinitized mode the 'affinitized' is 0 , and the 'tasks' file
+>>> indicate the tasks the cache subset is affinitized to.  When user adds
+>>> tasks to the tasks file , the tasks would get to fill the cache subset
+>>> represented by the CAT cgroup's 'cbm' file.
+>>>
+>>> During context switch kernel implements this by writing the
+>>> corresponding CLOSid (internally maintained by kernel) of the CAT
+>>> cgroup to the CPU's IA32_PQR_ASSOC MSR.
+>
+> Right.
+>
