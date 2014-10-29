@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427AbaJ2L16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 07:27:58 -0400
-Received: from outbound-smtp04.blacknight.com ([81.17.249.35]:33776 "EHLO
-	outbound-smtp04.blacknight.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932384AbaJ2L14 (ORCPT
+	id S932675AbaJ2L2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 07:28:16 -0400
+Received: from glenfiddich.mraw.org ([62.210.215.98]:43047 "EHLO
+	glenfiddich.mraw.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932384AbaJ2L2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 07:27:56 -0400
-Message-ID: <5450CF36.7060105@nexus-software.ie>
-Date: Wed, 29 Oct 2014 11:27:50 +0000
-From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 29 Oct 2014 07:28:14 -0400
+X-Greylist: delayed 938 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Oct 2014 07:28:13 EDT
+Date: Wed, 29 Oct 2014 12:12:24 +0100
+From: Cyril Brulebois <kibi@debian.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] wireless: rt2x00: add new rt2800usb device
+Message-ID: <20141029111224.GC29720@mraw.org>
+References: <1414510961-28920-1-git-send-email-kibi@debian.org>
+ <20141029110214.GB2021@redhat.com>
 MIME-Version: 1.0
-To: "Chen, Alvin" <alvin.chen@intel.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Kweh, Hock Leong" <hock.leong.kweh@intel.com>,
-        "Ong, Boon Leong" <boon.leong.ong@intel.com>,
-        "Tan, Raymond" <raymond.tan@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: Re: [PATCH 1/2 v3] SPI: spi-pxa2xx: Add helpers for regiseters' accessing
-References: <1412783423-9408-1-git-send-email-alvin.chen@intel.com> <1412783423-9408-2-git-send-email-alvin.chen@intel.com> <4656BEB6164FC34F8171C6538F1A595B2E9A90E6@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <4656BEB6164FC34F8171C6538F1A595B2E9A90E6@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5G06lTa6Jq83wMTw"
+Content-Disposition: inline
+In-Reply-To: <20141029110214.GB2021@redhat.com>
+Organization: Debian
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/10/14 00:33, Chen, Alvin wrote:
-> Any update for these patches? Just want to follow-up.
->
 
-Hi Alvin, Weike.
+--5G06lTa6Jq83wMTw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm not clear if these patches apply to the current tip-of-tree.
+Stanislaw Gruszka <sgruszka@redhat.com> (2014-10-29):
+> On Tue, Oct 28, 2014 at 04:42:41PM +0100, Cyril Brulebois wrote:
+> > 0x1b75 0xa200 AirLive WN-200USB wireless 11b/g/n dongle
+> >=20
+> > References: https://bugs.debian.org/766802
+> > Reported-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+>=20
+> Was this patch tested by reporter? I would rather see Reported-and-tested=
+-by tag :-)
 
-I thought the action required here, was for a resend of patches to 
-ensure they applied to tip-of-tree ?
+The reporter confirmed the following trick worked:
 
-Best,
-	BOD
+  # echo rt2800usb >> /etc/modules
+  # echo 'install rt2800usb /sbin/modprobe --ignore-install rt2800usb $CMDL=
+INE_OPTS && echo 1b75 a200 > /sys/bus/usb/drivers/rt2800usb/new_id' > /etc/=
+modprobe.d/ralink.conf
+  # modprobe -r rt2800usb ; modprobe rt2800usb
 
+but I'll try and get this patch tested on top of 3.16.x (which is what
+we have in Debian at the moment) if that's good enough for you.
+
+Mraw,
+KiBi.
+
+--5G06lTa6Jq83wMTw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJUUMuYAAoJEP+RSvDCs1UgqXoP/ir73I8VkEWvHsLs56Wc2Jo5
+Wf4Zpr19uj1KGuktexF8UpaIdzi84Ot3DWW3L0Jxb8GtBE3yr1MNDKGCQ+yncQcw
+RGqkbYb3DuAPfPb3ecg21er5dBZNZ+anu2uKcyd5nxeNh4U5N+Brr4qLapPHoNp+
+FtDE68+6b1W9HmEnSMz2uZdXLUTKOYPR4je34eIt8x1pULlRpRUEUtM090q9D94s
+lx2hmDxrMxTigkpJUJ2NCSen4uklS/pPpF1yd5Htst5l7TaXXxHTf+gh3Y5B+a77
+VC3P/+rWbJamYtUD2jvYDUS5VlL0PaMAFYEOdoU8wFP528SJi9woVIB2WbFrULQY
+mVvdsMDpn2lk+MkFy3kbHqLNTsJZvmTrvSvbOnYTmFGaVoHt/OTQDrRHHWXHyIve
+RtHGdrK+qjVexHfHT4xrjnYC1Mw5/2fJOO14oCq4E/v8I/AADVCedg41pAtusKrS
+hd1EQ7cLH/ewxsWXY97aRolqQNqIb842UVVANir648dIkT72CLDuialK3OLVvUNI
+In+iTlEFhkJrbctPJ7Mk6fOOcuzPU9+kv3pdJgwhh7VhPzNYANsZZG7fquuyg1Pk
+cTGTHaIzQP/pZhp9WlVk+ghpoL4PJmH2kWCbomZAK2vQOCQu8O5aQKQ/mloYVH0r
+MIP0hb1J8kEsVOtAwR/M
+=VB1b
+-----END PGP SIGNATURE-----
+
+--5G06lTa6Jq83wMTw--
