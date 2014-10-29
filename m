@@ -1,15 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683AbaJ2W2k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:28:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53718 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932228AbaJ2W2j (ORCPT
+	id S932753AbaJ2W2t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:28:49 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:64086 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197AbaJ2W2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:28:39 -0400
-Date: Wed, 29 Oct 2014 15:27:29 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Andy Lutomirski <luto@amacapital.net>
+	Wed, 29 Oct 2014 18:28:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20141029222531.GA8129@kroah.com>
+References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
+ <CALCETrUBegZ4F1sKq3LxUgANX3=syYOrqOp9=F--g9pkVHHgUA@mail.gmail.com> <20141029222531.GA8129@kroah.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 29 Oct 2014 15:28:25 -0700
+Message-ID: <CALCETrX6vf7cKy=XDhDtn9hn1W930MRxBa=pk93RnyuZ-EaNyw@mail.gmail.com>
+Subject: Re: [PATCH 00/12] Add kdbus implementation
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Linux API <linux-api@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         John Stultz <john.stultz@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
@@ -19,50 +25,39 @@ Cc: Linux API <linux-api@vger.kernel.org>,
         Djalal Harouni <tixxdz@opendz.org>, simon.mcvittie@collabora.co.uk,
         daniel@zonque.org, alban.crequy@collabora.co.uk,
         javier.martinez@collabora.co.uk, Tom Gundersen <teg@jklm.no>
-Subject: Re: [PATCH 00/12] Add kdbus implementation
-Message-ID: <20141029222729.GB8129@kroah.com>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <CALCETrWrxc8foPYbRPtxwNX0sHK_=vLFLDXXyXu+2U2=B+=qCQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWrxc8foPYbRPtxwNX0sHK_=vLFLDXXyXu+2U2=B+=qCQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 03:15:51PM -0700, Andy Lutomirski wrote:
-> (reply 1/2 -- I'm replying twice to keep the threading sane)
-> 
-> On Wed, Oct 29, 2014 at 3:00 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > kdbus is a kernel-level IPC implementation that aims for resemblance to
-> > the the protocol layer with the existing userspace D-Bus daemon while
-> > enabling some features that couldn't be implemented before in userspace.
-> >
-> 
-> >  * Support for multiple domains, completely separated from each other,
-> >    allowing multiple virtualized instances to be used at the same time.
-> 
-> Given that there is no such thing as a device namespace, how does this work?
+On Wed, Oct 29, 2014 at 3:25 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Oct 29, 2014 at 03:19:21PM -0700, Andy Lutomirski wrote:
+>> On Wed, Oct 29, 2014 at 3:00 PM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
+>> >  * Attachment of trustable metadata to each message on demand, such as
+>> >    the sending peer's timestamp, creds, auxgroups, comm, exe, cmdline,
+>> >    cgroup path, capabilities, security label, audit information, etc,
+>> >    each taken at the time the sender issued the ioctl to send the
+>> >    message. Which of those are actually recorded and attached is
+>> >    controlled by the receiving peer.
+>>
+>> I think that each piece of trustable metadata needs to be explicitly
+>> opted-in to by the sender at the time of capture.  Otherwise you're
+>> asking for lots of information leaks and privilege escalations.  This
+>> is especially important given that some of the items in the current
+>> list could be rather sensitive.
+>
+> You do have to opt-in for this information at time of capture, so I
+> don't understand the issue here.  This is the same type of thing that
+> dbus does today, and I don't see the information leaks happening there,
+> do you?
+>
 
-See the document for the details.
+The docs suggest that the *receiver* opts in.
 
-> The docs seem a bit confusing to me as to whether there's a hierarchy
-> of domains.  Do domains have a concept of a parent?
+I don't think that current dbus has severe information leaks because
+the total scope for information transparently sent to dbus is rather
+small (struct ucred only, presumably).
 
-Yes.
-
-> What's "container-name"?
-
-Is that used in the documentation?
-
-> Given that domains have random IDs, how can they be checkpointed and restored?
-
-Good question, I don't know about checkpoint/restore, but I think that
-has been done.  Daniel would know more than I do about that.
-
-thanks,
-
-greg k-h
+--Andy
