@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757266AbaJ2V6E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 17:58:04 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:42234 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756704AbaJ2V6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 17:58:02 -0400
-Date: Wed, 29 Oct 2014 16:58:39 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alex Thorlton <athorlton@sgi.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>, Bob Liu <lliubbo@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Hugh Dickins <hughd@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Kees Cook <keescook@chromium.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] Convert khugepaged to a task_work function
-Message-ID: <20141029215839.GO2979@sgi.com>
-References: <1414032567-109765-1-git-send-email-athorlton@sgi.com>
- <87lho0pf4l.fsf@tassilo.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87lho0pf4l.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757447AbaJ2V62 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 17:58:28 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:44076 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757305AbaJ2V61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 17:58:27 -0400
+From: Fabio Falzoi <fabio.falzoi84@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: micky_ching@realsil.com.cn, dan.carpenter@oracle.com, joe@perches.com,
+        giedrius.statkevicius@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Fabio Falzoi <fabio.falzoi84@gmail.com>
+Subject: [PATCH v3 0/2] Staging: rts5208: rtsx_reset_chip style clean up
+Date: Wed, 29 Oct 2014 22:58:17 +0100
+Message-Id: <1414619899-2633-1-git-send-email-fabio.falzoi84@gmail.com>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 05:12:26AM -0700, Andi Kleen wrote:
-> Alex Thorlton <athorlton@sgi.com> writes:
-> 
-> > Last week, while discussing possible fixes for some unexpected/unwanted behavior
-> > from khugepaged (see: https://lkml.org/lkml/2014/10/8/515) several people
-> > mentioned possibly changing changing khugepaged to work as a task_work function
-> > instead of a kernel thread.  This will give us finer grained control over the
-> > page collapse scans, eliminate some unnecessary scans since tasks that are
-> > relatively inactive will not be scanned often, and eliminate the unwanted
-> > behavior described in the email thread I mentioned.
-> 
-> With your change, what would happen in a single threaded case?
-> 
-> Previously one core would scan and another would run the workload.
-> With your change both scanning and running would be on the same
-> core.
-> 
-> Would seem like a step backwards to me.
+Clean up the code in rtsx_reset_chip function defining two new helper
+functions rtsx_reset_aspm and rtsx_enable_pcie_intr.
+Specifically, the following checkpatch warnings are corrected:
 
-I suppose from the single-threaded point of view, it could be.  Maybe we
-could look at this a bit differently.  What if we allow processes to
-choose their collapse mechanism on fork?  That way, the system could
-default to using the standard khugepaged mechanism, but we could request
-that processes handle collapses themselves if we want.  Overall, I don't
-think that would add too much overhead to what I've already proposed
-here, and it gives us more flexibility.
+* PARENTHESIS_ALIGNMENT at rows 295 and 313
 
-Thoughts?
+This patch is inspired by the following post on LKML regarding another
+clean up for rts5208 module:
+http://www.spinics.net/lists/linux-driver-devel/msg55038.html
 
-- Alex
+Changes in v3:
+* rebased against master branch of linux-next tree
+
+Changes in v2:
+* rebased against staging-testing branch of staging driver development
+tree
+
+Fabio Falzoi (2):
+  Staging: rts5208: helper function to manage aspm during reset
+  Staging: rts5208: helper function to enable interrupts
+
+ drivers/staging/rts5208/rtsx_chip.c | 165 +++++++++++++++++++-----------------
+ 1 file changed, 87 insertions(+), 78 deletions(-)
+
+-- 
+2.1.1
+
