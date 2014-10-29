@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934069AbaJ2Pl4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:41:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43917 "EHLO
+	id S934095AbaJ2PmB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:42:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43960 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933423AbaJ2Ply (ORCPT
+	with ESMTP id S934071AbaJ2Pl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:41:54 -0400
-Date: Wed, 29 Oct 2014 16:35:10 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Mariusz Gorski <marius.gorski@gmail.com>
-Cc: Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Peng Tao <bergwolf@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] staging: lustre: Reduce function visibility
-Message-ID: <20141029083510.GA31558@kroah.com>
-References: <1414200638-20682-1-git-send-email-marius.gorski@gmail.com>
- <1414200638-20682-2-git-send-email-marius.gorski@gmail.com>
+	Wed, 29 Oct 2014 11:41:59 -0400
+Date: Wed, 29 Oct 2014 16:40:40 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Eric Rost <eric.rost@mybabylon.net>, devel@driverdev.osuosl.org,
+        antonysaraev@gmail.com, linux-kernel@vger.kernel.org, jake@lwn.net
+Subject: Re: [PATCH v6 0/7] staging: skein: CryptoAPI and Module Support
+Message-ID: <20141029084040.GA5333@kroah.com>
+References: <cover.1414189566.git.eric.rost@mybabylon.net>
+ <20141027132031.GB15252@titan.lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1414200638-20682-2-git-send-email-marius.gorski@gmail.com>
+In-Reply-To: <20141027132031.GB15252@titan.lakedaemon.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 25, 2014 at 03:30:37AM +0200, Mariusz Gorski wrote:
-> This patch fixes the following sparse warnings:
-> drivers/staging/lustre/lnet/lnet/module.c:47:1: warning: symbol
->   'lnet_configure' was not declared. Should it be static?
-> drivers/staging/lustre/lnet/lnet/module.c:67:1: warning: symbol
->   'lnet_unconfigure' was not declared. Should it be static?
-> drivers/staging/lustre/lnet/lnet/module.c:87:1: warning: symbol
->   'lnet_ioctl' was not declared. Should it be static?
-> drivers/staging/lustre/lnet/lnet/module.c:114:1: warning: symbol
->   'init_lnet' was not declared. Should it be static?
-> drivers/staging/lustre/lnet/lnet/module.c:139:1: warning: symbol
->   'fini_lnet' was not declared. Should it be static?
+On Mon, Oct 27, 2014 at 09:20:31AM -0400, Jason Cooper wrote:
+> Greg,
 > 
-> Signed-off-by: Mariusz Gorski <marius.gorski@gmail.com>
-> ---
->  drivers/staging/lustre/lnet/lnet/module.c | 10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
+> On Fri, Oct 24, 2014 at 05:29:09PM -0500, Eric Rost wrote:
+> > Adds CryptoAPI and loadable module support to the Skein Hashing
+> > Algorithm. Collapses threefish module into skein module. Renames skein.c
+> > and skein.h to skein_base.c and skein_base.h so module can be named
+> > skein.ko. Inlines rotl_64 macro. Removes unneeded #define and
+> > skein_debug.h include.
+> > 
+> > Eric Rost (7):
+> >   staging: skein: Collapses threefish module
+> >   staging: skein: Renames skein to skein_base
+> >   staging: skein: Adds CryptoAPI Support
+> >   staging: skein: Adds Loadable Module Support
+> >   staging: skein: Inlines rotl_64
+> >   staging: skein: Removes unneeded #define
 > 
-> diff --git a/drivers/staging/lustre/lnet/lnet/module.c b/drivers/staging/lustre/lnet/lnet/module.c
-> index e84d59d..dc09b43 100644
-> --- a/drivers/staging/lustre/lnet/lnet/module.c
-> +++ b/drivers/staging/lustre/lnet/lnet/module.c
-> @@ -43,7 +43,7 @@ MODULE_PARM_DESC(config_on_load, "configure network at module load");
->  
->  static struct mutex lnet_config_mutex;
->  
-> -int
-> +static int
->  lnet_configure(void *arg)
->  {
->  	/* 'arg' only there so I can be passed to cfs_create_thread() */
-> @@ -63,7 +63,7 @@ lnet_configure(void *arg)
->  	return rc;
->  }
->  
-> -int
-> +static int
->  lnet_unconfigure(void)
->  {
->  	int   refcount;
-> @@ -83,7 +83,7 @@ lnet_unconfigure(void)
->  	return (refcount == 0) ? 0 : -EBUSY;
->  }
->  
-> -int
-> +static int
->  lnet_ioctl(unsigned int cmd, struct libcfs_ioctl_data *data)
->  {
->  	int   rc;
-> @@ -110,7 +110,7 @@ lnet_ioctl(unsigned int cmd, struct libcfs_ioctl_data *data)
->  
->  DECLARE_IOCTL_HANDLER(lnet_ioctl_handler, lnet_ioctl);
->  
-> -int
-> +static int
->  init_lnet(void)
->  {
->  	int		  rc;
-> @@ -135,7 +135,7 @@ init_lnet(void)
->  	return 0;
->  }
->  
-> -void
-> +static void
->  fini_lnet(void)
->  {
->  	int rc;
+> For patches 1 through 6,
+> 
+> Reviewed-by: Jason Cooper <jason@lakedaemon.net>
+> 
+> We'll keep working on #7, but feel free to take the first six when you
+> get a moment Greg.
 
-Someone did this patch before you, sorry.
+Now applied, thanks.
 
 greg k-h
