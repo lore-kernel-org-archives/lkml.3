@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776AbaJ2E5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 00:57:21 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:60684 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712AbaJ2E5T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 00:57:19 -0400
-X-Original-SENDERIP: 10.186.123.76
-X-Original-MAILFROM: gioh.kim@lge.com
-Message-ID: <545073AB.5060502@lge.com>
-Date: Wed, 29 Oct 2014 13:57:15 +0900
-From: Gioh Kim <gioh.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: gregkh@linuxfoundation.org, john.stultz@linaro.org, rebecca@android.com,
-        lauraa@codeaurora.org, dan.carpenter@oracle.com,
-        Minchan Kim <minchan@kernel.org>,
-        =?EUC-KR?B?J7Howdi89ic=?= <iamjoonsoo.kim@lge.com>
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        gunho.lee@lge.com, gioh.kim@lge.com
-Subject: [RFC] stating: ion: use hot page first in pool
-Content-Type: text/plain; charset=euc-kr
-Content-Transfer-Encoding: 7bit
+	id S1751983AbaJ2FF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 01:05:56 -0400
+Received: from mail.kernel.org ([198.145.19.201]:42395 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751006AbaJ2FFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 01:05:55 -0400
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Cc: Jaegeuk Kim <jaegeuk@kernel.org>
+Subject: [PATCH 1/4] f2fs: call write_checkpoint under disabled gc
+Date: Tue, 28 Oct 2014 22:05:50 -0700
+Message-Id: <1414559153-92771-1-git-send-email-jaegeuk@kernel.org>
+X-Mailer: git-send-email 2.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+During the write_checkpoint, we should avoid f2fs_gc trigger to avoid any
+filesystem consistency.
 
-Hello,
-
-I found that ion insert freed-page at the tail of list
-and extract at the head.
-
-I think it is good for cache to use the most recently used page
-but these pages in pool are not cached memory.
-So I'm not sure using hot page is better or not in this case.
-
-What do you think about using hot page first?
-
--------------------------- 8< -----------------------------
-
->From 14c8455cc80628e56a27ace9603d29e5056835b5 Mon Sep 17 00:00:00 2001
-From: Gioh Kim <gioh.kim@lge.com>
-Date: Wed, 29 Oct 2014 13:44:28 +0900
-Subject: [PATCH] staging: ion: use hot-page first
-
-A page near the head is hot for cache.
-This patch makes pool use hot page first.
-
-Signed-off-by: Gioh Kim <gioh.kim@lge.com>
+Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
 ---
- drivers/staging/android/ion/ion_page_pool.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/f2fs/segment.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/staging/android/ion/ion_page_pool.c b/drivers/staging/android/ion/ion_page_pool.c
-index 5864f3d..3d6ac4f 100644
---- a/drivers/staging/android/ion/ion_page_pool.c
-+++ b/drivers/staging/android/ion/ion_page_pool.c
-@@ -45,10 +45,10 @@ static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
- {
-        mutex_lock(&pool->mutex);
-        if (PageHighMem(page)) {
--               list_add_tail(&page->lru, &pool->high_items);
-+               list_add(&page->lru, &pool->high_items);
-                pool->high_count++;
-        } else {
--               list_add_tail(&page->lru, &pool->low_items);
-+               list_add(&page->lru, &pool->low_items);
-                pool->low_count++;
-        }
-        mutex_unlock(&pool->mutex);
---
-1.7.9.5
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 21ccc48..d391a59 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -1046,7 +1046,9 @@ int f2fs_trim_fs(struct f2fs_sb_info *sbi, struct fstrim_range *range)
+ 	cpc.trim_minlen = range->minlen >> sbi->log_blocksize;
+ 
+ 	/* do checkpoint to issue discard commands safely */
++	mutex_lock(&sbi->gc_mutex);
+ 	write_checkpoint(sbi, &cpc);
++	mutex_unlock(&sbi->gc_mutex);
+ out:
+ 	range->len = cpc.trimmed << sbi->log_blocksize;
+ 	return 0;
+-- 
+2.1.1
 
