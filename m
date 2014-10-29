@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367AbaJ2KKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:10:52 -0400
-Received: from mail-bn1on0144.outbound.protection.outlook.com ([157.56.110.144]:35184
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756329AbaJ2KKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:10:44 -0400
-X-Greylist: delayed 878 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Oct 2014 06:10:44 EDT
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drvres: Improve grp->id setting logics in devres_open_group()
-Date: Wed, 29 Oct 2014 17:59:47 +0800
-Message-ID: <1414576787-2074-1-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 2.1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(46102003)(92566001)(4396001)(80022003)(93916002)(86362001)(87286001)(88136002)(97736003)(77156001)(85306004)(84676001)(92726001)(87936001)(110136001)(50226001)(99396003)(68736004)(50986999)(120916001)(85852003)(76482002)(89996001)(19580395003)(44976005)(104016003)(6806004)(19580405001)(20776003)(47776003)(62966002)(106466001)(21056001)(104166001)(64706001)(31966008)(229853001)(36756003)(102836001)(26826002)(50466002)(107046002)(95666004)(105606002)(2351001)(48376002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0632;H:tx30smr01.am.freescale.net;FPR:;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0632;
-X-Forefront-PRVS: 03793408BA
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-OriginatorOrg: freescale.com
+	id S932607AbaJ2KLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:11:14 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:45651 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328AbaJ2KLI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 06:11:08 -0400
+From: Rostislav Lisovy <lisovy@gmail.com>
+X-Google-Original-From: Rostislav Lisovy <lisovy@merica.cz>
+To: David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Roger Quadros <rogerq@ti.com>, sojkam1@fel.cvut.cz, michal.vokac@comap.cz,
+        lisovy@gmail.com, Rostislav Lisovy <lisovy@merica.cz>
+Subject: [PATCH v4] mtd: nand: omap: Synchronize the access to the ECC engine
+Date: Wed, 29 Oct 2014 11:10:59 +0100
+Message-Id: <1414577459-26135-1-git-send-email-lisovy@merica.cz>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of setting grp->id directly with a temporary value and
-then changing it if a certain condition meets, we may check
-the condition first and then decide which value should be set
-to grp->id.  This may save two lines of code and potentially
-reduces a writing operation.
+The AM335x Technical Reference Manual (spruh73j.pdf) says
+"Because the ECC engine includes only one accumulation context,
+it can be allocated to only one chip-select at a time ... "
+(7.1.3.3.12.3). Since the commit 97a288ba2cfa ("ARM: omap2+:
+gpmc-nand: Use dynamic platform_device_alloc()") gpmc-nand
+driver supports multiple NAND flash devices connected to
+the single controller.
+Use global 'struct nand_hw_control' among multiple NAND
+instances to synchronize the access to the single ECC Engine.
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+Tested with custom AM335x board using 2x NAND flash chips.
+
+Signed-off-by: Rostislav Lisovy <lisovy@merica.cz>
+Acked-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/base/devres.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Changes since v3:
+* Make the omap_gpmc_controller static (Frans Klaver)
 
-diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-index c8a53d1..39e1856 100644
---- a/drivers/base/devres.c
-+++ b/drivers/base/devres.c
-@@ -544,9 +544,7 @@ void * devres_open_group(struct device *dev, void *id, gfp_t gfp)
- 	INIT_LIST_HEAD(&grp->node[1].entry);
- 	set_node_dbginfo(&grp->node[0], "grp<", 0);
- 	set_node_dbginfo(&grp->node[1], "grp>", 0);
--	grp->id = grp;
--	if (id)
--		grp->id = id;
-+	grp->id = id ? id : grp;
+Changes since v2:
+* Do not use custom locks. Use global 'struct nand_hw_control'
+  among multiple NAND instances and it will do the work for us
+  (Roger Quadros)
+
+Changes since v1:
+* Since not all the read/write operations are performed by the
+  omap_read(write)_page_bch() functions use the locks directly on
+  those places that configure the ECC engine (take the lock) and
+  read the result from the ECC engine (release the lock).
+  This approach should cover read/write operations with all
+  possible ECC modes. (Roger Quadros)
+
+
+ drivers/mtd/nand/omap2.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index b0f89d8..ec040b4 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -144,8 +144,13 @@ static u_char bch8_vector[] = {0xf3, 0xdb, 0x14, 0x16, 0x8b, 0xd2, 0xbe, 0xcc,
+ 	0xac, 0x6b, 0xff, 0x99, 0x7b};
+ static u_char bch4_vector[] = {0x00, 0x6b, 0x31, 0xdd, 0x41, 0xbc, 0x10};
  
- 	spin_lock_irqsave(&dev->devres_lock, flags);
- 	add_dr(dev, &grp->node[0]);
++/* Shared among all NAND instances to synchronize the access to the ECC Engine */
++static struct nand_hw_control omap_gpmc_controller = {
++	.lock = __SPIN_LOCK_UNLOCKED(omap_gpmc_controller.lock),
++	.wq = __WAIT_QUEUE_HEAD_INITIALIZER(omap_gpmc_controller.wq),
++};
++
+ struct omap_nand_info {
+-	struct nand_hw_control		controller;
+ 	struct omap_nand_platform_data	*pdata;
+ 	struct mtd_info			mtd;
+ 	struct nand_chip		nand;
+@@ -1685,9 +1690,6 @@ static int omap_nand_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, info);
+ 
+-	spin_lock_init(&info->controller.lock);
+-	init_waitqueue_head(&info->controller.wq);
+-
+ 	info->pdev		= pdev;
+ 	info->gpmc_cs		= pdata->cs;
+ 	info->reg		= pdata->reg;
+@@ -1707,7 +1709,7 @@ static int omap_nand_probe(struct platform_device *pdev)
+ 
+ 	info->phys_base = res->start;
+ 
+-	nand_chip->controller = &info->controller;
++	nand_chip->controller = &omap_gpmc_controller;
+ 
+ 	nand_chip->IO_ADDR_W = nand_chip->IO_ADDR_R;
+ 	nand_chip->cmd_ctrl  = omap_hwcontrol;
 -- 
-2.1.0
+1.9.1
 
