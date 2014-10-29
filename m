@@ -1,64 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189AbaJ2UOW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:14:22 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:26574 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756787AbaJ2UOU (ORCPT
+	id S1756861AbaJ2UT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:19:29 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:49695 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756002AbaJ2UT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:14:20 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmU4AHRJUVR5LbBUPGdsb2JhbABcgw6BLII2hQeyZgEBAQEBAQaVU4VqBAICgR0XAQEBAQEGAQEBATg7hAMBAQQ6HCMQCAMYCSUPBSUDBxoTiEDIKAErGIYeiloHhEsFnWmBMoZ5kiIpL4JLAQEB
-Date: Thu, 30 Oct 2014 07:14:17 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Jason B. Akers" <jason.b.akers@intel.com>
-Cc: linux-ide@vger.kernel.org, axboe@fb.com, dan.j.williams@intel.com,
-        kapil.karkra@intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] Enable use of Solid State Hybrid Drives
-Message-ID: <20141029201417.GK16186@dastard>
-References: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141029180454.4879.75088.stgit@stg-AndroidDev-VirtualBox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Oct 2014 16:19:27 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>, Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v13 00/11] qspinlock: a 4-byte queue spinlock with PV support
+Date: Wed, 29 Oct 2014 16:19:00 -0400
+Message-Id: <1414613951-32532-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 11:23:38AM -0700, Jason B. Akers wrote:
-> The following series enables the use of Solid State hybrid drives
-> ATA standard 3.2 defines the hybrid information feature, which provides a means for the host driver to provide hints to the SSHDs to guide what to place on the SSD/NAND portion and what to place on the magnetic media.
-> 
-> This implementation allows user space applications to provide the cache hints to the kernel using the existing ionice syscall. 
-> 
-> An application can pass a priority number coding up bits 11, 12, and 15 of the ionice command to form a 3 bit field that encodes the following priorities:
-> 	OPRIO_ADV_NONE,
-> 	IOPRIO_ADV_EVICT, /* actively discard cached data */
-> 	IOPRIO_ADV_DONTNEED, /* caching this data has little value */
-> 	IOPRIO_ADV_NORMAL, /* best-effort cache priority (default) */
-> 	IOPRIO_ADV_RESERVED1, /* reserved for future use */
-> 	IOPRIO_ADV_RESERVED2,
-> 	IOPRIO_ADV_RESERVED3,
-> 	IOPRIO_ADV_WILLNEED, /* high temporal locality */
-> 
-> For example the following commands from the user space will make dd IOs to be generated with a hint of IOPRIO_ADV_DONTNEED assuming the SSHD is /dev/sdc.
-> 
-> ionice -c2 -n4096 dd if=/dev/zero of=/dev/sdc bs=1M count=1024
-> ionice -c2 -n4096 dd if=/dev/sdc of=/dev/null bs=1M count=1024
+v12->v13:
+ - Change patch 9 to generate separate versions of the
+   queue_spin_lock_slowpath functions for bare metal and PV guest. This
+   reduces the performance impact of the PV code on bare metal systems.
 
-This looks to be the wrong way to implement per-IO priority
-information.
+v11->v12:
+ - Based on PeterZ's version of the qspinlock patch
+   (https://lkml.org/lkml/2014/6/15/63).
+ - Incorporated many of the review comments from Konrad Wilk and
+   Paolo Bonzini.
+ - The pvqspinlock code is largely from my previous version with
+   PeterZ's way of going from queue tail to head and his idea of
+   using callee saved calls to KVM and XEN codes.
 
-How does a filesystem make use of this to make sure it's
-metadata ends up with IOPRIO_ADV_WILLNEED to store frequently
-accessed metadata in flash. Conversely, journal writes need to
-be issued with IOPRIO_ADV_DONTNEED so they don't unneceessarily
-consume flash space as they are never-read IOs...
+v10->v11:
+  - Use a simple test-and-set unfair lock to simplify the code,
+    but performance may suffer a bit for large guest with many CPUs.
+  - Take out Raghavendra KT's test results as the unfair lock changes
+    may render some of his results invalid.
+  - Add PV support without increasing the size of the core queue node
+    structure.
+  - Other minor changes to address some of the feedback comments.
 
-Cheers,
+v9->v10:
+  - Make some minor changes to qspinlock.c to accommodate review feedback.
+  - Change author to PeterZ for 2 of the patches.
+  - Include Raghavendra KT's test results in patch 18.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+v8->v9:
+  - Integrate PeterZ's version of the queue spinlock patch with some
+    modification:
+    http://lkml.kernel.org/r/20140310154236.038181843@infradead.org
+  - Break the more complex patches into smaller ones to ease review effort.
+  - Fix a racing condition in the PV qspinlock code.
+
+v7->v8:
+  - Remove one unneeded atomic operation from the slowpath, thus
+    improving performance.
+  - Simplify some of the codes and add more comments.
+  - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
+    unfair lock.
+  - Reduce unfair lock slowpath lock stealing frequency depending
+    on its distance from the queue head.
+  - Add performance data for IvyBridge-EX CPU.
+
+v6->v7:
+  - Remove an atomic operation from the 2-task contending code
+  - Shorten the names of some macros
+  - Make the queue waiter to attempt to steal lock when unfair lock is
+    enabled.
+  - Remove lock holder kick from the PV code and fix a race condition
+  - Run the unfair lock & PV code on overcommitted KVM guests to collect
+    performance data.
+
+v5->v6:
+ - Change the optimized 2-task contending code to make it fairer at the
+   expense of a bit of performance.
+ - Add a patch to support unfair queue spinlock for Xen.
+ - Modify the PV qspinlock code to follow what was done in the PV
+   ticketlock.
+ - Add performance data for the unfair lock as well as the PV
+   support code.
+
+v4->v5:
+ - Move the optimized 2-task contending code to the generic file to
+   enable more architectures to use it without code duplication.
+ - Address some of the style-related comments by PeterZ.
+ - Allow the use of unfair queue spinlock in a real para-virtualized
+   execution environment.
+ - Add para-virtualization support to the qspinlock code by ensuring
+   that the lock holder and queue head stay alive as much as possible.
+
+v3->v4:
+ - Remove debugging code and fix a configuration error
+ - Simplify the qspinlock structure and streamline the code to make it
+   perform a bit better
+ - Add an x86 version of asm/qspinlock.h for holding x86 specific
+   optimization.
+ - Add an optimized x86 code path for 2 contending tasks to improve
+   low contention performance.
+
+v2->v3:
+ - Simplify the code by using numerous mode only without an unfair option.
+ - Use the latest smp_load_acquire()/smp_store_release() barriers.
+ - Move the queue spinlock code to kernel/locking.
+ - Make the use of queue spinlock the default for x86-64 without user
+   configuration.
+ - Additional performance tuning.
+
+v1->v2:
+ - Add some more comments to document what the code does.
+ - Add a numerous CPU mode to support >= 16K CPUs
+ - Add a configuration option to allow lock stealing which can further
+   improve performance in many cases.
+ - Enable wakeup of queue head CPU at unlock time for non-numerous
+   CPU mode.
+
+This patch set has 3 different sections:
+ 1) Patches 1-6: Introduces a queue-based spinlock implementation that
+    can replace the default ticket spinlock without increasing the
+    size of the spinlock data structure. As a result, critical kernel
+    data structures that embed spinlock won't increase in size and
+    break data alignments.
+ 2) Patch 7: Enables the use of unfair lock in a virtual guest. This
+    can resolve some of the locking related performance issues due to
+    the fact that the next CPU to get the lock may have been scheduled
+    out for a period of time.
+ 3) Patches 8-11: Enable qspinlock para-virtualization support by
+    halting the waiting CPUs after spinning for a certain amount of
+    time. The unlock code will detect the a sleeping waiter and wake it
+    up. This is essentially the same logic as the PV ticketlock code.
+
+The queue spinlock has slightly better performance than the ticket
+spinlock in uncontended case. Its performance can be much better
+with moderate to heavy contention.  This patch has the potential of
+improving the performance of all the workloads that have moderate to
+heavy spinlock contention.
+
+The queue spinlock is especially suitable for NUMA machines with
+at least 2 sockets. Though even at the 2-socket level, there can
+be significant speedup depending on the workload. I got report that
+the queue spinlock patch can improve the performance of an I/O and
+interrupt intensive stress test with a lot of spinlock contention on
+a 2-socket system by up to 20%.
+
+The purpose of this patch set is not to solve any particular spinlock
+contention problems. Those need to be solved by refactoring the code
+to make more efficient use of the lock or finer granularity ones. The
+main purpose is to make the lock contention problems more tolerable
+until someone can spend the time and effort to fix them.
+
+Peter Zijlstra (3):
+  qspinlock: Add pending bit
+  qspinlock: Optimize for smaller NR_CPUS
+  qspinlock: Revert to test-and-set on hypervisors
+
+Waiman Long (8):
+  qspinlock: A simple generic 4-byte queue spinlock
+  qspinlock, x86: Enable x86-64 to use queue spinlock
+  qspinlock: Extract out code snippets for the next patch
+  qspinlock: Use a simple write to grab the lock
+  qspinlock, x86: Rename paravirt_ticketlocks_enabled
+  pvqspinlock, x86: Add para-virtualization support
+  pvqspinlock, x86: Enable PV qspinlock for KVM
+  pvqspinlock, x86: Enable PV qspinlock for XEN
+
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/paravirt.h       |   19 ++
+ arch/x86/include/asm/paravirt_types.h |   20 ++
+ arch/x86/include/asm/pvqspinlock.h    |  411 ++++++++++++++++++++++++++++
+ arch/x86/include/asm/qspinlock.h      |  104 +++++++
+ arch/x86/include/asm/spinlock.h       |    9 +-
+ arch/x86/include/asm/spinlock_types.h |    4 +
+ arch/x86/kernel/kvm.c                 |  140 ++++++++++-
+ arch/x86/kernel/paravirt-spinlocks.c  |   10 +-
+ arch/x86/xen/spinlock.c               |  151 ++++++++++-
+ include/asm-generic/qspinlock.h       |  127 +++++++++
+ include/asm-generic/qspinlock_types.h |   79 ++++++
+ kernel/Kconfig.locks                  |    7 +
+ kernel/locking/Makefile               |    1 +
+ kernel/locking/mcs_spinlock.h         |    1 +
+ kernel/locking/qspinlock.c            |  473 +++++++++++++++++++++++++++++++++
+ 16 files changed, 1545 insertions(+), 12 deletions(-)
+ create mode 100644 arch/x86/include/asm/pvqspinlock.h
+ create mode 100644 arch/x86/include/asm/qspinlock.h
+ create mode 100644 include/asm-generic/qspinlock.h
+ create mode 100644 include/asm-generic/qspinlock_types.h
+ create mode 100644 kernel/locking/qspinlock.c
+
