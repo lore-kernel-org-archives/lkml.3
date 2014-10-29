@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797AbaJ2IHC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 04:07:02 -0400
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:60216 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755554AbaJ2IG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 04:06:57 -0400
+	id S1755874AbaJ2IJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 04:09:59 -0400
+Received: from mail-bn1bon0146.outbound.protection.outlook.com ([157.56.111.146]:10992
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755363AbaJ2IJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 04:09:52 -0400
+X-WSS-ID: 0NE75C9-07-QJE-02
+X-M-MSG: 
+Date: Wed, 29 Oct 2014 16:08:09 +0800
+From: Huang Rui <ray.huang@amd.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Jason Chang <jason.chang@amd.com>, "Vincent Wan" <vincent.wan@amd.com>,
+        Tony Li <tony.li@amd.com>, USB list <linux-usb@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 13/19] usb: dwc3: add tx demphasis quirk
+Message-ID: <20141029080809.GB10840@hr-slim.amd.com>
+References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
+ <1414497280-3126-14-git-send-email-ray.huang@amd.com>
+ <CAErSpo6ouE7AZi8ysTFnTNtKc8R9w-71AhXe6b-_0g_yeR-=Ag@mail.gmail.com>
+ <20141028184303.GD25735@saruman>
 MIME-Version: 1.0
-In-Reply-To: <20141028220731.GI10873@pd.tnic>
-References: <20141008151730.GB16892@pd.tnic>
-	<CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
-	<20141008222619.GG16892@pd.tnic>
-	<20141012125515.GA32045@jig.fritz.box>
-	<20141028185756.GD10873@pd.tnic>
-	<CA+rthh9qePkJogFDT+ttSLvYPvJrAM6CXMJ407Hq3PjcRw9WTw@mail.gmail.com>
-	<20141028201342.GG10873@pd.tnic>
-	<CA+rthh9LSRm12qYORAd5BWzpw7DEP7hqHLA3EDdfUDxwx-4=2g@mail.gmail.com>
-	<20141028212642.GH10873@pd.tnic>
-	<CA+rthh-Tk3PO0qUeyLzxggCYOhr5D4EvPjKR+jhmjdPXi4yu=Q@mail.gmail.com>
-	<20141028220731.GI10873@pd.tnic>
-Date: Wed, 29 Oct 2014 09:06:55 +0100
-Message-ID: <CA+rthh_t7gw=+j5M91hGv29py7JpH7Whffjakp4YS5zS1i15jw@mail.gmail.com>
-Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
-From: Mathias Krause <minipli@googlemail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        x86-ml <x86@kernel.org>, Matt Fleming <matt.fleming@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141028184303.GD25735@saruman>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(24454002)(51704005)(199003)(377454003)(105586002)(106466001)(95666004)(110136001)(101416001)(107046002)(97736003)(50986999)(76176999)(54356999)(68736004)(83506001)(33656002)(102836001)(99396003)(120916001)(31966008)(93886004)(85306004)(4396001)(64706001)(86362001)(20776003)(23726002)(47776003)(46102003)(80022003)(50466002)(85852003)(19580395003)(19580405001)(76482002)(92566001)(92726001)(46406003)(44976005)(77096002)(21056001)(53416004)(84676001)(97756001)(87936001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB201;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB201;
+X-Forefront-PRVS: 03793408BA
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Ray.Huang@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 October 2014 23:07, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Oct 28, 2014 at 10:49:36PM +0100, Mathias Krause wrote:
->> Sync only data or kernel code, too?
->
-> Data only should be enough.
+On Tue, Oct 28, 2014 at 01:43:03PM -0500, Felipe Balbi wrote:
+> On Tue, Oct 28, 2014 at 10:27:27AM -0600, Bjorn Helgaas wrote:
+> > On Tue, Oct 28, 2014 at 5:54 AM, Huang Rui <ray.huang@amd.com> wrote:
+> > > This patch adds Tx demphasis quirk, and the Tx demphasis value is
+> > 
+> > "demphasis" (above and in subject) should be "de-emphasis" as used in
+> > the code and comments below.
+> 
+> +1
+> 
 
-No, not really. This is why:
-
-1/ When setting up the virtual mapping via a call to the
-SetVirtualAddressMap EFI service we're running with interrupts
-enabled, as we skip to disable them in efi_call_phys_prolog(). This
-means, IRQs might happen and, in fact, they *do* happen. I know for
-sure, because I had to debug an issue with a "wbinvd" instruction
-within that EFI code delaying execution long enough, that the timer
-interrupt triggers. So we should be prepared to handle those by having
-the kernel mapped during the EFI call or bad things will happen.
-2/ When the EFI code traps, e.g., because the EFI code is buggy or the
-arguments the kernel provides are borked, not having a trap handler
-for #PF, #GP, #UD, you name it, will make the system just triple fault
-and reset. From a user perspective, that's not nice. ;)
-
-So, having the kernel mapped during EFI calls is kinda required. I
-rather prefer seeing the system panic with a backtrace instead of just
-triple faulting.
-
->> Really, I'd just map the EFI RT service virtual mappings "somewhere"
->> but at pgd[511] and have pgd[511] initially set up as
->> init_level4_pgt[511]. Then, thing should "just work"(TM).
->
-> Nah, nothing with EFI just works :-)
-
-Yeah, learned it the hard way, too ;)
-
->
->> If you fear the EFI code might do harm to the kernel code/data, then
->> you've lost anyway. Nothing will prevent the EFI code from doing nasty
->> things -- like setting up its own mappings to tamper with the kernel's
->> memory.
->
-> Sure, nothing would surprise me anymore. However, I'd prefer to not be
-> an enabler. :)
-
-We have the EFI code 'n data mapped RWX into the kernel address space
-at predictable addresses, now. It can't get any worse ;)
-
-
-Regards,
-Mathias
+OK, will update
