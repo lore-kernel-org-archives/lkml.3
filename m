@@ -1,129 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933384AbaJ2O2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:28:53 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:59919 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933143AbaJ2O2v (ORCPT
+	id S933340AbaJ2ObY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:31:24 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52748 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932834AbaJ2ObW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:28:51 -0400
+	Wed, 29 Oct 2014 10:31:22 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index() when using properties
+Date: Wed, 29 Oct 2014 15:51:59 +0100
+Message-ID: <11524706.oiA2Jzq65k@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1738599.RytCx391OM@vostro.rjw.lan>
+References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <20141029085429.GJ1304@lahna.fi.intel.com> <1738599.RytCx391OM@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <1412037291-16880-6-git-send-email-bjorn.andersson@sonymobile.com>
-References: <1412037291-16880-1-git-send-email-bjorn.andersson@sonymobile.com> <1412037291-16880-6-git-send-email-bjorn.andersson@sonymobile.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 29 Oct 2014 16:28:29 +0200
-X-Google-Sender-Auth: tu9kKb_CAlG3fKWO6PJ8avSJNFo
-Message-ID: <CADMYwHxLtAZZMUGX3jo0URAezqGuho5XB=hQJp8k+acBiENrhg@mail.gmail.com>
-Subject: Re: [RFC 5/7] soc: qcom: Add Shared Memory Driver
-To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Kumar Gala <galak@codeaurora.org>, Andy Gross <agross@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>, devicetree@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Thanks Kevin for the heads up on this]
+On Wednesday, October 29, 2014 03:42:23 PM Rafael J. Wysocki wrote:
+> On Wednesday, October 29, 2014 10:54:29 AM Mika Westerberg wrote:
+> > On Wed, Oct 29, 2014 at 04:41:47PM +0900, Alexandre Courbot wrote:
+> > > On 10/29/2014 06:59 AM, Rafael J. Wysocki wrote:
+> > > >On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
+> > > >>acpi_dev_add_driver_gpios() makes it possible to set up mapping between
+> > > >>properties and ACPI GpioIo resources in a driver, so we can take index
+> > > >>parameter in acpi_find_gpio() into use with _DSD device properties now.
+> > > >>
+> > > >>This index can be used to select a GPIO from a property with multiple
+> > > >>GPIOs:
+> > > >>
+> > > >>   Package () {
+> > > >>   	"data-gpios",
+> > > >>   	Package () {
+> > > >>   		\_SB.GPIO, 0, 0, 0,
+> > > >>   		\_SB.GPIO, 1, 0, 0,
+> > > >>   		\_SB.GPIO, 2, 0, 1,
+> > > >>   	}
+> > > >>   }
+> > > >>
+> > > >>In order to retrieve the last GPIO from a driver we can simply do:
+> > > >>
+> > > >>   desc = devm_gpiod_get_index(dev, "data", 2);
+> > > >>
+> > > >>and so on.
+> > > >>
+> > > >>Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > >
+> > > >Cool. :-)
+> > > >
+> > > >Any objections anyone?
+> > > 
+> > > Looks good to me!
+> > > 
+> > > Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+> > 
+> > Thanks!
+> > 
+> > > Since this looks like a bug fix, shouldn't this be squashed into the
+> > > relevant patch of the device-properties set?
+> > 
+> > I agree.
+> 
+> Well, except that the set is in my linux-next branch now and I very much
+> prefer to do fixes on top of it.
+> 
+> Besides, I'm not sure if that even matters for the current series.
 
-Hi Bjorn,
+Never mind.  I need to rebase the series anyway because of a bug in the
+second patch, so I'll fold the $subject one into patch [5/12].
 
-On Tue, Sep 30, 2014 at 3:34 AM, Bjorn Andersson
-<bjorn.andersson@sonymobile.com> wrote:
-> == Codeaurora implementation ==
-> The codeaurora implementation originates from an implementation that was based purely on initcall and global state
-
-Do you refer to the in-tree arch/arm/mach-msm/smd.c ? it seems similar
-in some ways to the newly proposed smd driver.
-
-> == RPMSG ==
->
-> The rpmsg_driver fits nicely into what I want to do, so that could be used
-> straight off. Data is transmitted by calling rpmsg_send() and incoming data is
-> delivered through the registered callback on a channel.  It's possible to
-> request additional channels for a rpmsg device, although this is probably never
-> tested as there is no way to send data on this additional endpoint.
-
-This is inaccurate - rpmsg does have offchannel sending API, some of
-which are being used by the rpmsg core itself. Please check out
-rpmsg_sendto() and rpmsg_send_offchannel().
-
-> Endpoints are sort of equivalent of a smd channel although the life cycle is
-> slightly different, but a major issue with the rpmsg interface is that channels
-> are identified by a single u32, while SMD channels are identified by a u32 and
-> the channel name.
-
-Honestly this sounds like a small technical difference that can
-probably be fixed with some effort. Rpmsg is designed to satisfy the
-requirements of its current users, and is not set in stone. Not even
-the wire protocol is.
-
-If another requirement shows up, we can adopt rpmsg so new users could
-use it instead of merging additional frameworks that basically do the
-same thing.
-
-But new requirements must be well described so we can technically be
-convinced a core change is indeed needed.
-
-> So to be able to use the rpmsg api we would need to create additional apis that
-> handles the custom address format of the smd channels. Furthermore all the "off
-> channel" functions would be invalid.
-> Furthermore most of the channel and endpoint structures would be "invalid".
-
-Not sure I'm following this one. Can you please explain the smd
-addressing? what part of it is set in stone and what part of it can
-still be changed?
-
-> But these are the problems with the actual api, rpmsg is not only the api. It's
-> a direct implementation of these functions, defining how services are
-> discovered, how channels are represented as well as the actual "wire" protocol.
->
-> Or to put it in another way: rpmsg is an implementation of a packet protocol
-> on-top of virtio, it is not a framework or api for abstracting packet transport
-> logic.
-
-This is inaccurate. If there's justification for another wire
-protocol, it can be added. Even virtio itself was once only an
-abstraction over the virtqueue wire protocol:
-
-commit 7c5e9ed0c84e7d70d887878574590638d5572659
-Author: Michael S. Tsirkin <mst@redhat.com>
-Date:   Mon Apr 12 16:19:07 2010 +0300
-
-    virtio_ring: remove a level of indirection
-
-    We have a single virtqueue_ops implementation,
-    and it seems unlikely we'll get another one
-    at this point. So let's remove an unnecessary
-    level of indirection: it would be very easy to
-    re-add it if another implementation surfaces.
-
-    Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-
-> As there are discussions regarding replacing SMD with a new wire protocol, it
-> would probably be convenient to create a generic version of my proposed "api"
-> that can be re-used between different implementations and hopefully provide
-> re-use of parts of the code. Maybe we can make rpmsg an implementation under
-> such a generic api.
-
-If the SMD wire protocol can still be changed that's great. Why don't
-you pick up the vrings structures and play with it? You then get rpmsg
-for free. If some of the APIs aren't exactly what you need, please
-explain and we could change it to fit your requirements.
-
-It's always easier to merge new code rather than understand the
-existing one and change it to fit all users, but usually it just means
-more work later.
-
-Thanks,
-Ohad.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
