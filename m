@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934477AbaJ2QgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:36:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35269 "EHLO mx1.redhat.com"
+	id S934399AbaJ2QgS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:36:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43353 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933994AbaJ2QgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:36:20 -0400
+	id S933786AbaJ2QgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:36:16 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org
@@ -24,48 +24,154 @@ Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
         David Miller <davem@davemloft.net>,
         Steve Capper <steve.capper@linaro.org>,
         Johannes Weiner <jweiner@redhat.com>
-Subject: [PATCH 0/5] get_user_pages_locked|unlocked v1
-Date: Wed, 29 Oct 2014 17:35:15 +0100
-Message-Id: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 2/5] mm: gup: add __get_user_pages_unlocked to customize gup_flags
+Date: Wed, 29 Oct 2014 17:35:17 +0100
+Message-Id: <1414600520-7664-3-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
+References: <1414600520-7664-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset standalone is an optimization leveraging the page fault
-FAULT_FLAG_ALLOW_RETRY flag which allows the page fault paths to drop
-the mmap_sem before I/O.
+Some caller (like KVM) may want to set the gup_flags like
+FOLL_HWPOSION to get a proper -EHWPOSION retval instead of -EFAULT to
+take a more appropriate action if get_user_pages runs into a memory
+failure.
 
-For the userfaultfd patchset this patch is instead a dependency as we
-need that flag always set the first time any thread attempts a page
-fault, in order to release the mmap_sem before stopping the page fault
-(while waiting for a later userland wakeup).
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ include/linux/mm.h |  4 ++++
+ mm/gup.c           | 44 ++++++++++++++++++++++++++++++++------------
+ mm/nommu.c         | 16 +++++++++++++---
+ 3 files changed, 49 insertions(+), 15 deletions(-)
 
-http://thread.gmane.org/gmane.linux.kernel.mm/123575
-
-Andrea Arcangeli (5):
-  mm: gup: add get_user_pages_locked and get_user_pages_unlocked
-  mm: gup: add __get_user_pages_unlocked to customize gup_flags
-  mm: gup: use get_user_pages_unlocked within get_user_pages_fast
-  mm: gup: use get_user_pages_unlocked
-  mm: gup: kvm use get_user_pages_unlocked
-
- arch/mips/mm/gup.c                 |   8 +-
- arch/powerpc/mm/gup.c              |   6 +-
- arch/s390/mm/gup.c                 |   6 +-
- arch/sh/mm/gup.c                   |   6 +-
- arch/sparc/mm/gup.c                |   6 +-
- arch/x86/mm/gup.c                  |   7 +-
- drivers/iommu/amd_iommu_v2.c       |   6 +-
- drivers/media/pci/ivtv/ivtv-udma.c |   6 +-
- drivers/scsi/st.c                  |   7 +-
- drivers/video/fbdev/pvr2fb.c       |   6 +-
- include/linux/kvm_host.h           |  11 --
- include/linux/mm.h                 |  11 ++
- mm/gup.c                           | 203 ++++++++++++++++++++++++++++++++++---
- mm/nommu.c                         |  33 ++++++
- mm/process_vm_access.c             |   7 +-
- mm/util.c                          |  10 +-
- net/ceph/pagevec.c                 |   6 +-
- virt/kvm/async_pf.c                |   2 +-
- virt/kvm/kvm_main.c                |  50 +--------
- 19 files changed, 265 insertions(+), 132 deletions(-)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 99831d9..9a5ada3 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1222,6 +1222,10 @@ long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
+ 		    unsigned long start, unsigned long nr_pages,
+ 		    int write, int force, struct page **pages,
+ 		    int *locked);
++long __get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
++			       unsigned long start, unsigned long nr_pages,
++			       int write, int force, struct page **pages,
++			       unsigned int gup_flags);
+ long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
+ 		    unsigned long start, unsigned long nr_pages,
+ 		    int write, int force, struct page **pages);
+diff --git a/mm/gup.c b/mm/gup.c
+index a8521f1..01534ff 100644
+--- a/mm/gup.c
++++ b/mm/gup.c
+@@ -591,9 +591,9 @@ static __always_inline long __get_user_pages_locked(struct task_struct *tsk,
+ 						int write, int force,
+ 						struct page **pages,
+ 						struct vm_area_struct **vmas,
+-						int *locked, bool notify_drop)
++						int *locked, bool notify_drop,
++						unsigned int flags)
+ {
+-	int flags = FOLL_TOUCH;
+ 	long ret, pages_done;
+ 	bool lock_dropped;
+ 
+@@ -707,11 +707,37 @@ long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
+ 			   int *locked)
+ {
+ 	return __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
+-				       pages, NULL, locked, true);
++				       pages, NULL, locked, true, FOLL_TOUCH);
+ }
+ EXPORT_SYMBOL(get_user_pages_locked);
+ 
+ /*
++ * Same as get_user_pages_unlocked(...., FOLL_TOUCH) but it allows to
++ * pass additional gup_flags as last parameter (like FOLL_HWPOISON).
++ *
++ * NOTE: here FOLL_TOUCH is not set implicitly and must be set by the
++ * caller if required (just like with __get_user_pages). "FOLL_GET",
++ * "FOLL_WRITE" and "FOLL_FORCE" are set implicitly as needed
++ * according to the parameters "pages", "write", "force"
++ * respectively.
++ */
++__always_inline long __get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
++					       unsigned long start, unsigned long nr_pages,
++					       int write, int force, struct page **pages,
++					       unsigned int gup_flags)
++{
++	long ret;
++	int locked = 1;
++	down_read(&mm->mmap_sem);
++	ret = __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
++				      pages, NULL, &locked, false, gup_flags);
++	if (locked)
++		up_read(&mm->mmap_sem);
++	return ret;
++}
++EXPORT_SYMBOL(__get_user_pages_unlocked);
++
++/*
+  * get_user_pages_unlocked() is suitable to replace the form:
+  *
+  *      down_read(&mm->mmap_sem);
+@@ -732,14 +758,8 @@ long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
+ 			     unsigned long start, unsigned long nr_pages,
+ 			     int write, int force, struct page **pages)
+ {
+-	long ret;
+-	int locked = 1;
+-	down_read(&mm->mmap_sem);
+-	ret = __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
+-				      pages, NULL, &locked, false);
+-	if (locked)
+-		up_read(&mm->mmap_sem);
+-	return ret;
++	return __get_user_pages_unlocked(tsk, mm, start, nr_pages, write,
++					 force, pages, FOLL_TOUCH);
+ }
+ EXPORT_SYMBOL(get_user_pages_unlocked);
+ 
+@@ -803,7 +823,7 @@ long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 		int force, struct page **pages, struct vm_area_struct **vmas)
+ {
+ 	return __get_user_pages_locked(tsk, mm, start, nr_pages, write, force,
+-				       pages, vmas, NULL, false);
++				       pages, vmas, NULL, false, FOLL_TOUCH);
+ }
+ EXPORT_SYMBOL(get_user_pages);
+ 
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 2a63d1f..6f6c752 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -223,9 +223,10 @@ long get_user_pages_locked(struct task_struct *tsk, struct mm_struct *mm,
+ }
+ EXPORT_SYMBOL(get_user_pages_locked);
+ 
+-long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
+-			     unsigned long start, unsigned long nr_pages,
+-			     int write, int force, struct page **pages)
++long __get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
++			       unsigned long start, unsigned long nr_pages,
++			       int write, int force, struct page **pages,
++			       unsigned int gup_flags)
+ {
+ 	long ret;
+ 	down_read(&mm->mmap_sem);
+@@ -234,6 +235,15 @@ long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
+ 	up_read(&mm->mmap_sem);
+ 	return ret;
+ }
++EXPORT_SYMBOL(__get_user_pages_unlocked);
++
++long get_user_pages_unlocked(struct task_struct *tsk, struct mm_struct *mm,
++			     unsigned long start, unsigned long nr_pages,
++			     int write, int force, struct page **pages)
++{
++	return __get_user_pages_unlocked(tsk, mm, start, nr_pages, write,
++					 force, pages, 0);
++}
+ EXPORT_SYMBOL(get_user_pages_unlocked);
+ 
+ /**
