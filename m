@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934061AbaJ2PNd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:13:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:57818 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933381AbaJ2PN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:13:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,810,1406617200"; 
-   d="scan'208";a="622822896"
-Message-ID: <5451033A.8070204@linux.intel.com>
-Date: Wed, 29 Oct 2014 23:09:46 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Brown, Len" <len.brown@intel.com>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org,
-        "linux-pm@vger.kernel.org >> Linux PM list" 
-	<linux-pm@vger.kernel.org>
-Subject: Re: [RFC/PATCH] PM / Sleep: Timer quiesce in freeze state
-References: <5446787E.60202@linux.intel.com> <20141024153656.GM12706@worktop.programming.kicks-ass.net> <544DE5CF.9040501@linux.intel.com> <20141027072816.GD10501@worktop.programming.kicks-ass.net> <544F1C50.8010505@linux.intel.com> <20141028082900.GP3337@twins.programming.kicks-ass.net> <54501CAB.8040503@linux.intel.com> <20141029082150.GU3337@twins.programming.kicks-ass.net>
-In-Reply-To: <20141029082150.GU3337@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S934017AbaJ2PNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:13:17 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:10181 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933723AbaJ2PLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 11:11:06 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-9d-545103871fdf
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 5/8] regulator: max77686: Initialize opmode explicitly to
+ normal mode
+Date: Wed, 29 Oct 2014 16:06:43 +0100
+Message-id: <1414595206-1437-6-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1414595206-1437-1-git-send-email-k.kozlowski@samsung.com>
+References: <1414595206-1437-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xy7rtzIEhBlsPK1psnLGe1WLSugNM
+	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
+	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
+	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DKeNj8lLngD3vFhP1vmBoYn7B1
+	MXJySAiYSGzdsYYJwhaTuHBvPVCci0NIYCmjxOzJcxghnD4miQ0Xd4NVsQkYS2xevgSsSkSg
+	k1mi52AvM4jDLLCaSeLnlVPMIFXCAlESzVu6GEFsFgFViUVLH4Ht4xVwk3j6+SAjxD45iZPH
+	JrOC2JwC7hILWz6AxYWAat4um8QygZF3ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQ
+	IP+yg3HxMatDjAIcjEo8vA4bA0KEWBPLiitzDzFKcDArifB+/gUU4k1JrKxKLcqPLyrNSS0+
+	xMjEwSnVwBg3Lyur/uK0J5duPRRS0sz8yz6Ru3PSgS8RAoye6XPVVbvMI9fVTLn2eL1mSnrR
+	HKNrqhd6IksumTnoNS6a+/2Y6MYlERHOwqHpFhtuviz9WcDfKnPo754CyxOCTouZ+7WmCHfN
+	PXxD7co195ITu1f4tuoFL6z/72k28wXP+fa1oezsQtVdV5VYijMSDbWYi4oTAVl6r5xQAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/10/29 16:21, Peter Zijlstra wrote:
-> On Wed, Oct 29, 2014 at 06:46:03AM +0800, Li, Aubrey wrote:
->> On 2014/10/28 16:29, Peter Zijlstra wrote:
->>> On Tue, Oct 28, 2014 at 12:32:16PM +0800, Li, Aubrey wrote:
->>>> On 2014/10/27 15:28, Peter Zijlstra wrote:
->>>>> On Mon, Oct 27, 2014 at 02:27:27PM +0800, Li, Aubrey wrote:
->>>>>>> Now I suppose the problem is with cpu_pause() which needs IPIs to
->>>>>>> complete? Do we really need cpuidle_pause() there?
->>>>>>> cpuidle_uninstall_handlers() seems like a daft thing to call just about
->>>>>>> there.
->>>>>>
->>>>>> Please check the log of 8651f97bd951d0bb1c10fa24e3fa3455193f3548.
->>>>>> Rafael should know more this question than me.
->>>>>
->>>>> That changelog explains its complete bollocks to do it here. We _want_
->>>>> to enter and/or remain in deep idle states.
->>>>
->>>> cpuidle_resume() will be called at the end of dpm_resume_noirq(). So we
->>>> still are able to enter deep idle states after resume.
->>>
->>> cpuidle_resume is absolute crap, as is cpuidle_suspend for that matter
->>> -- in this case.
->>>
->>> The only reason we needed cpuidle_suspend is because some BIOS shat its
->>> pants when some CPUs were in higher C states while trying to do the S3
->>> thing. We're not going to use S states or BIOS calls _at_all_, so no
->>> point in kicking CPUs out of their deep C states.
->>
->> We already kicked CPUs out of their deep C states in dpm_suspend_noirq().
->>
->> We pause cpuidle in dpm_suspend_noirq() and resume cpuidle in
->> dpm_resume_noirq(), so currently we can't enter deep c-state during S
->> states. That's an intention for some buggy BIOS.
-> 
-> And work arounds for buggy crap hardware should not be in generic code.
-> They should be in the platform drivers associated with said crap bugs.
-> 
-> But I think I see what you're saying, we're going through this dpm_ crap
-> even for suspend to idle, which is wrong too.
-> 
->> However, for freeze state, there is another intention that we want
->> always to enter the *deepest* c-state every time we enter freeze.
->> So we need cpuidle_resume() to make sure we have deep cstate  in freeze.
->>
->> So back to your question in another email,
->>
->>> I think you can simply remove them altogether, they're nonsense.
->>
->> We need them to resume cpuidle in freeze.
-> 
-> So you can do cpuidle_resume() before we do the stop machine dance,
+Minor nit: Initialize the opmode for each regulator to normal mode in a
+readable explicit way.
 
-I agree, this can leave the current behavior unchanged. I'll send out a
-refined version soon.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Suggested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+---
+ drivers/regulator/max77686.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> but ideally it'd all be ripped out from generic code and stuffed into
-> the platform drivers where it belongs. But at the very least it should
-> be isolated to the S3 path, I bet suspend to disk doesn't care either.
-> 
-I think this is a good question to Rafael, which I ever asked before.
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index 7ec9b4e5b917..5497e10b9659 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -497,8 +497,8 @@ static int max77686_pmic_probe(struct platform_device *pdev)
+ 		config.init_data = rdata[i].init_data;
+ 		config.of_node = rdata[i].of_node;
+ 
+-		max77686->opmode[id] = regulators[i].enable_mask >>
+-						max77686_get_opmode_shift(id);
++		max77686->opmode[id] = MAX77686_NORMAL;
++
+ 		rdev = devm_regulator_register(&pdev->dev,
+ 						&regulators[i], &config);
+ 		if (IS_ERR(rdev)) {
+-- 
+1.9.1
 
-Thanks,
--Aubrey
