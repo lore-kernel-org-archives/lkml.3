@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933579AbaJ2M5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 08:57:07 -0400
-Received: from mail.kernel.org ([198.145.19.201]:36999 "EHLO mail.kernel.org"
+	id S933537AbaJ2M47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 08:56:59 -0400
+Received: from mail.kernel.org ([198.145.19.201]:36925 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933557AbaJ2M5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 08:57:04 -0400
+	id S932751AbaJ2M4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 08:56:55 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/10] perf tools: Fix report -F dso_to for data without branch info
-Date: Wed, 29 Oct 2014 10:56:15 -0200
-Message-Id: <1414587377-25077-9-git-send-email-acme@kernel.org>
+Subject: [PATCH 06/10] perf tools: Fix report -F symbol_to for data without branch info
+Date: Wed, 29 Oct 2014 10:56:13 -0200
+Message-Id: <1414587377-25077-7-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414587377-25077-1-git-send-email-acme@kernel.org>
 References: <1414587377-25077-1-git-send-email-acme@kernel.org>
@@ -33,7 +33,7 @@ allocated, which is wrong and following perf session ends up with report
 segfault.
 
   $ perf record ls
-  $ perf report -F dso_to
+  $ perf report -F symbol_to
   perf: Segmentation fault
 
 Checking that hist_entry::branch_info is valid and display "N/A" string
@@ -49,40 +49,50 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1413468427-31049-7-git-send-email-jolsa@kernel.org
+Link: http://lkml.kernel.org/r/1413468427-31049-5-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/sort.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ tools/perf/util/sort.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
 diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index fc4ff2a96616..7a9054a23c36 100644
+index 0c68af83e7dd..57047c0a247c 100644
 --- a/tools/perf/util/sort.c
 +++ b/tools/perf/util/sort.c
-@@ -387,6 +387,9 @@ static int hist_entry__dso_from_snprintf(struct hist_entry *he, char *bf,
+@@ -413,8 +413,13 @@ sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
  static int64_t
- sort__dso_to_cmp(struct hist_entry *left, struct hist_entry *right)
+ sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
  {
+-	struct addr_map_symbol *to_l = &left->branch_info->to;
+-	struct addr_map_symbol *to_r = &right->branch_info->to;
++	struct addr_map_symbol *to_l, *to_r;
++
 +	if (!left->branch_info || !right->branch_info)
 +		return cmp_null(left->branch_info, right->branch_info);
 +
- 	return _sort__dso_cmp(left->branch_info->to.map,
- 			      right->branch_info->to.map);
- }
-@@ -394,8 +397,11 @@ sort__dso_to_cmp(struct hist_entry *left, struct hist_entry *right)
- static int hist_entry__dso_to_snprintf(struct hist_entry *he, char *bf,
++	to_l = &left->branch_info->to;
++	to_r = &right->branch_info->to;
+ 
+ 	if (!to_l->sym && !to_r->sym)
+ 		return _sort__addr_cmp(to_l->addr, to_r->addr);
+@@ -434,10 +439,14 @@ static int hist_entry__sym_from_snprintf(struct hist_entry *he, char *bf,
+ static int hist_entry__sym_to_snprintf(struct hist_entry *he, char *bf,
  				       size_t size, unsigned int width)
  {
--	return _hist_entry__dso_snprintf(he->branch_info->to.map,
--					 bf, size, width);
-+	if (he->branch_info)
-+		return _hist_entry__dso_snprintf(he->branch_info->to.map,
-+						 bf, size, width);
-+	else
-+		return repsep_snprintf(bf, size, "%-*.*s", width, width, "N/A");
+-	struct addr_map_symbol *to = &he->branch_info->to;
+-	return _hist_entry__sym_snprintf(to->map, to->sym, to->addr,
+-					 he->level, bf, size, width);
++	if (he->branch_info) {
++		struct addr_map_symbol *to = &he->branch_info->to;
++
++		return _hist_entry__sym_snprintf(to->map, to->sym, to->addr,
++						 he->level, bf, size, width);
++	}
+ 
++	return repsep_snprintf(bf, size, "%-*.*s", width, width, "N/A");
  }
  
- static int64_t
+ struct sort_entry sort_dso_from = {
 -- 
 1.9.3
 
