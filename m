@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933907AbaJ2OVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:21:52 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:52941 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932903AbaJ2OVu (ORCPT
+	id S933923AbaJ2OWS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:22:18 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:32888 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932903AbaJ2OWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:21:50 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Darren Hart <dvhart@linux.intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / GPIO: Pass index to acpi_get_gpiod_by_index() when using properties
-Date: Wed, 29 Oct 2014 15:42:23 +0100
-Message-ID: <1738599.RytCx391OM@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141029085429.GJ1304@lahna.fi.intel.com>
-References: <1414494927-204923-1-git-send-email-mika.westerberg@linux.intel.com> <54509A3B.5090709@nvidia.com> <20141029085429.GJ1304@lahna.fi.intel.com>
+	Wed, 29 Oct 2014 10:22:17 -0400
+Date: Wed, 29 Oct 2014 14:22:14 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Mathias Krause <minipli@googlemail.com>
+Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        x86-ml <x86@kernel.org>, Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCHv2 1/3] x86, ptdump: Add section for EFI runtime services
+Message-ID: <20141029142214.GS12020@console-pimps.org>
+References: <1411313216-2641-2-git-send-email-minipli@googlemail.com>
+ <20141003134707.GJ14343@console-pimps.org>
+ <20141007150132.GA7307@nazgul.tnic>
+ <20141007170748.GA25767@jig.fritz.box>
+ <20141008151730.GB16892@pd.tnic>
+ <CA+rthh_Q0HQfLX6P3kcuOUwggjSnhYGCc5YJNOn0UCCRPZbaxA@mail.gmail.com>
+ <20141008222619.GG16892@pd.tnic>
+ <20141012125515.GA32045@jig.fritz.box>
+ <20141028185756.GD10873@pd.tnic>
+ <CA+rthh9qePkJogFDT+ttSLvYPvJrAM6CXMJ407Hq3PjcRw9WTw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+rthh9qePkJogFDT+ttSLvYPvJrAM6CXMJ407Hq3PjcRw9WTw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 29, 2014 10:54:29 AM Mika Westerberg wrote:
-> On Wed, Oct 29, 2014 at 04:41:47PM +0900, Alexandre Courbot wrote:
-> > On 10/29/2014 06:59 AM, Rafael J. Wysocki wrote:
-> > >On Tuesday, October 28, 2014 01:15:27 PM Mika Westerberg wrote:
-> > >>acpi_dev_add_driver_gpios() makes it possible to set up mapping between
-> > >>properties and ACPI GpioIo resources in a driver, so we can take index
-> > >>parameter in acpi_find_gpio() into use with _DSD device properties now.
-> > >>
-> > >>This index can be used to select a GPIO from a property with multiple
-> > >>GPIOs:
-> > >>
-> > >>   Package () {
-> > >>   	"data-gpios",
-> > >>   	Package () {
-> > >>   		\_SB.GPIO, 0, 0, 0,
-> > >>   		\_SB.GPIO, 1, 0, 0,
-> > >>   		\_SB.GPIO, 2, 0, 1,
-> > >>   	}
-> > >>   }
-> > >>
-> > >>In order to retrieve the last GPIO from a driver we can simply do:
-> > >>
-> > >>   desc = devm_gpiod_get_index(dev, "data", 2);
-> > >>
-> > >>and so on.
-> > >>
-> > >>Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > >
-> > >Cool. :-)
-> > >
-> > >Any objections anyone?
-> > 
-> > Looks good to me!
-> > 
-> > Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+On Tue, 28 Oct, at 08:48:23PM, Mathias Krause wrote:
+> On 28 October 2014 19:57, Borislav Petkov <bp@alien8.de> wrote:
+> > [...]
+> >
+> > Ok, thanks for refreshing this for me, your patch is good, so
+> >
+> > Acked-by: Borislav Petkov <bp@suse.de>
 > 
-> Thanks!
-> 
-> > Since this looks like a bug fix, shouldn't this be squashed into the
-> > relevant patch of the device-properties set?
-> 
-> I agree.
+> Thanks. But as you said, the EFI mappings shouldn't be in the kernel's
+> page table in the first place, so I'd rather see a patch doing that
+> instead. But, in the meantime, this patch is valid, as it shows the
+> "status quo".
 
-Well, except that the set is in my linux-next branch now and I very much
-prefer to do fixes on top of it.
-
-Besides, I'm not sure if that even matters for the current series.
+Now, everyone agrees this patch is OK? There are no comments that still
+need addressing?
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Matt Fleming, Intel Open Source Technology Center
