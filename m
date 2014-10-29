@@ -1,83 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934551AbaJ2QhT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:37:19 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:62060 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934439AbaJ2QhP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934530AbaJ2QhP (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 29 Oct 2014 12:37:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47816 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933452AbaJ2QhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:37:13 -0400
+Date: Wed, 29 Oct 2014 17:37:11 +0100
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH block/for-linus] writeback: fix a subtle race condition
+ in I_DIRTY clearing
+Message-ID: <20141029163711.GG11466@quack.suse.cz>
+References: <20141024193821.GA7453@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20141029094338.GA28356@ulmo.nvidia.com>
-References: <1414535277-15645-1-git-send-email-abrestic@chromium.org>
-	<1414535277-15645-6-git-send-email-abrestic@chromium.org>
-	<20141029094338.GA28356@ulmo.nvidia.com>
-Date: Wed, 29 Oct 2014 09:37:14 -0700
-X-Google-Sender-Auth: hZB0BoZvLjTQgCQaas9ozCzUqLM
-Message-ID: <CAL1qeaEf0mTQfMgnY8jHGDBvbQ7ivtzAQRWaE9K24TJ86hWYMg@mail.gmail.com>
-Subject: Re: [PATCH RESEND V4 5/9] of: Add NVIDIA Tegra xHCI controller binding
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassisinghbrar@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Arnd Bergmann <arnd@arndb.de>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141024193821.GA7453@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 2:43 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Tue, Oct 28, 2014 at 03:27:50PM -0700, Andrew Bresticker wrote:
-> [...]
->> diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra124-xusb-padctl.txt
-> [...]
->> +Optional properties:
->> +-------------------
->> +- vbus-{0,1,2}-supply: VBUS regulator for the corresponding UTMI pad.
->> +- vddio-hsic-supply: VDDIO regulator for the HSIC pads.
->> +- nvidia,usb3-port-{0,1}-lane: PCIe/SATA lane to which the corresponding USB3
->> +  port is mapped.  See <dt-bindings/pinctrl/pinctrl-tegra-xusb.h> for the list
->> +  of valid values.
->
-> I dislike how we now need to provide a list of all pins in the header
-> file, where previously we used strings for this. This could become very
-> ugly if the set of pins changes in future generations of this IP block.
->
-> Could we instead derive this from the pinmux nodes? For example you have
-> this in the example below:
->
->         usb3p0 {
->                 nvidia,lanes = "pcie-0";
->                 ...
->         };
->
-> Perhaps what we need is to either key off the node name or add another
-> property, such as:
->
->         nvidia,usb3-port = <0>;
->
-> This would match the nvidia,usb2-port property that you've added below.
+On Fri 24-10-14 15:38:21, Tejun Heo wrote:
+> After invoking ->dirty_inode(), __mark_inode_dirty() does smp_mb() and
+> tests inode->i_state locklessly to see whether it already has all the
+> necessary I_DIRTY bits set.  The comment above the barrier doesn't
+> contain any useful information - memory barriers can't ensure "changes
+> are seen by all cpus" by itself.
+> 
+> And it sure enough was broken.  Please consider the following
+> scenario.
+> 
+>  CPU 0					CPU 1
+>  -------------------------------------------------------------------------------
+> 
+> 					enters __writeback_single_inode()
+> 					grabs inode->i_lock
+> 					tests PAGECACHE_TAG_DIRTY which is clear
+>  enters __set_page_dirty()
+>  grabs mapping->tree_lock
+>  sets PAGECACHE_TAG_DIRTY
+>  releases mapping->tree_lock
+>  leaves __set_page_dirty()
+> 
+>  enters __mark_inode_dirty()
+>  smp_mb()
+>  sees I_DIRTY_PAGES set
+>  leaves __mark_inode_dirty()
+> 					clears I_DIRTY_PAGES
+> 					releases inode->i_lock
+> 
+> Now @inode has dirty pages w/ I_DIRTY_PAGES clear.  This doesn't seem
+> to lead to an immediately critical problem because requeue_inode()
+> later checks PAGECACHE_TAG_DIRTY instead of I_DIRTY_PAGES when
+> deciding whether the inode needs to be requeued for IO and there are
+> enough unintentional memory barriers inbetween, so while the inode
+> ends up with inconsistent I_DIRTY_PAGES flag, it doesn't fall off the
+> IO list.
+> 
+> The lack of explicit barrier may also theoretically affect the other
+> I_DIRTY bits which deal with metadata dirtiness.  There is no
+> guarantee that a strong enough barrier exists between
+> I_DIRTY_[DATA]SYNC clearing and write_inode() writing out the dirtied
+> inode.  Filesystem inode writeout path likely has enough stuff which
+> can behave as full barrier but it's theoretically possible that the
+> writeout may not see all the updates from ->dirty_inode().
+> 
+> Fix it by adding an explicit smp_mb() after I_DIRTY clearing.  Note
+> that I_DIRTY_PAGES needs a special treatment as it always needs to be
+> cleared to be interlocked with the lockless test on
+> __mark_inode_dirty() side.  It's cleared unconditionally and
+> reinstated after smp_mb() if the mapping still has dirty pages.
+> 
+> Also add comments explaining how and why the barriers are paired.
+> 
+> Lightly tested.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: Mikulas Patocka <mpatocka@redhat.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: stable@vger.kernel.org
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-That is actually how I described the USB3 port to SS lane mapping
-originally, but in review of an earlier version of this series,
-Stephen suggested that I make it a separate, not pinconfig property
-since it wasn't a value written directly to the hardware.  I'm fine
-with changing it back as the pinconfig property makes more sense to me
-as well.
+								Honza
+> ---
+>  fs/fs-writeback.c |   29 ++++++++++++++++++++++-------
+>  1 file changed, 22 insertions(+), 7 deletions(-)
+> 
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -479,12 +479,28 @@ __writeback_single_inode(struct inode *i
+>  	 * write_inode()
+>  	 */
+>  	spin_lock(&inode->i_lock);
+> -	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
+> -	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
+> -		inode->i_state &= ~I_DIRTY_PAGES;
+> +
+>  	dirty = inode->i_state & I_DIRTY;
+> -	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
+> +	inode->i_state &= ~I_DIRTY;
+> +
+> +	/*
+> +	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
+> +	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
+> +	 * either they see the I_DIRTY bits cleared or we see the dirtied
+> +	 * inode.
+> +	 *
+> +	 * I_DIRTY_PAGES is always cleared together above even if @mapping
+> +	 * still has dirty pages.  The flag is reinstated after smp_mb() if
+> +	 * necessary.  This guarantees that either __mark_inode_dirty()
+> +	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
+> +	 */
+> +	smp_mb();
+> +
+> +	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
+> +		inode->i_state |= I_DIRTY_PAGES;
+> +
+>  	spin_unlock(&inode->i_lock);
+> +
+>  	/* Don't write the inode if only I_DIRTY_PAGES was set */
+>  	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
+>  		int err = write_inode(inode, wbc);
+> @@ -1148,12 +1164,11 @@ void __mark_inode_dirty(struct inode *in
+>  	}
+>  
+>  	/*
+> -	 * make sure that changes are seen by all cpus before we test i_state
+> -	 * -- mikulas
+> +	 * Paired with smp_mb() in __writeback_single_inode() for the
+> +	 * following lockless i_state test.  See there for details.
+>  	 */
+>  	smp_mb();
+>  
+> -	/* avoid the locking if we can */
+>  	if ((inode->i_state & flags) == flags)
+>  		return;
+>  
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
