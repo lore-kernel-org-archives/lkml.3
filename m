@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752AbaJ2H7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 03:59:20 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:48660 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843AbaJ2H7T (ORCPT
+	id S1755695AbaJ2ICH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 04:02:07 -0400
+Received: from mout.kundenserver.de ([212.227.126.187]:53072 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306AbaJ2ICD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 03:59:19 -0400
-Date: Wed, 29 Oct 2014 08:59:15 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: tglx@linutronix.de, jiang.liu@linux.intel.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [tip:x86/urgent] ix86: Fix build failure when !CONFIG_X86_IO_APIC
-Message-ID: <20141029075915.GB7322@gmail.com>
-References: <54184CC802000078000355EE@mail.emea.novell.com>
- <tip-a425cf83e39f99a70168c184e79cea8c67ba7c12@git.kernel.org>
- <544FAC9F0200007800042CA6@mail.emea.novell.com>
- <20141029075042.GA7322@gmail.com>
- <5450AAF30200007800042F64@mail.emea.novell.com>
+	Wed, 29 Oct 2014 04:02:03 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        arm@kernel.org
+Subject: Re: [PATCH] soc: versatile: Add terminating entry for realview_soc_of_match
+Date: Wed, 29 Oct 2014 09:01:59 +0100
+Message-ID: <2097592.uX1sdbECvl@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAFRkauAP9+6VM40O-WLMKY5X5WrpyrCqBhjwVbWGSV2B_+DPXg@mail.gmail.com>
+References: <1413733260.6272.1.camel@phoenix> <2588271.FpfytU43Wu@wuerfel> <CAFRkauAP9+6VM40O-WLMKY5X5WrpyrCqBhjwVbWGSV2B_+DPXg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5450AAF30200007800042F64@mail.emea.novell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:p3dgC+/Av20YZGvUTISi8zz8lOuYLbciRo1tBErAaQT
+ nozZrvykU2WMmEcPDZ0pxeEBRx3aXEZ2DcCLA3vacVSjDkyTzA
+ 8bceb3uvY6/AQYIOCzUYUjAMB6pMOMqzhLDih1u7GsMkh8zX8z
+ GGVaYEF7CaXusZ7h1rtvF3uMnVx5qGY/ngcE+UAdpwxZWJi2Lo
+ SJ0k4nRfcK6bBCcIFJDZD/1uVrAtA5Wmqi9U0Ka+okfbF6zxhS
+ ducUQmGIkXPhj8zuwj1FBl9CapwblUuD84kYFlyMIkTqZsJLK/
+ oomB4QUVFo5S/hCg0TF/h1TPdpdI9PkE/5rS87FjmFHuDqMIkO
+ rpEmD2ceOWahgo9gVowI=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jan Beulich <JBeulich@suse.com> wrote:
-
-> >>> On 29.10.14 at 08:50, <mingo@kernel.org> wrote:
+On Wednesday 29 October 2014 08:48:11 Axel Lin wrote:
+> >>
+> >> Arnd are you merging this directly into ARM SoC?
+> >>
+> >
+> > Applied to the fixes branch.
+> Thanks.
+> >
+> > Please remember to add arm@kernel.org when you want us to pick up the
+> > patches.
+> scripts/get_maintainer.pl does not suggest arm@kernel.org for this patch.
 > 
-> > * Jan Beulich <JBeulich@suse.com> wrote:
-> > 
-> >> >>> On 28.10.14 at 12:18, <tipbot@zytor.com> wrote:
-> >> > Commit-ID:  a425cf83e39f99a70168c184e79cea8c67ba7c12
-> >> > Gitweb:     
-> > http://git.kernel.org/tip/a425cf83e39f99a70168c184e79cea8c67ba7c12 
-> >> > Author:     Jan Beulich <JBeulich@suse.com>
-> >> > AuthorDate: Tue, 16 Sep 2014 13:44:24 +0100
-> >> > Committer:  Ingo Molnar <mingo@kernel.org>
-> >> > CommitDate: Tue, 28 Oct 2014 12:01:09 +0100
-> >> > 
-> >> > ix86: Fix build failure when !CONFIG_X86_IO_APIC
-> >> > 
-> >> > mp_should_keep_irq() isn't really IO-APIC related, and
-> >> > considering that it's being used solely in arch/x86/pci/ likely
-> >> > both declaration and definition got misplaced even without
-> >> > considering the resulting build failure:
-> >> > 
-> >> >   .../arch/x86/pci/irq.c: In function ‘pirq_disable_irq’:
-> >> >   .../arch/x86/pci/irq.c:1259: error: implicit declaration of function 
-> >> > ‘mp_should_keep_irq’
-> >> >   make[3]: *** [arch/x86/pci/irq.o] Error 1
-> >> > 
-> >> > Move them to better places.
-> >> 
-> >> Ingo,
-> >> 
-> >> the build failure had got addressed by a different patch 
-> >> already, albeit that patch seems far from ideal to me. I.e. I 
-> >> still think cleanup along the lines of the patch here is 
-> >> desirable, but I need to submit one that actually builds (the 
-> >> build failure the test robot encountered is a direct result of 
-> >> the clash between the two patches). I have that patch ready, 
-> >> but didn't want to submit before I got around to test it with 
-> >> 3.18-rc.
-> > 
-> > Okay, I've removed it from x86/urgent. Note that it also 
-> > generated this build failure:
-> > 
-> > ./arch/x86/include/asm/io_apic.h:240:20: error: static declaration of 
-> > ‘mp_should_keep_irq’ follows non-static declaration
+> $ scripts/get_maintainer.pl
+> 0001-soc-versatile-Add-terminating-entry-for-realview_soc.patch
+> Linus Walleij <linus.walleij@linaro.org>
+> (commit_signer:1/1=100%,authored:1/1=100%,added_lines:144/144=100%)
+> Arnd Bergmann <arnd@arndb.de> (commit_signer:1/1=100%)
+> linux-kernel@vger.kernel.org (open list)
 > 
-> Right - that's the one I was referring to above (actually iirc there
-> are two relatively similar build failures resulting from the conflict).
+> Maybe it needs update the maintainer entry?
 
-Okay. I didn't mind your cleanup, so please follow it up and I'll 
-apply it.
+We generally don't want developers other than subarch maintainers to
+send us stuff directly and we certainly don't want to be Cc'd on
+(literally, if you count every version in review) thousands of patches
+per kernel release.
 
-Thanks,
+My comment was directed at Linus, who has sent us the updates for
+vexpress recently and who was (rightfully) asking for the patch to
+be picked up.
 
-	Ingo
+	Arnd
