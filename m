@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933AbaJ2XlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 19:41:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54577 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757544AbaJ2XlL (ORCPT
+	id S1757963AbaJ2Xlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 19:41:52 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60890 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757289AbaJ2Xlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 19:41:11 -0400
-Date: Wed, 29 Oct 2014 16:40:01 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        john.stultz@linaro.org, arnd@arndb.de, tj@kernel.org,
-        marcel@holtmann.org, desrt@desrt.ca, hadess@hadess.net,
-        dh.herrmann@gmail.com, tixxdz@opendz.org,
-        simon.mcvittie@collabora.co.uk, daniel@zonque.org,
-        alban.crequy@collabora.co.uk, javier.martinez@collabora.co.uk,
-        teg@jklm.no
-Subject: Re: [PATCH 00/12] Add kdbus implementation
-Message-ID: <20141029234001.GB16520@kroah.com>
-References: <1414620056-6675-1-git-send-email-gregkh@linuxfoundation.org>
- <alpine.LRH.2.00.1410292354480.11562@twin.jikos.cz>
- <20141029231106.GB16548@kroah.com>
- <alpine.LRH.2.00.1410300019570.11562@twin.jikos.cz>
+	Wed, 29 Oct 2014 19:41:51 -0400
+Message-ID: <54517B37.9010305@collabora.co.uk>
+Date: Thu, 30 Oct 2014 00:41:43 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.00.1410300019570.11562@twin.jikos.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
+CC: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [RFT v2 2/8] regulator: max77802: Remove support for board files
+References: <1414595206-1437-1-git-send-email-k.kozlowski@samsung.com> <1414595206-1437-3-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1414595206-1437-3-git-send-email-k.kozlowski@samsung.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 30, 2014 at 12:24:02AM +0100, Jiri Kosina wrote:
-> On Wed, 29 Oct 2014, Greg Kroah-Hartman wrote:
-> 
-> > > > kdbus is a kernel-level IPC implementation that aims for resemblance to
-> > > > the the protocol layer with the existing userspace D-Bus daemon while
-> > > > enabling some features that couldn't be implemented before in userspace.
-> > > 
-> > > I'd be interested in the features that can't be implemented in userspace 
-> > > (and therefore would justify existence of kdbus in the kernel). Could you 
-> > > please point me to such list / documentation?
-> > 
-> > Lennart has given whole talks about this in the past, here's a recent
-> > talk going into the details:
-> > 	https://www.youtube.com/watch?v=HPbQzm_iz_k
-> 
-> I think it's a reasonable expectation that kernel patch submissions should 
-> be reasonably self-contained though. We've always been very strict about 
-> pushing everybody to provide extensive cover letters, changelogs and 
-> explanations, so this shouldn't really be an exception, I think.
+Hello Krzysztof,
 
-There is a 1815 line documentation file in this series, so we aren't
-trying to not provide this type of information here at all.  But yes,
-more background, about why this can't be done in userspace (zero copy,
-less context switches, proper credential passing, timestamping, availble
-at early-boot, LSM hooks for security models to tie into, race-free
-interfaces, container/namespace support, etc.) should be added to the
-docs as well.
+On 10/29/2014 04:06 PM, Krzysztof Kozlowski wrote:
+>  
+>  static int max77802_pmic_probe(struct platform_device *pdev)
+>  {
+>  	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+> -	struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
+>  	struct max77802_regulator_prv *max77802;
+>  	int i, ret = 0, val;
+>  	struct regulator_config config = { };
+> -
+> -	/* This is allocated by the MFD driver */
+> -	if (!pdata) {
+> -		dev_err(&pdev->dev, "no platform data found for regulator\n");
+> -		return -ENODEV;
+> -	}
+> +	struct of_regulator_match *rdata;
+>  
+>  	max77802 = devm_kzalloc(&pdev->dev,
+>  				sizeof(struct max77802_regulator_prv),
+> @@ -586,24 +558,29 @@ static int max77802_pmic_probe(struct platform_device *pdev)
+>  	if (!max77802)
+>  		return -ENOMEM;
+>  
+> -	if (iodev->dev->of_node) {
+> -		ret = max77802_pmic_dt_parse_pdata(pdev, pdata);
+> -		if (ret)
+> -			return ret;
+> -	}
+> -
+>  	config.dev = iodev->dev;
+>  	config.regmap = iodev->regmap;
+>  	config.driver_data = max77802;
+>  	platform_set_drvdata(pdev, max77802);
+>  
+> +	rdata = kzalloc(sizeof(*rdata) * MAX77802_REG_MAX, GFP_KERNEL);
+> +	if (!rdata)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; i < MAX77802_REG_MAX; i++)
+> +		rdata[i].name = regulators[i].name;
+> +
+> +	ret = max77802_pmic_dt_parse(pdev, rdata);
+> +	if (ret)
+> +		goto out;
+> +
+>  	for (i = 0; i < MAX77802_REG_MAX; i++) {
+>  		struct regulator_dev *rdev;
+> -		int id = pdata->regulators[i].id;
+> +		int id = regulators[i].id;
+>  		int shift = max77802_get_opmode_shift(id);
+>  
+> -		config.init_data = pdata->regulators[i].initdata;
+> -		config.of_node = pdata->regulators[i].of_node;
+> +		config.init_data = rdata[i].init_data;
+> +		config.of_node = rdata[i].of_node;
+>  
+>  		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
+>  		val = val >> shift & MAX77802_OPMODE_MASK;
+> @@ -621,13 +598,17 @@ static int max77802_pmic_probe(struct platform_device *pdev)
+>  		rdev = devm_regulator_register(&pdev->dev,
+>  					       &regulators[i], &config);
 
-> > > It seems to me that most of the highlight features from the cover letter 
-> > > can be "easily" (for certain definition of that word, of course) 
-> > > implemented in userspace (vmsplice(), sending fd through unix socket, user 
-> > > namespaces, UUID management, etc).
-> > 
-> > We have dbus in userspace today, but that requires extra copies of data,
-> 
-> But we can do zero-copy between processess for quite some time already, so 
-> what exactly is the issue here?
+Thanks for your patch. It's indeed an improvement over the old code and I can
+test it tomorrow when I've access to my machine with a max77802 PMIC.
 
-See the above list for more details.
+However, I don't think this is the change that Mark asked. AFAIU what he wanted
+is to fill the struct regulator_desc .of_match and .regulators_node fields so
+the init_data is extracted by the core on regulator registration.
 
-We'll work on this for the next round of patches, thanks.
+Look at commits a0c7b164 ("regulator: of: Provide simplified DT parsing method")
+and 93a127b ("regulator: isl9305: Convert to new style DT parsing") to see what
+I'm talking about.
 
-greg k-h
+Best regards,
+Javier
