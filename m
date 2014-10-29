@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934502AbaJ2QmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 12:42:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37499 "EHLO mx1.redhat.com"
+	id S934327AbaJ2QqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 12:46:21 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52461 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934051AbaJ2QmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 12:42:17 -0400
-Date: Wed, 29 Oct 2014 17:41:36 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Gleb Natapov <gleb@kernel.org>, Radim Krcmar <rkrcmar@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sasha Levin <sasha.levin@oracle.com>, Jianyu Zhan <nasa4836@gmail.com>,
-        Paul Cassella <cassella@cray.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>
-Subject: Re: [PATCH 2/4] mm: gup: add get_user_pages_locked and
- get_user_pages_unlocked
-Message-ID: <20141029164136.GJ19606@redhat.com>
-References: <1412153797-6667-1-git-send-email-aarcange@redhat.com>
- <1412153797-6667-3-git-send-email-aarcange@redhat.com>
- <20141009104723.GL4750@worktop.programming.kicks-ass.net>
+	id S933822AbaJ2QqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 12:46:20 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>,
+        Santosh Shilimkar <ssantosh@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v1 2/4] ARM: keystone: defconfig: add options to enable PCI controller
+Date: Wed, 29 Oct 2014 12:45:32 -0400
+Message-ID: <1414601134-31825-3-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1414601134-31825-1-git-send-email-m-karicheri2@ti.com>
+References: <1414601134-31825-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141009104723.GL4750@worktop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 09, 2014 at 12:47:23PM +0200, Peter Zijlstra wrote:
-> On Wed, Oct 01, 2014 at 10:56:35AM +0200, Andrea Arcangeli wrote:
-> > +static inline long __get_user_pages_locked(struct task_struct *tsk,
-> > +					   struct mm_struct *mm,
-> > +					   unsigned long start,
-> > +					   unsigned long nr_pages,
-> > +					   int write, int force,
-> > +					   struct page **pages,
-> > +					   struct vm_area_struct **vmas,
-> > +					   int *locked,
-> > +					   bool notify_drop)
-> 
-> You might want to consider __always_inline to make sure it does indeed
-> get inlined and constant propagation works for @locked and @notify_drop.
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+CC: Santosh Shilimkar <ssantosh@kernel.org>
+CC: Russell King <linux@arm.linux.org.uk>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ v1 - fixed email ID for Santosh
+ arch/arm/configs/keystone_defconfig |    3 +++
+ 1 file changed, 3 insertions(+)
 
-Ok, that's included in the last patchset submit.
+diff --git a/arch/arm/configs/keystone_defconfig b/arch/arm/configs/keystone_defconfig
+index 932ae40..40d3e9d 100644
+--- a/arch/arm/configs/keystone_defconfig
++++ b/arch/arm/configs/keystone_defconfig
+@@ -20,6 +20,9 @@ CONFIG_MODULE_FORCE_UNLOAD=y
+ CONFIG_MODVERSIONS=y
+ CONFIG_ARCH_KEYSTONE=y
+ CONFIG_ARM_LPAE=y
++CONFIG_PCI=y
++CONFIG_PCI_MSI=y
++CONFIG_PCI_KEYSTONE=y
+ CONFIG_SMP=y
+ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+-- 
+1.7.9.5
 
-Thanks,
-Andrea
