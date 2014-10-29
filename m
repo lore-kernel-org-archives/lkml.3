@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933883AbaJ2PLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 11:11:15 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:47969 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933587AbaJ2PLF (ORCPT
+	id S933843AbaJ2PLN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 11:11:13 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:31462 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933090AbaJ2PLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 11:11:05 -0400
-X-AuditID: cbfec7f4-b7f6c6d00000120b-94-545103867f60
+	Wed, 29 Oct 2014 11:11:04 -0400
+X-AuditID: cbfec7f4-b7f6c6d00000120b-8f-54510385cfe4
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
@@ -22,24 +22,23 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 3/8] regulator: max77686: Remove support for board files
-Date: Wed, 29 Oct 2014 16:06:41 +0100
-Message-id: <1414595206-1437-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [RFT v2 2/8] regulator: max77802: Remove support for board files
+Date: Wed, 29 Oct 2014 16:06:40 +0100
+Message-id: <1414595206-1437-3-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1414595206-1437-1-git-send-email-k.kozlowski@samsung.com>
 References: <1414595206-1437-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t/xy7ptzIEhBlfesVhsnLGe1WLSugNM
-	FlMfPmGzuP7lOavF/CPnWC2O/i6weP3C0KJ3wVU2i7NNb9gt7n89ymjx7UoHk8Wmx9dYLS7v
-	msNmMeP8PiaL25d5LdYeuctucbqb1UHQo6W5h83j7/PrLB5/V71g9tg56y67x6ZVnWwed67t
-	YfOYdzLQY/OSeo++LasYPT5vkgvgiuKySUnNySxLLdK3S+DK+PZ4NUvBR5WKl8u3MzUwTpbr
-	YuTkkBAwkVj2/xwThC0mceHeerYuRi4OIYGljBKXbn9ihXD6mCSWHpvADlLFJmAssXn5ErAq
-	EYFOZomeg73MIA6zwGomiZ9XTjGDVAkLeEtMnbGAFcRmEVCVOHPkLVAHBwevgJvEh/niEOvk
-	JE4emwxWwingLrGw5QMjiC0EVPJ22SSWCYy8CxgZVjGKppYmFxQnpeca6hUn5haX5qXrJefn
-	bmKEhPiXHYyLj1kdYhTgYFTi4XXYGBAixJpYVlyZe4hRgoNZSYT38y+gEG9KYmVValF+fFFp
-	TmrxIUYmDk6pBsYKnu72k613lLYb3PRzUlbad0Blw7aVJo+vr7I/OTdv1ffUH92bn35M6bwc
-	wVvkeYV5+dftAm9cl0+RX+J29y3/zwrTrooVi9c8DfmiOz9jv5pUpFBCRFTq7d0LPc2E3z3I
-	8nN+P69CQs87bU69l5ac5YW+9ORi53XJzU7LprpYMQpoLuNefkuJpTgj0VCLuag4EQBHVT6E
-	TwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xy7qtzIEhBqv7RSw2zljPajFp3QEm
+	i6kPn7BZXP/ynNVi/pFzrBZHfxdYvH5haNG74CqbxdmmN+wW978eZbT4dqWDyWLT42usFpd3
+	zWGzmHF+H5PF7cu8FmuP3GW3ON3N6iDo0dLcw+bx9/l1Fo+/q14we+ycdZfdY9OqTjaPO9f2
+	sHnMOxnosXlJvUffllWMHp83yQVwRXHZpKTmZJalFunbJXBlPH0wjb1guUbFlePzmRsYbyh0
+	MXJySAiYSPx+9JcRwhaTuHBvPVsXIxeHkMBSRom511ZDOX1MEkuPTWAHqWITMJbYvHwJWEJE
+	oJNZoudgLzOIwyywmkni55VTzCBVwgKeEn9mzGEFsVkEVCUutj4Gi/MKuEk8e9QFtU9O4uSx
+	yWA1nALuEgtbPoDFhYBq3i6bxDKBkXcBI8MqRtHU0uSC4qT0XEO94sTc4tK8dL3k/NxNjJAg
+	/7KDcfExq0OMAhyMSjy8DhsDQoRYE8uKK3MPMUpwMCuJ8H7+BRTiTUmsrEotyo8vKs1JLT7E
+	yMTBKdXAWKekoBy8wtVmb62+/Vw7nxDFybsai/7OFlzw/4XcF322UIFpRxYxnepab1v4YR+P
+	180vvjKmsx+kGqyc3Lju44OM3rXvGZXDYpufN/2zXvYpw+PvowVh++JeCx6QO1+a+jz8kc8X
+	4VKFF5kyTgvObdnPOblyZ5npi4Y7UoV3//KedLjynblqhhJLcUaioRZzUXEiALOO9IhQAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -51,21 +50,29 @@ driver.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/regulator/max77686.c | 84 +++++++++++++++++---------------------------
- 1 file changed, 33 insertions(+), 51 deletions(-)
+ drivers/regulator/max77802.c | 87 +++++++++++++++++---------------------------
+ 1 file changed, 34 insertions(+), 53 deletions(-)
 
-diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
-index 27c5f4556044..7ec9b4e5b917 100644
---- a/drivers/regulator/max77686.c
-+++ b/drivers/regulator/max77686.c
-@@ -428,15 +428,14 @@ static const struct regulator_desc regulators[] = {
- 	regulator_desc_buck(9),
+diff --git a/drivers/regulator/max77802.c b/drivers/regulator/max77802.c
+index b9958d927297..e3390c7db5ae 100644
+--- a/drivers/regulator/max77802.c
++++ b/drivers/regulator/max77802.c
+@@ -70,6 +70,7 @@ static unsigned int ramp_table_77802_4bit[] = {
+ };
+ 
+ struct max77802_regulator_prv {
++	/* Array indexed by regulator id */
+ 	unsigned int opmode[MAX77802_REG_MAX];
+ };
+ 
+@@ -513,15 +514,14 @@ static struct regulator_desc regulators[] = {
+ 	regulator_77802_desc_n_ldo(35, 2, 1),
  };
  
 -#ifdef CONFIG_OF
--static int max77686_pmic_dt_parse_pdata(struct platform_device *pdev,
+-static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
 -					struct max77686_platform_data *pdata)
-+static int max77686_pmic_dt_parse(struct platform_device *pdev,
++static int max77802_pmic_dt_parse(struct platform_device *pdev,
 +				struct of_regulator_match *rdata)
  {
  	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
@@ -75,11 +82,11 @@ index 27c5f4556044..7ec9b4e5b917 100644
 -	unsigned int i;
 +	int ret = 0;
 +
-+	BUILD_BUG_ON(MAX77686_REGULATORS != ARRAY_SIZE(regulators));
++	BUILD_BUG_ON(MAX77802_REG_MAX != ARRAY_SIZE(regulators));
  
  	pmic_np = iodev->dev->of_node;
- 	regulators_np = of_get_child_by_name(pmic_np, "voltage-regulators");
-@@ -445,63 +444,31 @@ static int max77686_pmic_dt_parse_pdata(struct platform_device *pdev,
+ 	regulators_np = of_get_child_by_name(pmic_np, "regulators");
+@@ -530,55 +530,27 @@ static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
  		return -EINVAL;
  	}
  
@@ -87,22 +94,27 @@ index 27c5f4556044..7ec9b4e5b917 100644
 -	rdata = devm_kzalloc(&pdev->dev, sizeof(*rdata) *
 -			     pdata->num_regulators, GFP_KERNEL);
 -	if (!rdata) {
--		of_node_put(regulators_np);
++	ret = of_regulator_match(&pdev->dev, regulators_np, rdata,
++			MAX77802_REG_MAX);
++	if (ret < 0) {
++		dev_err(&pdev->dev, "error parsing regulators data\n");
+ 		of_node_put(regulators_np);
 -		return -ENOMEM;
 -	}
- 
+-
 -	for (i = 0; i < pdata->num_regulators; i++) {
 -		rmatch.name = regulators[i].name;
 -		rmatch.init_data = NULL;
 -		rmatch.of_node = NULL;
--		of_regulator_match(&pdev->dev, regulators_np, &rmatch, 1);
+-		if (of_regulator_match(&pdev->dev, regulators_np, &rmatch,
+-				       1) != 1) {
+-			dev_warn(&pdev->dev, "No matching regulator for '%s'\n",
+-				 rmatch.name);
+-			continue;
+-		}
 -		rdata[i].initdata = rmatch.init_data;
 -		rdata[i].of_node = rmatch.of_node;
-+	ret = of_regulator_match(&pdev->dev, regulators_np, rdata,
-+			MAX77686_REGULATORS);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "error parsing regulators data\n");
-+		of_node_put(regulators_np);
+-		rdata[i].id = regulators[i].id;
 +		return ret;
  	}
 +	/* else: don't care how many regulators were parsed from DTS. */
@@ -113,72 +125,72 @@ index 27c5f4556044..7ec9b4e5b917 100644
  	return 0;
  }
 -#else
--static int max77686_pmic_dt_parse_pdata(struct platform_device *pdev,
+-static int max77802_pmic_dt_parse_pdata(struct platform_device *pdev,
 -					struct max77686_platform_data *pdata)
 -{
 -	return 0;
 -}
 -#endif /* CONFIG_OF */
  
- static int max77686_pmic_probe(struct platform_device *pdev)
+ static int max77802_pmic_probe(struct platform_device *pdev)
  {
  	struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
 -	struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
- 	struct max77686_data *max77686;
- 	int i, ret = 0;
+ 	struct max77802_regulator_prv *max77802;
+ 	int i, ret = 0, val;
  	struct regulator_config config = { };
-+	struct of_regulator_match *rdata;
- 
- 	dev_dbg(&pdev->dev, "%s\n", __func__);
- 
+-
+-	/* This is allocated by the MFD driver */
 -	if (!pdata) {
 -		dev_err(&pdev->dev, "no platform data found for regulator\n");
 -		return -ENODEV;
 -	}
--
++	struct of_regulator_match *rdata;
+ 
+ 	max77802 = devm_kzalloc(&pdev->dev,
+ 				sizeof(struct max77802_regulator_prv),
+@@ -586,24 +558,29 @@ static int max77802_pmic_probe(struct platform_device *pdev)
+ 	if (!max77802)
+ 		return -ENOMEM;
+ 
 -	if (iodev->dev->of_node) {
--		ret = max77686_pmic_dt_parse_pdata(pdev, pdata);
+-		ret = max77802_pmic_dt_parse_pdata(pdev, pdata);
 -		if (ret)
 -			return ret;
 -	}
 -
--	if (pdata->num_regulators != MAX77686_REGULATORS) {
--		dev_err(&pdev->dev,
--			"Invalid initial data for regulator's initialiation\n");
--		return -EINVAL;
--	}
--
- 	max77686 = devm_kzalloc(&pdev->dev, sizeof(struct max77686_data),
- 				GFP_KERNEL);
- 	if (!max77686)
-@@ -512,25 +479,40 @@ static int max77686_pmic_probe(struct platform_device *pdev)
- 	config.driver_data = max77686;
- 	platform_set_drvdata(pdev, max77686);
+ 	config.dev = iodev->dev;
+ 	config.regmap = iodev->regmap;
+ 	config.driver_data = max77802;
+ 	platform_set_drvdata(pdev, max77802);
  
-+	rdata = kzalloc(sizeof(*rdata) * MAX77686_REGULATORS, GFP_KERNEL);
++	rdata = kzalloc(sizeof(*rdata) * MAX77802_REG_MAX, GFP_KERNEL);
 +	if (!rdata)
 +		return -ENOMEM;
 +
-+	for (i = 0; i < MAX77686_REGULATORS; i++)
++	for (i = 0; i < MAX77802_REG_MAX; i++)
 +		rdata[i].name = regulators[i].name;
 +
-+	ret = max77686_pmic_dt_parse(pdev, rdata);
++	ret = max77802_pmic_dt_parse(pdev, rdata);
 +	if (ret)
 +		goto out;
 +
- 	for (i = 0; i < MAX77686_REGULATORS; i++) {
+ 	for (i = 0; i < MAX77802_REG_MAX; i++) {
  		struct regulator_dev *rdev;
- 		int id = regulators[i].id;
+-		int id = pdata->regulators[i].id;
++		int id = regulators[i].id;
+ 		int shift = max77802_get_opmode_shift(id);
  
 -		config.init_data = pdata->regulators[i].initdata;
 -		config.of_node = pdata->regulators[i].of_node;
 +		config.init_data = rdata[i].init_data;
 +		config.of_node = rdata[i].of_node;
  
- 		max77686->opmode[id] = regulators[i].enable_mask >>
- 						max77686_get_opmode_shift(id);
+ 		ret = regmap_read(iodev->regmap, regulators[i].enable_reg, &val);
+ 		val = val >> shift & MAX77802_OPMODE_MASK;
+@@ -621,13 +598,17 @@ static int max77802_pmic_probe(struct platform_device *pdev)
  		rdev = devm_regulator_register(&pdev->dev,
- 						&regulators[i], &config);
+ 					       &regulators[i], &config);
  		if (IS_ERR(rdev)) {
 +			ret = PTR_ERR(rdev);
  			dev_err(&pdev->dev,
@@ -196,7 +208,7 @@ index 27c5f4556044..7ec9b4e5b917 100644
 +	return ret;
  }
  
- static const struct platform_device_id max77686_pmic_id[] = {
+ static const struct platform_device_id max77802_pmic_id[] = {
 -- 
 1.9.1
 
