@@ -1,125 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933965AbaJ2OMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:12:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47276 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932555AbaJ2OMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:12:20 -0400
-Date: Wed, 29 Oct 2014 09:11:46 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Huang Rui <ray.huang@amd.com>
-CC: Felipe Balbi <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Jason Chang <jason.chang@amd.com>, Vincent Wan <vincent.wan@amd.com>,
-        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 19/19] usb: dwc3: add support for AMD NL platform
-Message-ID: <20141029141146.GF11572@saruman>
-Reply-To: <balbi@ti.com>
-References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
- <1414497280-3126-20-git-send-email-ray.huang@amd.com>
- <20141028133856.GB8123@saruman>
- <20141028143536.GA4519@hr-slim.amd.com>
- <20141029091342.GC10840@hr-slim.amd.com>
+	id S933979AbaJ2OMo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:12:44 -0400
+Received: from mail-bn1on0078.outbound.protection.outlook.com ([157.56.110.78]:58816
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932555AbaJ2OMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 10:12:41 -0400
+Date: Wed, 29 Oct 2014 07:12:33 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Lothar =?utf-8?Q?Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC v2 1/8] pinctrl: Add driver for Zynq
+References: <1413479495-14206-1-git-send-email-soren.brinkmann@xilinx.com>
+ <1413479495-14206-2-git-send-email-soren.brinkmann@xilinx.com>
+ <20141028161656.6fb55199@ipc1.ka-ro>
+ <ed83381607d7493bafde4b881b37a3ab@BN1BFFO11FD017.protection.gbl>
+ <20141029054929.27a417ce@ipc1.ka-ro>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="twz1s1Hj1O0rHoT0"
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20141029091342.GC10840@hr-slim.amd.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141029054929.27a417ce@ipc1.ka-ro>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21060.005
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <041ef3bb17a34994a2c75d137caa235a@BN1AFFO11FD058.protection.gbl>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(377424004)(199003)(189002)(24454002)(44976005)(76482002)(99396003)(80022003)(53416004)(76176999)(85306004)(92566001)(46102003)(77096002)(104016003)(19580405001)(110136001)(108616004)(74316001)(50466002)(93886004)(33646002)(120916001)(4396001)(85202003)(23676002)(107046002)(47776003)(85852003)(86362001)(95666004)(21056001)(102836001)(31966008)(6806004)(106466001)(87936001)(20776003)(19580395003)(83506001)(50986999)(64706001)(54356999)(85182001)(107986001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB032;H:xsj-pvapsmtpgw01;FPR:;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB032;
+X-Forefront-PRVS: 03793408BA
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---twz1s1Hj1O0rHoT0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2014-10-29 at 05:49AM +0100, Lothar Waßmann wrote:
+> Hi,
+> 
+> Sören Brinkmann wrote:
+> > On Tue, 2014-10-28 at 04:16PM +0100, Lothar Waßmann wrote:
+> > > Hi,
+> > > 
+> > > Soren Brinkmann wrote:
+> > > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > > > ---
+> > > > changes since RFC:
+> > > >  - use syscon/regmap to access registers in SLCR space
+> > > >  - add pinctrl to zc702 DT
+> > > >  - rebase to 3.18: rename enable -> set_mux
+> > > >  - add kernel-doc
+> > > >  - support pinconf
+> > > >    - supported attributes
+> > > >      - pin-bias: pull up, tristate, disable
+> > > >      - slew-rate: 0 == slow, 1 == fast; generic pinconf does not display
+> > > >        argument
+> > > > 
+> > > [...]
+> > > > +struct zynq_pctrl_group zynq_pctrl_groups[] = {
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ethernet0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ethernet1_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(mdio0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(mdio1_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(qspi0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(qspi1_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(qspi_fbclk),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(qspi_cs1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi0_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi0_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(spi1_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_emio_wp),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio0_emio_cd),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_emio_wp),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(sdio1_emio_cd),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nor),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nor_cs1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nor_addr25),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(smc0_nand),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_4),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_5),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_6),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_7),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_8),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_9),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can0_10),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_4),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_5),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_6),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_7),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_8),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_9),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_10),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(can1_11),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_4),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_5),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_6),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_7),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_8),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_9),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart0_10),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_4),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_5),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_6),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_7),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_8),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_9),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_10),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(uart1_11),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_4),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_5),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_6),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_7),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_8),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_9),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c0_10),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_4),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_5),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_6),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_7),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_8),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_9),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(i2c1_10),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc0_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc0_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc1_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc1_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(ttc1_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(swdt0_4),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_0),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_1),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_2),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_3),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_4),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_5),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_6),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_7),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_8),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_9),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_10),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_11),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_12),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_13),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_14),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_15),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_16),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_17),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_18),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_19),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_20),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_21),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_22),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_23),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_24),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_25),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_26),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_27),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_28),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_29),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_30),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_31),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_32),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_33),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_34),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_35),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_36),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_37),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_38),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_39),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_40),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_41),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_42),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_43),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_44),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_45),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_46),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_47),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_48),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_49),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_50),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_51),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_52),
+> > > > +	DEFINE_ZYNQ_PINCTRL_GRP(gpio0_53)
+> > > dto.
+> > > 
+> > > [...]
+> > > > +#define DEFINE_ZYNQ_PINMUX_FUNCTION(fname, mval)	\
+> > > > +	[ZYNQ_PMUX_##fname] = {				\
+> > > > +		.name = #fname,				\
+> > > > +		.groups = fname##_groups,		\
+> > > > +		.ngroups = ARRAY_SIZE(fname##_groups),	\
+> > > > +		.mux_val = mval				\
+> > > > +	}
+> > > > +
+> > > dto.
+> > > 
+> > > [...]
+> > > > +#define DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(fname, mval, mux, mask, shift)	\
+> > > > +	[ZYNQ_PMUX_##fname] = {				\
+> > > > +		.name = #fname,				\
+> > > > +		.groups = fname##_groups,		\
+> > > > +		.ngroups = ARRAY_SIZE(fname##_groups),	\
+> > > > +		.mux_val = mval,			\
+> > > > +		.mux_mask = mask,			\
+> > > > +		.mux_shift = shift			\
+> > > dto.
+> > > 
+> > > [...]
+> > > > +static const struct zynq_pinmux_function zynq_pmux_functions[] = {
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(ethernet0, 1),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(ethernet1, 1),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(mdio0, 0x40),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(mdio1, 0x50),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi0, 1),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi1, 1),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi_fbclk, 1),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(qspi_cs1, 1),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(spi0, 0x50),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(spi1, 0x50),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio0, 0x40),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio0_pc, 0xc),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio0_wp, 0, 130, ZYNQ_SDIO_WP_MASK,
+> > > > +					ZYNQ_SDIO_WP_SHIFT),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio0_cd, 0, 130, ZYNQ_SDIO_CD_MASK,
+> > > > +					ZYNQ_SDIO_CD_SHIFT),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio1, 0x40),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(sdio1_pc, 0xc),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio1_wp, 0, 134, ZYNQ_SDIO_WP_MASK,
+> > > > +					ZYNQ_SDIO_WP_SHIFT),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION_MUX(sdio1_cd, 0, 134, ZYNQ_SDIO_CD_MASK,
+> > > > +					ZYNQ_SDIO_CD_SHIFT),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nor, 4),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nor_cs1, 8),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nor_addr25, 4),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(smc0_nand, 8),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(can0, 0x10),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(can1, 0x10),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(uart0, 0x70),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(uart1, 0x70),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(i2c0, 0x20),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(i2c1, 0x20),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(ttc0, 0x60),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(ttc1, 0x60),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(swdt0, 0x30),
+> > > > +	DEFINE_ZYNQ_PINMUX_FUNCTION(gpio0, 0)
+> > > dto.
+> > > 
+> > > [...]
+> > > > +static const struct pinctrl_ops zynq_pctrl_ops = {
+> > > > +	.get_groups_count = zynq_pctrl_get_groups_count,
+> > > > +	.get_group_name = zynq_pctrl_get_group_name,
+> > > > +	.get_group_pins = zynq_pctrl_get_group_pins,
+> > > > +	.dt_node_to_map = pinconf_generic_dt_node_to_map_group,
+> > > > +	.dt_free_map = pinctrl_utils_dt_free_map
+> > > dto.
+> > 
+> > Can we please use full sentences? But at least real words? I have no
+> > idea what you're trying to tell me.
+> > 
+> Sorry, I must have accidentally removed my first comment which was:
+> 'missing comma at end of initializer.'
 
-On Wed, Oct 29, 2014 at 05:13:43PM +0800, Huang Rui wrote:
-> Hi Felipe, Paul,
->=20
-> On Tue, Oct 28, 2014 at 10:35:37PM +0800, Huang Rui wrote:
-> > On Tue, Oct 28, 2014 at 08:38:56AM -0500, Felipe Balbi wrote:
->=20
-> <snip>
->=20
-> > >=20
-> > > however, as I mentioned before, the core shouldn't have to know that
-> > > it's running on an AMD platform. We already support several different
-> > > platforms (OMAP5, AM437x, DRA7xx, Exynos5, Exynos7, Qcom, Merrifield,
-> > > Baytrail, Braswell, HAPS PCIe, and STiH407) and none of them get their
-> > > $my_awesome_platform flag in dwc3, why should AMD be any different ?
-> > >=20
-> > > This is the only part of $subject that I cannot accept because it wou=
-ld
-> > > mean we would be giving AMD a special treatment when there shouldn't =
-be
-> > > any, for anybody.
-> > >=20
-> >=20
-> > That's because I used this flag to enable below quirks on AMD NL FPGA
-> > board, and FPGA flag only can be detected on core. Can I set
-> > disable_scramble_quirk, dis_u3_susphy_quirk, and dis_u2_susphy_quirk
-> > for all the FPGA platforms?
-> >=20
-> > if (dwc->amd_nl_plat && dwc->is_fpga) {
-> >         dwc->disable_scramble_quirk =3D true;
-> >         dwc->dis_u3_susphy_quirk =3D true;
-> >         dwc->dis_u2_susphy_quirk =3D true;
-> > }
-> >=20
->=20
-> I confirmed with HW designer, these three quirks only will be needed
-> on FPGA board. And these should *not* be used on non-FPGA board, as you
-> known.
->=20
-> So I would like to use below conditions on dwc3 core. When I set these
-> quirk flags in pci glue layer, then core can filter them by is_fpga
-> flag to support both on FPGA and SoC. Is there any concern? If that, I
-> should remove WARN_ONCE at disable_scramble flag.
->=20
-> if (dwc->disable_scramble_quirk && dwc->is_fpga) {..}
->=20
-> if (dwc->dis_u2_susphy_quirk && dwc->is_fpga) {..}
->=20
-> if (dwc->dis_u3_susphy_quirk && dwc->is_fpga) {..}
+Why should there be one? Neither gcc nor checkpatch seem to "miss" one.
 
-the problem is that somebody might need this on non-FPGA. Currently,
-only AMD needs these and only on FPGA, but you never know.
-
-I guess we can add it like this for now and once we have a real AMD
-product, we drop FPGA support from AMD.
-
-cheers
-
---=20
-balbi
-
---twz1s1Hj1O0rHoT0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUUPWiAAoJEIaOsuA1yqREQTgQAKy7FvVXwO1O3wKAm18qq3WF
-uIGcusiKZP92MHw2nmUv88T7bdadeThhkUzCA4Uryk4IvAQeYruLpSJRTM2gXKgN
-HmRJO17YL4uowWTXrRNYEWuPv7zgWAsFFztKwn1TGoQTimDiILGbc0JiadDP7VmH
-M0mXBVSYUInSRiIb0iEGp9F1QO/E8Yvw45F04b8WNeY28lTnhiSUJ9GGMDcFxOIo
-DURVvy38GcJq4hf3/P7ziNSWid3DJX/2ey662jW6XG+sjcpdpDwRdfr+BYKEWiP8
-/B3A8vzjCVeE1vWd9b22iFmM4ovB0B8thhuzAkm2dc6SzeURcejmsu/DNG68YqNp
-GCzqcecQb7DkX7ZAcxToi/MCsJx/Vg5pJPzAEZy3kXtzrG6mV5PN0MJyA2HEzLZ+
-6EfLvxWAGLtkLFMASxPMUp3AO+X0WLJl+RwCHbuEKfapkik31dx5jLfE7HNNI7BA
-Ef/29nlSsY4wVHS4Jj8YkJpXyfF9VU52L0vhJAlPQ8ry+aeUkwNQCL7ta/e0jnYS
-VIz0ZN12VfHwd3hRUdCgvbb2WHSGS8qRo7oOg0xzTusVFAuKVPDNwRqcWDwg7eTG
-p+Fhez4a/chlCOVK0GgreH2Rrj21fUce/eHegAN7AiIE/7iYoEcUYkHV7DugIkcF
-AH1yvGrjYsytwmlSNBfM
-=Mh5b
------END PGP SIGNATURE-----
-
---twz1s1Hj1O0rHoT0--
+	Sören
