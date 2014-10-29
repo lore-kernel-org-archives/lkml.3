@@ -1,129 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844AbaJ2Xpi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 19:45:38 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:60143 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757333AbaJ2Xph (ORCPT
+	id S1757734AbaJ2XxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 19:53:16 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:53225 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757289AbaJ2XxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 19:45:37 -0400
+	Wed, 29 Oct 2014 19:53:14 -0400
+Date: Wed, 29 Oct 2014 19:53:00 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Florian Westphal <fw@strlen.de>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        netfilter-devel@vger.kernel.org, coreteam@netfilter.org
+Subject: Re: [RFA][PATCH 2/8] netfilter: Remove return values for
+ print_conntrack callbacks
+Message-ID: <20141029195300.52ae0fe6@gandalf.local.home>
+In-Reply-To: <20141029221601.GB10069@breakpoint.cc>
+References: <20141029215602.535533597@goodmis.org>
+	<20141029220107.465008329@goodmis.org>
+	<20141029221601.GB10069@breakpoint.cc>
+X-Mailer: Claws Mail 3.10.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141028222511.GB23619@ld-irv-0074>
-References: <1414020181-8855-1-git-send-email-andrea.adami@gmail.com>
-	<20141028222511.GB23619@ld-irv-0074>
-Date: Thu, 30 Oct 2014 00:45:36 +0100
-Message-ID: <CAAQYJAsvCVb0o8bKELc+j8Ces6mUJfbGtiAgqs3gP_8S3dF3uw@mail.gmail.com>
-Subject: Re: [PATCH] mtd: cfi_cmdset_0001.c: fix resume for LH28F640BF chips
-From: Andrea Adami <andrea.adami@gmail.com>
-To: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Brian,
+On Wed, 29 Oct 2014 23:16:01 +0100
+Florian Westphal <fw@strlen.de> wrote:
 
-thanks for the review.
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > 
+> > [ REQUEST FOR ACKS ]
+> > 
+> > The seq_printf() and friends are having their return values removed.
+> > The print_conntrack() returns the result of seq_printf(), which is
+> > meaningless when seq_printf() returns void. Might as well remove the
+> > return values of print_conntrack() as well.
+> [..]
+> 
+> > diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+> > index 4c48e434bb1f..91f207c2cb69 100644
+> > --- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+> > +++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
+> > @@ -147,7 +147,10 @@ static int ct_seq_show(struct seq_file *s, void *v)
+> >  		      ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
+> >  		goto release;
+> >  
+> > -	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
+> > +	if (l4proto->print_conntrack)
+> > +		l4proto->print_conntrack(s, ct);
+> > +
+> > +	if (seq_has_overflowed(s))
+> >  		goto release;
+> 
+> Its not obvious to me why nf_conntrack_l3proto_ipv4_compat now calls
+> seq_has_overflowed ...
+> 
+> > > diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
+> > index cf65a1e040dd..348aa3602787 100644
+> > --- a/net/netfilter/nf_conntrack_standalone.c
+> > +++ b/net/netfilter/nf_conntrack_standalone.c
+> > @@ -199,8 +199,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
+> >  		       ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
+> >  		goto release;
+> >  
+> > -	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
+> > -		goto release;
+> > +	if (l4proto->print_conntrack)
+> > +		l4proto->print_conntrack(s, ct);
+> >  
+> >  	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
+> >  			l3proto, l4proto))
+> 
+> ... while nf_conntrack_standalone does not.
 
-On Tue, Oct 28, 2014 at 11:25 PM, Brian Norris
-<computersforpeace@gmail.com> wrote:
->
-> On Thu, Oct 23, 2014 at 01:23:01AM +0200, Andrea Adami wrote:
-> > After '#echo mem > /sys/power/state' some devices can not be properly resumed
-> > because apparently the MTD Partition Configuration Register has been reset
-> > to default thus the rootfs cannot be mounted cleanly on resume.
-> > An example of this can be found in the SA-1100 Developer's Manual at 9.5.3.3
-> > where the second step of the Sleep Shutdown Sequence is described:
-> > "An internal reset is applied to the SA-1100. All units are reset...".
-> >
-> > As workaround we refresh the PCR value as done initially on chip setup.
-> >
-> > This behavior and the fix are confirmed by our tests done on 2 different Zaurus
-> > collie units with kernel 3.17.
-> >
-> > Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> > Signed-off-by: Andrea Adami <andrea.adami@gmail.com>
->
-> Who's the author? I have a 'From' header (which becomes the patch
-> author) of Andrea, but the sign-off is Dmitry. If you add a
-> 'From: xxx <yyy@zzz.tld>' line to the beginning of the email, that can
-> clarify the author, even when the author is not emailing.
->
-> git-send-email will also handle that for you, if the original git commit
-> has the proper author.
+Because I did those two changes separately at different times ;-)
 
-The author is Dmitry who first noticed the failure on resume and
-suggested the fix.
-I just verified the PCR was reset [1] and added the comments before
-sending it upstream.
+I can add it here too to be consistent. The goto release logic is not
+that critical, as it's really a micro optimization for a slow path.
 
->
-> > ---
-> >  drivers/mtd/chips/cfi_cmdset_0001.c | 2 ++
-> >  1 file changed, 2 insertions(+)
-> >
-> > diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
-> > index a7543ba..59e2355 100644
-> > --- a/drivers/mtd/chips/cfi_cmdset_0001.c
-> > +++ b/drivers/mtd/chips/cfi_cmdset_0001.c
-> > @@ -2590,6 +2590,8 @@ static void cfi_intelext_resume(struct mtd_info *mtd)
-> >
-> >               /* Go to known state. Chip may have been power cycled */
-> >               if (chip->state == FL_PM_SUSPENDED) {
-> > +                     /* Refresh LH28F640BF Partition Config. Register */
-> > +                     fixup_LH28F640BF(mtd);
->
-> OK, that looks fine.
->
-> But while we're at it, it seems like any chip which has a boot-time
-> fixup hook in cfi_fixup_table[] should be run at resume time, since
-> those chips may have lost power too. For instance, it looks like
-> fixup_unlock_powerup_lock() would need rerun.
->
-> I'm not sure if we should do a more invasive patch like that without any
-> testing, though.
->
-> >                       map_write(map, CMD(0xFF), cfi->chips[i].start);
-> >                       chip->oldstate = chip->state = FL_READY;
-> >                       wake_up(&chip->wq);
->
-> Brian
+If we were to remove all the goto release calls, what would happen is
+if the buffer were to fill up, the rest of the code would be done in
+vain, because it would do the work but the result will be thrown away.
+The seq_file code would throw away the buffer completely (does this
+regardless of the goto release call when the buffer fills up), and
+would allocate a new buffer, and then run the code again. This time it
+would hopefully have enough buffer space to hold the entire content,
+otherwise, wash rinse repeat.
 
-For chips supporting 'Instant Lock' the unlock is done few lines later
-by cfi_intelext_restore_locks(mtd)
+As this is to output text from a proc file, and the user will most
+likely never notice this delay. It's probably done as more of a good
+feeling that we didn't waste computer cycles and burn more green house
+gasses than necessary, then anything that is remotely noticeable.
+Although, I haven't run benchmarks to see what the difference is.
 
-If you don't see more issues I'd resend the patch adding the initial From:.
+I'll make the change for consistency.
 
-Thanks
+Thanks!
 
-Andrea
-
-
-[1]
-root@collie:~# echo mem > /sys/power/state
-PM: Syncing filesystems ... done.
-Freezing user space processes ... (elapsed 0.002 seconds) done.
-Freezing remaining freezable tasks ... (elapsed 0.001 seconds) done.
-Suspending console(s) (use no_console_suspend to debug)
-sd 0:0:0:0: [sda] Stopping disk
-PM: suspend of devices complete after 836.004 msecs
-PM: late suspend of devices complete after 5.305 msecs
-PM: noirq suspend of devices complete after 4.625 msecs
-PM: noirq resume of devices complete after 726.661 msecs
-PM: early resume of devices complete after 4.004 msecs
-sd 0:0:0:0: [sda] Starting disk
-Partition Configuration Register was:400   <--------------------this
-Reset Partition Config. Register: 1 Partition of 4 planes
-cfi_cmdset_0001: Simultaneous Operations disabled
-ata1.00: configured for PIO0
-PM: resume of devices complete after 276.926 msecs
-Restarting tasks ... done.
-root@collie:~#
-
-* HEX BIN NR PARTITIONS
-* 400 = 100 2   3 planes + 1 plane (boot default)
-*
-* 000 = 000 1   1 partition of 4 planes, no Dual Work
-* 200 = 010 2   2 partitions of 2 planes
-* 700 = 111 4   4 partitions of 1 plane
+-- Steve
