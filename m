@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152AbaJ2IcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 04:32:11 -0400
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:37517 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755504AbaJ2IcJ (ORCPT
+	id S1755893AbaJ2IgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 04:36:24 -0400
+Received: from mout.kundenserver.de ([212.227.17.24]:54209 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755465AbaJ2IgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 04:32:09 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhgOAJ6lUFRXQzqR/2dsb2JhbABcgw6BLLpABgEBAQEBBQF0mkeBGRcBAQEBAX2EMC8jgRo3iEUBtmiOZiyGNYpUHYQ1BZ1oljiBRwGCMTwvgksBAQE
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Fabian Frederick <fabf@skynet.be>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 1/1 net-next] ipx: remove all unnecessary castings on ntohl
-Date: Wed, 29 Oct 2014 09:31:42 +0100
-Message-Id: <1414571502-9231-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Wed, 29 Oct 2014 04:36:21 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gnurou@gmail.com, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [PATCH v2] Documentation: gpio: guidelines for bindings
+Date: Wed, 29 Oct 2014 09:36:11 +0100
+Message-ID: <4218554.VFiN8kJDb1@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1414570394-11706-1-git-send-email-acourbot@nvidia.com>
+References: <1414570394-11706-1-git-send-email-acourbot@nvidia.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:+x3LzzPiZw1Vx72UI/VMvmfXAbmM+hQ1M7Gn9KbFRzg
+ XYhGUp8KeeF0NBr3e5vTyLJpSO3nlHFVNLsBLcq3gRRB0iPjIl
+ px47gjqhtJNcmXCLe/BBNGAkvS1TC5rQWYGSUHWM3X0lrsspxW
+ Pqz52N8YnLfNCXdtHVLmE3UXRICqQcQ7l2CiKZ1pGmTB+wf/vH
+ Qa3f93Rh73hYDK0MK2s5lQwkU+egbXsq0QMOZ7DZdjSfR4Vo+A
+ llC1Up6L/P6OB3r8VDlIKNkxOFvmZKOWPOJmFEiFtMZMqZvBlA
+ zd5tx/KDJrhmqL6b5llg0YWAgsU0VH91Abe0A7GvyVmn9Fu1LJ
+ pxhot4kFXGKnUZ4WKCtk=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apply commit e0f36310f793
-("ipx: remove unnecessary casting on ntohl")
-to all seq_printf/08lX
+On Wednesday 29 October 2014 17:13:14 Alexandre Courbot wrote:
+> Now that ACPI supports named GPIO properties, either through ACPI 5.1 or
+> the per-driver ACPI GPIO mappings, we can be more narrow about the way
+> GPIOs should be specified in Device Tree bindings.
+> 
+> This patch updates the GPIO DT bindings documentation to highlight the
+> following rules for new GPIO bindings:
+> 
+> - All new bindings must have a meaningful name (e.g. the "gpios"
+>   property must not be used)
+> - The only suffix allowed is "-gpios", no matter the number of
+>   descriptors in the property
+> - GPIOs can only be grouped under the same property when they serve the
+>   same purpose, a case that should remain exceptional (e.g. bit-banged
+>   data lines).
+> 
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> CC: Linus Walleij <linus.walleij@linaro.org>
+> CC: Arnd Bergmann <arnd@arndb.de>
+> CC: Rafael J. Wysocki <rjw@rjwysocki.net>
+> CC: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Inspired-by: "David S. Miller" <davem@davemloft.net>
-Inspired-by: Joe Perches <joe@perches.com>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- net/ipx/ipx_proc.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/net/ipx/ipx_proc.c b/net/ipx/ipx_proc.c
-index 8391191..c1d247e 100644
---- a/net/ipx/ipx_proc.c
-+++ b/net/ipx/ipx_proc.c
-@@ -45,7 +45,7 @@ static int ipx_seq_interface_show(struct seq_file *seq, void *v)
- 	}
- 
- 	i = list_entry(v, struct ipx_interface, node);
--	seq_printf(seq, "%08lX   ", (unsigned long int)ntohl(i->if_netnum));
-+	seq_printf(seq, "%08X   ", ntohl(i->if_netnum));
- 	seq_printf(seq, "%02X%02X%02X%02X%02X%02X   ",
- 			i->if_node[0], i->if_node[1], i->if_node[2],
- 			i->if_node[3], i->if_node[4], i->if_node[5]);
-@@ -87,7 +87,7 @@ static int ipx_seq_route_show(struct seq_file *seq, void *v)
- 
- 	rt = list_entry(v, struct ipx_route, node);
- 
--	seq_printf(seq, "%08lX   ", (unsigned long int)ntohl(rt->ir_net));
-+	seq_printf(seq, "%08X   ", ntohl(rt->ir_net));
- 	if (rt->ir_routed)
- 		seq_printf(seq, "%08X     %02X%02X%02X%02X%02X%02X\n",
- 			   ntohl(rt->ir_intrfc->if_netnum),
-@@ -194,19 +194,19 @@ static int ipx_seq_socket_show(struct seq_file *seq, void *v)
- 	s = v;
- 	ipxs = ipx_sk(s);
- #ifdef CONFIG_IPX_INTERN
--	seq_printf(seq, "%08lX:%02X%02X%02X%02X%02X%02X:%04X  ",
--		   (unsigned long)ntohl(ipxs->intrfc->if_netnum),
-+	seq_printf(seq, "%08X:%02X%02X%02X%02X%02X%02X:%04X  ",
-+		   ntohl(ipxs->intrfc->if_netnum),
- 		   ipxs->node[0], ipxs->node[1], ipxs->node[2], ipxs->node[3],
- 		   ipxs->node[4], ipxs->node[5], ntohs(ipxs->port));
- #else
--	seq_printf(seq, "%08lX:%04X  ", (unsigned long) ntohl(ipxs->intrfc->if_netnum),
-+	seq_printf(seq, "%08X:%04X  ", ntohl(ipxs->intrfc->if_netnum),
- 		   ntohs(ipxs->port));
- #endif	/* CONFIG_IPX_INTERN */
- 	if (s->sk_state != TCP_ESTABLISHED)
- 		seq_printf(seq, "%-28s", "Not_Connected");
- 	else {
--		seq_printf(seq, "%08lX:%02X%02X%02X%02X%02X%02X:%04X  ",
--			   (unsigned long)ntohl(ipxs->dest_addr.net),
-+		seq_printf(seq, "%08X:%02X%02X%02X%02X%02X%02X:%04X  ",
-+			   ntohl(ipxs->dest_addr.net),
- 			   ipxs->dest_addr.node[0], ipxs->dest_addr.node[1],
- 			   ipxs->dest_addr.node[2], ipxs->dest_addr.node[3],
- 			   ipxs->dest_addr.node[4], ipxs->dest_addr.node[5],
--- 
-1.9.3
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
