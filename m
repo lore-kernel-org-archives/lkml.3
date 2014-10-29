@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879AbaJ2SHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 14:07:39 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45486 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506AbaJ2SHh (ORCPT
+	id S1753533AbaJ2SNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 14:13:05 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58067 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaJ2SNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 14:07:37 -0400
-Date: Wed, 29 Oct 2014 19:07:34 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sabrina Dubroca <sd@queasysnail.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jeffrey.t.kirsher@intel.com, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: e1000_netpoll(): disable_irq() triggers might_sleep() on
- linux-next
-Message-ID: <20141029180734.GQ12706@worktop.programming.kicks-ass.net>
-References: <20141029155620.GA4886@kria>
+	Wed, 29 Oct 2014 14:13:02 -0400
+Date: Wed, 29 Oct 2014 19:12:57 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andy Lutomirski <luto@amacapital.net>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Richard Weinberger <richard.weinberger@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v2] all arches, signal: Move restart_block to struct
+ task_struct
+In-Reply-To: <43c88012a4959cd427ab634906e697fbc524e847.1414604015.git.luto@amacapital.net>
+Message-ID: <alpine.DEB.2.11.1410291908290.5308@nanos>
+References: <43c88012a4959cd427ab634906e697fbc524e847.1414604015.git.luto@amacapital.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141029155620.GA4886@kria>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 04:56:20PM +0100, Sabrina Dubroca wrote:
-> commit e22b886a8a43b ("sched/wait: Add might_sleep() checks") included
-> in today's linux-next added a check that fires on e1000 with netpoll:
+On Wed, 29 Oct 2014, Andy Lutomirski wrote:
+
+> If an attacker can cause a controlled kernel stack overflow,
+> overwriting the restart block is a very juicy exploit target.
+> Moving the restart block to struct task_struct prevents this
+> exploit.
 > 
+> Note that there are other fields in thread_info that are also easy
+> targets, at least on some architectures.
 > 
-> BUG: sleeping function called from invalid context at kernel/irq/manage.c:104
-> in_atomic(): 1, irqs_disabled(): 1, pid: 1, name: systemd
-> no locks held by systemd/1.
-> irq event stamp: 10102965
-> hardirqs last  enabled at (10102965): [<ffffffff810cbafd>] vprintk_emit+0x2dd/0x6a0
-> hardirqs last disabled at (10102964): [<ffffffff810cb897>] vprintk_emit+0x77/0x6a0
-> softirqs last  enabled at (10102342): [<ffffffff810666aa>] __do_softirq+0x27a/0x6f0
-> softirqs last disabled at (10102337): [<ffffffff81066e86>] irq_exit+0x56/0xe0
-> Preemption disabled at:[<ffffffff817de50d>] printk_emit+0x31/0x33
-> 
-> CPU: 1 PID: 1 Comm: systemd Not tainted 3.18.0-rc2-next-20141029-dirty #222
-> Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140617_173321-var-lib-archbuild-testing-x86_64-tobias 04/01/2014
->  ffffffff81a82291 ffff88001e743978 ffffffff817df31d 0000000000000000
->  0000000000000000 ffff88001e7439a8 ffffffff8108dfa2 ffff88001e7439a8
->  ffffffff81a82291 0000000000000068 0000000000000000 ffff88001e7439d8
-> Call Trace:
->  [<ffffffff817df31d>] dump_stack+0x4f/0x7c
->  [<ffffffff8108dfa2>] ___might_sleep+0x182/0x2b0
->  [<ffffffff8108e10a>] __might_sleep+0x3a/0xc0
->  [<ffffffff810ce358>] synchronize_irq+0x38/0xa0
->  [<ffffffff810ce690>] disable_irq+0x20/0x30
->  [<ffffffff815d7253>] e1000_netpoll+0x23/0x60
->  [<ffffffff81678d02>] netpoll_poll_dev+0x72/0x3a0
->  [<ffffffff816791e7>] netpoll_send_skb_on_dev+0x1b7/0x2e0
->  [<ffffffff816795f3>] netpoll_send_udp+0x2e3/0x490
+> It's also a decent simplification, since the restart code is more or
+> less identical on all architectures.
 
-Oh cute.. not entirely sure what to do there. This only works if you
-_know_ desc->threads_active will never be !0.
+I think that's the most important change. Moving common stuff into
+common code. The side effect of slightly reducing the attack surface
+is nice, but as Al pointed out not really the big win here.
+ 
+Thanks,
 
-The best I can come up with is something like this, which avoids the
-might_sleep() in the one special case.
-
-Thomas?
-
----
- kernel/irq/manage.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 0a9104b4608b..b7cb736a8b32 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -100,8 +100,11 @@ void synchronize_irq(unsigned int irq)
- 		 * running. Now verify that no threaded handlers are
- 		 * active.
- 		 */
--		wait_event(desc->wait_for_threads,
--			   !atomic_read(&desc->threads_active));
-+		if (atomic_read(&desc->threads_active)) {
-+			might_sleep();
-+			__wait_event(desc->wait_for_threads,
-+				     !atomic_read(&desc->threads_active));
-+		}
- 	}
- }
- EXPORT_SYMBOL(synchronize_irq);
+	tglx
