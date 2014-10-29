@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387AbaJ2FZa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 01:25:30 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:52457 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712AbaJ2FZ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 01:25:29 -0400
-Date: Wed, 29 Oct 2014 10:55:17 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Mikael Svantesson <mikael@distopic.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Cooper <jason@lakedaemon.net>, Jake Edge <jake@lwn.net>,
-        Anton Saraev <antonysaraev@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: skein: skein_api.c: removed space before ','
-Message-ID: <20141029052517.GA3556@sudip-PC>
-References: <544FF764.7090003@distopic.net>
+	id S1751976AbaJ2FaW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 01:30:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59051 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750825AbaJ2FaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 01:30:21 -0400
+Message-ID: <54507B6A.2060706@suse.com>
+Date: Wed, 29 Oct 2014 06:30:18 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <544FF764.7090003@distopic.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com
+Subject: Re: [PATCH 1/2] Xen: Delay remapping memory of pv-domain
+References: <1414421551-31555-1-git-send-email-jgross@suse.com> <1414421551-31555-2-git-send-email-jgross@suse.com> <544FD3A2.1050903@citrix.com>
+In-Reply-To: <544FD3A2.1050903@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 28, 2014 at 09:07:00PM +0100, Mikael Svantesson wrote:
-> Signed-off-by: Mikael Svantesson <mikael@distopic.net>
-still the same problem.
+On 10/28/2014 06:34 PM, David Vrabel wrote:
+> Can these patches be split up?  They're hard to review as-is.  e.g., the
+> changes to page allocation look they could be split out.
+>
+> On 27/10/14 14:52, Juergen Gross wrote:
+>> Early in the boot process the memory layout of a pv-domain is changed
+>> to match the E820 map (either the host one for Dom0 or the Xen one)
+>> regarding placement of RAM and PCI holes. This requires removing memory
+>> pages initially located at positions not suitable for RAM and adding
+>> them later at higher addresses where no restrictions apply.
+>
+> How does this impact Matt Rushton's recent change to ensure the
+> relocated frames are contiguous?
 
-ERROR: patch seems to be corrupt (line wrapped?)
+It is simplifying it. :-)
+
+The relocated frames are in the same sequence as before, just at
+another location. As the remapping is done later, I don't have to be
+careful not to cross a p2m leaf page boundary (allocating a new leaf
+page is no problem now).
+
+>
+> The change was "xen/setup: Remap Xen Identity Mapped RAM" (4fbb67e3c87).
+>
+>> +	/* Update kernel mapping */
+>> +	if (HYPERVISOR_update_va_mapping((unsigned long)__va(pfn << PAGE_SHIFT),
+>> +					 mfn_pte(mfn, PAGE_KERNEL), 0)) {
+>> +		WARN(1, "Failed to update kernel mapping for mfn=%ld pfn=%ld\n",
+>> +		      mfn, pfn);
+>> +		return 0;
+>
+> I think you need to check if this is a PFN for a high page before
+> updating the mapping.
+
+Really? I'm not aware of having removed such a check. If it is really
+necessary it must have been missing before...
 
 
-> ---
->  drivers/staging/skein/skein_api.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/skein/skein_api.c b/drivers/staging/skein/skein_api.c
-> index 6e700ee..5bfce07 100644
-> --- a/drivers/staging/skein/skein_api.c
-> +++ b/drivers/staging/skein/skein_api.c
-> @@ -31,7 +31,7 @@ int skein_ctx_prepare(struct skein_ctx *ctx, enum skein_size size)
->  {
->  	skein_assert_ret(ctx && size, SKEIN_FAIL);
->  -	memset(ctx , 0, sizeof(struct skein_ctx));
-> +	memset(ctx, 0, sizeof(struct skein_ctx));
->  	ctx->skein_size = size;
->   	return SKEIN_SUCCESS;
-> -- 
-> 2.1.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Juergen
