@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532AbaJ2OHp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 10:07:45 -0400
-Received: from mail.kernel.org ([198.145.19.201]:41156 "EHLO mail.kernel.org"
+	id S933585AbaJ2OHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 10:07:53 -0400
+Received: from mail.kernel.org ([198.145.19.201]:41247 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932906AbaJ2OHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 10:07:43 -0400
+	id S933560AbaJ2OHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 10:07:51 -0400
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
         Hemant Kumar <hemant@linux.vnet.ibm.com>, Jiri Olsa <jolsa@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/25] perf tools: Export usage string and option table of perf record
-Date: Wed, 29 Oct 2014 12:06:21 -0200
-Message-Id: <1414591597-2763-10-git-send-email-acme@kernel.org>
+Subject: [PATCH 11/25] perf tools: Add support for exclusive option
+Date: Wed, 29 Oct 2014 12:06:23 -0200
+Message-Id: <1414591597-2763-12-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1414591597-2763-1-git-send-email-acme@kernel.org>
 References: <1414591597-2763-1-git-send-email-acme@kernel.org>
@@ -27,120 +26,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-Those are shared with other builtin commands like kvm, script.  So
-make it accessable from them.  This is a preparation of later change
-that limiting possible options.
+Some options cannot be used at the same time.  To handle such options
+add a new PARSE_OPT_EXCLUSIVE flag and show error message if more than
+one of them is used.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Acked-by: Hemant Kumar <hemant@linux.vnet.ibm.com>
-Cc: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Hemant Kumar <hemant@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@redhat.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1413990949-13953-3-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1413990949-13953-5-git-send-email-namhyung@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c    | 7 +++++--
- tools/perf/builtin-script.c    | 1 -
- tools/perf/builtin-timechart.c | 7 ++++---
- tools/perf/perf.h              | 3 +++
- 4 files changed, 12 insertions(+), 6 deletions(-)
+ tools/perf/util/parse-options.c | 59 +++++++++++++++++++++++++++++++++--------
+ tools/perf/util/parse-options.h |  2 ++
+ 2 files changed, 50 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 2583a9b04317..5091a27e6d28 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -680,11 +680,12 @@ static int perf_record_config(const char *var, const char *value, void *cb)
- 	return perf_default_config(var, value, cb);
+diff --git a/tools/perf/util/parse-options.c b/tools/perf/util/parse-options.c
+index b6016101b40b..f62dee7bd924 100644
+--- a/tools/perf/util/parse-options.c
++++ b/tools/perf/util/parse-options.c
+@@ -45,6 +45,23 @@ static int get_value(struct parse_opt_ctx_t *p,
+ 	if (opt->flags & PARSE_OPT_DISABLED)
+ 		return opterror(opt, "is not usable", flags);
+ 
++	if (opt->flags & PARSE_OPT_EXCLUSIVE) {
++		if (p->excl_opt) {
++			char msg[128];
++
++			if (((flags & OPT_SHORT) && p->excl_opt->short_name) ||
++			    p->excl_opt->long_name == NULL) {
++				scnprintf(msg, sizeof(msg), "cannot be used with switch `%c'",
++					  p->excl_opt->short_name);
++			} else {
++				scnprintf(msg, sizeof(msg), "cannot be used with %s",
++					  p->excl_opt->long_name);
++			}
++			opterror(opt, msg, flags);
++			return -3;
++		}
++		p->excl_opt = opt;
++	}
+ 	if (!(flags & OPT_SHORT) && p->opt) {
+ 		switch (opt->type) {
+ 		case OPTION_CALLBACK:
+@@ -345,13 +362,14 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 		       const char * const usagestr[])
+ {
+ 	int internal_help = !(ctx->flags & PARSE_OPT_NO_INTERNAL_HELP);
++	int excl_short_opt = 1;
++	const char *arg;
+ 
+ 	/* we must reset ->opt, unknown short option leave it dangling */
+ 	ctx->opt = NULL;
+ 
+ 	for (; ctx->argc; ctx->argc--, ctx->argv++) {
+-		const char *arg = ctx->argv[0];
+-
++		arg = ctx->argv[0];
+ 		if (*arg != '-' || !arg[1]) {
+ 			if (ctx->flags & PARSE_OPT_STOP_AT_NON_OPTION)
+ 				break;
+@@ -360,19 +378,21 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 		}
+ 
+ 		if (arg[1] != '-') {
+-			ctx->opt = arg + 1;
++			ctx->opt = ++arg;
+ 			if (internal_help && *ctx->opt == 'h')
+ 				return usage_with_options_internal(usagestr, options, 0);
+ 			switch (parse_short_opt(ctx, options)) {
+ 			case -1:
+-				return parse_options_usage(usagestr, options, arg + 1, 1);
++				return parse_options_usage(usagestr, options, arg, 1);
+ 			case -2:
+ 				goto unknown;
++			case -3:
++				goto exclusive;
+ 			default:
+ 				break;
+ 			}
+ 			if (ctx->opt)
+-				check_typos(arg + 1, options);
++				check_typos(arg, options);
+ 			while (ctx->opt) {
+ 				if (internal_help && *ctx->opt == 'h')
+ 					return usage_with_options_internal(usagestr, options, 0);
+@@ -389,6 +409,8 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 					ctx->argv[0] = strdup(ctx->opt - 1);
+ 					*(char *)ctx->argv[0] = '-';
+ 					goto unknown;
++				case -3:
++					goto exclusive;
+ 				default:
+ 					break;
+ 				}
+@@ -404,19 +426,23 @@ int parse_options_step(struct parse_opt_ctx_t *ctx,
+ 			break;
+ 		}
+ 
+-		if (internal_help && !strcmp(arg + 2, "help-all"))
++		arg += 2;
++		if (internal_help && !strcmp(arg, "help-all"))
+ 			return usage_with_options_internal(usagestr, options, 1);
+-		if (internal_help && !strcmp(arg + 2, "help"))
++		if (internal_help && !strcmp(arg, "help"))
+ 			return usage_with_options_internal(usagestr, options, 0);
+-		if (!strcmp(arg + 2, "list-opts"))
++		if (!strcmp(arg, "list-opts"))
+ 			return PARSE_OPT_LIST_OPTS;
+-		if (!strcmp(arg + 2, "list-cmds"))
++		if (!strcmp(arg, "list-cmds"))
+ 			return PARSE_OPT_LIST_SUBCMDS;
+-		switch (parse_long_opt(ctx, arg + 2, options)) {
++		switch (parse_long_opt(ctx, arg, options)) {
+ 		case -1:
+-			return parse_options_usage(usagestr, options, arg + 2, 0);
++			return parse_options_usage(usagestr, options, arg, 0);
+ 		case -2:
+ 			goto unknown;
++		case -3:
++			excl_short_opt = 0;
++			goto exclusive;
+ 		default:
+ 			break;
+ 		}
+@@ -428,6 +454,17 @@ unknown:
+ 		ctx->opt = NULL;
+ 	}
+ 	return PARSE_OPT_DONE;
++
++exclusive:
++	parse_options_usage(usagestr, options, arg, excl_short_opt);
++	if ((excl_short_opt && ctx->excl_opt->short_name) ||
++	    ctx->excl_opt->long_name == NULL) {
++		char opt = ctx->excl_opt->short_name;
++		parse_options_usage(NULL, options, &opt, 1);
++	} else {
++		parse_options_usage(NULL, options, ctx->excl_opt->long_name, 0);
++	}
++	return PARSE_OPT_HELP;
  }
  
--static const char * const record_usage[] = {
-+static const char * const __record_usage[] = {
- 	"perf record [<options>] [<command>]",
- 	"perf record [<options>] -- <command> [<options>]",
- 	NULL
- };
-+const char * const *record_usage = __record_usage;
- 
- /*
-  * XXX Ideally would be local to cmd_record() and passed to a record__new
-@@ -725,7 +726,7 @@ const char record_callchain_help[] = CALLCHAIN_HELP "fp";
-  * perf_evlist__prepare_workload, etc instead of fork+exec'in 'perf record',
-  * using pipes, etc.
-  */
--const struct option record_options[] = {
-+struct option __record_options[] = {
- 	OPT_CALLBACK('e', "event", &record.evlist, "event",
- 		     "event selector. use 'perf list' to list available events",
- 		     parse_events_option),
-@@ -802,6 +803,8 @@ const struct option record_options[] = {
- 	OPT_END()
+ int parse_options_end(struct parse_opt_ctx_t *ctx)
+diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+index b7c80dbc7627..97b153fb4999 100644
+--- a/tools/perf/util/parse-options.h
++++ b/tools/perf/util/parse-options.h
+@@ -39,6 +39,7 @@ enum parse_opt_option_flags {
+ 	PARSE_OPT_HIDDEN  = 8,
+ 	PARSE_OPT_LASTARG_DEFAULT = 16,
+ 	PARSE_OPT_DISABLED = 32,
++	PARSE_OPT_EXCLUSIVE = 64,
  };
  
-+struct option *record_options = __record_options;
-+
- int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	int err = -ENOMEM;
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index b35517f2ceb5..ce304dfd962a 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -23,7 +23,6 @@ static char const		*generate_script_lang;
- static bool			debug_mode;
- static u64			last_timestamp;
- static u64			nr_unordered;
--extern const struct option	record_options[];
- static bool			no_callchain;
- static bool			latency_format;
- static bool			system_wide;
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index f5fb256d90d5..f3bb1a4bf060 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1963,7 +1963,7 @@ int cmd_timechart(int argc, const char **argv,
- 		NULL
- 	};
- 
--	const struct option record_options[] = {
-+	const struct option timechart_record_options[] = {
- 	OPT_BOOLEAN('P', "power-only", &tchart.power_only, "output power data only"),
- 	OPT_BOOLEAN('T', "tasks-only", &tchart.tasks_only,
- 		    "output processes data only"),
-@@ -1972,7 +1972,7 @@ int cmd_timechart(int argc, const char **argv,
- 	OPT_BOOLEAN('g', "callchain", &tchart.with_backtrace, "record callchain"),
- 	OPT_END()
- 	};
--	const char * const record_usage[] = {
-+	const char * const timechart_record_usage[] = {
- 		"perf timechart record [<options>]",
- 		NULL
- 	};
-@@ -1985,7 +1985,8 @@ int cmd_timechart(int argc, const char **argv,
- 	}
- 
- 	if (argc && !strncmp(argv[0], "rec", 3)) {
--		argc = parse_options(argc, argv, record_options, record_usage,
-+		argc = parse_options(argc, argv, timechart_record_options,
-+				     timechart_record_usage,
- 				     PARSE_OPT_STOP_AT_NON_OPTION);
- 
- 		if (tchart.power_only && tchart.tasks_only) {
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 220d44e44c1b..511c2831aa81 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -62,4 +62,7 @@ struct record_opts {
- 	unsigned     initial_delay;
+ struct option;
+@@ -174,6 +175,7 @@ struct parse_opt_ctx_t {
+ 	const char **out;
+ 	int argc, cpidx;
+ 	const char *opt;
++	const struct option *excl_opt;
+ 	int flags;
  };
  
-+struct option;
-+extern const char * const *record_usage;
-+extern struct option *record_options;
- #endif
 -- 
 1.9.3
 
