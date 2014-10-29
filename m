@@ -1,183 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597AbaJ2WBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 18:01:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:29917 "EHLO
+	id S1757615AbaJ2WBS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 18:01:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:55355 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756039AbaJ2WBK (ORCPT
+	by vger.kernel.org with ESMTP id S1757576AbaJ2WBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 18:01:10 -0400
-Message-Id: <20141029220107.465008329@goodmis.org>
+	Wed, 29 Oct 2014 18:01:13 -0400
+Message-Id: <20141029220108.467786659@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Wed, 29 Oct 2014 17:56:04 -0400
+Date: Wed, 29 Oct 2014 17:56:10 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        <netfilter-devel@vger.kernel.org>, <coreteam@netfilter.org>
-Subject: [RFA][PATCH 2/8] netfilter: Remove return values for print_conntrack callbacks
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [RFA][PATCH 8/8] debugfs: Have debugfs_print_regs32() return void
 References: <20141029215602.535533597@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-netfilter-Remove-return-values-for-print_conntrack-c.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+Content-Disposition: inline; filename=0008-debugfs-Have-debugfs_print_regs32-return-void.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Joe Perches <joe@perches.com>
 
 [ REQUEST FOR ACKS ]
 
-The seq_printf() and friends are having their return values removed.
-The print_conntrack() returns the result of seq_printf(), which is
-meaningless when seq_printf() returns void. Might as well remove the
-return values of print_conntrack() as well.
+The seq_printf() will soon just return void, and seq_has_overflowed()
+should be used instead to see if the seq can no longer accept input.
 
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Cc: netfilter-devel@vger.kernel.org
-Cc: coreteam@netfilter.org
+As the return value of debugfs_print_regs32() has no users and
+the seq_file descriptor should be checked with seq_has_overflowed()
+instead of return values of functions, it is better to just have
+debugfs_print_regs32() also return void.
+
+Link: http://lkml.kernel.org/p/2634b19eb1c04a9d31148c1fe6f1f3819be95349.1412031505.git.joe@perches.com
+
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Joe Perches <joe@perches.com>
+[ original change only updated seq_printf() return, added return of
+  void to debugfs_print_regs32() as well ]
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/net/netfilter/nf_conntrack_l4proto.h          | 2 +-
- net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c | 5 ++++-
- net/netfilter/nf_conntrack_proto_dccp.c               | 4 ++--
- net/netfilter/nf_conntrack_proto_gre.c                | 8 ++++----
- net/netfilter/nf_conntrack_proto_sctp.c               | 4 ++--
- net/netfilter/nf_conntrack_proto_tcp.c                | 4 ++--
- net/netfilter/nf_conntrack_standalone.c               | 4 ++--
- 7 files changed, 17 insertions(+), 14 deletions(-)
+ Documentation/filesystems/debugfs.txt |  2 +-
+ fs/debugfs/file.c                     | 15 ++++++++-------
+ include/linux/debugfs.h               |  7 +++----
+ 3 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/include/net/netfilter/nf_conntrack_l4proto.h b/include/net/netfilter/nf_conntrack_l4proto.h
-index 4c8d573830b7..82e4ec002a39 100644
---- a/include/net/netfilter/nf_conntrack_l4proto.h
-+++ b/include/net/netfilter/nf_conntrack_l4proto.h
-@@ -60,7 +60,7 @@ struct nf_conntrack_l4proto {
- 			   const struct nf_conntrack_tuple *);
+diff --git a/Documentation/filesystems/debugfs.txt b/Documentation/filesystems/debugfs.txt
+index 3a863f692728..88ab81c79109 100644
+--- a/Documentation/filesystems/debugfs.txt
++++ b/Documentation/filesystems/debugfs.txt
+@@ -140,7 +140,7 @@ file.
+ 				     struct dentry *parent,
+ 				     struct debugfs_regset32 *regset);
  
- 	/* Print out the private part of the conntrack. */
--	int (*print_conntrack)(struct seq_file *s, struct nf_conn *);
-+	void (*print_conntrack)(struct seq_file *s, struct nf_conn *);
+-    int debugfs_print_regs32(struct seq_file *s, struct debugfs_reg32 *regs,
++    void debugfs_print_regs32(struct seq_file *s, struct debugfs_reg32 *regs,
+ 			 int nregs, void __iomem *base, char *prefix);
  
- 	/* Return the array of timeouts for this protocol. */
- 	unsigned int *(*get_timeouts)(struct net *net);
-diff --git a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-index 4c48e434bb1f..91f207c2cb69 100644
---- a/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-+++ b/net/ipv4/netfilter/nf_conntrack_l3proto_ipv4_compat.c
-@@ -147,7 +147,10 @@ static int ct_seq_show(struct seq_file *s, void *v)
- 		      ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
- 		goto release;
- 
--	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
-+	if (l4proto->print_conntrack)
-+		l4proto->print_conntrack(s, ct);
-+
-+	if (seq_has_overflowed(s))
- 		goto release;
- 
- 	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
-diff --git a/net/netfilter/nf_conntrack_proto_dccp.c b/net/netfilter/nf_conntrack_proto_dccp.c
-index cb372f96f10d..15971177470a 100644
---- a/net/netfilter/nf_conntrack_proto_dccp.c
-+++ b/net/netfilter/nf_conntrack_proto_dccp.c
-@@ -626,9 +626,9 @@ static int dccp_print_tuple(struct seq_file *s,
- 			  ntohs(tuple->dst.u.dccp.port));
- }
- 
--static int dccp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
-+static void dccp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+ The "base" argument may be 0, but you may want to build the reg32 array
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index 76c08c2beb2f..8e0f2f410189 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -692,18 +692,19 @@ EXPORT_SYMBOL_GPL(debugfs_create_u32_array);
+  * because some peripherals have several blocks of identical registers,
+  * for example configuration of dma channels
+  */
+-int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
+-			   int nregs, void __iomem *base, char *prefix)
++void debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
++			  int nregs, void __iomem *base, char *prefix)
  {
--	return seq_printf(s, "%s ", dccp_state_names[ct->proto.dccp.state]);
-+	seq_printf(s, "%s ", dccp_state_names[ct->proto.dccp.state]);
+-	int i, ret = 0;
++	int i;
+ 
+ 	for (i = 0; i < nregs; i++, regs++) {
+ 		if (prefix)
+-			ret += seq_printf(s, "%s", prefix);
+-		ret += seq_printf(s, "%s = 0x%08x\n", regs->name,
+-				  readl(base + regs->offset));
++			seq_printf(s, "%s", prefix);
++		seq_printf(s, "%s = 0x%08x\n", regs->name,
++			   readl(base + regs->offset));
++		if (seq_has_overflowed(s))
++			break;
+ 	}
+-	return ret;
+ }
+ EXPORT_SYMBOL_GPL(debugfs_print_regs32);
+ 
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 4d0b4d1aa132..d84f8c254a87 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -92,8 +92,8 @@ struct dentry *debugfs_create_regset32(const char *name, umode_t mode,
+ 				     struct dentry *parent,
+ 				     struct debugfs_regset32 *regset);
+ 
+-int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
+-			 int nregs, void __iomem *base, char *prefix);
++void debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
++			  int nregs, void __iomem *base, char *prefix);
+ 
+ struct dentry *debugfs_create_u32_array(const char *name, umode_t mode,
+ 					struct dentry *parent,
+@@ -233,10 +233,9 @@ static inline struct dentry *debugfs_create_regset32(const char *name,
+ 	return ERR_PTR(-ENODEV);
  }
  
- #if IS_ENABLED(CONFIG_NF_CT_NETLINK)
-diff --git a/net/netfilter/nf_conntrack_proto_gre.c b/net/netfilter/nf_conntrack_proto_gre.c
-index d5665739e3b1..cba607ada069 100644
---- a/net/netfilter/nf_conntrack_proto_gre.c
-+++ b/net/netfilter/nf_conntrack_proto_gre.c
-@@ -235,11 +235,11 @@ static int gre_print_tuple(struct seq_file *s,
- }
- 
- /* print private data for conntrack */
--static int gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
-+static void gre_print_conntrack(struct seq_file *s, struct nf_conn *ct)
+-static inline int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
++static inline void debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
+ 			 int nregs, void __iomem *base, char *prefix)
  {
--	return seq_printf(s, "timeout=%u, stream_timeout=%u ",
--			  (ct->proto.gre.timeout / HZ),
--			  (ct->proto.gre.stream_timeout / HZ));
-+	seq_printf(s, "timeout=%u, stream_timeout=%u ",
-+		   (ct->proto.gre.timeout / HZ),
-+		   (ct->proto.gre.stream_timeout / HZ));
+-	return 0;
  }
  
- static unsigned int *gre_get_timeouts(struct net *net)
-diff --git a/net/netfilter/nf_conntrack_proto_sctp.c b/net/netfilter/nf_conntrack_proto_sctp.c
-index 1314d33f6bcf..c61f4cd6407d 100644
---- a/net/netfilter/nf_conntrack_proto_sctp.c
-+++ b/net/netfilter/nf_conntrack_proto_sctp.c
-@@ -175,7 +175,7 @@ static int sctp_print_tuple(struct seq_file *s,
- }
- 
- /* Print out the private part of the conntrack. */
--static int sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
-+static void sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
- {
- 	enum sctp_conntrack state;
- 
-@@ -183,7 +183,7 @@ static int sctp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
- 	state = ct->proto.sctp.state;
- 	spin_unlock_bh(&ct->lock);
- 
--	return seq_printf(s, "%s ", sctp_conntrack_names[state]);
-+	seq_printf(s, "%s ", sctp_conntrack_names[state]);
- }
- 
- #define for_each_sctp_chunk(skb, sch, _sch, offset, dataoff, count)	\
-diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
-index 44d1ea32570a..79668fd3db96 100644
---- a/net/netfilter/nf_conntrack_proto_tcp.c
-+++ b/net/netfilter/nf_conntrack_proto_tcp.c
-@@ -311,7 +311,7 @@ static int tcp_print_tuple(struct seq_file *s,
- }
- 
- /* Print out the private part of the conntrack. */
--static int tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
-+static void tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
- {
- 	enum tcp_conntrack state;
- 
-@@ -319,7 +319,7 @@ static int tcp_print_conntrack(struct seq_file *s, struct nf_conn *ct)
- 	state = ct->proto.tcp.state;
- 	spin_unlock_bh(&ct->lock);
- 
--	return seq_printf(s, "%s ", tcp_conntrack_names[state]);
-+	seq_printf(s, "%s ", tcp_conntrack_names[state]);
- }
- 
- static unsigned int get_conntrack_index(const struct tcphdr *tcph)
-diff --git a/net/netfilter/nf_conntrack_standalone.c b/net/netfilter/nf_conntrack_standalone.c
-index cf65a1e040dd..348aa3602787 100644
---- a/net/netfilter/nf_conntrack_standalone.c
-+++ b/net/netfilter/nf_conntrack_standalone.c
-@@ -199,8 +199,8 @@ static int ct_seq_show(struct seq_file *s, void *v)
- 		       ? (long)(ct->timeout.expires - jiffies)/HZ : 0) != 0)
- 		goto release;
- 
--	if (l4proto->print_conntrack && l4proto->print_conntrack(s, ct))
--		goto release;
-+	if (l4proto->print_conntrack)
-+		l4proto->print_conntrack(s, ct);
- 
- 	if (print_tuple(s, &ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple,
- 			l3proto, l4proto))
+ static inline bool debugfs_initialized(void)
 -- 
 2.1.1
 
