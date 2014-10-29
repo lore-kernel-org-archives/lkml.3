@@ -1,153 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281AbaJ2CQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Oct 2014 22:16:37 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:61217 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbaJ2CQg (ORCPT
+	id S1753443AbaJ2CTZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Oct 2014 22:19:25 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:41164 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaJ2CTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Oct 2014 22:16:36 -0400
-Message-ID: <1414548964.20336.17.camel@debian>
-Subject: Re: [PATCH 2/2] x86, mce: support memory error recovery for both
- UCNA and Deferred error in machine_check_poll
-From: Chen Yucong <slaoub@gmail.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "bp@alien8.de" <bp@alien8.de>, "ak@linux.intel.com" <ak@linux.intel.com>,
-        "aravind.gopalakrishnan@amd.com" <aravind.gopalakrishnan@amd.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Oct 2014 10:16:04 +0800
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F32917841@ORSMSX114.amr.corp.intel.com>
-References: <1414371382-15491-1-git-send-email-slaoub@gmail.com>
-	 <1414371382-15491-3-git-send-email-slaoub@gmail.com>
-	 <3908561D78D1C84285E8C5FCA982C28F32917841@ORSMSX114.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Oct 2014 22:19:23 -0400
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <ulf.hansson@linaro.org>, <chris@printf.net>
+CC: <khilman@kernel.org>, <nicolas.ferre@atmel.com>,
+        <ludovic.desroches@atmel.com>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <wenyou.yang@atmel.com>
+Subject: [PATCH] mmc: atmel-mci: add pm runtime support
+Date: Wed, 29 Oct 2014 10:15:57 +0800
+Message-ID: <1414548958-10537-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-10-27 at 23:10 +0000, Luck, Tony wrote:
-> +	m->mcgstatus |= (MCG_STATUS_MCIP|MCG_STATUS_RIPV);
-> +	severity = mce_severity(m, mca_cfg.tolerant, NULL);
-> 
-> This seems a big hack to make mce_severity() work when called from
-> CMCI context (when MCG_STATUS register is not set).  It would also
-> be confusing as the subsequent logged entries would show MCIP and RIPV
-> bits set in the mcg_status.
-> 
-> If someone can think of a less hacky way to do this, that would be good. Otherwise
-> the code needs a comment, and should reset m->mcg_status to avoid making logs
-> that have incorrect data.
-> 
-Hi all,
-
-At the suggestion of Tony, this patch add a comment, and restore m->mcgstatus to avoid
-making logs that have incorrect data.
-
-thx!
-cyc
-
-From: Chen Yucong <slaoub@gmail.com>
-
-Signed-off-by: Chen Yucong <slaoub@gmail.com>
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |   64 ++++++++++++++++++++++++++++++++++++--
- 1 file changed, 62 insertions(+), 2 deletions(-)
+ drivers/mmc/host/atmel-mci.c |  116 ++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 94 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index fdc422e..d285d26 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -575,6 +575,56 @@ static void mce_read_aux(struct mce *m, int i)
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index 0b9ddf8..e9d32d0 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -37,6 +37,8 @@
+ 
+ #include <linux/atmel-mci.h>
+ #include <linux/atmel_pdc.h>
++#include <linux/pm.h>
++#include <linux/pm_runtime.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/io.h>
+@@ -44,6 +46,8 @@
+ 
+ #include "atmel-mci-regs.h"
+ 
++#define AUTOSUSPEND_DELAY	50
++
+ #define ATMCI_DATA_ERROR_FLAGS	(ATMCI_DCRCE | ATMCI_DTOE | ATMCI_OVRE | ATMCI_UNRE)
+ #define ATMCI_DMA_THRESHOLD	16
+ 
+@@ -386,20 +390,19 @@ static int atmci_regs_show(struct seq_file *s, void *v)
+ 	if (!buf)
+ 		return -ENOMEM;
+ 
++	pm_runtime_get_sync(&host->pdev->dev);
++
+ 	/*
+ 	 * Grab a more or less consistent snapshot. Note that we're
+ 	 * not disabling interrupts, so IMR and SR may not be
+ 	 * consistent.
+ 	 */
+-	ret = clk_prepare_enable(host->mck);
+-	if (ret)
+-		goto out;
+-
+ 	spin_lock_bh(&host->lock);
+ 	memcpy_fromio(buf, host->regs, ATMCI_REGS_SIZE);
+ 	spin_unlock_bh(&host->lock);
+ 
+-	clk_disable_unprepare(host->mck);
++	pm_runtime_mark_last_busy(&host->pdev->dev);
++	pm_runtime_put_autosuspend(&host->pdev->dev);
+ 
+ 	seq_printf(s, "MR:\t0x%08x%s%s ",
+ 			buf[ATMCI_MR / 4],
+@@ -449,7 +452,6 @@ static int atmci_regs_show(struct seq_file *s, void *v)
+ 				val & ATMCI_CFG_LSYNC ? " LSYNC" : "");
  	}
+ 
+-out:
+ 	kfree(buf);
+ 
+ 	return ret;
+@@ -1252,6 +1254,8 @@ static void atmci_request(struct mmc_host *mmc, struct mmc_request *mrq)
+ 	WARN_ON(slot->mrq);
+ 	dev_dbg(&host->pdev->dev, "MRQ: cmd %u\n", mrq->cmd->opcode);
+ 
++	pm_runtime_get_sync(&host->pdev->dev);
++
+ 	/*
+ 	 * We may "know" the card is gone even though there's still an
+ 	 * electrical connection. If so, we really need to communicate
+@@ -1281,7 +1285,8 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	struct atmel_mci_slot	*slot = mmc_priv(mmc);
+ 	struct atmel_mci	*host = slot->host;
+ 	unsigned int		i;
+-	bool			unprepare_clk;
++
++	pm_runtime_get_sync(&host->pdev->dev);
+ 
+ 	slot->sdc_reg &= ~ATMCI_SDCBUS_MASK;
+ 	switch (ios->bus_width) {
+@@ -1297,13 +1302,8 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 		unsigned int clock_min = ~0U;
+ 		u32 clkdiv;
+ 
+-		clk_prepare(host->mck);
+-		unprepare_clk = true;
+-
+ 		spin_lock_bh(&host->lock);
+ 		if (!host->mode_reg) {
+-			clk_enable(host->mck);
+-			unprepare_clk = false;
+ 			atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
+ 			atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIEN);
+ 			if (host->caps.has_cfg_reg)
+@@ -1371,8 +1371,6 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	} else {
+ 		bool any_slot_active = false;
+ 
+-		unprepare_clk = false;
+-
+ 		spin_lock_bh(&host->lock);
+ 		slot->clock = 0;
+ 		for (i = 0; i < ATMCI_MAX_NR_SLOTS; i++) {
+@@ -1385,17 +1383,12 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 			atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
+ 			if (host->mode_reg) {
+ 				atmci_readl(host, ATMCI_MR);
+-				clk_disable(host->mck);
+-				unprepare_clk = true;
+ 			}
+ 			host->mode_reg = 0;
+ 		}
+ 		spin_unlock_bh(&host->lock);
+ 	}
+ 
+-	if (unprepare_clk)
+-		clk_unprepare(host->mck);
+-
+ 	switch (ios->power_mode) {
+ 	case MMC_POWER_OFF:
+ 		if (!IS_ERR(mmc->supply.vmmc))
+@@ -1421,6 +1414,9 @@ static void atmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 		 */
+ 		break;
+ 	}
++
++	pm_runtime_mark_last_busy(&host->pdev->dev);
++	pm_runtime_put_autosuspend(&host->pdev->dev);
  }
  
-+static bool mem_deferred_error(struct mce *m)
+ static int atmci_get_ro(struct mmc_host *mmc)
+@@ -1512,6 +1508,9 @@ static void atmci_request_end(struct atmel_mci *host, struct mmc_request *mrq)
+ 	spin_unlock(&host->lock);
+ 	mmc_request_done(prev_mmc, mrq);
+ 	spin_lock(&host->lock);
++
++	pm_runtime_mark_last_busy(&host->pdev->dev);
++	pm_runtime_put_autosuspend(&host->pdev->dev);
+ }
+ 
+ static void atmci_command_complete(struct atmel_mci *host,
+@@ -2417,7 +2416,6 @@ static int __init atmci_probe(struct platform_device *pdev)
+ 
+ 	atmci_writel(host, ATMCI_CR, ATMCI_CR_SWRST);
+ 	host->bus_hz = clk_get_rate(host->mck);
+-	clk_disable_unprepare(host->mck);
+ 
+ 	host->mapbase = regs->start;
+ 
+@@ -2449,6 +2447,12 @@ static int __init atmci_probe(struct platform_device *pdev)
+ 
+ 	setup_timer(&host->timer, atmci_timeout_timer, (unsigned long)host);
+ 
++	pm_runtime_enable(&pdev->dev);
++	pm_runtime_get_sync(&pdev->dev);
++	pm_runtime_set_autosuspend_delay(&pdev->dev, AUTOSUSPEND_DELAY);
++	pm_runtime_use_autosuspend(&pdev->dev);
++	pm_suspend_ignore_children(&pdev->dev, 1);
++
+ 	/* We need at least one slot to succeed */
+ 	nr_slots = 0;
+ 	ret = -ENODEV;
+@@ -2491,6 +2495,9 @@ static int __init atmci_probe(struct platform_device *pdev)
+ 			"Atmel MCI controller at 0x%08lx irq %d, %u slots\n",
+ 			host->mapbase, irq, nr_slots);
+ 
++	pm_runtime_mark_last_busy(&host->pdev->dev);
++	pm_runtime_put_autosuspend(&pdev->dev);
++
+ 	return 0;
+ 
+ err_dma_alloc:
+@@ -2499,6 +2506,9 @@ err_dma_alloc:
+ 			atmci_cleanup_slot(host->slot[i], i);
+ 	}
+ err_init_slot:
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++
+ 	del_timer_sync(&host->timer);
+ 	if (host->dma.chan)
+ 		dma_release_channel(host->dma.chan);
+@@ -2511,6 +2521,8 @@ static int __exit atmci_remove(struct platform_device *pdev)
+ 	struct atmel_mci	*host = platform_get_drvdata(pdev);
+ 	unsigned int		i;
+ 
++	pm_runtime_get_sync(&pdev->dev);
++
+ 	if (host->buffer)
+ 		dma_free_coherent(&pdev->dev, host->buf_size,
+ 		                  host->buffer, host->buf_phys_addr);
+@@ -2520,11 +2532,9 @@ static int __exit atmci_remove(struct platform_device *pdev)
+ 			atmci_cleanup_slot(host->slot[i], i);
+ 	}
+ 
+-	clk_prepare_enable(host->mck);
+ 	atmci_writel(host, ATMCI_IDR, ~0UL);
+ 	atmci_writel(host, ATMCI_CR, ATMCI_CR_MCIDIS);
+ 	atmci_readl(host, ATMCI_SR);
+-	clk_disable_unprepare(host->mck);
+ 
+ 	del_timer_sync(&host->timer);
+ 	if (host->dma.chan)
+@@ -2532,14 +2542,76 @@ static int __exit atmci_remove(struct platform_device *pdev)
+ 
+ 	free_irq(platform_get_irq(pdev, 0), host);
+ 
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++
++	clk_disable_unprepare(host->mck);
++
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int atmci_suspend(struct device *dev)
 +{
-+	int severity;
-+	u8 mcgs = m->mcgstatus & 0xff;
-+	struct cpuinfo_x86 *c = &boot_cpu_data;
++	struct atmel_mci *host = dev_get_drvdata(dev);
 +
-+	/*
-+	 * mce_severity is specific to machine check exception, and it will
-+	 * check MCIP/EIPV/RIPV bits. In order to get pass the check, we need
-+	 * to set MCIP and RIPV.
-+	 */
-+	m->mcgstatus |= (MCG_STATUS_MCIP|MCG_STATUS_RIPV);
-+	severity = mce_severity(m, mca_cfg.tolerant, NULL);
++	pm_runtime_get_sync(dev);
 +
-+	/* restore the original value of m->mcgstatus */
-+	m->mcgstatus = (m->mcgstatus & ~0xff) | mcgs;
++	clk_disable_unprepare(host->mck);
 +
-+	if (c->x86_vendor == X86_VENDOR_AMD) {
-+		/*
-+		 * AMD BKDGs - Machine Check Error Codes
-+		 *
-+		 * Bit 8 of ErrCode[15:0] of MCi_STATUS is used for indicating
-+		 * a memory-specific error. Note that this field encodes info-
-+		 * rmation about memory-hierarchy level involved in the error.
-+		 */
-+		if (severity == MCE_DEFERRED_SEVERITY)
-+			return  (m->status & 0xff00) == BIT(8);
-+	} else if (c->x86_vendor == X86_VENDOR_INTEL) {
-+		/*
-+		 * Intel SDM Volume 3B - 15.9.2 Compound Error Codes
-+		 *
-+		 * Bit 7 of the MCACOD field of IA32_MCi_STATUS is used for
-+		 * indicating a memory error. Bit 8 is used for indicating a
-+		 * cache hierarchy error. The combination of bit 2 and bit 3
-+		 * is used for indicating a `generic' cache hierarchy error
-+		 * But we can't just blindly check the above bits, because if
-+		 * bit 11 is set, then it is a bus/interconnect error - and
-+		 * either way the above bits just gives more detail on what
-+		 * bus/interconnect error happened. Note that bit 12 can be
-+		 * ignored, as it's the "filter" bit.
-+		 */
-+		if (severity == MCE_UCNA_SEVERITY)
-+			return (m->status & 0xef80) == BIT(7) ||
-+			       (m->status & 0xef00) == BIT(8) ||
-+			       (m->status & 0xeffc) == 0xc;
-+	}
++	pm_runtime_mark_last_busy(dev);
++	pm_runtime_put_autosuspend(dev);
 +
-+	return false;
++	return 0;
 +}
 +
- DEFINE_PER_CPU(unsigned, mce_poll_count);
- 
- /*
-@@ -630,6 +680,16 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 
- 		if (!(flags & MCP_TIMESTAMP))
- 			m.tsc = 0;
++static int atmci_resume(struct device *dev)
++{
++	struct atmel_mci *host = dev_get_drvdata(dev);
++	int ret;
 +
-+		/*
-+		 * In the cases where we don't have a valid address after all,
-+		 * do not add it into the ring buffer.
-+		 */
-+		if (mem_deferred_error(&m) && (m.status & MCI_STATUS_ADDRV)) {
-+			mce_ring_add(m.addr >> PAGE_SHIFT);
-+			mce_schedule_work();
-+		}
++	pm_runtime_get_sync(dev);
 +
- 		/*
- 		 * Don't get the IP here because it's unlikely to
- 		 * have anything to do with the actual error location.
-@@ -1098,8 +1158,8 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		severity = mce_severity(&m, cfg->tolerant, NULL);
++	ret = clk_prepare_enable(host->mck);
++
++	pm_runtime_mark_last_busy(dev);
++	pm_runtime_put_autosuspend(dev);
++
++	return ret;
++}
++
++static int atmci_runtime_suspend(struct device *dev)
++{
++	struct atmel_mci *host = dev_get_drvdata(dev);
++
++	clk_disable_unprepare(host->mck);
++
++	return 0;
++}
++
++static int atmci_runtime_resume(struct device *dev)
++{
++	struct atmel_mci *host = dev_get_drvdata(dev);
++
++	return clk_prepare_enable(host->mck);
++}
++
++static const struct dev_pm_ops atmci_dev_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(atmci_suspend, atmci_resume)
++	SET_RUNTIME_PM_OPS(atmci_runtime_suspend, atmci_runtime_resume, NULL)
++};
++
++#define ATMCI_PM_OPS	(&atmci_dev_pm_ops)
++#else
++#define ATMCI_PM_OPS	NULL
++#endif
++
+ static struct platform_driver atmci_driver = {
+ 	.remove		= __exit_p(atmci_remove),
+ 	.driver		= {
+ 		.name		= "atmel_mci",
+ 		.of_match_table	= of_match_ptr(atmci_dt_ids),
++		.pm		= ATMCI_PM_OPS,
+ 	},
+ };
  
- 		/*
--		 * When machine check was for corrected handler don't touch,
--		 * unless we're panicing.
-+		 * When machine check was for corrected/deferred handler don't
-+		 * touch, unless we're panicing.
- 		 */
- 		if ((severity == MCE_KEEP_SEVERITY ||
- 		     severity == MCE_UCNA_SEVERITY) && !no_way_out)
 -- 
-1.7.10.4
-
-
+1.7.9.5
 
