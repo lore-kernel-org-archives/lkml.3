@@ -1,145 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaJ2JN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 05:13:29 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:44937 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264AbaJ2JNX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 05:13:23 -0400
-Date: Wed, 29 Oct 2014 14:43:17 +0530
-From: Heena Sirwani <heenasirwani@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: john.stultz@linaro.org, tglx@linutronix.de, arnd@arndb.de
-Subject: [PATCH v7] timekeeping: Added a function to return tv_sec portion of
- ktime_get_ts64()
-Message-ID: <20141029091317.GA1138@heena-HP-Compaq-8200-Elite-MT-PC>
+	id S932350AbaJ2JPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:15:25 -0400
+Received: from mail-bl2on0106.outbound.protection.outlook.com ([65.55.169.106]:47424
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755469AbaJ2JPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 05:15:22 -0400
+X-WSS-ID: 0NE78DG-07-TBK-02
+X-M-MSG: 
+Date: Wed, 29 Oct 2014 17:13:43 +0800
+From: Huang Rui <ray.huang@amd.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Paul Zimmerman" <Paul.Zimmerman@synopsys.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Jason Chang <jason.chang@amd.com>, "Vincent Wan" <vincent.wan@amd.com>,
+        Tony Li <tony.li@amd.com>, <linux-usb@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 19/19] usb: dwc3: add support for AMD NL platform
+Message-ID: <20141029091342.GC10840@hr-slim.amd.com>
+References: <1414497280-3126-1-git-send-email-ray.huang@amd.com>
+ <1414497280-3126-20-git-send-email-ray.huang@amd.com>
+ <20141028133856.GB8123@saruman> <20141028143536.GA4519@hr-slim.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <20141028143536.GA4519@hr-slim.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(164054003)(199003)(51704005)(24454002)(99396003)(31966008)(23726002)(120916001)(85852003)(76482002)(93886004)(85306004)(53416004)(83506001)(46406003)(97736003)(84676001)(50986999)(76176999)(54356999)(44976005)(97756001)(106466001)(105586002)(95666004)(50466002)(68736004)(80022003)(46102003)(107046002)(21056001)(77096002)(47776003)(20776003)(92566001)(92726001)(87936001)(110136001)(64706001)(86362001)(102836001)(101416001)(33656002)(4396001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB204;H:atltwp01.amd.com;FPR:;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB204;
+X-Forefront-PRVS: 03793408BA
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Ray.Huang@amd.com; 
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patch replaces all instances of time_t with time64_t i.e.
-change the type used for representing time from 32-bit to 64-bit. All
-32-bit kernels to date use a signed 32-bit time_t type, which can only
-represent time until January 2038. Since embedded systems running 32-bit
-Linux are going to survive beyond that date, we have to change all
-current uses, in a backwards compatible way.
+Hi Felipe, Paul,
 
-The patch also changes the function get_seconds() that returns a 32-bit
-integer to ktime_get_seconds() that returns seconds as 64-bit integer.
+On Tue, Oct 28, 2014 at 10:35:37PM +0800, Huang Rui wrote:
+> On Tue, Oct 28, 2014 at 08:38:56AM -0500, Felipe Balbi wrote:
 
-The patch changes the type of ticks from time_t to u32. We keep ticks as
-32-bits as the function uses 32-bit arithmetic which would prove less
-expensive than 64-bit arithmetic and the function is expected to be
-called atleast once every 32 seconds.
+<snip>
 
-Signed-off-by: Heena Sirwani <heenasirwani@gmail.com>
----
-Changes in v7:
-	- Reordered assignments in tk_update_ktime_data() to improve
-	  readability.
+> > 
+> > however, as I mentioned before, the core shouldn't have to know that
+> > it's running on an AMD platform. We already support several different
+> > platforms (OMAP5, AM437x, DRA7xx, Exynos5, Exynos7, Qcom, Merrifield,
+> > Baytrail, Braswell, HAPS PCIe, and STiH407) and none of them get their
+> > $my_awesome_platform flag in dwc3, why should AMD be any different ?
+> > 
+> > This is the only part of $subject that I cannot accept because it would
+> > mean we would be giving AMD a special treatment when there shouldn't be
+> > any, for anybody.
+> > 
+> 
+> That's because I used this flag to enable below quirks on AMD NL FPGA
+> board, and FPGA flag only can be detected on core. Can I set
+> disable_scramble_quirk, dis_u3_susphy_quirk, and dis_u2_susphy_quirk
+> for all the FPGA platforms?
+> 
+> if (dwc->amd_nl_plat && dwc->is_fpga) {
+>         dwc->disable_scramble_quirk = true;
+>         dwc->dis_u3_susphy_quirk = true;
+>         dwc->dis_u2_susphy_quirk = true;
+> }
+> 
 
- include/linux/timekeeper_internal.h |  2 ++
- include/linux/timekeeping.h         |  1 +
- kernel/time/timekeeping.c           | 31 ++++++++++++++++++++++++++++---
- 3 files changed, 31 insertions(+), 3 deletions(-)
+I confirmed with HW designer, these three quirks only will be needed
+on FPGA board. And these should *not* be used on non-FPGA board, as you
+known.
 
-diff --git a/include/linux/timekeeper_internal.h b/include/linux/timekeeper_internal.h
-index 95640dc..92e5e9d 100644
---- a/include/linux/timekeeper_internal.h
-+++ b/include/linux/timekeeper_internal.h
-@@ -42,6 +42,7 @@ struct tk_read_base {
-  * struct timekeeper - Structure holding internal timekeeping values.
-  * @tkr:		The readout base structure
-  * @xtime_sec:		Current CLOCK_REALTIME time in seconds
-+ * @ktime_sec:		Current CLOCK_MONOTONIC time in seconds
-  * @wall_to_monotonic:	CLOCK_REALTIME to CLOCK_MONOTONIC offset
-  * @offs_real:		Offset clock monotonic -> clock realtime
-  * @offs_boot:		Offset clock monotonic -> clock boottime
-@@ -77,6 +78,7 @@ struct tk_read_base {
- struct timekeeper {
- 	struct tk_read_base	tkr;
- 	u64			xtime_sec;
-+	u64			ktime_sec;
- 	struct timespec64	wall_to_monotonic;
- 	ktime_t			offs_real;
- 	ktime_t			offs_boot;
-diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
-index 1caa6b0..115d55e 100644
---- a/include/linux/timekeeping.h
-+++ b/include/linux/timekeeping.h
-@@ -28,6 +28,7 @@ struct timespec __current_kernel_time(void);
- struct timespec get_monotonic_coarse(void);
- extern void getrawmonotonic(struct timespec *ts);
- extern void ktime_get_ts64(struct timespec64 *ts);
-+extern time64_t ktime_get_seconds(void);
- 
- extern int __getnstimeofday64(struct timespec64 *tv);
- extern void getnstimeofday64(struct timespec64 *tv);
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index ec1791f..7136a33 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -418,6 +418,8 @@ EXPORT_SYMBOL_GPL(pvclock_gtod_unregister_notifier);
- static inline void tk_update_ktime_data(struct timekeeper *tk)
- {
- 	s64 nsec;
-+	u64 seconds;
-+	s64 nsec_offset;
- 
- 	/*
- 	 * The xtime based monotonic readout is:
-@@ -426,13 +428,18 @@ static inline void tk_update_ktime_data(struct timekeeper *tk)
- 	 *	nsec = base_mono + now();
- 	 * ==> base_mono = (xtime_sec + wtm_sec) * 1e9 + wtm_nsec
- 	 */
--	nsec = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
--	nsec *= NSEC_PER_SEC;
--	nsec += tk->wall_to_monotonic.tv_nsec;
-+	seconds = (s64)(tk->xtime_sec + tk->wall_to_monotonic.tv_sec);
-+	nsec_offset = tk->wall_to_monotonic.tv_nsec;
-+	nsec = seconds * NSEC_PER_SEC;
-+	nsec += nsec_offset;
- 	tk->tkr.base_mono = ns_to_ktime(nsec);
- 
- 	/* Update the monotonic raw base */
- 	tk->base_raw = timespec64_to_ktime(tk->raw_time);
-+
-+	if (((long)(tk->tkr.xtime_nsec >> tk->tkr.shift) + nsec_offset) >= NSEC_PER_SEC)
-+		seconds += 1;
-+	tk->ktime_sec = seconds;
- }
- 
- /* must hold timekeeper_lock */
-@@ -648,6 +655,24 @@ void ktime_get_ts64(struct timespec64 *ts)
- }
- EXPORT_SYMBOL_GPL(ktime_get_ts64);
- 
-+time64_t ktime_get_seconds(void)
-+{
-+	time64_t seconds;
-+	struct timekeeper *tk = &tk_core.timekeeper;
-+	unsigned int seq;
-+
-+	WARN_ON(timekeeping_suspended);
-+
-+	do {
-+		seq = read_seqcount_begin(&tk_core.seq);
-+		seconds = tk->ktime_sec;
-+
-+	} while (read_seqcount_retry(&tk_core.seq, seq));
-+
-+	return seconds;
-+}
-+EXPORT_SYMBOL_GPL(ktime_get_seconds);
-+
- #ifdef CONFIG_NTP_PPS
- 
- /**
--- 
-1.9.1
+So I would like to use below conditions on dwc3 core. When I set these
+quirk flags in pci glue layer, then core can filter them by is_fpga
+flag to support both on FPGA and SoC. Is there any concern? If that, I
+should remove WARN_ONCE at disable_scramble flag.
 
+if (dwc->disable_scramble_quirk && dwc->is_fpga) {..}
+
+if (dwc->dis_u2_susphy_quirk && dwc->is_fpga) {..}
+
+if (dwc->dis_u3_susphy_quirk && dwc->is_fpga) {..}
+
+Thanks,
+Rui
