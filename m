@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932503AbaJ2Kbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 06:31:37 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40726 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932198AbaJ2Kbg (ORCPT
+	id S932534AbaJ2Kb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 06:31:57 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:33057 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168AbaJ2Kb4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 06:31:36 -0400
-Date: Wed, 29 Oct 2014 11:31:03 +0100
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: atull <atull@opensource.altera.com>, jgunthorpe@obsidianresearch.com,
-        hpa@zytor.com, monstr@monstr.eu, michal.simek@xilinx.com,
-        rdunlap@infradead.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
-        grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, pavel@denx.de, philip@balister.org,
-        rubini@gnudd.com, jason@lakedaemon.net, kyle.teske@ni.com,
-        nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, mgerlach@opensource.altera.com,
-        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
-Message-ID: <20141029103103.GD10262@pengutronix.de>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com>
- <1414108267-22058-3-git-send-email-atull@opensource.altera.com>
- <20141024070042.GL10262@pengutronix.de>
- <alpine.DEB.2.02.1410281601570.11910@atx-linux-37>
- <20141029075701.GA10262@pengutronix.de>
- <20141029101632.GU18557@sirena.org.uk>
+	Wed, 29 Oct 2014 06:31:56 -0400
+Date: Wed, 29 Oct 2014 16:01:50 +0530
+From: Heena Sirwani <heenasirwani@gmail.com>
+To: opw-kernel@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, tglx@linutronix.de,
+        arnd@arndb.de
+Subject: [PATCH v8 2/2] timekeeping: Added a function to return tv_sec
+ portion of ktime_get_real_ts64()
+Message-ID: <7adcfaa8962b8ad58785d9a2456c3f77d93c0ffb.1414578445.git.heenasirwani@gmail.com>
+References: <cover.1414578445.git.heenasirwani@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141029101632.GU18557@sirena.org.uk>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:20:13 up 13 days, 21:33, 88 users,  load average: 0,09, 0,07,
- 0,10
+In-Reply-To: <cover.1414578445.git.heenasirwani@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 10:16:32AM +0000, Mark Brown wrote:
-> On Wed, Oct 29, 2014 at 08:57:01AM +0100, Steffen Trumtrar wrote:
-> 
-> > So, that shouldn't be a problem though, as I already cooked up a driver for
-> > the L3 with all the ranges specified. The only thing I need to figure out
-> > before I will post it, is how to nicely handle the WO remap register.
-> > I think regmap might be able to handle this itself, but am not sure yet.
-> 
-> It's supposed to be able to, not sure if anyone really tests that or not
-> though so it's possible bugs crept in.  Most write only registers can
-> physically be read so actually come out as volatile rather than write
-> only even if functionally there is no reason to read.
+The following patch adds a function to return tv_sec portion of
+ktime_get_real_ts64() function in order to have a function that returns
+seconds as 64-bit integers instead of 32-bit integers to address the
+y2038 problem.
 
-Ah, I think you might be actually right there. IIRC it IS possible to read
-from that register, but you only get 0s.
-So, I shot myself in the knee with specifying that register as write-only
-in my driver.
+The function is similar to get_seconds() function except that it
+includes read_seqcount_retry loop which is required for 32-bit
+architectures. This is because 32-bit machines cannot access 64-bit
+tk->xtime_sec variable atomically, requiring two 32-bit register loads.
 
-Thanks,
-Steffen
+Signed-off-by: Heena Sirwani <heenasirwani@gmail.com>
+---
+ include/linux/timekeeping.h |  1 +
+ kernel/time/timekeeping.c   | 19 +++++++++++++++++++
+ 2 files changed, 20 insertions(+)
 
+diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
+index 115d55e..91454de 100644
+--- a/include/linux/timekeeping.h
++++ b/include/linux/timekeeping.h
+@@ -29,6 +29,7 @@ struct timespec get_monotonic_coarse(void);
+ extern void getrawmonotonic(struct timespec *ts);
+ extern void ktime_get_ts64(struct timespec64 *ts);
+ extern time64_t ktime_get_seconds(void);
++extern time64_t ktime_get_real_seconds(void);
+ 
+ extern int __getnstimeofday64(struct timespec64 *tv);
+ extern void getnstimeofday64(struct timespec64 *tv);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index e42da92..d731e7a 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -664,6 +664,25 @@ time64_t ktime_get_seconds(void)
+ }
+ EXPORT_SYMBOL_GPL(ktime_get_seconds);
+ 
++time64_t ktime_get_real_seconds(void)
++{
++	time64_t seconds;
++	struct timekeeper *tk = &tk_core.timekeeper;
++	unsigned int seq;
++
++	if (IS_ENABLED(CONFIG_64BIT))
++		return tk->xtime_sec;
++
++	do {
++		seq = read_seqcount_begin(&tk_core.seq);
++		seconds = tk->xtime_sec;
++
++	} while (read_seqcount_retry(&tk_core.seq, seq));
++
++	return seconds;
++}
++EXPORT_SYMBOL_GPL(ktime_get_real_seconds);
++
+ #ifdef CONFIG_NTP_PPS
+ 
+ /**
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+1.9.1
+
