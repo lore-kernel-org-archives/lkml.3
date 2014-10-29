@@ -1,68 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407AbaJ2JfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 05:35:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41183 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756365AbaJ2JfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 05:35:11 -0400
-Date: Wed, 29 Oct 2014 10:35:03 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>, mingo@kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        ilya.dryomov@inktank.com, linux-kernel@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, rafael.j.wysocki@intel.com
-Subject: Re: [PATCH 00/11] nested sleeps, fixes and debug infrastructure
-Message-ID: <20141029093503.GX3337@twins.programming.kicks-ass.net>
-References: <20140924081845.572814794@infradead.org>
- <1411633803.15810.12.camel@marge.simpson.net>
- <20140925090619.GA5430@worktop>
- <20140925091556.GB5430@worktop>
- <20141002102251.GA6324@worktop.programming.kicks-ass.net>
- <20141002121553.GB6324@worktop.programming.kicks-ass.net>
- <20141027134103.GA10476@twins.programming.kicks-ass.net>
- <20141028000703.GA22964@redhat.com>
- <20141028082335.GM3337@twins.programming.kicks-ass.net>
- <20141029000055.GA12107@redhat.com>
+	id S1756470AbaJ2Jfg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 05:35:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14258 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756282AbaJ2Jfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 05:35:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="407740858"
+Message-ID: <5450B485.5050705@intel.com>
+Date: Wed, 29 Oct 2014 11:33:57 +0200
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141029000055.GA12107@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: =?EUC-KR?B?wK/H0bDm?= <hankyung.yu@lge.com>,
+        "'Chanho Min'" <chanho.min@lge.com>
+CC: "'Chris Ball'" <chris@printf.net>,
+        "'Ulf Hansson'" <ulf.hansson@linaro.org>,
+        "'Seungwon Jeon'" <tgih.jun@samsung.com>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'HyoJun Im'" <hyojun.im@lge.com>,
+        gunho.lee@lge.com
+Subject: Re: [PATCH] mmc:core: fix hs400 timing selection
+References: <1413946555-1266-1-git-send-email-chanho.min@lge.com> <544F98DD.6040605@intel.com> <00b501cff307$1de03fb0$59a0bf10$@lge.com>
+In-Reply-To: <00b501cff307$1de03fb0$59a0bf10$@lge.com>
+Content-Type: text/plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 29, 2014 at 01:00:56AM +0100, Oleg Nesterov wrote:
-> On 10/28, Peter Zijlstra wrote:
-> >
-> > On Tue, Oct 28, 2014 at 01:07:03AM +0100, Oleg Nesterov wrote:
-> >
-> > > I was going to say that wait_event_freezable() in kauditd_thread()
-> > > is not friendly wrt kthread_should_stop() and thus we we need
-> > > kthread_freezable_should_stop().
-> >
-> > I'm not sure those two would interact, yes, both would first set either
-> > the freezable or stop bit and then wake. If both were to race, all we
-> > need to ensure is to check both before calling schedule again.
-> >
-> > A loop like:
-> >
-> > 	while (!kthread_should_stop()) {
-> > 		wait_event_freezable(wq, cond);
-> > 	}
-> >
-> > Would satisfy that, because even if kthread_should_stop() gets set first
-> > and then freezing happens and we get into try_to_freeze() first, we'd
-> > still to the kthread_should_stop() check right after we thaw.
+On 29/10/14 01:30, À¯ÇÑ°æ wrote:
+> Hi I'm Hankyung Yu
 > 
-> Right after, yes.
+> I will answer instead Chanho Min
 > 
-> But what if it calls try_to_freeze() and another thread (which should
-> be frozen too) sleeps in kthread_stop() ?
+> HS200 mode right thing to support less than 52Mhz
+> 
+> However CLK <-> DATA delay timing is dependent on the clock.
+> 
+> So only lower clock without adjusting the timing and mode of a control h/w
+> ever the problem may occur.
+> 
+> So change the operating mode and to lower the clock.
 
-Fair point indeed. Now I had a look at __refrigerator() and is there any
-reason we should not remove that .check_kthr_stop argument and replace
-it with an unconditional (current->flags & PF_KTHREAD) ?
+I meant something different.
+
+With your patch I find that __mmc_switch() -> send_status() fails.
+
+So I suggest something like this:
+
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index 92247c2..195d48a 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -1045,21 +1045,28 @@ static int mmc_select_hs400(struct mmc_card *card)
+ 	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+ 			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS,
+ 			   card->ext_csd.generic_cmd6_time,
+-			   true, true, true);
++			   true, false, false);
++	if (!err) {
++		u32 status;
++
++		/*
++		 * According to JEDEC v5.01 spec (6.6.5), Clock frequency should
++		 * be set to a value not greater than 52MHz after the HS_TIMING
++		 * field is set to 0x1.
++		*/
++		mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
++		mmc_set_bus_speed(card);
++
++		err = __mmc_send_status(card, &status, false, 1);
++		if (!err)
++			err = mmc_check_switch_status(card->host, status);
++	}
+ 	if (err) {
+ 		pr_err("%s: switch to high-speed from hs200 failed, err:%d\n",
+ 			mmc_hostname(host), err);
+ 		return err;
+ 	}
+ 
+-	/*
+-	 * According to JEDEC v5.01 spec (6.6.5), Clock frequency should
+-	 * be set to a value not greater than 52MHz after the HS_TIMING
+-	 * field is set to 0x1.
+-	 */
+-	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
+-	mmc_set_bus_speed(card);
+-
+ 	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+ 			 EXT_CSD_BUS_WIDTH,
+ 			 EXT_CSD_DDR_BUS_WIDTH_8,
+diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+index 23aa3a3..f917527 100644
+--- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -23,15 +23,12 @@
+ 
+ #define MMC_OPS_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
+ 
+-static inline int __mmc_send_status(struct mmc_card *card, u32 *status,
+-				    bool ignore_crc)
++int __mmc_send_status(struct mmc_card *card, u32 *status, bool ignore_crc,
++		      int retries)
+ {
+ 	int err;
+ 	struct mmc_command cmd = {0};
+ 
+-	BUG_ON(!card);
+-	BUG_ON(!card->host);
+-
+ 	cmd.opcode = MMC_SEND_STATUS;
+ 	if (!mmc_host_is_spi(card->host))
+ 		cmd.arg = card->rca << 16;
+@@ -39,7 +36,7 @@ static inline int __mmc_send_status(struct mmc_card *card, u32 *status,
+ 	if (ignore_crc)
+ 		cmd.flags &= ~MMC_RSP_CRC;
+ 
+-	err = mmc_wait_for_cmd(card->host, &cmd, MMC_CMD_RETRIES);
++	err = mmc_wait_for_cmd(card->host, &cmd, retries);
+ 	if (err)
+ 		return err;
+ 
+@@ -54,7 +51,7 @@ static inline int __mmc_send_status(struct mmc_card *card, u32 *status,
+ 
+ int mmc_send_status(struct mmc_card *card, u32 *status)
+ {
+-	return __mmc_send_status(card, status, false);
++	return __mmc_send_status(card, status, false, MMC_CMD_RETRIES);
+ }
+ 
+ static int _mmc_select_card(struct mmc_host *host, struct mmc_card *card)
+@@ -419,6 +416,21 @@ int mmc_spi_set_crc(struct mmc_host *host, int use_crc)
+ 	return err;
+ }
+ 
++int mmc_check_switch_status(struct mmc_host *host, u32 status)
++{
++	if (mmc_host_is_spi(host)) {
++		if (status & R1_SPI_ILLEGAL_COMMAND)
++			return -EBADMSG;
++	} else {
++		if (status & 0xFDFFA000)
++			pr_warn("%s: unexpected status %#x after switch\n",
++				mmc_hostname(host), status);
++		if (status & R1_SWITCH_ERROR)
++			return -EBADMSG;
++	}
++	return 0;
++}
++
+ /**
+  *	__mmc_switch - modify EXT_CSD register
+  *	@card: the MMC card associated with the data transfer
+@@ -497,7 +509,7 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
+ 	timeout = jiffies + msecs_to_jiffies(timeout_ms);
+ 	do {
+ 		if (send_status) {
+-			err = __mmc_send_status(card, &status, ignore_crc);
++			err = __mmc_send_status(card, &status, ignore_crc, 1);
+ 			if (err)
+ 				return err;
+ 		}
+@@ -524,18 +536,7 @@ int __mmc_switch(struct mmc_card *card, u8 set, u8 index, u8 value,
+ 		}
+ 	} while (R1_CURRENT_STATE(status) == R1_STATE_PRG);
+ 
+-	if (mmc_host_is_spi(host)) {
+-		if (status & R1_SPI_ILLEGAL_COMMAND)
+-			return -EBADMSG;
+-	} else {
+-		if (status & 0xFDFFA000)
+-			pr_warn("%s: unexpected status %#x after switch\n",
+-				mmc_hostname(host), status);
+-		if (status & R1_SWITCH_ERROR)
+-			return -EBADMSG;
+-	}
+-
+-	return 0;
++	return mmc_check_switch_status(host, status);
+ }
+ EXPORT_SYMBOL_GPL(__mmc_switch);
+ 
+diff --git a/drivers/mmc/core/mmc_ops.h b/drivers/mmc/core/mmc_ops.h
+index 6f4b00e..a59319c 100644
+--- a/drivers/mmc/core/mmc_ops.h
++++ b/drivers/mmc/core/mmc_ops.h
+@@ -20,7 +20,10 @@ int mmc_send_op_cond(struct mmc_host *host, u32 ocr, u32 *rocr);
+ int mmc_all_send_cid(struct mmc_host *host, u32 *cid);
+ int mmc_set_relative_addr(struct mmc_card *card);
+ int mmc_send_csd(struct mmc_card *card, u32 *csd);
++int __mmc_send_status(struct mmc_card *card, u32 *status, bool ignore_crc,
++		      int retries);
+ int mmc_send_status(struct mmc_card *card, u32 *status);
++int mmc_check_switch_status(struct mmc_host *host, u32 status);
+ int mmc_send_cid(struct mmc_host *host, u32 *cid);
+ int mmc_spi_read_ocr(struct mmc_host *host, int highcap, u32 *ocrp);
+ int mmc_spi_set_crc(struct mmc_host *host, int use_crc);
+
+
+
+> 
+> 
+> -----Original Message-----
+> From: Adrian Hunter [mailto:adrian.hunter@intel.com] 
+> Sent: Tuesday, October 28, 2014 10:24 PM
+> To: Chanho Min
+> Cc: Chris Ball; Ulf Hansson; Seungwon Jeon; Jaehoon Chung; linux-
+> mmc@vger.kernel.org; linux-kernel@vger.kernel.org; HyoJun Im; gunho.lee@lge.
+> com; Hankyung Yu
+> Subject: Re: [PATCH] mmc:core: fix hs400 timing selection
+> 
+> On 22/10/14 05:55, Chanho Min wrote:
+>> According to JEDEC v5.01 spec (6.6.5), In order to switch to HS400 
+>> mode, host should perform the following steps.
+>>
+>>  1. HS200 mode selection completed
+>>  2. Set HS_TIMING to 0x01(High Speed)
+>>  3. Host changes frequency to =< 52MHz  4. Set the bus width to DDR 
+>> 8bit (CMD6)  5. Host may read Driver Strength (CMD8)  6. Set HS_TIMING 
+>> to 0x03 (HS400)
+>>
+>> In current implementation, the order of 2 and 3 is reversed.
+> 
+> But HS200 mode supports running at speeds less than 52 MHz whereas High
+> Speed mode does not support running at speeds greater than
+> 52 MHz.
+> 
+> So the switch command might succeed, but the subsequent send_status command
+> (see __mmc_switch) could be expected to fail unless the frequency is
+> changed first.
+> 
+>> The HS_TIMING field should be set to 0x1 before the clock frequency is 
+>> set to a value not greater than 52 MHz. Otherwise, Initialization of 
+>> timing can be failed. Also, the host contoller's UHS timing mode 
+>> should be set to DDR50 after the bus width is set to DDR 8bit.
+>>
+>> Signed-off-by: Hankyung Yu <hankyung.yu@lge.com>
+>> Signed-off-by: Chanho Min <chanho.min@lge.com>
+>> ---
+>>  drivers/mmc/core/mmc.c |   13 ++++++++++---
+>>  1 file changed, 10 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c index 
+>> a301a78..52f78e0 100644
+>> --- a/drivers/mmc/core/mmc.c
+>> +++ b/drivers/mmc/core/mmc.c
+>> @@ -1061,9 +1061,6 @@ static int mmc_select_hs400(struct mmc_card *card)
+>>  	 * Before switching to dual data rate operation for HS400,
+>>  	 * it is required to convert from HS200 mode to HS mode.
+>>  	 */
+>> -	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
+>> -	mmc_set_bus_speed(card);
+>> -
+>>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS,
+>>  			   card->ext_csd.generic_cmd6_time, @@ -1074,6
+> +1071,14 @@ static 
+>> int mmc_select_hs400(struct mmc_card *card)
+>>  		return err;
+>>  	}
+>>  
+>> +	/*
+>> +	 * According to JEDEC v5.01 spec (6.6.5), Clock frequency should
+>> +	 * be set to a value not greater than 52MHz after the HS_TIMING
+>> +	 * field is set to 0x1.
+>> +	 */
+>> +	mmc_set_timing(card->host, MMC_TIMING_MMC_HS);
+>> +	mmc_set_bus_speed(card);
+>> +
+>>  	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>>  			 EXT_CSD_BUS_WIDTH,
+>>  			 EXT_CSD_DDR_BUS_WIDTH_8,
+>> @@ -1084,6 +1089,8 @@ static int mmc_select_hs400(struct mmc_card *card)
+>>  		return err;
+>>  	}
+>>  
+>> +	mmc_set_timing(card->host, MMC_TIMING_MMC_DDR52);
+>> +
+>>  	err = __mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>>  			   EXT_CSD_HS_TIMING, EXT_CSD_TIMING_HS400,
+>>  			   card->ext_csd.generic_cmd6_time,
+>>
+> 
+> 
+> 
+
