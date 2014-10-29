@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756372AbaJ2Uqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Oct 2014 16:46:53 -0400
-Received: from mail-by2on0077.outbound.protection.outlook.com ([207.46.100.77]:6368
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755312AbaJ2Uqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Oct 2014 16:46:51 -0400
-Date: Wed, 29 Oct 2014 15:39:43 -0500
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@atx-linux-37
-To: Pavel Machek <pavel@denx.de>
-CC: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
-        <michal.simek@xilinx.com>, <rdunlap@infradead.org>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <pantelis.antoniou@konsulko.com>,
-        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
-        <iws@ovro.caltech.edu>, <linux-doc@vger.kernel.org>,
-        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
-        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
-        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
-        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
-        <linus.walleij@linaro.org>, <mgerlach@opensource.altera.com>,
-        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
-        <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v2 2/3] ARM: dts: socfpga: fpga bridges bindings docs
-In-Reply-To: <20141029082440.GA22891@amd>
-Message-ID: <alpine.DEB.2.02.1410291537540.29374@atx-linux-37>
-References: <1414108267-22058-1-git-send-email-atull@opensource.altera.com> <1414108267-22058-3-git-send-email-atull@opensource.altera.com> <20141024070042.GL10262@pengutronix.de> <alpine.DEB.2.02.1410281601570.11910@atx-linux-37>
- <20141029082440.GA22891@amd>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756786AbaJ2UuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Oct 2014 16:50:23 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:33300 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752359AbaJ2UuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Oct 2014 16:50:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: AMSPR04CA0045.eurprd04.prod.outlook.com (10.242.87.163) To
- DM2PR03MB319.namprd03.prod.outlook.com (10.141.54.18)
-X-MS-Exchange-Transport-FromEntityHeader: Hosted
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB319;
-X-Forefront-PRVS: 03793408BA
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(51704005)(24454002)(80022003)(53416004)(122386002)(107046002)(97736003)(95666004)(46406003)(15975445006)(106356001)(15202345003)(69596002)(76482002)(120916001)(66066001)(81156004)(105586002)(93886004)(50466002)(101416001)(85306004)(92726001)(46102003)(83506001)(23726002)(20776003)(40100003)(31966008)(21056001)(86152002)(33716001)(92566001)(19580395003)(47776003)(50986999)(85852003)(87976001)(42186005)(86362001)(64706001)(77096002)(76176999)(110136001)(4396001)(99396003)(54356999);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB319;H:atx-linux-37.altera.com;FPR:;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-OriginatorOrg: opensource.altera.com
+In-Reply-To: <1414577167-25666-1-git-send-email-kever.yang@rock-chips.com>
+References: <1414577167-25666-1-git-send-email-kever.yang@rock-chips.com>
+Date: Wed, 29 Oct 2014 13:50:20 -0700
+X-Google-Sender-Auth: SHqW5UTLBC5stkC36fb0zhTI2-g
+Message-ID: <CAD=FV=Vnt7Pg9V_cE0S8u-2X2hDsPN8huwy8xKv1UwvWEo-Hyw@mail.gmail.com>
+Subject: Re: [PATCH] clk: rockchip: disable unused clocks
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Sonny Rao <sonnyrao@chromium.org>,
+        Addy Ke <addy.ke@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        Jianqun Xu <xjq@rock-chips.com>, han jiang <hj@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Oct 2014, Pavel Machek wrote:
+Kever,
 
-> Hi!
-> 
-> > > > +Optional properties:
-> > > > + - label          : name that you want this bridge to show up as under
-> > > > +                    /sys/class/fpga-bridge.  Default is br<device#> if this is
-> > > > +                    not specified.
-> > > > +
-> > > 
-> > > Why? Linux-specific.
-> > 
-> > That was a convience for the user.  I can take that out and won't
-> > miss it.
-> 
-> Actually make it
-> 
-> - label : optional user-readable name for this bridge
-> 
-> ...and it is no longer Linux-specific, and you can keep it if it is
-> otherwise useful...
-> 									Pavel
+On Wed, Oct 29, 2014 at 3:06 AM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> The rockchip clock driver use CLK_IGNORE_UNUSED flag to make sure
+> all the clocks are available like default power on state.
+> We have implement the clock manage in most of rockchip drivers,
+> it is time to remove it for power save.
+> Instead we add CLK_IGNORE_UNUSED for some clock nodes which should
+> be on during boot or no module driver in kernel will initialize it.
+>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>
+>  drivers/clk/rockchip/clk-rk3188.c |  32 ++++-----
+>  drivers/clk/rockchip/clk-rk3288.c | 146 +++++++++++++++++++-------------------
+>  drivers/clk/rockchip/clk.c        |   9 ---
+>  3 files changed, 90 insertions(+), 97 deletions(-)
 
-Great!  Thanks for the review.  In the future I'll keep my sysfs 
-documentation separate from my DT bindings!
+Your patch didn't seem to apply to the top of Heiko's
+"v3.19-clk/next".  Where should it apply to?
 
-Alan
+> -       GATE(ACLK_CPU, "aclk_cpu", "aclk_cpu_pre", 0,
+> +       GATE(0, "aclk_cpu", "aclk_cpu_pre", CLK_IGNORE_UNUSED,
+>                         RK3288_CLKGATE_CON(0), 3, GFLAGS),
 
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-> 
+It seems strange to me that you're removing the ACLK_CPU ID here.  Was
+that on purpose?
+
+> -       COMPOSITE_NOMUX(PCLK_CPU, "pclk_cpu", "aclk_cpu_pre", 0,
+> +       COMPOSITE_NOMUX(0, "pclk_cpu", "aclk_cpu_pre", CLK_IGNORE_UNUSED,
+>                         RK3288_CLKSEL_CON(1), 12, 3, DFLAGS,
+>                         RK3288_CLKGATE_CON(0), 5, GFLAGS),
+
+Here too for PCLK_CPU.  There are a few others as well.
+
+
+I'll also say that when I applied this atop my local tree that USB
+stopped working.  I just see:
+
+[ 1647.626747] hub 2-1:1.0: hub_port_status failed (err = -110)
+[ 1657.626746] hub 2-1:1.0: hub_port_status failed (err = -110)
+
+...over and over and over again.
